@@ -69,8 +69,8 @@ export interface GrammarPattern {
     no: string;
     /** `fact` only: the truth, e.g. «Can penguins swim?» → true. The picture is the subject, with no ✅ / ❌. */
     answer?: boolean;
-    /** The line shown above a `marker` question: ✅ = the child likes it (the default), or ✅ = it's there. */
-    hint?: 'likes' | 'there';
+    /** The line shown above a `marker` question: ✅ = the child likes it (the default), ✅ = it's there, or ✅ = it was there. */
+    hint?: 'likes' | 'there' | 'was';
   };
 }
 
@@ -109,7 +109,7 @@ export interface GrammarSentence {
     /** True when the sentence's own answer is «yes». */
     answer: boolean;
     /** Which line the app shows above a `marker` question; null for the others. */
-    hint: 'likes' | 'there' | null;
+    hint: 'likes' | 'there' | 'was' | null;
   } | null;
   /**
    * What Build the sentence puts in order: the whole sentence, or, over the grade's cap, its answer

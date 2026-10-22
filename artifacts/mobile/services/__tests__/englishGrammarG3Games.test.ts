@@ -95,7 +95,7 @@ describe('Yes or No on Grade 3', () => {
       assert.equal(pictured, id === L(2, 9) ? 6 : pictured);
       assert.equal(round.length, Math.min(ROUND_LENGTH, pictured), id);
       assert.equal(round.filter(q => q.answer).length, Math.ceil(round.length / 2), id);
-      const pictures = round.map(q => q.picture.word);
+      const pictures = round.map(q => q.picture!.word);
       assert.equal(new Set(pictures).size, pictures.length, `${id}: a picture twice`);
       for (const q of round) {
         assert.ok(spoken.has(q.question), q.question);

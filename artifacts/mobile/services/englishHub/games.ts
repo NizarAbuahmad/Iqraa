@@ -304,13 +304,15 @@ export function isSentenceBuilt(tiles: readonly { text: string }[], sentence: Gr
 
 export interface TrueFalseQuestion {
   sentence: GrammarSentence;
-  /** The word whose picture is shown — the sentence's own, or another of the same slot. */
-  pictureWord: string;
+  /** The word whose picture is shown — the sentence's own, or another of the same slot; null for a picture-free claim. */
+  pictureWord: string | null;
+  /** What is shown and spoken: the sentence, or, for a false picture-free claim, its swapped twin. */
+  text: string;
   isTrue: boolean;
 }
 
 function judgeable(s: GrammarSentence): boolean {
-  return Boolean(s.picture && s.falsePicture);
+  return Boolean((s.picture && s.falsePicture) || s.claim);
 }
 
 /** Half the round (rounded up) is true, the rest false, then the order is shuffled. */
@@ -320,7 +322,10 @@ export function buildTrueFalseRound(sentences: readonly GrammarSentence[], rng: 
   return shuffle(
     picked.map((sentence, i): TrueFalseQuestion => {
       const isTrue = i < trueCount;
-      return { sentence, isTrue, pictureWord: isTrue ? sentence.picture!.word : sentence.falsePicture! };
+      if (sentence.picture && sentence.falsePicture) {
+        return { sentence, isTrue, pictureWord: isTrue ? sentence.picture.word : sentence.falsePicture, text: sentence.text };
+      }
+      return { sentence, isTrue, pictureWord: null, text: isTrue ? sentence.text : sentence.claim!.falseText };
     }),
     rng,
   );
@@ -330,11 +335,12 @@ export function buildTrueFalseRound(sentences: readonly GrammarSentence[], rng: 
 
 export interface YesNoQuestion {
   sentence: GrammarSentence;
-  picture: { word: string; count: 1 | 2 };
+  /** Null for a picture-free fact (Grade 4, S1 U4). */
+  picture: { word: string; count: 1 | 2 } | null;
   marker: GrammarMarker | null;
   kind: 'match' | 'marker' | 'fact';
-  /** The line shown above the question: ✅ = likes / ✅ = it's there; null when the picture is the subject only. */
-  hint: 'likes' | 'there' | null;
+  /** The line shown above the question: ✅ = likes / it's there / it was there; null when the picture is the subject only. */
+  hint: 'likes' | 'there' | 'was' | null;
   /** What the child is asked, in English. */
   question: string;
   /** True when the right answer is «yes». */
@@ -344,12 +350,12 @@ export interface YesNoQuestion {
 }
 
 function yesNoUsable(s: GrammarSentence): boolean {
-  return s.yesNo !== null && s.picture !== null;
+  return s.yesNo !== null;
 }
 
 function yesNoItem(s: GrammarSentence, question: string, answer: boolean): YesNoQuestion {
   const y = s.yesNo!;
-  return { sentence: s, picture: s.picture!, marker: s.marker, kind: y.kind, hint: y.hint, question, answer, yes: y.yes, no: y.no };
+  return { sentence: s, picture: s.picture, marker: s.marker, kind: y.kind, hint: y.hint, question, answer, yes: y.yes, no: y.no };
 }
 
 /** The whole exchange, spoken once the child has answered: a string `allGrammarSpoken` lists. */
@@ -357,14 +363,17 @@ export function yesNoExchange(q: YesNoQuestion): string {
   return `${q.question} ${q.answer ? q.yes : q.no}`;
 }
 
-/** Up to `n` items, one per picture word, skipping the words already `taken`. */
+/** What makes two items «the same»: their picture word, or, with no picture, their question. */
+const itemKey = (q: YesNoQuestion): string => q.picture?.word ?? q.question;
+
+/** Up to `n` items, one per picture word (or question), skipping the keys already `taken`. */
 function pickByWord(items: readonly YesNoQuestion[], n: number, taken: ReadonlySet<string>, rng: () => number): YesNoQuestion[] {
   const seen = new Set(taken);
   const out: YesNoQuestion[] = [];
   for (const q of shuffle([...items], rng)) {
     if (out.length >= n) break;
-    if (seen.has(q.picture.word)) continue;
-    seen.add(q.picture.word);
+    if (seen.has(itemKey(q))) continue;
+    seen.add(itemKey(q));
     out.push(q);
   }
   return out;
@@ -388,12 +397,12 @@ export function buildYesNoRound(sentences: readonly GrammarSentence[], rng: () =
       (y.answer ? yesItems : noItems).push(yesNoItem(s, y.question, y.answer));
     }
   }
-  const n = Math.min(ROUND_LENGTH, new Set([...yesItems, ...noItems].map(q => q.picture.word)).size);
+  const n = Math.min(ROUND_LENGTH, new Set([...yesItems, ...noItems].map(itemKey)).size);
   const wantYes = Math.ceil(n / 2);
   const yes = pickByWord(yesItems, wantYes, new Set(), rng);
-  const no = pickByWord(noItems, n - wantYes, new Set(yes.map(q => q.picture.word)), rng);
+  const no = pickByWord(noItems, n - wantYes, new Set(yes.map(itemKey)), rng);
   // A side that ran short (a picture with only one kind of answer) is made up from either, still one picture each.
-  const used = new Set([...yes, ...no].map(q => q.picture.word));
+  const used = new Set([...yes, ...no].map(itemKey));
   const extra = yes.length + no.length < n ? pickByWord([...yesItems, ...noItems], n - yes.length - no.length, used, rng) : [];
   return shuffle([...yes, ...no, ...extra], rng);
 }
