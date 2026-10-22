@@ -46,6 +46,47 @@ Sections below are in the order they were written, not strictly by date.
 
 ---
 
+## A lesson game can be homework, and the teacher sees the scores — 2026-10-22
+
+**What changed.** In a class's «الواجبات», «لعبة من الدرس» attaches a lesson game
+(memory, unscramble or spot-the-term) from the class's own grade and subjects
+(`components/classes/GamePickerSheet.tsx`, lessons from `gameLessonsForScope`). The
+attachment is a new `homework.resources` kind, `{kind:"game", lessonId, game, title}`
+(`lessonId` checked against the curriculum, `game` against the three). A student opens it
+from «المدرسة» → `/play/lesson/<id>?game=…&hw=<homework>`; when a **signed-in student**
+finishes a round of **the attached game**, the app posts it
+(`PUT /student/homework/:id/game-result`), the footer says «أُرسلت نتيجتك إلى المعلم»
+(retry on failure), and the homework is ticked done for the same roster rows. The teacher's
+homework row gets «النتائج» (`GET /homework/:id/game-results`, `GameResultsSheet`): each
+student's best score and attempts. Student and parent homework items carry `gameResults`
+and show «نتيجتك: ٦ من ٦» / «نتيجة طفلك: …».
+
+**Storage.** New table `game_results` (migration `0011_cuddly_captain_america.sql`, additive,
+granted to `iqraa_app`, RLS-classified DEFERRED like `homework_completions`): one row per
+homework × roster row × **lesson** × game — a result must name the attached lesson as well
+as the game, so two memory games from different lessons are two results, and another
+lesson's round never counts. Results of a game no longer attached are not returned. It keeps
+the **best** score/total ratio (a tie keeps the existing),
+`attempts` counted, `played_at` updated. The best-of rule is in two places on purpose —
+`isBetterResult` (`modules/homework/game.ts`, unit-tested) and the atomic upsert in
+`lib/homeworkGame.ts` (db-tested). Rows are the caller's own `self` rows in the class
+(`ownHomeworkRows`, now shared with `setHomeworkDone`); every failure is a 404.
+Memory's real score is moves, so a finished memory round posts `score = total = pairs`.
+**Older apps** do not know the `game` kind and drop it, then a teacher's edit PATCHes the
+whole list: so a PATCH without `gamesIncluded: true` keeps the existing games it omitted
+(this client always sends the flag; with it the list is authoritative). Scores are reported
+by the client — fine for practice, never used for mastery.
+
+**Verified.** Workspace typecheck; api-server suite 2,324 pass with a real Postgres
+(homework + family db tests cover create/reject, best-of, tie, attempts, 404s, teacher
+ownership, family lists); `rlsCoverage` 6/6 on a database migrated from scratch; mobile
+suite pass except the known local CRLF `scopeSelection`. End to end in headless Chromium
+against this branch's API on a throwaway migrated database with the family fixtures:
+teacher's homework row and picker; student «المدرسة» → 🎮 → spot 6/6 → «أُرسلت نتيجتك»;
+API and teacher sheet «سارة … ٦ من ٦»; student and parent see the score, homework moved to
+«تم إنجازه». **Not verified / not built:** Android; English-corner activities as homework
+and English-corner progress on the server (still device-only); a parent push for a score.
+
 ## Progress is celebrated — 2026-10-22
 
 - **Four moments.** `Celebrate` (`components/ui/Celebrate.tsx`) marks an exam handed in,

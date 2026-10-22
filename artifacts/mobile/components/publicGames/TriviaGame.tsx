@@ -47,12 +47,14 @@ export function TriviaGame({
 }
 
 export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: string }>({
-  titleKey, accent, buildRound, renderPrompt, onBack, analytics,
+  titleKey, accent, buildRound, renderPrompt, onBack, analytics, onFinished, footer,
 }: {
   titleKey: TranslationKey;
   accent: string;
   onBack?: () => void;
   analytics?: Record<string, string>;
+  onFinished?: (score: number, total: number) => void;
+  footer?: React.ReactNode;
   /** Must be stable (module-level or useCallback): a new identity reshuffles the round. */
   buildRound: (lang: 'ar' | 'en') => Q[];
   renderPrompt: (question: Q) => React.ReactNode;
@@ -106,6 +108,8 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
       onReplay={replay}
       onBack={onBack}
       analytics={analytics}
+      onFinished={onFinished}
+      footer={footer}
     >
       <View style={{ flex: 1, padding: 20, gap: 20 }}>
         <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>

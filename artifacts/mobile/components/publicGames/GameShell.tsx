@@ -23,7 +23,7 @@ import type { TranslationKey } from '@/services/i18n';
 import { trackEvent } from '@/services/analytics';
 
 export function GameShell({
-  titleKey, accent, scoreLabel, gameOver, onReplay, onBack, analytics, children,
+  titleKey, accent, scoreLabel, gameOver, onReplay, onBack, analytics, onFinished, footer, children,
 }: {
   /** Default: back to the /play menu. */
   onBack?: () => void;
@@ -37,6 +37,10 @@ export function GameShell({
   /** `score`/`total` go to analytics only; the message is what's shown. `perfect` makes the celebration bigger. */
   gameOver?: { message: string; perfect?: boolean; score?: number; total?: number } | null;
   onReplay?: () => void;
+  /** Fired once per finished round, at the same crossing as the analytics event (a replay re-arms it). `gameOver.score`/`total` default to 0. */
+  onFinished?: (score: number, total: number) => void;
+  /** Rendered in the game-over panel under the message — e.g. «sent to the teacher». */
+  footer?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const colors = useColors();
@@ -66,6 +70,7 @@ export function GameShell({
       ...(gameOver?.score != null && { score: gameOver.score }),
       ...(gameOver?.total != null && { total: gameOver.total }),
     });
+    onFinished?.(gameOver?.score ?? 0, gameOver?.total ?? 0);
     // Once per game over, not on every re-render of the panel.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [over]);
@@ -99,6 +104,7 @@ export function GameShell({
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 16, lineHeight: 26, textAlign: 'center' }}>
               {gameOver.message}
             </Text>
+            {footer}
 
             <Button label={t('playPlayAgain')} onPress={() => onReplay?.()} style={{ backgroundColor: accent, marginTop: 12 }} fullWidth size="lg" />
 

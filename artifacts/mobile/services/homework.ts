@@ -44,11 +44,44 @@ export interface HomeworkMaterialResource {
   type: string;
 }
 
-export type HomeworkResource = HomeworkLibraryResource | HomeworkMaterialResource;
+/**
+ * One of a lesson's term games (services/lessonGames.ts), played from the
+ * homework: it opens `/play/lesson/<lessonId>?game=…&hw=…` and the student's
+ * result is posted back. `title` is the lesson's Arabic title. The game names
+ * are spelled here, not imported, because this file takes no imports.
+ */
+export type HomeworkGameName = 'memory' | 'scramble' | 'spot';
+export const HOMEWORK_GAMES: readonly HomeworkGameName[] = ['memory', 'scramble', 'spot'];
+export interface HomeworkGameResource {
+  kind: 'game';
+  lessonId: string;
+  game: HomeworkGameName;
+  title: string;
+}
+
+export type HomeworkResource = HomeworkLibraryResource | HomeworkMaterialResource | HomeworkGameResource;
 
 /** An attachment's identity in a list — for a Library item, the picker's own "already added" key. */
 export function resourceKey(r: HomeworkResource): string {
+  if (r.kind === 'game') return `game:${r.lessonId}:${r.game}`;
   return r.kind === 'material' ? `material:${r.materialId}` : `${r.source}:${r.nativeId}`;
+}
+
+/** Best round of one game on a homework, as `gameResults` carries it. */
+export interface FamilyGameResult {
+  /** A result belongs to a (lesson, game) pair: two memory games of different lessons are two attachments. */
+  lessonId: string;
+  game: HomeworkGameName;
+  score: number;
+  total: number;
+  attempts: number;
+}
+
+/** One student's best round, as the teacher's `GET /homework/:id/game-results` lists it. */
+export interface TeacherGameResult extends FamilyGameResult {
+  studentId: string;
+  displayName: string;
+  playedAt: string;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -82,6 +115,8 @@ export interface FamilyHomework {
    * per child. Absent on the wire (an older server) reads as true.
    */
   canTrack: boolean;
+  /** Best round per attached game; absent on the wire (an older server) reads as none. */
+  gameResults: FamilyGameResult[];
 }
 
 export interface ChildHomework {
@@ -230,9 +265,61 @@ export function normalizeFamilyHomework(raw: unknown): FamilyHomework[] {
         examTitle,
         resources: normalizeResources(r['resources']),
         canTrack: r['canTrack'] !== false,
+        gameResults: normalizeGameResults(r['gameResults']),
       },
     ];
   });
+}
+
+const isGameName = (v: unknown): v is HomeworkGameName => HOMEWORK_GAMES.includes(v as HomeworkGameName);
+
+/** A result without a known game and a sane score out of a positive total is dropped. */
+function gameResult(r: unknown): FamilyGameResult | null {
+  if (!isRecord(r) || !isGameName(r['game']) || !str(r['lessonId'])) return null;
+  const score = r['score'];
+  const total = r['total'];
+  if (typeof score !== 'number' || typeof total !== 'number' || !Number.isFinite(score) || !Number.isFinite(total)) return null;
+  if (total <= 0 || score < 0 || score > total) return null;
+  return { lessonId: str(r['lessonId']), game: r['game'], score, total, attempts: Math.max(1, count(r['attempts'])) };
+}
+
+/** `gameResults` of a family item. Absent (an older server) is none. Never throws. */
+export function normalizeGameResults(raw: unknown): FamilyGameResult[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap(r => {
+    const g = gameResult(r);
+    return g ? [g] : [];
+  });
+}
+
+/** The `results` array of `GET /homework/:id/game-results`; a row with no student id is dropped. */
+export function normalizeTeacherGameResults(raw: unknown): TeacherGameResult[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((r): TeacherGameResult[] => {
+    const g = gameResult(r);
+    if (!g || !isRecord(r) || !str(r['studentId'])) return [];
+    return [{ ...g, studentId: str(r['studentId']), displayName: str(r['displayName']), playedAt: str(r['playedAt']) }];
+  });
+}
+
+/** The result for one attached game of one lesson, if any. */
+export function resultForGame(
+  results: readonly FamilyGameResult[],
+  lessonId: string,
+  game: HomeworkGameName,
+): FamilyGameResult | null {
+  return results.find(r => r.lessonId === lessonId && r.game === game) ?? null;
+}
+
+/**
+ * «٧ من ٨» (Arabic UI, Arabic-Indic digits) or "7 of 8". Display only — the
+ * numbers stay latin everywhere else. Memory sends pairs of pairs (see the lesson
+ * game screen), so its label reads «٦ من ٦».
+ */
+export function gameScoreText(score: number, total: number, isAr: boolean): string {
+  if (!isAr) return `${score} of ${total}`;
+  const ar = (n: number) => String(n).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)]!);
+  return `${ar(score)} من ${ar(total)}`;
 }
 
 /** An item without a source, id and title is dropped; an absent list (an older server) is none. */
@@ -240,6 +327,12 @@ export function normalizeResources(raw: unknown): HomeworkResource[] {
   if (!Array.isArray(raw)) return [];
   return raw.flatMap((r): HomeworkResource[] => {
     if (!isRecord(r)) return [];
+    if (r['kind'] === 'game') {
+      const lessonId = str(r['lessonId']);
+      const title = str(r['title']);
+      const game = r['game'];
+      return lessonId && title && isGameName(game) ? [{ kind: 'game', lessonId, game, title }] : [];
+    }
     if (r['kind'] === 'material') {
       const materialId = str(r['materialId']);
       const title = str(r['title']);
@@ -269,6 +362,7 @@ export function normalizeResources(raw: unknown): HomeworkResource[] {
  * it and, for a staff upload, re-reads the Library row.
  */
 export function resourceBody(r: HomeworkResource): Record<string, string> {
+  if (r.kind === 'game') return { kind: 'game', lessonId: r.lessonId, game: r.game, title: r.title };
   // Only the id: the server takes a material's title and type from the teacher's own row.
   if (r.kind === 'material') return { kind: 'material', materialId: r.materialId };
   return {

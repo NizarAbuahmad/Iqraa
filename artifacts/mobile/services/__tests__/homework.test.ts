@@ -19,6 +19,10 @@ import {
   resourceKey,
   isAttachableMaterial,
   clampedDone,
+  gameScoreText,
+  normalizeGameResults,
+  normalizeTeacherGameResults,
+  resultForGame,
   homeworkSections,
   normalizeTeacherHomework,
   normalizeTeacherList,
@@ -39,6 +43,7 @@ const hw = (over: Partial<FamilyHomework> = {}): FamilyHomework => ({
   examTitle: null,
   resources: [],
   canTrack: true,
+  gameResults: [],
   ...over,
 });
 
@@ -145,6 +150,7 @@ test('normalizeFamilyHomework keeps a well-formed row', () => {
       examTitle: null,
       resources: [],
       canTrack: true,
+      gameResults: [],
     },
   ]);
 });
@@ -551,7 +557,7 @@ test('isHomeworkChatLine matches the shared-homework chat line only', () => {
 test('allTrackedDone: every item that can be ticked is done', () => {
   const item = (id: string, done: boolean, canTrack = true) => ({
     id, title: id, instructions: '', dueDate: '2026-10-22', className: '', teacherName: '',
-    done, state: done ? 'done' as const : 'open' as const, examTitle: null, resources: [], canTrack,
+    done, state: done ? 'done' as const : 'open' as const, examTitle: null, resources: [], canTrack, gameResults: [],
   });
   assert.equal(allTrackedDone([item('a', true), item('b', true)]), true);
   assert.equal(allTrackedDone([item('a', true), item('b', false)]), false);
@@ -560,4 +566,63 @@ test('allTrackedDone: every item that can be ticked is done', () => {
   // Nothing trackable is not "all done".
   assert.equal(allTrackedDone([item('b', false, false)]), false);
   assert.equal(allTrackedDone([]), false);
+});
+
+// ─── lesson games as homework ────────────────────────────────────────────────
+
+test('a game attachment round-trips: normalized, keyed per lesson and game, resent whole', () => {
+  const g = { kind: 'game', lessonId: 'lesson-math-10-1-1', game: 'scramble', title: 'الدرس الأول' } as const;
+  assert.deepEqual(normalizeResources([g]), [g]);
+  assert.equal(resourceKey(g), 'game:lesson-math-10-1-1:scramble');
+  assert.notEqual(resourceKey(g), resourceKey({ ...g, game: 'memory' }));
+  assert.deepEqual(resourceBody(g), g);
+});
+
+test('normalizeResources drops a game with no lesson, title or known game', () => {
+  const ok = { kind: 'game', lessonId: 'l1', game: 'spot', title: 'ت' };
+  assert.equal(normalizeResources([ok, { ...ok, lessonId: '' }, { ...ok, title: '' }, { ...ok, game: 'chess' }, { kind: 'game' }]).length, 1);
+});
+
+test('gameResults: absent reads as none, junk rows are dropped, attempts floor at 1', () => {
+  assert.deepEqual(normalizeFamilyHomework([rawItem])[0]!.gameResults, []);
+  const rows = [
+    { lessonId: 'l1', game: 'memory', score: 6, total: 6, attempts: 2 },
+    { lessonId: 'l1', game: 'spot', score: 7, total: 6, attempts: 1 }, // score above total
+    { lessonId: 'l1', game: 'scramble', score: 3, total: 0, attempts: 1 }, // no total
+    { lessonId: 'l1', game: 'chess', score: 1, total: 2, attempts: 1 },
+    { game: 'memory', score: 2, total: 6, attempts: 1 }, // no lesson
+    { lessonId: 'l1', game: 'spot', score: 4, total: 6 }, // attempts absent
+    null,
+  ];
+  assert.deepEqual(normalizeGameResults(rows), [
+    { lessonId: 'l1', game: 'memory', score: 6, total: 6, attempts: 2 },
+    { lessonId: 'l1', game: 'spot', score: 4, total: 6, attempts: 1 },
+  ]);
+  assert.deepEqual(normalizeFamilyHomework([{ ...rawItem, gameResults: rows }])[0]!.gameResults.length, 2);
+  assert.deepEqual(normalizeGameResults('x'), []);
+});
+
+test('resultForGame matches lesson AND game: two memory games of different lessons keep their own results', () => {
+  const rs = normalizeGameResults([
+    { lessonId: 'l1', game: 'memory', score: 6, total: 6, attempts: 1 },
+    { lessonId: 'l2', game: 'memory', score: 5, total: 5, attempts: 2 },
+    { lessonId: 'l1', game: 'spot', score: 4, total: 6, attempts: 1 },
+  ]);
+  assert.equal(resultForGame(rs, 'l1', 'memory')?.total, 6);
+  assert.equal(resultForGame(rs, 'l2', 'memory')?.attempts, 2);
+  assert.equal(resultForGame(rs, 'l1', 'spot')?.score, 4);
+  assert.equal(resultForGame(rs, 'l2', 'spot'), null);
+  assert.equal(resultForGame(rs, 'l3', 'memory'), null);
+});
+
+test('normalizeTeacherGameResults needs a student id and keeps the name', () => {
+  const row = { studentId: 's1', displayName: 'سلمى', lessonId: 'l1', game: 'scramble', score: 5, total: 6, attempts: 3, playedAt: '2026-10-22T10:00:00Z' };
+  assert.deepEqual(normalizeTeacherGameResults([row, { ...row, studentId: '' }, { ...row, score: -1 }, { ...row, lessonId: '' }]), [row]);
+  assert.deepEqual(normalizeTeacherGameResults(undefined), []);
+});
+
+test('gameScoreText: Arabic-Indic digits in the Arabic UI, latin in English', () => {
+  assert.equal(gameScoreText(7, 8, true), '٧ من ٨');
+  assert.equal(gameScoreText(10, 12, true), '١٠ من ١٢');
+  assert.equal(gameScoreText(7, 8, false), '7 of 8');
 });
