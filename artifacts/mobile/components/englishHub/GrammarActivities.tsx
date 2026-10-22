@@ -196,6 +196,13 @@ export function BuildSentence({ sentences, onFinish }: { sentences: readonly Gra
     <View style={{ gap: 16, alignItems: 'center' }}>
       <Progress i={i} n={round.length} />
       <SentencePicture s={q.sentence} />
+      {/* Over the cap, only the answer is built: the question is the prompt, read before the words are ordered. */}
+      {q.prompt ? (
+        <>
+          <EnglishLine text={q.prompt} />
+          <HearButton word={q.prompt} />
+        </>
+      ) : null}
 
       <View style={styles.tileRow}>
         {slots.map((tile, idx) => (
@@ -228,7 +235,7 @@ export function BuildSentence({ sentences, onFinish }: { sentences: readonly Gra
         ))}
       </View>
 
-      {result !== null ? <Feedback ok={result} answer={q.sentence.text} onNext={next} sentence={q.sentence.text} /> : null}
+      {result !== null ? <Feedback ok={result} answer={q.sentence.build!.text} onNext={next} sentence={q.sentence.text} /> : null}
     </View>
   );
 }
@@ -344,8 +351,8 @@ export function YesNo({ sentences, onFinish }: { sentences: readonly GrammarSent
     <View style={{ gap: 16, alignItems: 'center' }}>
       <Progress i={i} n={round.length} />
       <GrammarPicture word={q.picture.word} count={q.picture.count} marker={q.marker} />
-      {q.kind === 'marker' ? (
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: 'center' }}>{t('hubGYesNoLikes')}</Text>
+      {q.hint ? (
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: 'center' }}>{t(q.hint === 'there' ? 'hubGYesNoThere' : 'hubGYesNoLikes')}</Text>
       ) : null}
       <EnglishLine text={q.question} />
       {picked === null ? <HearButton word={q.question} /> : null}
