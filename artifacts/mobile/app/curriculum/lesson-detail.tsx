@@ -13,6 +13,7 @@ import {
   isBrowserLessonTitleOnly,
 } from '@/services/curriculumData';
 import { lockState } from '@/services/lessonLock';
+import { hasLessonGames } from '@/services/lessonGames';
 import { useMasteryProgress } from '@/hooks/useMasteryProgress';
 import { LessonPrepPanel } from '@/components/ui/LessonPrepPanel';
 import { LessonMediaPanel } from '@/components/ui/LessonMediaPanel';
@@ -294,6 +295,23 @@ export default function LessonDetailScreen() {
             <Text style={{ fontSize: 24 }}>🎧</Text>
             <Text style={{ flex: 1, color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }}>
               {t('hubOpenFromLesson')}
+            </Text>
+            <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color="#fff" />
+          </Pressable>
+        ) : null}
+
+        {/* Games from the lesson's own key terms — only where it has enough. */}
+        {hasLessonGames(lesson) ? (
+          <Pressable
+            onPress={() => router.push({ pathname: '/play/lesson/[lessonId]', params: { lessonId: lesson.id } } as never)}
+            style={({ pressed }) => [
+              styles.hubLink,
+              { backgroundColor: colorFill, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.9 : 1 },
+            ]}
+          >
+            <Text style={{ fontSize: 24 }}>🎮</Text>
+            <Text style={{ flex: 1, color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }}>
+              {t('lessonGamesOpen')}
             </Text>
             <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color="#fff" />
           </Pressable>

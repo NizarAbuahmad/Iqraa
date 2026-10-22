@@ -17,6 +17,7 @@ import type { TranslationKey } from '@/services/i18n';
 import { GRAMMAR_ACTIVITIES, HUB_ACTIVITIES, READING_ACTIVITIES, dayOf, grammarActivityAvailable, lessonHasPictureMatch, newlyEarnedBadges, progressKey, readSentenceAvailable, readingActivityAvailable, recordResult, starsFor, type BadgeId, type HubActivity } from '@/services/englishHub/games';
 import { useHubProgress } from '@/services/englishHub/progressStore';
 import { goBack } from '@/services/navigation';
+import { trackEvent } from '@/services/analytics';
 import { unitNames } from '@/services/contentLanguage';
 import { Flashcards, ListenChoose, MatchMeaning, PictureMatch, Scramble, Speaking, SpellIt } from '@/components/englishHub/Activities';
 import { BuildSentence, GrammarChoose, TrueFalse, YesNo } from '@/components/englishHub/GrammarActivities';
@@ -86,6 +87,7 @@ export default function EnglishHubLessonScreen() {
       const after = recordResult(progress, lesson.id, activity, stars, dayOf(new Date()));
       setUnlocked(newlyEarnedBadges(progress, after));
       record(lesson.id, activity, stars);
+      trackEvent('game_finished', { game: `english-${activity}`, lessonId: lesson.id, score: correct, total });
     }
     setResult({ correct, total, stars });
   };

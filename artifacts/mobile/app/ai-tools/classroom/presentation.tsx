@@ -45,6 +45,7 @@ import {
   createGame, hasGameScores, podium, resetScores, setAwards, toggleAward, toggleNobody, type GameState,
 } from '@/services/classGame';
 import { AwardRow, PodiumView, ScoreStrip, ScoreboardView } from '@/components/classroom/GameBoard';
+import { trackEvent } from '@/services/analytics';
 import { MathText } from '@/components/classroom/MathText';
 import { VerifiedBadge } from '@/components/classroom/VerifiedBadge';
 import { ImageViewerModal } from '@/components/ui/ImageViewer';
@@ -1498,6 +1499,23 @@ export default function PresentationScreen() {
     sync();
     return onFullscreenChange(sync);
   }, []);
+
+  // One analytics event when a Class Challenge reaches its podium — once per
+  // game, not again when the teacher steps back off the podium and returns.
+  const onPodium = !!game && activity?.slides[slideIndex]?.type === 'podium';
+  const podiumTracked = useRef<GameState | null>(null);
+  useEffect(() => {
+    if (!onPodium || !game || podiumTracked.current === game) return;
+    podiumTracked.current = game;
+    const top = podium(game)[0]?.[0];
+    trackEvent('game_finished', {
+      game: 'class-challenge',
+      teams: game.teams.length,
+      total: game.questionCount,
+      ...(top && { score: top.score }),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onPodium]);
 
   // Keyboard + presentation-clicker control (web/projector). A teacher runs
   // the class from the front of the room, not from the laptop: clickers send

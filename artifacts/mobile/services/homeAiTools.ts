@@ -9,7 +9,8 @@ export type GeneratorRoute =
   | '/ai-tools/quiz'
   | '/ai-tools/activity'
   | '/ai-tools/lesson-flow'
-  | '/ai-tools/classroom';
+  | '/ai-tools/classroom'
+  | '/ai-tools/game';
 
 export type HomeToolId =
   | 'lesson-plan'
@@ -121,7 +122,7 @@ export const HOME_AI_TOOLS: HomeToolDef[] = [
   },
   {
     id: 'game', emoji: '🎮', labelAr: 'لعبة تعليمية', labelEn: 'Learning game',
-    route: '/ai-tools/classroom', status: 'coming_soon', enabled: false,
+    route: '/ai-tools/game', status: 'enabled', enabled: false, navigable: true,
   },
   {
     id: 'video', emoji: '🎥', labelAr: 'فكرة فيديو', labelEn: 'Video idea',
