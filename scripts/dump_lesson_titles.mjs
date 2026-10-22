@@ -2,7 +2,7 @@
  * Writes the curriculum's books, units and lessons (ids and Arabic titles, in
  * book order) for the subjects `map_lesson_pages.py` handles, as JSON.
  *
- *   node --experimental-strip-types scripts/dump_lesson_titles.mjs <out.json>
+ *   node --experimental-strip-types scripts/dump_lesson_titles.mjs <out.json> [--all]
  *
  * Kept out of the Python script because the lesson list lives in TypeScript
  * (`artifacts/mobile/services/knowledgeBase.ts`); a title is the join key
@@ -12,7 +12,8 @@ import { writeFileSync } from 'node:fs';
 import { KB_BOOKS, KB_UNITS, KB_LESSONS } from '../artifacts/mobile/services/knowledgeBase.ts';
 
 const SUBJECTS = new Set(['arabic', 'islamic', 'physical-education', 'digital-literacy', 'civic-education']);
-const books = KB_BOOKS.filter(b => SUBJECTS.has(b.subjectId)).map(b => ({
+const ALL = process.argv[3] === '--all';
+const books = KB_BOOKS.filter(b => ALL || SUBJECTS.has(b.subjectId)).map(b => ({
   id: b.id,
   gradeId: b.gradeId,
   subjectId: b.subjectId,
