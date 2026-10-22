@@ -9,6 +9,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CORNERS, CORNER_IDS, type CornerId } from '../../constants/corners.ts';
 import { contrast } from '../readableColor.ts';
+import { bandGradient } from '../band.ts';
 
 // The global palette's fixed surfaces and text, copied from constants/colors.ts
 // (which cannot be imported here: it reads Appearance from react-native).
@@ -72,6 +73,28 @@ test('motif opacity stays subtle enough for the band text', () => {
   }
 });
 
+// palette.hero, copied from constants/colors.ts (which cannot be imported here).
+// Measured at 0.95, the library header's meta line; a brand band drawing 0.85 white would be 4.42:1 in dark mode — measure it here before adding one.
+const BRAND_HERO = { light: '#006D65', dark: '#0F766E' };
+
+test('band text reads on both stops of every band gradient', () => {
+  // [name, hero, alpha of the white subtitle drawn on the band]
+  const heroes: [string, string, number][] = [
+    ...CORNER_IDS.flatMap((id): [string, string, number][] => [
+      [`${id} light`, CORNERS[id].light.hero, 0.85],
+      [`${id} dark`, CORNERS[id].dark.hero, 0.85],
+    ]),
+    ['brand light', BRAND_HERO.light, 0.95],
+    ['brand dark', BRAND_HERO.dark, 0.95],
+  ];
+  for (const [what, hero, alpha] of heroes) {
+    for (const stop of bandGradient(hero)) {
+      atLeast(WHITE, stop, `${what} band title`);
+      atLeast(blendWhite(alpha, stop), stop, `${what} band subtitle at ${alpha}`);
+    }
+  }
+});
+
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 /** Every corner is wired. */
@@ -131,15 +154,18 @@ test('corner code never imports the global palette', () => {
   }
 });
 
-test('the library tiles take each corner its own colour', () => {
+test('the library tiles take each corner its own colour and pattern', () => {
   const src = readFileSync(join(root, 'app', 'curriculum', 'resources.tsx'), 'utf8');
   assert.match(src, /from '@\/constants\/corners'/, 'resources.tsx does not import the corner table');
+  assert.match(src, /<LibraryTile\b/, 'the front-row tiles are not LibraryTile');
+  assert.match(src, /cornerLook\(id\)/, 'cornerTile does not read the corner look');
+  assert.match(src, /CORNERS\[id\]\.motif\b/, 'cornerTile does not take the corner motif');
   for (const id of ['english', 'lab', 'math', 'quran'] as const) {
-    assert.match(src, new RegExp(`cornerLook\\('${id}'\\)`), `${id} tile does not read its corner look`);
+    assert.match(src, new RegExp(`cornerTile\\('${id}'\\)`), `${id} tile does not wear its corner`);
   }
-  // The old identical-teal tile icon must be gone from the four themed corner tiles; the curriculum tile
-  // and the student/parent «my exams» tile keep ACCENT on purpose.
-  assert.equal((src.match(/ACCENT \+ '1F'/g) ?? []).length, 2, 'only the curriculum tile and the student/parent «my exams» tile keep the teal icon tint');
+  // The flat teal icon tint is gone: the curriculum and «my exams» tiles wear the brand look (BRAND_TILE).
+  assert.equal((src.match(/ACCENT \+ '1F'/g) ?? []).length, 0, 'a tile still uses the old flat teal icon tint');
+  assert.match(src, /<Band\b/, 'the library header is not a Band');
 });
 
 test('text on a primary fill in the English corner is primaryForeground, not white', () => {
@@ -157,4 +183,26 @@ test('text on a primary fill in the English corner is primaryForeground, not whi
       }
     }
   }
+});
+
+test('the corner frame draws its band with Band, and the grid brings cards in with Entrance', () => {
+  const frame = readFileSync(join(root, 'components', 'corners', 'CornerFrame.tsx'), 'utf8');
+  assert.match(frame, /<Band\b/, 'CornerFrame does not draw its band with Band');
+  const grid = readFileSync(join(root, 'components', 'corners', 'CornerGrid.tsx'), 'utf8');
+  assert.match(grid, /<Entrance\b/, 'CornerGrid does not wrap its cells in Entrance');
+});
+
+test('every corner hub card is a lifted surface that gives when pressed', () => {
+  for (const id of CORNER_IDS) {
+    const src = readFileSync(join(routeDir(id), 'index.tsx'), 'utf8');
+    assert.match(src, /<PressableScale\b/, `${id} hub cards are not PressableScale`);
+    assert.match(src, /\buseSurface\(/, `${id} hub cards do not take useSurface()`);
+  }
+});
+
+test('Profile has the brand band and lifted cards', () => {
+  const src = readFileSync(join(root, 'app', '(tabs)', 'profile.tsx'), 'utf8');
+  assert.match(src, /<Band\b[^>]*motif="leaf"/, 'the Profile header is not a leaf Band');
+  assert.match(src, /\buseSurface\(/, 'the Profile cards do not take useSurface()');
+  assert.match(src, /<PressableScale\b/, 'the Profile setting rows are not PressableScale');
 });

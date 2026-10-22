@@ -1472,3 +1472,118 @@ describe('account, classes, exams and games (thirteenth live pass)', () => {
     });
   }
 });
+
+describe('families, lesson-plan options, schedule and email (fourteenth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['كيف أدخل كحساب طالب؟', 'howStudentSignIn'],
+    ['how do i log in as a student', 'howStudentSignIn'],
+    ['كيف يرى ولي الأمر علامات ابنه؟', 'howFamilyView'],
+    ['how does a parent see the homework', 'howFamilyView'],
+    ['how can i see my child\'s results', 'howFamilyView'],
+    ['كيف أربط حسابي بحساب ابني؟', 'howParentLink'],
+    ['how do i link my account to my child', 'howParentLink'],
+    ['كيف أنسى رمز الدخول وأستعيده؟', 'howLoginCodeLost'],
+    ['نسيت رمز الدخول', 'howLoginCodeLost'],
+    ['i forgot my login code', 'howLoginCodeLost'],
+    ['كيف أختار أسلوب التدريس في خطة الدرس؟', 'howPlanOptions'],
+    ['كيف أضيف أهدافاً تعليمية لخطة الدرس؟', 'howPlanOptions'],
+    ['how do i set the duration of the lesson plan', 'howPlanOptions'],
+    ['كيف أغير لغة خطة الدرس إلى الإنجليزية؟', 'howPlanLanguage'],
+    ['how do i make the worksheet in english', 'howPlanLanguage'],
+    ['كيف أبحث عن درس معين في المنهاج؟', 'howSearchLesson'],
+    ['where can i see the grade 10 chemistry units', 'howSearchLesson'],
+    ['كيف أشاهد فيديو شرح الدرس؟', 'howLibraryVideos'],
+    ['كيف أرسل ورقة العمل بالبريد الإلكتروني؟', 'howEmailMaterial'],
+    ['how do i email the worksheet', 'howEmailMaterial'],
+    ['كيف أضيف حصة إلى جدولي الأسبوعي؟', 'howTimetable'],
+    ['كيف أحذف حصة من الجدول؟', 'howTimetableRemove'],
+    ['how do i delete a class from my timetable', 'howTimetableRemove'],
+    ['كيف أغير بريدي الإلكتروني؟', 'howChangeEmail'],
+    ['how do i change my email', 'howChangeEmail'],
+    ['كيف أتحقق من بريدي الإلكتروني؟', 'howVerifyEmail'],
+    ['how do i verify my email', 'howVerifyEmail'],
+    ['كيف أحظر مستخدماً في الرسائل؟', 'howBlock'],
+    ['كيف أنشئ مجموعة محادثة مع أولياء أمور شعبتي؟', 'howParentGroup'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  const stayWithModel = [
+    'what is the best teaching style for weak students',
+    'كيف أختار أسلوب التدريس المناسب لطلاب ضعاف',
+    'كيف أشرح أسلوب التدريس التعاوني',
+    'how do i verify my answer to a math problem',
+    'how do i change the email template in marketing',
+    'how do i see grade 10 chemistry units in the book',
+    'how do i watch a video about photosynthesis',
+    'how do i log in as admin',
+    'كيف يرى الطالب الخطأ في حله',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not app help`, () => assert.equal(isAppHelpQuery(q), false));
+  }
+});
+
+describe('chat, homework, results and sign-in (fifteenth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['كيف أمسح المحادثة مع إقرأ؟', 'howChatHistory'],
+    ['كيف أبدأ محادثة جديدة مع المساعد؟', 'howChatHistory'],
+    ['how do i start a new chat', 'howChatHistory'],
+    ['هل يمكنني إرسال صورة في المحادثة؟', 'howUploadFile'],
+    ['كيف أنسخ إجابة المساعد؟', 'faqA4'],
+    ['كيف أغير حجم الخط في التطبيق؟', 'howFontSize'],
+    ['how do i use voice input in the chat', 'howChatVoice'],
+    ['هل يقرأ التطبيق النص بصوت عال؟', 'howChatVoice'],
+    ['كيف أعدل خطة التدريس الشهرية؟', 'howEditTeachingPlan'],
+    ['كيف أعدل واجباً بعد نشره؟', 'howHomeworkEdit'],
+    ['كيف أحذف واجباً؟', 'howHomeworkEdit'],
+    ['how do i delete a homework', 'howHomeworkEdit'],
+    ['كيف أرسل واجباً لطالب واحد فقط؟', 'howHomeworkOne'],
+    ['كيف أطبع كشف علامات الشعبة؟', 'howExportMarks'],
+    ['كيف أرى معدل الشعبة في الامتحان؟', 'howClassAverage'],
+    ['كيف أسمح للطالب بإعادة الامتحان؟', 'howExamRetake'],
+    ['how do i let a student retake the exam', 'howExamRetake'],
+    ['how are open-ended answers graded', 'howOpenGrading'],
+    ['كيف تُصحَّح الأسئلة المقالية في التطبيق؟', 'howOpenGrading'],
+    ['كيف أشارك الدرس مع زميل؟', 'howShareMaterial'],
+    ['ما هي اللغات المدعومة في التطبيق؟', 'howLanguages'],
+    ['what languages are supported', 'howLanguages'],
+    ['كيف أسجل الدخول بحساب جوجل؟', 'howGoogleSignIn'],
+    ['how do i sign in with google', 'howGoogleSignIn'],
+    ['كيف أعرف كم ولّدت من مواد هذا الشهر؟', 'howAiUsage'],
+    ['كيف أبدل صورة الغلاف في العرض؟', 'howSlideEdit'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  const stayWithModel = [
+    'how do i grade essays fairly',
+    'كيف أصحح الأسئلة المقالية بعدالة',
+    'what languages should i teach in class',
+    'ما هي اللغات السامية',
+    'كيف أحذف واجباً منزلياً من دفتر الطالب',
+    'how do i use voice acting in a lesson',
+    'كيف أمسح السبورة بعد الحصة',
+    'how do i start a new chapter',
+    'how do i let students retake the test fairly',
+    'كيف أعدل خطة التدريس لتناسب الطلاب الضعاف',
+    'how do i sign in with a pen',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howChatHistory', 'howChatVoice', 'howFontSize', 'howHomeworkEdit', 'howHomeworkOne', 'howClassAverage', 'howExamRetake', 'howOpenGrading', 'howLanguages', 'howGoogleSignIn', 'howAiUsage', 'howEditTeachingPlan']);
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});

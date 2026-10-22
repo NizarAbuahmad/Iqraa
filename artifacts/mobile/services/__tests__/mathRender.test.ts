@@ -256,6 +256,17 @@ describe('isolateForeignRuns', () => {
     assert.equal(out, 'إذا كان ⁦f(x) = 2x + 3⁩ و ⁦g(x) = x²⁩');
   });
 
+  it('keeps the bank\'s «؟» blank inside its equation, forced left-to-right', () => {
+    const LTR = (run: string) => `⁦\u202D${run}\u202C⁩`;
+    assert.equal(isolateForeignRuns('أوجد العدد المجهول: 88 × ؟ = 1056'), `أوجد العدد المجهول: ${LTR('88 × ؟ = 1056')}`);
+    assert.equal(isolateForeignRuns('أوجد العدد المجهول: ؟ × 9 = 63'), `أوجد العدد المجهول: ${LTR('؟ × 9 = 63')}`);
+    assert.equal(isolateForeignRuns('أكمل: 9 + 9 + 9 = 9 × ؟'), `أكمل: ${LTR('9 + 9 + 9 = 9 × ؟')}`);
+  });
+  it('leaves a sentence-ending «؟» in the Arabic flow', () => {
+    assert.equal(isolateForeignRuns('ما ناتج 3 + 4؟'), 'ما ناتج ⁦3 + 4⁩؟');
+    assert.equal(isolateForeignRuns('كم مربعًا في الشبكة؟'), 'كم مربعًا في الشبكة؟');
+  });
+
   it('leaves pure Arabic prose untouched — no isolates inserted', () => {
     const line = 'اشرح الفكرة بأسلوب بسيط';
     assert.equal(isolateForeignRuns(line), line);

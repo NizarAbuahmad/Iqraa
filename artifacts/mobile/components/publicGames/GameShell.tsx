@@ -7,7 +7,7 @@
  * (a top-of-funnel acquisition hook), so it lives here once rather than
  * risking one game shipping without it.
  */
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,17 +17,25 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { Button } from '@/components/ui/Button';
+import { Celebrate } from '@/components/ui/Celebrate';
+import { justCompleted, type Progress } from '@/services/celebration';
 import type { TranslationKey } from '@/services/i18n';
+import { trackEvent } from '@/services/analytics';
 
 export function GameShell({
-  titleKey, accent, scoreLabel, gameOver, onReplay, children,
+  titleKey, accent, scoreLabel, gameOver, onReplay, onBack, analytics, children,
 }: {
+  /** Default: back to the /play menu. */
+  onBack?: () => void;
+  /** Extra fields on the `game_finished` event, e.g. the lesson. */
+  analytics?: Record<string, string>;
   titleKey: TranslationKey;
   accent: string;
   /** Already-formatted, e.g. t('playScoreLabel', score, total) — the shell
    *  has no opinion on what a game's score means. */
   scoreLabel?: string;
-  gameOver?: { message: string } | null;
+  /** `score`/`total` go to analytics only; the message is what's shown. `perfect` makes the celebration bigger. */
+  gameOver?: { message: string; perfect?: boolean; score?: number; total?: number } | null;
   onReplay?: () => void;
   children: React.ReactNode;
 }) {
@@ -37,6 +45,31 @@ export function GameShell({
   const { user } = useAuth();
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
+  // A finished round celebrates on the crossing from playing to over, once.
+  // `prev` starts null, so a shell that mounts with the game already over does
+  // not fire; a replay sets `gameOver` back to null, so the next finish does.
+  const prev = useRef<Progress | null>(null);
+  const [celebrate, setCelebrate] = useState<'small' | 'big' | null>(null);
+  const next: Progress = { key: titleKey, complete: !!gameOver };
+  useEffect(() => {
+    if (justCompleted(prev.current, next)) setCelebrate(gameOver?.perfect ? 'big' : 'small');
+    prev.current = next;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!gameOver]);
+  const over = !!gameOver;
+  React.useEffect(() => {
+    if (!over) return;
+    trackEvent('game_finished', {
+      game: titleKey,
+      signedIn: !!user,
+      ...analytics,
+      ...(gameOver?.score != null && { score: gameOver.score }),
+      ...(gameOver?.total != null && { total: gameOver.total }),
+    });
+    // Once per game over, not on every re-render of the panel.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [over]);
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={{ width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', flex: 1 }}>
@@ -44,7 +77,7 @@ export function GameShell({
           {/* Cast: '/play' isn't in the generated typed-routes union until the
               dev server regenerates it — same reason other new routes in this
               app are cast (see app/_layout.tsx). */}
-          <Pressable onPress={() => router.replace('/play' as any)} style={styles.backBtn} hitSlop={10}>
+          <Pressable onPress={onBack ?? (() => router.replace('/play' as any))} style={styles.backBtn} hitSlop={10}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
           <Text style={[styles.title, { textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
@@ -85,6 +118,13 @@ export function GameShell({
           children
         )}
       </View>
+      <Celebrate
+        visible={celebrate !== null}
+        size={celebrate ?? 'small'}
+        showBadge={celebrate === 'big'}
+        message={t(celebrate === 'big' ? 'celebrateGamePerfect' : 'celebrateGameOver')}
+        onDone={() => setCelebrate(null)}
+      />
     </View>
   );
 }

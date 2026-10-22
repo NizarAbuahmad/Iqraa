@@ -47,7 +47,7 @@ export function ColorSpotGame() {
       titleKey="playColorsTitle"
       accent={ACCENT}
       scoreLabel={`${t('playColorsRound', round + 1)} · ${t('playColorsLives', lives)}`}
-      gameOver={gameOverAt !== null ? { message: t('playColorsGameOver', gameOverAt) } : null}
+      gameOver={gameOverAt !== null ? { message: t('playColorsGameOver', gameOverAt), score: gameOverAt } : null}
       onReplay={replay}
     >
       <View style={{ flex: 1, padding: 20, gap: 20 }}>

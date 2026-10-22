@@ -1,26 +1,21 @@
 /**
  * Landing route.
  *
- * On desktop web a teacher gets the lesson workspace: the lesson that is
- * loaded, what is still missing from it, and one line to the assistant. Every
- * other case keeps the old behaviour and forwards.
+ * A teacher lands on Today: the lesson that is loaded, what is still missing
+ * from it, and one line to the assistant. On desktop web that is the two-column
+ * `LessonWorkspace` below; on a phone it is `PhoneToday`
+ * (components/today/PhoneToday.tsx), a one-column version over the same
+ * `useTodayLesson` hook. Every other role keeps the old behaviour and forwards.
  *
- * Why the workspace exists at all: the chat was the landing, and a chat's
- * empty state can only ever ask "what do you want to say?" — while the
- * question a teacher actually arrives with is "what is still missing for third
- * period?". Nothing on the old screen answered it, even though the answer was
- * already in the workspace. The chat is still one click away, and still where
- * the conversation happens; it is no longer the thing you are made to look at
- * before you can see the state of your own lesson.
- *
- * On a phone this route still redirects to the chat. The workspace is a
- * two-column desktop layout, and a phone has no room for a sixth tab to reach
- * a one-column version of it — so the part that answers the question travels
- * instead: the chat's empty state carries the same readiness board
- * (`LessonPrepBoard`, fed by the same `buildPrepBoard`), in the space that was
- * a logo and two chips.
+ * Why Today exists at all: the chat was the landing, and a chat's empty state
+ * can only ever ask "what do you want to say?" — while the question a teacher
+ * actually arrives with is "what is still missing for third period?". Nothing
+ * on the old screen answered it, even though the answer was already in the
+ * workspace. The chat is still one tap away (Today's ask card, and on desktop
+ * the sidebar), and still where the conversation happens; it is no longer the
+ * thing you are made to look at before you can see the state of your own lesson.
  */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -31,39 +26,24 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Redirect, router, useLocalSearchParams } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
+import { useTodayLesson } from '@/hooks/useTodayLesson';
 import { DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { JordanFlag } from '@/components/ui/JordanFlag';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
-import { buildPrepBoard, prepLessonKey, prepSummary, savedDeckFor, withoutBoardTools, type PrepRow } from '@/services/lessonBoard';
 import { LessonPrepBoard } from '@/components/ui/LessonPrepBoard';
-import { getAllItems, type SavedMaterial } from '@/services/workspace';
-import { listClasses } from '@/services/roster';
-import type { ClassGroup } from '@/services/roster';
+import { Celebrate } from '@/components/ui/Celebrate';
 import { periodClassLabel } from '@/services/classSubjects';
 import { className, classNameFor } from '@/services/materialClass';
 import { todayLabel } from '@/services/dateLabels';
-import { loadTimetable } from '@/services/schedule';
-import { formatNextPeriod, type NextPeriodLesson, type TimetableSetupStep } from '@/services/scheduleCalendar';
-import { todayISO } from '@/services/planEntries';
-import {
-  HomeLessonPick, dismissSetupNudge, loadLessonPick, loadPrepSkips, setPrepSkip, subscribeLessonPick, timetableWins,
-  wasSetupNudgeDismissed,
-} from '@/services/lessonContext';
-import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
-import { lessonPickerParams, resolveLessonPrepContext, scopePickerParams } from '@/services/lessonPrep';
-import { defaultLessonIdFor } from '@/services/lessonCopilot';
-import { buildClassDeck } from '@/services/startClass';
-import { setPendingClassroomActivity } from '@/services/classroomStore';
-import { WORKFLOW } from '@/services/toolCatalog';
-import { trackEvent } from '@/services/analytics';
 import { palette } from '@/constants/colors';
+import { PhoneToday } from '@/components/today/PhoneToday';
 
 const START_CLASS_COLOR = palette.live;
 const SIDE_PANEL_WIDTH = 356;
@@ -87,7 +67,7 @@ export default function Index() {
   // parent", react-native-screens#4677). One navigation, not two.
   if (!user) return null;
   if (isTeacherRole(user.role)) {
-    return isDesktop ? <LessonWorkspace /> : <Redirect href="/iqra" />;
+    return isDesktop ? <LessonWorkspace /> : <PhoneToday />;
   }
   // Ordered teacher → student → everyone else, so an unknown or absent role
   // still lands on Messages. Same fail-closed reasoning as the `isLoading`
@@ -97,205 +77,23 @@ export default function Index() {
 }
 
 function LessonWorkspace() {
-  const { user } = useAuth();
   const colors = useColors();
   const { t, lang, isRTL } = useLanguage();
   const isAr = lang === 'ar';
-  const params = useLocalSearchParams<{ startClass?: string }>();
+  const today = useTodayLesson('workspace');
+  const {
+    topic, periodLine, next, setup, nudgeDismissed, classes, board, summary, toggleSkip,
+    gradeLabel, subjectLabel, toolParams, quickTools, startingClass, startClassError, openLessonPicker,
+  } = today;
 
-  const [pick, setPick] = useState<HomeLessonPick | null>(null);
-  const [next, setNext] = useState<NextPeriodLesson | null>(null);
-  const [setup, setSetup] = useState<TimetableSetupStep | null>(null);
-  const [nudgeDismissed, setNudgeDismissed] = useState(true); // until read: never flash it
-  const [materials, setMaterials] = useState<SavedMaterial[]>([]);
-  const [classes, setClasses] = useState<ClassGroup[]>([]);
   const [ask, setAsk] = useState('');
-  const [startingClass, setStartingClass] = useState(false);
-  const [startClassError, setStartClassError] = useState('');
-
-  useEffect(() => {
-    loadLessonPick().then(setPick);
-    return subscribeLessonPick(setPick);
-  }, []);
-
-  /*
-   * Saved materials are the only record of prep that outlives a chat session,
-   * so they are what the board reads. Reloaded on focus rather than once on
-   * mount: generating a worksheet leaves this screen and comes back, and a
-   * board that still says "missing" after the teacher just made the thing is
-   * worse than no board.
-   */
-  const reload = useCallback(() => {
-    getAllItems().then(setMaterials).catch(() => {});
-    listClasses().then(setClasses).catch(() => {});
-    loadTimetable().then(tt => {
-      setNext(tt?.next ?? null);
-      setSetup(tt?.setup ?? null);
-    });
-    wasSetupNudgeDismissed().then(setNudgeDismissed);
-  }, []);
-  useEffect(() => {
-    reload();
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-    window.addEventListener('focus', reload);
-    return () => window.removeEventListener('focus', reload);
-  }, [reload]);
-
-  /*
-    A teacher who has never opened the lesson picker still has a lesson: the
-    chat has always seeded one (`seedDefaultLessonMemory`) and shows it on its
-    card. Falling back to the same one keeps the two screens saying the same
-    thing — a home that said "no lesson picked" while the chat one click away
-    showed «تركيب الاقترانات» would read as a bug in whichever was seen second.
-  */
-  const fallback = useMemo(
-    () => resolveLessonPrepContext(defaultLessonIdFor(user?.teachingAssignments), lang as 'ar' | 'en'),
-    [lang, user?.teachingAssignments],
-  );
-  /*
-    The lesson the card is about, in order: a lesson the teacher picked by
-    hand today; else the one the pacing plan puts in front of the next class
-    on the timetable; else an older pick; else the chat's default. A pick from
-    last week is where they were, not where they are — the timetable knows
-    better — but a pick from this morning is a decision, and it wins.
-  */
-  const scheduled = useMemo(
-    () => (next?.lessonId ? resolveLessonPrepContext(next.lessonId, lang as 'ar' | 'en') : null),
-    [next?.lessonId, lang],
-  );
-  const fromSchedule = timetableWins(pick, !!scheduled, todayISO());
-  const active = fromSchedule && scheduled
-    ? { topic: scheduled.topic, lessonId: scheduled.lessonId, gradeId: scheduled.gradeId, subjectId: scheduled.subjectId }
-    : pick?.topic?.trim()
-      ? { topic: pick.topic.trim(), lessonId: pick.lessonId ?? null, gradeId: pick.gradeId, subjectId: pick.subjectId }
-      : fallback
-        ? { topic: fallback.topic, lessonId: fallback.lessonId, gradeId: fallback.gradeId, subjectId: fallback.subjectId }
-        : null;
-  // «الحصة القادمة · العاشر ب · 10:15» — only when the card is showing that period's lesson.
-  const periodLine = fromSchedule && next
-    ? formatNextPeriod(next, {
-        classLabel: periodClassLabel(classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'), next.subjectId, lang),
-        today: todayISO(),
-        lang: lang as 'ar' | 'en',
-        nowLabel: t('homePeriodNow'),
-        nextLabel: t('homePeriodNext'),
-      })
-    : '';
-
-  const topic = active?.topic ?? '';
-  // «غير مطلوب» choices for this lesson; reloaded whenever the lesson changes.
-  const skipKey = prepLessonKey(topic, active?.lessonId);
-  const [skips, setSkips] = useState<string[]>([]);
-  useEffect(() => {
-    let live = true;
-    loadPrepSkips(skipKey).then(list => { if (live) setSkips(list); });
-    return () => { live = false; };
-  }, [skipKey]);
-  const toggleSkip = useCallback((row: PrepRow) => {
-    if (!skipKey) return;
-    void setPrepSkip(skipKey, row.type, !row.skipped).then(setSkips);
-  }, [skipKey]);
-  const board = useMemo(
-    () => buildPrepBoard(materials, topic, active?.lessonId, skips),
-    [materials, topic, active?.lessonId, skips],
-  );
-  const summary = prepSummary(board);
-
-  const grade = active?.gradeId ? getPickerGrades().find(g => g.id === active.gradeId) : undefined;
-  const subject = active?.subjectId ? getPickerSubjects().find(s => s.id === active.subjectId) : undefined;
-  const gradeLabel = grade ? (isAr ? grade.nameAr : grade.name) : '';
-  const subjectLabel = subject ? (isAr ? subject.nameAr : subject.name) : '';
-
-  /**
-   * Params that open a generator on this lesson's own grade and subject.
-   *
-   * Never omitted and never hand-rolled: every `/ai-tools/*` screen defaults
-   * `subjectIdx` to 0, so a tool opened with a bare topic generates the first
-   * subject's material under this lesson's title — the trap CLAUDE.md
-   * describes. `lessonPickerParams` computes both indices from the lesson's
-   * own book; `scopePickerParams` is the fallback when the pick carries ids
-   * but no lesson.
-   */
-  const toolParams = useMemo((): Record<string, string> => {
-    const idx =
-      lessonPickerParams(active?.lessonId, lang as 'ar' | 'en') ??
-      scopePickerParams(active?.gradeId, active?.subjectId);
-    // The lesson id too: a title does not identify a lesson (Slides reads it).
-    const lessonId: Record<string, string> = idx && active?.lessonId ? { lessonId: active.lessonId } : {};
-    return { ...(topic ? { topic } : {}), ...(idx ?? {}), ...lessonId };
-  }, [active?.lessonId, active?.gradeId, active?.subjectId, topic, lang]);
-
-  const openLessonPicker = useCallback(() => {
-    router.push({ pathname: '/iqra', params: { openLessonPicker: String(Date.now()) } });
-  }, []);
-
-  const handleStartClass = useCallback(async () => {
-    if (startingClass || !topic) return;
-    setStartingClass(true);
-    setStartClassError('');
-    try {
-      // A «عرض الحصة» the teacher already made for this lesson is the deck
-      // they meant to teach from — present it instead of building a new one.
-      const saved = savedDeckFor(materials, topic, active?.lessonId);
-      if (saved) {
-        setPendingClassroomActivity(saved);
-        trackEvent('class_started', { source: 'workspace', deck: 'saved' });
-        router.push('/ai-tools/classroom/presentation' as never);
-        return;
-      }
-      // The lesson's own subject, not the deck builder's maths default —
-      // `isMathContext` reads the subject *name*, so a chemistry lesson
-      // announced as "Mathematics" comes back as a deck of algebra questions
-      // under the chemistry title.
-      const activity = await buildClassDeck({
-        topic,
-        lang: lang as 'ar' | 'en',
-        subjectId: active?.subjectId ?? undefined,
-        subjectName: subject?.name,
-        gradeId: active?.gradeId ?? undefined,
-        lessonId: active?.lessonId ?? null,
-      });
-      setPendingClassroomActivity(activity);
-      trackEvent('class_started', { source: 'workspace', deck: 'built' });
-      router.push('/ai-tools/classroom/presentation' as never);
-    } catch {
-      setStartClassError(t('startClassFailed'));
-    } finally {
-      setStartingClass(false);
-    }
-  }, [startingClass, topic, lang, materials, active?.subjectId, active?.gradeId, active?.lessonId, subject?.name, t]);
-
-  // ⌘K → «ابدأ الحصة» arrives as a nonce param, so pressing it twice fires
-  // twice (a plain flag would have been swallowed the second time).
-  useEffect(() => {
-    if (!params.startClass) return;
-    void handleStartClass();
-    // Intentionally keyed on the nonce alone: re-running when handleStartClass
-    // is rebuilt would start a class the teacher never asked for.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.startClass]);
-
-  const sendAsk = useCallback(() => {
-    const text = ask.trim();
-    if (!text) return;
+  const sendAsk = () => {
+    today.ask(ask);
     setAsk('');
-    router.push({
-      pathname: '/iqra',
-      params: { initialMessage: text, askId: String(Date.now()) },
-    });
-  }, [ask]);
+  };
 
   const rowDir = isRTL ? 'row-reverse' as const : 'row' as const;
   const align = isRTL ? 'right' as const : 'left' as const;
-  /*
-    Everything the board does not already offer. The first version took the
-    first four of BEFORE_CLASS, which put a «خطة درس» card directly under the
-    «خطة الدرس» row and a «شرائح الدرس» card under «عرض الحصة» — the same two
-    buttons twice, and the card was the worse of each pair because it cannot
-    say whether the material already exists. What is left is the rest of the
-    catalog: the tools that have no row.
-  */
-  const quickTools = withoutBoardTools(WORKFLOW.flatMap(section => section.tools)).slice(0, 4);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -316,7 +114,7 @@ function LessonWorkspace() {
         </View>
         <View style={[{ flexDirection: rowDir, alignItems: 'center', gap: 9 }]}>
           <Pressable
-            onPress={handleStartClass}
+            onPress={today.startClass}
             disabled={!topic || startingClass}
             style={({ pressed }) => [
               s.btn,
@@ -406,10 +204,7 @@ function LessonWorkspace() {
                   </Text>
                 </Pressable>
                 <Pressable
-                  onPress={() => {
-                    setNudgeDismissed(true);
-                    void dismissSetupNudge();
-                  }}
+                  onPress={today.dismissNudge}
                   hitSlop={8}
                   accessibilityRole="button"
                   accessibilityLabel={t('homeSetupDismiss')}
@@ -421,9 +216,9 @@ function LessonWorkspace() {
             ) : null}
 
             {startClassError ? (
-              <View style={[s.errorRow, { backgroundColor: START_CLASS_COLOR + '14', flexDirection: rowDir }]}>
-                <Ionicons name="alert-circle-outline" size={14} color={START_CLASS_COLOR} />
-                <Text style={[s.errorText, { color: START_CLASS_COLOR, textAlign: align }]}>{startClassError}</Text>
+              <View style={[s.errorRow, { backgroundColor: colors.destructive + '14', flexDirection: rowDir }]}>
+                <Ionicons name="alert-circle-outline" size={14} color={colors.destructive} />
+                <Text style={[s.errorText, { color: colors.destructive, textAlign: align }]}>{startClassError}</Text>
               </View>
             ) : null}
 
@@ -520,7 +315,7 @@ function LessonWorkspace() {
             teacher nothing — and there is no second transcript to reconcile.
           */}
           <View style={{ gap: 8, marginTop: 14 }}>
-            {suggestionsFor(board, topic, isAr).map(sug => (
+            {today.suggestions.map(sug => (
               <Pressable
                 key={sug}
                 onPress={() => router.push({ pathname: '/iqra', params: { initialMessage: sug, askId: String(Date.now()) } })}
@@ -564,21 +359,9 @@ function LessonWorkspace() {
           </Pressable>
         </View>
       </View>
+      <Celebrate visible={today.prepJustReady} size="small" message={t('celebratePrepReady')} onDone={today.clearPrepJustReady} />
     </View>
   );
-}
-
-/** Ask the assistant for whatever the board says is missing, in the board's order. */
-function suggestionsFor(board: PrepRow[], topic: string, isAr: boolean): string[] {
-  if (!topic) return [];
-  const missing = board.filter(r => !r.done && !r.skipped).slice(0, 2);
-  const asks = missing.map(row =>
-    isAr ? `جهّز ${row.labelAr} عن «${topic}»` : `Prepare a ${row.labelEn.toLowerCase()} for “${topic}”`,
-  );
-  if (asks.length < 2) {
-    asks.push(isAr ? `اشرح لي أصعب فكرة في «${topic}»` : `Explain the hardest idea in “${topic}”`);
-  }
-  return asks.slice(0, 3);
 }
 
 const s = StyleSheet.create({
