@@ -10,6 +10,21 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+**Chat, homework, results and sign-in (2026-10-22, fifteenth live pass).**
+Of 30 questions, 9 were right and 21 went to the model. Checked in code: the chat keeps no
+history (`howChatHistory` existed; «امسح المحادثة» missed it), has no voice input, no
+read-aloud and no image upload (`DOCUMENT_UPLOAD_ENABLED = false`), and its replies carry
+«نسخ»/«تصدير»; there is no font-size setting. Homework is edited or deleted by tapping it in
+the class's «الواجبات» tab, and goes to the whole class. «لوحة النتائج» shows «المتوسط العام»
+and «توزيع المستويات». A teacher cannot reopen an exam: `attempts` is unique per student and
+exam, and the only retake is the student's «أعد المحاولة» on a failed single-lesson quiz
+(`retakeDecision`, `MASTERY_GATE=true`, 3 tries). Open-response types
+(`short_answer`, `open_ended`, `problem_solving`) have no `grade`, so a paper with one stays
+provisional until the teacher enters its mark. Settings shows the monthly AI allowance as a
+percentage with a renewal date, not a count. Google sign-in is on the sign-in and sign-up
+screens. Left with the model, not verified in code: sorting homework by due date.
+«كيف أصحح الأسئلة المقالية؟» stays a teaching question.
+
 Sections below are in the order they were written, not strictly by date.
 
 ---
@@ -46,6 +61,55 @@ save the quiz or deck, reopen it, press 🏆. Bank-first questions in
 `/ai-tools/game`: the shared pool already serves a repeat lesson instantly and
 the offline path already draws from the banks. Printed bingo cards: the prompt's
 `printables` are instructions, not card data — it needs its own design.
+
+## Math Corner exercises: learn or test yourself on a lesson from the book, 2026-10-22
+
+**What a user can do.** The Math Corner hub's first card, «تمارين الدروس», opens
+`/curriculum/math/exercises`: grade chips 1–10 (a teacher starts on the first
+grade they teach), then the grade's maths units and lessons in book order. A
+lesson (`/curriculum/math/exercises/<kb lesson id>`) shows ten multiple-choice
+questions, easy → hard, in two modes:
+- **تعلّم (learn):** «أظهر الحل» per question highlights the key and shows the
+  checked working where a person wrote it (`steps.ts`; today only Grade 10 bank
+  items have any). A teacher also gets «أظهر كل الإجابات» to go through the set
+  with the class, and «نسخ الرابط», which copies the lesson's production link.
+- **اختبر نفسك (test yourself):** a tap marks the answer at once and locks it
+  (green key, red wrong pick, working if any); a score line counts up, and the
+  end offers «أعد المحاولة» (same set) or «تمارين جديدة».
+Students reach it with no gating change (`/curriculum` prefix).
+
+**Best score per lesson, on this device.** Finishing a test-yourself set saves
+the lesson's best score (`services/mathExerciseProgress.ts`, AsyncStorage key
+`mathExercises.best.v1.<user id>`, so two children on one family phone keep
+separate lists). The lesson list shows «أفضل نتيجة: 8 من 10» under a lesson, and
+test mode shows it under the running score. Scores compare as fractions because
+a thin lesson's set can be shorter than ten (`recordBest`; a tie keeps the longer
+set), and stored JSON is read defensively (`parseBests`); both are tested.
+Checked in a browser: finish a set, the list shows the best, and it survives a
+full page reload. **Not built:** nothing reaches the server, so a new phone or a
+cleared app starts from zero and a teacher cannot see who practised, the same v1
+limit as the English corner's stars.
+
+**Where the questions come from.** `services/mathExercises.ts` lists only the
+lessons `hasMathBank` covers (445 of 485 Grade 1–10 maths lessons on 2026-10-22)
+and draws each item from the same lesson-keyed bank as worksheets and quizzes
+(`takeConcreteMath`, with its own session set). Multiple choice only, because the
+bank's key is the option as displayed, so marking is string equality. A thin
+lesson gives a shorter set rather than a repeat (some Grade 10 lessons give 3–8).
+**The extracted book items are not used**: they are held behind `BOOK_ITEMS_LIVE`
+until a person compares them with the printed pages, and a student screen must
+not get round that gate. `mathExercises.test.ts` builds every covered lesson's
+set in both languages and checks every key is one of its distinct options.
+
+**«؟» as a blank stays inside its equation (`isolateForeignRuns`).** The bank's
+Grade 1–6 stems write the missing number as «؟» («88 × ؟ = 1056»). It was not in
+the run class, so the equation was cut into pieces that the bidi algorithm
+reordered («× 88 ؟ 1056 =»), on every screen that shows these stems. A «؟» next
+to an operator is now part of the run, and such a run gets a left-to-right
+override inside its isolate, because «؟» is an Arabic letter to bidi and would
+turn the digits after it Arabic (rule W2). A «؟» straight after a digit ends the
+sentence and stays in the flow. Checked by glyph position in a browser, not by
+eye: every stem on a Grade 5 lesson read in typed order.
 
 ## Lesson games from a lesson's key terms — 2026-10-22
 
