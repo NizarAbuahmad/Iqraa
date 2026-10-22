@@ -1589,6 +1589,33 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Students review their answers, with maths worked steps, 2026-10-22
+
+**What changed.** A released result used to be a level and a percentage; a
+student could not see which questions they got wrong. On a **closed** exam the
+teacher now presses «اعرض الإجابات والحلول للطلبة», and each student gets
+«راجع إجاباتك والحلول» under the result in «اختباراتي»
+(`app/exam-review/[id].tsx`): every question with their answer, the correct
+one, the marks, and for maths the worked steps. On a maths exam the teacher
+first presses «جهّز خطوات الحل»; the model is given each question **and its
+key** and asked only for the steps to it (`modules/assessment/workedSteps.ts`),
+and the steps show under each question on the teacher's screen to be read
+before showing.
+
+**The gate** (`studentReviewReady`, `modules/assessment/answerReview.ts`):
+closed + results released + review on + a final (non-provisional) mark.
+Closed is what protects the key — an open exam is still being sat and retakes
+run only while it is open — so turning the review on needs a closed exam and
+re-publishing turns it off. Answers leave as display text, never the raw
+`expectedAnswer`. Pinned over HTTP by `answerReview.db.test.ts`.
+
+**Schema:** `evaluations.show_solutions_to_student`,
+`evaluation_questions.worked_steps` (migration 0011, additive).
+
+**Not covered yet:** parents («نتائج أبنائي»), link-only students (`/take`),
+editing a single step. Live step generation is untested against a real model
+(local AI was off); the steps are unchecked by design — the teacher reads them.
+
 ## Each corner has its own colour and band, 2026-10-21
 
 **What changed.** The Math Corner is indigo with graph paper, the Lab violet

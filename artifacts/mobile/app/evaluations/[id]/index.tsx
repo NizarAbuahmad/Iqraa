@@ -25,6 +25,8 @@ import {
   closeEvaluation,
   publishEvaluation,
   setResultsReleased,
+  setSolutionsShown,
+  prepareWorkedSteps,
   setEvaluationClass,
   type Evaluation,
   type EvaluationQuestion,
@@ -49,6 +51,7 @@ import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { groupSizeLabel } from '@/services/supportGroups';
 import { palette } from '@/constants/colors';
+import { TYPE } from '@/constants/theme';
 import { PROD_ORIGIN } from '@/services/siteOrigin';
 import { BackButton } from '@/components/ui/BackButton';
 import { ExamDateCard } from '@/components/ExamDateCard';
@@ -102,7 +105,9 @@ export default function EvaluationDetailScreen() {
   /** The question open in the editor; 'new' when writing one from scratch. */
   const [editing, setEditing] = useState<EvaluationQuestion | 'new' | null>(null);
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState<'generate' | 'publish' | 'close' | 'release' | 'archive' | null>(null);
+  const [busy, setBusy] = useState<'generate' | 'publish' | 'close' | 'release' | 'solutions' | 'steps' | 'archive' | null>(null);
+  /** After «جهّز خطوات الحل»: how many questions the model could not explain. */
+  const [stepsMissed, setStepsMissed] = useState<number | null>(null);
   // What the generator said while producing this paper ("2 questions removed:
   // the verifier contradicted their key"). The questions cannot show a
   // question that was dropped, so this is the only place the teacher hears it.
@@ -291,6 +296,53 @@ export default function EvaluationDetailScreen() {
       );
     } catch {
       setError(t('releaseResultsFailed'));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // «راجع إجاباتك» for students — modules/assessment/answerReview.ts on the
+  // server. Showing asks first, like releasing; hiding does not.
+  const onToggleSolutions = async () => {
+    if (!id || busy || !evaluation) return;
+    const shown = !evaluation.showSolutionsToStudent;
+    if (shown) {
+      const ok = await confirm({
+        title: t('showSolutionsBtn'),
+        message: t('showSolutionsConfirm'),
+        confirmLabel: t('showSolutionsBtn'),
+        cancelLabel: t('cancel'),
+      });
+      if (!ok) return;
+    }
+    setBusy('solutions');
+    setError('');
+    try {
+      const updated = await setSolutionsShown(id, shown);
+      queryClient.setQueryData<EvaluationData>(evaluationQueryKey(id), prev =>
+        prev ? { ...prev, evaluation: updated } : prev,
+      );
+    } catch {
+      setError(t('showSolutionsFailed'));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const onPrepareSteps = async () => {
+    if (!id || busy) return;
+    setBusy('steps');
+    setError('');
+    setStepsMissed(null);
+    try {
+      const { questions: updated, missed } = await prepareWorkedSteps(id);
+      queryClient.setQueryData<EvaluationData>(evaluationQueryKey(id), prev =>
+        prev ? { ...prev, questions: updated } : prev,
+      );
+      setStepsMissed(missed);
+    } catch (err) {
+      const code = err instanceof EvaluationError ? err.code : '';
+      setError(t(code === 'user_quota_exceeded' || code === 'budget_exceeded' ? 'aiQuotaSpent' : 'prepareStepsFailed'));
     } finally {
       setBusy(null);
     }
@@ -518,6 +570,61 @@ export default function EvaluationDetailScreen() {
         </View>
       )}
 
+      {/* «راجع إجاباتك»: only once the exam is closed, and never for a paper
+          exam — there are no questions to show. Maths gets worked steps the
+          teacher prepares, and reads under each question, before showing. */}
+      {evaluation?.status === 'closed' && !paperExam && (
+        <View style={{ marginHorizontal: 20, marginTop: 10, gap: 6 }}>
+          {evaluation.subjectId === 'mathematics' && (
+            <Pressable
+              onPress={onPrepareSteps}
+              disabled={!!busy}
+              accessibilityRole="button"
+              style={[styles.resultsBtn, { borderColor: ACCENT, opacity: busy ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              {busy === 'steps' ? (
+                <ActivityIndicator color={ACCENT} size="small" />
+              ) : (
+                <Ionicons name="list-outline" size={18} color={ACCENT} />
+              )}
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+                {t('prepareStepsBtn')}
+              </Text>
+            </Pressable>
+          )}
+          {stepsMissed !== null ? (
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 19, textAlign: align }}>
+              {stepsMissed > 0 ? t('prepareStepsMissed', stepsMissed) : t('prepareStepsDone')}
+            </Text>
+          ) : null}
+          <Pressable
+            onPress={onToggleSolutions}
+            disabled={busy === 'solutions'}
+            accessibilityRole="button"
+            style={[
+              styles.resultsBtn,
+              {
+                borderColor: evaluation.showSolutionsToStudent ? colors.border : ACCENT,
+                opacity: busy === 'solutions' ? 0.6 : 1,
+                flexDirection: isRTL ? 'row-reverse' : 'row',
+              },
+            ]}
+          >
+            <Ionicons
+              name={evaluation.showSolutionsToStudent ? 'eye-off-outline' : 'school-outline'}
+              size={18}
+              color={evaluation.showSolutionsToStudent ? colors.mutedForeground : ACCENT}
+            />
+            <Text style={{ color: evaluation.showSolutionsToStudent ? colors.mutedForeground : ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+              {t(evaluation.showSolutionsToStudent ? 'hideSolutionsBtn' : 'showSolutionsBtn')}
+            </Text>
+          </Pressable>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 19, textAlign: align }}>
+            {t(evaluation.showSolutionsToStudent ? 'solutionsShownNote' : 'solutionsHiddenNote')}
+          </Text>
+        </View>
+      )}
+
       {evaluation?.status === 'closed' && (
         <View style={{ marginHorizontal: 20, marginTop: 16, gap: 10 }}>
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
@@ -672,6 +779,18 @@ export default function EvaluationDetailScreen() {
               {questionTextFor(q, lang === 'ar') || '—'}
             </Text>
             <QuestionFigure body={q.body} captionColor={colors.mutedForeground} />
+            {q.workedSteps?.length ? (
+              <View style={[styles.verifySummary, { backgroundColor: ACCENT + '0D', borderColor: ACCENT + '33', marginTop: 8, gap: 4 }]}>
+                <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: align }}>
+                  {t('workedStepsTitle')}
+                </Text>
+                {q.workedSteps.map((step, n) => (
+                  <Text key={n} style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: align, writingDirection: isRTL ? 'rtl' : 'ltr' }}>
+                    {isolateForeignRuns(`${n + 1}. ${step}`)}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
           </View>
           </React.Fragment>
         ))}

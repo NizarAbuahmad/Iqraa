@@ -92,6 +92,8 @@ const NON_TEACHER_ROUTES = [
   // «اختباراتي» for a student, «نتائج أبنائي» for a parent — one screen,
   // reading /student/exams or /parent/exams by role.
   '/my-exams',
+  // «راجع إجاباتك», opened from a row of «اختباراتي» — the student's own paper.
+  '/exam-review',
   // «المدرسة» — the parent/student tab: the weekly timetable (and, later,
   // homework). One screen, reading /student/schedule or /parent/schedule by role.
   '/school',

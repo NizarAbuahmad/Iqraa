@@ -471,6 +471,22 @@ function ExamRow({
         </View>
       ) : null}
     </Pressable>
+    {exam.review ? (
+      <Pressable
+        onPress={() => router.push({ pathname: '/exam-review/[id]', params: { id: exam.evaluationId } } as never)}
+        accessibilityRole="button"
+        style={[
+          styles.retakeBar,
+          { flexDirection: isRTL ? 'row-reverse' : 'row', backgroundColor: colors.card, borderColor: ACCENT + '55', borderRadius: colors.radius },
+        ]}
+      >
+        <Ionicons name="school-outline" size={18} color={ACCENT} />
+        <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
+          {t('reviewOpenBtn')}
+        </Text>
+        <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={ACCENT} />
+      </Pressable>
+    ) : null}
     {canRetake ? (
       <View
         style={[
