@@ -280,3 +280,28 @@ test('a form Choose without `wrong` is still the third-person diff, and a patter
   assert.deepEqual([third[0].text, third[0].choose!.right, third[0].choose!.wrong], ['He plays tennis.', 'plays', 'play']);
   assert.throws(() => unitSentences(FORM_UNIT([{ id: 'x', text: 'It is {adj}.', rows: [{ adj: 'high' }], choose: { kind: 'form', slot: 'adj', wrong: 'base' } }])), /no form of/);
 });
+
+test('a ranking row gives a true sentence, its swapped false twin, and a picture-free Yes or No fact', () => {
+  const row = { big: 'mountain', small: 'hill', adj: 'high' };
+  const unit = FORM_UNIT([
+    { id: 'c', text: 'The {big} is {cmp:adj} than the {small}.', rows: [row], claim: { swap: ['big', 'small'] }, choose: { kind: 'form', slot: 'adj', wrong: 'base' } },
+    { id: 'q', text: 'Is the {big} {cmp:adj} than the {small}? Yes, it is.', rows: [row], yesNo: { kind: 'fact', question: 'Is the {big} {cmp:adj} than the {small}?', yes: 'Yes, it is.', no: "No, it isn't.", answer: true } },
+  ]);
+  const [c, q] = unitSentences(unit);
+  assert.equal(c.text, 'The mountain is higher than the hill.');
+  assert.deepEqual(c.claim, { falseText: 'The hill is higher than the mountain.' });
+  assert.equal(c.picture, null);
+  assert.equal(c.falsePicture, null);
+  assert.equal(q.picture, null);
+  assert.deepEqual([q.yesNo!.kind, q.yesNo!.question, q.yesNo!.answer], ['fact', 'Is the mountain higher than the hill?', true]);
+  assert.equal(q.claim, null);
+  assert.ok(allGrammarSpoken().length > 0);
+});
+
+test('a pictured sentence has no claim, and a picture-free match Yes or No still needs a picture', () => {
+  const g = unitSentences(FORM_UNIT([
+    { id: 'm', text: 'Is it {a:thing}? Yes, it is.', yesNo: { kind: 'match', question: 'Is it {a:thing}?', yes: 'Yes, it is.', no: "No, it isn't." } },
+  ], { thing: ['car'] }));
+  assert.equal(g[0].yesNo, null);
+  assert.equal(g[0].claim, null);
+});

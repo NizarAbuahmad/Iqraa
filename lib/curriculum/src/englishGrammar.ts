@@ -33,6 +33,12 @@ export interface GrammarPattern {
   /** What the picture adds: ✓/✗, a boy or a girl, or two of the thing. */
   marker?: GrammarMarker;
   /**
+   * A picture-free True or false (Grade 4, S1 U4): the sentence is the true claim, and its false twin is the same
+   * sentence with these two slots' fills swapped («The hill is higher than the mountain.»). Rows must make the
+   * unswapped sentence true.
+   */
+  claim?: { swap: [string, string] };
+  /**
    * What Choose the word blanks: a fixed phrase and its contrast, the slot's
    * word (the picture says which), or the whole answer after the question
    * (the question is then not shown — it would give the answer away).
@@ -91,6 +97,8 @@ export interface GrammarSentence {
   choose: { kind: 'phrase' | 'slot' | 'whole' | 'form'; start: number; length: number; right: string; wrong: string } | null;
   /** Another word of the picture slot, with a picture, for True or false. */
   falsePicture: string | null;
+  /** The false twin of a picture-free claim, for True or false; null for every other sentence. */
+  claim: { falseText: string } | null;
   /** Null unless the pattern has `yesNo` and the picture exists. `otherQuestion` is a `match` item's No question. */
   yesNo: {
     kind: 'match' | 'marker' | 'fact';
@@ -516,9 +524,14 @@ export function unitSentences(unit: GrammarUnit): GrammarSentence[] {
         choose = { kind: 'form', start: at, length: 1, right: strip(tokens[at]), wrong: strip(base[at]) };
       }
 
+      const claim = p.claim
+        ? { falseText: realise(p.text, { ...fill, [p.claim.swap[0]]: fill[p.claim.swap[1]], [p.claim.swap[1]]: fill[p.claim.swap[0]] }).tokens.join(' ') }
+        : null;
+
       let yesNo: GrammarSentence['yesNo'] = null;
       const y = p.yesNo;
-      if (y && picture) {
+      // A `fact` about the world needs no picture (S1 U4 of Grade 4); every other kind judges the picture.
+      if (y && (picture || (y.kind === 'fact' && !p.picture))) {
         const question = realise(y.question, fill).tokens.join(' ');
         const otherQuestion = y.kind === 'match' && otherWord && p.picture
           ? realise(y.question, { ...fill, [p.picture]: otherWord }).tokens.join(' ')
@@ -537,6 +550,7 @@ export function unitSentences(unit: GrammarUnit): GrammarSentence[] {
         marker: p.marker ?? null,
         choose,
         falsePicture,
+        claim,
         yesNo,
         build: buildOf(tokens, cap),
       });
@@ -560,6 +574,7 @@ export function allGrammarSpoken(): string[] {
   for (const u of GRAMMAR_UNITS) {
     for (const s of unitSentences(u)) {
       out.add(s.text);
+      if (s.claim) out.add(s.claim.falseText);
       if (s.build?.prompt) out.add(s.build.prompt);
       const y = s.yesNo;
       if (!y) continue;
@@ -622,7 +637,7 @@ export function renderGrammarSheet(grade = 1): string {
         : y.kind !== 'match' ? `${y.question} → ${y.answer ? y.yes : y.no}`
           : `${y.question} → ${y.yes}${y.otherQuestion ? `<br>${y.otherQuestion} → ${y.no}` : ''}`;
       const text = s.build?.prompt ? `${s.text} _(Build: ${s.build.text})_` : s.text;
-      lines.push(`| ${text} | ${pic} | ${choose} | ${s.falsePicture ?? '—'} |${hasYesNo(unit) ? ` ${yesNoText} |` : ''}`);
+      lines.push(`| ${text} | ${pic} | ${choose} | ${s.falsePicture ?? (s.claim ? `_${s.claim.falseText}_` : '—')} |${hasYesNo(unit) ? ` ${yesNoText} |` : ''}`);
     }
     lines.push('');
   }
