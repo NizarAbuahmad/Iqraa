@@ -98,8 +98,8 @@ test('the sentence activity needs reading, grammar and a Grade 2, 3 or 4 lesson'
   assert.equal(offeredReadingSentences('kbl-g1-eng-s1-nccd-u1_l1', { reading: true, grammar: true }), null);
 });
 
-test('the not-covered table names the five lessons with no sentence activity, in form-safe text', () => {
-  assert.deepEqual(Object.keys(READING_NOT_COVERED_G4).sort(), [L(1, 2), L(1, 4), L(2, 7), L(2, 9), L(2, 10)].sort());
+test('the not-covered table names the five lessons with no sentence activity and S1 U1 (no Starts with), in form-safe text', () => {
+  assert.deepEqual(Object.keys(READING_NOT_COVERED_G4).sort(), [L(1, 1), L(1, 2), L(1, 4), L(2, 7), L(2, 9), L(2, 10)].sort());
   for (const [id, items] of Object.entries(READING_NOT_COVERED_G4)) {
     assert.ok(items.length > 0, id);
     for (const text of items) assert.ok(!/["&<>]/.test(text), `${id}: ${text}`);
@@ -118,7 +118,7 @@ test('the Grade 4 reading form lists every word and pool sentence once, the 45 l
   assert.equal((html.match(/<td class="skip">/g) ?? []).length, 45);
   assert.equal((html.match(/<section class="unit"/g) ?? []).length, 9);
   assert.equal((html.match(/<td class="sentence" dir="ltr">/g) ?? []).length, 107);
-  assert.equal((html.match(/class="not-covered"/g) ?? []).length, 5);
+  assert.equal((html.match(/class="not-covered"/g) ?? []).length, 6);
   assert.ok(html.includes('مراجعة قراءة الصف الرابع'));
   assert.ok(html.includes('اقرَأ الجملة'));
   assert.ok(html.includes('<td class="sentence" dir="ltr">He\'s from Spain.</td>'));

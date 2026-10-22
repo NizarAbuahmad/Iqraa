@@ -1,6 +1,6 @@
 # English corner: reading activities for Grade 4 — design
 
-**Status:** proposed (awaiting review). **Scope:** Grade 4 English reading only (the 9 hub lessons,
+**Status:** implemented (PR #1171; where the build differs from what was first written, the text says how). **Scope:** Grade 4 English reading only (the 9 hub lessons,
 `kbl-g4-eng-s{1,2}-nccd-u*_l1`). Builds on the Grade 2 and Grade 3 reading activities
 (`2026-10-20-english-corner-reading-g2-design.md`, `2026-10-22-english-corner-reading-g3-design.md`) and the
 Grade 4 grammar sentences (`2026-10-22-english-corner-grammar-g4-design.md`, PR #1171, still a draft when
@@ -38,6 +38,10 @@ sentences. Nothing new needs authoring: the design is Grade 3's, applied whereve
    words under a new `SoundSkip` reason `hard-q` («Q is read /k/ here»). «quickly», «quiet» and «quietly»
    are /kw/ and stay. No Grade 1–3 word starts with «qa», so no older form changes. The rule leaves out
    **45** of the 172 words (43 by the existing rule, 2 by this one), each listed on the form with its reason.
+   **A consequence found while building:** S1 U1's pictured words are its six flags, and with `Qatar` out
+   (as `Egypt`, `the United Kingdom` and `the United Arab Emirates` already were) only `Jordan` and `Spain`
+   have a first sound, under the floor of three distinct letters. So S1 U1 has **no Starts with** (it keeps
+   First letter, Read and find and «Read the sentence»).
 8. **Medial and final sounds, letter-sound recordings, and reading words inside a sentence are out of
    scope**, as before.
 
@@ -77,7 +81,7 @@ already in the app (measured with `readingActivityAvailable`):
 
 | Lesson | First letter | Read and find | Starts with | Read the sentence |
 | --- | --- | --- | --- | --- |
-| S1 U1 | yes | yes | yes | yes |
+| S1 U1 | yes | yes | – | yes |
 | S1 U2 | yes | – | – | – |
 | S1 U3 | yes | yes | yes | yes |
 | S1 U4 | yes | yes | yes | – |
@@ -89,14 +93,14 @@ already in the app (measured with `readingActivityAvailable`):
 
 Five lessons have no sentence activity (S1 U2, S1 U4, S2 U7, S2 U9, S2 U10), and three have only First
 letter (S1 U2, S2 U7, S2 U9: their words have no pictures for Read and find or Starts with to choose
-between). Each is printed on the form as a «غير مشمول» note, not silently dropped.
+between). S1 U1 lacks only Starts with (see decision 7). Each is printed on the form as a «غير مشمول» note, not silently dropped.
 
 ## Where it lives
 
 - **`lib/curriculum/src/englishReading.ts`:** nine Grade 4 rows appended to `READING_UNITS` (the hub has
   no S2 U6); `readSentencePool`'s grade test widened to `2 | 3 | 4`; `SoundSkip` gains `'hard-q'` and
   `firstSoundSkip` returns it for a word starting «qa»; `READING_NOT_COVERED_G4` (the five lessons with no
-  sentence activity, plus the lesson notes below). The header comments say «Grades 2 to 4».
+  sentence activity, and S1 U1 for its missing Starts with). The header comments say «Grades 2 to 4».
 - **`lib/curriculum/src/englishReadingReview.ts`:** `SKIP_AR['hard-q']`; `GRADE_COPY[4]` (lead, activities,
   checks, meta); `sentenceSection` for Grades 2 to 4 reading its own grade's not-covered text;
   `renderUnit`'s `grade >= 2` test unchanged in effect. The Grade 1, 2 and 3 forms stay byte-identical.
@@ -129,7 +133,7 @@ In `lib/curriculum/src/__tests__/englishReadingG4.test.ts`:
   or marker.
 - The committed Grade 4 reading form equals `renderReadingReviewHtml(4)`, lists each pool sentence once,
   lists the 45 left-out words with their reasons, and has a not-covered block for the five lessons with no
-  sentence activity; the Grade 1, 2 and 3 reading forms are unchanged.
+  sentence activity and one for S1 U1 (no Starts with); the Grade 1, 2 and 3 reading forms are unchanged.
 
 In `artifacts/mobile/services/__tests__/englishReadingG4Games.test.ts` (seeded rng): at most 8 questions;
 S1 U1's round is exactly 6; three distinct pictures, one right; no picture word twice in a round; the

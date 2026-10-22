@@ -206,9 +206,12 @@ export const READING_NOT_COVERED_G3: Record<string, string[]> = {
 
 /**
  * The same for Grade 4 (spec: 2026-10-22-english-corner-reading-g4-design.md): the five lessons with no
- * «Read the sentence» at all. Same text rules as G2.
+ * «Read the sentence» at all, and S1 U1, which has no «Starts with». Same text rules as G2.
  */
 export const READING_NOT_COVERED_G4: Record<string, string[]> = {
+  'kbl-g4-eng-s1-nccd-u1_l1': [
+    'لا يظهر «يبدأ بهذا الحرف» في هذه الوحدة: كلماتها المصورة ستة أعلام، ولا حرف أول إلا لـ Jordan وSpain بعد استبعاد Qatar وEgypt والبلدين الطويلين، أي أقل من ثلاثة حروف. تبقى «اقرَأ واختر الصورة» و«الحرف الأول» و«اقرَأ الجملة».',
+  ],
   'kbl-g4-eng-s1-nccd-u2_l1': [
     'لا صور لهذه الوحدة: كلماتها مواد دراسية وأوقات وتكرار، فلا يظهر «اقرَأ الجملة» ولا نشاطا الصور. يبقى «الحرف الأول» فقط.',
   ],
