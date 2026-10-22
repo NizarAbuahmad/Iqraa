@@ -275,6 +275,21 @@ const SCREENS: AppPlace[] = [
   { id: 'mastery-gate', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howMasteryGate' },
   { id: 'exam-date-who', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howExamDateWho' },
   { id: 'school-add', route: '/schedule', labelKey: 'myWeeklySchedule', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howAddSchool' },
+  // The seventeenth live pass (2026-10-22).
+  { id: 'switch-account', route: '/settings', labelKey: 'settings', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howSwitchAccount' },
+  { id: 'logout-all', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howLogoutAll' },
+  { id: 'intro-replay', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howIntroReplay' },
+  { id: 'mark-all-read', route: '/notifications', labelKey: 'tabAlerts', pathKeys: [], isTool: false, keywords: [], howKey: 'howMarkAllRead' },
+  { id: 'mute-chat', route: '/notifications', labelKey: 'tabAlerts', pathKeys: [], isTool: false, keywords: [], howKey: 'howMuteChat' },
+  { id: 'read-receipts', route: '/notifications', labelKey: 'tabAlerts', pathKeys: [], isTool: false, keywords: [], howKey: 'howReadReceipts' },
+  { id: 'search-messages', route: '/notifications', labelKey: 'tabAlerts', pathKeys: [], isTool: false, keywords: [], howKey: 'howSearchMessages' },
+  { id: 'send-file-message', route: '/notifications', labelKey: 'tabAlerts', pathKeys: [], isTool: false, keywords: [], howKey: 'howSendFileMessage' },
+  { id: 'eval-setup', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howEvalSetup' },
+  { id: 'eval-pass-mark', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howEvalPassMark' },
+  { id: 'eval-figures', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howEvalFigures' },
+  { id: 'lab-about', route: '/curriculum/lab', labelKey: 'labEntryTitle', pathKeys: ['resourcesTitle'], isTool: false, keywords: [], howKey: 'howLabAbout' },
+  { id: 'quran-about', route: '/curriculum/quran', labelKey: 'quranTitle', pathKeys: ['resourcesTitle'], isTool: false, keywords: [], howKey: 'howQuranAbout' },
+  { id: 'math-tools', route: '/curriculum/math', labelKey: 'mathEntryTitle', pathKeys: ['resourcesTitle'], isTool: false, keywords: [], howKey: 'howMathTools' },
   {
     // The bottom tab: its route file is still «curriculum» (see `app/(tabs)/_layout.tsx`).
     id: 'library', route: '/curriculum', labelKey: 'resourcesTitle', pathKeys: [], isTool: false,
@@ -942,6 +957,10 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
   {
     id: 'edit-exam-questions',
     res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:regenerate|re-?generate|redo|re-?roll)\s+(?:the\s+|my\s+)?(?:evaluation|exam|test)\s+questions` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اعيد|اعاده)\s+(?:توليد|تكوين|انشاء)\s+(?:ال)?(?:اسئله)\s+(?:ال)?(?:تقييم|امتحان|اختبار)` + AR_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`(?:change|edit|set|update)\s+(?:the\s+)?(?:marks?|points?|score)\s+(?:of|for)\s+(?:a\s+|the\s+)?question(?:\s+in\s+(?:the\s+|an?\s+)?(?:evaluation|exam|test))?` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اغير|تغيير|اعدل|تعديل|اضبط|ضبط)\s+(?:ال)?(?:علامه|درجه)\s+(?:ال)?سؤال(?:\s+(?:في|ب)\s+(?:ال)?(?:تقييم|امتحان|اختبار))?` + AR_RULE_TAIL),
       new RegExp(
         EN_HOW_LEAD + String.raw`(?:(?:delete|remove|edit|change|add|write)\s+(?:(?:a|an|the|my|one|this|some)\s+)*(?:own\s+)?questions?\s+(?:from|in|to|into|on|of)\s+(?:(?:the|my|an?|this)\s+)?(?:exam|test|evaluation)` +
           String.raw`|write\s+(?:(?:the|my)\s+)?(?:exam|test)\s+questions\s+(?:myself|by\s+myself|on\s+my\s+own))` + EN_RULE_TAIL,
@@ -1267,6 +1286,8 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
   {
     id: 'save-slides',
     res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:export|save|download|convert)\s+(?:the\s+|my\s+)?(?:slides|deck|presentation)\s+(?:as|to|in|into)\s+(?:a\s+)?(?:powerpoint|pptx|ppt|pdf)(?:\s+file)?` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اصدر|تصدير|احول|تحويل|احفظ|حفظ|انزل|تنزيل|احمل|تحميل)\s+(?:ال)?(?:شرائح|عرض(?:\s+(?:ال)?تقديمي)?)\s+(?:ب|بصيغه|الي|ك|علي\s+شكل)\s*(?:صيغه\s+)?(?:ال)?(?:بوربوينت|باوربوينت|pptx|powerpoint|pdf|بي\s*دي\s*اف)` + AR_RULE_TAIL),
       new RegExp(EN_RULE_LEAD + String.raw`(?:save|keep|print|export|download)\s+(?:(?:the|my|a|this)\s+)?(?:slides|slideshow|presentation|deck)` + EN_RULE_TAIL),
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:احفظ|حفظ|اطبع|طباعه|اصدر|تصدير|احمل|تحميل|انزل)\s+(?:ال)?(?:شرائح|عرض\s+(?:ال)?تقديمي|عرض|بوربوينت|باوربوينت)` + AR_RULE_TAIL,
@@ -2287,6 +2308,144 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       new RegExp(EN_RULE_LEAD + String.raw`(?:add|register|set\s+up)\s+(?:my\s+)?school(?:\s+(?:to|in|on)\s+(?:my\s+account|the\s+app))?` + EN_RULE_TAIL),
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:اضيف|اضافه|اسجل)\s+(?:ال)?مدرس(?:تي|ه)(?:\s+(?:الي|ل|لل|في)\s*(?:حسابي|ال?حساب|ال?تطبيق))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  // The seventeenth live pass (2026-10-22).
+  {
+    id: 'switch-account',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:switch|change|swap|toggle)\s+(?:between\s+)?(?:two\s+|my\s+|the\s+)?accounts?(?:\s+(?:in|on)\s+(?:the\s+)?app)?` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:ابدل|تبديل|انتقل|الانتقال|اغير|تغيير|ابدل)\s+(?:بين\s+)?(?:حسابين|الحسابات|حساب\s+(?:الي|لحساب)\s+(?:اخر|ثاني)|حسابي\s+(?:الي|لحساب)\s+(?:اخر|ثاني))(?:\s+(?:في|ب)\s+(?:ال)?تطبيق)?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'logout-all',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:sign|log)\s*out\s+(?:of\s+)?(?:from\s+)?(?:all|every)\s+(?:my\s+)?devices` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اسجل\s+(?:ال)?خروج|تسجيل\s+(?:ال)?خروج|اخرج)\s+(?:من|علي)\s+(?:كل|جميع)\s+(?:ال)?(?:اجهزه|جهاز)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'intro-replay',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:see|watch|replay|view|open)\s+(?:the\s+)?(?:app\s+)?(?:intro|introduction|onboarding|welcome\s+(?:screens?|tour))(?:\s+again)?` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعيد|اعاده)\s+(?:مشاهده|عرض)\s+(?:ال)?(?:مقدمه|شاشات\s+(?:ال)?ترحيب|جوله)(?:\s+(?:ال)?تعريفيه)?(?:\s+(?:لل|ل|في)\s*(?:ال)?تطبيق)?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'mark-all-read',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:mark|read|clear)\s+all\s+(?:the\s+)?(?:notifications?|messages?)(?:\s+as\s+read)?(?:\s+at\s+once)?` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اقرا|اعلم|علم|اعلّم|امسح)\s+(?:كل\s+)?(?:ال)?(?:اشعارات|رسائل)(?:\s+(?:ك)?مقروءه)?(?:\s+دفعه\s+واحده)?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'mute-chat',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`mute\s+(?:a\s+|the\s+|this\s+|one\s+)?(?:specific\s+)?(?:chat|conversation|thread|group)` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اكتم|كتم)\s+(?:ال)?(?:محادثه|مجموعه|دردشه)(?:\s+(?:معينه|محدده))?` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'read-receipts',
+    res: [
+      new RegExp(String.raw`^(?:can\s+i\s+|do\s+i\s+|does\s+the\s+app\s+)?(?:see|show|get|have)\s+(?:read\s+receipts?|seen\s+(?:status|marks?)|when\s+(?:a\s+)?(?:message|parent)\s+(?:is\s+)?(?:read|seen))` + EN_RULE_TAIL),
+      new RegExp(String.raw`^(?:هل\s+)?(?:تظهر|يظهر|اشوف|اري)\s+(?:لي\s+)?(?:ال)?(?:اشعارات\s+(?:ال)?قراءه|ايصالات\s+(?:ال)?قراءه|علامه\s+(?:ال)?قراءه|شوهدت|ان\s+(?:ال)?رساله\s+(?:قرئت|قريت|شوهدت))(?:\s+(?:في|ب)\s+(?:ال)?رسائل)?` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'search-messages',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:search|find|look\s+for)\s+(?:an?\s+)?(?:old|previous|earlier)\s+(?:message|chat|conversation)s?` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:ابحث|بحث|ادور|دور)\s+(?:عن|في)\s+(?:رساله|رسائل)\s+(?:قديمه|سابقه)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'send-file-message',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:send|attach|share|upload)\s+(?:an?\s+|the\s+|my\s+)?(?:file|pdf|document|attachment)\s+(?:in|to|through)\s+(?:the\s+)?(?:messages?|chat|messaging)` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:ارسل|ارسال|ارفق|ارفاق|ارفع|رفع)\s+(?:ملف(?:ا)?|ملفا|مستند(?:ا)?)\s+(?:في|عبر|ل|الي)\s*(?:ال)?(?:رسائل|مراسله|دردشه)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'eval-setup',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:set|choose|pick|change|select)\s+(?:the\s+)?(?:number\s+of\s+questions|question\s+count|how\s+many\s+questions)(?:\s+(?:in|for|of)\s+(?:the\s+|an?\s+)?(?:evaluation|exam|test))?` + EN_RULE_TAIL),
+      new RegExp(String.raw`^what\s+(?:question\s+)?types?\s+(?:of\s+questions?\s+)?(?:can|does)\s+(?:an?\s+|the\s+)?(?:evaluation|exam|test)\s+(?:have|include|contain|use)` + EN_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`(?:choose|pick|select|set)\s+(?:the\s+)?(?:lesson\s+)?objectives\s+(?:for|of|in)\s+(?:an?\s+|the\s+)?(?:evaluation|exam|test)` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:احدد|اضبط|اختار|اغير|تحديد|اختيار)\s+عدد\s+(?:ال)?اسئله(?:\s+(?:ال)?(?:تقييم|امتحان|اختبار))?` + AR_RULE_TAIL,
+      ),
+      new RegExp(String.raw`^(?:ما\s+هي\s+|ماهي\s+)?(?:ال)?انواع\s+(?:ال)?اسئله\s+(?:في\s+)?(?:ال)?(?:تقييم|امتحان|اختبار)` + AR_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اختار|اختيار|احدد|تحديد)\s+(?:ال)?(?:اهداف|دروس)\s+(?:ال)?درس\s+(?:ل|لل)\s*(?:ال)?(?:تقييم|امتحان|اختبار)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'eval-pass-mark',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:set|change|choose|define)\s+(?:the\s+)?(?:pass(?:ing)?\s+(?:mark|grade|score|percentage)|pass\s+mark)(?:\s+(?:for|of|in)\s+(?:the\s+|an?\s+)?(?:evaluation|exam|test))?` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اضبط|ضبط|احدد|تحديد|اغير|تغيير)\s+(?:ال)?علامه\s+(?:ال)?نجاح(?:\s+(?:ل|لل)\s*(?:ال)?(?:تقييم|امتحان|اختبار))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'eval-figures',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:add|attach|put|insert)\s+(?:a\s+)?(?:figure|diagram|shape|drawing|picture|image)\s+(?:to|in|into)\s+(?:a\s+|the\s+)?question` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اضيف|اضافه|ارفق|ارفاق|اضع)\s+(?:رسما|رسم|شكلا|شكل|صوره|مخططا|مخطط)\s+(?:او\s+(?:رسما|رسم|شكلا|شكل|صوره)\s+)?(?:الي|في|ل)\s*(?:ال)?سؤال` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'lab-about',
+    res: [
+      new RegExp(String.raw`^what(?:['’]?s|\s+is)\s+(?:the\s+)?(?:virtual\s+)?(?:science\s+)?lab(?:oratory)?(?:\s+in\s+the\s+app)?` + EN_RULE_TAIL),
+      new RegExp(String.raw`^(?:ما\s+(?:هو\s+)?|ماهو\s+)(?:ال)?مختبر(?:\s+(?:ال)?افتراضي)?(?:\s+(?:في|ب)\s*(?:ال)?تطبيق)?` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'quran-about',
+    res: [
+      new RegExp(String.raw`^what(?:['’]?s|\s+is)\s+(?:in|inside)\s+(?:the\s+)?quran\s+corner` + EN_RULE_TAIL),
+      new RegExp(String.raw`^what\s+is\s+the\s+quran\s+corner` + EN_RULE_TAIL),
+      new RegExp(String.raw`^(?:ماذا|شو|ايش)\s+(?:يوجد\s+)?(?:في|داخل)\s+(?:ال)?ركن\s+(?:ال)?قران(?:\s+(?:ال)?كريم)?` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:ما\s+(?:هو\s+)?|ماهو\s+)(?:ال)?ركن\s+(?:ال)?قران(?:\s+(?:ال)?كريم)?` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'math-tools',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`use\s+(?:the\s+)?(?:scientific\s+)?calculator(?:\s+in\s+(?:the\s+)?math(?:s|ematics)?\s+corner)?` + EN_RULE_TAIL),
+      new RegExp(String.raw`^what\s+(?:tools|is)\s+(?:are\s+)?in\s+(?:the\s+)?math(?:s|ematics)?\s+corner` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:استخدم|افتح|اشغل)\s+(?:ال)?(?:اله\s+)?(?:ال)?حاسبه(?:\s+(?:ال)?علميه)?(?:\s+(?:في|ب)\s+(?:زاويه|ركن)\s+(?:ال)?رياضيات)?` + AR_RULE_TAIL,
+      ),
+      new RegExp(String.raw`^(?:ما\s+(?:هي\s+)?|ماهي\s+)(?:ال)?ادوات\s+(?:زاويه|ركن)\s+(?:ال)?رياضيات` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'add-student',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:add|enter|paste)\s+(?:all\s+)?(?:my\s+)?students\s+(?:at\s+once|in\s+bulk|all\s+at\s+once|in\s+one\s+go)(?:\s+from\s+a\s+list)?` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اضيف|اضافه|ادخل|ادخال|الصق|لصق)\s+(?:ال)?(?:طلاب(?:ا)?|طلبه|اسماء\s+(?:ال)?(?:طلاب|طلبه))\s+(?:دفعه(?:\s+واحده)?|مره\s+واحده|كلهم\s+معا)(?:\s+من\s+(?:ال)?(?:قائمه|ملف|نسخ))?` + AR_RULE_TAIL,
       ),
     ],
   },

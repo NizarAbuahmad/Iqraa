@@ -10,6 +10,20 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+**Accounts, messages, evaluation setup and the corners (2026-10-22, seventeenth live pass).**
+Of 30 questions, 9 were right and 21 went to the model; the recheck of the sixteenth pass was
+24/24. Checked in code: «الإعدادات» ← «الحسابات على هذا الجهاز» switches, adds and removes saved
+accounts (the login screen lists them too) and there is no sign-out from all devices; the intro
+shows once before sign-in and has no replay; the bell panel has «علّم الكل مقروءًا»; Messages has
+no mute, no message search and attaches an image only, but shows «شوهدت» on a read message;
+«تقييم جديد» offers eight question types (read-aloud and dictation are added as separate buttons),
+three levels and 5–30 questions, and has no pass-mark setting (the mastery gate's 80% is fixed);
+the evaluation page has a «من الكتاب المدرسي» figure panel and no figure upload; the Lab, Quran
+corner and Math corner screens say what they hold (five maths tools plus lesson exercises).
+Existing answers the wording missed: PowerPoint export of slides (`howSaveSlides`), regenerating
+and re-marking questions (`howEditExamQuestions`), adding students in bulk (`howAddStudent`).
+Left with the model: nothing from this pass that the code settles.
+
 **Today, lesson games, files and the mastery gate (2026-10-22, sixteenth live pass).**
 Of 30 questions, 6 were right (4 teaching controls) and 24 went to the model; the recheck of
 the fifteenth pass was 21/21. Checked in code: the «اليوم» tab shows the current or next period
