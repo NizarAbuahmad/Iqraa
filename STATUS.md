@@ -4691,6 +4691,20 @@ the exam link «عبر واتساب», «ملاحظات أو اقتراحات ل
 verified in code: sorting the class list by grade. «كيف أبلغ الطلاب بموعد الامتحان؟» stays
 a teaching question (announcing in class); only the parents' wording is app help.
 
+**Families, lesson-plan options, schedule and email (2026-10-22, fourteenth live pass).**
+Of 30 questions, 11 were right (4 of them teaching controls) and 19 went to the model or
+got a bare place list. Eight already had answers that the wording missed: student login,
+searching a lesson, the lesson videos, adding a timetable slot, blocking a user,
+a parent group chat. The rest were checked in code and are new: a parent sees homework
+under «المدرسة» and results under «نتائج أبنائي»; a lost login code is re-issued by the
+teacher (nothing recovers it in the app); linking a parent to a child is the link code
+(sign-up, or «الانضمام إلى شعبة أخرى»); the lesson plan's duration (30/45/60/90), teaching
+style and objectives (under «خيارات إضافية»); material language follows the app language
+(the English subject is always English — `contentLang`); no email sending (export →
+«مشاركة»); emptying a timetable slot vs deleting the period; a verified account's email
+cannot be changed (only before verifying, `/change-unverified-email`); verifying it.
+Left with the model: nothing from this pass that the code settles.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
