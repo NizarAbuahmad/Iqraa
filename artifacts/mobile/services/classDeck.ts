@@ -600,7 +600,7 @@ function pushGameRounds(slides: ActivitySlide[], rounds: GameRound[], lessonTitl
 export const MIN_GAME_QUESTIONS = 3;
 
 /** A deck's own choice questions that a game can score: options and an in-range key. */
-function scoreableSlides(deck: ClassroomActivity): ActivitySlide[] {
+export function scoreableSlides(deck: ClassroomActivity): ActivitySlide[] {
   return deck.slides.filter(s =>
     s.type === 'question'
     && (s.options?.length ?? 0) >= 2
