@@ -188,8 +188,10 @@ describe('figuresForLesson', () => {
         // `p035.png`, and `p035b.png` for the second figure on a page. One
         // page routinely prints four or five independent diagrams down the
         // margin; before the extractor could yield more than one per page,
-        // the bare form was the only shape a filename could take.
-        assert.match(f.file, /^p\d{3}[a-z]?\.png$/);
+        // the bare form was the only shape a filename could take. A re-crop
+        // (`scripts/audit_book_figures.py --apply`) is `p035-v2.png`: a new
+        // key, because the R2 uploader never overwrites one.
+        assert.match(f.file, /^p\d{3}[a-z]?(-v\d+)?\.png$/);
       }
     }
   });
