@@ -77,6 +77,10 @@ function lessonOnlySlides(deck: ClassroomActivity): ActivitySlide[] {
     || s.content.includes('من كتاب التمارين'));
 }
 
+/** The slide a unit's round opens on, right after its divider. */
+const ideasAfter = (deck: ClassroomActivity, unitTitle: string) =>
+  deck.slides[deck.slides.findIndex(s => s.type === 'divider' && s.title === unitTitle) + 1]!;
+
 const unitDividers = (deck: ClassroomActivity) =>
   deck.slides.filter(s => s.type === 'divider' && UNITS.some(u => u.title === s.title));
 
@@ -90,7 +94,8 @@ describe('buildRevisionDeck — a round per unit', () => {
       const ideas = deck.slides[at + 1]!;
       // No leading emoji any more: with one the heading draws the bulb and the
       // unit's own icon never shows. Both slides carry an icon the renderers can draw.
-      assert.equal(ideas.title, unit.title);
+      // Never the divider's title again — the outline listed every unit twice running.
+      assert.notEqual(ideas.title, unit.title);
       assert.equal(ideas.type, 'intro');
       assert.ok(isSectionIconName(ideas.icon), `${unit.title}: ideas icon`);
       assert.ok(isSectionIconName(deck.slides[at]!.icon), `${unit.title}: divider icon`);
@@ -107,7 +112,8 @@ describe('buildRevisionDeck — a round per unit', () => {
     });
     // the real case from a class: three one- or two-word terms on a nearly empty slide
     const cards = make('الحركة والقوة', ['سكون', 'قوة سحب', 'حركة']);
-    const ideas = cards.slides.find(s => s.type === 'intro' && s.title === 'الحركة والقوة')!;
+    const ideas = ideasAfter(cards, 'الحركة والقوة');
+    assert.equal(ideas.title, 'المفاهيم والمصطلحات', 'no outcomes: the round opens on the terms');
     assert.equal(ideas.layout, 'concepts');
     assert.deepEqual(ideas.concepts, ['سكون', 'قوة سحب', 'حركة']);
     assert.equal(resolveSlideLayout(ideas)?.kind, 'concepts');
@@ -117,16 +123,89 @@ describe('buildRevisionDeck — a round per unit', () => {
 
     // an outcome is a sentence: a card of it is worse than the list
     const sentence = make('الحركة والقوة', ['سكون'], ['يفسّر الطالب العلاقة بين القوة المحصلة وتغيّر حركة الجسم في خط مستقيم']);
-    const list = sentence.slides.find(s => s.type === 'intro' && s.title === 'الحركة والقوة')!;
+    const list = ideasAfter(sentence, 'الحركة والقوة');
+    assert.equal(list.title, 'نتاجات الوحدة');
     assert.equal(list.layout, undefined);
     assert.equal(list.concepts, undefined);
 
     // one term is not a grid
-    assert.equal(make('الحركة والقوة', ['سكون']).slides.find(s => s.type === 'intro' && s.title === 'الحركة والقوة')!.layout, undefined);
+    assert.equal(ideasAfter(make('الحركة والقوة', ['سكون']), 'الحركة والقوة').layout, undefined);
 
     // a title naming nothing recognisable still gets an icon, never a bare panel
     const plain = make('وحدة عامة', ['أ', 'ب']);
     assert.ok(isSectionIconName(plain.slides.find(s => s.type === 'divider' && s.title === 'وحدة عامة')!.icon));
+  });
+
+  it('the unit\'s outcomes and its key terms are two slides, and the terms are all of them, not three', () => {
+    const lessons = [{ id: 'l1', title: 'الدرس الأول', thin: false }];
+    const unit = {
+      unitId: 'u1', title: 'نظرية التطور', lessons,
+      outcomes: ['أناقش الآراء والنظريات التي تعرض لتطور الكائنات الحية.', 'أستكشف آلية تطور الكائنات الحية.'],
+      concepts: ['التطور', 'نظرية الانتخاب الطبيعي', 'نظرية التوازن المتقطع'],
+      allConcepts: ['التطور', 'نظرية الانتخاب الطبيعي', 'نظرية التوازن المتقطع', 'علم التشريح المقارن', 'السجل الأحفوري'],
+      terms: [],
+    };
+    const deck = buildRevisionDeck(true, { units: [unit], phrase: 'x', plan: null });
+    const at = deck.slides.findIndex(s => s.type === 'divider' && s.title === 'نظرية التطور');
+    const goals = deck.slides[at + 1]!;
+    const terms = deck.slides[at + 2]!;
+    assert.equal(goals.title, 'نتاجات الوحدة');
+    assert.equal(goals.layout, undefined, 'sentences stay a list');
+    assert.ok(goals.content.includes('أناقش الآراء'));
+    assert.ok(!goals.content.includes('نظرية الانتخاب الطبيعي'), 'the terms moved to their own slide');
+    assert.equal(terms.title, 'المفاهيم والمصطلحات');
+    assert.equal(terms.layout, 'concepts');
+    // the book's box lists five; the deck used to show three
+    assert.deepEqual(terms.concepts, unit.allConcepts);
+    assert.equal(resolveSlideLayout(terms)?.kind, 'concepts');
+  });
+
+  it('a unit\'s book figures ride with its round: the first by the outcomes, the second by the terms, none alone', () => {
+    const lessons = [{ id: 'kbl-biology-s1-nccd-u1_l1', title: 'تطور الكائنات الحية', thin: false }];
+    const unit = {
+      unitId: 'kbu-biology-s1-nccd-u1', title: 'نظرية التطور', lessons,
+      outcomes: ['أناقش الآراء والنظريات التي تعرض لتطور الكائنات الحية.'], concepts: ['التطور', 'نظرية الانتخاب الطبيعي'], terms: [],
+    };
+    const figureUri = (f: { file: string }) => `https://figs.example/${f.file}`;
+    const deck = buildRevisionDeck(true, { units: [unit], phrase: 'x', plan: null, figureUri });
+    const at = deck.slides.findIndex(s => s.type === 'divider' && s.title === 'نظرية التطور');
+    const goals = deck.slides[at + 1]!;
+    assert.equal(goals.sideImageUrl, 'https://figs.example/p011.png', 'the first figure sits beside the key ideas');
+    assert.match(goals.sideImageCaption ?? '', /صفحة/);
+    const terms = deck.slides[at + 2]!;
+    assert.equal(terms.sideImageUrl, 'https://figs.example/p012.png', 'the second figure sits beside the terms');
+    assert.equal(terms.layout, undefined, 'a figure costs the cards: the terms stay a list beside it');
+    // Mutation caught: the old standalone «من كتاب الطالب» slides, two back to back per unit.
+    assert.equal(deck.slides.filter(s => s.type === 'media').length, 0);
+    assert.equal(deck.slides[at + 3]!.type, 'summary', 'divider, outcomes, terms — then the deck goes on');
+    // a figure the screen cannot load is skipped, never an empty image
+    const none = buildRevisionDeck(true, { units: [unit], phrase: 'x', plan: null, figureUri: () => null });
+    assert.equal(none.slides.some(s => s.type === 'media' || !!s.sideImageUrl), false);
+    // and without a loader the deck is exactly as it was
+    const bare = buildRevisionDeck(true, { units: [unit], phrase: 'x', plan: null });
+    assert.equal(bare.slides.some(s => s.type === 'media' || !!s.sideImageUrl), false);
+  });
+
+  it('a unit with several lessons shows one figure per lesson before a second of any', () => {
+    const mk = (id: string) => ({ id, title: id, thin: false });
+    const unit = {
+      unitId: 'kbu-biology-s1-nccd-u3', title: 'تصنيف الكائنات الحية',
+      lessons: ['kbl-biology-s1-nccd-u3_l1', 'kbl-biology-s1-nccd-u3_l2', 'kbl-biology-s1-nccd-u3_l3', 'kbl-biology-s1-nccd-u3_l4'].map(mk),
+      outcomes: ['أستكشف خصائص المجموعات التصنيفية.'], concepts: ['النوع', 'الجنس'], terms: [],
+    };
+    const deck = buildRevisionDeck(true, { units: [unit], phrase: 'x', plan: null, figureUri: f => `u/${f.file}` });
+    const at = deck.slides.findIndex(s => s.type === 'divider');
+    const urls = [deck.slides[at + 1]!.sideImageUrl, deck.slides[at + 2]!.sideImageUrl];
+    // lessons 1 and 2 each contribute their first figure (p040, p046) before lesson 1's second
+    assert.deepEqual(urls, ['u/p040.png', 'u/p046.png']);
+  });
+
+  it('a unit whose list repeats an earlier unit\'s word for word gets its divider, not a copy', () => {
+    const lessons = ['أستمع بانتباه', 'أتحدث بطلاقة', 'أكتب'].map((title, i) => ({ id: `l${i}`, title, thin: false }));
+    const unit = (unitId: string, title: string) => ({ unitId, title, lessons, outcomes: [], concepts: [], terms: [] });
+    const deck = buildRevisionDeck(true, { units: [unit('u1', 'مدرستي'), unit('u2', 'علم بلادي')], phrase: 'x', plan: null });
+    assert.equal(deck.slides.filter(s => s.title === 'دروس الوحدة').length, 1);
+    assert.equal(deck.slides.filter(s => s.type === 'divider').length, 2, 'both rounds still open');
   });
 
   it('a unit scope is one round, not «الجولة 1 من 1»', () => {
@@ -185,7 +264,7 @@ describe('buildRevisionDeck — the checks and the plan', () => {
     assert.deepEqual(exit.map(s => s.content), ['سؤال رقم 3؟', 'سؤال رقم 4؟', 'سؤال رقم 5؟']);
     assert.deepEqual(mid[0]!.options, ['أ1', 'ب1', 'ج1', 'د1']);
     const lastTitle = UNITS[UNITS.length - 1]!.title;
-    const lastRound = deck.slides.map(s => (s.type === 'intro' ? s.title : '')).lastIndexOf(lastTitle);
+    const lastRound = deck.slides.findIndex(s => s.type === 'divider' && s.title === lastTitle) + 1;
     assert.ok(lastRound >= 0 && deck.slides.indexOf(mid[0]!) > lastRound, 'checks follow the last round');
     const summary = deck.slides.findIndex(s => s.type === 'summary');
     assert.ok(deck.slides.indexOf(exit[0]!) > summary, 'the exit ticket follows the summary');
@@ -258,7 +337,9 @@ describe('buildRevisionDeck — English decks carry no Arabic from the data, one
       // Arabic letter an English deck may carry, in brackets, as the plan allows.
       if (ARABIC_LETTER.test(withoutLetterGlosses(JSON.stringify(deck)))) offenders.push(`${sel.kind}:${sel.subjectId}:${sel.gradeId}`);
       // And every round still has its ideas slide: filtering must not empty a unit.
-      assert.equal(deck.slides.filter(s => s.type === 'intro' && units.some(u => u.title === s.title)).length, units.length, `${sel.kind} ${sel.subjectId}`);
+      // (A unit whose list repeats an earlier one's keeps its divider alone.)
+      const lists = deck.slides.filter((s, i) => s.type === 'intro' && deck.slides[i - 1]?.type === 'divider');
+      assert.ok(lists.length > 0 && units.every(u => deck.slides.some(s => s.type === 'divider' && s.title === u.title)), `${sel.kind} ${sel.subjectId}`);
     }
     assert.ok(built > 500, `expected the whole curriculum, got ${built}`);
     assert.deepEqual(offenders.slice(0, 5), []);
@@ -284,7 +365,8 @@ describe('buildRevisionDeck — English decks carry no Arabic from the data, one
       outcomes: ['يتعرف الطالب الحرف'], concepts: ['دراسة الجدوى'], terms: ['Stops ۖ', 'مصطلح (term)'],
     };
     const deck = buildRevisionDeck(false, { units: [unit], phrase: 'Letters', plan: null });
-    const ideas = deck.slides.find(s => s.type === 'intro' && s.title === 'Letters and stops')!;
+    const ideas = ideasAfter(deck, 'Letters and stops');
+    assert.equal(ideas.title, 'Unit lessons');
     // Outcomes and concepts are Arabic only, so the round shows its lesson titles.
     // Mutation caught: the old whole-script test (drops «Stops ۖ and pauses» and «The Letter Baa (ب)»).
     assert.equal(ideas.content, '• The Letter Baa (ب)\n• Stops ۖ and pauses\n• Looking good');
@@ -292,7 +374,7 @@ describe('buildRevisionDeck — English decks carry no Arabic from the data, one
     assert.ok(ideas.teacher?.teachingTips?.includes('Terms worth asking about: Stops ۖ'), String(ideas.teacher?.teachingTips));
     // The Arabic deck is not filtered at all.
     const ar = buildRevisionDeck(true, { units: [unit], phrase: 'x', plan: null });
-    assert.ok(ar.slides.find(s => s.type === 'intro' && s.title === 'Letters and stops')!.content.includes('يتعرف الطالب الحرف'));
+    assert.ok(ideasAfter(ar, 'Letters and stops').content.includes('يتعرف الطالب الحرف'));
   });
 
   it('the grade-4 Islamic scope that holds «Muhammad ۖ» keeps that lesson in its English deck', () => {

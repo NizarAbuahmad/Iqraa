@@ -1,17 +1,18 @@
 /**
- * Writes the teacher's grammar sheet — every sentence the Grade 1 grammar
- * activities can show — to docs/english-grammar-g1-sheet.md, and the same
- * sentences as a printable Arabic review form (tick boxes, notes, a sign-off
- * per unit) to docs/english-grammar-g1-review.html, and the reading
- * activities' words and first letters as the same kind of form to
- * docs/english-reading-g1-review.html. Open an .html in a browser and print
+ * Writes the teacher's grammar sheet — every sentence the grammar activities
+ * can show — to docs/english-grammar-g{N}-sheet.md, and the same sentences as a
+ * printable Arabic review form (tick boxes, notes, a sign-off per unit) to
+ * docs/english-grammar-g{N}-review.html, for Grades 1 and 2, and the Grade 1
+ * reading activities' words and first letters as the same kind of form to
+ * docs/english-reading-g1-review.html, and Grade 2's (words, first letters and the
+ * Read the sentence pool) to docs/english-reading-g2-review.html. Open an .html in a browser and print
  * it: A4 landscape, one unit per page.
  *
  *   pnpm --filter @workspace/curriculum run grammar-sheet
  *
  * A test fails when a committed file differs from the generator, so re-run
- * this after any change to src/englishGrammar.ts or src/englishReading.ts and
- * commit the result.
+ * this after any change to src/englishGrammar.ts, src/englishGrammarG2.ts or
+ * src/englishReading.ts and commit the result.
  */
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -22,11 +23,14 @@ import { renderReadingReviewHtml } from '../src/englishReadingReview.ts';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DOCS = path.join(HERE, '..', '..', '..', 'docs');
-for (const [name, text] of [
-  ['english-grammar-g1-sheet.md', renderGrammarSheet()],
-  ['english-grammar-g1-review.html', renderGrammarReviewHtml()],
-  ['english-reading-g1-review.html', renderReadingReviewHtml()],
-] as const) {
+const files: (readonly [string, string])[] = [];
+for (const grade of [1, 2]) {
+  files.push([`english-grammar-g${grade}-sheet.md`, renderGrammarSheet(grade)]);
+  files.push([`english-grammar-g${grade}-review.html`, renderGrammarReviewHtml(grade)]);
+}
+files.push(['english-reading-g1-review.html', renderReadingReviewHtml(1)]);
+files.push(['english-reading-g2-review.html', renderReadingReviewHtml(2)]);
+for (const [name, text] of files) {
   const out = path.join(DOCS, name);
   writeFileSync(out, text);
   console.log(`wrote ${path.relative(process.cwd(), out)}`);

@@ -5,24 +5,25 @@
  * card.
  */
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { hubLesson } from '@workspace/curriculum/englishHub';
 import { offeredGrammar } from '@workspace/curriculum/englishGrammar';
-import { offeredReading } from '@workspace/curriculum/englishReading';
+import { offeredReading, offeredReadingSentences } from '@workspace/curriculum/englishReading';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import type { TranslationKey } from '@/services/i18n';
-import { GRAMMAR_ACTIVITIES, HUB_ACTIVITIES, READING_ACTIVITIES, dayOf, grammarActivityAvailable, lessonHasPictureMatch, newlyEarnedBadges, progressKey, readingActivityAvailable, recordResult, starsFor, type BadgeId, type HubActivity } from '@/services/englishHub/games';
+import { GRAMMAR_ACTIVITIES, HUB_ACTIVITIES, READING_ACTIVITIES, dayOf, grammarActivityAvailable, lessonHasPictureMatch, newlyEarnedBadges, progressKey, readSentenceAvailable, readingActivityAvailable, recordResult, starsFor, type BadgeId, type HubActivity } from '@/services/englishHub/games';
 import { useHubProgress } from '@/services/englishHub/progressStore';
 import { goBack } from '@/services/navigation';
 import { unitNames } from '@/services/contentLanguage';
 import { Flashcards, ListenChoose, MatchMeaning, PictureMatch, Scramble, Speaking, SpellIt } from '@/components/englishHub/Activities';
-import { BuildSentence, GrammarChoose, TrueFalse } from '@/components/englishHub/GrammarActivities';
-import { FirstLetter, ReadFind, StartsWith } from '@/components/englishHub/ReadingActivities';
+import { BuildSentence, GrammarChoose, TrueFalse, YesNo } from '@/components/englishHub/GrammarActivities';
+import { FirstLetter, ReadFind, ReadSentence, StartsWith } from '@/components/englishHub/ReadingActivities';
 import { BADGE_META } from '@/components/englishHub/badgeMeta';
+import { CornerFrame } from '@/components/corners/CornerFrame';
+import { SPACE } from '@/constants/theme';
 
 const META: Record<HubActivity, { icon: keyof typeof Ionicons.glyphMap; title: TranslationKey; desc: TranslationKey }> = {
   flashcards: { icon: 'albums-outline', title: 'hubFlashcards', desc: 'hubFlashcardsDesc' },
@@ -35,9 +36,11 @@ const META: Record<HubActivity, { icon: keyof typeof Ionicons.glyphMap; title: T
   'grammar-choose': { icon: 'checkbox-outline', title: 'hubGChoose', desc: 'hubGChooseDesc' },
   'grammar-build': { icon: 'reorder-four-outline', title: 'hubGBuild', desc: 'hubGBuildDesc' },
   'grammar-true': { icon: 'thumbs-up-outline', title: 'hubGTrue', desc: 'hubGTrueDesc' },
+  'grammar-yesno': { icon: 'chatbubbles-outline', title: 'hubGYesNo', desc: 'hubGYesNoDesc' },
   'read-find': { icon: 'book-outline', title: 'hubRFind', desc: 'hubRFindDesc' },
   'first-letter': { icon: 'text-outline', title: 'hubRLetter', desc: 'hubRLetterDesc' },
   'starts-with': { icon: 'search-outline', title: 'hubRStarts', desc: 'hubRStartsDesc' },
+  'read-sentence': { icon: 'document-text-outline', title: 'hubRSentence', desc: 'hubRSentenceDesc' },
 };
 
 /** Never scored — no star count, no place in `lessonStars`. Kept separate from
@@ -48,7 +51,6 @@ const UNSCORED: HubActivity[] = ['flashcards', 'speaking'];
 
 export default function EnglishHubLessonScreen() {
   const colors = useColors();
-  const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const { lessonId } = useLocalSearchParams<{ lessonId: string }>();
   const lesson = hubLesson(lessonId ?? '');
@@ -62,6 +64,7 @@ export default function EnglishHubLessonScreen() {
   // re-render (a progress write) does not hand the activity a new list and reshuffle it.
   const grammar = useMemo(() => offeredGrammar(lessonId ?? ''), [lessonId]);
   const reading = useMemo(() => offeredReading(lessonId ?? ''), [lessonId]);
+  const readingSentences = useMemo(() => offeredReadingSentences(lessonId ?? ''), [lessonId]);
   const row = isRTL ? 'row-reverse' : 'row';
   const align = isRTL ? 'right' : 'left';
 
@@ -94,7 +97,7 @@ export default function EnglishHubLessonScreen() {
       setUnlocked([]);
     // Public page: with no history, `goBack()` lands a visitor on login.
     } else if (router.canGoBack()) goBack();
-    else router.replace('/curriculum/english' as never);
+    else router.replace({ pathname: '/curriculum/english', params: { grade: String(lesson.grade) } } as never);
   };
 
   const body = () => {
@@ -120,7 +123,7 @@ export default function EnglishHubLessonScreen() {
             onPress={() => { setResult(null); setUnlocked([]); setRound(r => r + 1); }}
             style={[styles.primary, { backgroundColor: colors.primary }]}
           >
-            <Text style={styles.primaryText}>{t('hubAgain')}</Text>
+            <Text style={[styles.primaryText, { color: colors.primaryForeground }]}>{t('hubAgain')}</Text>
           </Pressable>
           <Pressable onPress={back} hitSlop={8}>
             <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>{t('hubBackToLesson')}</Text>
@@ -139,9 +142,11 @@ export default function EnglishHubLessonScreen() {
     if (grammar && activity === 'grammar-choose') return <GrammarChoose key={round} sentences={grammar} onFinish={finish} />;
     if (grammar && activity === 'grammar-build') return <BuildSentence key={round} sentences={grammar} onFinish={finish} />;
     if (grammar && activity === 'grammar-true') return <TrueFalse key={round} sentences={grammar} onFinish={finish} />;
+    if (grammar && activity === 'grammar-yesno') return <YesNo key={round} sentences={grammar} onFinish={finish} />;
     if (reading && activity === 'read-find') return <ReadFind key={round} words={reading} onFinish={finish} />;
     if (reading && activity === 'first-letter') return <FirstLetter key={round} words={reading} onFinish={finish} />;
     if (reading && activity === 'starts-with') return <StartsWith key={round} words={reading} onFinish={finish} />;
+    if (readingSentences && activity === 'read-sentence') return <ReadSentence key={round} pool={readingSentences} onFinish={finish} />;
 
     const card = (a: HubActivity) => {
       const best = UNSCORED.includes(a) ? 0 : progress.stars[progressKey(lesson.id, a)] ?? 0;
@@ -166,7 +171,10 @@ export default function EnglishHubLessonScreen() {
       );
     };
     const grammarCards = grammar ? GRAMMAR_ACTIVITIES.filter(a => grammarActivityAvailable(a, grammar)) : [];
-    const readingCards = reading ? READING_ACTIVITIES.filter(a => readingActivityAvailable(a, reading)) : [];
+    const readingCards: HubActivity[] = [
+      ...(reading ? READING_ACTIVITIES.filter(a => readingActivityAvailable(a, reading)) : []),
+      ...(readingSentences && readSentenceAvailable(readingSentences) ? (['read-sentence'] as HubActivity[]) : []),
+    ];
 
     return (
       <View style={{ gap: 10 }}>
@@ -188,30 +196,19 @@ export default function EnglishHubLessonScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { backgroundColor: colors.hero, paddingTop: insets.top + 12 }]}>
-        <Pressable onPress={back} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
-        <Text style={[styles.eyebrow, { textAlign: align }]}>
-          {t('hubGrade', lesson.grade)} · {t('hubUnit', lesson.unitNumber)}
-        </Text>
-        <Text style={[styles.title, { textAlign: align }]} numberOfLines={2}>
-          {activity ? t(META[activity].title) : unitNames({ name: lesson.unitTitle, nameAr: lesson.unitTitleAr }, 'english', lang).title}
-        </Text>
-      </View>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
-        {body()}
-      </ScrollView>
-    </View>
+    <CornerFrame
+      eyebrow={`${t('hubGrade', lesson.grade)} · ${t('hubUnit', lesson.unitNumber)}`}
+      title={activity ? t(META[activity].title) : unitNames({ name: lesson.unitTitle, nameAr: lesson.unitTitleAr }, 'english', lang).title}
+      onBack={back}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={styles.body}>{body()}</View>
+    </CornerFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 14 },
-  backBtn: { width: 40, height: 40, justifyContent: 'center' },
-  eyebrow: { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 15, marginBottom: 4 },
-  title: { color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 22 },
+  body: { padding: SPACE.xl },
   card: { alignItems: 'center', gap: 12, borderWidth: 1, padding: 14 },
   section: { fontFamily: 'ReadexPro_700Bold', fontSize: 17, marginTop: 12 },
   icon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
@@ -219,5 +216,5 @@ const styles = StyleSheet.create({
   unlockRow: { flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
   unlockBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   primary: { borderRadius: 14, paddingVertical: 12, paddingHorizontal: 32, marginTop: 8 },
-  primaryText: { color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 16 },
+  primaryText: { fontFamily: 'ReadexPro_700Bold', fontSize: 16 },
 });

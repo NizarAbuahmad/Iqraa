@@ -191,10 +191,12 @@ def main():
 
 def write(books_out, lessons_out):
     json.dump({
-        'note': 'Written by scripts/verify_book_pages.py. Each lesson below has its pages at '
-                'book-pages/<kbLessonId>/<n>.jpg in the public R2 bucket, cut from a book whose live '
-                'PDF was compared figure-by-figure with the copy our start pages came from. '
-                'Do not add entries by hand.',
+        'note': 'Written by scripts/verify_book_pages.py and scripts/render_lesson_pages.py. Each lesson '
+                'below has its pages at book-pages/<kbLessonId>/<n>.jpg in the public R2 bucket. '
+                'Lessons of a book with a `pdfUrl` were cut from the live book, whose PDF was compared '
+                'figure-by-figure with the copy our start pages came from; lessons of a book with '
+                'no `pdfUrl` (Arabic, Islamic, PE, digital skills, civic) were rendered from our own '
+                'copy, at the page their title was found on. Do not add entries by hand.',
         'verifiedAt': datetime.date.today().isoformat(),
         'books': dict(sorted(books_out.items())),
         'lessons': dict(sorted(lessons_out.items())),

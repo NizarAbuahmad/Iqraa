@@ -10,26 +10,7 @@
  *
  * `orderIndex` is assigned from this order at insert, so every reader — the
  * teacher's list, the student's walk through the exam, a future print — sees
- * the same paper. Stable within a type, so the generator's own sequence (and
- * which questions a surplus trim dropped) is untouched. Keep in step with
- * `EXAM_TYPE_ORDER` in `artifacts/mobile/services/examBlocks.ts`.
+ * the same paper. The list itself now lives in `lib/exam-paper`, which the app
+ * imports too, so there is no second copy to keep in step.
  */
-export const EXAM_TYPE_ORDER: readonly string[] = [
-  "multiple_choice", "true_false", "matching", "fill_blank",
-  "short_answer", "open_ended", "problem_solving", "practical_task",
-  "read_aloud", "dictation",
-];
-
-/** Rank of a type; a type this list does not know sorts last rather than first. */
-function rank(type: string): number {
-  const i = EXAM_TYPE_ORDER.indexOf(type);
-  return i === -1 ? EXAM_TYPE_ORDER.length : i;
-}
-
-/** A new array grouped into ministry blocks; the input is not touched. */
-export function inPaperOrder<T>(items: readonly T[], typeOf: (item: T) => string): T[] {
-  return items
-    .map((item, i) => ({ item, i, r: rank(typeOf(item)) }))
-    .sort((a, b) => a.r - b.r || a.i - b.i)
-    .map(x => x.item);
-}
+export { EXAM_TYPE_ORDER, inPaperOrder } from "@workspace/exam-paper";

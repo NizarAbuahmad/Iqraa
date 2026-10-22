@@ -248,11 +248,14 @@ export async function searchDeckMedia(
   // branch in each renderer, which fills the slide and never reaches the
   // side-image column — a photo assigned there would be fetched, stored and
   // silently never shown. The exception is `photo`, whose whole point is that
-  // picture: it is drawn full-bleed from `sideImageUrl`.
+  // picture: it is drawn full-bleed from `sideImageUrl`. Only prose types: a
+  // question, challenge, divider or cover never reaches the side-image column
+  // in the exports, so a photo there used up a slot and printed nowhere.
   const asked = slides
     .map((slide, index) => ({ slide, index }))
-    .filter(({ slide }) => (
-      typeof slide.mediaPrompt === 'string' && slide.mediaPrompt.trim()
+    .filter(({ slide, index }) => (
+      index > 0 && PHOTOGRAPHABLE.has(slide.type)
+      && typeof slide.mediaPrompt === 'string' && slide.mediaPrompt.trim()
       && !slide.sideImageUrl && (!slide.layout || slide.layout === 'photo')
     ))
     .slice(0, MAX_SIDE_PHOTOS)
@@ -273,9 +276,13 @@ export async function searchDeckMedia(
     opts.wantVideo === false ? Promise.resolve([]) : safeVideos(searchVideos, videoQuery(deck, topic, isAr), lang),
   ]);
 
+  // The photo search returns the top hit, so two slides asking the same thing
+  // — or one asking what the cover asked — got the same picture twice.
+  const used = new Set([hero?.url, slides.some(s => s.type === 'divider') ? section?.url : undefined].filter(Boolean));
   wantPhotos.forEach(({ slide }, i) => {
     const photo = sidePhotos[i];
-    if (!photo) return;
+    if (!photo || used.has(photo.url)) return;
+    used.add(photo.url);
     // Beside the text, not instead of it — and the credit rides along, which
     // is both the Unsplash licence requirement and the thing three renderers
     // have dropped before (see the attribution note in CLAUDE.md's neighbours).

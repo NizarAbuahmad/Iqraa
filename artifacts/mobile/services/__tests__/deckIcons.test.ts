@@ -81,6 +81,20 @@ describe('iconForTopic', () => {
   });
 });
 
+describe('the biology units of the Grade 10 book', () => {
+  it('evolution and microbes get their own picture, not the generic one a leaf or flask stands for', () => {
+    assert.equal(iconForTopic('نظرية التطور'), 'leaf');
+    assert.match(photoQueryForTopic('نظرية التطور')!, /evolution/);
+    assert.equal(iconForTopic('الفيروسات والفيرويدات والبريونات'), 'flask');
+    assert.match(photoQueryForTopic('الفيروسات والفيرويدات والبريونات')!, /microscope/);
+    // the classification unit keeps the plants picture it already had
+    assert.equal(iconForTopic('تصنيف الكائنات الحية'), 'leaf');
+    assert.match(photoQueryForTopic('تصنيف الكائنات الحية')!, /plants/);
+    assert.match(photoQueryForTopic('Evolution Theory')!, /evolution/);
+    assert.match(photoQueryForTopic('Viruses, Viroids and Prions')!, /microscope/);
+  });
+});
+
 describe('photoQueryForTopic', () => {
   it('is an English query for a recognised topic and null otherwise', () => {
     assert.match(photoQueryForTopic('الحركة والقوة')!, /physics/);

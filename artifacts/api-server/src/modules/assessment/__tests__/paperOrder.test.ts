@@ -11,6 +11,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
+import * as pkg from "@workspace/exam-paper";
+
+import { QUIZ_TYPE_ORDER } from "../../../lib/generationShape.ts";
 import { EXAM_TYPE_ORDER, inPaperOrder } from "../paperOrder.ts";
 import { QUESTION_TYPES } from "../questionTypes.ts";
 
@@ -57,21 +60,54 @@ describe("EXAM_TYPE_ORDER", () => {
   });
 });
 
-describe("the server and the app order a paper identically", () => {
-  // Two copies, as with QuestionType: the server stores the order, the app
-  // heads its blocks by it. Read as text for the reason questionTypeParity
-  // gives — importing the mobile module would not load under node:test.
-  it("EXAM_TYPE_ORDER matches artifacts/mobile/services/examBlocks.ts", async () => {
+describe("the server and the app share one list, not two copies", () => {
+  // The lists live in `lib/exam-paper`. The real guard for the API's two
+  // exports is identity: they are the package's own arrays, not equal copies.
+  // (The app's two exports get the same assertion in
+  // `mobile/services/__tests__/examBlocks.test.ts` and `quizMinistryOrder.test.ts`,
+  // which can import the mobile modules under node:test.)
+  it("the API's EXAM_TYPE_ORDER and QUIZ_TYPE_ORDER are the package's own arrays", () => {
+    assert.equal(EXAM_TYPE_ORDER, pkg.EXAM_TYPE_ORDER);
+    assert.equal(QUIZ_TYPE_ORDER, pkg.QUIZ_TYPE_ORDER);
+  });
+
+  // The source-text checks below add two things the identity asserts cannot:
+  // the two mobile files import from the package and carry no
+  // `EXAM_TYPE_ORDER` / `QUIZ_TYPE_ORDER` literal, and the API's own modules
+  // declare none either. A list under another name is not caught.
+  const strip = (source: string) => source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+
+  it("examBlocks.ts and quizPaper.ts import their lists from lib/exam-paper", async () => {
     const { readFileSync } = await import("node:fs");
     const path = await import("node:path");
     const { fileURLToPath } = await import("node:url");
     const here = path.dirname(fileURLToPath(import.meta.url));
-    const file = path.resolve(here, "../../../../../mobile/services/examBlocks.ts");
-    const source = readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
-    const match = /EXAM_TYPE_ORDER[^=]*=\s*\[([\s\S]*?)\]/.exec(source);
-    assert.ok(match, "no EXAM_TYPE_ORDER found in the mobile file");
-    const mobile = [...match[1]!.matchAll(/'([a-z_]+)'/g)].map(m => m[1]!);
-    assert.ok(mobile.length >= 8, "mobile list looks empty — has the shape changed?");
-    assert.deepEqual(mobile, [...EXAM_TYPE_ORDER]);
+    const mobile = (file: string) => strip(readFileSync(path.resolve(here, "../../../../../mobile/services", file), "utf8"));
+    for (const [file, name] of [["examBlocks.ts", "EXAM_TYPE_ORDER"], ["quizPaper.ts", "QUIZ_TYPE_ORDER"]] as const) {
+      const source = mobile(file);
+      assert.match(source, /from '@workspace\/exam-paper'/, `${file} no longer imports from lib/exam-paper`);
+      assert.doesNotMatch(source, new RegExp(`${name}[^=\\n]*=\\s*\\[`), `${file} has its own ${name} list again`);
+    }
+  });
+
+  it("the quiz picker takes its types from lib/exam-paper, not a list of its own", async () => {
+    const { readFileSync } = await import("node:fs");
+    const path = await import("node:path");
+    const { fileURLToPath } = await import("node:url");
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const source = strip(readFileSync(path.resolve(here, "../../../../../mobile/app/ai-tools/quiz.tsx"), "utf8"));
+    assert.match(source, /from '@workspace\/exam-paper'/, "quiz.tsx no longer imports from lib/exam-paper");
+    assert.doesNotMatch(source, /ALL_Q_TYPES/, "quiz.tsx has its own list of quiz types again");
+    assert.doesNotMatch(source, /type \w+ = 'multiple_choice'/, "quiz.tsx has its own union of quiz types again");
+  });
+
+  it("the API's own modules do not declare a list of their own either", async () => {
+    const { readFileSync } = await import("node:fs");
+    const path = await import("node:path");
+    const { fileURLToPath } = await import("node:url");
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const read = (rel: string) => strip(readFileSync(path.resolve(here, rel), "utf8"));
+    assert.doesNotMatch(read("../paperOrder.ts"), /EXAM_TYPE_ORDER[^=\n]*=\s*\[/);
+    assert.doesNotMatch(read("../../../lib/generationShape.ts"), /QUIZ_TYPE_ORDER[^=\n]*=\s*(\[|\w+ as const)/);
   });
 });

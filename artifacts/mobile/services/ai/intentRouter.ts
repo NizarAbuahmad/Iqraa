@@ -3,7 +3,7 @@
  * Demo Mode only; fully local. Greetings & small talk never trigger lesson generation.
  */
 import { artifactFromAsk, isBareTeachAsk, isTeachMeAsk } from './askVocabulary.ts';
-import { isAppHelpQuery } from '../appHelp.ts';
+import { isAppHelpQuery, isPurposeQuestion } from '../appHelp.ts';
 
 export type ChatRouteIntent =
   | 'greeting'
@@ -127,6 +127,13 @@ function isRefinement(q: string): boolean {
     )
   );
 }
+
+const MAKE_ASK =
+  /أنشئ|انشئ|ولّد|ولد|اعمل|أعمل|جهز|جهّز|حضّر|حضر|اعد|إعداد|اعداد|create|generate|make|build|prepare/i;
+
+// «make homework less boring» changes how something reads; «make a worksheet for weak
+// students» builds one.
+const ADJUST_ASK = /\b(?:more|less)\s+\w+/i;
 
 function isArtifact(q: string): boolean {
   // The shared vocabulary first; the patterns below are the older list.
@@ -490,10 +497,13 @@ export function classifyChatIntent(
   }
 
   // Refinement / artifact / teaching — Teaching Assistant may use lesson context
-  if (isRefinement(q)) {
+  // A how-question with a purpose is advice, not an edit of the open paper.
+  if (isRefinement(q) && !isPurposeQuestion(query)) {
     return { intent: 'refinement', useTeachingPipeline: true };
   }
-  if (isArtifact(q)) {
+  // «كيف أعدّل ورقة العمل لتناسب…» names a paper but asks how to adapt one, not to
+  // make one; «كيف أعمل ورقة عمل لتناسب…» still does.
+  if (isArtifact(q) && !(isPurposeQuestion(query) && (!MAKE_ASK.test(q) || ADJUST_ASK.test(q)))) {
     return { intent: 'artifact', useTeachingPipeline: true };
   }
   if (isTeaching(q)) {

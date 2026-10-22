@@ -281,15 +281,29 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   asserts the two match. `req.difficulty` used to be read by neither
   generator, and the quiz factories passed a literal `'medium'`, so an easy
   and a hard quiz drew the same bank slice.
-- **A quiz's question types and their order live in three places.** The live
-  prompt (`quizPromptAr/En` + `QUIZ_TYPE_ORDER` in `artifacts/api-server/src/lib/`),
-  the server backstop `normalizeQuiz` (`generationShape.ts` — drops unrequested
+- **A quiz's question types live in several places; their order in one.** The
+  order, `QUIZ_TYPE_ORDER`, comes from `lib/exam-paper` (shared with the app,
+  derived from `EXAM_TYPE_ORDER` and restricted to `QUIZ_TYPES`). The live
+  prompt (`quizPromptAr/En` in `artifacts/api-server/src/lib/prompts.ts`), the
+  server backstop `normalizeQuiz` (`generationShape.ts` — drops unrequested
   types, forces the صح/خطأ option pair, groups into ministry order before
   anything is pooled) and the offline `quizOnce` in `generators.ts`, which
-  builds the same blocks from `QUIZ_TYPE_ORDER` in `services/quizPaper.ts`.
+  builds the same blocks from `QUIZ_TYPE_ORDER` in `services/quizPaper.ts`,
+  all work from it.
   The exports print a «السؤال الأول: …» heading per block from `quizBlocks`.
-  A new quiz type needs an entry in all of them, and the type contract in the
-  prompt, or the model is never told what the type looks like.
+  A new quiz type needs, in one pass: an entry in `QUIZ_TYPES`
+  (`lib/exam-paper/src/index.ts`) and in `EXAM_TYPE_ORDER` if it is not there;
+  its type contract in `QUIZ_TYPE_CONTRACT_AR`/`_EN` (`prompts.ts`, which
+  `quizPromptAr/En` print), or the model is never told what the type looks
+  like; a mapping in `quizTypeOf` (`generationShape.ts`), or `normalizeQuiz`
+  drops it; `quizOnce` (`services/ai/generators.ts`); `QuizQuestion['type']`
+  (`services/ai/AIService.ts`); the picker's labels and colours (`typeLabels`
+  and `TYPE_COLOR` in `app/ai-tools/quiz.tsx`, both typed `Record<QuizType, …>`,
+  so the typechecker finds a missing entry — the picker's own list comes from
+  `QUIZ_TYPE_ORDER`); `quizTypeLabel` (`services/quizPaper.ts` — an
+  unmapped type silently prints as "Short Answer"); and `examBlockDirection`
+  (`services/examBlocks.ts` — an unmapped type gets the generic «أجب عن الأسئلة
+  الآتية» line).
   **The count is enforced too.** A model asked for 20 questions often returns
   10 in a perfectly valid reply, so the quiz route counts (`quizShortfall`),
   asks once more for only the missing ones (`quizTopUpBlock`, merged by
@@ -309,9 +323,18 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   Saved evaluations follow the same convention by a different route: the
   generate route stores questions via `inPaperOrder`
   (`modules/assessment/paperOrder.ts`) and the teacher's list heads each run
-  of one type from `examBlocks` (`services/examBlocks.ts`). The two
-  `EXAM_TYPE_ORDER` lists are pinned equal by `paperOrder.test.ts`; a new
-  question type needs a place in both and a direction in `examBlockDirection`.
+  of one type from `examBlocks` (`services/examBlocks.ts`). The type order is
+  one list, `lib/exam-paper` (`EXAM_TYPE_ORDER`; the quiz's four types are
+  `QUIZ_TYPES`, its order derived), imported by the API and the app.
+  `paperOrder.test.ts`, `examBlocks.test.ts` and `quizMinistryOrder.test.ts`
+  assert, by reference, that the API's and the app's `EXAM_TYPE_ORDER` /
+  `QUIZ_TYPE_ORDER` exports are the package's own arrays, and `paperOrder.test.ts`
+  reads `app/ai-tools/quiz.tsx` to check it imports from the package and declares
+  no list or union of quiz types of its own (the picker had one until
+  2026-10-20). A list under another name elsewhere is not caught:
+  `QuizQuestion['type']` in `services/ai/AIService.ts` spells the four types out
+  again. A new exam question type needs a place
+  in `EXAM_TYPE_ORDER` and a direction in `examBlockDirection`.
 - **`additionalContext` is not teacher-pasted material — it is usually the
   curriculum.** Every `/ai-tools` screen fills it with `buildGeneratorContext()`
   output derived from the lesson, and the server appends its own book passages
@@ -515,3 +538,37 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   `startAttemptChecked` and read `created`; and remember the `attemptId` you got
   so a retry does not start again and mistake its own half-saved paper for
   someone else's. `services/classScanSave.ts` is the worked example.
+- **A corner's colour lives in one table (since 2026-10-21).** `constants/corners.ts`
+  holds each corner's tokens; `CornerThemeProvider` (mounted only by the
+  `_layout.tsx` of a corner directory — all five: math, lab, quran, english, play) puts them in context and `useColors()`
+  spreads them over the palette, so a shared button or chip inside a corner is
+  that corner's colour with no edit. Corner code must take
+  colours from `useColors()`, never from the global `palette`, whether read at
+  module scope or inside render: both ignore the provider and stay teal.
+  Text on a `colors.primary` fill is `colors.primaryForeground`, never `'#fff'`:
+  in dark mode a corner's primary is light.
+  `cornerTheme.test.ts` fails any file in a wired corner (or
+  `components/{math,lab,quran,corners,englishHub,publicGames}`) that imports `palette`, and any
+  `_layout.tsx` outside a corner directory that mounts `CornerThemeProvider`.
+  The library (`/curriculum/resources`) is deliberately **not** a corner — its
+  tiles borrow each corner's colour, its own chrome is brand teal.
+  A new corner is one table row, one layout
+  file, and a `CornerFrame`.
+- **Cards, presses, entry motion and bands are shared pieces (since 2026-10-21).**
+  The pieces are `useSurface()`/`Surface`, `PressableScale`, `Entrance` and
+  `Band` in `components/ui`, built from `ELEVATION` (`constants/theme.ts`) and
+  `MOTION` (`services/motion.ts`). Traps:
+  - A shadow is light-mode and Android 9+ only; dark cards, and light ones on
+    older Android (no outset `boxShadow` below API 28), keep their 1px border.
+  - A surface must not set `overflow: 'hidden'`, because iOS clips a view's
+    own shadow.
+  - When a card takes `useSurface()`, delete its own `borderWidth: 1`. A light
+    surface has no border colour, so a leftover width draws black.
+  - Motion goes through `useReduceMotion()`. With it on, nothing slides or
+    scales.
+  - Header bands are `Band`: a gradient that only deepens, and
+    `cornerTheme.test.ts` measures white text on both stops.
+  - `designScale.test.ts` counts hand-written `shadowColor`, so new depth
+    comes from the tokens.
+  **Amber (`palette.live`) means *now*** (start class, due today, live) and
+  nothing else.

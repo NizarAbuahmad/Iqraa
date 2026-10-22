@@ -1,0 +1,99 @@
+/**
+ * The grammar engine pieces Grade 2 added (spec: docs/superpowers/specs/2026-10-19-english-corner-grammar-g2-design.md):
+ * word forms, the optional Choose, the `yesNo` pattern field, grade helpers and the spoken-string list.
+ * The units here are inline, so these hold whatever data the grades carry.
+ */
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  allGrammarSpoken, grammarUnitsForGrade, pluralOf, unitGrade, unitSentences, withArticle, type GrammarUnit,
+} from '../englishGrammar.ts';
+
+test('Grade 2 word forms: irregular plurals, words with no article, a/an', () => {
+  for (const [word, plural] of [
+    ['mouse', 'mice'], ['fish', 'fish'], ['potato', 'potatoes'], ['tomato', 'tomatoes'], ['shelf', 'shelves'],
+    ['tortoise', 'tortoises'], ['cat', 'cats'], ['eggs', 'eggs'], ['scissors', 'scissors'], ['shoes', 'shoes'],
+    ['shorts', 'shorts'], ['trousers', 'trousers'], ['rice', 'rice'], ['milk', 'milk'], ['pencil case', 'pencil cases'],
+  ] as const) assert.equal(pluralOf(word), plural, word);
+  for (const [word, phrase] of [
+    ['action figure', 'an action figure'], ['T-shirt', 'a T-shirt'], ['mouse', 'a mouse'], ['fish', 'a fish'],
+    ['rice', 'rice'], ['bread', 'bread'], ['cheese', 'cheese'], ['chicken', 'chicken'], ['juice', 'juice'],
+    ['water', 'water'], ['scissors', 'scissors'], ['shorts', 'shorts'], ['trousers', 'trousers'], ['eggs', 'eggs'],
+  ] as const) assert.equal(withArticle(word), phrase, word);
+});
+
+const MATCH_UNIT: GrammarUnit = {
+  lessonId: 'kbl-g2-eng-s1-nccd-u1_l1',
+  reviewedBy: null,
+  patterns: [
+    { id: 'is', text: 'Is it {a:p}? Yes, it is.', picture: 'p', yesNo: { kind: 'match', question: 'Is it {a:p}?', yes: 'Yes, it is.', no: "No, it isn't." } },
+    { id: 'this', text: "What's this? It's {a:p}.", picture: 'p', choose: { kind: 'slot', slot: 'p' } },
+  ],
+  // robot's next pictured word skips «action figure» (no picture) and wraps to «car».
+  slots: { p: ['car', 'plane', 'robot', 'action figure'] },
+};
+
+test('a match pattern asks about the picture, and its No question names the next pictured word', () => {
+  const sentences = unitSentences(MATCH_UNIT).filter(s => s.patternId === 'is');
+  const car = sentences.find(s => s.picture?.word === 'car')!;
+  assert.equal(car.text, 'Is it a car? Yes, it is.');
+  assert.deepEqual(car.yesNo, { kind: 'match', question: 'Is it a car?', otherQuestion: 'Is it a plane?', yes: 'Yes, it is.', no: "No, it isn't.", answer: true });
+  assert.equal(sentences.find(s => s.picture?.word === 'robot')!.yesNo!.otherQuestion, 'Is it a car?');
+  // An unpictured word cannot be asked about: no yesNo, no picture.
+  const figure = sentences.find(s => s.text.includes('action figure'))!;
+  assert.equal(figure.text, 'Is it an action figure? Yes, it is.');
+  assert.equal(figure.picture, null);
+  assert.equal(figure.yesNo, null);
+  for (const s of sentences) assert.ok(s.text.startsWith(s.yesNo?.question ?? s.text), s.key);
+});
+
+test('a pattern with yesNo gives no Choose and no True or false item; one without it still does', () => {
+  for (const s of unitSentences(MATCH_UNIT).filter(x => x.patternId === 'is')) {
+    assert.equal(s.choose, null, s.key);
+    assert.equal(s.falsePicture, null, s.key);
+  }
+  const plain = unitSentences(MATCH_UNIT).filter(s => s.patternId === 'this' && s.picture);
+  assert.ok(plain.length > 0);
+  assert.ok(plain.every(s => s.choose && s.falsePicture && s.yesNo === null));
+});
+
+const MARKER_UNIT: GrammarUnit = {
+  lessonId: 'kbl-g2-eng-s2-nccd-u6_l1',
+  reviewedBy: null,
+  patterns: [
+    { id: 'ylike', text: 'Do you like {s:f}? Yes, I do.', picture: 'f', marker: 'yes', yesNo: { kind: 'marker', question: 'Do you like {s:f}?', yes: 'Yes, I do.', no: "No, I don't." } },
+    { id: 'ydont', text: "Do you like {s:f}? No, I don't.", picture: 'f', marker: 'no', yesNo: { kind: 'marker', question: 'Do you like {s:f}?', yes: 'Yes, I do.', no: "No, I don't." } },
+  ],
+  slots: { f: ['apple', 'cheese', 'potato'] },
+};
+
+test('a marker pattern answers from its own ✅ / ❌', () => {
+  const sentences = unitSentences(MARKER_UNIT);
+  const yes = sentences.find(s => s.patternId === 'ylike' && s.picture?.word === 'potato')!;
+  assert.equal(yes.text, 'Do you like potatoes? Yes, I do.');
+  assert.deepEqual(yes.yesNo, { kind: 'marker', question: 'Do you like potatoes?', otherQuestion: null, yes: 'Yes, I do.', no: "No, I don't.", answer: true });
+  const no = sentences.find(s => s.patternId === 'ydont' && s.picture?.word === 'cheese')!;
+  assert.equal(no.text, "Do you like cheese? No, I don't.");
+  assert.equal(no.yesNo!.answer, false);
+});
+
+test('every spoken string of a yesNo sentence is listed: the question, the exchange, the No exchange', () => {
+  const all = new Set(allGrammarSpoken());
+  // The inline units are not in GRAMMAR_UNITS, so check the rule on the data that is.
+  const withYesNo = grammarUnitsForGrade(2).flatMap(u => unitSentences(u)).filter(s => s.yesNo);
+  for (const s of withYesNo) {
+    assert.ok(all.has(s.text), s.text);
+    assert.ok(all.has(s.yesNo!.question), s.yesNo!.question);
+    if (s.yesNo!.otherQuestion) {
+      assert.ok(all.has(s.yesNo!.otherQuestion), s.yesNo!.otherQuestion);
+      assert.ok(all.has(`${s.yesNo!.otherQuestion} ${s.yesNo!.no}`), s.yesNo!.otherQuestion);
+    }
+  }
+});
+
+test('the grade helpers read the grade off the lesson', () => {
+  assert.equal(unitGrade(MATCH_UNIT), 2);
+  assert.equal(grammarUnitsForGrade(1).length, 9);
+  assert.ok(grammarUnitsForGrade(1).every(u => unitGrade(u) === 1));
+  assert.deepEqual(grammarUnitsForGrade(3), []);
+});

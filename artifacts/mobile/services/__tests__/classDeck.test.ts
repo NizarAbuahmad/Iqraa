@@ -452,6 +452,12 @@ describe('book figures on quiz and worksheet decks', () => {
     }
   });
 
+  it('titles each figure slide differently when the lesson has several', () => {
+    const shown = figs(buildDeckFromQuiz(QUIZ, 'الدوائر', true, { lesson: WITH_FIGURES, figureUri: uri }));
+    assert.ok(shown.length > 1, 'probe: the lesson holds several figures');
+    assert.equal(new Set(shown.map(s => s.title)).size, shown.length);
+  });
+
   it('places them before the first question, not after the answers', () => {
     const deck = buildDeckFromQuiz(QUIZ, 'الدوائر', true, { lesson: WITH_FIGURES, figureUri: uri });
     const firstFigure = deck.slides.findIndex(s => s.mediaUrl?.startsWith('asset://'));
