@@ -19,6 +19,8 @@ import evaluationsRouter from "./evaluations";
 import attemptsRouter from "./attempts";
 import studentAttemptRouter from "./studentAttempt";
 import studentExamsRouter from "./studentExams";
+import liveRouter from "./live";
+import liveHostRouter from "./liveHost";
 import familyScheduleRouter from "./familySchedule";
 import familyHomeworkRouter from "./familyHomework";
 import studentLessonExplanationRouter from "./studentLessonExplanation";
@@ -105,6 +107,14 @@ router.use(attemptsRouter);
 // teacher routers so it cannot shadow them, and asserted in mountOrder.test.ts
 // both ways: reachable without a token, and not having made anything else so.
 router.use(studentAttemptRouter);
+// Live (Kahoot-style) games. /live/* is the players' side — public like /take,
+// token-authenticated and rate-limited inside the router, with every limiter
+// attached to its own route. /live-host/* is the teacher's side and carries a
+// path-scoped authMiddleware + requireRole guard inside liveHost.ts. "/live"
+// does not match "/live-host" (Express matches whole path segments), and
+// mountOrder.test.ts asserts both.
+router.use(liveRouter);
+router.use(liveHostRouter);
 // «اختباراتي» — authenticated, student-only, and path-scoped to /student.
 router.use(studentExamsRouter);
 // «جدول الحصص» for students and parents — read-only, path-scoped to

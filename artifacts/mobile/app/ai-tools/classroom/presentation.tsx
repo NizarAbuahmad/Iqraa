@@ -47,6 +47,9 @@ import {
 import { AwardRow, PodiumView, ScoreStrip, ScoreboardView } from '@/components/classroom/GameBoard';
 import { trackEvent } from '@/services/analytics';
 import { buildGameDeckFromSlides, canPlayAsGame } from '@/services/classDeck';
+import { createLiveGame } from '@/services/liveGameApi';
+import { LIVE_DEFAULT_SECONDS, LIVE_MIN_QUESTIONS, deckLang, liveQuestionsFromDeck } from '@/services/liveGame';
+import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 import { toArabicDigits } from '@/services/labFormat';
 import { playGameCue, type GameCue } from '@/services/gameSounds';
 import { MathText } from '@/components/classroom/MathText';
@@ -1517,6 +1520,31 @@ export default function PresentationScreen() {
     initSlide(deckBeforeGame.deck.slides[deckBeforeGame.slideIndex]!);
     setDeckBeforeGame(null);
   };
+  // «العب مباشرة على الأجهزة»: the same questions, played by students on their own
+  // devices with a code; this deck stays open here and the host screen takes over.
+  const [liveBusy, setLiveBusy] = useState(false);
+  const [liveError, setLiveError] = useState('');
+  const startLiveGame = async () => {
+    if (!activity || liveBusy) return;
+    const questions = liveQuestionsFromDeck(activity);
+    if (questions.length < LIVE_MIN_QUESTIONS) return;
+    setLiveBusy(true);
+    setLiveError('');
+    try {
+      const { id } = await createLiveGame({
+        title: (activity.lesson || activity.activityName).slice(0, 100),
+        lang: deckLang(questions),
+        seconds: LIVE_DEFAULT_SECONDS,
+        questions,
+      });
+      setTeamPickerOpen(false);
+      router.push(`/ai-tools/classroom/live-host?id=${encodeURIComponent(id)}` as never);
+    } catch {
+      setLiveError(t('livePlayLiveFailed'));
+    } finally {
+      setLiveBusy(false);
+    }
+  };
   const startGameFromDeck = (teams: number) => {
     if (!activity) return;
     const isAr = lang === 'ar';
@@ -1799,6 +1827,18 @@ export default function PresentationScreen() {
               <Text style={[styles.teamChipText, { fontFamily: 'ReadexPro_700Bold' }]}>{lang === 'ar' ? toArabicDigits(String(n)) : String(n)}</Text>
             </Pressable>
           ))}
+          {/* Or: every student on their own device, with a code. */}
+          <Pressable
+            onPress={() => void startLiveGame()}
+            disabled={liveBusy}
+            style={[styles.liveBtn, { flexDirection: isRTL ? 'row-reverse' : 'row', opacity: liveBusy ? 0.6 : 1 }]}
+            accessibilityRole="button"
+            accessibilityLabel={t('livePlayLive')}
+          >
+            <Ionicons name="radio-outline" size={18} color={T.primary} />
+            <Text style={[styles.liveBtnText, { fontFamily: 'ReadexPro_700Bold' }]}>{liveBusy ? t('livePlayLiveBusy') : t('livePlayLive')}</Text>
+          </Pressable>
+          {!!liveError && <Text style={[styles.liveError, { fontFamily: 'ReadexPro_600SemiBold' }]}>{liveError}</Text>}
         </View>
       )}
 
@@ -2234,10 +2274,13 @@ const makeStyles = (T: DeckTheme) => StyleSheet.create({
   dotTarget: { paddingVertical: 10, paddingHorizontal: 2, justifyContent: 'center' },
   counterBox: { minWidth: 54, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: T.card, borderWidth: 1, borderColor: T.border },
   counterText: { fontSize: 13, color: T.text },
-  teamPicker: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 16, paddingBottom: 10 },
+  teamPicker: { alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, paddingBottom: 10 },
   teamPickerLabel: { fontSize: 14, color: T.text },
   teamChip: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: T.card, borderWidth: 1, borderColor: T.primary },
   teamChipText: { fontSize: 15, color: T.primary },
+  liveBtn: { alignItems: 'center', gap: SPACE.xs, height: 40, paddingHorizontal: SPACE.md, borderRadius: RADIUS.pill, backgroundColor: T.card, borderWidth: 1, borderColor: T.primary },
+  liveBtnText: { fontSize: TYPE.label, color: T.primary },
+  liveError: { flexBasis: '100%', textAlign: 'center', fontSize: TYPE.caption, color: T.text },
   actionRow: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 10 },
   // flexShrink so an unexpected width narrows these instead of letting them
   // spill over the nav buttons, which is what the overlap on a real phone was.

@@ -80,6 +80,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-22 — Live games: students answer from any device
 - 2026-10-22 — Status-bar icons read on the corner bands
 - 2026-10-22 — Game buttons read in dark mode
 - 2026-10-22 — A lesson game can be homework, and the teacher sees the scores
@@ -109,7 +110,6 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-16 — The electron-configuration lesson was answered with periodic-trends questions; fixed
 - 2026-10-16 — A decimal over a power drew as a broken fraction
 - 2026-10-16 — The chat answers teachers, on the web too
-- 2026-10-16 — Chat pushes are sent before the send is answered
 
 ## Finding older detail, and recording new work
 
