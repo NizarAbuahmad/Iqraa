@@ -8,9 +8,10 @@
  *
  * The lesson id in the URL is shareable and untrusted (`resolveExerciseLesson`).
  * A teacher gets a copy-link button to send the lesson's exercises to a class.
- * Nothing is saved: a set lives in this screen only.
+ * A finished test-yourself set saves the lesson's best score on this device
+ * (`services/mathExerciseProgress.ts`); the set itself lives in this screen only.
  */
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -19,6 +20,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { buildExerciseSet, exerciseGradeOf, exerciseLessonPath, resolveExerciseLesson, EXERCISES_ROUTE, type Exercise } from '@/services/mathExercises';
+import { useExerciseBests } from '@/services/mathExerciseProgress';
 import { PROD_ORIGIN } from '@/services/siteOrigin';
 import { copyToClipboard } from '@/services/share';
 import { goBack } from '@/services/navigation';
@@ -43,6 +45,7 @@ export default function MathExerciseLessonScreen() {
   const [picks, setPicks] = useState<Record<number, string>>({});
   const [shown, setShown] = useState<Set<number>>(new Set());
   const [copied, setCopied] = useState(false);
+  const { bests, record } = useExerciseBests();
   // `round` is the only thing that asks for a fresh draw.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const set = useMemo(() => (lesson ? buildExerciseSet(lesson, lang) : []), [lesson?.id, lang, round]);
@@ -50,6 +53,15 @@ export default function MathExerciseLessonScreen() {
   const row = isRTL ? 'row-reverse' : 'row';
   const align = isRTL ? 'right' : 'left';
   const grade = lesson ? exerciseGradeOf(lesson) : null;
+  const answeredAll = mode === 'test' && set.length > 0 && Object.keys(picks).length === set.length;
+  // Once per finished set: `picks` only changes again on retry or a new set,
+  // which clears it, so this does not fire twice for one finish.
+  useEffect(() => {
+    if (!answeredAll || !lesson) return;
+    void record(lesson.id, { correct: set.filter((e, i) => picks[i] === e.answer).length, total: set.length });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [answeredAll]);
+
   const back = () => (router.canGoBack() ? goBack() : router.replace(`${EXERCISES_ROUTE}${grade ? `?grade=${grade}` : ''}` as never));
 
   if (!lesson) {
@@ -60,9 +72,9 @@ export default function MathExerciseLessonScreen() {
     );
   }
 
-  const answered = Object.keys(picks).length;
   const correct = set.filter((e, i) => picks[i] === e.answer).length;
-  const finished = mode === 'test' && set.length > 0 && answered === set.length;
+  const finished = answeredAll;
+  const best = bests[lesson.id];
   const allShown = set.length > 0 && shown.size === set.length;
 
   const reset = (fresh: boolean) => {
@@ -146,6 +158,9 @@ export default function MathExerciseLessonScreen() {
       {mode === 'test' ? (
         <Text style={[styles.score, { color: colors.foreground, textAlign: align }]}>{t('mathExScore', correct, set.length)}</Text>
       ) : null}
+      {mode === 'test' && best ? (
+        <Text style={[styles.best, { color: colors.mutedForeground, textAlign: align }]}>{t('mathExBest', best.correct, best.total)}</Text>
+      ) : null}
 
       <View style={styles.list}>
         {set.map((e, i) => {
@@ -228,6 +243,7 @@ const styles = StyleSheet.create({
   iconChip: { alignItems: 'center', gap: SPACE.xs },
   linkRow: { alignItems: 'center', gap: SPACE.xs, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.sm },
   score: { paddingHorizontal: SPACE.lg, paddingTop: SPACE.sm, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.bodyLg },
+  best: { paddingHorizontal: SPACE.lg, fontFamily: 'ReadexPro_500Medium', fontSize: TYPE.caption },
   list: { padding: SPACE.lg, gap: SPACE.md },
   card: { padding: SPACE.md, gap: SPACE.sm, borderRadius: RADIUS.lg },
   qNum: { fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption },

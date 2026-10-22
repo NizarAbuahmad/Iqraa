@@ -3,8 +3,9 @@
  *
  * Under `/curriculum` so students reach it with no gating change (the same
  * prefix the rest of the corner relies on). Only lessons the practice bank
- * covers are listed (`services/mathExercises.ts`). The grade rides in the URL
- * so back-navigation from a lesson lands on the same grade.
+ * covers are listed (`services/mathExercises.ts`), each with the student's best
+ * test-yourself score on this device. The grade rides in the URL so
+ * back-navigation from a lesson lands on the same grade.
  */
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -15,6 +16,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { EXERCISE_GRADES, exerciseLessonPath, exerciseUnits } from '@/services/mathExercises';
+import { useExerciseBests } from '@/services/mathExerciseProgress';
 import { CornerFrame } from '@/components/corners/CornerFrame';
 import { CornerGrid } from '@/components/corners/CornerGrid';
 import { PressableScale } from '@/components/ui/PressableScale';
@@ -38,6 +40,7 @@ export default function MathExercisesScreen() {
   const params = useLocalSearchParams<{ grade?: string }>();
   const grade = initialGrade(params.grade, user?.gradeIds);
   const units = useMemo(() => exerciseUnits(grade), [grade]);
+  const { bests } = useExerciseBests();
   const row = isRTL ? 'row-reverse' : 'row';
   const align = isRTL ? 'right' : 'left';
 
@@ -81,9 +84,16 @@ export default function MathExercisesScreen() {
                   accessibilityRole="button"
                   style={[styles.card, surface, { flexDirection: row }]}
                 >
-                  <Text style={[styles.lessonTitle, { color: colors.foreground, textAlign: align }]}>
-                    {lang === 'ar' ? l.titleAr : l.titleEn || l.titleAr}
-                  </Text>
+                  <View style={{ flex: 1, gap: SPACE.xxs }}>
+                    <Text style={[styles.lessonTitle, { color: colors.foreground, textAlign: align }]}>
+                      {lang === 'ar' ? l.titleAr : l.titleEn || l.titleAr}
+                    </Text>
+                    {bests[l.id] ? (
+                      <Text style={[styles.best, { color: colors.primary, textAlign: align }]}>
+                        {t('mathExBest', bests[l.id]!.correct, bests[l.id]!.total)}
+                      </Text>
+                    ) : null}
+                  </View>
                   <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
                 </PressableScale>
               ))}
@@ -102,5 +112,6 @@ const styles = StyleSheet.create({
   unit: { marginTop: SPACE.md },
   unitTitle: { paddingHorizontal: SPACE.lg, marginBottom: SPACE.xs, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption },
   card: { flexGrow: 1, alignItems: 'center', gap: SPACE.md, padding: SPACE.md },
-  lessonTitle: { flex: 1, fontSize: TYPE.body, fontFamily: 'ReadexPro_500Medium' },
+  lessonTitle: { fontSize: TYPE.body, fontFamily: 'ReadexPro_500Medium' },
+  best: { fontSize: TYPE.caption, fontFamily: 'ReadexPro_600SemiBold' },
 });

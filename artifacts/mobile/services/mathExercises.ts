@@ -81,6 +81,48 @@ export function buildExerciseSet(lesson: KBLesson, lang: Lang, count: number = E
   return out;
 }
 
+/** A finished test-yourself set: how many of how many. */
+export interface ExerciseScore {
+  correct: number;
+  total: number;
+}
+
+/** Best score per lesson id. */
+export type ExerciseBests = Record<string, ExerciseScore>;
+
+/** Stored JSON → bests; anything malformed is dropped, never thrown. */
+export function parseBests(raw: string | null): ExerciseBests {
+  let data: unknown;
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch {
+    return {};
+  }
+  const out: ExerciseBests = {};
+  if (!data || typeof data !== 'object') return out;
+  for (const [id, v] of Object.entries(data as Record<string, unknown>)) {
+    const { correct, total } = (v ?? {}) as Partial<ExerciseScore>;
+    if (Number.isInteger(correct) && Number.isInteger(total) && total! > 0 && correct! >= 0 && correct! <= total!) {
+      out[id] = { correct: correct!, total: total! };
+    }
+  }
+  return out;
+}
+
+/**
+ * Keep the better of the old and new score, compared as a fraction because a
+ * thin lesson's set can be shorter than ten. A tie keeps the longer set.
+ */
+export function recordBest(bests: ExerciseBests, lessonId: string, score: ExerciseScore): ExerciseBests {
+  const old = bests[lessonId];
+  if (score.total <= 0) return bests;
+  if (old) {
+    const diff = score.correct * old.total - old.correct * score.total;
+    if (diff < 0 || (diff === 0 && score.total <= old.total)) return bests;
+  }
+  return { ...bests, [lessonId]: score };
+}
+
 export function exerciseLessonPath(lessonId: string): string {
   return `${EXERCISES_ROUTE}/${encodeURIComponent(lessonId)}`;
 }

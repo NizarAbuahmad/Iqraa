@@ -28,8 +28,19 @@ questions, easy → hard, in two modes:
 - **اختبر نفسك (test yourself):** a tap marks the answer at once and locks it
   (green key, red wrong pick, working if any); a score line counts up, and the
   end offers «أعد المحاولة» (same set) or «تمارين جديدة».
-Students reach it with no gating change (`/curriculum` prefix). Nothing is saved:
-no score history, no teacher view of who practised.
+Students reach it with no gating change (`/curriculum` prefix).
+
+**Best score per lesson, on this device.** Finishing a test-yourself set saves
+the lesson's best score (`services/mathExerciseProgress.ts`, AsyncStorage key
+`mathExercises.best.v1.<user id>`, so two children on one family phone keep
+separate lists). The lesson list shows «أفضل نتيجة: 8 من 10» under a lesson, and
+test mode shows it under the running score. Scores compare as fractions because
+a thin lesson's set can be shorter than ten (`recordBest`; a tie keeps the longer
+set), and stored JSON is read defensively (`parseBests`); both are tested.
+Checked in a browser: finish a set, the list shows the best, and it survives a
+full page reload. **Not built:** nothing reaches the server, so a new phone or a
+cleared app starts from zero and a teacher cannot see who practised, the same v1
+limit as the English corner's stars.
 
 **Where the questions come from.** `services/mathExercises.ts` lists only the
 lessons `hasMathBank` covers (445 of 485 Grade 1–10 maths lessons on 2026-10-22)

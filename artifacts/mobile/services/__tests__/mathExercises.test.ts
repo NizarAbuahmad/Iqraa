@@ -11,6 +11,8 @@ import {
   exerciseGradeOf,
   exerciseLessonPath,
   exerciseUnits,
+  parseBests,
+  recordBest,
   resolveExerciseLesson,
 } from '../mathExercises.ts';
 import { getBookForLesson } from '../knowledgeBase.ts';
@@ -52,6 +54,31 @@ describe('buildExerciseSet', () => {
         }
       }
     }
+  });
+});
+
+describe('best scores', () => {
+  it('keeps the better score as a fraction, and the longer set on a tie', () => {
+    let b = recordBest({}, 'L', { correct: 6, total: 10 });
+    assert.deepEqual(b.L, { correct: 6, total: 10 });
+    assert.equal(recordBest(b, 'L', { correct: 5, total: 10 }), b, 'a worse score changes nothing');
+    b = recordBest(b, 'L', { correct: 4, total: 5 });
+    assert.deepEqual(b.L, { correct: 4, total: 5 }, '4/5 beats 6/10');
+    b = recordBest(b, 'L', { correct: 8, total: 10 });
+    assert.deepEqual(b.L, { correct: 8, total: 10 }, 'a tie keeps the longer set');
+    assert.equal(recordBest(b, 'L', { correct: 4, total: 5 }), b, 'a tie with a shorter set changes nothing');
+    assert.deepEqual(recordBest(b, 'M', { correct: 0, total: 3 }).L, b.L, 'other lessons are untouched');
+  });
+  it('round-trips through JSON and drops anything malformed', () => {
+    const b = recordBest({}, 'L', { correct: 7, total: 10 });
+    assert.deepEqual(parseBests(JSON.stringify(b)), b);
+    assert.deepEqual(parseBests(null), {});
+    assert.deepEqual(parseBests('not json'), {});
+    assert.deepEqual(parseBests('[1,2]'), {});
+    assert.deepEqual(
+      parseBests(JSON.stringify({ a: { correct: 11, total: 10 }, b: { correct: 1.5, total: 3 }, c: { correct: 0, total: 0 }, d: null, e: { correct: 2, total: 4 } })),
+      { e: { correct: 2, total: 4 } },
+    );
   });
 });
 
