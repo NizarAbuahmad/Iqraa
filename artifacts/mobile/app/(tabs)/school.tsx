@@ -91,6 +91,9 @@ export default function SchoolScreen() {
   // Homework has its own list, error and sequence so it fails and reloads on
   // its own; `selected` is shared because both lists use the same child keys.
   const [homework, setHomework] = useState<ChildHomework[] | null>(null);
+  // The list as last rendered, for a save that finishes after another tick.
+  const homeworkNow = useRef(homework);
+  homeworkNow.current = homework;
   const [hwError, setHwError] = useState('');
   // Ids whose save is in flight: the ref is the synchronous guard against a
   // double tap, the state only drives the dimmed look.
@@ -188,15 +191,16 @@ export default function SchoolScreen() {
       patch(items => applyDone(items, item.id, next));
       try {
         await setHomeworkDone(item.id, next);
-        // Only a tick that the server accepted, only the one that finishes the
-        // list, and only when no other save is still out: this tick's snapshot
-        // includes the other's optimistic change, which may yet roll back.
-        // (`hwInFlight` still holds this id here; its `finally` removes it.)
-        const was = seen.before;
+        // Only a tick that the server accepted, and only once no other save is
+        // still out (an optimistic tick may yet roll back). The last save to
+        // finish judges the list as it stands now, so ticking the last two
+        // quickly still finishes it. (`hwInFlight` still holds this id here;
+        // its `finally` removes it.)
         const othersInFlight = [...hwInFlight.current].some(id => id !== item.id);
+        const now = homeworkNow.current?.find(k => k.key === childKey)?.homework ?? [];
         if (next && !othersInFlight && justCompleted(
-          { key: childKey, complete: allTrackedDone(was) },
-          { key: childKey, complete: allTrackedDone(applyDone(was, item.id, true)) },
+          { key: childKey, complete: allTrackedDone(seen.before) },
+          { key: childKey, complete: allTrackedDone(now) },
         )) setCelebrateHw(true);
       } catch (e) {
         patch(items => items.map(h => (h.id === item.id ? item : h)));
