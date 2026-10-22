@@ -10,6 +10,23 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+**Today, lesson games, files and the mastery gate (2026-10-22, sixteenth live pass).**
+Of 30 questions, 6 were right (4 teaching controls) and 24 went to the model; the recheck of
+the fifteenth pass was 21/21. Checked in code: the «اليوم» tab shows the current or next period
+and its lesson, and «جاهزية الدرس» lists one row per material with its own «أنشئ» and a
+«تخطّي» (there is no create-everything button); the lesson page shows «العب بمصطلحات الدرس»
+only where the lesson has `MIN_LESSON_TERMS` (4) key terms, opening three games
+(`services/lessonGames.ts`); the lesson bar's «إلغاء تثبيت الدرس» and «تغيير الدرس» pin and unpin;
+«ملفاتي» has a search box, a favourites filter, ⋯ → open/edit/choose class/duplicate/delete, no
+folders and no trash; a saved file reaches a class from either «ملفاتي» or the class's «الملفات» tab;
+a worksheet becomes something students solve through `howSendWorksheet`; a teacher sees student
+work only through evaluations (results dashboard, student record); a lesson unlocks at
+`MASTERY_PASS_PERCENT` (80) on the previous lesson's quiz, a teacher can unlock it by hand, a
+student retakes up to `MAX_RETAKES` (3); an exam date shows to school teachers and, once the exam is
+published and attached, to the class's families (`examVisibleToFamilies`). Existing answers the
+wording missed: school calendar, adding a grade/subject, students solving a worksheet on phones.
+Left with the model: nothing from this pass that the code settles.
+
 **Chat, homework, results and sign-in (2026-10-22, fifteenth live pass).**
 Of 30 questions, 9 were right and 21 went to the model. Checked in code: the chat keeps no
 history (`howChatHistory` existed; «امسح المحادثة» missed it), has no voice input, no
