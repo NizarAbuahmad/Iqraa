@@ -70,6 +70,7 @@ import { isolateForeignRuns } from '@/services/mathRender';
 import type { TranslationKey } from '@/services/i18n';
 import { palette } from '@/constants/colors';
 import { QuestionFigure } from '@/components/ui/QuestionFigure';
+import { Celebrate } from '@/components/ui/Celebrate';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -118,6 +119,9 @@ export default function TakeExamScreen() {
   const [answers, setAnswers] = useState<Record<string, StudentResponse>>({});
   const [index, setIndex] = useState(0);
   const [busy, setBusy] = useState(false);
+  // Only this sitting's own successful hand-in celebrates; a paper reopened
+  // already handed in, or `already_submitted`, does not.
+  const [celebrating, setCelebrating] = useState(false);
   const [deadlineAt, setDeadlineAt] = useState<string | null>(null);
   // Server time minus device time, measured when the paper is entered. The
   // countdown used to run on the device clock alone: a phone a few minutes
@@ -373,6 +377,9 @@ export default function TakeExamScreen() {
         return;
       }
       await submitStudentExam(token);
+      // Only a hand-in the student chose celebrates: time running out or the
+      // exam closing hands the paper in for them, which is not an achievement.
+      if (!opts?.force) setCelebrating(true);
       setPhase('done');
     } catch (err) {
       if (err instanceof StudentExamError && err.code === 'already_submitted') {
@@ -437,51 +444,54 @@ export default function TakeExamScreen() {
 
   if (phase === 'done') {
     return (
-      <View style={[styles.center, { backgroundColor: colors.background, padding: 32, gap: 12 }]}>
-        <Ionicons name="checkmark-circle" size={56} color={ACCENT} />
-        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 20 }}>
-          {t('takeHandedIn')}
-        </Text>
-        {notice ? (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
-            {notice}
+      <View style={{ flex: 1 }}>
+        <View style={[styles.center, { backgroundColor: colors.background, padding: 32, gap: 12 }]}>
+          <Ionicons name="checkmark-circle" size={56} color={ACCENT} />
+          <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 20 }}>
+            {t('takeHandedIn')}
           </Text>
-        ) : null}
-        {/* Never a score by default. Releasing one is the teacher's decision
-            (`releaseResultsToStudent`) and requires the paper to be fully
-            marked — this only ever checks, on request, whether both are true
-            yet; see `studentResultReady` on the server. */}
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
-          {t('takeTeacherWillReview')}
-        </Text>
+          {notice ? (
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
+              {notice}
+            </Text>
+          ) : null}
+          {/* Never a score by default. Releasing one is the teacher's decision
+              (`releaseResultsToStudent`) and requires the paper to be fully
+              marked — this only ever checks, on request, whether both are true
+              yet; see `studentResultReady` on the server. */}
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
+            {t('takeTeacherWillReview')}
+          </Text>
 
-        {studentResult ? (
-          <View style={{ marginTop: 12, width: '100%' }}>
-            <StudentResultCard result={studentResult} colors={colors} isRTL={isRTL} t={t} />
-          </View>
-        ) : (
-          <View style={{ marginTop: 8, alignItems: 'center', gap: 8 }}>
-            {resultChecked && (
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: 'center' }}>
-                {t('takeResultNotReady')}
-              </Text>
-            )}
-            <Pressable
-              onPress={checkResult}
-              disabled={checkingResult}
-              style={[styles.retryBtn, { borderColor: ACCENT, opacity: checkingResult ? 0.7 : 1 }]}
-            >
-              {checkingResult ? (
-                <ActivityIndicator color={ACCENT} size="small" />
-              ) : (
-                <Ionicons name="refresh" size={16} color={ACCENT} />
+          {studentResult ? (
+            <View style={{ marginTop: 12, width: '100%' }}>
+              <StudentResultCard result={studentResult} colors={colors} isRTL={isRTL} t={t} />
+            </View>
+          ) : (
+            <View style={{ marginTop: 8, alignItems: 'center', gap: 8 }}>
+              {resultChecked && (
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: 'center' }}>
+                  {t('takeResultNotReady')}
+                </Text>
               )}
-              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
-                {checkingResult ? t('takeCheckingResult') : t('takeCheckResult')}
-              </Text>
-            </Pressable>
-          </View>
-        )}
+              <Pressable
+                onPress={checkResult}
+                disabled={checkingResult}
+                style={[styles.retryBtn, { borderColor: ACCENT, opacity: checkingResult ? 0.7 : 1 }]}
+              >
+                {checkingResult ? (
+                  <ActivityIndicator color={ACCENT} size="small" />
+                ) : (
+                  <Ionicons name="refresh" size={16} color={ACCENT} />
+                )}
+                <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
+                  {checkingResult ? t('takeCheckingResult') : t('takeCheckResult')}
+                </Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
+        <Celebrate visible={celebrating} size="big" message={t('celebrateHandedIn')} onDone={() => setCelebrating(false)} />
       </View>
     );
   }
