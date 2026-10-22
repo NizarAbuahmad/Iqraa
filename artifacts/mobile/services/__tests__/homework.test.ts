@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   addDays,
+  allTrackedDone,
   ammanToday,
   applyDone,
   dueBadge,
@@ -545,4 +546,18 @@ test('isHomeworkChatLine matches the shared-homework chat line only', () => {
   assert.equal(isHomeworkChatLine('📚 واجب جديد: تاريخ الوطن\nموعد التسليم: 19-10-2026'), true);
   assert.equal(isHomeworkChatLine('واجب جديد'), false);
   assert.equal(isHomeworkChatLine('مرحبا'), false);
+});
+
+test('allTrackedDone: every item that can be ticked is done', () => {
+  const item = (id: string, done: boolean, canTrack = true) => ({
+    id, title: id, instructions: '', dueDate: '2026-10-22', className: '', teacherName: '',
+    done, state: done ? 'done' as const : 'open' as const, examTitle: null, resources: [], canTrack,
+  });
+  assert.equal(allTrackedDone([item('a', true), item('b', true)]), true);
+  assert.equal(allTrackedDone([item('a', true), item('b', false)]), false);
+  // An item nobody can tick does not hold the celebration back, and does not count as done either.
+  assert.equal(allTrackedDone([item('a', true), item('b', false, false)]), true);
+  // Nothing trackable is not "all done".
+  assert.equal(allTrackedDone([item('b', false, false)]), false);
+  assert.equal(allTrackedDone([]), false);
 });

@@ -29,6 +29,42 @@ Sections below are in the order they were written, not strictly by date.
 
 ---
 
+## Progress is celebrated — 2026-10-22
+
+- **Four moments.** `Celebrate` (`components/ui/Celebrate.tsx`) marks an exam handed in,
+  a game over, the last homework ticked and a lesson's prep checklist reaching all ready.
+  The exam fires on a successful hand-in the student made; a forced hand-in (time up, or
+  the exam closed) does not celebrate, and neither does a paper reopened already handed in
+  or `already_submitted`. The other three fire only when the state crosses into done
+  (`justCompleted`, `services/celebration.ts`; the prep checklist through `prepCrossing`,
+  which wraps it), never on opening a screen that is already complete: Today opened at 5 of
+  5, a switch to a lesson that is already ready, or a reloaded finished homework list is
+  not a moment.
+- **What each one waits for.** Homework celebrates after the save succeeds, only for a tick
+  (not an untick), and only when no other homework save is still in flight (that save's
+  optimistic change may yet roll back). The last save to finish judges the list as it is
+  rendered now, so ticking the last two quickly still celebrates, once. The prep checklist is judged only when the saved materials came from the
+  server (or nobody is signed in) and the lesson's «غير مطلوب» choices have been read for
+  that lesson; `getItems` never rejects and turns a failed or timed-out read into the
+  device-only list, so the board reads `getAllItemsChecked()` and a degraded read drops the
+  baseline instead of becoming it (otherwise the next good read at 5 of 5 would celebrate on
+  opening Today). On web the window-focus reload only runs while Today is the focused screen.
+- **How it looks.** A confetti burst, a badge, a success haptic and a screen-reader
+  announcement; with reduced motion only the badge fades. The badge sits in the upper
+  third so it never covers the next action, and a non-perfect game end is confetti only
+  (the game's own panel already says «أحسنت!»).
+- **The classroom presentation keeps its own celebration**; it is not touched.
+- **Verified:** `pnpm test` (mobile) and `pnpm run typecheck`. `celebration.test.ts` pins
+  the crossing and `prepCrossing` (opening at 5 of 5, a degraded read, a stale skips list,
+  a change of lesson); `celebrateMoments.test.ts` reads each screen's source for the rule it
+  depends on (exam: after the submit and not on the forced path; homework: after the awaited
+  save, behind the tick and no-other-save-in-flight guard; Today: `prepCrossing` over a
+  checked read). Screenshots of the game-over burst were taken in a browser in light, dark
+  and reduced motion. The badge position on the exam hand-in and the perfect-score badge was
+  checked by reading the code only.
+- **Not verified:** screenshots of the homework and prep-checklist moments; the haptic and
+  the screen-reader announcement, on a device.
+
 ## Math Corner exercises: learn or test yourself on a lesson from the book, 2026-10-22
 
 **What a user can do.** The Math Corner hub's first card, «تمارين الدروس», opens
