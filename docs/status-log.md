@@ -10,6 +10,19 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+**Duplicate-key 409s answered 500 (2026-10-22).** drizzle-orm 0.45 rethrows every driver
+error as a `DrizzleQueryError` with the pg error on `cause`, so `err.code === "23505"` never
+matched and every handled duplicate fell through to a 500: register, change-unverified-email,
+add-email and Google sign-in (`email_taken`), the `/take` name claim (`name_taken` — a student
+who lost the race saw «failed to start» instead of «someone already started»), and the
+share-code retry on publish (a collision failed the publish instead of retrying). All six now
+call `isUniqueViolation` (`artifacts/api-server/src/lib/pgErrors.ts`), which checks both
+places. Verified by `uniqueViolation.db.test.ts`: test-only triggers raise SQLSTATE 23505 at
+each write (the real collisions are races); before the fix all five reachable paths answered
+500, after it 409/409/409/409 and a retried 200. **Not covered:** Google sign-in, which needs
+a real Google token — same one-line change. The live-game branch has its own copy of the
+helper in `modules/live/store.ts`; it should import this one.
+
 **Today, lesson games, files and the mastery gate (2026-10-22, sixteenth live pass).**
 Of 30 questions, 6 were right (4 teaching controls) and 24 went to the model; the recheck of
 the fifteenth pass was 21/21. Checked in code: the «اليوم» tab shows the current or next period
