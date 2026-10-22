@@ -9,7 +9,7 @@
  * docs/english-reading-g1-review.html, and a test fails when that copy is stale.
  */
 import {
-  READING_NOT_COVERED_G2, READING_NOT_COVERED_G3, firstSound, firstSoundSkip, readSentencePool, readingUnitsForGrade, sentencePartner,
+  READING_NOT_COVERED_G2, READING_NOT_COVERED_G3, READING_NOT_COVERED_G4, firstSound, firstSoundSkip, readSentencePool, readingUnitsForGrade, sentencePartner,
   type ReadingUnit, type SoundSkip,
 } from './englishReading.ts';
 import type { GrammarSentence } from './englishGrammar.ts';
@@ -17,8 +17,8 @@ import { notCoveredList, picture, unitLabelAr } from './englishGrammarReview.ts'
 import { hubLesson } from './englishHub.ts';
 import { wordPicture } from './englishPictures.ts';
 
-/** Why a lesson has no, or fewer, «Read the sentence» — the two grades' tables never share a lesson. */
-const NOT_COVERED: Record<string, string[]> = { ...READING_NOT_COVERED_G2, ...READING_NOT_COVERED_G3 };
+/** Why a lesson has no, or fewer, «Read the sentence» — the grades' tables never share a lesson. */
+const NOT_COVERED: Record<string, string[]> = { ...READING_NOT_COVERED_G2, ...READING_NOT_COVERED_G3, ...READING_NOT_COVERED_G4 };
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const AR_DIGITS = (n: number) => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)]);
@@ -204,6 +204,21 @@ const GRADE_COPY: Record<number, GradeCopy> = {
       'هل تُقرأ ✅ و❌ والصورة المضاعفة بوضوح على أنها «There\'s» و«There isn\'t» و«There are»، وهل تُقرأ صورة الولد مقابل البنت على أنها «he» و«she»؟',
       'في وحدة «Look at the stars» ست كلمات مصورة فقط، فالجولة ستة أسئلة: هل يكفي هذا أم تفضلون إخفاء النشاط هناك؟',
       'هل تسبب أي صورة من صور الجمل لبسًا في الاسم المطلوب؟',
+    ],
+    meta: META_SENTENCE,
+    extraCss: CSS_SENTENCE,
+  },
+  4: {
+    title: 'مراجعة قراءة الصف الرابع',
+    eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف الرابع',
+    lead: (words, units, sentences, sentenceUnits) => `أضفنا إلى ركن اللغة الإنجليزية في الصف الرابع أربعة أنشطة قراءة: ثلاثة على كلمات كل وحدة كما في الصفوف السابقة، ونشاط رابع لقراءة جملة كاملة. الجمل هي جمل القواعد نفسها، وتُسمع بعد الإجابة فقط، ولا يظهر هذا النشاط لوحدة قبل موافقتكم على قواعدها أيضًا. خمس وحدات من التسع بلا نشاط جمل، لأن جملها بلا صور (المقارنات والماضي) أو لأن كلماتها بلا صور، وسبب كل منها مكتوب في وحدتها. كلمتا <span dir="ltr">Qatar</span> و<span dir="ltr">Qatari</span> مستبعدتان من «الحرف الأول» لأن حرف Q فيهما يُلفظ k. لا يُسمع في التطبيق صوت الحرف وحده؛ يظهر الحرف مكتوبًا فقط. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل كلمة في ${AR_DIGITS(units)} وحدات، ${wordCountAr(words)}، وجمل النشاط الرابع في ${AR_DIGITS(sentenceUnits)} وحدات، ${AR_DIGITS(sentences)} جملة.`,
+    acts: ACTS_SENTENCE,
+    checks: [
+      ...CHECKS_WORD,
+      'في «اقرَأ الجملة»: هل جملتا السؤال والجواب معًا، مثل «Where are you from? I\'m from Qatar.»، أطول مما يُحتمل في هذه المرحلة، أم يكفي عرض الجواب وحده؟',
+      'هل تُقرأ صورة العلم وملامح ✅ و❌ و👦 و👧 والصورة المضاعفة بوضوح على أنها «I\'m from» و«There isn\'t» و«he / she» و«There were two»؟',
+      'في وحدة «New Neighbours» ست كلمات مصورة فقط (الأعلام)، فالجولة ستة أسئلة: هل يكفي هذا أم تفضلون إخفاء النشاط هناك؟',
+      'هل توافقون على استبعاد Qatar وQatari من «الحرف الأول» (Q تُلفظ k)، وعلى استبعاد العبارات التي تبدأ بحرف علّة مثل «at the weekend» و«a bag of»؟',
     ],
     meta: META_SENTENCE,
     extraCss: CSS_SENTENCE,

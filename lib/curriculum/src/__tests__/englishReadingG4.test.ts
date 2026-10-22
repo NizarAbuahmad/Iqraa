@@ -105,3 +105,29 @@ test('the not-covered table names the five lessons with no sentence activity, in
     for (const text of items) assert.ok(!/["&<>]/.test(text), `${id}: ${text}`);
   }
 });
+
+const docs = new URL('../../../../docs/', import.meta.url);
+
+test('the Grade 4 reading form lists every word and pool sentence once, the 45 left-out words, and a note per gap', async () => {
+  const { renderReadingReviewHtml } = await import('../englishReadingReview.ts');
+  const html = renderReadingReviewHtml(4);
+  const words = G4.flatMap(l => l.words);
+  assert.equal(words.length, 172);
+  assert.equal((html.match(/<td class="word" dir="ltr">/g) ?? []).length, 172);
+  assert.equal((html.match(/<td class="letter" dir="ltr">[a-z]<\/td>/g) ?? []).length, 127);
+  assert.equal((html.match(/<td class="skip">/g) ?? []).length, 45);
+  assert.equal((html.match(/<section class="unit"/g) ?? []).length, 9);
+  assert.equal((html.match(/<td class="sentence" dir="ltr">/g) ?? []).length, 107);
+  assert.equal((html.match(/class="not-covered"/g) ?? []).length, 5);
+  assert.ok(html.includes('مراجعة قراءة الصف الرابع'));
+  assert.ok(html.includes('اقرَأ الجملة'));
+  assert.ok(html.includes('<td class="sentence" dir="ltr">He\'s from Spain.</td>'));
+  assert.ok(html.includes('<td class="skip">لا تُستعمل: <span dir="ltr">Q</span> تُلفظ <span dir="ltr">k</span> هنا</td>'));
+});
+
+test('the committed Grade 4 reading form is exactly what the generator produces; Grades 1–3 are untouched', async () => {
+  const { renderReadingReviewHtml } = await import('../englishReadingReview.ts');
+  const read = (f: string) => readFileSync(new URL(f, docs), 'utf8');
+  assert.equal(read('english-reading-g4-review.html'), renderReadingReviewHtml(4), 'run: pnpm --filter @workspace/curriculum run grammar-sheet');
+  for (const g of [1, 2, 3]) assert.equal(read(`english-reading-g${g}-review.html`), renderReadingReviewHtml(g), `Grade ${g} reading form changed`);
+});
