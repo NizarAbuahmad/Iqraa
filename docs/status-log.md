@@ -59,6 +59,47 @@ Sections below are in the order they were written, not strictly by date.
 - **Verified:** mobile tests and typecheck; the web build at 1366px in Arabic (first
   tool top-right) and English (top-left), and at phone size (unchanged).
 
+## Live games: students answer from any device — 2026-10-22
+
+**What changed.** In the presenter, the 🏆 picker gets «العب مباشرة على الأجهزة»: the
+deck's own choice questions (`scoreableSlides`, the one rule for what a game may score)
+become a live game hosted at `/ai-tools/classroom/live-host?id=…` (teacher-only). The
+projector shows a big code and a QR for `app.iqrra.com/live`; students join on **any
+browser device** — a school computer lab, tablets, or at home for an evening review (phones
+are banned in Jordanian classrooms, so the copy says «جهاز», never «هاتف») — with the code
+and a typed name, **no account**; a signed-in student is recorded as such («دخل بحساب
+طالب»), the host never sees the account's name. Each question: coloured options with a
+shape and a letter (colour is never the only cue), a server-anchored countdown, «أجاب ٢ من
+٣»; reveal (automatic when everyone answered or time ran out) shows the distribution, the
+correct option and the top five; players see ✓/✗, «+٩٣٥ نقطة», «المركز ١ من ٣»; the end is
+a podium. A reload resumes from the stored player token.
+
+**Server.** Tables `live_games`, `live_players`, `live_answers` (migration
+`0012_numerous_stature.sql`, additive, DEFERRED RLS with hand-written GRANTs, plain `db`).
+Host: `POST /live-host/games`, `GET /live-host/games/:id`, `POST …/advance`
+(`start|reveal|next|end`, any other move 409), `POST …/kick`. Public: `POST /live/:code/join`
+(optional student session → `user_id`), `GET /live/:code/state` and `POST /live/:code/answer`
+with `X-Live-Token` (32 random bytes, only the sha256 stored). Scoring uses only the server
+clock: correct = round(500 + 500 × time left / seconds), 2 s grace, one answer per question.
+The answer key never reaches a player before the reveal (pinned by a test).
+**Limits** (from the security review): no per-IP ceiling on valid polls — a school's
+classes share one address — only a per-token limit plus a per-IP limit charged for rejected
+tokens; join 240/min per IP; 100 players per game (row-locked count); an unknown code and an
+unknown token get the same 401; names reject invisible/RTL-override/filler characters and
+need a letter or digit; 30 games per teacher per hour; games older than 7 days are deleted
+on each create (the retention rule for children's typed names). Clients back off on 429.
+
+**Verified.** Root typecheck; api-server suite 2,390 pass with a real Postgres (live DB test
+19, also with `RLS_ENFORCE` on), rules unit 33, `mountOrder`, `rlsCoverage` on a fresh
+database; mobile suite pass except the known local CRLF `scopeSelection` (live tests 36).
+**End to end in headless Chromium** on a throwaway database, run twice (before and after
+the review fixes): teacher quiz → present → 🏆 → «العب مباشرة» → lobby with code and QR;
+three devices join (two anonymous, one signed-in student), a duplicate name refused; fast
+correct 935, slower correct 847, wrong 0; auto-reveal on all-answered and on time-out;
+ranks «من ٣»; podium; a reload keeps the final rank. **Not verified:** a real classroom
+(30 devices, one NAT), the QR scanned by a camera, Android, load (each poll is a few reads
+plus a rate-limit upsert). Scores are not saved to a student's record.
+
 ## Status-bar icons read on the corner bands — 2026-10-22
 
 - **What was wrong.** Every corner screen (`CornerFrame`), every game (`GameShell`'s

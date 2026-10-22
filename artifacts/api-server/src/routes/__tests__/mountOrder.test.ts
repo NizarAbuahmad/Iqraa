@@ -591,6 +591,52 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 401, "claim-self must require a token");
   });
 
+  it("keeps the players' side of a live game public, and the host's side guarded", async () => {
+    // /live/* is public like /take, with its own token check inside the router.
+    // A 401 here is acceptable ONLY as that router's own answer — code
+    // `token_invalid` — never the auth middleware's ("No token provided"): the
+    // latter would mean an earlier guard swallowed the request. With a token the
+    // request reaches the (unreachable) database: 404 or 500, never 401.
+    const noToken = await fetch(`${base}/live/ZZZZZZ/state`);
+    assert.equal(noToken.status, 401);
+    assert.equal(((await noToken.json()) as { code?: string }).code, "token_invalid", "must be the live router's own 401");
+    const withToken = await fetch(`${base}/live/ZZZZZZ/state`, { headers: { "X-Live-Token": "not-a-real-token" } });
+    // A token the router looks up: 401 token_invalid (a miss, uniform for an
+    // unknown code too) or 500 here, where the database is unreachable.
+    assert.ok(
+      withToken.status === 401 || withToken.status === 500,
+      `expected 401 (token miss) or 500 (no database in this suite), got ${withToken.status}`,
+    );
+    if (withToken.status === 401) {
+      assert.equal(((await withToken.json()) as { code?: string }).code, "token_invalid");
+    }
+    const answer = await fetch(`${base}/live/ZZZZZZ/answer`, { method: "POST" });
+    assert.equal(((await answer.json()) as { code?: string }).code, "token_invalid");
+    const join = await fetch(`${base}/live/ZZZZZZ/join`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Sara" }),
+    });
+    assert.notEqual(join.status, 401, "joining must not require a session");
+
+    // The host's side is the opposite, and /live must not have swallowed it.
+    const create = await fetch(`${base}/live-host/games`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    assert.equal(create.status, 401, "POST /live-host/games must require a token");
+    assert.notEqual(((await create.json()) as { code?: string }).code, "token_invalid");
+    const read = await fetch(`${base}/live-host/games/00000000-0000-4000-8000-000000000000`);
+    assert.equal(read.status, 401, "GET /live-host/games/:id must require a token");
+
+    // And the guard stayed on its own prefix: an unowned path is still a 404.
+    const unowned = await fetch(`${base}/live-nothing/here`);
+    assert.equal(unowned.status, 404);
+    const unownedLive = await fetch(`${base}/live/ZZZZZZ/nothing`);
+    assert.equal(unownedLive.status, 404);
+  });
+
   it("guards «اختباراتي», and keeps it from shadowing the roster's /students", async () => {
     // Two traps in one place. The list is a student's own exams and results,
     // so an anonymous request must be refused. And Express prefix-matches by
