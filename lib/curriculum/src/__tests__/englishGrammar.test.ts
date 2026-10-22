@@ -8,24 +8,25 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import {
-  GRAMMAR_UNITS, allGrammarSentences, grammarUnit, offeredGrammar, pluralOf, renderGrammarSheet, unitSentences, withArticle,
+  allGrammarSentences, allGrammarSpoken, grammarUnit, grammarUnitsForGrade, offeredGrammar, pluralOf, renderGrammarSheet, unitSentences, withArticle,
 } from '../englishGrammar.ts';
 import { allHubWords, audioSlug, hubLessonsForGrade } from '../englishHub.ts';
 import { wordPicture } from '../englishPictures.ts';
 
 const G1 = hubLessonsForGrade(1);
 const order = new Map(G1.map((l, i) => [l.id, i]));
+const UNITS = grammarUnitsForGrade(1);
 
 test('every grammar unit is a Grade 1 lesson, and not Semester 1 Unit 0', () => {
-  for (const u of GRAMMAR_UNITS) {
+  for (const u of UNITS) {
     assert.ok(order.has(u.lessonId), u.lessonId);
     assert.ok(!u.lessonId.endsWith('-s1-nccd-u0_l1'), u.lessonId);
   }
-  assert.equal(GRAMMAR_UNITS.length, 9);
+  assert.equal(UNITS.length, 9);
 });
 
 test('a slot names only words of its own lesson or an earlier Grade 1 lesson', () => {
-  for (const u of GRAMMAR_UNITS) {
+  for (const u of UNITS) {
     const allowed = new Set(G1.slice(0, order.get(u.lessonId)! + 1).flatMap(l => l.words.map(w => w.en)));
     for (const [slot, words] of Object.entries(u.slots)) {
       for (const w of words) assert.ok(allowed.has(w), `${u.lessonId} ${slot}: ${w}`);
@@ -45,7 +46,7 @@ test('a/an and plurals', () => {
 
 test('every sentence re-joins from its tiles, and every Choose has one right option shown at its blank', () => {
   let chooses = 0;
-  for (const u of GRAMMAR_UNITS) {
+  for (const u of UNITS) {
     for (const s of unitSentences(u)) {
       assert.equal(s.tokens.join(' '), s.text, s.key);
       if (!s.choose) continue;
@@ -59,7 +60,7 @@ test('every sentence re-joins from its tiles, and every Choose has one right opt
 });
 
 test('the pictures a sentence uses all exist, and a false picture is another word', () => {
-  for (const u of GRAMMAR_UNITS) {
+  for (const u of UNITS) {
     for (const s of unitSentences(u)) {
       if (s.picture) assert.ok(wordPicture(s.picture.word), s.key);
       if (s.falsePicture) {
@@ -73,7 +74,7 @@ test('the pictures a sentence uses all exist, and a false picture is another wor
 });
 
 test('the sentences the book uses as its own examples come out word for word', () => {
-  const texts = new Set(GRAMMAR_UNITS.flatMap(u => unitSentences(u).map(s => s.text)));
+  const texts = new Set(UNITS.flatMap(u => unitSentences(u).map(s => s.text)));
   for (const t of [
     "I've got a pen.", "I haven't got an eraser.", 'The book is on the chair.', 'The pens are on the floor.',
     "What are these? They're tigers.", 'I like cakes.', "I don't like lemons.", "He's got two arms.",
@@ -86,23 +87,30 @@ test('the sentences the book uses as its own examples come out word for word', (
 });
 
 test('an unreviewed unit is offered to nobody', () => {
-  for (const u of GRAMMAR_UNITS) {
+  for (const u of UNITS) {
     assert.deepEqual(offeredGrammar(u.lessonId), u.reviewedBy ? unitSentences(u) : null);
   }
   assert.equal(offeredGrammar('kbl-g1-eng-s1-nccd-u0_l1'), null);
   assert.equal(grammarUnit('nope'), undefined);
 });
 
-test('every sentence has its own recording key, shared with no other sentence or word', () => {
-  // `playWord(sentence)` plays `<audioSlug>.mp3`; a collision would play another sentence.
+test('every spoken string has its own recording key, shared with no other string or word', () => {
+  // `playWord(text)` plays `<audioSlug>.mp3`; a collision would play another string. Spoken strings are
+  // the sentences, plus the questions and the No exchange a Yes or No item says.
   const words = new Set(allHubWords().map(audioSlug));
   const seen = new Map<string, string>();
-  for (const text of allGrammarSentences()) {
+  const spoken = allGrammarSpoken();
+  for (const text of spoken) {
     const slug = audioSlug(text);
     assert.ok(!words.has(slug), `${text} → ${slug} is a word's recording`);
     assert.equal(seen.get(slug) ?? text, text, `${text} and ${seen.get(slug)} share ${slug}`);
     seen.set(slug, text);
   }
+  for (const text of [
+    'Is it a car? Yes, it is.', 'Is it a plane?', "Is it a plane? No, it isn't.",
+    'Do you like cheese?', "Do you like cheese? No, I don't.",
+  ]) assert.ok(spoken.includes(text), text);
+  for (const text of allGrammarSentences()) assert.ok(spoken.includes(text), text);
 });
 
 test("the committed teacher's sheet is exactly what the generator produces", () => {
@@ -116,12 +124,12 @@ test("the teacher's printable review form lists every sentence once, and the com
   const html = renderGrammarReviewHtml();
   const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   // A sentence can belong to two units (S2 Unit 0 reuses Unit 2's): once per unit, then.
-  const all = GRAMMAR_UNITS.flatMap(u => unitSentences(u).map(s => s.text));
+  const all = UNITS.flatMap(u => unitSentences(u).map(s => s.text));
   for (const text of new Set(all)) {
     const cell = `<td class="sentence" dir="ltr">${esc(text)}</td>`;
     assert.equal(html.split(cell).length - 1, all.filter(t => t === text).length, text);
   }
-  assert.equal((html.match(/<td class="sentence"/g) ?? []).length, GRAMMAR_UNITS.reduce((n, u) => n + unitSentences(u).length, 0));
+  assert.equal((html.match(/<td class="sentence"/g) ?? []).length, UNITS.reduce((n, u) => n + unitSentences(u).length, 0));
   // Arabic counting: 3–10 take the plural, everything else the singular.
   assert.equal(sentenceCountAr(5), '٥ جمل');
   assert.equal(sentenceCountAr(10), '١٠ جمل');

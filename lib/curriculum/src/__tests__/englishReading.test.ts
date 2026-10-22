@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { hubLessonsForGrade } from '../englishHub.ts';
-import { READING_UNITS, firstSound, firstSoundSkip, offeredReading, readingUnit } from '../englishReading.ts';
+import { READING_UNITS, firstSound, firstSoundSkip, offeredReading, readingUnit, readingUnitsForGrade } from '../englishReading.ts';
 
 test('a first sound is the first letter, except where the letter is not the sound', () => {
   const cases: [string, string | null][] = [
@@ -29,8 +29,9 @@ test('over the 10 lessons, exactly the words the spec names are left out', () =>
 
 test('every Grade 1 hub lesson has one reading record, and nothing else does', () => {
   const ids = hubLessonsForGrade(1).map(l => l.id).sort();
-  assert.deepEqual(READING_UNITS.map(u => u.lessonId).sort(), ids);
-  assert.equal(new Set(READING_UNITS.map(u => u.lessonId)).size, READING_UNITS.length);
+  const g1 = readingUnitsForGrade(1);
+  assert.deepEqual(g1.map(u => u.lessonId).sort(), ids);
+  assert.equal(new Set(g1.map(u => u.lessonId)).size, g1.length);
 });
 
 test('every unit ships unreviewed, so nothing is offered', () => {
@@ -65,7 +66,7 @@ test("the teacher's reading form lists every word once per unit, and the committ
   // Every word the app may ask about shows its letter; every left-out word shows why.
   assert.equal((html.match(/<td class="letter" dir="ltr">[a-z]<\/td>/g) ?? []).length, words.filter(w => firstSound(w.en)).length);
   assert.equal((html.match(/<td class="skip">/g) ?? []).length, words.filter(w => !firstSound(w.en)).length);
-  assert.equal((html.match(/<section class="unit"/g) ?? []).length, READING_UNITS.length);
+  assert.equal((html.match(/<section class="unit"/g) ?? []).length, readingUnitsForGrade(1).length);
   const committed = readFileSync(new URL('../../../../docs/english-reading-g1-review.html', import.meta.url), 'utf8');
   assert.equal(committed, html, 'stale: run pnpm --filter @workspace/curriculum run grammar-sheet');
 });

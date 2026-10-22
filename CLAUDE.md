@@ -297,8 +297,10 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   `quizPromptAr/En` print), or the model is never told what the type looks
   like; a mapping in `quizTypeOf` (`generationShape.ts`), or `normalizeQuiz`
   drops it; `quizOnce` (`services/ai/generators.ts`); `QuizQuestion['type']`
-  (`services/ai/AIService.ts`); the picker's `QType` and `ALL_Q_TYPES`
-  (`app/ai-tools/quiz.tsx`); `quizTypeLabel` (`services/quizPaper.ts` — an
+  (`services/ai/AIService.ts`); the picker's labels and colours (`typeLabels`
+  and `TYPE_COLOR` in `app/ai-tools/quiz.tsx`, both typed `Record<QuizType, …>`,
+  so the typechecker finds a missing entry — the picker's own list comes from
+  `QUIZ_TYPE_ORDER`); `quizTypeLabel` (`services/quizPaper.ts` — an
   unmapped type silently prints as "Short Answer"); and `examBlockDirection`
   (`services/examBlocks.ts` — an unmapped type gets the generic «أجب عن الأسئلة
   الآتية» line).
@@ -326,9 +328,12 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   `QUIZ_TYPES`, its order derived), imported by the API and the app.
   `paperOrder.test.ts`, `examBlocks.test.ts` and `quizMinistryOrder.test.ts`
   assert, by reference, that the API's and the app's `EXAM_TYPE_ORDER` /
-  `QUIZ_TYPE_ORDER` exports are the package's own arrays. A list under another
-  name is not caught: the quiz picker's `ALL_Q_TYPES` in `app/ai-tools/quiz.tsx`
-  is one, and it predates this change. A new exam question type needs a place
+  `QUIZ_TYPE_ORDER` exports are the package's own arrays, and `paperOrder.test.ts`
+  reads `app/ai-tools/quiz.tsx` to check it imports from the package and declares
+  no list or union of quiz types of its own (the picker had one until
+  2026-10-20). A list under another name elsewhere is not caught:
+  `QuizQuestion['type']` in `services/ai/AIService.ts` spells the four types out
+  again. A new exam question type needs a place
   in `EXAM_TYPE_ORDER` and a direction in `examBlockDirection`.
 - **`additionalContext` is not teacher-pasted material — it is usually the
   curriculum.** Every `/ai-tools` screen fills it with `buildGeneratorContext()`
@@ -533,3 +538,19 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   `startAttemptChecked` and read `created`; and remember the `attemptId` you got
   so a retry does not start again and mistake its own half-saved paper for
   someone else's. `services/classScanSave.ts` is the worked example.
+- **A corner's colour lives in one table (since 2026-10-21).** `constants/corners.ts`
+  holds each corner's tokens; `CornerThemeProvider` (mounted only by the
+  `_layout.tsx` of a corner directory — all five: math, lab, quran, english, play) puts them in context and `useColors()`
+  spreads them over the palette, so a shared button or chip inside a corner is
+  that corner's colour with no edit. Corner code must take
+  colours from `useColors()`, never from the global `palette`, whether read at
+  module scope or inside render: both ignore the provider and stay teal.
+  Text on a `colors.primary` fill is `colors.primaryForeground`, never `'#fff'`:
+  in dark mode a corner's primary is light.
+  `cornerTheme.test.ts` fails any file in a wired corner (or
+  `components/{math,lab,quran,corners,englishHub,publicGames}`) that imports `palette`, and any
+  `_layout.tsx` outside a corner directory that mounts `CornerThemeProvider`.
+  The library (`/curriculum/resources`) is deliberately **not** a corner — its
+  tiles borrow each corner's colour, its own chrome is brand teal.
+  A new corner is one table row, one layout
+  file, and a `CornerFrame`.

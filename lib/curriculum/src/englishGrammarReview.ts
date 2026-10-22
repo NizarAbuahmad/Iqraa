@@ -10,8 +10,9 @@
  * docs/english-grammar-g1-review.html beside the markdown sheet, and a test
  * fails when the committed copy is stale.
  */
-import { GRAMMAR_UNITS, unitSentences, type GrammarSentence, type GrammarUnit } from './englishGrammar.ts';
-import { hubLesson } from './englishHub.ts';
+import { grammarUnitsForGrade, unitSentences, type GrammarSentence, type GrammarUnit } from './englishGrammar.ts';
+import { NOT_COVERED_G2 } from './englishGrammarG2.ts';
+import { hubLesson, hubLessonsForGrade } from './englishHub.ts';
 import { wordPicture } from './englishPictures.ts';
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -31,7 +32,27 @@ const NOTES: Record<string, string> = {
   'kbl-g1-eng-s2-nccd-u0_l1': 'وحدة الترحيب لا تحتوي كلمات العائلة، لذلك تستخدم نمطي الوحدة الثانية (I\'ve got) والوحدة الرابعة (favourite toy).',
 };
 
-function picture(word: string | null, count: 1 | 2, marker: string | null): string {
+/** Per grade: lesson id → why part of it is not covered (Grade 1 uses `NOTES` instead). */
+const NOT_COVERED: Record<number, Record<string, string[]>> = { 2: NOT_COVERED_G2 };
+
+/** Wraps each run of English in `dir="ltr"`, so a phrase with punctuation does not scramble inside an Arabic line. */
+export const ltr = (s: string) =>
+  esc(s).replace(/[A-Za-z][A-Za-z0-9'’-]*(?:[ ,.?!/…]+[A-Za-z0-9'’][A-Za-z0-9'’-]*)*[.?!]?/g, m => `<span dir="ltr">${m}</span>`);
+
+function yesNoCell(s: GrammarSentence): string {
+  const y = s.yesNo;
+  if (!y) return '<span class="none">لا يظهر</span>';
+  const line = (q: string, a: string, cls: string) => `<span class="yn ${cls}" dir="ltr">${esc(q)} → ${esc(a)}</span>`;
+  if (y.kind === 'marker') return line(y.question, y.answer ? y.yes : y.no, y.answer ? 'yn-yes' : 'yn-no');
+  return line(y.question, y.yes, 'yn-yes') + (y.otherQuestion ? line(y.otherQuestion, y.no, 'yn-no') : '');
+}
+
+export function notCoveredList(items: string[] | undefined): string {
+  if (!items) return '';
+  return `<p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered">${items.map(i => `<li>${ltr(i)}</li>`).join('')}</ul>`;
+}
+
+export function picture(word: string | null, count: 1 | 2, marker: string | null): string {
   const pic = word ? wordPicture(word) : null;
   const glyph = marker ? MARKER[marker] ?? '' : '';
   if (!pic && !glyph) return '<span class="none">—</span>';
@@ -55,13 +76,14 @@ const patternText = (t: string) => t.replace(/\{(?:a:|s:)?\w+\}/g, '…');
 function renderUnit(u: GrammarUnit, idx: number): string {
   const lesson = hubLesson(u.lessonId)!;
   const sentences = unitSentences(u);
+  const withYesNo = sentences.some(s => s.yesNo);
   const rows = sentences.map((s, i) => `
         <tr>
           <td class="num">${AR_DIGITS(i + 1)}</td>
           <td class="sentence" dir="ltr">${esc(s.text)}</td>
           <td>${s.picture ? picture(s.picture.word, s.picture.count, s.marker) : picture(null, 1, s.marker)}</td>
           <td class="choose">${chooseCell(s)}</td>
-          <td>${falseCell(s)}</td>
+          <td>${falseCell(s)}</td>${withYesNo ? `\n          <td class="yesno">${yesNoCell(s)}</td>` : ''}
           <td class="tick"><span class="box" aria-hidden="true"></span></td>
           <td class="note"></td>
         </tr>`).join('');
@@ -73,7 +95,7 @@ function renderUnit(u: GrammarUnit, idx: number): string {
       <div class="unit-meta"><span>${sem}</span><span>${unitLabelAr(lesson.unitNumber)}</span><span>${sentenceCountAr(sentences.length)}</span></div>
       <h2><span dir="ltr">${esc(lesson.unitTitle)}</span> <span class="unit-ar">${esc(lesson.unitTitleAr)}</span></h2>
       <ul class="patterns" dir="ltr">${u.patterns.map(p => `<li>${esc(patternText(p.text))}</li>`).join('')}</ul>
-      ${note}
+      ${note}${notCoveredList(NOT_COVERED[hubLesson(u.lessonId)!.grade]?.[u.lessonId])}
     </header>
     <div class="table-wrap">
       <table>
@@ -83,7 +105,7 @@ function renderUnit(u: GrammarUnit, idx: number): string {
             <th>الجملة</th>
             <th>الصورة</th>
             <th>«اختر الكلمة»<small>الصحيح ثم الخاطئ</small></th>
-            <th>«صح أم خطأ»<small>الصورة الخاطئة</small></th>
+            <th>«صح أم خطأ»<small>الصورة الخاطئة</small></th>${withYesNo ? `\n            <th>«نعم أم لا»<small>السؤال والجواب، ثم سؤال «لا»</small></th>` : ''}
             <th class="tick">✓</th>
             <th class="note">ملاحظات</th>
           </tr>
@@ -107,11 +129,90 @@ function renderUnit(u: GrammarUnit, idx: number): string {
   </section>`;
 }
 
-export function renderGrammarReviewHtml(): string {
-  const total = GRAMMAR_UNITS.reduce((n, u) => n + unitSentences(u).length, 0);
-  const units = GRAMMAR_UNITS.map(renderUnit).join('');
+function renderUncovered(lessonId: string, idx: number, items: string[]): string {
+  const lesson = hubLesson(lessonId)!;
+  const sem = lesson.semester === 1 ? 'الفصل الأول' : 'الفصل الثاني';
+  return `
+  <section class="unit" id="unit-${idx + 1}">
+    <header class="unit-head">
+      <div class="unit-meta"><span>${sem}</span><span>${unitLabelAr(lesson.unitNumber)}</span><span>بلا أنشطة قواعد</span></div>
+      <h2><span dir="ltr">${esc(lesson.unitTitle)}</span> <span class="unit-ar">${esc(lesson.unitTitleAr)}</span></h2>
+      ${notCoveredList(items)}
+    </header>
+  </section>`;
+}
 
-  const page = `<title>مراجعة قواعد الصف الأول</title>
+interface GradeCopy {
+  title: string;
+  eyebrow: string;
+  lead: (total: number, units: number) => string;
+  acts: string;
+  checks: string[];
+  extraCss: string;
+}
+
+const GRADE_COPY: Record<number, GradeCopy> = {
+  1: {
+    title: 'مراجعة قواعد الصف الأول',
+    eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف الأول',
+    lead: (total, units) => `بناءً على ملاحظتكم، أضفنا إلى ركن اللغة الإنجليزية ثلاثة أنشطة لتثبيت القواعد. الجمل مبنية من نمط القواعد في كل وحدة من الكتاب ومن كلمات الوحدة نفسها. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة في ${AR_DIGITS(units)} وحدات.`,
+    acts: `
+      <div class="act"><b>اختر الكلمة</b>جملة فيها فراغ وصورة، وخياران: الصحيح ونقيضه في القاعدة، مثل <span dir="ltr">I've got / I haven't got</span> أو <span dir="ltr">is / are</span> أو <span dir="ltr">He's / She's</span>.</div>
+      <div class="act"><b>رتّب الجملة</b>كلمات الجملة مبعثرة، ويرتّبها الطالب بالنقر. لا تُستخدم جملة أطول من ٧ كلمات.</div>
+      <div class="act"><b>صح أم خطأ</b>جملة بجانب صورة: نصف الأسئلة بصورتها الصحيحة، ونصفها بصورة كلمة أخرى من الوحدة.</div>
+    `,
+    checks: [
+      'هل الجملة صحيحة لغويًا، وبالصيغة التي يدرّسها الكتاب؟',
+      'هل الصورة تناسب الجملة؟',
+      'في «اختر الكلمة»: هل الخيار الخاطئ خاطئ بوضوح مع هذه الصورة؟',
+      'في «صح أم خطأ»: هل الصورة الخاطئة لا تحتمل أن تكون صحيحة؟',
+      'هل الكلمات مناسبة لطالب الصف الأول؟',
+    ],
+    extraCss: '',
+  },
+  2: {
+    title: 'مراجعة قواعد الصف الثاني',
+    eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف الثاني',
+    lead: (total, units) => `أضفنا إلى ركن اللغة الإنجليزية في الصف الثاني أربعة أنشطة لتثبيت القواعد، منها نشاط جديد للأجوبة القصيرة. الجمل مبنية من نمط القواعد في كل وحدة من الكتاب ومن كلمات الوحدة نفسها، وما استُبعد منها مذكور مع سببه في كل وحدة. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة في ${AR_DIGITS(units)} وحدات.`,
+    acts: `
+      <div class="act"><b>اختر الكلمة</b>جملة فيها فراغ وصورة، وخياران: الصحيح ونقيضه في القاعدة، مثل <span dir="ltr">This is / These are</span> أو <span dir="ltr">He's / She's</span> أو <span dir="ltr">like / don't like</span>.</div>
+      <div class="act"><b>رتّب الجملة</b>كلمات الجملة مبعثرة، ويرتّبها الطالب بالنقر. لا تُستخدم جملة أطول من ٧ كلمات.</div>
+      <div class="act"><b>صح أم خطأ</b>جملة بجانب صورة: نصف الأسئلة بصورتها الصحيحة، ونصفها بصورة كلمة أخرى من الوحدة.</div>
+      <div class="act"><b>نعم أم لا</b>صورة وسؤال، ويختار الطالب الجواب القصير: <span dir="ltr">Yes, it is. / No, it isn't.</span> أو <span dir="ltr">Yes, I do. / No, I don't.</span> نصف الأسئلة جوابها «نعم» ونصفها «لا».</div>
+    `,
+    checks: [
+      'هل الجملة صحيحة لغويًا، وبالصيغة التي يدرّسها الكتاب؟',
+      'هل الصورة تناسب الجملة؟',
+      'في «اختر الكلمة»: هل الخيار الخاطئ خاطئ بوضوح مع هذه الصورة؟',
+      'في «صح أم خطأ»: هل الصورة الخاطئة لا تحتمل أن تكون صحيحة؟',
+      'في «نعم أم لا»: هل الجواب القصير هو الصحيح للسؤال وللصورة؟',
+      'هل الكلمات مناسبة لطالب الصف الثاني؟',
+    ],
+    extraCss: `
+  .yn { display: block; font-family: var(--latin); font-size: .88rem; white-space: nowrap; }
+  .yn-yes { color: var(--right); }
+  .yn-no { color: var(--wrong); }
+  td.yesno { white-space: nowrap; }
+  .not-covered { margin: 0; padding-inline-start: 1.3em; display: grid; gap: 4px; font-size: .92rem; color: var(--muted); }
+  .not-covered [dir="ltr"] { font-family: var(--latin); }`,
+  },
+};
+
+export function renderGrammarReviewHtml(grade = 1): string {
+  const copy = GRADE_COPY[grade]!;
+  const units = grammarUnitsForGrade(grade);
+  const total = units.reduce((n, u) => n + unitSentences(u).length, 0);
+  const byLesson = new Map(units.map(u => [u.lessonId, u]));
+  const uncovered = NOT_COVERED[grade] ?? {};
+  let idx = 0;
+  // In the order the lessons come in: a lesson with no unit still gets its page when it has reasons to list.
+  const sections = hubLessonsForGrade(grade).flatMap(l => {
+    const u = byLesson.get(l.id);
+    if (u) return [renderUnit(u, idx++)];
+    return uncovered[l.id] ? [renderUncovered(l.id, idx++, uncovered[l.id])] : [];
+  }).join('');
+
+  const page = `<title>${copy.title}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700&family=Readex+Pro:wght@400;500;600;700&display=swap">
@@ -219,29 +320,21 @@ export function renderGrammarReviewHtml(): string {
     tr, .signoff { break-inside: avoid; }
     thead { display: table-header-group; }
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  }
+  }${copy.extraCss}
 </style>
 
 <main class="sheet" dir="rtl" lang="ar">
   <section class="intro">
-    <div class="eyebrow">إقرأ · ركن اللغة الإنجليزية · الصف الأول</div>
+    <div class="eyebrow">${copy.eyebrow}</div>
     <h1>مراجعة جمل القواعد قبل عرضها على الطلاب</h1>
-    <p class="lead">بناءً على ملاحظتكم، أضفنا إلى ركن اللغة الإنجليزية ثلاثة أنشطة لتثبيت القواعد. الجمل مبنية من نمط القواعد في كل وحدة من الكتاب ومن كلمات الوحدة نفسها. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة في ${AR_DIGITS(GRAMMAR_UNITS.length)} وحدات.</p>
+    <p class="lead">${copy.lead(total, units.length)}</p>
 
-    <div class="acts">
-      <div class="act"><b>اختر الكلمة</b>جملة فيها فراغ وصورة، وخياران: الصحيح ونقيضه في القاعدة، مثل <span dir="ltr">I've got / I haven't got</span> أو <span dir="ltr">is / are</span> أو <span dir="ltr">He's / She's</span>.</div>
-      <div class="act"><b>رتّب الجملة</b>كلمات الجملة مبعثرة، ويرتّبها الطالب بالنقر. لا تُستخدم جملة أطول من ٧ كلمات.</div>
-      <div class="act"><b>صح أم خطأ</b>جملة بجانب صورة: نصف الأسئلة بصورتها الصحيحة، ونصفها بصورة كلمة أخرى من الوحدة.</div>
-    </div>
+    <div class="acts">${copy.acts}</div>
 
     <div class="card">
       <h3>ما المطلوب في كل جملة</h3>
       <ol>
-        <li>هل الجملة صحيحة لغويًا، وبالصيغة التي يدرّسها الكتاب؟</li>
-        <li>هل الصورة تناسب الجملة؟</li>
-        <li>في «اختر الكلمة»: هل الخيار الخاطئ خاطئ بوضوح مع هذه الصورة؟</li>
-        <li>في «صح أم خطأ»: هل الصورة الخاطئة لا تحتمل أن تكون صحيحة؟</li>
-        <li>هل الكلمات مناسبة لطالب الصف الأول؟</li>
+        ${copy.checks.map(c => `<li>${c}</li>`).join('\n        ')}
       </ol>
     </div>
 
@@ -265,7 +358,7 @@ export function renderGrammarReviewHtml(): string {
     </div>
     <p class="meta-line">«لا يظهر» تعني أن الجملة لا تُستخدم في هذا النشاط (لا توجد صورة واضحة لها). الصور هي الرموز التي تظهر في التطبيق نفسه.</p>
   </section>
-${units}
+${sections}
 </main>
 `;
   // A standalone file: opened from disk in any browser and printed from there.

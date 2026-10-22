@@ -9,7 +9,6 @@ import React, { useCallback, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -20,11 +19,12 @@ import { goBack } from '@/services/navigation';
 import { unitNames } from '@/services/contentLanguage';
 import { BADGE_META } from '@/components/englishHub/badgeMeta';
 import { disableDailyReminder, enableDailyReminder, isReminderEnabled, syncDailyReminder } from '@/services/englishHub/dailyReminder';
-import { BackButton } from '@/components/ui/BackButton';
+import { CornerFrame } from '@/components/corners/CornerFrame';
+import { CornerGrid } from '@/components/corners/CornerGrid';
+import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 
 export default function EnglishHubScreen() {
   const colors = useColors();
-  const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const params = useLocalSearchParams<{ grade?: string }>();
   const [grade, setGrade] = useState(() => {
@@ -75,29 +75,28 @@ export default function EnglishHubScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { backgroundColor: colors.hero, paddingTop: insets.top + 12 }]}>
-        {/* Public page: with no history, `goBack()`'s fallback is `/`, which
-            sends a visitor with no account to the login screen. `/play` is where
-            they came from, or where they'd want to go. */}
-        <BackButton color="#fff" onPress={() => (router.canGoBack() ? goBack() : router.replace('/play' as never))} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
-        <Text style={[styles.title, { textAlign: align }]}>{t('hubTitle')}</Text>
-        <Text style={[styles.sub, { textAlign: align }]}>{t('hubIntro')}</Text>
-        {streak > 0 ? <Text style={[styles.streak, { textAlign: align }]}>{t('hubStreak', streak)}</Text> : null}
-        <View style={[styles.goalRow, { flexDirection: row }]}>
-          <Ionicons name={practicedToday ? 'checkmark-circle' : 'ellipse-outline'} size={16} color="#fff" />
-          <Text style={{ color: '#fff', fontFamily: 'Almarai_400Regular', fontSize: 15 }}>
-            {t(practicedToday ? 'hubDailyGoalDone' : 'hubDailyGoalTodo')}
-          </Text>
-        </View>
-        {Platform.OS !== 'web' ? (
-          <View style={[styles.goalRow, { flexDirection: row, marginTop: 10 }]}>
-            <Switch value={reminderOn} onValueChange={v => void toggleReminder(v)} trackColor={{ false: 'rgba(255,255,255,0.3)', true: '#fff' }} thumbColor={colors.hero} />
-            <Text style={{ color: '#fff', fontFamily: 'Almarai_400Regular', fontSize: 15, flexShrink: 1 }}>{t('hubRemindMe')}</Text>
+    <CornerFrame
+      title={t('hubTitle')}
+      subtitle={t('hubIntro')}
+      // Public page: with no history, `goBack()`'s fallback is `/`, which sends a
+      // visitor with no account to the login screen. `/play` is where they came from.
+      onBack={() => (router.canGoBack() ? goBack() : router.replace('/play' as never))}
+      bandChildren={
+        <>
+          {streak > 0 ? <Text style={[styles.streak, { textAlign: align }]}>{t('hubStreak', streak)}</Text> : null}
+          <View style={[styles.goalRow, { flexDirection: row }]}>
+            <Ionicons name={practicedToday ? 'checkmark-circle' : 'ellipse-outline'} size={16} color="#fff" />
+            <Text style={styles.bandText}>{t(practicedToday ? 'hubDailyGoalDone' : 'hubDailyGoalTodo')}</Text>
           </View>
-        ) : null}
-      </View>
-
+          {Platform.OS !== 'web' ? (
+            <View style={[styles.goalRow, { flexDirection: row }]}>
+              <Switch value={reminderOn} onValueChange={v => void toggleReminder(v)} trackColor={{ false: 'rgba(255,255,255,0.3)', true: '#fff' }} thumbColor={colors.hero} />
+              <Text style={[styles.bandText, { flexShrink: 1 }]}>{t('hubRemindMe')}</Text>
+            </View>
+          ) : null}
+        </>
+      }
+    >
       {/* Only badges already earned show — an empty row for a brand-new student
           would read as "here are seven things you haven't done", not encouragement. */}
       {earned.size > 0 ? (
@@ -122,7 +121,7 @@ export default function EnglishHubScreen() {
               aria-selected={on}
               style={[styles.chip, { borderColor: on ? colors.primary : colors.border, backgroundColor: on ? colors.primary : colors.card }]}
             >
-              <Text style={{ color: on ? '#fff' : colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
+              <Text style={{ color: on ? colors.primaryForeground : colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>
                 {t('hubGrade', g)}
               </Text>
             </Pressable>
@@ -130,7 +129,7 @@ export default function EnglishHubScreen() {
         })}
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 4, paddingBottom: 60, gap: 10 }}>
+      <CornerGrid>
         {lessons.map(l => {
           const stars = lessonStars(progress, l.id);
           const names = unitNames({ name: l.unitTitle, nameAr: l.unitTitleAr }, 'english', lang);
@@ -140,52 +139,49 @@ export default function EnglishHubScreen() {
             // child nothing and the unit title ("Look at my toys!") does —
             // in English, as the book prints it (`unitNames`).
             <Pressable
-                key={l.id}
-                onPress={() => router.push({ pathname: '/curriculum/english/[lessonId]', params: { lessonId: l.id } } as never)}
-                style={({ pressed }) => [
-                  styles.card,
-                  { flexDirection: row, backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.85 : 1 },
-                ]}
-              >
-                <View style={{ flex: 1, gap: 4 }}>
-                  <Text style={[styles.unit, { color: colors.mutedForeground, textAlign: align }]}>{t('hubUnit', l.unitNumber)}
-                    {(perUnit.get(unitKey(l)) ?? 0) > 1 ? ` · ${lang === 'ar' ? l.titleAr || l.title : l.title}` : ''}
+              key={l.id}
+              onPress={() => router.push({ pathname: '/curriculum/english/[lessonId]', params: { lessonId: l.id } } as never)}
+              style={({ pressed }) => [
+                styles.card,
+                { flexDirection: row, backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.85 : 1 },
+              ]}
+            >
+              <View style={{ flex: 1, gap: 4 }}>
+                <Text style={[styles.unit, { color: colors.mutedForeground, textAlign: align }]}>{t('hubUnit', l.unitNumber)}
+                  {(perUnit.get(unitKey(l)) ?? 0) > 1 ? ` · ${lang === 'ar' ? l.titleAr || l.title : l.title}` : ''}
+                </Text>
+                <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.body, textAlign: align }} numberOfLines={2}>
+                  {names.title}
+                </Text>
+                {names.gloss ? (
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }} numberOfLines={1}>
+                    {names.gloss}
                   </Text>
-                  <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: align }} numberOfLines={2}>
-                    {names.title}
-                  </Text>
-                  {names.gloss ? (
-                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }} numberOfLines={1}>
-                      {names.gloss}
-                    </Text>
-                  ) : null}
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
-                    {t('hubWords', l.words.length)} · {l.words.slice(0, 4).map(w => w.en).join(', ')}…
-                  </Text>
-                </View>
-                {stars > 0 ? (
-                  <Text style={{ fontSize: 13, color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }}>⭐ {stars}</Text>
                 ) : null}
-                <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.mutedForeground} />
-              </Pressable>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
+                  {t('hubWords', l.words.length)} · {l.words.slice(0, 4).map(w => w.en).join(', ')}…
+                </Text>
+              </View>
+              {stars > 0 ? (
+                <Text style={{ fontSize: TYPE.caption, color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }}>⭐ {stars}</Text>
+              ) : null}
+              <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.mutedForeground} />
+            </Pressable>
           );
         })}
-      </ScrollView>
-    </View>
+      </CornerGrid>
+    </CornerFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 14 },
-  backBtn: { width: 40, height: 40, justifyContent: 'center' },
-  title: { color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 24, marginBottom: 4 },
-  sub: { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 },
-  streak: { color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, marginTop: 8 },
-  goalRow: { alignItems: 'center', gap: 6, marginTop: 8 },
-  badgeRow: { gap: 8, paddingHorizontal: 20, paddingVertical: 10 },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
-  chips: { flexWrap: 'wrap', gap: 8, paddingHorizontal: 20, paddingVertical: 14 },
-  chip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7 },
+  streak: { color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.label, marginTop: SPACE.sm },
+  goalRow: { alignItems: 'center', gap: 6, marginTop: SPACE.sm },
+  bandText: { color: '#fff', fontFamily: 'Almarai_400Regular', fontSize: TYPE.body },
+  badgeRow: { gap: SPACE.sm, paddingHorizontal: SPACE.lg, paddingTop: SPACE.md },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: RADIUS.pill, paddingHorizontal: SPACE.md, paddingVertical: 6 },
+  chips: { flexWrap: 'wrap', gap: SPACE.sm, paddingHorizontal: SPACE.lg, paddingTop: SPACE.md },
+  chip: { borderWidth: 1, borderRadius: RADIUS.pill, paddingHorizontal: 14, paddingVertical: 7 },
   unit: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 },
-  card: { alignItems: 'center', gap: 10, borderWidth: 1, padding: 14 },
+  card: { alignItems: 'center', gap: 10, borderWidth: 1, padding: 14, flexGrow: 1 },
 });

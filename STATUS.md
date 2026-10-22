@@ -1589,6 +1589,47 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Each corner has its own colour and band, 2026-10-21
+
+**What changed.** The Math Corner is indigo with graph paper, the Lab violet
+with a hexagon lattice, the Quran corner deep green with eight-point stars and
+a gold hairline — band, icon tints, chips and buttons — on top of the shared
+cards, type and spacing. Since PR 2 the English corner is coral with speech
+bubbles and the games hub magenta with confetti; each game keeps its own band and accent
+once opened (its shared secondary buttons take the hub's magenta tint). The library's corner tiles show each corner's colour.
+At desktop width a hub's cards sit in up to three columns under a band whose
+title aligns with them. Design:
+`docs/superpowers/specs/2026-10-21-corner-identities-design.md`; plans:
+`docs/superpowers/plans/2026-10-21-corner-identities-pr1.md` and
+`docs/superpowers/plans/2026-10-21-corner-identities-pr2.md`.
+
+**How.** `constants/corners.ts` is the one table (light + dark tokens, motif,
+glyph); `context/CornerTheme.tsx` is mounted by each corner directory's
+`_layout.tsx`; `hooks/useColors.ts` spreads the corner's tokens over the
+palette, so every component under it follows. `components/corners/CornerFrame`
+replaced `MathFrame` and `LabFrame`; PR 2 removed those two shims, so
+`CornerFrame` is the only frame. `cornerTheme.test.ts` measures every token
+pair, and the band's subtitle on its hero, at ≥ 4.5:1 in both schemes and pins
+the structure: every corner has a provider layout (`WIRED` is `CORNER_IDS`),
+nothing else does, and no file in a corner's route directory or in
+`components/{math,lab,quran,corners,englishHub,publicGames}` imports the global
+`palette`. `e2e/screens.mjs` screenshots the corners and the library on the built web bundle (phone and
+desktop, light and dark) for a human to look at — see `e2e/README-screens.md`.
+
+**Not yet.** Dark-mode secondaries were measured by the test, not by eye on a
+device. The grapher's plotted curves stay teal on purpose: they take the shared
+data-series palette (`seriesColor`) that the slide export prints, so a graph
+looks the same in the grapher and on its slide; the controls around them are
+indigo. The bubbles and confetti tiles are 170px tall on a band about 104px
+tall, so their lower part is clipped; that is decorative and deliberate, the
+same as the math wave.
+
+Text on a primary fill must be `primaryForeground`: the English corner and its
+activities used white, which a corner's light dark-mode primary cannot carry;
+`cornerTheme.test.ts` now fails white `primaryText` and white selected-chip text
+there. Other screens outside the corners still carry the same white-on-teal pair
+in dark mode — not fixed here.
+
 ## One question-type order, one set of repeat-rule inputs, 2026-10-18
 
 The order a ministry paper puts its question types in was written out by hand in
@@ -1628,9 +1669,12 @@ exports (the API's `paperOrder.ts` `EXAM_TYPE_ORDER` and `generationShape.ts`
 asserted in `paperOrder.test.ts`, `examBlocks.test.ts` and
 `quizMinistryOrder.test.ts`. A source-text check stays on top: the two mobile
 files must import from `@workspace/exam-paper` and carry no list literal of
-their own, and the API's two modules declare none. A second list under another
-name is **not** caught; `ALL_Q_TYPES` in the quiz picker
-(`app/ai-tools/quiz.tsx`) is one, and it predates this change.
+their own, and the API's two modules declare none. The quiz picker
+(`app/ai-tools/quiz.tsx`) kept a second list, `ALL_Q_TYPES`, until 2026-10-20; it
+now takes `QUIZ_TYPE_ORDER` and `QuizType` from the package, and the same test
+fails if the file declares a list or union of its own again. A list under another
+name elsewhere is **not** caught — `QuizQuestion['type']` in
+`services/ai/AIService.ts` still spells the four types out.
 
 How "no behaviour change" was checked, rather than asserted: a before/after
 digest of `quizRepeats` (per paper) and `dominantKind` over every lesson's
@@ -1919,6 +1963,122 @@ yet.** Spec: `docs/superpowers/specs/2026-10-17-english-corner-reading-g1-design
 **To switch a unit on:** a Grade 1 English teacher signs that unit's page of
 `docs/english-reading-g1-review.html`, printed; then set its `reviewedBy` in
 `englishReading.ts` and merge. No recording step: every word is already voiced.
+
+## Grade 2 grammar in the English corner — built, shown to nobody yet, 2026-10-19
+
+Grammar for Grade 2, after Grade 1: the three Grade 1 activities (**Choose the
+word**, **Build the sentence**, **True or false**) plus a new fourth, **Yes or
+No** (a picture and a question; tap «Yes, it is.» or «No, it isn't.»). 8 of the
+hub's 9 Grade 2 lessons have a unit, 212 sentences in all. The hub has no S2
+Unit 0, and S1 Unit 3 (body parts) has no unit: its words have no pictures.
+**Every unit is `reviewedBy: null` in `GRAMMAR_UNITS_G2`
+(`lib/curriculum/src/englishGrammarG2.ts`), so nobody sees them yet.** Spec:
+`docs/superpowers/specs/2026-10-19-english-corner-grammar-g2-design.md`; plan:
+`docs/superpowers/plans/2026-10-19-english-corner-grammar-g2.md`.
+
+- **Only what can be pictured.** A pattern that needs a picture the corner does
+  not have is left out, and the teacher's form lists it with the reason
+  (`NOT_COVERED_G2`, one block per lesson, S1 U3 included): `swing`, `slide`
+  (no picture), `orange` as food (its only picture is the colour 🟠), `balcony`
+  («on», not «in»), the family words beyond mum/dad/grandad/granny, the
+  prepositions, the two-picture sentences. `action figure` and `building set`
+  appear in Build the sentence only.
+- **The Grade 1 engine, extended in place.** `choose` is optional and a pattern
+  may declare `yesNo`. `kind: 'match'`: the picture stays and the question names
+  it (Yes) or the next pictured word in the slot (No). `kind: 'marker'`: the
+  pattern's ✅ / ❌ is the truth («Do you like cheese?» ✅ → Yes). A `yesNo`
+  pattern is never a Choose or True or false item but is still a Build item.
+  Word forms added: irregular plurals (`mice`, `potatoes`, `shelves`), plural
+  forms with no article (`scissors`, `rice`, `eggs`).
+- **Yes or No is on two units**: toys (S1 U1, `Is it a car?`, 12 sentences) and
+  food (S2 U6, `Do you like cheese?`, 28). Its builder is `buildYesNoRound`
+  in `services/englishHub/games.ts` (half Yes, half No, never one picture twice);
+  the screen is `YesNo` in `components/englishHub/GrammarActivities.tsx`.
+  Checked in a browser at 390 px in Arabic and English with the two units signed
+  off in the working tree only; an unsigned unit shows no Yes or No card.
+- **The teacher's form and sheet are per grade.**
+  `docs/english-grammar-g2-review.html` (A4 landscape, a unit per page, a Yes or
+  No column on two of them, the not-covered block, a sign-off strip) and
+  `docs/english-grammar-g2-sheet.md`, written by the same `grammar-sheet`
+  script, pinned by tests. The Grade 1 sheet, Grade 1 form and reading form are
+  byte-identical.
+- **Four open points on the form for the teacher**: whether the eye-colour
+  circle beside 👦 / 👧 is clear; whether ✅ / ❌ read as «the child likes it»;
+  whether 🥵 / 🥶 are fair pictures for hot and cold weather; whether ages five
+  to ten are the right range for «How old are you?».
+- **Audio is a separate step and has not been run.** `english-audio` now
+  voices `allGrammarSpoken()`: each sentence plus the Yes or No question, the
+  other question and the No exchange. Grades 1 and 2 together are 322 sentences
+  and 360 spoken strings. It needs OpenAI and R2 keys (`pnpm --filter
+  @workspace/curriculum run english-audio`, which skips what already exists). A
+  test pins that no two of the 360 share a recording key.
+
+**To switch a unit on:** record the audio (above); a Grade 2 English teacher
+signs that unit's page of `docs/english-grammar-g2-review.html`, printed; then
+set its `reviewedBy` in `englishGrammarG2.ts` and merge. Grade 2 reading is a
+separate spec, not started.
+
+## Grade 2 reading in the English corner — built, shown to nobody yet, 2026-10-20
+
+Reading for Grade 2, after Grade 1: the three Grade 1 word activities (**Read
+and find**, **First letter**, **Starts with**) on the Grade 2 words, plus a
+fourth, **Read the sentence** (a sentence printed with no sound; tap its
+picture of three; the sentence plays after the answer). All 9 Grade 2 lessons
+get the word activities. **Every unit is `reviewedBy: null` in `READING_UNITS`
+(`lib/curriculum/src/englishReading.ts`), so nobody sees any of it yet.** Spec:
+`docs/superpowers/specs/2026-10-20-english-corner-reading-g2-design.md`; plan:
+`docs/superpowers/plans/2026-10-20-english-corner-reading-g2.md`.
+
+- **The sentences are the Grade 2 grammar sentences**, not new ones: pictured,
+  and not Yes or No (which has its own activity). Nothing new to author or
+  record. Seven lessons have the sentence activity (S1 U0, U1, U2, U4, S2 U5, U6,
+  U7). **S1 U3** has no grammar unit, so no sentences. **S2 U8** has 16
+  sentences but only 4 distinct pictures (the room; the sentences differ by the
+  person), so it is left out; the rule is "at least 6 distinct picture words"
+  (`MIN_SENTENCE_WORDS`), not a list.
+- **Three gates.** «Read the sentence» needs the unit's reading signed **and**
+  its grammar signed (a child never reads a sentence a teacher has not checked),
+  and the lesson to be Grade 2 (Grade 1 has grammar units too, and would
+  otherwise get the activity the day both of its switches are set). The word
+  activities need only the reading sign-off. `offeredReadingSentences` is the
+  gate; `signed` is injectable so tests never commit a sign-off.
+- **The wrong pictures teach the small word.** `sentencePartner` finds the
+  sentence one word away (same picture word, another count or marker): 1 pencil
+  against 2 pencils (14 of 15 sentences in S1 U2), 1 mouse against 2 mice (20
+  of 20, S2 U5), cheese ✅ against cheese ❌ (28 of 28, S2 U6), blue 👦 against
+  blue 👧 (6 of 10, S1 U4). It is shared by the form and the app, so the form
+  shows what the app will do; the other wrong picture is another word of the
+  same pattern. A round asks each picture word once: at most 8 questions, 8 in
+  S1 U2, 7 in S1 U4.
+- **First sounds use the Grade 1 rule unchanged**; no Grade 2 word needed an
+  exception. It leaves out 22 distinct words (23 entries; `orange` is in two
+  lessons), e.g. `apple`, `chicken`, `shoes`, `short`.
+- **The teacher's form** is `docs/english-reading-g2-review.html`, written by
+  the same `grammar-sheet` script (`renderReadingReviewHtml(2)`): per unit the
+  words with picture and first letter, the left-out words, a sentence table
+  with the wrong picture each is shown against, and a not-covered block for S1
+  U1, U3, S2 U6, U8. A test pins it to the generator. The Grade 1 reading form
+  and every other doc are unchanged. Open points for the teacher: is a
+  two-sentence exchange too long to read at this point of Grade 2 (a
+  one-function change to show only the answer); do ✅/❌ and one-versus-two
+  pictures read clearly as «don't» and «these are»; the pink heart, the 🟠 and
+  the eye-colour circle.
+- **Audio.** The sentence plays after the answer, from the grammar recordings:
+  Read the sentence adds none of its own, but it needs the pending
+  `english-audio` run (the Grade 2 grammar step) before it is worth switching
+  on. The word recordings already exist.
+- **Checked in a browser** at 390 px in Arabic and English with units signed off
+  in the working tree only (restored straight after; never committed): the
+  sentence stays left to right, three picture cards fit a row (two layout bugs
+  found and fixed: collapsed cards, and two-picture cards spilling over their
+  border), a unit with reading but not grammar signed shows the word cards and
+  no sentence card, and an unsigned unit shows no reading section.
+
+**To switch a unit on:** the grammar unit is signed and its audio recorded; a
+Grade 2 English teacher signs that unit's page of
+`docs/english-reading-g2-review.html`, printed; then set its `reviewedBy` in
+`englishReading.ts` and merge. The word activities need only the reading
+sign-off.
 
 ## A Grade 1 English teacher's review, 2026-10-15
 
@@ -2329,8 +2489,8 @@ as something else; circles belong to the sketchpad.
   −1…1, which no equal-aspect view can, so the «sin» button switches to a
   degree- or radian-axis view and the «1:1» button goes back. Degree ticks fall
   on 15°/30°/45°/90°.
-- **A canvas inside a ScrollView needs a scroll lock.** `MathFrame` is
-  `LabFrame` plus a context: the grapher locks the page while a finger is on
+- **A canvas inside a ScrollView needs a scroll lock.** The Math and Lab frames are now
+  one `CornerFrame` (`components/corners/CornerFrame.tsx`), which also holds the scroll lock: the grapher locks the page while a finger is on
   the canvas. Verified: dragging the canvas leaves `scrollTop` unchanged.
 - **The mouse wheel was silently dead in the first build.** The canvas mounts
   only after its first layout and the wheel listener was attached once at mount,
@@ -4400,6 +4560,94 @@ top-level place («المكتبة») is listed once instead of «المكتبة:
 open: «كيف أرسل رسالة لولي أمر؟», «كيف أصحح أوراق الطلاب؟», long-press export on the
 «أيّ مادة تقصد؟» clarification.
 
+**Features asked about by name, and ones the app lacks (2026-10-19, ninth live pass).**
+Of 30 new questions on app.iqrra.com, 10 were answered by the app and 13 went to
+the model, which refused or invented a menu path. Each screen was opened in code
+first. Now with steps: marking papers by camera (`class-scan` also matches
+«أصحح أوراق الامتحان بالكاميرا»), writing to a parent (`parent-message`, the
+«رسالة لوليّ الأمر» tool, ahead of `message-one`, and the Messages tab is named
+too), who has not handed in homework (`homework-done` now takes "has not" /
+«ما سلم»; the card shows only a count), joining a class by code (`join-class`:
+only student and parent accounts have «الانضمام إلى شعبة أخرى»; a teacher
+creates a class), the calendar (`calendar`: view-only, so «أضيف حدثًا» is
+answered with where each entry comes from), «نسيت كلمة المرور شو أعمل؟». Says the
+app cannot: Excel import (paste the names), attendance (no register), offline
+(no offline mode), a question bank (none), an exam reminder (none; the exam date
+shows in the calendar). "make homework less boring" and «أقل مللًا» are purpose
+words, and `classifyChatIntent` no longer builds a worksheet for "make … less/more
+…". «كيف أصحح أوراق الطلاب؟» stays with the model on purpose: without the
+camera it is marking advice. Still open: long-press export on the
+«أيّ مادة تقصد؟» clarification.
+
+**The lab, the corners, groups, export and more (2026-10-20, tenth live pass).**
+Of 30 more questions on app.iqrra.com about features not probed before, 5 were
+right; the model refused or invented a path for most of the rest. Each screen was
+opened in code first. Now found or explained: the lab, the math corner and the Quran
+corner (tiles on the Library tab, matched by anchored «open / where» rules only —
+«chemistry lab» alone is a lab report, «القرآن» a lesson), a memory or other
+play game (→ «ألعاب إقرأ»), the whiteboard (a button in the presentation toolbar),
+a group for parents (`messaging/new-group` has a «مجموعة» mode beside the one-to-one
+broadcast), downloading a plan as Word / PDF or copying a result (the existing
+export answer), switching between classes, the School tab (student and parent
+accounts only), a backup (none: saves live in the account), «هل بياناتي آمنة؟»
+(points to the privacy policy, does not promise), updating the app, which lessons
+are done (a plan counts lessons whose dates have passed; there is no taught tick),
+videos and searching in the Library, and sharing a plan with a colleague. Not done
+because the code does not settle them: a class limit, joining a school as a teacher,
+uploading an image to a lesson. Still open: long-press export on the
+«أيّ مادة تقصد؟» clarification.
+
+**Exams and classes: what exists and what does not (2026-10-20, eleventh live pass).**
+Of 30 questions on app.iqrra.com, 15 were fine (teaching, meta, support, the Excel
+export) and 15 went to the model, which refused or invented a path. Each was checked
+in code. Reopening a closed exam was already in `howCloseExam` («انشر التقييم»);
+the rule just did not match it. Now with steps: marks per question (the edit pencil's
+«العلامة»), the class grade (the same «تعديل الشعبة» pencil, grade buttons only when
+the teacher has more than one grade), seeing the class link code and a student's login
+code (the latter is shown once; the answer says so). Now said plainly: no ranking of
+students by mark (the results dashboard lists each student with a percentage), no
+per-question analysis (it shows «ما لم تتقنه الشعبة» per objective), no exam duration
+or extension (`evaluations.time_limit_min` is enforced when set, but nothing in the
+app or API sets it — the link takes answers until «أغلق الاختبار» or it expires), no
+shuffle of question order (blocks in the ministry order), no list of archived classes
+and no restore. Not done because the code does not settle it: adding a co-teacher.
+Still open: long-press export on the «أيّ مادة تقصد؟» clarification.
+
+**Slides, worksheets, verification and the books (2026-10-21, twelfth live pass).**
+Of 30 questions, 7 were fine (teaching) and 23 went to the model, which gave generic
+"depends on your program" steps or asked for a subject. Each was checked in code. The
+deck after «جهّز الشرائح» is a list with a pencil (title, content, answer, picture from
+the device, a suggested picture or a link, the video link) and a bin per slide, plus
+«مظهر العرض»; there is no way to add a slide, reorder them, or type teacher notes
+(generated notes go to the PPTX notes pane). A generated plan is edited by tapping an
+item (the existing `faqA5`). A worksheet's answers toggle with «إظهار/إخفاء الإجابات»
+and export as «نسخة الطالب» or «نسخة المعلم»; export adds no logo, name or name-and-date
+line (use Word). «مستوى الاختبار» / «مستوى الصعوبة» set difficulty. «تم التحقق من
+الإجابة رياضيًا (SymPy)» means a symbolic verifier solved it independently; its
+absence means nobody checked. A remedial worksheet comes from «مجموعات الدعم» after an
+exam, or from the worksheet tool at «عادي». The book, teacher guide and activity book
+are chips on the curriculum's subject page. A daily generation limit is answered with
+`howPricing` (the cap is monthly). Not done because the code does not settle them: the
+language of a worksheet, and past-year questions. Still open: long-press export on the
+«أيّ مادة تقصد؟» clarification.
+
+**Account, classes, exams and games (2026-10-21, thirteenth live pass).**
+Of 30 questions, 10 were right, 5 were teaching controls, 14 got a refusal or generic
+advice and 1 («كيف أشارك كود الشعبة مع الطلبة؟») got the *create-a-class* steps. All
+15 were checked in code first. Answered now: the profile photo (tap the round picture or
+the camera badge; red × removes it); a phone number (the app neither asks for nor keeps
+one); a mark on homework (none — only the «أنجزه … من …» count; make it an evaluation
+for a mark); a QR code for an evaluation (none — «رابط الطلبة» has a short code and a
+link; the only QR is the lab link in an export); reminding parents of an exam (saving the
+date on a published, class-attached exam pushes linked parents and students, a draft or
+classless exam sends nothing — `announceExamDate`); copying a class (not possible);
+the games list and the English Corner (two entrances); quick quiz vs evaluation (the quiz
+is export-only). The existing steps now also answer the wordings that missed them:
+«أضبط الإشعارات», moving a student «من شعبة إلى أخرى», who opened an exam, «كود الشعبة»,
+the exam link «عبر واتساب», «ملاحظات أو اقتراحات للتطبيق». Left with the model, not
+verified in code: sorting the class list by grade. «كيف أبلغ الطلاب بموعد الامتحان؟» stays
+a teaching question (announcing in class); only the parents' wording is app help.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
@@ -4913,30 +5161,24 @@ picture.
 - Bucket: pages are in `iqraa-public/book-pages/`; the app shows nothing new until
   the OTA ships.
 
-## Revision-deck slides name their unit, 2026-10-19
+## Book-picture slides no longer share one title, 2026-10-22
 
-A whole-book Grade 10 maths deck (53 slides) read as the same slide repeated: each
-unit round was five slides under three titles («الدائرة» on the divider and the ideas
-slide, «المفاهيم والمصطلحات», and «من كتاب الطالب» twice), so the slide list showed
-the same few titles eight times over.
+A deck read as the same slide repeated once book images came in: every figure was a
+slide titled «من كتاب الطالب». Measured over every KB lesson, 1,213 of 3,318 lesson
+decks had a run of them. (The whole-book revision deck had the same symptom through a
+different shape — five slides per unit; #1160 cut that to three, with the pictures
+beside the outcomes and terms, so it needs nothing here.)
 
-- **Fixed:** in `buildRevisionDeck` the divider keeps the bare unit title; the ideas slide
-  is «<unit> — الأفكار الرئيسة», the terms slide «<unit> — المفاهيم والمصطلحات», and
-  each book page «من كتاب الطالب — <unit> (٢)» (numbered from 2; the first figure sits
-  beside the ideas). English: «Key ideas» / «Key terms» (not «Goals» — a test uses
-  that word to detect an Arabic-only goals slide). `revisionDeck.test.ts` fails if any
-  two slides of the whole-book deck share a title.
-- **Same cause in the other decks (found 2026-10-19).** Measured over every KB lesson:
-  1,213 of 3,318 lesson decks had a run of identical «من كتاب الطالب» slides. Fixed in
-  `bookFigureSlides` callers via `numberedBookTitles` (`buildLessonDeck`, and `classDeck.ts`
-  for quiz/worksheet/game decks: «(١)», «(٢)»…, a lone figure stays bare) and in
-  `bookPageSlides` (title carries the page: «من كتاب الطالب — صفحة ٢٥»). Left: 27 lesson
-  decks where a concept slide is titled like the lesson itself (cover «قانون الجيوب» and
-  its rule slide) and 5 chemistry decks with two «💡 أفكار الدرس» slides.
-- **Not reproduced:** the same report had a player screenshot showing the agenda slide
-  at 27/53, where the built deck has a book page. The player reads `slides[slideIndex]`
-  for both counter and content, so the code cannot do this; it may have been a stale
-  saved deck. Unconfirmed until someone has the saved deck's link.
+- **Fixed:** `numberedBookTitles` numbers several figures «من كتاب الطالب (١)», «(٢)»…
+  (a lone figure stays bare) in `buildLessonDeck` and in `classDeck.ts`
+  (quiz/worksheet/game decks); `bookPageSlides` titles each page «من كتاب الطالب — صفحة ٢٥».
+  `lessonSlides.test.ts` fails if any lesson deck repeats a book-picture title.
+- **Left:** 27 lesson decks where a concept slide is titled like the lesson itself (cover
+  «قانون الجيوب» and its rule slide) and 5 chemistry decks with two «💡 أفكار الدرس» slides.
+- **Not reproduced:** a player screenshot showing the agenda slide at 27/53 of a
+  whole-book deck. The player reads `slides[slideIndex]` for both counter and content, so
+  the code cannot do this; it may have been a stale saved deck. Unconfirmed until
+  someone has the saved deck's link.
 
 ## Revision decks carry the book's own pictures and all its key terms, 2026-10-18
 
@@ -21431,3 +21673,82 @@ but nothing new is stored in the shared pool: `storeVariant`
 insert, so the insert fails, and the error is caught and logged as "artifact
 cache unavailable — generation continues uncached". Teacher pool reads and
 retire use explicit columns and are unaffected.
+
+## Load test, 2026-10-19: the exam path holds, the sign-up rush does not
+
+`e2e/loadtest/` (`pnpm --filter @workspace/e2e run loadtest`, README beside it)
+drives the real API: N accounts register, verify and sign in at once, then
+classes of students claim, answer, submit and fetch a result while teachers poll.
+It also sends a no-database `GET /healthz` every 250 ms ("bystander") so event-loop
+starvation shows up, and checks Postgres holds as many submitted attempts as
+students saw succeed.
+
+**Measured on a local API and Postgres (no Cloud Run → Neon hop, so latencies are
+a floor; the CPU-bound numbers are close to real):**
+
+- **Exam path: fine.** 300 students over 5 classes, 10 questions each, ramped over
+  10 s: all 300 handed in, all 300 stored, p95 ≤ 65 ms on every call, pool never
+  queued.
+- **Sign-up and sign-in: not fine.** `bcryptjs` at cost 12 is pure JavaScript and
+  runs on the event loop (~0.35 s of CPU per hash). 100 simultaneous
+  registrations took p50 21 s / p95 36 s, and **a request that needs no database
+  at all (`/healthz`) took p95 35 s during the burst** — the whole instance stops
+  serving, including a class mid-exam. 100 simultaneous sign-ins: p95 17 s.
+  The mobile client gives up at 15 s (`API_TIMEOUT_MS`). Fixed the same day,
+  see below.
+- **Because of that, the new 10 s pool timeout shows as errors in that burst.**
+  53 of 100 sign-ins answered 500 (queries could not get a connection through a
+  starved loop). With `DB_CONNECT_TIMEOUT_MS=60000` the same burst had no errors
+  and the same latency — the timeout surfaces the overload, it does not cause it.
+
+**What changed:** the pool is explicit and env-tunable with a connection timeout
+(`lib/db/src/poolConfig.ts`, table in `docs/deploying.md`); a starved pool now
+answers 503 `db_busy` + `Retry-After`. The auth middleware used to answer a failed
+user lookup with **401**, which makes every client call `/auth/refresh` and retry
+into the same dry pool. `GET /api/healthz/pool` (admin-key gated) exposes
+`total/idle/waiting`.
+
+**Not measured:** anything against production, Neon's real connection limit, an
+AI-generation burst, Cloud Run autoscaling, and the per-IP limiters from a real
+school network (a single-IP generator trips them; the script spoofs
+`X-Forwarded-For` only against a local API).
+
+### Hashing moved off the main thread, 2026-10-19
+
+`lib/passwordHash.ts` runs `bcryptjs` in a worker thread (`passwordHashWorker.ts`,
+its own esbuild entry — `build.mjs` fails if `dist/passwordHashWorker.mjs` is not
+emitted). Same algorithm and `$2b$12$…` format, so every stored password still
+verifies and there is no migration; `routes/auth.ts` and `routes/admin.ts` call
+`hashPassword`/`comparePassword` instead of `bcrypt.*`.
+
+Same 100-account burst, local API, before → after:
+
+| | before | after |
+| --- | --- | --- |
+| `/healthz` (no database) during sign-up | p95 35 s | p95 4 ms |
+| pool requests waiting for a connection | up to 73 | 0 |
+| sign-in 500s | 53 of 100 | 0 |
+| time for the last one (1 hasher, ~3 hashes/s) | ~36 s | ~36 s |
+
+The last row is the honest limit: hashing is CPU, one vCPU does ~3 a second, and
+moving it to a thread protects everyone else rather than speeding it up. So the
+routes that hash admit at most `PASSWORD_HASH_MAX_PENDING` (default 40, about
+what 15 s of one vCPU can finish) requests at once and answer the rest
+`503 hashing_busy` + `Retry-After` — before their rate limiters, because a
+refused request must not burn the per-address allowance (with the limiters first,
+a few retries of "busy" became a `429` lockout; found by the load test). The app
+shows «الخدمة مشغولة حاليًا…» for `hashing_busy`/`db_busy` (`errServerBusy`,
+JS only). More headroom is `PASSWORD_HASH_WORKERS` (1–4) together with more
+vCPU: **since 2026-10-19 `deploy.yml` sets `--cpu 2` and `PASSWORD_HASH_WORKERS=2`
+on `iqraa-api`** (the verifier stays at 1 vCPU). Measured first, on a local API
+pinned to two cores: 100 accounts register, verify and sign in in ~19 s instead of
+~38 s, a database-free `/healthz` still p95 7 ms, 0 errors, peak RSS 258 MiB of the
+512Mi limit. The always-on instance (`--min-instances 1`) now bills two vCPUs.
+
+A worker that cannot start falls back to hashing on the main thread, logged at
+error level, and `GET /api/healthz/pool` shows `hashing.degraded: true` — check it
+after the first deploy. Re-run with the API pinned to one core (`taskset -c 0`, the
+worker thread included, to approximate Cloud Run's one vCPU): 100/100 accounts
+through, `/healthz` p95 6 ms, 0 errors, 0 × 429, exam path unchanged. Not measured:
+Cloud Run's own CPU quota (throttling is not the same as pinning), or more than one
+instance.

@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
+import { existsSync } from "node:fs";
 import { cp, rm } from "node:fs/promises";
 
 // Plugins (e.g. 'esbuild-plugin-pino') may use `require` to resolve dependencies
@@ -15,7 +16,14 @@ async function buildAll() {
   await rm(distDir, { recursive: true, force: true });
 
   await esbuild({
-    entryPoints: [path.resolve(artifactDir, "src/index.ts")],
+    // The worker is its own entry, not part of index.mjs: `new Worker(url)` needs a file to
+    // point at (lib/passwordHash.ts resolves `./passwordHashWorker.mjs` beside the bundle).
+    // Missing it does not break sign-in — hashing falls back to the main thread, loudly —
+    // but it silently undoes the reason the worker exists, hence the check below.
+    entryPoints: {
+      index: path.resolve(artifactDir, "src/index.ts"),
+      passwordHashWorker: path.resolve(artifactDir, "src/lib/passwordHashWorker.ts"),
+    },
     platform: "node",
     bundle: true,
     format: "esm",
@@ -131,6 +139,10 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
   // request in production since it shipped. Ship the real files to where the
   // bundle actually looks for them, rather than changing the lookup: it's the
   // one relative position that stays correct however deep this file sits.
+  if (!existsSync(path.join(distDir, "passwordHashWorker.mjs"))) {
+    throw new Error("build did not emit dist/passwordHashWorker.mjs — password hashing would run on the main thread");
+  }
+
   const extractedSrc = path.resolve(artifactDir, "../../lib/curriculum/src/data/extracted");
   const extractedDest = path.join(distDir, "data", "extracted");
   await cp(extractedSrc, extractedDest, { recursive: true });

@@ -14,7 +14,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { MATH_TOOLS, mathShareUrl, resolveMathParam } from '@/services/mathTools';
 import { copyToClipboard } from '@/services/share';
-import { MathFrame } from '@/components/math/MathFrame';
+import { CornerFrame } from '@/components/corners/CornerFrame';
 import { MathTool } from '@/components/math/MathTool';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 
@@ -27,11 +27,11 @@ export default function MathToolScreen() {
   const id = resolveMathParam(toolId);
   if (!id) {
     return (
-      <MathFrame title={t('mathTitle')}>
+      <CornerFrame title={t('mathTitle')}>
         <Text style={[styles.missing, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
           {t('mathNotFound')}
         </Text>
-      </MathFrame>
+      </CornerFrame>
     );
   }
 
@@ -48,7 +48,7 @@ export default function MathToolScreen() {
   };
 
   return (
-    <MathFrame title={t(meta.titleKey)} subtitle={t(meta.hintKey)}>
+    <CornerFrame title={t(meta.titleKey)} subtitle={t(meta.hintKey)}>
       <View style={[styles.actions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Pressable
           onPress={copyLink}
@@ -62,7 +62,7 @@ export default function MathToolScreen() {
         </Pressable>
       </View>
       <MathTool toolId={id} />
-    </MathFrame>
+    </CornerFrame>
   );
 }
 

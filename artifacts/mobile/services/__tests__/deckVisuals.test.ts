@@ -518,6 +518,14 @@ describe('chartGeometry — one layout for the projector and the PDF', () => {
     assert.ok(g.bars.every(b => b.labelY > b.y + b.h));
   });
 
+  it('prints each bar’s value above it, so 12 and 120 do not look alike', () => {
+    const g = chartGeometry({ kind: 'chart', chartType: 'bar', categories: ['a', 'b'], values: [120, 12.5] }, 640, 320);
+    assert.ok(g && g.kind === 'bars');
+    assert.deepEqual(g.bars.map(b => b.value), ['120', '12.5']);
+    assert.ok(g.bars.every(b => b.valueY < b.y));
+    assert.match(visualToSvg({ kind: 'chart', chartType: 'bar', categories: ['a', 'b'], values: [120, 12.5] }), />120</);
+  });
+
   it('refuses mismatched or empty data', () => {
     assert.equal(chartGeometry({ kind: 'chart', chartType: 'bar', categories: ['a'], values: [1, 2] }, 640, 320), null);
     assert.equal(chartGeometry({ kind: 'chart', chartType: 'pie', categories: ['a'], values: [0] }, 640, 320), null);
@@ -536,6 +544,13 @@ describe('usableChartVisual — a chart the model wrote', () => {
     const bar = usableChartVisual({ ...ok, extra: 'ignored', caption: '  مصروف الأسرة ' });
     assert.deepEqual(bar, { ...ok, caption: 'مصروف الأسرة' });
     assert.ok(usableChartVisual({ ...ok, chartType: 'pie', values: [50, 30, 20] }));
+  });
+
+  it('draws a "pie" that is not a whole as bars — a pie would restate 45 and 30 as 60/40', () => {
+    const v = usableChartVisual({ ...ok, chartType: 'pie', categories: ['أ', 'ب'], values: [45, 30] });
+    assert.equal(v && v.kind === 'chart' ? v.chartType : null, 'bar');
+    const whole = usableChartVisual({ ...ok, chartType: 'pie', values: [33.3, 33.3, 33.3] });
+    assert.equal(whole && whole.kind === 'chart' ? whole.chartType : null, 'pie');
   });
 
   it('reads numeric strings, including Arabic-Indic digits, and nothing else as a number', () => {

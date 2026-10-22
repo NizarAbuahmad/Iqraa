@@ -7,7 +7,7 @@
  * `onSuggestVideo` — it needs the screen's own video search.
  */
 import React from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { Ionicons } from '@expo/vector-icons';
 import type { SlideEditor } from '@/hooks/useSlideEditor';
@@ -59,6 +59,91 @@ export function SlideEditModal({ editor, onSuggestVideo, loadingSuggestion = fal
               multiline
               style={[styles.modalInput, styles.modalInputMultiline, inputStyle]}
             />
+
+            {editor.pictureSlot && (
+              <>
+                {label('slidePictureField')}
+                {editor.picture ? (
+                  <View style={{ gap: 8, marginBottom: 8 }}>
+                    <Image
+                      source={{ uri: editor.picture.url }}
+                      resizeMode="contain"
+                      style={{ width: '100%', height: 140, borderRadius: colors.radius, backgroundColor: colors.muted }}
+                      accessibilityLabel={editor.picture.caption || t('slidePictureField')}
+                    />
+                    {editor.picture.caption ? (
+                      <Text style={[styles.modalHint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                        {editor.picture.caption}
+                      </Text>
+                    ) : null}
+                    {/* A picture slide's picture is the slide: deleting the slide is how it goes. */}
+                    {editor.pictureSlot !== 'media' && (
+                      <Pressable
+                        onPress={editor.removePicture}
+                        style={[styles.suggestBtn, { borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                        accessibilityRole="button"
+                      >
+                        <Ionicons name="trash-outline" size={16} color="#B25E02" />
+                        <Text style={{ color: '#B25E02', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{t('slidePictureRemove')}</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                ) : (
+                  <Text style={[styles.modalHint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                    {t(editor.pictureSlot === 'background' ? 'slidePictureNoneBackground' : 'slidePictureNone')}
+                  </Text>
+                )}
+
+                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
+                  <Pressable
+                    onPress={() => { void editor.uploadPicture(); }}
+                    disabled={editor.pictureBusy}
+                    style={[styles.suggestBtn, { borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: editor.pictureBusy ? 0.6 : 1 }]}
+                    accessibilityRole="button"
+                  >
+                    <Ionicons name="image-outline" size={16} color={ACCENT} />
+                    <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{t('slidePictureUpload')}</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => { void editor.suggestPicture(); }}
+                    disabled={editor.pictureBusy}
+                    style={[styles.suggestBtn, { borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: editor.pictureBusy ? 0.6 : 1 }]}
+                    accessibilityRole="button"
+                  >
+                    {editor.pictureBusy
+                      ? <ActivityIndicator size="small" color={ACCENT} />
+                      : <Ionicons name="shuffle-outline" size={16} color={ACCENT} />}
+                    <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
+                      {t(editor.picture ? 'slidePictureSuggestAnother' : 'slidePictureSuggest')}
+                    </Text>
+                  </Pressable>
+                </View>
+                <TextInput
+                  value={editor.pictureQuery}
+                  onChangeText={editor.setPictureQuery}
+                  placeholder={t('slidePictureQueryPlaceholder')}
+                  placeholderTextColor={colors.mutedForeground}
+                  style={[styles.modalInput, inputStyle]}
+                />
+                {!(editor.mediaEditing && editor.pictureSlot === 'media') && (
+                  <TextInput
+                    value={editor.pictureLink}
+                    onChangeText={editor.setPictureLink}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    placeholder={t('slidePictureLinkPlaceholder')}
+                    placeholderTextColor={colors.mutedForeground}
+                    // A URL is latin text: left-aligned even in the RTL layout.
+                    style={[styles.modalInput, { ...inputStyle, textAlign: 'left' }]}
+                  />
+                )}
+                {editor.pictureError ? (
+                  <Text style={[styles.modalHint, { color: '#B25E02', fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                    {editor.pictureError}
+                  </Text>
+                ) : null}
+              </>
+            )}
 
             {editor.mediaEditing && editing?.type === 'media' && (
               <>

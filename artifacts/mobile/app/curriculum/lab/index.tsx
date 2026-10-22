@@ -16,7 +16,8 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { getLessonById } from '@/services/knowledgeBase';
 import { labItemPath } from '@/services/labLinks';
-import { LabFrame } from '@/components/lab/LabFrame';
+import { CornerFrame } from '@/components/corners/CornerFrame';
+import { CornerGrid } from '@/components/corners/CornerGrid';
 import type { TranslationKey } from '@/services/i18n';
 
 const KIND_LABEL: Record<LabItemKind, TranslationKey> = {
@@ -136,7 +137,7 @@ export default function LabShelfScreen() {
   };
 
   return (
-    <LabFrame title={t('labTitle')} subtitle={t('labIntro')}>
+    <CornerFrame title={t('labTitle')} subtitle={t('labIntro')}>
       <View style={[styles.chips, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Chip colors={colors} label={t('labAllSubjects')} on={subjectId === null} onPress={() => setSubjectId(null)} />
         {SUBJECT_IDS.map(id => (
@@ -155,9 +156,11 @@ export default function LabShelfScreen() {
           {t('labEmpty')}
         </Text>
       ) : (
-        shown.map(item => <ItemRow key={item.id} item={item} colors={colors} isRTL={isRTL} lang={lang} t={t} />)
+        <CornerGrid>
+          {shown.map(item => <ItemRow key={item.id} item={item} colors={colors} isRTL={isRTL} lang={lang} t={t} />)}
+        </CornerGrid>
       )}
-    </LabFrame>
+    </CornerFrame>
   );
 }
 
@@ -165,10 +168,9 @@ const styles = StyleSheet.create({
   chips: { flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, paddingTop: 12 },
   chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999 },
   row: {
+    flexGrow: 1,
     alignItems: 'center',
     gap: 12,
-    marginHorizontal: 16,
-    marginTop: 12,
     padding: 14,
     borderRadius: 14,
     borderWidth: 1,

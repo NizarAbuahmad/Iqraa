@@ -45,7 +45,7 @@ import {
   type SketchTool,
 } from '@/services/mathGeometry';
 import { makeViewport, panBy, resize, toPx, toWorld, zoomAt, type Point, type Viewport } from '@/services/mathViewport';
-import { useScrollLock } from './MathFrame';
+import { useScrollLock } from '@/components/corners/CornerFrame';
 import { PlaneGrid } from './PlaneGrid';
 import { useCanvasGestures } from './useCanvasGestures';
 

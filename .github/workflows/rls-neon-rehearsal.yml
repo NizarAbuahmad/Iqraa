@@ -1,0 +1,102 @@
+name: RLS Neon rehearsal
+
+# Manual only. Applies every migration to a SEPARATE, EMPTY Neon project and runs the
+# row-level-security suites against its direct and pooled endpoints — the checks in
+# docs/rls-rollout-checklist.md steps B3–B4, without needing a local Node 22 setup.
+#
+# It must never touch production: the suites create and drop throwaway users and roles, and
+# the migration enables RLS on every table. So the first step refuses any database that is not
+# empty (or one this workflow has already marked as its own).
+#
+# Setup, once: create a Neon project `iqraa-rls-rehearsal` in the production region and add two
+# repository secrets (Settings → Secrets and variables → Actions):
+#   NEON_REHEARSAL_DIRECT_URL   the project's direct connection string
+#   NEON_REHEARSAL_POOLED_URL   the project's pooled connection string (host contains "-pooler")
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type rehearsal-not-production to confirm the secrets point at the EMPTY rehearsal project'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  rehearse:
+    name: neon rehearsal
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Confirm the input
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          if [ "$CONFIRM" != "rehearsal-not-production" ]; then
+            echo "::error::Type exactly: rehearsal-not-production"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - name: Check the secrets and that the database is a rehearsal one
+        env:
+          DIRECT_URL: ${{ secrets.NEON_REHEARSAL_DIRECT_URL }}
+          POOLED_URL: ${{ secrets.NEON_REHEARSAL_POOLED_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "$DIRECT_URL" ] || [ -z "$POOLED_URL" ]; then
+            echo "::error::Add the NEON_REHEARSAL_DIRECT_URL and NEON_REHEARSAL_POOLED_URL repository secrets first."
+            exit 1
+          fi
+          host() { printf '%s' "$1" | sed -E 's#^[a-z]+://[^@]*@([^/:?]+).*#\1#'; }
+          echo "direct host: $(host "$DIRECT_URL")"
+          echo "pooled host: $(host "$POOLED_URL")"
+          if [ "$(host "$DIRECT_URL")" = "$(host "$POOLED_URL")" ]; then
+            echo "::error::The direct and pooled strings have the same host; paste the pooled string (host contains -pooler) into NEON_REHEARSAL_POOLED_URL."
+            exit 1
+          fi
+          command -v psql >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client; }
+          tables=$(psql "$DIRECT_URL" -Atc "select count(*) from information_schema.tables where table_schema='public'")
+          marked=$(psql "$DIRECT_URL" -Atc "select count(*) from information_schema.tables where table_schema='rls_rehearsal' and table_name='marker'")
+          if [ "$tables" != "0" ] && [ "$marked" != "1" ]; then
+            echo "::error::This database already has $tables tables in public and was not created by this workflow. Refusing to run: it may be production."
+            exit 1
+          fi
+          # Mark it as ours (in its own schema, so it is not a public table the coverage suite would flag).
+          psql "$DIRECT_URL" -qc "create schema if not exists rls_rehearsal; create table if not exists rls_rehearsal.marker (created_at timestamptz default now()); insert into rls_rehearsal.marker select now() where not exists (select 1 from rls_rehearsal.marker);"
+          echo "ok: rehearsal database ($tables public tables before this run)"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.18.0 --activate
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build api-server
+        run: pnpm --filter @workspace/api-server run build
+
+      - name: Migrate (direct endpoint)
+        env:
+          DATABASE_URL: ${{ secrets.NEON_REHEARSAL_DIRECT_URL }}
+        run: pnpm --filter @workspace/db run migrate -- --from-env
+
+      - name: Row-level security suites — direct endpoint
+        env:
+          RLS_TEST_DATABASE_URL: ${{ secrets.NEON_REHEARSAL_DIRECT_URL }}
+        run: pnpm --filter @workspace/db run test
+
+      # Runs even if the direct run failed, so one run reports on both endpoints.
+      - name: Row-level security suites — pooled endpoint
+        if: ${{ !cancelled() }}
+        env:
+          RLS_TEST_DATABASE_URL: ${{ secrets.NEON_REHEARSAL_POOLED_URL }}
+        run: pnpm --filter @workspace/db run test
