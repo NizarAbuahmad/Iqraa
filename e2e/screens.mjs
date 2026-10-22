@@ -29,7 +29,13 @@ const ROUTES = [
   ['english-lesson', '/curriculum/english/kbl-g1-eng-s1-nccd-u0_l1'],
   ['play-hub', '/play'],
   ['play-flags', '/play/flags'],
+  ['profile', '/profile'],
 ];
+// ONLY=library,profile shoots a subset. REDUCED=1 emulates prefers-reduced-motion
+// and shoots as soon as the splash is gone: with reduced motion nothing may still
+// be on its way in, so a card caught half-faded there is a bug.
+const ONLY = process.env.ONLY ? new Set(process.env.ONLY.split(',')) : null;
+const REDUCED = process.env.REDUCED === '1';
 const VIEWPORTS = [
   { name: 'phone', width: 390, height: 844, isMobile: true, hasTouch: true, deviceScaleFactor: 2 },
   { name: 'desktop', width: 1366, height: 860, isMobile: false, hasTouch: false, deviceScaleFactor: 1 },
@@ -42,8 +48,12 @@ catch { browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chro
 for (const colorScheme of ['light', 'dark']) {
   for (const vp of VIEWPORTS) {
     for (const [name, path] of ROUTES) {
+      if (ONLY && !ONLY.has(name)) continue;
       const { name: _vpName, width, height, ...device } = vp;
-      const ctx = await browser.newContext({ ...device, viewport: { width, height }, locale: 'ar-JO', colorScheme });
+      const ctx = await browser.newContext({
+        ...device, viewport: { width, height }, locale: 'ar-JO', colorScheme,
+        reducedMotion: REDUCED ? 'reduce' : 'no-preference',
+      });
       await ctx.addInitScript((who) => {
         localStorage.setItem('@iqra_language', 'ar');
         localStorage.setItem('@iqra_intro_seen_v1', '1');
@@ -64,9 +74,10 @@ for (const colorScheme of ['light', 'dark']) {
         const splash = page.locator('[role="progressbar"][aria-label="Iqrra"]');
         await splash.waitFor({ state: 'attached', timeout: 3000 }).catch(() => {});
         await splash.waitFor({ state: 'detached', timeout: 15000 }).catch(() => {});
-        await page.waitForTimeout(500);
+        // Entrance staggers up to 6 × 40ms + 220ms; 500ms covers it. Reduced motion gets no wait.
+        if (!REDUCED) await page.waitForTimeout(500);
         const stuck = (await splash.count()) > 0;
-        await page.screenshot({ path: `${OUT}/${colorScheme}-${vp.name}-${name}.png` });
+        await page.screenshot({ path: `${OUT}/${REDUCED ? 'reduced-' : ''}${colorScheme}-${vp.name}-${name}.png` });
         console.log(`${colorScheme} ${vp.name} ${name}${stuck ? ' SPLASH' : ''}`);
       } catch (e) {
         console.log(`${colorScheme} ${vp.name} ${name} FAILED ${String(e.message).slice(0, 80)}`);

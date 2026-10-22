@@ -554,3 +554,21 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   tiles borrow each corner's colour, its own chrome is brand teal.
   A new corner is one table row, one layout
   file, and a `CornerFrame`.
+- **Cards, presses, entry motion and bands are shared pieces (since 2026-10-21).**
+  The pieces are `useSurface()`/`Surface`, `PressableScale`, `Entrance` and
+  `Band` in `components/ui`, built from `ELEVATION` (`constants/theme.ts`) and
+  `MOTION` (`services/motion.ts`). Traps:
+  - A shadow is light-mode and Android 9+ only; dark cards, and light ones on
+    older Android (no outset `boxShadow` below API 28), keep their 1px border.
+  - A surface must not set `overflow: 'hidden'`, because iOS clips a view's
+    own shadow.
+  - When a card takes `useSurface()`, delete its own `borderWidth: 1`. A light
+    surface has no border colour, so a leftover width draws black.
+  - Motion goes through `useReduceMotion()`. With it on, nothing slides or
+    scales.
+  - Header bands are `Band`: a gradient that only deepens, and
+    `cornerTheme.test.ts` measures white text on both stops.
+  - `designScale.test.ts` counts hand-written `shadowColor`, so new depth
+    comes from the tokens.
+  **Amber (`palette.live`) means *now*** (start class, due today, live) and
+  nothing else.

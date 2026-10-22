@@ -1,11 +1,12 @@
 /**
- * A corner's page frame: the band in the corner's hero colour with its motif,
+ * A corner's page frame: the band (components/ui/Band.tsx: a gradient from the
+ * corner's hero colour, its motif, a soft shadow in light mode),
  * a back button, title and subtitle, then a centred, width-capped scroll area.
  * `MathFrame`'s and `LabFrame`'s layout, merged — they were the same component
  * twice, differing only in the scroll lock the grapher needs, which lives here.
  *
  * It takes no colour props. It reads `useColors()`, and the corner's
- * `_layout.tsx` provider decides the hue; outside every provider it is teal,
+ * `_layout.tsx` provider decides the hue; outside every provider it is brand teal with the leaf motif,
  * which is what a future non-corner caller should get.
  *
  * The band stays full-bleed, but what is in it is capped at CONTENT_MAX_WIDTH
@@ -27,7 +28,7 @@ import { useCorner } from '@/context/CornerTheme';
 import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { SPACE, TYPE } from '@/constants/theme';
 import { BackButton } from '@/components/ui/BackButton';
-import { CornerMotif } from './CornerMotif';
+import { Band, BRAND_MOTIF_OPACITY } from '@/components/ui/Band';
 
 const ScrollLockContext = createContext<(locked: boolean) => void>(() => {});
 
@@ -64,8 +65,12 @@ export function CornerFrame({ title, subtitle, eyebrow, onBack, hideBack, keyboa
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.hero, { backgroundColor: colors.hero, paddingTop: insets.top + SPACE.md }]}>
-        {corner ? <CornerMotif motif={corner.motif} opacity={corner.motifOpacity} /> : null}
+      <Band
+        color={colors.hero}
+        motif={corner?.motif ?? 'leaf'}
+        motifOpacity={corner?.motifOpacity ?? BRAND_MOTIF_OPACITY}
+        style={[styles.hero, { paddingTop: insets.top + SPACE.md }]}
+      >
         {corner && !isDesktop ? (
           <View pointerEvents="none" style={[styles.glyphWrap, isRTL ? { left: -SPACE.md } : { right: -SPACE.md }]}>
             <Text style={[styles.glyph, { fontFamily: 'ReadexPro_700Bold' }]}>{corner.glyph}</Text>
@@ -85,7 +90,7 @@ export function CornerFrame({ title, subtitle, eyebrow, onBack, hideBack, keyboa
           {bandChildren}
         </View>
         {corner?.hairline ? <View style={[styles.hairline, { backgroundColor: corner.hairline }]} /> : null}
-      </View>
+      </Band>
       <ScrollView
         scrollEnabled={!locked}
         keyboardShouldPersistTaps={keyboardShouldPersistTaps}

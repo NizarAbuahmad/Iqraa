@@ -18,6 +18,8 @@ import { getLessonById } from '@/services/knowledgeBase';
 import { labItemPath } from '@/services/labLinks';
 import { CornerFrame } from '@/components/corners/CornerFrame';
 import { CornerGrid } from '@/components/corners/CornerGrid';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { useSurface } from '@/components/ui/Surface';
 import type { TranslationKey } from '@/services/i18n';
 
 const KIND_LABEL: Record<LabItemKind, TranslationKey> = {
@@ -54,19 +56,17 @@ function ItemRow({
   lang: string;
   t: TFn;
 }) {
+  const surface = useSurface();
   const lesson = getLessonById(item.lessonId);
   const lessonTitle = lesson ? (lang === 'ar' ? lesson.titleAr : lesson.titleEn) : '';
   return (
-    <Pressable
+    <PressableScale
       onPress={() => {
         Haptics.selectionAsync();
         router.push(labItemPath(item.id) as never);
       }}
       accessibilityRole="button"
-      style={[
-        styles.row,
-        { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' },
-      ]}
+      style={[styles.row, surface, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
     >
       <View style={[styles.icon, { backgroundColor: colors.secondary }]}>
         <Ionicons name={KIND_ICON[item.kind]} size={22} color={colors.primary} />
@@ -85,7 +85,7 @@ function ItemRow({
         </Text>
       </View>
       <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -172,8 +172,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
   },
   icon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   rowTitle: { fontSize: 15 },

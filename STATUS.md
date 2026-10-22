@@ -1630,6 +1630,30 @@ activities used white, which a corner's light dark-mode primary cannot carry;
 there. Other screens outside the corners still carry the same white-on-teal pair
 in dark mode — not fixed here.
 
+## Cards lift, presses give, screens arrive — 2026-10-21
+
+The second half of the "dull, everything looks the same" feedback.
+
+- **Shared pieces** in `components/ui`:
+  - `useSurface()`/`Surface`: a soft shadow in light mode, a 1px border in
+    dark mode, radius 16.
+  - `PressableScale`: springs to 0.97 while held, with a focus ring on web.
+  - `Entrance`: fades in and rises 8px over 220ms, staggered 40ms, capped at
+    the 6th item.
+  - `Band`: the hero colour deepening 18% on a diagonal, with a soft shadow.
+  - All of it honours reduce motion (`useReduceMotion`).
+- **Where they are used:**
+  - The corner bands are now `Band`, and every corner hub's cards are lifted
+    and enter in turn.
+  - The library's front-row tiles (`components/library/LibraryTile.tsx`)
+    wear their corner's strip and pattern; the curriculum and «my exams»
+    tiles wear the brand teal and a new `leaf` motif.
+  - The library and Profile headers are leaf `Band`s.
+- **Not moved yet:** the other ~150 bordered cards move when their screens
+  are touched. `designScale.test.ts` stops hand-written shadows from growing
+  meanwhile.
+- **Next:** the phone Today screen (PR 4).
+
 ## One question-type order, one set of repeat-rule inputs, 2026-10-18
 
 The order a ministry paper puts its question types in was written out by hand in

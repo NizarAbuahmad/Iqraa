@@ -10,6 +10,9 @@ import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { confirm } from '@/services/confirm';
 import { pickAvatarPhoto } from '@/services/avatarPick';
 import { Toast } from '@/components/ui/Toast';
+import { Band, BRAND_MOTIF_OPACITY } from '@/components/ui/Band';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { useSurface } from '@/components/ui/Surface';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { AR_LATIN } from '@/services/dateLabels';
 
@@ -32,26 +35,25 @@ function SettingRow({ icon, label, onPress, destructive, isRTL, colors }: {
   icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void;
   destructive?: boolean; isRTL: boolean; colors: ReturnType<typeof useColors>;
 }) {
+  const surface = useSurface();
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       accessibilityRole="button"
-      style={({ pressed }) => [
-        styles.settingRow,
-        { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.7 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' },
-      ]}
+      style={[styles.settingRow, surface, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
     >
       <Ionicons name={icon} size={20} color={destructive ? colors.destructive : colors.primary} />
       <Text style={[styles.settingLabel, { color: destructive ? colors.destructive : colors.foreground, fontFamily: 'ReadexPro_500Medium', flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
         {label}
       </Text>
       {!destructive && <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.mutedForeground} />}
-    </Pressable>
+    </PressableScale>
   );
 }
 
 export default function ProfileScreen() {
   const colors = useColors();
+  const surface = useSurface();
   const { t, isRTL } = useLanguage();
   const { user, logout, uploadAvatar, removeAvatar } = useAuth();
   const [avatarBusy, setAvatarBusy] = useState(false);
@@ -157,7 +159,7 @@ export default function ProfileScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View style={[styles.headerBg, { backgroundColor: colors.hero, paddingTop: topPad + 16 }]}>
+      <Band color={colors.hero} motif="leaf" motifOpacity={BRAND_MOTIF_OPACITY} style={[styles.headerBg, { paddingTop: topPad + 16 }]}>
         <View style={styles.avatarWrap}>
           <View>
             <Pressable
@@ -215,14 +217,14 @@ export default function ProfileScreen() {
             </Text>
           </View>
         </View>
-      </View>
+      </Band>
 
       <View style={{ paddingHorizontal: 20, paddingTop: 24 }}>
         {/* Info card */}
         <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('profileInfo')}
         </Text>
-        <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+        <View style={[styles.infoCard, surface]}>
           {/* An account made from a teacher's code has no address until it adds one. */}
           <InfoRow icon="mail-outline" label={t('email')} value={user?.email ?? t('profileNoEmail')} color={colors.primary} isRTL={isRTL} />
           {memberSince ? (
@@ -258,9 +260,9 @@ export default function ProfileScreen() {
             <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', marginTop: 20, textAlign: isRTL ? 'right' : 'left' }]}>
               {t('teaching')}
             </Text>
-            <Pressable
+            <PressableScale
               onPress={() => router.push({ pathname: '/setup-subjects', params: { mode: 'edit' } } as any)}
-              style={({ pressed }) => [styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.85 : 1 }]}
+              style={[styles.infoCard, surface]}
             >
               {/* One row per grade, each with only the subjects taught in it —
                   `teachingAssignments` is the pairing; the old flat
@@ -333,7 +335,7 @@ export default function ProfileScreen() {
                   {t('editTeachingTitle')}
                 </Text>
               </View>
-            </Pressable>
+            </PressableScale>
             {/* A roster of real children, a pacing plan, a weekly period
                 grid, and the calendar combining the two all belong beside
                 what the teacher teaches, not filed under الإعدادات next to
@@ -461,7 +463,7 @@ const styles = StyleSheet.create({
   roleBadge: { paddingHorizontal: 14, paddingVertical: 5, borderRadius: 20, marginTop: 2 },
   roleText: { fontSize: 12 },
   section: { fontSize: 11, marginBottom: 8 },
-  infoCard: { borderWidth: 1, overflow: 'hidden' },
+  infoCard: {},
   infoRow: { alignItems: 'center', padding: 14, gap: 12 },
   infoIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   infoLabel: { fontSize: 11, lineHeight: 18, marginBottom: 2, fontFamily: 'Almarai_400Regular' },
@@ -472,6 +474,6 @@ const styles = StyleSheet.create({
   tags: { flexWrap: 'wrap', gap: 6 },
   tag: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   tagText: { fontSize: 12 },
-  settingRow: { alignItems: 'center', padding: 16, gap: 12, borderWidth: 1 },
+  settingRow: { alignItems: 'center', padding: 16, gap: 12 },
   settingLabel: { fontSize: 15 },
 });
