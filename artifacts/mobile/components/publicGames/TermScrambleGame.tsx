@@ -19,10 +19,12 @@ const ACCENT = '#7C3AED';
 const RIGHT = '#16A34A';
 const WRONG = '#DC2626';
 
-export function TermScrambleGame({ terms, onBack, analytics }: {
+export function TermScrambleGame({ terms, onBack, analytics, onFinished, footer }: {
   terms: string[];
   onBack?: () => void;
   analytics?: Record<string, string>;
+  onFinished?: (score: number, total: number) => void;
+  footer?: React.ReactNode;
 }) {
   const colors = useColors();
   const { t, isRTL } = useLanguage();
@@ -93,6 +95,8 @@ export function TermScrambleGame({ terms, onBack, analytics }: {
       onReplay={replay}
       onBack={onBack}
       analytics={analytics}
+      onFinished={onFinished}
+      footer={footer}
     >
       <View style={{ flex: 1, padding: 20, gap: 18, alignItems: 'center' }}>
         <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13, alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>

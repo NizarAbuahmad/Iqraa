@@ -10,6 +10,23 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+**Today, lesson games, files and the mastery gate (2026-10-22, sixteenth live pass).**
+Of 30 questions, 6 were right (4 teaching controls) and 24 went to the model; the recheck of
+the fifteenth pass was 21/21. Checked in code: the «اليوم» tab shows the current or next period
+and its lesson, and «جاهزية الدرس» lists one row per material with its own «أنشئ» and a
+«تخطّي» (there is no create-everything button); the lesson page shows «العب بمصطلحات الدرس»
+only where the lesson has `MIN_LESSON_TERMS` (4) key terms, opening three games
+(`services/lessonGames.ts`); the lesson bar's «إلغاء تثبيت الدرس» and «تغيير الدرس» pin and unpin;
+«ملفاتي» has a search box, a favourites filter, ⋯ → open/edit/choose class/duplicate/delete, no
+folders and no trash; a saved file reaches a class from either «ملفاتي» or the class's «الملفات» tab;
+a worksheet becomes something students solve through `howSendWorksheet`; a teacher sees student
+work only through evaluations (results dashboard, student record); a lesson unlocks at
+`MASTERY_PASS_PERCENT` (80) on the previous lesson's quiz, a teacher can unlock it by hand, a
+student retakes up to `MAX_RETAKES` (3); an exam date shows to school teachers and, once the exam is
+published and attached, to the class's families (`examVisibleToFamilies`). Existing answers the
+wording missed: school calendar, adding a grade/subject, students solving a worksheet on phones.
+Left with the model: nothing from this pass that the code settles.
+
 **Chat, homework, results and sign-in (2026-10-22, fifteenth live pass).**
 Of 30 questions, 9 were right and 21 went to the model. Checked in code: the chat keeps no
 history (`howChatHistory` existed; «امسح المحادثة» missed it), has no voice input, no
@@ -45,6 +62,80 @@ Sections below are in the order they were written, not strictly by date.
 - **Verified:** mobile tests and typecheck; the web build at phone size in light and
   dark: the colour game's game-over panel, the multiplication drill and Capitals.
 - **Not verified:** Android.
+
+## A lesson game can be homework, and the teacher sees the scores — 2026-10-22
+
+**What changed.** In a class's «الواجبات», «لعبة من الدرس» attaches a lesson game
+(memory, unscramble or spot-the-term) from the class's own grade and subjects
+(`components/classes/GamePickerSheet.tsx`, lessons from `gameLessonsForScope`). The
+attachment is a new `homework.resources` kind, `{kind:"game", lessonId, game, title}`
+(`lessonId` checked against the curriculum, `game` against the three). A student opens it
+from «المدرسة» → `/play/lesson/<id>?game=…&hw=<homework>`; when a **signed-in student**
+finishes a round of **the attached game**, the app posts it
+(`PUT /student/homework/:id/game-result`), the footer says «أُرسلت نتيجتك إلى المعلم»
+(retry on failure), and the homework is ticked done for the same roster rows. The teacher's
+homework row gets «النتائج» (`GET /homework/:id/game-results`, `GameResultsSheet`): each
+student's best score and attempts. Student and parent homework items carry `gameResults`
+and show «نتيجتك: ٦ من ٦» / «نتيجة طفلك: …».
+
+**Storage.** New table `game_results` (migration `0011_cuddly_captain_america.sql`, additive,
+granted to `iqraa_app`, RLS-classified DEFERRED like `homework_completions`): one row per
+homework × roster row × **lesson** × game — a result must name the attached lesson as well
+as the game, so two memory games from different lessons are two results, and another
+lesson's round never counts. Results of a game no longer attached are not returned. It keeps
+the **best** score/total ratio (a tie keeps the existing),
+`attempts` counted, `played_at` updated. The best-of rule is in two places on purpose —
+`isBetterResult` (`modules/homework/game.ts`, unit-tested) and the atomic upsert in
+`lib/homeworkGame.ts` (db-tested). Rows are the caller's own `self` rows in the class
+(`ownHomeworkRows`, now shared with `setHomeworkDone`); every failure is a 404.
+Memory's real score is moves, so a finished memory round posts `score = total = pairs`.
+**Older apps** do not know the `game` kind and drop it, then a teacher's edit PATCHes the
+whole list: so a PATCH without `gamesIncluded: true` keeps the existing games it omitted
+(this client always sends the flag; with it the list is authoritative). Scores are reported
+by the client — fine for practice, never used for mastery.
+
+**Verified.** Workspace typecheck; api-server suite 2,324 pass with a real Postgres
+(homework + family db tests cover create/reject, best-of, tie, attempts, 404s, teacher
+ownership, family lists); `rlsCoverage` 6/6 on a database migrated from scratch; mobile
+suite pass except the known local CRLF `scopeSelection`. End to end in headless Chromium
+against this branch's API on a throwaway migrated database with the family fixtures:
+teacher's homework row and picker; student «المدرسة» → 🎮 → spot 6/6 → «أُرسلت نتيجتك»;
+API and teacher sheet «سارة … ٦ من ٦»; student and parent see the score, homework moved to
+«تم إنجازه». **Not verified / not built:** Android; English-corner activities as homework
+and English-corner progress on the server (still device-only); a parent push for a score.
+
+## Any deck plays as Class Challenge, with sound — 2026-10-22
+
+**What changed.** The presenter shows a 🏆 button on any deck that is not
+already a game and holds at least three scoreable choice questions (options and
+an in-range key): a quiz deck, a «ابدأ الحصة» warm-up, a lesson deck's checks, a
+saved deck reopened from ملفاتي. The teacher picks 2–6 teams and the same deck
+restarts as Class Challenge — its own questions, keys, pictures and badges, no
+generation (`buildGameDeckFromSlides` in `services/classDeck.ts`; the quiz-built
+game and this one share `gameIntroSlide` / `pushGameRounds`). A question slide
+brings only its badge, hint and picture or graph (an allowlist — a kept `layout`
+would draw over the stem). «العودة إلى الشرائح» puts the original deck, slide
+and ink back (confirming first once scores exist). In a game, a chime
+plays when a team is awarded (not when an award is taken back), a low tone when
+a question's timer runs out, a short fanfare on the podium; a speaker button
+mutes them for the session (`services/gameSounds.ts`, three synthesized WAVs in
+`assets/sounds/`, ~88 KB).
+
+**Verified:** typecheck; `classDeck.test.ts` (new builder + the existing quiz
+game tests unchanged); headless Chromium on the web build with a real local
+teacher — quiz (demo generation, G10 circles) → «اعرض على الشاشة» → 🏆 → 4
+teams → question 1 → reveal (bank badge carried over) → award: ١٠٠ on the strip
+and `correct.wav` fetched → back to the slides (confirm, then the 17-slide deck
+at slide 1). **Not verified:** that the cues are audible on a
+projector or on Android, the timer and podium cues (same path, not driven).
+
+**Not done from the games plan's Phase 2, on purpose:** a separate «save
+game»: saving a game deck as `slides` would make «ابدأ الحصة» present it as the
+lesson's deck (`savedDeckFor` takes the newest), and replay is already covered —
+save the quiz or deck, reopen it, press 🏆. Bank-first questions in
+`/ai-tools/game`: the shared pool already serves a repeat lesson instantly and
+the offline path already draws from the banks. Printed bingo cards: the prompt's
+`printables` are instructions, not card data — it needs its own design.
 
 ## Progress is celebrated — 2026-10-22
 
@@ -5371,7 +5462,7 @@ picture.
   `scripts/render_lesson_pages.py` renders from our own copy of the student book
   (so the page named is by construction the page shown) into the existing
   `book-pages/<kbLessonId>/<n>.jpg` store and lists it in `book-page-links.json`
-  (`pdfUrl: null`, ≤ 20 pages a lesson). 778 lessons / 4,776 pages added (1.05 GB, all in the bucket).
+  (`pdfUrl: null`, ≤ 20 pages a lesson). 778 lessons / 4,776 pages added (1.05 GB, all in the bucket); the second pass below adds more.
 - **Only confident matches.** Score ≥ 0.9; 17 weaker matches were dropped (several
   landed on the contents page), and so was the whole Grade 7 PE S1 book (its «sure»
   hits were page 2) and one Grade 3 Arabic S2 entry opening on page 3.
@@ -5379,10 +5470,29 @@ picture.
   with no figures of its own shows up to 3 book pages («من كتاب الطالب»); a
   revision unit with no figures shows the opener page of its first lesson that has
   one. A lesson that has figures is unchanged.
-- **Still without pages:** 20 books (386 lessons) with no student PDF on disk —
-  Grades 1–2 Arabic/Islamic/PE, Grades 4–6 PE and digital, Grade 8 Arabic S2 —
-  need an NCCD download; PE books (all grades except 3), Grade 7 digital S2, Grade
-  5 Arabic S2 (3/25) and parts of Grade 8/9 digital and civic did not map.
+- **Second pass, 2026-10-22.** Two scoring fixes in `map_lesson_pages.py` took the
+  PE books from 2/13 to all lessons, Grade 5 Arabic S2 from 3/25 to 25/25, civic and
+  the digital books to nearly all: a lesson number set in huge type («2» at 24 pt) is no
+  longer the whole heading (the title is also looked for under the largest span that
+  holds a word); a diagonal «draft copy» watermark (72 pt) is ignored; a Latin subtitle
+  in the title's size no longer counts against an Arabic title. 141 lessons added and 9
+  existing lessons moved to their real opener (the first pass had pointed several civic
+  and digital lessons at a body page). 1,288 lessons / 9,487 pages are now listed.
+- **Third pass, 2026-10-22: the other subjects.** The mapper also reads maths, science,
+  social, vocational, arts, financial literacy, geography, history and the grade 10
+  science books (`SUBJECT_KEYS`; `dump_lesson_titles.mjs --all`). Only lessons that
+  showed no picture at all were added (a lesson with figures keeps its figures), and a
+  match found through the contents table had to agree with the opener page's own heading
+  (>= 0.6) or it was dropped: 344 of 396 candidates kept (Grade 6 maths p2-5, Grade 8
+  social and similar were wrong pages). 1,632 lessons / 11,648 pages are now listed.
+  English has no source PDFs registered, so it is untouched.
+- **Biology book pages 9 and 10** (the finch beaks, the snail Figure 1) are cropped from
+  our copy as `p009`/`p010` (unit 1 lesson 1; in R2) — unit 1 now opens with the book's
+  own experiment.
+- **Still without pages:** 20 books (386 lessons) with no student PDF on disk — Grades
+  1–2 Arabic/Islamic/PE, Grades 4–5 PE and digital, Grade 8 Arabic S2 — need an NCCD
+  download; a handful of lessons whose opener scores under 0.9 (Grade 8 digital S2
+  «تمدد الشبكة», one Grade 9 PE S2 lesson) are left to the text-only deck.
 - Bucket: pages are in `iqraa-public/book-pages/`; the app shows nothing new until
   the OTA ships.
 

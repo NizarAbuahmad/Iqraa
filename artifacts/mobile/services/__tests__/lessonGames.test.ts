@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { LESSONS, type Lesson } from '@workspace/curriculum';
 import {
-  MIN_LESSON_TERMS, buildTermScramble, buildTermSpotRound, hasLessonGames, isTermUnscrambled,
+  MIN_LESSON_TERMS, buildTermScramble, buildTermSpotRound, gameLessonsForScope, hasLessonGames, isTermUnscrambled,
   lessonTerms, plainTerm,
 } from '../lessonGames.ts';
 
@@ -56,4 +56,21 @@ test('spot round: one option from this lesson, distractors from sibling lessons 
     assert.equal(right.length, 1);
     assert.equal(right[0].id, q.correctId);
   }
+});
+
+test('gameLessonsForScope offers only lessons that can host a game, by unit, from the class own subjects', () => {
+  const groups = gameLessonsForScope('grade-10', ['mathematics', 'chemistry']);
+  assert.ok(groups.length > 0, 'grade 10 maths/chemistry has lessons with games');
+  for (const g of groups) {
+    assert.ok(g.lessons.length > 0);
+    for (const l of g.lessons) {
+      const found = LESSONS.find(x => x.id === l.id);
+      assert.ok(found && hasLessonGames(found), l.id);
+    }
+  }
+  // Another subject's lessons never appear for a maths-only class.
+  const mathOnly = gameLessonsForScope('grade-10', ['mathematics']);
+  assert.ok(mathOnly.length <= groups.length);
+  assert.deepEqual(gameLessonsForScope('', ['mathematics']), []);
+  assert.deepEqual(gameLessonsForScope('grade-10', ['no-such-subject']), []);
 });

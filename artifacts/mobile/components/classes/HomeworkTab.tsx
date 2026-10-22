@@ -16,7 +16,8 @@
  * - Attachments are Library items, picked with the class shelf's own
  *   `LibraryPickerSheet` and sent as the shelf's POST body, or the teacher's
  *   own saved materials («من ملفاتي», `MaterialPickerSheet`), sent as an id the
- *   server checks is theirs; a save resends the whole list. «انشره في محادثة الشعبة» leaves a line in the class chat — on
+ *   server checks is theirs, or a lesson game («لعبة من الدرس», `GamePickerSheet`)
+ *   sent as `{kind:'game', lessonId, game, title}`; a save resends the whole list. «انشره في محادثة الشعبة» leaves a line in the class chat — on
  *   create through `shareToChat`, later from the edit modal.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -40,6 +41,8 @@ import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LibraryPickerSheet } from '@/components/classes/LibraryPickerSheet';
 import { MaterialPickerSheet } from '@/components/classes/MaterialPickerSheet';
+import { GamePickerSheet } from '@/components/classes/GamePickerSheet';
+import { GameResultsSheet } from '@/components/classes/GameResultsSheet';
 import type { SavedMaterial } from '@/services/workspace';
 import { addBodyFor } from '@/services/classResources';
 import type { ResourceItem } from '@/services/resourceCatalog';
@@ -56,8 +59,11 @@ import {
   maskYmd,
   resourceBody,
   resourceKey,
+  type HomeworkGameResource,
+  type HomeworkResource,
   type TeacherHomework,
 } from '@/services/homework';
+import { LESSON_GAME_TITLE_KEY } from '@/services/lessonGames';
 import { archiveHomework, createHomework, listClassHomework, shareHomework, updateHomework } from '@/services/homeworkApi';
 
 const ACCENT = palette.primary;
@@ -106,6 +112,8 @@ export function HomeworkTab({
   const [shareToChat, setShareToChat] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [materialPickerOpen, setMaterialPickerOpen] = useState(false);
+  const [gamePickerOpen, setGamePickerOpen] = useState(false);
+  const [resultsFor, setResultsFor] = useState<TeacherHomework | null>(null);
   const [notice, setNotice] = useState('');
 
   const load = useCallback(async () => {
@@ -130,6 +138,9 @@ export function HomeworkTab({
       loadSeq.current++;
     };
   }, [load]);
+
+  // A game's stored title is the lesson's; the teacher's lists say which game it is too.
+  const resourceLabel = (r: HomeworkResource) => (r.kind === 'game' ? `${t(LESSON_GAME_TITLE_KEY[r.game])}: ${r.title}` : r.title);
 
   const today = ammanToday();
   const published = exams.filter(e => e.status === 'published');
@@ -157,7 +168,7 @@ export function HomeworkTab({
       instructions: item.instructions,
       dueDate: item.dueDate,
       evaluationId: item.evaluationId,
-      resources: item.resources.map(r => ({ key: resourceKey(r), title: r.title, body: resourceBody(r) })),
+      resources: item.resources.map(r => ({ key: resourceKey(r), title: resourceLabel(r), body: resourceBody(r) })),
     });
     setFieldError(null);
     setModalError('');
@@ -192,6 +203,15 @@ export function HomeworkTab({
       d.resources.some(r => r.key === key) || d.resources.length >= MAX_RESOURCES
         ? d
         : { ...d, resources: [...d.resources, { key, title: m.title, body: { kind: 'material', materialId: m.id } }] },
+    );
+  };
+
+  const onAddGame = (g: HomeworkGameResource) => {
+    const key = resourceKey(g);
+    setDraft(d =>
+      d.resources.some(r => r.key === key) || d.resources.length >= MAX_RESOURCES
+        ? d
+        : { ...d, resources: [...d.resources, { key, title: resourceLabel(g), body: resourceBody(g) }] },
     );
   };
 
@@ -382,7 +402,7 @@ export function HomeworkTab({
                         numberOfLines={1}
                         style={{ flex: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}
                       >
-                        {item.resources.map(r => r.title).join('، ')}
+                        {item.resources.map(resourceLabel).join('، ')}
                       </Text>
                     </View>
                   ) : null}
@@ -400,6 +420,17 @@ export function HomeworkTab({
                     <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
                       {t('hwNoAccountCount', noAccount)}
                     </Text>
+                  ) : null}
+                  {item.resources.some(r => r.kind === 'game') ? (
+                    <Pressable
+                      onPress={() => setResultsFor(item)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${t('hwGameResults')}: ${item.title}`}
+                      style={[styles.resultsBtn, { borderColor: ACCENT, flexDirection: rowDir, alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
+                    >
+                      <Ionicons name="trophy-outline" size={16} color={ACCENT} />
+                      <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{t('hwGameResults')}</Text>
+                    </Pressable>
                   ) : null}
                 </Pressable>
               );
@@ -577,6 +608,23 @@ export function HomeworkTab({
                       </Text>
                     </Pressable>
                   ) : null}
+                  {draft.resources.length < MAX_RESOURCES ? (
+                    <Pressable
+                      onPress={() => setGamePickerOpen(true)}
+                      accessibilityRole="button"
+                      style={[styles.pick, { flexDirection: rowDir, borderColor: ACCENT, borderStyle: 'dashed' }]}
+                    >
+                      <Ionicons name="game-controller-outline" size={18} color={ACCENT} />
+                      <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.label, textAlign: align }}>
+                        {t('hwAddGame')}
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                  {draft.resources.some(r => r.key.startsWith('game:')) ? (
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
+                      {t('hwGameNote')}
+                    </Text>
+                  ) : null}
                   {draft.resources.some(r => r.key.startsWith('material:')) ? (
                     <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
                       {t('hwMaterialNote')}
@@ -673,6 +721,19 @@ export function HomeworkTab({
         onAdd={onAddMaterial}
         onClose={() => setMaterialPickerOpen(false)}
       />
+      <GamePickerSheet
+        visible={open && gamePickerOpen}
+        group={libraryGroup}
+        added={new Set(draft.resources.map(r => r.key))}
+        onAdd={onAddGame}
+        onClose={() => setGamePickerOpen(false)}
+      />
+      <GameResultsSheet
+        homeworkId={resultsFor?.id ?? null}
+        title={resultsFor?.title ?? ''}
+        games={(resultsFor?.resources ?? []).filter((r): r is HomeworkGameResource => r.kind === 'game')}
+        onClose={() => setResultsFor(null)}
+      />
     </>
   );
 }
@@ -690,6 +751,14 @@ const styles = StyleSheet.create({
   },
   row: { borderWidth: 1, padding: SPACE.lg, gap: SPACE.sm },
   examLine: { alignItems: 'center', gap: SPACE.xs },
+  resultsBtn: {
+    alignItems: 'center',
+    gap: SPACE.xs,
+    minHeight: 36,
+    paddingHorizontal: SPACE.md,
+    borderRadius: RADIUS.pill,
+    borderWidth: 1.5,
+  },
   track: { height: 6, borderRadius: RADIUS.pill, overflow: 'hidden' },
   fill: { height: 6, borderRadius: RADIUS.pill },
   errorBox: { alignItems: 'center', gap: SPACE.sm, padding: SPACE.md, borderWidth: 1, borderRadius: RADIUS.md },
