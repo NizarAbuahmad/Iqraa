@@ -23,7 +23,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  BOOK_FIGURE_MAX, BOOK_PAGE_SLIDE_MAX, bookFigureCaption, bookPageSlides, buildLessonDeck, splitChecks, splitExample,
+  BOOK_FIGURE_MAX, BOOK_PAGE_SLIDE_MAX, bookFigureCaption, bookPageSlides, buildLessonDeck, numberedBookTitles, splitChecks, splitExample,
   splitWarmup, usableTeaching, withoutSlide,
 } from '../lessonSlides.ts';
 import { figuresForLesson } from '../bookFigures.ts';
@@ -1223,7 +1223,8 @@ describe('a lesson with no figure shows its own book pages', () => {
     const [id, entry] = pageOnly!;
     const slides = bookPageSlides(id, true);
     assert.ok(slides.length >= 1 && slides.length <= BOOK_PAGE_SLIDE_MAX);
-    assert.ok(slides.every(s => s.type === 'media' && s.mediaKind === 'image' && s.title === 'من كتاب الطالب'));
+    assert.ok(slides.every(s => s.type === 'media' && s.mediaKind === 'image' && s.title.startsWith('من كتاب الطالب — صفحة ')));
+    assert.equal(new Set(slides.map(s => s.title)).size, slides.length, 'each page names itself');
     assert.match(slides[0]!.mediaUrl!, new RegExp(`/${id}/1\.jpg$`));
     assert.match(slides[0]!.mediaCaption!, /صفحة/);
     assert.equal(bookPageSlides(id, false)[0]!.mediaCaption, `Student Book · page ${entry.startPage}`);
@@ -1246,5 +1247,32 @@ describe('a lesson with no figure shows its own book pages', () => {
       lesson: { ...LESSON, id: 'kbl-math-s1-nccd-u1_l1' }, figureUri: f => `https://fig/${f.file}`, bookPages: true,
     });
     assert.equal(withFigures.slides.some(s => /\/book-pages\//.test(s.mediaUrl ?? '')), false);
+  });
+});
+
+describe('book pictures never make a run of slides with one title', () => {
+  // The report: a whole deck read as the same slide repeated once book images came in.
+  // Measured before the fix: 1,213 of the 3,318 lesson decks carried a run of «من كتاب الطالب».
+  it('no lesson deck repeats a book-picture title, however many figures or pages the lesson has', () => {
+    const repeats: string[] = [];
+    let withPictures = 0;
+    for (const lesson of KB_LESSONS) {
+      const deck = buildLessonDeck(lesson.titleAr, true, {
+        lesson, subject: 's', grade: 'g', bookPages: true,
+        figureUri: f => `https://figs.example/${f.sourceId}/${f.file}`,
+      });
+      const media = deck.slides.filter(s => s.type === 'media' && s.title.startsWith('من كتاب الطالب'));
+      if (media.length > 0) withPictures++;
+      if (new Set(media.map(s => s.title)).size !== media.length) repeats.push(lesson.id);
+    }
+    assert.ok(withPictures > 1000, `probe: expected most lessons to carry pictures, got ${withPictures}`);
+    assert.deepEqual(repeats.slice(0, 5), []);
+  });
+
+  it('numbers several figures and leaves a lone one bare', () => {
+    const mk = (title: string) => ({ title });
+    assert.deepEqual(numberedBookTitles([mk('من كتاب الطالب')], true).map(s => s.title), ['من كتاب الطالب']);
+    assert.deepEqual(numberedBookTitles([mk('A'), mk('A'), mk('A')], true).map(s => s.title), ['A (١)', 'A (٢)', 'A (٣)']);
+    assert.deepEqual(numberedBookTitles([mk('A'), mk('A')], false).map(s => s.title), ['A (1)', 'A (2)']);
   });
 });
