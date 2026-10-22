@@ -170,7 +170,8 @@ describe('buildRevisionDeck — a round per unit', () => {
     const deck = buildRevisionDeck(true, { units: [unit], phrase: 'x', plan: null, figureUri });
     const at = deck.slides.findIndex(s => s.type === 'divider' && s.title === 'نظرية التطور');
     const goals = deck.slides[at + 1]!;
-    assert.equal(goals.sideImageUrl, 'https://figs.example/p011.png', 'the first figure sits beside the key ideas');
+    // p011-v2: the 2026-10-22 figure audit re-cropped p011 (a new key, see audit_book_figures.py).
+    assert.equal(goals.sideImageUrl, 'https://figs.example/p011-v2.png', 'the first figure sits beside the key ideas');
     assert.match(goals.sideImageCaption ?? '', /صفحة/);
     const terms = deck.slides[at + 2]!;
     assert.equal(terms.sideImageUrl, 'https://figs.example/p012.png', 'the second figure sits beside the terms');

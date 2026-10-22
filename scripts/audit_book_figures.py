@@ -260,6 +260,7 @@ class Page:
             w = ln["bbox"][2] - ln["bbox"][0]
             ln["body"] = not ln["caption"] and ln["n"] >= 15 and ln["size"] >= self.body_size - 1.5 and (
                 ln["blockWidth"] >= 0.75 * col or (ln["n"] >= 25 and w >= 0.6 * col))
+        self.all_lines = lines
         self.lines = [ln for ln in lines if not (ln["bbox"][1] > 0.92 * H or ln["bbox"][3] < 0.05 * H)]
         # What is actually visible of those graphics, on a 1pt grid. Their
         # boxes alone over-claim: these books clip large fills to a shape (one
@@ -491,7 +492,37 @@ def rebuild(pg: Page, seed) -> tuple[tuple | None, dict]:
                       and area(inter(ln["bbox"], box)) > 0.5 * area(ln["bbox"]))
     note["bodyLinesInside"] = body_inside
     note["graphicBox"] = [round(v, 1) for v in graphic_box]
-    return pad(pg, box), note
+    return polish(pg, pad(pg, box)), note
+
+
+def polish(pg: Page, box):
+    """Pull the top and bottom edges in past what the first review found
+    most often at them: a line of text sliced across, and the page's footer
+    band with its page number. Only when it costs under 5% of the figure."""
+    total = pg.ink(box) or 1
+    x0, y0, x1, y1 = box
+    # The footer: below 90% of the page, where nothing but a page number or
+    # furniture is printed — unless a label or caption the figure took sits
+    # there (Grade 9 earth science p.40's «نيوترون + طاقة» does).
+    words = [ln for ln in pg.all_lines if ln["bbox"][3] > 0.9 * pg.H
+             and area(inter(ln["bbox"], box)) >= 0.5 * area(ln["bbox"])
+             and not re.fullmatch(r"[\d\s٠-٩]+", ln["text"])]
+    if y1 > 0.9 * pg.H and not words and pg.ink((x0, y0, x1, 0.9 * pg.H)) >= 0.95 * total:
+        y1 = max(y0 + 1, min(y1, 0.9 * pg.H))
+    # Prose only: a label is text too, so cutting one costs no ink, but
+    # Grade 9 earth science p.40 loses «نيوترون + طاقة».
+    for ln in pg.lines:
+        b = ln["bbox"]
+        if not ln["body"] or not (b[0] < x1 and b[2] > x0):
+            continue
+        inside = area(inter(b, (x0, y0, x1, y1)))
+        if not 0 < inside < 0.6 * area(b):
+            continue
+        if b[1] < y0 < b[3] and pg.ink((x0, b[3], x1, y1)) >= 0.95 * total:
+            y0 = b[3]
+        elif b[1] < y1 < b[3] and pg.ink((x0, y0, x1, b[1])) >= 0.95 * total:
+            y1 = b[1]
+    return (x0, y0, x1, y1)
 
 
 def pad(pg: Page, box):
