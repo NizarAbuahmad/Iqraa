@@ -1587,3 +1587,61 @@ describe('chat, homework, results and sign-in (fifteenth live pass)', () => {
     });
   }
 });
+
+describe('Today, lesson games, files and the mastery gate (sixteenth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['ما هي شاشة اليوم في التطبيق؟', 'howTodayScreen'],
+    ['where is the today screen', 'howTodayScreen'],
+    ['كيف أجهز كل مواد حصة الغد دفعة واحدة؟', 'howLessonPrep'],
+    ['كيف أتخطى تجهيز حصة معينة؟', 'howLessonPrep'],
+    ['ما هي ألعاب الدرس؟', 'howLessonGames'],
+    ['كيف ألعب لعبة ترتيب الحروف مع الطلبة؟', 'howLessonGames'],
+    ['كيف أفتح لعبة الذاكرة لدرس معين؟', 'howLessonGames'],
+    ['what are the lesson games', 'howLessonGames'],
+    ['كيف أضيف مدرستي إلى حسابي؟', 'howAddSchool'],
+    ['من يستطيع أن يرى مواعيد امتحاناتي؟', 'howExamDateWho'],
+    ['كيف أرى تقويم المدرسة؟', 'howCalendar'],
+    ['كيف أحدد صفي ومادتي من جديد؟', 'howAddGrade'],
+    ['كيف أغير الصف الذي أدرّسه؟', 'howAddGrade'],
+    ['كيف أعرف الدرس الحالي في المنهاج؟', 'faqA2'],
+    ['كيف أثبّت الدرس الذي أدرّسه الآن؟', 'faqA2'],
+    ['how do i unpin the current lesson', 'howUnpinLesson'],
+    ['how do i see my saved materials', 'howFilesFind'],
+    ['كيف أبحث في ملفاتي؟', 'howFilesFind'],
+    ['كيف أنظم ملفاتي في مجلدات؟', 'howFilesFind'],
+    ['كيف أستعيد ملفاً حذفته؟', 'howFilesRestore'],
+    ['كيف أشارك ملفاً من ملفاتي مع شعبة؟', 'howFilesToClass'],
+    ['how do i add a saved worksheet to a class', 'howFilesToClass'],
+    ['كيف أجعل الطلبة يحلون ورقة العمل على هواتفهم؟', 'howSendWorksheet'],
+    ['كيف أرى ما حله الطلبة في التدريب؟', 'howStudentWork'],
+    ['what is the mastery gate', 'howMasteryGate'],
+    ['كيف يفتح الطالب الدرس التالي؟', 'howMasteryGate'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  const stayWithModel = [
+    'كيف أثبّت المعلومة في ذاكرة الطلبة',
+    'how do i pin down the main idea of a text',
+    'كيف ألعب لعبة ترتيب الحروف في حصة اللغة العربية للصف الأول',
+    'how do i organize my notes in folders',
+    'كيف أرى ما حله الطالب على السبورة',
+    'what is the best way to prepare all the materials for a lab',
+    'كيف أضيف مدرستي إلى خريطة الأردن',
+    'what is the mastery of a skill',
+    'كيف أحدد صفي الدراسي في الجامعة',
+    'who can see my exam dates in the school year plan',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howTodayScreen', 'howLessonPrep', 'howLessonGames', 'howAddSchool', 'howExamDateWho', 'faqA2', 'howUnpinLesson', 'howFilesFind', 'howFilesRestore', 'howFilesToClass', 'howStudentWork', 'howMasteryGate']);
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});
