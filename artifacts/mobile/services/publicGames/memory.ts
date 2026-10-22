@@ -16,10 +16,14 @@ export interface MemoryCard {
   pairId: number;
 }
 
-/** `pairCount` icons, each duplicated once, shuffled into a play deck. */
-export function buildMemoryDeck(pairCount: number, rng: () => number = Math.random): MemoryCard[] {
-  const n = Math.min(pairCount, MEMORY_ICONS.length);
-  const icons = MEMORY_ICONS.slice(0, n);
+/** `pairCount` faces (emoji by default, or a lesson's terms), each duplicated once, shuffled into a play deck. */
+export function buildMemoryDeck(
+  pairCount: number,
+  rng: () => number = Math.random,
+  faces: readonly string[] = MEMORY_ICONS,
+): MemoryCard[] {
+  const n = Math.min(pairCount, faces.length);
+  const icons = faces.slice(0, n);
   const cards: MemoryCard[] = icons.flatMap((icon, pairId) => [
     { id: `${pairId}-a`, icon, pairId },
     { id: `${pairId}-b`, icon, pairId },

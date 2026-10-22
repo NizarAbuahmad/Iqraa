@@ -38,7 +38,7 @@ const GAMES: Array<{
   // Second: the hub's science game, from the G7–10 science/chemistry books.
   { id: 'elements', route: '/play/elements', icon: 'flask-outline', color: ELEMENTS_ACCENT, titleKey: 'playElementsTitle', descKey: 'playElementsDesc' },
   { id: 'flags', route: '/play/flags', icon: 'flag-outline', color: '#1D4ED8', titleKey: 'playFlagsTitle', descKey: 'playFlagsDesc' },
-  { id: 'capitals', route: '/play/capitals', icon: 'location-outline', color: '#0E8F86', titleKey: 'playCapitalsTitle', descKey: 'playCapitalsDesc' },
+  { id: 'capitals', route: '/play/capitals', icon: 'location-outline', color: '#0B7F77', titleKey: 'playCapitalsTitle', descKey: 'playCapitalsDesc' },
   { id: 'memory', route: '/play/memory', icon: 'apps-outline', color: '#0369A1', titleKey: 'playMemoryTitle', descKey: 'playMemoryDesc' },
   { id: 'colors', route: '/play/colors', icon: 'color-palette-outline', color: '#DB2777', titleKey: 'playColorsTitle', descKey: 'playColorsDesc' },
   { id: 'multiply', route: '/play/multiply', icon: 'calculator-outline', color: '#B45309', titleKey: 'playMultiplyTitle', descKey: 'playMultiplyDesc' },

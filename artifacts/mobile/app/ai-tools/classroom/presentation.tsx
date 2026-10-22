@@ -45,6 +45,10 @@ import {
   createGame, hasGameScores, podium, resetScores, setAwards, toggleAward, toggleNobody, type GameState,
 } from '@/services/classGame';
 import { AwardRow, PodiumView, ScoreStrip, ScoreboardView } from '@/components/classroom/GameBoard';
+import { trackEvent } from '@/services/analytics';
+import { buildGameDeckFromSlides, canPlayAsGame } from '@/services/classDeck';
+import { toArabicDigits } from '@/services/labFormat';
+import { playGameCue, type GameCue } from '@/services/gameSounds';
 import { MathText } from '@/components/classroom/MathText';
 import { VerifiedBadge } from '@/components/classroom/VerifiedBadge';
 import { ImageViewerModal } from '@/components/ui/ImageViewer';
@@ -1489,6 +1493,44 @@ export default function PresentationScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
+  /** «Play as Class Challenge»: this deck's own choice questions become a team game, from slide 1. */
+  const [teamPickerOpen, setTeamPickerOpen] = useState(false);
+  // Game sound cues; the mute button only shows in a game.
+  const [muted, setMuted] = useState(false);
+  const cue = (c: GameCue) => { if (game && !muted) playGameCue(c); };
+  // The deck, slide and ink the game replaced — so a stray tap mid-lesson is one tap to undo.
+  const [deckBeforeGame, setDeckBeforeGame] = useState<{ deck: ClassroomActivity; slideIndex: number; ink: Record<number, Stroke[]> } | null>(null);
+  const backToDeck = async () => {
+    if (!deckBeforeGame) return;
+    // Same guard as leaving: scores already given would be lost.
+    if (hasGameScores(game) && !(await confirm({
+      title: t('gameExitTitle'),
+      message: t('gameExitMsg'),
+      confirmLabel: t('playAsGameBack'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    }))) return;
+    setActivity(deckBeforeGame.deck);
+    setGame(null);
+    setInk(deckBeforeGame.ink);
+    setSlideIndex(deckBeforeGame.slideIndex);
+    initSlide(deckBeforeGame.deck.slides[deckBeforeGame.slideIndex]!);
+    setDeckBeforeGame(null);
+  };
+  const startGameFromDeck = (teams: number) => {
+    if (!activity) return;
+    const isAr = lang === 'ar';
+    const gameDeck = buildGameDeckFromSlides(activity, teams, isAr);
+    setDeckBeforeGame({ deck: activity, slideIndex, ink });
+    setTeamPickerOpen(false);
+    setActivity(gameDeck);
+    setGame(createGame(gameDeck.game!.teamCount, gameDeck.game!.questionCount, isAr));
+    setInk({});
+    setSlideIndex(0);
+    initSlide(gameDeck.slides[0]!);
+    trackEvent('game_started', { game: 'class-challenge', from: 'deck', teams, total: gameDeck.game!.questionCount });
+  };
+
   // The browser can leave fullscreen without us (Esc, F11), so read the state
   // back rather than tracking our own toggles — under both the standard and
   // the webkit-prefixed API, which `toggleFullscreen` already drove.
@@ -1498,6 +1540,30 @@ export default function PresentationScreen() {
     sync();
     return onFullscreenChange(sync);
   }, []);
+
+  // Time's up on a game question: everyone stops thinking and hands go up.
+  useEffect(() => {
+    if (timerTotal > 0 && timerSec === 0 && activity?.slides[slideIndex]?.type === 'question') cue('timeup');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timerSec]);
+
+  // One analytics event when a Class Challenge reaches its podium — once per
+  // game, not again when the teacher steps back off the podium and returns.
+  const onPodium = !!game && activity?.slides[slideIndex]?.type === 'podium';
+  const podiumTracked = useRef<GameState | null>(null);
+  useEffect(() => {
+    if (!onPodium || !game || podiumTracked.current === game) return;
+    podiumTracked.current = game;
+    cue('podium');
+    const top = podium(game)[0]?.[0];
+    trackEvent('game_finished', {
+      game: 'class-challenge',
+      teams: game.teams.length,
+      total: game.questionCount,
+      ...(top && { score: top.score }),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onPodium]);
 
   // Keyboard + presentation-clicker control (web/projector). A teacher runs
   // the class from the front of the room, not from the laptop: clickers send
@@ -1627,6 +1693,45 @@ export default function PresentationScreen() {
           </Pressable>
         )}
 
+        {/* Game sound on/off — a quiet school or an exam next door. */}
+        {game && (
+          <Pressable
+            onPress={() => setMuted(m => !m)}
+            style={styles.exitBtn}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel={muted ? t('gameSoundOn') : t('gameSoundOff')}
+          >
+            <Ionicons name={muted ? 'volume-mute-outline' : 'volume-high-outline'} size={19} color={T.muted} />
+          </Pressable>
+        )}
+
+        {/* Back from a game started here to the slides it replaced. */}
+        {game && deckBeforeGame && (
+          <Pressable
+            onPress={() => { void backToDeck(); }}
+            style={styles.exitBtn}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel={t('playAsGameBack')}
+          >
+            <Ionicons name="albums-outline" size={19} color={T.muted} />
+          </Pressable>
+        )}
+
+        {/* Turn this deck's own questions into a team game. */}
+        {canPlayAsGame(activity) && (
+          <Pressable
+            onPress={() => setTeamPickerOpen(o => !o)}
+            style={styles.exitBtn}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel={t('playAsGame')}
+          >
+            <Ionicons name="trophy-outline" size={19} color={teamPickerOpen ? T.primary : T.muted} />
+          </Pressable>
+        )}
+
         {/* Progress dots — each wrapped in a real touch target (the bare 6px
             dots were unhittable, which stranded teachers on slide 1). */}
         <View style={[styles.progressRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -1676,6 +1781,24 @@ export default function PresentationScreen() {
       {hasTimer && (
         <View style={styles.timerBarTrack}>
           <View style={[styles.timerBarFill, { width: `${timerPct * 100}%` as any, backgroundColor: tColor }]} />
+        </View>
+      )}
+
+      {/* ── Team count for «play as Class Challenge» ── */}
+      {teamPickerOpen && canPlayAsGame(activity) && (
+        <View style={[styles.teamPicker, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Text style={[styles.teamPickerLabel, { fontFamily: 'ReadexPro_600SemiBold' }]}>{t('playAsGameTeams')}</Text>
+          {[2, 3, 4, 5, 6].map(n => (
+            <Pressable
+              key={n}
+              onPress={() => startGameFromDeck(n)}
+              style={styles.teamChip}
+              accessibilityRole="button"
+              accessibilityLabel={t('playAsGameTeamsN', n)}
+            >
+              <Text style={[styles.teamChipText, { fontFamily: 'ReadexPro_700Bold' }]}>{lang === 'ar' ? toArabicDigits(String(n)) : String(n)}</Text>
+            </Pressable>
+          ))}
         </View>
       )}
 
@@ -1736,12 +1859,16 @@ export default function PresentationScreen() {
               state={game}
               questionIndex={slide.questionIndex}
               isRTL={isRTL}
-              onToggle={teamId => setGame(g => (g ? toggleAward(g, slide.questionIndex!, teamId) : g))}
-              onAll={() => setGame(g => {
-                if (!g) return g;
-                const everyone = g.teams.every(team => (g.awards[slide.questionIndex!] ?? []).includes(team.id));
-                return setAwards(g, slide.questionIndex!, everyone ? [] : g.teams.map(team => team.id));
-              })}
+              onToggle={teamId => {
+                // A chime for an award given, not for one taken back.
+                if (!(game.awards[slide.questionIndex!] ?? []).includes(teamId)) cue('correct');
+                setGame(g => (g ? toggleAward(g, slide.questionIndex!, teamId) : g));
+              }}
+              onAll={() => {
+                const everyone = game.teams.every(team => (game.awards[slide.questionIndex!] ?? []).includes(team.id));
+                if (!everyone) cue('correct');
+                setGame(g => (g ? setAwards(g, slide.questionIndex!, everyone ? [] : g.teams.map(team => team.id)) : g));
+              }}
               onNobody={() => setGame(g => (g ? toggleNobody(g, slide.questionIndex!) : g))}
               labels={{ prompt: t('gameWhoScored'), all: t('gameAwardAll'), nobody: t('gameAwardNobody') }}
             />
@@ -2107,6 +2234,10 @@ const makeStyles = (T: DeckTheme) => StyleSheet.create({
   dotTarget: { paddingVertical: 10, paddingHorizontal: 2, justifyContent: 'center' },
   counterBox: { minWidth: 54, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: T.card, borderWidth: 1, borderColor: T.border },
   counterText: { fontSize: 13, color: T.text },
+  teamPicker: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 16, paddingBottom: 10 },
+  teamPickerLabel: { fontSize: 14, color: T.text },
+  teamChip: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: T.card, borderWidth: 1, borderColor: T.primary },
+  teamChipText: { fontSize: 15, color: T.primary },
   actionRow: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 10 },
   // flexShrink so an unexpected width narrows these instead of letting them
   // spill over the nav buttons, which is what the overlap on a real phone was.
