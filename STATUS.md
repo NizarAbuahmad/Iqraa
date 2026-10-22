@@ -2039,6 +2039,62 @@ Grade 2 English teacher signs that unit's page of
 `englishReading.ts` and merge. The word activities need only the reading
 sign-off.
 
+## Grade 3 grammar in the English corner — built, shown to nobody yet, 2026-10-22
+
+Grammar for Grade 3, after Grades 1 and 2. 8 hub lessons (S1 U2–U5, S2 U7–U10),
+**324 sentences**. S1 U1 (this / these / that / those) and S2 U6 are book units
+with no vocabulary list, so they are not hub lessons and have no grammar here.
+**Every unit is `reviewedBy: null` in `GRAMMAR_UNITS_G3`
+(`lib/curriculum/src/englishGrammarG3.ts`), so nobody sees any of it yet.** Spec:
+`docs/superpowers/specs/2026-10-21-english-corner-grammar-g3-design.md`; plan:
+`docs/superpowers/plans/2026-10-21-english-corner-grammar-g3.md`.
+
+- **Pictures only where the sentence is shown by them.** S1 U2 (routines), S1 U4
+  (activities), S2 U7 (farm actions) and S2 U8 (forest) carry none, because their
+  words are verbs and phrases. They get Choose the word and Build the sentence
+  (S2 U10 gets Build and Yes or No: every pattern there is a Yes or No, and a Yes
+  or No sentence is never a Choose item). True or false is on S1 U3, U5 and S2 U9;
+  Yes or No on S2 U9 and U10. No new pictures.
+- **Engine, all additive** (`englishGrammar.ts`): plural and article forms for
+  Grade 3 words (`mangoes`, `ice lollies`, `glasses`, `shampoo`); verb forms
+  `{v:slot}` (a base verb phrase, one tile per word), `{3:slot}` (third person:
+  `has`, `goes`, `does`, `watches`, `roller skates`) and `{ing:slot}`; a verb-form
+  Choose (`plays` against `play`, found by comparing the two realisations);
+  `rows` (explicit slot values: a routine with its time, an animal with its
+  ability); a `fact` Yes or No (`Can penguins swim?`, answered from the row) and
+  a `hint` («✅ = it's there»); and Build's `build` field.
+- **Build the sentence: a cap of 9 for Grade 3, 7 for Grades 1–2** (`buildCap`).
+  A longer question-and-answer pair builds its **answer half**, the question
+  printed and spoken above the tiles; the form says so under the sentence. A
+  sentence that can be built neither way is `build: null` and a test fails for any
+  Grade 3 sentence like that. A Yes or No round is as long as the lesson's
+  distinct pictures (six on S2 U9), one picture each.
+- **The teacher's form and sheet** are `docs/english-grammar-g3-review.html` and
+  `-sheet.md`, written by the same `grammar-sheet` script; tests pin them. Grade 1
+  and 2 sheets and forms and both reading forms are byte-identical. Open points
+  for the teacher: the 16 animal-ability facts (every row listed), «✅ = it's
+  there», building only the answer half of long pairs, the paired routine times,
+  and the third-person forms.
+- **A known defect, not fixed for Grades 1–2:** their slot Choose measured the
+  wrong word with the right word's span, so «I'm wearing boots.» offers «boots»
+  against just «a» (4 rows: Grade 1 boots, socks; Grade 2 boots, shoes). Grade 3
+  measures the other word's own span; Grades 1–2 keep the old measure so their
+  printed forms stay byte-identical. The fix is one condition (`grade >= 3` in
+  `unitSentences`) plus regenerated docs; raised as a separate task.
+- **Audio** is a separate step and has not been run: `english-audio` now also
+  voices the Grade 3 sentences and the Build prompts (the question halves). It
+  needs OpenAI and R2 keys.
+- **Checked in a browser** at 390 px in Arabic and English with units signed off in
+  the working tree only (restored straight after; never committed): the activity
+  matrix per lesson, a picture-free verb-form Choose, an answer-half Build (question
+  above with a hear button, six answer tiles, judged right), Yes or No `fact` with
+  no hint and `marker` with the «it's there» hint, no horizontal scroll, and an
+  unsigned unit showing nothing.
+
+**To switch a unit on:** record the audio; a Grade 3 English teacher signs that
+unit's page of `docs/english-grammar-g3-review.html`, printed; then set its
+`reviewedBy` in `englishGrammarG3.ts` and merge. Grade 3 reading is the next spec.
+
 ## A Grade 1 English teacher's review, 2026-10-15
 
 A teacher went through English Grade 1 and sent nine notes. What each one turned

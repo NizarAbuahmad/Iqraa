@@ -1,7 +1,6 @@
 # English corner: grammar activities for Grade 3 — design
 
-**Status:** design approved in conversation (2026-10-21), awaiting review of
-this written spec. **Scope:** Grade 3 English **grammar** only, on the 8 Grade 3
+**Status:** implemented (PR #1171). **Scope:** Grade 3 English **grammar** only, on the 8 Grade 3
 hub lessons (`kbl-g3-eng-s{1,2}-nccd-u*_l1`). Grade 3 reading is a separate
 spec that follows this one. Builds on Grade 1 grammar (PR #1088), Grade 2
 grammar (`2026-10-19-english-corner-grammar-g2-design.md`, PR #1158) and the
@@ -72,7 +71,7 @@ and have no grammar here; the teacher's form says so.
 
 ## Engine changes (all additive: the Grade 1 and 2 sheets and forms must stay byte-identical)
 
-1. **Third-person verbs: `{3:slot}`.** Inflects the slot's verb: +s, +es after
+1. **Third-person verbs: `{3:slot}`**, with `{v:slot}` as a fourth form (found while building): a base verb phrase split into one tile per word, so «I don't {v:act}» builds as words, not as one tile, and `{pre}` = «in the» is two tiles. Inflects the slot's verb: +s, +es after
    s / sh / ch / x / z / o, consonant+y → ies. Overrides: `has`, `goes`, `does`.
    The verb is normally the first word of the slot value; a phrase override
    covers the exception, «roller skate» → «roller skates». A test checks every
@@ -107,10 +106,12 @@ and have no grammar here; the teacher's form says so.
    article: `shampoo`, `toothpaste`, `sunscreen`. (Measured: the current rule
    gives `mangos`, `ice lollys`, `torchs`, `glassess`, `a glasses`.)
 
+8. **A slot Choose offers whole phrases on Grade 3** (found while checking the form). The wrong option was measured with the right word's span, so «I'm wearing boots.» offered «boots» against just «a» (the article of «a coat»). Grade 3 measures the other word's own span («glasses» against «a dress»). **Grades 1 and 2 keep the old measure**, because their printed forms stay byte-identical (teachers read them as printed); the same four rows (Grade 1 boots, socks; Grade 2 boots, shoes) are a known defect, raised as a separate task with the fix ready.
+
 ## Per-lesson design
 
 Counts are the designed number of sentences; a test pins each once built, as in
-Grade 2. Roughly **326** sentences in all.
+Grade 2. **324** sentences in all (the draft said about 326; S2 U10 is 38, not 40, because `grapes` takes only the plural question).
 
 | Lesson | Patterns (slot sources) | Activities | Sentences |
 | --- | --- | --- | --- |
@@ -120,8 +121,8 @@ Grade 2. Roughly **326** sentences in all.
 | S1 U5 jobs, transport | «I want to be {a:job}.»; «He / She goes to work by {transport}.» (goes / go, with the 👦 / 👧 marker) | Choose, Build, True or false | 22 |
 | S2 U7 farm | «Are they {ing:act}? Yes, they are. / No, they aren't.»; «Is he / she {ing:act}? …» (Are / Is) | Choose, Build | 24 |
 | S2 U8 forest | «I haven't got {a:thing}.», «He / She hasn't got…», «Have you got…? Yes, I have. / No, I haven't.», «Has he / she got…?» (have / has) | Choose, Build | 54 |
-| S2 U9 furniture | «There's {a:item}.», «There isn't…», «There are {s:item}.», «There aren't any…», «Is there {a:item}? Yes, there is. / No, there isn't.» | Choose, Build, True or false, Yes or No (✅/❌ marker, pictured items) | 60 |
-| S2 U10 animals, food | «Can {s:animal} {ability}? Yes, they can. / No, they can't.» as 16 fact rows (8 yes, 8 no); «Is there {a:food}? / Are there any {s:food}?» Yes / No (✅/❌ marker) | Choose, Build, Yes or No (`fact` and `marker`) | 40 |
+| S2 U9 furniture | «There's {a:item}.», «There isn't…», «There are {s:item}.», «There aren't any…», «Is there {a:item}? Yes, there is. / No, there isn't.» | Choose, Build, True or false, Yes or No (✅/❌ marker, pictured items; a round is **6** questions, the lesson has six pictured items, one picture each) | 60 |
+| S2 U10 animals, food | «Can {s:animal} {ability}? Yes, they can. / No, they can't.» as 16 fact rows (8 yes, 8 no); «Is there {a:food}? / Are there any {s:food}?» Yes / No (✅/❌ marker) | Build, Yes or No (`fact` and `marker`). **No Choose:** every pattern is a Yes or No, and a Yes or No sentence is never a Choose item (found by the Grade 3 builder tests) | 38 |
 
 - **Choose needs evidence in the sentence or picture.** «Our glasses are blue»
   has none for our / your / their, so the possessives are Build-only and their
