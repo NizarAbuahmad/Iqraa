@@ -1654,6 +1654,25 @@ The second half of the "dull, everything looks the same" feedback.
   meanwhile.
 - **Next:** the phone Today screen (PR 4).
 
+## Teachers' phones open on Today — 2026-10-22
+
+- **Today on phones.** A teacher on a phone now lands on Today instead of the
+  chat. It has a navy leaf band with the date, the bell, a greeting and the
+  lesson (amber «ابدأ الحصة», «تغيير الدرس»), then the prep checklist, four
+  quick tools, an ask card that opens the chat with the question already sent,
+  and their classes.
+- **One logic, two layouts.** The desktop workspace and the phone Today share
+  `useTodayLesson()`, so they always name the same lesson.
+- **Tab bar.** The phone tab bar is Today, Library, Tools, Messages, Profile.
+  The chat leaves it, but its route stays, and the desktop sidebar keeps it
+  (`services/tabVisibility.ts`).
+- **No lesson bar on Today.** The lesson bar is hidden on Today (both sizes),
+  as on the chat.
+- **Empty states.** `EmptyState` is a lifted card with the icon on a tinted
+  circle; School's two empties use it.
+- **Tools.** The Tools tab is a two-column grid of coloured, lifted cards on
+  phones, with no section headings.
+
 ## One question-type order, one set of repeat-rule inputs, 2026-10-18
 
 The order a ministry paper puts its question types in was written out by hand in
@@ -18218,7 +18237,8 @@ populating the field; a list a teacher cannot act on is worse than no list.
 ## Open decisions (2026-08-10)
 
 - ~~**Home vs chat.**~~ **Decided 2026-08-10: chat is the landing tab, home is
-  retired from the tab bar.** `(tabs)/index.tsx` is now a `<Redirect href="/iqra">`
+  retired from the tab bar.** `(tabs)/index.tsx` is now a `<Redirect href="/iqra">` (until 2026-10-22, when a phone teacher
+  started landing on Today)
   — `/` stays the entry point so deep links and the post-login
   `router.replace('/(tabs)')` keep working. Start Class moved onto
   `CurrentLessonCard` in chat, and its deck-building orchestration came out of
