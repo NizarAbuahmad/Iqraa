@@ -19,6 +19,7 @@ import { hubLesson } from './englishHub.ts';
 import { wordPicture } from './englishPictures.ts';
 import { GRAMMAR_UNITS_G2 } from './englishGrammarG2.ts';
 import { GRAMMAR_UNITS_G3 } from './englishGrammarG3.ts';
+import { GRAMMAR_UNITS_G4 } from './englishGrammarG4.ts';
 
 export type GrammarMarker = 'yes' | 'no' | 'boy' | 'girl' | 'many';
 
@@ -348,7 +349,7 @@ const GRAMMAR_UNITS_G1: GrammarUnit[] = [
 ];
 
 /** Grade 1 first, then 2, then 3: the order the lessons come in. */
-export const GRAMMAR_UNITS: GrammarUnit[] = [...GRAMMAR_UNITS_G1, ...GRAMMAR_UNITS_G2, ...GRAMMAR_UNITS_G3];
+export const GRAMMAR_UNITS: GrammarUnit[] = [...GRAMMAR_UNITS_G1, ...GRAMMAR_UNITS_G2, ...GRAMMAR_UNITS_G3, ...GRAMMAR_UNITS_G4];
 
 export function grammarUnit(lessonId: string): GrammarUnit | undefined {
   return GRAMMAR_UNITS.find(u => u.lessonId === lessonId);
