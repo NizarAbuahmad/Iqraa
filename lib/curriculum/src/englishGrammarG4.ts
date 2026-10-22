@@ -49,6 +49,31 @@ const CONTAINERS = [
   { cont: 'a bowl of', unc: 'salad' }, { cont: 'a glass of', unc: 'lemonade' }, { cont: 'a cup of', unc: 'coffee' },
   { cont: 'a cup of', unc: 'tea' }, { cont: 'a box of', unc: 'cereal' }, { cont: 'a bag of', unc: 'fruit' },
 ];
+// ─── S1 U4–U5 ─────────────────────────────────────────────────────────────
+
+/** Plainly true comparisons: the first is the bigger, higher, deeper or wider. Every pair is on the teacher's form; the swapped twin is the false statement. */
+const RANKING = [
+  { big: 'mountain', small: 'hill', adj: 'high' }, { big: 'lake', small: 'pool', adj: 'deep' }, { big: 'sea', small: 'lake', adj: 'deep' },
+  { big: 'river', small: 'stream', adj: 'wide' }, { big: 'lion', small: 'rabbit', adj: 'dangerous' }, { big: 'shark', small: 'goldfish', adj: 'dangerous' },
+];
+const RANKING_SWAPPED = RANKING.map(r => ({ big: r.small, small: r.big, adj: r.adj }));
+const LONG_ROWS = [
+  { a: 'Swimming', b: 'walking', adj: 'exciting' }, { a: 'Canoeing', b: 'reading', adj: 'exciting' }, { a: 'Football', b: 'chess', adj: 'difficult' },
+];
+const SUPER_ROWS = [
+  { adj: 'deep', n: 'lake', where: 'Jordan' }, { adj: 'high', n: 'mountain', where: 'Jordan' }, { adj: 'wide', n: 'river', where: 'Jordan' },
+  { adj: 'beautiful', n: 'island', where: 'the world' }, { adj: 'interesting', n: 'town', where: 'Jordan' },
+];
+const JOBS4 = ['bus driver', 'carpenter', 'chef', 'doctor', 'farmer', 'firefighter', 'mechanic', 'police officer', 'scientist', 'teacher', 'vet'];
+/** What a pupil must and mustn't do at school. Every rule is on the form, so a wrong rule cannot be generated. */
+const MUST = ['arrive on time', 'be quiet in class', 'follow the rules', 'put litter in the bin'];
+const MUSTNT = ['be late', 'break the rules', 'drop litter', 'shout in class'];
+const WEAR = [
+  { colour: 'green', clothes: 'coat' }, { colour: 'red', clothes: 'dress' }, { colour: 'blue', clothes: 'hat' },
+  { colour: 'yellow', clothes: 'scarf' }, { colour: 'white', clothes: 'shirt' }, { colour: 'green', clothes: 'jacket' },
+];
+const COMPARE_FACT = { question: 'Is the {big} {cmp:adj} than the {small}?', yes: 'Yes, it is.', no: "No, it isn't." } as const;
+
 const THERE_Q = (question: string, yes: string, no: string) => ({ kind: 'marker' as const, question, yes, no, hint: 'there' as const });
 
 export const GRAMMAR_UNITS_G4: GrammarUnit[] = [
@@ -100,6 +125,34 @@ export const GRAMMAR_UNITS_G4: GrammarUnit[] = [
     ],
     slots: { unc: FOOD_UNC, pl: FOOD_PL },
   },
+  {
+    // comparatives and superlatives. No pictures; True or false and Yes or No only from the written ranking rows.
+    lessonId: L(1, 4),
+    reviewedBy: null,
+    patterns: [
+      { id: 'cmp', text: 'The {big} is {cmp:adj} than the {small}.', rows: RANKING, claim: { swap: ['big', 'small'] }, choose: { kind: 'form', slot: 'adj', wrong: 'base' } },
+      { id: 'cmpy', text: 'Is the {big} {cmp:adj} than the {small}? Yes, it is.', rows: RANKING, yesNo: { kind: 'fact', ...COMPARE_FACT, answer: true } },
+      { id: 'cmpn', text: "Is the {big} {cmp:adj} than the {small}? No, it isn't.", rows: RANKING_SWAPPED, yesNo: { kind: 'fact', ...COMPARE_FACT, answer: false } },
+      { id: 'long', text: '{a} is {cmp:adj} than {b}.', rows: LONG_ROWS, choose: { kind: 'form', slot: 'adj', wrong: 'base' } },
+      { id: 'sup', text: 'This is the {sup:adj} {n} in {v:where}.', rows: SUPER_ROWS, choose: { kind: 'form', slot: 'adj', wrong: 'comparative' } },
+      { id: 'amman', text: 'Amman is the {sup:adj} city in the world.', choose: { kind: 'form', slot: 'adj', wrong: 'comparative' } },
+    ],
+    slots: { adj: ['exciting', 'beautiful', 'interesting'] },
+  },
+  {
+    // present continuous with clothes and colours; must / mustn't
+    lessonId: L(1, 5),
+    reviewedBy: null,
+    patterns: [
+      { id: 'hejob', text: "He's {a:job}.", picture: 'job', marker: 'boy', choose: { kind: 'slot', slot: 'job' } },
+      { id: 'shejob', text: "She's {a:job}.", picture: 'job', marker: 'girl', choose: { kind: 'slot', slot: 'job' } },
+      { id: 'must', text: 'You must {v:rule}.', rows: MUST.map(rule => ({ rule })), choose: { kind: 'phrase', right: 'must', wrong: "mustn't" } },
+      { id: 'mustnt', text: "You mustn't {v:rule}.", rows: MUSTNT.map(rule => ({ rule })), choose: { kind: 'phrase', right: "mustn't", wrong: 'must' } },
+      { id: 'wear', text: "I'm wearing {a:colour} {clothes}.", picture: 'clothes', rows: WEAR, choose: { kind: 'slot', slot: 'clothes' } },
+      { id: 'wearq', text: 'Are you wearing {a:colour} {clothes}? Yes, I am.', picture: 'clothes', rows: WEAR, yesNo: { kind: 'match', question: 'Are you wearing {a:colour} {clothes}?', yes: 'Yes, I am.', no: "No, I'm not." } },
+    ],
+    slots: { job: JOBS4 },
+  },
 ];
 
 /**
@@ -107,6 +160,16 @@ export const GRAMMAR_UNITS_G4: GrammarUnit[] = [
  * Arabic with English phrases inline; no `"`, `&`, `<` or `>` (the form does not escape runs).
  */
 export const NOT_COVERED_G4: Record<string, string[]> = {
+  [L(1, 4)]: [
+    'لا صور في هذه الوحدة: صورة جبل لا تقول إنه أعلى من تلّ. «صح أم خطأ» و«نعم أم لا» من قائمة المقارنات المكتوبة فقط، وكل زوج فيها مطبوع في صفحة البيانات لتتأكدوا أنه صحيح دون جدال.',
+    'جملة A is more exciting than B وجمل أعلى وأعمق (the deepest) في «اختر الكلمة» و«رتّب الجملة» فقط: لا تُسأل صحةً، لأنها رأي لا معلومة.',
+    'خيارا «اختر الكلمة» دائمًا صيغتان حقيقيتان: higher مقابل high، وthe deepest مقابل the deeper. لم تُكتب صيغة غير موجودة.',
+  ],
+  [L(1, 5)]: [
+    'قواعد must وmustn\'t ثماني جمل مكتوبة جملة جملة في صفحة البيانات، فلا يمكن أن تُولَّد قاعدة خاطئة.',
+    'jacket بلا صورة فلا تظهر جملتاها في «صح أم خطأ» و«نعم أم لا» ولا «اختر الكلمة».',
+    'الجمل المستمرة عن الملابس والألوان من كلمات الصفوف السابقة: الصورة تدل على قطعة الملابس فقط، لا على لونها.',
+  ],
   [L(1, 1)]: [
     'الجنسيات (Egyptian وJordanian…) بلا صور، فلا تظهر في «اختر الكلمة»: يظهر علم البلد في «صح أم خطأ» فقط.',
     'جملة Where are you from? I\'m from the United Arab Emirates. أطول من تسع كلمات، فيُرتَّب جوابها فقط.',

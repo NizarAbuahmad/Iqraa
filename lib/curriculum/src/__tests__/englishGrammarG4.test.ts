@@ -84,6 +84,58 @@ test('S1 U3 classes the foods: a countable plural takes are, an uncountable take
 
 test('the generator produces the designed sentences, lesson by lesson', () => {
   const counts = new Map(UNITS.map(u => [u.lessonId, unitSentences(u).length]));
-  const designed: [string, number][] = [[L(1, 1), 60], [L(1, 2), 42], [L(1, 3), 56]];
+  const designed: [string, number][] = [[L(1, 1), 60], [L(1, 2), 42], [L(1, 3), 56], [L(1, 4), 29], [L(1, 5), 42]];
   assert.deepEqual([...counts].slice(0, designed.length), designed);
+});
+
+test('S1 U4: comparisons come from written rows; the swapped twin of a true row is never a true row', async () => {
+  const { ADJECTIVE_FORMS } = await import('../englishGrammar.ts');
+  const unit = grammarUnit(L(1, 4))!;
+  const s = unitSentences(unit);
+  assert.ok(s.every(x => x.picture === null));
+  const cmp = s.filter(x => x.patternId === 'cmp');
+  assert.ok(cmp.length >= 5);
+  assert.ok(cmp.every(x => x.claim && x.claim.falseText !== x.text), 'every comparison has a false twin');
+  const trueTexts = new Set(cmp.map(x => x.text));
+  for (const x of cmp) assert.ok(!trueTexts.has(x.claim!.falseText), `${x.text}: the twin is also a true row`);
+  assert.deepEqual(cmp[0].claim, { falseText: 'The hill is higher than the mountain.' });
+  // Yes and No questions are the same rows, true and swapped.
+  const yes = s.filter(x => x.patternId === 'cmpy');
+  const no = s.filter(x => x.patternId === 'cmpn');
+  assert.ok(yes.every(x => x.yesNo!.kind === 'fact' && x.yesNo!.answer && x.picture === null));
+  assert.ok(no.every(x => x.yesNo!.kind === 'fact' && !x.yesNo!.answer && x.picture === null));
+  assert.equal(yes.length, no.length);
+  const noQuestions = new Set(no.map(x => x.yesNo!.question));
+  for (const x of yes) assert.ok(!noQuestions.has(x.yesNo!.question), `${x.yesNo!.question} is asked as both yes and no`);
+  // Every adjective compared is in the table; every form Choose offers two different real forms.
+  for (const u of [unit]) for (const p of u.patterns) for (const row of p.rows ?? []) if (row.adj) assert.ok(ADJECTIVE_FORMS[row.adj], row.adj);
+  for (const x of s.filter(y => y.choose?.kind === 'form')) assert.notEqual(x.choose!.right, x.choose!.wrong, x.text);
+  const sup = s.find(x => x.text === 'This is the deepest lake in Jordan.')!;
+  assert.deepEqual([sup.choose!.right, sup.choose!.wrong], ['deepest', 'deeper']);
+  const long = s.find(x => x.text === 'Swimming is more exciting than walking.')!;
+  assert.deepEqual([long.choose!.right, long.choose!.wrong, long.choose!.length], ['more exciting', 'exciting', 2]);
+});
+
+test('S1 U5: jobs by picture, must / mustn\'t from written rules, clothes with colours', () => {
+  const s = unitSentences(grammarUnit(L(1, 5))!);
+  const by = (id: string) => s.filter(x => x.patternId === id);
+  assert.equal(by('hejob').length, 11);
+  assert.ok(by('hejob').every(x => x.marker === 'boy') && by('shejob').every(x => x.marker === 'girl'));
+  const must = by('must').map(x => x.text);
+  const mustnt = by('mustnt').map(x => x.text);
+  assert.deepEqual(must, ['You must arrive on time.', 'You must be quiet in class.', 'You must follow the rules.', 'You must put litter in the bin.']);
+  assert.deepEqual(mustnt, ["You mustn't be late.", "You mustn't break the rules.", "You mustn't drop litter.", "You mustn't shout in class."]);
+  assert.deepEqual([by('must')[0].choose!.right, by('must')[0].choose!.wrong], ['must', "mustn't"]);
+  const coat = by('wear').find(x => x.text === "I'm wearing a green coat.")!;
+  assert.equal(coat.picture!.word, 'coat');
+  assert.equal(by('wear').find(x => /jacket/.test(x.text))!.picture, null, 'jacket has no picture');
+  assert.ok(by('wearq').filter(x => x.picture).every(x => x.yesNo!.kind === 'match'));
+});
+
+test('picture-free Yes or No facts exist only on S1 U4', () => {
+  for (const u of UNITS) {
+    const free = unitSentences(u).filter(x => x.yesNo && !x.picture);
+    if (u.lessonId === L(1, 4)) assert.ok(free.length > 0);
+    else assert.equal(free.length, 0, u.lessonId);
+  }
 });
