@@ -21,7 +21,7 @@ import { ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/clien
 
 import { loadEnvFile } from '../../../scripts/load-env.mjs';
 import { ENGLISH_HUB_LESSONS, allHubWords, audioSlug } from '../src/englishHub.ts';
-import { allGrammarSentences } from '../src/englishGrammar.ts';
+import { allGrammarSpoken } from '../src/englishGrammar.ts';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 loadEnvFile(path.join(HERE, '..', '..', '..', '.env'));
@@ -71,8 +71,8 @@ const PRONUNCIATION: Record<string, string> = {
     'stress on "RAY"; a "z" sound in the middle, not "s"; no "r" sound at the end.',
 };
 
-/** Grade 1 grammar sentences, voiced like the grade's words; all are Grade 1 today. */
-const GRAMMAR_SENTENCES = allGrammarSentences();
+/** Every string the grammar activities speak (Grades 1 and 2: sentences, Yes or No questions and the No exchange), voiced like the grade's words; all are Grade 1–2, so all are the young voice. */
+const GRAMMAR_SENTENCES = allGrammarSpoken();
 
 const YOUNG_WORDS = new Set([
   ...ENGLISH_HUB_LESSONS.filter(l => l.grade <= 4).flatMap(l => l.words.map(w => audioSlug(w.en))),
@@ -154,8 +154,8 @@ async function speak(text: string): Promise<Buffer> {
 
 // One recording per slug; case-only twins ("Jordan"/"jordan") share it.
 const bySlug = new Map<string, string>();
-// Grammar sentences are keyed the same way («I've got a pen.» → i-ve-got-a-pen), so
-// `playWord(sentence)` finds them; `englishGrammar.test.ts` pins that no two collide.
+// Grammar strings are keyed the same way («I've got a pen.» → i-ve-got-a-pen), so
+// `playWord(text)` finds them; `englishGrammar.test.ts` pins that no two collide.
 for (const w of [...allHubWords(), ...GRAMMAR_SENTENCES]) if (!bySlug.has(audioSlug(w))) bySlug.set(audioSlug(w), w);
 
 let already: Set<string>;

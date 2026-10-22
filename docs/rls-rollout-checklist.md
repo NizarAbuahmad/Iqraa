@@ -42,6 +42,16 @@ Use a **new, empty Neon project**, not a branch of production: a branch of today
 already has `0008`, so "apply the migration" would prove nothing. The test suites create their
 own fixtures, so an empty database is enough.
 
+**Shortcut: let GitHub run B3 and B4.** The workflow `.github/workflows/rls-neon-rehearsal.yml`
+applies the migrations to the rehearsal project and runs the suites on the direct **and** pooled
+endpoints, so no local Node setup is needed. After B1, add two repository secrets
+(Settings → Secrets and variables → Actions): `NEON_REHEARSAL_DIRECT_URL` and
+`NEON_REHEARSAL_POOLED_URL`. Then Actions → *RLS Neon rehearsal* → *Run workflow*, and type
+`rehearsal-not-production`. It refuses any database that already has tables in `public` and
+was not created by the workflow itself, so a production string pasted by mistake stops at the
+first step. A green run is B3 and B4 passed; B2 can be skipped. (It does not measure latency —
+GitHub's runners are not in your Cloud Run region — so C1 is still separate.)
+
 - [ ] **B1. Create the project.** In the Neon console create `iqraa-rls-rehearsal` in the
   **same region as the production Neon database** (latency in C1 is only meaningful there).
   Copy the **direct** and the **pooled** connection strings into a private note — never into

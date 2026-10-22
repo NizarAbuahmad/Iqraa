@@ -1,0 +1,2704 @@
+<!doctype html>
+<html lang="ar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مراجعة قراءة الصف الثاني</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700&family=Readex+Pro:wght@400;500;600;700&display=swap">
+<style>
+  /* Layout: an A4 review form — instructions first, then one section per unit, each ending in a sign-off strip. */
+  :root {
+    --paper: #FBFCFB;
+    --ink: #13302C;
+    --muted: #4E6661;
+    --rule: #D3E2DE;
+    --tint: #EAF3F1;
+    --teal: #006D65;
+    --display: "Readex Pro", "Almarai", "Noto Sans Arabic", system-ui, sans-serif;
+    --body: "Almarai", "Readex Pro", "Noto Sans Arabic", system-ui, sans-serif;
+    --latin: "Readex Pro", "Segoe UI", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0E1A18; --ink: #E3EFEC; --muted: #9DB5AF; --rule: #2A3D39; --tint: #15302C; --teal: #2DD4BF;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0E1A18; --ink: #E3EFEC; --muted: #9DB5AF; --rule: #2A3D39; --tint: #15302C; --teal: #2DD4BF;
+    color-scheme: dark;
+  }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: var(--body); font-size: 15px; line-height: 1.7;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 28px 56px;
+  }
+  .sheet { max-width: 1040px; margin-inline: auto; display: grid; gap: 40px; }
+  h1, h2 { font-family: var(--display); text-wrap: balance; margin: 0; }
+  h1 { font-size: 1.85rem; line-height: 1.3; font-weight: 700; }
+  .eyebrow { font-family: var(--display); color: var(--teal); font-weight: 600; font-size: .9rem; }
+  .intro { display: grid; gap: 18px; max-width: 880px; }
+  .intro > p { max-width: 70ch; }
+  .intro p { margin: 0; }
+  .lead { font-size: 1.05rem; }
+  .card { border: 1px solid var(--rule); border-radius: 10px; padding: 16px 20px; background: var(--tint); }
+  .card h3 { font-family: var(--display); font-size: 1.05rem; margin: 0 0 8px; }
+  .card ol, .card ul { margin: 0; padding-inline-start: 1.3em; display: grid; gap: 6px; }
+  .card ol { list-style-type: arabic-indic; }
+  .acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .act { border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; }
+  .act b { font-family: var(--display); display: block; color: var(--teal); }
+  .meta-line { color: var(--muted); font-size: .9rem; }
+
+  .unit { display: grid; gap: 14px; }
+  .unit-head { display: grid; gap: 6px; border-bottom: 3px solid var(--teal); padding-bottom: 12px; }
+  .unit-meta { color: var(--teal); font-family: var(--display); font-weight: 600; font-size: .9rem; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  .unit-meta span + span::before { content: "·"; margin-inline-end: 14px; color: var(--muted); }
+  h2 { font-size: 1.45rem; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+  h2 [dir="ltr"] { font-family: var(--latin); }
+  .unit-ar { color: var(--muted); font-size: 1.05rem; font-weight: 400; font-family: var(--body); }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; font-variant-numeric: tabular-nums; }
+  th, td { border-bottom: 1px solid var(--rule); padding: 7px 10px; text-align: start; vertical-align: middle; }
+  thead th { background: var(--tint); font-family: var(--display); font-weight: 600; font-size: .85rem; line-height: 1.35; }
+  thead th small { display: block; font-weight: 400; color: var(--muted); font-size: .75rem; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num, th.num { width: 2.2em; color: var(--muted); text-align: center; }
+  td.word { font-family: var(--latin); font-size: 1.05rem; font-weight: 500; text-align: left; white-space: nowrap; }
+  td.letter { font-family: var(--latin); font-size: 1.35rem; font-weight: 700; color: var(--teal); text-align: center; }
+  td.skip { color: var(--muted); font-size: .85rem; }
+  td.skip [dir="ltr"] { font-family: var(--latin); }
+  .pic-art { font-size: 1.45rem; letter-spacing: 2px; font-family: "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif; }
+  .none { color: var(--muted); font-size: .85rem; }
+  th.tick, td.tick { width: 2.6em; text-align: center; }
+  .box { display: inline-block; width: 18px; height: 18px; border: 1.5px solid var(--ink); border-radius: 3px; vertical-align: -3px; }
+  th.note, td.note { width: 30%; }
+
+  .signoff { display: grid; gap: 12px; border: 1.5px dashed var(--teal); border-radius: 10px; padding: 14px 18px; }
+  .verdict { display: flex; flex-wrap: wrap; gap: 10px 26px; font-family: var(--display); font-size: .95rem; }
+  .verdict span { display: inline-flex; gap: 8px; align-items: center; }
+  .lines { display: flex; flex-wrap: wrap; gap: 14px 28px; }
+  .lines span { display: inline-flex; gap: 6px; align-items: baseline; flex: 1 1 200px; }
+  .lines i { flex: 1; border-bottom: 1px solid var(--ink); min-width: 80px; height: 1.2em; }
+
+  @page { size: A4 landscape; margin: 12mm; }
+  @media print {
+    :root { --paper: #fff; --ink: #111; --muted: #4d4d4d; --rule: #bbb; --tint: #F1F5F4; color-scheme: light; }
+    body { padding: 0; font-size: 12px; }
+    .sheet { gap: 0; max-width: none; }
+    .intro { max-width: none; }
+    .unit { break-before: page; }
+    .table-wrap { overflow: visible; border-radius: 0; }
+    table { min-width: 0; }
+    tr, .signoff { break-inside: avoid; }
+    thead { display: table-header-group; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  td.sentence { font-family: var(--latin); font-size: 1.02rem; font-weight: 500; text-align: left; white-space: nowrap; }
+  .pic { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.2; }
+  .pic-word { font-family: var(--latin); font-size: .72rem; color: var(--muted); }
+  .sub-h { font-family: var(--display); font-size: 1.05rem; margin: 6px 0 0; }
+  .unit-note { margin: 0; }
+  .not-covered { margin: 0; padding-inline-start: 1.3em; display: grid; gap: 4px; font-size: .92rem; color: var(--muted); }
+  .not-covered [dir="ltr"] { font-family: var(--latin); }
+</style>
+</head>
+<body>
+<main class="sheet" dir="rtl" lang="ar">
+  <section class="intro">
+    <div class="eyebrow">إقرأ · ركن اللغة الإنجليزية · الصف الثاني</div>
+    <h1>مراجعة أنشطة القراءة قبل عرضها على الطلاب</h1>
+    <p class="lead">أضفنا إلى ركن اللغة الإنجليزية في الصف الثاني أربعة أنشطة قراءة: ثلاثة على كلمات كل وحدة كما في الصف الأول، ونشاط رابع لقراءة جملة كاملة. الجمل هي جمل القواعد نفسها، وتُسمع بعد الإجابة فقط، ولا يظهر هذا النشاط لوحدة قبل موافقتكم على قواعدها أيضًا. لا يُسمع في التطبيق صوت الحرف وحده؛ يظهر الحرف مكتوبًا فقط. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل كلمة في ٩ وحدات، ١٥٤ كلمة، وجمل النشاط الرابع في ٧ وحدات، ١١٢ جملة.</p>
+
+    <div class="acts">
+      <div class="act"><b>اقرَأ واختر الصورة</b>تظهر الكلمة مكتوبة دون صوت، ويختار الطالب صورتها من ثلاث صور. تُسمع الكلمة بعد الإجابة.</div>
+      <div class="act"><b>الحرف الأول</b>يسمع الطالب الكلمة ويرى صورتها، ويختار حرفها الأول من ثلاثة أحرف. لا تُكتب الكلمة قبل الإجابة.</div>
+      <div class="act"><b>يبدأ بهذا الحرف</b>يظهر حرف، ويختار الطالب الصورة التي يبدأ اسمها بصوته من ثلاث صور.</div>
+      <div class="act"><b>اقرَأ الجملة</b>تظهر جملة مكتوبة دون صوت، ويختار الطالب صورتها من ثلاث صور. إحدى الصورتين الخاطئتين هي صورة الجملة المقابلة إن وُجدت (🐭 مقابل 🐭🐭، أو ✅ مقابل ❌، أو 👦 مقابل 👧) ليقرأ الطالب الكلمة الصغيرة.</div>
+    </div>
+
+    <div class="card">
+      <h3>ما المطلوب في كل كلمة</h3>
+      <ol>
+        <li>هل الحرف المكتوب هو فعلًا أول صوت يسمعه الطالب في الكلمة؟</li>
+        <li>هل الصورة تدل على الكلمة دون لبس؟</li>
+        <li>هل توافقون على استبعاد الكلمات المستبعدة، أم تريدون إضافة إحداها؟</li>
+        <li>في «اقرَأ الجملة»: هل يستطيع طالب الصف الثاني قراءة الجملة كاملة؟ وهل جملتا السؤال والجواب معًا أطول مما يُحتمل في هذه المرحلة، أم يكفي عرض الجواب وحده؟</li>
+        <li>هل تُقرأ ✅ و❌ والصورة الواحدة مقابل الصورتين بوضوح على أنها «don't» و«these are»؟</li>
+        <li>هل تسبب صورة pink (القلب الوردي) أو orange (الدائرة 🟠) أو لون العينين لبسًا؟</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h3>طريقة التعبئة</h3>
+      <ul>
+        <li>ضعوا ✓ في المربع إذا كانت الكلمة سليمة، أو اكتبوا الملاحظة في عمود «ملاحظات».</li>
+        <li>في آخر كل وحدة اختاروا: موافق، أو موافق بعد التعديلات، أو غير موافق، مع الاسم والتاريخ.</li>
+        <li>يمكن مراجعة وحدة واحدة في كل مرة؛ كل وحدة تُفعَّل وحدها بعد الموافقة عليها.</li>
+      </ul>
+    </div>
+
+    <p class="meta-line">«بلا صورة» تعني أن الكلمة لا تظهر في نشاطَي الصور، وتظهر في «الحرف الأول» بالصوت وحده. لا يشمل التطبيق الصوت الأوسط أو الأخير في الكلمة. الصور هي الرموز التي تظهر في التطبيق نفسه.</p>
+  </section>
+
+  <section class="unit" id="kbl-g2-eng-s1-nccd-u0_l1">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الأول</span><span>وحدة الترحيب</span><span>٢٠ كلمة</span></div>
+      <h2><span dir="ltr">Welcome: Hello!</span> <span class="unit-ar">أهلاً وسهلاً (Hello!)</span></h2>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الكلمة</th>
+            <th>الصورة</th>
+            <th>الحرف الأول<small>كما يظهر للطالب</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="word" dir="ltr">one</td>
+          <td><span class="pic-art">1️⃣</span></td>
+          <td class="skip">لا تُستعمل: تبدأ بحرف علّة، وله أكثر من صوت</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="word" dir="ltr">two</td>
+          <td><span class="pic-art">2️⃣</span></td>
+          <td class="letter" dir="ltr">t</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="word" dir="ltr">three</td>
+          <td><span class="pic-art">3️⃣</span></td>
+          <td class="skip">لا تُستعمل: أول حرفين صوت واحد (<span dir="ltr">ch / sh / th</span>)</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="word" dir="ltr">four</td>
+          <td><span class="pic-art">4️⃣</span></td>
+          <td class="letter" dir="ltr">f</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="word" dir="ltr">five</td>
+          <td><span class="pic-art">5️⃣</span></td>
+          <td class="letter" dir="ltr">f</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="word" dir="ltr">six</td>
+          <td><span class="pic-art">6️⃣</span></td>
+          <td class="letter" dir="ltr">s</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="word" dir="ltr">seven</td>
+          <td><span class="pic-art">7️⃣</span></td>
+          <td class="letter" dir="ltr">s</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="word" dir="ltr">eight</td>
+          <td><span class="pic-art">8️⃣</span></td>
+          <td class="skip">لا تُستعمل: تبدأ بحرف علّة، وله أكثر من صوت</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="word" dir="ltr">nine</td>
+          <td><span class="pic-art">9️⃣</span></td>
+          <td class="letter" dir="ltr">n</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="word" dir="ltr">ten</td>
+          <td><span class="pic-art">🔟</span></td>
+          <td class="letter" dir="ltr">t</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="word" dir="ltr">black</td>
+          <td><span class="pic-art">⚫</span></td>
+          <td class="letter" dir="ltr">b</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="word" dir="ltr">blue</td>
+          <td><span class="pic-art">🔵</span></td>
+          <td class="letter" dir="ltr">b</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="word" dir="ltr">brown</td>
+          <td><span class="pic-art">🟤</span></td>
+          <td class="letter" dir="ltr">b</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="word" dir="ltr">green</td>
+          <td><span class="pic-art">🟢</span></td>
+          <td class="letter" dir="ltr">g</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="word" dir="ltr">orange</td>
+          <td><span class="pic-art">🟠</span></td>
+          <td class="skip">لا تُستعمل: تبدأ بحرف علّة، وله أكثر من صوت</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="word" dir="ltr">pink</td>
+          <td><span class="pic-art">🩷</span></td>
+          <td class="letter" dir="ltr">p</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٧</td>
+          <td class="word" dir="ltr">purple</td>
+          <td><span class="pic-art">🟣</span></td>
+          <td class="letter" dir="ltr">p</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٨</td>
+          <td class="word" dir="ltr">red</td>
+          <td><span class="pic-art">🔴</span></td>
+          <td class="letter" dir="ltr">r</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٩</td>
+          <td class="word" dir="ltr">white</td>
+          <td><span class="pic-art">⚪</span></td>
+          <td class="letter" dir="ltr">w</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٠</td>
+          <td class="word" dir="ltr">yellow</td>
+          <td><span class="pic-art">🟡</span></td>
+          <td class="letter" dir="ltr">y</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <h3 class="sub-h">جمل «اقرَأ الجملة» <span class="meta-line">(١٦)</span></h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>الصورة</th>
+            <th>صورة خاطئة تظهر معها<small>تُختار الأخرى عشوائيًا</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="sentence" dir="ltr">What colour is it? It's black.</td>
+          <td><span class="pic"><span class="pic-art">⚫</span><span class="pic-word" dir="ltr">black</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="sentence" dir="ltr">What colour is it? It's blue.</td>
+          <td><span class="pic"><span class="pic-art">🔵</span><span class="pic-word" dir="ltr">blue</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="sentence" dir="ltr">What colour is it? It's brown.</td>
+          <td><span class="pic"><span class="pic-art">🟤</span><span class="pic-word" dir="ltr">brown</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="sentence" dir="ltr">What colour is it? It's green.</td>
+          <td><span class="pic"><span class="pic-art">🟢</span><span class="pic-word" dir="ltr">green</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="sentence" dir="ltr">What colour is it? It's orange.</td>
+          <td><span class="pic"><span class="pic-art">🟠</span><span class="pic-word" dir="ltr">orange</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="sentence" dir="ltr">What colour is it? It's pink.</td>
+          <td><span class="pic"><span class="pic-art">🩷</span><span class="pic-word" dir="ltr">pink</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="sentence" dir="ltr">What colour is it? It's purple.</td>
+          <td><span class="pic"><span class="pic-art">🟣</span><span class="pic-word" dir="ltr">purple</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="sentence" dir="ltr">What colour is it? It's red.</td>
+          <td><span class="pic"><span class="pic-art">🔴</span><span class="pic-word" dir="ltr">red</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="sentence" dir="ltr">What colour is it? It's white.</td>
+          <td><span class="pic"><span class="pic-art">⚪</span><span class="pic-word" dir="ltr">white</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="sentence" dir="ltr">What colour is it? It's yellow.</td>
+          <td><span class="pic"><span class="pic-art">🟡</span><span class="pic-word" dir="ltr">yellow</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="sentence" dir="ltr">How old are you? I'm five.</td>
+          <td><span class="pic"><span class="pic-art">5️⃣</span><span class="pic-word" dir="ltr">five</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="sentence" dir="ltr">How old are you? I'm six.</td>
+          <td><span class="pic"><span class="pic-art">6️⃣</span><span class="pic-word" dir="ltr">six</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="sentence" dir="ltr">How old are you? I'm seven.</td>
+          <td><span class="pic"><span class="pic-art">7️⃣</span><span class="pic-word" dir="ltr">seven</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="sentence" dir="ltr">How old are you? I'm eight.</td>
+          <td><span class="pic"><span class="pic-art">8️⃣</span><span class="pic-word" dir="ltr">eight</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="sentence" dir="ltr">How old are you? I'm nine.</td>
+          <td><span class="pic"><span class="pic-art">9️⃣</span><span class="pic-word" dir="ltr">nine</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="sentence" dir="ltr">How old are you? I'm ten.</td>
+          <td><span class="pic"><span class="pic-art">🔟</span><span class="pic-word" dir="ltr">ten</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+  <section class="unit" id="kbl-g2-eng-s1-nccd-u1_l1">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الأول</span><span>الوحدة ١</span><span>١٦ كلمة</span></div>
+      <h2><span dir="ltr">Look at My Toys!</span> <span class="unit-ar">انظر إلى ألعابي!</span></h2>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الكلمة</th>
+            <th>الصورة</th>
+            <th>الحرف الأول<small>كما يظهر للطالب</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="word" dir="ltr">action figure</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="skip">لا تُستعمل: تبدأ بحرف علّة، وله أكثر من صوت</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="word" dir="ltr">building set</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">b</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="word" dir="ltr">car</td>
+          <td><span class="pic-art">🚗</span></td>
+          <td class="letter" dir="ltr">c</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="word" dir="ltr">dinosaur</td>
+          <td><span class="pic-art">🦕</span></td>
+          <td class="letter" dir="ltr">d</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="word" dir="ltr">doll</td>
+          <td><span class="pic-art">🪆</span></td>
+          <td class="letter" dir="ltr">d</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="word" dir="ltr">plane</td>
+          <td><span class="pic-art">✈️</span></td>
+          <td class="letter" dir="ltr">p</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="word" dir="ltr">puzzle</td>
+          <td><span class="pic-art">🧩</span></td>
+          <td class="letter" dir="ltr">p</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="word" dir="ltr">robot</td>
+          <td><span class="pic-art">🤖</span></td>
+          <td class="letter" dir="ltr">r</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="word" dir="ltr">teddy</td>
+          <td><span class="pic-art">🧸</span></td>
+          <td class="letter" dir="ltr">t</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="word" dir="ltr">yoyo</td>
+          <td><span class="pic-art">🪀</span></td>
+          <td class="letter" dir="ltr">y</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="word" dir="ltr">ball</td>
+          <td><span class="pic-art">⚽</span></td>
+          <td class="letter" dir="ltr">b</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="word" dir="ltr">bike</td>
+          <td><span class="pic-art">🚲</span></td>
+          <td class="letter" dir="ltr">b</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="word" dir="ltr">kite</td>
+          <td><span class="pic-art">🪁</span></td>
+          <td class="letter" dir="ltr">k</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="word" dir="ltr">scooter</td>
+          <td><span class="pic-art">🛴</span></td>
+          <td class="letter" dir="ltr">s</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="word" dir="ltr">slide</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">s</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="word" dir="ltr">swing</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">s</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <h3 class="sub-h">جمل «اقرَأ الجملة» <span class="meta-line">(١٢)</span></h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>الصورة</th>
+            <th>صورة خاطئة تظهر معها<small>تُختار الأخرى عشوائيًا</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="sentence" dir="ltr">What's this? It's a car.</td>
+          <td><span class="pic"><span class="pic-art">🚗</span><span class="pic-word" dir="ltr">car</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="sentence" dir="ltr">What's this? It's a dinosaur.</td>
+          <td><span class="pic"><span class="pic-art">🦕</span><span class="pic-word" dir="ltr">dinosaur</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="sentence" dir="ltr">What's this? It's a doll.</td>
+          <td><span class="pic"><span class="pic-art">🪆</span><span class="pic-word" dir="ltr">doll</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="sentence" dir="ltr">What's this? It's a plane.</td>
+          <td><span class="pic"><span class="pic-art">✈️</span><span class="pic-word" dir="ltr">plane</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="sentence" dir="ltr">What's this? It's a puzzle.</td>
+          <td><span class="pic"><span class="pic-art">🧩</span><span class="pic-word" dir="ltr">puzzle</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="sentence" dir="ltr">What's this? It's a robot.</td>
+          <td><span class="pic"><span class="pic-art">🤖</span><span class="pic-word" dir="ltr">robot</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="sentence" dir="ltr">What's this? It's a teddy.</td>
+          <td><span class="pic"><span class="pic-art">🧸</span><span class="pic-word" dir="ltr">teddy</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="sentence" dir="ltr">What's this? It's a yoyo.</td>
+          <td><span class="pic"><span class="pic-art">🪀</span><span class="pic-word" dir="ltr">yoyo</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="sentence" dir="ltr">What's this? It's a ball.</td>
+          <td><span class="pic"><span class="pic-art">⚽</span><span class="pic-word" dir="ltr">ball</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="sentence" dir="ltr">What's this? It's a bike.</td>
+          <td><span class="pic"><span class="pic-art">🚲</span><span class="pic-word" dir="ltr">bike</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="sentence" dir="ltr">What's this? It's a kite.</td>
+          <td><span class="pic"><span class="pic-art">🪁</span><span class="pic-word" dir="ltr">kite</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="sentence" dir="ltr">What's this? It's a scooter.</td>
+          <td><span class="pic"><span class="pic-art">🛴</span><span class="pic-word" dir="ltr">scooter</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div><p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>جمل «<span dir="ltr">Is it a car? Yes, it is.</span>» وأخواتها لها نشاط «نعم أم لا» الخاص في القواعد، فلا تظهر في «اقرَأ الجملة».</li><li><span dir="ltr">action figure</span> و<span dir="ltr">building set</span> بلا صورة، فلا تظهر جملتاهما في «اقرَأ الجملة».</li></ul>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+  <section class="unit" id="kbl-g2-eng-s1-nccd-u2_l1">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الأول</span><span>الوحدة ٢</span><span>١٦ كلمة</span></div>
+      <h2><span dir="ltr">Where's My Pen?</span> <span class="unit-ar">أين قلمي؟</span></h2>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الكلمة</th>
+            <th>الصورة</th>
+            <th>الحرف الأول<small>كما يظهر للطالب</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="word" dir="ltr">bag</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">b</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="word" dir="ltr">book</td>
+          <td><span class="pic-art">📖</span></td>
+          <td class="letter" dir="ltr">b</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="word" dir="ltr">chair</td>
+          <td><span class="pic-art">🪑</span></td>
+          <td class="skip">لا تُستعمل: أول حرفين صوت واحد (<span dir="ltr">ch / sh / th</span>)</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="word" dir="ltr">computer</td>
+          <td><span class="pic-art">💻</span></td>
+          <td class="letter" dir="ltr">c</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="word" dir="ltr">crayon</td>
+          <td><span class="pic-art">🖍️</span></td>
+          <td class="letter" dir="ltr">c</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="word" dir="ltr">cupboard</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">c</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="word" dir="ltr">desk</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">d</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="word" dir="ltr">eraser</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="skip">لا تُستعمل: تبدأ بحرف علّة، وله أكثر من صوت</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="word" dir="ltr">pen</td>
+          <td><span class="pic-art">🖊️</span></td>
+          <td class="letter" dir="ltr">p</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="word" dir="ltr">pencil</td>
+          <td><span class="pic-art">✏️</span></td>
+          <td class="letter" dir="ltr">p</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="word" dir="ltr">pencil case</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">p</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="word" dir="ltr">pencil sharpener</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">p</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="word" dir="ltr">ruler</td>
+          <td><span class="pic-art">📏</span></td>
+          <td class="letter" dir="ltr">r</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="word" dir="ltr">scissors</td>
+          <td><span class="pic-art">✂️</span></td>
+          <td class="letter" dir="ltr">s</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="word" dir="ltr">shelf</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="skip">لا تُستعمل: أول حرفين صوت واحد (<span dir="ltr">ch / sh / th</span>)</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="word" dir="ltr">table</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">t</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <h3 class="sub-h">جمل «اقرَأ الجملة» <span class="meta-line">(١٥)</span></h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>الصورة</th>
+            <th>صورة خاطئة تظهر معها<small>تُختار الأخرى عشوائيًا</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="sentence" dir="ltr">This is my book.</td>
+          <td><span class="pic"><span class="pic-art">📖</span><span class="pic-word" dir="ltr">book</span></span></td>
+          <td><span class="pic"><span class="pic-art">📖📖</span><span class="pic-word" dir="ltr">book ×٢</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="sentence" dir="ltr">This is my chair.</td>
+          <td><span class="pic"><span class="pic-art">🪑</span><span class="pic-word" dir="ltr">chair</span></span></td>
+          <td><span class="pic"><span class="pic-art">🪑🪑</span><span class="pic-word" dir="ltr">chair ×٢</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="sentence" dir="ltr">This is my computer.</td>
+          <td><span class="pic"><span class="pic-art">💻</span><span class="pic-word" dir="ltr">computer</span></span></td>
+          <td><span class="pic"><span class="pic-art">💻💻</span><span class="pic-word" dir="ltr">computer ×٢</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="sentence" dir="ltr">This is my crayon.</td>
+          <td><span class="pic"><span class="pic-art">🖍️</span><span class="pic-word" dir="ltr">crayon</span></span></td>
+          <td><span class="pic"><span class="pic-art">🖍️🖍️</span><span class="pic-word" dir="ltr">crayon ×٢</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="sentence" dir="ltr">This is my pen.</td>
+          <td><span class="pic"><span class="pic-art">🖊️</span><span class="pic-word" dir="ltr">pen</span></span></td>
+          <td><span class="pic"><span class="pic-art">🖊️🖊️</span><span class="pic-word" dir="ltr">pen ×٢</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="sentence" dir="ltr">This is my pencil.</td>
+          <td><span class="pic"><span class="pic-art">✏️</span><span class="pic-word" dir="ltr">pencil</span></span></td>
+          <td><span class="pic"><span class="pic-art">✏️✏️</span><span class="pic-word" dir="ltr">pencil ×٢</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="sentence" dir="ltr">This is my ruler.</td>
+          <td><span class="pic"><span class="pic-art">📏</span><span class="pic-word" dir="ltr">ruler</span></span></td>
+          <td><span class="pic"><span class="pic-art">📏📏</span><span class="pic-word" dir="ltr">ruler ×٢</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="sentence" dir="ltr">These are my books.</td>
+          <td><span class="pic"><span class="pic-art">📖📖</span><span class="pic-word" dir="ltr">book ×٢</span></span></td>
+          <td><span class="pic"><span class="pic-art">📖</span><span class="pic-word" dir="ltr">book</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="sentence" dir="ltr">These are my chairs.</td>
+          <td><span class="pic"><span class="pic-art">🪑🪑</span><span class="pic-word" dir="ltr">chair ×٢</span></span></td>
+          <td><span class="pic"><span class="pic-art">🪑</span><span class="pic-word" dir="ltr">chair</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="sentence" dir="ltr">These are my computers.</td>
+          <td><span class="pic"><span class="pic-art">💻💻</span><span class="pic-word" dir="ltr">computer ×٢</span></span></td>
+          <td><span class="pic"><span class="pic-art">💻</span><span class="pic-word" dir="ltr">computer</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="sentence" dir="ltr">These are my crayons.</td>
+          <td><span class="pic"><span class="pic-art">🖍️🖍️</span><span class="pic-word" dir="ltr">crayon ×٢</span></span></td>
+          <td><span class="pic"><span class="pic-art">🖍️</span><span class="pic-word" dir="ltr">crayon</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="sentence" dir="ltr">These are my pens.</td>
+          <td><span class="pic"><span class="pic-art">🖊️🖊️</span><span class="pic-word" dir="ltr">pen ×٢</span></span></td>
+          <td><span class="pic"><span class="pic-art">🖊️</span><span class="pic-word" dir="ltr">pen</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="sentence" dir="ltr">These are my pencils.</td>
+          <td><span class="pic"><span class="pic-art">✏️✏️</span><span class="pic-word" dir="ltr">pencil ×٢</span></span></td>
+          <td><span class="pic"><span class="pic-art">✏️</span><span class="pic-word" dir="ltr">pencil</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="sentence" dir="ltr">These are my rulers.</td>
+          <td><span class="pic"><span class="pic-art">📏📏</span><span class="pic-word" dir="ltr">ruler ×٢</span></span></td>
+          <td><span class="pic"><span class="pic-art">📏</span><span class="pic-word" dir="ltr">ruler</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="sentence" dir="ltr">These are my scissors.</td>
+          <td><span class="pic"><span class="pic-art">✂️✂️</span><span class="pic-word" dir="ltr">scissors ×٢</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+  <section class="unit" id="kbl-g2-eng-s1-nccd-u3_l1">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الأول</span><span>الوحدة ٣</span><span>١٦ كلمة</span></div>
+      <h2><span dir="ltr">Move Your Body!</span> <span class="unit-ar">حرِّك جسمك!</span></h2>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الكلمة</th>
+            <th>الصورة</th>
+            <th>الحرف الأول<small>كما يظهر للطالب</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="word" dir="ltr">arms</td>
+          <td><span class="pic-art">💪💪</span></td>
+          <td class="skip">لا تُستعمل: تبدأ بحرف علّة، وله أكثر من صوت</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="word" dir="ltr">face</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">f</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="word" dir="ltr">feet</td>
+          <td><span class="pic-art">🦶🦶</span></td>
+          <td class="letter" dir="ltr">f</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="word" dir="ltr">fingers</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">f</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="word" dir="ltr">hands</td>
+          <td><span class="pic-art">👐</span></td>
+          <td class="letter" dir="ltr">h</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="word" dir="ltr">head</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">h</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="word" dir="ltr">knees</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="skip">لا تُستعمل: أول حرفين صوت واحد (<span dir="ltr">ch / sh / th</span>)</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="word" dir="ltr">legs</td>
+          <td><span class="pic-art">🦵🦵</span></td>
+          <td class="letter" dir="ltr">l</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="word" dir="ltr">toes</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">t</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="word" dir="ltr">tummy</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">t</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="word" dir="ltr">bend</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">b</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="word" dir="ltr">clap</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">c</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="word" dir="ltr">move</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">m</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="word" dir="ltr">stamp</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">s</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="word" dir="ltr">stretch</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">s</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="word" dir="ltr">touch</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">t</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div><p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا جمل لهذه الوحدة لأنها بلا أنشطة قواعد (لا صور لكلماتها)، فتبقى أنشطة الكلمات الثلاثة فقط.</li></ul>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+  <section class="unit" id="kbl-g2-eng-s1-nccd-u4_l1">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الأول</span><span>الوحدة ٤</span><span>١٤ كلمة</span></div>
+      <h2><span dir="ltr">Meet My Family</span> <span class="unit-ar">تعرَّف على عائلتي</span></h2>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الكلمة</th>
+            <th>الصورة</th>
+            <th>الحرف الأول<small>كما يظهر للطالب</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="word" dir="ltr">aunt</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="skip">لا تُستعمل: تبدأ بحرف علّة، وله أكثر من صوت</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="word" dir="ltr">brother</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">b</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="word" dir="ltr">cousin</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">c</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="word" dir="ltr">dad</td>
+          <td><span class="pic-art">👨</span></td>
+          <td class="letter" dir="ltr">d</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="word" dir="ltr">grandad</td>
+          <td><span class="pic-art">👴</span></td>
+          <td class="letter" dir="ltr">g</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="word" dir="ltr">granny</td>
+          <td><span class="pic-art">👵</span></td>
+          <td class="letter" dir="ltr">g</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="word" dir="ltr">me</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">m</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="word" dir="ltr">mum</td>
+          <td><span class="pic-art">👩</span></td>
+          <td class="letter" dir="ltr">m</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="word" dir="ltr">sister</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">s</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="word" dir="ltr">uncle</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="skip">لا تُستعمل: تبدأ بحرف علّة، وله أكثر من صوت</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="word" dir="ltr">ears</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="skip">لا تُستعمل: تبدأ بحرف علّة، وله أكثر من صوت</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="word" dir="ltr">eyes</td>
+          <td><span class="pic-art">👀</span></td>
+          <td class="skip">لا تُستعمل: تبدأ بحرف علّة، وله أكثر من صوت</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="word" dir="ltr">mouth</td>
+          <td><span class="pic-art">👄</span></td>
+          <td class="letter" dir="ltr">m</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="word" dir="ltr">nose</td>
+          <td><span class="pic-art">👃</span></td>
+          <td class="letter" dir="ltr">n</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <h3 class="sub-h">جمل «اقرَأ الجملة» <span class="meta-line">(١٠)</span></h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>الصورة</th>
+            <th>صورة خاطئة تظهر معها<small>تُختار الأخرى عشوائيًا</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="sentence" dir="ltr">Who's this? It's my mum.</td>
+          <td><span class="pic"><span class="pic-art">👩</span><span class="pic-word" dir="ltr">mum</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="sentence" dir="ltr">Who's this? It's my dad.</td>
+          <td><span class="pic"><span class="pic-art">👨</span><span class="pic-word" dir="ltr">dad</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="sentence" dir="ltr">Who's this? It's my grandad.</td>
+          <td><span class="pic"><span class="pic-art">👴</span><span class="pic-word" dir="ltr">grandad</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="sentence" dir="ltr">Who's this? It's my granny.</td>
+          <td><span class="pic"><span class="pic-art">👵</span><span class="pic-word" dir="ltr">granny</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="sentence" dir="ltr">He's got blue eyes.</td>
+          <td><span class="pic"><span class="pic-art">👦🔵</span><span class="pic-word" dir="ltr">blue</span></span></td>
+          <td><span class="pic"><span class="pic-art">👧🔵</span><span class="pic-word" dir="ltr">blue</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="sentence" dir="ltr">He's got brown eyes.</td>
+          <td><span class="pic"><span class="pic-art">👦🟤</span><span class="pic-word" dir="ltr">brown</span></span></td>
+          <td><span class="pic"><span class="pic-art">👧🟤</span><span class="pic-word" dir="ltr">brown</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="sentence" dir="ltr">He's got green eyes.</td>
+          <td><span class="pic"><span class="pic-art">👦🟢</span><span class="pic-word" dir="ltr">green</span></span></td>
+          <td><span class="pic"><span class="pic-art">👧🟢</span><span class="pic-word" dir="ltr">green</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="sentence" dir="ltr">She's got blue eyes.</td>
+          <td><span class="pic"><span class="pic-art">👧🔵</span><span class="pic-word" dir="ltr">blue</span></span></td>
+          <td><span class="pic"><span class="pic-art">👦🔵</span><span class="pic-word" dir="ltr">blue</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="sentence" dir="ltr">She's got brown eyes.</td>
+          <td><span class="pic"><span class="pic-art">👧🟤</span><span class="pic-word" dir="ltr">brown</span></span></td>
+          <td><span class="pic"><span class="pic-art">👦🟤</span><span class="pic-word" dir="ltr">brown</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="sentence" dir="ltr">She's got green eyes.</td>
+          <td><span class="pic"><span class="pic-art">👧🟢</span><span class="pic-word" dir="ltr">green</span></span></td>
+          <td><span class="pic"><span class="pic-art">👦🟢</span><span class="pic-word" dir="ltr">green</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+  <section class="unit" id="kbl-g2-eng-s2-nccd-u5_l1">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الثاني</span><span>الوحدة ٥</span><span>٢٠ كلمة</span></div>
+      <h2><span dir="ltr">Help the Animals!</span> <span class="unit-ar">ساعِدِ الحيوانات!</span></h2>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الكلمة</th>
+            <th>الصورة</th>
+            <th>الحرف الأول<small>كما يظهر للطالب</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="word" dir="ltr">cat</td>
+          <td><span class="pic-art">🐱</span></td>
+          <td class="letter" dir="ltr">c</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="word" dir="ltr">duck</td>
+          <td><span class="pic-art">🦆</span></td>
+          <td class="letter" dir="ltr">d</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="word" dir="ltr">fish</td>
+          <td><span class="pic-art">🐟</span></td>
+          <td class="letter" dir="ltr">f</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="word" dir="ltr">hamster</td>
+          <td><span class="pic-art">🐹</span></td>
+          <td class="letter" dir="ltr">h</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="word" dir="ltr">mouse</td>
+          <td><span class="pic-art">🐭</span></td>
+          <td class="letter" dir="ltr">m</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="word" dir="ltr">parrot</td>
+          <td><span class="pic-art">🦜</span></td>
+          <td class="letter" dir="ltr">p</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="word" dir="ltr">rabbit</td>
+          <td><span class="pic-art">🐰</span></td>
+          <td class="letter" dir="ltr">r</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="word" dir="ltr">snake</td>
+          <td><span class="pic-art">🐍</span></td>
+          <td class="letter" dir="ltr">s</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="word" dir="ltr">spider</td>
+          <td><span class="pic-art">🕷️</span></td>
+          <td class="letter" dir="ltr">s</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="word" dir="ltr">tortoise</td>
+          <td><span class="pic-art">🐢</span></td>
+          <td class="letter" dir="ltr">t</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="word" dir="ltr">feathers</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">f</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="word" dir="ltr">fur</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">f</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="word" dir="ltr">shell</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="skip">لا تُستعمل: أول حرفين صوت واحد (<span dir="ltr">ch / sh / th</span>)</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="word" dir="ltr">tail</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">t</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="word" dir="ltr">teeth</td>
+          <td><span class="pic-art">🦷🦷</span></td>
+          <td class="letter" dir="ltr">t</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="word" dir="ltr">wings</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">w</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٧</td>
+          <td class="word" dir="ltr">big</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">b</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٨</td>
+          <td class="word" dir="ltr">long</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">l</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٩</td>
+          <td class="word" dir="ltr">short</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="skip">لا تُستعمل: أول حرفين صوت واحد (<span dir="ltr">ch / sh / th</span>)</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٠</td>
+          <td class="word" dir="ltr">small</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">s</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <h3 class="sub-h">جمل «اقرَأ الجملة» <span class="meta-line">(٢٠)</span></h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>الصورة</th>
+            <th>صورة خاطئة تظهر معها<small>تُختار الأخرى عشوائيًا</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="sentence" dir="ltr">What's this? It's a cat.</td>
+          <td><span class="pic"><span class="pic-art">🐱</span><span class="pic-word" dir="ltr">cat</span></span></td>
+          <td><span class="pic"><span class="pic-art">🐱🐱</span><span class="pic-word" dir="ltr">cat ×٢</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="sentence" dir="ltr">What's this? It's a duck.</td>
+          <td><span class="pic"><span class="pic-art">🦆</span><span class="pic-word" dir="ltr">duck</span></span></td>
+          <td><span class="pic"><span class="pic-art">🦆🦆</span><span class="pic-word" dir="ltr">duck ×٢</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="sentence" dir="ltr">What's this? It's a fish.</td>
+          <td><span class="pic"><span class="pic-art">🐟</span><span class="pic-word" dir="ltr">fish</span></span></td>
+          <td><span class="pic"><span class="pic-art">🐟🐟</span><span class="pic-word" dir="ltr">fish ×٢</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="sentence" dir="ltr">What's this? It's a hamster.</td>
+          <td><span class="pic"><span class="pic-art">🐹</span><span class="pic-word" dir="ltr">hamster</span></span></td>
+          <td><span class="pic"><span class="pic-art">🐹🐹</span><span class="pic-word" dir="ltr">hamster ×٢</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="sentence" dir="ltr">What's this? It's a mouse.</td>
+          <td><span class="pic"><span class="pic-art">🐭</span><span class="pic-word" dir="ltr">mouse</span></span></td>
+          <td><span class="pic"><span class="pic-art">🐭🐭</span><span class="pic-word" dir="ltr">mouse ×٢</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="sentence" dir="ltr">What's this? It's a parrot.</td>
+          <td><span class="pic"><span class="pic-art">🦜</span><span class="pic-word" dir="ltr">parrot</span></span></td>
+          <td><span class="pic"><span class="pic-art">🦜🦜</span><span class="pic-word" dir="ltr">parrot ×٢</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="sentence" dir="ltr">What's this? It's a rabbit.</td>
+          <td><span class="pic"><span class="pic-art">🐰</span><span class="pic-word" dir="ltr">rabbit</span></span></td>
+          <td><span class="pic"><span class="pic-art">🐰🐰</span><span class="pic-word" dir="ltr">rabbit ×٢</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="sentence" dir="ltr">What's this? It's a snake.</td>
+          <td><span class="pic"><span class="pic-art">🐍</span><span class="pic-word" dir="ltr">snake</span></span></td>
+          <td><span class="pic"><span class="pic-art">🐍🐍</span><span class="pic-word" dir="ltr">snake ×٢</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="sentence" dir="ltr">What's this? It's a spider.</td>
+          <td><span class="pic"><span class="pic-art">🕷️</span><span class="pic-word" dir="ltr">spider</span></span></td>
+          <td><span class="pic"><span class="pic-art">🕷️🕷️</span><span class="pic-word" dir="ltr">spider ×٢</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="sentence" dir="ltr">What's this? It's a tortoise.</td>
+          <td><span class="pic"><span class="pic-art">🐢</span><span class="pic-word" dir="ltr">tortoise</span></span></td>
+          <td><span class="pic"><span class="pic-art">🐢🐢</span><span class="pic-word" dir="ltr">tortoise ×٢</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="sentence" dir="ltr">What are these? They're cats.</td>
+          <td><span class="pic"><span class="pic-art">🐱🐱</span><span class="pic-word" dir="ltr">cat ×٢</span></span></td>
+          <td><span class="pic"><span class="pic-art">🐱</span><span class="pic-word" dir="ltr">cat</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="sentence" dir="ltr">What are these? They're ducks.</td>
+          <td><span class="pic"><span class="pic-art">🦆🦆</span><span class="pic-word" dir="ltr">duck ×٢</span></span></td>
+          <td><span class="pic"><span class="pic-art">🦆</span><span class="pic-word" dir="ltr">duck</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="sentence" dir="ltr">What are these? They're fish.</td>
+          <td><span class="pic"><span class="pic-art">🐟🐟</span><span class="pic-word" dir="ltr">fish ×٢</span></span></td>
+          <td><span class="pic"><span class="pic-art">🐟</span><span class="pic-word" dir="ltr">fish</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="sentence" dir="ltr">What are these? They're hamsters.</td>
+          <td><span class="pic"><span class="pic-art">🐹🐹</span><span class="pic-word" dir="ltr">hamster ×٢</span></span></td>
+          <td><span class="pic"><span class="pic-art">🐹</span><span class="pic-word" dir="ltr">hamster</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="sentence" dir="ltr">What are these? They're mice.</td>
+          <td><span class="pic"><span class="pic-art">🐭🐭</span><span class="pic-word" dir="ltr">mouse ×٢</span></span></td>
+          <td><span class="pic"><span class="pic-art">🐭</span><span class="pic-word" dir="ltr">mouse</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="sentence" dir="ltr">What are these? They're parrots.</td>
+          <td><span class="pic"><span class="pic-art">🦜🦜</span><span class="pic-word" dir="ltr">parrot ×٢</span></span></td>
+          <td><span class="pic"><span class="pic-art">🦜</span><span class="pic-word" dir="ltr">parrot</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٧</td>
+          <td class="sentence" dir="ltr">What are these? They're rabbits.</td>
+          <td><span class="pic"><span class="pic-art">🐰🐰</span><span class="pic-word" dir="ltr">rabbit ×٢</span></span></td>
+          <td><span class="pic"><span class="pic-art">🐰</span><span class="pic-word" dir="ltr">rabbit</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٨</td>
+          <td class="sentence" dir="ltr">What are these? They're snakes.</td>
+          <td><span class="pic"><span class="pic-art">🐍🐍</span><span class="pic-word" dir="ltr">snake ×٢</span></span></td>
+          <td><span class="pic"><span class="pic-art">🐍</span><span class="pic-word" dir="ltr">snake</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٩</td>
+          <td class="sentence" dir="ltr">What are these? They're spiders.</td>
+          <td><span class="pic"><span class="pic-art">🕷️🕷️</span><span class="pic-word" dir="ltr">spider ×٢</span></span></td>
+          <td><span class="pic"><span class="pic-art">🕷️</span><span class="pic-word" dir="ltr">spider</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٠</td>
+          <td class="sentence" dir="ltr">What are these? They're tortoises.</td>
+          <td><span class="pic"><span class="pic-art">🐢🐢</span><span class="pic-word" dir="ltr">tortoise ×٢</span></span></td>
+          <td><span class="pic"><span class="pic-art">🐢</span><span class="pic-word" dir="ltr">tortoise</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+  <section class="unit" id="kbl-g2-eng-s2-nccd-u6_l1">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الثاني</span><span>الوحدة ٦</span><span>١٩ كلمة</span></div>
+      <h2><span dir="ltr">Do You Like Peas?</span> <span class="unit-ar">هل تحب البازلاء؟</span></h2>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الكلمة</th>
+            <th>الصورة</th>
+            <th>الحرف الأول<small>كما يظهر للطالب</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="word" dir="ltr">apple</td>
+          <td><span class="pic-art">🍎</span></td>
+          <td class="skip">لا تُستعمل: تبدأ بحرف علّة، وله أكثر من صوت</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="word" dir="ltr">banana</td>
+          <td><span class="pic-art">🍌</span></td>
+          <td class="letter" dir="ltr">b</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="word" dir="ltr">bean</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">b</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="word" dir="ltr">carrot</td>
+          <td><span class="pic-art">🥕</span></td>
+          <td class="letter" dir="ltr">c</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="word" dir="ltr">orange</td>
+          <td><span class="pic-art">🟠</span></td>
+          <td class="skip">لا تُستعمل: تبدأ بحرف علّة، وله أكثر من صوت</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="word" dir="ltr">pasta</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">p</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="word" dir="ltr">pea</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">p</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="word" dir="ltr">potato</td>
+          <td><span class="pic-art">🥔</span></td>
+          <td class="letter" dir="ltr">p</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="word" dir="ltr">rice</td>
+          <td><span class="pic-art">🍚</span></td>
+          <td class="letter" dir="ltr">r</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="word" dir="ltr">tomato</td>
+          <td><span class="pic-art">🍅</span></td>
+          <td class="letter" dir="ltr">t</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="word" dir="ltr">bread</td>
+          <td><span class="pic-art">🍞</span></td>
+          <td class="letter" dir="ltr">b</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="word" dir="ltr">cheese</td>
+          <td><span class="pic-art">🧀</span></td>
+          <td class="skip">لا تُستعمل: أول حرفين صوت واحد (<span dir="ltr">ch / sh / th</span>)</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="word" dir="ltr">chicken</td>
+          <td><span class="pic-art">🍗</span></td>
+          <td class="skip">لا تُستعمل: أول حرفين صوت واحد (<span dir="ltr">ch / sh / th</span>)</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="word" dir="ltr">eggs</td>
+          <td><span class="pic-art">🥚🥚</span></td>
+          <td class="skip">لا تُستعمل: تبدأ بحرف علّة، وله أكثر من صوت</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="word" dir="ltr">fish</td>
+          <td><span class="pic-art">🐟</span></td>
+          <td class="letter" dir="ltr">f</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="word" dir="ltr">juice</td>
+          <td><span class="pic-art">🧃</span></td>
+          <td class="letter" dir="ltr">j</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٧</td>
+          <td class="word" dir="ltr">meat</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">m</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٨</td>
+          <td class="word" dir="ltr">milk</td>
+          <td><span class="pic-art">🥛</span></td>
+          <td class="letter" dir="ltr">m</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٩</td>
+          <td class="word" dir="ltr">water</td>
+          <td><span class="pic-art">💧</span></td>
+          <td class="letter" dir="ltr">w</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <h3 class="sub-h">جمل «اقرَأ الجملة» <span class="meta-line">(٢٨)</span></h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>الصورة</th>
+            <th>صورة خاطئة تظهر معها<small>تُختار الأخرى عشوائيًا</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="sentence" dir="ltr">I like apples.</td>
+          <td><span class="pic"><span class="pic-art">✅🍎</span><span class="pic-word" dir="ltr">apple</span></span></td>
+          <td><span class="pic"><span class="pic-art">❌🍎</span><span class="pic-word" dir="ltr">apple</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="sentence" dir="ltr">I like bananas.</td>
+          <td><span class="pic"><span class="pic-art">✅🍌</span><span class="pic-word" dir="ltr">banana</span></span></td>
+          <td><span class="pic"><span class="pic-art">❌🍌</span><span class="pic-word" dir="ltr">banana</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="sentence" dir="ltr">I like carrots.</td>
+          <td><span class="pic"><span class="pic-art">✅🥕</span><span class="pic-word" dir="ltr">carrot</span></span></td>
+          <td><span class="pic"><span class="pic-art">❌🥕</span><span class="pic-word" dir="ltr">carrot</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="sentence" dir="ltr">I like potatoes.</td>
+          <td><span class="pic"><span class="pic-art">✅🥔</span><span class="pic-word" dir="ltr">potato</span></span></td>
+          <td><span class="pic"><span class="pic-art">❌🥔</span><span class="pic-word" dir="ltr">potato</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="sentence" dir="ltr">I like tomatoes.</td>
+          <td><span class="pic"><span class="pic-art">✅🍅</span><span class="pic-word" dir="ltr">tomato</span></span></td>
+          <td><span class="pic"><span class="pic-art">❌🍅</span><span class="pic-word" dir="ltr">tomato</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="sentence" dir="ltr">I like rice.</td>
+          <td><span class="pic"><span class="pic-art">✅🍚</span><span class="pic-word" dir="ltr">rice</span></span></td>
+          <td><span class="pic"><span class="pic-art">❌🍚</span><span class="pic-word" dir="ltr">rice</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="sentence" dir="ltr">I like bread.</td>
+          <td><span class="pic"><span class="pic-art">✅🍞</span><span class="pic-word" dir="ltr">bread</span></span></td>
+          <td><span class="pic"><span class="pic-art">❌🍞</span><span class="pic-word" dir="ltr">bread</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="sentence" dir="ltr">I like cheese.</td>
+          <td><span class="pic"><span class="pic-art">✅🧀</span><span class="pic-word" dir="ltr">cheese</span></span></td>
+          <td><span class="pic"><span class="pic-art">❌🧀</span><span class="pic-word" dir="ltr">cheese</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="sentence" dir="ltr">I like chicken.</td>
+          <td><span class="pic"><span class="pic-art">✅🍗</span><span class="pic-word" dir="ltr">chicken</span></span></td>
+          <td><span class="pic"><span class="pic-art">❌🍗</span><span class="pic-word" dir="ltr">chicken</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="sentence" dir="ltr">I like eggs.</td>
+          <td><span class="pic"><span class="pic-art">✅🥚🥚</span><span class="pic-word" dir="ltr">eggs</span></span></td>
+          <td><span class="pic"><span class="pic-art">❌🥚🥚</span><span class="pic-word" dir="ltr">eggs</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="sentence" dir="ltr">I like fish.</td>
+          <td><span class="pic"><span class="pic-art">✅🐟</span><span class="pic-word" dir="ltr">fish</span></span></td>
+          <td><span class="pic"><span class="pic-art">❌🐟</span><span class="pic-word" dir="ltr">fish</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="sentence" dir="ltr">I like juice.</td>
+          <td><span class="pic"><span class="pic-art">✅🧃</span><span class="pic-word" dir="ltr">juice</span></span></td>
+          <td><span class="pic"><span class="pic-art">❌🧃</span><span class="pic-word" dir="ltr">juice</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="sentence" dir="ltr">I like milk.</td>
+          <td><span class="pic"><span class="pic-art">✅🥛</span><span class="pic-word" dir="ltr">milk</span></span></td>
+          <td><span class="pic"><span class="pic-art">❌🥛</span><span class="pic-word" dir="ltr">milk</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="sentence" dir="ltr">I like water.</td>
+          <td><span class="pic"><span class="pic-art">✅💧</span><span class="pic-word" dir="ltr">water</span></span></td>
+          <td><span class="pic"><span class="pic-art">❌💧</span><span class="pic-word" dir="ltr">water</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="sentence" dir="ltr">I don't like apples.</td>
+          <td><span class="pic"><span class="pic-art">❌🍎</span><span class="pic-word" dir="ltr">apple</span></span></td>
+          <td><span class="pic"><span class="pic-art">✅🍎</span><span class="pic-word" dir="ltr">apple</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="sentence" dir="ltr">I don't like bananas.</td>
+          <td><span class="pic"><span class="pic-art">❌🍌</span><span class="pic-word" dir="ltr">banana</span></span></td>
+          <td><span class="pic"><span class="pic-art">✅🍌</span><span class="pic-word" dir="ltr">banana</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٧</td>
+          <td class="sentence" dir="ltr">I don't like carrots.</td>
+          <td><span class="pic"><span class="pic-art">❌🥕</span><span class="pic-word" dir="ltr">carrot</span></span></td>
+          <td><span class="pic"><span class="pic-art">✅🥕</span><span class="pic-word" dir="ltr">carrot</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٨</td>
+          <td class="sentence" dir="ltr">I don't like potatoes.</td>
+          <td><span class="pic"><span class="pic-art">❌🥔</span><span class="pic-word" dir="ltr">potato</span></span></td>
+          <td><span class="pic"><span class="pic-art">✅🥔</span><span class="pic-word" dir="ltr">potato</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٩</td>
+          <td class="sentence" dir="ltr">I don't like tomatoes.</td>
+          <td><span class="pic"><span class="pic-art">❌🍅</span><span class="pic-word" dir="ltr">tomato</span></span></td>
+          <td><span class="pic"><span class="pic-art">✅🍅</span><span class="pic-word" dir="ltr">tomato</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٠</td>
+          <td class="sentence" dir="ltr">I don't like rice.</td>
+          <td><span class="pic"><span class="pic-art">❌🍚</span><span class="pic-word" dir="ltr">rice</span></span></td>
+          <td><span class="pic"><span class="pic-art">✅🍚</span><span class="pic-word" dir="ltr">rice</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢١</td>
+          <td class="sentence" dir="ltr">I don't like bread.</td>
+          <td><span class="pic"><span class="pic-art">❌🍞</span><span class="pic-word" dir="ltr">bread</span></span></td>
+          <td><span class="pic"><span class="pic-art">✅🍞</span><span class="pic-word" dir="ltr">bread</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٢</td>
+          <td class="sentence" dir="ltr">I don't like cheese.</td>
+          <td><span class="pic"><span class="pic-art">❌🧀</span><span class="pic-word" dir="ltr">cheese</span></span></td>
+          <td><span class="pic"><span class="pic-art">✅🧀</span><span class="pic-word" dir="ltr">cheese</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٣</td>
+          <td class="sentence" dir="ltr">I don't like chicken.</td>
+          <td><span class="pic"><span class="pic-art">❌🍗</span><span class="pic-word" dir="ltr">chicken</span></span></td>
+          <td><span class="pic"><span class="pic-art">✅🍗</span><span class="pic-word" dir="ltr">chicken</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٤</td>
+          <td class="sentence" dir="ltr">I don't like eggs.</td>
+          <td><span class="pic"><span class="pic-art">❌🥚🥚</span><span class="pic-word" dir="ltr">eggs</span></span></td>
+          <td><span class="pic"><span class="pic-art">✅🥚🥚</span><span class="pic-word" dir="ltr">eggs</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٥</td>
+          <td class="sentence" dir="ltr">I don't like fish.</td>
+          <td><span class="pic"><span class="pic-art">❌🐟</span><span class="pic-word" dir="ltr">fish</span></span></td>
+          <td><span class="pic"><span class="pic-art">✅🐟</span><span class="pic-word" dir="ltr">fish</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٦</td>
+          <td class="sentence" dir="ltr">I don't like juice.</td>
+          <td><span class="pic"><span class="pic-art">❌🧃</span><span class="pic-word" dir="ltr">juice</span></span></td>
+          <td><span class="pic"><span class="pic-art">✅🧃</span><span class="pic-word" dir="ltr">juice</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٧</td>
+          <td class="sentence" dir="ltr">I don't like milk.</td>
+          <td><span class="pic"><span class="pic-art">❌🥛</span><span class="pic-word" dir="ltr">milk</span></span></td>
+          <td><span class="pic"><span class="pic-art">✅🥛</span><span class="pic-word" dir="ltr">milk</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٨</td>
+          <td class="sentence" dir="ltr">I don't like water.</td>
+          <td><span class="pic"><span class="pic-art">❌💧</span><span class="pic-word" dir="ltr">water</span></span></td>
+          <td><span class="pic"><span class="pic-art">✅💧</span><span class="pic-word" dir="ltr">water</span></span> <span class="none">+ كلمة أخرى من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div><p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>جمل «<span dir="ltr">Do you like cheese? Yes, I do.</span>» وأخواتها لها نشاط «نعم أم لا» الخاص في القواعد، فلا تظهر في «اقرَأ الجملة».</li></ul>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+  <section class="unit" id="kbl-g2-eng-s2-nccd-u7_l1">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الثاني</span><span>الوحدة ٧</span><span>١٧ كلمة</span></div>
+      <h2><span dir="ltr">It's Windy!</span> <span class="unit-ar">إنها عاصفة!</span></h2>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الكلمة</th>
+            <th>الصورة</th>
+            <th>الحرف الأول<small>كما يظهر للطالب</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="word" dir="ltr">cloudy</td>
+          <td><span class="pic-art">☁️</span></td>
+          <td class="letter" dir="ltr">c</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="word" dir="ltr">cold</td>
+          <td><span class="pic-art">🥶</span></td>
+          <td class="letter" dir="ltr">c</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="word" dir="ltr">foggy</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">f</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="word" dir="ltr">hot</td>
+          <td><span class="pic-art">🥵</span></td>
+          <td class="letter" dir="ltr">h</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="word" dir="ltr">rainy</td>
+          <td><span class="pic-art">🌧️</span></td>
+          <td class="letter" dir="ltr">r</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="word" dir="ltr">snowy</td>
+          <td><span class="pic-art">❄️</span></td>
+          <td class="letter" dir="ltr">s</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="word" dir="ltr">stormy</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">s</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="word" dir="ltr">sunny</td>
+          <td><span class="pic-art">☀️</span></td>
+          <td class="letter" dir="ltr">s</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="word" dir="ltr">windy</td>
+          <td><span class="pic-art">💨</span></td>
+          <td class="letter" dir="ltr">w</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="word" dir="ltr">boots</td>
+          <td><span class="pic-art">👢👢</span></td>
+          <td class="letter" dir="ltr">b</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="word" dir="ltr">coat</td>
+          <td><span class="pic-art">🧥</span></td>
+          <td class="letter" dir="ltr">c</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="word" dir="ltr">jumper</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">j</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="word" dir="ltr">T-shirt</td>
+          <td><span class="pic-art">👕</span></td>
+          <td class="letter" dir="ltr">t</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="word" dir="ltr">shoes</td>
+          <td><span class="pic-art">👟👟</span></td>
+          <td class="skip">لا تُستعمل: أول حرفين صوت واحد (<span dir="ltr">ch / sh / th</span>)</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="word" dir="ltr">shorts</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="skip">لا تُستعمل: أول حرفين صوت واحد (<span dir="ltr">ch / sh / th</span>)</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="word" dir="ltr">skirt</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">s</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٧</td>
+          <td class="word" dir="ltr">trousers</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">t</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <h3 class="sub-h">جمل «اقرَأ الجملة» <span class="meta-line">(١١)</span></h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>الصورة</th>
+            <th>صورة خاطئة تظهر معها<small>تُختار الأخرى عشوائيًا</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="sentence" dir="ltr">What's the weather like? It's cloudy.</td>
+          <td><span class="pic"><span class="pic-art">☁️</span><span class="pic-word" dir="ltr">cloudy</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="sentence" dir="ltr">What's the weather like? It's cold.</td>
+          <td><span class="pic"><span class="pic-art">🥶</span><span class="pic-word" dir="ltr">cold</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="sentence" dir="ltr">What's the weather like? It's hot.</td>
+          <td><span class="pic"><span class="pic-art">🥵</span><span class="pic-word" dir="ltr">hot</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="sentence" dir="ltr">What's the weather like? It's rainy.</td>
+          <td><span class="pic"><span class="pic-art">🌧️</span><span class="pic-word" dir="ltr">rainy</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="sentence" dir="ltr">What's the weather like? It's snowy.</td>
+          <td><span class="pic"><span class="pic-art">❄️</span><span class="pic-word" dir="ltr">snowy</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="sentence" dir="ltr">What's the weather like? It's sunny.</td>
+          <td><span class="pic"><span class="pic-art">☀️</span><span class="pic-word" dir="ltr">sunny</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="sentence" dir="ltr">What's the weather like? It's windy.</td>
+          <td><span class="pic"><span class="pic-art">💨</span><span class="pic-word" dir="ltr">windy</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="sentence" dir="ltr">I'm wearing boots.</td>
+          <td><span class="pic"><span class="pic-art">👢👢</span><span class="pic-word" dir="ltr">boots</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="sentence" dir="ltr">I'm wearing a coat.</td>
+          <td><span class="pic"><span class="pic-art">🧥</span><span class="pic-word" dir="ltr">coat</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="sentence" dir="ltr">I'm wearing shoes.</td>
+          <td><span class="pic"><span class="pic-art">👟👟</span><span class="pic-word" dir="ltr">shoes</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="sentence" dir="ltr">I'm wearing a T-shirt.</td>
+          <td><span class="pic"><span class="pic-art">👕</span><span class="pic-word" dir="ltr">T-shirt</span></span></td>
+          <td><span class="none">كلمتان أخريان من القائمة</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+  <section class="unit" id="kbl-g2-eng-s2-nccd-u8_l1">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الثاني</span><span>الوحدة ٨</span><span>١٦ كلمة</span></div>
+      <h2><span dir="ltr">Who's at Home?</span> <span class="unit-ar">مَن في المنزل؟</span></h2>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الكلمة</th>
+            <th>الصورة</th>
+            <th>الحرف الأول<small>كما يظهر للطالب</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="word" dir="ltr">balcony</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">b</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="word" dir="ltr">bathroom</td>
+          <td><span class="pic-art">🛁</span></td>
+          <td class="letter" dir="ltr">b</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="word" dir="ltr">bedroom</td>
+          <td><span class="pic-art">🛏️</span></td>
+          <td class="letter" dir="ltr">b</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="word" dir="ltr">flat</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">f</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="word" dir="ltr">garage</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">g</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="word" dir="ltr">garden</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">g</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="word" dir="ltr">hall</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">h</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="word" dir="ltr">house</td>
+          <td><span class="pic-art">🏠</span></td>
+          <td class="letter" dir="ltr">h</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="word" dir="ltr">kitchen</td>
+          <td><span class="pic-art">🍳</span></td>
+          <td class="letter" dir="ltr">k</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="word" dir="ltr">living room</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">l</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="word" dir="ltr">clean the floor</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">c</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="word" dir="ltr">lay the table</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">l</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="word" dir="ltr">make the bed</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">m</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="word" dir="ltr">tidy up</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">t</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="word" dir="ltr">wash the car</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">w</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="word" dir="ltr">water the plants</td>
+          <td><span class="none">بلا صورة</span></td>
+          <td class="letter" dir="ltr">w</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div><p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>جمل الوحدة تختلف باسم الشخص (<span dir="ltr">dad</span> و<span dir="ltr">mum</span> و<span dir="ltr">grandad</span> و<span dir="ltr">granny</span>) والصورة هي الغرفة فقط، أي أربع صور لا غير، فلا يظهر «اقرَأ الجملة». تبقى أنشطة الكلمات الثلاثة.</li></ul>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

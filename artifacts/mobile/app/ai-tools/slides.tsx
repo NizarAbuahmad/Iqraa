@@ -22,7 +22,7 @@ import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PickerField } from '@/components/ui/PickerField';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { aiErrorText, isAbortError, throwIfAborted } from '@/services/ai/aiProvenance';
+import { aiErrorMessageKey, aiErrorText, isAbortError, throwIfAborted } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
@@ -563,6 +563,7 @@ export default function SlidesScreen() {
             ...(grounding.lesson.rulesEn ?? []),
           ].join(' \n ')),
           figureUri: bookFigureUri,
+          bookPages: true,
         });
         prelim = {
           ...base,
@@ -683,8 +684,9 @@ export default function SlidesScreen() {
       ].join(' \n '));
       const builtBase = wide
         // A unit / semester / book deck: the plan's introduction, a round per
-        // unit, the checks and the closure — no lesson, so no figures,
-        // vocabulary, rules or worked examples (`buildRevisionDeck`).
+        // unit (with up to three of its book figures), the checks and the
+        // closure — no lesson, so no vocabulary, rules or worked examples
+        // (`buildRevisionDeck`).
         ? buildRevisionDeck(isAr, {
           units: wide.units,
           phrase: revisionPhrase(wideSel!, lang),
@@ -693,6 +695,9 @@ export default function SlidesScreen() {
           subject: isAr ? subjects[subjectIdx].nameAr : subjects[subjectIdx].name,
           grade: isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
           includePractice,
+          // A unit's own pictures from the student book ride with its round.
+          figureUri: bookFigureUri,
+          bookPages: true,
         })
         : buildLessonDeck(trimmed, isAr, {
         lesson: grounding.lesson,
@@ -705,6 +710,7 @@ export default function SlidesScreen() {
         checks,
         teaching,
         figureUri: bookFigureUri,
+          bookPages: true,
       });
       // The teacher's own resources go in before anything is shown, unlike
       // the searched media which arrives later — they are local, so there is
@@ -727,6 +733,11 @@ export default function SlidesScreen() {
       setWideFrozen(wideSel);
       setDeck(built);
       setPreliminary(false);
+      // A spent allowance refuses the plan, the checks and the explanation
+      // together, and the deck above is the book alone — for a thin lesson,
+      // its one outcome three times. Say why rather than let it pass as
+      // generated.
+      if (!lessonPlan && aiErrorMessageKey(planError) === 'aiQuotaSpent') setError(t('slidesBookOnlyQuota'));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
 
@@ -800,7 +811,11 @@ export default function SlidesScreen() {
           const unitTargets = unitPhotoTargets(built.slides);
           const [titlePhoto, dividerPhoto, videos, unitPhotos] = await Promise.all([
             searchDeckPhoto(titleQuery),
-            searchDeckPhoto(dividerQuery),
+            // The generic «subject classroom» picture belongs to a one-lesson deck's
+            // single break. A revision deck's breaks are units, and that picture on
+            // the first of them was a stranger's: a computer lab on an evolution
+            // round. Each unit gets its own picture below or stays flat.
+            wide ? Promise.resolve(null) : searchDeckPhoto(dividerQuery),
             wantVideo ? searchDeckVideos(videoQuery, isAr ? 'ar' : 'en') : Promise.resolve([]),
             Promise.all(unitTargets.map(t => searchDeckPhoto(t.query))),
           ]);

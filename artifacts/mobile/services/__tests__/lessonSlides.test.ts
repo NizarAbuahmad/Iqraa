@@ -23,11 +23,12 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  BOOK_FIGURE_MAX, bookFigureCaption, buildLessonDeck, splitChecks, splitExample,
+  BOOK_FIGURE_MAX, BOOK_PAGE_SLIDE_MAX, bookFigureCaption, bookPageSlides, buildLessonDeck, numberedBookTitles, splitChecks, splitExample,
   splitWarmup, usableTeaching, withoutSlide,
 } from '../lessonSlides.ts';
 import { figuresForLesson } from '../bookFigures.ts';
 import { KB_LESSONS } from '../knowledgeBase.ts';
+import pageLinks from '../../../../knowledge-base/book-page-links.json' with { type: 'json' };
 import type { ActivitySlide, LessonPlanOutput } from '../ai/AIService.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 
@@ -978,6 +979,39 @@ describe('generated explanation in the deck', () => {
     assert.ok(rule.content.includes(LESSON.rulesAr![0]!));
   });
 
+  it('drops a generated point that restates the book rule, and a concept left with none', () => {
+    const rule = LESSON.rulesAr![0]!;
+    const deck = buildLessonDeck('x', true, {
+      lesson: LESSON,
+      teaching: { ...TEACHING, concepts: [
+        { title: 'فكرة تكرّر القاعدة', points: [`${rule}.`] },
+        { title: 'فكرة مختلطة', points: [`  ${rule} `, 'سطر جديد'] },
+      ] },
+    });
+    assert.equal(deck.slides.some(s => s.title === 'فكرة تكرّر القاعدة'), false);
+    assert.equal(deck.slides.find(s => s.title === 'فكرة مختلطة')!.content, '• سطر جديد');
+    assert.ok(deck.slides.find(s => s.title.includes('القاعدة'))!.content.includes(rule));
+  });
+
+  it('keeps a short point that is only a fragment of the rule', () => {
+    const rule = LESSON.rulesAr![0]!;
+    const fragment = rule.slice(0, Math.ceil(rule.length / 3));
+    const deck = buildLessonDeck('x', true, {
+      lesson: LESSON, teaching: { ...TEACHING, concepts: [{ title: 'جزء', points: [fragment] }] },
+    });
+    assert.equal(deck.slides.find(s => s.title === 'جزء')?.content, `• ${fragment}`);
+  });
+
+  it('falls back to the book when every generated point restated the rule', () => {
+    const rule = LESSON.rulesAr![0]!;
+    const withBook = buildLessonDeck('x', true, { lesson: LESSON });
+    const allDropped = buildLessonDeck('x', true, {
+      lesson: LESSON, teaching: { ...TEACHING, concepts: [{ title: 'تكرار', points: [rule] }] },
+    });
+    const bookTitles = (d: typeof withBook) => d.slides.filter(s => !s.aiWritten && s.type !== 'challenge').map(s => s.title);
+    for (const t of bookTitles(withBook)) assert.ok(allDropped.slides.some(s => s.title === t), `book slide «${t}» lost`);
+  });
+
   it("never replaces the book's own worked examples", () => {
     const deck = buildLessonDeck('x', true, { lesson: LESSON, teaching: TEACHING });
     const examples = deck.slides.filter(s => s.type === 'challenge');
@@ -1172,5 +1206,73 @@ describe('a short figure with a name', () => {
   it('leaves a long value alone even when it holds digits', () => {
     const s = slideTitled(['الشرط: يجب أن يكون المميز أكبر من 0 حتى يوجد حلان', 'فكرة ثانية: شرح طويل لا يصلح أن يكون رقمًا'], 'الشرط')!;
     assert.equal(s.layout, undefined);
+  });
+});
+
+describe('a lesson with no figure shows its own book pages', () => {
+  // A lesson whose pages are on file but that the figure index knows nothing of —
+  // the Arabic / Islamic / PE / digital / civic books, whose pages were found by title.
+  const pageOnly = Object.entries((pageLinks as { lessons: Record<string, { sourceId: string; startPage: number }> }).lessons)
+    .find(([id]) => figuresForLesson(id).length === 0);
+
+  it('the data has such a lesson', () => {
+    assert.ok(pageOnly, 'no lesson with book pages and no figures — the page-only subjects are missing from book-page-links.json');
+  });
+
+  it('bookPageSlides: the first pages, in order, captioned with the page', () => {
+    const [id, entry] = pageOnly!;
+    const slides = bookPageSlides(id, true);
+    assert.ok(slides.length >= 1 && slides.length <= BOOK_PAGE_SLIDE_MAX);
+    assert.ok(slides.every(s => s.type === 'media' && s.mediaKind === 'image' && s.title.startsWith('من كتاب الطالب — صفحة ')));
+    assert.equal(new Set(slides.map(s => s.title)).size, slides.length, 'each page names itself');
+    assert.match(slides[0]!.mediaUrl!, new RegExp(`/${id}/1\.jpg$`));
+    assert.match(slides[0]!.mediaCaption!, /صفحة/);
+    assert.equal(bookPageSlides(id, false)[0]!.mediaCaption, `Student Book · page ${entry.startPage}`);
+    assert.deepEqual(bookPageSlides('kbl-does-not-exist', true), []);
+    assert.deepEqual(bookPageSlides(undefined, true), []);
+    assert.equal(bookPageSlides(id, true, 1).length, 1);
+  });
+
+  it('a lesson deck shows them only when asked, and only for a lesson with no figure to show', () => {
+    const [id] = pageOnly!;
+    const lesson: KBLesson = { ...LESSON, id };
+    const plain = buildLessonDeck('درس', true, { lesson });
+    assert.equal(plain.slides.some(s => s.type === 'media'), false, 'opt-in: a deck built without the flag is as it was');
+    const withPages = buildLessonDeck('درس', true, { lesson, bookPages: true });
+    const media = withPages.slides.filter(s => s.type === 'media');
+    assert.ok(media.length >= 1 && media.length <= BOOK_PAGE_SLIDE_MAX);
+    assert.ok(media.every(s => /\/book-pages\//.test(s.mediaUrl ?? '')));
+    // a lesson that has figures keeps its figures and gains no pages
+    const withFigures = buildLessonDeck('نظام معادلات', true, {
+      lesson: { ...LESSON, id: 'kbl-math-s1-nccd-u1_l1' }, figureUri: f => `https://fig/${f.file}`, bookPages: true,
+    });
+    assert.equal(withFigures.slides.some(s => /\/book-pages\//.test(s.mediaUrl ?? '')), false);
+  });
+});
+
+describe('book pictures never make a run of slides with one title', () => {
+  // The report: a whole deck read as the same slide repeated once book images came in.
+  // Measured before the fix: 1,213 of the 3,318 lesson decks carried a run of «من كتاب الطالب».
+  it('no lesson deck repeats a book-picture title, however many figures or pages the lesson has', () => {
+    const repeats: string[] = [];
+    let withPictures = 0;
+    for (const lesson of KB_LESSONS) {
+      const deck = buildLessonDeck(lesson.titleAr, true, {
+        lesson, subject: 's', grade: 'g', bookPages: true,
+        figureUri: f => `https://figs.example/${f.sourceId}/${f.file}`,
+      });
+      const media = deck.slides.filter(s => s.type === 'media' && s.title.startsWith('من كتاب الطالب'));
+      if (media.length > 0) withPictures++;
+      if (new Set(media.map(s => s.title)).size !== media.length) repeats.push(lesson.id);
+    }
+    assert.ok(withPictures > 1000, `probe: expected most lessons to carry pictures, got ${withPictures}`);
+    assert.deepEqual(repeats.slice(0, 5), []);
+  });
+
+  it('numbers several figures and leaves a lone one bare', () => {
+    const mk = (title: string) => ({ title });
+    assert.deepEqual(numberedBookTitles([mk('من كتاب الطالب')], true).map(s => s.title), ['من كتاب الطالب']);
+    assert.deepEqual(numberedBookTitles([mk('A'), mk('A'), mk('A')], true).map(s => s.title), ['A (١)', 'A (٢)', 'A (٣)']);
+    assert.deepEqual(numberedBookTitles([mk('A'), mk('A')], false).map(s => s.title), ['A (1)', 'A (2)']);
   });
 });

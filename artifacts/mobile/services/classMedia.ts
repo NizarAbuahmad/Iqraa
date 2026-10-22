@@ -458,8 +458,9 @@ export function scanGraphCommands(
   // two of them. Without this `y = -x + 3` matched nothing at all — an
   // ordinary line with a negative slope, so a two-line system was projected
   // with one line missing and no error anywhere.
+  // The name must start a word: «energy = 2x + 5» is not «y = 2x + 5».
   const re = new RegExp(
-    `([fghy])\\s*(\\([a-z]\\))?\\s*=\\s*(-?\\s*${term}(?:\\s*[+\\-*/]\\s*${term})*)`,
+    `(?<![a-z0-9_])([fghy])\\s*(\\([a-z]\\))?\\s*=\\s*(-?\\s*${term}(?:\\s*[+\\-*/]\\s*${term})*)`,
     'gi',
   );
   let m: RegExpExecArray | null;

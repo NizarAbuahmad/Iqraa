@@ -142,7 +142,8 @@ export function GenerationStatus({
 
   // «No question bank» is the same answer every time — a retry button would
   // only invite the teacher to ask again.
-  const retryable = onRetry && errorDetail !== t('noQuestionBank');
+  // Nor does a spent monthly allowance.
+  const retryable = onRetry && ![t('noQuestionBank'), t('aiQuotaSpent'), t('slidesBookOnlyQuota')].includes(errorDetail ?? '');
 
   return (
     <View style={shell(colors.destructive, colors.destructive + '10')} accessibilityRole="alert">

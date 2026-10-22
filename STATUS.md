@@ -79,8 +79,16 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-22 — Book-picture slides no longer share one title
+- 2026-10-21 — Each corner has its own colour and band
+- 2026-10-21 — Cards lift, presses give, screens arrive — 2026-10-21
+- 2026-10-20 — Grade 2 reading in the English corner — built, shown to nobody yet
+- 2026-10-19 — Grade 2 grammar in the English corner — built, shown to nobody yet
+- 2026-10-19 — Arabic, Islamic, civic, digital and PE lessons get their book pages in decks
+- 2026-10-19 — Load test: the exam path holds, the sign-up rush does not
 - 2026-10-18 — One question-type order, one set of repeat-rule inputs
 - 2026-10-18 — One card for quizzes and evaluations
+- 2026-10-18 — Revision decks carry the book's own pictures and all its key terms
 - 2026-10-18 — Slides Maker decks stop looking like bare lists
 - 2026-10-18 — Four new slide layouts: timeline, stats, table, flow
 - 2026-10-17 — The parent letter stops saying things the teacher never typed
@@ -101,18 +109,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-15 — All chemistry families now hold 15 or more items
 - 2026-10-15 — Four chemistry lessons were routed to the wrong family; fixed
 - 2026-10-15 — The heat-capacity lesson has its own question family
-- 2026-10-15 — The derivative bank went from 5 items to 21, so a worksheet on a derivative lesson can reach the picker's count offline
-- 2026-10-15 — A Grade 1 English teacher's review
-- 2026-10-14 — Lesson plan, slides, activity, lesson-flow and the classroom builder take a unit, semester or whole book — as one revis…
-- 2026-10-14 — Quiz, worksheet, homework and game take a unit, semester or whole book
-- 2026-10-14 — Lesson plan «أعد التجهيز»: what changed, and what it cannot
-- 2026-10-14 — Lesson plans have a second wording for the five fixed sections — Arabic and English, NOT YET READ BY A TEACHER
-- 2026-10-14 — Scanning external exams: paper setup from photos, and a whole class at once
-- 2026-10-13 — Wide-scope selection, foundation only
 
 ## Finding older detail, and recording new work
 
-- The log has 323 sections. Anything cited elsewhere as
+- The log has 331 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line

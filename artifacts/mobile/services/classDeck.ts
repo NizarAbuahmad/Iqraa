@@ -20,7 +20,7 @@ import type {
 } from './ai/AIService.ts';
 import type { KBLesson } from './knowledgeBase.ts';
 import type { BookFigure } from './bookFigures.ts';
-import { bookFigureSlides } from './lessonSlides.ts';
+import { bookFigureSlides, numberedBookTitles } from './lessonSlides.ts';
 import { toArabicDigits } from './labFormat.ts';
 import { optionLetter } from './optionLabels.ts';
 import { samplePlot } from './deckVisuals.ts';
@@ -167,7 +167,7 @@ function pushFigures(
   isAr: boolean,
   figureUri?: (figure: BookFigure) => string | null,
 ): void {
-  for (const slide of bookFigureSlides(kbLessonId, isAr, figureUri)) {
+  for (const slide of numberedBookTitles(bookFigureSlides(kbLessonId, isAr, figureUri), isAr)) {
     slides.push({ ...slide, slideNumber: slides.length + 1 } as ActivitySlide);
   }
 }

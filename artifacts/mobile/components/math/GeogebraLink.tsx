@@ -5,35 +5,30 @@
  * tab on web, the in-app browser on native.
  */
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { openGeogebraGraphing } from '@/services/geogebra';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { useSurface } from '@/components/ui/Surface';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 
 export function GeogebraLink() {
   const colors = useColors();
+  const surface = useSurface();
   const { t, isRTL } = useLanguage();
   const align = isRTL ? 'right' : 'left';
   return (
-    <Pressable
+    <PressableScale
       onPress={() => {
         Haptics.selectionAsync();
         void openGeogebraGraphing();
       }}
       accessibilityRole="link"
       accessibilityLabel={`${t('mathOpenGeogebra')}, ${t('mathGeogebraHint')}`}
-      style={({ pressed }) => [
-        styles.card,
-        {
-          backgroundColor: colors.card,
-          borderColor: colors.border,
-          flexDirection: isRTL ? 'row-reverse' : 'row',
-          opacity: pressed ? 0.8 : 1,
-        },
-      ]}
+      style={[styles.card, surface, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
     >
       <View style={[styles.icon, { backgroundColor: colors.secondary }]}>
         <Ionicons name="open-outline" size={22} color={colors.primary} />
@@ -46,12 +41,12 @@ export function GeogebraLink() {
           {t('mathGeogebraHint')}
         </Text>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { alignItems: 'center', gap: SPACE.md, padding: SPACE.md, borderWidth: 1, borderRadius: RADIUS.lg },
+  card: { flexGrow: 1, alignItems: 'center', gap: SPACE.md, padding: SPACE.md },
   icon: { width: 44, height: 44, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: TYPE.body },
   hint: { fontSize: TYPE.caption, marginTop: SPACE.xxs },

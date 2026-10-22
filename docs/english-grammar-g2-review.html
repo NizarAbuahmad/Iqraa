@@ -1,0 +1,2467 @@
+<!doctype html>
+<html lang="ar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مراجعة قواعد الصف الثاني</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700&family=Readex+Pro:wght@400;500;600;700&display=swap">
+<style>
+  /* Layout: an A4 review form — instructions first, then one section per unit, each ending in a sign-off strip. */
+  :root {
+    --paper: #FBFCFB;
+    --ink: #13302C;
+    --muted: #4E6661;
+    --rule: #D3E2DE;
+    --tint: #EAF3F1;
+    --teal: #006D65;
+    --right: #17643A;
+    --right-bg: #E3F2E8;
+    --wrong: #9B2C25;
+    --wrong-bg: #F8E6E4;
+    --display: "Readex Pro", "Almarai", "Noto Sans Arabic", system-ui, sans-serif;
+    --body: "Almarai", "Readex Pro", "Noto Sans Arabic", system-ui, sans-serif;
+    --latin: "Readex Pro", "Segoe UI", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0E1A18; --ink: #E3EFEC; --muted: #9DB5AF; --rule: #2A3D39; --tint: #15302C;
+      --teal: #2DD4BF; --right: #7FD8A1; --right-bg: #173726; --wrong: #F2A099; --wrong-bg: #3A1D1A;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0E1A18; --ink: #E3EFEC; --muted: #9DB5AF; --rule: #2A3D39; --tint: #15302C;
+    --teal: #2DD4BF; --right: #7FD8A1; --right-bg: #173726; --wrong: #F2A099; --wrong-bg: #3A1D1A;
+    color-scheme: dark;
+  }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: var(--body); font-size: 15px; line-height: 1.7;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 28px 56px;
+  }
+  .sheet { max-width: 1040px; margin-inline: auto; display: grid; gap: 40px; }
+  h1, h2 { font-family: var(--display); text-wrap: balance; margin: 0; }
+  h1 { font-size: 1.85rem; line-height: 1.3; font-weight: 700; }
+  .eyebrow { font-family: var(--display); color: var(--teal); font-weight: 600; font-size: .9rem; }
+  .intro { display: grid; gap: 18px; max-width: 880px; }
+  .intro > p { max-width: 70ch; }
+  .intro p { margin: 0; }
+  .lead { font-size: 1.05rem; }
+  .card { border: 1px solid var(--rule); border-radius: 10px; padding: 16px 20px; background: var(--tint); }
+  .card h3 { font-family: var(--display); font-size: 1.05rem; margin: 0 0 8px; }
+  .card ol, .card ul { margin: 0; padding-inline-start: 1.3em; display: grid; gap: 6px; }
+  .card ol { list-style-type: arabic-indic; }
+  .acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .act { border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; }
+  .act b { font-family: var(--display); display: block; color: var(--teal); }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: .92rem; }
+  .meta-line { color: var(--muted); font-size: .9rem; }
+
+  .unit { display: grid; gap: 14px; }
+  .unit-head { display: grid; gap: 6px; border-bottom: 3px solid var(--teal); padding-bottom: 12px; }
+  .unit-meta { color: var(--teal); font-family: var(--display); font-weight: 600; font-size: .9rem; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  .unit-meta span + span::before { content: "·"; margin-inline-end: 14px; color: var(--muted); }
+  h2 { font-size: 1.45rem; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+  h2 [dir="ltr"] { font-family: var(--latin); }
+  .unit-ar { color: var(--muted); font-size: 1.05rem; font-weight: 400; font-family: var(--body); }
+  .patterns { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+  .patterns li { font-family: var(--latin); font-size: .9rem; border: 1px solid var(--rule); border-radius: 999px; padding: 2px 12px; }
+  .unit-note { margin: 0; font-size: .92rem; color: var(--muted); }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; min-width: 780px; font-variant-numeric: tabular-nums; }
+  th, td { border-bottom: 1px solid var(--rule); padding: 7px 10px; text-align: start; vertical-align: middle; }
+  thead th { background: var(--tint); font-family: var(--display); font-weight: 600; font-size: .85rem; line-height: 1.35; }
+  thead th small { display: block; font-weight: 400; color: var(--muted); font-size: .75rem; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num, th.num { width: 2.2em; color: var(--muted); text-align: center; }
+  td.sentence { font-family: var(--latin); font-size: 1.02rem; font-weight: 500; text-align: left; white-space: nowrap; }
+  .pic { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.2; }
+  .pic-art { font-size: 1.45rem; letter-spacing: 2px; font-family: "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif; }
+  .pic-word { font-family: var(--latin); font-size: .72rem; color: var(--muted); }
+  .none { color: var(--muted); font-size: .85rem; }
+  td.choose { white-space: nowrap; }
+  .opt { display: inline-block; font-family: var(--latin); font-size: .88rem; border-radius: 6px; padding: 1px 8px; margin: 2px; }
+  .opt-right { background: var(--right-bg); color: var(--right); font-weight: 600; }
+  .opt-wrong { background: var(--wrong-bg); color: var(--wrong); text-decoration: line-through; text-decoration-thickness: 1px; }
+  th.tick, td.tick { width: 2.6em; text-align: center; }
+  .box { display: inline-block; width: 18px; height: 18px; border: 1.5px solid var(--ink); border-radius: 3px; vertical-align: -3px; }
+  th.note, td.note { width: 26%; }
+
+  .signoff { display: grid; gap: 12px; border: 1.5px dashed var(--teal); border-radius: 10px; padding: 14px 18px; }
+  .verdict { display: flex; flex-wrap: wrap; gap: 10px 26px; font-family: var(--display); font-size: .95rem; }
+  .verdict span { display: inline-flex; gap: 8px; align-items: center; }
+  .lines { display: flex; flex-wrap: wrap; gap: 14px 28px; }
+  .lines span { display: inline-flex; gap: 6px; align-items: baseline; flex: 1 1 200px; }
+  .lines i { flex: 1; border-bottom: 1px solid var(--ink); min-width: 80px; height: 1.2em; }
+
+  @page { size: A4 landscape; margin: 12mm; }
+  @media print {
+    :root { --paper: #fff; --ink: #111; --muted: #4d4d4d; --rule: #bbb; --tint: #F1F5F4; color-scheme: light; }
+    body { padding: 0; font-size: 12px; }
+    .sheet { gap: 0; max-width: none; }
+    .intro { max-width: none; }
+    .unit { break-before: page; }
+    .table-wrap { overflow: visible; border-radius: 0; }
+    table { min-width: 0; }
+    tr, .signoff { break-inside: avoid; }
+    thead { display: table-header-group; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  .yn { display: block; font-family: var(--latin); font-size: .88rem; white-space: nowrap; }
+  .yn-yes { color: var(--right); }
+  .yn-no { color: var(--wrong); }
+  td.yesno { white-space: nowrap; }
+  .not-covered { margin: 0; padding-inline-start: 1.3em; display: grid; gap: 4px; font-size: .92rem; color: var(--muted); }
+  .not-covered [dir="ltr"] { font-family: var(--latin); }
+</style>
+</head>
+<body>
+<main class="sheet" dir="rtl" lang="ar">
+  <section class="intro">
+    <div class="eyebrow">إقرأ · ركن اللغة الإنجليزية · الصف الثاني</div>
+    <h1>مراجعة جمل القواعد قبل عرضها على الطلاب</h1>
+    <p class="lead">أضفنا إلى ركن اللغة الإنجليزية في الصف الثاني أربعة أنشطة لتثبيت القواعد، منها نشاط جديد للأجوبة القصيرة. الجمل مبنية من نمط القواعد في كل وحدة من الكتاب ومن كلمات الوحدة نفسها، وما استُبعد منها مذكور مع سببه في كل وحدة. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ٢١٢ جملة في ٨ وحدات.</p>
+
+    <div class="acts">
+      <div class="act"><b>اختر الكلمة</b>جملة فيها فراغ وصورة، وخياران: الصحيح ونقيضه في القاعدة، مثل <span dir="ltr">This is / These are</span> أو <span dir="ltr">He's / She's</span> أو <span dir="ltr">like / don't like</span>.</div>
+      <div class="act"><b>رتّب الجملة</b>كلمات الجملة مبعثرة، ويرتّبها الطالب بالنقر. لا تُستخدم جملة أطول من ٧ كلمات.</div>
+      <div class="act"><b>صح أم خطأ</b>جملة بجانب صورة: نصف الأسئلة بصورتها الصحيحة، ونصفها بصورة كلمة أخرى من الوحدة.</div>
+      <div class="act"><b>نعم أم لا</b>صورة وسؤال، ويختار الطالب الجواب القصير: <span dir="ltr">Yes, it is. / No, it isn't.</span> أو <span dir="ltr">Yes, I do. / No, I don't.</span> نصف الأسئلة جوابها «نعم» ونصفها «لا».</div>
+    </div>
+
+    <div class="card">
+      <h3>ما المطلوب في كل جملة</h3>
+      <ol>
+        <li>هل الجملة صحيحة لغويًا، وبالصيغة التي يدرّسها الكتاب؟</li>
+        <li>هل الصورة تناسب الجملة؟</li>
+        <li>في «اختر الكلمة»: هل الخيار الخاطئ خاطئ بوضوح مع هذه الصورة؟</li>
+        <li>في «صح أم خطأ»: هل الصورة الخاطئة لا تحتمل أن تكون صحيحة؟</li>
+        <li>في «نعم أم لا»: هل الجواب القصير هو الصحيح للسؤال وللصورة؟</li>
+        <li>هل الكلمات مناسبة لطالب الصف الثاني؟</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h3>طريقة التعبئة</h3>
+      <ul>
+        <li>ضعوا ✓ في المربع إذا كانت الجملة سليمة، أو اكتبوا الملاحظة في عمود «ملاحظات».</li>
+        <li>في آخر كل وحدة اختاروا: موافق، أو موافق بعد التعديلات، أو غير موافق، مع الاسم والتاريخ.</li>
+        <li>يمكن مراجعة وحدة واحدة في كل مرة؛ كل وحدة تُفعَّل وحدها بعد الموافقة عليها.</li>
+      </ul>
+    </div>
+
+    <div class="legend">
+      <span>✅ لديّ / أحب</span>
+      <span>❌ ليس لديّ / لا أحب</span>
+      <span>👦 He</span>
+      <span>👧 She</span>
+      <span>صورتان من الشيء = جمع (are / They're)</span>
+      <span><span class="opt opt-right" dir="ltr">right</span> الخيار الصحيح</span>
+      <span><span class="opt opt-wrong" dir="ltr">wrong</span> الخيار الخاطئ</span>
+    </div>
+    <p class="meta-line">«لا يظهر» تعني أن الجملة لا تُستخدم في هذا النشاط (لا توجد صورة واضحة لها). الصور هي الرموز التي تظهر في التطبيق نفسه.</p>
+  </section>
+
+  <section class="unit" id="unit-1">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الأول</span><span>وحدة الترحيب</span><span>١٦ جملة</span></div>
+      <h2><span dir="ltr">Welcome: Hello!</span> <span class="unit-ar">أهلاً وسهلاً (Hello!)</span></h2>
+      <ul class="patterns" dir="ltr"><li>What colour is it? It's ….</li><li>How old are you? I'm ….</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>«<span dir="ltr">What's your name? My name's</span> …» و«<span dir="ltr">How many</span> …?»: لا توجد صورة تُظهرها.</li><li>«<span dir="ltr">How old are you?</span>»: الأعمار المستخدمة من خمس إلى عشر فقط.</li></ul>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>الصورة</th>
+            <th>«اختر الكلمة»<small>الصحيح ثم الخاطئ</small></th>
+            <th>«صح أم خطأ»<small>الصورة الخاطئة</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="sentence" dir="ltr">What colour is it? It's black.</td>
+          <td><span class="pic"><span class="pic-art">⚫</span><span class="pic-word" dir="ltr">black</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">black</span><span class="opt opt-wrong" dir="ltr">blue</span></td>
+          <td><span class="pic"><span class="pic-art">🔵</span><span class="pic-word" dir="ltr">blue</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="sentence" dir="ltr">What colour is it? It's blue.</td>
+          <td><span class="pic"><span class="pic-art">🔵</span><span class="pic-word" dir="ltr">blue</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">blue</span><span class="opt opt-wrong" dir="ltr">brown</span></td>
+          <td><span class="pic"><span class="pic-art">🟤</span><span class="pic-word" dir="ltr">brown</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="sentence" dir="ltr">What colour is it? It's brown.</td>
+          <td><span class="pic"><span class="pic-art">🟤</span><span class="pic-word" dir="ltr">brown</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">brown</span><span class="opt opt-wrong" dir="ltr">green</span></td>
+          <td><span class="pic"><span class="pic-art">🟢</span><span class="pic-word" dir="ltr">green</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="sentence" dir="ltr">What colour is it? It's green.</td>
+          <td><span class="pic"><span class="pic-art">🟢</span><span class="pic-word" dir="ltr">green</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">green</span><span class="opt opt-wrong" dir="ltr">orange</span></td>
+          <td><span class="pic"><span class="pic-art">🟠</span><span class="pic-word" dir="ltr">orange</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="sentence" dir="ltr">What colour is it? It's orange.</td>
+          <td><span class="pic"><span class="pic-art">🟠</span><span class="pic-word" dir="ltr">orange</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">orange</span><span class="opt opt-wrong" dir="ltr">pink</span></td>
+          <td><span class="pic"><span class="pic-art">🩷</span><span class="pic-word" dir="ltr">pink</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="sentence" dir="ltr">What colour is it? It's pink.</td>
+          <td><span class="pic"><span class="pic-art">🩷</span><span class="pic-word" dir="ltr">pink</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">pink</span><span class="opt opt-wrong" dir="ltr">purple</span></td>
+          <td><span class="pic"><span class="pic-art">🟣</span><span class="pic-word" dir="ltr">purple</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="sentence" dir="ltr">What colour is it? It's purple.</td>
+          <td><span class="pic"><span class="pic-art">🟣</span><span class="pic-word" dir="ltr">purple</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">purple</span><span class="opt opt-wrong" dir="ltr">red</span></td>
+          <td><span class="pic"><span class="pic-art">🔴</span><span class="pic-word" dir="ltr">red</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="sentence" dir="ltr">What colour is it? It's red.</td>
+          <td><span class="pic"><span class="pic-art">🔴</span><span class="pic-word" dir="ltr">red</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">red</span><span class="opt opt-wrong" dir="ltr">white</span></td>
+          <td><span class="pic"><span class="pic-art">⚪</span><span class="pic-word" dir="ltr">white</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="sentence" dir="ltr">What colour is it? It's white.</td>
+          <td><span class="pic"><span class="pic-art">⚪</span><span class="pic-word" dir="ltr">white</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">white</span><span class="opt opt-wrong" dir="ltr">yellow</span></td>
+          <td><span class="pic"><span class="pic-art">🟡</span><span class="pic-word" dir="ltr">yellow</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="sentence" dir="ltr">What colour is it? It's yellow.</td>
+          <td><span class="pic"><span class="pic-art">🟡</span><span class="pic-word" dir="ltr">yellow</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">yellow</span><span class="opt opt-wrong" dir="ltr">black</span></td>
+          <td><span class="pic"><span class="pic-art">⚫</span><span class="pic-word" dir="ltr">black</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="sentence" dir="ltr">How old are you? I'm five.</td>
+          <td><span class="pic"><span class="pic-art">5️⃣</span><span class="pic-word" dir="ltr">five</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">five</span><span class="opt opt-wrong" dir="ltr">six</span></td>
+          <td><span class="pic"><span class="pic-art">6️⃣</span><span class="pic-word" dir="ltr">six</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="sentence" dir="ltr">How old are you? I'm six.</td>
+          <td><span class="pic"><span class="pic-art">6️⃣</span><span class="pic-word" dir="ltr">six</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">six</span><span class="opt opt-wrong" dir="ltr">seven</span></td>
+          <td><span class="pic"><span class="pic-art">7️⃣</span><span class="pic-word" dir="ltr">seven</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="sentence" dir="ltr">How old are you? I'm seven.</td>
+          <td><span class="pic"><span class="pic-art">7️⃣</span><span class="pic-word" dir="ltr">seven</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">seven</span><span class="opt opt-wrong" dir="ltr">eight</span></td>
+          <td><span class="pic"><span class="pic-art">8️⃣</span><span class="pic-word" dir="ltr">eight</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="sentence" dir="ltr">How old are you? I'm eight.</td>
+          <td><span class="pic"><span class="pic-art">8️⃣</span><span class="pic-word" dir="ltr">eight</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">eight</span><span class="opt opt-wrong" dir="ltr">nine</span></td>
+          <td><span class="pic"><span class="pic-art">9️⃣</span><span class="pic-word" dir="ltr">nine</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="sentence" dir="ltr">How old are you? I'm nine.</td>
+          <td><span class="pic"><span class="pic-art">9️⃣</span><span class="pic-word" dir="ltr">nine</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">nine</span><span class="opt opt-wrong" dir="ltr">ten</span></td>
+          <td><span class="pic"><span class="pic-art">🔟</span><span class="pic-word" dir="ltr">ten</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="sentence" dir="ltr">How old are you? I'm ten.</td>
+          <td><span class="pic"><span class="pic-art">🔟</span><span class="pic-word" dir="ltr">ten</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">ten</span><span class="opt opt-wrong" dir="ltr">five</span></td>
+          <td><span class="pic"><span class="pic-art">5️⃣</span><span class="pic-word" dir="ltr">five</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+  <section class="unit" id="unit-2">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الأول</span><span>الوحدة ١</span><span>٢٦ جملة</span></div>
+      <h2><span dir="ltr">Look at My Toys!</span> <span class="unit-ar">انظر إلى ألعابي!</span></h2>
+      <ul class="patterns" dir="ltr"><li>What's this? It's ….</li><li>Is it …? Yes, it is.</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>الكلمتان <span dir="ltr">swing</span> و<span dir="ltr">slide</span> ليس لهما صورة، و<span dir="ltr">swing</span> هي مثال الكتاب في «<span dir="ltr">Is it a swing?</span>»، لذلك تُستخدم ألعاب لها صور.</li><li><span dir="ltr">action figure</span> و<span dir="ltr">building set</span> تظهران في «رتّب الجملة» فقط لأنه لا صورة لهما.</li><li>«<span dir="ltr">Can I play with it, please?</span>»: حوار بلا صورة.</li></ul>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>الصورة</th>
+            <th>«اختر الكلمة»<small>الصحيح ثم الخاطئ</small></th>
+            <th>«صح أم خطأ»<small>الصورة الخاطئة</small></th>
+            <th>«نعم أم لا»<small>السؤال والجواب، ثم سؤال «لا»</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="sentence" dir="ltr">What's this? It's an action figure.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="sentence" dir="ltr">What's this? It's a building set.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="sentence" dir="ltr">What's this? It's a car.</td>
+          <td><span class="pic"><span class="pic-art">🚗</span><span class="pic-word" dir="ltr">car</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a car</span><span class="opt opt-wrong" dir="ltr">a dinosaur</span></td>
+          <td><span class="pic"><span class="pic-art">🦕</span><span class="pic-word" dir="ltr">dinosaur</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="sentence" dir="ltr">What's this? It's a dinosaur.</td>
+          <td><span class="pic"><span class="pic-art">🦕</span><span class="pic-word" dir="ltr">dinosaur</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a dinosaur</span><span class="opt opt-wrong" dir="ltr">a doll</span></td>
+          <td><span class="pic"><span class="pic-art">🪆</span><span class="pic-word" dir="ltr">doll</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="sentence" dir="ltr">What's this? It's a doll.</td>
+          <td><span class="pic"><span class="pic-art">🪆</span><span class="pic-word" dir="ltr">doll</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a doll</span><span class="opt opt-wrong" dir="ltr">a plane</span></td>
+          <td><span class="pic"><span class="pic-art">✈️</span><span class="pic-word" dir="ltr">plane</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="sentence" dir="ltr">What's this? It's a plane.</td>
+          <td><span class="pic"><span class="pic-art">✈️</span><span class="pic-word" dir="ltr">plane</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a plane</span><span class="opt opt-wrong" dir="ltr">a puzzle</span></td>
+          <td><span class="pic"><span class="pic-art">🧩</span><span class="pic-word" dir="ltr">puzzle</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="sentence" dir="ltr">What's this? It's a puzzle.</td>
+          <td><span class="pic"><span class="pic-art">🧩</span><span class="pic-word" dir="ltr">puzzle</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a puzzle</span><span class="opt opt-wrong" dir="ltr">a robot</span></td>
+          <td><span class="pic"><span class="pic-art">🤖</span><span class="pic-word" dir="ltr">robot</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="sentence" dir="ltr">What's this? It's a robot.</td>
+          <td><span class="pic"><span class="pic-art">🤖</span><span class="pic-word" dir="ltr">robot</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a robot</span><span class="opt opt-wrong" dir="ltr">a teddy</span></td>
+          <td><span class="pic"><span class="pic-art">🧸</span><span class="pic-word" dir="ltr">teddy</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="sentence" dir="ltr">What's this? It's a teddy.</td>
+          <td><span class="pic"><span class="pic-art">🧸</span><span class="pic-word" dir="ltr">teddy</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a teddy</span><span class="opt opt-wrong" dir="ltr">a yoyo</span></td>
+          <td><span class="pic"><span class="pic-art">🪀</span><span class="pic-word" dir="ltr">yoyo</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="sentence" dir="ltr">What's this? It's a yoyo.</td>
+          <td><span class="pic"><span class="pic-art">🪀</span><span class="pic-word" dir="ltr">yoyo</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a yoyo</span><span class="opt opt-wrong" dir="ltr">a ball</span></td>
+          <td><span class="pic"><span class="pic-art">⚽</span><span class="pic-word" dir="ltr">ball</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="sentence" dir="ltr">What's this? It's a ball.</td>
+          <td><span class="pic"><span class="pic-art">⚽</span><span class="pic-word" dir="ltr">ball</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a ball</span><span class="opt opt-wrong" dir="ltr">a bike</span></td>
+          <td><span class="pic"><span class="pic-art">🚲</span><span class="pic-word" dir="ltr">bike</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="sentence" dir="ltr">What's this? It's a bike.</td>
+          <td><span class="pic"><span class="pic-art">🚲</span><span class="pic-word" dir="ltr">bike</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a bike</span><span class="opt opt-wrong" dir="ltr">a kite</span></td>
+          <td><span class="pic"><span class="pic-art">🪁</span><span class="pic-word" dir="ltr">kite</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="sentence" dir="ltr">What's this? It's a kite.</td>
+          <td><span class="pic"><span class="pic-art">🪁</span><span class="pic-word" dir="ltr">kite</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a kite</span><span class="opt opt-wrong" dir="ltr">a scooter</span></td>
+          <td><span class="pic"><span class="pic-art">🛴</span><span class="pic-word" dir="ltr">scooter</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="sentence" dir="ltr">What's this? It's a scooter.</td>
+          <td><span class="pic"><span class="pic-art">🛴</span><span class="pic-word" dir="ltr">scooter</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a scooter</span><span class="opt opt-wrong" dir="ltr">a car</span></td>
+          <td><span class="pic"><span class="pic-art">🚗</span><span class="pic-word" dir="ltr">car</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="sentence" dir="ltr">Is it a car? Yes, it is.</td>
+          <td><span class="pic"><span class="pic-art">🚗</span><span class="pic-word" dir="ltr">car</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Is it a car? → Yes, it is.</span><span class="yn yn-no" dir="ltr">Is it a dinosaur? → No, it isn't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="sentence" dir="ltr">Is it a dinosaur? Yes, it is.</td>
+          <td><span class="pic"><span class="pic-art">🦕</span><span class="pic-word" dir="ltr">dinosaur</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Is it a dinosaur? → Yes, it is.</span><span class="yn yn-no" dir="ltr">Is it a doll? → No, it isn't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٧</td>
+          <td class="sentence" dir="ltr">Is it a doll? Yes, it is.</td>
+          <td><span class="pic"><span class="pic-art">🪆</span><span class="pic-word" dir="ltr">doll</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Is it a doll? → Yes, it is.</span><span class="yn yn-no" dir="ltr">Is it a plane? → No, it isn't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٨</td>
+          <td class="sentence" dir="ltr">Is it a plane? Yes, it is.</td>
+          <td><span class="pic"><span class="pic-art">✈️</span><span class="pic-word" dir="ltr">plane</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Is it a plane? → Yes, it is.</span><span class="yn yn-no" dir="ltr">Is it a puzzle? → No, it isn't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٩</td>
+          <td class="sentence" dir="ltr">Is it a puzzle? Yes, it is.</td>
+          <td><span class="pic"><span class="pic-art">🧩</span><span class="pic-word" dir="ltr">puzzle</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Is it a puzzle? → Yes, it is.</span><span class="yn yn-no" dir="ltr">Is it a robot? → No, it isn't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٠</td>
+          <td class="sentence" dir="ltr">Is it a robot? Yes, it is.</td>
+          <td><span class="pic"><span class="pic-art">🤖</span><span class="pic-word" dir="ltr">robot</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Is it a robot? → Yes, it is.</span><span class="yn yn-no" dir="ltr">Is it a teddy? → No, it isn't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢١</td>
+          <td class="sentence" dir="ltr">Is it a teddy? Yes, it is.</td>
+          <td><span class="pic"><span class="pic-art">🧸</span><span class="pic-word" dir="ltr">teddy</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Is it a teddy? → Yes, it is.</span><span class="yn yn-no" dir="ltr">Is it a yoyo? → No, it isn't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٢</td>
+          <td class="sentence" dir="ltr">Is it a yoyo? Yes, it is.</td>
+          <td><span class="pic"><span class="pic-art">🪀</span><span class="pic-word" dir="ltr">yoyo</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Is it a yoyo? → Yes, it is.</span><span class="yn yn-no" dir="ltr">Is it a ball? → No, it isn't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٣</td>
+          <td class="sentence" dir="ltr">Is it a ball? Yes, it is.</td>
+          <td><span class="pic"><span class="pic-art">⚽</span><span class="pic-word" dir="ltr">ball</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Is it a ball? → Yes, it is.</span><span class="yn yn-no" dir="ltr">Is it a bike? → No, it isn't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٤</td>
+          <td class="sentence" dir="ltr">Is it a bike? Yes, it is.</td>
+          <td><span class="pic"><span class="pic-art">🚲</span><span class="pic-word" dir="ltr">bike</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Is it a bike? → Yes, it is.</span><span class="yn yn-no" dir="ltr">Is it a kite? → No, it isn't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٥</td>
+          <td class="sentence" dir="ltr">Is it a kite? Yes, it is.</td>
+          <td><span class="pic"><span class="pic-art">🪁</span><span class="pic-word" dir="ltr">kite</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Is it a kite? → Yes, it is.</span><span class="yn yn-no" dir="ltr">Is it a scooter? → No, it isn't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٦</td>
+          <td class="sentence" dir="ltr">Is it a scooter? Yes, it is.</td>
+          <td><span class="pic"><span class="pic-art">🛴</span><span class="pic-word" dir="ltr">scooter</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Is it a scooter? → Yes, it is.</span><span class="yn yn-no" dir="ltr">Is it a car? → No, it isn't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+  <section class="unit" id="unit-3">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الأول</span><span>الوحدة ٢</span><span>٣١ جملة</span></div>
+      <h2><span dir="ltr">Where's My Pen?</span> <span class="unit-ar">أين قلمي؟</span></h2>
+      <ul class="patterns" dir="ltr"><li>This is my ….</li><li>These are my ….</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>«<span dir="ltr">Where's the pencil? It's in / on / under the desk</span>»: لا يمكن لرمز تعبيري أن يُظهر <span dir="ltr">in</span> أو <span dir="ltr">on</span> أو <span dir="ltr">under.</span></li><li>«<span dir="ltr">Can I borrow it, please?</span>»: حوار بلا صورة.</li><li>كلمة <span dir="ltr">scissors</span> تأتي مع «<span dir="ltr">These are</span>» فقط لأنها جمع دائمًا.</li></ul>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>الصورة</th>
+            <th>«اختر الكلمة»<small>الصحيح ثم الخاطئ</small></th>
+            <th>«صح أم خطأ»<small>الصورة الخاطئة</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="sentence" dir="ltr">This is my bag.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">This is</span><span class="opt opt-wrong" dir="ltr">These are</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="sentence" dir="ltr">This is my book.</td>
+          <td><span class="pic"><span class="pic-art">📖</span><span class="pic-word" dir="ltr">book</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">This is</span><span class="opt opt-wrong" dir="ltr">These are</span></td>
+          <td><span class="pic"><span class="pic-art">🪑</span><span class="pic-word" dir="ltr">chair</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="sentence" dir="ltr">This is my chair.</td>
+          <td><span class="pic"><span class="pic-art">🪑</span><span class="pic-word" dir="ltr">chair</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">This is</span><span class="opt opt-wrong" dir="ltr">These are</span></td>
+          <td><span class="pic"><span class="pic-art">💻</span><span class="pic-word" dir="ltr">computer</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="sentence" dir="ltr">This is my computer.</td>
+          <td><span class="pic"><span class="pic-art">💻</span><span class="pic-word" dir="ltr">computer</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">This is</span><span class="opt opt-wrong" dir="ltr">These are</span></td>
+          <td><span class="pic"><span class="pic-art">🖍️</span><span class="pic-word" dir="ltr">crayon</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="sentence" dir="ltr">This is my crayon.</td>
+          <td><span class="pic"><span class="pic-art">🖍️</span><span class="pic-word" dir="ltr">crayon</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">This is</span><span class="opt opt-wrong" dir="ltr">These are</span></td>
+          <td><span class="pic"><span class="pic-art">🖊️</span><span class="pic-word" dir="ltr">pen</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="sentence" dir="ltr">This is my cupboard.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">This is</span><span class="opt opt-wrong" dir="ltr">These are</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="sentence" dir="ltr">This is my desk.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">This is</span><span class="opt opt-wrong" dir="ltr">These are</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="sentence" dir="ltr">This is my eraser.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">This is</span><span class="opt opt-wrong" dir="ltr">These are</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="sentence" dir="ltr">This is my pen.</td>
+          <td><span class="pic"><span class="pic-art">🖊️</span><span class="pic-word" dir="ltr">pen</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">This is</span><span class="opt opt-wrong" dir="ltr">These are</span></td>
+          <td><span class="pic"><span class="pic-art">✏️</span><span class="pic-word" dir="ltr">pencil</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="sentence" dir="ltr">This is my pencil.</td>
+          <td><span class="pic"><span class="pic-art">✏️</span><span class="pic-word" dir="ltr">pencil</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">This is</span><span class="opt opt-wrong" dir="ltr">These are</span></td>
+          <td><span class="pic"><span class="pic-art">📏</span><span class="pic-word" dir="ltr">ruler</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="sentence" dir="ltr">This is my pencil case.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">This is</span><span class="opt opt-wrong" dir="ltr">These are</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="sentence" dir="ltr">This is my pencil sharpener.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">This is</span><span class="opt opt-wrong" dir="ltr">These are</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="sentence" dir="ltr">This is my ruler.</td>
+          <td><span class="pic"><span class="pic-art">📏</span><span class="pic-word" dir="ltr">ruler</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">This is</span><span class="opt opt-wrong" dir="ltr">These are</span></td>
+          <td><span class="pic"><span class="pic-art">📖</span><span class="pic-word" dir="ltr">book</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="sentence" dir="ltr">This is my shelf.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">This is</span><span class="opt opt-wrong" dir="ltr">These are</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="sentence" dir="ltr">This is my table.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">This is</span><span class="opt opt-wrong" dir="ltr">These are</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="sentence" dir="ltr">These are my bags.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">These are</span><span class="opt opt-wrong" dir="ltr">This is</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٧</td>
+          <td class="sentence" dir="ltr">These are my books.</td>
+          <td><span class="pic"><span class="pic-art">📖📖</span><span class="pic-word" dir="ltr">book ×٢</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">These are</span><span class="opt opt-wrong" dir="ltr">This is</span></td>
+          <td><span class="pic"><span class="pic-art">🪑🪑</span><span class="pic-word" dir="ltr">chair ×٢</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٨</td>
+          <td class="sentence" dir="ltr">These are my chairs.</td>
+          <td><span class="pic"><span class="pic-art">🪑🪑</span><span class="pic-word" dir="ltr">chair ×٢</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">These are</span><span class="opt opt-wrong" dir="ltr">This is</span></td>
+          <td><span class="pic"><span class="pic-art">💻💻</span><span class="pic-word" dir="ltr">computer ×٢</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٩</td>
+          <td class="sentence" dir="ltr">These are my computers.</td>
+          <td><span class="pic"><span class="pic-art">💻💻</span><span class="pic-word" dir="ltr">computer ×٢</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">These are</span><span class="opt opt-wrong" dir="ltr">This is</span></td>
+          <td><span class="pic"><span class="pic-art">🖍️🖍️</span><span class="pic-word" dir="ltr">crayon ×٢</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٠</td>
+          <td class="sentence" dir="ltr">These are my crayons.</td>
+          <td><span class="pic"><span class="pic-art">🖍️🖍️</span><span class="pic-word" dir="ltr">crayon ×٢</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">These are</span><span class="opt opt-wrong" dir="ltr">This is</span></td>
+          <td><span class="pic"><span class="pic-art">🖊️🖊️</span><span class="pic-word" dir="ltr">pen ×٢</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢١</td>
+          <td class="sentence" dir="ltr">These are my cupboards.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">These are</span><span class="opt opt-wrong" dir="ltr">This is</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٢</td>
+          <td class="sentence" dir="ltr">These are my desks.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">These are</span><span class="opt opt-wrong" dir="ltr">This is</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٣</td>
+          <td class="sentence" dir="ltr">These are my erasers.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">These are</span><span class="opt opt-wrong" dir="ltr">This is</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٤</td>
+          <td class="sentence" dir="ltr">These are my pens.</td>
+          <td><span class="pic"><span class="pic-art">🖊️🖊️</span><span class="pic-word" dir="ltr">pen ×٢</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">These are</span><span class="opt opt-wrong" dir="ltr">This is</span></td>
+          <td><span class="pic"><span class="pic-art">✏️✏️</span><span class="pic-word" dir="ltr">pencil ×٢</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٥</td>
+          <td class="sentence" dir="ltr">These are my pencils.</td>
+          <td><span class="pic"><span class="pic-art">✏️✏️</span><span class="pic-word" dir="ltr">pencil ×٢</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">These are</span><span class="opt opt-wrong" dir="ltr">This is</span></td>
+          <td><span class="pic"><span class="pic-art">📏📏</span><span class="pic-word" dir="ltr">ruler ×٢</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٦</td>
+          <td class="sentence" dir="ltr">These are my pencil cases.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">These are</span><span class="opt opt-wrong" dir="ltr">This is</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٧</td>
+          <td class="sentence" dir="ltr">These are my pencil sharpeners.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">These are</span><span class="opt opt-wrong" dir="ltr">This is</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٨</td>
+          <td class="sentence" dir="ltr">These are my rulers.</td>
+          <td><span class="pic"><span class="pic-art">📏📏</span><span class="pic-word" dir="ltr">ruler ×٢</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">These are</span><span class="opt opt-wrong" dir="ltr">This is</span></td>
+          <td><span class="pic"><span class="pic-art">✂️✂️</span><span class="pic-word" dir="ltr">scissors ×٢</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٩</td>
+          <td class="sentence" dir="ltr">These are my shelves.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">These are</span><span class="opt opt-wrong" dir="ltr">This is</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٠</td>
+          <td class="sentence" dir="ltr">These are my tables.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">These are</span><span class="opt opt-wrong" dir="ltr">This is</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣١</td>
+          <td class="sentence" dir="ltr">These are my scissors.</td>
+          <td><span class="pic"><span class="pic-art">✂️✂️</span><span class="pic-word" dir="ltr">scissors ×٢</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">These are</span><span class="opt opt-wrong" dir="ltr">This is</span></td>
+          <td><span class="pic"><span class="pic-art">📖📖</span><span class="pic-word" dir="ltr">book ×٢</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+  <section class="unit" id="unit-4">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الأول</span><span>الوحدة ٣</span><span>بلا أنشطة قواعد</span></div>
+      <h2><span dir="ltr">Move Your Body!</span> <span class="unit-ar">حرِّك جسمك!</span></h2>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا أنشطة قواعد في هذه الوحدة: لا توجد صور للكلمات <span dir="ltr">face</span> و<span dir="ltr">toes</span> و<span dir="ltr">fingers</span> و<span dir="ltr">head</span> و<span dir="ltr">knees</span> و<span dir="ltr">tummy.</span></li><li>الكلمات المصوّرة (<span dir="ltr">arms</span> و<span dir="ltr">feet</span> و<span dir="ltr">hands</span> و<span dir="ltr">legs</span>) مستخدمة في قواعد الصف الأول.</li><li>أفعال الحركة مثل «<span dir="ltr">Touch your head!</span>» لا صور لها.</li></ul>
+    </header>
+  </section>
+  <section class="unit" id="unit-5">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الأول</span><span>الوحدة ٤</span><span>١٠ جمل</span></div>
+      <h2><span dir="ltr">Meet My Family</span> <span class="unit-ar">تعرَّف على عائلتي</span></h2>
+      <ul class="patterns" dir="ltr"><li>Who's this? It's my ….</li><li>He's got … eyes.</li><li>She's got … eyes.</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li><span dir="ltr">uncle</span> و<span dir="ltr">aunt</span> و<span dir="ltr">brother</span> و<span dir="ltr">sister</span> و<span dir="ltr">cousin</span> ليس لها صور، لذلك يقتصر «<span dir="ltr">Who's this?</span>» على <span dir="ltr">mum</span> و<span dir="ltr">dad</span> و<span dir="ltr">grandad</span> و<span dir="ltr">granny.</span></li><li>«<span dir="ltr">His name's … / Her name's</span> …»: لا صورة لها.</li><li>لون العينين يظهر دائرة ملوّنة بجانب 👦 أو 👧؛ إن رأيتم ذلك غير واضح فيُحذف هذا النمط بسطر واحد.</li></ul>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>الصورة</th>
+            <th>«اختر الكلمة»<small>الصحيح ثم الخاطئ</small></th>
+            <th>«صح أم خطأ»<small>الصورة الخاطئة</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="sentence" dir="ltr">Who's this? It's my mum.</td>
+          <td><span class="pic"><span class="pic-art">👩</span><span class="pic-word" dir="ltr">mum</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Who's</span><span class="opt opt-wrong" dir="ltr">What's</span></td>
+          <td><span class="pic"><span class="pic-art">👨</span><span class="pic-word" dir="ltr">dad</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="sentence" dir="ltr">Who's this? It's my dad.</td>
+          <td><span class="pic"><span class="pic-art">👨</span><span class="pic-word" dir="ltr">dad</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Who's</span><span class="opt opt-wrong" dir="ltr">What's</span></td>
+          <td><span class="pic"><span class="pic-art">👴</span><span class="pic-word" dir="ltr">grandad</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="sentence" dir="ltr">Who's this? It's my grandad.</td>
+          <td><span class="pic"><span class="pic-art">👴</span><span class="pic-word" dir="ltr">grandad</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Who's</span><span class="opt opt-wrong" dir="ltr">What's</span></td>
+          <td><span class="pic"><span class="pic-art">👵</span><span class="pic-word" dir="ltr">granny</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="sentence" dir="ltr">Who's this? It's my granny.</td>
+          <td><span class="pic"><span class="pic-art">👵</span><span class="pic-word" dir="ltr">granny</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Who's</span><span class="opt opt-wrong" dir="ltr">What's</span></td>
+          <td><span class="pic"><span class="pic-art">👩</span><span class="pic-word" dir="ltr">mum</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="sentence" dir="ltr">He's got blue eyes.</td>
+          <td><span class="pic"><span class="pic-art">👦🔵</span><span class="pic-word" dir="ltr">blue</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">He's</span><span class="opt opt-wrong" dir="ltr">She's</span></td>
+          <td><span class="pic"><span class="pic-art">👦🟤</span><span class="pic-word" dir="ltr">brown</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="sentence" dir="ltr">He's got brown eyes.</td>
+          <td><span class="pic"><span class="pic-art">👦🟤</span><span class="pic-word" dir="ltr">brown</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">He's</span><span class="opt opt-wrong" dir="ltr">She's</span></td>
+          <td><span class="pic"><span class="pic-art">👦🟢</span><span class="pic-word" dir="ltr">green</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="sentence" dir="ltr">He's got green eyes.</td>
+          <td><span class="pic"><span class="pic-art">👦🟢</span><span class="pic-word" dir="ltr">green</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">He's</span><span class="opt opt-wrong" dir="ltr">She's</span></td>
+          <td><span class="pic"><span class="pic-art">👦🔵</span><span class="pic-word" dir="ltr">blue</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="sentence" dir="ltr">She's got blue eyes.</td>
+          <td><span class="pic"><span class="pic-art">👧🔵</span><span class="pic-word" dir="ltr">blue</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">She's</span><span class="opt opt-wrong" dir="ltr">He's</span></td>
+          <td><span class="pic"><span class="pic-art">👧🟤</span><span class="pic-word" dir="ltr">brown</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="sentence" dir="ltr">She's got brown eyes.</td>
+          <td><span class="pic"><span class="pic-art">👧🟤</span><span class="pic-word" dir="ltr">brown</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">She's</span><span class="opt opt-wrong" dir="ltr">He's</span></td>
+          <td><span class="pic"><span class="pic-art">👧🟢</span><span class="pic-word" dir="ltr">green</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="sentence" dir="ltr">She's got green eyes.</td>
+          <td><span class="pic"><span class="pic-art">👧🟢</span><span class="pic-word" dir="ltr">green</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">She's</span><span class="opt opt-wrong" dir="ltr">He's</span></td>
+          <td><span class="pic"><span class="pic-art">👧🔵</span><span class="pic-word" dir="ltr">blue</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+  <section class="unit" id="unit-6">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الثاني</span><span>الوحدة ٥</span><span>٢٠ جملة</span></div>
+      <h2><span dir="ltr">Help the Animals!</span> <span class="unit-ar">ساعِدِ الحيوانات!</span></h2>
+      <ul class="patterns" dir="ltr"><li>What's this? It's ….</li><li>What are these? They're ….</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>«<span dir="ltr">It's got big teeth</span>»: لا صورة تُظهر <span dir="ltr">big.</span></li></ul>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>الصورة</th>
+            <th>«اختر الكلمة»<small>الصحيح ثم الخاطئ</small></th>
+            <th>«صح أم خطأ»<small>الصورة الخاطئة</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="sentence" dir="ltr">What's this? It's a cat.</td>
+          <td><span class="pic"><span class="pic-art">🐱</span><span class="pic-word" dir="ltr">cat</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">It's a cat</span><span class="opt opt-wrong" dir="ltr">They're cats</span></td>
+          <td><span class="pic"><span class="pic-art">🦆</span><span class="pic-word" dir="ltr">duck</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="sentence" dir="ltr">What's this? It's a duck.</td>
+          <td><span class="pic"><span class="pic-art">🦆</span><span class="pic-word" dir="ltr">duck</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">It's a duck</span><span class="opt opt-wrong" dir="ltr">They're ducks</span></td>
+          <td><span class="pic"><span class="pic-art">🐟</span><span class="pic-word" dir="ltr">fish</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="sentence" dir="ltr">What's this? It's a fish.</td>
+          <td><span class="pic"><span class="pic-art">🐟</span><span class="pic-word" dir="ltr">fish</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">It's a fish</span><span class="opt opt-wrong" dir="ltr">They're fish</span></td>
+          <td><span class="pic"><span class="pic-art">🐹</span><span class="pic-word" dir="ltr">hamster</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="sentence" dir="ltr">What's this? It's a hamster.</td>
+          <td><span class="pic"><span class="pic-art">🐹</span><span class="pic-word" dir="ltr">hamster</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">It's a hamster</span><span class="opt opt-wrong" dir="ltr">They're hamsters</span></td>
+          <td><span class="pic"><span class="pic-art">🐭</span><span class="pic-word" dir="ltr">mouse</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="sentence" dir="ltr">What's this? It's a mouse.</td>
+          <td><span class="pic"><span class="pic-art">🐭</span><span class="pic-word" dir="ltr">mouse</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">It's a mouse</span><span class="opt opt-wrong" dir="ltr">They're mice</span></td>
+          <td><span class="pic"><span class="pic-art">🦜</span><span class="pic-word" dir="ltr">parrot</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="sentence" dir="ltr">What's this? It's a parrot.</td>
+          <td><span class="pic"><span class="pic-art">🦜</span><span class="pic-word" dir="ltr">parrot</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">It's a parrot</span><span class="opt opt-wrong" dir="ltr">They're parrots</span></td>
+          <td><span class="pic"><span class="pic-art">🐰</span><span class="pic-word" dir="ltr">rabbit</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="sentence" dir="ltr">What's this? It's a rabbit.</td>
+          <td><span class="pic"><span class="pic-art">🐰</span><span class="pic-word" dir="ltr">rabbit</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">It's a rabbit</span><span class="opt opt-wrong" dir="ltr">They're rabbits</span></td>
+          <td><span class="pic"><span class="pic-art">🐍</span><span class="pic-word" dir="ltr">snake</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="sentence" dir="ltr">What's this? It's a snake.</td>
+          <td><span class="pic"><span class="pic-art">🐍</span><span class="pic-word" dir="ltr">snake</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">It's a snake</span><span class="opt opt-wrong" dir="ltr">They're snakes</span></td>
+          <td><span class="pic"><span class="pic-art">🕷️</span><span class="pic-word" dir="ltr">spider</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="sentence" dir="ltr">What's this? It's a spider.</td>
+          <td><span class="pic"><span class="pic-art">🕷️</span><span class="pic-word" dir="ltr">spider</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">It's a spider</span><span class="opt opt-wrong" dir="ltr">They're spiders</span></td>
+          <td><span class="pic"><span class="pic-art">🐢</span><span class="pic-word" dir="ltr">tortoise</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="sentence" dir="ltr">What's this? It's a tortoise.</td>
+          <td><span class="pic"><span class="pic-art">🐢</span><span class="pic-word" dir="ltr">tortoise</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">It's a tortoise</span><span class="opt opt-wrong" dir="ltr">They're tortoises</span></td>
+          <td><span class="pic"><span class="pic-art">🐱</span><span class="pic-word" dir="ltr">cat</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="sentence" dir="ltr">What are these? They're cats.</td>
+          <td><span class="pic"><span class="pic-art">🐱🐱</span><span class="pic-word" dir="ltr">cat ×٢</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">They're cats</span><span class="opt opt-wrong" dir="ltr">It's a cat</span></td>
+          <td><span class="pic"><span class="pic-art">🦆🦆</span><span class="pic-word" dir="ltr">duck ×٢</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="sentence" dir="ltr">What are these? They're ducks.</td>
+          <td><span class="pic"><span class="pic-art">🦆🦆</span><span class="pic-word" dir="ltr">duck ×٢</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">They're ducks</span><span class="opt opt-wrong" dir="ltr">It's a duck</span></td>
+          <td><span class="pic"><span class="pic-art">🐟🐟</span><span class="pic-word" dir="ltr">fish ×٢</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="sentence" dir="ltr">What are these? They're fish.</td>
+          <td><span class="pic"><span class="pic-art">🐟🐟</span><span class="pic-word" dir="ltr">fish ×٢</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">They're fish</span><span class="opt opt-wrong" dir="ltr">It's a fish</span></td>
+          <td><span class="pic"><span class="pic-art">🐹🐹</span><span class="pic-word" dir="ltr">hamster ×٢</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="sentence" dir="ltr">What are these? They're hamsters.</td>
+          <td><span class="pic"><span class="pic-art">🐹🐹</span><span class="pic-word" dir="ltr">hamster ×٢</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">They're hamsters</span><span class="opt opt-wrong" dir="ltr">It's a hamster</span></td>
+          <td><span class="pic"><span class="pic-art">🐭🐭</span><span class="pic-word" dir="ltr">mouse ×٢</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="sentence" dir="ltr">What are these? They're mice.</td>
+          <td><span class="pic"><span class="pic-art">🐭🐭</span><span class="pic-word" dir="ltr">mouse ×٢</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">They're mice</span><span class="opt opt-wrong" dir="ltr">It's a mouse</span></td>
+          <td><span class="pic"><span class="pic-art">🦜🦜</span><span class="pic-word" dir="ltr">parrot ×٢</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="sentence" dir="ltr">What are these? They're parrots.</td>
+          <td><span class="pic"><span class="pic-art">🦜🦜</span><span class="pic-word" dir="ltr">parrot ×٢</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">They're parrots</span><span class="opt opt-wrong" dir="ltr">It's a parrot</span></td>
+          <td><span class="pic"><span class="pic-art">🐰🐰</span><span class="pic-word" dir="ltr">rabbit ×٢</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٧</td>
+          <td class="sentence" dir="ltr">What are these? They're rabbits.</td>
+          <td><span class="pic"><span class="pic-art">🐰🐰</span><span class="pic-word" dir="ltr">rabbit ×٢</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">They're rabbits</span><span class="opt opt-wrong" dir="ltr">It's a rabbit</span></td>
+          <td><span class="pic"><span class="pic-art">🐍🐍</span><span class="pic-word" dir="ltr">snake ×٢</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٨</td>
+          <td class="sentence" dir="ltr">What are these? They're snakes.</td>
+          <td><span class="pic"><span class="pic-art">🐍🐍</span><span class="pic-word" dir="ltr">snake ×٢</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">They're snakes</span><span class="opt opt-wrong" dir="ltr">It's a snake</span></td>
+          <td><span class="pic"><span class="pic-art">🕷️🕷️</span><span class="pic-word" dir="ltr">spider ×٢</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٩</td>
+          <td class="sentence" dir="ltr">What are these? They're spiders.</td>
+          <td><span class="pic"><span class="pic-art">🕷️🕷️</span><span class="pic-word" dir="ltr">spider ×٢</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">They're spiders</span><span class="opt opt-wrong" dir="ltr">It's a spider</span></td>
+          <td><span class="pic"><span class="pic-art">🐢🐢</span><span class="pic-word" dir="ltr">tortoise ×٢</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٠</td>
+          <td class="sentence" dir="ltr">What are these? They're tortoises.</td>
+          <td><span class="pic"><span class="pic-art">🐢🐢</span><span class="pic-word" dir="ltr">tortoise ×٢</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">They're tortoises</span><span class="opt opt-wrong" dir="ltr">It's a tortoise</span></td>
+          <td><span class="pic"><span class="pic-art">🐱🐱</span><span class="pic-word" dir="ltr">cat ×٢</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+  <section class="unit" id="unit-7">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الثاني</span><span>الوحدة ٦</span><span>٥٦ جملة</span></div>
+      <h2><span dir="ltr">Do You Like Peas?</span> <span class="unit-ar">هل تحب البازلاء؟</span></h2>
+      <ul class="patterns" dir="ltr"><li>I like ….</li><li>I don't like ….</li><li>Do you like …? Yes, I do.</li><li>Do you like …? No, I don't.</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>جمل «… <span dir="ltr">and … too</span>» و«… <span dir="ltr">but</span> …» و«… <span dir="ltr">or</span> …»: تحتاج صورتين، ويمكن تبديل الطعامين وتبقى الجملة صحيحة.</li><li><span dir="ltr">bean</span> و<span dir="ltr">pea</span> و<span dir="ltr">pasta</span> و<span dir="ltr">meat</span> ليس لها صور.</li><li>كلمة <span dir="ltr">orange</span> مستبعدة لأن صورتها الوحيدة هي اللون 🟠.</li><li>في «<span dir="ltr">Do you like</span> …?» تُظهر الصورة ✅ أو ❌ ويختار الطالب الجواب المطابق (✅ = يحبّه). إن لم يكن ذلك واضحًا يبقى «نعم أم لا» على «<span dir="ltr">Is it a</span> …?» فقط.</li></ul>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>الصورة</th>
+            <th>«اختر الكلمة»<small>الصحيح ثم الخاطئ</small></th>
+            <th>«صح أم خطأ»<small>الصورة الخاطئة</small></th>
+            <th>«نعم أم لا»<small>السؤال والجواب، ثم سؤال «لا»</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="sentence" dir="ltr">I like apples.</td>
+          <td><span class="pic"><span class="pic-art">✅🍎</span><span class="pic-word" dir="ltr">apple</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">like</span><span class="opt opt-wrong" dir="ltr">don't like</span></td>
+          <td><span class="pic"><span class="pic-art">✅🍌</span><span class="pic-word" dir="ltr">banana</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="sentence" dir="ltr">I like bananas.</td>
+          <td><span class="pic"><span class="pic-art">✅🍌</span><span class="pic-word" dir="ltr">banana</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">like</span><span class="opt opt-wrong" dir="ltr">don't like</span></td>
+          <td><span class="pic"><span class="pic-art">✅🥕</span><span class="pic-word" dir="ltr">carrot</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="sentence" dir="ltr">I like carrots.</td>
+          <td><span class="pic"><span class="pic-art">✅🥕</span><span class="pic-word" dir="ltr">carrot</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">like</span><span class="opt opt-wrong" dir="ltr">don't like</span></td>
+          <td><span class="pic"><span class="pic-art">✅🥔</span><span class="pic-word" dir="ltr">potato</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="sentence" dir="ltr">I like potatoes.</td>
+          <td><span class="pic"><span class="pic-art">✅🥔</span><span class="pic-word" dir="ltr">potato</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">like</span><span class="opt opt-wrong" dir="ltr">don't like</span></td>
+          <td><span class="pic"><span class="pic-art">✅🍅</span><span class="pic-word" dir="ltr">tomato</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="sentence" dir="ltr">I like tomatoes.</td>
+          <td><span class="pic"><span class="pic-art">✅🍅</span><span class="pic-word" dir="ltr">tomato</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">like</span><span class="opt opt-wrong" dir="ltr">don't like</span></td>
+          <td><span class="pic"><span class="pic-art">✅🍚</span><span class="pic-word" dir="ltr">rice</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="sentence" dir="ltr">I like rice.</td>
+          <td><span class="pic"><span class="pic-art">✅🍚</span><span class="pic-word" dir="ltr">rice</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">like</span><span class="opt opt-wrong" dir="ltr">don't like</span></td>
+          <td><span class="pic"><span class="pic-art">✅🍞</span><span class="pic-word" dir="ltr">bread</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="sentence" dir="ltr">I like bread.</td>
+          <td><span class="pic"><span class="pic-art">✅🍞</span><span class="pic-word" dir="ltr">bread</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">like</span><span class="opt opt-wrong" dir="ltr">don't like</span></td>
+          <td><span class="pic"><span class="pic-art">✅🧀</span><span class="pic-word" dir="ltr">cheese</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="sentence" dir="ltr">I like cheese.</td>
+          <td><span class="pic"><span class="pic-art">✅🧀</span><span class="pic-word" dir="ltr">cheese</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">like</span><span class="opt opt-wrong" dir="ltr">don't like</span></td>
+          <td><span class="pic"><span class="pic-art">✅🍗</span><span class="pic-word" dir="ltr">chicken</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="sentence" dir="ltr">I like chicken.</td>
+          <td><span class="pic"><span class="pic-art">✅🍗</span><span class="pic-word" dir="ltr">chicken</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">like</span><span class="opt opt-wrong" dir="ltr">don't like</span></td>
+          <td><span class="pic"><span class="pic-art">✅🥚🥚</span><span class="pic-word" dir="ltr">eggs</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="sentence" dir="ltr">I like eggs.</td>
+          <td><span class="pic"><span class="pic-art">✅🥚🥚</span><span class="pic-word" dir="ltr">eggs</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">like</span><span class="opt opt-wrong" dir="ltr">don't like</span></td>
+          <td><span class="pic"><span class="pic-art">✅🐟</span><span class="pic-word" dir="ltr">fish</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="sentence" dir="ltr">I like fish.</td>
+          <td><span class="pic"><span class="pic-art">✅🐟</span><span class="pic-word" dir="ltr">fish</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">like</span><span class="opt opt-wrong" dir="ltr">don't like</span></td>
+          <td><span class="pic"><span class="pic-art">✅🧃</span><span class="pic-word" dir="ltr">juice</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="sentence" dir="ltr">I like juice.</td>
+          <td><span class="pic"><span class="pic-art">✅🧃</span><span class="pic-word" dir="ltr">juice</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">like</span><span class="opt opt-wrong" dir="ltr">don't like</span></td>
+          <td><span class="pic"><span class="pic-art">✅🥛</span><span class="pic-word" dir="ltr">milk</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="sentence" dir="ltr">I like milk.</td>
+          <td><span class="pic"><span class="pic-art">✅🥛</span><span class="pic-word" dir="ltr">milk</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">like</span><span class="opt opt-wrong" dir="ltr">don't like</span></td>
+          <td><span class="pic"><span class="pic-art">✅💧</span><span class="pic-word" dir="ltr">water</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="sentence" dir="ltr">I like water.</td>
+          <td><span class="pic"><span class="pic-art">✅💧</span><span class="pic-word" dir="ltr">water</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">like</span><span class="opt opt-wrong" dir="ltr">don't like</span></td>
+          <td><span class="pic"><span class="pic-art">✅🍎</span><span class="pic-word" dir="ltr">apple</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="sentence" dir="ltr">I don't like apples.</td>
+          <td><span class="pic"><span class="pic-art">❌🍎</span><span class="pic-word" dir="ltr">apple</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">don't like</span><span class="opt opt-wrong" dir="ltr">like</span></td>
+          <td><span class="pic"><span class="pic-art">❌🍌</span><span class="pic-word" dir="ltr">banana</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="sentence" dir="ltr">I don't like bananas.</td>
+          <td><span class="pic"><span class="pic-art">❌🍌</span><span class="pic-word" dir="ltr">banana</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">don't like</span><span class="opt opt-wrong" dir="ltr">like</span></td>
+          <td><span class="pic"><span class="pic-art">❌🥕</span><span class="pic-word" dir="ltr">carrot</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٧</td>
+          <td class="sentence" dir="ltr">I don't like carrots.</td>
+          <td><span class="pic"><span class="pic-art">❌🥕</span><span class="pic-word" dir="ltr">carrot</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">don't like</span><span class="opt opt-wrong" dir="ltr">like</span></td>
+          <td><span class="pic"><span class="pic-art">❌🥔</span><span class="pic-word" dir="ltr">potato</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٨</td>
+          <td class="sentence" dir="ltr">I don't like potatoes.</td>
+          <td><span class="pic"><span class="pic-art">❌🥔</span><span class="pic-word" dir="ltr">potato</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">don't like</span><span class="opt opt-wrong" dir="ltr">like</span></td>
+          <td><span class="pic"><span class="pic-art">❌🍅</span><span class="pic-word" dir="ltr">tomato</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٩</td>
+          <td class="sentence" dir="ltr">I don't like tomatoes.</td>
+          <td><span class="pic"><span class="pic-art">❌🍅</span><span class="pic-word" dir="ltr">tomato</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">don't like</span><span class="opt opt-wrong" dir="ltr">like</span></td>
+          <td><span class="pic"><span class="pic-art">❌🍚</span><span class="pic-word" dir="ltr">rice</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٠</td>
+          <td class="sentence" dir="ltr">I don't like rice.</td>
+          <td><span class="pic"><span class="pic-art">❌🍚</span><span class="pic-word" dir="ltr">rice</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">don't like</span><span class="opt opt-wrong" dir="ltr">like</span></td>
+          <td><span class="pic"><span class="pic-art">❌🍞</span><span class="pic-word" dir="ltr">bread</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢١</td>
+          <td class="sentence" dir="ltr">I don't like bread.</td>
+          <td><span class="pic"><span class="pic-art">❌🍞</span><span class="pic-word" dir="ltr">bread</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">don't like</span><span class="opt opt-wrong" dir="ltr">like</span></td>
+          <td><span class="pic"><span class="pic-art">❌🧀</span><span class="pic-word" dir="ltr">cheese</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٢</td>
+          <td class="sentence" dir="ltr">I don't like cheese.</td>
+          <td><span class="pic"><span class="pic-art">❌🧀</span><span class="pic-word" dir="ltr">cheese</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">don't like</span><span class="opt opt-wrong" dir="ltr">like</span></td>
+          <td><span class="pic"><span class="pic-art">❌🍗</span><span class="pic-word" dir="ltr">chicken</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٣</td>
+          <td class="sentence" dir="ltr">I don't like chicken.</td>
+          <td><span class="pic"><span class="pic-art">❌🍗</span><span class="pic-word" dir="ltr">chicken</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">don't like</span><span class="opt opt-wrong" dir="ltr">like</span></td>
+          <td><span class="pic"><span class="pic-art">❌🥚🥚</span><span class="pic-word" dir="ltr">eggs</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٤</td>
+          <td class="sentence" dir="ltr">I don't like eggs.</td>
+          <td><span class="pic"><span class="pic-art">❌🥚🥚</span><span class="pic-word" dir="ltr">eggs</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">don't like</span><span class="opt opt-wrong" dir="ltr">like</span></td>
+          <td><span class="pic"><span class="pic-art">❌🐟</span><span class="pic-word" dir="ltr">fish</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٥</td>
+          <td class="sentence" dir="ltr">I don't like fish.</td>
+          <td><span class="pic"><span class="pic-art">❌🐟</span><span class="pic-word" dir="ltr">fish</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">don't like</span><span class="opt opt-wrong" dir="ltr">like</span></td>
+          <td><span class="pic"><span class="pic-art">❌🧃</span><span class="pic-word" dir="ltr">juice</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٦</td>
+          <td class="sentence" dir="ltr">I don't like juice.</td>
+          <td><span class="pic"><span class="pic-art">❌🧃</span><span class="pic-word" dir="ltr">juice</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">don't like</span><span class="opt opt-wrong" dir="ltr">like</span></td>
+          <td><span class="pic"><span class="pic-art">❌🥛</span><span class="pic-word" dir="ltr">milk</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٧</td>
+          <td class="sentence" dir="ltr">I don't like milk.</td>
+          <td><span class="pic"><span class="pic-art">❌🥛</span><span class="pic-word" dir="ltr">milk</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">don't like</span><span class="opt opt-wrong" dir="ltr">like</span></td>
+          <td><span class="pic"><span class="pic-art">❌💧</span><span class="pic-word" dir="ltr">water</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٨</td>
+          <td class="sentence" dir="ltr">I don't like water.</td>
+          <td><span class="pic"><span class="pic-art">❌💧</span><span class="pic-word" dir="ltr">water</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">don't like</span><span class="opt opt-wrong" dir="ltr">like</span></td>
+          <td><span class="pic"><span class="pic-art">❌🍎</span><span class="pic-word" dir="ltr">apple</span></span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٩</td>
+          <td class="sentence" dir="ltr">Do you like apples? Yes, I do.</td>
+          <td><span class="pic"><span class="pic-art">✅🍎</span><span class="pic-word" dir="ltr">apple</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Do you like apples? → Yes, I do.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٠</td>
+          <td class="sentence" dir="ltr">Do you like bananas? Yes, I do.</td>
+          <td><span class="pic"><span class="pic-art">✅🍌</span><span class="pic-word" dir="ltr">banana</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Do you like bananas? → Yes, I do.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣١</td>
+          <td class="sentence" dir="ltr">Do you like carrots? Yes, I do.</td>
+          <td><span class="pic"><span class="pic-art">✅🥕</span><span class="pic-word" dir="ltr">carrot</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Do you like carrots? → Yes, I do.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٢</td>
+          <td class="sentence" dir="ltr">Do you like potatoes? Yes, I do.</td>
+          <td><span class="pic"><span class="pic-art">✅🥔</span><span class="pic-word" dir="ltr">potato</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Do you like potatoes? → Yes, I do.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٣</td>
+          <td class="sentence" dir="ltr">Do you like tomatoes? Yes, I do.</td>
+          <td><span class="pic"><span class="pic-art">✅🍅</span><span class="pic-word" dir="ltr">tomato</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Do you like tomatoes? → Yes, I do.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٤</td>
+          <td class="sentence" dir="ltr">Do you like rice? Yes, I do.</td>
+          <td><span class="pic"><span class="pic-art">✅🍚</span><span class="pic-word" dir="ltr">rice</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Do you like rice? → Yes, I do.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٥</td>
+          <td class="sentence" dir="ltr">Do you like bread? Yes, I do.</td>
+          <td><span class="pic"><span class="pic-art">✅🍞</span><span class="pic-word" dir="ltr">bread</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Do you like bread? → Yes, I do.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٦</td>
+          <td class="sentence" dir="ltr">Do you like cheese? Yes, I do.</td>
+          <td><span class="pic"><span class="pic-art">✅🧀</span><span class="pic-word" dir="ltr">cheese</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Do you like cheese? → Yes, I do.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٧</td>
+          <td class="sentence" dir="ltr">Do you like chicken? Yes, I do.</td>
+          <td><span class="pic"><span class="pic-art">✅🍗</span><span class="pic-word" dir="ltr">chicken</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Do you like chicken? → Yes, I do.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٨</td>
+          <td class="sentence" dir="ltr">Do you like eggs? Yes, I do.</td>
+          <td><span class="pic"><span class="pic-art">✅🥚🥚</span><span class="pic-word" dir="ltr">eggs</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Do you like eggs? → Yes, I do.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٩</td>
+          <td class="sentence" dir="ltr">Do you like fish? Yes, I do.</td>
+          <td><span class="pic"><span class="pic-art">✅🐟</span><span class="pic-word" dir="ltr">fish</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Do you like fish? → Yes, I do.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٠</td>
+          <td class="sentence" dir="ltr">Do you like juice? Yes, I do.</td>
+          <td><span class="pic"><span class="pic-art">✅🧃</span><span class="pic-word" dir="ltr">juice</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Do you like juice? → Yes, I do.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤١</td>
+          <td class="sentence" dir="ltr">Do you like milk? Yes, I do.</td>
+          <td><span class="pic"><span class="pic-art">✅🥛</span><span class="pic-word" dir="ltr">milk</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Do you like milk? → Yes, I do.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٢</td>
+          <td class="sentence" dir="ltr">Do you like water? Yes, I do.</td>
+          <td><span class="pic"><span class="pic-art">✅💧</span><span class="pic-word" dir="ltr">water</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Do you like water? → Yes, I do.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٣</td>
+          <td class="sentence" dir="ltr">Do you like apples? No, I don't.</td>
+          <td><span class="pic"><span class="pic-art">❌🍎</span><span class="pic-word" dir="ltr">apple</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Do you like apples? → No, I don't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٤</td>
+          <td class="sentence" dir="ltr">Do you like bananas? No, I don't.</td>
+          <td><span class="pic"><span class="pic-art">❌🍌</span><span class="pic-word" dir="ltr">banana</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Do you like bananas? → No, I don't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٥</td>
+          <td class="sentence" dir="ltr">Do you like carrots? No, I don't.</td>
+          <td><span class="pic"><span class="pic-art">❌🥕</span><span class="pic-word" dir="ltr">carrot</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Do you like carrots? → No, I don't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٦</td>
+          <td class="sentence" dir="ltr">Do you like potatoes? No, I don't.</td>
+          <td><span class="pic"><span class="pic-art">❌🥔</span><span class="pic-word" dir="ltr">potato</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Do you like potatoes? → No, I don't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٧</td>
+          <td class="sentence" dir="ltr">Do you like tomatoes? No, I don't.</td>
+          <td><span class="pic"><span class="pic-art">❌🍅</span><span class="pic-word" dir="ltr">tomato</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Do you like tomatoes? → No, I don't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٨</td>
+          <td class="sentence" dir="ltr">Do you like rice? No, I don't.</td>
+          <td><span class="pic"><span class="pic-art">❌🍚</span><span class="pic-word" dir="ltr">rice</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Do you like rice? → No, I don't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٩</td>
+          <td class="sentence" dir="ltr">Do you like bread? No, I don't.</td>
+          <td><span class="pic"><span class="pic-art">❌🍞</span><span class="pic-word" dir="ltr">bread</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Do you like bread? → No, I don't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥٠</td>
+          <td class="sentence" dir="ltr">Do you like cheese? No, I don't.</td>
+          <td><span class="pic"><span class="pic-art">❌🧀</span><span class="pic-word" dir="ltr">cheese</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Do you like cheese? → No, I don't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥١</td>
+          <td class="sentence" dir="ltr">Do you like chicken? No, I don't.</td>
+          <td><span class="pic"><span class="pic-art">❌🍗</span><span class="pic-word" dir="ltr">chicken</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Do you like chicken? → No, I don't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥٢</td>
+          <td class="sentence" dir="ltr">Do you like eggs? No, I don't.</td>
+          <td><span class="pic"><span class="pic-art">❌🥚🥚</span><span class="pic-word" dir="ltr">eggs</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Do you like eggs? → No, I don't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥٣</td>
+          <td class="sentence" dir="ltr">Do you like fish? No, I don't.</td>
+          <td><span class="pic"><span class="pic-art">❌🐟</span><span class="pic-word" dir="ltr">fish</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Do you like fish? → No, I don't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥٤</td>
+          <td class="sentence" dir="ltr">Do you like juice? No, I don't.</td>
+          <td><span class="pic"><span class="pic-art">❌🧃</span><span class="pic-word" dir="ltr">juice</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Do you like juice? → No, I don't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥٥</td>
+          <td class="sentence" dir="ltr">Do you like milk? No, I don't.</td>
+          <td><span class="pic"><span class="pic-art">❌🥛</span><span class="pic-word" dir="ltr">milk</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Do you like milk? → No, I don't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥٦</td>
+          <td class="sentence" dir="ltr">Do you like water? No, I don't.</td>
+          <td><span class="pic"><span class="pic-art">❌💧</span><span class="pic-word" dir="ltr">water</span></span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Do you like water? → No, I don't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+  <section class="unit" id="unit-8">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الثاني</span><span>الوحدة ٧</span><span>١٧ جملة</span></div>
+      <h2><span dir="ltr">It's Windy!</span> <span class="unit-ar">إنها عاصفة!</span></h2>
+      <ul class="patterns" dir="ltr"><li>What's the weather like? It's ….</li><li>I'm wearing ….</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>«<span dir="ltr">I'm wearing a T-shirt and shorts</span>»: تحتاج صورتين.</li><li><span dir="ltr">jumper</span> و<span dir="ltr">shorts</span> و<span dir="ltr">skirt</span> و<span dir="ltr">trousers</span> و<span dir="ltr">foggy</span> و<span dir="ltr">stormy</span> ليس لها صور: تظهر في «رتّب الجملة» فقط.</li><li>الوجهان 🥵 و🥶 يعبّران عن الحر والبرد، وليسا صورتين للطقس نفسه.</li></ul>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>الصورة</th>
+            <th>«اختر الكلمة»<small>الصحيح ثم الخاطئ</small></th>
+            <th>«صح أم خطأ»<small>الصورة الخاطئة</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="sentence" dir="ltr">What's the weather like? It's cloudy.</td>
+          <td><span class="pic"><span class="pic-art">☁️</span><span class="pic-word" dir="ltr">cloudy</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">cloudy</span><span class="opt opt-wrong" dir="ltr">cold</span></td>
+          <td><span class="pic"><span class="pic-art">🥶</span><span class="pic-word" dir="ltr">cold</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="sentence" dir="ltr">What's the weather like? It's cold.</td>
+          <td><span class="pic"><span class="pic-art">🥶</span><span class="pic-word" dir="ltr">cold</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">cold</span><span class="opt opt-wrong" dir="ltr">hot</span></td>
+          <td><span class="pic"><span class="pic-art">🥵</span><span class="pic-word" dir="ltr">hot</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="sentence" dir="ltr">What's the weather like? It's foggy.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="sentence" dir="ltr">What's the weather like? It's hot.</td>
+          <td><span class="pic"><span class="pic-art">🥵</span><span class="pic-word" dir="ltr">hot</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">hot</span><span class="opt opt-wrong" dir="ltr">rainy</span></td>
+          <td><span class="pic"><span class="pic-art">🌧️</span><span class="pic-word" dir="ltr">rainy</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="sentence" dir="ltr">What's the weather like? It's rainy.</td>
+          <td><span class="pic"><span class="pic-art">🌧️</span><span class="pic-word" dir="ltr">rainy</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">rainy</span><span class="opt opt-wrong" dir="ltr">snowy</span></td>
+          <td><span class="pic"><span class="pic-art">❄️</span><span class="pic-word" dir="ltr">snowy</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="sentence" dir="ltr">What's the weather like? It's snowy.</td>
+          <td><span class="pic"><span class="pic-art">❄️</span><span class="pic-word" dir="ltr">snowy</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">snowy</span><span class="opt opt-wrong" dir="ltr">sunny</span></td>
+          <td><span class="pic"><span class="pic-art">☀️</span><span class="pic-word" dir="ltr">sunny</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="sentence" dir="ltr">What's the weather like? It's stormy.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="sentence" dir="ltr">What's the weather like? It's sunny.</td>
+          <td><span class="pic"><span class="pic-art">☀️</span><span class="pic-word" dir="ltr">sunny</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">sunny</span><span class="opt opt-wrong" dir="ltr">windy</span></td>
+          <td><span class="pic"><span class="pic-art">💨</span><span class="pic-word" dir="ltr">windy</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="sentence" dir="ltr">What's the weather like? It's windy.</td>
+          <td><span class="pic"><span class="pic-art">💨</span><span class="pic-word" dir="ltr">windy</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">windy</span><span class="opt opt-wrong" dir="ltr">cloudy</span></td>
+          <td><span class="pic"><span class="pic-art">☁️</span><span class="pic-word" dir="ltr">cloudy</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="sentence" dir="ltr">I'm wearing boots.</td>
+          <td><span class="pic"><span class="pic-art">👢👢</span><span class="pic-word" dir="ltr">boots</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">boots</span><span class="opt opt-wrong" dir="ltr">a</span></td>
+          <td><span class="pic"><span class="pic-art">🧥</span><span class="pic-word" dir="ltr">coat</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="sentence" dir="ltr">I'm wearing a coat.</td>
+          <td><span class="pic"><span class="pic-art">🧥</span><span class="pic-word" dir="ltr">coat</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a coat</span><span class="opt opt-wrong" dir="ltr">shoes</span></td>
+          <td><span class="pic"><span class="pic-art">👟👟</span><span class="pic-word" dir="ltr">shoes</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="sentence" dir="ltr">I'm wearing a jumper.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="sentence" dir="ltr">I'm wearing shoes.</td>
+          <td><span class="pic"><span class="pic-art">👟👟</span><span class="pic-word" dir="ltr">shoes</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">shoes</span><span class="opt opt-wrong" dir="ltr">a</span></td>
+          <td><span class="pic"><span class="pic-art">👕</span><span class="pic-word" dir="ltr">T-shirt</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="sentence" dir="ltr">I'm wearing shorts.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="sentence" dir="ltr">I'm wearing a skirt.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="sentence" dir="ltr">I'm wearing a T-shirt.</td>
+          <td><span class="pic"><span class="pic-art">👕</span><span class="pic-word" dir="ltr">T-shirt</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a T-shirt</span><span class="opt opt-wrong" dir="ltr">boots</span></td>
+          <td><span class="pic"><span class="pic-art">👢👢</span><span class="pic-word" dir="ltr">boots</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٧</td>
+          <td class="sentence" dir="ltr">I'm wearing trousers.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+  <section class="unit" id="unit-9">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الثاني</span><span>الوحدة ٨</span><span>٣٦ جملة</span></div>
+      <h2><span dir="ltr">Who's at Home?</span> <span class="unit-ar">مَن في المنزل؟</span></h2>
+      <ul class="patterns" dir="ltr"><li>Where's my …? He's in the ….</li><li>Where's my …? She's in the ….</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>«<span dir="ltr">He's / She's tidying up</span>» وأعمال المنزل: لا صور لها.</li><li>كلمة <span dir="ltr">balcony</span> مستبعدة لأن الجملة معها <span dir="ltr">on the balcony</span> وليست <span dir="ltr">in.</span></li><li><span dir="ltr">garden</span> و<span dir="ltr">garage</span> و<span dir="ltr">hall</span> و<span dir="ltr">living room</span> و<span dir="ltr">flat</span> تظهر في «رتّب الجملة» فقط لأنه لا صور لها.</li><li>الرمز 🍳 يمثّل المطبخ.</li></ul>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>الصورة</th>
+            <th>«اختر الكلمة»<small>الصحيح ثم الخاطئ</small></th>
+            <th>«صح أم خطأ»<small>الصورة الخاطئة</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="sentence" dir="ltr">Where's my dad? He's in the bathroom.</td>
+          <td><span class="pic"><span class="pic-art">🛁</span><span class="pic-word" dir="ltr">bathroom</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">He's</span><span class="opt opt-wrong" dir="ltr">She's</span></td>
+          <td><span class="pic"><span class="pic-art">🛏️</span><span class="pic-word" dir="ltr">bedroom</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="sentence" dir="ltr">Where's my dad? He's in the bedroom.</td>
+          <td><span class="pic"><span class="pic-art">🛏️</span><span class="pic-word" dir="ltr">bedroom</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">He's</span><span class="opt opt-wrong" dir="ltr">She's</span></td>
+          <td><span class="pic"><span class="pic-art">🍳</span><span class="pic-word" dir="ltr">kitchen</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="sentence" dir="ltr">Where's my dad? He's in the kitchen.</td>
+          <td><span class="pic"><span class="pic-art">🍳</span><span class="pic-word" dir="ltr">kitchen</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">He's</span><span class="opt opt-wrong" dir="ltr">She's</span></td>
+          <td><span class="pic"><span class="pic-art">🏠</span><span class="pic-word" dir="ltr">house</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="sentence" dir="ltr">Where's my dad? He's in the house.</td>
+          <td><span class="pic"><span class="pic-art">🏠</span><span class="pic-word" dir="ltr">house</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">He's</span><span class="opt opt-wrong" dir="ltr">She's</span></td>
+          <td><span class="pic"><span class="pic-art">🛁</span><span class="pic-word" dir="ltr">bathroom</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="sentence" dir="ltr">Where's my dad? He's in the garden.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">He's</span><span class="opt opt-wrong" dir="ltr">She's</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="sentence" dir="ltr">Where's my dad? He's in the garage.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">He's</span><span class="opt opt-wrong" dir="ltr">She's</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="sentence" dir="ltr">Where's my dad? He's in the hall.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">He's</span><span class="opt opt-wrong" dir="ltr">She's</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="sentence" dir="ltr">Where's my dad? He's in the living room.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">He's</span><span class="opt opt-wrong" dir="ltr">She's</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="sentence" dir="ltr">Where's my dad? He's in the flat.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">He's</span><span class="opt opt-wrong" dir="ltr">She's</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="sentence" dir="ltr">Where's my grandad? He's in the bathroom.</td>
+          <td><span class="pic"><span class="pic-art">🛁</span><span class="pic-word" dir="ltr">bathroom</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">He's</span><span class="opt opt-wrong" dir="ltr">She's</span></td>
+          <td><span class="pic"><span class="pic-art">🛏️</span><span class="pic-word" dir="ltr">bedroom</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="sentence" dir="ltr">Where's my grandad? He's in the bedroom.</td>
+          <td><span class="pic"><span class="pic-art">🛏️</span><span class="pic-word" dir="ltr">bedroom</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">He's</span><span class="opt opt-wrong" dir="ltr">She's</span></td>
+          <td><span class="pic"><span class="pic-art">🍳</span><span class="pic-word" dir="ltr">kitchen</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="sentence" dir="ltr">Where's my grandad? He's in the kitchen.</td>
+          <td><span class="pic"><span class="pic-art">🍳</span><span class="pic-word" dir="ltr">kitchen</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">He's</span><span class="opt opt-wrong" dir="ltr">She's</span></td>
+          <td><span class="pic"><span class="pic-art">🏠</span><span class="pic-word" dir="ltr">house</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="sentence" dir="ltr">Where's my grandad? He's in the house.</td>
+          <td><span class="pic"><span class="pic-art">🏠</span><span class="pic-word" dir="ltr">house</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">He's</span><span class="opt opt-wrong" dir="ltr">She's</span></td>
+          <td><span class="pic"><span class="pic-art">🛁</span><span class="pic-word" dir="ltr">bathroom</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="sentence" dir="ltr">Where's my grandad? He's in the garden.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">He's</span><span class="opt opt-wrong" dir="ltr">She's</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="sentence" dir="ltr">Where's my grandad? He's in the garage.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">He's</span><span class="opt opt-wrong" dir="ltr">She's</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="sentence" dir="ltr">Where's my grandad? He's in the hall.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">He's</span><span class="opt opt-wrong" dir="ltr">She's</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٧</td>
+          <td class="sentence" dir="ltr">Where's my grandad? He's in the living room.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">He's</span><span class="opt opt-wrong" dir="ltr">She's</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٨</td>
+          <td class="sentence" dir="ltr">Where's my grandad? He's in the flat.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">He's</span><span class="opt opt-wrong" dir="ltr">She's</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٩</td>
+          <td class="sentence" dir="ltr">Where's my mum? She's in the bathroom.</td>
+          <td><span class="pic"><span class="pic-art">🛁</span><span class="pic-word" dir="ltr">bathroom</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">She's</span><span class="opt opt-wrong" dir="ltr">He's</span></td>
+          <td><span class="pic"><span class="pic-art">🛏️</span><span class="pic-word" dir="ltr">bedroom</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٠</td>
+          <td class="sentence" dir="ltr">Where's my mum? She's in the bedroom.</td>
+          <td><span class="pic"><span class="pic-art">🛏️</span><span class="pic-word" dir="ltr">bedroom</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">She's</span><span class="opt opt-wrong" dir="ltr">He's</span></td>
+          <td><span class="pic"><span class="pic-art">🍳</span><span class="pic-word" dir="ltr">kitchen</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢١</td>
+          <td class="sentence" dir="ltr">Where's my mum? She's in the kitchen.</td>
+          <td><span class="pic"><span class="pic-art">🍳</span><span class="pic-word" dir="ltr">kitchen</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">She's</span><span class="opt opt-wrong" dir="ltr">He's</span></td>
+          <td><span class="pic"><span class="pic-art">🏠</span><span class="pic-word" dir="ltr">house</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٢</td>
+          <td class="sentence" dir="ltr">Where's my mum? She's in the house.</td>
+          <td><span class="pic"><span class="pic-art">🏠</span><span class="pic-word" dir="ltr">house</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">She's</span><span class="opt opt-wrong" dir="ltr">He's</span></td>
+          <td><span class="pic"><span class="pic-art">🛁</span><span class="pic-word" dir="ltr">bathroom</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٣</td>
+          <td class="sentence" dir="ltr">Where's my mum? She's in the garden.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">She's</span><span class="opt opt-wrong" dir="ltr">He's</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٤</td>
+          <td class="sentence" dir="ltr">Where's my mum? She's in the garage.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">She's</span><span class="opt opt-wrong" dir="ltr">He's</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٥</td>
+          <td class="sentence" dir="ltr">Where's my mum? She's in the hall.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">She's</span><span class="opt opt-wrong" dir="ltr">He's</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٦</td>
+          <td class="sentence" dir="ltr">Where's my mum? She's in the living room.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">She's</span><span class="opt opt-wrong" dir="ltr">He's</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٧</td>
+          <td class="sentence" dir="ltr">Where's my mum? She's in the flat.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">She's</span><span class="opt opt-wrong" dir="ltr">He's</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٨</td>
+          <td class="sentence" dir="ltr">Where's my granny? She's in the bathroom.</td>
+          <td><span class="pic"><span class="pic-art">🛁</span><span class="pic-word" dir="ltr">bathroom</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">She's</span><span class="opt opt-wrong" dir="ltr">He's</span></td>
+          <td><span class="pic"><span class="pic-art">🛏️</span><span class="pic-word" dir="ltr">bedroom</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٩</td>
+          <td class="sentence" dir="ltr">Where's my granny? She's in the bedroom.</td>
+          <td><span class="pic"><span class="pic-art">🛏️</span><span class="pic-word" dir="ltr">bedroom</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">She's</span><span class="opt opt-wrong" dir="ltr">He's</span></td>
+          <td><span class="pic"><span class="pic-art">🍳</span><span class="pic-word" dir="ltr">kitchen</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٠</td>
+          <td class="sentence" dir="ltr">Where's my granny? She's in the kitchen.</td>
+          <td><span class="pic"><span class="pic-art">🍳</span><span class="pic-word" dir="ltr">kitchen</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">She's</span><span class="opt opt-wrong" dir="ltr">He's</span></td>
+          <td><span class="pic"><span class="pic-art">🏠</span><span class="pic-word" dir="ltr">house</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣١</td>
+          <td class="sentence" dir="ltr">Where's my granny? She's in the house.</td>
+          <td><span class="pic"><span class="pic-art">🏠</span><span class="pic-word" dir="ltr">house</span></span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">She's</span><span class="opt opt-wrong" dir="ltr">He's</span></td>
+          <td><span class="pic"><span class="pic-art">🛁</span><span class="pic-word" dir="ltr">bathroom</span></span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٢</td>
+          <td class="sentence" dir="ltr">Where's my granny? She's in the garden.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">She's</span><span class="opt opt-wrong" dir="ltr">He's</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٣</td>
+          <td class="sentence" dir="ltr">Where's my granny? She's in the garage.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">She's</span><span class="opt opt-wrong" dir="ltr">He's</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٤</td>
+          <td class="sentence" dir="ltr">Where's my granny? She's in the hall.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">She's</span><span class="opt opt-wrong" dir="ltr">He's</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٥</td>
+          <td class="sentence" dir="ltr">Where's my granny? She's in the living room.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">She's</span><span class="opt opt-wrong" dir="ltr">He's</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٦</td>
+          <td class="sentence" dir="ltr">Where's my granny? She's in the flat.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">She's</span><span class="opt opt-wrong" dir="ltr">He's</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>
