@@ -86,8 +86,8 @@ silently dropped.
 
 - **`lib/curriculum/src/englishReading.ts`:** eight Grade 3 rows appended to `READING_UNITS`
   (the hub has no S1 U0/U1 or S2 U5/U6 for Grade 3); `readSentencePool`'s grade test widened from
-  `=== 2` to `2 | 3`; `READING_NOT_COVERED_G3` (the picture-free lessons, S2 U9's Yes/No sentences,
-  S2 U10's reason). The header comment and `offeredReadingSentences`'s doc say "Grade 2 or 3".
+  `=== 2` to `2 | 3`; `READING_NOT_COVERED_G3` (seven lessons: the picture-free ones, S1 U3's unpictured sentences,
+  S2 U9's Yes/No sentences, S2 U10's reason). The header comment and `offeredReadingSentences`'s doc say "Grade 2 or 3".
 - **`lib/curriculum/src/englishReadingReview.ts`:** `GRADE_COPY[3]` (lead, the four activities,
   the checks, meta); `sentenceSection` is called for Grades 2 and 3 and reads the not-covered text of
   its own grade; the Grade 1 and Grade 2 forms stay byte-identical.
@@ -114,8 +114,8 @@ In `lib/curriculum/src/__tests__/englishReadingG3.test.ts`:
   S2 U9 (There's ↔ There isn't), none in S1 U3; a partner has the same picture word.
 - The 20 left-out words are exactly those in decision 7, and `firstSoundSkip` gives a reason for each.
 - The committed Grade 3 reading form equals `renderReadingReviewHtml(3)`, lists each pool sentence
-  once, and has a not-covered block for the five lessons without a sentence activity; the Grade 1 and 2
-  reading forms are unchanged.
+  once, and has a not-covered block for the seven lessons with a gap (the five without a sentence activity,
+  plus S1 U3 and S2 U9, whose pools leave some sentences out); the Grade 1 and 2 reading forms are unchanged.
 
 In `artifacts/mobile/services/__tests__/englishReadingG3Games.test.ts` (seeded rng): at most 8 questions;
 S2 U9's round is exactly 6; three distinct pictures, one right; no picture word twice in a round; the
