@@ -5,7 +5,7 @@
 > limits — is in [`docs/status-log.md`](./docs/status-log.md). Older audits live in
 > `docs/archive/` — historical snapshots, do not act on them.
 
-_Last verified: 2026-10-18, **by command** against production and the repo — not carried
+_Last verified: 2026-10-22, **by command** against production and the repo — not carried
 over from older text. Lines marked **(notes)** come from session notes and were not
 re-checked that day._
 
@@ -19,10 +19,10 @@ math answer keys (`artifacts/math-verifier`), RTL/Arabic-first UX.
 
 ## Production right now
 
-Checked 2026-10-18:
+Checked 2026-10-22:
 
 - **API** `iqraa-api` (Cloud Run, europe-west1, project `iqraa-auth-507315`): commit
-  `98ac0a1`, revision `iqraa-api-00382-j28`, 100% of traffic (`/api/healthz/version`).
+  `9346b5f`, revision `iqraa-api-00390-d4p`, 100% of traffic (`/api/healthz/version`).
 - **Math verifier** `iqraa-verifier`: `/api/healthz/verifier` answers `ok`, self-test `pass`.
 - **Web app** `app.iqrra.com` (Cloudflare Pages): 200. **Landing** `iqrra.com` (separate repo
   `Site_Iqra`, Vercel) answers 308 to `www.iqrra.com`, which is 200.
@@ -33,7 +33,7 @@ Checked 2026-10-18:
   student `0.20`; `STUDENT_ACCOUNTS=true`; `MASTERY_GATE=true`.
 - **Credentials:** 11 are Secret Manager references, 18 are plain config. Rotation:
   [`docs/deploying.md`](./docs/deploying.md), «Rotating a secret».
-- **Mobile:** `app.json` version `1.4.0`. An OTA update only reaches a binary with the same
+- **Mobile:** `app.json` version `1.5.0`. An OTA update only reaches a binary with the same
   version (CLAUDE.md, «`app.json`'s `version` is the OTA compatibility key»).
 - **Every shipped build uses live AI.** `EXPO_PUBLIC_DEMO_MODE=false` is set for Android
   (`eas.json`, `mobile-update.yml`) and, since 2026-10-16, for the web build (`deploy.yml`).
@@ -49,16 +49,17 @@ Checked 2026-10-18:
   `migrations match schema`, `math verifier`, `destructive migrations acknowledged`,
   and the browser smoke test (`e2e/`, teacher → exam → student → results).
 - Workflows: ci, deploy, deploy-rerun-stalled, destructive-migration-ack, e2e, mobile-build,
-  mobile-build-gradle, mobile-update, provider-eval, schema-check.
+  mobile-build-gradle, mobile-update, provider-eval, rls-neon-rehearsal, schema-check.
 
 ## Open
 
-Checked 2026-10-18:
+Checked 2026-10-22:
 
-- **No crash or error reporting service** for the app or the API (no Sentry/Crashlytics/Bugsnag
-  anywhere in `package.json`, `app.json` or the API source). The API keeps its own error
-  log (`/healthz/errors`, admin key) and Cloud Run logs; the app reports nothing. PR #1115
-  adds Firebase Crashlytics to the app (needs a version bump to 1.5.0 and a new build); not merged.
+- **Crash reporting in the app is merged but not yet in anyone's hands:** Firebase Crashlytics
+  (PR #1115, 2026-10-19, `app.json` 1.5.0) only works in a native build, so it reports nothing until
+  a 1.5.0 build is installed and Crashlytics is enabled in the Firebase console (project
+  `iqraa-95dd1`) **(notes)** — neither was checked. The API has no error-reporting service; it
+  keeps its own log (`/healthz/errors`, admin key) and Cloud Run logs.
 - **Draft PR #730** (teacher visibility into English Corner practice) changes the schema,
   conflicts with `main`, and needs `pnpm --filter @workspace/db run generate` after it is updated.
 - **The E2E smoke test is not a required check** yet; make it one after about a week

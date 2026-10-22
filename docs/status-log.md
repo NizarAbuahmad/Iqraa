@@ -2,7 +2,7 @@
 
 The long form. One section per change: what was built, what was and was not
 verified, and the known limits. It is the whole of the old `STATUS.md`
-(21,779 lines), split out on 2026-10-18 and kept word for word, so every
+(21,779 lines), split out on 2026-10-22 and kept word for word, so every
 «see STATUS.md «title»» pointer in code comments, workflows and design docs
 still resolves: search the title in this file.
 
