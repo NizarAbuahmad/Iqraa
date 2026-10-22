@@ -15,9 +15,13 @@ import { apiFetch, apiJson } from './apiClient.ts';
 import {
   normalizeChildHomework,
   normalizeFamilyHomework,
+  normalizeGameResults,
+  normalizeTeacherGameResults,
   normalizeTeacherHomework,
   normalizeTeacherList,
   type ChildHomework,
+  type HomeworkGameName,
+  type TeacherGameResult,
   type TeacherHomework,
   type TeacherHomeworkList,
 } from './homework.ts';
@@ -96,6 +100,24 @@ export async function setHomeworkDone(id: string, done: boolean): Promise<void> 
   await readJson(res, 'Saving homework');
 }
 
+/**
+ * A student's finished round of an attached game. The server keeps the best
+ * round and counts attempts, and marks the homework done. A 404 (not attached
+ * any more, or not this student's) throws `HomeworkError` like the other writes.
+ */
+export async function postGameResult(
+  homeworkId: string,
+  body: { lessonId: string; game: HomeworkGameName; score: number; total: number },
+): Promise<{ best: { score: number; total: number } | null; attempts: number }> {
+  const res = await apiFetch(`/student/homework/${encodeURIComponent(homeworkId)}/game-result`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+  const data = await readJson<{ best?: { score?: unknown; total?: unknown }; attempts?: unknown }>(res, 'Saving game result');
+  const best = normalizeGameResults([{ lessonId: body.lessonId, game: body.game, ...data.best, attempts: data.attempts }])[0];
+  return { best: best ? { score: best.score, total: best.total } : null, attempts: best?.attempts ?? 1 };
+}
+
 // ─── teacher ─────────────────────────────────────────────────────────────────
 
 export interface NewHomework {
@@ -130,7 +152,8 @@ export async function listClassHomework(classId: string): Promise<TeacherHomewor
 }
 
 export async function createHomework(input: NewHomework): Promise<TeacherHomework | null> {
-  const res = await apiFetch('/homework', { method: 'POST', body: JSON.stringify(input) });
+  // `gamesIncluded`: the resource list sent is authoritative about game attachments (the server keeps them on a PATCH without it).
+  const res = await apiFetch('/homework', { method: 'POST', body: JSON.stringify({ ...input, gamesIncluded: true }) });
   const data = await readJson<{ homework?: unknown }>(res, 'Creating homework');
   return normalizeTeacherHomework([data.homework])[0] ?? null;
 }
@@ -138,7 +161,7 @@ export async function createHomework(input: NewHomework): Promise<TeacherHomewor
 export async function updateHomework(id: string, patch: HomeworkPatch): Promise<TeacherHomework | null> {
   const res = await apiFetch(`/homework/${encodeURIComponent(id)}`, {
     method: 'PATCH',
-    body: JSON.stringify(patch),
+    body: JSON.stringify({ ...patch, gamesIncluded: true }),
   });
   const data = await readJson<{ homework?: unknown }>(res, 'Saving homework');
   return normalizeTeacherHomework([data.homework])[0] ?? null;
@@ -153,4 +176,11 @@ export async function shareHomework(id: string): Promise<void> {
 export async function archiveHomework(id: string): Promise<void> {
   const res = await apiFetch(`/homework/${encodeURIComponent(id)}`, { method: 'DELETE' });
   await readJson(res, 'Deleting homework');
+}
+
+/** Each student's best round of the homework's games, for the teacher. */
+export async function fetchGameResults(homeworkId: string): Promise<TeacherGameResult[]> {
+  const res = await apiFetch(`/homework/${encodeURIComponent(homeworkId)}/game-results`);
+  const data = await readJson<{ results?: unknown }>(res, 'Loading game results');
+  return normalizeTeacherGameResults(data.results);
 }

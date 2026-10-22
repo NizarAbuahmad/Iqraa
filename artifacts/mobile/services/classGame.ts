@@ -4,9 +4,9 @@
  * Jordanian schools ban student phones, so the usual model (every student on a
  * device, server tallying) is unavailable. Here the projector is the game board
  * and the *class is divided into teams*: a question appears with a timer, every
- * student answers from their seat on the printed أ ب ج د card (the routine
- * `classDeck.ts` already establishes), and on reveal the teacher taps which
- * teams got it right. One device, no accounts, no network.
+ * team thinks silently, then raises a hand to answer (the `gameHow*` copy), and
+ * on reveal the teacher taps which teams got it right. One device, no accounts,
+ * no network.
  *
  * ── Why scores are derived, never mutated ──
  * State is only the award ledger: which responders were credited on which

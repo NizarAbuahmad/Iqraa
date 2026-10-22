@@ -555,6 +555,9 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   module scope or inside render: both ignore the provider and stay teal.
   Text on a `colors.primary` fill is `colors.primaryForeground`, never `'#fff'`:
   in dark mode a corner's primary is light.
+  A `Button` in a colour of its own (a game's accent) takes `fill`, never a
+  `backgroundColor` style, which leaves the variant's label on it (navy on every
+  game accent in dark mode); `gameAccents.test.ts` fails the style form.
   `cornerTheme.test.ts` fails any file in a wired corner (or
   `components/{math,lab,quran,corners,englishHub,publicGames}`) that imports `palette`, and any
   `_layout.tsx` outside a corner directory that mounts `CornerThemeProvider`.
@@ -582,5 +585,15 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   shares `useTodayLesson()` with the desktop workspace — change the lesson
   logic there, never in one layout; tab visibility and the lesson-bar rule live
   in `services/tabVisibility.ts`.
+  Progress is celebrated by `Celebrate` (`components/ui/Celebrate.tsx`) at four
+  moments only — exam handed in, game over, last homework ticked, prep checklist
+  all ready. The exam fires on a successful hand-in the student made (never the
+  forced one when time runs out or the exam closes); the other three fire only
+  on the crossing into done (`justCompleted` / `prepCrossing` in
+  `services/celebration.ts`), never on opening a screen that is already done.
+  A load that failed or fell back to the device list is never the baseline:
+  `getItems` does not reject, so the prep board reads `getAllItemsChecked()` and
+  drops its baseline on a degraded read, or the next good read at 5 of 5 would
+  celebrate on opening Today.
   **Amber (`palette.live`) means *now*** (start class, due today, live) and
   nothing else.
