@@ -1128,9 +1128,14 @@ generateRouter.post("/generate/variants/:id/retire", async (req: AuthenticatedRe
     { artifactId: id, reportId: outcome.reportId, userId: req.user?.id },
     "pooled artifact reported by a teacher",
   );
-  notifyAdminsOfArtifactReport({ kind: outcome.kind, lessonRef: outcome.lessonRef }).catch((err) =>
-    logger.error({ err, artifactId: id }, "admin artifact-report notification failed"),
-  );
+  // An admin's own report (the prefill script retiring explanations it then
+  // approves in the same second) would only email and push the admins about
+  // something one of them just did — 8 such mails on 2026-10-18.
+  if (req.user!.role !== "system_admin") {
+    notifyAdminsOfArtifactReport({ kind: outcome.kind, lessonRef: outcome.lessonRef }).catch((err) =>
+      logger.error({ err, artifactId: id }, "admin artifact-report notification failed"),
+    );
+  }
   res.json({ reported: true });
 });
 
