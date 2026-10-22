@@ -5,7 +5,8 @@
  * docs/english-grammar-g{N}-review.html, for Grades 1, 2 and 3, and the Grade 1
  * reading activities' words and first letters as the same kind of form to
  * docs/english-reading-g1-review.html, and Grade 2's (words, first letters and the
- * Read the sentence pool) to docs/english-reading-g2-review.html. Open an .html in a browser and print
+ * Read the sentence pool) to docs/english-reading-g2-review.html. Grade 3's go to
+ * docs/english-reading-g3-review.html. Open an .html in a browser and print
  * it: A4 landscape, one unit per page.
  *
  *   pnpm --filter @workspace/curriculum run grammar-sheet
@@ -30,6 +31,7 @@ for (const grade of [1, 2, 3]) {
 }
 files.push(['english-reading-g1-review.html', renderReadingReviewHtml(1)]);
 files.push(['english-reading-g2-review.html', renderReadingReviewHtml(2)]);
+files.push(['english-reading-g3-review.html', renderReadingReviewHtml(3)]);
 for (const [name, text] of files) {
   const out = path.join(DOCS, name);
   writeFileSync(out, text);

@@ -36,13 +36,14 @@ design is Grade 2's, applied wherever the Grade 3 data allows it.
    | S1 U5 «I want to be a teacher!» | 22 | 22 | 16 | 8 | 12 (he / she, the six transport sentences each way) |
    | S2 U7 «Fun on the farm» | 24 | 0 | 0 | none | – |
    | S2 U8 «Out in the forest» | 54 | 0 | 0 | none | – |
-   | S2 U9 «Look at the stars» | 60 | 18 (12 Yes/No left out) | 6 | 6 | 18 (There's / There isn't, ✅ / ❌) |
+   | S2 U9 «Look at the stars» | 60 | 18 (12 Yes/No left out) | 6 | 6 | 18 (three forms per word: There's ✅, There isn't ❌, There are 🚪🚪) |
    | S2 U10 «Animals are fun!» | 38 | 0 (34 Yes/No, 4 no picture) | 0 | none | – |
 
    So three lessons offer it: S1 U3, S1 U5, S2 U9.
 4. **The wrong pictures teach the small word, as in Grade 2.** Where a partner exists, one wrong
-   picture is the partner's (S1 U5: «He goes to work by bus» is shown against the girl's bus; S2 U9:
-   «There's a door» against the ✅/❌ pair). The other wrong picture is another word of the same
+   picture is the partner's (S1 U5: «He goes to work by bus» is shown against the girl's bus; S2 U9
+   has three forms of each word, so «There's a door» is shown against «There isn't»'s ❌, «There isn't a
+   door» against the ✅, and «There are doors» against the single ✅ door). The other wrong picture is another word of the same
    pattern's slot. The partner rule is `sentencePartner`, unchanged, used by the app and the form.
    S1 U3 has no pairs (its sentences differ by the item, not a marker), so both wrong pictures are other
    words. S1 U5's job sentences («I want to be a teacher») have none either.
@@ -111,7 +112,7 @@ In `lib/curriculum/src/__tests__/englishReadingG3.test.ts`:
 - Gates: reading signed but grammar unsigned → no sentences; both signed → the pool; a Grade 1 lesson
   with both signed → `null` (sign-offs set in the test's own copies only).
 - `sentencePartner`: 12 partners in S1 U5 (all and only the transport sentences, he ↔ she), 18 in
-  S2 U9 (There's ↔ There isn't), none in S1 U3; a partner has the same picture word.
+  S2 U9 (six words × There's, There isn't, There are; the first other form is the partner), none in S1 U3; a partner has the same picture word and a different picture.
 - The 20 left-out words are exactly those in decision 7, and `firstSoundSkip` gives a reason for each.
 - The committed Grade 3 reading form equals `renderReadingReviewHtml(3)`, lists each pool sentence
   once, and has a not-covered block for the seven lessons with a gap (the five without a sentence activity,
@@ -132,7 +133,7 @@ the S2 U9 round ends after 6, and an unsigned unit shows nothing.
 1. Are the 20 left-out words right to leave out of «First letter» (and does anything left in sound
    wrong — e.g. `ice lolly` is out as a vowel, `shirt` and `phone` as digraphs)?
 2. Do the ✅/❌ pictures of S2 U9 and the boy/girl pairs of S1 U5 read clearly as «There isn't» and
-   «she»?
+   «she», and does the doubled picture read as «There are»?
 3. Is a six-question round on S2 U9 enough, or would the teacher rather have the activity hidden
    there?
 4. The same picture questions the Grade 3 grammar form already carries.
