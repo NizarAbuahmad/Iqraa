@@ -60,6 +60,19 @@ Sections below are in the order they were written, not strictly by date.
 
 ---
 
+## The desktop Tools grid reads right to left in Arabic — 2026-10-22
+
+- **What was wrong.** The Tools tab's grid on desktop was `flexDirection: 'row'`
+  whatever the language, so in Arabic the first tool («شرائح الدرس») sat top-left and
+  the order ran left to right, while the phone grid (flipped by `isRTL` since #1174)
+  started top-right.
+- **Fix.** Both sizes take their direction from `isRTL` (`app/(tabs)/ai-tools.tsx`);
+  `listGrid` no longer fixes its own.
+- **Pinned.** `toolsGrid.test.ts` fails a `flexDirection` inside `listGrid` and checks
+  the direction is applied to both sizes.
+- **Verified:** mobile tests and typecheck; the web build at 1366px in Arabic (first
+  tool top-right) and English (top-left), and at phone size (unchanged).
+
 ## Live games: students answer from any device — 2026-10-22
 
 **What changed.** In the presenter, the 🏆 picker gets «العب مباشرة على الأجهزة»: the
