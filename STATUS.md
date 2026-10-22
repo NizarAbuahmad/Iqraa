@@ -5161,6 +5161,25 @@ picture.
 - Bucket: pages are in `iqraa-public/book-pages/`; the app shows nothing new until
   the OTA ships.
 
+## Book-picture slides no longer share one title, 2026-10-22
+
+A deck read as the same slide repeated once book images came in: every figure was a
+slide titled «من كتاب الطالب». Measured over every KB lesson, 1,213 of 3,318 lesson
+decks had a run of them. (The whole-book revision deck had the same symptom through a
+different shape — five slides per unit; #1160 cut that to three, with the pictures
+beside the outcomes and terms, so it needs nothing here.)
+
+- **Fixed:** `numberedBookTitles` numbers several figures «من كتاب الطالب (١)», «(٢)»…
+  (a lone figure stays bare) in `buildLessonDeck` and in `classDeck.ts`
+  (quiz/worksheet/game decks); `bookPageSlides` titles each page «من كتاب الطالب — صفحة ٢٥».
+  `lessonSlides.test.ts` fails if any lesson deck repeats a book-picture title.
+- **Left:** 27 lesson decks where a concept slide is titled like the lesson itself (cover
+  «قانون الجيوب» and its rule slide) and 5 chemistry decks with two «💡 أفكار الدرس» slides.
+- **Not reproduced:** a player screenshot showing the agenda slide at 27/53 of a
+  whole-book deck. The player reads `slides[slideIndex]` for both counter and content, so
+  the code cannot do this; it may have been a stale saved deck. Unconfirmed until
+  someone has the saved deck's link.
+
 ## Revision decks carry the book's own pictures and all its key terms, 2026-10-18
 
 Read against the Grade 10 biology student book (unit 1, evolution), the first real

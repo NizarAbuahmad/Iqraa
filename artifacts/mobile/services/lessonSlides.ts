@@ -438,6 +438,20 @@ export function bookFigureSlides(
   return out;
 }
 
+/**
+ * Numbers book-figure slides that would otherwise share one title. A lesson with
+ * five figures was five slides all called «من كتاب الطالب» (1,213 of the 3,318
+ * lesson decks had such a run), which in the slide list reads as one slide
+ * repeated. A lone figure keeps the bare title.
+ */
+export function numberedBookTitles<T extends { title: string }>(slides: T[], isAr: boolean): T[] {
+  if (slides.length < 2) return slides;
+  return slides.map((s, i) => ({
+    ...s,
+    title: `${s.title} (${isAr ? String(i + 1).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)]!) : i + 1})`,
+  }));
+}
+
 /** A lesson with no figure shows at most this many of its own book pages. */
 export const BOOK_PAGE_SLIDE_MAX = 3;
 
@@ -466,7 +480,8 @@ export function bookPageSlides(
     const caption = isAr ? `كتاب الطالب · صفحة ${page}` : `Student Book · page ${page}`;
     return {
       type: 'media' as const,
-      title: isAr ? 'من كتاب الطالب' : 'From the Student Book',
+      // The page is what tells three consecutive book-page slides apart.
+      title: isAr ? `من كتاب الطالب — صفحة ${page}` : `From the Student Book — page ${page}`,
       content: caption,
       mediaKind: 'image' as const,
       mediaUrl: url,
@@ -817,7 +832,7 @@ export function buildLessonDeck(
   // Whatever the rule slide above did not take. With no rule slide — a lesson
   // whose book states none — nothing was taken and this is every figure, so
   // the deck is exactly what it was.
-  for (const slide of figures) push(slide);
+  for (const slide of numberedBookTitles(figures, isAr)) push(slide);
   // A lesson with no figure of its own shows its book pages instead (opt-in).
   if (opts.bookPages && !ruleFigure && figures.length === 0) {
     for (const slide of bookPageSlides(lesson?.id, isAr)) push(slide);
