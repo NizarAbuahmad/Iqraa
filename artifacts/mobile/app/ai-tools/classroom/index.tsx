@@ -115,7 +115,7 @@ export default function ClassroomHubScreen() {
         {filter === 'all' && !query.trim() && (
           <View style={styles.section}>
             <View style={[styles.sectionHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <Ionicons name="star" size={14} color="#B54708" />
+              <Ionicons name="star" size={14} color={colors.primary} />
               <Text style={[styles.sectionLabel, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold' }]}>
                 {t('marketplaceFeatured' as any)}
               </Text>

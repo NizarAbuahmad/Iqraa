@@ -30,6 +30,67 @@ book is downloaded from the curriculum card; I did not verify that no in-app rea
 exam only), copying an old exam within a class (`howCopyExam` answers a different question),
 the book-source question and the ready-made-homework question (neither looked into).
 
+## The "now" amber is only for now — 2026-10-23
+
+`palette.live` (`#B45309`) is the one warm accent in the app: «ابدأ الحصة», the class
+happening now. Two game accents were exactly that hex, so a student saw "now" on a game
+tile. They, and a third use of the same hex in the drill game, now wear colours that are
+not amber.
+
+**What moved**
+- Multiplication game, hub tile (`app/play/index.tsx`) and the drill itself
+  (`ACCENTS.mul` in `components/publicGames/MathDrillGame.tsx`, which must match the
+  tile): `#B45309` to `#166534` (a deep green). White on it 7.13:1; ΔE2000 47.9 from
+  `palette.live`; nearest hub tile 15.9 (elements); nearest concept colour 9.4 (`games`).
+- Lesson game "spot the term" (`app/play/lesson/[lessonId].tsx`): `#B45309` to `#831843`
+  (a deep rose). White on it 9.65:1; ΔE2000 33.7 from `palette.live`; 43.6 from the
+  memory game and 30.1 from the scramble game beside it; nearest concept colour 11.7
+  (`evaluations`).
+- The "Featured" star on the classroom hub (`app/ai-tools/classroom/index.tsx`): was
+  `#B54708` (the old quiz amber). It is a decorative marker beside a heading, not a score,
+  so it now takes `colors.primary` like the filter chips next to it.
+
+I first looked for a brick or terracotta red-brown for the multiply game, as the warm
+choice. None clears ΔE2000 8: `#9A3412`, `#A8321A` and `#7C2D12` are 6.7-7.6 from the
+`geogebra` concept (`#990000`), and the English tile's own `#C2410C` is nearby. A
+brown that gets far enough away lands in the amber hue band. So multiply took the free
+green on the hub and spot the deep rose.
+
+**Pinned:** `services/__tests__/gameAmber.test.ts`. No game accent (hub, lesson games,
+drill, single-game files) equals `palette.live`, is in the amber family (the
+`iconSystem.test.ts` rule: hue 25-50 at saturation over 0.6, or within ΔE2000 3 of
+`#B54708` / `#B45309`), or is within ΔE2000 3 of `palette.warning`; each carries white at
+4.5:1; hub tiles are 8+ apart; the lesson chooser's three tiles are 8+ apart; the drill's
+four operations are 8+ apart and the hub tile matches its drill; the two recoloured
+accents are 8+ from every `CONCEPTS` colour. Putting `#B45309` back on the hub tile and
+on the lesson game fails 5 of the 9 tests.
+
+**Already close, not fixed:** two hub pairs were under 8 before this change, and are
+listed in `KNOWN_CLOSE` in that test (it fails if a listed pair becomes 8+ apart, so the
+list shrinks): the elements and capitals teals (`#0F766E` / `#0B7F77`, ΔE2000 3.2) and
+flags / add (`#1D4ED8` / `#4338CA`, 7.4). Recolouring a game nobody asked about is its
+own decision.
+
+**Left alone, and why.** Other places draw `#B45309` or `#B54708` that are not "now":
+- Warnings in the app: the "key check unavailable" notice
+  (`app/evaluations/[id]/index.tsx`), the failed-start line on `CurrentLessonCard`, the
+  unchecked verdict in `SolutionBlock` (drawn on the board page, so it cannot take
+  `palette.warning`, whose dark value is yellow). They are caution, not "now", but they
+  share the live hex; they want a decision on one warning colour, not a find-and-replace.
+- Not the app's palette: slide and print output (`deckTheme.ts`, `deckSlidesHtml.ts`,
+  `exportPptx.ts`, `exportHtml.ts`, `boardExportHtml.ts`), the internal curriculum-QA
+  screens under `app/dev/cqv`, and `palette.warning` itself.
+- Genuine "now": `START_CLASS_COLOR` on Today (`app/(tabs)/index.tsx`,
+  `components/today/PhoneToday.tsx`) and the definition in `constants/colors.ts`.
+
+**Verified:** `pnpm run typecheck` and the mobile suite, and the new test fails as
+described when `#B45309` is put back.
+
+**Not verified:** nothing was seen on a device or in a browser. In particular the hub
+grid and the lesson chooser in light and dark mode, RTL, and the drill's play-again
+button on the new green (it takes `fill`, so the label is chosen by `textOn`; the test
+pins 7.13:1 white, not the screen).
+
 ## Book figure crops: audited, re-cropped, fragments dropped — 2026-10-22
 
 **What changed.** Every book figure a lesson can reach (2,576 across 66 books;
