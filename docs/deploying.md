@@ -641,6 +641,11 @@ gcloud run services update iqraa-api --region europe-west1 $P \
   --update-env-vars=AI_MODEL_DOCUMENTS=claude-sonnet-5-5
 ```
 
+**Order matters: ship the app's 90 s wait before step 4.** A merge deploys the web build
+at once, but phones keep the old 45 s limit until the production OTA
+(`gh workflow run mobile-update.yml -f branch=production`). A deck takes 30-40 s on
+Claude, so switching first would time it out on a phone that has not updated yet.
+
 **Roll back** with `--remove-env-vars=AI_MODEL_DOCUMENTS`: instant, no deploy. Pooled
 artifacts are keyed by model, so what OpenAI wrote and what Claude writes never mix.
 
