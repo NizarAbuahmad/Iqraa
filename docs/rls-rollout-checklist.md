@@ -95,7 +95,14 @@ GitHub's runners are not in your Cloud Run region — so C1 is still separate.)
 
 ## C. Measure and check limits
 
-- [ ] **C1. Measure the added latency** against the rehearsal project's **pooled** string, from
+- [ ] **C1. Measure the added latency — FAILED the gate on 2026-10-23, do not flip.** `bench:rls`
+  from Cloud Shell against the rehearsal project's pooled endpoint: 15 statements cost 167.6 ms off
+  and 496.6 ms on (median), p95 174.4 vs 510.9 ms — **+336.5 ms** against a budget of +100 ms; +21.9 ms
+  per statement. Cause: with enforcement on each statement is three round trips (BEGIN + scope, the
+  statement, COMMIT) instead of one, and one round trip is about 11 ms here (the API is in
+  europe-west1, the database in Frankfurt). Tick this only after a mitigation below brings the same
+  benchmark under the budget, measured from the API's region.
+  Original instruction: against the rehearsal project's **pooled** string, from
   the API's region if you can (a Cloud Run job, or a VM there; numbers from a laptop overstate
   the cost). Run the benchmark: `BENCH_DATABASE_URL='<pooled string of the rehearsal
   project>' pnpm --filter @workspace/db run bench:rls` (`lib/db/scripts/bench-rls.ts`; read-only; it
@@ -167,6 +174,6 @@ Outside school hours, and only with A, B and C ticked.
 | --- | --- | --- | --- |
 | A | | | |
 | B | owner, via the GitHub workflow | 2026-10-23 | run 39931238295: migrations applied; 46/46 direct, 46/46 pooled. Direct tests ≈ 3.4 min, pooled ≈ 3.3 min (CI runner → Neon, not a latency measurement). Run 4 before it failed only because the pooled secret held a malformed string. |
-| C | owner (C2 only so far) | 2026-10-23 | C2: maxScale 20, pooled host, max_connections 225 — pass via the pooler. C1 (latency) not done. |
+| C | owner | 2026-10-23 | C2: maxScale 20, pooled host, max_connections 225 — pass via the pooler. C1: **failed** — +336.5 ms p95 per 15-statement request (budget +100 ms); +21.9 ms per statement; RTT ≈ 11 ms. |
 | D | | | |
 | E | | | |
