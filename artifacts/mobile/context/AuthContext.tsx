@@ -135,6 +135,12 @@ export interface RegisterData {
    * (`LEGAL_VERSION`) — see `api-server/src/lib/termsAcceptance.ts`.
    */
   acceptedTerms?: boolean;
+  /**
+   * A student signing up with an email (no teacher's code) ticked «أنا بالغ أو
+   * وافق وليّ أمري». The server refuses a new student account without it — see
+   * `api-server/src/lib/ageConfirmation.ts`. Sent for no other role.
+   */
+  ageConfirmed?: boolean;
 }
 
 /** What a parent or student sends to create an account from a teacher's code alone. */
@@ -158,7 +164,7 @@ interface AuthContextType {
    * "Continue with Google" button, which used to ignore the role pill
    * entirely and silently create a teacher.
    */
-  loginWithGoogle: (credential: string, signup?: Pick<RegisterData, 'role' | 'acceptedTerms'>) => Promise<void>;
+  loginWithGoogle: (credential: string, signup?: Pick<RegisterData, 'role' | 'acceptedTerms' | 'ageConfirmed'>) => Promise<void>;
   /**
    * Creates the account but does NOT sign in — a password account starts
    * unverified and the server refuses login until `verifyEmail` succeeds.
@@ -509,7 +515,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = useCallback(async (
     credential: string,
-    signup?: Pick<RegisterData, 'role' | 'acceptedTerms'>,
+    signup?: Pick<RegisterData, 'role' | 'acceptedTerms' | 'ageConfirmed'>,
   ) => {
     // `isNewAccount` is optional on purpose: an app build can outlive the API
     // revision that answers it (and predates it during a rollout). Absent is
@@ -530,6 +536,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Read only when this credential creates an account; someone
           // signing back in is not asked again.
           acceptedTerms: signup?.acceptedTerms === true,
+          ageConfirmed: signup?.ageConfirmed === true,
           termsVersion: LEGAL_VERSION,
         }),
       },
@@ -564,6 +571,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           confirmPassword: payload.confirmPassword,
           role: payload.role,
           acceptedTerms: payload.acceptedTerms === true,
+          ageConfirmed: payload.ageConfirmed === true,
           termsVersion: LEGAL_VERSION,
         }),
       },

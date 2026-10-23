@@ -20,10 +20,12 @@ import { CodeSignupForm } from '@/components/CodeSignupForm';
 import { useStudentAccountsStatus } from '@/services/features';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { emailNotSent } from '@/services/emailDelivery';
+import {
+  needsAgeConfirmation, signupForm,
+  type SignupRole, type StudentSignupMethod,
+} from '@/services/signupMethod';
 import { Ionicons } from '@expo/vector-icons';
 import { BackButton } from '@/components/ui/BackButton';
-
-type SignupRole = 'teacher' | 'parent' | 'student';
 
 export default function RegisterScreen() {
   const colors = useColors();
@@ -55,10 +57,18 @@ export default function RegisterScreen() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
-  // A parent or student signs up from the teacher's code alone (no email, no
-  // password, no Google): the code already says who they are, and email can be
-  // added later from the profile. Teachers keep the form below.
-  const codeSignup = chosenRole === 'parent' || chosenRole === 'student';
+  // A parent signs up from the teacher's code alone (no email, no password, no
+  // Google): the code already says who they are, and email can be added later
+  // from the profile. A teacher signs up with an email. A student chooses —
+  // no default, see services/signupMethod.ts.
+  const [studentMethod, setStudentMethod] = useState<StudentSignupMethod | null>(null);
+  const form = signupForm(chosenRole, studentMethod);
+  const codeSignup = form === 'code';
+  // A student with an email has no teacher's code vouching for them, so they
+  // confirm they are an adult or have a guardian's agreement.
+  const askAge = needsAgeConfirmation(chosenRole, studentMethod);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const readyToSignUp = termsAccepted && (!askAge || ageConfirmed);
 
   const handleGoogleCredential = async (credential: string) => {
     setError('');
@@ -66,6 +76,10 @@ export default function RegisterScreen() {
     // a credential that arrives anyway. The server refuses it too.
     if (!termsAccepted) {
       setError(t('errTermsRequired'));
+      return;
+    }
+    if (askAge && !ageConfirmed) {
+      setError(t('errAgeConfirmRequired'));
       return;
     }
     setGoogleLoading(true);
@@ -76,7 +90,11 @@ export default function RegisterScreen() {
       // from the login screen already takes. No roster code here either: a
       // parent/student claims one afterwards, on the mandatory screen the
       // routing gate sends them to.
-      await loginWithGoogle(credential, { role: chosenRole ?? undefined, acceptedTerms: true });
+      await loginWithGoogle(credential, {
+        role: chosenRole ?? undefined,
+        acceptedTerms: true,
+        ageConfirmed: askAge && ageConfirmed,
+      });
       router.replace('/(tabs)');
     } catch (e: any) {
       // The server only refuses the pill's role when the existing account can
@@ -102,11 +120,11 @@ export default function RegisterScreen() {
         confirmPassword,
         // Never trust the local selection: the flag can flip while this
         // screen is open, and the server would refuse it anyway. No roster
-        // code is collected here — a parent/student claims one afterwards,
-        // on the mandatory screen the routing gate sends them to (see
-        // needsRosterClaim in services/routeGating.ts).
+        // code is collected here: a student joins a class later from
+        // /join-class, and a parent never gets this form.
         role: chosenRole,
         acceptedTerms: termsAccepted,
+        ageConfirmed: askAge && ageConfirmed,
       });
       // No session yet — a password account is unverified until it proves
       // the address it just typed. Google's "Continue with" button above
@@ -136,7 +154,7 @@ export default function RegisterScreen() {
     // so an empty confirm field was accepted here and refused there with an
     // English "Passwords do not match".
     confirmPassword === password &&
-    termsAccepted;
+    readyToSignUp;
 
   const formPanel = (
     <View
@@ -212,6 +230,32 @@ export default function RegisterScreen() {
             />
           ) : null}
 
+          {/* A student chooses how to sign up. Not a default: with a teacher's
+              code they need no email; with an email they need no class. */}
+          {chosenRole === 'student' ? (
+            <>
+              <PillSelector
+                label={t('signupMethodLabel')}
+                options={[
+                  { value: 'code', label: t('signupMethodCode') },
+                  { value: 'email', label: t('signupMethodEmail') },
+                ]}
+                value={studentMethod}
+                onChange={setStudentMethod}
+                hint={studentMethod ? undefined : t('signupMethodHint')}
+                colors={colors}
+                isRTL={isRTL}
+                accent={colors.primary}
+                haptics
+              />
+              {studentMethod === 'email' ? (
+                <Text style={[styles.terms, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+                  {t('studentEmailNote')}
+                </Text>
+              ) : null}
+            </>
+          ) : null}
+
           {/* Shown whether or not a role pill is picked — hiding it until then
               read as "no Google signup here". /setup-subjects re-asks the role
               for any Google-created account anyway. */}
@@ -250,12 +294,35 @@ export default function RegisterScreen() {
             </Text>
           </Pressable>
 
-          {codeSignup ? (
+          {askAge ? (
+            <Pressable
+              onPress={() => setAgeConfirmed(v => !v)}
+              style={[styles.termsRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              accessibilityRole="checkbox"
+              aria-checked={ageConfirmed}
+            >
+              <View style={[
+                styles.checkbox,
+                {
+                  borderColor: ageConfirmed ? colors.primary : colors.border,
+                  backgroundColor: ageConfirmed ? colors.primary : 'transparent',
+                },
+              ]}>
+                {ageConfirmed && <Ionicons name="checkmark" size={14} color={colors.primaryForeground} />}
+              </View>
+              <Text style={[styles.terms, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', flex: 1 }]}>
+                {t('ageConfirmLabel')}
+              </Text>
+            </Pressable>
+          ) : null}
+
+          {form === 'choose' ? null : codeSignup ? (
             <CodeSignupForm
               // Remounted per role: the name picker and the typed code belong to
               // the role that was chosen when they were entered.
               key={chosenRole}
-              role={chosenRole}
+              // `signupForm` returns 'code' for a parent or a student only.
+              role={chosenRole as 'parent' | 'student'}
               termsAccepted={termsAccepted}
               lang={lang}
               colors={colors}
@@ -269,15 +336,15 @@ export default function RegisterScreen() {
               {/* Google draws its own button on web, which has no disabled
                   state; a non-interactive wrapper is the closest thing. */}
               <View
-                pointerEvents={termsAccepted ? 'auto' : 'none'}
-                style={{ opacity: termsAccepted ? 1 : 0.45 }}
-                aria-disabled={!termsAccepted}
+                pointerEvents={readyToSignUp ? 'auto' : 'none'}
+                style={{ opacity: readyToSignUp ? 1 : 0.45 }}
+                aria-disabled={!readyToSignUp}
               >
                 <GoogleSignInButton onCredential={handleGoogleCredential} locale={lang} />
               </View>
-              {!termsAccepted ? (
+              {!readyToSignUp ? (
                 <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-                  {t('registerAcceptTermsFirst')}
+                  {t(termsAccepted ? 'ageConfirmFirst' : 'registerAcceptTermsFirst')}
                 </Text>
               ) : null}
               {googleLoading ? (
@@ -376,9 +443,9 @@ export default function RegisterScreen() {
             disabled={!canSubmit}
             fullWidth
           />
-          {!termsAccepted ? (
+          {!readyToSignUp ? (
             <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-              {t('registerAcceptTermsFirst')}
+              {t(termsAccepted ? 'ageConfirmFirst' : 'registerAcceptTermsFirst')}
             </Text>
           ) : null}
             </>

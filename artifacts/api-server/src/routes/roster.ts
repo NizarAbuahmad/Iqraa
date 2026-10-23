@@ -51,6 +51,7 @@ import { logger } from "../lib/logger";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { generateShareCode } from "../modules/assessment/studentView.ts";
 import { generateLoginCode, hashLoginCode } from "../lib/loginCode.ts";
+import { canReissueLoginCode } from "../lib/loginCodeReissue.ts";
 import { isCodeLive } from "../lib/claimDecision.ts";
 import { letterReadState } from "../lib/parentContactRead.ts";
 import { requireRosterConsent } from "../lib/rosterConsent.js";
@@ -1498,11 +1499,12 @@ router.post("/students/:id/links/:userId/login-code", async (req: AuthenticatedR
           loginCodeHash: users.loginCodeHash,
           passwordHash: users.passwordHash,
           googleId: users.googleId,
+          emailVerified: users.emailVerified,
         })
         .from(users)
         .where(eq(users.id, linkedUserId))
         .for("update");
-      if (!target || !target.loginCodeHash || target.passwordHash || target.googleId) return false;
+      if (!target || !canReissueLoginCode(target)) return false;
 
       await tx.update(users).set({ loginCodeHash: hashLoginCode(loginCode)! }).where(eq(users.id, linkedUserId));
       await tx.delete(refreshTokens).where(eq(refreshTokens.userId, linkedUserId));

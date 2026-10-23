@@ -10,6 +10,56 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Students choose an email or a teacher's code — 2026-10-23
+
+A student could sign up only with a teacher's code (`POST /auth/redeem`, no email): the register
+screen hid the email and Google forms as soon as «طالب» was picked, and an email student made by
+the roundabout route (sign up as a teacher, switch role) was held on `/claim-required` until a
+teacher's code was entered. Not every student has an email, but some do and a code is not
+something every student has on day one.
+
+**What changed**
+- **Register screen:** a student picks «برمز المعلم» or «ببريد إلكتروني» (no default;
+  `services/signupMethod.ts`). The email form is the teacher's form (and Google) with
+  `role: 'student'`, plus a checkbox: an adult, or a guardian agrees. A parent is code-only as before.
+- **API:** `/auth/register` and `/auth/google` refuse a new student without `ageConfirmed: true`
+  (`age_confirmation_required`, `lib/ageConfirmation.ts`) and store `users.guardian_confirmed_at`
+  (migration 0015, one nullable column).
+- **Claim gate:** `needsRosterClaim` no longer holds a student (a parent still is); `needsGradeSetup`
+  no longer waits behind it for a student. An email student uses the library, corners, games and
+  lesson explanations with no class; `/student/*` routes answer 200 with an empty list. The school tab
+  and `/my-exams` say "join a class" with a button to `/join-class`, which now calls
+  `markRosterClaimed(true)`. Settings offers the account-type switch to a student with no class
+  (the claim screen was their only exit).
+- **Lockout:** `canReissueLoginCode` (`lib/loginCodeReissue.ts`). A code-only student who added an
+  email (`/auth/add-email`) had a password hash, so the teacher's reissue answered
+  `not_a_code_account`, while password sign-in needs a *verified* email: a mistyped address plus a
+  lost code was a lockout. Reissue now works until the email is verified.
+- **Wording:** privacy §5, terms §1 and the header comment in `constants/legal.ts`, `LEGAL_VERSION`
+  2026-10-23 (everyone is asked to accept again). The teacher-shared claim message said the code is
+  asked "after verifying your email", false since 2026-10-10; it now says no email is needed.
+  The in-app help `howStudentSignIn` mentions the email option.
+
+**Verified.** `pnpm run typecheck`; api-server `pnpm build && pnpm test` (2202 pass); the new unit
+tests (`ageConfirmation`, `loginCodeReissue`, `signupMethod`, the changed `routeGating` and
+`claimCodeMessage` cases). Against the built API on a throwaway local Postgres with
+`STUDENT_ACCOUNTS=true`, all 16 migrations applied from empty, and by `curl`: a student without
+`ageConfirmed` gets 400, with it 201 and `guardian_confirmed_at` set, a teacher needs none; a verified
+email student has `hasRosterLink:false` and `/student/exams|grades|homework|schedule` and
+`/messaging/contacts` all 200 empty; after `/auth/claim` with a class code `hasRosterLink:true` and
+`gradeIds` fill in; a code-only student who added a mistyped, unverified email gets a new login code
+from the teacher (old code dead, new one signs in), and once the email is verified the same call is
+refused (409).
+
+**Not verified.** The register screen and the school tab in a browser (the web build was still
+running when this was written); the full mobile suite's result is in the PR. The Arabic strings were
+reviewed once and aligned to «شعبة» / «رمز الربط». Not a lawyer's review (the legal text is drafted,
+not reviewed).
+
+**Known limits.** The teacher → student role switch (`POST /auth/role`) does not ask for the age
+confirmation. `/auth/redeem` and `/auth/code-login` still have no committed handler tests. The store
+declaration comment in `lib/features.ts` still describes accounts made only through a class.
+
 ## Chat app-help, nineteenth live pass: 18 more wordings for answers that already existed — 2026-10-23
 
 A 30-question pass on app.iqrra.com found 18 questions answered by the model for which the app

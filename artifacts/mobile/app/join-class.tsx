@@ -34,7 +34,7 @@ export default function JoinClassScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL } = useLanguage();
-  const { user } = useAuth();
+  const { user, markRosterClaimed } = useAuth();
 
   const { code, setCode, roster, className, studentId, setStudentId, state, canSubmit: canSubmitCode, needsConfirm, confirmed, setConfirmed, pickedName } = useJoinCodeLookup();
   const [submitting, setSubmitting] = useState(false);
@@ -54,6 +54,10 @@ export default function JoinClassScreen() {
     try {
       await claimRosterCode(code.trim(), roster ? studentId : undefined);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // A student who signed up with an email arrives here with no link, so the
+      // flag the app holds (and the school tab's "join a class" prompt) is
+      // still false until told; see AuthContext.markRosterClaimed.
+      markRosterClaimed(true);
       setJoined(true);
       // A class is where the teacher's messages and released results come
       // from — a natural moment to offer push (services/pushPolicy.ts).

@@ -48,9 +48,13 @@ export default function SettingsScreen() {
   // A teacher account made by mistake (the old pre-selected signup pill, or
   // Google on the login screen) can still become a parent/student while it
   // owns no class or student — the server decides (lib/roleSwitch.ts).
-  const canChangeType = studentAccounts && user?.role === 'teacher';
+  // A student with no class can too (since 2026-10-23): the claim screen used
+  // to be their way out, and an email student is no longer sent there.
+  const canChangeType = studentAccounts && (
+    user?.role === 'teacher' || (user?.role === 'student' && user.hasRosterLink === false)
+  );
   const [typeOpen, setTypeOpen] = useState(false);
-  const [nextRole, setNextRole] = useState<'parent' | 'student' | null>(null);
+  const [nextRole, setNextRole] = useState<'teacher' | 'parent' | 'student' | null>(null);
   const [switching, setSwitching] = useState(false);
   const [typeError, setTypeError] = useState('');
   const [sendingTest, setSendingTest] = useState(false);
@@ -204,7 +208,8 @@ export default function SettingsScreen() {
     setSwitching(true);
     setTypeError('');
     try {
-      // On success the routing gate moves the account to /claim-required.
+      // On success the routing gate moves the account on: a parent to
+      // /claim-required, a teacher to /setup-subjects, a student into the app.
       await switchRole(nextRole);
     } catch (e) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -502,7 +507,7 @@ export default function SettingsScreen() {
                 label={t('accountType')}
                 isRTL={isRTL}
                 colors={colors}
-                right={<Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{t('roleTeacher')}</Text>}
+                right={<Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{t(user?.role === 'student' ? 'roleStudent' : 'roleTeacher')}</Text>}
                 onPress={() => { setTypeOpen(o => !o); setNextRole(null); setTypeError(''); }}
               />
               {typeOpen && (
@@ -510,10 +515,17 @@ export default function SettingsScreen() {
                   <PillSelector
                     label={t('claimRequiredPickRole')}
                     hint={t('accountTypeSwitchNote')}
-                    options={[
-                      { value: 'parent', label: t('roleParent') },
-                      { value: 'student', label: t('roleStudent') },
-                    ]}
+                    options={
+                      user?.role === 'student'
+                        ? [
+                            { value: 'teacher', label: t('roleTeacher') },
+                            { value: 'parent', label: t('roleParent') },
+                          ]
+                        : [
+                            { value: 'parent', label: t('roleParent') },
+                            { value: 'student', label: t('roleStudent') },
+                          ]
+                    }
                     value={nextRole}
                     onChange={setNextRole}
                     colors={colors}

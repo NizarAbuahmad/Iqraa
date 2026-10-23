@@ -1,6 +1,7 @@
 import { Router, type Request } from "express";
 import { signupSource } from "../lib/adminMetrics.js";
 import { termsAcceptance } from "../lib/termsAcceptance.ts";
+import { ageConfirmation } from "../lib/ageConfirmation.ts";
 import { comparePassword, hashPassword, shedWhenHashingBusy } from "../lib/passwordHash.js";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
@@ -521,6 +522,15 @@ router.post("/register", shedWhenHashingBusy(), registerLimiter, registerEmailLi
       return;
     }
 
+    // A student with an email has no teacher's code vouching for them, so they
+    // confirm they are an adult or have a guardian's agreement. Not asked of
+    // anyone else; see lib/ageConfirmation.ts.
+    const age = ageConfirmation(req.body, role);
+    if (!age.ok) {
+      res.status(age.status).json({ error: age.error, code: age.code });
+      return;
+    }
+
     // Check duplicate email
     const [existing] = await db
       .select({ id: users.id })
@@ -545,6 +555,7 @@ router.post("/register", shedWhenHashingBusy(), registerLimiter, registerEmailLi
         preferredLanguage: "en",
         termsAcceptedAt: terms.termsAcceptedAt,
         termsVersion: terms.termsVersion,
+        guardianConfirmedAt: age.guardianConfirmedAt,
         ...signupSource(req.headers),
       })
       .returning();
@@ -1858,6 +1869,13 @@ router.post("/google", googleLimiter, async (req, res) => {
           return;
         }
 
+        // Same as /register: a student with no teacher's code confirms their age.
+        const age = ageConfirmation(req.body, role);
+        if (!age.ok) {
+          res.status(age.status).json({ error: age.error, code: age.code });
+          return;
+        }
+
         isNewAccount = true;
         [user] = await db
           .insert(users)
@@ -1871,6 +1889,7 @@ router.post("/google", googleLimiter, async (req, res) => {
             emailVerified: true,
             termsAcceptedAt: terms.termsAcceptedAt,
             termsVersion: terms.termsVersion,
+            guardianConfirmedAt: age.guardianConfirmedAt,
             ...signupSource(req.headers),
           })
           .returning();

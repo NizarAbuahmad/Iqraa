@@ -29,7 +29,7 @@ Checked 2026-10-22:
 - **Database:** Neon Postgres, **Launch plan since 2026-10-23** (was Free: 100 compute-hours a
   month, 30.92 used, after which Neon suspends the compute), autoscaling 0.25-0.5 CU, scale to
   zero on, $10 spend alert — see «Neon leaves the Free plan before launch» in the log and the
-  first item under *Open*. The schema deploys as migrations (11 files in
+  first item under *Open*. The schema deploys as migrations (16 files in
   `lib/db/migrations`); `verify-schema` runs before every API deploy.
 - **Live config** (plain env on the service): `AI_LIVE_MODE=true`; models `gpt-5.4-mini`
   for generation and for chat; budgets `AI_BUDGET_USD=50`, per user `1`, per
@@ -56,6 +56,14 @@ Checked 2026-10-22:
 
 ## Open
 
+- **A student can sign up with an email and no teacher's code — the legal wording needs a person
+  to read it before this merges.** The privacy policy §5 and terms §1 (`constants/legal.ts`,
+  `LEGAL_VERSION` 2026-10-23) now say a student may join with an email after confirming they are
+  an adult or have a guardian's agreement; they were drafted, not reviewed by a lawyer, and the
+  store declaration (`lib/features.ts` comment) still describes accounts made only through a
+  class. Merging deploys it, and every user is asked to accept the new version. Also the role
+  switch (teacher → student) does not ask for the age confirmation. Entry: «Students choose an
+  email or a teacher's code» in the log.
 - **Neon is on Launch (applied 2026-10-23 by the owner); two checks remain.** Autoscaling 0.25-0.5
   CU, scale to zero on: about $10 a month expected, about $39 at most (estimates; read Neon's
   Usage page weekly for a month). Check `pooled` on `GET /api/healthz/pool` (admin key) once this
@@ -101,6 +109,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-23 — Students choose an email or a teacher's code
 - 2026-10-23 — The "now" amber is only for now
 - 2026-10-23 — The tab bar is drawn
 - 2026-10-23 — Neon leaves the Free plan before launch
