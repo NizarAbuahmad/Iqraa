@@ -2,14 +2,14 @@
   "sourceId": "g9-history-s1-student-book",
   "figures": [
     {
-      "file": "p008.png",
+      "file": "p008-v2.png",
       "sourceId": "g9-history-s1-student-book",
       "pdfPage": 8,
       "rect": [
-        60.5,
-        380.1,
-        366.7,
-        627.7
+        64.0,
+        385.4,
+        360.0,
+        669.8
       ],
       "unit": 1,
       "lesson": 1,
@@ -18,14 +18,14 @@
       "lessonStartPage": 8
     },
     {
-      "file": "p009.png",
+      "file": "p009-v2.png",
       "sourceId": "g9-history-s1-student-book",
       "pdfPage": 9,
       "rect": [
-        46.9,
-        149.2,
-        549.2,
-        289.9
+        50.0,
+        103.4,
+        551.0,
+        316.9
       ],
       "unit": 1,
       "lesson": 1,
@@ -50,14 +50,14 @@
       "lessonStartPage": 8
     },
     {
-      "file": "p018.png",
+      "file": "p018-v2.png",
       "sourceId": "g9-history-s1-student-book",
       "pdfPage": 18,
       "rect": [
-        50.7,
-        368.2,
-        371.5,
-        630.5
+        53.0,
+        371.0,
+        368.0,
+        680.2
       ],
       "unit": 1,
       "lesson": 3,
@@ -98,14 +98,14 @@
       "lessonStartPage": 36
     },
     {
-      "file": "p039.png",
+      "file": "p039-v2.png",
       "sourceId": "g9-history-s1-student-book",
       "pdfPage": 39,
       "rect": [
-        0.0,
-        590.6,
-        342.8,
-        772.1
+        37.0,
+        604.6,
+        337.0,
+        750.0
       ],
       "unit": 2,
       "lesson": 2,
@@ -162,14 +162,14 @@
       "lessonStartPage": 64
     },
     {
-      "file": "p064b.png",
+      "file": "p064b-v2.png",
       "sourceId": "g9-history-s1-student-book",
       "pdfPage": 64,
       "rect": [
-        74.1,
-        414.5,
-        359.9,
-        735.7
+        99.0,
+        398.3,
+        358.4,
+        731.7
       ],
       "unit": 3,
       "lesson": 1,
@@ -178,14 +178,14 @@
       "lessonStartPage": 64
     },
     {
-      "file": "p071.png",
+      "file": "p071-v2.png",
       "sourceId": "g9-history-s1-student-book",
       "pdfPage": 71,
       "rect": [
-        100.4,
-        109.7,
-        493.1,
-        395.7
+        105.0,
+        106.4,
+        546.0,
+        408.9
       ],
       "unit": 3,
       "lesson": 2,

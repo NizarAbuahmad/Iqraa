@@ -2,14 +2,14 @@
   "sourceId": "g9-geography-s1-student-book",
   "figures": [
     {
-      "file": "p009.png",
+      "file": "p009-v2.png",
       "sourceId": "g9-geography-s1-student-book",
       "pdfPage": 9,
       "rect": [
-        54.5,
-        247.3,
-        540.4,
-        449.2
+        58.0,
+        254.5,
+        538.0,
+        500.2
       ],
       "unit": 1,
       "lesson": 1,
@@ -34,14 +34,14 @@
       "lessonStartPage": 8
     },
     {
-      "file": "p012.png",
+      "file": "p012-v2.png",
       "sourceId": "g9-geography-s1-student-book",
       "pdfPage": 12,
       "rect": [
-        52.0,
-        81.8,
-        548.7,
-        251.9
+        56.0,
+        72.0,
+        545.0,
+        281.5
       ],
       "unit": 1,
       "lesson": 1,
@@ -50,14 +50,14 @@
       "lessonStartPage": 8
     },
     {
-      "file": "p012b.png",
+      "file": "p012b-v2.png",
       "sourceId": "g9-geography-s1-student-book",
       "pdfPage": 12,
       "rect": [
-        61.1,
-        375.0,
-        520.3,
-        585.2
+        57.0,
+        355.4,
+        543.4,
+        643.4
       ],
       "unit": 1,
       "lesson": 1,
@@ -82,14 +82,14 @@
       "lessonStartPage": 20
     },
     {
-      "file": "p026.png",
+      "file": "p026-v2.png",
       "sourceId": "g9-geography-s1-student-book",
       "pdfPage": 26,
       "rect": [
-        67.0,
-        433.0,
-        535.9,
-        633.7
+        71.0,
+        397.4,
+        544.6,
+        663.9
       ],
       "unit": 1,
       "lesson": 3,
@@ -114,14 +114,14 @@
       "lessonStartPage": 20
     },
     {
-      "file": "p032.png",
+      "file": "p032-v2.png",
       "sourceId": "g9-geography-s1-student-book",
       "pdfPage": 32,
       "rect": [
-        73.8,
-        287.4,
-        376.1,
-        586.5
+        89.0,
+        291.0,
+        372.1,
+        638.2
       ],
       "unit": 2,
       "lesson": 1,
@@ -130,14 +130,14 @@
       "lessonStartPage": 32
     },
     {
-      "file": "p041.png",
+      "file": "p041-v2.png",
       "sourceId": "g9-geography-s1-student-book",
       "pdfPage": 41,
       "rect": [
-        17.0,
         0.0,
-        465.6,
-        254.2
+        0.0,
+        595.3,
+        267.4
       ],
       "unit": 2,
       "lesson": 2,
@@ -178,14 +178,14 @@
       "lessonStartPage": 47
     },
     {
-      "file": "p056.png",
+      "file": "p056-v2.png",
       "sourceId": "g9-geography-s1-student-book",
       "pdfPage": 56,
       "rect": [
-        58.7,
-        597.1,
-        192.4,
-        730.7
+        62.0,
+        612.9,
+        188.2,
+        714.3
       ],
       "unit": 3,
       "lesson": 1,
@@ -194,14 +194,14 @@
       "lessonStartPage": 56
     },
     {
-      "file": "p057.png",
+      "file": "p057-v2.png",
       "sourceId": "g9-geography-s1-student-book",
       "pdfPage": 57,
       "rect": [
-        46.8,
-        254.5,
-        548.7,
-        595.0
+        50.0,
+        240.1,
+        546.0,
+        647.7
       ],
       "unit": 3,
       "lesson": 1,
@@ -210,14 +210,14 @@
       "lessonStartPage": 56
     },
     {
-      "file": "p060.png",
+      "file": "p060-v2.png",
       "sourceId": "g9-geography-s1-student-book",
       "pdfPage": 60,
       "rect": [
-        48.1,
-        31.3,
-        549.7,
-        371.7
+        51.0,
+        36.0,
+        544.0,
+        428.0
       ],
       "unit": 3,
       "lesson": 1,

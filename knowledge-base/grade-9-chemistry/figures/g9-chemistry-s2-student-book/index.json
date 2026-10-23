@@ -2,14 +2,14 @@
   "sourceId": "g9-chemistry-s2-student-book",
   "figures": [
     {
-      "file": "p011.png",
+      "file": "p011-v2.png",
       "sourceId": "g9-chemistry-s2-student-book",
       "pdfPage": 11,
       "rect": [
-        92.0,
-        0.0,
+        87.0,
+        51.0,
         623.6,
-        204.2
+        235.0
       ],
       "unit": 3,
       "lesson": 1,
@@ -34,14 +34,14 @@
       "lessonStartPage": 10
     },
     {
-      "file": "p018.png",
+      "file": "p018-v2.png",
       "sourceId": "g9-chemistry-s2-student-book",
       "pdfPage": 18,
       "rect": [
-        407.1,
-        638.9,
-        556.6,
-        739.9
+        409.3,
+        611.0,
+        554.5,
+        736.0
       ],
       "unit": 3,
       "lesson": 1,
@@ -50,14 +50,14 @@
       "lessonStartPage": 10
     },
     {
-      "file": "p019.png",
+      "file": "p019-v2.png",
       "sourceId": "g9-chemistry-s2-student-book",
       "pdfPage": 19,
       "rect": [
-        161.7,
-        574.9,
-        292.8,
-        726.5
+        165.7,
+        596.6,
+        284.0,
+        708.0
       ],
       "unit": 3,
       "lesson": 1,
@@ -66,14 +66,14 @@
       "lessonStartPage": 10
     },
     {
-      "file": "p019b.png",
+      "file": "p019b-v2.png",
       "sourceId": "g9-chemistry-s2-student-book",
       "pdfPage": 19,
       "rect": [
-        93.1,
-        606.7,
-        166.3,
-        712.3
+        70.5,
+        610.0,
+        164.0,
+        709.1
       ],
       "unit": 3,
       "lesson": 1,
@@ -82,14 +82,14 @@
       "lessonStartPage": 10
     },
     {
-      "file": "p025.png",
+      "file": "p025-v2.png",
       "sourceId": "g9-chemistry-s2-student-book",
       "pdfPage": 25,
       "rect": [
-        66.4,
-        258.6,
-        214.1,
-        365.3
+        70.0,
+        236.1,
+        212.1,
+        362.0
       ],
       "unit": 3,
       "lesson": 2,
@@ -98,14 +98,14 @@
       "lessonStartPage": 21
     },
     {
-      "file": "p026.png",
+      "file": "p026-v2.png",
       "sourceId": "g9-chemistry-s2-student-book",
       "pdfPage": 26,
       "rect": [
-        408.1,
-        634.9,
-        555.7,
-        735.5
+        412.0,
+        612.1,
+        552.8,
+        732.0
       ],
       "unit": 3,
       "lesson": 2,
@@ -114,14 +114,14 @@
       "lessonStartPage": 21
     },
     {
-      "file": "p032b.png",
+      "file": "p032b-v2.png",
       "sourceId": "g9-chemistry-s2-student-book",
       "pdfPage": 32,
       "rect": [
-        107.2,
-        281.9,
-        197.9,
-        482.5
+        51.3,
+        242.3,
+        213.0,
+        535.5
       ],
       "unit": 3,
       "lesson": 2,
@@ -130,30 +130,14 @@
       "lessonStartPage": 21
     },
     {
-      "file": "p033.png",
-      "sourceId": "g9-chemistry-s2-student-book",
-      "pdfPage": 33,
-      "rect": [
-        0.0,
-        0.0,
-        216.4,
-        496.2
-      ],
-      "unit": 3,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 21
-    },
-    {
-      "file": "p047.png",
+      "file": "p047-v2.png",
       "sourceId": "g9-chemistry-s2-student-book",
       "pdfPage": 47,
       "rect": [
-        365.4,
-        52.8,
-        475.6,
-        134.9
+        248.0,
+        56.0,
+        472.0,
+        222.0
       ],
       "unit": 4,
       "lesson": 1,
@@ -162,14 +146,14 @@
       "lessonStartPage": 40
     },
     {
-      "file": "p048.png",
+      "file": "p048-v2.png",
       "sourceId": "g9-chemistry-s2-student-book",
       "pdfPage": 48,
       "rect": [
-        410.5,
-        126.3,
-        572.4,
-        288.5
+        404.5,
+        61.0,
+        579.6,
+        329.6
       ],
       "unit": 4,
       "lesson": 1,
@@ -178,14 +162,14 @@
       "lessonStartPage": 40
     },
     {
-      "file": "p049.png",
+      "file": "p049-v2.png",
       "sourceId": "g9-chemistry-s2-student-book",
       "pdfPage": 49,
       "rect": [
-        55.5,
-        363.7,
-        201.5,
-        456.5
+        49.5,
+        299.0,
+        207.5,
+        462.5
       ],
       "unit": 4,
       "lesson": 1,
@@ -242,14 +226,14 @@
       "lessonStartPage": 40
     },
     {
-      "file": "p053.png",
+      "file": "p053-v2.png",
       "sourceId": "g9-chemistry-s2-student-book",
       "pdfPage": 53,
       "rect": [
-        73.7,
-        237.6,
-        154.2,
-        413.7
+        67.7,
+        205.2,
+        200.4,
+        409.7
       ],
       "unit": 4,
       "lesson": 1,
@@ -258,30 +242,14 @@
       "lessonStartPage": 40
     },
     {
-      "file": "p053b.png",
-      "sourceId": "g9-chemistry-s2-student-book",
-      "pdfPage": 53,
-      "rect": [
-        114.0,
-        238.9,
-        194.4,
-        413.7
-      ],
-      "unit": 4,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 40
-    },
-    {
-      "file": "p054.png",
+      "file": "p054-v2.png",
       "sourceId": "g9-chemistry-s2-student-book",
       "pdfPage": 54,
       "rect": [
-        248.9,
-        574.5,
-        347.9,
-        735.8
+        242.0,
+        578.0,
+        442.7,
+        739.8
       ],
       "unit": 4,
       "lesson": 1,
@@ -370,14 +338,14 @@
       "lessonStartPage": 59
     },
     {
-      "file": "p062.png",
+      "file": "p062-v2.png",
       "sourceId": "g9-chemistry-s2-student-book",
       "pdfPage": 62,
       "rect": [
-        62.2,
-        375.9,
-        285.8,
-        576.4
+        66.0,
+        369.9,
+        250.0,
+        572.4
       ],
       "unit": 4,
       "lesson": 2,
@@ -402,14 +370,14 @@
       "lessonStartPage": 59
     },
     {
-      "file": "p066.png",
+      "file": "p066-v2.png",
       "sourceId": "g9-chemistry-s2-student-book",
       "pdfPage": 66,
       "rect": [
-        132.2,
-        535.0,
-        345.1,
-        746.8
+        101.2,
+        529.0,
+        411.8,
+        739.8
       ],
       "unit": 4,
       "lesson": 2,
@@ -418,14 +386,14 @@
       "lessonStartPage": 59
     },
     {
-      "file": "p067.png",
+      "file": "p067-v2.png",
       "sourceId": "g9-chemistry-s2-student-book",
       "pdfPage": 67,
       "rect": [
-        57.7,
-        483.7,
-        214.8,
-        691.0
+        61.7,
+        477.7,
+        223.7,
+        739.8
       ],
       "unit": 4,
       "lesson": 2,
@@ -434,14 +402,14 @@
       "lessonStartPage": 59
     },
     {
-      "file": "p070.png",
+      "file": "p070-v2.png",
       "sourceId": "g9-chemistry-s2-student-book",
       "pdfPage": 70,
       "rect": [
-        131.8,
-        629.9,
-        236.5,
-        709.6
+        111.8,
+        564.0,
+        253.3,
+        736.0
       ],
       "unit": 4,
       "lesson": 2,
