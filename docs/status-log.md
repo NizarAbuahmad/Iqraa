@@ -10,6 +10,66 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Generator screens: the lesson plan — 2026-10-23
+
+PR 3 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`. The lesson-plan screen
+(`app/ai-tools/lesson-plan.tsx`) is built from the shared pieces of `components/generator/`, as the quiz
+and the worksheet were. Mobile only: nothing here changes what is asked of the model, the API, or what is
+stored.
+
+**What changed**
+| Field | Control |
+|---|---|
+| Grade, subject, `TopicSelector`, the empty-topic error | `LessonCard` body (unchanged pickers, `StrandedSelectionNote`, `hasError`) |
+| Duration (`durationIdx`, 30/45/60/90) | `SegmentedControl` over the same index and array |
+| Teaching style (`styleIdx`) | `SegmentedControl` over the same index and array |
+| Prior-knowledge review | one labelled checkbox row (hidden on a wide scope, disabled with its note), after the fold |
+| «More options» (objectives, adaptations + «تبسيط الشرح», prior topics) | the same fold and the same `TextInput`s, restyled (`useSurface()` cards, 44-point toggle and chip, `aria-expanded`) |
+| Generate | one `DockedAction`, no `disabled` and no `hint` |
+
+- **Deliberate deviation from the spec:** duration is a segmented control, not a stepper. The spec says a
+  numeric list is a stepper, but this list is four short labels, which the same spec's rule 3 sends to a
+  segmented control; the quiz keeps a stepper because its duration list has six.
+- `ACCENT` is the concept colour (indigo) instead of `palette.primary`. Text, icons and outlines on a card
+  use `accentInk`, in the form and in the result (`LessonPlanResult` takes an `ink` prop; `GenerationStatus`,
+  `GeneratorResultActions` and `GeneratorSaveBar` get it). A source test fails any raw `ACCENT` used as text,
+  icon or outline colour, and a second test puts three raw uses back into the real source to prove it bites.
+- **Validation is unchanged: the button is not disabled.** A press with no topic sets `topicRequired`, and the
+  message shows beside the field. The button is docked away from the field, so the screen measures the header
+  and the error text (`measureInWindow`, both `collapsable={false}`) and scrolls the error into view, on a
+  phone and on desktop (the desktop button is in a sticky side column, so a teacher deep in the optional boxes
+  would otherwise see nothing happen). The `attempt` counter is in the effect's dependencies, so a second press
+  scrolls again; the status-scroll effect stands down while `topicRefusal` is set, so a press after Cancel does
+  not jump twice.
+- **Preview:** `PaperPreview` gained `nameLine?: boolean` (default true, so the quiz and worksheet are
+  unchanged); the lesson plan passes false (the «الاسم / التاريخ» line belongs on a student's paper). The
+  skeleton rows are the sections `LessonPlanView` prints, in its order: 10, or 11 with the prior-review row
+  (shown when the review was asked for and is available, or the prior-topics box has text, never on a wide scope).
+  Their titles come from the plan's CONTENT language (`getT(lang)`), not the interface language, because the plan
+  is written in the subject's language. Summary: «45 دقيقة · 10 أقسام · التعليم المباشر» (`sections` in
+  `generatorSummary.ts`, with Arabic agreement: قسم واحد / قسمان / 3–10 أقسام / 11 قسمًا).
+- i18n: `genPreviewLessonPlanNote`, both languages.
+- Found by the screenshots on the worksheet and fixed here in advance: the docked bar must be rendered
+  (`{isDesktop ? null : action(true)}` and `{action(false)}`); the test that pins it now covers this screen too.
+- The prior-review checkbox sits after the fold, as before: its shared note says «استخدم حقل الملاحظات أعلاه»,
+  and the field it points to is the folded one. A test pins the order.
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,107 tests, 7,097 pass, 10 skipped, 0 fail.
+Web-build screenshots, Arabic: phone (390) and desktop (1366), light and dark, with a lesson carried in and
+without; an empty-topic press on a phone (the error scrolled into view); a generated plan in dark. An
+independent review found no blocker; its six defects (the checkbox order, the desktop empty-topic scroll, the
+double scroll after Cancel, the preview language, a stale comment, an awkward English line) are fixed.
+
+**Not verified:** any device (the Android keyboard hiding the bar while a fold box is focused, the iOS safe
+area, touch feel, screen readers, `measureInWindow` on native); English at 360 wide; a wide scope; a live-AI
+plan (whether the model writes the prior-review section whenever it is asked); the unfolded boxes in the
+browser.
+
+**Known limits.** The skeleton rows show section titles, not content. The ticked checkbox's fill is about 1.9:1
+against the dark card (the tick itself carries the state). Most of the screen's new tests pin source text; they
+freeze the code but cannot show it scrolls correctly. The activity and slides screens are still on the old
+teal and dropdowns.
+
 ## Generator screens: the worksheet and homework — 2026-10-23
 
 PR 2 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`. The worksheet screen

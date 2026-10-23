@@ -14,6 +14,7 @@ import { join } from 'node:path';
 import { CONCEPTS } from '../../constants/icons.ts';
 import { bandGradient } from '../band.ts';
 import { contrast } from '../readableColor.ts';
+import translations from '../i18n.ts';
 
 const ROOT = join(import.meta.dirname, '..', '..');
 const read = (...p: string[]) => readFileSync(join(ROOT, ...p), 'utf8');
@@ -302,6 +303,8 @@ test('DockedAction takes an optional secondary action beside the primary, and th
 
 const worksheet = read('app', 'ai-tools', 'worksheet.tsx');
 const worksheetCode = code(worksheet);
+const lessonPlan = read('app', 'ai-tools', 'lesson-plan.tsx');
+const lessonPlanCode = code(lessonPlan);
 
 test('the worksheet imports every shared piece and draws its controls with them', () => {
   for (const name of ['SegmentedControl', 'Stepper', 'ChipGroup', 'LessonCard', 'DockedAction', 'GeneratorLayout', 'PaperPreview']) {
@@ -367,7 +370,7 @@ test('the distribution control appears on a wide scope only', () => {
 
 test('a ported screen draws the docked bar on a phone and the inline action on desktop', () => {
   // The worksheet once built `action` and never rendered `action(true)`: a phone had no button at all.
-  for (const [name, src] of [['quiz', code(read('app', 'ai-tools', 'quiz.tsx'))], ['worksheet', worksheetCode]] as const) {
+  for (const [name, src] of [['quiz', code(read('app', 'ai-tools', 'quiz.tsx'))], ['worksheet', worksheetCode], ['lesson plan', lessonPlanCode]] as const) {
     assert.match(src, /\{isDesktop \? null : action\(true\)\}/, `${name}: no docked bar on a phone`);
     assert.match(src, /\{action\(false\)\}/, `${name}: no inline action under the desktop preview`);
   }
@@ -540,11 +543,227 @@ test('a disabled chip never counts towards min', () => {
 });
 
 test('pressing generate again on the same refusal scrolls to it again: the effect also depends on an attempt counter', () => {
-  for (const [name, src] of [['quiz', quizCode], ['worksheet', worksheetCode]] as const) {
+  for (const [name, src] of [['quiz', quizCode], ['worksheet', worksheetCode], ['lesson plan', lessonPlanCode]] as const) {
     assert.match(src, /const \[attempt, setAttempt\] = useState\(0\);/, `${name}: no attempt counter`);
     // Bumped first thing in generate, before any early return (the refusals), and nothing else about generate moves.
     assert.match(src, /const generate = async \(opts\?: \{[^}]*\}\) => \{\s*(\/\/[^\n]*\n\s*)*setAttempt\(n => n \+ 1\);\s*const previous = result;/, `${name}: attempt is not bumped at the start of generate`);
     assert.match(src, /\}, \[statusPhase, attempt\]\);/, `${name}: the effect ignores the attempt`);
-    assert.match(src, /if \(isDesktop \|\| statusPhase === 'idle'\) return;/, `${name}: an idle form must not scroll`);
+    // (The lesson plan also yields to a topic refusal: see its own test.)
+    assert.match(src, /if \(isDesktop \|\| statusPhase === 'idle'(?: \|\| topicRefusal)?\) return;/, `${name}: an idle form must not scroll`);
+  }
+});
+
+// ── The lesson plan ─────────────────────────────────────────────────────────
+
+/** The ink rule, shared by the screens that wear a concept colour (see the worksheet's test for why). */
+function rawAccentAsInk(line: string): boolean {
+  return /\bcolor\s*[:=]\s*\{?\s*ACCENT\b/.test(line)
+    || /\bcolor\s*[:=]\s*\{?[^\n]*?[?:]\s*ACCENT\b(?!\s*\+)/.test(line)
+    || /\bborderColor\s*:\s*ACCENT\b(?!\s*\+)/.test(line);
+}
+const rawAccentLines = (src: string) => src.split('\n').flatMap((l, i) => (rawAccentAsInk(l) ? [`${i + 1}: ${l.trim().slice(0, 100)}`] : []));
+
+test('the lesson plan imports the shared pieces it uses and draws them', () => {
+  for (const name of ['SegmentedControl', 'LessonCard', 'DockedAction', 'GeneratorLayout', 'PaperPreview']) {
+    assert.match(lessonPlan, new RegExp(`from '@/components/generator/${name}'`), `lesson-plan.tsx does not import ${name}`);
+    assert.match(lessonPlanCode, new RegExp(`<${name}\\b`), `lesson-plan.tsx imports ${name} and does not draw it`);
+  }
+  assert.equal((lessonPlanCode.match(/<DockedAction\b/g) ?? []).length, 1, 'one generate action, no secondary');
+  assert.doesNotMatch(lessonPlanCode, /secondary=/);
+  assert.doesNotMatch(lessonPlanCode, /<Button\b/, 'the generate button is the DockedAction now');
+});
+
+test('the lesson plan keeps TopicSelector mounted: inside the lesson card, never behind a condition', () => {
+  assert.equal((lessonPlanCode.match(/<TopicSelector\b/g) ?? []).length, 1);
+  assert.match(lessonPlanCode, /<LessonCard[\s\S]*<TopicSelector\b[\s\S]*<\/LessonCard>/, 'TopicSelector must sit inside LessonCard');
+  assert.doesNotMatch(lessonPlanCode, /lessonOpen\s*(\?|&&)/, 'the open state may only change the card, never mount or unmount the pickers');
+  assert.match(lessonPlanCode, /allowedKinds=\{\['lesson', 'unit', 'semester', 'book'\]\}/);
+  assert.match(lessonPlanCode, /onScopeChange=\{wideScope\.setScopeSel\}\s+offlineWideScope/);
+  assert.match(lessonPlanCode, /hasError=\{!!error && !topic\}/);
+  assert.match(lessonPlanCode, /<PickerField label=\{t\('grade'\)\}[^>]*hidden=\{teacherScope\.gradeHidden\}/);
+  assert.match(lessonPlanCode, /<LessonCard[\s\S]*<StrandedSelectionNote\b[\s\S]*<\/LessonCard>/, 'the note is part of the card body');
+  assert.match(lessonPlanCode, /<PickerField label=\{t\('subjects'\)\}[^>]*hidden=\{subjectHidden\}/);
+  // A stranded pair keeps the card open, and an empty topic keeps it locked open.
+  assert.match(lessonPlanCode, /const stranded = subjectHidden\?\.\[subjectIdx\] === true;/);
+  assert.match(lessonPlanCode, /expanded=\{lessonOpen \|\| stranded\}/);
+  assert.match(lessonPlanCode, /locked=\{!topic\.trim\(\) \|\| stranded\}/);
+});
+
+test('the lesson plan carries the lesson by id, and keeps its state names, route params and saved form state', () => {
+  assert.match(lessonPlanCode, /usePickedLesson\(/);
+  assert.match(lessonPlanCode, /groundLessonPlanTopic\(form, kbScope, pickedLesson\.lessonId\)/);
+  assert.match(lessonPlanCode, /lessonId\?: string;/);
+  for (const name of ['gradeIdx', 'subjectIdx', 'objectives', 'adaptations', 'priorTopicsNotes', 'includePriorReview', 'durationIdx', 'styleIdx']) {
+    const cap = name[0]!.toUpperCase() + name.slice(1);
+    assert.match(lessonPlanCode, new RegExp(`\\[${name}, set${cap}\\] = useState`), `state ${name} was renamed or removed`);
+  }
+  assert.match(lessonPlanCode, /const \[topic, setTopic\] = useState/);
+  assert.match(lessonPlanCode, /const DURATION_VALUES = \[30, 45, 60, 90\];/);
+  assert.match(lessonPlanCode, /const STYLE_IDS = \['direct', 'inquiry', 'collaborative'\] as const;/);
+  assert.match(lessonPlanCode, /durationIdx, styleIdx, objectives, adaptations,/);
+  assert.match(lessonPlanCode, /priorTopicsNotes: wideFrozen \? '' : priorTopicsNotes,/);
+  assert.match(lessonPlanCode, /includePriorReview: includePriorReview \? '1' : '0',/);
+  assert.match(lessonPlanCode, /\.\.\.scopeFormState\(wideFrozen, 'balanced'\),/);
+});
+
+test('duration and teaching style are segmented controls over the same arrays and indices', () => {
+  assert.match(lessonPlanCode, /<SegmentedControl label=\{t\('durationLabel'\)\} options=\{durationLabels\} index=\{durationIdx\} onChange=\{setDurationIdx\}/);
+  assert.match(lessonPlanCode, /<SegmentedControl label=\{t\('teachingStyleLabel'\)\} options=\{styleLabels\} index=\{styleIdx\} onChange=\{setStyleIdx\}/);
+  assert.match(lessonPlanCode, /const durationLabels = DURATION_VALUES\.map\(d => `\$\{d\} \$\{t\('min'\)\}`\);/);
+  assert.match(lessonPlanCode, /const styleLabels = \[t\('teachingStyleDirect'\), t\('teachingStyleInquiry'\), t\('teachingStyleCollaborative'\)\];/);
+  assert.doesNotMatch(lessonPlanCode, /<PickerField\b[^>]*label=\{t\('(durationLabel|teachingStyleLabel)'\)\}/, 'no dropdown for a short list');
+});
+
+test('the optional boxes still fold: open when any holds text, three inputs, the prior-topics box hidden on a wide scope', () => {
+  assert.match(lessonPlanCode, /const moreOpen = showMore \|\| !!\(objectives\.trim\(\) \|\| adaptations\.trim\(\) \|\| \(!wideScope\.isWide && priorTopicsNotes\.trim\(\)\)\);/);
+  assert.match(lessonPlanCode, /aria-expanded=\{moreOpen\}/);
+  assert.match(lessonPlanCode, /onPress=\{\(\) => setShowMore\(v => !v\)\}/);
+  assert.equal((lessonPlanCode.match(/<TextInput\b/g) ?? []).length, 3);
+  for (const setter of ['setObjectives', 'setAdaptations', 'setPriorTopicsNotes']) {
+    assert.match(lessonPlanCode, new RegExp(`onChangeText=\\{${setter}\\}`));
+  }
+  assert.match(lessonPlanCode, /\{wideScope\.isWide \? null : \(\s*<View style=\{styles\.field\}>\s*<Text[^>]*>\s*\{t\('priorTopicsLabel'\)\}/);
+  // The «تبسيط الشرح» preset is unchanged.
+  assert.match(lessonPlanCode, /if \(adaptations\.includes\(preset\)\) return;/);
+  assert.match(lessonPlanCode, /setAdaptations\(a => \(a\.trim\(\) \? `\$\{a\.trim\(\)\}\\n\$\{preset\}` : preset\)\);/);
+  // The toggle and the preset chip are 44-point targets; the boxes sit in a surface card.
+  assert.match(lessonPlanCode, /moreToggle: \{[^}]*minHeight: 44/);
+  assert.match(lessonPlanCode, /presetChip: \{[^}]*minHeight: 44/);
+  assert.match(lessonPlanCode, /<View style=\{\[surface, styles\.moreCard\]\}>/);
+});
+
+test('the prior-knowledge review is one checkbox: hidden on a wide scope, disabled with its note', () => {
+  assert.match(lessonPlanCode, /\{wideScope\.isWide \? null : \(\s*<View style=\{\[surface, styles\.priorCard\]\}>\s*<CheckboxRow/);
+  // After the fold: its unavailable note says «the notes field above», and the notes are in the fold.
+  assert.ok(lessonPlanCode.indexOf('styles.moreCard') < lessonPlanCode.indexOf('styles.priorCard]'), 'the checkbox card must come after the optional boxes');
+  assert.match(translations.ar.priorReviewPlanUnavailableNote, /أعلاه/);
+  assert.match(lessonPlanCode, /checked=\{includePriorReview && priorReviewAvailable\}/);
+  assert.match(lessonPlanCode, /disabled=\{!priorReviewAvailable\}/);
+  assert.match(lessonPlanCode, /t\('priorReviewPlanUnavailableNote'\)/);
+  assert.match(lessonPlanCode, /accessibilityRole="checkbox"\s+aria-checked=\{checked\}/);
+  assert.match(lessonPlanCode, /checkRow: \{[^}]*minHeight: 44/);
+  assert.match(lessonPlanCode, /textOn\(accent\)/, 'the tick is textOn the fill, not a literal white');
+  // The request still drops the review on a wide scope (wideScopeRequest), and the effect keeps the tick across a detour.
+  assert.match(lessonPlanCode, /if \(!wideScope\.isWide && !priorReviewAvailable && includePriorReview\) setIncludePriorReview\(false\);/);
+});
+
+test('validation is unchanged: the button is not disabled, pressing it with no topic sets the error beside the field', () => {
+  assert.match(lessonPlanCode, /if \(!topic\.trim\(\)\) \{ setError\(t\('topicRequired'\)\); return; \}/);
+  const action = lessonPlanCode.slice(lessonPlanCode.indexOf('const action = ('), lessonPlanCode.indexOf('const form = ('));
+  assert.match(action, /onPress=\{\(\) => generate\(\)\}/);
+  assert.doesNotMatch(action, /disabled=/, 'this screen never disabled the button on an empty topic');
+  assert.doesNotMatch(action, /hint=/);
+  assert.match(lessonPlanCode, /\{error && !topic\.trim\(\) \? \(\s*<View ref=\{topicErrorRef\} collapsable=\{false\}>\s*<Text/);
+  assert.match(lessonPlanCode, /label=\{loading \? t\('generatingLessonPlan'\) : t\('generateLessonPlanBtn'\)\}/);
+  assert.match(lessonPlanCode, /hidden=\{docked && saveBarVisible\}/);
+  assert.match(lessonPlanCode, /\{action\(false\)\}/);
+});
+
+test('an empty-topic press brings the field into view on a phone AND on desktop, and a second press does it again', () => {
+  assert.match(lessonPlanCode, /const topicRefusal = !!error && !topic\.trim\(\);/);
+  // Desktop too: the sticky button is in the side column and the field is at the top of the form.
+  assert.match(lessonPlanCode, /useLayoutEffect\(\(\) => \{\s*if \(!topicRefusal\) return;/);
+  assert.doesNotMatch(lessonPlanCode, /isDesktop \|\| !topicRefusal/);
+  // After a Cancel `cancelled` stays set; the status scroll must yield so only the field's scroll runs.
+  assert.match(lessonPlanCode, /useLayoutEffect\(\(\) => \{\s*if \(isDesktop \|\| statusPhase === 'idle' \|\| topicRefusal\) return;/);
+  // `topicRefusal` is declared before the status effect reads it.
+  assert.ok(lessonPlanCode.indexOf('const topicRefusal') < lessonPlanCode.indexOf("statusPhase === 'idle' || topicRefusal"));
+  // Both positions are measured together, so the current scroll offset cancels out.
+  assert.match(lessonPlanCode, /top\.measureInWindow\(\(_x, topY\) => \{\s*target\.measureInWindow\(\(_tx, targetY\) => \{\s*scrollRef\.current\?\.scrollTo\(\{ y: Math\.max\(0, targetY - topY - Math\.round\(windowHeight \* 0\.4\)\), animated: !reduceMotion \}\);/);
+  assert.match(lessonPlanCode, /\}, \[topicRefusal, attempt\]\);/, 'without the attempt a repeated press with the same refusal scrolls nowhere');
+  assert.match(lessonPlanCode, /<View ref=\{contentTopRef\} collapsable=\{false\}>\s*<ToolHeader/);
+});
+
+test('the lesson plan scrolls a refusal, an error or the spinner into view above the docked bar, and pads its content for the bar', () => {
+  assert.match(lessonPlanCode, /const statusPhase = loading \? 'loading' : cancelled \? 'cancelled' : \(error && topic\.trim\(\)\) \? 'error' : 'idle';/);
+  assert.match(lessonPlanCode, /<GenerationStatus\s+phase=\{statusPhase\}/);
+  assert.match(lessonPlanCode, /<View onLayout=\{e => \{ statusY\.current = e\.nativeEvent\.layout\.y; \}\}>\s*<GenerationStatus/);
+  assert.match(lessonPlanCode, /useLayoutEffect\(\(\) => \{\s*if \(isDesktop \|\| statusPhase === 'idle' \|\| topicRefusal\) return;/);
+  assert.match(lessonPlanCode, /scrollRef\.current\?\.scrollTo\(\{ y: Math\.max\(0, statusY\.current - SPACE\.lg\), animated: !reduceMotion \}\);\s*\}, \[statusPhase, attempt\]\);/);
+  assert.match(lessonPlanCode, /const reduceMotion = useReduceMotion\(\);/);
+  assert.match(lessonPlanCode, /paddingBottom: DOCKED_BAR_HEIGHT \+ SPACE\.xxl \+ insets\.bottom/);
+  assert.match(lessonPlanCode, /const saveBarVisible = !!result && !loading && !savedId && saveLabel === 'save';/);
+  assert.match(lessonPlanCode, /<GeneratorLayout form=\{form\} side=\{side\} isDesktop=\{isDesktop\} \/>/);
+});
+
+test('the lesson plan header keeps its concept and eyebrow, and generation and the result are untouched', () => {
+  assert.match(lessonPlanCode, /concept="lesson-plan" eyebrow=\{\{ icon: 'sparkles', label: t\('aiLessonPlanBadge'\) \}\}/);
+  assert.match(lessonPlanCode, /aiService\.generateLessonPlan\(\s*wideReq \?\? buildLessonPlanRequest\(form, grounding\),/);
+  assert.match(lessonPlanCode, /buildWideLessonPlanRequest\(form, wideSel\)/);
+  assert.match(lessonPlanCode, /groundedSubjectConflict\(/);
+  assert.match(lessonPlanCode, /<GeneratorResultActions\b/);
+  assert.match(lessonPlanCode, /<GeneratorSaveBar\b/);
+  assert.match(lessonPlanCode, /onMinistry=\{wideFrozen \? undefined : handleMinistry\}/);
+});
+
+test('the lesson plan wears its concept colour; text, icons and outlines on a card are accentInk, never the raw colour', () => {
+  assert.match(lessonPlanCode, /const ACCENT = conceptOf\('lesson-plan'\)\.color;/);
+  assert.match(lessonPlanCode, /const accentInk = readableOn\(ACCENT, colors\.card\);/);
+  assert.doesNotMatch(lessonPlanCode, /import[^;]*\bpalette\b[^;]*from/, 'no palette import is left in the file');
+  assert.doesNotMatch(lessonPlanCode, /\bpalette\./);
+  assert.deepEqual(rawAccentLines(lessonPlanCode), [], 'use accentInk (readableOn(ACCENT, colors.card)) for ink on a card');
+  assert.ok((lessonPlanCode.match(/\baccentInk\b/g) ?? []).length >= 12, 'the form and the result should read accentInk');
+  // The sheets and bars that take an accent get the ink, as the worksheet's do.
+  assert.match(lessonPlanCode, /<GenerationStatus[\s\S]*?accent=\{accentInk\}/);
+  assert.match(lessonPlanCode, /<GeneratorResultActions\s+accent=\{accentInk\}/);
+  assert.match(lessonPlanCode, /<GeneratorSaveBar accent=\{accentInk\}/);
+  assert.match(lessonPlanCode, /<TopicSelector[\s\S]*?accent=\{accentInk\}/);
+  // The result area gets the ink as a prop: it is a function outside the component and cannot see accentInk.
+  assert.match(lessonPlanCode, /<LessonPlanResult\s+plan=\{result\}\s+ink=\{accentInk\}/);
+  assert.match(lessonPlanCode, /<LessonPlanView[\s\S]*?accent=\{ink\}/);
+  // Fills and tints stay the concept colour.
+  assert.match(lessonPlanCode, /<DockedAction[\s\S]*?accent=\{ACCENT\}/);
+  assert.match(lessonPlanCode, /backgroundColor: ACCENT \+ '15'/);
+});
+
+test('the raw-accent check catches the forms it is meant to catch, in the lesson plan\'s own source', () => {
+  // Put one raw use back into the real source and the check must see it.
+  const mutations: Array<[string, string]> = [
+    ["color={ink}", "color={ACCENT}"],
+    ["color: ink, fontFamily", "color: ACCENT, fontFamily"],
+    ["borderColor: accentInk, borderRadius: colors.radius", "borderColor: ACCENT, borderRadius: colors.radius"],
+  ];
+  for (const [from, to] of mutations) {
+    assert.ok(lessonPlanCode.includes(from), `fixture drifted: ${from}`);
+    assert.equal(rawAccentLines(lessonPlanCode.replace(from, to)).length, 1, `should flag: ${to}`);
+  }
+  for (const ok of ["{ backgroundColor: ACCENT, borderRadius: 1 }", "{ backgroundColor: ACCENT + '15', borderColor: ACCENT + '30' }", "{ color: active ? textOn(ACCENT) : accentInk }", "<DockedAction accent={ACCENT} />"]) {
+    assert.equal(rawAccentLines(ok).length, 0, `should not flag: ${ok}`);
+  }
+});
+
+test('the lesson plan form writes no colour by hand and nothing lifts for the keyboard', () => {
+  const formSrc = lessonPlanCode.slice(lessonPlanCode.indexOf('const form = ('), lessonPlanCode.indexOf('const side = ('));
+  assert.ok(formSrc.length > 1000, 'could not isolate the form region');
+  assert.doesNotMatch(formSrc, /#[0-9A-Fa-f]{3,8}\b/);
+  assert.doesNotMatch(formSrc, /\brgba?\(/);
+  assert.doesNotMatch(lessonPlanCode, /KeyboardAvoidingView/);
+  assert.doesNotMatch(lessonPlanCode, /accessibilityState=/);
+  assert.doesNotMatch(lessonPlanCode, /#fff\b/i, 'no literal white left (the checkbox tick is textOn)');
+});
+
+test('the lesson plan preview draws one skeleton row per section, with the review only when asked, and no name line', () => {
+  assert.match(lessonPlanCode, /const planSections = lessonPlanSections\(withPriorReview\);/);
+  assert.match(lessonPlanCode, /const withPriorReview = !wideScope\.isWide && \(\(includePriorReview && priorReviewAvailable\) \|\| priorTopicsNotes\.trim\(\)\.length > 0\);/);
+  assert.match(lessonPlanCode, /previewRows\(planSections, planSections\.length, planSections\.length\)/);
+  assert.match(lessonPlanCode, /summaryLine\(\{ minutes: DURATION_VALUES\[durationIdx\], sections: planSections\.length, level: styleLabels\[styleIdx\] \}, uiLang\)/);
+  assert.match(lessonPlanCode, /nameLine=\{false\}/);
+  // The titles are the plan's own headings: in the language the plan will be written in, not the interface's.
+  assert.match(lessonPlanCode, /const previewT = getT\(lang\);/);
+  assert.match(lessonPlanCode, /previewT\(SECTION_LABEL_KEY\[r\.type\]\)/);
+  assert.doesNotMatch(lessonPlanCode, /\bt\(SECTION_LABEL_KEY/);
+  const preview = code(read('components', 'generator', 'PaperPreview.tsx'));
+  assert.match(preview, /nameLine = true/, 'the worksheet and quiz keep the name line');
+  // Every section the preview can draw has a title in both languages.
+  const keys = ['sectionObjectives', 'sectionMaterials', 'sectionPriorReview', 'sectionIntroduction', 'sectionMainActivity', 'sectionGuidedPractice', 'sectionIndependentPractice', 'sectionClosure', 'sectionAssessment', 'sectionDifferentiation', 'sectionHomework'];
+  for (const key of keys) {
+    assert.match(lessonPlanCode, new RegExp(`'${key}'`), `the preview does not title ${key}`);
+    for (const lang of ['ar', 'en'] as const) assert.ok((translations as any)[lang][key], `${lang}.${key} is missing`);
+  }
+});
+
+test('the new generator strings exist in both languages', () => {
+  for (const key of ['genPreviewLessonPlanNote', 'genPreviewWorksheetNote', 'genPreviewHomeworkNote', 'genHomeworkBtn']) {
+    for (const lang of ['ar', 'en'] as const) assert.ok(String((translations as any)[lang][key] ?? '').trim(), `${lang}.${key} is missing`);
   }
 });

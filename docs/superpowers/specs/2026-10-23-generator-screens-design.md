@@ -96,7 +96,8 @@ summary with the Arabic count agreement `arCountPhrase` already implements, and
   over `QUIZ_TYPE_ORDER`; distribution → segmented, only on a wide scope;
   `ExamKindSwitch` stays as the tab row.
 - **Worksheet, lesson plan, activity, slides** — mapped when each is ported, by the
-  same rules; a field whose real options are not a short list stays a dropdown.
+  same rules (a numeric list of at most four short labels, such as the lesson plan's
+  four durations, is a segmented control, not a stepper); a field whose real options are not a short list stays a dropdown.
   Each port lists its mapping table in its PR.
 
 ## Verification
