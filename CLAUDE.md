@@ -743,7 +743,7 @@ sweep in your staged files.
   a bare `<Ionicons name={tool.icon}>`, or the drawing silently falls back to the
   stock glyph. A new drawing must be used or listed in `HELD` with its reason
   (`glyphs.test.ts`; it is empty today).
-- **A generator screen is built from `components/generator/` (since 2026-10-23; the
+- **A generator screen is built from `components/generator/` (since 2026-10-23;
   all five are ported: quiz, worksheet/homework, lesson plan, activity, slides).** `ToolHeader` takes the band's colour
   from its `concept`; the form is `SegmentedControl` (a list of at most four labels),
   `Stepper` (a numeric list: it moves the screen's INDEX through the real option
