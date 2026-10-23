@@ -78,6 +78,7 @@ import { gradeSubmission } from "../modules/assessment/attemptGrading.ts";
 import { attemptAudioKey, deleteAttemptAudio } from "../lib/attemptAudio.ts";
 import { inAudience } from "../modules/assessment/audience.ts";
 import { evaluationAudience } from "../lib/evaluationAudience.ts";
+import { isUniqueViolation } from "../lib/pgErrors.ts";
 
 const router = Router();
 
@@ -318,7 +319,7 @@ async function claimAttemptFor(
     // true. Thirty students press start at once, so two claiming the same
     // name can both pass that query before either inserts — and the loser
     // must be told the name is taken, not handed a second sitting.
-    if ((err as { code?: string })?.code === "23505") {
+    if (isUniqueViolation(err)) {
       res.status(409).json({
         error: "Someone has already started with this name. Ask your teacher.",
         code: "name_taken",

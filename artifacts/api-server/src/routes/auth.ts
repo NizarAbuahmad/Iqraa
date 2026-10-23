@@ -64,6 +64,7 @@ import { extensionForAvatarMime, MAX_AVATAR_DATA_URL_LENGTH } from "../lib/avata
 import { parseDataUrl } from "../lib/lessonMediaUpload.js";
 import { getUserBudgetLimitUsd } from "../lib/aiBudget.js";
 import { currentPeriodStart, readUserPeriodSpendUsd } from "../lib/aiUsageLog.js";
+import { isUniqueViolation } from "../lib/pgErrors.js";
 import { parsePushPrefsPatch, readPushPrefs } from "../modules/notifications/pushPrefs.ts";
 
 const router = Router();
@@ -560,7 +561,7 @@ router.post("/register", shedWhenHashingBusy(), registerLimiter, registerEmailLi
 
     res.status(201).json(registerResponse(address, emailSent));
   } catch (err: any) {
-    if (err.code === "23505") {
+    if (isUniqueViolation(err)) {
       res.status(409).json({ error: "An account with this email already exists", code: "email_taken" });
       return;
     }
@@ -797,7 +798,7 @@ router.post("/change-unverified-email", shedWhenHashingBusy(), changeEmailLimite
     logger.info({ userId: updated.id }, "pending signup repointed to a new email");
     res.json(changeEmailResponse(next, emailSent));
   } catch (err: any) {
-    if (err.code === "23505") {
+    if (isUniqueViolation(err)) {
       res.status(409).json({ error: "An account with this email already exists", code: "email_taken" });
       return;
     }
@@ -1568,7 +1569,7 @@ router.post("/add-email", shedWhenHashingBusy(), authMiddleware, addEmailUserLim
         : "We could not send the verification email. Try resending the code, or check the address.",
     });
   } catch (err: any) {
-    if (err.code === "23505") {
+    if (isUniqueViolation(err)) {
       res.status(409).json({ error: "An account with this email already exists", code: "email_taken" });
       return;
     }
@@ -1928,7 +1929,7 @@ router.post("/google", googleLimiter, async (req, res) => {
       },
     });
   } catch (err: any) {
-    if (err.code === "23505") {
+    if (isUniqueViolation(err)) {
       res.status(409).json({ error: "An account with this email already exists", code: "email_taken" });
       return;
     }
