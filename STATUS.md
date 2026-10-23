@@ -81,6 +81,7 @@ From session notes **(notes)**:
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
 - 2026-10-22 — Today wears the lesson's subject
+- 2026-10-22 — Grade 5 in the English corner — words glossed, recordings still to make
 - 2026-10-22 — The desktop Tools grid reads right to left in Arabic
 - 2026-10-22 — Live games: students answer from any device
 - 2026-10-22 — Status-bar icons read on the corner bands
@@ -109,7 +110,6 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-17 — Two more slide layouts: quote and photo
 - 2026-10-17 — The model chooses a deck's icons and charts
 - 2026-10-16 — Typed chemistry topics measured and 18 of 44 misroutes fixed
-- 2026-10-16 — The electron-configuration lesson was answered with periodic-trends questions; fixed
 
 ## Finding older detail, and recording new work
 
