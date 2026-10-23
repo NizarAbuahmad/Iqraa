@@ -10,6 +10,42 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Students review their answers, with maths worked steps — 2026-10-22
+
+**What changed.** A released result used to be a level and a percentage; a
+student could not see which questions they got wrong. On a **closed** exam the
+teacher now presses «اعرض الإجابات والحلول للطلبة», and each student gets
+«راجع إجاباتك والحلول» under the result in «اختباراتي»
+(`app/exam-review/[id].tsx`): every question with their answer, the correct
+one, the marks, and for maths the worked steps. On a maths exam the teacher
+first presses «جهّز خطوات الحل»; the model is given each question **and its
+key** and asked only for the steps to it (`modules/assessment/workedSteps.ts`),
+and the steps show under each question on the teacher's screen to be read
+before showing.
+
+**The gate** (`studentReviewReady`, `modules/assessment/answerReview.ts`):
+closed + results released + review on + a final (non-provisional) mark.
+Closed is what protects the key — an open exam is still being sat and retakes
+run only while it is open — so turning the review on needs a closed exam and
+re-publishing turns it off. Answers leave as display text, never the raw
+`expectedAnswer`.
+
+**Schema:** `evaluations.show_solutions_to_student`,
+`evaluation_questions.worked_steps` (migration 0011, additive).
+
+**Verified:** API suite 2,139/2,139; `answerReview.db.test.ts` (5, real
+Postgres over HTTP: hidden while open, before release, after hiding, from
+other students and parents, and after re-publish) plus 45 neighbouring DB
+tests; mobile suite green except the CRLF-only `TopicSelector` source check;
+teacher screen, «اختباراتي» and the review screen rendered from the worktree.
+
+**Not verified / not covered:** live step generation against a real model
+(local AI was off); the steps are unchecked by design — the teacher reads
+them. Parents («نتائج أبنائي»), link-only students (`/take`) and editing a
+single step are not built.
+
+---
+
 
 ## A vowelled unit title gets its icon and photo, 2026-10-23
 
