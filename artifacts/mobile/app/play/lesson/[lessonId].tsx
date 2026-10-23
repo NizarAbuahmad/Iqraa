@@ -33,7 +33,7 @@ import {
 const META: Record<LessonGame, { icon: keyof typeof Ionicons.glyphMap; color: string; titleKey: TranslationKey; descKey: TranslationKey }> = {
   memory: { icon: 'apps-outline', color: '#0369A1', titleKey: 'lessonGameMemoryTitle', descKey: 'lessonGameMemoryDesc' },
   scramble: { icon: 'shuffle-outline', color: '#7C3AED', titleKey: 'lessonGameScrambleTitle', descKey: 'lessonGameScrambleDesc' },
-  spot: { icon: 'search-outline', color: '#B45309', titleKey: 'lessonGameSpotTitle', descKey: 'lessonGameSpotDesc' },
+  spot: { icon: 'search-outline', color: '#831843', titleKey: 'lessonGameSpotTitle', descKey: 'lessonGameSpotDesc' },
 };
 
 export default function LessonGamesScreen() {
