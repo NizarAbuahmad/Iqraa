@@ -113,6 +113,19 @@ describe("studentExamRow", () => {
     });
   });
 
+  it("offers the answer review only on a closed, released exam the teacher opened it on", () => {
+    const sat = { status: "graded", startedAt: NOW, submittedAt: NOW };
+    const shown = { status: "closed", releaseResultsToStudent: true, showSolutionsToStudent: true } as const;
+    assert.equal(rowOf(exam(shown), sat, RESULT, NOW).review, true);
+    assert.equal(rowOf(exam({ ...shown, status: "published" }), sat, RESULT, NOW).review, false, "still being sat");
+    assert.equal(rowOf(exam({ ...shown, releaseResultsToStudent: false }), sat, RESULT, NOW).review, false);
+    assert.equal(rowOf(exam({ ...shown, showSolutionsToStudent: false }), sat, RESULT, NOW).review, false);
+    assert.equal(rowOf(exam({ ...shown, paper: true }), sat, RESULT, NOW).review, false, "a paper exam has no questions");
+    assert.equal(rowOf(exam(shown), sat, { ...RESULT, isProvisional: true }, NOW).review, false);
+    assert.equal(rowOf(exam(shown), null, null, NOW).review, false, "never sat");
+    assert.equal(guardianExamRow(rowOf(exam(shown), sat, RESULT, NOW)).review, false, "the review route is the student's");
+  });
+
   it("never hands out the link of a closed exam", () => {
     const row = rowOf(exam({ status: "closed", closedAt: NOW }), null, null, NOW);
     assert.equal(row.state, "closed");

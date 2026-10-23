@@ -175,6 +175,13 @@ export const evaluations = pgTable(
     examTime: text("exam_time"),
     shuffleQuestions: boolean("shuffle_questions").notNull().default(false),
     releaseResultsToStudent: boolean("release_results_to_student").notNull().default(false),
+    /**
+     * The teacher let students review this exam's answers: each question with
+     * their answer, the correct one and, where prepared, `workedSteps`. Only on
+     * a closed exam (`solutionsDecision`), cleared when it is re-published, and
+     * read together with `releaseResultsToStudent` (`studentReviewReady`).
+     */
+    showSolutionsToStudent: boolean("show_solutions_to_student").notNull().default(false),
 
     /** Denormalized sum of question marks; recomputed on every question write. */
     totalMarks: numeric("total_marks", { precision: 6, scale: 2 }).notNull().default("0"),
@@ -240,6 +247,12 @@ export const evaluationQuestions = pgTable(
      * contradicts is dropped before a teacher ever sees the question.
      */
     verification: jsonb("verification").$type<Record<string, unknown> | null>(),
+    /**
+     * How to reach the key, step by step, for the students' review — written by
+     * the model on the teacher's request (`POST /evaluations/:id/worked-steps`),
+     * ending at the key it was given. Unchecked: the teacher reads it first.
+     */
+    workedSteps: jsonb("worked_steps").$type<string[] | null>(),
 
     /** Soft delete: a published evaluation's questions may be referenced by attempts. */
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
