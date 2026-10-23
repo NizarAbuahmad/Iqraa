@@ -10,6 +10,26 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat app-help, nineteenth live pass: 18 more wordings for answers that already existed — 2026-10-23
+
+A 30-question pass on app.iqrra.com found 18 questions answered by the model for which the app
+already had a written answer (`howExamSubmissions`, `howCloseExam`, `howExamTime`,
+`howOpenGrading`, `howLinkParent`, `howExportMarks`, `howSaveSlides`, `howExamDate`,
+`howSupportGroups`, `howOffline`, `howLabAbout`, `howQuestionImage`, `howPlanLanguage`,
+`howUploadFile`, `howAiUsage`, `howArchiveClass`, `howShareGame`, `howBookDownload`): the
+matcher did not recognise the teacher's wording. Two were worse than a miss: «أصدّر علامات الصف
+إلى إكسل» got the generic «تصدير: PDF أو Word» (`faqA4`) although the app has no Excel export
+and `howExportMarks` says so, and «أطبع الشرائح كملف PDF» got the same generic text. No new
+answer strings: only wordings added to existing rule ids in `appHelp.ts`, pinned in
+`appHelp.test.ts` with near-misses that stay with the model.
+
+**Judgement calls.** «أفتح كتاب الطالب داخل التطبيق» maps to `howBookDownload`, which says the
+book is downloaded from the curriculum card; I did not verify that no in-app reader exists.
+«أترجم ورقة العمل إلى الإنجليزية» maps to `howPlanLanguage` (materials follow the app language).
+**Deliberately left to the model:** class average across a whole subject (the app has it per
+exam only), copying an old exam within a class (`howCopyExam` answers a different question),
+the book-source question and the ready-made-homework question (neither looked into).
+
 ## The lesson-prep panel says why a generation failed — 2026-10-23
 
 A teacher on the web app opened a Grade 1 lesson, tapped «حضّر خطة الدرس» and got
