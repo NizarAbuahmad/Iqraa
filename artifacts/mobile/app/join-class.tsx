@@ -26,6 +26,7 @@ import { useJoinCodeLookup } from '@/hooks/useJoinCodeLookup';
 import { RosterCodeClaimForm } from '@/components/RosterCodeClaimForm';
 import { RosterError, claimRosterCode } from '@/services/roster';
 import { claimErrorKey } from '@/services/claimCodeGate';
+import { joinClassCopyKeys } from '@/services/joinClassCopy';
 import { goBack } from '@/services/navigation';
 import { askForPushPermission, pushAskCopy } from '@/services/pushTokens';
 import { BackButton } from '@/components/ui/BackButton';
@@ -35,6 +36,9 @@ export default function JoinClassScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL } = useLanguage();
   const { user, markRosterClaimed } = useAuth();
+  // A student's first class reads differently from "another class"; the success
+  // screen below has its own words either way.
+  const copy = joinClassCopyKeys(user);
 
   const { code, setCode, roster, className, studentId, setStudentId, state, canSubmit: canSubmitCode, needsConfirm, confirmed, setConfirmed, pickedName } = useJoinCodeLookup();
   const [submitting, setSubmitting] = useState(false);
@@ -96,7 +100,7 @@ export default function JoinClassScreen() {
       >
         <BackButton color={colors.foreground} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
-          {t('joinAnotherClass')}
+          {t(copy.title)}
         </Text>
       </View>
 
@@ -105,7 +109,7 @@ export default function JoinClassScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <Text style={[styles.desc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
-          {t('joinAnotherClassDesc')}
+          {t(copy.desc)}
         </Text>
 
         <RosterCodeClaimForm

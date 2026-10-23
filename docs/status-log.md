@@ -38,7 +38,11 @@ something every student has on day one.
 - **Wording:** privacy §5, terms §1 and the header comment in `constants/legal.ts`, `LEGAL_VERSION`
   2026-10-23 (everyone is asked to accept again). The teacher-shared claim message said the code is
   asked "after verifying your email", false since 2026-10-10; it now says no email is needed.
-  The in-app help `howStudentSignIn` mentions the email option.
+  The in-app help `howStudentSignIn` mentions the email option. `/join-class` told a student with no
+  class to "join another class… another child" (`joinClassCopyKeys`, `services/joinClassCopy.ts`): it
+  now says «الانضمام إلى شعبة» with a first-class sentence for a student with `hasRosterLink === false`,
+  and keeps the old wording for everyone else. The `lib/features.ts` comment on `STUDENT_ACCOUNTS`
+  names both student paths.
 
 **Verified.** `pnpm run typecheck`; api-server `pnpm build && pnpm test` (2202 pass); mobile
 `pnpm test` (7019 tests, 7009 pass, 10 skipped, 0 fail — the first run had 3 failures that were mine:
@@ -60,16 +64,22 @@ email student has `hasRosterLink:false` and `/student/exams|grades|homework|sche
 from the teacher (old code dead, new one signs in), and once the email is verified the same call is
 refused (409).
 
-**Not verified.** The browser run used a bundle built before the last English wording fix and the
-`NoClassPrompt` extraction (same behaviour, older strings: it still said «class code» and
-«guardian»), and only in English, LTR, on web — the Arabic/RTL layout, Android, the Google button
-(no client id locally) and finishing `/join-class` in the browser (the `/auth/claim` call itself was
-checked by `curl`) were not exercised. The Arabic strings were reviewed once and aligned to «شعبة» /
-«رمز الربط». Not a lawyer's review (the legal text is drafted, not reviewed).
+A second pass on a rebuilt bundle, in **English and in Arabic (RTL)**, with a fresh classless student
+each time: the register screen (both paths), sign-in → `/setup-grade` → Skip → library → School tab
+prompt → the first-class `/join-class` wording → typing a teacher's per-student link code → «تم الانضمام
+إلى الشعبة بنجاح» / "You have joined the class" → the School tab no longer shows the prompt and shows
+the ordinary homework and exams view. The Arabic screenshots read right to left (picker, note, both
+checkboxes, form).
+
+**Not verified.** Android and iOS devices; the Google button (no client id locally); joining with a
+*class* code and picking a name from the list in the browser (a per-student code was used; the
+class-code claim was checked by `curl`); a parent through the unchanged code path in the browser. The
+Arabic strings were reviewed once and aligned to «شعبة» / «رمز الربط», not by a second native reader.
+Not a lawyer's review (the legal text is drafted, not reviewed).
 
 **Known limits.** The teacher → student role switch (`POST /auth/role`) does not ask for the age
 confirmation. `/auth/redeem` and `/auth/code-login` still have no committed handler tests. The store
-declaration comment in `lib/features.ts` still describes accounts made only through a class.
+declaration itself (outside the repo) still needs to say students can sign up with an email.
 
 ## Chat app-help, nineteenth live pass: 18 more wordings for answers that already existed — 2026-10-23
 
