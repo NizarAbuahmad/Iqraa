@@ -84,6 +84,7 @@ import { LibraryPickerSheet } from '@/components/classes/LibraryPickerSheet';
 import { LabPickerSheet } from '@/components/classes/LabPickerSheet';
 import { SupportGroupsSection } from '@/components/classes/SupportGroupsSection';
 import { HomeworkTab } from '@/components/classes/HomeworkTab';
+import { MathPracticeSheet } from '@/components/classes/MathPracticeSheet';
 import { SPACE } from '@/constants/theme';
 import type { SupportGroup } from '@/services/supportGroups';
 import {
@@ -167,6 +168,7 @@ export default function ClassDetailScreen() {
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
   const [showJoinCode, setShowJoinCode] = useState(false);
+  const [showPractice, setShowPractice] = useState(false);
   const [mintingCode, setMintingCode] = useState(false);
   const [toast, setToast] = useState('');
   const [showEdit, setShowEdit] = useState(false);
@@ -895,6 +897,20 @@ export default function ClassDetailScreen() {
               )}
               {students.length > 0 && (
                 <ParentContactSection summary={contactSummary} subjectIds={subjectIds} colors={colors} isRTL={isRTL} align={align} lang={lang} t={t} />
+              )}
+              {studentAccounts && students.length > 0 && subjectIds.includes('mathematics') && (
+                <Pressable
+                  onPress={() => setShowPractice(true)}
+                  accessibilityRole="button"
+                  style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, gap: 10, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center' }]}
+                >
+                  <Ionicons name="calculator-outline" size={20} color={ACCENT} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>{t('mathPracticeTitle')}</Text>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>{t('mathPracticeHint')}</Text>
+                  </View>
+                  <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.mutedForeground} />
+                </Pressable>
               )}
               {students.length > 1 && (
                 <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
@@ -1715,6 +1731,8 @@ export default function ClassDetailScreen() {
           setShowLibrary(false);
         }}
       />
+
+      <MathPracticeSheet classId={showPractice && id ? String(id) : null} onClose={() => setShowPractice(false)} />
 
       <LabPickerSheet
         visible={showLab}
