@@ -25,7 +25,58 @@ import {
   type SignupRole, type StudentSignupMethod,
 } from '@/services/signupMethod';
 import { Ionicons } from '@expo/vector-icons';
+import { ICON } from '@/constants/icons';
 import { BackButton } from '@/components/ui/BackButton';
+
+/**
+ * One tick-box row: the terms, and a student's age confirmation. They were two
+ * copies of the same markup, and when the terms row was restyled (a framed
+ * panel and a dark outline, because `colors.border` is near-white on the card)
+ * the copy kept the old look and its leftover `borderWidth` drew a black frame.
+ * One component keeps them the same.
+ */
+function CheckRow({ checked, onPress, isRTL, colors, children }: {
+  checked: boolean;
+  onPress: () => void;
+  isRTL: boolean;
+  colors: ReturnType<typeof useColors>;
+  children: React.ReactNode;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      // The row is a framed panel and the unticked box has a dark outline:
+      // `colors.border` is near-white on the card, so the box read as empty
+      // space and the line beside it as a caption, not something to tick.
+      style={[
+        styles.termsRow,
+        {
+          flexDirection: isRTL ? 'row-reverse' : 'row',
+          backgroundColor: checked ? colors.primary + '14' : colors.input,
+          borderColor: checked ? colors.primary : colors.mutedForeground,
+          borderRadius: colors.radius,
+        },
+      ]}
+      accessibilityRole="checkbox"
+      // react-native-web 0.21 drops `accessibilityState`; only `aria-*`
+      // reaches the DOM, so a screen reader heard an unticked box.
+      aria-checked={checked}
+    >
+      <View style={[
+        styles.checkbox,
+        {
+          borderColor: checked ? colors.primary : colors.mutedForeground,
+          backgroundColor: checked ? colors.primary : colors.card,
+        },
+      ]}>
+        {checked && <Ionicons name="checkmark" size={ICON.lg} color={colors.primaryForeground} />}
+      </View>
+      <Text style={[styles.terms, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', flex: 1 }]}>
+        {children}
+      </Text>
+    </Pressable>
+  );
+}
 
 export default function RegisterScreen() {
   const colors = useColors();
@@ -262,58 +313,24 @@ export default function RegisterScreen() {
           {/* Above both ways to sign up, because it governs both. It used to sit
               under «إنشاء حساب» and gate the password form only, so «متابعة
               عبر Google» created accounts nobody had asked to accept anything. */}
-          <Pressable
-            onPress={() => setTermsAccepted(v => !v)}
-            style={[styles.termsRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-            accessibilityRole="checkbox"
-            // react-native-web 0.21 drops `accessibilityState`; only `aria-*`
-            // reaches the DOM, so a screen reader heard an unticked box.
-            aria-checked={termsAccepted}
-          >
-            <View style={[
-              styles.checkbox,
-              {
-                borderColor: termsAccepted ? colors.primary : colors.border,
-                backgroundColor: termsAccepted ? colors.primary : 'transparent',
-              },
-            ]}>
-              {termsAccepted && <Ionicons name="checkmark" size={14} color="#fff" />}
-            </View>
-            <Text style={[styles.terms, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', flex: 1 }]}>
-              {lang === 'ar' ? 'أوافق على ' : 'I agree to the '}
-              {/* Underlined: the two links fill most of the sentence, and
-                  tapping one opened the policy when the tap was meant to tick
-                  the box. Only «أوافق على» and the box itself toggle. */}
-              <Text style={{ color: colors.primary, textDecorationLine: 'underline' }} accessibilityRole="link" onPress={() => router.push('/legal/terms')}>
-                {t('termsOfService')}
-              </Text>
-              {lang === 'ar' ? ' و' : ' and '}
-              <Text style={{ color: colors.primary, textDecorationLine: 'underline' }} accessibilityRole="link" onPress={() => router.push('/legal/privacy')}>
-                {t('privacyPolicy')}
-              </Text>
+          <CheckRow checked={termsAccepted} onPress={() => setTermsAccepted(v => !v)} isRTL={isRTL} colors={colors}>
+            {lang === 'ar' ? 'أوافق على ' : 'I agree to the '}
+            {/* Underlined: the two links fill most of the sentence, and
+                tapping one opened the policy when the tap was meant to tick
+                the box. Only «أوافق على» and the box itself toggle. */}
+            <Text style={{ color: colors.primary, textDecorationLine: 'underline' }} accessibilityRole="link" onPress={() => router.push('/legal/terms')}>
+              {t('termsOfService')}
             </Text>
-          </Pressable>
+            {lang === 'ar' ? ' و' : ' and '}
+            <Text style={{ color: colors.primary, textDecorationLine: 'underline' }} accessibilityRole="link" onPress={() => router.push('/legal/privacy')}>
+              {t('privacyPolicy')}
+            </Text>
+          </CheckRow>
 
           {askAge ? (
-            <Pressable
-              onPress={() => setAgeConfirmed(v => !v)}
-              style={[styles.termsRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-              accessibilityRole="checkbox"
-              aria-checked={ageConfirmed}
-            >
-              <View style={[
-                styles.checkbox,
-                {
-                  borderColor: ageConfirmed ? colors.primary : colors.border,
-                  backgroundColor: ageConfirmed ? colors.primary : 'transparent',
-                },
-              ]}>
-                {ageConfirmed && <Ionicons name="checkmark" size={14} color={colors.primaryForeground} />}
-              </View>
-              <Text style={[styles.terms, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', flex: 1 }]}>
-                {t('ageConfirmLabel')}
-              </Text>
-            </Pressable>
+            <CheckRow checked={ageConfirmed} onPress={() => setAgeConfirmed(v => !v)} isRTL={isRTL} colors={colors}>
+              {t('ageConfirmLabel')}
+            </CheckRow>
           ) : null}
 
           {form === 'choose' ? null : codeSignup ? (
@@ -485,7 +502,7 @@ const styles = StyleSheet.create({
   googleLoadingText: { fontSize: 13, lineHeight: 21, textAlign: 'center', marginTop: -6 },
   nameRow: { flexDirection: 'row', gap: 12 },
   nameField: { flex: 1 },
-  termsRow: { alignItems: 'flex-start', gap: 10 },
-  checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
-  terms: { fontSize: 11, lineHeight: 17 },
+  termsRow: { alignItems: 'center', gap: 12, borderWidth: 1, paddingVertical: 12, paddingHorizontal: 14, minHeight: 48 },
+  checkbox: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  terms: { fontSize: 13, lineHeight: 20 },
 });
