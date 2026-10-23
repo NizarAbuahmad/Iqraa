@@ -743,3 +743,24 @@ sweep in your staged files.
   a bare `<Ionicons name={tool.icon}>`, or the drawing silently falls back to the
   stock glyph. A new drawing must be used or listed in `HELD` with its reason
   (`glyphs.test.ts`; it is empty today).
+- **A generator screen is built from `components/generator/` (since 2026-10-23; the
+  quiz is the first, the other four follow).** `ToolHeader` takes the band's colour
+  from its `concept`; the form is `SegmentedControl` (a list of at most four labels),
+  `Stepper` (a numeric list: it moves the screen's INDEX through the real option
+  array, never a number), `ChipGroup` (multi-select), one `LessonCard` wrapping the
+  existing grade/subject pickers and `TopicSelector`, and a `DockedAction` (docked
+  on a phone, under `PaperPreview` on desktop via `GeneratorLayout`). Summary text
+  comes from `services/generatorSummary.ts`. Traps: the card's body is hidden with
+  `display: 'none'`, never unmounted, because `TopicSelector` holds the unit /
+  semester / book selection that drives `useWideScope`; the screen's state names and
+  persisted index positions do not change; a stepper over a new array must keep the
+  array's order (append, never insert); text or a ring in the tool's colour on a card
+  is `readableOn(ACCENT, colors.card)` (the raw concept colour sinks on the dark
+  card), a solid fill takes `textOn`. **Pinned by `generatorScreens.test.ts`:** the
+  quiz's invariants (state names, option arrays, `TopicSelector` inside the card and
+  never conditional, no `PickerField` for a short list, validation, no `palette`, no
+  hand-written hex in the shared pieces, 44-point targets, `aria-*` state), and white
+  text at 4.5:1 on every concept band. **Only convention:** which list becomes which
+  control on a screen not yet ported (a field whose real options are not a short list
+  stays a dropdown), and how it looks (check it in `pnpm run dev:mobile:web`, phone
+  and desktop, light and dark, RTL).

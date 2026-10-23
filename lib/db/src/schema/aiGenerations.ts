@@ -65,6 +65,11 @@ export const aiGenerations = pgTable(
     /** Wall time of the model call. Null for cache hits and for callers that
      *  don't time the call — the admin dashboard's p50/p95 skip nulls. */
     durationMs: integer("duration_ms"),
+    /** 'android' | 'ios' | 'web' from the request's X-Iqraa-Platform header;
+     *  null for rows written before this column existed, and for calls with
+     *  no client (cron, scripts). Not backfilled: a user's signup platform is
+     *  not where they used it. */
+    platform: text("platform"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [
