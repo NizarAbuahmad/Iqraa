@@ -40,9 +40,18 @@ something every student has on day one.
   asked "after verifying your email", false since 2026-10-10; it now says no email is needed.
   The in-app help `howStudentSignIn` mentions the email option.
 
-**Verified.** `pnpm run typecheck`; api-server `pnpm build && pnpm test` (2202 pass); the new unit
-tests (`ageConfirmation`, `loginCodeReissue`, `signupMethod`, the changed `routeGating` and
-`claimCodeMessage` cases). Against the built API on a throwaway local Postgres with
+**Verified.** `pnpm run typecheck`; api-server `pnpm build && pnpm test` (2202 pass); mobile
+`pnpm test` (7019 tests, 7009 pass, 10 skipped, 0 fail — the first run had 3 failures that were mine:
+`i18nTerminology` refuses «class code» and «guardian» in English, and `emptyState.test.ts` counts
+exactly two `EmptyState` in `school.tsx`, so the no-class card is its own component,
+`components/NoClassPrompt.tsx`); the new unit tests (`ageConfirmation`, `loginCodeReissue`,
+`signupMethod`, the changed `routeGating` and `claimCodeMessage` cases). In Chromium (430px, English)
+against the built web bundle and the local API: «طالب» shows the method picker and nothing else until
+a choice is made; «برمز المعلم» shows one code input and no password; «ببريد إلكتروني» shows five inputs
+(two passwords), the note and the age box; submit goes nowhere with nothing ticked or with the terms
+only, and reaches `/verify-email` with both; after verifying, sign-in lands on `/setup-grade`, not
+`/claim-required`; Skip leads to the library, the School tab shows «لم تنضم إلى شعبة بعد» with a
+«Join a class» button, which opens `/join-class`. Against the built API on a throwaway local Postgres with
 `STUDENT_ACCOUNTS=true`, all 16 migrations applied from empty, and by `curl`: a student without
 `ageConfirmed` gets 400, with it 201 and `guardian_confirmed_at` set, a teacher needs none; a verified
 email student has `hasRosterLink:false` and `/student/exams|grades|homework|schedule` and
@@ -51,10 +60,12 @@ email student has `hasRosterLink:false` and `/student/exams|grades|homework|sche
 from the teacher (old code dead, new one signs in), and once the email is verified the same call is
 refused (409).
 
-**Not verified.** The register screen and the school tab in a browser (the web build was still
-running when this was written); the full mobile suite's result is in the PR. The Arabic strings were
-reviewed once and aligned to «شعبة» / «رمز الربط». Not a lawyer's review (the legal text is drafted,
-not reviewed).
+**Not verified.** The browser run used a bundle built before the last English wording fix and the
+`NoClassPrompt` extraction (same behaviour, older strings: it still said «class code» and
+«guardian»), and only in English, LTR, on web — the Arabic/RTL layout, Android, the Google button
+(no client id locally) and finishing `/join-class` in the browser (the `/auth/claim` call itself was
+checked by `curl`) were not exercised. The Arabic strings were reviewed once and aligned to «شعبة» /
+«رمز الربط». Not a lawyer's review (the legal text is drafted, not reviewed).
 
 **Known limits.** The teacher → student role switch (`POST /auth/role`) does not ask for the age
 confirmation. `/auth/redeem` and `/auth/code-login` still have no committed handler tests. The store

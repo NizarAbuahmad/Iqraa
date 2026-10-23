@@ -71,6 +71,7 @@ import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { NoClassPrompt } from '@/components/NoClassPrompt';
 import { Celebrate } from '@/components/ui/Celebrate';
 import { justCompleted } from '@/services/celebration';
 
@@ -248,12 +249,7 @@ export default function SchoolScreen() {
             {t('tabSchool')}
           </Text>
         </View>
-        <EmptyState
-          icon="school-outline"
-          title={t('schoolNoClassTitle')}
-          body={t('schoolNoClassDesc')}
-          action={{ label: t('joinAClass'), onPress: () => router.push('/join-class') }}
-        />
+        <NoClassPrompt />
       </View>
     );
   }
