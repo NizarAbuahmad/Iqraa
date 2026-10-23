@@ -19,7 +19,8 @@ import {
   yesNoExchange,
 } from '../englishHub/games.ts';
 
-const UNITS = grammarUnitsForGrade(9).map(u => ({ id: u.lessonId, sentences: unitSentences(u) }));
+// The pilot's two lessons; the thirteen authored lessons are in englishGrammarG9ItemGames.test.ts.
+const UNITS = grammarUnitsForGrade(9).filter(u => /-u4_l[13]$/.test(u.lessonId)).map(u => ({ id: u.lessonId, sentences: unitSentences(u) }));
 const COMPARE = 'kbl-g9-eng-s1-nccd-u4_l1';
 const QUANT = 'kbl-g9-eng-s1-nccd-u4_l3';
 const SEEDS = [1, 2, 3, 4, 5, 6];

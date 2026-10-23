@@ -93,6 +93,7 @@ From session notes **(notes)**:
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
 - 2026-10-23 — Neon leaves the Free plan before launch
+- 2026-10-23 — Grade 9 grammar, thirteen lessons in the English corner — built, shown to nobody yet
 - 2026-10-23 — Iqraa draws its own icons
 - 2026-10-23 — Grade 9 grammar pilot (Unit 4) in the English corner — built, shown to nobody yet
 - 2026-10-23 — Icons follow one system
@@ -121,7 +122,6 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-19 — Load test: the exam path holds, the sign-up rush does not
 - 2026-10-18 — One question-type order, one set of repeat-rule inputs
 - 2026-10-18 — One card for quizzes and evaluations
-- 2026-10-18 — Revision decks carry the book's own pictures and all its key terms
 
 ## Finding older detail, and recording new work
 
