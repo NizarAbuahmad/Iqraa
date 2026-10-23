@@ -73,6 +73,9 @@ async function boot(enforce: "on" | "off"): Promise<Server> {
       OPENAI_API_KEY: "sk-test-placeholder",
       SITE_INGEST_KEY: SITE_KEY,
       RLS_ENFORCE: enforce,
+      // The held-scope test reads the middleware's debug line. Nothing else compares log
+      // lines except the error-level filter in the write comparison, which debug lines miss.
+      LOG_LEVEL: "debug",
       STUDENT_ACCOUNTS: "true", // parent and student routes answer 403 without it
       MASTERY_GATE: "true", // the student retake route answers 403 without it
       NODE_OPTIONS: `--import ${stub}`,
@@ -203,6 +206,31 @@ describe("turning row-level security on changes nothing a user can see or cause"
     }
     assert.ok(compared > 50, `only compared ${compared} requests`);
     assert.deepEqual(differences, [], `\n${differences.join("\n")}\n`);
+  });
+
+  test("the inbox read really takes the held path with enforcement on, and never with it off", async () => {
+    // The answers above are identical whether or not holdScopedConnection did anything, so a
+    // wiring regression (wrong identity function, swapped dependency) would stay green there.
+    // The middleware logs one debug line per held request: "held scope ended", then its fields
+    // (route, statements, heldMs) on indented lines. Only /messaging/threads is allow-listed.
+    const strip = (l: string) => l.replace(/\u001b\[[0-9;]*m/g, "");
+    const heldEntries = (server: Server) => {
+      const lines = server.logs.map(strip);
+      return lines.flatMap((l, n) => (l.includes("held scope ended") ? [lines.slice(n, n + 4).join("\n")] : []));
+    };
+    for (let waited = 0; heldEntries(on).length === 0 && waited < 3000; waited += 100) await new Promise(r => setTimeout(r, 100));
+
+    const held = heldEntries(on);
+    assert.ok(held.length > 0, "no 'held scope ended' line from the enforcing server: /messaging/threads did not take the held path");
+    assert.ok(
+      held.some(e => /route:\s*"?GET \/api\/messaging\/threads"?/.test(e) && Number(/statements:\s*(\d+)/.exec(e)?.[1]) >= 1),
+      `no held scope for GET /api/messaging/threads ran a statement:\n${held.slice(0, 3).join("\n---\n")}`,
+    );
+    assert.ok(
+      held.every(e => /route:\s*"?GET \/api\/messaging\/threads"?/.test(e)),
+      `a route other than the allow-listed inbox held a scope:\n${held.filter(e => !/route:\s*"?GET \/api\/messaging\/threads"?/.test(e)).slice(0, 3).join("\n---\n")}`,
+    );
+    assert.deepEqual(heldEntries(off), [], "the server with enforcement off must not hold a scope");
   });
 
   // ── Writes and side effects ───────────────────────────────────────────────
