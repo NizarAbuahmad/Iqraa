@@ -25,6 +25,8 @@ import { arCountPhrase } from '@/services/arCount';
 // extracted to stop — a card in موادي and the material it opens must not
 // disagree about what colour an activity is.
 import { MATERIAL_COLOR, MATERIAL_EDIT_ROUTE, MATERIAL_FILL } from '@/constants/materialKind';
+import { FLOW_STEP, flowStepColor } from '@/constants/lessonFlowSteps';
+import { readableOn } from '@/services/readableColor';
 import { materialSubjectId } from '@/services/contentLanguage';
 import { redoesInEnglish } from '@/hooks/useEnglishRefresh';
 import { usePrintStyle } from '@/hooks/usePrintStyle';
@@ -779,6 +781,12 @@ function QuizView({ quiz, colors, isRTL, t, accent, lang }: {
 
 const FLOW_TEAL = palette.primary;
 const FLOW_NAVY = '#081B3A';
+// The steps' icons and colours: constants/lessonFlowSteps.ts, shared with the builder (ai-tools/lesson-flow.tsx).
+const WARMUP = flowStepColor('warmup', FLOW_NAVY);
+const ACTIVITY = flowStepColor('activity', FLOW_NAVY);
+const GUIDED = flowStepColor('guided', FLOW_NAVY);
+const WORKSHEET = flowStepColor('worksheet', FLOW_NAVY);
+const EXIT_TICKET = flowStepColor('exitTicket', FLOW_NAVY);
 
 /** Plain-text outline of a saved deck — what share/copy hands over. */
 function formatDeckOutline(deck: ClassroomActivity, isAr: boolean): string {
@@ -864,7 +872,7 @@ function FlowView({ flow, colors, isRTL, lang, accent, revision }: {
   }> = [
     {
       label: lang === 'ar' ? 'الأهداف التعليمية' : 'Learning Objectives',
-      icon: 'flag-outline', color: FLOW_NAVY,
+      icon: FLOW_STEP.objectives.icon, color: FLOW_NAVY,
       render: () => (
         <View style={{ gap: 6 }}>
           {flow.objectives.map((obj, i) => (
@@ -878,13 +886,13 @@ function FlowView({ flow, colors, isRTL, lang, accent, revision }: {
     },
     {
       label: lang === 'ar' ? 'النشاط التمهيدي' : 'Warm-up Activity',
-      icon: 'flame-outline', color: '#C2410C',
+      icon: FLOW_STEP.warmup.icon, color: WARMUP,
       render: () => (
         <View style={{ gap: 6 }}>
           <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, marginBottom: 4, textAlign: isRTL ? 'right' : 'left' }}>{flow.warmup.title}</Text>
           {flow.warmup.steps.map((s, i) => (
             <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start', backgroundColor: colors.muted, borderRadius: 8, padding: 10 }]}>
-              <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#C2410C', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: WARMUP, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
               <View style={{ flex: 1 }}>
@@ -898,13 +906,13 @@ function FlowView({ flow, colors, isRTL, lang, accent, revision }: {
     },
     {
       label: lang === 'ar' ? 'النشاط التفاعلي' : 'Interactive Activity',
-      icon: 'flash-outline', color: '#4F46E5',
+      icon: FLOW_STEP.activity.icon, color: ACTIVITY,
       render: () => (
         <View style={{ gap: 6 }}>
           <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, marginBottom: 4, textAlign: isRTL ? 'right' : 'left' }}>{flow.activity.title}</Text>
           {flow.activity.steps.map((s, i) => (
             <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start', backgroundColor: colors.muted, borderRadius: 8, padding: 10 }]}>
-              <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#4F46E5', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: ACTIVITY, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
               <View style={{ flex: 1 }}>
@@ -918,21 +926,21 @@ function FlowView({ flow, colors, isRTL, lang, accent, revision }: {
     },
     {
       label: lang === 'ar' ? 'التدريب الموجّه' : 'Guided Practice',
-      icon: 'pencil-outline', color: FLOW_TEAL,
+      icon: FLOW_STEP.guided.icon, color: GUIDED,
       render: () => (
-        <View style={{ backgroundColor: FLOW_TEAL + '10', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: FLOW_TEAL + '30' }}>
+        <View style={{ backgroundColor: GUIDED + '10', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: GUIDED + '30' }}>
           <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>{flow.guidedPractice}</Text>
         </View>
       ),
     },
     {
       label: lang === 'ar' ? 'ورقة العمل' : 'Student Worksheet',
-      icon: 'document-text-outline', color: '#6D28D9',
+      icon: FLOW_STEP.worksheet.icon, color: WORKSHEET,
       render: () => (
         <View style={{ gap: 6 }}>
           {flow.worksheet.sections.flatMap(sec => sec.questions).slice(0, 5).map((q, i) => (
             <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start', backgroundColor: colors.muted, borderRadius: 8, padding: 10 }]}>
-              <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#6D28D9', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: WORKSHEET, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
               <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left' }}>{q.text}</Text>
@@ -943,12 +951,12 @@ function FlowView({ flow, colors, isRTL, lang, accent, revision }: {
     },
     {
       label: lang === 'ar' ? (revision ? 'غلق الحصة' : 'غلق الدرس') : 'Exit Ticket',
-      icon: 'ticket-outline', color: palette.warning,
+      icon: FLOW_STEP.exitTicket.icon, color: EXIT_TICKET,
       render: () => (
         <View style={{ gap: 6 }}>
           {flow.exitTicket.questions.slice(0, 3).map((q, i) => (
             <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start', backgroundColor: colors.muted, borderRadius: 8, padding: 10 }]}>
-              <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#B54708', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: EXIT_TICKET, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
               <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left' }}>{q.text}</Text>
@@ -987,7 +995,7 @@ function ContentSection({ title, icon, isRTL, accent, colors, children }: {
   return (
     <View style={{ marginBottom: 16 }}>
       <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, marginBottom: 8 }]}>
-        <Ionicons name={icon} size={16} color={accent} />
+        <Ionicons name={icon} size={16} color={readableOn(accent, colors.background, 3)} />
         <Text style={[{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }]}>{title}</Text>
       </View>
       <View style={[{ backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, borderRadius: colors.radius, padding: 14 }]}>
