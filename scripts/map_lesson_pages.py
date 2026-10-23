@@ -98,19 +98,33 @@ def heading_bags(page: fitz.Page) -> list[Counter]:
         sp
         for block in page.get_text("dict", flags=TEXT_FLAGS)["blocks"]
         for line in block.get("lines", [])
+        if abs(line["dir"][1]) < 0.1  # a diagonal «draft copy» watermark is set at 72 pt
         for sp in line.get("spans", [])
         if sp["text"].strip()
     ]
     if not spans:
         return []
     top = max(sp["size"] for sp in spans)
-    return [bag(" ".join(sp["text"] for sp in spans if sp["size"] >= top - band)) for band in BANDS]
+    # A lesson number set in huge type («2» at 24 pt over a 19 pt title) would
+    # otherwise be the whole heading, so the title is also looked for under the
+    # largest span that holds a word.
+    words = [sp["size"] for sp in spans if len(norm(sp["text"])) >= 4]
+    tops = {top, max(words)} if words else {top}
+    return [
+        bag(" ".join(sp["text"] for sp in spans if sp["size"] >= ref - band))
+        for ref in sorted(tops, reverse=True)
+        for band in BANDS
+    ]
 
 
 def score_page(title: Counter, headings: list[Counter]) -> float:
     """The best a page's heading, at any of the bands, resembles the title."""
     best = 0.0
+    arabic_title = any("ء" <= c <= "ي" for c in title)
     for heading in headings:
+        if arabic_title:
+            # «التشفير» over «(Encryption)» in the same size is still the title
+            heading = Counter({c: n for c, n in heading.items() if not c.isascii() or c.isdigit()})
         if not heading or sum(heading.values()) > MAX_EXTRA * max(1, sum(title.values())):
             continue
         best = max(best, overlap(title, heading))
@@ -369,6 +383,20 @@ SUBJECT_KEYS = {
     "physical-education": ["pe"],
     "digital-literacy": ["digital", "digital-literacy"],
     "civic-education": ["civic"],
+    # second pass: the books that already have extracted figures but whose other
+    # lessons show nothing (grade 10 sources carry no grade prefix and short names)
+    "mathematics": ["math"],
+    "science": ["science"],
+    "social": ["social"],
+    "vocational-education": ["voc"],
+    "financial-literacy": ["finlit"],
+    "creative-arts": ["arts"],
+    "biology": ["biology", "bio"],
+    "chemistry": ["chemistry", "chem"],
+    "physics": ["physics", "phys"],
+    "earth-science": ["earth-science", "earth"],
+    "geography": ["geography", "geo"],
+    "history": ["history"],
 }
 
 
@@ -385,10 +413,12 @@ def source_for(book: dict, registry: dict) -> str | None:
     or 'islamic-s1-student-book' for grade 10. None when the extractor has no
     student book registered for it."""
     grade = book["gradeId"].split("-")[1]
+    prefix = f"g{grade}-" if grade != "10" else ""
     for key in SUBJECT_KEYS.get(book["subjectId"], []):
-        sid = (f"g{grade}-" if grade != "10" else "") + f"{key}-s{book['semester']}-student-book"
-        if sid in registry:
-            return sid
+        # an arts book is one per year, with no semester in its source id
+        for sid in (f"{prefix}{key}-s{book['semester']}-student-book", f"{prefix}{key}-student-book"):
+            if sid in registry:
+                return sid
     return None
 
 

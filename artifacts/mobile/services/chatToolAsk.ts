@@ -69,8 +69,8 @@ export function toolAskReply(kind: ToolAsk, lang: 'ar' | 'en', topic?: string | 
   switch (kind) {
     case 'game':
       return isAr
-        ? `جهّزت لك أداة الألعاب${onLesson}. اضغط الزر لفتحها واختيار نوع اللعبة:`
-        : `The game builder is ready${onLesson}. Tap to open it and pick a game:`;
+        ? `جهّزت لك تحدي الصف${onLesson}. اضغط الزر لتقسيم الصف إلى فرق وبدء اللعبة:`
+        : `Class Challenge is ready${onLesson}. Tap to split the class into teams and start:`;
     case 'slides':
       return isAr
         ? `جهّزت لك أداة العروض${onLesson}. اضغط الزر لبناء الشرائح:`

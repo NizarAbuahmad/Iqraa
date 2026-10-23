@@ -17,6 +17,8 @@
  * keys, so the two cannot disagree about what exists.
  */
 export const BOOK_FIGURE_KEYS: ReadonlySet<string> = new Set([
+  'bio-s1-student-book/p009.png',
+  'bio-s1-student-book/p010.png',
   'bio-s1-student-book/p011.png',
   'bio-s1-student-book/p012.png',
   'bio-s1-student-book/p015.png',
@@ -2596,4 +2598,4 @@ export const BOOK_FIGURE_KEYS: ReadonlySet<string> = new Set([
 ]);
 
 /** How many figures the app can reach. Asserted by the drift test. */
-export const BOOK_FIGURE_COUNT = 2576;
+export const BOOK_FIGURE_COUNT = 2578;

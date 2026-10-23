@@ -686,12 +686,12 @@ export default function TeachingPlansScreen() {
                   backgroundColor: ACCENT + '12',
                 }}
               >
-                <Ionicons name="information-circle-outline" size={20} color={ACCENT} />
+                <Ionicons name="information-circle" size={20} color={ACCENT} />
                 <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: align }}>
                   {notice}
                 </Text>
                 <Pressable onPress={() => setNotice('')} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('cancel')}>
-                  <Ionicons name="close" size={18} color={colors.mutedForeground} />
+                  <Ionicons name="close" size={20} color={colors.mutedForeground} />
                 </Pressable>
               </View>
             ) : null
@@ -778,14 +778,14 @@ export default function TeachingPlansScreen() {
                 {exportingId === item.id ? (
                   <ActivityIndicator size="small" color={ACCENT} />
                 ) : (
-                  <Ionicons name="document-text-outline" size={18} color={ACCENT} />
+                  <Ionicons name="document-text-outline" size={20} color={ACCENT} />
                 )}
               </Pressable>
               <Pressable onPress={() => { void onDelete(item); }} disabled={deletingId === item.id} hitSlop={10}>
                 {deletingId === item.id ? (
                   <ActivityIndicator size="small" color={colors.mutedForeground} />
                 ) : (
-                  <Ionicons name="trash-outline" size={18} color={colors.mutedForeground} />
+                  <Ionicons name="trash-outline" size={20} color={colors.mutedForeground} />
                 )}
               </Pressable>
               <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedForeground} />
@@ -795,7 +795,7 @@ export default function TeachingPlansScreen() {
       )}
 
       <Pressable onPress={openCreate} style={[styles.fab, { backgroundColor: ACCENT_FILL, bottom: insets.bottom + 24 }]}>
-        <Ionicons name="add" size={26} color="#fff" />
+        <Ionicons name="add" size={24} color="#fff" />
       </Pressable>
 
       <Modal visible={showForm} transparent animationType="fade" onRequestClose={() => setShowForm(false)}>
@@ -1066,7 +1066,7 @@ export default function TeachingPlansScreen() {
             </ScrollView>
             {error ? (
               <View style={[styles.modalError, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+                <Ionicons name="alert-circle" size={16} color={colors.destructive} />
                 <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 22, flex: 1, textAlign: align }}>
                   {error}
                 </Text>

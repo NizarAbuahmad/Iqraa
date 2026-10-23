@@ -81,7 +81,7 @@ function SurahRow({
       style={[styles.row, surface, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
     >
       <View style={[styles.icon, { backgroundColor: colors.secondary }]}>
-        <Ionicons name="book-outline" size={22} color={colors.primary} />
+        <Ionicons name="book-outline" size={24} color={colors.primary} />
       </View>
       <View style={{ flex: 1 }}>
         {/* The surah name is Arabic whatever the interface language. */}
@@ -93,7 +93,7 @@ function SurahRow({
           {done > 0 ? ` · ${t('quranMemorisedLabel')} ${digits(`${done} / ${surah.ayahs.length}`)}` : ''}
         </Text>
       </View>
-      <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
+      <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedForeground} />
     </PressableScale>
   );
 }
@@ -121,7 +121,7 @@ function ResourceRow({
       style={[styles.row, surface, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
     >
       <View style={[styles.icon, { backgroundColor: colors.secondary }]}>
-        <Ionicons name="open-outline" size={22} color={colors.primary} />
+        <Ionicons name="open-outline" size={24} color={colors.primary} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[styles.rowTitle, { color: colors.foreground, textAlign: align, fontFamily: 'ReadexPro_600SemiBold' }]}>

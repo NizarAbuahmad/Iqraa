@@ -9,15 +9,32 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { GameShell } from './GameShell';
 import { buildMemoryDeck, isMatch, type MemoryCard } from '@/services/publicGames/memory';
+import { shuffle } from '@/services/publicGames/rng';
+import type { TranslationKey } from '@/services/i18n';
 
 const ACCENT = '#0369A1';
 const PAIR_COUNT = 8;
+/** Term cards are wider, so fewer of them fit a phone screen. */
+const WORD_PAIR_COUNT = 6;
 
-export function MemoryGame() {
+/** Emoji by default; pass `words` (a lesson's terms) for text cards. */
+export function MemoryGame({ words, titleKey = 'playMemoryTitle', onBack, analytics, onFinished, footer }: {
+  words?: string[];
+  titleKey?: TranslationKey;
+  onBack?: () => void;
+  analytics?: Record<string, string>;
+  /** Memory's own score is moves (fewer is better), which is not a mark out of a total. A finished round reports `pairs, pairs`: it is completion, not performance. */
+  onFinished?: (score: number, total: number) => void;
+  footer?: React.ReactNode;
+} = {}) {
   const colors = useColors();
   const { t } = useLanguage();
   const [round, setRound] = useState(0);
-  const deck = useMemo(() => buildMemoryDeck(PAIR_COUNT), [round]); // eslint-disable-line react-hooks/exhaustive-deps
+  const deck = useMemo(
+    // Words: a fresh pick of the lesson's terms on every play, not the same six.
+    () => (words ? buildMemoryDeck(WORD_PAIR_COUNT, Math.random, shuffle(words)) : buildMemoryDeck(PAIR_COUNT)),
+    [round], // eslint-disable-line react-hooks/exhaustive-deps
+  );
   const [flipped, setFlipped] = useState<string[]>([]);
   const [matched, setMatched] = useState<Set<string>>(new Set());
   const [moves, setMoves] = useState(0);
@@ -58,11 +75,15 @@ export function MemoryGame() {
 
   return (
     <GameShell
-      titleKey="playMemoryTitle"
+      titleKey={titleKey}
       accent={ACCENT}
+      onBack={onBack}
+      analytics={analytics}
       scoreLabel={t('playMemoryMoves', moves)}
-      gameOver={won ? { message: `${t('playMemoryWin')} — ${t('playMemoryMoves', moves)}` } : null}
+      gameOver={won ? { message: `${t('playMemoryWin')} — ${t('playMemoryMoves', moves)}`, score: moves } : null}
       onReplay={replay}
+      onFinished={onFinished ? () => onFinished(deck.length / 2, deck.length / 2) : undefined}
+      footer={footer}
     >
       <View style={styles.grid}>
         {deck.map(card => {
@@ -73,13 +94,14 @@ export function MemoryGame() {
               onPress={() => flip(card)}
               style={[
                 styles.card,
+                words && styles.wordCard,
                 {
                   backgroundColor: isFaceUp ? colors.card : ACCENT,
                   borderColor: matched.has(card.id) ? '#16A34A' : colors.border,
                 },
               ]}
             >
-              <Text style={styles.icon}>{isFaceUp ? card.icon : ''}</Text>
+              <Text style={words ? [styles.word, { color: colors.foreground }] : styles.icon}>{isFaceUp ? card.icon : ''}</Text>
             </Pressable>
           );
         })}
@@ -94,4 +116,6 @@ const styles = StyleSheet.create({
     width: 72, height: 72, borderRadius: 12, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center',
   },
   icon: { fontSize: 30 },
+  wordCard: { width: 104, height: 80, paddingHorizontal: 6 },
+  word: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: 'center', writingDirection: 'rtl' },
 });

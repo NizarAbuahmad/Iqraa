@@ -48,5 +48,8 @@ export * from "./parentContacts";
 // Rate-limit counters, shared across instances — see lib/rateLimit.ts
 export * from "./rateLimits";
 
+// Kahoot-style live games — host on a projector, players join by code — see liveGames.ts
+export * from "./liveGames";
+
 // Admin dashboard: hand-entered growth numbers + iqrra.com signups — see adminMetrics.ts
 export * from "./adminMetrics";

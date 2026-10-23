@@ -148,7 +148,7 @@ export function ParticipantPickerSheet({
               {t('messagingPickMembers')}
             </Text>
             <Pressable onPress={onClose} hitSlop={10}>
-              <Ionicons name="close" size={22} color={colors.mutedForeground} />
+              <Ionicons name="close" size={24} color={colors.mutedForeground} />
             </Pressable>
           </View>
 

@@ -159,18 +159,18 @@ export default function OnboardingScreen() {
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={[styles.cardHead, { backgroundColor: tone + '14' }]}>
               <View style={[styles.cardIcon, { backgroundColor: tone }]}>
-                <Ionicons name={slide.icon} size={26} color={colors.card} />
+                <Ionicons name={slide.icon} size={24} color={colors.card} />
               </View>
             </View>
             {points.map((p, i) => (
               <View key={p} style={[styles.pointRow, { flexDirection: row, borderTopColor: colors.border }]}>
                 <View style={[styles.pointIcon, { backgroundColor: tone + '1A' }]}>
-                  <Ionicons name={slide.pointIcons[i] ?? 'checkmark'} size={18} color={tone} />
+                  <Ionicons name={slide.pointIcons[i] ?? 'checkmark'} size={20} color={tone} />
                 </View>
                 <Text style={[styles.pointText, { color: colors.cardForeground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left', writingDirection: dir }]}>
                   {p}
                 </Text>
-                <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+                <Ionicons name="checkmark-circle" size={20} color={colors.success} />
               </View>
             ))}
           </View>

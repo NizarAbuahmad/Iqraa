@@ -354,7 +354,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
         onPress={() => { Haptics.selectionAsync(); setShowOptions(o => !o); }}
         style={[styles.optionsToggle, { flexDirection: rowDir, alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
       >
-        <Ionicons name={showOptions ? 'chevron-up' : 'options-outline'} size={15} color={colors.mutedForeground} />
+        <Ionicons name={showOptions ? 'chevron-up' : 'options-outline'} size={16} color={colors.mutedForeground} />
         <Text style={[styles.optionsToggleText, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
           {t('prepInlineOptions')}
         </Text>
@@ -489,7 +489,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
       {result && (
         <>
           <View style={[styles.readyRow, { backgroundColor: accent + '15', borderColor: accent + '30', borderRadius: colors.radius, flexDirection: rowDir }]}>
-            <Ionicons name="checkmark-circle" size={18} color={accent} />
+            <Ionicons name="checkmark-circle" size={20} color={accent} />
             <Text style={[styles.readyText, { color: accent, fontFamily: 'ReadexPro_600SemiBold' }]}>
               {planT('lessonPlanReady')}
             </Text>
@@ -639,7 +639,7 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled
       style={[styles.checkRow, { flexDirection: isRTL ? 'row-reverse' : 'row', opacity: disabled ? 0.6 : 1 }]}
     >
       <View style={[styles.checkbox, { borderColor: checked ? accent : colors.border, backgroundColor: checked ? accent : 'transparent' }]}>
-        {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
+        {checked && <Ionicons name="checkmark" size={14} color="#fff" />}
       </View>
       <Text style={[{ color: disabled ? colors.mutedForeground : colors.foreground, fontFamily: checked ? 'ReadexPro_500Medium' : 'Almarai_400Regular', fontSize: 13, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
     </Pressable>
@@ -689,7 +689,7 @@ const styles = StyleSheet.create({
   textInput: { fontSize: 15, padding: 0, minHeight: 48 },
   checkboxGroup: { borderWidth: 1.5, padding: 12, marginTop: 10, gap: 4 },
   checkRow: { alignItems: 'center', gap: 10, paddingVertical: 4 },
-  checkbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   loadingBox: { alignItems: 'center', gap: 12, padding: 16, marginTop: 12 },
   loadingText: { fontSize: 15, lineHeight: 24 },
   error: { fontSize: 15, lineHeight: 24, marginTop: 10 },

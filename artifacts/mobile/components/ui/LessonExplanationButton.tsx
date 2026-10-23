@@ -61,7 +61,7 @@ export function LessonExplanationButton({ lessonId, accent, fill }: { lessonId: 
       {state === 'checking' ? (
         <ActivityIndicator size="small" color={colors.mutedForeground} />
       ) : (
-        <Ionicons name={disabled ? 'time-outline' : 'bulb-outline'} size={18} color={disabled ? colors.mutedForeground : '#fff'} />
+        <Ionicons name={disabled ? 'time-outline' : 'bulb-outline'} size={20} color={disabled ? colors.mutedForeground : '#fff'} />
       )}
       <Text style={[styles.text, { color: disabled ? colors.mutedForeground : '#fff', fontFamily: 'ReadexPro_600SemiBold' }]}>
         {state === 'soon' ? t('lessonExplainSoon') : t('lessonExplainButton')}

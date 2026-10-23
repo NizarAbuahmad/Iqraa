@@ -233,7 +233,7 @@ export function DocumentAttachmentBar({
             ]}
             accessibilityLabel={t('docUpload')}
           >
-            <Ionicons name="attach-outline" size={18} color={colors.primary} />
+            <Ionicons name="attach-outline" size={20} color={colors.primary} />
           </Pressable>
           <Pressable
             onPress={handlePickImages}
@@ -244,7 +244,7 @@ export function DocumentAttachmentBar({
             ]}
             accessibilityLabel={t('docUploadImage')}
           >
-            <Ionicons name="image-outline" size={18} color={colors.primary} />
+            <Ionicons name="image-outline" size={20} color={colors.primary} />
           </Pressable>
         </View>
       ) : null}

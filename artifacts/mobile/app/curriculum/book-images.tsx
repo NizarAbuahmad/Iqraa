@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
+import { useLightStatusBar } from '@/hooks/useLightStatusBar';
 import { useLanguage } from '@/context/LanguageContext';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { getSubjectsForGrade, getVisibleGrades } from '@workspace/curriculum';
@@ -38,6 +39,8 @@ const GAP = 12;
 export default function BookImagesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  // The band sits under the status bar: its icons must be light on it.
+  useLightStatusBar();
   const { t, isRTL, lang } = useLanguage();
   const isAr = lang === 'ar';
   const { user } = useAuth();
@@ -109,7 +112,7 @@ export default function BookImagesScreen() {
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         {folders?.length === 0 || (!folders && figures.length === 0) ? (
           <View style={styles.empty}>
-            <Ionicons name="images-outline" size={36} color={colors.mutedForeground} />
+            <Ionicons name="images-outline" size={40} color={colors.mutedForeground} />
             <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
               {t('bookImagesEmpty')}
             </Text>
@@ -132,7 +135,7 @@ export default function BookImagesScreen() {
                 { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: dir, opacity: pressed ? 0.85 : 1 },
               ]}
             >
-              <Ionicons name="folder" size={28} color={colors.primary} />
+              <Ionicons name="folder" size={24} color={colors.primary} />
               <View style={{ flex: 1 }}>
                 <Text numberOfLines={2} style={[styles.folderName, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
                   {f.label}
@@ -141,7 +144,7 @@ export default function BookImagesScreen() {
                   {t('bookImagesCount', f.count)}
                 </Text>
               </View>
-              <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
+              <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedForeground} />
             </Pressable>
           </React.Fragment>
         ))}
@@ -171,17 +174,17 @@ const styles = StyleSheet.create({
   hero: { paddingHorizontal: 20, paddingBottom: 16, gap: 2 },
   backBtn: { padding: 4 },
   trail: { color: 'rgba(255,255,255,0.95)', fontSize: 14, lineHeight: 22 },
-  heroTitle: { color: '#fff', fontSize: 22, lineHeight: 32 },
-  body: { padding: 20, paddingBottom: 60, gap: 10, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
+  heroTitle: { color: '#fff', fontSize: 24, lineHeight: 34 },
+  body: { padding: 20, paddingBottom: 48, gap: 12, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
   heading: { fontSize: 14, marginTop: 8 },
-  folder: { alignItems: 'center', gap: 14, padding: 14, borderWidth: 1, minHeight: 64 },
-  folderName: { fontSize: 16, lineHeight: 24 },
+  folder: { alignItems: 'center', gap: 12, padding: 16, borderWidth: 1, minHeight: 64 },
+  folderName: { fontSize: 17, lineHeight: 25 },
   folderMeta: { fontSize: 13, lineHeight: 20 },
   grid: { flexWrap: 'wrap', gap: GAP },
-  cell: { borderWidth: 1, padding: 8, alignItems: 'center', gap: 6 },
+  cell: { borderWidth: 1, padding: 8, alignItems: 'center', gap: 8 },
   tap: { width: '100%', backgroundColor: '#fff', borderRadius: 6 },
   image: { width: '100%', height: 140 },
   caption: { fontSize: 13, lineHeight: 18, textAlign: 'center' },
-  empty: { alignItems: 'center', gap: 10, paddingTop: 48, paddingHorizontal: 40 },
+  empty: { alignItems: 'center', gap: 8, paddingTop: 48, paddingHorizontal: 40 },
   emptyText: { fontSize: 15, textAlign: 'center', lineHeight: 23 },
 });

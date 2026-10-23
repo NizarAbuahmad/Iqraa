@@ -14,6 +14,8 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import type { GlyphId } from '@/constants/glyphs';
+import { ConceptIcon } from '@/components/ui/Glyph';
 import { useColors } from '@/hooks/useColors';
 import type { MotifId } from '@/constants/corners';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
@@ -28,6 +30,8 @@ type Props = {
   /** Position in the row, for the entrance stagger. */
   index: number;
   icon: React.ComponentProps<typeof Ionicons>['name'];
+  /** Iqraa's own drawing (a corner's), drawn in place of `icon`. */
+  glyph?: GlyphId;
   title: string;
   desc: string;
   /** The «my exams» waiting count is a call to act, drawn in the tile's primary. */
@@ -41,7 +45,7 @@ type Props = {
 const STRIP = 28;
 const BADGE = 52;
 
-export function LibraryTile({ index, icon, title, desc, descStrong, look, motif, motifOpacity, onPress }: Props) {
+export function LibraryTile({ index, icon, glyph, title, desc, descStrong, look, motif, motifOpacity, onPress }: Props) {
   const colors = useColors();
   const surface = useSurface();
   return (
@@ -56,7 +60,7 @@ export function LibraryTile({ index, icon, title, desc, descStrong, look, motif,
           <CornerMotif motif={motif} opacity={motifOpacity} />
         </View>
         <View style={[styles.badge, { backgroundColor: look.primary, borderColor: colors.card }]}>
-          <Ionicons name={icon} size={24} color={look.primaryForeground} />
+          <ConceptIcon icon={icon} glyph={glyph} size={24} color={look.primaryForeground} />
         </View>
         <Text numberOfLines={2} style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
           {title}

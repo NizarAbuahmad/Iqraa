@@ -55,11 +55,13 @@ Checked 2026-10-22:
 
 Checked 2026-10-22:
 
-- **Crash reporting in the app is merged but not yet in anyone's hands:** Firebase Crashlytics
-  (PR #1115, 2026-10-19, `app.json` 1.5.0) only works in a native build, so it reports nothing until
-  a 1.5.0 build is installed and Crashlytics is enabled in the Firebase console (project
-  `iqraa-95dd1`) **(notes)** — neither was checked. The API has no error-reporting service; it
-  keeps its own log (`/healthz/errors`, admin key) and Cloud Run logs.
+- **Crash reporting in the app:** Firebase Crashlytics (PR #1115, 2026-10-19, `app.json` 1.5.0) is
+  merged, a 1.5.0 production build ran on 2026-10-22 (the Mobile Android build workflow, success)
+  and Crashlytics is enabled in the Firebase console (project `iqraa-95dd1`) **(notes — the owner
+  said so; not checked)**. Not verified: which build is installed on a phone, that a crash
+  actually appears in the console, and that the OTAs published since #1115 (all runtime 1.5.0)
+  reach a device. The API has no error-reporting service; it keeps its own log
+  (`/healthz/errors`, admin key) and Cloud Run logs.
 - **Draft PR #730** (teacher visibility into English Corner practice) changes the schema,
   conflicts with `main`, and needs `pnpm --filter @workspace/db run generate` after it is updated.
 - **The E2E smoke test is not a required check** yet; make it one after about a week
@@ -80,8 +82,26 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-23 — Iqraa draws its own icons
+- 2026-10-23 — Grade 9 grammar pilot (Unit 4) in the English corner — built, shown to nobody yet
+- 2026-10-23 — Icons follow one system
+- 2026-10-22 — Today wears the lesson's subject
+- 2026-10-22 — Grade 5 in the English corner — words glossed, recordings still to make
+- 2026-10-22 — The desktop Tools grid reads right to left in Arabic
+- 2026-10-22 — Live games: students answer from any device
+- 2026-10-22 — Status-bar icons read on the corner bands
+- 2026-10-22 — Grade 4 reading in the English corner — built, shown to nobody yet
+- 2026-10-22 — Game buttons read in dark mode
+- 2026-10-22 — A lesson game can be homework, and the teacher sees the scores
+- 2026-10-22 — Any deck plays as Class Challenge, with sound
+- 2026-10-22 — Progress is celebrated
+- 2026-10-22 — Math Corner exercises: learn or test yourself on a lesson from the book
+- 2026-10-22 — Grade 4 grammar in the English corner — built, shown to nobody yet
+- 2026-10-22 — Lesson games from a lesson's key terms
 - 2026-10-22 — Teachers' phones open on Today
 - 2026-10-22 — Book-picture slides no longer share one title
+- 2026-10-22 — Grade 3 reading in the English corner — built, shown to nobody yet
+- 2026-10-22 — Grade 3 grammar in the English corner — built, shown to nobody yet
 - 2026-10-21 — Each corner has its own colour and band
 - 2026-10-21 — Cards lift, presses give, screens arrive — 2026-10-21
 - 2026-10-20 — Grade 2 reading in the English corner — built, shown to nobody yet
@@ -92,28 +112,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-18 — One card for quizzes and evaluations
 - 2026-10-18 — Revision decks carry the book's own pictures and all its key terms
 - 2026-10-18 — Slides Maker decks stop looking like bare lists
-- 2026-10-18 — Four new slide layouts: timeline, stats, table, flow
-- 2026-10-17 — The parent letter stops saying things the teacher never typed
-- 2026-10-17 — The parent letter: a typed name can be linked, and guardians can be chosen
-- 2026-10-17 — Grade 1 reading in the English corner — built, shown to nobody yet
-- 2026-10-17 — Two more slide layouts: quote and photo
-- 2026-10-17 — The model chooses a deck's icons and charts
-- 2026-10-16 — Typed chemistry topics measured and 18 of 44 misroutes fixed
-- 2026-10-16 — The electron-configuration lesson was answered with periodic-trends questions; fixed
-- 2026-10-16 — A decimal over a power drew as a broken fraction
-- 2026-10-16 — The chat answers teachers, on the web too
-- 2026-10-16 — Chat pushes are sent before the send is answered
-- 2026-10-16 — Grade 1 grammar in the English corner — built, shown to nobody yet
-- 2026-10-16 — The Library's lesson chips open at «كل الدروس» in Arabic
-- 2026-10-15 — Exam and evaluation papers stop repeating themselves
-- 2026-10-15 — Native photo shrinking needs a new binary: `version` 1.3.0 → 1.4.0
-- 2026-10-15 — The periodic-table question family went from 5 to 15 items
-- 2026-10-15 — All chemistry families now hold 15 or more items
-- 2026-10-15 — Four chemistry lessons were routed to the wrong family; fixed
 
 ## Finding older detail, and recording new work
 
-- The log has 332 sections. Anything cited elsewhere as
+- The log has 350 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line
