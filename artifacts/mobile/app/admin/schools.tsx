@@ -49,9 +49,16 @@ export default function AdminSchoolsScreen() {
     setSchools(res.items);
   }, []);
 
+  // The users endpoint returns 30 a page; a school's list must be all of them, or the rest
+  // look like they are not in it.
   const loadMembers = useCallback(async (schoolId: string) => {
-    const res = await apiJson<{ items: TeacherRow[] }>(`/admin/users?role=teacher&schoolId=${schoolId}`);
-    setMembers(res.items);
+    const all: TeacherRow[] = [];
+    for (;;) {
+      const res = await apiJson<{ items: TeacherRow[]; total: number }>(`/admin/users?role=teacher&schoolId=${schoolId}&offset=${all.length}`);
+      all.push(...res.items);
+      if (res.items.length === 0 || all.length >= res.total) break;
+    }
+    setMembers(all);
   }, []);
 
   useEffect(() => {

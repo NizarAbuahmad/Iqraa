@@ -77,6 +77,26 @@ the four calls.
 - Chat was not compared across all providers (a network drop erased two of four scenarios), so it stays on OpenAI.
 - `AI_USER_BUDGET_USD=1` is about 25 documents on Claude instead of about 115. Decide whether to raise it.
 
+## Schools tab: all of a school's teachers, and a bad filter is refused — 2026-10-23
+
+Two gaps in the admin Schools tab (#1136), found reading it.
+
+- **The members list stopped at 30.** `GET /admin/users` pages by 30, and the screen read one
+  page, so a school with 31 teachers showed 30 and the 31st looked like they were not in it.
+  `loadMembers` (`app/admin/schools.tsx`) now follows `offset` until it holds `total` rows.
+  The teacher *search* is still one page: a name or email narrows it, and 30 matches is more
+  than anyone scans.
+- **A malformed `?schoolId=` was ignored,** which turned "this school's teachers" into "every
+  teacher", each row with a Remove button. `parseSchoolIdFilter` (`lib/adminSchools.ts`) now
+  refuses it with a 400; absent or empty still means no filter.
+
+**Verified:** `adminSchools.test.ts` pins the new helper (valid id, absent/empty, malformed,
+array, number); api-server typecheck clean, 2,195/2,195 api tests pass on the second run (the
+first run tripped the event-loop timing test in `passwordHash.test.ts` under load; it passes
+alone); mobile typecheck clean.
+**Not verified:** the screen in a browser, and a school with more than 30 teachers (no such
+data exists). The paging loop is read, not run.
+
 ## Generator screens: the shared pieces and the quiz — 2026-10-23
 
 PR 1 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`: the band wears
