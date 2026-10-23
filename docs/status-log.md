@@ -81,6 +81,186 @@ Not a lawyer's review (the legal text is drafted, not reviewed).
 confirmation. `/auth/redeem` and `/auth/code-login` still have no committed handler tests. The store
 declaration itself (outside the repo) still needs to say students can sign up with an email.
 
+## Generator screens: the slides — 2026-10-23
+
+PR 5 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`, the last of the five tools. The
+slides screen (`app/ai-tools/slides.tsx`) is built from the shared pieces of `components/generator/`. Mobile
+only: nothing here changes what is asked of the model, the API, or what is stored.
+
+**What changed**
+| Field | Control |
+|---|---|
+| Grade, subject, `TopicSelector`, every refusal | `LessonCard` body (unchanged pickers with `maxHeight={220}`, `StrandedSelectionNote`, `hasError`) |
+| `LessonResources` (not on a wide scope), `LessonAttachments`, `LessonLabItems` | still mounted, same props, conditions and order, right after the card (outside its body, so folding it never hides them) |
+| `includeExamples` / `includePractice` / `includeAttachments` | one multi-select `ChipGroup` with `min={0}`; examples is not offered on a wide scope, attachments only when there are some and the scope is not wide; a hidden option keeps its boolean exactly as the toggles did |
+| «من وصف حر» link | a 44-point link in the form (phone and desktop), not in the docked bar |
+| Generate | one `DockedAction`, not disabled (a press with no topic sets the refusal, as before) |
+
+- **Refusals** (no topic, no curriculum for the scope, a topic from another subject, an ungroundable scope) all
+  show inside the lesson card in one measured view and are scrolled into view on a phone and on desktop, again on
+  a repeated press (`attempt`). While one shows the card cannot be folded (`locked` includes `refusal`) and an
+  effect keeps its stored open state true, so clearing the message while typing does not fold the card mid-word.
+- **The docked bar yields to an unsaved deck.** This screen has no save bar (its save lives in `DeckActions`), so
+  the other screens' rule does not apply as is; but a docked «جهّز الشرائح» under an edited, unsaved deck is one
+  mis-tap from losing the edits. The bar is hidden while `deckUnsaved = !!deck && !loading && !workspace.saved`
+  (`workspace.saved` is true only when the stored copy is exactly the deck on screen, so a saved deck keeps the
+  bar), and while it is hidden on a phone the same action renders inline at the end of the form, so rebuilding is
+  still a scroll away. The reopened-saved-deck case rests on `reopenedDeckLink`'s comments and was not run.
+- `Toast` takes an optional `bottomOffset` (default 0, every other screen unchanged); slides lifts it by the bar's
+  height while the bar is shown, because the toast used to sit under the bar's summary line.
+- `ACCENT` is the concept colour (blue); text and icons on a card use `accentInk`; no `palette` import and no hex
+  are left in the screen; the two `palette.success` uses became `colors.success`. The same raw-accent test and the
+  test proving it bites apply. The result area itself needed no change.
+- **`ChipGroup`** wraps a long label inside its chip, and its lock rule is now the pure `chipLocked`
+  (`services/chipRules.ts`, unit-tested; `min: 0` locks nothing).
+- **Preview:** one skeleton row per section a deck is built from, in the order of `buildLessonDeck` (cover,
+  outcomes, warm-up, vocabulary, explanation, checks, worked examples if ticked, practice if ticked, summary, exit
+  ticket, homework when practice is on) or `buildRevisionDeck` on a wide scope (exit ticket titled «غلق الحصة», as
+  that builder titles it; a test reads `lessonSlides.ts` to keep both). Titles in the content language. The footer
+  is grade and subject, because a slide count is unknowable; the note says the count follows the content. Summary
+  «شرائح · أمثلة · تدريب» (`deckOptionsSummary`, «شرائح مراجعة» on a wide scope).
+- i18n: 20 new `gen*` keys in both languages; `slidesIncludeExamples`, `slidesIncludePractice` and
+  `slidesIncludeAttachments` are deleted (nothing else used them; a test says so).
+
+**With this PR all five generator tools are ported.** The remaining old-teal and dropdown generator forms are
+gone; what is left of the older look is outside the five (the evaluations builder, the homework tool's result,
+the parent message, the lesson-flow screens), which the spec lists as out of scope.
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,146 tests, 7,136 pass, 10 skipped, 0 fail.
+Web-build screenshots, Arabic: phone (390) and desktop (1366), light and dark, with a lesson and without (a
+refusal scrolled into view with its reason beside the field); English at 360; a generated deck in dark; the
+unsaved-deck state with the bar hidden and the inline button in the form. An independent review found no blocker;
+its should-fix items (the «تم» button during a refusal, the bar under an unsaved deck) and its wording, toast and
+dead-key nits are fixed.
+
+**Not verified:** any device (the `measureInWindow` scroll on native, the keyboard, the iOS safe area, touch
+feel, screen readers); the reopened-saved-deck case; a wide-scope deck; a live-AI deck.
+
+**Known limits.** The preview draws one row for the checks that a real deck splits into two, and a real deck
+leaves out any section with nothing to say (the note says so). A toast shown while the soft keyboard is open (which
+also hides the bar) sits a little high on slides. The other four generator screens have the same toast and docked
+bar overlap once a result is saved. After a book-only deck's quota message the status scroll and the screen's
+existing 200 ms scroll-to-end both fire. The earlier entries' known limits still stand: the banner contrast on
+the lesson plan, worksheet and quiz header, and the Cancel-then-refusal message on the quiz, worksheet and lesson
+plan.
+
+## Generator screens: the activity — 2026-10-23
+
+PR 4 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`. The activity screen
+(`app/ai-tools/activity.tsx`) is built from the shared pieces of `components/generator/`. Mobile only:
+nothing here changes what is asked of the model, the API, or what is stored.
+
+**What changed**
+| Field | Control |
+|---|---|
+| Grade, subject, `TopicSelector`, the inline error | `LessonCard` body (unchanged pickers, `StrandedSelectionNote`, `hasError`) |
+| Activity type (`activityTypeIdx`, 5 labels, default index 1) | `ChipGroup` in the new `single` mode over `ACTIVITY_TYPE_IDS`, moving the same index |
+| Duration (`durationIdx`, 20/30/45/60) | `SegmentedControl` over the same index and array |
+| Objective (`objective`) | the same multiline `TextInput`, in a labelled `useSurface()` card |
+| Generate | one `DockedAction`, disabled with `genNeedLessonHint` while there is no topic (as the quiz and worksheet) |
+
+- **A new shared mode.** Five long Arabic type labels do not fit a segmented control (at most four short ones),
+  so `ChipGroup` gained an opt-in `single` mode: the group is a `radiogroup`, each chip a `radio` with
+  `aria-checked`, pressing the chosen chip does nothing, and the at-least-one lock is not used. Multi mode
+  (the quiz's and the worksheet's types) is unchanged, and a test fails a `single` prop on either of those.
+  The spec's mapping line says so.
+- **A contrast fix in the shared chip, found by the review.** A selected chip's label was judged against the
+  plain card but drawn on its own 12% tint, which measured 4.35:1 for the activity orange in light mode (quiz
+  violet 4.19 and worksheet teal 4.36 in dark). A selected chip is now an opaque fill (`tintOver`, new in
+  `services/readableColor.ts`) and its label, tick and ring are `readableOn(accent, thatFill)`. A test checks
+  every generator concept colour (quiz, worksheet, homework, lesson plan, activity, slides) in light and dark
+  against the real card and page colours, at 4.5:1; it also pins that the old method fails for the activity
+  colour. `SegmentedControl` has no such flaw (its selected segment is the plain card), and a test pins that.
+  The selected chips on the quiz, worksheet and homework are therefore a touch more solid than before.
+- `ACCENT` is the concept colour (orange). The result view's private `#C2410C` copies are gone; text, icons
+  and outlines on a card use `accentInk`, the step-number circle is an `ACCENT` fill with `textOn(ACCENT)`, and
+  the ready banner's ink is judged against its tint over the page (`tintOver`). The file has no hex literal and
+  no `palette` import. Source tests: no raw `ACCENT` as ink, and a second that puts three back to prove it bites.
+- **Preview:** six skeleton rows in the order `ActivityResult` prints them (objective, materials, steps, tips,
+  differentiation, assessment), titles in the CONTENT language, a test that reads the result's own source to
+  keep the order in step. Summary: «30 دقيقة · جماعي». The result's «الهدف» heading and the preview's title
+  are the same i18n key, so they cannot drift. i18n: `genPreviewActivityNote`, `genSectionObjective`.
+- The docked bar renders on a phone and under the preview on desktop, with the `attempt` counter in the scroll
+  effect's dependencies; the shared tests for both now cover this screen too.
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,127 tests, 7,117 pass, 10 skipped, 0 fail.
+Web-build screenshots, Arabic: phone (390) and desktop (1366), light and dark, with a lesson and without (the
+disabled button and its reason); English at 360 (the five chips wrap to three rows); a generated activity in dark.
+An independent review found no blocker; its should-fix items (the chip contrast, the banner contrast, an unused
+import, a weak guard test, a duplicated heading) are fixed.
+
+**Not verified:** any device (the Android keyboard hiding the bar while the objective box is focused, the iOS
+safe area, touch feel, screen readers, whether Space activates a `role="radio"` chip on web); the chips' look
+after the contrast change on the quiz and the worksheet in the browser; a wide scope; a live-AI activity.
+
+**Known limits.** The same flaw as the activity banner is likely in three places this PR does not touch: the lesson
+plan's ready banner, the worksheet's success banner and the quiz header's pills (ink judged against the card but
+drawn on `ACCENT+'15'` over the page, about 4.2-4.4:1 in light mode; not measured). Found by the review and not
+fixed here, because it is on every generator screen: after Cancel, `cancelled` stays set and the phase expression
+puts it before `error`, so a later refusal (`scopeNoCurriculum`, `subjectTopicMismatch`, `wideScopeUngrounded`)
+shows «أُلغي» instead of the refusal; on this screen no press can reach a refusal with an empty topic, but the
+quiz, worksheet and lesson plan can. The slides screen was still on the old teal and dropdowns when this shipped (done in the entry above).
+
+## Generator screens: the lesson plan — 2026-10-23
+
+PR 3 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`. The lesson-plan screen
+(`app/ai-tools/lesson-plan.tsx`) is built from the shared pieces of `components/generator/`, as the quiz
+and the worksheet were. Mobile only: nothing here changes what is asked of the model, the API, or what is
+stored.
+
+**What changed**
+| Field | Control |
+|---|---|
+| Grade, subject, `TopicSelector`, the empty-topic error | `LessonCard` body (unchanged pickers, `StrandedSelectionNote`, `hasError`) |
+| Duration (`durationIdx`, 30/45/60/90) | `SegmentedControl` over the same index and array |
+| Teaching style (`styleIdx`) | `SegmentedControl` over the same index and array |
+| Prior-knowledge review | one labelled checkbox row (hidden on a wide scope, disabled with its note), after the fold |
+| «More options» (objectives, adaptations + «تبسيط الشرح», prior topics) | the same fold and the same `TextInput`s, restyled (`useSurface()` cards, 44-point toggle and chip, `aria-expanded`) |
+| Generate | one `DockedAction`, no `disabled` and no `hint` |
+
+- **Deliberate deviation from the spec:** duration is a segmented control, not a stepper. The spec says a
+  numeric list is a stepper, but this list is four short labels, which the same spec's rule 3 sends to a
+  segmented control; the quiz keeps a stepper because its duration list has six.
+- `ACCENT` is the concept colour (indigo) instead of `palette.primary`. Text, icons and outlines on a card
+  use `accentInk`, in the form and in the result (`LessonPlanResult` takes an `ink` prop; `GenerationStatus`,
+  `GeneratorResultActions` and `GeneratorSaveBar` get it). A source test fails any raw `ACCENT` used as text,
+  icon or outline colour, and a second test puts three raw uses back into the real source to prove it bites.
+- **Validation is unchanged: the button is not disabled.** A press with no topic sets `topicRequired`, and the
+  message shows beside the field. The button is docked away from the field, so the screen measures the header
+  and the error text (`measureInWindow`, both `collapsable={false}`) and scrolls the error into view, on a
+  phone and on desktop (the desktop button is in a sticky side column, so a teacher deep in the optional boxes
+  would otherwise see nothing happen). The `attempt` counter is in the effect's dependencies, so a second press
+  scrolls again; the status-scroll effect stands down while `topicRefusal` is set, so a press after Cancel does
+  not jump twice.
+- **Preview:** `PaperPreview` gained `nameLine?: boolean` (default true, so the quiz and worksheet are
+  unchanged); the lesson plan passes false (the «الاسم / التاريخ» line belongs on a student's paper). The
+  skeleton rows are the sections `LessonPlanView` prints, in its order: 10, or 11 with the prior-review row
+  (shown when the review was asked for and is available, or the prior-topics box has text, never on a wide scope).
+  Their titles come from the plan's CONTENT language (`getT(lang)`), not the interface language, because the plan
+  is written in the subject's language. Summary: «45 دقيقة · 10 أقسام · التعليم المباشر» (`sections` in
+  `generatorSummary.ts`, with Arabic agreement: قسم واحد / قسمان / 3–10 أقسام / 11 قسمًا).
+- i18n: `genPreviewLessonPlanNote`, both languages.
+- Found by the screenshots on the worksheet and fixed here in advance: the docked bar must be rendered
+  (`{isDesktop ? null : action(true)}` and `{action(false)}`); the test that pins it now covers this screen too.
+- The prior-review checkbox sits after the fold, as before: its shared note says «استخدم حقل الملاحظات أعلاه»,
+  and the field it points to is the folded one. A test pins the order.
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,107 tests, 7,097 pass, 10 skipped, 0 fail.
+Web-build screenshots, Arabic: phone (390) and desktop (1366), light and dark, with a lesson carried in and
+without; an empty-topic press on a phone (the error scrolled into view); a generated plan in dark. An
+independent review found no blocker; its six defects (the checkbox order, the desktop empty-topic scroll, the
+double scroll after Cancel, the preview language, a stale comment, an awkward English line) are fixed.
+
+**Not verified:** any device (the Android keyboard hiding the bar while a fold box is focused, the iOS safe
+area, touch feel, screen readers, `measureInWindow` on native); English at 360 wide; a wide scope; a live-AI
+plan (whether the model writes the prior-review section whenever it is asked); the unfolded boxes in the
+browser.
+
+**Known limits.** The skeleton rows show section titles, not content. The ticked checkbox's fill is about 1.9:1
+against the dark card (the tick itself carries the state). Most of the screen's new tests pin source text; they
+freeze the code but cannot show it scrolls correctly. The activity (done in the next entry up) and slides screens were
+still on the old teal and dropdowns when this shipped.
+
 ## Generator screens: the worksheet and homework — 2026-10-23
 
 PR 2 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`. The worksheet screen
