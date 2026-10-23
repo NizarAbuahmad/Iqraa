@@ -128,7 +128,7 @@ export default function SuggestFeatureScreen() {
         <View style={styles.column}>
           {sent ? (
             <View style={[styles.card, styles.thanksCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Ionicons name="bulb" size={34} color={colors.primary} />
+              <Ionicons name="bulb" size={32} color={colors.primary} />
               <Text style={[styles.thanksTitle, { color: colors.foreground }]}>{t('suggestFeatureThanksTitle')}</Text>
               <Text style={[styles.thanksBody, { color: colors.mutedForeground }]}>{t('suggestFeatureThanks')}</Text>
               <Pressable

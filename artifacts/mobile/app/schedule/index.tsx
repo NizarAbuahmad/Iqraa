@@ -104,7 +104,7 @@ function Chip({ label, active, onPress, icon, colors }: {
         backgroundColor: active ? palette.selected : colors.card,
       }}
     >
-      {icon ? <Ionicons name={icon} size={15} color={active ? ACCENT : colors.mutedForeground} /> : null}
+      {icon ? <Ionicons name={icon} size={16} color={active ? ACCENT : colors.mutedForeground} /> : null}
       <Text style={{ color: active ? ACCENT : colors.mutedForeground, fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular', fontSize: 13 }}>
         {label}
       </Text>
@@ -389,7 +389,7 @@ function SlotEditorModal({ title, classes, current, period, onClose, onSave, onS
                   hitSlop={8}
                   accessibilityLabel={t('scheduleEditClassName')}
                 >
-                  <Ionicons name="create-outline" size={18} color={colors.mutedForeground} />
+                  <Ionicons name="create-outline" size={20} color={colors.mutedForeground} />
                 </Pressable>
               ) : null}
             </View>
@@ -473,7 +473,7 @@ function SlotContent({ className, notes, compact, colors }: {
   colors: Colors;
 }) {
   if (!className) {
-    return <Ionicons name="add-circle-outline" size={compact ? 18 : 22} color={colors.mutedForeground} style={{ opacity: 0.45 }} />;
+    return <Ionicons name="add-circle-outline" size={compact ? 20 : 24} color={colors.mutedForeground} style={{ opacity: 0.45 }} />;
   }
   return (
     <View style={{ alignItems: 'center', gap: 2 }}>
@@ -631,7 +631,7 @@ function DayView({ day, setDay, weekdays, today, periods, slots, labelFor, multi
                 </Text>
                 {r.notes ? (
                   <View style={{ flexDirection: row, alignItems: 'center', gap: 5 }}>
-                    <Ionicons name="document-text-outline" size={13} color={colors.mutedForeground} />
+                    <Ionicons name="document-text-outline" size={14} color={colors.mutedForeground} />
                     <Text numberOfLines={2} style={{ flex: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
                       {r.notes}
                     </Text>
@@ -919,10 +919,10 @@ export default function ScheduleScreen() {
           <BackButton color="#fff" />
           <View style={{ flexDirection: row, gap: 18 }}>
             <Pressable onPress={() => router.push('/calendar')} hitSlop={12} accessibilityLabel={t('scheduleOpenCalendar')}>
-              <Ionicons name="calendar-outline" size={22} color="#fff" />
+              <Ionicons name="calendar-outline" size={24} color="#fff" />
             </Pressable>
             <Pressable onPress={() => setShowPeriodsEditor(true)} hitSlop={12} accessibilityLabel={t('schedulePeriodsTitle')}>
-              <Ionicons name="settings-outline" size={22} color="#fff" />
+              <Ionicons name="settings-outline" size={24} color="#fff" />
             </Pressable>
           </View>
         </View>

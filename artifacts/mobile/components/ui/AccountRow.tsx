@@ -70,7 +70,7 @@ export function AccountRow({
       {busy ? (
         <ActivityIndicator size="small" color={colors.primary} />
       ) : current ? (
-        <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+        <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
       ) : null}
     </View>
   );
@@ -100,7 +100,7 @@ export function AccountRow({
           accessibilityLabel={removeLabel}
           style={({ pressed }) => [styles.remove, { opacity: pressed ? 0.6 : 1 }]}
         >
-          <Ionicons name="close-circle-outline" size={22} color={colors.mutedForeground} />
+          <Ionicons name="close-circle-outline" size={24} color={colors.mutedForeground} />
         </Pressable>
       ) : null}
     </View>

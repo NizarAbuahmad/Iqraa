@@ -36,7 +36,7 @@ export function CoverageNotice({ lessons, questions, modelReported }: {
   ].filter(Boolean).join(' ');
   return (
     <View style={[styles.box, row, { borderColor: colors.border, backgroundColor: colors.card, borderRadius: colors.radius }]}>
-      <Ionicons name="layers-outline" size={18} color={colors.mutedForeground} style={{ marginTop: 1 }} />
+      <Ionicons name="layers-outline" size={20} color={colors.mutedForeground} style={{ marginTop: 1 }} />
       <Text style={[styles.text, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left' }]}>{text}</Text>
     </View>
   );

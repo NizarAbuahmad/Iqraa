@@ -186,7 +186,7 @@ export function ClassPickerSheet({
                 >
                   <Ionicons
                     name={multiple ? (on ? 'checkbox' : 'square-outline') : (current ? 'checkmark-circle' : 'people-outline')}
-                    size={multiple ? 20 : 18}
+                    size={20}
                     color={!multiple || on ? ACCENT : colors.mutedForeground}
                   />
                   <View style={{ flex: 1 }}>
@@ -229,7 +229,7 @@ export function ClassPickerSheet({
               ]}
               accessibilityRole="button"
             >
-              <Ionicons name="close-circle-outline" size={18} color={colors.mutedForeground} />
+              <Ionicons name="close-circle-outline" size={20} color={colors.mutedForeground} />
               <Text
                 style={{
                   color: colors.mutedForeground,

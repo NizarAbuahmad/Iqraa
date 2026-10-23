@@ -332,11 +332,11 @@ export default function AdminDashboardScreen() {
                   onPress={() => { void openExternal('https://console.cloud.google.com/run?project=iqraa-auth-507315'); }}
                   style={[styles.posthogLink, { borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                 >
-                  <Ionicons name="speedometer-outline" size={15} color={colors.mutedForeground} />
+                  <Ionicons name="speedometer-outline" size={16} color={colors.mutedForeground} />
                   <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
                     {lang === 'ar' ? 'زمن استجابة الخادم ونسبة الأخطاء في Cloud Run' : 'Server latency & error rate in Cloud Run'}
                   </Text>
-                  <Ionicons name="open-outline" size={13} color={colors.mutedForeground} />
+                  <Ionicons name="open-outline" size={14} color={colors.mutedForeground} />
                 </Pressable>
               </View>
             )}
@@ -450,11 +450,11 @@ export default function AdminDashboardScreen() {
                   onPress={() => { void openExternal('https://us.posthog.com'); }}
                   style={[styles.posthogLink, { borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                 >
-                  <Ionicons name="analytics-outline" size={15} color={colors.mutedForeground} />
+                  <Ionicons name="analytics-outline" size={16} color={colors.mutedForeground} />
                   <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
                     {lang === 'ar' ? 'افتح PostHog لبيانات الاستخدام التفصيلية (الشاشات، الأدوات)' : 'Open PostHog for detailed usage/trace data (screens, tools)'}
                   </Text>
-                  <Ionicons name={isRTL ? 'open-outline' : 'open-outline'} size={13} color={colors.mutedForeground} />
+                  <Ionicons name={isRTL ? 'open-outline' : 'open-outline'} size={14} color={colors.mutedForeground} />
                 </Pressable>
               </View>
             )}
@@ -468,7 +468,7 @@ export default function AdminDashboardScreen() {
                 <FilterChip label={lang === 'ar' ? 'الكل' : 'All'} active={filter === 'all'} onPress={() => setFilter('all')} colors={colors} />
                 <FilterChip label="👍" active={filter === 'up'} onPress={() => setFilter('up')} colors={colors} />
                 <FilterChip label="👎" active={filter === 'down'} onPress={() => setFilter('down')} colors={colors} />
-                <FilterChip label={lang === 'ar' ? '💡 اقتراحات' : '💡 Ideas'} active={filter === 'idea'} onPress={() => setFilter('idea')} colors={colors} />
+                <FilterChip label={lang === 'ar' ? 'اقتراحات' : 'Ideas'} active={filter === 'idea'} onPress={() => setFilter('idea')} colors={colors} />
               </View>
               <DateRange value={range} onChange={setRange} ar={lang === 'ar'} isRTL={isRTL} colors={colors} />
 
@@ -579,7 +579,7 @@ function GrowthSection({ metrics, onSaved, isRTL, ar, colors }: {
           return (
             <View key={m.key} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexGrow: 1, flexBasis: 150 }]}>
               <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
-                <Ionicons name={m.icon} size={15} color={ACCENT} />
+                <Ionicons name={m.icon} size={16} color={ACCENT} />
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{ar ? m.ar : m.en}</Text>
               </View>
               <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
@@ -646,7 +646,7 @@ function FeedbackRow({ item, isRTL, colors, onDelete }: { item: FeedbackItem; is
         <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 }}>{date}</Text>
         {/* "Read it": the note goes away. The list is a to-do, not an archive. */}
         <Pressable onPress={onDelete} hitSlop={8} accessibilityLabel="delete">
-          <Ionicons name="trash-outline" size={15} color={colors.mutedForeground} />
+          <Ionicons name="trash-outline" size={16} color={colors.mutedForeground} />
         </Pressable>
       </View>
       {!!item.comment && (

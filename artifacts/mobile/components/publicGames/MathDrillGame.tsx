@@ -227,7 +227,10 @@ function DrillRound({ config, onDone }: { config: DrillConfig; onDone: (r: Resul
         <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
           {t('playDrillTimeLeft', secsLeft)}
         </Text>
-        <Text style={{ color: RIGHT, fontFamily: 'ReadexPro_700Bold', fontSize: 16 }}>✓ {state.correct}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Ionicons name="checkmark-circle" size={20} color={RIGHT} />
+          <Text style={{ color: RIGHT, fontFamily: 'ReadexPro_700Bold', fontSize: 16 }}>{state.correct}</Text>
+        </View>
       </View>
       <View style={[styles.track, { backgroundColor: colors.border }]}>
         <View style={{ width: `${(msLeft / (config.seconds * 1000)) * 100}%`, height: '100%', backgroundColor: ACCENT, borderRadius: 3 }} />
@@ -259,7 +262,7 @@ function DrillRound({ config, onDone }: { config: DrillConfig; onDone: (r: Resul
                 ]}
               >
                 {key === 'back' ? (
-                  <Ionicons name="backspace-outline" size={26} color={colors.foreground} />
+                  <Ionicons name="backspace-outline" size={24} color={colors.foreground} />
                 ) : (
                   <Text style={[styles.padText, { color: colors.foreground }]}>{key}</Text>
                 )}

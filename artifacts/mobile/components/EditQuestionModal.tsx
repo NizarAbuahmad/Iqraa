@@ -162,7 +162,7 @@ export function EditQuestionModal({
               return (
                 <View key={i} style={[row, { alignItems: 'center', gap: 8 }]}>
                   <Pressable onPress={() => set({ correct: [i] })} hitSlop={8} accessibilityRole="radio" aria-checked={on}>
-                    <Ionicons name={on ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={on ? ACCENT : colors.mutedForeground} />
+                    <Ionicons name={on ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={on ? ACCENT : colors.mutedForeground} />
                   </Pressable>
                   <View style={{ flex: 1 }}>
                     {input(text, v => set({ options: form.options.map((o, k) => (k === i ? v : o)) }), {
@@ -215,7 +215,7 @@ export function EditQuestionModal({
                 <View style={{ flex: 1 }}>
                   {input(p.left, v => set({ pairs: form.pairs.map((q, k) => (k === i ? { ...q, left: v } : q)) }))}
                 </View>
-                <Ionicons name="swap-horizontal" size={18} color={colors.mutedForeground} style={{ alignSelf: 'center' }} />
+                <Ionicons name="swap-horizontal" size={20} color={colors.mutedForeground} style={{ alignSelf: 'center' }} />
                 <View style={{ flex: 1 }}>
                   {input(p.right, v => set({ pairs: form.pairs.map((q, k) => (k === i ? { ...q, right: v } : q)) }))}
                 </View>
@@ -263,7 +263,7 @@ export function EditQuestionModal({
               {t(question ? 'questionEditTitle' : 'questionAddTitle')}
             </Text>
             <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={t('close')}>
-              <Ionicons name="close" size={22} color={colors.mutedForeground} />
+              <Ionicons name="close" size={24} color={colors.mutedForeground} />
             </Pressable>
           </View>
 
@@ -309,7 +309,7 @@ export function EditQuestionModal({
                       aria-checked={on}
                       style={[row, styles.objectiveRow, { borderColor: on ? ACCENT : colors.border, backgroundColor: on ? palette.selected : colors.card }]}
                     >
-                      <Ionicons name={on ? 'radio-button-on' : 'radio-button-off'} size={18} color={on ? ACCENT : colors.mutedForeground} />
+                      <Ionicons name={on ? 'radio-button-on' : 'radio-button-off'} size={20} color={on ? ACCENT : colors.mutedForeground} />
                       <Text numberOfLines={2} style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
                         {objectiveLabel(id, lang) ?? t('readAloudObjectiveN', String(i + 1))}
                       </Text>

@@ -90,7 +90,7 @@ export function GamePickerSheet({
                         >
                           {l.title}
                         </Text>
-                        <Ionicons name={on ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedForeground} />
+                        <Ionicons name={on ? 'chevron-up' : 'chevron-down'} size={20} color={colors.mutedForeground} />
                       </Pressable>
                       {on ? (
                         <View style={[styles.chips, { flexDirection: rowDir }]}>

@@ -45,7 +45,7 @@ export function Input({
         {leftIcon && (
           <Ionicons
             name={leftIcon}
-            size={18}
+            size={20}
             color={colors.mutedForeground}
             style={isRTL ? styles.rightIcon : styles.leftIcon}
           />
@@ -78,7 +78,7 @@ export function Input({
             accessibilityLabel={rightIconLabel}
             style={isRTL ? styles.leftIconBtn : styles.rightIconBtn}
           >
-            <Ionicons name={rightIcon} size={18} color={colors.mutedForeground} />
+            <Ionicons name={rightIcon} size={20} color={colors.mutedForeground} />
           </Pressable>
         )}
       </View>

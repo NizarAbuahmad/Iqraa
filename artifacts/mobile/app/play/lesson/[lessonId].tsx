@@ -125,7 +125,7 @@ export default function LessonGamesScreen() {
             <Entrance key={g} index={i} style={styles.cell}>
               <PressableScale onPress={() => setGame(g)} style={[styles.card, surface]}>
                 <View style={[styles.iconWrap, { backgroundColor: `${META[g].color}1a` }]}>
-                  <Ionicons name={META[g].icon} size={26} color={META[g].color} />
+                  <Ionicons name={META[g].icon} size={24} color={META[g].color} />
                 </View>
                 <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16, textAlign: 'center' }}>
                   {t(META[g].titleKey)}

@@ -8,6 +8,7 @@
  * inline, the tools tab navigates); this file only says what the tools are.
  */
 import type { Ionicons } from '@expo/vector-icons';
+import { CONCEPTS, type ConceptId } from '../constants/icons.ts';
 
 export interface ToolDef {
   id: string;
@@ -51,6 +52,16 @@ export type WorkflowSection = {
   tools: ToolDef[];
 };
 
+/**
+ * A tool's icon and colour are its concept's (`constants/icons.ts`), the same
+ * pair the prep board draws, so the quiz is one icon in one colour wherever a
+ * teacher meets it. `iconSystem.test.ts` fails a literal colour in this file.
+ */
+const look = (concept: ConceptId): Pick<ToolDef, 'icon' | 'color'> => ({
+  icon: CONCEPTS[concept].icon,
+  color: CONCEPTS[concept].color,
+});
+
 /** Core teaching jobs — ordered by when teachers use them. */
 const BEFORE_CLASS_ALL: ToolDef[] = [
   // Pinned first: teachers build slides as prep, even though they're
@@ -61,8 +72,7 @@ const BEFORE_CLASS_ALL: ToolDef[] = [
     id: 'slides',
     titleKey: 'toolSlidesTitle',
     descKey: 'toolSlidesDesc',
-    icon: 'tv-outline',
-    color: '#0369A1',
+    ...look('slides'),
     route: '/ai-tools/slides',
   },
   // Folded into Lesson slides as a link (2026-09-24): two cards, one output.
@@ -71,16 +81,14 @@ const BEFORE_CLASS_ALL: ToolDef[] = [
     hidden: true,
     titleKey: 'toolPromptSlidesTitle',
     descKey: 'toolPromptSlidesDesc',
-    icon: 'sparkles-outline',
-    color: '#7C3AED',
+    ...look('prompt-slides'),
     route: '/ai-tools/prompt-slides',
   },
   {
     id: 'lesson-plan',
     titleKey: 'toolLessonPlanTitle',
     descKey: 'toolLessonPlanDesc',
-    icon: 'document-text-outline',
-    color: '#007C74',
+    ...look('lesson-plan'),
     route: '/ai-tools/lesson-plan',
   },
   // Generates the whole lesson journey in one pass, so it belongs with prep
@@ -90,8 +98,7 @@ const BEFORE_CLASS_ALL: ToolDef[] = [
     hidden: true,
     titleKey: 'toolLessonFlowTitle',
     descKey: 'toolLessonFlowSub',
-    icon: 'git-branch-outline',
-    color: '#0369A1',
+    ...look('lesson-flow'),
     route: '/ai-tools/lesson-flow',
   },
 ];
@@ -105,8 +112,7 @@ const CLASSROOM_HUB: ToolDef = {
   id: 'classroom',
   titleKey: 'toolClassroomTitle',
   descKey: 'toolClassroomDesc',
-  icon: 'grid-outline',
-  color: '#4F46E5',
+  ...look('classroom'),
   route: '/ai-tools/classroom',
 };
 
@@ -115,8 +121,7 @@ const DURING_CLASS_ALL: ToolDef[] = [
     id: 'worksheet',
     titleKey: 'toolWorksheetTitle',
     descKey: 'toolWorksheetDesc',
-    icon: 'list-outline',
-    color: '#0E8F86',
+    ...look('worksheet'),
     route: '/ai-tools/worksheet',
   },
   CLASSROOM_HUB,
@@ -124,16 +129,14 @@ const DURING_CLASS_ALL: ToolDef[] = [
     id: 'game',
     titleKey: 'toolGameTitle',
     descKey: 'toolGameDesc',
-    icon: 'trophy-outline',
-    color: '#B54708',
+    ...look('challenge'),
     route: '/ai-tools/game',
   },
   {
     id: 'activity',
     titleKey: 'toolActivityTitle',
     descKey: 'toolActivityDesc',
-    icon: 'people-outline',
-    color: '#C2410C',
+    ...look('activity'),
     route: '/ai-tools/activity',
   },
   // The public, no-login games hub (app/play) — a share-with-students link,
@@ -143,8 +146,7 @@ const DURING_CLASS_ALL: ToolDef[] = [
     id: 'games',
     titleKey: 'toolGamesTitle',
     descKey: 'toolGamesDesc',
-    icon: 'game-controller-outline',
-    color: '#15803D',
+    ...look('games'),
     route: '/play',
   },
   {
@@ -152,8 +154,7 @@ const DURING_CLASS_ALL: ToolDef[] = [
     hidden: true,
     titleKey: 'toolGeogebraTitle',
     descKey: 'toolGeogebraDesc',
-    icon: 'analytics-outline',
-    color: '#990000',
+    ...look('geogebra'),
     badgeKey: 'toolGeogebraBadge',
     externalAction: 'geogebra-graphing',
     mathOnly: true,
@@ -165,8 +166,7 @@ const AFTER_CLASS_ALL: ToolDef[] = [
     id: 'quiz',
     titleKey: 'toolQuizTitle',
     descKey: 'toolQuizDesc',
-    icon: 'checkmark-circle-outline',
-    color: '#B54708',
+    ...look('quiz'),
     route: '/ai-tools/quiz',
     // One card for «ورقة للطباعة» and «تقييم يُرصد»: the quiz screen opens on
     // the paper and carries a switch to the evaluations list (see
@@ -179,8 +179,7 @@ const AFTER_CLASS_ALL: ToolDef[] = [
     hidden: true,
     titleKey: 'toolHomeworkTitle',
     descKey: 'toolHomeworkDesc',
-    icon: 'home-outline',
-    color: '#007C74',
+    ...look('homework'),
     route: '/ai-tools/worksheet',
     routeParams: { isHomework: '1' },
   },
@@ -191,8 +190,7 @@ const AFTER_CLASS_ALL: ToolDef[] = [
     id: 'evaluations',
     titleKey: 'evaluations',
     descKey: 'evaluationsSubtitle',
-    icon: 'clipboard-outline',
-    color: '#64748B',
+    ...look('evaluations'),
     route: '/evaluations',
     tabHidden: true,
   },
@@ -200,8 +198,7 @@ const AFTER_CLASS_ALL: ToolDef[] = [
     id: 'parent-msg',
     titleKey: 'toolParentMsgTitle',
     descKey: 'toolParentMsgDesc',
-    icon: 'mail-outline',
-    color: '#6D28D9',
+    ...look('parent-msg'),
     route: '/ai-tools/parent-message',
   },
 ];

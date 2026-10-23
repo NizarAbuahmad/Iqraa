@@ -253,18 +253,18 @@ export function LessonPrepBoard({
               >
                 <Ionicons
                   name={row.icon as keyof typeof Ionicons.glyphMap}
-                  size={compact ? 16 : 18}
+                  size={compact ? 16 : 20}
                   color={row.done ? textOn(row.color) : readableOn(row.color, colors.card)}
                 />
                 {row.done ? (
                   <View
                     style={[
                       styles.badge,
-                      isRTL ? { left: -5 } : { right: -5 },
+                      isRTL ? { left: -6 } : { right: -6 },
                       { backgroundColor: colors.card, borderColor: readableOn(row.color, colors.card) },
                     ]}
                   >
-                    <Ionicons name="checkmark" size={10} color={readableOn(row.color, colors.card)} />
+                    <Ionicons name="checkmark" size={14} color={readableOn(row.color, colors.card)} />
                   </View>
                 ) : null}
               </View>
@@ -288,12 +288,12 @@ export function LessonPrepBoard({
                 </View>
               ) : row.type === nextType ? (
                 <View style={[styles.cta, styles.ctaMake, { flexDirection: rowDir, backgroundColor: colors.primary }]}>
-                  <Ionicons name="add" size={15} color={colors.primaryForeground} />
+                  <Ionicons name="add" size={16} color={colors.primaryForeground} />
                   <Text style={[styles.ctaText, { color: colors.primaryForeground }]}>{createLabel}</Text>
                 </View>
               ) : (
                 <View style={[styles.cta, { flexDirection: rowDir }]}>
-                  <Ionicons name="add" size={15} color={disabled ? colors.mutedForeground : colors.primary} />
+                  <Ionicons name="add" size={16} color={disabled ? colors.mutedForeground : colors.primary} />
                   <Text style={[styles.ctaText, { color: disabled ? colors.mutedForeground : colors.primary }]}>{createLabel}</Text>
                 </View>
               )}
@@ -351,7 +351,7 @@ export function LessonPrepBoard({
                     { flexDirection: rowDir, borderColor: colors.border, backgroundColor: pressed || hovered ? colors.secondary : 'transparent' },
                   ]}
                 >
-                  <Ionicons name="refresh" size={12} color={colors.mutedForeground} />
+                  <Ionicons name="refresh" size={14} color={colors.mutedForeground} />
                   <Text style={[styles.skipText, { color: colors.mutedForeground }]}>{label}</Text>
                 </Pressable>
               );
@@ -394,10 +394,10 @@ const styles = StyleSheet.create({
   tileCompact: { width: 34, height: 34, borderRadius: 9 },
   badge: {
     position: 'absolute',
-    top: -5,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    top: -6,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',

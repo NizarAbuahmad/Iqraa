@@ -140,13 +140,13 @@ export default function LessonDetailScreen() {
             </View>
           ) : null}
           <View style={[styles.heroPill, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-            <Ionicons name="time-outline" size={12} color="#fff" />
+            <Ionicons name="time-outline" size={14} color="#fff" />
             <Text style={[styles.heroPillText, { color: '#fff', fontFamily: 'Almarai_400Regular' }]}>
               {lesson.estimatedDuration} {t('min')}
             </Text>
           </View>
           <View style={[styles.heroPill, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-            <Ionicons name="school-outline" size={12} color="#fff" />
+            <Ionicons name="school-outline" size={14} color="#fff" />
             <Text style={[styles.heroPillText, { color: '#fff', fontFamily: 'Almarai_400Regular' }]}>
               {lesson.outcomes.length} {t('outcomes')}
             </Text>
@@ -186,7 +186,7 @@ export default function LessonDetailScreen() {
             }}
             style={[styles.aiBtn, { backgroundColor: colorFill, borderRadius: colors.radius, flex: 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
-            <Ionicons name={prepOpen ? 'chevron-up' : 'sparkles'} size={18} color="#fff" />
+            <Ionicons name={prepOpen ? 'chevron-up' : 'sparkles'} size={20} color="#fff" />
             <Text style={[styles.aiBtnText, { color: '#fff', fontFamily: 'ReadexPro_600SemiBold' }]}>
               {prepOpen ? t('prepInlineHide') : t('generateAILesson')}
             </Text>
@@ -292,11 +292,11 @@ export default function LessonDetailScreen() {
               { backgroundColor: colorFill, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.9 : 1 },
             ]}
           >
-            <Text style={{ fontSize: 24 }}>🎧</Text>
+            <Ionicons name="headset-outline" size={24} color="#fff" />
             <Text style={{ flex: 1, color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }}>
               {t('hubOpenFromLesson')}
             </Text>
-            <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color="#fff" />
+            <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color="#fff" />
           </Pressable>
         ) : null}
 
@@ -309,11 +309,11 @@ export default function LessonDetailScreen() {
               { backgroundColor: colorFill, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.9 : 1 },
             ]}
           >
-            <Text style={{ fontSize: 24 }}>🎮</Text>
+            <Ionicons name="game-controller-outline" size={24} color="#fff" />
             <Text style={{ flex: 1, color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }}>
               {t('lessonGamesOpen')}
             </Text>
-            <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color="#fff" />
+            <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color="#fff" />
           </Pressable>
         ) : null}
 

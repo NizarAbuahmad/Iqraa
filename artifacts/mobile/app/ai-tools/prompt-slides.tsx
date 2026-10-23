@@ -61,6 +61,8 @@ import { DeckActions } from '@/components/slides/DeckActions';
 import { DeckThemePicker } from '@/components/slides/DeckThemePicker';
 import { SlideEditModal } from '@/components/slides/SlideEditModal';
 import { BackButton } from '@/components/ui/BackButton';
+import { IconTile } from '@/components/ui/IconTile';
+import { CONCEPTS } from '@/constants/icons';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -378,9 +380,7 @@ export default function PromptSlidesScreen() {
         >
           <BackButton color="#fff" style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 12 }}>
-            <View style={styles.heroIcon}>
-              <Ionicons name="sparkles" size={22} color="#fff" />
-            </View>
+            <IconTile icon={CONCEPTS['prompt-slides'].icon} color={CONCEPTS['prompt-slides'].color} size={44} tone="onBand" />
             <View style={{ flex: 1 }}>
               <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
                 {t('promptSlidesTitle')}
@@ -400,7 +400,7 @@ export default function PromptSlidesScreen() {
               ['download-outline', t('promptSlidesPillExport')],
             ] as const).map(([icon, label]) => (
               <View key={label} style={[styles.heroPill, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                <Ionicons name={icon} size={12} color="rgba(255,255,255,0.85)" />
+                <Ionicons name={icon} size={14} color="rgba(255,255,255,0.85)" />
                 <Text style={styles.heroPillText}>{label}</Text>
               </View>
             ))}
@@ -586,7 +586,7 @@ export default function PromptSlidesScreen() {
         {!deck && !loading && !cancelled && !error && (
           <View style={[styles.emptyCard, { borderColor: colors.border, borderRadius: colors.radius }]}>
             <View style={[styles.emptyIcon, { backgroundColor: ACCENT_FILL }]}>
-              <Ionicons name="sparkles" size={26} color="#fff" />
+              <Ionicons name="sparkles" size={24} color="#fff" />
             </View>
             <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold' }]}>
               {t('promptSlidesEmptyTitle')}
@@ -637,10 +637,6 @@ export default function PromptSlidesScreen() {
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 14 },
   backBtn: { width: 40, height: 40, justifyContent: 'center' },
-  heroIcon: {
-    width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.18)',
-  },
   heroPills: { flexWrap: 'wrap', gap: 8, marginTop: 16 },
   heroPill: {
     alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5,

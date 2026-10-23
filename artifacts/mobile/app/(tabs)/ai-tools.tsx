@@ -84,7 +84,7 @@ function ToolCard({
       style={[styles.gridCard, phone && styles.gridCardPhone, surface]}
     >
       <View style={[styles.gridIconWrap, { backgroundColor: tool.color + '1A', borderRadius: 16 }]}>
-        <Ionicons name={tool.icon} size={30} color={tool.color} />
+        <Ionicons name={tool.icon} size={32} color={tool.color} />
       </View>
       <View style={[styles.gridTitleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: 'center' }]}>
@@ -168,7 +168,7 @@ export default function AIToolsScreen() {
 
       {DEMO_MODE && (
         <View style={[styles.note, { backgroundColor: colors.muted, borderRadius: colors.radius, marginHorizontal: 20, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Ionicons name="information-circle-outline" size={16} color={colors.mutedForeground} />
+          <Ionicons name="information-circle" size={16} color={colors.mutedForeground} />
           <Text style={[styles.noteText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('aiToolsNote')}
           </Text>

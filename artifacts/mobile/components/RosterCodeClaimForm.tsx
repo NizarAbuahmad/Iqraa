@@ -6,6 +6,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Input } from '@/components/ui/Input';
 import { RADIUS, SPACE } from '@/constants/theme';
 import type { JoinRosterEntry } from '@/services/roster';
@@ -117,9 +118,12 @@ export function RosterCodeClaimForm({
                     },
                   ]}
                 >
-                  <Text style={{ color: picked ? colors.primary : colors.foreground, fontFamily: picked ? 'ReadexPro_700Bold' : 'ReadexPro_500Medium', fontSize: 14 }}>
-                    {picked ? '✓ ' : ''}{entry.displayName}
-                  </Text>
+                  <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 4 }}>
+                    {picked ? <Ionicons name="checkmark" size={16} color={colors.primary} /> : null}
+                    <Text style={{ color: picked ? colors.primary : colors.foreground, fontFamily: picked ? 'ReadexPro_700Bold' : 'ReadexPro_500Medium', fontSize: 14 }}>
+                      {entry.displayName}
+                    </Text>
+                  </View>
                   {blocked ? (
                     <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10, lineHeight: 16 }}>
                       {t('joinNameTaken')}

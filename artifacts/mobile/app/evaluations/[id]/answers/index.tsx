@@ -130,7 +130,7 @@ export default function PickStudentScreen() {
 
       {error ? (
         <View style={[styles.errorBox, { borderColor: colors.destructive, margin: 20 }]}>
-          <Ionicons name="alert-circle-outline" size={18} color={colors.destructive} />
+          <Ionicons name="alert-circle" size={20} color={colors.destructive} />
           <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', flex: 1, textAlign: align }}>
             {error}
           </Text>
@@ -143,7 +143,7 @@ export default function PickStudentScreen() {
           onPress={() => router.push({ pathname: '/evaluations/[id]/marks', params: { id: id as string } } as never)}
           style={[styles.card, { backgroundColor: colors.card, borderColor: ACCENT, marginHorizontal: SPACE.xl, marginTop: SPACE.lg, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
         >
-          <Ionicons name="grid-outline" size={18} color={ACCENT} />
+          <Ionicons name="grid-outline" size={20} color={ACCENT} />
           <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.body, textAlign: align }}>{t('marksGridTableBtn')}</Text>
         </Pressable>
       ) : null}

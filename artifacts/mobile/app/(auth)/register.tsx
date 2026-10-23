@@ -177,7 +177,7 @@ export default function RegisterScreen() {
         <View style={[styles.card, { backgroundColor: colors.card, borderRadius: colors.radius * 1.5, borderColor: colors.border }]}>
           {error ? (
             <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+              <Ionicons name="alert-circle" size={16} color={colors.destructive} />
               <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text>
             </View>
           ) : null}
@@ -233,7 +233,7 @@ export default function RegisterScreen() {
                 backgroundColor: termsAccepted ? colors.primary : 'transparent',
               },
             ]}>
-              {termsAccepted && <Ionicons name="checkmark" size={12} color="#fff" />}
+              {termsAccepted && <Ionicons name="checkmark" size={14} color="#fff" />}
             </View>
             <Text style={[styles.terms, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', flex: 1 }]}>
               {lang === 'ar' ? 'أوافق على ' : 'I agree to the '}
@@ -419,6 +419,6 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', gap: 12 },
   nameField: { flex: 1 },
   termsRow: { alignItems: 'flex-start', gap: 10 },
-  checkbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
   terms: { fontSize: 11, lineHeight: 17 },
 });
