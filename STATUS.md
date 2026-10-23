@@ -72,6 +72,15 @@ Checked 2026-10-22:
   actually appears in the console, and that the OTAs published since #1115 (all runtime 1.5.0)
   reach a device. The API has no error-reporting service; it keeps its own log
   (`/healthz/errors`, admin key) and Cloud Run logs.
+- **Row-level security is deployed and switched off** (`RLS_ENFORCE` unset; PR #1048, migration
+  `0008`). Rehearsed on 2026-10-23 on a separate empty Neon project: all migrations apply and the
+  database suite passes 46/46 on both the direct and the pooled endpoint (workflow run
+  39931238295). The connection ceiling checks out (20 instances, pooled endpoint, `max_connections` 225).
+  **The latency gate failed (C1, 2026-10-23): +336 ms p95 on a 15-statement request,
+  budget +100 ms** — each statement becomes three round trips and one costs about 11 ms from
+  europe-west1 to Frankfurt; it must not be switched on until a mitigation passes the same benchmark.
+  Not done: that mitigation, enabling it in production, and making the `row-level security` check required — the steps and
+  the switch are in `docs/rls-rollout-checklist.md`.
 - **Draft PR #730** (teacher visibility into English Corner practice) changes the schema,
   conflicts with `main`, and needs `pnpm --filter @workspace/db run generate` after it is updated.
 - **The E2E smoke test is not a required check** yet; make it one after about a week
@@ -93,6 +102,7 @@ From session notes **(notes)**:
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
 - 2026-10-23 — Grade 5 grammar in the English corner — built, shown to nobody yet
+- 2026-10-23 — The "now" amber is only for now
 - 2026-10-23 — Grammar-only hub lessons, and the last five Grade 9 grammar lessons — built, shown to nobody yet
 - 2026-10-23 — Grade 9 grammar: the passive added, and a wrong «no hub lesson» corrected
 - 2026-10-23 — The tab bar is drawn
@@ -121,11 +131,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-22 — Grade 3 grammar in the English corner — built, shown to nobody yet
 - 2026-10-21 — Each corner has its own colour and band
 - 2026-10-21 — Cards lift, presses give, screens arrive — 2026-10-21
-- 2026-10-20 — Grade 2 reading in the English corner — built, shown to nobody yet
 
 ## Finding older detail, and recording new work
 
-- The log has 362 sections. Anything cited elsewhere as
+- The log has 366 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line

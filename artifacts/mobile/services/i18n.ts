@@ -590,6 +590,10 @@ const translations = {
     resourcesIntro:
       'أوراق عمل وفيديوهات وصور وأنشطة ومصادر الكتب، جاهزة للاستخدام. اختر الصف والمادة والدرس ليظهر ما يخصّه.',
     libraryCurriculumDesc: 'الكتب حسب الصف والمادة',
+    bookImagesTitle: 'صور الكتاب',
+    bookImagesDesc: 'صور كل درس من كتاب الطالب',
+    bookImagesCount: (n: number) => arCountPhrase(n, 'صورة', 'صورتان', 'صور'),
+    bookImagesEmpty: 'لا توجد صور من الكتاب هنا بعد',
     resourcesAllSubjects: 'كل المواد',
     libraryCatInfographic: 'إنفوجرافيك',
     libraryAllShelves: 'كل التصنيفات',
@@ -3873,6 +3877,10 @@ const translations = {
     resourcesIntro:
       'Worksheets, videos, photos, activities and book resources, ready to use. Pick a grade, subject and lesson to see what belongs to it.',
     libraryCurriculumDesc: 'Books by grade and subject',
+    bookImagesTitle: 'Book images',
+    bookImagesDesc: "Each lesson's pictures from the student book",
+    bookImagesCount: (n: number) => `${n} image${n === 1 ? '' : 's'}`,
+    bookImagesEmpty: 'No book images here yet',
     resourcesAllSubjects: 'All subjects',
     libraryCatInfographic: 'Infographic',
     libraryAllShelves: 'All categories',
