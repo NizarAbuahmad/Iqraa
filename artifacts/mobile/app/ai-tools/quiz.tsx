@@ -12,6 +12,8 @@ import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { groundingRequestFields, resolveGeneratorGrounding } from '@/services/kbContext';
+import { offlineBankRefuses } from '@/services/ai/generators';
+import { DEMO_MODE } from '@/services/ai/demoMode';
 import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
 import { QuizOutput, QuizQuestion } from '@/services/ai/AIService';
 import { buildDeckFromQuiz } from '@/services/classDeck';
@@ -145,6 +147,13 @@ export default function QuizScreen() {
   const kbScope = { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id };
   const pickedLesson = usePickedLesson(params.lessonId, topic, kbScope);
   const wideScope = useWideScope(params, { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
+  // With no live AI the offline bank is all there is: a lesson it would refuse
+  // greys the button now instead of failing after the press. Grounded lessons
+  // only, as on the worksheet; a wide scope has its own per-lesson rule.
+  const groundedKb = DEMO_MODE && topic.trim() && !wideScope.isWide
+    ? resolveGeneratorGrounding(topic.trim(), lang, { scope: kbScope, lessonId: pickedLesson.lessonId }).lesson
+    : null;
+  const noBank = !!groundedKb && offlineBankRefuses(topic.trim(), groundedKb, subjects[subjectIdx].name);
   /** The wide scope and distribution the paper on screen was generated under — what Save records. */
   const [wideFrozen, setWideFrozen] = useState<{ sel: ScopeSelection; distribution: Distribution } | null>(
     () => (wideScope.isWide ? { sel: wideScope.scopeSel!, distribution: wideScope.distribution } : null),
@@ -647,14 +656,14 @@ export default function QuizScreen() {
           out of sight of the button that had just been pressed.
         */}
         {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontSize: 15, lineHeight: 24, fontFamily: 'Almarai_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
-        <Button label={loading ? t('generatingQuiz') : t('generateQuizBtn')} onPress={() => generate()} loading={loading} disabled={!topic.trim()} fullWidth />
+        <Button label={loading ? t('generatingQuiz') : t('generateQuizBtn')} onPress={() => generate()} loading={loading} disabled={!topic.trim() || noBank} fullWidth />
         {/*
           A greyed-out primary button with nothing next to it reads as a broken
           product rather than an unmet precondition. It says which one.
         */}
-        {!topic.trim() ? (
+        {!topic.trim() || noBank ? (
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
-            {t('needTopicHint')}
+            {t(!topic.trim() ? 'needTopicHint' : 'noQuestionBank')}
           </Text>
         ) : null}
       </View>

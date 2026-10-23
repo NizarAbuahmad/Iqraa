@@ -1051,6 +1051,69 @@ describe('money, time and measurement: answers recomputed', () => {
   });
 });
 
+describe('position and direction: answers read off the scene', () => {
+  const OPP: Record<string, string> = { فوق: 'تحت', تحت: 'فوق', أمام: 'خلف', خلف: 'أمام', يمين: 'يسار', يسار: 'يمين' };
+  const WORDS = Object.keys(OPP);
+  it('every answer follows from the order the sentence states', () => {
+    const kinds = new Set<string>();
+    for (const item of draws('position_direction', 900)) {
+      const p = item.promptAr!, a = item.answer, where = `«${p}» → ${a}`;
+      const listed = p.match(/: (.+?)، ثم (.+?)، ثم (.+?)(?: في الآخر)?\./);
+      const shelves = p.match(/العلوي (.+?)، وعلى الرف الأوسط (.+?)، وعلى الرف السفلي (.+?)\./);
+      const front = p.match(/في المقدمة (.+?)، ثم (.+?)، ثم (.+?) في الآخر/);
+      if (has(p, 'ما عكس كلمة')) {
+        kinds.add('opposite');
+        assert.equal(a, OPP[p.match(/«(.+?)»/)![1]!], where);
+      } else if (front) {
+        kinds.add('queue');
+        const [, f, m, b] = front;
+        const near = p.match(/من (?:يقف|تقف) (أمام|خلف) (.+?) مباشرة/);
+        if (near) { assert.equal(near[2], m); assert.equal(a, near[1] === 'أمام' ? f : b, where); }
+        else { const [, x, y] = p.match(/أين (?:يقف|تقف) (.+?) بالنسبة إلى (.+?)؟/)!; assert.equal(a, x === f && y === b ? 'أمام' : x === b && y === f ? 'خلف' : '?', where); }
+      } else if (shelves) {
+        kinds.add('cupboard');
+        const [, top, mid, bot] = shelves;
+        const near = p.match(/الذي (فوق|تحت) (.+?) مباشرة/);
+        if (near) { assert.equal(near[2], mid); assert.equal(a, near[1] === 'فوق' ? top : bot, where); }
+        else { const [, x, y] = p.match(/أين (.+?) بالنسبة إلى (.+?)؟/)!; assert.equal(a, x === top && y === bot ? 'فوق' : x === bot && y === top ? 'تحت' : '?', where); }
+      } else if (listed && has(p, 'من اليمين إلى اليسار')) {
+        kinds.add('shelf');
+        const [, r, m, l] = listed;
+        const side = p.match(/الذي على (يمين|يسار) (.+?)؟/), far = p.match(/في أقصى ال(يمين|يسار)؟/), dir = p.match(/في أي جهة من (.+?) نجد (.+?)؟/);
+        if (side) { assert.equal(side[2], m); assert.equal(a, side[1] === 'يمين' ? r : l, where); }
+        else if (far) assert.equal(a, far[1] === 'يمين' ? r : l, where);
+        else { const [, y, x] = dir!; assert.equal(a, x === r && y === l ? 'يمين' : x === l && y === r ? 'يسار' : '?', where); }
+      } else if (has(p, 'استدار')) {
+        kinds.add('turn');
+        if (has(p, 'النافذة')) assert.equal(a, 'خلف', where);
+        else assert.equal(a, OPP[p.match(/الباب على (يمين|يسار)/)![1]!], where);
+      } else if (has(p, 'السبورة')) {
+        kinds.add('side by side');
+        assert.equal(a, OPP[p.match(/على (يمين|يسار) /)![1]!], where);
+      } else if (has(p, 'الطابور')) {
+        kinds.add('pair in line');
+        assert.equal(a, OPP[p.match(/ (أمام|خلف) /)![1]!], where);
+      } else {
+        kinds.add('above/under');
+        const [, x, w, y, q, r] = p.match(/^(.+?) (فوق|تحت) (.+?)\. أين (.+?) بالنسبة إلى (.+?)؟$/)!;
+        assert.ok(q === y && r === x, where);
+        assert.equal(a, OPP[w!], where);
+      }
+      if (WORDS.includes(a)) for (const w of item.wrongs) assert.ok(WORDS.includes(w), `mixed options: ${where}`);
+    }
+    assert.equal(kinds.size, 8, [...kinds].join(', '));
+  });
+
+  it('a 20-question paper finds 20 different sentences', () => {
+    const t = TOPICS.find(x => x.id === 'position_direction')!;
+    for (const diff of TIERS) {
+      const used = new Set<string>();
+      const stems = Array.from({ length: 20 }, (_, i) => makeTopicItem(t, 1, diff, used, seeded(i + 11)).promptAr);
+      assert.equal(new Set(stems).size, 20, diff);
+    }
+  });
+});
+
 describe('early routing', () => {
   const cases: Array<[string, number, string | null]> = [
     ['الأعداد: 1 ,2 ,3', 1, 'count_123'], ['العددان: 9 ,10', 1, 'count_910'], ['العدد صفر', 1, 'count_zero'], ['العد الترتيبي', 1, 'ordinal'],
@@ -1068,8 +1131,9 @@ describe('early routing', () => {
     ['قياس الزوايا ورسمها', 4, 'angle_measure'], ['الأنماط', 4, 'number_patterns_g4'], ['جداول المدخلات والمخرجات', 4, 'input_output'], ['الأعداد العشرية والنقود', 4, 'decimal_money'],
     ['الدينار', 2, 'dinar'], ['فئات النقود الورقية', 2, 'banknotes'], ['أيام الأسبوع', 1, 'week_days'], ['الوقت لأقرب ربع ساعة', 2, 'time_15'], ['أشهر السنة', 2, 'months'], ['التقويم', 3, 'calendar'],
     ['مقارنة الأطوال وترتيبها', 1, 'compare_len'], ['السنتيمتر', 2, 'cm_lengths'], ['اللتر والمليلتر', 2, 'units_l_g2'],
+    ['الْمَوْقِعُ وَالِاتِّجاهُ', 1, 'position_direction'], ['الموقع والاتجاه', 1, 'position_direction'],
     // lessons that stay refused: they need pictures, objects, or a digit form the app converts itself
-    ['الأرقام الهندية', 3, null], ['التصنيف وفق خاصية واحدة', 1, null], ['الموقع والاتجاه', 1, null], ['ترتيب الأعمال اليومية', 1, null],
+    ['الأرقام الهندية', 3, null], ['التصنيف وفق خاصية واحدة', 1, null], ['ترتيب الأعمال اليومية', 1, null],
   ];
   for (const [title, grade, id] of cases) {
     it(`${title} (G${grade}) → ${id ?? 'refused'}`, () => {
