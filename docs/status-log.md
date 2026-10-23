@@ -10,6 +10,52 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 9 grammar pilot (Unit 4) in the English corner — built, shown to nobody yet, 2026-10-23
+
+The first Grade 9 grammar, on **one unit only**: S1 U4 «A good buy», two hub lessons —
+comparatives and superlatives (`kbl-g9-eng-s1-nccd-u4_l1`, 42 sentences) and quantifiers
+(`…u4_l3`, 80). **Both are `reviewedBy: null` in `lib/curriculum/src/englishGrammarG9.ts`, so
+nobody sees any of it yet.** Spec:
+`docs/superpowers/specs/2026-10-23-english-corner-grammar-g9-pilot-design.md`; plan:
+`docs/superpowers/plans/2026-10-23-english-corner-grammar-g9-pilot.md`.
+
+- **Why a pilot.** The book's JSON for Grade 9 has objectives only — no example sentences — so
+  every sentence is authored by us and checked by a teacher. One unit shows whether that content
+  model works before the other nine units and Grade 10 are written.
+- **Nothing is pictured.** A food does not show «healthier». True or false and Yes or No come only
+  from ten written pairs (`PLURAL_PAIRS`, `MASS_PAIRS`), each plainly true; the false twin is the
+  same sentence with the two sides swapped. Opinion rows («Pancakes are tastier than porridge.»)
+  and superlative rows («the most expensive dish on the menu») are Choose and Build only, never
+  judged.
+- **Engine changes (shared, Grades 1–4 unchanged).** Eight Grade 9 `ADJECTIVE_FORMS`
+  (cheap, healthy, tasty, and five «more / most» adjectives); `claim.swap` takes a list of pairs
+  (the capitalised sentence start and the lower-case question both swap); Grade 4's data page was
+  pinned with `GRADE_FOUR_ADJECTIVES` so the shared table's growth did not change its form.
+  `games.ts`, the screens and the strings needed nothing.
+- **Quantifiers by the noun.** Eight hand-classed counted foods and eight uncounted; five patterns
+  per class (How many/much…, There aren't many/much…, too many/much, Are there many…? / Is there
+  much…?, a few / a little), the choice decided by the noun. «some», «any» and «enough» are left
+  out, and the form says so.
+- **The teacher's form** is `docs/english-grammar-g9-review.html` (sheet:
+  `docs/english-grammar-g9-sheet.md`), written by `lib/curriculum/scripts/grammar-sheet.ts` and
+  pinned by a test: two unit pages and a data page of four tables — the ten comparison pairs with
+  their false twins, the adjective forms, the 16 foods by class, and the six opinion rows. The
+  Grade 1–4 forms and sheets are byte-identical.
+- **Verified:** curriculum 593 tests, mobile 6867 pass / 10 skipped / 0 fail, root typecheck.
+  **In a browser** at 390 px in Arabic and English, with sign-offs in the working tree only
+  (restored straight after; never committed; `grep -c "LOCAL CHECK"` is 0): `u4_l1` offers all
+  four cards and `u4_l3` Choose and Build only; True or false and Yes or No show a text with no
+  picture; the Choose options are real forms («more popular» / «most popular», «many» / «much»);
+  no horizontal scroll.
+- **Not verified:** on a device; with a teacher; the audio — it needs the pending `english-audio`
+  run (OpenAI and R2 keys).
+- **Known limit:** a sentence such as «How many grapes are there?» has no context; the form asks
+  the teacher whether that is acceptable at Grade 9.
+
+**To switch a unit on:** record the audio; a Grade 9 English teacher signs that unit's page **and
+the data page** of `docs/english-grammar-g9-review.html`, printed; then set its `reviewedBy` in
+`englishGrammarG9.ts` and merge.
+
 ## Icons follow one system — 2026-10-23
 
 - **What was wrong.** An audit of the app's icons found 709 `Ionicons` uses in 172 files
@@ -287,6 +333,59 @@ plus a rate-limit upsert). Scores are not saved to a student's record.
 - **Not verified:** on a device. The status bar exists only on Android and iOS, and
   the web build is a no-op, so this has not been seen running.
 
+## Grade 4 reading in the English corner — built, shown to nobody yet, 2026-10-22
+
+Reading activities for Grade 4, after Grades 1–3: the three word activities on the 9
+hub lessons and «Read the sentence» on four of them. **Every unit is `reviewedBy: null`
+in `READING_UNITS` (`lib/curriculum/src/englishReading.ts`), so nobody sees any of it
+yet.** Spec: `docs/superpowers/specs/2026-10-22-english-corner-reading-g4-design.md`;
+plan: `docs/superpowers/plans/2026-10-22-english-corner-reading-g4.md`.
+
+- **Word activities.** First letter on all 9 lessons. Read and find on S1 U1, U3, U4, U5,
+  S2 U8 and U10 (the lessons whose words have pictures). Starts with on the same lessons
+  except S1 U1. S1 U2, S2 U7 and S2 U9 have First letter only.
+- **One new first-sound exception, `hard-q`.** «Qatar» and «Qatari» start with Q but are
+  said /k/, so they are skipped (a new `SoundSkip` reason and form text); «quickly»,
+  «quiet» and «quietly» are /kw/ and stay. No Grade 1–3 word starts «qa», so the older
+  forms did not change. The rule leaves out **45** of the 172 words (43 by the old rule,
+  2 by this one), each listed on the form with its reason.
+- **A consequence found while building:** S1 U1's pictured words are its six flags, and
+  with Qatar, Egypt and the two multi-word countries skipped only Jordan (j) and Spain (s)
+  have a first sound, under the floor of three letters. So **S1 U1 has no Starts with**;
+  the form says so.
+- **Read the sentence** on S1 U1 (30 sentences, 6 flags → a round of 6), S1 U3 (24, round
+  of 8), S1 U5 (21, 13 picture words, round of 8: the 16 job sentences have he / she
+  partners, the five clothes sentences none) and S2 U8 (32, round of 8). It needs the
+  unit's reading and grammar sign-offs. `readSentencePool` now serves Grades 2, 3 and 4;
+  Grade 1 stays out. Five lessons have no sentence activity (S1 U2, S1 U4, S2 U7, U9, U10:
+  no pictured sentences) and the form says why.
+- **Code change is curriculum only.** `games.ts`, the screen, the lesson card and the
+  strings needed nothing; tests pin the data (`englishReadingG4.test.ts`) and the
+  builder on the Grade 4 pools (`englishReadingG4Games.test.ts`).
+- **The teacher's form** is `docs/english-reading-g4-review.html` (9 unit pages, 172
+  words, 107 sentences, six «غير مشمول» notes), written by the `grammar-sheet` script
+  and pinned by a test. The Grade 1–3 reading forms and all grammar sheets and forms are
+  byte-identical.
+- **Verified:** curriculum 581 tests, mobile 6782 pass / 10 skipped / 0 fail, root
+  typecheck. **In a browser** at 390 px in Arabic and English, with sign-offs in the
+  working tree only (restored straight after; never committed; `grep -c "LOCAL CHECK"`
+  is 0): the sentence card shows on S1 U1, U5 and S2 U8 once both sign-offs are set; S1 U3
+  and S1 U4 with reading but not grammar signed show the word cards and no sentence card;
+  S1 U1 has no Starts with; S2 U7 shows First letter only; unsigned lessons show nothing;
+  an S1 U1 round is 6 questions then «Finished», S1 U5 and S2 U8 rounds are 8; the flags
+  with the girl and boy markers and S2 U8's doubled pictures fit; no horizontal scroll.
+- **Not verified:** on a device; with a teacher; the audio — «Read the sentence» plays the
+  grammar recording after the answer and adds none of its own, so it needs the pending
+  `english-audio` run (OpenAI and R2 keys).
+- **Known limit:** S1 U1's round is 6 questions, not 8, because it has six flags; the
+  form asks the teacher whether that is enough, and whether the two-sentence «Where are
+  you from? I'm from Qatar.» is too long to read.
+
+**To switch a unit on:** record the audio; sign and set the unit's grammar
+(`englishGrammarG4.ts`); a Grade 4 English teacher signs that unit's page of
+`docs/english-reading-g4-review.html`, printed; then set its `reviewedBy` in
+`englishReading.ts` and merge.
+
 ## Game buttons read in dark mode — 2026-10-22
 
 - **What was wrong.** A game's «العب مرة أخرى» (and the maths drill's «ابدأ», the
@@ -463,6 +562,56 @@ turn the digits after it Arabic (rule W2). A «؟» straight after a digit ends 
 sentence and stays in the flow. Checked by glyph position in a browser, not by
 eye: every stem on a Grade 5 lesson read in typed order.
 
+## Grade 4 grammar in the English corner — built, shown to nobody yet, 2026-10-22
+
+Grammar for Grade 4, after Grades 1–3. 9 hub lessons (S1 U1–U5, S2 U7–U10), **454
+sentences**. S2 U6 is a revision unit with no word list, so it is not a hub lesson.
+**Every unit is `reviewedBy: null` in `GRAMMAR_UNITS_G4`
+(`lib/curriculum/src/englishGrammarG4.ts`), so nobody sees any of it yet.** Spec:
+`docs/superpowers/specs/2026-10-22-english-corner-grammar-g4-design.md`; plan:
+`docs/superpowers/plans/2026-10-22-english-corner-grammar-g4.md`.
+
+- **Pictures only where a picture shows what the sentence says.** The book's grammar is
+  comparison, modals and the past simple, and a picture shows none of them. Countries,
+  foods and jobs (S1 U1, U3, U5) are pictured; S2 U8 is pictured only for there was /
+  wasn't / were. S1 U2, S2 U7, U9 and U10 carry none (Choose and Build).
+- **Engine, all additive** (`englishGrammar.ts`): `{cmp:}` and `{sup:}` read an explicit
+  `ADJECTIVE_FORMS` table (11 adjectives); `{ed:}` is the past (+ed, +d, `stop` →
+  `stopped`, irregulars in `PAST_OVERRIDES`); a form Choose can name its wrong option
+  (`base`, `past`, `comparative`) so the child only ever sees real forms («higher» /
+  «high», «the deepest» / «the deeper», «used» / «use»); a `claim` gives a picture-free
+  True or false (a true sentence or its swapped twin); a `fact` Yes or No no longer
+  needs a picture; the hint «✅ = it was there».
+- **True or false and Yes or No without pictures, S1 U4 only,** from six written ranking
+  pairs (mountain > hill, lake > pool, sea > lake, river > stream, lion > rabbit, shark
+  > goldfish). Every pair is on the form's data page. The app's two screens hide the
+  picture area when an item has none.
+- **Build the sentence keeps its cap of 9.** A longer pair builds its answer half.
+- **The teacher's form and sheet** are `docs/english-grammar-g4-review.html` and
+  `-sheet.md`, written by the `grammar-sheet` script and pinned by tests. A **data
+  page** at the front prints eight tables a teacher must check: the comparisons and
+  their false twins, the adjective forms, countable / uncountable foods, the eight
+  must / mustn't rules, nationalities, the past forms, the invented timetable, and the
+  adverb rows. Grade 1–3 sheets and forms and all three reading forms are
+  byte-identical. Open points for the teacher are listed in the spec.
+- **Left out on purpose:** ordinal numbers (the book gives no sentence frame), dates and
+  times beyond S1 U2's examples, S2 U6, new pictures, and reading (the next spec).
+- **Audio** is a separate step and has not been run: `english-audio` now also voices the
+  Grade 4 sentences, the Build prompts and the false twins. It needs OpenAI and R2 keys.
+- **Verified:** curriculum 572 tests, mobile 6662 pass / 10 skipped / 0 fail, root
+  typecheck. **In a browser** at 390 px in Arabic and English with five units signed off
+  in the working tree only (restored straight after; never committed;
+  `grep -c "LOCAL CHECK"` is 0): the activity matrix of all nine lessons (an unsigned unit
+  showed nothing), S1 U4 True or false (six items, swapped twins judged false, no picture)
+  and Yes or No (eight picture-free facts), S2 U8's hint, S2 U9's «visited / visit»
+  Choose, S1 U1's flag Yes or No, and no horizontal scroll anywhere.
+- **Not verified:** on a device; with a teacher; every ranking pair as a fact (the
+  teacher checks them); the audio.
+
+**To switch a unit on:** record the audio; a Grade 4 English teacher signs that unit's
+page of `docs/english-grammar-g4-review.html`, printed (and the data page); then set its
+`reviewedBy` in `englishGrammarG4.ts` and merge. Grade 4 reading is the next spec.
+
 ## Lesson games from a lesson's key terms — 2026-10-22
 
 **What changed.** A lesson with at least four key terms (`keywordsAr`) gets
@@ -491,6 +640,110 @@ Chromium on the web build — memory, spot (6/6) and scramble (5/6, the hinted
 one not scoring) played to the game-over panel. **Not verified:** PostHog
 delivery (no key locally), the lesson-page button (behind teacher login),
 Android.
+
+## Grade 3 reading in the English corner — built, shown to nobody yet, 2026-10-22
+
+Reading activities for Grade 3, after Grades 1 and 2: the three word activities on
+the 8 hub lessons and «Read the sentence» on three of them. **Every unit is
+`reviewedBy: null` in `READING_UNITS` (`lib/curriculum/src/englishReading.ts`), so
+nobody sees any of it yet.** Spec:
+`docs/superpowers/specs/2026-10-22-english-corner-reading-g3-design.md`; plan:
+`docs/superpowers/plans/2026-10-22-english-corner-reading-g3.md`.
+
+- **Word activities.** First letter on all 8 lessons; Read and find and Starts with
+  on S1 U3, U5, S2 U7, U9, U10 (the lessons whose words have pictures). S1 U2, S1 U4
+  and S2 U8 get First letter only. The Grade 1 first-sound rule needed no new
+  exception: it leaves out 20 words, all listed on the form with the reason.
+- **Read the sentence** on S1 U3 (26 sentences, round of 8), S1 U5 (22, round of 8;
+  the six transport sentences come as he / she pairs, so the other sex's picture is
+  a wrong answer) and S2 U9 (18, **round of 6**: six pictured words, each as
+  There's / There isn't / There are, so the first other form is the partner). The
+  rule is Grade 2's, on the data: pictured grammar sentences that are not Yes or No,
+  at least 6 distinct picture words. `readSentencePool` now serves Grades 2 and 3;
+  Grade 1 stays excluded. It needs the reading AND the grammar sign-off of the unit.
+- **Code change is curriculum only.** `games.ts`, the screen, the lesson card and
+  the strings are grade-agnostic and needed nothing; tests pin the builder on the
+  Grade 3 pools (`englishReadingG3Games.test.ts`) and the data
+  (`englishReadingG3.test.ts`).
+- **The teacher's form** is `docs/english-reading-g3-review.html` (8 unit pages, 126
+  words, 66 sentences, a «غير مشمول» note for the 7 lessons with a gap), written by
+  the `grammar-sheet` script and pinned by a test. The Grade 1 and 2 reading forms
+  and all grammar sheets and forms are byte-identical.
+- **Verified:** curriculum 544 tests, mobile 6647 pass / 10 skipped / 0 fail,
+  root typecheck. **In a browser** at 390 px in Arabic and English, with sign-offs
+  in the working tree only (restored straight after; never committed): the sentence
+  card shows on S1 U5 and S2 U9 only; S1 U3 with reading but not grammar signed
+  shows the three word cards and no sentence card; S2 U7 shows words only; an
+  unsigned unit shows nothing; no horizontal scroll; a full S2 U9 round is exactly 6
+  questions then «Finished»; S1 U5 rounds are 8; the partner cards (girl's
+  underground against «He goes…», the single ✅ clock against «There are clocks.»)
+  fit and read clearly.
+- **Not verified:** on a device; with real teacher sign-off; the audio — «Read the
+  sentence» plays the grammar recording after the answer and adds none of its own,
+  so it needs the pending `english-audio` run (OpenAI and R2 keys).
+- **Known limit:** S2 U9's round is 6 questions, not 8, because only six of its
+  words have pictures; the form asks the teacher whether that is enough.
+
+**To switch a unit on:** record the audio; sign and set the unit's grammar
+(`englishGrammarG3.ts`); a Grade 3 English teacher signs that unit's page of
+`docs/english-reading-g3-review.html`, printed; then set its `reviewedBy` in
+`englishReading.ts` and merge. Grade 4 is the next grade.
+
+## Grade 3 grammar in the English corner — built, shown to nobody yet, 2026-10-22
+
+Grammar for Grade 3, after Grades 1 and 2. 8 hub lessons (S1 U2–U5, S2 U7–U10),
+**324 sentences**. S1 U1 (this / these / that / those) and S2 U6 are book units
+with no vocabulary list, so they are not hub lessons and have no grammar here.
+**Every unit is `reviewedBy: null` in `GRAMMAR_UNITS_G3`
+(`lib/curriculum/src/englishGrammarG3.ts`), so nobody sees any of it yet.** Spec:
+`docs/superpowers/specs/2026-10-21-english-corner-grammar-g3-design.md`; plan:
+`docs/superpowers/plans/2026-10-21-english-corner-grammar-g3.md`.
+
+- **Pictures only where the sentence is shown by them.** S1 U2 (routines), S1 U4
+  (activities), S2 U7 (farm actions) and S2 U8 (forest) carry none, because their
+  words are verbs and phrases. They get Choose the word and Build the sentence
+  (S2 U10 gets Build and Yes or No: every pattern there is a Yes or No, and a Yes
+  or No sentence is never a Choose item). True or false is on S1 U3, U5 and S2 U9;
+  Yes or No on S2 U9 and U10. No new pictures.
+- **Engine, all additive** (`englishGrammar.ts`): plural and article forms for
+  Grade 3 words (`mangoes`, `ice lollies`, `glasses`, `shampoo`); verb forms
+  `{v:slot}` (a base verb phrase, one tile per word), `{3:slot}` (third person:
+  `has`, `goes`, `does`, `watches`, `roller skates`) and `{ing:slot}`; a verb-form
+  Choose (`plays` against `play`, found by comparing the two realisations);
+  `rows` (explicit slot values: a routine with its time, an animal with its
+  ability); a `fact` Yes or No (`Can penguins swim?`, answered from the row) and
+  a `hint` («✅ = it's there»); and Build's `build` field.
+- **Build the sentence: a cap of 9 for Grade 3, 7 for Grades 1–2** (`buildCap`).
+  A longer question-and-answer pair builds its **answer half**, the question
+  printed and spoken above the tiles; the form says so under the sentence. A
+  sentence that can be built neither way is `build: null` and a test fails for any
+  Grade 3 sentence like that. A Yes or No round is as long as the lesson's
+  distinct pictures (six on S2 U9), one picture each.
+- **The teacher's form and sheet** are `docs/english-grammar-g3-review.html` and
+  `-sheet.md`, written by the same `grammar-sheet` script; tests pin them. Grade 1
+  and 2 sheets and forms and both reading forms are byte-identical. Open points
+  for the teacher: the 16 animal-ability facts (every row listed), «✅ = it's
+  there», building only the answer half of long pairs, the paired routine times,
+  and the third-person forms.
+- **A known defect, not fixed for Grades 1–2:** their slot Choose measured the
+  wrong word with the right word's span, so «I'm wearing boots.» offers «boots»
+  against just «a» (4 rows: Grade 1 boots, socks; Grade 2 boots, shoes). Grade 3
+  measures the other word's own span; Grades 1–2 keep the old measure so their
+  printed forms stay byte-identical. The fix is one condition (`grade >= 3` in
+  `unitSentences`) plus regenerated docs; raised as a separate task.
+- **Audio** is a separate step and has not been run: `english-audio` now also
+  voices the Grade 3 sentences and the Build prompts (the question halves). It
+  needs OpenAI and R2 keys.
+- **Checked in a browser** at 390 px in Arabic and English with units signed off in
+  the working tree only (restored straight after; never committed): the activity
+  matrix per lesson, a picture-free verb-form Choose, an answer-half Build (question
+  above with a hear button, six answer tiles, judged right), Yes or No `fact` with
+  no hint and `marker` with the «it's there» hint, no horizontal scroll, and an
+  unsigned unit showing nothing.
+
+**To switch a unit on:** record the audio; a Grade 3 English teacher signs that
+unit's page of `docs/english-grammar-g3-review.html`, printed; then set its
+`reviewedBy` in `englishGrammarG3.ts` and merge. Grade 3 reading is the next spec.
 
 ## Teachers' phones open on Today — 2026-10-22
 

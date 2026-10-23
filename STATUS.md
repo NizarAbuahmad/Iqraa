@@ -80,20 +80,25 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-23 — Grade 9 grammar pilot (Unit 4) in the English corner — built, shown to nobody yet
 - 2026-10-23 — Icons follow one system
 - 2026-10-22 — Today wears the lesson's subject
 - 2026-10-22 — Grade 5 in the English corner — words glossed, recordings still to make
 - 2026-10-22 — The desktop Tools grid reads right to left in Arabic
 - 2026-10-22 — Live games: students answer from any device
 - 2026-10-22 — Status-bar icons read on the corner bands
+- 2026-10-22 — Grade 4 reading in the English corner — built, shown to nobody yet
 - 2026-10-22 — Game buttons read in dark mode
 - 2026-10-22 — A lesson game can be homework, and the teacher sees the scores
 - 2026-10-22 — Any deck plays as Class Challenge, with sound
 - 2026-10-22 — Progress is celebrated
 - 2026-10-22 — Math Corner exercises: learn or test yourself on a lesson from the book
+- 2026-10-22 — Grade 4 grammar in the English corner — built, shown to nobody yet
 - 2026-10-22 — Lesson games from a lesson's key terms
 - 2026-10-22 — Teachers' phones open on Today
 - 2026-10-22 — Book-picture slides no longer share one title
+- 2026-10-22 — Grade 3 reading in the English corner — built, shown to nobody yet
+- 2026-10-22 — Grade 3 grammar in the English corner — built, shown to nobody yet
 - 2026-10-21 — Each corner has its own colour and band
 - 2026-10-21 — Cards lift, presses give, screens arrive — 2026-10-21
 - 2026-10-20 — Grade 2 reading in the English corner — built, shown to nobody yet
