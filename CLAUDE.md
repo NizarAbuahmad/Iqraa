@@ -113,6 +113,111 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   shipped build overrides it with `EXPO_PUBLIC_DEMO_MODE=false`: Android
   (`eas.json`, `mobile-update.yml`) and, since 2026-10-16, the web (`deploy.yml`).
 
+## Working here with Claude Code (team setup)
+
+New to the repo? [`docs/team-onboarding.md`](./docs/team-onboarding.md) lists what
+you set up yourself (Claude seat, GitHub, GCP / Neon / Cloudflare access). The repo
+is **public**: nothing below, or anywhere in it, may hold a secret value.
+
+**Shared config is committed; personal config is not.** `.claude/settings.json`
+(permission allowlist + deny list), `.mcp.json` (Playwright only), `.claude/agents/`
+and `.claude/skills/` are shared — change them in a PR. Your own tweaks go in
+`.claude/settings.local.json` and `CLAUDE.local.md`, both gitignored.
+
+**Secrets**
+- Never read, `cat`, `grep` or print a `.env` file, and never print Cloud Run env.
+  The settings deny `gcloud run revisions describe`, `revisions list`,
+  `services describe` and printing an access token. A narrow
+  `--format="value(...)"` read of one field (a traffic split, say) needs a local
+  override in `.claude/settings.local.json`, or the person running it themselves.
+  The deny rules are prefix matches: they do not cover PowerShell or every shell
+  form, so branch protection and not reading `.env` files are the real guards, not
+  the list. A key that reached a transcript, a PR or a log is rotated — see *Rotating a secret*
+  in [`docs/deploying.md`](./docs/deploying.md).
+- Credentials are Secret Manager references on Cloud Run. Rotating one is
+  `gcloud secrets versions add` plus a new revision, never an env edit.
+- No shared keys. Each person gets their own access through IAM / their own account.
+
+**PRs and shipping**
+- Never push to `main`. `main` requires an up-to-date branch and a green
+  `typecheck + tests` job, and enforces both for admins. If `gh pr merge` is
+  refused because `main` moved, run `gh pr update-branch <n>` and wait for CI.
+- Run what CI runs before you open a PR: `pnpm run typecheck`; api-server
+  `pnpm build` then `pnpm test`; mobile `pnpm test`; curriculum `test` and
+  `verify`; `python -X utf8 test_equations.py` in `artifacts/math-verifier`.
+- **A change you cannot undo by reverting the commit goes up as a draft PR** (a
+  schema drop, removing a service block, anything whose rollback needs secrets
+  re-typed). GitHub refuses to merge a draft; "do not merge yet" in the body stops
+  nothing. Caveats go in the PR body, not only in chat.
+- Merging to `main` deploys: the API and verifier to Cloud Run (project
+  `iqraa-auth-507315`, `europe-west1`), then the web bundle to Cloudflare Pages
+  (`.github/workflows/deploy.yml`, details in `docs/deploying.md`).
+- The app ships over the air. A merge publishes to the `preview` channel on its own;
+  the **`production` channel is manual**:
+  `gh workflow run mobile-update.yml -f branch=production`. An OTA only reaches a
+  binary with the same `app.json` `version` (see the runtime-version trap below).
+  A native change needs a real build instead; run EAS builds from a clean worktree
+  of `main` after `pnpm install --filter "./artifacts/mobile..."` (the CLI resolves
+  Expo plugins locally), and expect ~25 minutes of mostly silence.
+- Schema changes are migrations only (see *The schema deploys as migrations*
+  below). Never `push`, never hand-run DDL on production — the next migration then
+  fails with "already exists". `lib/db` scripts read the repo-root `.env`, which
+  points at a local database; never put a production URL in it.
+
+**Parallel sessions: one worktree per task.** Two Claude sessions in one checkout
+share a working tree and an index: a second session that runs `git checkout`
+silently discards your uncommitted edits to tracked files, and its `git commit` can
+sweep in your staged files.
+- `git worktree add ../wt-<task> -b <branch> origin/main`, work and commit there, and
+  `git add` named paths — never `-A` or `.`. Check `git diff --cached --stat` for
+  files you did not touch before committing.
+- A fresh worktree needs a **full** `pnpm install` (a filtered one leaves
+  `lib/curriculum` without `@types/node`) and `tsc --build` at the root; until then
+  typecheck prints dozens of phantom errors (`TS6305`, "cannot find module
+  `@workspace/...`"). A worktree whose `node_modules` is a junction to another
+  checkout resolves `@workspace/*` to *that* checkout's `lib/` — do not trust its
+  typecheck or tests.
+- The mobile suite prints nothing until it finishes (minutes). That is not a hang.
+- To run the app from a worktree: copy `.env` and `artifacts/mobile/.env` from your
+  main checkout (do not open them), start the API with `AI_LIVE_MODE=false`, and
+  register a throwaway teacher (the API logs the 6-digit code when there is no
+  `RESEND_API_KEY`). Do **not** start Expo with `CI=1` if you will keep editing — it
+  turns off Metro's file watching and you will debug stale code.
+- Deleting a finished worktree on Windows hits `MAX_PATH` once `pnpm install` has
+  run in it. In Git Bash: `rm -rf <worktree>` (backgrounded, ~2 min), then
+  `git worktree prune` and `git branch -D <branch>`.
+- A subagent started with `isolation: "worktree"` reports its PR and stops; the
+  parent cleans up its worktree, never the agent.
+- Finding a rebase or merge in progress that you did not start: do not
+  `--abort` or `--continue` it. It is someone else's half-finished work.
+
+**Tool pitfalls that corrupt files silently**
+- No `sed -i` or `perl -pi` on source. Files are UTF-8 with Arabic and `${...}`,
+  and a substitution once turned spaces into NUL bytes while tests stayed green. Use
+  the Edit tool, even for a throwaway mutation. A `git diff --stat` line reading
+  `Bin N -> M bytes` for a text file means corruption.
+- The Bash tool rewrites backslash escapes inside commands and heredocs: `−`
+  arrives as the literal character, `\\n` as a real newline, `\\-` as a bare `-`
+  (which turns a regex class into a range that matches Arabic letters). In a patch
+  script build special characters from code (`String.fromCodePoint(0x2212)`), put
+  `-` last in a character class, and read the resulting `git diff`. Node on Windows
+  cannot open `/tmp/x.cjs`; give it a Windows path.
+- The Claude desktop Browser pane never fires `animationend`, so react-native-web
+  fade/slide `Modal`s never become active there (no Escape, no focus trap). Check
+  modal keyboard behaviour with Playwright (`e2e/`), not that pane.
+
+**Product wording**
+- The Latin product name is **Iqrra** (two r's), as in iqrra.com — never "Iqraa" or
+  "Iqra" in copy, designs, wordmarks or PR titles. (The repo, folders and package
+  names stay `Iqraa`.)
+- The Arabic brand is **«إقرأ»** (hamzat qatʿ). The verb «اقرأ» ("read") is
+  ordinary copy and stays; CI fails the old spelling in the files that name the
+  product and the quoted form in the app's and API's source (`ci.yml`, "Brand is
+  «إقرأ»"). The drawn wordmark artwork still shows «اقرأ» — it is a
+  picture, not text.
+- Before handing back a regenerated quiz, exam or worksheet, read the new questions
+  and check each answer key yourself; a model's Arabic reads fluently either way.
+
 ## Things that have bitten before
 
 - **Verify claims against the running system.** Several past bugs were things a
