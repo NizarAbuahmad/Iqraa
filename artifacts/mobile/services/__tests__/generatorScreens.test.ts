@@ -14,6 +14,7 @@ import { join } from 'node:path';
 import { CONCEPTS } from '../../constants/icons.ts';
 import { bandGradient } from '../band.ts';
 import { contrast, readableOn, tintOver } from '../readableColor.ts';
+import { chipLocked } from '../chipRules.ts';
 import translations from '../i18n.ts';
 
 const ROOT = join(import.meta.dirname, '..', '..');
@@ -307,6 +308,8 @@ const lessonPlan = read('app', 'ai-tools', 'lesson-plan.tsx');
 const lessonPlanCode = code(lessonPlan);
 const activity = read('app', 'ai-tools', 'activity.tsx');
 const activityCode = code(activity);
+const slides = read('app', 'ai-tools', 'slides.tsx');
+const slidesCode = code(slides);
 
 test('the worksheet imports every shared piece and draws its controls with them', () => {
   for (const name of ['SegmentedControl', 'Stepper', 'ChipGroup', 'LessonCard', 'DockedAction', 'GeneratorLayout', 'PaperPreview']) {
@@ -372,7 +375,7 @@ test('the distribution control appears on a wide scope only', () => {
 
 test('a ported screen draws the docked bar on a phone and the inline action on desktop', () => {
   // The worksheet once built `action` and never rendered `action(true)`: a phone had no button at all.
-  for (const [name, src] of [['quiz', code(read('app', 'ai-tools', 'quiz.tsx'))], ['worksheet', worksheetCode], ['lesson plan', lessonPlanCode], ['activity', activityCode]] as const) {
+  for (const [name, src] of [['quiz', code(read('app', 'ai-tools', 'quiz.tsx'))], ['worksheet', worksheetCode], ['lesson plan', lessonPlanCode], ['activity', activityCode], ['slides', slidesCode]] as const) {
     assert.match(src, /\{isDesktop \? null : action\(true\)\}/, `${name}: no docked bar on a phone`);
     assert.match(src, /\{action\(false\)\}/, `${name}: no inline action under the desktop preview`);
   }
@@ -540,7 +543,7 @@ test('the primary label is centred and may take two lines, and the secondary sta
 test('a disabled chip never counts towards min', () => {
   const src = code(read('components', 'generator', 'ChipGroup.tsx'));
   assert.match(src, /const counted = options\.filter\(o => !o\.disabled && selected\.has\(o\.id\)\)\.length;/);
-  assert.match(src, /const locked = !single && on && !off && counted <= min;/);
+  assert.match(src, /const locked = chipLocked\(\{ single, on, off, counted, min \}\);/, 'the lock rule is the tested pure one');
   assert.doesNotMatch(src, /selected\.size/);
 });
 
@@ -784,7 +787,7 @@ test('ChipGroup has a single-choice mode: radio semantics, the chosen chip inert
   // A radio is not switched off: pressing the chosen chip neither buzzes nor calls the screen.
   assert.match(src, /if \(locked \|\| off \|\| \(single && on\)\) return;/);
   // `min` belongs to multi-select; it must not lock the one chosen chip as «disabled».
-  assert.match(src, /const locked = !single && on && !off && counted <= min;/);
+  assert.match(src, /const locked = chipLocked\(\{ single, on, off, counted, min \}\);/, 'the lock rule is the tested pure one');
   assert.match(src, /minHeight: 44/);
   // The existing screens do not pass it.
   // Every <ChipGroup .../> element of the multi-select screens, whole: none of them carries a `single` prop in any position.
@@ -1011,4 +1014,214 @@ test('the activity result headings share their text with the preview, and no unu
   assert.doesNotMatch(activityCode, /'الهدف'|'Objective'/);
   assert.doesNotMatch(activityCode, /\bICON\b/);
   assert.doesNotMatch(activityCode, /lang=\{outLang\}/);
+});
+
+// ── The slides ──────────────────────────────────────────────────────────────
+
+test('the slides import the shared pieces they use and draw them, with one generate action', () => {
+  for (const name of ['ChipGroup', 'LessonCard', 'DockedAction', 'GeneratorLayout', 'PaperPreview']) {
+    assert.match(slides, new RegExp(`from '@/components/generator/${name}'`), `slides.tsx does not import ${name}`);
+    assert.match(slidesCode, new RegExp(`<${name}\\b`), `slides.tsx imports ${name} and does not draw it`);
+  }
+  assert.equal((slidesCode.match(/<DockedAction\b/g) ?? []).length, 1);
+  assert.doesNotMatch(slidesCode, /secondary=/);
+  assert.doesNotMatch(slidesCode, /<Button\b/, 'the generate button is the DockedAction now');
+  assert.doesNotMatch(slidesCode, /const Toggle\b|<Toggle\b/, 'the three toggles are chips now');
+});
+
+test('the slides keep TopicSelector mounted inside the lesson card, the lesson by id, and the lesson pins mounted', () => {
+  assert.equal((slidesCode.match(/<TopicSelector\b/g) ?? []).length, 1);
+  assert.match(slidesCode, /<LessonCard[\s\S]*<TopicSelector\b[\s\S]*<\/LessonCard>/);
+  assert.doesNotMatch(slidesCode, /lessonOpen\s*(\?|&&)/, 'the open state may only change the card, never mount or unmount the pickers');
+  assert.match(slidesCode, /allowedKinds=\{\['lesson', 'unit', 'semester', 'book'\]\}/);
+  assert.match(slidesCode, /onScopeChange=\{wideScope\.setScopeSel\}\s+offlineWideScope/);
+  assert.match(slidesCode, /hasError=\{!!validationError && !topic\}/);
+  const gradePicker = /<PickerField label=\{t\('grade'\)\}[\s\S]*?\/>/.exec(slidesCode)?.[0] ?? '';
+  assert.match(gradePicker, /hidden=\{teacherScope\.gradeHidden\}/);
+  assert.match(gradePicker, /maxHeight=\{220\}/);
+  assert.match(slidesCode, /<LessonCard[\s\S]*<StrandedSelectionNote\b[\s\S]*<\/LessonCard>/);
+  assert.match(slidesCode, /<PickerField label=\{t\('subjects'\)\}[^>]*hidden=\{subjectHidden\}[^>]*maxHeight=\{220\}/);
+  assert.match(slidesCode, /const stranded = subjectHidden\?\.\[subjectIdx\] === true;/);
+  // Locked while a refusal shows too: the «تم» button would do nothing (the card is forced open) and the card would fold while typing.
+  assert.match(slidesCode, /locked=\{!topic\.trim\(\) \|\| stranded \|\| refusal\}/);
+  assert.match(slidesCode, /expanded=\{lessonOpen \|\| stranded \|\| refusal\}/);
+  assert.match(slidesCode, /usePickedLesson\(/);
+  assert.match(slidesCode, /const groundingOptions = \{ lessonId: pickedLessonId, scope: kbScope \};/);
+  // The lesson's pins follow the lesson card, outside its body so folding the card never hides them, with their conditions untouched.
+  assert.match(slidesCode, /<\/LessonCard>[\s\S]*\{!wideScope\.isWide && <LessonResources topic=\{topic\.trim\(\)\} onChange=\{setAttached\} \/>\}\s*<LessonAttachments lessonId=\{groundedLessonId\} onChange=\{setUploadedAttachments\} \/>\s*<LessonLabItems lessonId=\{groundedLessonId\} isAr=\{isAr\} picks=\{labPicks\} onChange=\{setLabPicks\} \/>/);
+});
+
+test('the slides keep their switches, their defaults and the saved deck options', () => {
+  assert.match(slidesCode, /const \[includeExamples, setIncludeExamples\] = useState\(\(\) => readFlagParam\(params\.includeExamples, true\)\);/);
+  assert.match(slidesCode, /const \[includePractice, setIncludePractice\] = useState\(\(\) => readFlagParam\(params\.includePractice, true\)\);/);
+  assert.match(slidesCode, /const \[includeAttachments, setIncludeAttachments\] = useState\(\(\) => readFlagParam\(params\.includeAttachments, false\)\);/);
+  assert.match(slidesCode, /type DeckOptions = \{ includeExamples: boolean; includePractice: boolean; includeAttachments: boolean \};/);
+  assert.match(slidesCode, /\.\.\.\(generated\?\.options \?\? \{ includeExamples, includePractice, includeAttachments \}\),/);
+  assert.match(slidesCode, /options: \{ includeExamples, includePractice, includeAttachments \},/);
+  assert.match(slidesCode, /\.\.\.scopeFormState\(wideFrozen, 'balanced'\),/);
+  for (const param of ['gradeIdx', 'subjectIdx', 'topic', 'savedId', 'includeExamples', 'includePractice', 'includeAttachments', 'scope', 'lessonId']) {
+    assert.match(slidesCode, new RegExp(`${param}\\?: string`), `route param ${param} was dropped`);
+  }
+});
+
+test('the three switches are one multi-select chip group over the same booleans, offered under the same conditions, clearable', () => {
+  assert.match(slidesCode, /<ChipGroup\s+label=\{t\('genSlidesIncludeLabel'\)\}\s+options=\{includeOptions\}\s+selected=\{includeSelected\}\s+onToggle=\{toggleOption\}\s+min=\{0\}/);
+  assert.doesNotMatch(slidesCode, /<ChipGroup\s+single/);
+  // The conditions the toggles had, unchanged: examples and attachments never on a wide scope; attachments only when there are some.
+  assert.match(slidesCode, /const offerExamples = !wideScope\.isWide;/);
+  assert.match(slidesCode, /const offerAttachments = hasAttachments && !wideScope\.isWide;/);
+  assert.match(slidesCode, /\.\.\.\(offerExamples \? \[\{ id: 'examples' as const, label: t\('genSlidesOptExamples'\) \}\] : \[\]\),\s*\{ id: 'practice' as const, label: t\('genSlidesOptPractice'\) \},\s*\.\.\.\(offerAttachments \? \[\{ id: 'attachments' as const, label: t\('genSlidesOptAttachments'\) \}\] : \[\]\),/);
+  // Each chip flips its own boolean and nothing else, and a hidden chip leaves its boolean exactly as it was.
+  assert.match(slidesCode, /if \(id === 'examples'\) setIncludeExamples\(v => !v\);\s*else if \(id === 'practice'\) setIncludePractice\(v => !v\);\s*else setIncludeAttachments\(v => !v\);/);
+  assert.match(slidesCode, /\.\.\.\(includeExamples \? \['examples' as const\] : \[\]\),\s*\.\.\.\(includePractice \? \['practice' as const\] : \[\]\),\s*\.\.\.\(includeAttachments \? \['attachments' as const\] : \[\]\),/);
+  // min 0 really lets every chip be cleared: the lock rule is the tested pure one, and min is not raised.
+  assert.match(code(read('components', 'generator', 'ChipGroup.tsx')), /const locked = chipLocked\(\{ single, on, off, counted, min \}\);/);
+  assert.match(code(read('components', 'generator', 'ChipGroup.tsx')), /min = 0/);
+  assert.equal(chipLocked({ single: false, on: true, off: false, counted: 1, min: 0 }), false);
+  // Generation reads the same three booleans.
+  assert.match(slidesCode, /includeExamples,\s*includePractice,\s*graphCommands: extractGraphCommands/);
+});
+
+test('the slides button is not disabled; every refusal is shown in the lesson card and brought into view, and a second press scrolls again', () => {
+  const action = slidesCode.slice(slidesCode.indexOf('const action = ('), slidesCode.indexOf('const form = ('));
+  assert.doesNotMatch(action, /disabled=|hint=/, 'this screen never disabled the button');
+  assert.match(action, /hidden=\{docked && deckUnsaved\}/);
+  assert.match(action, /label=\{loading \? t\('slidesBuilding'\) : t\('slidesBuild'\)\}/);
+  assert.match(action, /onPress=\{\(\) => generate\(\)\}/);
+  assert.match(slidesCode, /const refuse = \(msg: string\) => \{ setValidationError\(msg\); setError\(''\); setCancelled\(false\); \};/);
+  for (const refusal of ["refuse(t('topicRequired'))", "refuse(t('scopeNoCurriculum', scope.grade, scope.subject))", "refuse(t('wideScopeUngrounded'))", "refuse(t('subjectTopicMismatch'"]) {
+    assert.ok(slidesCode.includes(refusal), `a refusal went missing: ${refusal}`);
+  }
+  // Inside the card, where every one of them is about; the card opens for it (so it is measurable) and stays open when it clears.
+  assert.match(slidesCode, /\{validationError \? \(\s*<View ref=\{refusalRef\} collapsable=\{false\}>/);
+  assert.match(slidesCode, /expanded=\{lessonOpen \|\| stranded \|\| refusal\}/);
+  assert.match(slidesCode, /useEffect\(\(\) => \{ if \(!topic\.trim\(\) \|\| validationError\) setLessonOpen\(true\); \}, \[topic, validationError\]\);/);
+  assert.match(slidesCode, /const refusal = !!validationError;/);
+  // Measure-and-scroll on phone AND desktop, keyed on the attempt so the same refusal scrolls again.
+  assert.match(slidesCode, /useLayoutEffect\(\(\) => \{\s*if \(!refusal\) return;/);
+  assert.doesNotMatch(slidesCode, /isDesktop \|\| !refusal/);
+  assert.match(slidesCode, /top\.measureInWindow\(\(_x, topY\) => \{\s*target\.measureInWindow\(\(_tx, targetY\) => \{\s*scrollRef\.current\?\.scrollTo\(\{ y: Math\.max\(0, targetY - topY - Math\.round\(windowHeight \* 0\.4\)\), animated: !reduceMotion \}\);/);
+  assert.match(slidesCode, /\}, \[refusal, attempt\]\);/);
+  assert.match(slidesCode, /<View ref=\{contentTopRef\} collapsable=\{false\}>\s*<ToolHeader/);
+  // The status scroll yields to a refusal, depends on the attempt, and its phase still reads the two-phase flow.
+  assert.match(slidesCode, /if \(isDesktop \|\| statusPhase === 'idle' \|\| refusal\) return;/);
+  assert.match(slidesCode, /\}, \[statusPhase, attempt\]\);/);
+  assert.match(slidesCode, /const statusPhase = loading \? 'loading' : cancelled \? 'cancelled' : error \? 'error' : 'idle';/);
+  assert.match(slidesCode, /<GenerationStatus\s+phase=\{statusPhase\}/);
+  assert.match(slidesCode, /<View onLayout=\{e => \{ statusY\.current = e\.nativeEvent\.layout\.y; \}\}>\s*<GenerationStatus/);
+  // The attempt is counted before anything can refuse.
+  assert.match(slidesCode, /const \[attempt, setAttempt\] = useState\(0\);/);
+  assert.match(slidesCode, /const generate = async \(regen: ReturnType<typeof regenerationFields> = \{\}\) => \{\s*setAttempt\(n => n \+ 1\);\s*const trimmed = topic\.trim\(\);/);
+  assert.match(slidesCode, /loadingLabel=\{preliminary \? t\('slidesBuildingRest'\) : t\('slidesBuilding'\)\}/);
+});
+
+test('the slides pad for the docked bar and lock the draft deck while it is preliminary', () => {
+  assert.match(slidesCode, /paddingBottom: DOCKED_BAR_HEIGHT \+ SPACE\.xxl \+ insets\.bottom/);
+  assert.match(slidesCode, /<GeneratorLayout form=\{form\} side=\{side\} isDesktop=\{isDesktop\} \/>/);
+  assert.match(slidesCode, /style=\{\{ marginHorizontal: 20, opacity: preliminary \? 0\.6 : 1 \}\}\s*pointerEvents=\{preliminary \? 'none' : 'auto'\}/);
+  assert.match(slidesCode, /\{deck && \(!loading \|\| preliminary\) && \(/);
+});
+
+test('«من وصف حر» stays a quiet link in the form, reachable on phone and desktop, 44 points', () => {
+  assert.match(slidesCode, /router\.push\(\{ pathname: '\/ai-tools\/prompt-slides', params: topic\.trim\(\) \? \{ prompt: topic\.trim\(\) \} : \{\} \}\)/);
+  assert.match(slidesCode, /<PressableScale[^>]*onPress=\{\(\) => router\.push[\s\S]*?accessibilityRole="link"\s+style=\{styles\.promptLink\}/);
+  assert.match(slidesCode, /promptLink: \{[^}]*minHeight: 44/);
+  assert.match(slidesCode, /t\('slidesFromPromptLink'\)/);
+  // It is part of the form, not of the docked bar.
+  const form = slidesCode.slice(slidesCode.indexOf('const form = ('), slidesCode.indexOf('const side = ('));
+  assert.ok(form.includes("t('slidesFromPromptLink')"));
+  assert.ok(!slidesCode.slice(slidesCode.indexOf('const action = ('), slidesCode.indexOf('const form = (')).includes('slidesFromPromptLink'));
+});
+
+test('the slides wear their concept colour: no palette, no hand-written colour, ink on cards', () => {
+  assert.match(slidesCode, /const ACCENT = conceptOf\('slides'\)\.color;/);
+  assert.match(slidesCode, /const accentInk = readableOn\(ACCENT, colors\.card\);/);
+  assert.doesNotMatch(slidesCode, /import[^;]*\bpalette\b[^;]*from/);
+  assert.doesNotMatch(slidesCode, /\bpalette\b/);
+  assert.doesNotMatch(slidesCode, /#[0-9A-Fa-f]{3,8}\b/, 'a hand-written colour is left in the file');
+  assert.deepEqual(rawAccentLines(slidesCode), [], 'use the ink (readableOn(ACCENT, colors.card)) for text, icons and outlines on a card');
+  assert.match(slidesCode, /<TopicSelector[\s\S]*?accent=\{accentInk\}/);
+  assert.match(slidesCode, /<GenerationStatus[\s\S]*?accent=\{accentInk\}/);
+  assert.match(slidesCode, /<DockedAction[\s\S]*?accent=\{ACCENT\}/);
+  assert.match(/<PickerField label=\{t\('grade'\)\}[\s\S]*?\/>/.exec(slidesCode)?.[0] ?? '', /accent=\{accentInk\}/);
+  assert.match(slidesCode, /selectedTint=\{props\.accent \+ '15'\}/);
+  assert.doesNotMatch(slidesCode, /KeyboardAvoidingView/);
+  assert.doesNotMatch(slidesCode, /accessibilityState=/);
+});
+
+test('the raw-accent check bites in the slides\' own source', () => {
+  const from = "color: accentInk, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption";
+  assert.ok(slidesCode.includes(from), 'fixture drifted');
+  assert.equal(rawAccentLines(slidesCode.replace(from, "color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption")).length, 1);
+});
+
+test('the slides preview draws the sections a deck is built from, in the content language, and claims no slide count', () => {
+  assert.match(slidesCode, /const sections = deckSections\(\{ wide: wideScope\.isWide, examples: includeExamples, practice: includePractice \}\);/);
+  assert.match(slidesCode, /previewRows\(sections, sections\.length, sections\.length\)/);
+  assert.match(slidesCode, /const previewT = getT\(lang\);/);
+  assert.match(slidesCode, /previewT\(r\.type === 'exitTicket' && wideScope\.isWide \? 'genDeckExitTicketRevision' : DECK_SECTION_LABEL_KEY\[r\.type\]\)/);
+  assert.doesNotMatch(slidesCode, /\bt\(DECK_SECTION_LABEL_KEY/);
+  assert.match(slidesCode, /const summary = deckOptionsSummary\(\{\s*wide: wideScope\.isWide, examples: includeExamples, practice: includePractice, attachments: includeAttachments && offerAttachments,\s*\}, uiLang\);/);
+  assert.match(slidesCode, /nameLine=\{false\}/);
+  const side = slidesCode.slice(slidesCode.indexOf('const side = ('), slidesCode.indexOf('return (\n    <View style={{ flex: 1, backgroundColor'));
+  assert.doesNotMatch(side, /slideCount|deck\.slides/, 'the preview cannot know how many slides there will be');
+  assert.match(side, /t\('genPreviewDeckNote'\)/);
+  const keys = slidesCode.slice(slidesCode.indexOf('const DECK_SECTION_LABEL_KEY'), slidesCode.indexOf('} as const satisfies'));
+  for (const key of keys.match(/'gen[A-Za-z]+'/g) ?? []) {
+    for (const lang of ['ar', 'en'] as const) assert.ok(String((translations as any)[lang][key.slice(1, -1)] ?? '').trim(), `${lang}.${key} is missing`);
+  }
+  assert.equal((keys.match(/'gen[A-Za-z]+'/g) ?? []).length, 14);
+  for (const key of ['genSlidesIncludeLabel', 'genSlidesOptExamples', 'genSlidesOptPractice', 'genSlidesOptAttachments', 'genPreviewDeckNote']) {
+    for (const lang of ['ar', 'en'] as const) assert.ok(String((translations as any)[lang][key] ?? '').trim(), `${lang}.${key} is missing`);
+  }
+});
+
+test('a long chip label wraps inside its chip instead of running off a narrow screen', () => {
+  const src = code(read('components', 'generator', 'ChipGroup.tsx'));
+  assert.match(src, /maxWidth: '100%'/);
+  assert.match(src, /text: \{ fontSize: TYPE\.label, flexShrink: 1 \}/);
+});
+
+test('the docked bar yields to an unsaved deck on a phone, and the rebuild stays reachable inline above the results', () => {
+  // The screen's saved signal: `workspace.saved` (a saved link whose stored copy IS the deck on screen).
+  assert.match(slidesCode, /const deckUnsaved = !!deck && !loading && !workspace\.saved;/);
+  assert.match(slidesCode, /hidden=\{docked && deckUnsaved\}/);
+  assert.match(slidesCode, /\{isDesktop \? null : action\(true\)\}/);
+  // While the bar is hidden the same action is the last thing in the form (phone only; desktop keeps the side column's).
+  assert.match(slidesCode, /\{!isDesktop && deckUnsaved \? action\(false\) : null\}\s*<\/>\s*\);\s*const side = \(/);
+  assert.match(slidesCode, /\{action\(false\)\}/);
+  // It is the form's last child, after the quiet link and the chips.
+  const form = slidesCode.slice(slidesCode.indexOf('const form = ('), slidesCode.indexOf('const side = ('));
+  assert.ok(form.indexOf("t('slidesFromPromptLink')") < form.indexOf('action(false)'));
+  assert.ok(form.indexOf('<ChipGroup') < form.indexOf('action(false)'));
+  // The saved signal really is the one that is lit only for a stored copy equal to the deck on screen.
+  const hook = code(read('hooks', 'useDeckWorkspace.ts'));
+  assert.match(hook, /saved: showsSaved\(currentLink\(\)\),/);
+  const link = code(read('services', 'deckSaveLink.ts'));
+  assert.match(link, /return !!link\.savedId && link\.autoSync;/);
+});
+
+test('the slides toast is lifted above the docked bar while the bar is shown on a phone', () => {
+  assert.match(slidesCode, /<Toast [\s\S]*?bottomOffset=\{isDesktop \|\| deckUnsaved \? 0 : DOCKED_BAR_HEIGHT\} \/>/);
+  const toast = code(read('components', 'ui', 'Toast.tsx'));
+  assert.match(toast, /bottomOffset\?: number;/);
+  assert.match(toast, /bottomOffset = 0/, 'every other screen\'s toast stays where it was');
+  assert.match(toast, /bottom: 100 \+ insets\.bottom \+ bottomOffset,/);
+});
+
+test('the slides wording: neutral count note, one attachments word, the revision exit ticket, no dead toggle strings', () => {
+  const T = translations as any;
+  assert.match(T.ar.genPreviewDeckNote, /يتبع المحتوى/);
+  assert.doesNotMatch(T.ar.genPreviewDeckNote, /يتبع الدرس/);
+  assert.match(T.en.genPreviewDeckNote, /follows the content/);
+  assert.equal(T.ar.genSlidesOptAttachments, 'مرفقاتي');
+  assert.equal(T.en.genSlidesOptAttachments, 'My attachments');
+  assert.equal(T.ar.genDeckExitTicket, 'غلق الدرس', 'a lesson deck titles it «غلق الدرس»');
+  assert.equal(T.ar.genDeckExitTicketRevision, 'غلق الحصة', 'buildRevisionDeck titles it «غلق الحصة»');
+  assert.match(read('services', 'lessonSlides.ts'), /L\('غلق الحصة', 'Exit Ticket'\)/);
+  assert.match(read('services', 'lessonSlides.ts'), /L\('غلق الدرس', 'Exit Ticket'\)/);
+  for (const lang of ['ar', 'en'] as const) {
+    for (const dead of ['slidesIncludeExamples', 'slidesIncludePractice', 'slidesIncludeAttachments']) assert.equal(T[lang][dead], undefined, `${lang}.${dead} is dead and was removed`);
+  }
+  assert.doesNotMatch(read('app', 'ai-tools', 'slides.tsx'), /slidesInclude/);
 });

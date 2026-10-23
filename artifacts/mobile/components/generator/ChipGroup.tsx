@@ -36,6 +36,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { ICON } from '@/constants/icons';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 import { readableOn, tintOver } from '@/services/readableColor';
+import { chipLocked } from '@/services/chipRules';
 
 /** How much of the accent a selected chip carries (0x1F of 0xFF). */
 export const SELECTED_ALPHA = 0x1f / 255;
@@ -76,7 +77,7 @@ export function ChipGroup<T extends string>({ label, options, selected, onToggle
         {options.map(option => {
           const on = selected.has(option.id);
           const off = option.disabled === true;
-          const locked = !single && on && !off && counted <= min;
+          const locked = chipLocked({ single, on, off, counted, min });
           return (
             <PressableScale
               key={option.id}
@@ -121,6 +122,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACE.lg,
     borderRadius: RADIUS.pill,
     borderWidth: 1.5,
+    // A long label wraps inside the chip instead of running off a narrow screen.
+    maxWidth: '100%',
   },
-  text: { fontSize: TYPE.label },
+  text: { fontSize: TYPE.label, flexShrink: 1 },
 });

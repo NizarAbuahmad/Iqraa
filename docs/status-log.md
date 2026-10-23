@@ -10,6 +10,69 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Generator screens: the slides — 2026-10-23
+
+PR 5 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`, the last of the five tools. The
+slides screen (`app/ai-tools/slides.tsx`) is built from the shared pieces of `components/generator/`. Mobile
+only: nothing here changes what is asked of the model, the API, or what is stored.
+
+**What changed**
+| Field | Control |
+|---|---|
+| Grade, subject, `TopicSelector`, every refusal | `LessonCard` body (unchanged pickers with `maxHeight={220}`, `StrandedSelectionNote`, `hasError`) |
+| `LessonResources` (not on a wide scope), `LessonAttachments`, `LessonLabItems` | still mounted, same props, conditions and order, right after the card (outside its body, so folding it never hides them) |
+| `includeExamples` / `includePractice` / `includeAttachments` | one multi-select `ChipGroup` with `min={0}`; examples is not offered on a wide scope, attachments only when there are some and the scope is not wide; a hidden option keeps its boolean exactly as the toggles did |
+| «من وصف حر» link | a 44-point link in the form (phone and desktop), not in the docked bar |
+| Generate | one `DockedAction`, not disabled (a press with no topic sets the refusal, as before) |
+
+- **Refusals** (no topic, no curriculum for the scope, a topic from another subject, an ungroundable scope) all
+  show inside the lesson card in one measured view and are scrolled into view on a phone and on desktop, again on
+  a repeated press (`attempt`). While one shows the card cannot be folded (`locked` includes `refusal`) and an
+  effect keeps its stored open state true, so clearing the message while typing does not fold the card mid-word.
+- **The docked bar yields to an unsaved deck.** This screen has no save bar (its save lives in `DeckActions`), so
+  the other screens' rule does not apply as is; but a docked «جهّز الشرائح» under an edited, unsaved deck is one
+  mis-tap from losing the edits. The bar is hidden while `deckUnsaved = !!deck && !loading && !workspace.saved`
+  (`workspace.saved` is true only when the stored copy is exactly the deck on screen, so a saved deck keeps the
+  bar), and while it is hidden on a phone the same action renders inline at the end of the form, so rebuilding is
+  still a scroll away. The reopened-saved-deck case rests on `reopenedDeckLink`'s comments and was not run.
+- `Toast` takes an optional `bottomOffset` (default 0, every other screen unchanged); slides lifts it by the bar's
+  height while the bar is shown, because the toast used to sit under the bar's summary line.
+- `ACCENT` is the concept colour (blue); text and icons on a card use `accentInk`; no `palette` import and no hex
+  are left in the screen; the two `palette.success` uses became `colors.success`. The same raw-accent test and the
+  test proving it bites apply. The result area itself needed no change.
+- **`ChipGroup`** wraps a long label inside its chip, and its lock rule is now the pure `chipLocked`
+  (`services/chipRules.ts`, unit-tested; `min: 0` locks nothing).
+- **Preview:** one skeleton row per section a deck is built from, in the order of `buildLessonDeck` (cover,
+  outcomes, warm-up, vocabulary, explanation, checks, worked examples if ticked, practice if ticked, summary, exit
+  ticket, homework when practice is on) or `buildRevisionDeck` on a wide scope (exit ticket titled «غلق الحصة», as
+  that builder titles it; a test reads `lessonSlides.ts` to keep both). Titles in the content language. The footer
+  is grade and subject, because a slide count is unknowable; the note says the count follows the content. Summary
+  «شرائح · أمثلة · تدريب» (`deckOptionsSummary`, «شرائح مراجعة» on a wide scope).
+- i18n: 20 new `gen*` keys in both languages; `slidesIncludeExamples`, `slidesIncludePractice` and
+  `slidesIncludeAttachments` are deleted (nothing else used them; a test says so).
+
+**With this PR all five generator tools are ported.** The remaining old-teal and dropdown generator forms are
+gone; what is left of the older look is outside the five (the evaluations builder, the homework tool's result,
+the parent message, the lesson-flow screens), which the spec lists as out of scope.
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,146 tests, 7,136 pass, 10 skipped, 0 fail.
+Web-build screenshots, Arabic: phone (390) and desktop (1366), light and dark, with a lesson and without (a
+refusal scrolled into view with its reason beside the field); English at 360; a generated deck in dark; the
+unsaved-deck state with the bar hidden and the inline button in the form. An independent review found no blocker;
+its should-fix items (the «تم» button during a refusal, the bar under an unsaved deck) and its wording, toast and
+dead-key nits are fixed.
+
+**Not verified:** any device (the `measureInWindow` scroll on native, the keyboard, the iOS safe area, touch
+feel, screen readers); the reopened-saved-deck case; a wide-scope deck; a live-AI deck.
+
+**Known limits.** The preview draws one row for the checks that a real deck splits into two, and a real deck
+leaves out any section with nothing to say (the note says so). A toast shown while the soft keyboard is open (which
+also hides the bar) sits a little high on slides. The other four generator screens have the same toast and docked
+bar overlap once a result is saved. After a book-only deck's quota message the status scroll and the screen's
+existing 200 ms scroll-to-end both fire. The earlier entries' known limits still stand: the banner contrast on
+the lesson plan, worksheet and quiz header, and the Cancel-then-refusal message on the quiz, worksheet and lesson
+plan.
+
 ## Generator screens: the activity — 2026-10-23
 
 PR 4 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`. The activity screen
@@ -65,7 +128,7 @@ drawn on `ACCENT+'15'` over the page, about 4.2-4.4:1 in light mode; not measure
 fixed here, because it is on every generator screen: after Cancel, `cancelled` stays set and the phase expression
 puts it before `error`, so a later refusal (`scopeNoCurriculum`, `subjectTopicMismatch`, `wideScopeUngrounded`)
 shows «أُلغي» instead of the refusal; on this screen no press can reach a refusal with an empty topic, but the
-quiz, worksheet and lesson plan can. The slides screen is still on the old teal and dropdowns.
+quiz, worksheet and lesson plan can. The slides screen was still on the old teal and dropdowns when this shipped (done in the entry above).
 
 ## Generator screens: the lesson plan — 2026-10-23
 
