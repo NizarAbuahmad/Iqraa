@@ -305,3 +305,25 @@ test('a pictured sentence has no claim, and a picture-free match Yes or No still
   assert.equal(g[0].yesNo, null);
   assert.equal(g[0].claim, null);
 });
+
+test('the Grade 9 adjectives have their forms', () => {
+  for (const [adj, c, s] of [
+    ['cheap', 'cheaper', 'cheapest'], ['healthy', 'healthier', 'healthiest'], ['tasty', 'tastier', 'tastiest'],
+    ['expensive', 'more expensive', 'most expensive'], ['fattening', 'more fattening', 'most fattening'],
+    ['filling', 'more filling', 'most filling'], ['nutritious', 'more nutritious', 'most nutritious'],
+    ['popular', 'more popular', 'most popular'],
+  ] as const) {
+    assert.equal(comparativeOf(adj), c, adj);
+    assert.equal(superlativeOf(adj), s, adj);
+  }
+});
+
+test('a claim can swap two pairs of slots, so a capitalised first word swaps with its lower-case twin', () => {
+  const [s] = unitSentences(FORM_UNIT([{
+    id: 'c', text: '{bigC} are {cmp:adj} than {small}.',
+    rows: [{ bigC: 'Carrots', big: 'carrots', smallC: 'Doughnuts', small: 'doughnuts', adj: 'healthy' }],
+    claim: { swap: [['bigC', 'smallC'], ['big', 'small']] },
+  }]));
+  assert.equal(s.text, 'Carrots are healthier than doughnuts.');
+  assert.deepEqual(s.claim, { falseText: 'Doughnuts are healthier than carrots.' });
+});

@@ -271,6 +271,9 @@ function dataTable(title: string, headers: string[], rows: string[][]): string {
     <div class="table-wrap"><table class="data-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
 }
 
+/** The adjectives of Grade 4's S1 U4: the shared table has grown (Grade 9), but Grade 4's printed page lists only its own. */
+const GRADE_FOUR_ADJECTIVES = ['high', 'deep', 'wide', 'beautiful', 'boring', 'colourful', 'dangerous', 'delicious', 'difficult', 'exciting', 'interesting'];
+
 /** Everything in Grade 4 that is a claim rather than a sentence, built from the same rows and tables the units use. */
 function gradeFourDataPage(): string {
   const sentences = (lesson: string, pattern: string) => unitSentences(grammarUnit(lesson)!).filter(s => s.patternId === pattern);
@@ -283,7 +286,7 @@ function gradeFourDataPage(): string {
   const pastKind = (v: string) => (v === 'stop' ? 'تضعيف الحرف الأخير' : PAST_OVERRIDES[v] ? 'شاذ (من الجدول)' : 'منتظم (قاعدة -ed)');
   const tables = [
     dataTable('المقارنات: الجملة الصحيحة وتوأمها الخاطئ', ['الجملة الصحيحة', 'توأمها الخاطئ في «صح أم خطأ»'], sentences(U4, 'cmp').map(s => [s.text, s.claim!.falseText])),
-    dataTable('صيغ الصفات', ['الصفة', 'المقارنة', 'التفضيل'], Object.entries(ADJECTIVE_FORMS).map(([a, [c, sup]]) => [a, c, sup])),
+    dataTable('صيغ الصفات', ['الصفة', 'المقارنة', 'التفضيل'], Object.entries(ADJECTIVE_FORMS).filter(([a]) => GRADE_FOUR_ADJECTIVES.includes(a)).map(([a, [c, sup]]) => [a, c, sup])),
     dataTable('الأطعمة: معدودة أم غير معدودة', ['الطعام', 'التصنيف'], [
       ...T.foodPlural.map(f => [f, 'معدود بالجمع: There are a lot of …']),
       ...T.foodUncountable.map(f => [f, 'غير معدود: There\'s a lot of …']),

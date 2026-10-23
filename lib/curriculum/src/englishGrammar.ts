@@ -36,9 +36,10 @@ export interface GrammarPattern {
   /**
    * A picture-free True or false (Grade 4, S1 U4): the sentence is the true claim, and its false twin is the same
    * sentence with these two slots' fills swapped («The hill is higher than the mountain.»). Rows must make the
-   * unswapped sentence true.
+   * unswapped sentence true. Several pairs may be swapped at once (Grade 9: a capitalised first word swaps with
+   * its own capitalised twin, and the lower-case word with its lower-case twin).
    */
-  claim?: { swap: [string, string] };
+  claim?: { swap: [string, string] | [string, string][] };
   /**
    * What Choose the word blanks: a fixed phrase and its contrast, the slot's
    * word (the picture says which), or the whole answer after the question
@@ -203,6 +204,11 @@ export const ADJECTIVE_FORMS: Record<string, [string, string]> = {
   colourful: ['more colourful', 'most colourful'], dangerous: ['more dangerous', 'most dangerous'],
   delicious: ['more delicious', 'most delicious'], difficult: ['more difficult', 'most difficult'],
   exciting: ['more exciting', 'most exciting'], interesting: ['more interesting', 'most interesting'],
+  // Grade 9, S1 U4 (food and shopping adjectives).
+  cheap: ['cheaper', 'cheapest'], healthy: ['healthier', 'healthiest'], tasty: ['tastier', 'tastiest'],
+  expensive: ['more expensive', 'most expensive'], fattening: ['more fattening', 'most fattening'],
+  filling: ['more filling', 'most filling'], nutritious: ['more nutritious', 'most nutritious'],
+  popular: ['more popular', 'most popular'],
 };
 
 export function comparativeOf(adj: string): string {
@@ -526,7 +532,12 @@ export function unitSentences(unit: GrammarUnit): GrammarSentence[] {
       }
 
       const claim = p.claim
-        ? { falseText: realise(p.text, { ...fill, [p.claim.swap[0]]: fill[p.claim.swap[1]], [p.claim.swap[1]]: fill[p.claim.swap[0]] }).tokens.join(' ') }
+        ? (() => {
+            const pairs = (Array.isArray(p.claim.swap[0]) ? p.claim.swap : [p.claim.swap]) as [string, string][];
+            const swapped = { ...fill };
+            for (const [a, b] of pairs) { swapped[a] = fill[b]; swapped[b] = fill[a]; }
+            return { falseText: realise(p.text, swapped).tokens.join(' ') };
+          })()
         : null;
 
       let yesNo: GrammarSentence['yesNo'] = null;
