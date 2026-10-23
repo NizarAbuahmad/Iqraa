@@ -2,14 +2,14 @@
  "sourceId": "g8-math-s2-student-book",
  "figures": [
   {
-   "file": "p028.png",
+   "file": "p028-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 28,
    "rect": [
-    62.1,
-    439.3,
-    150.5,
-    527.6
+    66.0,
+    443.0,
+    147.0,
+    521.3
    ],
    "unit": 5,
    "lesson": 3,
@@ -34,14 +34,14 @@
    "lessonStartPage": 29
   },
   {
-   "file": "p042.png",
+   "file": "p042-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 42,
    "rect": [
-    421.2,
-    577.2,
-    527.1,
-    686.0
+    425.0,
+    560.7,
+    561.0,
+    737.0
    ],
    "unit": 6,
    "lesson": 1,
@@ -50,14 +50,14 @@
    "lessonStartPage": 40
   },
   {
-   "file": "p043.png",
+   "file": "p043-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 43,
    "rect": [
-    72.4,
-    155.8,
-    212.2,
-    310.2
+    76.0,
+    172.2,
+    208.0,
+    306.0
    ],
    "unit": 6,
    "lesson": 1,
@@ -98,14 +98,14 @@
    "lessonStartPage": 40
   },
   {
-   "file": "p065.png",
+   "file": "p065-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 65,
    "rect": [
-    47.4,
-    111.2,
-    238.7,
-    228.8
+    50.0,
+    104.0,
+    235.0,
+    209.0
    ],
    "unit": 6,
    "lesson": 3,
@@ -114,14 +114,14 @@
    "lessonStartPage": 56
   },
   {
-   "file": "p066.png",
+   "file": "p066-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 66,
    "rect": [
-    82.7,
-    424.4,
-    285.8,
-    613.0
+    70.2,
+    404.2,
+    303.6,
+    639.5
    ],
    "unit": 6,
    "lesson": 3,
@@ -130,14 +130,14 @@
    "lessonStartPage": 56
   },
   {
-   "file": "p069b.png",
+   "file": "p069b-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 69,
    "rect": [
-    166.2,
-    617.7,
-    237.4,
-    704.8
+    72.0,
+    591.0,
+    270.0,
+    739.8
    ],
    "unit": 6,
    "lesson": 3,
@@ -162,14 +162,14 @@
    "lessonStartPage": 70
   },
   {
-   "file": "p078.png",
+   "file": "p078-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 78,
    "rect": [
-    142.9,
-    632.3,
-    262.1,
-    721.4
+    71.8,
+    636.3,
+    259.0,
+    717.0
    ],
    "unit": 7,
    "lesson": 2,
@@ -178,14 +178,14 @@
    "lessonStartPage": 77
   },
   {
-   "file": "p084b.png",
+   "file": "p084b-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 84,
    "rect": [
-    129.5,
-    95.9,
-    211.6,
-    178.0
+    77.0,
+    99.0,
+    217.0,
+    254.0
    ],
    "unit": 7,
    "lesson": 3,
@@ -194,14 +194,14 @@
    "lessonStartPage": 84
   },
   {
-   "file": "p086.png",
+   "file": "p086-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 86,
    "rect": [
-    64.8,
-    616.6,
-    215.7,
-    706.0
+    68.8,
+    610.6,
+    221.7,
+    712.0
    ],
    "unit": 7,
    "lesson": 3,
@@ -226,14 +226,14 @@
    "lessonStartPage": 84
   },
   {
-   "file": "p089.png",
+   "file": "p089-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 89,
    "rect": [
-    76.3,
-    579.1,
-    228.8,
-    653.2
+    51.0,
+    575.0,
+    234.0,
+    672.0
    ],
    "unit": 7,
    "lesson": 3,
@@ -258,14 +258,14 @@
    "lessonStartPage": 84
   },
   {
-   "file": "p103.png",
+   "file": "p103-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 103,
    "rect": [
-    50.3,
-    251.9,
-    232.5,
-    346.5
+    57.0,
+    255.9,
+    225.0,
+    375.0
    ],
    "unit": 7,
    "lesson": 5,
@@ -274,14 +274,14 @@
    "lessonStartPage": 99
   },
   {
-   "file": "p104.png",
+   "file": "p104-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 104,
    "rect": [
-    96.9,
-    106.0,
-    246.4,
-    212.7
+    84.0,
+    103.0,
+    261.0,
+    218.7
    ],
    "unit": 7,
    "lesson": 5,
@@ -322,14 +322,14 @@
    "lessonStartPage": 106
   },
   {
-   "file": "p110.png",
+   "file": "p110-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 110,
    "rect": [
-    91.1,
-    444.4,
-    192.8,
-    558.8
+    95.0,
+    448.4,
+    183.0,
+    571.8
    ],
    "unit": 7,
    "lesson": 6,
@@ -338,14 +338,14 @@
    "lessonStartPage": 106
   },
   {
-   "file": "p113.png",
+   "file": "p113-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 113,
    "rect": [
-    46.7,
-    210.1,
-    190.7,
-    333.7
+    51.0,
+    214.0,
+    275.8,
+    345.6
    ],
    "unit": 7,
    "lesson": 6,
@@ -354,14 +354,14 @@
    "lessonStartPage": 106
   },
   {
-   "file": "p116b.png",
+   "file": "p116b-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 116,
    "rect": [
-    60.2,
-    373.2,
-    257.0,
-    495.2
+    64.0,
+    377.0,
+    253.0,
+    540.5
    ],
    "unit": 8,
    "lesson": 1,
@@ -370,14 +370,14 @@
    "lessonStartPage": 116
   },
   {
-   "file": "p128.png",
+   "file": "p128-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 128,
    "rect": [
-    159.7,
-    122.5,
-    255.1,
-    208.6
+    163.0,
+    97.0,
+    251.0,
+    220.0
    ],
    "unit": 8,
    "lesson": 2,
@@ -386,14 +386,14 @@
    "lessonStartPage": 124
   },
   {
-   "file": "p128b.png",
+   "file": "p128b-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 128,
    "rect": [
-    260.9,
-    410.7,
-    374.2,
-    495.9
+    252.0,
+    405.9,
+    386.0,
+    493.0
    ],
    "unit": 8,
    "lesson": 2,
@@ -402,14 +402,14 @@
    "lessonStartPage": 124
   },
   {
-   "file": "p130.png",
+   "file": "p130-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 130,
    "rect": [
-    61.0,
-    93.9,
-    302.2,
-    171.5
+    65.0,
+    103.0,
+    196.0,
+    168.0
    ],
    "unit": 8,
    "lesson": 2,
@@ -418,14 +418,14 @@
    "lessonStartPage": 124
   },
   {
-   "file": "p130b.png",
+   "file": "p130b-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 130,
    "rect": [
-    63.4,
-    619.0,
-    164.3,
-    697.9
+    68.0,
+    623.0,
+    159.0,
+    694.0
    ],
    "unit": 8,
    "lesson": 2,
@@ -450,14 +450,14 @@
    "lessonStartPage": 124
   },
   {
-   "file": "p132b.png",
+   "file": "p132b-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 132,
    "rect": [
-    62.2,
-    265.3,
-    222.6,
-    449.9
+    66.0,
+    269.0,
+    299.0,
+    446.0
    ],
    "unit": 8,
    "lesson": 3,
@@ -498,14 +498,14 @@
    "lessonStartPage": 132
   },
   {
-   "file": "p133b.png",
+   "file": "p133b-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 133,
    "rect": [
-    87.2,
-    328.7,
-    187.5,
-    419.3
+    91.0,
+    332.7,
+    183.5,
+    416.0
    ],
    "unit": 8,
    "lesson": 3,
@@ -530,14 +530,14 @@
    "lessonStartPage": 132
   },
   {
-   "file": "p134.png",
+   "file": "p134-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 134,
    "rect": [
-    96.4,
-    123.5,
-    189.9,
-    212.2
+    100.0,
+    127.5,
+    185.9,
+    209.0
    ],
    "unit": 8,
    "lesson": 3,
@@ -562,14 +562,14 @@
    "lessonStartPage": 132
   },
   {
-   "file": "p134c.png",
+   "file": "p134c-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 134,
    "rect": [
-    71.6,
-    287.6,
-    156.9,
-    379.0
+    75.0,
+    291.0,
+    154.0,
+    385.0
    ],
    "unit": 8,
    "lesson": 3,
@@ -578,14 +578,14 @@
    "lessonStartPage": 132
   },
   {
-   "file": "p134d.png",
+   "file": "p134d-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 134,
    "rect": [
-    72.4,
-    628.3,
-    157.9,
-    719.8
+    70.4,
+    632.0,
+    162.0,
+    725.8
    ],
    "unit": 8,
    "lesson": 3,
@@ -594,14 +594,14 @@
    "lessonStartPage": 132
   },
   {
-   "file": "p135.png",
+   "file": "p135-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 135,
    "rect": [
-    289.5,
-    324.1,
-    533.0,
-    436.1
+    198.0,
+    330.0,
+    530.0,
+    427.1
    ],
    "unit": 8,
    "lesson": 3,
@@ -626,14 +626,14 @@
    "lessonStartPage": 132
   },
   {
-   "file": "p136b.png",
+   "file": "p136b-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 136,
    "rect": [
-    102.1,
-    571.0,
-    214.7,
-    691.3
+    106.1,
+    575.0,
+    207.0,
+    684.0
    ],
    "unit": 8,
    "lesson": 3,
@@ -642,14 +642,14 @@
    "lessonStartPage": 132
   },
   {
-   "file": "p137.png",
+   "file": "p137-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 137,
    "rect": [
-    82.0,
-    116.7,
-    179.8,
-    189.8
+    85.0,
+    96.0,
+    176.0,
+    186.0
    ],
    "unit": 8,
    "lesson": 3,
@@ -706,14 +706,14 @@
    "lessonStartPage": 132
   },
   {
-   "file": "p138.png",
+   "file": "p138-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 138,
    "rect": [
-    84.7,
-    280.3,
-    179.2,
-    368.9
+    72.9,
+    284.0,
+    176.0,
+    366.0
    ],
    "unit": 8,
    "lesson": 3,
@@ -738,14 +738,14 @@
    "lessonStartPage": 132
   },
   {
-   "file": "p138c.png",
+   "file": "p138c-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 138,
    "rect": [
-    273.0,
-    364.3,
-    360.6,
-    456.7
+    276.0,
+    368.0,
+    379.0,
+    459.0
    ],
    "unit": 8,
    "lesson": 3,
@@ -754,14 +754,14 @@
    "lessonStartPage": 132
   },
   {
-   "file": "p138d.png",
+   "file": "p138d-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 138,
    "rect": [
-    78.9,
-    372.3,
-    191.8,
-    446.4
+    72.9,
+    376.0,
+    181.0,
+    443.0
    ],
    "unit": 8,
    "lesson": 3,
@@ -770,14 +770,14 @@
    "lessonStartPage": 132
   },
   {
-   "file": "p138e.png",
+   "file": "p138e-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 138,
    "rect": [
-    89.2,
-    570.3,
-    191.8,
-    658.9
+    72.9,
+    574.0,
+    181.0,
+    656.0
    ],
    "unit": 8,
    "lesson": 3,
@@ -786,14 +786,14 @@
    "lessonStartPage": 132
   },
   {
-   "file": "p138f.png",
+   "file": "p138f-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 138,
    "rect": [
-    274.4,
-    570.2,
-    370.0,
-    643.8
+    278.0,
+    574.0,
+    367.0,
+    640.0
    ],
    "unit": 8,
    "lesson": 3,
@@ -802,14 +802,14 @@
    "lessonStartPage": 132
   },
   {
-   "file": "p138g.png",
+   "file": "p138g-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 138,
    "rect": [
-    89.2,
-    660.6,
-    183.3,
-    755.9
+    70.5,
+    658.2,
+    214.3,
+    739.8
    ],
    "unit": 8,
    "lesson": 3,
@@ -834,14 +834,14 @@
    "lessonStartPage": 132
   },
   {
-   "file": "p140.png",
+   "file": "p140-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 140,
    "rect": [
-    318.5,
-    287.6,
-    427.3,
-    387.0
+    322.0,
+    291.0,
+    405.0,
+    374.0
    ],
    "unit": 8,
    "lesson": 3,
@@ -850,14 +850,14 @@
    "lessonStartPage": 132
   },
   {
-   "file": "p141.png",
+   "file": "p141-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 141,
    "rect": [
-    46.7,
-    298.8,
-    155.7,
-    460.2
+    51.0,
+    308.7,
+    149.0,
+    454.0
    ],
    "unit": 8,
    "lesson": 3,
@@ -898,14 +898,14 @@
    "lessonStartPage": 154
   },
   {
-   "file": "p160.png",
+   "file": "p160-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 160,
    "rect": [
-    62.0,
-    89.4,
-    165.9,
-    179.5
+    66.0,
+    93.0,
+    171.9,
+    175.0
    ],
    "unit": 9,
    "lesson": 2,
@@ -946,14 +946,14 @@
    "lessonStartPage": 154
   },
   {
-   "file": "p161.png",
+   "file": "p161-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 161,
    "rect": [
-    83.5,
-    218.9,
-    165.2,
-    295.4
+    75.0,
+    210.0,
+    161.0,
+    291.0
    ],
    "unit": 9,
    "lesson": 3,
@@ -994,14 +994,14 @@
    "lessonStartPage": 161
   },
   {
-   "file": "p163b.png",
+   "file": "p163b-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 163,
    "rect": [
-    51.1,
-    349.6,
-    134.3,
-    432.8
+    59.0,
+    353.0,
+    131.0,
+    425.0
    ],
    "unit": 9,
    "lesson": 3,
@@ -1026,14 +1026,14 @@
    "lessonStartPage": 161
   },
   {
-   "file": "p164b.png",
+   "file": "p164b-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 164,
    "rect": [
-    149.3,
-    506.5,
-    238.2,
-    614.6
+    75.9,
+    514.0,
+    230.0,
+    618.8
    ],
    "unit": 9,
    "lesson": 3,
@@ -1042,30 +1042,14 @@
    "lessonStartPage": 161
   },
   {
-   "file": "p164c.png",
-   "sourceId": "g8-math-s2-student-book",
-   "pdfPage": 164,
-   "rect": [
-    60.6,
-    511.1,
-    144.9,
-    614.6
-   ],
-   "unit": 9,
-   "lesson": 3,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "الدرسِعَدُّ النواتج",
-   "lessonStartPage": 161
-  },
-  {
-   "file": "p165.png",
+   "file": "p165-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 165,
    "rect": [
-    46.6,
-    385.1,
-    223.6,
-    549.0
+    57.0,
+    389.0,
+    211.0,
+    543.2
    ],
    "unit": 9,
    "lesson": 3,
@@ -1074,14 +1058,14 @@
    "lessonStartPage": 161
   },
   {
-   "file": "p166.png",
+   "file": "p166-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 166,
    "rect": [
-    61.6,
-    488.3,
-    144.8,
-    571.5
+    69.0,
+    492.0,
+    141.0,
+    564.0
    ],
    "unit": 9,
    "lesson": 4,
@@ -1090,14 +1074,14 @@
    "lessonStartPage": 166
   },
   {
-   "file": "p167.png",
+   "file": "p167-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 167,
    "rect": [
-    55.3,
-    452.3,
-    147.9,
-    551.0
+    60.0,
+    446.3,
+    217.2,
+    547.0
    ],
    "unit": 9,
    "lesson": 4,
@@ -1106,30 +1090,14 @@
    "lessonStartPage": 166
   },
   {
-   "file": "p167b.png",
-   "sourceId": "g8-math-s2-student-book",
-   "pdfPage": 167,
-   "rect": [
-    149.7,
-    452.3,
-    242.3,
-    551.0
-   ],
-   "unit": 9,
-   "lesson": 4,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "الدرسِاحتمالُ الحوادثِ المركَّبة",
-   "lessonStartPage": 166
-  },
-  {
-   "file": "p168.png",
+   "file": "p168-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 168,
    "rect": [
-    87.4,
-    539.5,
-    236.8,
-    710.6
+    91.4,
+    543.5,
+    232.0,
+    692.0
    ],
    "unit": 9,
    "lesson": 4,
@@ -1138,14 +1106,30 @@
    "lessonStartPage": 166
   },
   {
-   "file": "p169.png",
+   "file": "p169-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 169,
    "rect": [
-    74.5,
+    78.5,
+    102.8,
+    220.0,
+    251.3
+   ],
+   "unit": 9,
+   "lesson": 4,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الدرسِاحتمالُ الحوادثِ المركَّبة",
+   "lessonStartPage": 166
+  },
+  {
+   "file": "p169b-v2.png",
+   "sourceId": "g8-math-s2-student-book",
+   "pdfPage": 169,
+   "rect": [
     98.8,
-    223.8,
-    269.9
+    417.0,
+    204.0,
+    525.6
    ],
    "unit": 9,
    "lesson": 4,
@@ -1154,14 +1138,14 @@
    "lessonStartPage": 166
   },
   {
-   "file": "p169b.png",
+   "file": "p169c-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 169,
    "rect": [
-    104.8,
-    413.3,
-    207.7,
-    519.6
+    98.8,
+    589.0,
+    204.0,
+    698.1
    ],
    "unit": 9,
    "lesson": 4,
@@ -1170,30 +1154,14 @@
    "lessonStartPage": 166
   },
   {
-   "file": "p169c.png",
-   "sourceId": "g8-math-s2-student-book",
-   "pdfPage": 169,
-   "rect": [
-    104.8,
-    585.8,
-    207.7,
-    692.1
-   ],
-   "unit": 9,
-   "lesson": 4,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "الدرسِاحتمالُ الحوادثِ المركَّبة",
-   "lessonStartPage": 166
-  },
-  {
-   "file": "p171.png",
+   "file": "p171-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 171,
    "rect": [
-    47.9,
-    289.6,
-    126.9,
-    368.6
+    51.0,
+    293.0,
+    123.0,
+    364.3
    ],
    "unit": 9,
    "lesson": 4,
@@ -1202,14 +1170,14 @@
    "lessonStartPage": 166
   },
   {
-   "file": "p171b.png",
+   "file": "p171b-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 171,
    "rect": [
-    124.5,
-    289.6,
-    203.5,
-    368.6
+    128.0,
+    293.0,
+    200.0,
+    364.3
    ],
    "unit": 9,
    "lesson": 4,

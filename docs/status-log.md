@@ -38,6 +38,169 @@ Follow-up (final review): `openScope` now validates the identity itself (`assert
 held-route guard in `heldReads.test.ts` also refuses `.for("update"|"share"|"no key update"|"key share")`, which a
 READ ONLY transaction rejects.
 
+## Chat app-help, nineteenth live pass: 18 more wordings for answers that already existed — 2026-10-23
+
+A 30-question pass on app.iqrra.com found 18 questions answered by the model for which the app
+already had a written answer (`howExamSubmissions`, `howCloseExam`, `howExamTime`,
+`howOpenGrading`, `howLinkParent`, `howExportMarks`, `howSaveSlides`, `howExamDate`,
+`howSupportGroups`, `howOffline`, `howLabAbout`, `howQuestionImage`, `howPlanLanguage`,
+`howUploadFile`, `howAiUsage`, `howArchiveClass`, `howShareGame`, `howBookDownload`): the
+matcher did not recognise the teacher's wording. Two were worse than a miss: «أصدّر علامات الصف
+إلى إكسل» got the generic «تصدير: PDF أو Word» (`faqA4`) although the app has no Excel export
+and `howExportMarks` says so, and «أطبع الشرائح كملف PDF» got the same generic text. No new
+answer strings: only wordings added to existing rule ids in `appHelp.ts`, pinned in
+`appHelp.test.ts` with near-misses that stay with the model.
+
+**Judgement calls.** «أفتح كتاب الطالب داخل التطبيق» maps to `howBookDownload`, which says the
+book is downloaded from the curriculum card; I did not verify that no in-app reader exists.
+«أترجم ورقة العمل إلى الإنجليزية» maps to `howPlanLanguage` (materials follow the app language).
+**Deliberately left to the model:** class average across a whole subject (the app has it per
+exam only), copying an old exam within a class (`howCopyExam` answers a different question),
+the book-source question and the ready-made-homework question (neither looked into).
+
+## The lesson-prep panel says why a generation failed — 2026-10-23
+
+A teacher on the web app opened a Grade 1 lesson, tapped «حضّر خطة الدرس» and got
+only «تعذّر إتمام العملية. حاول مرة أخرى.» beside the orange «تعذّر الاتصال · محتوى
+تجريبي» badge. The panel's `catch {}` threw the error away, so nothing on screen
+could tell a spent allowance from a switched-off service from a server fault.
+
+**What changed**
+- `components/ui/LessonPrepPanel.tsx`: the generate call's `catch` now shows
+  `aiErrorText(e, t)`, the sentence the eight generator screens already use:
+  `aiQuotaSpent` («انتهت حصة التوليد الجديد لهذا الشهر…») for `user_quota_exceeded`
+  and `budget_exceeded`, and `aiUnavailable` («خدمة الذكاء الاصطناعي متوقفة
+  حاليًا. حاول لاحقًا.») for `live_mode_off`.
+- `lessonPrepPanelError.test.ts` reads the panel's source (it reaches react-native,
+  so `node --test` cannot load it) and fails a return to the bare `catch {}`.
+
+**What was checked**
+- The production API answers `/api/healthz` with 200 and allows the origin
+  `https://app.iqrra.com` (a preflight to `/api/generate/lesson-plan` returns the
+  matching `access-control-allow-origin`), and `/generate/lesson-plan` has no
+  subject or grade restriction, so none of those is the cause.
+
+**What was not**
+- **The cause of the teacher's failure is not known.** Server logs were not
+  readable from the session and the failing request was not captured. Its status
+  and body, from the browser's network tab, say which of 503 `live_mode_off`,
+  429 `budget_exceeded` / `user_quota_exceeded` / `generation_in_flight`, 502, 500
+  or 401 it was.
+- `generation_in_flight`, 502 and 500 still read as the generic line: the mapping
+  has no key for them, and «حاول مرة أخرى» is true for all three.
+- After a non-cap failure the app falls back to the offline generator, and for
+  this lesson that ended in an error too. Why the offline path has nothing for it
+  was not looked into.
+- Not seen on a device or in a browser.
+
+## The "now" amber is only for now — 2026-10-23
+
+`palette.live` (`#B45309`) is the one warm accent in the app: «ابدأ الحصة», the class
+happening now. Two game accents were exactly that hex, so a student saw "now" on a game
+tile. They, and a third use of the same hex in the drill game, now wear colours that are
+not amber.
+
+**What moved**
+- Multiplication game, hub tile (`app/play/index.tsx`) and the drill itself
+  (`ACCENTS.mul` in `components/publicGames/MathDrillGame.tsx`, which must match the
+  tile): `#B45309` to `#166534` (a deep green). White on it 7.13:1; ΔE2000 47.9 from
+  `palette.live`; nearest hub tile 15.9 (elements); nearest concept colour 9.4 (`games`).
+- Lesson game "spot the term" (`app/play/lesson/[lessonId].tsx`): `#B45309` to `#831843`
+  (a deep rose). White on it 9.65:1; ΔE2000 33.7 from `palette.live`; 43.6 from the
+  memory game and 30.1 from the scramble game beside it; nearest concept colour 11.7
+  (`evaluations`).
+- The "Featured" star on the classroom hub (`app/ai-tools/classroom/index.tsx`): was
+  `#B54708` (the old quiz amber). It is a decorative marker beside a heading, not a score,
+  so it now takes `colors.primary` like the filter chips next to it.
+
+I first looked for a brick or terracotta red-brown for the multiply game, as the warm
+choice. None clears ΔE2000 8: `#9A3412`, `#A8321A` and `#7C2D12` are 6.7-7.6 from the
+`geogebra` concept (`#990000`), and the English tile's own `#C2410C` is nearby. A
+brown that gets far enough away lands in the amber hue band. So multiply took the free
+green on the hub and spot the deep rose.
+
+**Pinned:** `services/__tests__/gameAmber.test.ts`. No game accent (hub, lesson games,
+drill, single-game files) equals `palette.live`, is in the amber family (the
+`iconSystem.test.ts` rule: hue 25-50 at saturation over 0.6, or within ΔE2000 3 of
+`#B54708` / `#B45309`), or is within ΔE2000 3 of `palette.warning`; each carries white at
+4.5:1; hub tiles are 8+ apart; the lesson chooser's three tiles are 8+ apart; the drill's
+four operations are 8+ apart and the hub tile matches its drill; the two recoloured
+accents are 8+ from every `CONCEPTS` colour. Putting `#B45309` back on the hub tile and
+on the lesson game fails 5 of the 9 tests.
+
+**Already close, not fixed:** two hub pairs were under 8 before this change, and are
+listed in `KNOWN_CLOSE` in that test (it fails if a listed pair becomes 8+ apart, so the
+list shrinks): the elements and capitals teals (`#0F766E` / `#0B7F77`, ΔE2000 3.2) and
+flags / add (`#1D4ED8` / `#4338CA`, 7.4). Recolouring a game nobody asked about is its
+own decision.
+
+**Left alone, and why.** Other places draw `#B45309` or `#B54708` that are not "now":
+- Warnings in the app: the "key check unavailable" notice
+  (`app/evaluations/[id]/index.tsx`), the failed-start line on `CurrentLessonCard`, the
+  unchecked verdict in `SolutionBlock` (drawn on the board page, so it cannot take
+  `palette.warning`, whose dark value is yellow). They are caution, not "now", but they
+  share the live hex; they want a decision on one warning colour, not a find-and-replace.
+- Not the app's palette: slide and print output (`deckTheme.ts`, `deckSlidesHtml.ts`,
+  `exportPptx.ts`, `exportHtml.ts`, `boardExportHtml.ts`), the internal curriculum-QA
+  screens under `app/dev/cqv`, and `palette.warning` itself.
+- Genuine "now": `START_CLASS_COLOR` on Today (`app/(tabs)/index.tsx`,
+  `components/today/PhoneToday.tsx`) and the definition in `constants/colors.ts`.
+
+**Verified:** `pnpm run typecheck` and the mobile suite, and the new test fails as
+described when `#B45309` is put back.
+
+**Not verified:** nothing was seen on a device or in a browser. In particular the hub
+grid and the lesson chooser in light and dark mode, RTL, and the drill's play-again
+button on the new green (it takes `fill`, so the label is chosen by `textOn`; the test
+pins 7.13:1 white, not the screen).
+
+## Book figure crops: audited, re-cropped, fragments dropped — 2026-10-22
+
+**What changed.** Every book figure a lesson can reach (2,576 across 66 books;
+1,641 of them inside a deck's four-figure window) was rebuilt from its PDF page
+by the new `scripts/audit_book_figures.py` and judged against the committed
+crop. Eyeballing two samples on 2026-10-19 had found 35–45% visibly bad:
+labels or captions sliced at an edge, half a diagram, a neighbouring body-text
+column pulled in, a lone sub-image of a composite picture, page chrome.
+
+- **1,221 re-cropped** — saved as a NEW key (`p011.png` → `p011-v2.png`), old PNG
+  removed from git. 217 of them then had a sliced prose line or the page footer
+  trimmed off the top/bottom edge (`polish`).
+- **264 dropped** — PNG and `index.json` entry both: text-only note boxes
+  («أتذكّر», «أفكّر», «تعلّمتُ سابقًا»), page-number badges, slivers of unit-opener
+  art, empty graph/pie templates, lone shapes, and sub-images whose whole figure
+  is now one re-crop.
+- **1,091 unchanged** — 802 already fine, 145 re-crops rejected in review (the
+  rebuild was worse), 109 «manual» rows kept, 35 proposed drops overturned.
+- Deck slots (first four per lesson): 1,641 → 1,549; of the 1,641, 748
+  re-cropped, 164 dropped, 729 kept. Six lessons are left with no figure — all
+  their figures were text boxes, empty templates or lone circles.
+
+**How it was decided.** The tool classified (1,442 re-crop / 804 ok / 183 drop /
+147 manual); ten reviewer agents then judged all 1,920 re-crop/drop/manual rows
+and a 148-row sample of «ok» on before/after contact sheets, and I spot-checked
+their keep/drop calls. «ok» sample: 6 of 148 still cut badly (≈4%).
+
+**Not done / not verified.**
+- **R2: uploaded 2026-10-23, additive.** The 1,221 `-v2` keys went up with
+  `pnpm --filter @workspace/curriculum run upload-figures-r2` (it skips keys the
+  bucket has; 1,091 skipped, nothing overwritten or deleted), so an OTA carrying
+  the new `bookFigureAssets.ts` finds every figure. Installed builds keep asking
+  for the old keys, which stay in the bucket.
+- 84 kept figures are still cut badly and 168 re-crops are better but flawed;
+  both lists, with the dropped ones, are in the session notes
+  (`figure-crops-followups.md`). They need hand crops. Grade 6 science p.102's
+  star-colour row is the one real loss among the six figure-less lessons.
+- Grade 10 maths S1/S2 and chemistry S1 were read from copies in
+  `Downloads/Claudi/Iqraa/attached_assets` (the BOOKS paths resolve there only
+  by copying); chemistry S1's copy is the recompressed one.
+- Not looked at on a device or in a rendered deck.
+
+**Verified.** Mobile tests 6,637/6,648 (the one failure, `scopeSelection` reading
+`TopicSelector.tsx` for a `\n`, is this Windows checkout's CRLF, in a file not
+touched here); typecheck clean; `bookFigureAssets.test.ts` passes on the
+regenerated 2,312 keys.
+
 ## Row-level security rehearsed on a separate Neon project, 2026-10-23
 
 The `RLS Neon rehearsal` workflow (`.github/workflows/rls-neon-rehearsal.yml`, run 39931238295, green) applied

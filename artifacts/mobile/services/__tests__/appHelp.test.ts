@@ -1759,3 +1759,54 @@ describe('live games, the interactive class, slides, activities, quizzes and wor
     });
   }
 });
+
+describe('exams, marks, slides export and the library — wordings of answers that already existed (nineteenth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['كيف أرى من سلّم الاختبار ومن لم يسلّم؟', 'howExamSubmissions'],
+    ['كيف أغلق الاختبار قبل انتهاء وقته؟', 'howCloseExam'],
+    ['كيف أعطي طالباً وقتاً إضافياً في الاختبار؟', 'howExamTime'],
+    ['how do i give a student extra time in the exam', 'howExamTime'],
+    ['كيف أصحح إجابة طالب يدوياً؟', 'howOpenGrading'],
+    ['كيف أربط حساب ولي الأمر بالطالب؟', 'howLinkParent'],
+    ['كيف أصدّر علامات الصف إلى ملف إكسل؟', 'howExportMarks'],
+    ['how do i export the class marks to excel', 'howExportMarks'],
+    ['كيف أطبع الشرائح كملف PDF؟', 'howSaveSlides'],
+    ['how do i save the slides as a pdf', 'howSaveSlides'],
+    ['كيف أحدد موعداً لاختبار قادم في الجدول؟', 'howExamDate'],
+    ['كيف أفتح كتاب الطالب داخل التطبيق؟', 'howBookDownload'],
+    ['كيف أعرف الطلبة الضعفاء في درس معين؟', 'howSupportGroups'],
+    ['how do i find the weak students', 'howSupportGroups'],
+    ['كيف أحفظ المحتوى لأستخدمه دون إنترنت؟', 'howOffline'],
+    ['كيف أستخدم المختبر الافتراضي لتجربة الأحماض؟', 'howLabAbout'],
+    ['كيف أضيف صورة إلى ورقة العمل؟', 'howQuestionImage'],
+    ['كيف أترجم ورقة العمل إلى الإنجليزية؟', 'howPlanLanguage'],
+    ['كيف أحمّل ملف PDF لأسأل عنه إقرأ؟', 'howUploadFile'],
+    ['كيف أرى استهلاكي من الرصيد أو الحد اليومي؟', 'howAiUsage'],
+    ['كيف أحذف شعبة انتهى العام لها؟', 'howArchiveClass'],
+    ['كيف أشارك لعبة من زاوية اللغة الإنجليزية مع الطلبة؟', 'howShareGame'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  const stayWithModel = [
+    'كيف أصحح الأسئلة المقالية؟',
+    'كيف أعطي الطلبة وقتا للتفكير',
+    'كيف أربط الأفكار بحياة الطالب',
+    'كيف أعرف الطلبة الضعفاء بالملاحظة',
+    'كيف أغلق الدرس بنشاط ختامي',
+    'كيف أحفظ الدرس في ذاكرة الطلبة',
+    'كيف أستخدم المختبر في حصة الكيمياء',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howExamSubmissions', 'howCloseExam', 'howExamTime', 'howOpenGrading', 'howLinkParent', 'howExportMarks', 'howSaveSlides', 'howExamDate', 'howBookDownload', 'howSupportGroups', 'howOffline', 'howLabAbout', 'howQuestionImage', 'howPlanLanguage', 'howUploadFile', 'howAiUsage', 'howArchiveClass', 'howShareGame']);
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});
