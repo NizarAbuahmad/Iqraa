@@ -53,7 +53,8 @@ import { buildWideLessonPlanRequest, scopeFormState } from '@/services/wideScope
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { conceptOf, ICON } from '@/constants/icons';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
-import { readableOn, textOn } from '@/services/readableColor';
+import { readableOn, textOn, selectedRow } from '@/services/readableColor';
+import { generationPhase } from '@/services/generationPhase';
 import { lessonPlanSections, previewRows, summaryLine, type LessonPlanSection } from '@/services/generatorSummary';
 import { SegmentedControl } from '@/components/generator/SegmentedControl';
 import { LessonCard } from '@/components/generator/LessonCard';
@@ -165,6 +166,8 @@ export default function LessonPlanScreen() {
       // A «subject mismatch» refusal is about the old pairing; it used to
       // stay on screen in red under the now-empty topic field.
       setError('');
+      // …and a Cancel from the old pairing: «أُلغي» is about a run that no longer matters.
+      setCancelled(false);
       prevGradeRef.current = gradeIdx;
       prevSubjectRef.current = subjectIdx;
     }
@@ -309,6 +312,9 @@ export default function LessonPlanScreen() {
   const generate = async (opts?: { regenerate?: boolean }) => {
     // Counted first, before any refusal below returns: the scroll effects depend on it.
     setAttempt(n => n + 1);
+    // A Cancel leaves `cancelled` set, and it outranks an error in the status block: clear it before any
+    // refusal below can return, or «أُلغي» would be shown over the refusal's own message.
+    setCancelled(false);
     // Read before any setState clears it — this is what the teacher is
     // looking at, and what a regeneration must not hand back.
     const previous = result;
@@ -563,16 +569,16 @@ export default function LessonPlanScreen() {
   // What GenerationStatus shows. Under the form it is out of sight of a docked button, so a
   // phone scrolls it into view when this leaves 'idle' (a refusal such as scopeNoCurriculum or
   // subjectTopicMismatch, a network error, the spinner and its Cancel).
-  const statusPhase = loading ? 'loading' : cancelled ? 'cancelled' : (error && topic.trim()) ? 'error' : 'idle';
+  const statusPhase = generationPhase({ loading, cancelled, failed: !!(error && topic.trim()) });
   const statusY = useRef(0);
   const reduceMotion = useReduceMotion();
   // Layout effect, not effect: the jump is made before the frame is painted, so there is no flash
   // of the form first. No animated scroll under reduced motion.
-  // A topic refusal is the field's to show, not the status block's: after a Cancel `cancelled` stays set,
-  // so an empty-topic press would otherwise fire both scrolls and the status one would win.
+  // (No special case for a topic refusal: `generate` clears `cancelled` first, and a refusal with no topic
+  // is not a generation failure, so the phase is 'idle' and this effect returns by itself.)
   const topicRefusal = !!error && !topic.trim();
   useLayoutEffect(() => {
-    if (isDesktop || statusPhase === 'idle' || topicRefusal) return;
+    if (isDesktop || statusPhase === 'idle') return;
     scrollRef.current?.scrollTo({ y: Math.max(0, statusY.current - SPACE.lg), animated: !reduceMotion });
   }, [statusPhase, attempt]);
   // This screen's button is NOT disabled on an empty topic: pressing it is what shows «اكتب عنوان الدرس»
@@ -992,7 +998,8 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled
  * teal of the default.
  */
 function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
-  return <SharedPickerField selectedTint={props.accent + '15'} {...props} />;
+  const row = selectedRow(props.accent, props.colors.card);
+  return <SharedPickerField selectedTint={row.fill} {...props} accent={row.ink} />;
 }
 
 const styles = StyleSheet.create({
