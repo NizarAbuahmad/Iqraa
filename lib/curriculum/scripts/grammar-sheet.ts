@@ -2,7 +2,7 @@
  * Writes the teacher's grammar sheet — every sentence the grammar activities
  * can show — to docs/english-grammar-g{N}-sheet.md, and the same sentences as a
  * printable Arabic review form (tick boxes, notes, a sign-off per unit) to
- * docs/english-grammar-g{N}-review.html, for Grades 1 to 4 and 9, and the Grade 1
+ * docs/english-grammar-g{N}-review.html, for Grades 1 to 5 and 9, and the Grade 1
  * reading activities' words and first letters as the same kind of form to
  * docs/english-reading-g1-review.html, and Grade 2's (words, first letters and the
  * Read the sentence pool) to docs/english-reading-g2-review.html. Grade 3's and Grade 4's go to
@@ -12,7 +12,7 @@
  *   pnpm --filter @workspace/curriculum run grammar-sheet
  *
  * A test fails when a committed file differs from the generator, so re-run
- * this after any change to src/englishGrammar.ts, src/englishGrammarG2.ts, src/englishGrammarG3.ts, src/englishGrammarG4.ts, src/englishGrammarG9.ts, src/englishGrammarG9Items.ts or
+ * this after any change to src/englishGrammar.ts, src/englishGrammarG2.ts, src/englishGrammarG3.ts, src/englishGrammarG4.ts, src/englishGrammarG5.ts, src/englishGrammarG5Items.ts, src/englishGrammarG9.ts, src/englishGrammarG9Items.ts or
  * src/englishReading.ts and commit the result.
  */
 import { writeFileSync } from 'node:fs';
@@ -25,7 +25,7 @@ import { renderReadingReviewHtml } from '../src/englishReadingReview.ts';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DOCS = path.join(HERE, '..', '..', '..', 'docs');
 const files: (readonly [string, string])[] = [];
-for (const grade of [1, 2, 3, 4, 9]) {
+for (const grade of [1, 2, 3, 4, 5, 9]) {
   files.push([`english-grammar-g${grade}-sheet.md`, renderGrammarSheet(grade)]);
   files.push([`english-grammar-g${grade}-review.html`, renderGrammarReviewHtml(grade)]);
 }

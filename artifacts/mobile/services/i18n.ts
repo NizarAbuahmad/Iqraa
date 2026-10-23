@@ -1051,6 +1051,10 @@ const translations = {
     genPreviewName: 'الاسم',
     genPreviewDate: 'التاريخ',
     genPreviewQuizNote: 'ورقة جاهزة للطباعة، ومعها مفتاح الإجابات.',
+    genPreviewWorksheetNote: 'ورقة تدريب جاهزة للطباعة، ومعها مفتاح الإجابات.',
+    genPreviewHomeworkNote: 'تمرين بيتي جاهز للطباعة، ومعه مفتاح الإجابات.',
+    // The homework tool shares the worksheet screen; its button names what it makes.
+    genHomeworkBtn: 'جهّز الواجب البيتي',
     // No direction word: the button is below the form on a phone and beside it on desktop.
     genNeedLessonHint: 'اختر الدرس ليصبح الزر جاهزًا.',
 
@@ -3207,6 +3211,7 @@ const translations = {
     hubUnit: (n: number) => `الوحدة ${n}`,
     hubStreak: (n: number) => `🔥 ${arCountPhrase(n, 'يوم', 'يومان', 'أيام')} متتالية`,
     hubWords: (n: number) => arCountPhrase(n, 'كلمة', 'كلمتان', 'كلمات'),
+    hubGrammarOnly: 'تمارين قواعد',
     hubFlashcards: 'بطاقات الكلمات',
     hubFlashcardsDesc: 'اسمع الكلمة واقلب البطاقة لترى معناها',
     hubListen: 'اسمع واختر',
@@ -4331,6 +4336,9 @@ const translations = {
     genPreviewName: 'Name',
     genPreviewDate: 'Date',
     genPreviewQuizNote: 'A print-ready paper, with its answer key.',
+    genPreviewWorksheetNote: 'A print-ready practice sheet, with its answer key.',
+    genPreviewHomeworkNote: 'A print-ready home exercise, with its answer key.',
+    genHomeworkBtn: 'Prepare homework',
     genNeedLessonHint: 'Pick a lesson to enable this.',
 
     // ── Workspace home (desktop web) ──────────────────────────────
@@ -6433,6 +6441,7 @@ const translations = {
     hubUnit: (n: number) => `Unit ${n}`,
     hubStreak: (n: number) => `🔥 ${n}-day streak`,
     hubWords: (n: number) => `${n} word${n === 1 ? '' : 's'}`,
+    hubGrammarOnly: 'Grammar activities',
     hubFlashcards: 'Flashcards',
     hubFlashcardsDesc: 'Hear the word, flip the card to see its meaning',
     hubListen: 'Listen and choose',

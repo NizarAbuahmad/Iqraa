@@ -50,14 +50,17 @@ import {
   assertLiveModeEnabled,
   assertUserQuotaAvailable,
   getChatModel,
+  getDocumentModel,
   getGenerationModel,
   getPromptSlidesModel,
+  isClaudeModel,
   recordCacheHit,
   recordImageUsage,
   recordUsage,
   withUserAiSlot,
   type GenerationDetail,
 } from "../lib/aiBudget.ts";
+import { ClaudeRefusalError, completeWithClaude } from "../lib/claude.ts";
 import { normalizeEscapeCodes } from "../lib/escapeCodes.ts";
 import { withGrounding, type Grounding } from "../lib/grounding.ts";
 import { PROMPT_VERSION, generationKeys, hasBookFigures, normalizeText, scopeKeyOf } from "../lib/generationKey.ts";
@@ -240,19 +243,33 @@ async function completeOnce(args: {
   body?: Record<string, unknown>;
 }): Promise<Completion> {
   const startedAt = Date.now();
-  const completion = await withUserAiSlot(args.detail.userId, () =>
-    openai.chat.completions.create({
+  // Both providers answer as `{ text, usage }` so nothing below cares which ran.
+  // The model id decides: a `claude-*` id is Anthropic's, anything else OpenAI's.
+  const completion = await withUserAiSlot(args.detail.userId, async (): Promise<{
+    text: string;
+    usage: { prompt_tokens?: number; completion_tokens?: number } | undefined | null;
+  }> => {
+    if (isClaudeModel(args.model)) {
+      return completeWithClaude({
+        model: args.model,
+        system: args.systemPrompt,
+        user: args.userPrompt,
+        maxTokens: args.maxCompletionTokens,
+      });
+    }
+    const res = await openai.chat.completions.create({
       model: args.model,
       max_completion_tokens: args.maxCompletionTokens,
       messages: [
         { role: "system", content: args.systemPrompt },
         { role: "user", content: args.userPrompt },
       ],
-    }),
-  );
+    });
+    return { text: res.choices[0]?.message?.content ?? "{}", usage: res.usage };
+  });
   const durationMs = Date.now() - startedAt;
   try {
-    const raw = completion.choices[0]?.message?.content ?? "{}";
+    const raw = completion.text;
     const parsed = extractJSON(raw);
     // Valid JSON is not the same as a usable artifact. Without this the route
     // answered 200 with `{}` and the screen rendered a blank lesson plan. It
@@ -325,7 +342,7 @@ async function refusalFromCaps(
 async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
   assertLiveModeEnabled();
   const { kind, body, userId } = args;
-  const model = args.model ?? getGenerationModel();
+  const model = args.model ?? getDocumentModel(kind);
   const keys = generationKeys(kind, model, body);
   const regenerate = body.regenerate === true;
   const detail = { kind, promptVersion: PROMPT_VERSION, userId, ...keys };
@@ -675,6 +692,14 @@ function respondAiError(err: unknown, res: Response, label: string): void {
     // stayed invisible for as long as it did.
     logger.error({ kind: err.kind, missing: err.missing }, `${label} returned an unusable shape`);
     res.status(502).json({ error: err.message, missing: err.missing });
+    return;
+  }
+  if (err instanceof ClaudeRefusalError) {
+    // Also an upstream answer, not a bad request: the model declined. The
+    // category is logged because educational content can trip a safeguard now
+    // and then, and "generation failed" would hide which one.
+    logger.warn({ category: err.category }, `${label} was declined by the model`);
+    res.status(502).json({ error: err.message, code: "model_declined" });
     return;
   }
   logger.error({ err }, `${label} error`);

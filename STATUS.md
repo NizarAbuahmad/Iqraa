@@ -32,7 +32,9 @@ Checked 2026-10-22:
   first item under *Open*. The schema deploys as migrations (17 files in
   `lib/db/migrations`); `verify-schema` runs before every API deploy.
 - **Live config** (plain env on the service): `AI_LIVE_MODE=true`; models `gpt-5.4-mini`
-  for generation and for chat; budgets `AI_BUDGET_USD=50`, per user `1`, per
+  for generation and for chat (`AI_MODEL_DOCUMENTS`, which would move lesson plans,
+  worksheets, quizzes and slide decks to Claude Sonnet 5.5, is **unset**: the code is in,
+  the secret and the switch are Nizar's — «Claude writes the documents» in the log); budgets `AI_BUDGET_USD=50`, per user `1`, per
   student `0.20`; `STUDENT_ACCOUNTS=true`; `MASTERY_GATE=true`.
 - **Credentials:** 11 are Secret Manager references, 18 are plain config. Rotation:
   [`docs/deploying.md`](./docs/deploying.md), «Rotating a secret».
@@ -113,8 +115,12 @@ From session notes **(notes)**:
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
 - 2026-10-23 — Students choose an email or a teacher's code
+- 2026-10-23 — Generator screens: the worksheet and homework
+- 2026-10-23 — Grade 5 grammar in the English corner — built, shown to nobody yet
 - 2026-10-23 — Generator screens: the shared pieces and the quiz
 - 2026-10-23 — The "now" amber is only for now
+- 2026-10-23 — Grammar-only hub lessons, and the last five Grade 9 grammar lessons — built, shown to nobody yet
+- 2026-10-23 — Grade 9 grammar: the passive added, and a wrong «no hub lesson» corrected
 - 2026-10-23 — The tab bar is drawn
 - 2026-10-23 — Neon leaves the Free plan before launch
 - 2026-10-23 — Leftover icon colours follow CONCEPTS
@@ -139,14 +145,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-22 — Book-picture slides no longer share one title
 - 2026-10-22 — Grade 3 reading in the English corner — built, shown to nobody yet
 - 2026-10-22 — Grade 3 grammar in the English corner — built, shown to nobody yet
-- 2026-10-21 — Each corner has its own colour and band
-- 2026-10-21 — Cards lift, presses give, screens arrive — 2026-10-21
-- 2026-10-20 — Grade 2 reading in the English corner — built, shown to nobody yet
-- 2026-10-19 — Grade 2 grammar in the English corner — built, shown to nobody yet
 
 ## Finding older detail, and recording new work
 
-- The log has 367 sections. Anything cited elsewhere as
+- The log has 376 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line

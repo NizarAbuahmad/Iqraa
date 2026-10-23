@@ -200,6 +200,10 @@ export default function QuizScreen() {
   const [lessonOpen, setLessonOpen] = useState(() => !topic.trim());
   useEffect(() => { if (!topic.trim()) setLessonOpen(true); }, [topic]);
   const [loading, setLoading] = useState(false);
+  // Counts presses of generate. The status scroll depends on it as well as on the phase: a refusal
+  // returns before `setError('')`, so pressing again with the same refusal leaves the phase at 'error'
+  // and, without this, would show the teacher nothing.
+  const [attempt, setAttempt] = useState(0);
   /**
    * Held across renders so Cancel can reach the in-flight request. A cancel
    * that only cleared the spinner would leave the call running and still
@@ -402,6 +406,7 @@ export default function QuizScreen() {
   const generate = async (opts?: { regenerate?: boolean }) => {
     // Read before any setState clears it — this is what the teacher is
     // looking at, and what a regeneration must not hand back.
+    setAttempt(n => n + 1);
     const previous = result;
     // Everything a failed or cancelled run must hand back: the paper, its
     // badges and edits, and the scope it was generated under. It used to be
@@ -623,7 +628,7 @@ export default function QuizScreen() {
   useLayoutEffect(() => {
     if (isDesktop || statusPhase === 'idle') return;
     scrollRef.current?.scrollTo({ y: Math.max(0, statusY.current - SPACE.lg), animated: !reduceMotion });
-  }, [statusPhase]);
+  }, [statusPhase, attempt]);
   // The result's own save bar takes the bottom of a phone while a fresh paper is unsaved.
   const saveBarVisible = !!result && !loading && !savedId && saveLabel === 'save';
   const typeOptions = QUIZ_TYPE_ORDER.map(type => ({ id: type, label: TYPE_LABEL[type] }));
