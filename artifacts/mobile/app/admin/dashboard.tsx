@@ -26,6 +26,7 @@ import { confirm } from '@/services/confirm';
 import { ACCENT, Bar, FilterChip, KeyValue, SectionTitle, StatCard, Table } from '@/components/admin/widgets';
 import { DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
 import { palette } from '@/constants/colors';
+import { TYPE } from '@/constants/theme';
 import { BackButton } from '@/components/ui/BackButton';
 
 const ADMIN_ROLES = ['school_admin', 'system_admin'];
@@ -375,7 +376,7 @@ export default function AdminDashboardScreen() {
                     )}
                   </>
                 )}
-                {!!aiError && <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 8 }}>{aiError}</Text>}
+                {!!aiError && <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, marginTop: 8 }}>{aiError}</Text>}
                 <Pressable
                   onPress={() => { void openExternal('https://console.cloud.google.com/run?project=iqraa-auth-507315'); }}
                   style={[styles.posthogLink, { borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
