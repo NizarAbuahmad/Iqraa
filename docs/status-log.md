@@ -59,6 +59,21 @@ it yet.** Spec: `docs/superpowers/specs/2026-10-23-english-corner-grammar-g9-les
 `docs/english-grammar-g9-review.html`, printed, and checks the book-page line at its top; then set the unit's
 `reviewedBy` in `englishGrammarG9.ts` and merge.
 
+## Duplicate-key 409s answered 500 — 2026-10-22
+
+drizzle-orm 0.45 rethrows every driver
+error as a `DrizzleQueryError` with the pg error on `cause`, so `err.code === "23505"` never
+matched and every handled duplicate fell through to a 500: register, change-unverified-email,
+add-email and Google sign-in (`email_taken`), the `/take` name claim (`name_taken` — a student
+who lost the race saw «failed to start» instead of «someone already started»), and the
+share-code retry on publish (a collision failed the publish instead of retrying). All six now
+call `isUniqueViolation` (`artifacts/api-server/src/lib/pgErrors.ts`), which checks both
+places. Verified by `uniqueViolation.db.test.ts`: test-only triggers raise SQLSTATE 23505 at
+each write (the real collisions are races); before the fix all five reachable paths answered
+500, after it 409/409/409/409 and a retried 200. **Not covered:** Google sign-in, which needs
+a real Google token — same one-line change. The live-game routes (`live.ts`, `liveHost.ts`)
+had their own copy in `modules/live/store.ts`; they now import this one.
+
 ## Iqraa draws its own icons — 2026-10-23
 
 Step two of the icon work. Sixteen drawings, approved from a review sheet

@@ -55,11 +55,13 @@ Checked 2026-10-22:
 
 Checked 2026-10-22:
 
-- **Crash reporting in the app is merged but not yet in anyone's hands:** Firebase Crashlytics
-  (PR #1115, 2026-10-19, `app.json` 1.5.0) only works in a native build, so it reports nothing until
-  a 1.5.0 build is installed and Crashlytics is enabled in the Firebase console (project
-  `iqraa-95dd1`) **(notes)** — neither was checked. The API has no error-reporting service; it
-  keeps its own log (`/healthz/errors`, admin key) and Cloud Run logs.
+- **Crash reporting in the app:** Firebase Crashlytics (PR #1115, 2026-10-19, `app.json` 1.5.0) is
+  merged, a 1.5.0 production build ran on 2026-10-22 (the Mobile Android build workflow, success)
+  and Crashlytics is enabled in the Firebase console (project `iqraa-95dd1`) **(notes — the owner
+  said so; not checked)**. Not verified: which build is installed on a phone, that a crash
+  actually appears in the console, and that the OTAs published since #1115 (all runtime 1.5.0)
+  reach a device. The API has no error-reporting service; it keeps its own log
+  (`/healthz/errors`, admin key) and Cloud Run logs.
 - **Draft PR #730** (teacher visibility into English Corner practice) changes the schema,
   conflicts with `main`, and needs `pnpm --filter @workspace/db run generate` after it is updated.
 - **The E2E smoke test is not a required check** yet; make it one after about a week
