@@ -43,10 +43,13 @@ export function makeHoldScopedConnection<S extends HeldScope>(deps: HeldDeps<S>)
     const done = () => {
       if (ended) return;
       ended = true;
+      // An end() that rejects is swallowed and the log still runs; the final catch keeps a
+      // throwing log from becoming an unhandled rejection.
       void scope
         .end()
-        .catch(() => undefined)
-        .then(() => deps.log({ route, ...scope.stats() }));
+        .then(() => undefined, () => undefined)
+        .then(() => deps.log({ route, ...scope.stats() }))
+        .catch(() => undefined);
     };
     res.once("finish", done);
     res.once("close", done);

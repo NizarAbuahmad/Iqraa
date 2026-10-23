@@ -66,6 +66,43 @@ describe("holdScopedConnection", () => {
     assert.deepEqual(h.logs, [{ route: "GET /api/messaging/threads", statements: 3, heldMs: 12 }]);
   });
 
+  test("an end() that rejects is swallowed and the log still runs", async () => {
+    const logs: unknown[] = [];
+    const mw = makeHoldScopedConnection({
+      identity: () => ({ userId: "u1", role: "teacher" }),
+      open: () => ({ end: async () => { throw new Error("connection lost"); }, stats: () => ({ statements: 1, heldMs: 2 }) }),
+      run: (_s, fn) => fn(),
+      log: info => logs.push(info),
+    });
+    const res = new EventEmitter();
+    mw({ method: "GET", url: "/x" }, res, () => undefined);
+    res.emit("finish");
+    await new Promise<void>(r => setImmediate(r));
+    assert.deepEqual(logs, [{ route: "GET /x", statements: 1, heldMs: 2 }]);
+  });
+
+  test("a log that throws does not become an unhandled rejection", async () => {
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => unhandled.push(reason);
+    process.on("unhandledRejection", onUnhandled);
+    try {
+      const mw = makeHoldScopedConnection({
+        identity: () => ({ userId: "u1", role: "teacher" }),
+        open: () => ({ end: async () => undefined, stats: () => ({ statements: 1, heldMs: 2 }) }),
+        run: (_s, fn) => fn(),
+        log: () => { throw new Error("logger broke"); },
+      });
+      const res = new EventEmitter();
+      mw({ method: "GET", url: "/x" }, res, () => undefined);
+      res.emit("finish");
+      // unhandledRejection fires after the microtask queue drains, so give it a few turns
+      await new Promise<void>(r => setTimeout(r, 20));
+      assert.deepEqual(unhandled, []);
+    } finally {
+      process.off("unhandledRejection", onUnhandled);
+    }
+  });
+
   test("a write is never held", () => {
     const h = harness();
     h.mw(h.req("POST"), new EventEmitter(), h.next);
