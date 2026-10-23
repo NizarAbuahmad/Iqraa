@@ -32,7 +32,9 @@ Checked 2026-10-22:
   first item under *Open*. The schema deploys as migrations (11 files in
   `lib/db/migrations`); `verify-schema` runs before every API deploy.
 - **Live config** (plain env on the service): `AI_LIVE_MODE=true`; models `gpt-5.4-mini`
-  for generation and for chat; budgets `AI_BUDGET_USD=50`, per user `1`, per
+  for generation and for chat (`AI_MODEL_DOCUMENTS`, which would move lesson plans,
+  worksheets, quizzes and slide decks to Claude Sonnet 5.5, is **unset**: the code is in,
+  the secret and the switch are Nizar's — «Claude writes the documents» in the log); budgets `AI_BUDGET_USD=50`, per user `1`, per
   student `0.20`; `STUDENT_ACCOUNTS=true`; `MASTERY_GATE=true`.
 - **Credentials:** 11 are Secret Manager references, 18 are plain config. Rotation:
   [`docs/deploying.md`](./docs/deploying.md), «Rotating a secret».

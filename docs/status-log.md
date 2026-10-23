@@ -10,6 +10,73 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Claude writes the documents, 2026-10-23
+
+**Built, not switched on.** Lesson plans, worksheets, quizzes and slide decks (`prompt-slides`) can now be
+written by Claude Sonnet 5.5. Nothing changes in production until Nizar creates the `ANTHROPIC_API_KEY`
+secret and sets `AI_MODEL_DOCUMENTS=claude-sonnet-5-5` — the recipe, and the one-line rollback, are in
+`docs/deploying.md`, «Claude for documents».
+
+**Why.** Three blind comparisons on the shipped prompts and four lessons per task (maths and chemistry),
+independent AI reviewers who did not know the author, scores matched to models afterwards:
+
+| | accuracy | Arabic | teaching | wins | flagged for a wrong key or fact (by the reviewers) |
+|---|---|---|---|---|---|
+| Sonnet 5.5 (head to head, 16 groups) | 4.81 | 4.56 | 4.63 | **14** | 1 |
+| Gemini 3.8 Flash | 4.75 | 3.31 | 3.94 | 2 | 0 flagged |
+| `gpt-5.4-mini` (what the generators ran on) | 3.25 | 3.38 | 2.25 | 0 | 7 |
+
+`gpt-5.4-mini` came last in both earlier rounds too (20 and 18 groups). Across the three comparisons, seven of
+its flags were re-checked by hand or with SymPy and are real: a worksheet key `x = 0 or 2` where the roots are (4±√10)/3, `14.20 × 0.906` written as
+12.17, a quiz offering 3/5 and 6/10 (and 4/5 and 8/10) as different options, a slide answer of 2.5 cm that its own
+note works out as 5, an answer key that contradicts its own working. One reviewer flag (an "impossible challenge"
+slide) was not in the file and was discounted. Sonnet's one flagged error was also checked: its circle worksheet
+has 7 questions but 8 key entries, and question 6's key says «خارج الدائرة» for a point that lies on the circle.
+Gemini was as accurate but wrote `sin`/`cos`/`tan` and «الدالة» where the curriculum says جا/جتا/ظا and «الاقتران», and
+its plans and decks were thinner. The cost: a document takes 11-33 s (4-13 s), about $0.039 (about $0.0085).
+
+**What changed.**
+- `lib/claude.ts` (new): one Claude completion, lazily built client (never throws at import), adaptive thinking
+  at `medium` effort (what was measured; `AI_CLAUDE_EFFORT` overrides), `max_tokens` never below 16000 because
+  thinking tokens count against it, usage renamed to the pair `recordUsage` takes, a refusal throws
+  `ClaudeRefusalError` (answered 502 `model_declined`, category in the log).
+- `lib/aiBudget.ts`: `getDocumentModel(kind)` — `AI_MODEL_DOCUMENTS` for those four kinds only, ignored (one warning)
+  when it names a Claude model and `ANTHROPIC_API_KEY` is unset; `claude-sonnet-5-5` ($2/$10) and
+  `claude-haiku-5-5` ($0.10/$0.50) in the price table.
+- `routes/generate.ts`: `completeOnce` calls Claude when the model id starts with `claude-`, OpenAI otherwise.
+  Pooled artifacts are keyed by model, so the two never mix.
+- `RemoteAIService.ts`: the four document calls wait 90 s instead of 45 s, because a deck can take 30-40 s and a
+  top-up or retry makes a second call; `prompt-slides` has no offline fallback to hide a timeout behind.
+- Deliberately **not** on Claude: chat, evaluations (exam generation), grading, the verified-derivative path,
+  homework, activities, classroom activities, infographics, the lesson-teaching deck. They were not compared,
+  and several call the OpenAI client directly — which is why this is a new variable, not `AI_MODEL_GENERATE`.
+
+**Verified.** Typecheck of the whole monorepo clean. API: build, then **2206 of 2206 tests pass**, none skipped,
+including the suite that boots the built bundle. New tests: `claude.test.ts` runs the real SDK against a local
+HTTP server and asserts the request on the wire (path, key header, model, system/user mapping, adaptive thinking,
+effort, the 16000 floor), that thinking blocks never reach the artifact, the usage rename, the refusal error and the
+no-key error; `aiBudget.test.ts` covers which kinds move, that nothing changes while the variable is unset, that a
+Claude id without a key is never returned, and the prices; `documentTimeout.test.ts` pins the 90 s wait to exactly
+the four calls.
+
+**Not verified.**
+- **No live call to Claude from this API.** This checkout has no key; the wire test is against a local server. The
+  first real generation after the switch is the first real test — try a worksheet, a quiz, a lesson plan and a deck
+  before telling teachers.
+- `completeOnce`'s routing branch has no unit test of its own (`generate.ts` builds the OpenAI client at import,
+  so it cannot be loaded in a test); it is covered by typecheck and by the helper tests above.
+- The price table is the model table's $2/$10 and has not been checked against a bill. The older note on Sonnet 5
+  says $3/$15; the model table says $2/$10. Compare the first day's spend with the Anthropic console.
+- The server-side refusal fallback is **not** enabled (it could not be tried without a key). A refusal is a clean
+  502 and the teacher can retry; educational content can trip a safeguard now and then.
+- Production prompts carry book passages the comparison did not, so real latency will be somewhat higher.
+- The reviewers were Claude models, so the order among Claude tiers is softer than the gap to `gpt-5.4-mini`, which
+  rests on the hand-checked errors. A Jordanian teacher reading Sonnet and Gemini outputs side by side would settle
+  the Arabic-terminology question. Every provider, Sonnet included, sometimes writes Latin `f(x)` and `sin`/`cos`
+  where the curriculum has ق(س) and جا/جتا; that is a prompt fix, independent of the model.
+- Chat was not compared across all providers (a network drop erased two of four scenarios), so it stays on OpenAI.
+- `AI_USER_BUDGET_USD=1` is about 25 documents on Claude instead of about 115. Decide whether to raise it.
+
 ## Row-level security rehearsed on a separate Neon project, 2026-10-23
 
 The `RLS Neon rehearsal` workflow (`.github/workflows/rls-neon-rehearsal.yml`, run 39931238295, green) applied
