@@ -20,6 +20,8 @@
 import { Router } from "express";
 import {
   db,
+  attemptAnswers,
+  attemptQuestionGrades,
   attemptResults,
   attemptRetakes,
   attempts,
@@ -50,6 +52,7 @@ import { examVisibleTo } from "../modules/assessment/audience.ts";
 import { assignedStudentsByEvaluation } from "../lib/evaluationAudience.ts";
 import { guardianLinkedStudents, selfLinkedStudentIds } from "../lib/familyAccess.ts";
 import { paperExamIdsFromFlags } from "../modules/assessment/paperExam.ts";
+import { reviewItems, studentReviewReady, type ReviewQuestion } from "../modules/assessment/answerReview.ts";
 import { groupChildren } from "../modules/family/children.ts";
 import {
   guardianExamRow,
@@ -209,6 +212,7 @@ async function examRowsFor(studentIds: string[]): Promise<StudentExamRow[]> {
       timeLimitMin: evaluations.timeLimitMin,
       totalMarks: evaluations.totalMarks,
       releaseResultsToStudent: evaluations.releaseResultsToStudent,
+      showSolutionsToStudent: evaluations.showSolutionsToStudent,
       publishedAt: evaluations.publishedAt,
       closedAt: evaluations.closedAt,
       examDate: evaluations.examDate,
@@ -487,6 +491,89 @@ router.post("/student/exams/:evaluationId/retake", async (req: AuthenticatedRequ
     }
     logger.error({ err }, "student retake failed");
     res.status(500).json({ error: "Failed to reset this quiz" });
+  }
+});
+
+/**
+ * «راجع إجاباتك»: the paper this student sat, each question with their answer,
+ * the correct one and any worked steps — only once `studentReviewReady` holds
+ * (see modules/assessment/answerReview.ts). Anything short of that is the same
+ * 404 as "no sitting", so the route says nothing about how far along the
+ * teacher is.
+ */
+router.get("/student/exams/:evaluationId/review", async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!studentAccountsEnabled()) {
+      res.status(403).json({
+        code: "student_accounts_disabled",
+        error: "Parent and student accounts are not available yet.",
+      });
+      return;
+    }
+    const studentIds = await selfLinkedStudentIds(req.user!.id);
+    const evaluationId = req.params["evaluationId"] as string;
+    const notReady = () => {
+      res.status(404).json({ code: "no_review", error: "There is no answer review for this exam." });
+    };
+    if (studentIds.length === 0) {
+      notReady();
+      return;
+    }
+
+    const [row] = await db
+      .select({ attempt: attempts, evaluation: evaluations, result: attemptResults })
+      .from(attempts)
+      .innerJoin(evaluations, eq(evaluations.id, attempts.evaluationId))
+      .leftJoin(attemptResults, eq(attemptResults.attemptId, attempts.id))
+      .where(
+        and(
+          eq(attempts.evaluationId, evaluationId),
+          inArray(attempts.studentId, studentIds),
+          isNotNull(attempts.submittedAt),
+        ),
+      )
+      .limit(1);
+    if (
+      !row ||
+      !studentReviewReady({
+        status: row.evaluation.status,
+        released: row.evaluation.releaseResultsToStudent,
+        solutionsShown: row.evaluation.showSolutionsToStudent,
+        result: row.result ?? undefined,
+      })
+    ) {
+      notReady();
+      return;
+    }
+
+    const snapshot = (row.attempt.questionSnapshot as ReviewQuestion[]) ?? [];
+    const [answers, grades, live] = await Promise.all([
+      db.select().from(attemptAnswers).where(eq(attemptAnswers.attemptId, row.attempt.id)),
+      db.select().from(attemptQuestionGrades).where(eq(attemptQuestionGrades.attemptId, row.attempt.id)),
+      snapshot.length
+        ? db
+            .select({ id: evaluationQuestions.id, workedSteps: evaluationQuestions.workedSteps })
+            .from(evaluationQuestions)
+            .where(inArray(evaluationQuestions.id, snapshot.map(q => q.id)))
+        : Promise.resolve([]),
+    ]);
+
+    res.json({
+      evaluationId,
+      title: row.evaluation.title,
+      titleAr: row.evaluation.titleAr,
+      subjectId: row.evaluation.subjectId,
+      items: reviewItems({
+        snapshot,
+        answers,
+        grades,
+        stepsById: new Map(live.map(q => [q.id, q.workedSteps])),
+        isAr: row.evaluation.language !== "en",
+      }),
+    });
+  } catch (err) {
+    logger.error({ err }, "student answer review failed");
+    res.status(500).json({ error: "Failed to load the answer review" });
   }
 });
 
