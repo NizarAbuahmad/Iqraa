@@ -1,5 +1,5 @@
 /**
- * Grade 9 grammar on the thirteen authored hub lessons (spec: docs/superpowers/specs/2026-10-23-english-corner-grammar-g9-lessons-design.md):
+ * Grade 9 grammar on the fourteen authored hub lessons (spec: docs/superpowers/specs/2026-10-23-english-corner-grammar-g9-lessons-design.md):
  * the lessons, their book statements, the item rules and the audio list. The wrongness of a distractor is a teacher's
  * call on the printed form; these tests only catch a malformed item.
  */
@@ -14,12 +14,12 @@ const dataFile = (sem: 1 | 2) => JSON.parse(readFileSync(new URL(`../data/iqra_c
 const L = (s: string) => `kbl-g9-eng-${s}`;
 const LESSONS = [
   's1-nccd-u1_l1', 's1-nccd-u1_l3', 's1-nccd-u1_l4', 's1-nccd-u2_l1', 's1-nccd-u3_l1', 's1-nccd-u3_l4', 's1-nccd-u5_l1', 's1-nccd-u5_l3',
-  's2-nccd-u6_l1', 's2-nccd-u6_l3', 's2-nccd-u8_l1', 's2-nccd-u9_l1', 's2-nccd-u10_l4',
+  's2-nccd-u6_l1', 's2-nccd-u6_l3', 's2-nccd-u8_l1', 's2-nccd-u9_l1', 's2-nccd-u10_l1', 's2-nccd-u10_l4',
 ].map(L);
 const sentencesOf = (id: string) => unitSentences(grammarUnit(id)!);
 
 describe('Grade 9 authored lessons', () => {
-  it('are the thirteen hub lessons, unsigned and offered to nobody', () => {
+  it('are the fourteen hub lessons, unsigned and offered to nobody', () => {
     assert.deepEqual(G9_ITEM_LESSONS.map(l => l.lessonId), LESSONS);
     for (const id of LESSONS) {
       assert.ok(hubLesson(id), id);
@@ -37,7 +37,7 @@ describe('Grade 9 authored lessons', () => {
     }
   });
 
-  it('give 40 items a lesson, 520 in all, each topic at least six', () => {
+  it('give 40 items a lesson, 560 in all, each topic at least six', () => {
     let total = 0;
     for (const id of LESSONS) {
       const s = sentencesOf(id);
@@ -47,7 +47,7 @@ describe('Grade 9 authored lessons', () => {
       for (const x of s) by.set(x.patternId, (by.get(x.patternId) ?? 0) + 1);
       for (const [topic, n] of by) assert.ok(n >= 6, `${id} ${topic} has ${n}`);
     }
-    assert.equal(total, 520);
+    assert.equal(total, 560);
   });
 
   it('pin the topics and their sizes', () => {
@@ -68,6 +68,7 @@ describe('Grade 9 authored lessons', () => {
     assert.deepEqual(shape('s2-nccd-u6_l3'), { 'going-to-predictions': 20, 'will-predictions': 20 });
     assert.deepEqual(shape('s2-nccd-u8_l1'), { 'ing-verbs': 20, 'to-verbs': 20 });
     assert.deepEqual(shape('s2-nccd-u9_l1'), { 'had-form': 24, 'had-negatives-questions': 16 });
+    assert.deepEqual(shape('s2-nccd-u10_l1'), { 'present-passive': 14, 'past-passive': 14, 'questions-negatives': 12 });
     assert.deepEqual(shape('s2-nccd-u10_l4'), { 'second-conditional': 24, 'if-were': 16 });
   });
 
@@ -97,7 +98,7 @@ describe('Grade 9 authored lessons', () => {
   });
 
   it('contain no capitalised name of a person (only a sentence start, I, a family word or a place)', () => {
-    const ok = new Set(['I', "I'm", "I'd", "I'll", 'Dad', 'Mum', 'TV', 'Petra', 'Aqaba', 'Amman', 'Irbid', 'Rome', 'London', 'Paris', 'Mars', 'Monday', 'Friday', 'Saturday', 'Sunday', 'May', 'July', 'English', 'French']);
+    const ok = new Set(['I', "I'm", "I'd", "I'll", 'Dad', 'Mum', 'TV', 'Jordan', 'Brazil', 'Petra', 'Aqaba', 'Amman', 'Irbid', 'Rome', 'London', 'Paris', 'Mars', 'Monday', 'Friday', 'Saturday', 'Sunday', 'May', 'July', 'English', 'French']);
     for (const id of LESSONS) for (const x of sentencesOf(id)) {
       x.tokens.forEach((t, i) => {
         const word = t.replace(/[.,?!]+$/, '');
@@ -137,10 +138,14 @@ describe('the Grade 9 teacher form for the authored lessons', () => {
     const html = renderGrammarReviewHtml(9);
     const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     for (const l of G9_ITEM_LESSONS) assert.ok(html.includes(esc(l.statement)), l.lessonId);
-    assert.equal((html.match(/تأكدوا أولًا/g) ?? []).length, 13);
-    assert.equal((html.match(/<b>الكلمات خارج قوائم المفردات<\/b>/g) ?? []).length, 13);
-    assert.equal((html.match(/class="kind kind-form"/g) ?? []).length + (html.match(/class="kind kind-meaning"/g) ?? []).length, 520);
-    for (const word of ['used to', 'present perfect', 'first conditional', 'tell', 'the passive']) assert.ok(html.includes(word), word);
+    assert.equal((html.match(/تأكدوا أولًا/g) ?? []).length, 14);
+    assert.equal((html.match(/<b>الكلمات خارج قوائم المفردات<\/b>/g) ?? []).length, 14);
+    assert.equal((html.match(/class="kind kind-form"/g) ?? []).length + (html.match(/class="kind kind-meaning"/g) ?? []).length, 560);
+    for (const word of ['used to', 'present perfect', 'first conditional', 'tell']) assert.ok(html.includes(word), word);
+    // The passive has a hub lesson (S2 U10 l1) and is built, so the form must not list it among the gaps.
+    const from = html.indexOf('class="card gaps"');
+    const gaps = html.slice(from, html.indexOf('</div>', from));
+    assert.ok(from > 0 && gaps.includes('used to') && !gaps.includes('passive'), 'the passive is not a gap');
   });
 
   it('lists each true sentence once per lesson page and each twin beside it', async () => {

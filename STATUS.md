@@ -82,6 +82,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-23 — Grade 9 grammar: the passive added, and a wrong «no hub lesson» corrected
 - 2026-10-23 — Grade 9 grammar, thirteen lessons in the English corner — built, shown to nobody yet
 - 2026-10-23 — Iqraa draws its own icons
 - 2026-10-23 — Grade 9 grammar pilot (Unit 4) in the English corner — built, shown to nobody yet

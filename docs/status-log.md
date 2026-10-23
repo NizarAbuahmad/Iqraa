@@ -10,6 +10,29 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 9 grammar: the passive added, and a wrong «no hub lesson» corrected — 2026-10-23
+
+The thirteen-lesson entry below, its spec, the teacher's form and PR #1204 all said the passive (S2 U10 l1) has
+no hub lesson, so it was left out. **That was wrong:** `kbl-g9-eng-s2-nccd-u10_l1` («Vocabulary and Grammar») is
+in the hub with 7 words. The hub listing showed it; it was read past. Re-checked against the hub for all 21
+Grade 9 grammar lessons: 15 had grammar (the pilot's two and the thirteen), this one is in the hub with none, and
+**five** are not in the hub (used to, the two present perfects, the first conditional, reported speech), each
+with fewer than four words (3, 1, 2, 0 and 2).
+
+- **Built:** the passive lesson, 40 hand-written items under the same rules (`englishGrammarG9Items.ts`):
+  `present-passive` 14 («is spoken» / «is speak»), `past-passive` 14 («was built» / «was build») and
+  `questions-negatives` 12 («Was the window broken» / «Was the window break»), all `form`. The distractor is
+  always the verb in its first form, never a participle that could fit. Fourteen lessons, 560 items, hidden like
+  the rest (`reviewedBy: null`).
+- **Corrected:** the form's «lessons the hub does not carry» block no longer lists the passive (a test pins it),
+  the spec, and the passage in the entry below. The form and sheet were regenerated; every other document is
+  byte-identical.
+- **Verified:** curriculum 612 tests, the two Grade 9 app test files, root typecheck. **Not verified:** the new
+  sentences by a teacher, as for the others; the audio (the 40 correct sentences join the pending
+  `english-audio` run).
+- **Still open:** the five lessons the hub does not carry need a change to how the hub builds lessons (its own
+  spec).
+
 ## Grade 9 grammar, thirteen lessons in the English corner — built, shown to nobody yet, 2026-10-23
 
 Grammar activities on thirteen more Grade 9 hub lessons (S1 U1, U2, U3, U5; S2 U6, U8, U9, U10), after the
@@ -40,7 +63,8 @@ it yet.** Spec: `docs/superpowers/specs/2026-10-23-english-corner-grammar-g9-les
   and the reading forms are byte-identical apart from the Grade 9 intro.
 - **Left out on purpose:** used to (U2), the two present perfects (U7), the first conditional (U8), reported
   speech (U9) and the passive (U10) have no hub lesson (the hub offers one only with four or more words; Unit 7
-  has none at all); personality adjectives (U1 l3) cannot be right or wrong.
+  has none at all); personality adjectives (U1 l3) cannot be right or wrong. **Corrected the same day (see the
+  entry above): the passive does have a hub lesson, S2 U10 l1 with 7 words, and was simply not built.**
 - **Verified:** curriculum 612 tests, mobile 6905 pass / 10 skipped / 0 fail on the tree before one pilot test
   was corrected to select Unit 4 by lesson id (that file re-run: pass), root typecheck. **In a browser** at
   390 px in Arabic and English, with sign-offs in the working tree only (restored straight after; never

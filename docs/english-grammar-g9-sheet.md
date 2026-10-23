@@ -718,6 +718,53 @@ Not reviewed yet — shown to nobody.
 
 | Sentence | Picture | Choose | True or false: wrong picture |
 |---|---|---|---|
+| English is spoken in many countries. | — | **is spoken** / is speak | _English is speak in many countries._ |
+| These cars are made in Jordan. | — | **are made** / are make | _These cars are make in Jordan._ |
+| Olive oil is sold in this shop. | — | **is sold** / is sell | _Olive oil is sell in this shop._ |
+| Bread is baked every morning. | — | **is baked** / is bake | _Bread is bake every morning._ |
+| Homework is checked by the teacher. | — | **is checked** / is check | _Homework is check by the teacher._ |
+| Coffee is grown in warm countries. | — | **is grown** / is grow | _Coffee is grow in warm countries._ |
+| Letters are delivered every morning. | — | **are delivered** / are deliver | _Letters are deliver every morning._ |
+| Rice is eaten in many countries. | — | **is eaten** / is eat | _Rice is eat in many countries._ |
+| The film is shown at eight. | — | **is shown** / is show | _The film is show at eight._ |
+| Dinner is served at seven. | — | **is served** / is serve | _Dinner is serve at seven._ |
+| Paper is made from wood. | — | **is made** / is make | _Paper is make from wood._ |
+| These apples are picked by hand. | — | **are picked** / are pick | _These apples are pick by hand._ |
+| The tickets are sold online. | — | **are sold** / are sell | _The tickets are sell online._ |
+| Tea is drunk all day here. | — | **is drunk** / is drink | _Tea is drink all day here._ |
+| The bridge was built in 1990. | — | **was built** / was build | _The bridge was build in 1990._ |
+| The window was broken yesterday. | — | **was broken** / was break | _The window was break yesterday._ |
+| My phone was stolen last week. | — | **was stolen** / was steal | _My phone was steal last week._ |
+| These pictures were painted by children. | — | **were painted** / were paint | _These pictures were paint by children._ |
+| The book was written in 1950. | — | **was written** / was write | _The book was write in 1950._ |
+| The cakes were baked this morning. | — | **were baked** / were bake | _The cakes were bake this morning._ |
+| The match was cancelled because of rain. | — | **was cancelled** / was cancel | _The match was cancel because of rain._ |
+| Two houses were sold last year. | — | **were sold** / were sell | _Two houses were sell last year._ |
+| The castle was destroyed long ago. | — | **was destroyed** / was destroy | _The castle was destroy long ago._ |
+| My bag was found under the bed. | — | **was found** / was find | _My bag was find under the bed._ |
+| The letters were sent yesterday. | — | **were sent** / were send | _The letters were send yesterday._ |
+| The prize was won by a student. | — | **was won** / was win | _The prize was win by a student._ |
+| All the tickets were sold quickly. | — | **were sold** / were sell | _All the tickets were sell quickly._ |
+| The song was written by my uncle. | — | **was written** / was write | _The song was write by my uncle._ |
+| Was the window broken by the storm? | — | **Was the window broken** / Was the window break | _Was the window break by the storm?_ |
+| Were the letters sent yesterday? | — | **Were the letters sent** / Were the letters send | _Were the letters send yesterday?_ |
+| The letter wasn't sent. | — | **wasn't sent** / wasn't send | _The letter wasn't send._ |
+| The cars weren't made here. | — | **weren't made** / weren't make | _The cars weren't make here._ |
+| Is English spoken in Brazil? | — | **Is English spoken** / Is English speak | _Is English speak in Brazil?_ |
+| Are these shoes made of leather? | — | **Are these shoes made** / Are these shoes make | _Are these shoes make of leather?_ |
+| The bag isn't sold here. | — | **isn't sold** / isn't sell | _The bag isn't sell here._ |
+| Was the door locked last night? | — | **Was the door locked** / Was the door lock | _Was the door lock last night?_ |
+| The food wasn't cooked well. | — | **wasn't cooked** / wasn't cook | _The food wasn't cook well._ |
+| Where was the film made? | — | **was the film made** / was the film make | _Where was the film make?_ |
+| Those rooms aren't used often. | — | **aren't used** / aren't use | _Those rooms aren't use often._ |
+| When were the pyramids built? | — | **were the pyramids built** / were the pyramids build | _When were the pyramids build?_ |
+
+## Semester 2 · Unit 10 — Helping others
+
+Not reviewed yet — shown to nobody.
+
+| Sentence | Picture | Choose | True or false: wrong picture |
+|---|---|---|---|
 | If I had a car, I would drive. | — | **would drive** / will drive | _If I had a car, I will drive._ |
 | If she studied more, she would pass. | — | **would pass** / will pass | _If she studied more, she will pass._ |
 | If we had time, we would visit Petra. | — | **would visit** / will visit | _If we had time, we will visit Petra._ |

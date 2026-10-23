@@ -1,5 +1,5 @@
 /**
- * The thirteen authored Grade 9 lessons on the app side (spec: docs/superpowers/specs/2026-10-23-english-corner-grammar-g9-lessons-design.md):
+ * The fourteen authored Grade 9 lessons on the app side (spec: docs/superpowers/specs/2026-10-23-english-corner-grammar-g9-lessons-design.md):
  * Choose, Build and True or false on hand-written items, no Yes or No, and a True or false that plays no sound.
  */
 import { describe, it } from 'node:test';
@@ -18,7 +18,7 @@ import {
 
 const LESSONS = [
   's1-nccd-u1_l1', 's1-nccd-u1_l3', 's1-nccd-u1_l4', 's1-nccd-u2_l1', 's1-nccd-u3_l1', 's1-nccd-u3_l4', 's1-nccd-u5_l1', 's1-nccd-u5_l3',
-  's2-nccd-u6_l1', 's2-nccd-u6_l3', 's2-nccd-u8_l1', 's2-nccd-u9_l1', 's2-nccd-u10_l4',
+  's2-nccd-u6_l1', 's2-nccd-u6_l3', 's2-nccd-u8_l1', 's2-nccd-u9_l1', 's2-nccd-u10_l1', 's2-nccd-u10_l4',
 ].map(s => `kbl-g9-eng-${s}`);
 const SEEDS = [1, 2, 3, 4, 5, 6];
 const sentences = (id: string) => unitSentences(grammarUnit(id)!);
