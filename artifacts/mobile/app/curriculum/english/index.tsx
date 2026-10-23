@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { ENGLISH_HUB_GRADES, hubLessonsForGrade } from '@workspace/curriculum/englishHub';
+import { hubLessonVisible } from '@workspace/curriculum/englishGrammar';
 import { BADGE_IDS, badgesEarned, currentStreak, dayOf, lessonStars } from '@/services/englishHub/games';
 import { useHubProgress } from '@/services/englishHub/progressStore';
 import { goBack } from '@/services/navigation';
@@ -39,7 +40,8 @@ export default function EnglishHubScreen() {
   const streak = currentStreak(progress, today);
   const practicedToday = progress.lastDay === today;
   const earned = new Set(badgesEarned(progress));
-  const lessons = hubLessonsForGrade(grade);
+  // A grammar-only lesson (too few words for the word activities) is listed only once a teacher has signed its grammar.
+  const lessons = hubLessonsForGrade(grade).filter(l => hubLessonVisible(l.id));
   // Grades 9–10 offer several lessons per unit, so the unit title alone would
   // repeat on card after card; there the lesson's own title tells them apart.
   const unitKey = (l: { semester: number; unitNumber: number }) => `${l.semester}-${l.unitNumber}`;
@@ -159,7 +161,7 @@ export default function EnglishHubScreen() {
                   </Text>
                 ) : null}
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
-                  {t('hubWords', l.words.length)} · {l.words.slice(0, 4).map(w => w.en).join(', ')}…
+                  {l.grammarOnly ? t('hubGrammarOnly') : `${t('hubWords', l.words.length)} · ${l.words.slice(0, 4).map(w => w.en).join(', ')}…`}
                 </Text>
               </View>
               {stars > 0 ? (

@@ -25,7 +25,7 @@ import { askAboutLessonHandoff } from '@/services/lessonShelf';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { bookPagesForLesson } from '@/services/bookFigures';
 import { VocabularyPracticePanel } from '@/components/ui/VocabularyPracticePanel';
-import { hubLesson } from '@workspace/curriculum/englishHub';
+import { hubLessonVisible } from '@workspace/curriculum/englishGrammar';
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { goBack } from '@/services/navigation';
 import { readableOn } from '@/services/readableColor';
@@ -284,7 +284,7 @@ export default function LessonDetailScreen() {
         <VocabularyPracticePanel lessonId={lesson.id} accent={color} />
 
         {/* Grades 1–4 and 9–10 English: the same words, voiced and played with. */}
-        {hubLesson(lesson.id) ? (
+        {hubLessonVisible(lesson.id) ? (
           <Pressable
             onPress={() => router.push({ pathname: '/curriculum/english/[lessonId]', params: { lessonId: lesson.id } } as never)}
             style={({ pressed }) => [
