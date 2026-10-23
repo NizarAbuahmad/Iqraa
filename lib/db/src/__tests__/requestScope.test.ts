@@ -4,7 +4,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { after, before, describe, test } from "node:test";
 import pg from "pg";
 import { asUser, type Identity } from "../identity.ts";
-import { runInScope, type RequestScope } from "../requestScope.ts";
+import { RequestScope, runInScope } from "../requestScope.ts";
 import { ScopedPool } from "../scopedPool.ts";
 import { seed, TEST_URL, type Fixture } from "../testing/rlsHarness.ts";
 
@@ -96,8 +96,12 @@ describe("request-scoped connection", { skip: !TEST_URL && "RLS_TEST_DATABASE_UR
       identity("teacherA", "teacher"),
       async scope => {
         await scoped.query(`SELECT 1`);
-        await sleep(300);
+        // Wait for the timer to fire (generous deadline, no fixed margin), then for the
+        // rollback and release it started: end() returns that same closing promise.
+        const deadline = Date.now() + 10_000;
+        while (!scope.ended && Date.now() < deadline) await sleep(10);
         assert.equal(scope.ended, true);
+        await scope.end();
         assert.equal(scoped.idleCount, scoped.totalCount);
         const after = await scoped.query(`SELECT app_uid() AS uid`); // per-statement path now
         assert.equal(after.rows[0].uid, ids.teacherA);
@@ -110,6 +114,52 @@ describe("request-scoped connection", { skip: !TEST_URL && "RLS_TEST_DATABASE_UR
     const before = scoped.totalCount;
     await held(identity("teacherA", "teacher"), async () => {});
     assert.equal(scoped.totalCount, before);
+  });
+
+  test("a statement queued behind a failed held one falls back; the failed one keeps its own error", async () => {
+    await held(identity("teacherA", "teacher"), async scope => {
+      const [bad, good] = await Promise.allSettled([
+        scoped.query(`SELECT 1/0`),
+        scoped.query(`SELECT app_uid() AS uid`),
+      ]);
+      assert.equal(bad.status, "rejected");
+      assert.match(String((bad as PromiseRejectedResult).reason), /division by zero/);
+      assert.equal(good.status, "fulfilled");
+      assert.equal((good as PromiseFulfilledResult<pg.QueryResult>).value.rows[0].uid, ids.teacherA);
+      assert.equal(scope.ended, true);
+    });
+    assert.equal(scoped.idleCount, scoped.totalCount);
+  });
+
+  test("a held connection that cannot be checked out falls back to the per-statement path", async () => {
+    const scope = new RequestScope(scoped, () => Promise.reject(new Error("no connection")), "BEGIN READ ONLY", 5000);
+    const who = identity("teacherA", "teacher");
+    await asUser(who, () =>
+      runInScope(scope, async () => {
+        const r = await scoped.query(`SELECT current_user AS u, app_uid() AS uid`);
+        assert.equal(r.rows[0].u, "iqraa_app");
+        assert.equal(r.rows[0].uid, ids.teacherA);
+        assert.equal(scope.ended, true);
+      }),
+    );
+    await scope.end();
+  });
+
+  test("a held connection whose BEGIN fails falls back, and the bad connection is discarded", async () => {
+    const side = new pg.Pool({ connectionString: TEST_URL, max: 1 });
+    try {
+      const scope = new RequestScope(scoped, () => side.connect(), "BEGIN READ ONLY; SELECT 1/0", 5000);
+      await asUser(identity("teacherA", "teacher"), () =>
+        runInScope(scope, async () => {
+          const r = await scoped.query(`SELECT app_uid() AS uid`);
+          assert.equal(r.rows[0].uid, ids.teacherA);
+        }),
+      );
+      await scope.end();
+      assert.equal(side.totalCount, 0); // release(true) destroyed it
+    } finally {
+      await side.end();
+    }
   });
 
   test("with enforcement off there is no scope", async () => {

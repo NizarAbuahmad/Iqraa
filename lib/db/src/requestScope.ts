@@ -53,13 +53,28 @@ export class RequestScope {
 
   async query(args: any[]): Promise<pg.QueryResult> {
     if (this.ended) throw new ScopeEnded();
-    const client = await this.open();
+    let client: pg.PoolClient;
+    try {
+      client = await this.open();
+    } catch {
+      // No connection, or its BEGIN failed (a stale pooled connection, say): the per-statement
+      // path takes a fresh one, so end the scope and let ScopedPool retry there.
+      await this.end(true);
+      throw new ScopeEnded();
+    }
     if (this.ended) throw new ScopeEnded(); // ended while we waited for the connection
     this.statements++;
     try {
       return await (client.query as any).apply(client, args);
     } catch (err) {
+      // If the scope had already ended when this error arrived, this statement was queued
+      // behind one that failed (or behind the timeout's rollback) and died in the aborted
+      // transaction: its error says nothing about the statement itself. Held statements are
+      // read-only, so ScopedPool can safely run it again per-statement. The statement that
+      // failed first still surfaces its own error.
+      const endedBefore = this.ended;
       await this.end(true); // the transaction is aborted; later statements go per-statement
+      if (endedBefore) throw new ScopeEnded();
       throw err;
     }
   }
