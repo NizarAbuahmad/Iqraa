@@ -72,6 +72,15 @@ Checked 2026-10-22:
   actually appears in the console, and that the OTAs published since #1115 (all runtime 1.5.0)
   reach a device. The API has no error-reporting service; it keeps its own log
   (`/healthz/errors`, admin key) and Cloud Run logs.
+- **Row-level security is deployed and switched off** (`RLS_ENFORCE` unset; PR #1048, migration
+  `0008`). Rehearsed on 2026-10-23 on a separate empty Neon project: all migrations apply and the
+  database suite passes 46/46 on both the direct and the pooled endpoint (workflow run
+  39931238295). The connection ceiling checks out (20 instances, pooled endpoint, `max_connections` 225).
+  **The latency gate failed (C1, 2026-10-23): +336 ms p95 on a 15-statement request,
+  budget +100 ms** — each statement becomes three round trips and one costs about 11 ms from
+  europe-west1 to Frankfurt; it must not be switched on until a mitigation passes the same benchmark.
+  Not done: that mitigation, enabling it in production, and making the `row-level security` check required — the steps and
+  the switch are in `docs/rls-rollout-checklist.md`.
 - **Draft PR #730** (teacher visibility into English Corner practice) changes the schema,
   conflicts with `main`, and needs `pnpm --filter @workspace/db run generate` after it is updated.
 - **The E2E smoke test is not a required check** yet; make it one after about a week

@@ -30,6 +30,25 @@ book is downloaded from the curriculum card; I did not verify that no in-app rea
 exam only), copying an old exam within a class (`howCopyExam` answers a different question),
 the book-source question and the ready-made-homework question (neither looked into).
 
+## Row-level security rehearsed on a separate Neon project, 2026-10-23
+
+The `RLS Neon rehearsal` workflow (`.github/workflows/rls-neon-rehearsal.yml`, run 39931238295, green) applied
+every migration to a new, empty Neon project in the production region and ran `@workspace/db`'s tests twice,
+against its direct and its pooled endpoint: **46 of 46 passed on each**, none failed or skipped. That covers the
+coverage guard, the policy matrix and the differential test (enforcement off versus on: statuses, pushes, rows
+left behind, logged errors), so migration `0008` works on Neon, the `iqraa_app` role can be created there, and
+`SET LOCAL ROLE` / `set_config` survive Neon's pooler.
+
+**Not verified:** added latency (GitHub's runners are not in the Cloud Run region, so the run says nothing about
+it), the production connection ceiling for two pools per instance, and anyone walking the flows with
+`RLS_ENFORCE=on` in the real environment. Enforcement in production is still off. Next steps and the switch:
+`docs/rls-rollout-checklist.md` (C1, C2, D, E).
+
+Two things the first runs found: a mistyped confirmation stops the job at its first step (by design), and a
+pooled secret saved with extra text around the URL failed with `getaddrinfo ENOTFOUND base` — the guard's
+`pooled host:` line printing `***` instead of an address is the tell. PR #1187 made the pooled step skip when
+the confirmation or the empty-database guard fails.
+
 ## The tab bar is drawn — 2026-10-23
 
 Step three of the icon work. The phone tab bar and the desktop sidebar draw
@@ -4035,7 +4054,7 @@ unclassified table, and a differential test that boots the built API with enforc
 and on and finds no difference in what users see, which pushes are sent, which rows are
 left behind, or what is logged — across 56 reads for six identities and 53 write steps (a student's retake, the push badge and the inbox order a reply bumps included).
 
-**Not verified, and the reason it is off:** enforcement has never run against Neon (the migration will, at merge). Added latency
+**Not verified, and the reason it is off:** enforcement had never run against Neon when this was written (the migration ran there at merge); the 2026-10-23 rehearsal entry above now covers the database suites on a separate Neon project. Added latency
 across the Cloud Run → Neon hop is unmeasured (≈ two extra round trips per statement; +0.24 ms
 on loopback). The connection ceiling with two pools per instance is unchecked. No one has
 walked the teacher / parent / student flows with it on in a real environment.
