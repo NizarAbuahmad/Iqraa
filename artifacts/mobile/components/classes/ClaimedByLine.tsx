@@ -1,5 +1,5 @@
 /**
- * «الحساب: خالد التيس · 23 أكتوبر» under a roster name — which account holds
+ * «الحساب: خالد التيس · 23 تشرين الأول» under a roster name — which account holds
  * it and since when, so a teacher can see at a glance that the name on the
  * roster and the account behind it are the same child. Shows the student's own
  * account only; parents are listed on the code screen.

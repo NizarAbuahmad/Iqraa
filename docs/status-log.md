@@ -20,8 +20,8 @@ opens one sheet: name, register number, gender, note (`EditStudentSheet`), sendi
 
 **Rules.** A rename that matches another live student in any of that student's classes is a 409
 `student_name_taken` (same whitespace/case key as the add route, no Arabic folding; other classes
-and other teachers may reuse the name). After a rename, linked code-only accounts (no email,
-password or Google id) are re-derived from the new roster name — only if they still carry what the
+and other teachers may reuse the name). After a rename, linked code-only accounts (a login
+code, no password and no Google id) are re-derived from the new roster name — only if they still carry what the
 old name would have produced, so a name a person chose is never overwritten. That write uses
 `systemDb` (`routes/roster.ts` was already pinned) in a second step after the roster update, not
 the same transaction; a failure is logged by id and the saved rename stands.
@@ -36,7 +36,7 @@ Arabic-Indic digits» passes. In CI on head 1b87839 (which already held the API 
 Typecheck, Build api-server, Test api-server (`REQUIRE_DB_TESTS=true`, so `rosterEdit.db.test.ts` ran
 against a real Postgres and passed) and Test db were green; "Test mobile" failed with exactly one test,
 the Arabic-Indic date one above, because `formatLinkedOn` used a plain `ar-JO` locale. Commit 319d790
-switched it to the repo's `dateLocale()`, so an Arabic date prints Latin digits («23 أكتوبر»).
+switched it to the repo's `dateLocale()`, so an Arabic date prints Latin digits («23 تشرين الأول»).
 
 **Not verified.** CI on the final head had not been read when this was written; see the PR for it. No
 browser or device pass: RTL layout, dark mode, the keyboard lift, the sheet's scrolling on a short phone

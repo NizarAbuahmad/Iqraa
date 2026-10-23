@@ -2,7 +2,7 @@
  * What this guards: renaming a roster row must not leave the linked account
  * wearing the old name, and must never overwrite a name its owner chose.
  *
- * A code-only account (no email) is named from the roster row once, at sign-up
+ * A code-only account (a login code, no password and no Google id) is named from the roster row once, at sign-up
  * (`namesForNewAccount`). The teacher's chat list shows that account name, so a
  * rename that stopped at the roster row left «خالد التبس» in every thread. But
  * a person may also have edited their own name, so the account is rewritten

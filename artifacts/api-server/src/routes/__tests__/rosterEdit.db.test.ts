@@ -108,8 +108,11 @@ describeDb("editing a roster row over HTTP, against a real database", () => {
     });
 
     it("is another teacher's student: 404, and nothing changes", async () => {
+      const before = await user(`SELECT display_name FROM students WHERE id = $1`, [w.students.sA1]);
       const res = await call(on, "PATCH", `/students/${w.students.sA1}`, w.users.t2, { displayName: "x" });
       assert.equal(res.status, 404);
+      const after = await user(`SELECT display_name FROM students WHERE id = $1`, [w.students.sA1]);
+      assert.equal(after.display_name, before.display_name);
     });
 
     it("still refuses an empty name", async () => {

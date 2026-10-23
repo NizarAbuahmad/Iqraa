@@ -518,6 +518,11 @@ export default function ClassDetailScreen() {
             }
           : prev,
       );
+      // A rename also renames linked code-only accounts on the server and can
+      // move the row in the alphabetical list, so refetch the links too.
+      if (changes.displayName !== undefined) {
+        void queryClient.invalidateQueries({ queryKey: CLASS_QUERY_KEY(id) });
+      }
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setEditStudent(null);
     } catch (err) {

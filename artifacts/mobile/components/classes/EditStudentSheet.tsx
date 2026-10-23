@@ -138,7 +138,7 @@ export function EditStudentSheet({ student, saving, error, onSave, onClose }: Pr
             </ScrollView>
 
             <View style={styles.actions}>
-              <Pressable onPress={onClose} style={styles.btn}>
+              <Pressable onPress={onClose} accessibilityRole="button" style={styles.btn}>
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>{t('cancel')}</Text>
               </Pressable>
               <Pressable
