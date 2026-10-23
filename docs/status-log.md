@@ -45,6 +45,53 @@ could tell a spent allowance from a switched-off service from a server fault.
   was not looked into.
 - Not seen on a device or in a browser.
 
+## Book figure crops: audited, re-cropped, fragments dropped — 2026-10-22
+
+**What changed.** Every book figure a lesson can reach (2,576 across 66 books;
+1,641 of them inside a deck's four-figure window) was rebuilt from its PDF page
+by the new `scripts/audit_book_figures.py` and judged against the committed
+crop. Eyeballing two samples on 2026-10-19 had found 35–45% visibly bad:
+labels or captions sliced at an edge, half a diagram, a neighbouring body-text
+column pulled in, a lone sub-image of a composite picture, page chrome.
+
+- **1,221 re-cropped** — saved as a NEW key (`p011.png` → `p011-v2.png`), old PNG
+  removed from git. 217 of them then had a sliced prose line or the page footer
+  trimmed off the top/bottom edge (`polish`).
+- **264 dropped** — PNG and `index.json` entry both: text-only note boxes
+  («أتذكّر», «أفكّر», «تعلّمتُ سابقًا»), page-number badges, slivers of unit-opener
+  art, empty graph/pie templates, lone shapes, and sub-images whose whole figure
+  is now one re-crop.
+- **1,091 unchanged** — 802 already fine, 145 re-crops rejected in review (the
+  rebuild was worse), 109 «manual» rows kept, 35 proposed drops overturned.
+- Deck slots (first four per lesson): 1,641 → 1,549; of the 1,641, 748
+  re-cropped, 164 dropped, 729 kept. Six lessons are left with no figure — all
+  their figures were text boxes, empty templates or lone circles.
+
+**How it was decided.** The tool classified (1,442 re-crop / 804 ok / 183 drop /
+147 manual); ten reviewer agents then judged all 1,920 re-crop/drop/manual rows
+and a 148-row sample of «ok» on before/after contact sheets, and I spot-checked
+their keep/drop calls. «ok» sample: 6 of 148 still cut badly (≈4%).
+
+**Not done / not verified.**
+- **R2: uploaded 2026-10-23, additive.** The 1,221 `-v2` keys went up with
+  `pnpm --filter @workspace/curriculum run upload-figures-r2` (it skips keys the
+  bucket has; 1,091 skipped, nothing overwritten or deleted), so an OTA carrying
+  the new `bookFigureAssets.ts` finds every figure. Installed builds keep asking
+  for the old keys, which stay in the bucket.
+- 84 kept figures are still cut badly and 168 re-crops are better but flawed;
+  both lists, with the dropped ones, are in the session notes
+  (`figure-crops-followups.md`). They need hand crops. Grade 6 science p.102's
+  star-colour row is the one real loss among the six figure-less lessons.
+- Grade 10 maths S1/S2 and chemistry S1 were read from copies in
+  `Downloads/Claudi/Iqraa/attached_assets` (the BOOKS paths resolve there only
+  by copying); chemistry S1's copy is the recompressed one.
+- Not looked at on a device or in a rendered deck.
+
+**Verified.** Mobile tests 6,637/6,648 (the one failure, `scopeSelection` reading
+`TopicSelector.tsx` for a `\n`, is this Windows checkout's CRLF, in a file not
+touched here); typecheck clean; `bookFigureAssets.test.ts` passes on the
+regenerated 2,312 keys.
+
 ## Row-level security rehearsed on a separate Neon project, 2026-10-23
 
 The `RLS Neon rehearsal` workflow (`.github/workflows/rls-neon-rehearsal.yml`, run 39931238295, green) applied

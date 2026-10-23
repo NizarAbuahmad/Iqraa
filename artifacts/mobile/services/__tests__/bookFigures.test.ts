@@ -22,13 +22,14 @@ describe('figuresForLesson', () => {
     // the one that is wrong (see scripts/extract_book_figures.py BOOKS).
     const figures = figuresForLesson('kbl-math-s1-nccd-u1_l1');
     assert.ok(figures.length > 0, 'the lesson has figures');
-    assert.ok(figures.some(f => f.file === 'p021.png'));
+    // By page, not file name: a re-crop renames `p021.png` to `p021-v2.png`.
+    assert.ok(figures.some(f => f.pdfPage === 21));
     assert.ok(figures.every(f => f.sourceId === 'math-s1-student-book'));
   });
 
   it('keeps the circle-and-parabola figure with the two-quadratics lesson', () => {
     const figures = figuresForLesson('kbl-math-s1-nccd-u1_l2');
-    assert.ok(figures.some(f => f.file === 'p028.png'));
+    assert.ok(figures.some(f => f.pdfPage === 28));
   });
 
   it('puts the hyperbolas under Rational Functions', () => {
@@ -166,7 +167,7 @@ describe('figuresForLesson', () => {
     // them. Joined on the Arabic title, which matches the curriculum's word
     // for word — the book states no English lesson title on its openers.
     const wave = figuresForLesson('kbl-chem-s1-nccd-u1_l2');
-    assert.ok(wave.some(f => f.file === 'p024.png'), 'the wave-model figure');
+    assert.ok(wave.some(f => f.pdfPage === 24), 'the wave-model figure');
     assert.ok(wave.every(f => f.sourceId === 'chem-s1-student-book'));
     // Counts are asserted as "some", not as a number. They were 2 and 1 when
     // the extractor only found figures seeded on a pair of axes; teaching the
@@ -188,8 +189,10 @@ describe('figuresForLesson', () => {
         // `p035.png`, and `p035b.png` for the second figure on a page. One
         // page routinely prints four or five independent diagrams down the
         // margin; before the extractor could yield more than one per page,
-        // the bare form was the only shape a filename could take.
-        assert.match(f.file, /^p\d{3}[a-z]?\.png$/);
+        // the bare form was the only shape a filename could take. A re-crop
+        // (`scripts/audit_book_figures.py --apply`) is `p035-v2.png`: a new
+        // key, because the R2 uploader never overwrites one.
+        assert.match(f.file, /^p\d{3}[a-z]?(-v\d+)?\.png$/);
       }
     }
   });
