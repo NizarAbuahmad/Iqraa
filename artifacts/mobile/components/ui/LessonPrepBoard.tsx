@@ -260,7 +260,7 @@ export function LessonPrepBoard({
                   <View
                     style={[
                       styles.badge,
-                      isRTL ? { left: -6 } : { right: -6 },
+                      isRTL ? { left: -7 } : { right: -7 },
                       { backgroundColor: colors.card, borderColor: readableOn(row.color, colors.card) },
                     ]}
                   >
@@ -394,10 +394,10 @@ const styles = StyleSheet.create({
   tileCompact: { width: 34, height: 34, borderRadius: 9 },
   badge: {
     position: 'absolute',
-    top: -6,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    top: -7,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',

@@ -16,7 +16,8 @@ import { fileURLToPath } from 'node:url';
 import { CONCEPTS, ICON, ICON_DISPLAY, type ConceptId } from '../../constants/icons.ts';
 import { ALL_TOOLS, TAB_TOOLS } from '../toolCatalog.ts';
 import { PREP_ROWS } from '../lessonBoard.ts';
-import { contrast } from '../readableColor.ts';
+import { contrast, readableOn } from '../readableColor.ts';
+import { deltaE2000, deltaE2000Lab } from '../colorDistance.ts';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -81,18 +82,6 @@ test('no other icon family is left in the app', () => {
 
 const hex = (h: string): [number, number, number] => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)) as [number, number, number];
 
-/** CIE76 ΔE: straight-line distance in L*a*b*. Crude next to ΔE2000, but enough to say "two swatches are different colours". */
-function deltaE(a: string, b: string): number {
-  const lab = (h: string) => {
-    const [r, g, bl] = hex(h).map(v => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }) as [number, number, number];
-    const x = (0.4124 * r + 0.3576 * g + 0.1805 * bl) / 0.95047, y = 0.2126 * r + 0.7152 * g + 0.0722 * bl, z = (0.0193 * r + 0.1192 * g + 0.9505 * bl) / 1.08883;
-    const f = (t: number) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
-    return [116 * f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z))] as const;
-  };
-  const p = lab(a), q = lab(b);
-  return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
-}
-
 function hueSat(h: string): { hue: number; sat: number } {
   const [r, g, b] = hex(h).map(v => v / 255) as [number, number, number];
   const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, l = (mx + mn) / 2;
@@ -103,6 +92,9 @@ function hueSat(h: string): { hue: number; sat: number } {
 }
 
 const ids = Object.keys(CONCEPTS) as ConceptId[];
+
+// A tool's id is not always its concept's: the class-challenge tool is `game`.
+const CONCEPT_OF_TOOL: Record<string, ConceptId> = { game: 'challenge' };
 
 test('the concept list covers every teaching concept the audit named', () => {
   for (const id of ['lesson-plan', 'worksheet', 'quiz', 'slides', 'activity', 'homework', 'evaluations', 'challenge', 'games', 'classroom', 'parent-msg', 'lesson-flow', 'prompt-slides', 'geogebra'] as ConceptId[]) {
@@ -119,37 +111,70 @@ test('white text reads on every concept colour at 4.5:1', () => {
   }
 });
 
-test('no two concepts share a colour, and none is a near twin of another', () => {
-  // ΔE76 ≥ 8: the closest allowed pair is lesson-plan / classroom (two indigos, 8.4). Anything under 8 reads as the same swatch in a tile.
+test('CIEDE2000 matches the published reference pairs', () => {
+  // Sharma, Wu and Dalal (2005), the first rows of their test data.
+  assert.ok(Math.abs(deltaE2000Lab([50, 2.6772, -79.7751], [50, 0, -82.7485]) - 2.0425) < 1e-3);
+  assert.ok(Math.abs(deltaE2000Lab([50, 3.1571, -77.2803], [50, 0, -82.7485]) - 2.8615) < 1e-3);
+  assert.ok(Math.abs(deltaE2000Lab([50, 2.5, 0], [50, 0, -2.5]) - 4.3065) < 1e-3);
+  assert.equal(deltaE2000('#4338CA', '#4338CA'), 0);
+});
+
+// The Tools tab's own concepts: the ones a teacher sees side by side as a grid of tiles.
+const TAB_CONCEPTS = [...new Set(TAB_TOOLS.map(t => CONCEPT_OF_TOOL[t.id] ?? t.id))] as ConceptId[];
+const DARK_CARD = '#111F36'; // palette.card in dark mode
+
+// ΔE2000 ≥ 8 on the light card and again after `readableOn` has lifted each colour for the dark card. 10 would be
+// the target, but the prep board's own hues (lesson-plan #4338CA, quiz #7C3AED) are 9.4 apart (8.5 on dark) and
+// those are kept; every other pair is further apart than that.
+const TAB_MIN_DE = 8;
+
+test('Tools-tab concepts are clearly different colours on the light card', () => {
+  assert.ok(TAB_CONCEPTS.length >= 8, `the Tools tab lists ${TAB_CONCEPTS.length} concepts`);
   const bad: string[] = [];
-  for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
-    const d = deltaE(CONCEPTS[ids[i]!].color, CONCEPTS[ids[j]!].color);
-    if (d < 8) bad.push(`${ids[i]} ${CONCEPTS[ids[i]!].color} ~ ${ids[j]} ${CONCEPTS[ids[j]!].color} (ΔE ${d.toFixed(1)})`);
+  for (let i = 0; i < TAB_CONCEPTS.length; i++) for (let j = i + 1; j < TAB_CONCEPTS.length; j++) {
+    const a = TAB_CONCEPTS[i]!, b = TAB_CONCEPTS[j]!;
+    const d = deltaE2000(CONCEPTS[a].color, CONCEPTS[b].color);
+    if (d < TAB_MIN_DE) bad.push(`${a} ${CONCEPTS[a].color} ~ ${b} ${CONCEPTS[b].color} (ΔE2000 ${d.toFixed(1)})`);
   }
   assert.deepEqual(bad, []);
-  const tabIds = new Set(TAB_TOOLS.map(t => t.id));
-  assert.ok(tabIds.size >= 6, 'the Tools tab lists its cards');
+});
+
+test('Tools-tab concepts are clearly different colours on the dark card', () => {
+  const lift = (id: ConceptId) => readableOn(CONCEPTS[id].color, DARK_CARD, 3);
+  const bad: string[] = [];
+  for (let i = 0; i < TAB_CONCEPTS.length; i++) for (let j = i + 1; j < TAB_CONCEPTS.length; j++) {
+    const a = TAB_CONCEPTS[i]!, b = TAB_CONCEPTS[j]!;
+    const d = deltaE2000(lift(a), lift(b));
+    if (d < TAB_MIN_DE) bad.push(`${a} ${lift(a)} ~ ${b} ${lift(b)} (ΔE2000 ${d.toFixed(1)})`);
+  }
+  assert.deepEqual(bad, []);
+});
+
+test('no two concepts anywhere (hidden tools included) are near twins', () => {
+  const bad: string[] = [];
+  for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+    const d = deltaE2000(CONCEPTS[ids[i]!].color, CONCEPTS[ids[j]!].color);
+    if (d < 7) bad.push(`${ids[i]} ${CONCEPTS[ids[i]!].color} ~ ${ids[j]} ${CONCEPTS[ids[j]!].color} (ΔE2000 ${d.toFixed(1)})`);
+  }
+  assert.deepEqual(bad, []);
 });
 
 test('no concept is amber: amber (palette.live) means "now" and nothing else', () => {
   // Amber family, two ways. (1) Hue 25°–50° at saturation > 0.6 — where palette.live (#B45309, 26°) and every
-  // lighter amber sit. (2) Within ΔE 7 of the two oranges the app already used for "attention" (#B54708, the old
-  // quiz and challenge colour; #B45309). The activity orange #C2410C is 17° and ΔE 7.6 from #B54708 — close, but a
-  // red-orange, and the prep board has always worn it.
+  // lighter amber sit. (2) Within ΔE2000 3 of the two oranges the app already used for "attention" (#B54708, the old
+  // quiz and challenge colour; #B45309). The activity orange #C2410C is 17°, ΔE2000 3.5 from #B54708 and 6.9 from
+  // #B45309: close, but a red-orange, and the prep board has always worn it. It is the nearest concept to amber.
   for (const id of ids) {
     const { color } = CONCEPTS[id];
     const { hue, sat } = hueSat(color);
     assert.ok(!(hue >= 25 && hue <= 50 && sat > 0.6), `${id} ${color} is in the amber hue band (${hue.toFixed(0)}°)`);
     for (const amber of ['#B54708', '#B45309']) {
-      assert.ok(deltaE(color, amber) >= 7, `${id} ${color} is within ΔE 7 of the amber ${amber}`);
+      assert.ok(deltaE2000(color, amber) >= 3, `${id} ${color} is within ΔE2000 3 of the amber ${amber}`);
     }
   }
 });
 
 // ---------------------------------------------------------------- one source
-
-// A tool's id is not always its concept's: the class-challenge tool is `game`.
-const CONCEPT_OF_TOOL: Record<string, ConceptId> = { game: 'challenge' };
 
 test('the tool catalog takes icon and colour from CONCEPTS', () => {
   for (const tool of ALL_TOOLS) {
@@ -214,4 +239,35 @@ test('every allow-listed emoji file still holds one (so the list cannot rot)', (
     assert.ok(f, `${rel} no longer exists`);
     assert.ok(UI_EMOJI.test(f!.src), `${rel} no longer holds a UI emoji — remove it from EMOJI_ALLOWED`);
   }
+});
+
+// ---------------------------------------------------------------- glyphs on the card
+
+// A concept colour is picked to carry white text, which is the opposite surface from the dark card: a raw `#4338CA`
+// glyph is 2.0:1 on `#111F36`. Every screen that draws a tool's glyph lifts it with readableOn(…, colors.card, 3).
+const TOOL_GLYPH_FILES = [
+  'app/(tabs)/ai-tools.tsx',
+  'app/(tabs)/index.tsx',
+  'components/today/PhoneToday.tsx',
+  'components/ui/ComposerToolsMenu.tsx',
+];
+
+test('a tool glyph on a card goes through readableOn', () => {
+  for (const rel of TOOL_GLYPH_FILES) {
+    const src = readFileSync(join(root, rel), 'utf8');
+    assert.match(src, /<Ionicons name=\{tool\.icon\}[^>]*color=\{readableOn\(tool\.color, colors\.card, 3\)\}/, `${rel} draws the tool glyph without readableOn`);
+  }
+  const raw = files.filter(f => /<Ionicons\b[^>]*color=\{tool\.color\}/.test(f.src)).map(f => f.rel);
+  assert.deepEqual(raw, [], 'a raw tool.color glyph on a card: wrap it in readableOn(tool.color, colors.card, 3)');
+});
+
+// ---------------------------------------------------------------- strings that sit beside an icon
+
+test('relatedResourcesDone has no leading emoji: its panel draws a checkmark-circle', () => {
+  const i18n = readFileSync(join(root, 'services', 'i18n.ts'), 'utf8');
+  const found = [...i18n.matchAll(/relatedResourcesDone:\s*'([^']*)'/g)].map(m => m[1]!);
+  assert.equal(found.length, 2, 'one string in Arabic and one in English');
+  for (const text of found) assert.doesNotMatch(text, /^\s*[✅✓✔\p{Extended_Pictographic}]/u, `«${text}» starts with an emoji`);
+  const panel = readFileSync(join(root, 'components', 'ui', 'RelatedResourcesPanel.tsx'), 'utf8');
+  assert.match(panel, /name="checkmark-circle"/, 'the panel no longer draws the tick this test assumes');
 });

@@ -37,6 +37,7 @@ import { periodClassLabel } from '@/services/classSubjects';
 import { className, classNameFor } from '@/services/materialClass';
 import { todayLabel } from '@/services/dateLabels';
 import { greetingKey } from '@/services/greeting';
+import { readableOn } from '@/services/readableColor';
 
 const START_CLASS_COLOR = palette.live;
 const ON_NAVY = '#FFFFFF';
@@ -254,7 +255,7 @@ export function PhoneToday() {
                     style={[s.tool, surface]}
                   >
                     <View style={[s.toolIcon, { backgroundColor: tool.color + '1A' }]}>
-                      <Ionicons name={tool.icon} size={20} color={tool.color} />
+                      <Ionicons name={tool.icon} size={20} color={readableOn(tool.color, colors.card, 3)} />
                     </View>
                     <Text numberOfLines={2} style={[s.toolText, { color: colors.foreground }]}>
                       {t(tool.titleKey as never)}

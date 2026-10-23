@@ -109,6 +109,9 @@ export function RosterCodeClaimForm({
                   key={entry.id}
                   onPress={() => { if (!blocked) onSelectStudent(entry.id); }}
                   disabled={blocked}
+                  accessibilityRole="button"
+                  aria-selected={picked}
+                  aria-disabled={blocked}
                   style={[
                     styles.nameChip,
                     {

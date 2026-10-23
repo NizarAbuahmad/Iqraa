@@ -29,7 +29,9 @@ Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
     hues are unchanged; the Tools tab moved to match them (worksheet `#0E8F86` to
     `#0F766E`, lesson plan `#007C74` to `#4338CA`, quiz `#B54708` to `#7C3AED` with the
     prep board's icon, challenge `#B54708` to `#BE123C`, homework `#007C74` to `#0E7490`,
-    evaluations `#64748B` to `#BE185D`, parent message `#6D28D9` to `#A21CAF`; the hidden
+    evaluations `#64748B` to `#BE185D`, parent message `#6D28D9` to `#A21CAF`, and the
+    classroom hub `#4F46E5` to the olive `#3F6212`, which had been an indigo beside the lesson
+    plan's; the hidden
     lesson-flow and prompt-slides moved off the slides and quiz colours).
   - **Sizes.** Every literal `<Ionicons size>` in `app/` and `components/` is on the
     scale: 355 icons in 128 files remapped by script (12 to 15 → 14/16, 17 to 20 → 20,
@@ -50,20 +52,32 @@ Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
     outline (`alert-circle`, `warning`, `information-circle`, `checkmark-circle` beside
     text) are filled; actions (clear, remove, mark all read) stay outline.
   - **`IconTile`** (`components/ui/IconTile.tsx`): a 36/44/56 rounded square tinted
-    `color + '1F'` with the glyph in `readableOn(color, colors.card)`, so it holds 4.5:1 in
-    dark mode. Used on the settings and profile rows, the classes list (the class's first
+    `color + '1F'` with the glyph in `readableOn(color, colors.card)`: 4.5:1 against the
+    card, and on the tint itself about 4:1 at worst, which clears the 3:1 a graphic needs.
+    The Tools tab, the home quick tools and the chat «+» menu lift their raw tool colour
+    the same way (`readableOn(tool.color, colors.card, 3)`) so a glyph does not sink on the
+    dark card. Used on the settings and profile rows, the classes list (the class's first
     subject colour through `subjectChipColor`) and every generator header
     (`ToolHeader concept=…`, a white tile on the band). The Tools tab and Today quick-tool
     tiles were left: they are 64 and 40 px with a 1A tint, so IconTile would change their
     look.
-  - The classes list card now reverses its row in Arabic. `flexDirection: 'row'` does not
-    flip on web, so the card read tile, name, bin, chevron from the left.
+  - The classes list card now reverses its row in Arabic. `LanguageContext` pins
+    `I18nManager` to LTR, so a plain `flexDirection: 'row'` never mirrors, on web or native,
+    and the card read tile, name, bin, chevron from the left.
+  - `relatedResourcesDone` lost its leading ✅ in both languages (its panel now draws a
+    `checkmark-circle`, so the tick showed twice). The roster name chip and the drill score
+    kept their meaning for screen readers: the chip has `aria-selected` (the web build ignores `accessibilityState`), the
+    score reads «N correct out of M».
 - **Pinned.** `services/__tests__/iconSystem.test.ts`: every literal Ionicons size
   (including both arms of a ternary) is on the scale; no second icon family outside one
-  allow-listed eraser; every concept carries white text at 4.5:1; no two concepts closer
-  than ΔE 8 (CIE76; the nearest pair is lesson plan and classroom, two indigos at 8.4);
-  none in the amber hue band (25° to 50° at saturation above 0.6) or within ΔE 7 of
-  `#B54708`/`#B45309`; the tool catalog and the prep board equal `CONCEPTS` and each
+  allow-listed eraser; every concept carries white text at 4.5:1; Tools-tab concepts at least
+  CIEDE2000 8 apart on the light card and after `readableOn(…, '#111F36', 3)` on the dark
+  one (minimum 9.4 light, 8.5 dark, both lesson plan against quiz, two prep-board hues that
+  were kept; 10 would need one of them to move), and every concept at least 7 from every
+  other; none in the amber hue band (25° to 50° at saturation above 0.6) or within
+  CIEDE2000 3 of `#B54708`/`#B45309` (the activity orange is the nearest, 3.5 from
+  `#B54708`); the CIEDE2000 helper against Sharma's published pairs; the four screens that
+  draw a tool glyph on a card use `readableOn`; `relatedResourcesDone` has no leading emoji; the tool catalog and the prep board equal `CONCEPTS` and each
   other for every shared concept, with no colour literal in either file; no ✓ ✕ ✗ ⚠ 💡 ✅ ❌
   in app chrome (comments skipped; the grammar pictures and the internal `app/dev/cqv`
   screens are allow-listed with a reason). No existing test was changed.
@@ -78,7 +92,13 @@ Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
   has its own icons and hues (the quiz is `help-circle-outline` in rose, the worksheet
   brown): it is a deliberate table with a dark-mode variant and export twins, left for its
   own change. `typeColor` in `services/continueTeaching.ts` still colours the quiz amber
-  and is not called by any screen.
+  and is not called by any screen. Other icon and colour tables that still disagree with
+  `CONCEPTS`: `app/ai-tools/lesson-flow.tsx:435` (the worksheet step is
+  `document-text-outline` in `#6D28D9`), `app/workspace/view.tsx:930` (the same), and
+  `app/curriculum/resources.tsx:112` (the library's worksheet shelf is `#0E8F86`; its audio
+  shelf is `#B45309`, **exactly `palette.live`**, the amber that means "now" — that one
+  breaks the amber rule and should change first). The outline/filled rule and `IconTile`
+  use are conventions, not tests.
 
 **Accounts, messages, evaluation setup and the corners (2026-10-22, seventeenth live pass).**
 Of 30 questions, 9 were right and 21 went to the model; the recheck of the sixteenth pass was

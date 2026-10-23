@@ -47,7 +47,7 @@ export const CONCEPTS = {
   challenge: { icon: 'trophy-outline', color: '#BE123C' },
   /** The public games hub. */
   games: { icon: 'game-controller-outline', color: '#15803D' },
-  classroom: { icon: 'grid-outline', color: '#4F46E5' },
+  classroom: { icon: 'grid-outline', color: '#3F6212' },
   'parent-msg': { icon: 'mail-outline', color: '#A21CAF' },
   'lesson-flow': { icon: 'git-branch-outline', color: '#4D7C0F' },
   'prompt-slides': { icon: 'sparkles-outline', color: '#1D4ED8' },

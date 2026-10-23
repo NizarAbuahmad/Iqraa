@@ -2373,7 +2373,6 @@ const makeSlideStyles = (T: DeckTheme) => StyleSheet.create({
   formulaBox: { backgroundColor: T.card, borderRadius: 16, borderWidth: 1, borderColor: T.border, paddingVertical: 22, paddingHorizontal: 18, alignItems: 'center' },
   formula: { fontSize: 30, color: T.text, textAlign: 'center', lineHeight: 46 },
   codeBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 28, backgroundColor: TIMER_GREEN + '12', borderRadius: 14, borderWidth: 1, borderColor: TIMER_GREEN + '40', padding: 20 },
-  codeLabel: { fontSize: 28 },
   codeValue: { fontSize: 48, color: TIMER_GREEN },
 });
 

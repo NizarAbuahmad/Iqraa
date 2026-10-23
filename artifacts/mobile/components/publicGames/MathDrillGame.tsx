@@ -227,7 +227,11 @@ function DrillRound({ config, onDone }: { config: DrillConfig; onDone: (r: Resul
         <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
           {t('playDrillTimeLeft', secsLeft)}
         </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        <View
+          accessible
+          accessibilityLabel={t('playDrillResult', state.correct, state.attempted)}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+        >
           <Ionicons name="checkmark-circle" size={20} color={RIGHT} />
           <Text style={{ color: RIGHT, fontFamily: 'ReadexPro_700Bold', fontSize: 16 }}>{state.correct}</Text>
         </View>

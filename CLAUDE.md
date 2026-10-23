@@ -617,6 +617,13 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   Never draw a tick, cross, warning or tip with an emoji (✓ ✕ ⚠ 💡 render
   differently on every platform): use `<Ionicons>`. A row or card that leads
   with an icon uses `IconTile` (`components/ui`), whose glyph is
-  `readableOn(color, colors.card)`. No concept may be amber, and white text must
-  read on every concept colour. `iconSystem.test.ts` enforces all of it,
-  including that every literal `<Ionicons size>` is on the scale.
+  `readableOn(color, colors.card)`; a raw tool colour drawn as a glyph on a card
+  goes through `readableOn(color, colors.card, 3)`, or it sinks on the dark card.
+  `iconSystem.test.ts` pins exactly this: every literal `<Ionicons size>` is on the
+  scale; one icon family (plus the whiteboard eraser); `CONCEPTS` colours carry
+  white at 4.5:1, Tools-tab pairs are at least CIEDE2000 8 apart on the light card
+  and on the dark one, and none is amber; the catalog and the prep board read from
+  `CONCEPTS`; ✓ ✕ ✗ ⚠ 💡 ✅ ❌ are absent from `.tsx` chrome; `relatedResourcesDone`
+  has no leading emoji; the Tools tab, Today and the chat menu use `readableOn` on
+  the tool glyph. **Not tested, only convention:** outline for actions and filled
+  for status, and which rows use `IconTile`.

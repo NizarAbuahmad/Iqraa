@@ -324,7 +324,7 @@ function ClassesList() {
           renderItem={({ item }) => (
             <Pressable
               onPress={() => router.push({ pathname: '/classes/[id]', params: { id: item.id } })}
-              // 'row' does not flip on web: without this the Arabic card read tile, name, bin, chevron from the left.
+              // LanguageContext pins I18nManager to LTR, so a plain 'row' never mirrors (web or native): without this the Arabic card read tile, name, bin, chevron from the left.
               style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }, numColumns > 1 && { flex: 1 }]}
             >
               {/* The tile wears the class's first subject, so a list of classes sorts by colour before it is read. */}

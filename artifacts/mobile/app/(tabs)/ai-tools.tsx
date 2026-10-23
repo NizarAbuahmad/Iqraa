@@ -17,6 +17,7 @@ import { trackEvent } from '@/services/analytics';
 import { pickPrefillParams } from '@/services/lessonPrep';
 import { loadLessonPick } from '@/services/lessonContext';
 import { classToolParamsFromRoute, type ClassToolParams } from '@/services/classToolParams';
+import { readableOn } from '@/services/readableColor';
 import {
   TAB_TOOLS,
   type ToolDef,
@@ -84,7 +85,7 @@ function ToolCard({
       style={[styles.gridCard, phone && styles.gridCardPhone, surface]}
     >
       <View style={[styles.gridIconWrap, { backgroundColor: tool.color + '1A', borderRadius: 16 }]}>
-        <Ionicons name={tool.icon} size={32} color={tool.color} />
+        <Ionicons name={tool.icon} size={32} color={readableOn(tool.color, colors.card, 3)} />
       </View>
       <View style={[styles.gridTitleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: 'center' }]}>
@@ -92,7 +93,7 @@ function ToolCard({
         </Text>
         {tool.badgeKey && (
           <View style={[styles.badge, { backgroundColor: tool.color + '22' }]}>
-            <Text style={[styles.badgeText, { color: tool.color, fontFamily: 'ReadexPro_600SemiBold' }]}>
+            <Text style={[styles.badgeText, { color: readableOn(tool.color, colors.card), fontFamily: 'ReadexPro_600SemiBold' }]}>
               {t(tool.badgeKey as any)}
             </Text>
           </View>

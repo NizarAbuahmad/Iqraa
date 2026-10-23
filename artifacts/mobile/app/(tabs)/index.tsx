@@ -48,6 +48,7 @@ import { className, classNameFor } from '@/services/materialClass';
 import { todayLabel } from '@/services/dateLabels';
 import { palette } from '@/constants/colors';
 import { PhoneToday } from '@/components/today/PhoneToday';
+import { readableOn } from '@/services/readableColor';
 
 const START_CLASS_COLOR = palette.live;
 const SIDE_PANEL_WIDTH = 356;
@@ -279,7 +280,7 @@ function LessonWorkspace() {
                 accessibilityLabel={t(tool.titleKey as never)}
               >
                 <View style={[s.toolIcon, { backgroundColor: tool.color + '1F' }]}>
-                  <Ionicons name={tool.icon} size={24} color={tool.color} />
+                  <Ionicons name={tool.icon} size={24} color={readableOn(tool.color, colors.card, 3)} />
                 </View>
                 <Text numberOfLines={1} style={[s.toolText, { color: colors.foreground }]}>
                   {t(tool.titleKey as never)}
