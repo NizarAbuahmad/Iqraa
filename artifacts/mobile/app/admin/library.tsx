@@ -410,10 +410,10 @@ export default function LibraryAdminScreen() {
             </Text>
           </View>
           <Pressable onPress={() => startEdit(item)} hitSlop={8} accessibilityLabel={t('libraryAdminEditSave')}>
-            <Ionicons name="pencil-outline" size={18} color={ACCENT} />
+            <Ionicons name="pencil-outline" size={20} color={ACCENT} />
           </Pressable>
           <Pressable onPress={() => remove(item)} hitSlop={8} accessibilityLabel={t('libraryAdminDelete')}>
-            <Ionicons name="trash-outline" size={18} color="#B42318" />
+            <Ionicons name="trash-outline" size={20} color="#B42318" />
           </Pressable>
         </View>
       ))}

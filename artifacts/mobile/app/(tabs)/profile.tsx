@@ -13,6 +13,7 @@ import { Toast } from '@/components/ui/Toast';
 import { Band, BRAND_MOTIF_OPACITY } from '@/components/ui/Band';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { useSurface } from '@/components/ui/Surface';
+import { IconTile } from '@/components/ui/IconTile';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { AR_LATIN } from '@/services/dateLabels';
 
@@ -42,7 +43,7 @@ function SettingRow({ icon, label, onPress, destructive, isRTL, colors }: {
       accessibilityRole="button"
       style={[styles.settingRow, surface, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
     >
-      <Ionicons name={icon} size={20} color={destructive ? colors.destructive : colors.primary} />
+      <IconTile icon={icon} color={destructive ? colors.destructive : colors.primary} size={36} />
       <Text style={[styles.settingLabel, { color: destructive ? colors.destructive : colors.foreground, fontFamily: 'ReadexPro_500Medium', flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
         {label}
       </Text>
@@ -204,7 +205,7 @@ export default function ProfileScreen() {
                 onPress={handleRemovePhoto}
                 style={[styles.avatarRemoveBadge, { backgroundColor: colors.destructive }]}
               >
-                <Ionicons name="close" size={12} color={'#FFFFFF'} />
+                <Ionicons name="close" size={14} color={'#FFFFFF'} />
               </Pressable>
             ) : null}
           </View>
@@ -474,6 +475,6 @@ const styles = StyleSheet.create({
   tags: { flexWrap: 'wrap', gap: 6 },
   tag: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   tagText: { fontSize: 12 },
-  settingRow: { alignItems: 'center', padding: 16, gap: 12 },
+  settingRow: { alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, gap: 12 },
   settingLabel: { fontSize: 15 },
 });

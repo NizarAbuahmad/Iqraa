@@ -311,7 +311,7 @@ export default function SchoolScreen() {
                 { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: rowDir },
               ]}
             >
-              <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+              <Ionicons name="alert-circle" size={16} color={colors.destructive} />
               <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
                 {hwError}
               </Text>
@@ -374,7 +374,7 @@ export default function SchoolScreen() {
                 { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: rowDir },
               ]}
             >
-              <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+              <Ionicons name="alert-circle" size={16} color={colors.destructive} />
               <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
                 {examError}
               </Text>
@@ -414,7 +414,7 @@ export default function SchoolScreen() {
                 { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: rowDir },
               ]}
             >
-              <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+              <Ionicons name="alert-circle" size={16} color={colors.destructive} />
               <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
                 {error}
               </Text>
@@ -476,7 +476,7 @@ export default function SchoolScreen() {
           <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: align }}>
             {t(isParent ? 'childResultsTitle' : 'myExamsTitle')}
           </Text>
-          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
+          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedForeground} />
         </Pressable>
       </ScrollView>
       <Celebrate visible={celebrateHw} size="small" message={t('celebrateHomeworkAll')} onDone={() => setCelebrateHw(false)} />
@@ -612,7 +612,7 @@ function HomeworkRow({
         >
           <Ionicons
             name={item.done ? 'checkmark-circle' : 'ellipse-outline'}
-            size={26}
+            size={24}
             color={item.done ? ACCENT : colors.mutedForeground}
           />
         </View>
@@ -629,7 +629,7 @@ function HomeworkRow({
         >
           <Ionicons
             name={item.done ? 'checkbox' : 'square-outline'}
-            size={26}
+            size={24}
             color={item.done ? ACCENT : colors.mutedForeground}
           />
         </Pressable>
@@ -703,7 +703,7 @@ function HomeworkRow({
                 style={{ flexDirection: rowDir, alignItems: 'center', gap: SPACE.xs, paddingVertical: SPACE.xs }}
               >
                 {isGame ? (
-                  <Text style={{ fontSize: TYPE.caption }}>🎮</Text>
+                  <Ionicons name="game-controller-outline" size={16} color={ACCENT} />
                 ) : (
                   <Ionicons name="attach-outline" size={16} color={ACCENT} />
                 )}

@@ -80,7 +80,7 @@ function PickerRow({
         <ActivityIndicator size="small" color={colors.primary} />
       ) : isAdded ? (
         <View style={{ alignItems: 'center', flexDirection: 'row', gap: 4 }}>
-          <Ionicons name="checkmark-circle" size={18} color={colors.mutedForeground} />
+          <Ionicons name="checkmark-circle" size={20} color={colors.mutedForeground} />
           <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>
             {t('resourceAdded')}
           </Text>

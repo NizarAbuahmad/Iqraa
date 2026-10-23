@@ -569,7 +569,7 @@ function ActivityView({ activity, colors, isRTL, t, accent, isAr }: {
       {activity.steps?.length > 0 && (
         <View style={{ marginBottom: 16 }}>
           <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, marginBottom: 8 }]}>
-            <Ionicons name="list-outline" size={15} color={accent} />
+            <Ionicons name="list-outline" size={16} color={accent} />
             <Text style={[{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }]}>
               {t('sectionActivitySteps')}
             </Text>
@@ -732,11 +732,11 @@ function QuizView({ quiz, colors, isRTL, t, accent, lang }: {
         <Text style={[{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 16, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }]}>{quiz.title}</Text>
         <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: accent + '18', borderRadius: 20 }}>
-            <Ionicons name="time-outline" size={12} color={accent} />
+            <Ionicons name="time-outline" size={14} color={accent} />
             <Text style={{ color: accent, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{quiz.duration} {t('min')}</Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: accent + '18', borderRadius: 20 }}>
-            <Ionicons name="star-outline" size={12} color={accent} />
+            <Ionicons name="star-outline" size={14} color={accent} />
             <Text style={{ color: accent, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{quiz.totalPoints} {t('pts')}</Text>
           </View>
         </View>
@@ -987,7 +987,7 @@ function ContentSection({ title, icon, isRTL, accent, colors, children }: {
   return (
     <View style={{ marginBottom: 16 }}>
       <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, marginBottom: 8 }]}>
-        <Ionicons name={icon} size={15} color={accent} />
+        <Ionicons name={icon} size={16} color={accent} />
         <Text style={[{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }]}>{title}</Text>
       </View>
       <View style={[{ backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, borderRadius: colors.radius, padding: 14 }]}>

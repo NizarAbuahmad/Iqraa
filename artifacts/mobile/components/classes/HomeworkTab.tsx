@@ -327,7 +327,7 @@ export function HomeworkTab({
               { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', flexDirection: rowDir },
             ]}
           >
-            <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+            <Ionicons name="alert-circle" size={16} color={colors.destructive} />
             <Text style={{ flex: 1, color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
               {listError}
             </Text>
@@ -545,7 +545,7 @@ export function HomeworkTab({
                           },
                         ]}
                       >
-                        <Ionicons name={on ? 'radio-button-on' : 'radio-button-off'} size={18} color={on ? ACCENT : colors.mutedForeground} />
+                        <Ionicons name={on ? 'radio-button-on' : 'radio-button-off'} size={20} color={on ? ACCENT : colors.mutedForeground} />
                         <Text
                           numberOfLines={1}
                           style={{
@@ -567,7 +567,7 @@ export function HomeworkTab({
                   <Text style={labelStyle}>{t('hwFieldResources')}</Text>
                   {draft.resources.map(r => (
                     <View key={r.key} style={[styles.pick, { flexDirection: rowDir, borderColor: colors.border }]}>
-                      <Ionicons name="attach-outline" size={18} color={colors.mutedForeground} />
+                      <Ionicons name="attach-outline" size={20} color={colors.mutedForeground} />
                       <Text
                         numberOfLines={1}
                         style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.label, textAlign: align }}
@@ -580,7 +580,7 @@ export function HomeworkTab({
                         accessibilityRole="button"
                         accessibilityLabel={`${t('hwRemoveResource')}: ${r.title}`}
                       >
-                        <Ionicons name="close" size={18} color={colors.mutedForeground} />
+                        <Ionicons name="close" size={20} color={colors.mutedForeground} />
                       </Pressable>
                     </View>
                   ))}
@@ -590,7 +590,7 @@ export function HomeworkTab({
                       accessibilityRole="button"
                       style={[styles.pick, { flexDirection: rowDir, borderColor: ACCENT, borderStyle: 'dashed' }]}
                     >
-                      <Ionicons name="library-outline" size={18} color={ACCENT} />
+                      <Ionicons name="library-outline" size={20} color={ACCENT} />
                       <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.label, textAlign: align }}>
                         {t('hwAddResource')}
                       </Text>
@@ -602,7 +602,7 @@ export function HomeworkTab({
                       accessibilityRole="button"
                       style={[styles.pick, { flexDirection: rowDir, borderColor: ACCENT, borderStyle: 'dashed' }]}
                     >
-                      <Ionicons name="folder-open-outline" size={18} color={ACCENT} />
+                      <Ionicons name="folder-open-outline" size={20} color={ACCENT} />
                       <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.label, textAlign: align }}>
                         {t('hwAddMaterial')}
                       </Text>
@@ -614,7 +614,7 @@ export function HomeworkTab({
                       accessibilityRole="button"
                       style={[styles.pick, { flexDirection: rowDir, borderColor: ACCENT, borderStyle: 'dashed' }]}
                     >
-                      <Ionicons name="game-controller-outline" size={18} color={ACCENT} />
+                      <Ionicons name="game-controller-outline" size={20} color={ACCENT} />
                       <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.label, textAlign: align }}>
                         {t('hwAddGame')}
                       </Text>
@@ -685,7 +685,7 @@ export function HomeworkTab({
                     accessibilityRole="button"
                     style={[styles.deleteBtn, { flexDirection: rowDir, gap: SPACE.xs, opacity: saving ? 0.5 : 1 }]}
                   >
-                    <Ionicons name="chatbubbles-outline" size={18} color={ACCENT} />
+                    <Ionicons name="chatbubbles-outline" size={20} color={ACCENT} />
                     <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.label }}>{t('hwShareToChat')}</Text>
                   </Pressable>
                 ) : null}

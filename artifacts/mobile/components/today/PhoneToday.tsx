@@ -37,6 +37,7 @@ import { periodClassLabel } from '@/services/classSubjects';
 import { className, classNameFor } from '@/services/materialClass';
 import { todayLabel } from '@/services/dateLabels';
 import { greetingKey } from '@/services/greeting';
+import { readableOn } from '@/services/readableColor';
 
 const START_CLASS_COLOR = palette.live;
 const ON_NAVY = '#FFFFFF';
@@ -115,7 +116,7 @@ export function PhoneToday() {
               >
                 <Ionicons
                   name={next?.happeningNow ? 'radio-button-on' : 'time-outline'}
-                  size={13}
+                  size={14}
                   color={colors.accentForeground}
                 />
                 <Text style={[s.periodText, { color: colors.accentForeground }]}>{periodLine}</Text>
@@ -146,7 +147,7 @@ export function PhoneToday() {
               >
                 {startingClass
                   ? <ActivityIndicator size="small" color={ON_NAVY} />
-                  : <Ionicons name="tv-outline" size={15} color={ON_NAVY} />}
+                  : <Ionicons name="tv-outline" size={16} color={ON_NAVY} />}
                 <Text style={s.btnText}>{t('startClass')}</Text>
               </PressableScale>
               <PressableScale
@@ -157,7 +158,7 @@ export function PhoneToday() {
                   { borderColor: 'rgba(255,255,255,0.28)', backgroundColor: 'rgba(255,255,255,0.06)', flexDirection: rowDir },
                 ]}
               >
-                <Ionicons name="swap-horizontal" size={15} color={ON_NAVY} />
+                <Ionicons name="swap-horizontal" size={16} color={ON_NAVY} />
                 <Text style={s.btnText}>{t('changeLesson')}</Text>
               </PressableScale>
             </View>
@@ -208,7 +209,7 @@ export function PhoneToday() {
           {startClassError ? (
             <Entrance index={section++}>
               <View style={[s.errorRow, { backgroundColor: colors.destructive + '14', flexDirection: rowDir }]}>
-                <Ionicons name="alert-circle-outline" size={14} color={colors.destructive} />
+                <Ionicons name="alert-circle" size={14} color={colors.destructive} />
                 <Text style={[s.errorText, { color: colors.destructive, textAlign: align }]}>{startClassError}</Text>
               </View>
             </Entrance>
@@ -254,7 +255,7 @@ export function PhoneToday() {
                     style={[s.tool, surface]}
                   >
                     <View style={[s.toolIcon, { backgroundColor: tool.color + '1A' }]}>
-                      <Ionicons name={tool.icon} size={20} color={tool.color} />
+                      <Ionicons name={tool.icon} size={20} color={readableOn(tool.color, colors.card, 3)} />
                     </View>
                     <Text numberOfLines={2} style={[s.toolText, { color: colors.foreground }]}>
                       {t(tool.titleKey as never)}

@@ -10,6 +10,7 @@ import React from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { ToolDef } from '@/services/toolCatalog';
+import { readableOn } from '@/services/readableColor';
 
 type Colors = {
   card: string;
@@ -117,7 +118,7 @@ export function ComposerToolsMenu({
                     accessibilityRole="button"
                   >
                     <View style={[styles.iconWrap, { backgroundColor: colors.secondary }]}>
-                      <Ionicons name={action.icon} size={17} color={colors.primary} />
+                      <Ionicons name={action.icon} size={20} color={colors.primary} />
                     </View>
                     <Text style={[styles.rowTitle, { color: colors.foreground, textAlign: align, flex: 1 }]}>
                       {action.label}
@@ -151,7 +152,7 @@ export function ComposerToolsMenu({
                       accessibilityLabel={labelFor(tool)}
                     >
                       <View style={[styles.iconWrap, { backgroundColor: tool.color + '18' }]}>
-                        <Ionicons name={tool.icon} size={17} color={tool.color} />
+                        <Ionicons name={tool.icon} size={20} color={readableOn(tool.color, colors.card, 3)} />
                       </View>
                       <View style={{ flex: 1, gap: 1 }}>
                         <View style={[styles.titleRow, { flexDirection: rowDir }]}>
@@ -178,7 +179,7 @@ export function ComposerToolsMenu({
                       </View>
                       <Ionicons
                         name={tool.externalAction ? 'open-outline' : (isRTL ? 'chevron-back' : 'chevron-forward')}
-                        size={15}
+                        size={16}
                         color={colors.mutedForeground}
                       />
                     </Pressable>

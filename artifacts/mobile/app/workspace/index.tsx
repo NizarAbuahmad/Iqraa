@@ -265,7 +265,7 @@ export default function WorkspaceScreen() {
       >
         {/* Icon */}
         <View style={[styles.cardIcon, { backgroundColor: color + '18', borderRadius: 14 }]}>
-          <Ionicons name={icon} size={22} color={color} />
+          <Ionicons name={icon} size={24} color={color} />
         </View>
 
         {/* Body */}
@@ -290,7 +290,7 @@ export default function WorkspaceScreen() {
                 label saying so on every card. */}
             {classLabel ? (
               <View style={[styles.classPill, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                <Ionicons name="people-outline" size={11} color={colors.mutedForeground} />
+                <Ionicons name="people-outline" size={14} color={colors.mutedForeground} />
                 <Text
                   style={[styles.metaText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}
                   numberOfLines={1}
@@ -483,7 +483,7 @@ export default function WorkspaceScreen() {
               >
                 <Ionicons
                   name={action.icon}
-                  size={18}
+                  size={20}
                   color={action.destructive ? colors.destructive : colors.primary}
                 />
                 <Text

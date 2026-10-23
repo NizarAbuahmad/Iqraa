@@ -12,6 +12,7 @@
  */
 
 import type { ClassroomActivity } from './ai/AIService.ts';
+import { CONCEPTS } from '../constants/icons.ts';
 import { isWideScopeFormState } from './materialLessonId.ts';
 
 /** The five materials the product actually pushes, in the order a teacher prepares them. */
@@ -70,12 +71,13 @@ export type PrepRow = PrepRowMeta & {
   skipped: boolean;
 };
 
+/** Icon and colour come from `CONCEPTS` (`constants/icons.ts`), shared with the Tools tab. */
 export const PREP_ROWS: PrepRowMeta[] = [
-  { type: 'lesson-plan', emoji: '📘', icon: 'document-text-outline', labelAr: 'خطة الدرس', labelEn: 'Lesson plan', route: '/ai-tools/lesson-plan', color: '#4338CA' },
-  { type: 'worksheet', emoji: '📝', icon: 'list-outline', labelAr: 'ورقة عمل', labelEn: 'Worksheet', route: '/ai-tools/worksheet', color: '#0F766E' },
-  { type: 'quiz', emoji: '✅', icon: 'checkmark-done-outline', labelAr: 'اختبار قصير', labelEn: 'Quiz', route: '/ai-tools/quiz', color: '#7C3AED' },
-  { type: 'slides', emoji: '🎬', icon: 'tv-outline', labelAr: 'عرض الحصة', labelEn: 'Class slides', route: '/ai-tools/slides', color: '#0369A1' },
-  { type: 'activity', emoji: '🎯', icon: 'people-outline', labelAr: 'نشاط صفّي', labelEn: 'Class activity', route: '/ai-tools/activity', color: '#C2410C' },
+  { type: 'lesson-plan', emoji: '📘', icon: CONCEPTS['lesson-plan'].icon, labelAr: 'خطة الدرس', labelEn: 'Lesson plan', route: '/ai-tools/lesson-plan', color: CONCEPTS['lesson-plan'].color },
+  { type: 'worksheet', emoji: '📝', icon: CONCEPTS['worksheet'].icon, labelAr: 'ورقة عمل', labelEn: 'Worksheet', route: '/ai-tools/worksheet', color: CONCEPTS['worksheet'].color },
+  { type: 'quiz', emoji: '✅', icon: CONCEPTS['quiz'].icon, labelAr: 'اختبار قصير', labelEn: 'Quiz', route: '/ai-tools/quiz', color: CONCEPTS['quiz'].color },
+  { type: 'slides', emoji: '🎬', icon: CONCEPTS['slides'].icon, labelAr: 'عرض الحصة', labelEn: 'Class slides', route: '/ai-tools/slides', color: CONCEPTS['slides'].color },
+  { type: 'activity', emoji: '🎯', icon: CONCEPTS['activity'].icon, labelAr: 'نشاط صفّي', labelEn: 'Class activity', route: '/ai-tools/activity', color: CONCEPTS['activity'].color },
 ];
 
 /**

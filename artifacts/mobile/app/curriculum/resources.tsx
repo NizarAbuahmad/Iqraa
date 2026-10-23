@@ -313,7 +313,7 @@ function ResourceRow({
           onError={() => setThumbFailed(true)}
         />
       ) : !isVideo ? (
-        <Ionicons name={KIND_ICON[item.kind]} size={large ? 36 : 24} color={accent} />
+        <Ionicons name={KIND_ICON[item.kind]} size={large ? 40 : 24} color={accent} />
       ) : null}
       {isVideo ? (
         <View style={[styles.playBadge, large ? styles.playBadgeLarge : styles.playBadgeSmall, { backgroundColor: ACCENT_FILL }]}>
@@ -389,7 +389,7 @@ function ResourceRow({
             />
           ) : isBook ? null : (
             <View style={[styles.thumb, styles.thumbFallback, { backgroundColor: colors.muted }]}>
-              <Ionicons name={KIND_ICON[item.kind]} size={22} color={accent} />
+              <Ionicons name={KIND_ICON[item.kind]} size={24} color={accent} />
             </View>
           )}
           <View style={{ flex: 1 }}>
@@ -411,7 +411,7 @@ function ResourceRow({
           ) : item.url ? (
             <Ionicons
               name={isVideo ? forwardIcon : 'open-outline'}
-              size={18}
+              size={20}
               color={isVideo ? ACCENT : colors.mutedForeground}
               accessibilityElementsHidden
               importantForAccessibility="no"
@@ -695,7 +695,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
               accessibilityRole="button"
               style={[styles.addBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
-              <Ionicons name="add-circle-outline" size={18} color={ACCENT_FILL} />
+              <Ionicons name="add-circle-outline" size={20} color={ACCENT_FILL} />
               <Text style={[styles.addBtnText, { color: ACCENT_FILL, fontFamily: 'ReadexPro_600SemiBold' }]}>
                 {t('libraryAddResource')}
               </Text>
@@ -729,7 +729,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
             },
           ]}
         >
-          <Ionicons name="search" size={18} color={colors.mutedForeground} />
+          <Ionicons name="search" size={20} color={colors.mutedForeground} />
           <TextInput
             value={query}
             onChangeText={setQuery}
@@ -894,7 +894,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
           })}
           {shelves.length === 0 ? (
             <View style={styles.empty}>
-              <Ionicons name="library-outline" size={36} color={colors.mutedForeground} />
+              <Ionicons name="library-outline" size={40} color={colors.mutedForeground} />
               <Text
                 style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}
               >
@@ -1021,7 +1021,7 @@ function ShelfTabs({
           interactionStyle(state as PressState, on ? ACCENT : colors.border),
         ]}
       >
-        {icon ? <Ionicons name={icon} size={18} color={on ? palette.primaryForeground : iconColor} /> : null}
+        {icon ? <Ionicons name={icon} size={20} color={on ? palette.primaryForeground : iconColor} /> : null}
         <Text
           style={[
             styles.tabText,
