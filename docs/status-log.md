@@ -86,6 +86,105 @@ with fewer than four words (3, 1, 2, 0 and 2).
 - **Still open:** the five lessons the hub does not carry need a change to how the hub builds lessons (its own
   spec).
 
+## The tab bar is drawn — 2026-10-23
+
+Step three of the icon work. The phone tab bar and the desktop sidebar draw
+Iqraa's own icons, so the one piece of navigation that sits on every screen no
+longer mixes two styles. Back arrows, chevrons and the many small action icons
+are still stock Ionicons. #1203 put sixteen drawings in the app and held `library` and `messages` back for
+this, because three drawn tabs beside four stock ones would mix two styles in one
+row. The four missing ones (Today, Ask, Tools, Profile) were shown on the review
+sheet and approved the same day.
+
+**What changed**
+- `constants/glyphs.ts` gains `today` (a calendar page with the day marked),
+  `ask` (one round bubble with a spark), `tools` (a toolbox) and `profile` (a
+  person in a circle). The set is twenty.
+- `Glyph` takes `tint` (default on). Idle tabs are outline; the selected tab
+  carries the 18% tint, which keeps the rule «outline, then filled when
+  selected». Solid dots stay in both states.
+- `app/(tabs)/_layout.tsx` draws every tab with `tabIcon(name)`. iOS used to draw
+  SF Symbols and the other platforms Ionicons, so the bar differed per platform;
+  it is now one drawing everywhere. `WebSidebar` reads the same entries and no
+  longer takes `isIOS`. The School tab (parents and students) wears the classes
+  drawing; Messages wears the two-bubble drawing, so it no longer needs the
+  envelope that kept it from reading like Ask.
+- The `expo-symbols` package is no longer imported anywhere. It stays in
+  `package.json` on purpose: removing a native module changes the native surface
+  and would need an `app.json` version bump. Removing it can wait for the next
+  native build.
+
+**Pinned:** `glyphs.test.ts` now pins the twenty, that the tab bar draws the seven
+entries in order with `<Glyph … tint={focused}>`, that no stock icon or
+`expo-symbols` import returns to the layout, that the sidebar draws the same
+entries, and that `tint={false}` removes a tinted part's fill. `HELD` is empty.
+
+**Verified:** mobile tests and typecheck, and web-build screenshots of the phone
+bar and the desktop sidebar in light and dark.
+
+**Not verified:** the bar on an Android or iOS device. On iOS the bar sat on a
+blur with SF Symbols; the drawn icons sit on the same blur, but how they look at
+24px over it has not been seen. The command palette still names tabs by Ionicons
+glyph (`iconNameFor`), which is a font-name API and is unchanged.
+
+## Neon leaves the Free plan before launch — 2026-10-23
+
+**Status: applied by the owner on 2026-10-23**, in the Neon console (screenshots): plan Launch,
+primary compute autoscaling **0.25-0.5 CU** (Neon had set it to 8 CU on upgrade; saved at 0.5),
+scale to zero **on** (5 minutes), spend alert **$10**. This PR changes nothing in Neon; the only
+production change in it is one extra field on an admin-only route.
+
+- **Why.** The project (`Iqraa`, AWS Frankfurt, one branch, 0.25 CU compute) is on Neon's **Free
+  plan**: 100 compute-hours a month, and when they are used up Neon says the compute is
+  "suspended until the next billing period or until you upgrade", which is the whole app down.
+  The console showed **30.92 CU-hours used** since 1 October (screenshot, 2026-10-23), at quiet
+  traffic. A launch keeps the compute awake much longer and Neon may scale it up, so the
+  allowance could run out within days to about two weeks. That figure is an estimate, not a
+  measurement.
+- **Decision (owner, 2026-10-23): upgrade in place to Launch** (pay for use: $0.106 per CU-hour,
+  $0.35 per GB-month, no monthly minimum; 7-day restore window; autoscaling to 16 CU; scale to
+  zero can be switched off; logical replication). Settings to apply: autoscaling **min 0.25, max
+  0.5 CU**, scale to zero **on**. **Expected cost about $10 a month, ceiling about $39** (0.5 CU
+  x 730 h x $0.106). Both are arithmetic from the published rates, not an invoice. The trade-off
+  of scale to zero is a wait of "a few hundred milliseconds" on the first query after about five
+  idle minutes; switching it off costs roughly $10-12 a month more at 0.25 CU.
+- **Considered and not chosen: switching provider.** The database is about 39 MB, so storage is
+  irrelevant and any paid plan fixes the cap. The code is plain Postgres (`pg` + Drizzle, no Neon
+  packages, no Neon-only SQL), so a later move is possible, but a move now means rehearsing a
+  restore, getting migration 0008's `iqraa_app` role and row-level security to survive it, keeping
+  table ownership equal to the role in **both** `DATABASE_URL` secrets (GitHub Actions and Secret
+  Manager), and a cutover right before launch; the failure mode is rows silently missing. Cloud
+  SQL came to about $50 a month for 1 vCPU / 3.75 GB single-zone by arithmetic from Google's US
+  per-unit rates (Europe and shared-core prices not confirmed); Supabase Pro is $25 a month with
+  point-in-time recovery $100 a month extra and no uptime SLA. Neon Scale ($0.222 per CU-hour) is
+  the tier with a 99.95% SLA; not needed yet. Jordan's Personal Data Protection Law (No. 24 of
+  2023) restricts moving personal data out of Jordan unless the destination is adequate; it
+  applies to every candidate equally and is a question for a lawyer, not a reason to pick one.
+- **Code.** `GET /api/healthz/pool` (admin key) now also returns `pooled: true|false`: whether
+  `DATABASE_URL` goes through Neon's pooler (`-pooler` in the host). Only that yes/no leaves the
+  process; the host and string do not. At 0.25 CU Neon allows 104 `max_connections` (97 usable),
+  while the API can open `DB_POOL_MAX` (10) per instance across many instances; the pooler accepts
+  10,000 client connections in transaction mode, which this code is designed for (no prepared
+  statements, no advisory locks, `SET LOCAL` only inside transactions). Not exercised: the
+  `SET LOCAL` path runs only with `RLS_ENFORCE=on`, which is off in production, and has not been
+  run through Neon's pooler. `isPooledConnectionString` is
+  in `lib/db/src/poolConfig.ts`, with unit tests.
+- **Verified.** Limits and prices were read from Neon's plans, pricing, scale-to-zero and
+  connection-pooling pages and from the Change-plan screen on 2026-10-23. The code's coupling to
+  Neon was reviewed by reading it, not by running a migration. The helper is unit-tested.
+- **Not verified, still open.** (1) That the settings above hold under real traffic (the console accepted them; nothing has
+  been measured since). (2) Whether production's `DATABASE_URL` is
+  pooled: call `/api/healthz/pool` with the admin key after this deploys; if `pooled` is `false`,
+  switch the Secret Manager secret to the pooled string and roll a revision outside school hours.
+  (3) The real monthly cost; look at Neon's Usage page weekly for the first month. (4) Neon's
+  reliability: third-party trackers list about 29 incidents in 12 months, mostly short and
+  regional; Neon's own status page was not read. (5) A load test against Neon: the sandbox that
+  runs the load test blocks outbound connections on the Postgres port (5432; tested against two
+  public addresses, not against Neon), so `e2e/loadtest` was only run against a local database; the compute-hour and connection figures above come from the documentation.
+- **Review after two to four weeks:** a slow first request in the morning (turn scale to zero
+  off), a bill above about $30, Neon incidents during school hours (Sunday to Thursday, about
+  07:30-14:00 Amman), a need for an SLA or a longer restore window, connection limits biting.
+
 ## Chat app-help, eighteenth live pass: live games, the interactive class, slides, activities, quizzes, worksheets — 2026-10-23
 
 A 30-question pass on app.iqrra.com found the chat answering app-specific "how do I" questions
