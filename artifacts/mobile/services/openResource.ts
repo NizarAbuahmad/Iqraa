@@ -13,14 +13,23 @@ import { allPremade } from '@workspace/curriculum/premade';
 import { getSubjectsForGrade, getVisibleGrades } from '@workspace/curriculum';
 import { readPrintStyle } from '@/hooks/usePrintStyle';
 import { openTargetFor } from './classResources';
-import type { HomeworkMaterialResource } from './homework';
+import type { HomeworkGameResource, HomeworkMaterialResource } from './homework';
 import { openExternal } from './externalLinks';
 import { buildWorksheetHTML, exportAsPDF } from './share';
 
 export function openResource(
-  resource: (Parameters<typeof openTargetFor>[0] & { title: string }) | HomeworkMaterialResource,
+  resource: (Parameters<typeof openTargetFor>[0] & { title: string }) | HomeworkMaterialResource | HomeworkGameResource,
   opts: { teacher: boolean; isAr: boolean; homeworkId?: string },
 ): void {
+  // A lesson game: straight into the attached game. `/play` is public, and `hw`
+  // is what makes a student's finished round post back to the teacher.
+  if ('game' in resource) {
+    router.push({
+      pathname: '/play/lesson/[lessonId]',
+      params: { lessonId: resource.lessonId, game: resource.game, ...(opts.homeworkId ? { hw: opts.homeworkId } : {}) },
+    } as never);
+    return;
+  }
   // A teacher's saved material on a homework: the viewer's read-only family
   // source, which /workspace/view lets a parent or student into (routeGating.ts).
   if ('materialId' in resource) {

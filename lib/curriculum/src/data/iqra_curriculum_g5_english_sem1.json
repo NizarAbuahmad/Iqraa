@@ -41,59 +41,59 @@
           ],
           "vocabulary": [
             {
-              "ar": "",
+              "ar": "يلعب كرة القدم",
               "en": "play football"
             },
             {
-              "ar": "",
+              "ar": "يلعب كرة السلة",
               "en": "play basketball"
             },
             {
-              "ar": "",
+              "ar": "يذهب للسباحة",
               "en": "go swimming"
             },
             {
-              "ar": "",
+              "ar": "نادي العلوم",
               "en": "Science Club"
             },
             {
-              "ar": "",
+              "ar": "يزور الجدّة",
               "en": "visit Granny"
             },
             {
-              "ar": "",
+              "ar": "درس تنس",
               "en": "tennis lesson"
             },
             {
-              "ar": "",
+              "ar": "شعر مجعّد",
               "en": "curly hair"
             },
             {
-              "ar": "",
+              "ar": "شعر طويل",
               "en": "long hair"
             },
             {
-              "ar": "",
+              "ar": "شعر مسترسل",
               "en": "straight hair"
             },
             {
-              "ar": "",
+              "ar": "شعر قصير",
               "en": "short hair"
             },
             {
-              "ar": "",
+              "ar": "شعر داكن",
               "en": "dark hair"
             },
             {
-              "ar": "",
+              "ar": "لحية",
               "en": "a beard"
             },
             {
-              "ar": "",
+              "ar": "شعر أشقر",
               "en": "fair hair"
             },
             {
-              "ar": "",
+              "ar": "شارب",
               "en": "a moustache"
             }
           ]
@@ -137,107 +137,107 @@
           ],
           "vocabulary": [
             {
-              "ar": "",
+              "ar": "خجول",
               "en": "shy"
             },
             {
-              "ar": "",
+              "ar": "واثق بنفسه",
               "en": "confident"
             },
             {
-              "ar": "",
+              "ar": "كسول",
               "en": "lazy"
             },
             {
-              "ar": "",
+              "ar": "مجتهد",
               "en": "hard-working"
             },
             {
-              "ar": "",
+              "ar": "ودود",
               "en": "friendly"
             },
             {
-              "ar": "",
+              "ar": "مبتهج",
               "en": "cheerful"
             },
             {
-              "ar": "",
+              "ar": "طيّب القلب",
               "en": "kind"
             },
             {
-              "ar": "",
+              "ar": "هادئ",
               "en": "quiet"
             },
             {
-              "ar": "",
+              "ar": "مهذّب",
               "en": "polite"
             },
             {
-              "ar": "",
+              "ar": "وقح",
               "en": "rude"
             },
             {
-              "ar": "",
+              "ar": "مرتّب",
               "en": "tidy"
             },
             {
-              "ar": "",
+              "ar": "غير مرتّب",
               "en": "untidy"
             },
             {
-              "ar": "",
+              "ar": "يعدّ",
               "en": "count"
             },
             {
-              "ar": "",
+              "ar": "يتهجّى",
               "en": "spell"
             },
             {
-              "ar": "",
+              "ar": "يُجري تجارب",
               "en": "do experiments"
             },
             {
-              "ar": "",
+              "ar": "يخبز كعكة",
               "en": "bake a cake"
             },
             {
-              "ar": "",
+              "ar": "يرمي كرة",
               "en": "throw a ball"
             },
             {
-              "ar": "",
+              "ar": "يصلح الألعاب",
               "en": "fix toys"
             },
             {
-              "ar": "",
+              "ar": "يلعب بالكرات (جغلة)",
               "en": "juggle"
             },
             {
-              "ar": "",
+              "ar": "يُعدّ بيتزا",
               "en": "make a pizza"
             },
             {
-              "ar": "",
+              "ar": "غير مرتّب",
               "en": "untidy"
             },
             {
-              "ar": "",
+              "ar": "غير ودود",
               "en": "unfriendly"
             },
             {
-              "ar": "",
+              "ar": "حزين",
               "en": "unhappy"
             },
             {
-              "ar": "",
+              "ar": "سيّئ الحظ",
               "en": "unlucky"
             },
             {
-              "ar": "",
+              "ar": "متوعّك",
               "en": "unwell"
             },
             {
-              "ar": "",
+              "ar": "غير آمن",
               "en": "unsafe"
             }
           ]
@@ -281,99 +281,99 @@
           ],
           "vocabulary": [
             {
-              "ar": "",
+              "ar": "حاسوب",
               "en": "computer"
             },
             {
-              "ar": "",
+              "ar": "بريد إلكتروني",
               "en": "email"
             },
             {
-              "ar": "",
+              "ar": "ساعة ذكية",
               "en": "smartwatch"
             },
             {
-              "ar": "",
+              "ar": "لوحة مفاتيح",
               "en": "keyboard"
             },
             {
-              "ar": "",
+              "ar": "رسالة",
               "en": "letter"
             },
             {
-              "ar": "",
+              "ar": "يحمل",
               "en": "carry"
             },
             {
-              "ar": "",
+              "ar": "فأرة الحاسوب",
               "en": "mouse"
             },
             {
-              "ar": "",
+              "ar": "هاتف",
               "en": "telephone"
             },
             {
-              "ar": "",
+              "ar": "يتّصل",
               "en": "call"
             },
             {
-              "ar": "",
+              "ar": "جهاز لوحي",
               "en": "tablet"
             },
             {
-              "ar": "",
+              "ar": "هاتف محمول",
               "en": "mobile phone"
             },
             {
-              "ar": "",
+              "ar": "يدرس",
               "en": "study"
             },
             {
-              "ar": "",
+              "ar": "يرسل رسالة بالبريد",
               "en": "post a letter"
             },
             {
-              "ar": "",
+              "ar": "يمسك قلمًا",
               "en": "hold a pen"
             },
             {
-              "ar": "",
+              "ar": "يرسل بريدًا إلكترونيًا",
               "en": "send an email"
             },
             {
-              "ar": "",
+              "ar": "يفوز بسباق",
               "en": "win a race"
             },
             {
-              "ar": "",
+              "ar": "يصنع وجهًا مضحكًا",
               "en": "make a face"
             },
             {
-              "ar": "",
+              "ar": "يُحضّر شطيرة",
               "en": "make a sandwich"
             },
             {
-              "ar": "",
+              "ar": "يحكي قصة",
               "en": "tell a story"
             },
             {
-              "ar": "",
+              "ar": "يربط رباط الحذاء",
               "en": "tie a shoelace"
             },
             {
-              "ar": "",
+              "ar": "يُبلغ",
               "en": "inform"
             },
             {
-              "ar": "",
+              "ar": "معلومات",
               "en": "information"
             },
             {
-              "ar": "",
+              "ar": "يصف",
               "en": "describe"
             },
             {
-              "ar": "",
+              "ar": "وصف",
               "en": "description"
             }
           ]
@@ -420,115 +420,115 @@
           ],
           "vocabulary": [
             {
-              "ar": "",
+              "ar": "الشمس",
               "en": "Sun"
             },
             {
-              "ar": "",
+              "ar": "نجمة",
               "en": "star"
             },
             {
-              "ar": "",
+              "ar": "صاروخ",
               "en": "rocket"
             },
             {
-              "ar": "",
+              "ar": "القمر",
               "en": "Moon"
             },
             {
-              "ar": "",
+              "ar": "المجموعة الشمسية",
               "en": "solar system"
             },
             {
-              "ar": "",
+              "ar": "محطة فضاء",
               "en": "space station"
             },
             {
-              "ar": "",
+              "ar": "الأرض",
               "en": "Earth"
             },
             {
-              "ar": "",
+              "ar": "تلسكوب",
               "en": "telescope"
             },
             {
-              "ar": "",
+              "ar": "بدلة فضاء",
               "en": "spacesuit"
             },
             {
-              "ar": "",
+              "ar": "كوكب",
               "en": "planet"
             },
             {
-              "ar": "",
+              "ar": "مذنّب",
               "en": "comet"
             },
             {
-              "ar": "",
+              "ar": "قمر صناعي",
               "en": "satellite"
             },
             {
-              "ar": "",
+              "ar": "مئة",
               "en": "a hundred"
             },
             {
-              "ar": "",
+              "ar": "خمسمئة",
               "en": "five hundred"
             },
             {
-              "ar": "",
+              "ar": "ألف",
               "en": "a thousand"
             },
             {
-              "ar": "",
+              "ar": "خمسة آلاف",
               "en": "five thousand"
             },
             {
-              "ar": "",
+              "ar": "عشرة آلاف",
               "en": "ten thousand"
             },
             {
-              "ar": "",
+              "ar": "خمسون ألفًا",
               "en": "fifty thousand"
             },
             {
-              "ar": "",
+              "ar": "مئة ألف",
               "en": "a hundred thousand"
             },
             {
-              "ar": "",
+              "ar": "مليون",
               "en": "a million"
             },
             {
-              "ar": "",
+              "ar": "كوكب",
               "en": "planet"
             },
             {
-              "ar": "",
+              "ar": "بدلة فضاء",
               "en": "spacesuit"
             },
             {
-              "ar": "",
+              "ar": "صاروخ",
               "en": "rocket"
             },
             {
-              "ar": "",
+              "ar": "قمر صناعي",
               "en": "satellite"
             },
             {
-              "ar": "",
+              "ar": "رائد فضاء",
               "en": "astronaut"
             },
             {
-              "ar": "",
+              "ar": "تلسكوب",
               "en": "telescope"
             },
             {
-              "ar": "",
+              "ar": "عالِم",
               "en": "scientist"
             },
             {
-              "ar": "",
+              "ar": "مستكشف",
               "en": "explorer"
             }
           ]
@@ -573,103 +573,103 @@
           ],
           "vocabulary": [
             {
-              "ar": "",
+              "ar": "محل الجزّار",
               "en": "butcher's"
             },
             {
-              "ar": "",
+              "ar": "محل بيع الصحف",
               "en": "newsagent's"
             },
             {
-              "ar": "",
+              "ar": "محل هواتف",
               "en": "phone shop"
             },
             {
-              "ar": "",
+              "ar": "محل الخضار والفواكه",
               "en": "greengrocer's"
             },
             {
-              "ar": "",
+              "ar": "محل المجوهرات",
               "en": "jeweller's"
             },
             {
-              "ar": "",
+              "ar": "دكّان الحي",
               "en": "corner shop"
             },
             {
-              "ar": "",
+              "ar": "محل بيع السمك",
               "en": "fishmonger's"
             },
             {
-              "ar": "",
+              "ar": "محل أدوات رياضية",
               "en": "sports shop"
             },
             {
-              "ar": "",
+              "ar": "محل أحذية",
               "en": "shoe shop"
             },
             {
-              "ar": "",
+              "ar": "صيدلية",
               "en": "pharmacy"
             },
             {
-              "ar": "",
+              "ar": "محل هدايا",
               "en": "gift shop"
             },
             {
-              "ar": "",
+              "ar": "محل ألعاب",
               "en": "toy shop"
             },
             {
-              "ar": "",
+              "ar": "مال",
               "en": "money"
             },
             {
-              "ar": "",
+              "ar": "صندوق",
               "en": "box"
             },
             {
-              "ar": "",
+              "ar": "يوفّر",
               "en": "save"
             },
             {
-              "ar": "",
+              "ar": "كيس نقود",
               "en": "purse"
             },
             {
-              "ar": "",
+              "ar": "ينفق",
               "en": "spend"
             },
             {
-              "ar": "",
+              "ar": "محفظة",
               "en": "wallet"
             },
             {
-              "ar": "",
+              "ar": "يشتري",
               "en": "buy"
             },
             {
-              "ar": "",
+              "ar": "نقود هدية الميلاد",
               "en": "birthday money"
             },
             {
-              "ar": "",
+              "ar": "يبيع",
               "en": "sell"
             },
             {
-              "ar": "",
+              "ar": "يدفع",
               "en": "pay"
             },
             {
-              "ar": "",
+              "ar": "الدفع",
               "en": "payment"
             },
             {
-              "ar": "",
+              "ar": "يشجّع",
               "en": "encourage"
             },
             {
-              "ar": "",
+              "ar": "التشجيع",
               "en": "encouragement"
             }
           ]

@@ -370,7 +370,7 @@ export default function EvaluationDetailScreen() {
 
       {displayError ? (
         <View style={[styles.errorBox, { borderColor: colors.destructive, margin: 20, marginBottom: 0 }]}>
-          <Ionicons name="alert-circle-outline" size={18} color={colors.destructive} />
+          <Ionicons name="alert-circle" size={20} color={colors.destructive} />
           <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', flex: 1, textAlign: align }}>
             {displayError}
           </Text>
@@ -432,7 +432,7 @@ export default function EvaluationDetailScreen() {
               onPress={() => router.push({ pathname: '/evaluations/[id]/marks', params: { id: evaluation.id } } as never)}
               style={[styles.enterAnswersBtn, { backgroundColor: ACCENT_FILL, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
-              <Ionicons name="create-outline" size={18} color="#fff" />
+              <Ionicons name="create-outline" size={20} color="#fff" />
               <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
                 {t('marksGridBtn')}
               </Text>
@@ -448,7 +448,7 @@ export default function EvaluationDetailScreen() {
                 : [styles.enterAnswersBtn, { backgroundColor: ACCENT_FILL, flexDirection: isRTL ? 'row-reverse' : 'row' }]
             }
           >
-            <Ionicons name="create-outline" size={18} color={quickPaper ? ACCENT : '#fff'} />
+            <Ionicons name="create-outline" size={20} color={quickPaper ? ACCENT : '#fff'} />
             <Text style={{ color: quickPaper ? ACCENT : '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
               {t('enterAnswersBtn')}
             </Text>
@@ -460,7 +460,7 @@ export default function EvaluationDetailScreen() {
               onPress={() => router.push({ pathname: '/evaluations/[id]/scan-class', params: { id: evaluation.id } })}
               style={[styles.resultsBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
-              <Ionicons name="scan-outline" size={18} color={ACCENT} />
+              <Ionicons name="scan-outline" size={20} color={ACCENT} />
               <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
                 {t('classScanBtn')}
               </Text>
@@ -470,7 +470,7 @@ export default function EvaluationDetailScreen() {
             onPress={() => router.push({ pathname: '/evaluations/[id]/results', params: { id: evaluation.id } })}
             style={[styles.resultsBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
-            <Ionicons name="bar-chart-outline" size={18} color={ACCENT} />
+            <Ionicons name="bar-chart-outline" size={20} color={ACCENT} />
             <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
               {t('resultsDashboardBtn')}
             </Text>
@@ -480,7 +480,7 @@ export default function EvaluationDetailScreen() {
             disabled={busy === 'close'}
             style={[styles.resultsBtn, { borderColor: colors.border, opacity: busy === 'close' ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
-            <Ionicons name="lock-closed-outline" size={18} color={colors.mutedForeground} />
+            <Ionicons name="lock-closed-outline" size={20} color={colors.mutedForeground} />
             <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, lineHeight: 24, flexShrink: 1, textAlign: 'center' }}>
               {t('closeEvaluationBtn')}
             </Text>
@@ -505,7 +505,7 @@ export default function EvaluationDetailScreen() {
           >
             <Ionicons
               name={evaluation.releaseResultsToStudent ? 'eye-off-outline' : 'megaphone-outline'}
-              size={18}
+              size={20}
               color={evaluation.releaseResultsToStudent ? colors.mutedForeground : ACCENT}
             />
             <Text style={{ color: evaluation.releaseResultsToStudent ? colors.mutedForeground : ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
@@ -529,7 +529,7 @@ export default function EvaluationDetailScreen() {
               onPress={() => router.push({ pathname: '/evaluations/[id]/marks', params: { id: evaluation.id } } as never)}
               style={[styles.enterAnswersBtn, { backgroundColor: ACCENT_FILL, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
-              <Ionicons name="create-outline" size={18} color="#fff" />
+              <Ionicons name="create-outline" size={20} color="#fff" />
               <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
                 {t('marksGridBtn')}
               </Text>
@@ -539,7 +539,7 @@ export default function EvaluationDetailScreen() {
             onPress={() => router.push({ pathname: '/evaluations/[id]/results', params: { id: evaluation.id } })}
             style={[styles.resultsBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
-            <Ionicons name="bar-chart-outline" size={18} color={ACCENT} />
+            <Ionicons name="bar-chart-outline" size={20} color={ACCENT} />
             <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
               {t('resultsDashboardBtn')}
             </Text>
@@ -549,7 +549,7 @@ export default function EvaluationDetailScreen() {
             disabled={busy === 'publish'}
             style={[styles.resultsBtn, { borderColor: colors.border, opacity: busy === 'publish' ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
-            <Ionicons name="lock-open-outline" size={18} color={colors.mutedForeground} />
+            <Ionicons name="lock-open-outline" size={20} color={colors.mutedForeground} />
             <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
               {t('publishEvaluationBtn')}
             </Text>
@@ -565,7 +565,7 @@ export default function EvaluationDetailScreen() {
             accessibilityRole="button"
             style={[styles.resultsBtn, { borderColor: colors.destructive, opacity: busy === 'archive' ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
-            <Ionicons name="trash-outline" size={18} color={colors.destructive} />
+            <Ionicons name="trash-outline" size={20} color={colors.destructive} />
             <Text style={{ color: colors.destructive, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
               {t('archiveEvaluationBtn')}
             </Text>
@@ -582,7 +582,7 @@ export default function EvaluationDetailScreen() {
       {genWarnings.length > 0 && (
         <View style={{ paddingHorizontal: 20, paddingTop: 8 }}>
           <View style={[styles.verifySummary, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: 8 }]}>
-            <Ionicons name="information-circle-outline" size={16} color={colors.mutedForeground} />
+            <Ionicons name="information-circle" size={16} color={colors.mutedForeground} />
             <View style={{ flex: 1, gap: 4 }}>
               {genWarnings.map((w, i) => (
                 <Text key={i} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
@@ -623,11 +623,11 @@ export default function EvaluationDetailScreen() {
                 <>
                   {isEditableQuestion(q) && (
                     <Pressable onPress={() => setEditing(q)} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('questionEditBtn')}>
-                      <Ionicons name="pencil-outline" size={17} color={ACCENT} />
+                      <Ionicons name="pencil-outline" size={20} color={ACCENT} />
                     </Pressable>
                   )}
                   <Pressable onPress={() => void onDelete(q)} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('questionDeleteBtn')}>
-                    <Ionicons name="trash-outline" size={17} color={colors.destructive} />
+                    <Ionicons name="trash-outline" size={20} color={colors.destructive} />
                   </Pressable>
                 </>
               )}
@@ -637,7 +637,7 @@ export default function EvaluationDetailScreen() {
                 doubt about questions the verifier never had an opinion on. */}
             {q.verification?.verified ? (
               <View style={[styles.verifiedRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                <Ionicons name="shield-checkmark" size={13} color="#067647" />
+                <Ionicons name="shield-checkmark" size={14} color="#067647" />
                 <Text style={{ color: palette.success, fontFamily: 'ReadexPro_500Medium', fontSize: 11 }}>
                   {t('keyVerifiedBadge')}
                 </Text>
@@ -858,7 +858,7 @@ function KeyCheckNotice({
     ? { fg: palette.success, bg: '#05966912', border: '#05966933', icon: 'shield-checkmark' as const }
     : summary.kind === 'verifier-down'
       ? { fg: '#B45309', bg: '#F59E0B14', border: '#F59E0B38', icon: 'cloud-offline-outline' as const }
-      : { fg: colors.mutedForeground, bg: colors.card, border: colors.border, icon: 'information-circle-outline' as const };
+      : { fg: colors.mutedForeground, bg: colors.card, border: colors.border, icon: 'information-circle' as const };
 
   const title = summary.kind === 'verified'
     ? t('keysVerifiedSummary', String(summary.verified), String(summary.total))
@@ -879,7 +879,7 @@ function KeyCheckNotice({
   return (
     <View style={[styles.verifySummary, { backgroundColor: tone.bg, borderColor: tone.border }]}>
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
-        <Ionicons name={tone.icon} size={15} color={tone.fg} />
+        <Ionicons name={tone.icon} size={16} color={tone.fg} />
         <Text style={{ flex: 1, color: tone.fg, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: align }}>
           {title}
         </Text>

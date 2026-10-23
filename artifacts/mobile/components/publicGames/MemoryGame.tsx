@@ -18,11 +18,14 @@ const PAIR_COUNT = 8;
 const WORD_PAIR_COUNT = 6;
 
 /** Emoji by default; pass `words` (a lesson's terms) for text cards. */
-export function MemoryGame({ words, titleKey = 'playMemoryTitle', onBack, analytics }: {
+export function MemoryGame({ words, titleKey = 'playMemoryTitle', onBack, analytics, onFinished, footer }: {
   words?: string[];
   titleKey?: TranslationKey;
   onBack?: () => void;
   analytics?: Record<string, string>;
+  /** Memory's own score is moves (fewer is better), which is not a mark out of a total. A finished round reports `pairs, pairs`: it is completion, not performance. */
+  onFinished?: (score: number, total: number) => void;
+  footer?: React.ReactNode;
 } = {}) {
   const colors = useColors();
   const { t } = useLanguage();
@@ -79,6 +82,8 @@ export function MemoryGame({ words, titleKey = 'playMemoryTitle', onBack, analyt
       scoreLabel={t('playMemoryMoves', moves)}
       gameOver={won ? { message: `${t('playMemoryWin')} — ${t('playMemoryMoves', moves)}`, score: moves } : null}
       onReplay={replay}
+      onFinished={onFinished ? () => onFinished(deck.length / 2, deck.length / 2) : undefined}
+      footer={footer}
     >
       <View style={styles.grid}>
         {deck.map(card => {

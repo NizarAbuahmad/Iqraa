@@ -67,7 +67,7 @@ export function LabExternalCard({ item }: { item: LabExternalItem }) {
         accessibilityRole="button"
         style={[styles.open, { backgroundColor: colors.primary, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
       >
-        <Ionicons name="open-outline" size={18} color={colors.primaryForeground} />
+        <Ionicons name="open-outline" size={20} color={colors.primaryForeground} />
         <Text style={{ color: colors.primaryForeground, fontFamily: 'ReadexPro_600SemiBold' }}>{t('labOpenSource')}</Text>
       </Pressable>
       <Text style={[styles.credit, { color: colors.mutedForeground, textAlign: align, fontFamily: 'Almarai_400Regular' }]}>

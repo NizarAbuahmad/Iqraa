@@ -86,7 +86,7 @@ export default function LoginCodeScreen() {
 
         {foundPending && !error ? (
           <View style={[styles.banner, { backgroundColor: colors.primary + '12', borderColor: colors.primary + '33', flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
+            <Ionicons name="information-circle" size={16} color={colors.primary} />
             <Text style={[styles.bannerText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
               {t('loginWithCodeFoundPending')}
             </Text>
@@ -98,7 +98,7 @@ export default function LoginCodeScreen() {
             style={[styles.banner, { backgroundColor: colors.destructive + '14', borderColor: colors.destructive + '33', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             accessibilityLiveRegion="polite"
           >
-            <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+            <Ionicons name="alert-circle" size={16} color={colors.destructive} />
             <Text style={[styles.bannerText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>{error}</Text>
           </View>
         ) : null}

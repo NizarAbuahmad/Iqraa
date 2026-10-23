@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
+import { useLightStatusBar } from '@/hooks/useLightStatusBar';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
@@ -23,7 +24,7 @@ import type { TranslationKey } from '@/services/i18n';
 import { trackEvent } from '@/services/analytics';
 
 export function GameShell({
-  titleKey, accent, scoreLabel, gameOver, onReplay, onBack, analytics, children,
+  titleKey, accent, scoreLabel, gameOver, onReplay, onBack, analytics, onFinished, footer, children,
 }: {
   /** Default: back to the /play menu. */
   onBack?: () => void;
@@ -37,10 +38,16 @@ export function GameShell({
   /** `score`/`total` go to analytics only; the message is what's shown. `perfect` makes the celebration bigger. */
   gameOver?: { message: string; perfect?: boolean; score?: number; total?: number } | null;
   onReplay?: () => void;
+  /** Fired once per finished round, at the same crossing as the analytics event (a replay re-arms it). `gameOver.score`/`total` default to 0. */
+  onFinished?: (score: number, total: number) => void;
+  /** Rendered in the game-over panel under the message — e.g. «sent to the teacher». */
+  footer?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  // The accent header sits under the status bar.
+  useLightStatusBar();
   const { t, isRTL } = useLanguage();
   const { user } = useAuth();
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
@@ -66,6 +73,7 @@ export function GameShell({
       ...(gameOver?.score != null && { score: gameOver.score }),
       ...(gameOver?.total != null && { total: gameOver.total }),
     });
+    onFinished?.(gameOver?.score ?? 0, gameOver?.total ?? 0);
     // Once per game over, not on every re-render of the panel.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [over]);
@@ -78,7 +86,7 @@ export function GameShell({
               dev server regenerates it — same reason other new routes in this
               app are cast (see app/_layout.tsx). */}
           <Pressable onPress={onBack ?? (() => router.replace('/play' as any))} style={styles.backBtn} hitSlop={10}>
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
+            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color="#fff" />
           </Pressable>
           <Text style={[styles.title, { textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
             {t(titleKey)}
@@ -99,8 +107,9 @@ export function GameShell({
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 16, lineHeight: 26, textAlign: 'center' }}>
               {gameOver.message}
             </Text>
+            {footer}
 
-            <Button label={t('playPlayAgain')} onPress={() => onReplay?.()} style={{ backgroundColor: accent, marginTop: 12 }} fullWidth size="lg" />
+            <Button label={t('playPlayAgain')} onPress={() => onReplay?.()} fill={accent} style={{ marginTop: 12 }} fullWidth size="lg" />
 
             {!user && (
               <View style={[styles.ctaCard, { backgroundColor: colors.card, borderColor: colors.border }]}>

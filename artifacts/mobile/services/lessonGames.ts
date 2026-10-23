@@ -9,14 +9,22 @@
  *  - spot: pick the term that belongs to this lesson among terms from other
  *    lessons of the same book.
  */
-import { getLessonsForUnit, getUnitById, getUnitsForBook, type Lesson } from '@workspace/curriculum';
+import {
+  getBooksForSubjectGrade, getLessonsForUnit, getSubjectsForGrade, getUnitById, getUnitsForBook, type Lesson,
+} from '@workspace/curriculum';
 import { sample, shuffle } from './publicGames/rng.ts';
 import type { TriviaOption } from './publicGames/countries.ts';
+import type { TranslationKey } from './i18n.ts';
 
 export const MIN_LESSON_TERMS = 4;
 export const LESSON_GAME_ROUND = 6;
 export type LessonGame = 'memory' | 'scramble' | 'spot';
 export const LESSON_GAMES: LessonGame[] = ['memory', 'scramble', 'spot'];
+export const LESSON_GAME_TITLE_KEY: Record<LessonGame, TranslationKey> = {
+  memory: 'lessonGameMemoryTitle',
+  scramble: 'lessonGameScrambleTitle',
+  spot: 'lessonGameSpotTitle',
+};
 
 const HARAKAT = /[ً-ْٰـ]/g;
 const ARABIC = /[؀-ۿ]/;
@@ -126,4 +134,35 @@ export function availableLessonGames(lesson: Lesson): LessonGame[] {
     : g === 'spot' ? siblingTerms(lesson).length >= 3
     : true,
   );
+}
+
+export interface GameLessonGroup {
+  unitId: string;
+  /** Unit name, Arabic. */
+  unitTitle: string;
+  bookTitle: string;
+  lessons: { id: string; title: string }[];
+}
+
+/**
+ * The lessons a teacher can set a game from, by unit: the books of the class's
+ * grade and subjects (no subjects = every subject of the grade), keeping only
+ * lessons with enough terms. Which games each offers is asked per lesson
+ * (`availableLessonGames`) once one is opened — it builds a scramble round.
+ */
+export function gameLessonsForScope(gradeId: string, subjectIds: readonly string[]): GameLessonGroup[] {
+  if (!gradeId) return [];
+  const subjects = subjectIds.length > 0 ? subjectIds : getSubjectsForGrade(gradeId).map(s => s.id);
+  const out: GameLessonGroup[] = [];
+  for (const subjectId of subjects) {
+    for (const book of getBooksForSubjectGrade(subjectId, gradeId, 'teacher')) {
+      for (const unit of getUnitsForBook(book.id)) {
+        const lessons = getLessonsForUnit(unit.id)
+          .filter(hasLessonGames)
+          .map(l => ({ id: l.id, title: l.titleAr || l.title }));
+        if (lessons.length > 0) out.push({ unitId: unit.id, unitTitle: unit.nameAr || unit.name, bookTitle: book.titleAr || book.title, lessons });
+      }
+    }
+  }
+  return out;
 }

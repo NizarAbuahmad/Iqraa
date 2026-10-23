@@ -34,14 +34,17 @@ import { useAuth } from '@/context/AuthContext';
 import { getChildSchedules, getMySchedule } from '@/services/familyScheduleApi';
 import { getChildHomework, getMyHomework, setHomeworkDone } from '@/services/homeworkApi';
 import { openResource } from '@/services/openResource';
+import { LESSON_GAME_TITLE_KEY } from '@/services/lessonGames';
 import {
   ammanToday,
   allTrackedDone,
   applyDone,
   dueBadge,
   formatDueDate,
+  gameScoreText,
   homeworkSections,
   resourceKey,
+  resultForGame,
   untrackedMode,
   type ChildHomework,
   type FamilyHomework,
@@ -308,7 +311,7 @@ export default function SchoolScreen() {
                 { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: rowDir },
               ]}
             >
-              <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+              <Ionicons name="alert-circle" size={16} color={colors.destructive} />
               <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
                 {hwError}
               </Text>
@@ -371,7 +374,7 @@ export default function SchoolScreen() {
                 { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: rowDir },
               ]}
             >
-              <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+              <Ionicons name="alert-circle" size={16} color={colors.destructive} />
               <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
                 {examError}
               </Text>
@@ -411,7 +414,7 @@ export default function SchoolScreen() {
                 { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: rowDir },
               ]}
             >
-              <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+              <Ionicons name="alert-circle" size={16} color={colors.destructive} />
               <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
                 {error}
               </Text>
@@ -473,7 +476,7 @@ export default function SchoolScreen() {
           <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: align }}>
             {t(isParent ? 'childResultsTitle' : 'myExamsTitle')}
           </Text>
-          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
+          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedForeground} />
         </Pressable>
       </ScrollView>
       <Celebrate visible={celebrateHw} size="small" message={t('celebrateHomeworkAll')} onDone={() => setCelebrateHw(false)} />
@@ -609,7 +612,7 @@ function HomeworkRow({
         >
           <Ionicons
             name={item.done ? 'checkmark-circle' : 'ellipse-outline'}
-            size={26}
+            size={24}
             color={item.done ? ACCENT : colors.mutedForeground}
           />
         </View>
@@ -626,7 +629,7 @@ function HomeworkRow({
         >
           <Ionicons
             name={item.done ? 'checkbox' : 'square-outline'}
-            size={26}
+            size={24}
             color={item.done ? ACCENT : colors.mutedForeground}
           />
         </Pressable>
@@ -688,20 +691,34 @@ function HomeworkRow({
             </Text>
           </Pressable>
         ) : null}
-        {item.resources.map(r => (
-          <Pressable
-            key={resourceKey(r)}
-            accessibilityRole="link"
-            hitSlop={8}
-            onPress={() => openResource(r, { teacher: false, isAr: isRTL, homeworkId: item.id })}
-            style={{ flexDirection: rowDir, alignItems: 'center', gap: SPACE.xs, paddingVertical: SPACE.xs }}
-          >
-            <Ionicons name="attach-outline" size={16} color={ACCENT} />
-            <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textAlign: align }}>
-              {r.title}
-            </Text>
-          </Pressable>
-        ))}
+        {item.resources.map(r => {
+          const isGame = r.kind === 'game';
+          const result = isGame ? resultForGame(item.gameResults, r.lessonId, r.game) : null;
+          return (
+            <View key={resourceKey(r)}>
+              <Pressable
+                accessibilityRole="link"
+                hitSlop={8}
+                onPress={() => openResource(r, { teacher: false, isAr: isRTL, homeworkId: item.id })}
+                style={{ flexDirection: rowDir, alignItems: 'center', gap: SPACE.xs, paddingVertical: SPACE.xs }}
+              >
+                {isGame ? (
+                  <Ionicons name="game-controller-outline" size={16} color={ACCENT} />
+                ) : (
+                  <Ionicons name="attach-outline" size={16} color={ACCENT} />
+                )}
+                <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textAlign: align }}>
+                  {isGame ? `${t(LESSON_GAME_TITLE_KEY[r.game])}: ${r.title}` : r.title}
+                </Text>
+              </Pressable>
+              {result ? (
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
+                  {t(isParent ? 'hwGameChildResult' : 'hwGameYourResult', gameScoreText(result.score, result.total, isRTL))}
+                </Text>
+              ) : null}
+            </View>
+          );
+        })}
       </View>
     </View>
   );

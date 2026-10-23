@@ -70,7 +70,7 @@ export function StrandedSelectionNote({ hidden, index, message, isRTL, colors }:
       ]}
       accessibilityRole="text"
     >
-      <Ionicons name="alert-circle-outline" size={15} color={colors.mutedForeground} />
+      <Ionicons name="alert-circle" size={16} color={colors.mutedForeground} />
       <Text
         style={[
           styles.text,

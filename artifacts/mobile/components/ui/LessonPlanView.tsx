@@ -162,7 +162,7 @@ function Section({
   return (
     <View style={{ marginBottom: 16 }}>
       <View style={[styles.header, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <Ionicons name={icon} size={15} color={accent} />
+        <Ionicons name={icon} size={16} color={accent} />
         <Text
           style={[
             styles.headerTitle,

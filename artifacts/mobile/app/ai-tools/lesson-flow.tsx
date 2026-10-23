@@ -43,6 +43,8 @@ import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { Button } from '@/components/ui/Button';
+import { IconTile } from '@/components/ui/IconTile';
+import { conceptOf } from '@/constants/icons';
 import { saveItem, updateItem } from '@/services/workspace';
 import { MaterialClassField } from '@/components/ui/MaterialClassField';
 import { Toast } from '@/components/ui/Toast';
@@ -458,8 +460,9 @@ export default function LessonFlowScreen() {
               style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
               hitSlop={12}
             >
-              <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={22} color="#fff" />
+              <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={24} color="#fff" />
             </Pressable>
+            <IconTile icon={conceptOf('lesson-flow').icon} glyph={conceptOf('lesson-flow').glyph} color={conceptOf('lesson-flow').color} size={36} tone="onBand" />
             <View style={{ flex: 1 }}>
               <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }]}>
                 <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -485,11 +488,14 @@ export default function LessonFlowScreen() {
                   backgroundColor: ACCENT_FILL,
                 }]} />
               </View>
-              <Text style={{ color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
-                {isDone
-                  ? (uiLang === 'ar' ? '✓ جاهز' : '✓ Ready')
-                  : `${uiLang === 'ar' ? 'خطوة' : 'Step'} ${completedCount + 1} ${uiLang === 'ar' ? 'من' : 'of'} 6`}
-              </Text>
+              <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 4, marginTop: 6 }}>
+                {isDone ? <Ionicons name="checkmark-circle" size={14} color="rgba(255,255,255,0.8)" /> : null}
+                <Text style={{ color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>
+                  {isDone
+                    ? (uiLang === 'ar' ? 'جاهز' : 'Ready')
+                    : `${uiLang === 'ar' ? 'خطوة' : 'Step'} ${completedCount + 1} ${uiLang === 'ar' ? 'من' : 'of'} 6`}
+                </Text>
+              </View>
             </View>
           )}
         </View>
@@ -633,7 +639,7 @@ export default function LessonFlowScreen() {
         {/* ── Error banner with Retry ── */}
         {isBuilding && error && failedStep && (
           <View style={[styles.errorBanner, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Ionicons name="alert-circle-outline" size={16} color="#D92D20" style={{ marginTop: 1 }} />
+            <Ionicons name="alert-circle" size={16} color="#D92D20" style={{ marginTop: 1 }} />
             <Text style={{ flex: 1, color: palette.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
@@ -689,7 +695,7 @@ export default function LessonFlowScreen() {
             >
               <Ionicons
                 name={saveLabel === 'save' ? 'bookmark-outline' : 'bookmark'}
-                size={18}
+                size={20}
                 color={ACCENT}
               />
             </Pressable>
@@ -755,9 +761,9 @@ function StepCard({ stepNum, label, icon, color, status, isRTL, lang, colors, co
           {status === 'loading' ? (
             <ActivityIndicator size="small" color={color} />
           ) : status === 'done' ? (
-            <Ionicons name={icon} size={18} color={color} />
+            <Ionicons name={icon} size={20} color={color} />
           ) : status === 'error' ? (
-            <Ionicons name="warning-outline" size={18} color="#D92D20" />
+            <Ionicons name="warning" size={20} color="#D92D20" />
           ) : (
             <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{stepNum}</Text>
           )}
