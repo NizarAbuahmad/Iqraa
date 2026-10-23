@@ -48,6 +48,12 @@ export type PrepRowMeta = {
   labelEn: string;
   /** The generator that makes this material. */
   route: string;
+  /**
+   * The row's own hue on the board: five rows drawn in one teal read as a form
+   * to fill in, not five different things to make. White text reads on each at
+   * 4.5:1, and no row is amber, which means "now".
+   */
+  color: string;
 };
 
 export type PrepRow = PrepRowMeta & {
@@ -65,11 +71,11 @@ export type PrepRow = PrepRowMeta & {
 };
 
 export const PREP_ROWS: PrepRowMeta[] = [
-  { type: 'lesson-plan', emoji: '📘', icon: 'document-text-outline', labelAr: 'خطة الدرس', labelEn: 'Lesson plan', route: '/ai-tools/lesson-plan' },
-  { type: 'worksheet', emoji: '📝', icon: 'list-outline', labelAr: 'ورقة عمل', labelEn: 'Worksheet', route: '/ai-tools/worksheet' },
-  { type: 'quiz', emoji: '✅', icon: 'checkmark-done-outline', labelAr: 'اختبار قصير', labelEn: 'Quiz', route: '/ai-tools/quiz' },
-  { type: 'slides', emoji: '🎬', icon: 'tv-outline', labelAr: 'عرض الحصة', labelEn: 'Class slides', route: '/ai-tools/slides' },
-  { type: 'activity', emoji: '🎯', icon: 'people-outline', labelAr: 'نشاط صفّي', labelEn: 'Class activity', route: '/ai-tools/activity' },
+  { type: 'lesson-plan', emoji: '📘', icon: 'document-text-outline', labelAr: 'خطة الدرس', labelEn: 'Lesson plan', route: '/ai-tools/lesson-plan', color: '#4338CA' },
+  { type: 'worksheet', emoji: '📝', icon: 'list-outline', labelAr: 'ورقة عمل', labelEn: 'Worksheet', route: '/ai-tools/worksheet', color: '#0F766E' },
+  { type: 'quiz', emoji: '✅', icon: 'checkmark-done-outline', labelAr: 'اختبار قصير', labelEn: 'Quiz', route: '/ai-tools/quiz', color: '#7C3AED' },
+  { type: 'slides', emoji: '🎬', icon: 'tv-outline', labelAr: 'عرض الحصة', labelEn: 'Class slides', route: '/ai-tools/slides', color: '#0369A1' },
+  { type: 'activity', emoji: '🎯', icon: 'people-outline', labelAr: 'نشاط صفّي', labelEn: 'Class activity', route: '/ai-tools/activity', color: '#C2410C' },
 ];
 
 /**

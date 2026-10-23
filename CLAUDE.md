@@ -588,6 +588,10 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   shares `useTodayLesson()` with the desktop workspace — change the lesson
   logic there, never in one layout; tab visibility and the lesson-bar rule live
   in `services/tabVisibility.ts`.
+  Today's band wears the lesson's subject (`subjectTheme` in
+  `services/subjectTheme.ts`): a corner subject borrows its corner, any other its
+  catalog colour deepened for white text; each prep row has its own hue
+  (`PREP_ROWS[].color`).
   Progress is celebrated by `Celebrate` (`components/ui/Celebrate.tsx`) at four
   moments only — exam handed in, game over, last homework ticked, prep checklist
   all ready. The exam fires on a successful hand-in the student made (never the
