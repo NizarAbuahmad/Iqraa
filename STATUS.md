@@ -82,6 +82,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-23 — Leftover icon colours follow CONCEPTS
 - 2026-10-23 — Grade 9 grammar, thirteen lessons in the English corner — built, shown to nobody yet
 - 2026-10-23 — Iqraa draws its own icons
 - 2026-10-23 — Grade 9 grammar pilot (Unit 4) in the English corner — built, shown to nobody yet
@@ -111,12 +112,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-19 — Load test: the exam path holds, the sign-up rush does not
 - 2026-10-18 — One question-type order, one set of repeat-rule inputs
 - 2026-10-18 — One card for quizzes and evaluations
-- 2026-10-18 — Revision decks carry the book's own pictures and all its key terms
-- 2026-10-18 — Slides Maker decks stop looking like bare lists
 
 ## Finding older detail, and recording new work
 
-- The log has 350 sections. Anything cited elsewhere as
+- The log has 356 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line
