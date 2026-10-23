@@ -13,6 +13,7 @@ import { hubLesson } from '../englishHub.ts';
 const dataFile = (sem: 1 | 2) => JSON.parse(readFileSync(new URL(`../data/iqra_curriculum_g5_english_sem${sem}.json`, import.meta.url), 'utf8'));
 const L = (s: string) => `kbl-g5-eng-${s}`;
 const S1 = ['s1-nccd-u1_l1', 's1-nccd-u2_l1', 's1-nccd-u3_l1', 's1-nccd-u4_l1', 's1-nccd-u5_l1'].map(L);
+const S2 = ['s2-nccd-u6_l1', 's2-nccd-u7_l1', 's2-nccd-u8_l1', 's2-nccd-u9_l1', 's2-nccd-u10_l1'].map(L);
 const sentencesOf = (id: string) => unitSentences(grammarUnit(id)!);
 const ids = () => G5_ITEM_LESSONS.map(l => l.lessonId);
 
@@ -22,17 +23,28 @@ const SIZES: Record<string, Record<string, number>> = {
   [L('s1-nccd-u3_l1')]: { 'was-were': 14, 'did-questions': 14, 'regular-irregular': 12 },
   [L('s1-nccd-u4_l1')]: { will: 14, wont: 12, 'will-questions': 14 },
   [L('s1-nccd-u5_l1')]: { who: 14, where: 14, which: 12 },
+  [L('s2-nccd-u6_l1')]: { irregular: 16, 'did-negatives': 12, questions: 12 },
+  [L('s2-nccd-u7_l1')]: { 'was-were-ing': 14, 'when-while': 14, questions: 12 },
+  [L('s2-nccd-u8_l1')]: { should: 14, shouldnt: 14, 'advice-questions': 12 },
+  [L('s2-nccd-u9_l1')]: { 'have-has': 16, 'havent-hasnt': 12, questions: 12 },
+  [L('s2-nccd-u10_l1')]: { 'ever-questions': 14, never: 14, 'short-answers': 12 },
 };
 
 describe('Grade 5 authored lessons', () => {
-  it('start with the five Semester 1 hub lessons, unsigned and offered to nobody', () => {
-    assert.deepEqual(ids().slice(0, 5), S1);
+  it('are the ten hub lessons, Semester 1 then Semester 2, unsigned and offered to nobody', () => {
+    assert.deepEqual(ids(), [...S1, ...S2]);
     for (const id of ids()) {
       assert.ok(hubLesson(id), id);
       assert.equal(hubLesson(id)!.grammarOnly, undefined, id);
       assert.equal(grammarUnit(id)!.reviewedBy, null, id);
       assert.equal(offeredGrammar(id), null, id);
     }
+  });
+
+  it('are ten lessons and 400 items', () => {
+    assert.equal(G5_ITEM_LESSONS.length, 10);
+    assert.equal(G5_ITEM_LESSONS.reduce((n, l) => n + sentencesOf(l.lessonId).length, 0), 400);
+    assert.equal(grammarUnitsForGrade(5).length, 10);
   });
 
   it("carry the book's own statement for that lesson id", () => {
