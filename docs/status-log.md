@@ -43,9 +43,17 @@ something every student has on day one.
   now says «الانضمام إلى شعبة» with a first-class sentence for a student with `hasRosterLink === false`,
   and keeps the old wording for everyone else. The `lib/features.ts` comment on `STUDENT_ACCOUNTS`
   names both student paths.
+- **One `CheckRow` on the register screen.** #1229 («Make the register terms checkbox visible»)
+  landed on `main` while this PR was open and restyled the terms row (a framed panel, a dark outline)
+  and gave `styles.termsRow` a border width. The age-confirmation row had been copied from the old
+  one: it reused `termsRow` without a border colour, which draws a black frame, and kept the old box.
+  Git merged the file with no conflict, so only looking at the screen showed it. Both rows now render
+  one `CheckRow` in `app/(auth)/register.tsx`, so they cannot drift apart again.
 
-**Verified.** `pnpm run typecheck`; api-server `pnpm build && pnpm test` (2202 pass); mobile
-`pnpm test` (7019 tests, 7009 pass, 10 skipped, 0 fail — the first run had 3 failures that were mine:
+**Verified.** `pnpm run typecheck`; api-server `pnpm build && pnpm test` (2238 pass on the last merge
+with `main`; 2202 when first written); mobile
+`pnpm test` (7157 tests, 7147 pass, 10 skipped, 0 fail on the last merge; the first run, 7019 tests, had
+3 failures that were mine:
 `i18nTerminology` refuses «class code» and «guardian» in English, and `emptyState.test.ts` counts
 exactly two `EmptyState` in `school.tsx`, so the no-class card is its own component,
 `components/NoClassPrompt.tsx`); the new unit tests (`ageConfirmation`, `loginCodeReissue`,
