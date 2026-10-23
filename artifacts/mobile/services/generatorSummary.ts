@@ -11,12 +11,21 @@ import { arCountPhrase, arQuestionsPhrase } from './arCount.ts';
 export type SummaryLang = 'ar' | 'en';
 
 /** The counts a summary can name. A part left out is left out of the line. */
-export interface SummaryParts {
+export interface SummaryCounts {
   questions?: number;
   minutes?: number;
   marks?: number;
   /** How many question types are ticked. */
   kinds?: number;
+}
+
+export interface SummaryParts extends SummaryCounts {
+  /**
+   * A word and not a count — the difficulty level («متوسط»), already in the
+   * display language. It closes the line: «20 سؤالًا · 3 أنواع · متوسط». The
+   * worksheet has no duration or marks to name, so the level takes their place.
+   */
+  level?: string;
 }
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
@@ -28,29 +37,31 @@ function arKinds(n: number): string {
   return arCountPhrase(n, 'نوع', 'نوعان', 'أنواع');
 }
 
-const AR: Record<keyof SummaryParts, (n: number) => string> = {
+const AR: Record<keyof SummaryCounts, (n: number) => string> = {
   questions: arQuestionsPhrase,
   minutes: n => arCountPhrase(n, 'دقيقة', 'دقيقتان', 'دقائق'),
   marks: n => arCountPhrase(n, 'درجة', 'درجتان', 'درجات'),
   kinds: arKinds,
 };
 
-const EN: Record<keyof SummaryParts, (n: number) => string> = {
+const EN: Record<keyof SummaryCounts, (n: number) => string> = {
   questions: n => plural(n, 'question', 'questions'),
   minutes: n => `${n} min`,
   marks: n => plural(n, 'mark', 'marks'),
   kinds: n => plural(n, 'type', 'types'),
 };
 
-const ORDER: (keyof SummaryParts)[] = ['questions', 'minutes', 'marks', 'kinds'];
+const ORDER: (keyof SummaryCounts)[] = ['questions', 'minutes', 'marks', 'kinds'];
 
-/** «10 أسئلة · 20 دقيقة · 20 درجة · 4 أنواع», in a fixed order whatever order the caller named them. */
+/** «10 أسئلة · 20 دقيقة · 20 درجة · 4 أنواع», in a fixed order whatever order the caller named them (a `level` word last). */
 export function summaryLine(parts: SummaryParts, lang: SummaryLang): string {
   const say = lang === 'ar' ? AR : EN;
-  return ORDER
+  const line = ORDER
     .filter(k => typeof parts[k] === 'number' && Number.isFinite(parts[k]))
-    .map(k => say[k](parts[k] as number))
-    .join(' · ');
+    .map(k => say[k](parts[k] as number));
+  const level = parts.level?.trim();
+  if (level) line.push(level);
+  return line.join(' · ');
 }
 
 export interface PreviewRow<T> {
