@@ -110,7 +110,10 @@ GitHub's runners are not in your Cloud Run region — so C1 is still separate.)
   not on `artifacts/api-server/src/lib/heldReads.ts` still pays the `on` column (about 22 ms per statement), so
   decide whether that is acceptable or which route to add next. After the flip, `LOG_LEVEL=debug` logs
   `held scope ended` with the statements and milliseconds each held request used.
-  Original instruction: against the rehearsal project's **pooled** string, from
+  **Note on comparing runs:** the script now runs three modes (off, on, held) and defaults to 8 statements per
+  request (`BENCH_STATEMENTS` overrides); the recorded +336.5 ms was measured at 15 statements, so the next run's
+  `on` column is not like-for-like with it — compare per-statement figures (about 22 ms per statement then).
+  Original instruction (as first written, for the record; it describes the two-mode, 15-statement script): against the rehearsal project's **pooled** string, from
   the API's region if you can (a Cloud Run job, or a VM there; numbers from a laptop overstate
   the cost). Run the benchmark: `BENCH_DATABASE_URL='<pooled string of the rehearsal
   project>' pnpm --filter @workspace/db run bench:rls` (`lib/db/scripts/bench-rls.ts`; read-only; it

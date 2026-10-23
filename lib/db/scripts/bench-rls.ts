@@ -28,6 +28,10 @@ if (!/-pooler\./.test(url)) {
 
 // The teacher inbox runs 7 or 8 statements in sequence, depending on the account's data; BENCH_STATEMENTS overrides.
 const STATEMENTS_PER_REQUEST = Number(process.env.BENCH_STATEMENTS ?? 8);
+if (!Number.isInteger(STATEMENTS_PER_REQUEST) || STATEMENTS_PER_REQUEST <= 0) {
+  console.error(`BENCH_STATEMENTS must be a positive whole number, got "${process.env.BENCH_STATEMENTS}".`);
+  process.exit(1);
+}
 const REQUESTS = 40; // per round
 const MODES = ["off", "on", "held"] as const;
 type Mode = (typeof MODES)[number];
@@ -74,11 +78,13 @@ for (let i = 0; i < ROUNDS; i++) {
   console.log(`round ${i + 1}: ${mode.padEnd(4)} median ${median(ms).toFixed(1)} ms per ${STATEMENTS_PER_REQUEST}-statement request`);
 }
 
-const f = (n: number) => n.toFixed(1).padStart(7);
-console.log(`\n${STATEMENTS_PER_REQUEST} statements per request          off      on    held   on-off  held-off`);
-for (const [label, pick] of [["median", median], ["p95   ", p95]] as const) {
+const W = 9; // one column width for the header and the rows
+const f = (n: number) => n.toFixed(1).padStart(W);
+const head = (s: string) => s.padStart(W);
+console.log(`\n${`${STATEMENTS_PER_REQUEST} statements/request`.padEnd(26)}${["off", "on", "held", "on-off", "held-off"].map(head).join("")}`);
+for (const [label, pick] of [["median ms", median], ["p95 ms", p95]] as const) {
   const [off, on, held] = MODES.map(m => pick(times[m]));
-  console.log(`${label} / request ms        ${f(off)} ${f(on)} ${f(held)}  ${f(on - off)}   ${f(held - off)}`);
+  console.log(`${label.padEnd(26)}${[off, on, held, on - off, held - off].map(f).join("")}`);
 }
 const heldAdded = p95(times.held) - p95(times.off);
 const onAdded = p95(times.on) - p95(times.off);
