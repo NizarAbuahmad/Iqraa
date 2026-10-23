@@ -77,7 +77,8 @@ import { buildScopeRequest, scopeFormState } from '@/services/wideScopeRequest';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { conceptOf } from '@/constants/icons';
 import { SPACE, TYPE } from '@/constants/theme';
-import { readableOn } from '@/services/readableColor';
+import { readableOn, selectedRow } from '@/services/readableColor';
+import { generationPhase } from '@/services/generationPhase';
 import { deckOptionsSummary, deckSections, previewRows, type DeckSection } from '@/services/generatorSummary';
 import { getT } from '@/services/i18n';
 import { ChipGroup } from '@/components/generator/ChipGroup';
@@ -527,6 +528,9 @@ export default function SlidesScreen() {
   const generate = async (regen: ReturnType<typeof regenerationFields> = {}) => {
     // Counted first, before any refusal below returns: the scrolls depend on it.
     setAttempt(n => n + 1);
+    // A Cancel leaves `cancelled` set, and it outranks an error in the status block: clear it before any
+    // refusal below can return, or «أُلغي» would be shown over the refusal's own message.
+    setCancelled(false);
     const trimmed = topic.trim();
     const refuse = (msg: string) => { setValidationError(msg); setError(''); setCancelled(false); };
     if (!trimmed) { refuse(t('topicRequired')); return; }
@@ -1024,16 +1028,16 @@ export default function SlidesScreen() {
   const stranded = subjectHidden?.[subjectIdx] === true;
   // What GenerationStatus shows. Under the form it is out of sight of a docked button, so a phone scrolls
   // it into view when this leaves 'idle' (the spinner and its Cancel, or a failure).
-  const statusPhase = loading ? 'loading' : cancelled ? 'cancelled' : error ? 'error' : 'idle';
+  const statusPhase = generationPhase({ loading, cancelled, failed: !!error });
   const statusY = useRef(0);
   const reduceMotion = useReduceMotion();
-  // A refusal is the form's to show, not the status block's: it clears `error` and `cancelled` itself, but
-  // the early return keeps the two scrolls from ever fighting.
+  // A refusal is the form's to show, not the status block's. `generate` clears `cancelled` first and a
+  // refusal clears `error`, so the phase is 'idle' then and the status scroll below returns by itself.
   const refusal = !!validationError;
   // Layout effect, not effect: the jump is made before the frame is painted, so there is no flash
   // of the form first. No animated scroll under reduced motion.
   useLayoutEffect(() => {
-    if (isDesktop || statusPhase === 'idle' || refusal) return;
+    if (isDesktop || statusPhase === 'idle') return;
     scrollRef.current?.scrollTo({ y: Math.max(0, statusY.current - SPACE.lg), animated: !reduceMotion });
   }, [statusPhase, attempt]);
   // This screen's button is NOT disabled without a topic: pressing it is what shows the refusal beside the
@@ -1360,7 +1364,8 @@ export default function SlidesScreen() {
  * teal of the default.
  */
 function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
-  return <SharedPickerField selectedTint={props.accent + '15'} {...props} />;
+  const row = selectedRow(props.accent, props.colors.card);
+  return <SharedPickerField selectedTint={row.fill} {...props} accent={row.ink} />;
 }
 
 const styles = StyleSheet.create({

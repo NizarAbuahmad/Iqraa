@@ -81,7 +81,8 @@ import { nextFrame } from '@/services/nextFrame';
 import { buildWorksheetRequest } from '@/services/generatorRequests';
 import { readHomeworkParam, readIndexParam } from '@/services/materialParams';
 import { conceptOf, ICON } from '@/constants/icons';
-import { readableOn, textOn } from '@/services/readableColor';
+import { readableOn, textOn, selectedRow, tintOver } from '@/services/readableColor';
+import { generationPhase } from '@/services/generationPhase';
 import { moreRowsLabel, previewRows, summaryLine } from '@/services/generatorSummary';
 import { SegmentedControl } from '@/components/generator/SegmentedControl';
 import { Stepper } from '@/components/generator/Stepper';
@@ -151,6 +152,10 @@ export default function WorksheetScreen() {
   const isHomework = readHomeworkParam(params.isHomework);
   const ACCENT = conceptOf(isHomework ? 'homework' : 'worksheet').color;
   const accentInk = readableOn(ACCENT, colors.card);
+  // Ink on a tint is judged against the tint, not the plain card: the ready banner is the accent at 8% over the
+  // page, and the «attach figure» button the accent at 10% over the card.
+  const bannerInk = readableOn(accentInk, tintOver(ACCENT, 0x15 / 255, colors.background));
+  const figureInk = readableOn(accentInk, tintOver(ACCENT, 0x1a / 255, colors.card));
 
   const grades = getPickerGrades();
   const subjects = getPickerSubjects();
@@ -208,6 +213,8 @@ export default function WorksheetScreen() {
       // A «subject mismatch» refusal is about the old pairing; it used to
       // stay on screen in red under the now-empty topic field.
       setError('');
+      // …and a Cancel from the old pairing: «أُلغي» is about a run that no longer matters.
+      setCancelled(false);
       prevGradeRef.current = gradeIdx;
       prevSubjectRef.current = subjectIdx;
     }
@@ -449,6 +456,9 @@ export default function WorksheetScreen() {
     // Read before any setState clears it — this is what the teacher is
     // looking at, and what a regeneration must not hand back.
     setAttempt(n => n + 1);
+    // A Cancel leaves `cancelled` set, and it outranks an error in the status block: clear it before any
+    // refusal below can return, or «أُلغي» would be shown over the refusal's own message.
+    setCancelled(false);
     const previous = result;
     // Everything a failed or cancelled run must hand back: the paper, its
     // badges, edits and levels, and the scope it was generated under. It
@@ -788,7 +798,7 @@ export default function WorksheetScreen() {
   // What GenerationStatus shows. Under the form it is out of sight of a docked button, so a
   // phone scrolls it into view when this leaves 'idle' (a refusal such as scopeNoCurriculum or
   // subjectTopicMismatch, a network error, the spinner and its Cancel).
-  const statusPhase = loading ? 'loading' : cancelled ? 'cancelled' : (error && topic.trim()) ? 'error' : 'idle';
+  const statusPhase = generationPhase({ loading, cancelled, failed: !!(error && topic.trim()) });
   const statusY = useRef(0);
   const reduceMotion = useReduceMotion();
   // Layout effect, not effect: the jump is made before the frame is painted, so there is no flash
@@ -1048,8 +1058,8 @@ export default function WorksheetScreen() {
             </View>
           ) : null}
           <View style={[styles.successBanner, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '30', borderRadius: colors.radius, flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
-            <Ionicons name="document-text" size={20} color={accentInk} />
-            <Text style={[{ color: accentInk, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, flex: 1, textAlign: outRTL ? 'right' : 'left' }]}>{result.title}</Text>
+            <Ionicons name="document-text" size={20} color={bannerInk} />
+            <Text style={[{ color: bannerInk, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, flex: 1, textAlign: outRTL ? 'right' : 'left' }]}>{result.title}</Text>
           </View>
 
           <ShortPaperNotice shortfall={result.shortfall} repeated={result.repeated} />
@@ -1274,10 +1284,10 @@ export default function WorksheetScreen() {
                             onPress={() => setFigurePickFor({ si, qi: i })}
                             hitSlop={8}
                             accessibilityRole="button"
-                            style={[styles.figureBtn, { flexDirection: outRTL ? 'row-reverse' : 'row', marginLeft: outRTL ? 0 : 'auto', marginRight: outRTL ? 'auto' : 0 }, wanted && { backgroundColor: ACCENT + '1A', borderColor: accentInk }]}
+                            style={[styles.figureBtn, { flexDirection: outRTL ? 'row-reverse' : 'row', marginLeft: outRTL ? 0 : 'auto', marginRight: outRTL ? 'auto' : 0 }, wanted && { backgroundColor: ACCENT + '1A', borderColor: figureInk }]}
                           >
-                            <Ionicons name="image-outline" size={16} color={wanted ? accentInk : colors.mutedForeground} />
-                            <Text style={[styles.figureBtnText, { color: wanted ? accentInk : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
+                            <Ionicons name="image-outline" size={16} color={wanted ? figureInk : colors.mutedForeground} />
+                            <Text style={[styles.figureBtnText, { color: wanted ? figureInk : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
                               {t(q.figure ? 'changeFigure' : 'attachFigure')}
                             </Text>
                           </Pressable>
@@ -1483,7 +1493,8 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled
  * component, because the answer was that every screen wanted it.
  */
 function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
-  return <SharedPickerField maxHeight={180} selectedTint={props.accent + '15'} {...props} />;
+  const row = selectedRow(props.accent, props.colors.card);
+  return <SharedPickerField maxHeight={180} selectedTint={row.fill} {...props} accent={row.ink} />;
 }
 
 const styles = StyleSheet.create({

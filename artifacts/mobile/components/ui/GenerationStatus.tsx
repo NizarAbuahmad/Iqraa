@@ -16,11 +16,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { countSeconds } from '@/services/i18n';
+import type { GenerationPhase } from '@/services/generationPhase';
 
 /** How long before we admit this is slower than usual. */
 const SLOW_AFTER_SECONDS = 15;
 
-export type GenerationPhase = 'idle' | 'loading' | 'error' | 'cancelled';
+export type { GenerationPhase };
 
 type Colors = {
   card: string;
