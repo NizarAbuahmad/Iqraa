@@ -13,7 +13,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CONCEPTS } from '../../constants/icons.ts';
 import { bandGradient } from '../band.ts';
-import { contrast } from '../readableColor.ts';
+import { contrast, readableOn, tintOver } from '../readableColor.ts';
 import translations from '../i18n.ts';
 
 const ROOT = join(import.meta.dirname, '..', '..');
@@ -276,7 +276,7 @@ test('a chip can be disabled: dimmed, aria-disabled, inert, still a 44-point tar
   assert.match(src, /disabled\?: boolean;/, 'ChipOption lost its optional disabled flag');
   assert.match(src, /aria-disabled=\{locked \|\| off\}/);
   assert.match(src, /disabled=\{off\}/);
-  assert.match(src, /if \(locked \|\| off\) return;/, 'a disabled chip must not call onToggle');
+  assert.match(src, /if \(locked \|\| off \|\| \(single && on\)\) return;/, 'a disabled chip must not call onToggle');
   assert.match(src, /opacity: off \? 0\.5 : 1/);
   assert.match(src, /minHeight: 44/);
   // The quiz passes no disabled flag, so none of it changes for the quiz.
@@ -305,6 +305,8 @@ const worksheet = read('app', 'ai-tools', 'worksheet.tsx');
 const worksheetCode = code(worksheet);
 const lessonPlan = read('app', 'ai-tools', 'lesson-plan.tsx');
 const lessonPlanCode = code(lessonPlan);
+const activity = read('app', 'ai-tools', 'activity.tsx');
+const activityCode = code(activity);
 
 test('the worksheet imports every shared piece and draws its controls with them', () => {
   for (const name of ['SegmentedControl', 'Stepper', 'ChipGroup', 'LessonCard', 'DockedAction', 'GeneratorLayout', 'PaperPreview']) {
@@ -370,7 +372,7 @@ test('the distribution control appears on a wide scope only', () => {
 
 test('a ported screen draws the docked bar on a phone and the inline action on desktop', () => {
   // The worksheet once built `action` and never rendered `action(true)`: a phone had no button at all.
-  for (const [name, src] of [['quiz', code(read('app', 'ai-tools', 'quiz.tsx'))], ['worksheet', worksheetCode], ['lesson plan', lessonPlanCode]] as const) {
+  for (const [name, src] of [['quiz', code(read('app', 'ai-tools', 'quiz.tsx'))], ['worksheet', worksheetCode], ['lesson plan', lessonPlanCode], ['activity', activityCode]] as const) {
     assert.match(src, /\{isDesktop \? null : action\(true\)\}/, `${name}: no docked bar on a phone`);
     assert.match(src, /\{action\(false\)\}/, `${name}: no inline action under the desktop preview`);
   }
@@ -538,12 +540,12 @@ test('the primary label is centred and may take two lines, and the secondary sta
 test('a disabled chip never counts towards min', () => {
   const src = code(read('components', 'generator', 'ChipGroup.tsx'));
   assert.match(src, /const counted = options\.filter\(o => !o\.disabled && selected\.has\(o\.id\)\)\.length;/);
-  assert.match(src, /const locked = on && !off && counted <= min;/);
+  assert.match(src, /const locked = !single && on && !off && counted <= min;/);
   assert.doesNotMatch(src, /selected\.size/);
 });
 
 test('pressing generate again on the same refusal scrolls to it again: the effect also depends on an attempt counter', () => {
-  for (const [name, src] of [['quiz', quizCode], ['worksheet', worksheetCode], ['lesson plan', lessonPlanCode]] as const) {
+  for (const [name, src] of [['quiz', quizCode], ['worksheet', worksheetCode], ['lesson plan', lessonPlanCode], ['activity', activityCode]] as const) {
     assert.match(src, /const \[attempt, setAttempt\] = useState\(0\);/, `${name}: no attempt counter`);
     // Bumped first thing in generate, before any early return (the refusals), and nothing else about generate moves.
     assert.match(src, /const generate = async \(opts\?: \{[^}]*\}\) => \{\s*(\/\/[^\n]*\n\s*)*setAttempt\(n => n \+ 1\);\s*const previous = result;/, `${name}: attempt is not bumped at the start of generate`);
@@ -766,4 +768,247 @@ test('the new generator strings exist in both languages', () => {
   for (const key of ['genPreviewLessonPlanNote', 'genPreviewWorksheetNote', 'genPreviewHomeworkNote', 'genHomeworkBtn']) {
     for (const lang of ['ar', 'en'] as const) assert.ok(String((translations as any)[lang][key] ?? '').trim(), `${lang}.${key} is missing`);
   }
+});
+
+// ── ChipGroup: single choice ────────────────────────────────────────────────
+
+test('ChipGroup has a single-choice mode: radio semantics, the chosen chip inert, still a 44-point chip', () => {
+  const src = code(read('components', 'generator', 'ChipGroup.tsx'));
+  assert.match(src, /single\?: boolean;/);
+  assert.match(src, /single = false/, 'single is opt-in, so the quiz and worksheet are unchanged');
+  assert.match(src, /role=\{single \? 'radiogroup' : 'group'\}/);
+  assert.match(src, /accessibilityRole=\{single \? 'radio' : 'button'\}/);
+  assert.match(src, /aria-pressed=\{single \? undefined : on\}/);
+  assert.match(src, /aria-checked=\{single \? on : undefined\}/);
+  assert.doesNotMatch(src, /accessibilityState=/);
+  // A radio is not switched off: pressing the chosen chip neither buzzes nor calls the screen.
+  assert.match(src, /if \(locked \|\| off \|\| \(single && on\)\) return;/);
+  // `min` belongs to multi-select; it must not lock the one chosen chip as «disabled».
+  assert.match(src, /const locked = !single && on && !off && counted <= min;/);
+  assert.match(src, /minHeight: 44/);
+  // The existing screens do not pass it.
+  // Every <ChipGroup .../> element of the multi-select screens, whole: none of them carries a `single` prop in any position.
+  for (const [name, src2] of [['quiz', quizCode], ['worksheet', worksheetCode]] as const) {
+    const elements = src2.match(/<ChipGroup\b[\s\S]*?\/>/g) ?? [];
+    assert.ok(elements.length >= 1, `${name}: found no ChipGroup element to check`);
+    for (const el of elements) assert.doesNotMatch(el, /\bsingle\b/, `${name}: a multi-select ChipGroup got the single prop`);
+  }
+});
+
+// ── The activity ────────────────────────────────────────────────────────────
+
+test('the activity imports the shared pieces it uses and draws them, with one generate action', () => {
+  for (const name of ['SegmentedControl', 'ChipGroup', 'LessonCard', 'DockedAction', 'GeneratorLayout', 'PaperPreview']) {
+    assert.match(activity, new RegExp(`from '@/components/generator/${name}'`), `activity.tsx does not import ${name}`);
+    assert.match(activityCode, new RegExp(`<${name}\\b`), `activity.tsx imports ${name} and does not draw it`);
+  }
+  assert.equal((activityCode.match(/<DockedAction\b/g) ?? []).length, 1);
+  assert.doesNotMatch(activityCode, /secondary=/);
+  assert.doesNotMatch(activityCode, /<Button\b/, 'the generate button is the DockedAction now');
+});
+
+test('the activity keeps TopicSelector mounted inside the lesson card, and the lesson by id', () => {
+  assert.equal((activityCode.match(/<TopicSelector\b/g) ?? []).length, 1);
+  assert.match(activityCode, /<LessonCard[\s\S]*<TopicSelector\b[\s\S]*<\/LessonCard>/);
+  assert.doesNotMatch(activityCode, /lessonOpen\s*(\?|&&)/, 'the open state may only change the card, never mount or unmount the pickers');
+  assert.match(activityCode, /allowedKinds=\{\['lesson', 'unit', 'semester', 'book'\]\}/);
+  assert.match(activityCode, /onScopeChange=\{wideScope\.setScopeSel\}\s+offlineWideScope/);
+  assert.match(activityCode, /hasError=\{!!error && !topic\}/);
+  assert.match(activityCode, /<PickerField label=\{t\('grade'\)\}[^>]*hidden=\{teacherScope\.gradeHidden\}/);
+  assert.match(activityCode, /<LessonCard[\s\S]*<StrandedSelectionNote\b[\s\S]*<\/LessonCard>/);
+  assert.match(activityCode, /<PickerField label=\{t\('subjects'\)\}[^>]*hidden=\{subjectHidden\}/);
+  assert.match(activityCode, /const stranded = subjectHidden\?\.\[subjectIdx\] === true;/);
+  assert.match(activityCode, /expanded=\{lessonOpen \|\| stranded\}/);
+  assert.match(activityCode, /locked=\{!topic\.trim\(\) \|\| stranded\}/);
+  assert.match(activityCode, /usePickedLesson\(/);
+  assert.match(activityCode, /lessonId: pickedLesson\.lessonId/);
+  assert.match(activityCode, /lessonId\?: string;/);
+});
+
+test('the activity keeps its state names, arrays and saved form state', () => {
+  for (const name of ['gradeIdx', 'subjectIdx', 'activityTypeIdx', 'durationIdx', 'objective']) {
+    const cap = name[0]!.toUpperCase() + name.slice(1);
+    assert.match(activityCode, new RegExp(`\\[${name}, set${cap}\\] = useState`), `state ${name} was renamed or removed`);
+  }
+  assert.match(activityCode, /const \[topic, setTopic\] = useState/);
+  assert.match(activityCode, /const DURATION_VALUES = \[20, 30, 45, 60\];/);
+  assert.match(activityCode, /readIndexParam\(params\.activityTypeIdx, ACTIVITY_TYPE_IDS\.length, 1\)/);
+  assert.match(activityCode, /\.\.\.\(builtWith \?\? \{ activityTypeIdx, durationIdx, objective \}\),/);
+  assert.match(activityCode, /\.\.\.scopeFormState\(wideFrozen, 'balanced'\),/);
+  assert.match(activityCode, /activityType: ACTIVITY_TYPE_IDS\[activityTypeIdx\],/);
+  assert.match(activity, /ACTIVITY_TYPE_IDS/);
+});
+
+test('the activity type is a single-choice chip group over the same ids, moving the same index; duration is segmented', () => {
+  assert.match(activityCode, /<ChipGroup\s+single\s+label=\{t\('activityTypeLabel'\)\}/);
+  assert.match(activityCode, /options=\{ACTIVITY_TYPE_IDS\.map\(\(id, i\) => \(\{ id, label: activityTypeLabels\[i\]! \}\)\)\}/);
+  assert.match(activityCode, /selected=\{new Set<AType>\(\[ACTIVITY_TYPE_IDS\[activityTypeIdx\]!\]\)\}/);
+  assert.match(activityCode, /onToggle=\{id => setActivityTypeIdx\(ACTIVITY_TYPE_IDS\.indexOf\(id\)\)\}/);
+  assert.match(activityCode, /<SegmentedControl label=\{t\('durationLabel'\)\} options=\{durationLabels\} index=\{durationIdx\} onChange=\{setDurationIdx\}/);
+  assert.match(activityCode, /const durationLabels = DURATION_VALUES\.map\(d => `\$\{d\} \$\{t\('min'\)\}`\);/);
+  assert.doesNotMatch(activityCode, /<PickerField\b[^>]*label=\{t\('(activityTypeLabel|durationLabel)'\)\}/, 'no dropdown for these lists');
+});
+
+test('the objective stays a multiline input in a labelled surface card', () => {
+  assert.equal((activityCode.match(/<TextInput\b/g) ?? []).length, 1);
+  assert.match(activityCode, /<View style=\{\[surface, styles\.objectiveCard\]\}>/);
+  assert.match(activityCode, /value=\{objective\}\s+onChangeText=\{setObjective\}\s+multiline/);
+  assert.match(activityCode, /t\('activityObjectiveLabel'\)/);
+  assert.match(activityCode, /textInput: \{[^}]*minHeight: 44/);
+});
+
+test('the activity button is still disabled with no topic, and says why', () => {
+  const action = activityCode.slice(activityCode.indexOf('const action = ('), activityCode.indexOf('const form = ('));
+  assert.match(action, /disabled=\{!topic\.trim\(\)\}/);
+  assert.match(action, /hint=\{t\('genNeedLessonHint'\)\}/);
+  assert.match(action, /onPress=\{\(\) => generate\(\)\}/);
+  assert.match(action, /hidden=\{docked && saveBarVisible\}/);
+  assert.doesNotMatch(activityCode, /needTopicHint/);
+  assert.match(activityCode, /if \(!topic\.trim\(\)\) \{ setError\(t\('topicRequired'\)\); return; \}/);
+  assert.match(activityCode, /\{error && !topic\.trim\(\) \? <Text/);
+  assert.match(activityCode, /\{action\(false\)\}/);
+  assert.match(activityCode, /label=\{loading \? t\('generatingActivity'\) : t\('generateActivityBtn'\)\}/);
+});
+
+test('the activity scrolls a refusal or the spinner into view above the docked bar, and pads for it', () => {
+  assert.match(activityCode, /const statusPhase = loading \? 'loading' : cancelled \? 'cancelled' : \(error && topic\.trim\(\)\) \? 'error' : 'idle';/);
+  assert.match(activityCode, /<GenerationStatus\s+phase=\{statusPhase\}/);
+  assert.match(activityCode, /<View onLayout=\{e => \{ statusY\.current = e\.nativeEvent\.layout\.y; \}\}>\s*<GenerationStatus/);
+  assert.match(activityCode, /scrollRef\.current\?\.scrollTo\(\{ y: Math\.max\(0, statusY\.current - SPACE\.lg\), animated: !reduceMotion \}\);\s*\}, \[statusPhase, attempt\]\);/);
+  assert.match(activityCode, /const reduceMotion = useReduceMotion\(\);/);
+  assert.match(activityCode, /paddingBottom: DOCKED_BAR_HEIGHT \+ SPACE\.xxl \+ insets\.bottom/);
+  assert.match(activityCode, /const saveBarVisible = !!result && !loading && !savedId && saveLabel === 'save';/);
+  assert.match(activityCode, /<GeneratorLayout form=\{form\} side=\{side\} isDesktop=\{isDesktop\} \/>/);
+});
+
+test('the activity header, generation and result are untouched', () => {
+  assert.match(activityCode, /concept="activity" eyebrow=\{\{ icon: 'flash', label: t\('activityBadge'\) \}\}/);
+  assert.match(activityCode, /aiService\.generateActivity\(/);
+  assert.match(activityCode, /buildScopeRequest\(wideScope\.scopeSel!/);
+  assert.match(activityCode, /groundedSubjectConflict\(/);
+  assert.match(activityCode, /setSavedId\(prev => savedIdAfterGeneration\(prev, opts\)\)/);
+  assert.match(activityCode, /<GeneratorResultActions\b/);
+  assert.match(activityCode, /<GeneratorSaveBar\b/);
+});
+
+test('the activity wears its concept colour: no hand-written colour, no palette, ink on cards, tint behind', () => {
+  assert.match(activityCode, /const ACCENT = conceptOf\('activity'\)\.color;/);
+  assert.match(activityCode, /const accentInk = readableOn\(ACCENT, colors\.card\);/);
+  assert.doesNotMatch(activityCode, /import[^;]*\bpalette\b[^;]*from/);
+  assert.doesNotMatch(activityCode, /\bpalette\./);
+  assert.doesNotMatch(activityCode, /ACCENT_FILL|ACCENT_LOCAL/);
+  // The result's old private copy of the colour, and a literal white on the step numbers, are gone.
+  assert.doesNotMatch(activityCode, /#[0-9A-Fa-f]{3,8}\b/, 'a hand-written colour is left in the file');
+  assert.deepEqual(rawAccentLines(activityCode), [], 'use the ink (readableOn(ACCENT, colors.card)) for text, icons and outlines on a card');
+  assert.match(activityCode, /color: textOn\(ACCENT\)/, 'the step number is textOn its ACCENT fill');
+  assert.match(activityCode, /<TopicSelector[\s\S]*?accent=\{accentInk\}/);
+  assert.match(activityCode, /<GenerationStatus[\s\S]*?accent=\{accentInk\}/);
+  assert.match(activityCode, /<GeneratorResultActions\s+accent=\{accentInk\}/);
+  assert.match(activityCode, /<GeneratorSaveBar accent=\{accentInk\}/);
+  assert.match(activityCode, /<DockedAction[\s\S]*?accent=\{ACCENT\}/);
+  // Every result piece that draws ink on a card reads the ink from the card colour.
+  assert.ok((activityCode.match(/readableOn\(ACCENT, colors\.card\)/g) ?? []).length >= 4);
+  assert.doesNotMatch(activityCode, /KeyboardAvoidingView/);
+  assert.doesNotMatch(activityCode, /accessibilityState=/);
+});
+
+test('the raw-accent check bites in the activity\'s own source', () => {
+  const mutations: Array<[string, string]> = [
+    ['color={ink}', 'color={ACCENT}'],
+    ['{ color: bannerInk, fontFamily', '{ color: ACCENT, fontFamily'],
+    ['color: textOn(ACCENT), fontSize', 'color: ACCENT, fontSize'],
+  ];
+  for (const [from, to] of mutations) {
+    assert.ok(activityCode.includes(from), `fixture drifted: ${from}`);
+    assert.equal(rawAccentLines(activityCode.replace(from, to)).length, 1, `should flag: ${to}`);
+  }
+});
+
+test('the activity preview is one skeleton row per section the result prints, in its order, in the content language', () => {
+  assert.match(activityCode, /const sections = activitySections\(\);/);
+  assert.match(activityCode, /previewRows\(sections, sections\.length, sections\.length\)/);
+  assert.match(activityCode, /const previewT = getT\(lang\);/);
+  assert.match(activityCode, /previewT\(SECTION_LABEL_KEY\[r\.type\]\)/);
+  assert.doesNotMatch(activityCode, /\bt\(SECTION_LABEL_KEY/);
+  assert.match(activityCode, /summaryLine\(\{ minutes: DURATION_VALUES\[durationIdx\], level: typeLabel \}, uiLang\)/);
+  assert.match(activityCode, /nameLine=\{false\}/);
+  // The titles are the ones ActivityResult prints, in the order it prints them.
+  const result = activityCode.slice(activityCode.indexOf('function ActivityResult('));
+  const order = ["'sectionMaterials'", "'sectionActivitySteps'", "'sectionTeacherTips'", "'sectionDifferentiation'", "'sectionAssessment'"];
+  const at = order.map(k => result.indexOf(`t(${k})`));
+  assert.ok(at.every(i => i >= 0), 'ActivityResult no longer prints one of the previewed sections');
+  assert.deepEqual([...at].sort((a, b) => a - b), at, 'the preview order drifted from the result order');
+  assert.ok(result.indexOf("lang === 'ar' ? 'الهدف'") < at[0]!, 'the objective box comes first');
+  const keyed = activityCode.slice(activityCode.indexOf('const SECTION_LABEL_KEY'), activityCode.indexOf('} as const satisfies'));
+  assert.deepEqual(['genSectionObjective', 'sectionMaterials', 'sectionActivitySteps', 'sectionTeacherTips', 'sectionDifferentiation', 'sectionAssessment'].map(k => keyed.indexOf(k)).every(i => i >= 0), true);
+  for (const key of ['genSectionObjective', 'sectionMaterials', 'sectionActivitySteps', 'sectionTeacherTips', 'sectionDifferentiation', 'sectionAssessment', 'genPreviewActivityNote']) {
+    for (const lang of ['ar', 'en'] as const) assert.ok(String((translations as any)[lang][key] ?? '').trim(), `${lang}.${key} is missing`);
+  }
+});
+
+// ── Contrast of the selected label on its real background ──────────────────
+
+/** The card and page colours of both themes, read from the palette source (which imports react-native). */
+function themeColours() {
+  const src = readFileSync(join(ROOT, 'constants', 'colors.ts'), 'utf8');
+  const block = (name: 'light' | 'dark') => {
+    const at = src.indexOf(`  ${name}: {`);
+    const body = src.slice(at, src.indexOf('\n  },', at));
+    const pick = (key: string) => new RegExp(`\\n    ${key}:\\s+'(#[0-9A-Fa-f]{6})'`).exec(body)![1]!;
+    return { card: pick('card'), background: pick('background') };
+  };
+  return { light: block('light'), dark: block('dark') };
+}
+/** Every concept colour a generator screen wears. */
+const GENERATOR_CONCEPTS = ['quiz', 'worksheet', 'homework', 'lesson-plan', 'activity', 'slides'] as const;
+
+test('a selected chip\'s label, tick and ring read at 4.5:1 on the chip\'s own fill, in both themes, for every generator colour', () => {
+  assert.match(code(read('components', 'generator', 'ChipGroup.tsx')), /const selectedFill = tintOver\(accent, SELECTED_ALPHA, colors\.card\);\s*const ink = readableOn\(accent, selectedFill\);/);
+  assert.match(code(read('components', 'generator', 'ChipGroup.tsx')), /SELECTED_ALPHA = 0x1f \/ 255/);
+  assert.match(code(read('components', 'generator', 'ChipGroup.tsx')), /backgroundColor: selectedFill/);
+  assert.doesNotMatch(code(read('components', 'generator', 'ChipGroup.tsx')), /accent \+ '/, 'a translucent tint leaves the label on an unknown background');
+  const alpha = 0x1f / 255;
+  for (const [theme, c] of Object.entries(themeColours())) {
+    for (const id of GENERATOR_CONCEPTS) {
+      const accent = CONCEPTS[id].color;
+      const fill = tintOver(accent, alpha, c.card);
+      const ink = readableOn(accent, fill);
+      assert.ok(contrast(ink, fill) >= 4.5, `${id} on ${theme}: chip label ${ink} on ${fill} is ${contrast(ink, fill).toFixed(2)}:1`);
+    }
+  }
+  // The flaw this replaces: judged against the plain card, #C2410C on its own tint was under 4.5:1.
+  const activityFill = tintOver(CONCEPTS.activity.color, alpha, themeColours().light.card);
+  assert.ok(contrast(readableOn(CONCEPTS.activity.color, themeColours().light.card), activityFill) < 4.5);
+});
+
+test('a selected segment\'s label reads at 4.5:1 on the card it is drawn on, in both themes, for every generator colour', () => {
+  const src = code(read('components', 'generator', 'SegmentedControl.tsx'));
+  // The selected segment is the plain card colour (not a tint), and its label is judged against that card.
+  assert.match(src, /const ink = readableOn\(accent, colors\.card\);/);
+  assert.match(src, /on \? \{ backgroundColor: colors\.card, borderColor: ink \}/);
+  for (const [theme, c] of Object.entries(themeColours())) {
+    for (const id of GENERATOR_CONCEPTS) {
+      const ink = readableOn(CONCEPTS[id].color, c.card);
+      assert.ok(contrast(ink, c.card) >= 4.5, `${id} on ${theme}: segment label ${ink} on ${c.card} is ${contrast(ink, c.card).toFixed(2)}:1`);
+    }
+  }
+});
+
+test('the activity\'s ready banner text reads at 4.5:1 on its tint over the page, in both themes', () => {
+  assert.match(activityCode, /const bannerInk = readableOn\(ACCENT, tintOver\(ACCENT, 0x15 \/ 255, colors\.background\)\);/);
+  assert.match(activityCode, /color=\{bannerInk\}/);
+  assert.match(activityCode, /\{ color: bannerInk, fontFamily/);
+  for (const [theme, c] of Object.entries(themeColours())) {
+    const fill = tintOver(CONCEPTS.activity.color, 0x15 / 255, c.background);
+    const ink = readableOn(CONCEPTS.activity.color, fill);
+    assert.ok(contrast(ink, fill) >= 4.5, `${theme}: banner ${ink} on ${fill} is ${contrast(ink, fill).toFixed(2)}:1`);
+  }
+});
+
+test('the activity result headings share their text with the preview, and no unused icon import is left', () => {
+  const result = activityCode.slice(activityCode.indexOf('function ActivityResult('));
+  assert.match(result, /\{t\('genSectionObjective'\)\}/, 'the objective heading is the preview\'s key, so the two cannot drift');
+  assert.doesNotMatch(activityCode, /'الهدف'|'Objective'/);
+  assert.doesNotMatch(activityCode, /\bICON\b/);
+  assert.doesNotMatch(activityCode, /lang=\{outLang\}/);
 });

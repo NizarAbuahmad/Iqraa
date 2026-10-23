@@ -121,3 +121,17 @@ export type LessonPlanSection = (typeof LESSON_PLAN_SECTIONS)[number];
 export function lessonPlanSections(withPriorReview: boolean): LessonPlanSection[] {
   return LESSON_PLAN_SECTIONS.filter(s => s !== 'priorReview' || withPriorReview);
 }
+
+/**
+ * What the activity screen's result prints, in the order it prints it: the
+ * objective box, then materials, the numbered steps, tips, differentiation and
+ * assessment. The preview draws one skeleton row per section; it never shows
+ * content, and it cannot say how many steps there will be.
+ */
+export const ACTIVITY_SECTIONS = ['objective', 'materials', 'steps', 'teacherTips', 'differentiation', 'assessment'] as const;
+
+export type ActivitySection = (typeof ACTIVITY_SECTIONS)[number];
+
+export function activitySections(): ActivitySection[] {
+  return [...ACTIVITY_SECTIONS];
+}
