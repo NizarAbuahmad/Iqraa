@@ -26,9 +26,10 @@ Checked 2026-10-22:
 - **Math verifier** `iqraa-verifier`: `/api/healthz/verifier` answers `ok`, self-test `pass`.
 - **Web app** `app.iqrra.com` (Cloudflare Pages): 200. **Landing** `iqrra.com` (separate repo
   `Site_Iqra`, Vercel) answers 308 to `www.iqrra.com`, which is 200.
-- **Database:** Neon Postgres, **Free plan** (100 compute-hours a month, **30.92 used** by
-  2026-10-23; when they run out Neon suspends the compute) — see «Neon leaves the Free plan before
-  launch» in the log and the first item under *Open*. The schema deploys as migrations (11 files in
+- **Database:** Neon Postgres, **Launch plan since 2026-10-23** (was Free: 100 compute-hours a
+  month, 30.92 used, after which Neon suspends the compute), autoscaling 0.25-0.5 CU, scale to
+  zero on, $10 spend alert — see «Neon leaves the Free plan before launch» in the log and the
+  first item under *Open*. The schema deploys as migrations (11 files in
   `lib/db/migrations`); `verify-schema` runs before every API deploy.
 - **Live config** (plain env on the service): `AI_LIVE_MODE=true`; models `gpt-5.4-mini`
   for generation and for chat; budgets `AI_BUDGET_USD=50`, per user `1`, per
@@ -55,11 +56,11 @@ Checked 2026-10-22:
 
 ## Open
 
-- **Move Neon off the Free plan before launch** (decided 2026-10-23, **not yet done**; the owner
-  does it in the Neon console). Launch plan, autoscaling 0.25-0.5 CU, scale to zero on: about
-  $10 a month expected, about $39 at most (estimates). Then check `pooled` on
-  `GET /api/healthz/pool` (admin key): if `false`, production's `DATABASE_URL` is a direct
-  connection, which at 0.25 CU allows only 97 usable connections; switch the secret to the pooled
+- **Neon is on Launch (applied 2026-10-23 by the owner); two checks remain.** Autoscaling 0.25-0.5
+  CU, scale to zero on: about $10 a month expected, about $39 at most (estimates; read Neon's
+  Usage page weekly for a month). Check `pooled` on `GET /api/healthz/pool` (admin key) once this
+  deploys: if `false`, production's `DATABASE_URL` is a direct connection (218 direct
+  connections at the 0.5 CU maximum, fewer when scaled down); switch the secret to the pooled
   string. Details and what is unverified: the log entry named above.
 
 Checked 2026-10-22:

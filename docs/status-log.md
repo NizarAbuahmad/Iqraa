@@ -12,9 +12,10 @@ Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
 ## Neon leaves the Free plan before launch — 2026-10-23
 
-**Status: decided, not yet applied.** The upgrade is a click in the Neon console that only the
-owner can make; nothing about production changed in this PR except one extra field on an
-admin-only route.
+**Status: applied by the owner on 2026-10-23**, in the Neon console (screenshots): plan Launch,
+primary compute autoscaling **0.25-0.5 CU** (Neon had set it to 8 CU on upgrade; saved at 0.5),
+scale to zero **on** (5 minutes), spend alert **$10**. This PR changes nothing in Neon; the only
+production change in it is one extra field on an admin-only route.
 
 - **Why.** The project (`Iqraa`, AWS Frankfurt, one branch, 0.25 CU compute) is on Neon's **Free
   plan**: 100 compute-hours a month, and when they are used up Neon says the compute is
@@ -54,7 +55,8 @@ admin-only route.
 - **Verified.** Limits and prices were read from Neon's plans, pricing, scale-to-zero and
   connection-pooling pages and from the Change-plan screen on 2026-10-23. The code's coupling to
   Neon was reviewed by reading it, not by running a migration. The helper is unit-tested.
-- **Not verified, still open.** (1) The upgrade itself. (2) Whether production's `DATABASE_URL` is
+- **Not verified, still open.** (1) That the settings above hold under real traffic (the console accepted them; nothing has
+  been measured since). (2) Whether production's `DATABASE_URL` is
   pooled: call `/api/healthz/pool` with the admin key after this deploys; if `pooled` is `false`,
   switch the Secret Manager secret to the pooled string and roll a revision outside school hours.
   (3) The real monthly cost; look at Neon's Usage page weekly for the first month. (4) Neon's
@@ -65,6 +67,21 @@ admin-only route.
 - **Review after two to four weeks:** a slow first request in the morning (turn scale to zero
   off), a bill above about $30, Neon incidents during school hours (Sunday to Thursday, about
   07:30-14:00 Amman), a need for an SLA or a longer restore window, connection limits biting.
+
+## Duplicate-key 409s answered 500 — 2026-10-22
+
+drizzle-orm 0.45 rethrows every driver
+error as a `DrizzleQueryError` with the pg error on `cause`, so `err.code === "23505"` never
+matched and every handled duplicate fell through to a 500: register, change-unverified-email,
+add-email and Google sign-in (`email_taken`), the `/take` name claim (`name_taken` — a student
+who lost the race saw «failed to start» instead of «someone already started»), and the
+share-code retry on publish (a collision failed the publish instead of retrying). All six now
+call `isUniqueViolation` (`artifacts/api-server/src/lib/pgErrors.ts`), which checks both
+places. Verified by `uniqueViolation.db.test.ts`: test-only triggers raise SQLSTATE 23505 at
+each write (the real collisions are races); before the fix all five reachable paths answered
+500, after it 409/409/409/409 and a retried 200. **Not covered:** Google sign-in, which needs
+a real Google token — same one-line change. The live-game routes (`live.ts`, `liveHost.ts`)
+had their own copy in `modules/live/store.ts`; they now import this one.
 
 ## Iqraa draws its own icons — 2026-10-23
 
