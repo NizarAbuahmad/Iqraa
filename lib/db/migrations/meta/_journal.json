@@ -92,13 +92,6 @@
       "when": 1792672560286,
       "tag": "0012_numerous_stature",
       "breakpoints": true
-    },
-    {
-      "idx": 13,
-      "version": "7",
-      "when": 1792745034979,
-      "tag": "0013_free_arclight",
-      "breakpoints": true
     }
   ]
 }
