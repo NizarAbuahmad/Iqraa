@@ -7,7 +7,7 @@ person-with-Neon-and-Cloud-Run-access checklist; the reasoning is in
 (`docs/superpowers/plans/2026-10-13-row-level-security.md`).
 
 Tick a box only when you have seen the result. Do not skip ahead: A is about production as
-it is today, B–C gate the switch, D–E are the switch. A2 and A3 were done on 2026-10-16; the
+it is today, B–C gate the switch, D–E are the switch. A2 and A3 were done on 2026-10-16 and B on 2026-10-23; the
 rest is open. When a step has a **Gate**, a failed
 gate means stop and do not flip.
 
@@ -52,11 +52,13 @@ was not created by the workflow itself, so a production string pasted by mistake
 first step. A green run is B3 and B4 passed; B2 can be skipped. (It does not measure latency —
 GitHub's runners are not in your Cloud Run region — so C1 is still separate.)
 
-- [ ] **B1. Create the project.** In the Neon console create `iqraa-rls-rehearsal` in the
+- [x] **B1. Create the project — done 2026-10-23** (`iqraa-rls-rehearsal`, Frankfurt, as production).
+  Original instruction: In the Neon console create `iqraa-rls-rehearsal` in the
   **same region as the production Neon database** (latency in C1 is only meaningful there).
   Copy the **direct** and the **pooled** connection strings into a private note — never into
   chat or the repo.
-- [ ] **B2. Get the code** (Cloud Shell or any machine with Node 22+ — the tests use
+- [x] **B2. Get the code** — skipped; the workflow does it on GitHub's runner.
+  Original instruction: (Cloud Shell or any machine with Node 22+ — the tests use
   `--experimental-strip-types`):
 
   ```bash
@@ -65,7 +67,9 @@ GitHub's runners are not in your Cloud Run region — so C1 is still separate.)
   corepack enable && pnpm install
   pnpm --filter @workspace/api-server run build
   ```
-- [ ] **B3. Apply the migrations to the empty project:**
+- [x] **B3. Apply the migrations to the empty project — passed 2026-10-23** (workflow run 39931238295,
+  "Migrations up to date: 14 applied").
+  Original instruction:
 
   ```bash
   export DIRECT_URL='<direct string>'  POOLED_URL='<pooled string>'
@@ -74,14 +78,16 @@ GitHub's runners are not in your Cloud Run region — so C1 is still separate.)
 
   **Gate:** all migrations apply, including `0008`, with no error. This proves the Neon owner
   role can `CREATE ROLE` and `GRANT iqraa_app TO CURRENT_USER`.
-- [ ] **B4. Run the database tests on both endpoints:**
+- [x] **B4. Run the database tests on both endpoints — passed 2026-10-23:** 46 of 46 on the direct
+  endpoint and 46 of 46 on the pooled one (host `…-pooler…`), 0 failed, 0 skipped, same run.
+  Original instruction:
 
   ```bash
   RLS_TEST_DATABASE_URL="$DIRECT_URL"  pnpm --filter @workspace/db run test
   RLS_TEST_DATABASE_URL="$POOLED_URL"  pnpm --filter @workspace/db run test
   ```
 
-  **Gate:** every test passes on **both** (42 at the time of writing). The pooled run proves
+  **Gate:** every test passes on **both** (46 on 2026-10-23). The pooled run proves
   `SET LOCAL ROLE` and `set_config(…, true)` survive the pooler. The suite includes
   `rlsDiff.test.ts`, which boots the built API with enforcement off and on and replays the main
   teacher, parent and student flows — pushes, blocks, retakes, inbox order — so it replaces a
@@ -152,7 +158,7 @@ Outside school hours, and only with A, B and C ticked.
 | Step | Done by | Date | Notes (numbers, endpoint used, anything odd) |
 | --- | --- | --- | --- |
 | A | | | |
-| B | | | |
+| B | owner, via the GitHub workflow | 2026-10-23 | run 39931238295: migrations applied; 46/46 direct, 46/46 pooled. Direct tests ≈ 3.4 min, pooled ≈ 3.3 min (CI runner → Neon, not a latency measurement). Run 4 before it failed only because the pooled secret held a malformed string. |
 | C | | | |
 | D | | | |
 | E | | | |
