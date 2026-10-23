@@ -7,7 +7,9 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { GRAMMAR_UNITS, allGrammarSpoken, grammarUnit, grammarUnitsForGrade, offeredGrammar, unitSentences } from '../englishGrammar.ts';
+import { renderGrammarSheet } from '../englishGrammar.ts';
 import { G5_ITEM_LESSONS } from '../englishGrammarG5Items.ts';
+import { renderGrammarReviewHtml } from '../englishGrammarReview.ts';
 import { hubLesson } from '../englishHub.ts';
 
 const dataFile = (sem: 1 | 2) => JSON.parse(readFileSync(new URL(`../data/iqra_curriculum_g5_english_sem${sem}.json`, import.meta.url), 'utf8'));
@@ -120,5 +122,27 @@ describe('Grade 5 authored lessons', () => {
   it('are in GRAMMAR_UNITS under Grade 5', () => {
     for (const id of ids()) assert.ok(GRAMMAR_UNITS.some(u => u.lessonId === id), id);
     assert.equal(grammarUnitsForGrade(5).length, ids().length);
+  });
+});
+
+describe('the Grade 5 teacher form', () => {
+  const html = renderGrammarReviewHtml(5);
+  const docs = (name: string) => readFileSync(new URL(`../../../../docs/${name}`, import.meta.url), 'utf8');
+  it('equals the committed form and sheet', () => {
+    assert.equal(docs('english-grammar-g5-review.html'), html);
+    assert.equal(docs('english-grammar-g5-sheet.md'), renderGrammarSheet(5));
+  });
+  it("prints each lesson's book statement and the first check, a kind for every item and the not-covered notes", () => {
+    for (const l of G5_ITEM_LESSONS) assert.ok(html.includes(l.statement.replace(/'/g, '&#39;')) || html.includes(l.statement), l.lessonId);
+    assert.ok(html.includes('تأكدوا أولًا'));
+    assert.ok(html.includes('الكلمات خارج قوائم المفردات'));
+    assert.equal(html.split('class="unit"').length - 1, 10);
+    assert.ok(html.includes('الصف الخامس'));
+  });
+  it('lists every sentence once', () => {
+    for (const id of ids()) for (const x of sentencesOf(id)) assert.ok(html.includes(x.text.replace(/'/g, '&#39;')) || html.includes(x.text), x.text);
+  });
+  it('leaves the other grades alone', () => {
+    for (const g of [1, 2, 3, 4, 9]) assert.equal(docs(`english-grammar-g${g}-review.html`), renderGrammarReviewHtml(g), `grade ${g}`);
   });
 });
