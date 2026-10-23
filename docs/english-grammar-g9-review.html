@@ -1,0 +1,1404 @@
+<!doctype html>
+<html lang="ar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مراجعة قواعد الصف التاسع</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700&family=Readex+Pro:wght@400;500;600;700&display=swap">
+<style>
+  /* Layout: an A4 review form — instructions first, then one section per unit, each ending in a sign-off strip. */
+  :root {
+    --paper: #FBFCFB;
+    --ink: #13302C;
+    --muted: #4E6661;
+    --rule: #D3E2DE;
+    --tint: #EAF3F1;
+    --teal: #006D65;
+    --right: #17643A;
+    --right-bg: #E3F2E8;
+    --wrong: #9B2C25;
+    --wrong-bg: #F8E6E4;
+    --display: "Readex Pro", "Almarai", "Noto Sans Arabic", system-ui, sans-serif;
+    --body: "Almarai", "Readex Pro", "Noto Sans Arabic", system-ui, sans-serif;
+    --latin: "Readex Pro", "Segoe UI", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0E1A18; --ink: #E3EFEC; --muted: #9DB5AF; --rule: #2A3D39; --tint: #15302C;
+      --teal: #2DD4BF; --right: #7FD8A1; --right-bg: #173726; --wrong: #F2A099; --wrong-bg: #3A1D1A;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0E1A18; --ink: #E3EFEC; --muted: #9DB5AF; --rule: #2A3D39; --tint: #15302C;
+    --teal: #2DD4BF; --right: #7FD8A1; --right-bg: #173726; --wrong: #F2A099; --wrong-bg: #3A1D1A;
+    color-scheme: dark;
+  }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: var(--body); font-size: 15px; line-height: 1.7;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 28px 56px;
+  }
+  .sheet { max-width: 1040px; margin-inline: auto; display: grid; gap: 40px; }
+  h1, h2 { font-family: var(--display); text-wrap: balance; margin: 0; }
+  h1 { font-size: 1.85rem; line-height: 1.3; font-weight: 700; }
+  .eyebrow { font-family: var(--display); color: var(--teal); font-weight: 600; font-size: .9rem; }
+  .intro { display: grid; gap: 18px; max-width: 880px; }
+  .intro > p { max-width: 70ch; }
+  .intro p { margin: 0; }
+  .lead { font-size: 1.05rem; }
+  .card { border: 1px solid var(--rule); border-radius: 10px; padding: 16px 20px; background: var(--tint); }
+  .card h3 { font-family: var(--display); font-size: 1.05rem; margin: 0 0 8px; }
+  .card ol, .card ul { margin: 0; padding-inline-start: 1.3em; display: grid; gap: 6px; }
+  .card ol { list-style-type: arabic-indic; }
+  .acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .act { border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; }
+  .act b { font-family: var(--display); display: block; color: var(--teal); }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: .92rem; }
+  .meta-line { color: var(--muted); font-size: .9rem; }
+
+  .unit { display: grid; gap: 14px; }
+  .unit-head { display: grid; gap: 6px; border-bottom: 3px solid var(--teal); padding-bottom: 12px; }
+  .unit-meta { color: var(--teal); font-family: var(--display); font-weight: 600; font-size: .9rem; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  .unit-meta span + span::before { content: "·"; margin-inline-end: 14px; color: var(--muted); }
+  h2 { font-size: 1.45rem; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+  h2 [dir="ltr"] { font-family: var(--latin); }
+  .unit-ar { color: var(--muted); font-size: 1.05rem; font-weight: 400; font-family: var(--body); }
+  .patterns { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+  .patterns li { font-family: var(--latin); font-size: .9rem; border: 1px solid var(--rule); border-radius: 999px; padding: 2px 12px; }
+  .unit-note { margin: 0; font-size: .92rem; color: var(--muted); }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; min-width: 780px; font-variant-numeric: tabular-nums; }
+  th, td { border-bottom: 1px solid var(--rule); padding: 7px 10px; text-align: start; vertical-align: middle; }
+  thead th { background: var(--tint); font-family: var(--display); font-weight: 600; font-size: .85rem; line-height: 1.35; }
+  thead th small { display: block; font-weight: 400; color: var(--muted); font-size: .75rem; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num, th.num { width: 2.2em; color: var(--muted); text-align: center; }
+  td.sentence { font-family: var(--latin); font-size: 1.02rem; font-weight: 500; text-align: left; white-space: nowrap; }
+  .pic { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.2; }
+  .pic-art { font-size: 1.45rem; letter-spacing: 2px; font-family: "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif; }
+  .pic-word { font-family: var(--latin); font-size: .72rem; color: var(--muted); }
+  .none { color: var(--muted); font-size: .85rem; }
+  td.choose { white-space: nowrap; }
+  .opt { display: inline-block; font-family: var(--latin); font-size: .88rem; border-radius: 6px; padding: 1px 8px; margin: 2px; }
+  .opt-right { background: var(--right-bg); color: var(--right); font-weight: 600; }
+  .opt-wrong { background: var(--wrong-bg); color: var(--wrong); text-decoration: line-through; text-decoration-thickness: 1px; }
+  th.tick, td.tick { width: 2.6em; text-align: center; }
+  .box { display: inline-block; width: 18px; height: 18px; border: 1.5px solid var(--ink); border-radius: 3px; vertical-align: -3px; }
+  th.note, td.note { width: 26%; }
+
+  .signoff { display: grid; gap: 12px; border: 1.5px dashed var(--teal); border-radius: 10px; padding: 14px 18px; }
+  .verdict { display: flex; flex-wrap: wrap; gap: 10px 26px; font-family: var(--display); font-size: .95rem; }
+  .verdict span { display: inline-flex; gap: 8px; align-items: center; }
+  .lines { display: flex; flex-wrap: wrap; gap: 14px 28px; }
+  .lines span { display: inline-flex; gap: 6px; align-items: baseline; flex: 1 1 200px; }
+  .lines i { flex: 1; border-bottom: 1px solid var(--ink); min-width: 80px; height: 1.2em; }
+
+  @page { size: A4 landscape; margin: 12mm; }
+  @media print {
+    :root { --paper: #fff; --ink: #111; --muted: #4d4d4d; --rule: #bbb; --tint: #F1F5F4; color-scheme: light; }
+    body { padding: 0; font-size: 12px; }
+    .sheet { gap: 0; max-width: none; }
+    .intro { max-width: none; }
+    .unit { break-before: page; }
+    .table-wrap { overflow: visible; border-radius: 0; }
+    table { min-width: 0; }
+    tr, .signoff { break-inside: avoid; }
+    thead { display: table-header-group; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  .yn { display: block; font-family: var(--latin); font-size: .88rem; white-space: nowrap; }
+  .yn-yes { color: var(--right); }
+  .yn-no { color: var(--wrong); }
+  td.yesno { white-space: nowrap; }
+  .not-covered { margin: 0; padding-inline-start: 1.3em; display: grid; gap: 4px; font-size: .92rem; color: var(--muted); }
+  .not-covered [dir="ltr"] { font-family: var(--latin); }
+  .build-half { display: block; color: var(--muted); font-size: .78rem; font-weight: 400; white-space: nowrap; }
+  .data { display: grid; gap: 14px; }
+  .data .table-wrap table { min-width: 0; }
+  .data-table td { font-size: .95rem; }
+  @media print { .data { break-before: page; } }
+</style>
+</head>
+<body>
+<main class="sheet" dir="rtl" lang="ar">
+  <section class="intro">
+    <div class="eyebrow">إقرأ · ركن اللغة الإنجليزية · الصف التاسع</div>
+    <h1>مراجعة جمل القواعد قبل عرضها على الطلاب</h1>
+    <p class="lead">هذه أول وحدة قواعد في الصف التاسع، وهي تجربة: ٢ درسان من الوحدة الرابعة «A good buy»، المقارنات والصيغة العليا ثم المقدّرات (<span dir="ltr">many / much / a few / a little</span>). الكتاب يعطي أهدافًا فقط دون جمل نموذجية، فكل جملة هنا كتبناها نحن، وكل زوج وكل تصنيف مكتوب في <b>صفحة البيانات</b> بعد هذه المقدمة لتتأكدوا منه قبل أي جملة. لا صور في هذه الوحدة. <b>لن يرى الطلاب أي درس قبل أن توافقوا عليه.</b> هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ١٢٢ جملة.</p>
+
+    <div class="acts">
+      <div class="act"><b>اختر الكلمة</b>جملة فيها فراغ، وخياران صيغتان حقيقيتان: <span dir="ltr">healthier / healthy</span> أو <span dir="ltr">the cheapest / the cheaper</span> أو <span dir="ltr">many / much</span>. الاسم أو الجملة هو ما يدل على الصحيح.</div>
+      <div class="act"><b>رتّب الجملة</b>كلمات الجملة مبعثرة، ويرتّبها الطالب بالنقر. حتى ٩ كلمات.</div>
+      <div class="act"><b>صح أم خطأ</b>في المقارنات فقط، بلا صور: تُعرض الجملة نفسها، أو توأمها الخاطئ بعد تبديل الطرفين (<span dir="ltr">Doughnuts are healthier than carrots.</span>).</div>
+      <div class="act"><b>نعم أم لا</b>في المقارنات فقط، بلا صور: <span dir="ltr">Are carrots healthier than doughnuts?</span> ويجيب الطالب مما يعرفه.</div>
+    </div>
+
+    <div class="card">
+      <h3>ما المطلوب في كل جملة</h3>
+      <ol>
+        <li>هل الجملة صحيحة لغويًا، وبالصيغة التي يدرّسها الكتاب؟</li>
+        <li>في صفحة البيانات: هل كل زوج في المقارنات صحيح دون جدال؟ وهل تصنيف الأطعمة (معدود أم غير معدود) سليم؟</li>
+        <li>في «اختر الكلمة»: هل الخيار الخاطئ صيغة حقيقية خاطئة بوضوح؟ وهل في الجملة ما يدل على الصحيح؟</li>
+        <li>هل جمل بلا سياق، مثل «How many grapes are there?»، مقبولة في الصف التاسع، أم تفضلون أن تأتي كل جملة داخل مشهد قصير؟</li>
+        <li>هل جمل الرأي (Pancakes are tastier than porridge.) مناسبة تمرينًا لا يُسأل صحةً؟</li>
+        <li>هل الكلمات مناسبة لطالب الصف التاسع؟</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h3>طريقة التعبئة</h3>
+      <ul>
+        <li>ضعوا ✓ في المربع إذا كانت الجملة سليمة، أو اكتبوا الملاحظة في عمود «ملاحظات».</li>
+        <li>في آخر كل وحدة اختاروا: موافق، أو موافق بعد التعديلات، أو غير موافق، مع الاسم والتاريخ.</li>
+        <li>يمكن مراجعة وحدة واحدة في كل مرة؛ كل وحدة تُفعَّل وحدها بعد الموافقة عليها.</li>
+      </ul>
+    </div>
+
+    <div class="legend">
+      <span>✅ لديّ / أحب</span>
+      <span>❌ ليس لديّ / لا أحب</span>
+      <span>👦 He</span>
+      <span>👧 She</span>
+      <span>صورتان من الشيء = جمع (are / They're)</span>
+      <span><span class="opt opt-right" dir="ltr">right</span> الخيار الصحيح</span>
+      <span><span class="opt opt-wrong" dir="ltr">wrong</span> الخيار الخاطئ</span>
+    </div>
+    <p class="meta-line">«لا يظهر» تعني أن الجملة لا تُستخدم في هذا النشاط (لا توجد صورة واضحة لها). الصور هي الرموز التي تظهر في التطبيق نفسه.</p>
+  </section>
+  <section class="data">
+    <h2>صفحة البيانات: ما يجب أن تتأكدوا منه</h2>
+    <p class="meta-line">هذه القوائم هي المعلومات التي تُبنى منها الجمل. إن كان فيها خطأ فكل الجمل المبنية عليه خاطئة.</p>
+    <h3 class="sub-h">المقارنات: الجملة الصحيحة وتوأمها الخاطئ <span class="meta-line">(١٠)</span></h3>
+    <div class="table-wrap"><table class="data-table"><thead><tr><th>الجملة الصحيحة</th><th>توأمها الخاطئ في «صح أم خطأ»</th></tr></thead><tbody><tr><td><span dir="ltr">Carrots are healthier than doughnuts.</span></td><td><span dir="ltr">Doughnuts are healthier than carrots.</span></td></tr><tr><td><span dir="ltr">Cucumbers are healthier than muffins.</span></td><td><span dir="ltr">Muffins are healthier than cucumbers.</span></td></tr><tr><td><span dir="ltr">Doughnuts are more fattening than cucumbers.</span></td><td><span dir="ltr">Cucumbers are more fattening than doughnuts.</span></td></tr><tr><td><span dir="ltr">Croissants are more fattening than melons.</span></td><td><span dir="ltr">Melons are more fattening than croissants.</span></td></tr><tr><td><span dir="ltr">Carrots are more nutritious than croissants.</span></td><td><span dir="ltr">Croissants are more nutritious than carrots.</span></td></tr><tr><td><span dir="ltr">Salmon is more expensive than bread.</span></td><td><span dir="ltr">Bread is more expensive than salmon.</span></td></tr><tr><td><span dir="ltr">Honey is more expensive than sugar.</span></td><td><span dir="ltr">Sugar is more expensive than honey.</span></td></tr><tr><td><span dir="ltr">Bread is cheaper than salmon.</span></td><td><span dir="ltr">Salmon is cheaper than bread.</span></td></tr><tr><td><span dir="ltr">Sugar is cheaper than honey.</span></td><td><span dir="ltr">Honey is cheaper than sugar.</span></td></tr><tr><td><span dir="ltr">Porridge is more filling than water.</span></td><td><span dir="ltr">Water is more filling than porridge.</span></td></tr></tbody></table></div>
+    <h3 class="sub-h">صيغ الصفات <span class="meta-line">(٨)</span></h3>
+    <div class="table-wrap"><table class="data-table"><thead><tr><th>الصفة</th><th>المقارنة</th><th>التفضيل</th></tr></thead><tbody><tr><td><span dir="ltr">cheap</span></td><td><span dir="ltr">cheaper</span></td><td><span dir="ltr">cheapest</span></td></tr><tr><td><span dir="ltr">healthy</span></td><td><span dir="ltr">healthier</span></td><td><span dir="ltr">healthiest</span></td></tr><tr><td><span dir="ltr">tasty</span></td><td><span dir="ltr">tastier</span></td><td><span dir="ltr">tastiest</span></td></tr><tr><td><span dir="ltr">expensive</span></td><td><span dir="ltr">more expensive</span></td><td><span dir="ltr">most expensive</span></td></tr><tr><td><span dir="ltr">fattening</span></td><td><span dir="ltr">more fattening</span></td><td><span dir="ltr">most fattening</span></td></tr><tr><td><span dir="ltr">filling</span></td><td><span dir="ltr">more filling</span></td><td><span dir="ltr">most filling</span></td></tr><tr><td><span dir="ltr">nutritious</span></td><td><span dir="ltr">more nutritious</span></td><td><span dir="ltr">most nutritious</span></td></tr><tr><td><span dir="ltr">popular</span></td><td><span dir="ltr">more popular</span></td><td><span dir="ltr">most popular</span></td></tr></tbody></table></div>
+    <h3 class="sub-h">الأطعمة: معدودة أم غير معدودة <span class="meta-line">(١٦)</span></h3>
+    <div class="table-wrap"><table class="data-table"><thead><tr><th>الطعام</th><th>التصنيف</th></tr></thead><tbody><tr><td><span dir="ltr">grapes</span></td><td>معدود بالجمع: <span dir="ltr">many / a few</span></td></tr><tr><td><span dir="ltr">olives</span></td><td>معدود بالجمع: <span dir="ltr">many / a few</span></td></tr><tr><td><span dir="ltr">mushrooms</span></td><td>معدود بالجمع: <span dir="ltr">many / a few</span></td></tr><tr><td><span dir="ltr">pancakes</span></td><td>معدود بالجمع: <span dir="ltr">many / a few</span></td></tr><tr><td><span dir="ltr">doughnuts</span></td><td>معدود بالجمع: <span dir="ltr">many / a few</span></td></tr><tr><td><span dir="ltr">croissants</span></td><td>معدود بالجمع: <span dir="ltr">many / a few</span></td></tr><tr><td><span dir="ltr">muffins</span></td><td>معدود بالجمع: <span dir="ltr">many / a few</span></td></tr><tr><td><span dir="ltr">carrots</span></td><td>معدود بالجمع: <span dir="ltr">many / a few</span></td></tr><tr><td><span dir="ltr">cream</span></td><td>غير معدود: <span dir="ltr">much / a little</span></td></tr><tr><td><span dir="ltr">honey</span></td><td>غير معدود: <span dir="ltr">much / a little</span></td></tr><tr><td><span dir="ltr">jam</span></td><td>غير معدود: <span dir="ltr">much / a little</span></td></tr><tr><td><span dir="ltr">salt</span></td><td>غير معدود: <span dir="ltr">much / a little</span></td></tr><tr><td><span dir="ltr">sugar</span></td><td>غير معدود: <span dir="ltr">much / a little</span></td></tr><tr><td><span dir="ltr">porridge</span></td><td>غير معدود: <span dir="ltr">much / a little</span></td></tr><tr><td><span dir="ltr">milk</span></td><td>غير معدود: <span dir="ltr">much / a little</span></td></tr><tr><td><span dir="ltr">rice</span></td><td>غير معدود: <span dir="ltr">much / a little</span></td></tr></tbody></table></div>
+    <h3 class="sub-h">جمل الرأي (لا تُسأل صحةً) <span class="meta-line">(٦)</span></h3>
+    <div class="table-wrap"><table class="data-table"><thead><tr><th>الجملة</th></tr></thead><tbody><tr><td><span dir="ltr">Pancakes are tastier than porridge.</span></td></tr><tr><td><span dir="ltr">Muffins are more popular than croissants.</span></td></tr><tr><td><span dir="ltr">Doughnuts are tastier than cucumbers.</span></td></tr><tr><td><span dir="ltr">Jam is more popular than honey.</span></td></tr><tr><td><span dir="ltr">Salmon is tastier than rice.</span></td></tr><tr><td><span dir="ltr">Grapes are more popular than melons.</span></td></tr></tbody></table></div>
+  </section>
+
+  <section class="unit" id="unit-1">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الأول</span><span>الوحدة ٤</span><span>٤٢ جملة</span></div>
+      <h2><span dir="ltr">A good buy</span> <span class="unit-ar">صفقةٌ رابحة</span></h2>
+      <ul class="patterns" dir="ltr"><li>… are … than ….</li><li>… is … than ….</li><li>Are … … than …? Yes, they are.</li><li>Is … … than …? Yes, it is.</li><li>Are … … than …? No, they aren't.</li><li>Is … … than …? No, it isn't.</li><li>… is the … … ….</li><li>… … … than ….</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور في هذه الوحدة: صورة جزرة لا تقول إنها أصح من دونات. «صح أم خطأ» و«نعم أم لا» من أزواج المقارنات المكتوبة فقط، وكل زوج منها مطبوع في صفحة البيانات لتتأكدوا أنه صحيح دون جدال، وتوأمه الخاطئ هو الجملة نفسها بعد تبديل الطرفين.</li><li>جمل الرأي (<span dir="ltr">Pancakes are tastier than porridge.</span>) وجمل الصيغة العليا (<span dir="ltr">the most expensive dish</span>) في «اختر الكلمة» و«رتّب الجملة» فقط: لا تُسأل صحةً لأنها رأي لا معلومة.</li><li>خيارا «اختر الكلمة» دائمًا صيغتان حقيقيتان: <span dir="ltr">healthier</span> مقابل <span dir="ltr">healthy</span>، و<span dir="ltr">the cheapest</span> مقابل <span dir="ltr">the cheaper.</span></li></ul>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>الصورة</th>
+            <th>«اختر الكلمة»<small>الصحيح ثم الخاطئ</small></th>
+            <th>«صح أم خطأ»<small>الصورة الخاطئة</small></th>
+            <th>«نعم أم لا»<small>السؤال والجواب، ثم سؤال «لا»</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="sentence" dir="ltr">Carrots are healthier than doughnuts.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">healthier</span><span class="opt opt-wrong" dir="ltr">healthy</span></td>
+          <td><span class="yn yn-no" dir="ltr">Doughnuts are healthier than carrots.</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="sentence" dir="ltr">Cucumbers are healthier than muffins.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">healthier</span><span class="opt opt-wrong" dir="ltr">healthy</span></td>
+          <td><span class="yn yn-no" dir="ltr">Muffins are healthier than cucumbers.</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="sentence" dir="ltr">Doughnuts are more fattening than cucumbers.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">more fattening</span><span class="opt opt-wrong" dir="ltr">fattening</span></td>
+          <td><span class="yn yn-no" dir="ltr">Cucumbers are more fattening than doughnuts.</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="sentence" dir="ltr">Croissants are more fattening than melons.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">more fattening</span><span class="opt opt-wrong" dir="ltr">fattening</span></td>
+          <td><span class="yn yn-no" dir="ltr">Melons are more fattening than croissants.</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="sentence" dir="ltr">Carrots are more nutritious than croissants.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">more nutritious</span><span class="opt opt-wrong" dir="ltr">nutritious</span></td>
+          <td><span class="yn yn-no" dir="ltr">Croissants are more nutritious than carrots.</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="sentence" dir="ltr">Salmon is more expensive than bread.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">more expensive</span><span class="opt opt-wrong" dir="ltr">expensive</span></td>
+          <td><span class="yn yn-no" dir="ltr">Bread is more expensive than salmon.</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="sentence" dir="ltr">Honey is more expensive than sugar.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">more expensive</span><span class="opt opt-wrong" dir="ltr">expensive</span></td>
+          <td><span class="yn yn-no" dir="ltr">Sugar is more expensive than honey.</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="sentence" dir="ltr">Bread is cheaper than salmon.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">cheaper</span><span class="opt opt-wrong" dir="ltr">cheap</span></td>
+          <td><span class="yn yn-no" dir="ltr">Salmon is cheaper than bread.</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="sentence" dir="ltr">Sugar is cheaper than honey.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">cheaper</span><span class="opt opt-wrong" dir="ltr">cheap</span></td>
+          <td><span class="yn yn-no" dir="ltr">Honey is cheaper than sugar.</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="sentence" dir="ltr">Porridge is more filling than water.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">more filling</span><span class="opt opt-wrong" dir="ltr">filling</span></td>
+          <td><span class="yn yn-no" dir="ltr">Water is more filling than porridge.</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="sentence" dir="ltr">Are carrots healthier than doughnuts? Yes, they are.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Are carrots healthier than doughnuts? → Yes, they are.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="sentence" dir="ltr">Are cucumbers healthier than muffins? Yes, they are.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Are cucumbers healthier than muffins? → Yes, they are.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="sentence" dir="ltr">Are doughnuts more fattening than cucumbers? Yes, they are.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Are doughnuts more fattening than cucumbers? → Yes, they are.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="sentence" dir="ltr">Are croissants more fattening than melons? Yes, they are.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Are croissants more fattening than melons? → Yes, they are.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="sentence" dir="ltr">Are carrots more nutritious than croissants? Yes, they are.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Are carrots more nutritious than croissants? → Yes, they are.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="sentence" dir="ltr">Is salmon more expensive than bread? Yes, it is.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Is salmon more expensive than bread? → Yes, it is.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٧</td>
+          <td class="sentence" dir="ltr">Is honey more expensive than sugar? Yes, it is.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Is honey more expensive than sugar? → Yes, it is.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٨</td>
+          <td class="sentence" dir="ltr">Is bread cheaper than salmon? Yes, it is.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Is bread cheaper than salmon? → Yes, it is.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٩</td>
+          <td class="sentence" dir="ltr">Is sugar cheaper than honey? Yes, it is.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Is sugar cheaper than honey? → Yes, it is.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٠</td>
+          <td class="sentence" dir="ltr">Is porridge more filling than water? Yes, it is.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-yes" dir="ltr">Is porridge more filling than water? → Yes, it is.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢١</td>
+          <td class="sentence" dir="ltr">Are doughnuts healthier than carrots? No, they aren't.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Are doughnuts healthier than carrots? → No, they aren't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٢</td>
+          <td class="sentence" dir="ltr">Are muffins healthier than cucumbers? No, they aren't.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Are muffins healthier than cucumbers? → No, they aren't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٣</td>
+          <td class="sentence" dir="ltr">Are cucumbers more fattening than doughnuts? No, they aren't.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Are cucumbers more fattening than doughnuts? → No, they aren't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٤</td>
+          <td class="sentence" dir="ltr">Are melons more fattening than croissants? No, they aren't.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Are melons more fattening than croissants? → No, they aren't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٥</td>
+          <td class="sentence" dir="ltr">Are croissants more nutritious than carrots? No, they aren't.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Are croissants more nutritious than carrots? → No, they aren't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٦</td>
+          <td class="sentence" dir="ltr">Is bread more expensive than salmon? No, it isn't.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Is bread more expensive than salmon? → No, it isn't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٧</td>
+          <td class="sentence" dir="ltr">Is sugar more expensive than honey? No, it isn't.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Is sugar more expensive than honey? → No, it isn't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٨</td>
+          <td class="sentence" dir="ltr">Is salmon cheaper than bread? No, it isn't.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Is salmon cheaper than bread? → No, it isn't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٩</td>
+          <td class="sentence" dir="ltr">Is honey cheaper than sugar? No, it isn't.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Is honey cheaper than sugar? → No, it isn't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٠</td>
+          <td class="sentence" dir="ltr">Is water more filling than porridge? No, it isn't.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="none">لا يظهر</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="yn yn-no" dir="ltr">Is water more filling than porridge? → No, it isn't.</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣١</td>
+          <td class="sentence" dir="ltr">Salmon is the most expensive dish on the menu.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">most expensive</span><span class="opt opt-wrong" dir="ltr">more expensive</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٢</td>
+          <td class="sentence" dir="ltr">Water is the cheapest drink in the café.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">cheapest</span><span class="opt opt-wrong" dir="ltr">cheaper</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٣</td>
+          <td class="sentence" dir="ltr">The doughnut is the most fattening snack here.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">most fattening</span><span class="opt opt-wrong" dir="ltr">more fattening</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٤</td>
+          <td class="sentence" dir="ltr">Porridge is the most filling breakfast at the café.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">most filling</span><span class="opt opt-wrong" dir="ltr">more filling</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٥</td>
+          <td class="sentence" dir="ltr">The muffin is the most popular cake here.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">most popular</span><span class="opt opt-wrong" dir="ltr">more popular</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٦</td>
+          <td class="sentence" dir="ltr">The salad is the healthiest dish on the menu.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">healthiest</span><span class="opt opt-wrong" dir="ltr">healthier</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٧</td>
+          <td class="sentence" dir="ltr">Pancakes are tastier than porridge.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">tastier</span><span class="opt opt-wrong" dir="ltr">tasty</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٨</td>
+          <td class="sentence" dir="ltr">Muffins are more popular than croissants.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">more popular</span><span class="opt opt-wrong" dir="ltr">popular</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٩</td>
+          <td class="sentence" dir="ltr">Doughnuts are tastier than cucumbers.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">tastier</span><span class="opt opt-wrong" dir="ltr">tasty</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٠</td>
+          <td class="sentence" dir="ltr">Jam is more popular than honey.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">more popular</span><span class="opt opt-wrong" dir="ltr">popular</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤١</td>
+          <td class="sentence" dir="ltr">Salmon is tastier than rice.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">tastier</span><span class="opt opt-wrong" dir="ltr">tasty</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٢</td>
+          <td class="sentence" dir="ltr">Grapes are more popular than melons.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">more popular</span><span class="opt opt-wrong" dir="ltr">popular</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="yesno"><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+  <section class="unit" id="unit-2">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الأول</span><span>الوحدة ٤</span><span>٨٠ جملة</span></div>
+      <h2><span dir="ltr">A good buy</span> <span class="unit-ar">صفقةٌ رابحة</span></h2>
+      <ul class="patterns" dir="ltr"><li>How many … are there?</li><li>How much … is there?</li><li>There aren't many ….</li><li>There isn't much ….</li><li>There are too many ….</li><li>There's too much ….</li><li>Are there many …?</li><li>Is there much …?</li><li>I'd like a few …, please.</li><li>I'd like a little …, please.</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور في هذه الوحدة، والاسم هو الذي يحدد الاختيار: <span dir="ltr">many</span> مع المعدود بالجمع و<span dir="ltr">much</span> مع غير المعدود، و<span dir="ltr">a few</span> مع الأول و<span dir="ltr">a little</span> مع الثاني.</li><li>الأطعمة صُنِّفت يدويًا في صفحة البيانات: معدودة بالجمع (<span dir="ltr">grapes</span> و<span dir="ltr">olives</span> و<span dir="ltr">mushrooms</span> و<span dir="ltr">pancakes</span> و<span dir="ltr">doughnuts</span> و<span dir="ltr">croissants</span> و<span dir="ltr">muffins</span> و<span dir="ltr">carrots</span>) وغير معدودة (<span dir="ltr">cream</span> و<span dir="ltr">honey</span> و<span dir="ltr">jam</span> و<span dir="ltr">salt</span> و<span dir="ltr">sugar</span> و<span dir="ltr">porridge</span> و<span dir="ltr">milk</span> و<span dir="ltr">rice</span>).</li><li><span dir="ltr">some</span> و<span dir="ltr">any</span> و<span dir="ltr">enough</span> غير مشمولة: اقتصرنا على <span dir="ltr">many</span> و<span dir="ltr">much</span> و<span dir="ltr">a few</span> و<span dir="ltr">a little</span> مع <span dir="ltr">too many</span> و<span dir="ltr">too much.</span></li></ul>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>الصورة</th>
+            <th>«اختر الكلمة»<small>الصحيح ثم الخاطئ</small></th>
+            <th>«صح أم خطأ»<small>الصورة الخاطئة</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="num">١</td>
+          <td class="sentence" dir="ltr">How many grapes are there?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="sentence" dir="ltr">How many olives are there?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="sentence" dir="ltr">How many mushrooms are there?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="sentence" dir="ltr">How many pancakes are there?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="sentence" dir="ltr">How many doughnuts are there?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="sentence" dir="ltr">How many croissants are there?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="sentence" dir="ltr">How many muffins are there?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="sentence" dir="ltr">How many carrots are there?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="sentence" dir="ltr">How much cream is there?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="sentence" dir="ltr">How much honey is there?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="sentence" dir="ltr">How much jam is there?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="sentence" dir="ltr">How much salt is there?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="sentence" dir="ltr">How much sugar is there?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="sentence" dir="ltr">How much porridge is there?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="sentence" dir="ltr">How much milk is there?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="sentence" dir="ltr">How much rice is there?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٧</td>
+          <td class="sentence" dir="ltr">There aren't many grapes.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٨</td>
+          <td class="sentence" dir="ltr">There aren't many olives.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٩</td>
+          <td class="sentence" dir="ltr">There aren't many mushrooms.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٠</td>
+          <td class="sentence" dir="ltr">There aren't many pancakes.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢١</td>
+          <td class="sentence" dir="ltr">There aren't many doughnuts.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٢</td>
+          <td class="sentence" dir="ltr">There aren't many croissants.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٣</td>
+          <td class="sentence" dir="ltr">There aren't many muffins.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٤</td>
+          <td class="sentence" dir="ltr">There aren't many carrots.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٥</td>
+          <td class="sentence" dir="ltr">There isn't much cream.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٦</td>
+          <td class="sentence" dir="ltr">There isn't much honey.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٧</td>
+          <td class="sentence" dir="ltr">There isn't much jam.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٨</td>
+          <td class="sentence" dir="ltr">There isn't much salt.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٩</td>
+          <td class="sentence" dir="ltr">There isn't much sugar.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٠</td>
+          <td class="sentence" dir="ltr">There isn't much porridge.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣١</td>
+          <td class="sentence" dir="ltr">There isn't much milk.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٢</td>
+          <td class="sentence" dir="ltr">There isn't much rice.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٣</td>
+          <td class="sentence" dir="ltr">There are too many grapes.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٤</td>
+          <td class="sentence" dir="ltr">There are too many olives.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٥</td>
+          <td class="sentence" dir="ltr">There are too many mushrooms.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٦</td>
+          <td class="sentence" dir="ltr">There are too many pancakes.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٧</td>
+          <td class="sentence" dir="ltr">There are too many doughnuts.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٨</td>
+          <td class="sentence" dir="ltr">There are too many croissants.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٩</td>
+          <td class="sentence" dir="ltr">There are too many muffins.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٠</td>
+          <td class="sentence" dir="ltr">There are too many carrots.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤١</td>
+          <td class="sentence" dir="ltr">There's too much cream.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٢</td>
+          <td class="sentence" dir="ltr">There's too much honey.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٣</td>
+          <td class="sentence" dir="ltr">There's too much jam.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٤</td>
+          <td class="sentence" dir="ltr">There's too much salt.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٥</td>
+          <td class="sentence" dir="ltr">There's too much sugar.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٦</td>
+          <td class="sentence" dir="ltr">There's too much porridge.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٧</td>
+          <td class="sentence" dir="ltr">There's too much milk.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٨</td>
+          <td class="sentence" dir="ltr">There's too much rice.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٩</td>
+          <td class="sentence" dir="ltr">Are there many grapes?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥٠</td>
+          <td class="sentence" dir="ltr">Are there many olives?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥١</td>
+          <td class="sentence" dir="ltr">Are there many mushrooms?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥٢</td>
+          <td class="sentence" dir="ltr">Are there many pancakes?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥٣</td>
+          <td class="sentence" dir="ltr">Are there many doughnuts?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥٤</td>
+          <td class="sentence" dir="ltr">Are there many croissants?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥٥</td>
+          <td class="sentence" dir="ltr">Are there many muffins?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥٦</td>
+          <td class="sentence" dir="ltr">Are there many carrots?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">many</span><span class="opt opt-wrong" dir="ltr">much</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥٧</td>
+          <td class="sentence" dir="ltr">Is there much cream?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥٨</td>
+          <td class="sentence" dir="ltr">Is there much honey?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥٩</td>
+          <td class="sentence" dir="ltr">Is there much jam?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦٠</td>
+          <td class="sentence" dir="ltr">Is there much salt?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦١</td>
+          <td class="sentence" dir="ltr">Is there much sugar?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦٢</td>
+          <td class="sentence" dir="ltr">Is there much porridge?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦٣</td>
+          <td class="sentence" dir="ltr">Is there much milk?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦٤</td>
+          <td class="sentence" dir="ltr">Is there much rice?</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">much</span><span class="opt opt-wrong" dir="ltr">many</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦٥</td>
+          <td class="sentence" dir="ltr">I'd like a few grapes, please.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a few</span><span class="opt opt-wrong" dir="ltr">a little</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦٦</td>
+          <td class="sentence" dir="ltr">I'd like a few olives, please.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a few</span><span class="opt opt-wrong" dir="ltr">a little</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦٧</td>
+          <td class="sentence" dir="ltr">I'd like a few mushrooms, please.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a few</span><span class="opt opt-wrong" dir="ltr">a little</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦٨</td>
+          <td class="sentence" dir="ltr">I'd like a few pancakes, please.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a few</span><span class="opt opt-wrong" dir="ltr">a little</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦٩</td>
+          <td class="sentence" dir="ltr">I'd like a few doughnuts, please.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a few</span><span class="opt opt-wrong" dir="ltr">a little</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧٠</td>
+          <td class="sentence" dir="ltr">I'd like a few croissants, please.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a few</span><span class="opt opt-wrong" dir="ltr">a little</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧١</td>
+          <td class="sentence" dir="ltr">I'd like a few muffins, please.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a few</span><span class="opt opt-wrong" dir="ltr">a little</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧٢</td>
+          <td class="sentence" dir="ltr">I'd like a few carrots, please.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a few</span><span class="opt opt-wrong" dir="ltr">a little</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧٣</td>
+          <td class="sentence" dir="ltr">I'd like a little cream, please.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a little</span><span class="opt opt-wrong" dir="ltr">a few</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧٤</td>
+          <td class="sentence" dir="ltr">I'd like a little honey, please.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a little</span><span class="opt opt-wrong" dir="ltr">a few</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧٥</td>
+          <td class="sentence" dir="ltr">I'd like a little jam, please.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a little</span><span class="opt opt-wrong" dir="ltr">a few</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧٦</td>
+          <td class="sentence" dir="ltr">I'd like a little salt, please.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a little</span><span class="opt opt-wrong" dir="ltr">a few</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧٧</td>
+          <td class="sentence" dir="ltr">I'd like a little sugar, please.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a little</span><span class="opt opt-wrong" dir="ltr">a few</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧٨</td>
+          <td class="sentence" dir="ltr">I'd like a little porridge, please.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a little</span><span class="opt opt-wrong" dir="ltr">a few</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧٩</td>
+          <td class="sentence" dir="ltr">I'd like a little milk, please.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a little</span><span class="opt opt-wrong" dir="ltr">a few</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨٠</td>
+          <td class="sentence" dir="ltr">I'd like a little rice, please.</td>
+          <td><span class="none">—</span></td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a little</span><span class="opt opt-wrong" dir="ltr">a few</span></td>
+          <td><span class="none">لا يظهر</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

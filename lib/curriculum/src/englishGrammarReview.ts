@@ -11,11 +11,12 @@
  * fails when the committed copy is stale.
  */
 import {
-  ADJECTIVE_FORMS, PAST_OVERRIDES, grammarUnit, grammarUnitsForGrade, pastTense, unitSentences, type GrammarSentence, type GrammarUnit,
+  ADJECTIVE_FORMS, PAST_OVERRIDES, grammarUnit, grammarUnitsForGrade, pastTense, pluralOf, unitSentences, type GrammarSentence, type GrammarUnit,
 } from './englishGrammar.ts';
 import { NOT_COVERED_G2 } from './englishGrammarG2.ts';
 import { NOT_COVERED_G3 } from './englishGrammarG3.ts';
 import { G4_TABLES, NOT_COVERED_G4 } from './englishGrammarG4.ts';
+import { G9_TABLES, NOT_COVERED_G9 } from './englishGrammarG9.ts';
 import { hubLesson, hubLessonsForGrade } from './englishHub.ts';
 import { wordPicture } from './englishPictures.ts';
 
@@ -37,7 +38,7 @@ const NOTES: Record<string, string> = {
 };
 
 /** Per grade: lesson id → why part of it is not covered (Grade 1 uses `NOTES` instead). */
-const NOT_COVERED: Record<number, Record<string, string[]>> = { 2: NOT_COVERED_G2, 3: NOT_COVERED_G3, 4: NOT_COVERED_G4 };
+const NOT_COVERED: Record<number, Record<string, string[]>> = { 2: NOT_COVERED_G2, 3: NOT_COVERED_G3, 4: NOT_COVERED_G4, 9: NOT_COVERED_G9 };
 
 /** Wraps each run of English in `dir="ltr"`, so a phrase with punctuation does not scramble inside an Arabic line. */
 export const ltr = (s: string) =>
@@ -260,6 +261,31 @@ const GRADE_COPY: Record<number, GradeCopy> = {
   .data-table td { font-size: .95rem; }
   @media print { .data { break-before: page; } }`,
   },
+  9: {
+    title: 'مراجعة قواعد الصف التاسع',
+    eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف التاسع',
+    lead: (total, units) => `هذه أول وحدة قواعد في الصف التاسع، وهي تجربة: ${AR_DIGITS(units)} درسان من الوحدة الرابعة «A good buy»، المقارنات والصيغة العليا ثم المقدّرات (<span dir="ltr">many / much / a few / a little</span>). الكتاب يعطي أهدافًا فقط دون جمل نموذجية، فكل جملة هنا كتبناها نحن، وكل زوج وكل تصنيف مكتوب في <b>صفحة البيانات</b> بعد هذه المقدمة لتتأكدوا منه قبل أي جملة. لا صور في هذه الوحدة. <b>لن يرى الطلاب أي درس قبل أن توافقوا عليه.</b> هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة.`,
+    acts: `
+      <div class="act"><b>اختر الكلمة</b>جملة فيها فراغ، وخياران صيغتان حقيقيتان: <span dir="ltr">healthier / healthy</span> أو <span dir="ltr">the cheapest / the cheaper</span> أو <span dir="ltr">many / much</span>. الاسم أو الجملة هو ما يدل على الصحيح.</div>
+      <div class="act"><b>رتّب الجملة</b>كلمات الجملة مبعثرة، ويرتّبها الطالب بالنقر. حتى ٩ كلمات.</div>
+      <div class="act"><b>صح أم خطأ</b>في المقارنات فقط، بلا صور: تُعرض الجملة نفسها، أو توأمها الخاطئ بعد تبديل الطرفين (<span dir="ltr">Doughnuts are healthier than carrots.</span>).</div>
+      <div class="act"><b>نعم أم لا</b>في المقارنات فقط، بلا صور: <span dir="ltr">Are carrots healthier than doughnuts?</span> ويجيب الطالب مما يعرفه.</div>
+    `,
+    checks: [
+      'هل الجملة صحيحة لغويًا، وبالصيغة التي يدرّسها الكتاب؟',
+      'في صفحة البيانات: هل كل زوج في المقارنات صحيح دون جدال؟ وهل تصنيف الأطعمة (معدود أم غير معدود) سليم؟',
+      'في «اختر الكلمة»: هل الخيار الخاطئ صيغة حقيقية خاطئة بوضوح؟ وهل في الجملة ما يدل على الصحيح؟',
+      'هل جمل بلا سياق، مثل «How many grapes are there?»، مقبولة في الصف التاسع، أم تفضلون أن تأتي كل جملة داخل مشهد قصير؟',
+      'هل جمل الرأي (Pancakes are tastier than porridge.) مناسبة تمرينًا لا يُسأل صحةً؟',
+      'هل الكلمات مناسبة لطالب الصف التاسع؟',
+    ],
+    extraCss: YESNO_CSS + `
+  .build-half { display: block; color: var(--muted); font-size: .78rem; font-weight: 400; white-space: nowrap; }
+  .data { display: grid; gap: 14px; }
+  .data .table-wrap table { min-width: 0; }
+  .data-table td { font-size: .95rem; }
+  @media print { .data { break-before: page; } }`,
+  },
 };
 
 /** One checkable table of the data page. Cells are English or Arabic; English runs are set left-to-right. */
@@ -273,6 +299,15 @@ function dataTable(title: string, headers: string[], rows: string[][]): string {
 
 /** The adjectives of Grade 4's S1 U4: the shared table has grown (Grade 9), but Grade 4's printed page lists only its own. */
 const GRADE_FOUR_ADJECTIVES = ['high', 'deep', 'wide', 'beautiful', 'boring', 'colourful', 'dangerous', 'delicious', 'difficult', 'exciting', 'interesting'];
+
+/** The data page's frame: a heading, one line of why, then the tables. */
+function dataSection(tables: string[]): string {
+  return `
+  <section class="data">
+    <h2>صفحة البيانات: ما يجب أن تتأكدوا منه</h2>
+    <p class="meta-line">هذه القوائم هي المعلومات التي تُبنى منها الجمل. إن كان فيها خطأ فكل الجمل المبنية عليه خاطئة.</p>${tables.join('')}
+  </section>`;
+}
 
 /** Everything in Grade 4 that is a claim rather than a sentence, built from the same rows and tables the units use. */
 function gradeFourDataPage(): string {
@@ -298,11 +333,25 @@ function gradeFourDataPage(): string {
     dataTable('الجدول الدراسي (مخترَع: ليس معلومة)', ['المادة', 'اليوم', 'الساعة'], T.timetable.map(r => [r.subject, r.day, r.time])),
     dataTable('ظروف الحال مع الأفعال', ['الفعل', 'الظرف'], [...T.manner.map(r => [r.act, r.adv]), ...T.well.map(r => [r.act, 'well'])]),
   ];
-  return `
-  <section class="data">
-    <h2>صفحة البيانات: ما يجب أن تتأكدوا منه</h2>
-    <p class="meta-line">هذه القوائم هي المعلومات التي تُبنى منها الجمل. إن كان فيها خطأ فكل الجمل المبنية عليه خاطئة.</p>${tables.join('')}
-  </section>`;
+  return dataSection(tables);
+}
+
+/** The Grade 9 adjectives (S1 U4): the shared table also holds Grade 4's. */
+const GRADE_NINE_ADJECTIVES = ['cheap', 'healthy', 'tasty', 'expensive', 'fattening', 'filling', 'nutritious', 'popular'];
+
+/** What a Grade 9 teacher checks: every claim the sentences are built from, from the same rows the units use. */
+function gradeNineDataPage(): string {
+  const sentences = (pattern: string) => unitSentences(grammarUnit('kbl-g9-eng-s1-nccd-u4_l1')!).filter(s => s.patternId === pattern);
+  const T = G9_TABLES;
+  return dataSection([
+    dataTable('المقارنات: الجملة الصحيحة وتوأمها الخاطئ', ['الجملة الصحيحة', 'توأمها الخاطئ في «صح أم خطأ»'], [...sentences('cmppl'), ...sentences('cmpmass')].map(s => [s.text, s.claim!.falseText])),
+    dataTable('صيغ الصفات', ['الصفة', 'المقارنة', 'التفضيل'], Object.entries(ADJECTIVE_FORMS).filter(([a]) => GRADE_NINE_ADJECTIVES.includes(a)).map(([a, [c, sup]]) => [a, c, sup])),
+    dataTable('الأطعمة: معدودة أم غير معدودة', ['الطعام', 'التصنيف'], [
+      ...T.foodCount.map(f => [pluralOf(f), 'معدود بالجمع: many / a few']),
+      ...T.foodMass.map(f => [f, 'غير معدود: much / a little']),
+    ]),
+    dataTable('جمل الرأي (لا تُسأل صحةً)', ['الجملة'], sentences('opinion').map(s => [s.text])),
+  ]);
 }
 
 export function renderGrammarReviewHtml(grade = 1): string {
@@ -464,7 +513,7 @@ export function renderGrammarReviewHtml(grade = 1): string {
       <span><span class="opt opt-wrong" dir="ltr">wrong</span> الخيار الخاطئ</span>
     </div>
     <p class="meta-line">«لا يظهر» تعني أن الجملة لا تُستخدم في هذا النشاط (لا توجد صورة واضحة لها). الصور هي الرموز التي تظهر في التطبيق نفسه.</p>${copy.extra ?? ''}
-  </section>${grade === 4 ? gradeFourDataPage() : ''}
+  </section>${grade === 4 ? gradeFourDataPage() : grade === 9 ? gradeNineDataPage() : ''}
 ${sections}
 </main>
 `;

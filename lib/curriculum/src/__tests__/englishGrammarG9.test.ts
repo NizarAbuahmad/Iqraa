@@ -112,3 +112,37 @@ test('the generator produces the designed sentences: 122 in all', () => {
   const longest = Math.max(...UNITS.flatMap(u => unitSentences(u)).map(x => x.tokens.length));
   assert.ok(longest <= 9, `the longest sentence is ${longest} words, over the Build cap`);
 });
+
+const docs = new URL('../../../../docs/', import.meta.url);
+
+test('the Grade 9 form lists every sentence once, a data page of everything to check, and a note per lesson', async () => {
+  const { renderGrammarReviewHtml } = await import('../englishGrammarReview.ts');
+  const html = renderGrammarReviewHtml(9);
+  assert.equal((html.match(/<td class="sentence" dir="ltr">/g) ?? []).length, 122);
+  assert.equal((html.match(/<section class="unit"/g) ?? []).length, 2);
+  assert.equal((html.match(/<section class="data"/g) ?? []).length, 1);
+  assert.equal((html.match(/<table class="data-table"/g) ?? []).length, 4);
+  assert.ok(html.includes('مراجعة قواعد الصف التاسع'));
+  for (const text of ['healthier', 'more expensive', 'cheapest', 'cream', 'rice', 'Pancakes are tastier than porridge.', 'Carrots are healthier than doughnuts.', 'Doughnuts are healthier than carrots.']) {
+    assert.ok(html.includes(text), `the form lacks «${text}»`);
+  }
+  assert.ok(html.includes('<span class="yn yn-no" dir="ltr">Doughnuts are healthier than carrots.</span>'));
+  assert.ok(html.includes('<span class="yn yn-yes" dir="ltr">Are carrots healthier than doughnuts? → Yes, they are.</span>'));
+  assert.equal((html.match(/class="not-covered"/g) ?? []).length, 2);
+  // Grade 9's data page lists Grade 9's adjectives only, and Grade 4's lists its own.
+  assert.ok(!html.includes('more colourful'));
+});
+
+test('the committed Grade 9 sheet and form are exactly what the generators produce; Grades 1-4 and the reading forms are untouched', async () => {
+  const { renderGrammarSheet } = await import('../englishGrammar.ts');
+  const { renderGrammarReviewHtml } = await import('../englishGrammarReview.ts');
+  const { renderReadingReviewHtml } = await import('../englishReadingReview.ts');
+  const read = (f: string) => readFileSync(new URL(f, docs), 'utf8');
+  assert.equal(read('english-grammar-g9-sheet.md'), renderGrammarSheet(9), 'run: pnpm --filter @workspace/curriculum run grammar-sheet');
+  assert.equal(read('english-grammar-g9-review.html'), renderGrammarReviewHtml(9), 'run: pnpm --filter @workspace/curriculum run grammar-sheet');
+  for (const g of [1, 2, 3, 4]) {
+    assert.equal(read(`english-grammar-g${g}-sheet.md`), renderGrammarSheet(g), `Grade ${g} sheet changed`);
+    assert.equal(read(`english-grammar-g${g}-review.html`), renderGrammarReviewHtml(g), `Grade ${g} form changed`);
+    assert.equal(read(`english-reading-g${g}-review.html`), renderReadingReviewHtml(g), `Grade ${g} reading form changed`);
+  }
+});
