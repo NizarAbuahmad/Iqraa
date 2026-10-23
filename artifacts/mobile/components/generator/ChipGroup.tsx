@@ -9,6 +9,13 @@
  * press. The screen keeps its own guard in `onToggle` as well, because the
  * selection it owns is what is saved.
  *
+ * An option may be `disabled` (the worksheet's four formats are greyed when the
+ * lesson's question bank cannot build them): it is drawn dimmed, is announced
+ * `aria-disabled` and ignores presses. A disabled chip does not count towards
+ * `min` even if the screen lists it in `selected`, so it can never be what keeps
+ * the last enabled chip from being locked. (The worksheet passes its greyed
+ * formats unselected anyway, as its old checkboxes drew them.)
+ *
  * Options come in the order the screen's source of truth gives them
  * (`QUIZ_TYPE_ORDER` for the quiz), never re-sorted here.
  */
@@ -26,6 +33,8 @@ import { readableOn } from '@/services/readableColor';
 export interface ChipOption<T extends string> {
   id: T;
   label: string;
+  /** Not offered right now: dimmed, `aria-disabled`, and a press does nothing. */
+  disabled?: boolean;
 }
 
 export interface ChipGroupProps<T extends string> {
@@ -42,28 +51,32 @@ export function ChipGroup<T extends string>({ label, options, selected, onToggle
   const colors = useColors();
   const { isRTL } = useLanguage();
   const ink = readableOn(accent, colors.card);
+  // Only enabled, selected chips count towards `min`.
+  const counted = options.filter(o => !o.disabled && selected.has(o.id)).length;
   return (
     <View>
       <Text style={[styles.label, { color: colors.foreground, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
       <View role="group" accessibilityLabel={label} style={[styles.wrap, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         {options.map(option => {
           const on = selected.has(option.id);
-          const locked = on && selected.size <= min;
+          const off = option.disabled === true;
+          const locked = on && !off && counted <= min;
           return (
             <PressableScale
               key={option.id}
               accessibilityRole="button"
               aria-pressed={on}
-              aria-disabled={locked}
+              aria-disabled={locked || off}
+              disabled={off}
               accessibilityLabel={option.label}
               onPress={() => {
-                if (locked) return;
+                if (locked || off) return;
                 Haptics.selectionAsync();
                 onToggle(option.id);
               }}
               style={[
                 styles.chip,
-                { flexDirection: isRTL ? 'row-reverse' : 'row' },
+                { flexDirection: isRTL ? 'row-reverse' : 'row', opacity: off ? 0.5 : 1 },
                 on
                   ? { backgroundColor: accent + '1F', borderColor: ink }
                   : { backgroundColor: colors.card, borderColor: colors.border },

@@ -79,3 +79,17 @@ test('the remainder line agrees with its number', () => {
   assert.equal(moreRowsLabel(4, 'en'), '+ 4 more');
   assert.equal(moreRowsLabel(0, 'en'), '');
 });
+
+test('a level word closes the line: the worksheet names a level where the quiz names minutes and marks', () => {
+  assert.equal(summaryLine({ questions: 20, kinds: 3, level: 'مرتفع' }, 'ar'), '20 سؤالًا · 3 أنواع · مرتفع');
+  assert.equal(summaryLine({ questions: 10, kinds: 2, level: 'Normal' }, 'en'), '10 questions · 2 types · Normal');
+  // Last whatever else is named, and alone it is the whole line.
+  assert.equal(summaryLine({ level: 'صعب', minutes: 20 }, 'ar'), '20 دقيقة · صعب');
+  assert.equal(summaryLine({ level: 'صعب' }, 'ar'), 'صعب');
+});
+
+test('an empty or blank level adds nothing, and the quiz line is unchanged', () => {
+  assert.equal(summaryLine({ questions: 10, level: '' }, 'ar'), '10 أسئلة');
+  assert.equal(summaryLine({ questions: 10, level: '   ' }, 'ar'), '10 أسئلة');
+  assert.equal(summaryLine({ questions: 10, minutes: 20, marks: 20, kinds: 4 }, 'ar'), '10 أسئلة · 20 دقيقة · 20 درجة · 4 أنواع');
+});
