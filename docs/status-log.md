@@ -10,6 +10,69 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## English review forms: «و» no longer glued to English, closing full stop kept out of the English run — 2026-10-23
+
+**What changed.** The teacher review forms drew an Arabic note that quotes English
+badly in two ways, both in `ltr()` (`lib/curriculum/src/englishGrammarReview.ts`),
+which `notCoveredList` calls for every not-covered note:
+
+- Arabic writes «و» glued to the next word («وafter»). Beside an LTR span it sat
+  hard against the English and read as a stray Latin letter («whenو after»). A «و»
+  that opens an English run is now its own `<span class="waw">`, and `.waw`
+  (`margin-inline-end: .3em`) spaces it off. The text is unchanged (copy-paste
+  still gives «وafter»); it is only drawn apart. A «و» that ends an Arabic word,
+  or has no English after it, is left alone. A margin, not a space character, so
+  a line can never break between the «و» and its word.
+- The note's closing full stop was inside the last English span, so it stood
+  against the Arabic word before it («have got. نمط» mid-line) instead of ending
+  the sentence. When it is the last character of a note that has Arabic in it, it
+  is now left outside the span, which puts it at the left end of the line. A full
+  stop inside a note («She can sew well. عن well…», «…in the afternoon.»), in an
+  all-English note, and any `?` or `!` stay inside the English run.
+
+Same defect, same fix, where English reached the page by another route: Grade 1's
+two `NOTES` (plain text, no spans — now through `ltr()`), the Grade 3 intro's
+hand-written «play / plays و have / has» spans, and the Grade 4 *reading* intro's
+«Qatar و Qatari». The reading forms share `notCoveredList`, so they carry the same
+`.waw` rule in their own stylesheet.
+
+**Regenerated, on purpose (bytes change).** `docs/english-grammar-g{1,2,3,4,9}-review.html`
+and `docs/english-reading-g{2,3,4}-review.html`. The `-sheet.md` files and the
+Grade 1 reading form do not change. A printed copy of any of these differs from
+what is now committed in the wording's *drawing* only: no word, sentence or mark
+changed. Glued «و» before an English span: g2 30, g3 29, g4 34, g9 30 → 0 in every
+form. Grade 1 gained one spaced «و».
+
+**Verified.** `englishGrammarReview.test.ts` (new): the unit cases above; for all
+114 real not-covered notes (Grades 2–4 and 9), the tags stripped give back exactly the note's text, no «و» is
+glued to a span and no closing full stop is inside one; every grammar and reading
+form that draws a `.waw` carries its rule and none has a glued «و». The existing
+tests that pin each committed doc to its generator pass (622 curriculum tests,
+`verify` 0 errors, monorepo typecheck clean). In Chromium: at 390 px and in print
+emulation each affected note was screenshotted before and after and its words read
+back in visual order (the 13 notes that end on an English word all have the full
+stop left-most on their last line); no horizontal overflow at 390 px; the A4
+landscape PDF has the same page count before and after for every changed form
+(g1 24, g2 35, g3 45, g4 57, g9 69; reading g2 33, g3 25, g4 41). Fonts came from
+the sandbox, not Readex Pro / Almarai (Google Fonts is unreachable there), so
+glyph shapes differ from a teacher's screen; the bidi order and spacing do not.
+
+**Not done.**
+- **The Grade 5 form is not regenerated here.** `docs/english-grammar-g5-review.html`
+  and `NOT_COVERED_G5` exist only on the open draft #1212, which also edits
+  `englishGrammarReview.ts`. The patch applies cleanly there; regenerating on that
+  branch took the Grade 5 form from 16 glued «و» to 0 and its 163 grammar and
+  reading tests passed (a throwaway worktree, nothing committed). After either PR
+  merges the other, run `pnpm --filter @workspace/curriculum run grammar-sheet`
+  and take the generated files; do not hand-merge the HTML.
+- Plain-text Latin that never goes through `ltr()` keeps a glued «و»: «قواعد must
+  وmustn't» (the Grade 4 form's checklist line and a table title) and «Qatar
+  وQatari» in the Grade 4 reading form's question. No LTR span is involved, so
+  it is a different change.
+- The full stop's new place (left end of the line, so a note can read «.as … as»)
+  is the Arabic convention for a sentence's end, but it is a judgement a teacher
+  may read differently.
+
 ## Book figure crops: audited, re-cropped, fragments dropped — 2026-10-22
 
 **What changed.** Every book figure a lesson can reach (2,576 across 66 books;

@@ -41,9 +41,27 @@ const NOTES: Record<string, string> = {
 /** Per grade: lesson id → why part of it is not covered (Grade 1 uses `NOTES` instead). */
 const NOT_COVERED: Record<number, Record<string, string[]>> = { 2: NOT_COVERED_G2, 3: NOT_COVERED_G3, 4: NOT_COVERED_G4, 9: NOT_COVERED_G9 };
 
-/** Wraps each run of English in `dir="ltr"`, so a phrase with punctuation does not scramble inside an Arabic line. */
+/**
+ * Wraps each run of English in `dir="ltr"`, so a phrase with punctuation does not scramble inside an Arabic line.
+ * Two things the bare wrap got wrong in a bidi line:
+ *  - Arabic writes the conjunction glued to the next word («وafter»). Beside an LTR span it sat hard against the
+ *    English and read as a stray Latin letter («whenو»), so a «و» that opens a run (not one ending an Arabic word)
+ *    is its own `.waw` span, which `.waw` in the stylesheet spaces off. The text is unchanged, only drawn apart.
+ *    Copy written by hand in this file that puts a «و» before an LTR span uses `WAW` for the same reason.
+ *  - The closing full stop of an Arabic note is the Arabic sentence's, not the English phrase's. Inside the span it
+ *    stood against the Arabic word before it, so it is left outside when it ends a note that has Arabic in it. A full
+ *    stop inside the note, or in a note that is all English, belongs to the English and stays inside; `?` and `!`
+ *    always do.
+ */
+export const WAW = '<span class="waw">و</span>';
 export const ltr = (s: string) =>
-  esc(s).replace(/[A-Za-z][A-Za-z0-9'’-]*(?:[ ,.?!/…]+[A-Za-z0-9'’][A-Za-z0-9'’-]*)*[.?!]?/g, m => `<span dir="ltr">${m}</span>`);
+  esc(s).replace(
+    /((?<![\p{L}\p{M}])و)?([A-Za-z][A-Za-z0-9'’-]*(?:[ ,.?!/…]+[A-Za-z0-9'’][A-Za-z0-9'’-]*)*[.?!]?)/gu,
+    (m, waw: string | undefined, run: string, at: number, all: string) => {
+      const endsNote = at + m.length === all.length && run.endsWith('.') && /\p{Script=Arabic}/u.test(all.slice(0, at));
+      return `${waw ? WAW : ''}<span dir="ltr">${endsNote ? run.slice(0, -1) : run}</span>${endsNote ? '.' : ''}`;
+    },
+  );
 
 function yesNoCell(s: GrammarSentence): string {
   const y = s.yesNo;
@@ -103,7 +121,7 @@ function renderUnit(u: GrammarUnit, idx: number): string {
           <td class="note"></td>
         </tr>`).join('');
   const sem = lesson.semester === 1 ? 'الفصل الأول' : 'الفصل الثاني';
-  const note = NOTES[u.lessonId] ? `<p class="unit-note">${NOTES[u.lessonId]}</p>` : '';
+  const note = NOTES[u.lessonId] ? `<p class="unit-note">${ltr(NOTES[u.lessonId])}</p>` : '';
   return `
   <section class="unit" id="unit-${idx + 1}">
     <header class="unit-head">
@@ -327,7 +345,7 @@ const GRADE_COPY: Record<number, GradeCopy> = {
   3: {
     title: 'مراجعة قواعد الصف الثالث',
     eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف الثالث',
-    lead: (total, units) => `أضفنا إلى ركن اللغة الإنجليزية في الصف الثالث أنشطة لتثبيت القواعد على ${AR_DIGITS(units)} وحدات. القواعد هنا في معظمها صيغ أفعال (<span dir="ltr">play / plays</span> و<span dir="ltr">have / has</span> و<span dir="ltr">Is / Are</span>)، ولذلك تجدون وحدات بلا صور لأن كلماتها أفعال وعبارات، وما استُبعد مذكور مع سببه في كل وحدة. الجمل مبنية من نمط القواعد في كل وحدة من الكتاب ومن كلمات الوحدة نفسها. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة.`,
+    lead: (total, units) => `أضفنا إلى ركن اللغة الإنجليزية في الصف الثالث أنشطة لتثبيت القواعد على ${AR_DIGITS(units)} وحدات. القواعد هنا في معظمها صيغ أفعال (<span dir="ltr">play / plays</span> ${WAW}<span dir="ltr">have / has</span> ${WAW}<span dir="ltr">Is / Are</span>)، ولذلك تجدون وحدات بلا صور لأن كلماتها أفعال وعبارات، وما استُبعد مذكور مع سببه في كل وحدة. الجمل مبنية من نمط القواعد في كل وحدة من الكتاب ومن كلمات الوحدة نفسها. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة.`,
     acts: `
       <div class="act"><b>اختر الكلمة</b>جملة فيها فراغ، وخياران: الصحيح ونقيضه في القاعدة، مثل <span dir="ltr">plays / play</span> أو <span dir="ltr">Does / Do</span> أو <span dir="ltr">There's / There isn't</span>. تظهر معها صورة حيث توجد صورة صادقة فقط.</div>
       <div class="act"><b>رتّب الجملة</b>كلمات الجملة مبعثرة، ويرتّبها الطالب بالنقر. حتى ٩ كلمات. إن زادت الجملة (سؤال وجواب) يُرتّب الجواب وحده ويظهر السؤال فوق الكلمات؛ ويُكتب ذلك تحت الجملة في القائمة.</div>
@@ -555,6 +573,7 @@ export function renderGrammarReviewHtml(grade = 1): string {
   .patterns { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
   .patterns li { font-family: var(--latin); font-size: .9rem; border: 1px solid var(--rule); border-radius: 999px; padding: 2px 12px; }
   .unit-note { margin: 0; font-size: .92rem; color: var(--muted); }
+  .waw { margin-inline-end: .3em; }
 
   .table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 10px; }
   table { border-collapse: collapse; width: 100%; min-width: 780px; font-variant-numeric: tabular-nums; }
