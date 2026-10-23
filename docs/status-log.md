@@ -10,6 +10,24 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat app-help, twentieth live pass: 14 more wordings, and one new answer (subject average) — 2026-10-23
+
+A 30-question pass on app.iqrra.com found 14 questions answered by the model for which the app
+already had a written answer (`howAttendance` — «لا يوجد تسجيل حضور», `howClassChat`,
+`howRegenerate`, `howEmailMaterial`, `howQuestionBank`, `howClassScan`, `howExamQr`,
+`howMathTools`, `howMasteryGate`, `howFilesToClass`, `howStudentRecord`, `howNotifications`,
+`howDeleteAccount`, `howCopyExam`). Two were an app card where the steps existed: «أفعّل
+الإشعارات على هاتفي» got only the «الرسائل» card and «أحذف حسابي نهائياً» only the «حسابي» card.
+Wordings added to the existing rule ids in `appHelp.ts`. One new answer, `howSubjectAverage`
+(ar + en): the app has the average per exam («لوحة النتائج») and each student's exam
+percentages («ملف الطالب»), and nothing for a whole subject, which the model had answered with
+an invented «التقارير» screen. Both halves are the existing `howClassAverage` and
+`howStudentRecord`, not new claims. Pinned in `appHelp.test.ts` with teaching near-misses.
+
+**Not done:** «أنضم إلى مدرستي» (the school-join flow for a teacher is not something I
+verified), the book-source question and the ready-made-homework question (neither looked into),
+«أحفظ خطة الدرس بصيغة وورد» (already answered by the generic «PDF أو Word» export text).
+
 ## Generator screens: Cancel then a refusal, and the banner contrast — 2026-10-23
 
 A follow-up to the five generator-screen ports (the two known limits their entries listed). Mobile only:
