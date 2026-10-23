@@ -28,3 +28,15 @@ export function parseSchoolAssignment(body: unknown): string | null {
   if (typeof raw !== "string" || !UUID_RE.test(raw)) throw "schoolId must be a school id, or null to remove";
   return raw;
 }
+
+/**
+ * `?schoolId=` on GET /admin/users. Absent or empty means no filter; anything
+ * else must be a school id. A malformed one used to be ignored, which turned
+ * "this school's teachers" into "every teacher" — and the schools screen puts a
+ * Remove button on each row it gets back.
+ */
+export function parseSchoolIdFilter(raw: unknown): string | undefined {
+  if (raw === undefined || raw === "") return undefined;
+  if (typeof raw !== "string" || !UUID_RE.test(raw)) throw "schoolId must be a school id";
+  return raw;
+}
