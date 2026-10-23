@@ -65,8 +65,9 @@ Checked 2026-10-22:
 - **Row-level security is deployed and switched off** (`RLS_ENFORCE` unset; PR #1048, migration
   `0008`). Rehearsed on 2026-10-23 on a separate empty Neon project: all migrations apply and the
   database suite passes 46/46 on both the direct and the pooled endpoint (workflow run
-  39931238295). Not done: the latency measurement (C1), the connection-ceiling check (C2),
-  enabling it in production, and making the `row-level security` check required — the steps and
+  39931238295). The connection ceiling checks out (20 instances, pooled endpoint, `max_connections` 225).
+  Not done: the latency measurement (C1), enabling it in production, and making the
+  `row-level security` check required — the steps and
   the switch are in `docs/rls-rollout-checklist.md`.
 - **Draft PR #730** (teacher visibility into English Corner practice) changes the schema,
   conflicts with `main`, and needs `pnpm --filter @workspace/db run generate` after it is updated.

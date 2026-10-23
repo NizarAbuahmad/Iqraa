@@ -7,7 +7,7 @@ person-with-Neon-and-Cloud-Run-access checklist; the reasoning is in
 (`docs/superpowers/plans/2026-10-13-row-level-security.md`).
 
 Tick a box only when you have seen the result. Do not skip ahead: A is about production as
-it is today, B–C gate the switch, D–E are the switch. A2 and A3 were done on 2026-10-16 and B on 2026-10-23; the
+it is today, B–C gate the switch, D–E are the switch. A2 and A3 were done on 2026-10-16 and B and C2 on 2026-10-23; the
 rest is open. When a step has a **Gate**, a failed
 gate means stop and do not flip.
 
@@ -104,7 +104,12 @@ GitHub's runners are not in your Cloud Run region — so C1 is still separate.)
   **Gate:** p95 within budget — suggested ≤ +100 ms on the inbox, ≤ +25 % elsewhere. If it
   fails, do not flip. Mitigations, in order: co-locate Cloud Run with Neon; a request-scoped
   transaction for routes that never call a model; fewer statements per request.
-- [ ] **C2. Check the connection ceiling.** With enforcement on an instance holds **two** pools
+- [x] **C2. Connection ceiling — passed 2026-10-23.** Cloud Run `maxScale` 20, `minScale` 1; the API's
+  `DATABASE_URL` points at the Neon **pooled** host (`…-pooler…`); the database's `max_connections` is
+  225. The worst case with enforcement on is 20 × 20 = 400 client connections, above 225, but they go
+  through Neon's pooler, which shares a smaller set of server connections (a burst queues at the
+  pooler instead of being refused), and the pooled endpoint is the one the rehearsal passed on.
+  Original instruction: With enforcement on an instance holds **two** pools
   (default 10 connections each). **Gate:** the production Neon database's `max_connections` (or
   the pooler's limit) is at least `20 × <Cloud Run --max-instances>`. Read `maxScale` with:
 
@@ -159,6 +164,6 @@ Outside school hours, and only with A, B and C ticked.
 | --- | --- | --- | --- |
 | A | | | |
 | B | owner, via the GitHub workflow | 2026-10-23 | run 39931238295: migrations applied; 46/46 direct, 46/46 pooled. Direct tests ≈ 3.4 min, pooled ≈ 3.3 min (CI runner → Neon, not a latency measurement). Run 4 before it failed only because the pooled secret held a malformed string. |
-| C | | | |
+| C | owner (C2 only so far) | 2026-10-23 | C2: maxScale 20, pooled host, max_connections 225 — pass via the pooler. C1 (latency) not done. |
 | D | | | |
 | E | | | |
