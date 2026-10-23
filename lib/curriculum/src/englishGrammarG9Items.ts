@@ -1,6 +1,7 @@
 /**
- * Grade 9 grammar: the thirteen authored hub lessons outside Unit 4 (spec:
- * docs/superpowers/specs/2026-10-23-english-corner-grammar-g9-lessons-design.md). Every item is a whole sentence with its
+ * Grade 9 grammar: the nineteen authored hub lessons outside Unit 4 (specs:
+ * docs/superpowers/specs/2026-10-23-english-corner-grammar-g9-lessons-design.md and
+ * ...-grammar-only-lessons-design.md, which adds the five grammar-only lessons). Every item is a whole sentence with its
  * correct answer and a distractor, written by us and checked by a teacher on the printed form; nothing here is pictured.
  *
  * The rule for a distractor: it is `form` (ungrammatical in standard English) or `meaning` (grammatical but excluded

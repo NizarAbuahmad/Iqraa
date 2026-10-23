@@ -9,7 +9,7 @@
  * that are plainly true; opinion rows are never judged. Both units ship `reviewedBy: null`: they are offered to
  * nobody until a teacher signs the printed form. `NOT_COVERED_G9` is what the form says is left out.
  *
- * The thirteen authored lessons (spec 2026-10-23-english-corner-grammar-g9-lessons-design.md) come from `englishGrammarG9Items.ts`.
+ * The nineteen authored lessons (specs 2026-10-23-english-corner-grammar-g9-lessons-design.md and ...-grammar-only-lessons-design.md) come from `englishGrammarG9Items.ts`.
  *
  * Imports only types from the engine, and the hub (which does not import the engine): `englishGrammar.ts` imports this file.
  */
@@ -100,7 +100,8 @@ const UNITS_G9: GrammarUnit[] = [
     ],
     slots: { pl: FOOD_COUNT, mass: FOOD_MASS },
   },
-  // The thirteen authored lessons (hand-written items; see `englishGrammarG9Items.ts`). Unsigned like the pilot.
+  // The nineteen authored lessons (hand-written items; see `englishGrammarG9Items.ts`), five of them grammar-only hub
+  // lessons (`GRAMMAR_ONLY_LESSONS`, englishHub.ts). Unsigned like the pilot.
   ...G9_ITEM_LESSONS.map(l => ({ lessonId: l.lessonId, reviewedBy: null, patterns: [], slots: {}, items: l.items }) satisfies GrammarUnit),
 ];
 

@@ -5,7 +5,9 @@
 > `present-passive` 14, `past-passive` 14, `questions-negatives` 12, all `form`), so the work covers **fourteen**
 > lessons and **560** items. Wherever the text below says thirteen, 520 or six topics, read fourteen, 560 and **five**
 > (used to, the two present perfects, the first conditional, reported speech). See the status-log entry «Grade 9
-> grammar: the passive added».
+> grammar: the passive added». **Update:** the five topics the hub lacked are built too, as grammar-only hub lessons
+> (`2026-10-23-english-corner-grammar-g9-grammar-only-lessons-design.md`); no Grade 9 grammar topic of the book is left
+> without a lesson.
 
 **Status:** implemented (PR #1204; where the build differs from what was first written, the text says how). **Scope:** Grade 9 English **grammar** on the thirteen hub lessons, outside
 Unit 4, that carry a grammar topic of the book (table below). Builds on the Unit 4 pilot

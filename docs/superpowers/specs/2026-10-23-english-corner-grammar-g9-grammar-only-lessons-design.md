@@ -1,6 +1,6 @@
 # English corner: grammar-only hub lessons, and the last five Grade 9 grammar lessons — design
 
-**Status:** proposed (awaiting review). **Scope:** (1) a change to how the English hub decides which lessons exist, so a
+**Status:** implemented (PR #1212; where the build differs from what was first written, the text says how). **Scope:** (1) a change to how the English hub decides which lessons exist, so a
 lesson with fewer than four words can carry grammar activities; (2) Grade 9 grammar for the five lessons that change
 unlocks. Builds on the Unit 4 pilot and the fourteen authored lessons
 (`2026-10-23-english-corner-grammar-g9-pilot-design.md`, `…-g9-lessons-design.md`, PRs #1171, #1204 and #1212) and the
