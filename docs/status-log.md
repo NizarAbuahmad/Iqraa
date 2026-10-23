@@ -33,6 +33,42 @@ with fewer than four words (3, 1, 2, 0 and 2).
 - **Still open:** the five lessons the hub does not carry need a change to how the hub builds lessons (its own
   spec).
 
+## Teachers see their class's Math Corner practice — 2026-10-23
+
+**What a teacher sees.** A maths class's «الطلبة» tab has a «تمارين الرياضيات»
+row (shown when student accounts are on, the class has students and maths is one
+of its subjects). It opens a sheet listing each student who practised, and under
+each name every lesson with the student's best «اختبر نفسك» score and how many
+sets they finished («ضَرْبُ الأَعْدادِ · ٦ من ١٠ · ٣ محاولات»). Students who have not
+practised are not listed.
+
+**How it gets there.** A student account's finished set is sent to
+`PUT /student/math-practice` `{ lessonId, correct, total }` (every set, not only a
+new best, so attempts count). The server checks the lesson is a catalog
+**mathematics** lesson (`modules/mathPractice/practice.ts`, 1 ≤ total ≤ 20) and
+writes one row per `self`-linked roster row of the account into the new
+`math_practice_results` table (migration 0014, additive, DEFERRED RLS + grant like
+`game_results`), keeping the best ratio (a tie keeps the old row) and counting
+attempts. An account with no roster row gets `{ saved: false }` and keeps its
+score on the device only. `GET /classes/:id/math-practice` (teacher, own live
+class) reads it through class membership, as `/homework/:id/game-results` does.
+The device copy (`mathExerciseProgress.ts`) still drives the student's own
+screens and works offline; a failed send is dropped, not retried.
+
+**Verified.** `mathPractice.db.test.ts` against a real Postgres: wrong roles
+403, flag off 403, bad bodies 400, an unlinked account saves nothing, a write
+lands only on the account's own self-linked row (not a guardian-only row of the
+same child, not a classmate), best ratio kept with attempts counted, the teacher
+reads only their own live class (another teacher's class and an archived class
+are 404). In a browser against a throwaway database: a student finished two sets
+(6/10 then 2/10); the teacher's sheet showed «٦ من ١٠» with three attempts.
+`mountOrder.test.ts` pins both routes behind a token.
+
+**Not built / not verified.** No per-lesson summary across the class (which
+lessons nobody practised), no export, no push to the teacher. A student whose
+first sets ran before this ships has device-only bests until they finish a set
+again. Not checked on Android. The migration is 0014: #1185 took 0013 first.
+
 ## Grade 9 grammar, thirteen lessons in the English corner — built, shown to nobody yet, 2026-10-23
 
 Grammar activities on thirteen more Grade 9 hub lessons (S1 U1, U2, U3, U5; S2 U6, U8, U9, U10), after the
@@ -118,6 +154,24 @@ them. Parents («نتائج أبنائي»), link-only students (`/take`) and ed
 single step are not built.
 
 ---
+
+
+## A vowelled unit title gets its icon and photo, 2026-10-23
+
+A teacher's whole-book revision deck for Grade 1 maths (66 lessons, 12 units, no book
+pictures — no Grade 1 or 2 student book is on disk) showed the same «books» icon on
+every unit break and no unit photo. Cause: the primary books print unit titles with every
+vowel mark («الْأَعْدادُ ضِمْنَ مَنْزِلَتَيْنِ»), and a mark between two letters stops the
+topic table's «أعداد» matching, so `iconForTopic` / `photoQueryForTopic` found nothing for
+any vocalised title — in every subject of grades 1-6, not only maths.
+
+- `topicRule` (`deckIcons.ts`) matches on the title with the marks and tatweel stripped
+  (`ً-ٟ`, `ٰ`, `ـ`; Arabic-Indic digits are not marks).
+- The calculator row also knows «جمع / طرح / منزلة» (addition, subtraction, place).
+- Verified: the rebuilt Grade 1 maths deck's twelve breaks now carry the calculator icon;
+  `deckIcons.test.ts` pins five vowelled titles. **Not verified:** the Unsplash photo that
+  follows the icon (quota), and still no book picture for Grade 1-2 maths — that needs the
+  NCCD books on disk.
 
 ## Duplicate-key 409s answered 500 — 2026-10-22
 

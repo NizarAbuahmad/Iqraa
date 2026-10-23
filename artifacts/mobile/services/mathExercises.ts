@@ -123,6 +123,46 @@ export function recordBest(bests: ExerciseBests, lessonId: string, score: Exerci
   return { ...bests, [lessonId]: score };
 }
 
+/** One student's best score on one lesson, as `GET /classes/:id/math-practice` sends it. */
+export interface ClassPracticeRow extends ExerciseScore {
+  studentId: string;
+  displayName: string;
+  lessonId: string;
+  attempts: number;
+  practicedAt: string;
+}
+
+/** The server's rows, with anything malformed dropped; an absent list is none. */
+export function normalizeClassPractice(raw: unknown): ClassPracticeRow[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((r): ClassPracticeRow[] => {
+    const o = (r ?? {}) as Record<string, unknown>;
+    const { studentId, displayName, lessonId, correct, total, attempts, practicedAt } = o;
+    if (typeof studentId !== 'string' || typeof lessonId !== 'string' || !studentId || !lessonId) return [];
+    if (!Number.isInteger(correct) || !Number.isInteger(total) || (total as number) <= 0) return [];
+    return [{
+      studentId,
+      displayName: typeof displayName === 'string' ? displayName : '',
+      lessonId,
+      correct: correct as number,
+      total: total as number,
+      attempts: Number.isInteger(attempts) ? (attempts as number) : 1,
+      practicedAt: typeof practicedAt === 'string' ? practicedAt : '',
+    }];
+  });
+}
+
+/** Rows grouped per student, in the order the server sent them (by name). */
+export function practiceByStudent(rows: readonly ClassPracticeRow[]): Array<{ studentId: string; displayName: string; lessons: ClassPracticeRow[] }> {
+  const out = new Map<string, { studentId: string; displayName: string; lessons: ClassPracticeRow[] }>();
+  for (const r of rows) {
+    const g = out.get(r.studentId) ?? { studentId: r.studentId, displayName: r.displayName, lessons: [] };
+    g.lessons.push(r);
+    out.set(r.studentId, g);
+  }
+  return [...out.values()];
+}
+
 export function exerciseLessonPath(lessonId: string): string {
   return `${EXERCISES_ROUTE}/${encodeURIComponent(lessonId)}`;
 }
