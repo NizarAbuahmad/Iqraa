@@ -1020,17 +1020,22 @@ router.delete("/classes/:id/resources/:rid", async (req: AuthenticatedRequest, r
 });
 
 /**
- * After a rename, the linked code-only accounts (no email, no password, no
- * Google id) are named from the roster row, so they are re-derived here — but
+ * After a rename, the linked code-only accounts (a login code set, no password,
+ * no Google id) are named from the roster row, so they are re-derived here — but
  * only while they still carry the OLD roster name (see lib/rosterRename.ts).
  *
  * systemDb: it writes other users' rows, which the app role cannot. That is a
  * second connection, so this cannot share a transaction with the roster update;
  * it runs after it and only logs on failure, because the rename the teacher
  * asked for has already been saved and must not be reported as failed.
- * Logs ids only — never a child's name.
+ *
+ * What a failure logs: the student id, the account id being written (when
+ * there is one) and the database error code. It never logs the error object:
+ * drizzle's query error carries the SQL parameters in its message, and for the
+ * update those are the child's new first and last name.
  */
 async function syncLinkedAccountNames(studentId: string, oldName: string, newName: string): Promise<void> {
+  let userId: string | undefined;
   try {
     const linked = await systemDb
       .select({
@@ -1054,10 +1059,15 @@ async function syncLinkedAccountNames(studentId: string, oldName: string, newNam
         newRosterName: newName,
         current: account,
       });
-      if (next) await systemDb.update(users).set(next).where(eq(users.id, account.userId));
+      if (next) {
+        userId = account.userId;
+        await systemDb.update(users).set(next).where(eq(users.id, account.userId));
+      }
     }
   } catch (err) {
-    logger.error({ err, studentId }, "renaming a student's linked accounts failed — the roster name was saved");
+    const e = err as { code?: unknown; cause?: { code?: unknown } } | null;
+    const code = [e?.cause?.code, e?.code].find((c): c is string => typeof c === "string");
+    logger.error({ studentId, userId, code }, "renaming a student's linked accounts failed — the roster name was saved");
   }
 }
 

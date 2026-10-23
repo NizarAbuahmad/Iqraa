@@ -1,7 +1,6 @@
 /**
  * Editing a roster row over HTTP, against a real database: the duplicate-name
- * refusal and the rename reaching linked code-only accounts. The class roster
- * read (`links`) is covered here too, since it shares the fixture.
+ * refusal and the rename reaching linked code-only accounts.
  */
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
