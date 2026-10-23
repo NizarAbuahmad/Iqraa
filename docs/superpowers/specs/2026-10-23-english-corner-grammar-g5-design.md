@@ -38,7 +38,7 @@ sentence. The second lesson of every unit is a listening-for-sequence lesson wit
 | `s1-nccd-u2_l1` | Comparative and superlative adjectives | `taller-forms`, `more-forms`, `superlatives`, `irregular` | «My mum is shorter than me.» shorter / more short |
 | `s1-nccd-u3_l1` | Past simple (was/were, did) | `was-were`, `did-questions`, `regular-irregular` | «Did you have a phone?» have / had |
 | `s1-nccd-u4_l1` | will / won't | `will`, `wont`, `will-questions` | «I won't get him a book.» get / to get |
-| `s1-nccd-u5_l1` | Relative clauses (who, where, which) | `who`, `where`, `which` | «It's the man who we saw.» who / where |
+| `s1-nccd-u5_l1` | Relative clauses (who, where, which) | `who`, `where`, `which` | «She is the girl who sells fish.» who / where |
 | `s2-nccd-u6_l1` | Past simple (irregular verbs, did) | `irregular`, `did-negatives`, `questions` | «I learnt how to cook.» learnt / learn |
 | `s2-nccd-u7_l1` | Past continuous | `was-were-ing`, `when-while`, `questions` | «The shark was looking for fish.» was looking / was look |
 | `s2-nccd-u8_l1` | should / shouldn't | `should`, `shouldnt`, `advice-questions` | «You should go to the doctor.» go / to go |
@@ -54,7 +54,7 @@ never «saw» for «seen» or «did» for «have done», which some teachers acc
 - **`lib/curriculum/src/englishGrammarG5Items.ts` (new):** `G5_ITEM_LESSONS` — ten `{lessonId, statement, items}` entries in
   hub order, `statement` equal to `objectives[0]` of that lesson (a test reads the JSON).
 - **`lib/curriculum/src/englishGrammarG5.ts` (new):** `GRAMMAR_UNITS_G5` (ten units, `patterns: []`, `reviewedBy: null`) and
-  `NOT_COVERED_G5` (per lesson: no pictures except where the hub has them, vocabulary is a printed list not a test, no audio).
+  `NOT_COVERED_G5` (per lesson: the two shared bullets, no pictures or Yes or No and a silent True or false, plus one lesson-specific bullet saying what that lesson leaves out).
 - **`lib/curriculum/src/englishGrammar.ts`:** `GRAMMAR_UNITS` gains `GRAMMAR_UNITS_G5`. No engine change: items,
   `buildCap(5)` = 9 and silent True or false already exist.
 - **`lib/curriculum/src/englishGrammarReview.ts`:** `renderAuthoredUnit` takes the statement and `NOT_COVERED` by the

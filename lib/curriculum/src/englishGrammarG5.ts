@@ -27,13 +27,13 @@ const L = (s: string) => `kbl-g5-eng-${s}`;
 /** What a Grade 5 lesson does not cover, and why — printed on the teacher's form. One bullet per item, no `"`, `&`, `<` or `>`. */
 export const NOT_COVERED_G5: Record<string, string[]> = {
   [L('s1-nccd-u1_l1')]: [...SHARED, 'جمل before وafter وwhen تُحدِّد صيغة الفعل مع he وshe وit (washes) وأن will لا تأتي بعد when، دون سؤال عن ترتيب الأحداث نفسه.'],
-  [L('s1-nccd-u2_l1')]: [...SHARED, 'الصفات الشاذة (good وbad) في موضوع واحد صغير، ولا مقارنة بـ as … as.'],
+  [L('s1-nccd-u2_l1')]: [...SHARED, 'الصفات الشاذة (good وbad) في موضوع واحد صغير، ولا مقارنة بـ as … as في هذا الدرس.'],
   [L('s1-nccd-u3_l1')]: [...SHARED, 'الخيارات الخاطئة أخطاء في الصيغة (had بعد did، sended)، لا اختيار بين الماضي البسيط والماضي المستمر.'],
   [L('s1-nccd-u4_l1')]: [...SHARED, "will وwon't فقط، دون going to، لأن الاختيار بينها وبين will كثيرًا ما يقبل الإجابتين."],
   [L('s1-nccd-u5_l1')]: [...SHARED, 'who للأشخاص وwhich للأشياء وwhere للأماكن؛ وwho دائمًا فاعلٌ في جملة الصلة، أما who بصفة مفعول (the man who we saw) فغير مختبَر.'],
-  [L('s2-nccd-u6_l1')]: [...SHARED, "الماضي البسيط للأفعال الشاذة (learnt وwent) وdid في السؤال والنفي؛ والخيارات الخاطئة أخطاء في الصيغة (didn't went)، لا اختيار بين الماضي والمضارع التام."],
+  [L('s2-nccd-u6_l1')]: [...SHARED, "الماضي البسيط للأفعال الشاذة (learnt وwent) وdid في السؤال والنفي؛ والخيارات الخاطئة أخطاء في الصيغة (didn't went)، لا اختيار بين الماضي البسيط والمضارع التام."],
   [L('s2-nccd-u7_l1')]: [...SHARED, 'الماضي المستمر مع while وwhen؛ لا اختيار بينه وبين الماضي البسيط لأن للجملة أحيانًا أكثر من صيغة مقبولة.'],
   [L('s2-nccd-u8_l1')]: [...SHARED, "should وshouldn't للنصيحة فقط، دون must وhave to، والخيارات الخاطئة أخطاء في الصيغة (should to go)."],
   [L('s2-nccd-u9_l1')]: [...SHARED, 'المضارع التام بـ have وhas والتصريف الثالث للفعل؛ لا اختيار بينه وبين الماضي البسيط، والخيارات الخاطئة أخطاء في الصيغة (has read مقابل have read مع I).'],
-  [L('s2-nccd-u10_l1')]: [...SHARED, "ever في السؤال وnever في الجملة والإجابات القصيرة (Yes, I have. / No, I haven't.)؛ لا اختيار بين المضارع التام والماضي البسيط."],
+  [L('s2-nccd-u10_l1')]: [...SHARED, "ever في السؤال وnever في الجملة الخبرية والإجابات القصيرة (Yes, I have. / No, I haven't.)؛ لا اختيار بين المضارع التام والماضي البسيط."],
 };

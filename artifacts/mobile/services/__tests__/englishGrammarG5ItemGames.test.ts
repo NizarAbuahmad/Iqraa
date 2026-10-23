@@ -35,17 +35,25 @@ describe('Grade 5 authored lessons in the app', () => {
   });
 
   it('Choose: the right option is the answer, and it differs from the distractor', () => {
-    for (const id of LESSONS) for (const seed of SEEDS) for (const q of buildChooseRound(sentences(id), makeRng(seed))) {
-      assert.equal(q.options[q.answerIndex], q.sentence.choose!.right, id);
-      assert.notEqual(q.options[0], q.options[1], id);
+    for (const id of LESSONS) for (const seed of SEEDS) {
+      const round = buildChooseRound(sentences(id), makeRng(seed));
+      assert.ok(round.length >= 6, id);
+      for (const q of round) {
+        assert.equal(q.options[q.answerIndex], q.sentence.choose!.right, id);
+        assert.notEqual(q.options[0], q.options[1], id);
+      }
     }
   });
 
   it('Build: the tiles are the whole sentence, and the tiles in order are judged right', () => {
-    for (const id of LESSONS) for (const seed of SEEDS) for (const q of buildSentenceRound(sentences(id), makeRng(seed))) {
-      assert.ok(!q.prompt, `${id}: ${q.sentence.text}`);
-      assert.equal(q.tiles.length, q.sentence.build!.tokens.length);
-      assert.equal(isSentenceBuilt(q.sentence.build!.tokens.map(text => ({ text })), q.sentence), true, q.sentence.text);
+    for (const id of LESSONS) for (const seed of SEEDS) {
+      const round = buildSentenceRound(sentences(id), makeRng(seed));
+      assert.ok(round.length >= 6, id);
+      for (const q of round) {
+        assert.ok(!q.prompt, `${id}: ${q.sentence.text}`);
+        assert.equal(q.tiles.length, q.sentence.build!.tokens.length);
+        assert.equal(isSentenceBuilt(q.sentence.build!.tokens.map(text => ({ text })), q.sentence), true, q.sentence.text);
+      }
     }
   });
 

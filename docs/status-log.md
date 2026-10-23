@@ -28,9 +28,10 @@ they were already visible).
   `will-questions` 14); U5 relative clauses (`who` 14, `where` 14, `which` 12). S2: U6 past simple, irregular verbs and
   did; U7 past continuous; U8 should/shouldn't; U9 present perfect; U10 present perfect with ever/never (each three
   sub-topics, 40 items). Sentences are nine words or fewer (`buildCap(5)`), with no real or book-character names, and
-  the distractor is ungrammatical in standard English: the bare verb for a participle, a doubled marker («the most
-  kindest», never «the most» before a short adjective, never «-fuller»), a misplaced negative, `Have he`, or statement
-  order in a wh-question. No item turns on the past simple against the present perfect, and a distractor a teacher
+  the distractor is ungrammatical in standard English, for example the bare verb for a participle, a doubled marker
+  («the most kindest», never «the most» before a short adjective, never «-fuller»), a misplaced negative, `Have he`,
+  or statement order in a wh-question (the full list is rule 4 of the plan,
+  `docs/superpowers/plans/2026-10-23-english-corner-grammar-g5.md`). No item turns on the past simple against the present perfect, and a distractor a teacher
   might accept («the most kind», `-ful` adjectives with `-er`) was replaced rather than flagged.
 - **True or false is silent** (twins are never voiced) and **Yes or No is not offered**, exactly as the Grade 9
   authored lessons; Choose and Build play the correct sentence after the answer. Nothing is pictured.
@@ -49,8 +50,8 @@ they were already visible).
   `englishGrammarG5ItemGames.test.ts` (Choose, Build and True or false on all ten, Yes or No on none, no twin voiced).
   `englishGrammarEngine.test.ts` pinned «Grade 5 has no grammar units»; it now says every Grade 5 unit is grade 5 and
   Grade 6 is the empty grade.
-- **Verified:** root `pnpm run typecheck` clean (api-server, mobile, scripts); `@workspace/curriculum` `test` 635
-  tests, 635 passing, 0 failing; its `verify` 197 files, 3306 lessons, 0 errors; the **full mobile suite 6975 tests,
+- **Verified:** root `pnpm run typecheck` clean (api-server, mobile, scripts); `@workspace/curriculum` `test` 636
+  tests, 636 passing, 0 failing; its `verify` 197 files, 3306 lessons, 0 errors; the **full mobile suite 6975 tests,
   6965 passing, 10 skipped, 0 failing** (394 s; the run before this change had 2 failing, both
   the Grade 9 `englishHubGames.test.ts` narrowing, fixed since). **In a browser** at 390 px in Arabic and English, web
   build with `EXPO_PUBLIC_DEMO_MODE=true`, sign-offs in the working tree only (restored straight after, `grep -c "LOCAL
@@ -59,7 +60,7 @@ they were already visible).
   round of eight in each activity, in both lessons and both languages: Choose and Build play the correct sentence
   after the answer (a recording URL and the browser voice as fallback; 8 of 8 questions each, 0 plays before) and True
   or false has no speaker button before or after answering and plays nothing (0 of 8); a nine-word Build round wraps
-  its slots and tiles onto two and three rows and a nine-word Choose stem onto two lines, with no horizontal scroll at
+  its slots and tiles onto two and three rows and an eight-word Choose stem onto two lines, with no horizontal scroll at
   any step. I read the screenshots.
 - **Not verified:** the 400 sentences by a teacher (a script cannot tell wrong English from right; the printed form is
   the review); the match of each lesson id to the printed book page; on a device; audio, which does not exist for
@@ -72,12 +73,15 @@ they were already visible).
 - **Found on the way, not fixed here:** (1) in every grade's not-covered notes the Arabic «و» is glued to an English
   word («وafter», «وshouldn't»), and on the printed form it renders as a stray letter beside the Latin run («wheng
   afterg»): it is in the Grade 2, 3, 4 and 9 notes too (8-13 lines each), so it is old, and it is a separate task to
-  rewrite the notes with a space or a comma. The U2 note's closing full stop is also pulled into its English run.
+  rewrite the notes with a space or a comma. (After the final review the three Arabic wording fixes were made: the U2 note no longer ends
+  in an English run followed by a full stop, the U6 note says «الماضي البسيط والمضارع التام», the U10 note says «never في
+  الجملة الخبرية»; the form's lead sentence now says the book gives «مثالًا أو مثالين» per lesson, not one sentence; and
+  the data test's past-simple guard now checks every word of the U9 and U10 distractors against a list of irregular
+  pasts, and a new test pins «ever» to questions.)
   (2) The units have a few optional minor review notes for the teacher, none blocking: a handful of stilted
   sentences (a broken microwave, «seen a dishwasher», «touch a rash»), «stay home» against «stay at home», the plural
   «was» distractors («The dolphins was swimming») that some dialects use, the missing-auxiliary twins in U7, which are
-  fragments rather than wrong verb forms, and a past-simple guard in the data test that is anchored to the whole
-  distractor and does not list `broke`, `wore`, `gave` or `drew`.
+  fragments rather than wrong verb forms.
 - **To switch a lesson on:** a Grade 5 English teacher signs that lesson's page of
   `docs/english-grammar-g5-review.html`, printed, and checks the book-page line; audio is recorded for the correct
   sentences; then the unit's `reviewedBy` is set in `englishGrammarG5.ts`.

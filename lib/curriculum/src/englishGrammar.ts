@@ -78,7 +78,7 @@ export interface GrammarPattern {
   };
 }
 
-/** A hand-written Grade 9 item: the whole sentence, the words a child must choose, and the distractor it is offered against. */
+/** A hand-written Grade 5 or 9 item: the whole sentence, the words a child must choose, and the distractor it is offered against. */
 export interface GrammarItem {
   /** The sub-topic it belongs to (printed on the teacher's form; the sentence's `patternId`). */
   topic: string;
@@ -95,7 +95,7 @@ export interface GrammarUnit {
   lessonId: string;
   /** A teacher's sign-off. `null` → the unit is offered to nobody. */
   reviewedBy: { name: string; date: string } | null;
-  /** Empty on a unit of authored `items` (Grade 9, S1 U1–U10 except U4's two). */
+  /** Empty on a unit of authored `items` (Grade 5 or 9; Grade 9: S1 U1–U10 except U4's two). */
   patterns: GrammarPattern[];
   /** Hand-written sentences, each with its answer and distractor; expanded after the patterns. */
   items?: GrammarItem[];

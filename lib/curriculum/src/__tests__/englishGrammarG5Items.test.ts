@@ -6,8 +6,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { GRAMMAR_UNITS, allGrammarSpoken, grammarUnit, grammarUnitsForGrade, offeredGrammar, unitSentences } from '../englishGrammar.ts';
-import { renderGrammarSheet } from '../englishGrammar.ts';
+import { GRAMMAR_UNITS, allGrammarSpoken, grammarUnit, grammarUnitsForGrade, offeredGrammar, renderGrammarSheet, unitSentences } from '../englishGrammar.ts';
 import { G5_ITEM_LESSONS } from '../englishGrammarG5Items.ts';
 import { renderGrammarReviewHtml } from '../englishGrammarReview.ts';
 import { hubLesson } from '../englishHub.ts';
@@ -106,8 +105,22 @@ describe('Grade 5 authored lessons', () => {
   });
 
   it('never use the past simple as a present perfect distractor', () => {
-    for (const id of [L('s2-nccd-u9_l1'), L('s2-nccd-u10_l1')].filter(i => ids().includes(i))) {
-      for (const x of sentencesOf(id)) assert.ok(!/^(saw|did|went|ate|took|made|wrote)$/.test(x.choose!.wrong), `${id}: ${x.text}`);
+    const PAST = new Set(('saw did went ate took wrote broke wore gave drew threw knew spoke rode sang swam drank began chose fell forgot ' +
+      'hid flew grew shook stole woke came became ran').split(' '));
+    for (const id of [L('s2-nccd-u9_l1'), L('s2-nccd-u10_l1')]) {
+      for (const x of sentencesOf(id)) {
+        for (const w of x.choose!.wrong.toLowerCase().split(/\s+/).map(w => w.replace(/[^a-z']/g, ''))) {
+          assert.ok(!PAST.has(w), `${id}: «${w}» in the distractor «${x.choose!.wrong}» of «${x.text}»`);
+        }
+      }
+    }
+  });
+
+  it('use «ever» only in a question', () => {
+    for (const id of ids()) for (const x of sentencesOf(id)) {
+      for (const clause of x.text.match(/[^.?!]+[.?!]?/g) ?? []) {
+        if (/\bever\b/i.test(clause)) assert.ok(clause.trim().endsWith('?'), `${id}: «${x.text}»`);
+      }
     }
   });
 
@@ -139,7 +152,7 @@ describe('the Grade 5 teacher form', () => {
     assert.equal(html.split('class="unit"').length - 1, 10);
     assert.ok(html.includes('الصف الخامس'));
   });
-  it('lists every sentence once', () => {
+  it('lists every sentence', () => {
     for (const id of ids()) for (const x of sentencesOf(id)) assert.ok(html.includes(x.text.replace(/'/g, '&#39;')) || html.includes(x.text), x.text);
   });
   it('leaves the other grades alone', () => {
