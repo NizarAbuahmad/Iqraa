@@ -162,6 +162,72 @@ with fewer than four words (3, 1, 2, 0 and 2).
 - **Still open:** the five lessons the hub does not carry need a change to how the hub builds lessons (its own
   spec).
 
+## Lesson-page pilot, app side: export of practice for five Grade 10 maths lessons — 2026-10-23
+
+`scripts/export-site-practice.ts` writes the practice the bank holds for five lessons into the
+snapshot iqrra.com renders as lesson pages (Site_Iqra `data/practice-grade10-math.json`, its own
+PR). Stacked on the SEO review PR above; retarget to `main` once that merges.
+
+**Why only five.** The bank is organised by family, not lesson. 25 of the 36 Grade 10 maths lessons
+match a family with worked solutions, but that match is too coarse to publish: four derivative
+lessons share one family (22 items would print under four titles), the statistics family holds
+mean, median and a dice question under lessons about mutually exclusive and independent events, and
+the functions family contains an arithmetic-sequence item. The script therefore exports a lesson
+only when it is on an explicit list (by lesson id), `matchMathFamily` still maps it to the expected
+family, **no other** Grade 10 maths lesson maps to that family, and the family still has at least
+4 items with working. It throws, not skips, when any of those stops holding. The five:
+linear+quadratic systems (`linear_quad`), two quadratics (`quad_system`), simplifying exponentials
+(`simplify_exp`), exponential equations (`exp_eq`), sequences (`sequences`). Per-lesson `exclude`
+lists name items of a clean family that are still off-lesson, each with its reason: `qq-v1` (a
+linear+quadratic system) and, for sequences, the two geometric items and the sum item, none of which
+the lesson's outcomes cover. Sequences therefore has 1 worked + 3 practice, the rest 1 + 5.
+
+**Verified.** All 28 exported items (5 worked, 23 practice) were worked by hand against the
+lesson's official outcomes: every answer key is correct, and each item's last line of working states
+its key. Strict `tsc` on the script passes (checked by hand: this folder is under no project's
+`rootDir`, so nothing typechecks it automatically; it cannot live in `lib/curriculum/scripts`,
+whose `rootDir` rejects the cross-package import).
+
+**Not verified.** The items were **not** sent to the SymPy service, so nothing says "verified"; the
+site pages say only that the questions are the bank's own, not the textbook's. The other 31 lessons
+that match a family are not exported: lessons sharing a family need an item-by-item mapping reviewed
+by a person who teaches the course (roughly 8 more lessons could qualify; estimate, not measured).
+Chemistry is not exported. The site shows Latin `x` and digits in left-to-right isolates; the app
+converts to «س» and Arabic digits at display time and that converter was not ported.
+
+## SEO / GEO / AEO review: one spelling, preview cards for app links — 2026-10-23
+
+A review of the landing site (`NizarAbuahmad/Site_Iqra`, iqrra.com — its changes are in that repo's
+own draft PR) and of what this repo ships to the web. Done from source only: the review sandbox
+could not reach iqrra.com, app.iqrra.com or any social account, so **nothing was checked live**,
+and the Ahrefs / Similarweb / Supermetrics connectors would not connect, so no keyword volumes.
+
+**Changed here.**
+- `scripts/inject-pwa.mjs` now writes Open Graph and `twitter:card` tags into the web `index.html`.
+  WhatsApp and similar scrapers do not run the bundle, so a pasted `/take/CODE`, class code or
+  shared material rendered as a bare URL. The image is the marketing site's `img/og.jpg` by
+  absolute URL — if that file is renamed in the other repo, previews lose their image with no
+  error here. The app stays de-indexed: `_headers` still sends `noindex`, which a preview
+  scraper does not read. Verified by running the script on a synthetic `index.html` (tags land,
+  second run is a no-op); the real `expo export` was not run.
+- Play listing copy (`marketing/play-store/listing-{ar,en}.md`) uses «إقرأ» and "Iqrra", matching
+  the site, the app and CI's brand rule. Titles stay within Play's 30 characters (27 and 30). The
+  marketing plan's spelling-drift bullet is marked decided. **If a listing is already saved in
+  Play Console, its title and descriptions must be changed by hand to match.**
+
+**Not done, and why.**
+- Lesson-level landing pages (the plan's «تحضير درس X» queries have no page; 57 grade-by-subject
+  pages exist, 1,862 lessons do not). Real risk of scaled thin content — pilot on Grade 10
+  maths and chemistry with real outcomes and a sample worksheet before generating any more.
+- Keyword wording («تحضير الحصص» in titles vs «تحضير درس» in the target queries) is a hypothesis;
+  check Search Console before changing a title.
+- No named author on any blog post, no About page; Search Console / Bing verification not found in
+  the repo (may be DNS) — confirm the sitemap is submitted.
+- No English page or `hreflang`. Google Play is left out of `sameAs` and `llms.txt` until the
+  listing is live.
+- The English half of the site's privacy policy still names "the Iqra team" as data controller.
+  That is a legal party name; whoever owns the policy decides.
+
 ## Schools tab: all of a school's teachers, and a bad filter is refused — 2026-10-23
 
 Two gaps in the admin Schools tab (#1136), found reading it.
