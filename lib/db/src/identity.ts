@@ -12,6 +12,16 @@ const ROLE_RE = /^[a-z_]{1,32}$/;
 const store = new AsyncLocalStorage<Identity>();
 
 /**
+ * Throws unless both fields are safe to write into a simple query. `asUser` calls it, and so
+ * does `ScopedPool#openScope`, which takes an Identity directly and must not rely on a caller
+ * having gone through `asUser`.
+ */
+export function assertValidIdentity(identity: Identity): void {
+  if (!UUID_RE.test(identity.userId)) throw new Error("asUser: userId is not a uuid");
+  if (!ROLE_RE.test(identity.role)) throw new Error("asUser: role must be lower_snake_case");
+}
+
+/**
  * Run `fn` — and everything it awaits — as `identity`.
  *
  * Both fields are checked here because ScopedPool writes them into a
@@ -19,8 +29,7 @@ const store = new AsyncLocalStorage<Identity>();
  * value that passes these two patterns cannot carry SQL.
  */
 export function asUser<T>(identity: Identity, fn: () => T): T {
-  if (!UUID_RE.test(identity.userId)) throw new Error("asUser: userId is not a uuid");
-  if (!ROLE_RE.test(identity.role)) throw new Error("asUser: role must be lower_snake_case");
+  assertValidIdentity(identity);
   return store.run({ userId: identity.userId.toLowerCase(), role: identity.role }, fn);
 }
 

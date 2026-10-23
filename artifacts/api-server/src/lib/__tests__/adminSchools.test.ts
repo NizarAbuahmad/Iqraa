@@ -9,7 +9,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { MAX_SCHOOL_NAME, parseSchoolAssignment, parseSchoolInput } from "../adminSchools.ts";
+import { MAX_SCHOOL_NAME, parseSchoolAssignment, parseSchoolIdFilter, parseSchoolInput } from "../adminSchools.ts";
 
 function rejects(fn: () => unknown): string {
   try {
@@ -58,5 +58,22 @@ describe("parseSchoolAssignment", () => {
     assert.match(rejects(() => parseSchoolAssignment({ schoolId: "" })), /schoolId/);
     assert.match(rejects(() => parseSchoolAssignment({ schoolId: "school-1" })), /schoolId/);
     assert.match(rejects(() => parseSchoolAssignment({ schoolId: 7 })), /schoolId/);
+  });
+});
+
+describe("parseSchoolIdFilter", () => {
+  it("returns the id", () => {
+    assert.equal(parseSchoolIdFilter(ID), ID);
+  });
+
+  it("means no filter when absent or empty", () => {
+    assert.equal(parseSchoolIdFilter(undefined), undefined);
+    assert.equal(parseSchoolIdFilter(""), undefined);
+  });
+
+  it("refuses a malformed id rather than listing every teacher", () => {
+    assert.match(rejects(() => parseSchoolIdFilter("school-1")), /schoolId/);
+    assert.match(rejects(() => parseSchoolIdFilter(["a", "b"])), /schoolId/);
+    assert.match(rejects(() => parseSchoolIdFilter(7)), /schoolId/);
   });
 });

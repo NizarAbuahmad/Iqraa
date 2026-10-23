@@ -22,11 +22,11 @@ import {
   students,
   users,
 } from "@workspace/db";
-import { and, asc, desc, eq, gte, ilike, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, inArray, isNotNull, isNull, lt, or, sql, type SQL } from "drizzle-orm";
 import { getBudgetStatus, getUserBudgetLimitUsd } from "../lib/aiBudget.js";
 import { currentPeriodStart } from "../lib/aiUsageLog.js";
 import { RATE_LIMITS } from "../lib/rateLimit.js";
-import { parseSchoolAssignment, parseSchoolInput } from "../lib/adminSchools.js";
+import { parseSchoolAssignment, parseSchoolIdFilter, parseSchoolInput } from "../lib/adminSchools.js";
 import { parseDateRange, parseMetricInput, parsePublicIdea, parseSiteSignup, siteKeyMatches, toCsv, UUID } from "../lib/adminMetrics.js";
 import { notifyAdminsOfWaitlistSignup } from "../lib/adminNotify.js";
 import { sendAppInviteEmail } from "../lib/email.js";
@@ -336,12 +336,19 @@ router.get("/admin/users", authMiddleware, requireRole(...ADMIN_ROLES), async (r
       res.status(400).json({ error: range.error });
       return;
     }
+    let schoolId: string | undefined;
+    try {
+      schoolId = parseSchoolIdFilter(req.query["schoolId"]);
+    } catch (msg) {
+      res.status(400).json({ error: String(msg) });
+      return;
+    }
     const where = and(
       q ? or(ilike(users.email, like), ilike(users.firstName, like), ilike(users.lastName, like)) : undefined,
       req.query["status"] === "suspended" ? isNotNull(users.suspendedAt) : undefined,
       // The schools screen lists teachers, and a school's own teachers.
       typeof req.query["role"] === "string" && req.query["role"] ? eq(users.role, req.query["role"]) : undefined,
-      typeof req.query["schoolId"] === "string" && UUID.test(req.query["schoolId"]) ? eq(users.schoolId, req.query["schoolId"]) : undefined,
+      schoolId ? eq(users.schoolId, schoolId) : undefined,
       range.from ? gte(users.createdAt, range.from) : undefined,
       range.to ? lt(users.createdAt, range.to) : undefined,
     );
@@ -631,8 +638,15 @@ router.post("/admin/invites", authMiddleware, requireRole("system_admin"), invit
   res.json({ ok: true });
 });
 
+/** `?platform=` on the AI pages: «mobile» is both app stores, «unknown» is rows with no marker. */
+const PLATFORM_FILTERS: Record<string, (col: typeof aiGenerations.platform) => SQL> = {
+  web: (col) => eq(col, "web"),
+  mobile: (col) => inArray(col, ["android", "ios"]),
+  unknown: (col) => isNull(col),
+};
+
 /**
- * GET /admin/ai-costs?from=&to= — the AI spend page. Defaults to the current
+ * GET /admin/ai-costs?from=&to=&platform= — the AI spend page. Defaults to the current
  * UTC month, which is the budget period. Every breakdown reads the same rows
  * with the same filter, so the tables agree with the totals.
  */
@@ -642,15 +656,23 @@ router.get("/admin/ai-costs", authMiddleware, requireRole(...ADMIN_ROLES), async
     res.status(400).json({ error: range.error });
     return;
   }
+  const platform = req.query["platform"];
+  if (platform !== undefined && platform !== "" && !(typeof platform === "string" && Object.hasOwn(PLATFORM_FILTERS, platform))) {
+    res.status(400).json({ error: "platform must be mobile, web or unknown" });
+    return;
+  }
   const from = range.from ?? currentPeriodStart();
-  const where = and(gte(aiGenerations.createdAt, from), range.to ? lt(aiGenerations.createdAt, range.to) : undefined);
+  // `byPlatform` reads `inRange`, not `where`: it is the comparison, so it
+  // must keep showing every platform while one is picked.
+  const inRange = and(gte(aiGenerations.createdAt, from), range.to ? lt(aiGenerations.createdAt, range.to) : undefined);
+  const where = and(inRange, platform ? PLATFORM_FILTERS[platform as string]!(aiGenerations.platform) : undefined);
   const calls = sql<number>`count(*)::int`;
   const hits = sql<number>`count(*) filter (where ${aiGenerations.cacheStatus} = 'hit')::int`;
   const costUsd = sql<number>`coalesce(sum(${aiGenerations.costUsd}), 0)::float`;
   const promptTokens = sql<number>`coalesce(sum(${aiGenerations.promptTokens}), 0)::int`;
   const completionTokens = sql<number>`coalesce(sum(${aiGenerations.completionTokens}), 0)::int`;
   try {
-    const [[totals], byDay, byKind, byModel, byUser] = await Promise.all([
+    const [[totals], byDay, byKind, byModel, byUser, byPlatform] = await Promise.all([
       db.select({ calls, hits, costUsd, promptTokens, completionTokens }).from(aiGenerations).where(where),
       db
         .select({ day: sql<string>`to_char(${aiGenerations.createdAt} at time zone 'UTC', 'YYYY-MM-DD')`, calls, costUsd })
@@ -685,6 +707,19 @@ router.get("/admin/ai-costs", authMiddleware, requireRole(...ADMIN_ROLES), async
         .groupBy(aiGenerations.userId, users.email, users.role)
         .orderBy(desc(sql`5`))
         .limit(50),
+      db
+        .select({
+          platform: sql<string>`coalesce(${aiGenerations.platform}, 'unknown')`,
+          calls,
+          hits,
+          costUsd,
+          p50Ms: sql<number | null>`percentile_cont(0.5) within group (order by ${aiGenerations.durationMs})::int`,
+          p95Ms: sql<number | null>`percentile_cont(0.95) within group (order by ${aiGenerations.durationMs})::int`,
+        })
+        .from(aiGenerations)
+        .where(inRange)
+        .groupBy(sql`1`)
+        .orderBy(desc(sql`4`)),
     ]);
     res.json({
       from: from.toISOString(),
@@ -694,6 +729,7 @@ router.get("/admin/ai-costs", authMiddleware, requireRole(...ADMIN_ROLES), async
       byKind,
       byModel,
       byUser,
+      byPlatform,
       budget: getBudgetStatus(),
     });
   } catch (err) {

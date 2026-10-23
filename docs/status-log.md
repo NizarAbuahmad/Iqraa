@@ -24,7 +24,7 @@ something every student has on day one.
   `role: 'student'`, plus a checkbox: an adult, or a guardian agrees. A parent is code-only as before.
 - **API:** `/auth/register` and `/auth/google` refuse a new student without `ageConfirmed: true`
   (`age_confirmation_required`, `lib/ageConfirmation.ts`) and store `users.guardian_confirmed_at`
-  (migration 0015, one nullable column).
+  (migration 0016, one nullable column; renumbered from 0015 when main's `ai_generations.platform` took it).
 - **Claim gate:** `needsRosterClaim` no longer holds a student (a parent still is); `needsGradeSetup`
   no longer waits behind it for a student. An email student uses the library, corners, games and
   lesson explanations with no class; `/student/*` routes answer 200 with an empty list. The school tab
@@ -56,7 +56,7 @@ a choice is made; «برمز المعلم» shows one code input and no password
 only, and reaches `/verify-email` with both; after verifying, sign-in lands on `/setup-grade`, not
 `/claim-required`; Skip leads to the library, the School tab shows «لم تنضم إلى شعبة بعد» with a
 «Join a class» button, which opens `/join-class`. Against the built API on a throwaway local Postgres with
-`STUDENT_ACCOUNTS=true`, all 16 migrations applied from empty, and by `curl`: a student without
+`STUDENT_ACCOUNTS=true`, all 17 migrations applied from empty, and by `curl`: a student without
 `ageConfirmed` gets 400, with it 201 and `guardian_confirmed_at` set, a teacher needs none; a verified
 email student has `hasRosterLink:false` and `/student/exams|grades|homework|schedule` and
 `/messaging/contacts` all 200 empty; after `/auth/claim` with a class code `hasRosterLink:true` and
@@ -80,6 +80,182 @@ Not a lawyer's review (the legal text is drafted, not reviewed).
 **Known limits.** The teacher → student role switch (`POST /auth/role`) does not ask for the age
 confirmation. `/auth/redeem` and `/auth/code-login` still have no committed handler tests. The store
 declaration itself (outside the repo) still needs to say students can sign up with an email.
+
+## Schools tab: all of a school's teachers, and a bad filter is refused — 2026-10-23
+
+Two gaps in the admin Schools tab (#1136), found reading it.
+
+- **The members list stopped at 30.** `GET /admin/users` pages by 30, and the screen read one
+  page, so a school with 31 teachers showed 30 and the 31st looked like they were not in it.
+  `loadMembers` (`app/admin/schools.tsx`) now follows `offset` until it holds `total` rows.
+  The teacher *search* is still one page: a name or email narrows it, and 30 matches is more
+  than anyone scans.
+- **A malformed `?schoolId=` was ignored,** which turned "this school's teachers" into "every
+  teacher", each row with a Remove button. `parseSchoolIdFilter` (`lib/adminSchools.ts`) now
+  refuses it with a 400; absent or empty still means no filter.
+
+**Verified:** `adminSchools.test.ts` pins the new helper (valid id, absent/empty, malformed,
+array, number); api-server typecheck clean, 2,195/2,195 api tests pass on the second run (the
+first run tripped the event-loop timing test in `passwordHash.test.ts` under load; it passes
+alone); mobile typecheck clean.
+**Not verified:** the screen in a browser, and a school with more than 30 teachers (no such
+data exists). The paging loop is read, not run.
+
+## Generator screens: the shared pieces and the quiz — 2026-10-23
+
+PR 1 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`: the band wears
+the tool, and the quiz screen becomes a screen instead of seven stacked dropdowns. Mobile
+only: nothing here changes what is asked of the model, the API, or what is stored.
+
+**What changed**
+- `ToolHeader` (`components/ui`): when `concept` is passed, the band is a `Band` in the
+  concept's colour (violet for the quiz), a gradient that only deepens, and the header now
+  calls `useLightStatusBar()`. Without `concept` it is the plain brand-teal band as before
+  (it now also asks for light status-bar icons, which the old teal band under the status bar
+  did not).
+- New `components/generator/`: `SegmentedControl`, `Stepper`, `ChipGroup`, `LessonCard`,
+  `DockedAction`, `GeneratorLayout` (with `useIsDesktopGenerator`) and `PaperPreview`.
+  Colour only from `useColors()` and the tool's concept colour; selected text is
+  `readableOn(accent, colors.card)`, solid-fill text `textOn`; every target is 44 points or
+  more; state is `aria-checked` / `aria-pressed`; presses go through `PressableScale`
+  (reduced motion), cards through `useSurface()`.
+- `services/generatorSummary.ts` (pure): `summaryLine`, `previewRows`, `moreRowsLabel`, with
+  Arabic count agreement from `arCount.ts`. `services/subjectTheme.ts` gained `subjectTile`
+  (the lesson card's drawing and colour).
+- `app/ai-tools/quiz.tsx` ported per the spec: level and distribution are segmented
+  controls, duration, marks and count are steppers over the existing `DURATION_OPTIONS`,
+  `MARKS_OPTIONS` and `numQLabels.slice(0, visibleCountOptions(wideScope.isWide))`, the
+  question types are chips over `QUIZ_TYPE_ORDER`, the lesson is one `LessonCard` whose body
+  is the existing grade picker, `StrandedSelectionNote`, subject picker and `TopicSelector`.
+  The generate button is a `DockedAction`: docked with a summary line on a phone (hidden
+  while the keyboard is open, and while the result's own save bar is showing), under a
+  `PaperPreview` on desktop. `ACCENT` is the quiz concept colour; text and rings on a card use
+  `readableOn(ACCENT, colors.card)` so the dark card stays readable.
+- `ExamKindSwitch` takes an optional `accent`, so the quiz's tab row matches its band
+  (evaluations still gets the teal).
+- i18n: `genLessonFromCurriculum`, `genLessonDone`, `genStepperLess`, `genStepperMore`,
+  `genPreviewTitle`, `genPreviewName`, `genPreviewDate`, `genPreviewQuizNote`, both languages.
+  The badge reads «من المنهاج» (the spelling the app uses 47 times against 5 for «المنهج»,
+  which the spec and mock wrote).
+- Review fixes, same PR: (1) on a phone `GenerationStatus` (the spinner and Cancel, a refusal
+  such as `scopeNoCurriculum` / `subjectTopicMismatch` / `wideScopeUngrounded`, a network error)
+  sits under the whole form, out of sight of the docked button, so the screen scrolls it into
+  view when its phase leaves idle (`useLayoutEffect`, so no flash of the form first; not
+  animated under `useReduceMotion()`; docked layouts only). (2) The stranded-selection note
+  lives in the card's body, so the card stays open (and its button is not drawn) for as long as
+  the grade/subject pair is stranded. (3) The steppers are one row layout at every width (the
+  controls need about 176 points; three side by side overflowed their cards at 900 to 1280);
+  `stacked` is gone. (4) `LessonCard` honours `locked` itself (`open = expanded || locked`).
+  (5) The disabled-button hint is a new key, `genNeedLessonHint` («اختر الدرس ليصبح الزر
+  جاهزًا.»), because `needTopicHint` says «أعلاه»/"above" and the desktop button is beside the
+  form. (6) `PaperPreview`'s sheet shadow is `ELEVATION.card`. (7) The Stepper value is no
+  longer a live region (a screen reader announced each step twice); the summary line in
+  `DockedAction` is the only one.
+- Found on the way, one line: the quiz result's question-count pill (`questionCountPill`,
+  Arabic) used `arCountPhrase(n, 'سؤال واحد', …)`, so a paper of eleven or more questions read
+  «15 سؤال واحد». It now uses `arQuestionsPhrase` («15 سؤالًا»), pinned in `arCount.test.ts`.
+
+**Pinned by tests** (`services/__tests__/generatorScreens.test.ts`, `generatorSummary.test.ts`,
+`subjectTheme.test.ts`)
+- State names, saved positions and `formState` of the quiz are untouched (`gradeIdx`,
+  `subjectIdx`, `durationIdx`, `marksIdx`, `numQIdx`, `diffIdx`, `selectedTypes`; the option
+  arrays are the same literals; steppers move the same index states).
+- The lesson is still carried by id (`usePickedLesson(`, `resolveGeneratorGrounding(`,
+  `lessonId: pickedLesson.lessonId`); `TopicSelector` stays inside `LessonCard`, never behind
+  a condition, and `LessonCard` hides its body with `display: 'none'` and `aria-hidden`
+  instead of unmounting it.
+- No `PickerField` is left for the level, duration, marks, count or distribution; the
+  distribution control is under `wideScope.isWide`; chips keep the last-type guard.
+- Validation is as before (`!topic.trim()` disables, the inline error, `hasError`); the hint is
+  `genNeedLessonHint`, and the quiz no longer uses `needTopicHint`.
+- The stranded note keeps the card open (`stranded` is the same test `StrandedSelectionNote`
+  makes), and the card is `locked` while it applies.
+- `GenerationStatus` is scrolled into view only on a docked layout, only when its phase leaves
+  idle, before paint, and with `animated: !reduceMotion`.
+- `LessonCard` renders its body unconditionally: the check reads the whole source and fails
+  `{expanded && (` and `{expanded ? (` across lines too (it is itself tested on synthetic
+  sources); `locked` is honoured inside the component.
+- The Stepper has no `stacked` variant and no `aria-live`; `DockedAction`'s summary does.
+- No shared piece imports `palette` or writes a hex (only `PaperPreview`'s four paper colours,
+  allow-listed with the reason), a `shadowColor`, a `boxShadow` other than `ELEVATION.*`, or an
+  `rgb()`/`rgba()`; no `accessibilityState`, no `KeyboardAvoidingView`.
+- White text at alpha 1, 0.95 and 0.92 reads at 4.5:1 on both stops of every `CONCEPTS`
+  colour, so a new concept cannot ship an unreadable band.
+
+**Generator screens that now wear a concept-coloured band but are NOT ported** (their own
+accent constants and solid fills are still the old teal, which now sits under a differently
+coloured band): worksheet and homework (`worksheet.tsx`, PR 2), lesson plan (`lesson-plan.tsx`,
+PR 3), activity (`activity.tsx`, PR 4), slides (`slides.tsx`, PR 5). Also coloured by the same
+change, outside the five: the class challenge (`game.tsx`), the classroom marketplace
+(`classroom/index.tsx`, olive; its search field's white-on-band placeholder is 3.4:1 at 0.55,
+better than on the teal it replaces) and its builder (concept only when no card is chosen),
+and the parent message (`parent-message.tsx`).
+
+**Known limits (conscious choices)**
+- On a phone the docked generate button stays visible over a finished paper once the result's
+  save bar is gone (saved). It does what the old in-form button did (generate again with
+  changed options); only the unsaved-result state hands the spot to the save bar.
+- On desktop the status block sits under the form and is not scrolled to; at 860 to 900 points
+  of height it can be below the fold while the button's own spinner is beside the preview.
+- The card's «من المنهاج» badge is shown only for a lesson picked by id (or a wide scope). A
+  title typed or carried as a bare `topic` that grounds on generation shows no badge until a
+  lesson is picked; the badge is conservative, never wrong in the other direction.
+
+**Verified**
+- `pnpm run typecheck` and `cd artifacts/mobile && pnpm test` pass.
+- Browser pass on the web build (Playwright, Chromium), Arabic phone and desktop in light and
+  dark, English in light: empty lesson (card open, button disabled with its hint), a lesson
+  picked and the card collapsed and expanded, the wide scope (a whole semester: distribution
+  control appears, card badge, preview subtitle), generating, and the result with the save
+  bar replacing the docked bar. After the review fixes: the three steppers at viewport widths
+  900, 1024, 1280 and 1366 (light; 900 and 1280 also dark), with a probe that every stepper
+  button lies inside its card (12 points of padding at the smallest) and no page overflow; the
+  spinner and Cancel scrolled into view above the docked bar on a phone; a refusal
+  (`subjectTopicMismatch`, from a bookmarked `subjectIdx` the teacher does not teach)
+  scrolled into view; the stranded note with the card open and no change button (phone,
+  light and dark); the new hint on the desktop button.
+
+**NOT verified**
+- No device: no Android keyboard behaviour (the bar hiding on `keyboardDidShow`), no iOS safe
+  area, no touch feel, no screen reader (VoiceOver / TalkBack).
+- A teacher with a grade or subject hidden was exercised only as the stub teacher with one
+  grade and one subject (the grade dropdown offers only Grade 10; a bookmarked `subjectIdx`
+  made the stranded note appear). A multi-grade teacher with some hidden was not.
+- The scroll-to-status for a network error and for `scopeNoCurriculum` / `wideScopeUngrounded`
+  was not triggered (demo generation does not fail); the spinner and a mismatch refusal were.
+  The scroll has not been run with reduced motion on, nor on a device (a native `ScrollView`
+  `scrollTo` from a layout effect is the one thing here only the web build has shown).
+- Count 25 and 30 on a wide scope (stepper range) were not stepped through in the browser;
+  they come from the same `visibleCountOptions` the dropdown used.
+- Dark mode of the English screens, and reduced motion, were not looked at.
+
+## Row-level security: one scoped connection per request, inbox first — built, switched off, 2026-10-23
+
+`ScopedPool#openScope` / `RequestScope` (`lib/db/src/requestScope.ts`) hold one `BEGIN READ ONLY` scoped
+connection for a whole request; `middlewares/holdScopedConnection.ts` opens it after `authMiddleware` and closes it
+from `res` `finish`/`close`; it is mounted only on `GET /messaging/threads`, pinned by `lib/heldReads.ts` and
+`heldReads.test.ts`. A write error or the 5 s hold timeout ends the scope, and later statements fall back to the
+per-statement scoped path. Enforcement off is unchanged.
+
+**Verified:** the new `requestScope.test.ts` (identity isolation under interleaving, commit and release, read-only
+refusal, timeout, no leak), `heldConnection.test.ts` and `heldReads.test.ts` (the latter also pins every use of
+`holdScopedConnection` in the API source). `rlsDiff.test.ts` now asserts, through the real built bundle with
+`LOG_LEVEL=debug`, that the enforcement-on server logs `held scope ended` for `GET /api/messaging/threads` with at
+least one statement and the enforcement-off server logs none (mutation-checked: removing the mount turns it red).
+A one-off real run of the built API against local Postgres showed the inbox held for a teacher (8 statements,
+~20 ms) and a parent (7 statements, ~13 ms), and `/messaging/contacts` not held. **Not verified:** the real saving
+— run `bench:rls` from Cloud Shell (the same way as the failed run, so the numbers compare; its distance to Neon
+is probably close to Cloud Run's but it is not the same place) against the rehearsal project's pooled endpoint and
+read the `held` column. The gate: the `held` p95 added ≤ +100 ms on the inbox-shaped request, no listed route over
++100 ms, and every unlisted route's cost known (about 22 ms per statement) and accepted or added to the list; the
+gate has not been run, so nothing says it passed. Routes not on the list, and every write, still pay about 22 ms
+per statement; `RLS_ENFORCE` is still unset in production. After a flip, the debug log line `held scope ended`
+shows the real hold times.
+
+Follow-up (final review): `openScope` now validates the identity itself (`assertValidIdentity`, shared with
+`asUser`) before writing it into the scope SQL, so a future caller passing a raw value cannot inject SQL; and the
+held-route guard in `heldReads.test.ts` also refuses `.for("update"|"share"|"no key update"|"key share")`, which a
+READ ONLY transaction rejects.
 
 ## Chat app-help, nineteenth live pass: 18 more wordings for answers that already existed — 2026-10-23
 
@@ -262,6 +438,36 @@ Two things the first runs found: a mistyped confirmation stops the job at its fi
 pooled secret saved with extra text around the URL failed with `getaddrinfo ENOTFOUND base` — the guard's
 `pooled host:` line printing `***` instead of an address is the tell. PR #1187 made the pooled step skip when
 the confirmation or the empty-database guard fails.
+
+## Admin AI section: filter by mobile / web — 2026-10-23
+
+The dashboard's «الذكاء الاصطناعي» section now has All / Mobile / Web / Unknown
+chips and a per-platform table (calls, cache hits, cost, p50, p95).
+
+**What changed**
+- `ai_generations.platform` (nullable text, migration 0015, additive). `recordGeneration`
+  reads it from `lib/requestPlatform.ts`, an AsyncLocalStorage set by a middleware on
+  `/api` from `X-Iqraa-Platform` (the app already sends it on every call). No generator
+  signature changed. Anything with no header (cron, scripts, old builds) is null.
+- `GET /admin/ai-costs?platform=mobile|web|unknown` (400 on anything else) filters every
+  breakdown; `byPlatform` is deliberately unfiltered. «mobile» is android + ios.
+- The dashboard section reads `/admin/ai-costs` instead of `usage-summary`'s `ai.byKind` /
+  `ai.topSpenders`, so a chip tap does not re-run every query on the screen. Those two
+  fields are still returned, now unused by this screen.
+
+**Limits**
+- Rows from before this ships have no platform and are **not backfilled** — `users.signup_platform`
+  is where someone joined, not where they used the AI. «Unknown» is all of history until then.
+- The spent / cap line is the whole month's spend whatever chip is picked.
+- Verified: typecheck, `requestPlatform.test.ts`, `mountOrder.test.ts`; and on a throwaway local
+  database (all 16 migrations applied from empty, then dropped): `recordGeneration` run through the
+  real middleware stored web / android / ios / null, `/admin/ai-costs` returned the right rows and
+  totals for no filter, `web`, `mobile` and `unknown`, 400 for `bogus` and `constructor`, and the
+  dashboard (Expo web against that API) showed the chips filtering the Kind table while the
+  Platform table stayed whole.
+- **Not** verified: a real model call end to end (the local API runs `AI_LIVE_MODE=false`, so rows were
+  written through `recordGeneration` directly), Android / a device, and a re-screenshot after the last
+  12 px of spacing above the chips.
 
 ## The tab bar is drawn — 2026-10-23
 

@@ -1,5 +1,5 @@
 {
-  "id": "c42e3a0f-fcd6-41e4-b0c6-91ebd10ba0de",
+  "id": "cd3e8ac0-4376-41c5-9e33-d491b416835c",
   "prevId": "696f6152-0070-451f-bbb2-f24fa24be87b",
   "version": "7",
   "dialect": "postgresql",
@@ -478,12 +478,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "''"
-        },
-        "guardian_confirmed_at": {
-          "name": "guardian_confirmed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
         },
         "grade_ids": {
           "name": "grade_ids",
@@ -4344,6 +4338,12 @@
         "duration_ms": {
           "name": "duration_ms",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "platform": {
+          "name": "platform",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
