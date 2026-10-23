@@ -101,6 +101,10 @@ eval-out/
 !.claude/SUPERPOWERS.md
 !.claude/LICENSE-superpowers
 .claude/settings.local.json
+# Personal Claude Code instructions, and the Playwright MCP server's output
+# folder (screenshots, snapshots) — both are per-machine.
+CLAUDE.local.md
+.playwright-mcp/
 
 # A local agent tool's session state (throttle timestamps); one file reached main
 # with #1105.
