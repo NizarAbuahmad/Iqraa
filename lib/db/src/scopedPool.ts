@@ -1,6 +1,7 @@
 // lib/db/src/scopedPool.ts
 import pg from "pg";
-import { currentIdentity } from "./identity.ts";
+import { currentIdentity, type Identity } from "./identity.ts";
+import { currentScope, RequestScope, ScopeEnded } from "./requestScope.ts";
 
 const BEGIN_RE = /^\s*begin\b/i;
 
@@ -11,8 +12,7 @@ const BEGIN_RE = /^\s*begin\b/i;
  * still switches role — it sets both to '' (app_uid() reads '' as NULL), so
  * every policy evaluates false and the query sees nothing (fail closed).
  */
-function scopeSql(): string {
-  const identity = currentIdentity();
+function scopeSqlFor(identity: Identity | undefined): string {
   const toRole = "SET LOCAL ROLE iqraa_app";
   if (!identity) {
     return `${toRole}; SELECT set_config('app.user_id', '', true), set_config('app.role', '', true)`;
@@ -23,6 +23,8 @@ function scopeSql(): string {
   );
 }
 
+const scopeSql = () => scopeSqlFor(currentIdentity());
+
 /**
  * A pg.Pool whose every statement runs as `iqraa_app` with the current
  * request's identity, so Postgres row-level security applies.
@@ -31,6 +33,8 @@ function scopeSql(): string {
  *   transaction per statement — BEGIN + scope, the statement, COMMIT.
  * - `connect()` (what Drizzle calls for `db.transaction`): the returned client
  *   runs the scope statements right after Drizzle's own BEGIN.
+ * - With a RequestScope open for the request (`openScope`), `query()` runs on that
+ *   one held connection instead; `connect()` (db.transaction) is unaffected.
  *
  * Both are SET LOCAL / set_config(..., true), so nothing outlives the
  * transaction — safe behind a transaction-mode pooler, and safe for the next
@@ -62,7 +66,33 @@ export class ScopedPool extends pg.Pool {
     if (!this.enforce || typeof args[args.length - 1] === "function") {
       return (super.query as any).apply(this, args);
     }
+    const scope = currentScope();
+    if (scope && !scope.ended && scope.owner === this) return this.heldQuery(scope, args);
     return this.scopedQuery(args);
+  }
+
+  /**
+   * One scoped, read-only connection for the whole request (see requestScope.ts),
+   * for the routes that opted in. `identity` is fixed when the scope is opened.
+   * Undefined with enforcement off, where there is nothing to scope.
+   */
+  openScope(identity: Identity, holdTimeoutMs = 5000): RequestScope | undefined {
+    if (!this.enforce) return undefined;
+    return new RequestScope(
+      this,
+      () => (super.connect as any).call(this),
+      `BEGIN READ ONLY; ${scopeSqlFor(identity)}`,
+      holdTimeoutMs,
+    );
+  }
+
+  private async heldQuery(scope: RequestScope, args: any[]): Promise<pg.QueryResult> {
+    try {
+      return await scope.query(args);
+    } catch (err) {
+      if (err instanceof ScopeEnded) return this.scopedQuery(args); // ended under us: still scoped, per statement
+      throw err;
+    }
   }
 
   override connect(): Promise<pg.PoolClient>;
