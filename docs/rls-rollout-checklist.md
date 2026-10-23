@@ -97,8 +97,11 @@ GitHub's runners are not in your Cloud Run region — so C1 is still separate.)
 
 - [ ] **C1. Measure the added latency** against the rehearsal project's **pooled** string, from
   the API's region if you can (a Cloud Run job, or a VM there; numbers from a laptop overstate
-  the cost). Use the benchmark in the plan, Task 7 Step 3: it prints ms per statement with
-  enforcement off and on. Multiply the difference by the statements in a typical request (the
+  the cost). Run the benchmark: `BENCH_DATABASE_URL='<pooled string of the rehearsal
+  project>' pnpm --filter @workspace/db run bench:rls` (`lib/db/scripts/bench-rls.ts`; read-only; it
+  alternates enforcement off and on and prints the added ms per statement and per 15-statement
+  request, and says whether the inbox gate holds). On a laptop-free loopback Postgres it added about
+  0.3 ms a statement, which is a floor, not a forecast. Multiply the difference by the statements in a typical request (the
   teacher inbox is the heaviest read, roughly fifteen).
 
   **Gate:** p95 within budget — suggested ≤ +100 ms on the inbox, ≤ +25 % elsewhere. If it

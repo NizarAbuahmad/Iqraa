@@ -14,7 +14,8 @@
     "push": "node ./scripts/push.mjs",
     "verify-schema": "node ./scripts/verify-schema.mjs",
     "push-force": "node ./scripts/push.mjs --force",
-    "seed:assessment": "node ./scripts/seed-assessment.mjs"
+    "seed:assessment": "node ./scripts/seed-assessment.mjs",
+    "bench:rls": "node --experimental-strip-types ./scripts/bench-rls.ts"
   },
   "dependencies": {
     "drizzle-orm": "catalog:",
