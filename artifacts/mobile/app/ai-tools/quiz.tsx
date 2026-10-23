@@ -590,7 +590,7 @@ export default function QuizScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <ToolHeader topPad={topPad} isRTL={isRTL} title={t('createQuizTitle')} subtitle={t('quizSubtitle')} />
+      <ToolHeader topPad={topPad} isRTL={isRTL} title={t('createQuizTitle')} concept="quiz" subtitle={t('quizSubtitle')} />
 
       {/* Form */}
       <View style={{ padding: 20 }}>
@@ -755,7 +755,7 @@ export default function QuizScreen() {
             ]}
             accessibilityRole="button"
           >
-            <Ionicons name="tv-outline" size={18} color="#fff" />
+            <Ionicons name="tv-outline" size={20} color="#fff" />
             <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 14 }}>
               {t('presentOnScreen')}
             </Text>
@@ -805,7 +805,7 @@ export default function QuizScreen() {
                       accessibilityRole="button"
                       accessibilityLabel={t('deleteQuestion')}
                     >
-                      <Ionicons name="trash-outline" size={15} color={colors.mutedForeground} />
+                      <Ionicons name="trash-outline" size={16} color={colors.mutedForeground} />
                     </Pressable>
                   </View>
                 </View>
@@ -814,7 +814,7 @@ export default function QuizScreen() {
                     checked. The aggregate row above still covers the rest. */}
                 {o?.verifiedBy === 'symbolic' ? (
                   <View style={[styles.verifyRow, { marginTop: 0, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    <Ionicons name="shield-checkmark" size={13} color="#067647" />
+                    <Ionicons name="shield-checkmark" size={14} color="#067647" />
                     <Text style={[styles.verifyText, { color: palette.success, textAlign: isRTL ? 'right' : 'left' }]}>
                       {t('verifiedBySymbolic')}
                     </Text>
@@ -869,7 +869,7 @@ export default function QuizScreen() {
                         >
                           <Ionicons
                             name={isCorrect ? 'checkmark-circle' : 'ellipse-outline'}
-                            size={17}
+                            size={20}
                             color={isCorrect ? palette.success : colors.mutedForeground}
                           />
                         </Pressable>
@@ -983,7 +983,7 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL }: {
   return (
     <Pressable onPress={onToggle} style={[styles.checkRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
       <View style={[styles.checkbox, { borderColor: checked ? accent : colors.border, backgroundColor: checked ? accent : 'transparent' }]}>
-        {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
+        {checked && <Ionicons name="checkmark" size={14} color="#fff" />}
       </View>
       <Text style={[{ color: colors.foreground, fontFamily: checked ? 'ReadexPro_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
     </Pressable>

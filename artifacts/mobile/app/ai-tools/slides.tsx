@@ -989,7 +989,7 @@ export default function SlidesScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <ToolHeader topPad={topPad} isRTL={isRTL} title={t('slidesTitle')} subtitle={t('slidesSubtitle')} leading="🖥️" />
+        <ToolHeader topPad={topPad} isRTL={isRTL} title={t('slidesTitle')} subtitle={t('slidesSubtitle')} concept="slides" />
 
         <View style={styles.form}>
           <PickerField label={t('grade')} value={uiLang === 'ar' ? grades[gradeIdx].nameAr : grades[gradeIdx].name} options={grades.map(g => (uiLang === 'ar' ? g.nameAr : g.name))} onChange={setGradeIdx} hidden={teacherScope.gradeHidden} colors={colors} isRTL={isRTL} accent={ACCENT} maxHeight={220} selectedTint={ACCENT + '15'} />

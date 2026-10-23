@@ -94,7 +94,7 @@ export function MaterialCanvas({
             >
               <Ionicons
                 name={action.icon}
-                size={15}
+                size={16}
                 color={action.primary ? colors.primaryForeground : colors.foreground}
               />
               <Text
@@ -114,7 +114,7 @@ export function MaterialCanvas({
             accessibilityRole="button"
             accessibilityLabel={closeLabel}
           >
-            <Ionicons name="close" size={17} color={colors.mutedForeground} />
+            <Ionicons name="close" size={20} color={colors.mutedForeground} />
           </Pressable>
         </View>
       </View>

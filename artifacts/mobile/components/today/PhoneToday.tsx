@@ -10,18 +10,21 @@
  * (see `showLessonBar`). Amber (`palette.live`) is only on Start class: it
  * means "now".
  */
-import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import React, { useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { ConceptIcon } from '@/components/ui/Glyph';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTodayLesson } from '@/hooks/useTodayLesson';
+import { useLightStatusBar } from '@/hooks/useLightStatusBar';
 import { palette } from '@/constants/colors';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
-import { Band, BRAND_MOTIF_OPACITY } from '@/components/ui/Band';
+import { Band } from '@/components/ui/Band';
+import { BRAND_BAND, subjectTheme } from '@/services/subjectTheme';
 import { Surface, useSurface } from '@/components/ui/Surface';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Entrance } from '@/components/ui/Entrance';
@@ -35,6 +38,7 @@ import { periodClassLabel } from '@/services/classSubjects';
 import { className, classNameFor } from '@/services/materialClass';
 import { todayLabel } from '@/services/dateLabels';
 import { greetingKey } from '@/services/greeting';
+import { readableOn } from '@/services/readableColor';
 
 const START_CLASS_COLOR = palette.live;
 const ON_NAVY = '#FFFFFF';
@@ -48,19 +52,17 @@ export function PhoneToday() {
   const { user } = useAuth();
   const isAr = lang === 'ar';
   const today = useTodayLesson('today_phone');
+  // The band wears the lesson's subject, as on desktop (`subjectTheme`).
+  const theme = subjectTheme(today.active?.subjectId);
+  const hero = theme === BRAND_BAND ? colors.ink : theme.hero;
   const {
     topic, periodLine, next, setup, nudgeDismissed, classes, board, summary, toggleSkip,
     gradeLabel, subjectLabel, toolParams, quickTools, suggestions, startingClass, startClassError,
     openLessonPicker, prepJustReady, clearPrepJustReady,
   } = today;
 
-  // The navy band sits under the status bar: light icons while Today is
-  // showing, the default again on any other screen. (No-op on web.)
-  useFocusEffect(useCallback(() => {
-    if (Platform.OS === 'web') return;
-    StatusBar.setBarStyle('light-content');
-    return () => StatusBar.setBarStyle('default');
-  }, []));
+  // The navy band sits under the status bar.
+  useLightStatusBar();
 
   const [draft, setDraft] = useState('');
   const sendDraft = () => {
@@ -83,9 +85,9 @@ export function PhoneToday() {
         keyboardShouldPersistTaps="handled"
       >
         <Band
-          color={colors.ink}
-          motif="leaf"
-          motifOpacity={BRAND_MOTIF_OPACITY}
+          color={hero}
+          motif={theme.motif}
+          motifOpacity={theme.motifOpacity}
           style={{
             paddingTop: insets.top + SPACE.md,
             paddingHorizontal: SPACE.lg,
@@ -115,7 +117,7 @@ export function PhoneToday() {
               >
                 <Ionicons
                   name={next?.happeningNow ? 'radio-button-on' : 'time-outline'}
-                  size={13}
+                  size={14}
                   color={colors.accentForeground}
                 />
                 <Text style={[s.periodText, { color: colors.accentForeground }]}>{periodLine}</Text>
@@ -146,7 +148,7 @@ export function PhoneToday() {
               >
                 {startingClass
                   ? <ActivityIndicator size="small" color={ON_NAVY} />
-                  : <Ionicons name="tv-outline" size={15} color={ON_NAVY} />}
+                  : <Ionicons name="tv-outline" size={16} color={ON_NAVY} />}
                 <Text style={s.btnText}>{t('startClass')}</Text>
               </PressableScale>
               <PressableScale
@@ -157,7 +159,7 @@ export function PhoneToday() {
                   { borderColor: 'rgba(255,255,255,0.28)', backgroundColor: 'rgba(255,255,255,0.06)', flexDirection: rowDir },
                 ]}
               >
-                <Ionicons name="swap-horizontal" size={15} color={ON_NAVY} />
+                <Ionicons name="swap-horizontal" size={16} color={ON_NAVY} />
                 <Text style={s.btnText}>{t('changeLesson')}</Text>
               </PressableScale>
             </View>
@@ -208,7 +210,7 @@ export function PhoneToday() {
           {startClassError ? (
             <Entrance index={section++}>
               <View style={[s.errorRow, { backgroundColor: colors.destructive + '14', flexDirection: rowDir }]}>
-                <Ionicons name="alert-circle-outline" size={14} color={colors.destructive} />
+                <Ionicons name="alert-circle" size={14} color={colors.destructive} />
                 <Text style={[s.errorText, { color: colors.destructive, textAlign: align }]}>{startClassError}</Text>
               </View>
             </Entrance>
@@ -254,7 +256,7 @@ export function PhoneToday() {
                     style={[s.tool, surface]}
                   >
                     <View style={[s.toolIcon, { backgroundColor: tool.color + '1A' }]}>
-                      <Ionicons name={tool.icon} size={20} color={tool.color} />
+                      <ConceptIcon icon={tool.icon} glyph={tool.glyph} size={20} color={readableOn(tool.color, colors.card, 3)} />
                     </View>
                     <Text numberOfLines={2} style={[s.toolText, { color: colors.foreground }]}>
                       {t(tool.titleKey as never)}

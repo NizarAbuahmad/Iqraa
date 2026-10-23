@@ -25,7 +25,7 @@ const LOCKED = ["email_verification_tokens", "password_reset_tokens", "refresh_t
 const DEFERRED = [
   "ai_artifact_reports", "ai_artifacts", "ai_generations", "class_resources", "competency_definitions",
   "conversations", "feedback", "game_results", "homework", "homework_completions", "homework_reminders", "lesson_media", "level_bands", "level_scales", "library_resources",
-  "manual_metrics", "messages", "rate_limit_buckets", "rubric_templates", "saved_materials",
+  "live_answers", "live_games", "live_players", "manual_metrics", "messages", "rate_limit_buckets", "rubric_templates", "saved_materials",
   "schedule_periods", "schedule_slots", "schools", "site_signups", "teaching_plans", "users",
 ] as const;
 

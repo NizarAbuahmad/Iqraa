@@ -28,6 +28,7 @@ import {
 } from 'react-native';
 import { Redirect, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { ConceptIcon } from '@/components/ui/Glyph';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
@@ -39,11 +40,16 @@ import { JordanFlag } from '@/components/ui/JordanFlag';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { LessonPrepBoard } from '@/components/ui/LessonPrepBoard';
 import { Celebrate } from '@/components/ui/Celebrate';
+import { Band } from '@/components/ui/Band';
+import { useSurface } from '@/components/ui/Surface';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { BRAND_BAND, subjectChipColor, subjectTheme } from '@/services/subjectTheme';
 import { periodClassLabel } from '@/services/classSubjects';
 import { className, classNameFor } from '@/services/materialClass';
 import { todayLabel } from '@/services/dateLabels';
 import { palette } from '@/constants/colors';
 import { PhoneToday } from '@/components/today/PhoneToday';
+import { readableOn } from '@/services/readableColor';
 
 const START_CLASS_COLOR = palette.live;
 const SIDE_PANEL_WIDTH = 356;
@@ -94,6 +100,12 @@ function LessonWorkspace() {
 
   const rowDir = isRTL ? 'row-reverse' as const : 'row' as const;
   const align = isRTL ? 'right' as const : 'left' as const;
+  const surface = useSurface();
+  // The band wears the lesson's subject: an English lesson and a maths lesson
+  // no longer open on the same navy. No subject keeps the brand navy (`ink`).
+  const theme = subjectTheme(today.active?.subjectId);
+  const hero = theme === BRAND_BAND ? colors.ink : theme.hero;
+  const readyPct = summary.total > 0 ? Math.min(1, summary.done / summary.total) : 0;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -104,9 +116,7 @@ function LessonWorkspace() {
         lesson, and the one action that starts it — and the card below keeps
         only what is still missing.
       */}
-      <View style={[s.band, { backgroundColor: colors.ink }]}>
-        <View pointerEvents="none" style={[s.bandGlow, s.bandGlowA, { backgroundColor: colors.brand }]} />
-        <View pointerEvents="none" style={[s.bandGlow, s.bandGlowB, { backgroundColor: colors.brand }]} />
+      <Band color={hero} motif={theme.motif} motifOpacity={theme.motifOpacity} style={s.band}>
       <View style={[s.topbar, { flexDirection: rowDir }]}>
         <View style={[{ flexDirection: rowDir, alignItems: 'center', gap: 10 }]}>
           <Text style={[s.today, { color: 'rgba(255,255,255,0.78)' }]}>{todayLabel(lang as 'ar' | 'en')}</Text>
@@ -118,14 +128,16 @@ function LessonWorkspace() {
             disabled={!topic || startingClass}
             style={({ pressed }) => [
               s.btn,
-              { backgroundColor: START_CLASS_COLOR, opacity: !topic ? 0.45 : pressed ? 0.88 : 1, flexDirection: rowDir },
+              // The band is the lesson's colour now; on a warm one (English) amber alone
+              // blends in, so the button keeps a light edge on every band.
+              { backgroundColor: START_CLASS_COLOR, borderWidth: 1, borderColor: 'rgba(255,255,255,0.55)', opacity: !topic ? 0.45 : pressed ? 0.88 : 1, flexDirection: rowDir },
             ]}
             accessibilityRole="button"
             accessibilityLabel={t('startClass')}
           >
             {startingClass
               ? <ActivityIndicator size="small" color="#fff" />
-              : <Ionicons name="tv-outline" size={15} color="#fff" />}
+              : <Ionicons name="tv-outline" size={16} color="#fff" />}
             <Text style={s.btnText}>{t('startClass')}</Text>
           </Pressable>
           <Pressable
@@ -137,7 +149,7 @@ function LessonWorkspace() {
             ]}
             accessibilityRole="button"
           >
-            <Ionicons name="swap-horizontal" size={15} color="#fff" />
+            <Ionicons name="swap-horizontal" size={16} color="#fff" />
             <Text style={s.btnText}>{t('changeLesson')}</Text>
           </Pressable>
         </View>
@@ -147,7 +159,7 @@ function LessonWorkspace() {
       <View style={s.bandLesson}>
         {periodLine ? (
           <View style={[s.periodPill, { backgroundColor: colors.accent, flexDirection: rowDir, alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-            <Ionicons name={next?.happeningNow ? 'radio-button-on' : 'time-outline'} size={13} color={colors.accentForeground} />
+            <Ionicons name={next?.happeningNow ? 'radio-button-on' : 'time-outline'} size={14} color={colors.accentForeground} />
             <Text style={[s.periodText, { color: colors.accentForeground }]}>{periodLine}</Text>
           </View>
         ) : null}
@@ -164,15 +176,23 @@ function LessonWorkspace() {
           <Text style={[s.hint, { color: 'rgba(255,255,255,0.78)', textAlign: align }]}>
             {t('homeNoLessonHint')}
           </Text>
+        ) : summary.total > 0 ? (
+          // How ready the lesson is, where the lesson is named.
+          <View style={[s.bandProgress, { flexDirection: rowDir }]}>
+            <View style={s.bandTrack}>
+              <View style={[s.bandFill, { width: `${readyPct * 100}%`, alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
+            </View>
+            <Text style={s.bandProgressText}>{t('homeReady', summary.done, summary.total)}</Text>
+          </View>
         ) : null}
       </View>
-      </View>
+      </Band>
 
       <View style={[s.body, { flexDirection: rowDir }]}>
         {/* ─── Main column ───────────────────────────────────────── */}
         <ScrollView style={{ flex: 1 }} contentContainerStyle={s.mainCol} showsVerticalScrollIndicator={false}>
           {/* Lesson + readiness */}
-          <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={[s.card, surface]}>
             {/*
               One next thing to set up so this card can follow the timetable —
               production had bell times but not a single class in a period.
@@ -217,7 +237,7 @@ function LessonWorkspace() {
 
             {startClassError ? (
               <View style={[s.errorRow, { backgroundColor: colors.destructive + '14', flexDirection: rowDir }]}>
-                <Ionicons name="alert-circle-outline" size={14} color={colors.destructive} />
+                <Ionicons name="alert-circle" size={14} color={colors.destructive} />
                 <Text style={[s.errorText, { color: colors.destructive, textAlign: align }]}>{startClassError}</Text>
               </View>
             ) : null}
@@ -254,21 +274,19 @@ function LessonWorkspace() {
           <Text style={[s.sectionTitle, { color: colors.foreground, textAlign: align }]}>{t('homeQuickTools')}</Text>
           <View style={[{ flexDirection: rowDir, gap: 12 }]}>
             {quickTools.map(tool => (
-              <Pressable
+              <PressableScale
                 key={tool.id}
                 onPress={() => router.push({ pathname: tool.route as never, params: toolParams as never })}
-                style={({ pressed }) => [
-                  s.tool,
-                  { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 },
-                ]}
+                style={[s.tool, surface]}
+                accessibilityLabel={t(tool.titleKey as never)}
               >
-                <View style={[s.toolIcon, { backgroundColor: tool.color + '1A' }]}>
-                  <Ionicons name={tool.icon} size={20} color={tool.color} />
+                <View style={[s.toolIcon, { backgroundColor: tool.color + '1F' }]}>
+                  <ConceptIcon icon={tool.icon} glyph={tool.glyph} size={24} color={readableOn(tool.color, colors.card, 3)} />
                 </View>
                 <Text numberOfLines={1} style={[s.toolText, { color: colors.foreground }]}>
                   {t(tool.titleKey as never)}
                 </Text>
-              </Pressable>
+              </PressableScale>
             ))}
           </View>
 
@@ -278,26 +296,28 @@ function LessonWorkspace() {
             {classes.length === 0 ? (
               <Text style={[s.empty, { color: colors.mutedForeground }]}>{t('homeNoClasses')}</Text>
             ) : (
-              classes.slice(0, 6).map(group => (
-                <Pressable
-                  key={group.id}
-                  onPress={() => router.push({ pathname: '/classes/[id]', params: { id: group.id } })}
-                  style={({ pressed }) => [
-                    s.classChip,
-                    { backgroundColor: colors.secondary, borderColor: colors.primary + '2E', opacity: pressed ? 0.8 : 1 },
-                  ]}
-                >
-                  <Text style={[s.classChipText, { color: colors.primary }]}>
-                    {className(group, lang as 'ar' | 'en')}
-                  </Text>
-                </Pressable>
-              ))
+              classes.slice(0, 6).map(group => {
+                // Each class in its subject's colour, so they tell apart at a glance.
+                const tone = subjectChipColor(group.subjectId, colors.card);
+                return (
+                  <PressableScale
+                    key={group.id}
+                    onPress={() => router.push({ pathname: '/classes/[id]', params: { id: group.id } })}
+                    style={[s.classChip, { backgroundColor: colors.card, borderColor: tone + '66', flexDirection: rowDir }]}
+                  >
+                    <View style={[s.classDot, { backgroundColor: tone }]} />
+                    <Text style={[s.classChipText, { color: tone }]}>
+                      {className(group, lang as 'ar' | 'en')}
+                    </Text>
+                  </PressableScale>
+                );
+              })
             )}
           </View>
         </ScrollView>
 
         {/* ─── Assistant panel ───────────────────────────────────── */}
-        <View style={[s.side, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[s.side, surface]}>
           <View style={[{ flexDirection: rowDir, alignItems: 'center', gap: 9 }]}>
             <IqraaMark size={28} tone="soft" />
             <View style={{ flex: 1 }}>
@@ -365,12 +385,13 @@ function LessonWorkspace() {
 }
 
 const s = StyleSheet.create({
-  // The navy header band. `overflow: hidden` clips the two glows to it.
-  band: { paddingHorizontal: 24, paddingTop: 14, paddingBottom: 26, gap: 14, overflow: 'hidden' },
-  bandGlow: { position: 'absolute', borderRadius: 999, opacity: 0.16 },
-  bandGlowA: { width: 320, height: 320, top: -170, left: -90 },
-  bandGlowB: { width: 260, height: 260, bottom: -190, left: 200, opacity: 0.09 },
+  // The header band, in the lesson's subject colour (`subjectTheme`).
+  band: { paddingHorizontal: 24, paddingTop: 14, paddingBottom: 26, gap: 14 },
   bandLesson: { gap: 8 },
+  bandProgress: { alignItems: 'center', gap: 12, marginTop: 4 },
+  bandTrack: { width: 220, height: 8, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.24)', overflow: 'hidden' },
+  bandFill: { height: 8, borderRadius: 999, backgroundColor: '#FFFFFF' },
+  bandProgressText: { color: '#FFFFFF', fontSize: 13, fontFamily: 'ReadexPro_600SemiBold' },
   topbar: {
     minHeight: 44,
     alignItems: 'center',
@@ -383,7 +404,7 @@ const s = StyleSheet.create({
 
   body: { flex: 1, gap: 20, padding: 22 },
   mainCol: { gap: 16, paddingBottom: 40 },
-  card: { borderWidth: 1, borderRadius: 18, padding: 22, gap: 14 },
+  card: { padding: 22, gap: 14 },
   crumb: { fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular' },
   periodPill: { alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 },
   periodText: { fontSize: 13, fontFamily: 'ReadexPro_600SemiBold' },
@@ -400,11 +421,12 @@ const s = StyleSheet.create({
   errorText: { fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular', flex: 1 },
 
   sectionTitle: { fontSize: 15, fontFamily: 'ReadexPro_600SemiBold', marginTop: 6 },
-  tool: { flex: 1, alignItems: 'center', gap: 9, borderWidth: 1, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 10 },
-  toolIcon: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  tool: { flex: 1, alignItems: 'center', gap: 10, paddingVertical: 18, paddingHorizontal: 10 },
+  toolIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   toolText: { fontSize: 13, fontFamily: 'ReadexPro_600SemiBold' },
-  classChip: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9 },
-  classChipText: { fontSize: 13, fontFamily: 'ReadexPro_500Medium' },
+  classChip: { alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9 },
+  classDot: { width: 8, height: 8, borderRadius: 4 },
+  classChipText: { fontSize: 13, fontFamily: 'ReadexPro_600SemiBold' },
   empty: { fontSize: 15, lineHeight: 24, fontFamily: 'Almarai_400Regular' },
 
   side: {
@@ -412,8 +434,6 @@ const s = StyleSheet.create({
     flexBasis: SIDE_PANEL_WIDTH,
     flexGrow: 0,
     flexShrink: 0,
-    borderWidth: 1,
-    borderRadius: 18,
     padding: 16,
   },
   sideTitle: { fontSize: 15, fontFamily: 'ReadexPro_600SemiBold' },

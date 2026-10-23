@@ -249,7 +249,7 @@ export default function CqvIndexScreen() {
     >
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.headerBack}>
-          <Ionicons name="arrow-back" size={22} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerEyebrow}>INTERNAL · NOT IN INVESTOR MVP</Text>
         <Text style={styles.headerTitle}>Curriculum Quality Validation</Text>

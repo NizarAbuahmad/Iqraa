@@ -322,7 +322,7 @@ export default function CalendarScreen() {
                           </Text>
                           {e.clash ? (
                             <View style={{ flexDirection: rowDir, alignItems: 'center', gap: SPACE.sm }}>
-                              <Ionicons name="warning-outline" size={14} color={colors.warning} />
+                              <Ionicons name="warning" size={14} color={colors.warning} />
                               <Text style={{ flex: 1, color: colors.warning, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align }}>
                                 {t('calendarExamClash', grade)}
                               </Text>

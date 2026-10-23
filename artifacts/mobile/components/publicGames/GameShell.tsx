@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
+import { useLightStatusBar } from '@/hooks/useLightStatusBar';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
@@ -45,6 +46,8 @@ export function GameShell({
 }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  // The accent header sits under the status bar.
+  useLightStatusBar();
   const { t, isRTL } = useLanguage();
   const { user } = useAuth();
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
@@ -83,7 +86,7 @@ export function GameShell({
               dev server regenerates it — same reason other new routes in this
               app are cast (see app/_layout.tsx). */}
           <Pressable onPress={onBack ?? (() => router.replace('/play' as any))} style={styles.backBtn} hitSlop={10}>
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
+            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color="#fff" />
           </Pressable>
           <Text style={[styles.title, { textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
             {t(titleKey)}

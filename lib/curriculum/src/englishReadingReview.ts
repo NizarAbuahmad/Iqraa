@@ -9,13 +9,16 @@
  * docs/english-reading-g1-review.html, and a test fails when that copy is stale.
  */
 import {
-  READING_NOT_COVERED_G2, firstSound, firstSoundSkip, readSentencePool, readingUnitsForGrade, sentencePartner,
+  READING_NOT_COVERED_G2, READING_NOT_COVERED_G3, READING_NOT_COVERED_G4, firstSound, firstSoundSkip, readSentencePool, readingUnitsForGrade, sentencePartner,
   type ReadingUnit, type SoundSkip,
 } from './englishReading.ts';
 import type { GrammarSentence } from './englishGrammar.ts';
 import { notCoveredList, picture, unitLabelAr } from './englishGrammarReview.ts';
 import { hubLesson } from './englishHub.ts';
 import { wordPicture } from './englishPictures.ts';
+
+/** Why a lesson has no, or fewer, «Read the sentence» — the grades' tables never share a lesson. */
+const NOT_COVERED: Record<string, string[]> = { ...READING_NOT_COVERED_G2, ...READING_NOT_COVERED_G3, ...READING_NOT_COVERED_G4 };
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const AR_DIGITS = (n: number) => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)]);
@@ -27,6 +30,7 @@ const SKIP_AR: Record<SoundSkip, string> = {
   digraph: 'لا تُستعمل: أول حرفين صوت واحد (<span dir="ltr">ch / sh / th</span>)',
   'soft-c': 'لا تُستعمل: <span dir="ltr">c</span> تُلفظ <span dir="ltr">s</span> هنا',
   'soft-g': 'لا تُستعمل: <span dir="ltr">g</span> تُلفظ <span dir="ltr">j</span> هنا',
+  'hard-q': 'لا تُستعمل: <span dir="ltr">Q</span> تُلفظ <span dir="ltr">k</span> هنا',
 };
 
 /** A sentence's picture, in the same markup as the grammar form. */
@@ -34,7 +38,7 @@ function pictureOf(s: GrammarSentence): string {
   return picture(s.picture!.word, s.picture!.count, s.marker);
 }
 
-/** Grade 2: the «Read the sentence» pool of a unit, with the wrong picture each is shown against; then why anything is left out. */
+/** Grades 2 and 3: the «Read the sentence» pool of a unit, with the wrong picture each is shown against; then why anything is left out. */
 function sentenceSection(lessonId: string): string {
   const pool = readSentencePool(lessonId);
   const rows = pool.map((s, i) => {
@@ -72,7 +76,7 @@ function sentenceSection(lessonId: string): string {
       </table>
     </div>`
     : '';
-  return `${table}${notCoveredList(READING_NOT_COVERED_G2[lessonId])}`;
+  return `${table}${notCoveredList(NOT_COVERED[lessonId])}`;
 }
 
 function renderUnit(u: ReadingUnit, grade: number): string {
@@ -116,7 +120,7 @@ function renderUnit(u: ReadingUnit, grade: number): string {
         <tbody>${rows}
         </tbody>
       </table>
-    </div>${grade === 2 ? sentenceSection(u.lessonId) : ''}
+    </div>${grade >= 2 ? sentenceSection(u.lessonId) : ''}
     <div class="signoff">
       <div class="verdict">
         <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
@@ -151,6 +155,20 @@ const CHECKS_WORD = [
   'هل توافقون على استبعاد الكلمات المستبعدة، أم تريدون إضافة إحداها؟',
 ];
 
+const ACTS_SENTENCE = ACT_FIND + '\n      ' + ACT_LETTER + '\n      ' + ACT_STARTS +
+  '\n      <div class="act"><b>اقرَأ الجملة</b>تظهر جملة مكتوبة دون صوت، ويختار الطالب صورتها من ثلاث صور. إحدى الصورتين الخاطئتين هي صورة الجملة المقابلة إن وُجدت (🐭 مقابل 🐭🐭، أو ✅ مقابل ❌، أو 👦 مقابل 👧) ليقرأ الطالب الكلمة الصغيرة.</div>';
+
+const META_SENTENCE = '«بلا صورة» تعني أن الكلمة لا تظهر في نشاطَي الصور، وتظهر في «الحرف الأول» بالصوت وحده. لا يشمل التطبيق الصوت الأوسط أو الأخير في الكلمة. الصور هي الرموز التي تظهر في التطبيق نفسه.';
+
+const CSS_SENTENCE = `
+  td.sentence { font-family: var(--latin); font-size: 1.02rem; font-weight: 500; text-align: left; white-space: nowrap; }
+  .pic { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.2; }
+  .pic-word { font-family: var(--latin); font-size: .72rem; color: var(--muted); }
+  .sub-h { font-family: var(--display); font-size: 1.05rem; margin: 6px 0 0; }
+  .unit-note { margin: 0; }
+  .not-covered { margin: 0; padding-inline-start: 1.3em; display: grid; gap: 4px; font-size: .92rem; color: var(--muted); }
+  .not-covered [dir="ltr"] { font-family: var(--latin); }`;
+
 const GRADE_COPY: Record<number, GradeCopy> = {
   1: {
     title: 'مراجعة قراءة الصف الأول',
@@ -165,23 +183,45 @@ const GRADE_COPY: Record<number, GradeCopy> = {
     title: 'مراجعة قراءة الصف الثاني',
     eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف الثاني',
     lead: (words, units, sentences, sentenceUnits) => `أضفنا إلى ركن اللغة الإنجليزية في الصف الثاني أربعة أنشطة قراءة: ثلاثة على كلمات كل وحدة كما في الصف الأول، ونشاط رابع لقراءة جملة كاملة. الجمل هي جمل القواعد نفسها، وتُسمع بعد الإجابة فقط، ولا يظهر هذا النشاط لوحدة قبل موافقتكم على قواعدها أيضًا. لا يُسمع في التطبيق صوت الحرف وحده؛ يظهر الحرف مكتوبًا فقط. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل كلمة في ${AR_DIGITS(units)} وحدات، ${wordCountAr(words)}، وجمل النشاط الرابع في ${AR_DIGITS(sentenceUnits)} وحدات، ${AR_DIGITS(sentences)} جملة.`,
-    acts: ACT_FIND + '\n      ' + ACT_LETTER + '\n      ' + ACT_STARTS +
-      '\n      <div class="act"><b>اقرَأ الجملة</b>تظهر جملة مكتوبة دون صوت، ويختار الطالب صورتها من ثلاث صور. إحدى الصورتين الخاطئتين هي صورة الجملة المقابلة إن وُجدت (🐭 مقابل 🐭🐭، أو ✅ مقابل ❌، أو 👦 مقابل 👧) ليقرأ الطالب الكلمة الصغيرة.</div>',
+    acts: ACTS_SENTENCE,
     checks: [
       ...CHECKS_WORD,
       'في «اقرَأ الجملة»: هل يستطيع طالب الصف الثاني قراءة الجملة كاملة؟ وهل جملتا السؤال والجواب معًا أطول مما يُحتمل في هذه المرحلة، أم يكفي عرض الجواب وحده؟',
       'هل تُقرأ ✅ و❌ والصورة الواحدة مقابل الصورتين بوضوح على أنها «don\'t» و«these are»؟',
       'هل تسبب صورة pink (القلب الوردي) أو orange (الدائرة 🟠) أو لون العينين لبسًا؟',
     ],
-    meta: '«بلا صورة» تعني أن الكلمة لا تظهر في نشاطَي الصور، وتظهر في «الحرف الأول» بالصوت وحده. لا يشمل التطبيق الصوت الأوسط أو الأخير في الكلمة. الصور هي الرموز التي تظهر في التطبيق نفسه.',
-    extraCss: `
-  td.sentence { font-family: var(--latin); font-size: 1.02rem; font-weight: 500; text-align: left; white-space: nowrap; }
-  .pic { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.2; }
-  .pic-word { font-family: var(--latin); font-size: .72rem; color: var(--muted); }
-  .sub-h { font-family: var(--display); font-size: 1.05rem; margin: 6px 0 0; }
-  .unit-note { margin: 0; }
-  .not-covered { margin: 0; padding-inline-start: 1.3em; display: grid; gap: 4px; font-size: .92rem; color: var(--muted); }
-  .not-covered [dir="ltr"] { font-family: var(--latin); }`,
+    meta: META_SENTENCE,
+    extraCss: CSS_SENTENCE,
+  },
+  3: {
+    title: 'مراجعة قراءة الصف الثالث',
+    eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف الثالث',
+    lead: (words, units, sentences, sentenceUnits) => `أضفنا إلى ركن اللغة الإنجليزية في الصف الثالث أربعة أنشطة قراءة: ثلاثة على كلمات كل وحدة كما في الصفين الأول والثاني، ونشاط رابع لقراءة جملة كاملة. الجمل هي جمل القواعد نفسها، وتُسمع بعد الإجابة فقط، ولا يظهر هذا النشاط لوحدة قبل موافقتكم على قواعدها أيضًا. ثلاث وحدات من الثماني بلا صور لكلماتها، فتبقى فيها «الحرف الأول» وحده. لا يُسمع في التطبيق صوت الحرف وحده؛ يظهر الحرف مكتوبًا فقط. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل كلمة في ${AR_DIGITS(units)} وحدات، ${wordCountAr(words)}، وجمل النشاط الرابع في ${AR_DIGITS(sentenceUnits)} وحدات، ${AR_DIGITS(sentences)} جملة.`,
+    acts: ACTS_SENTENCE,
+    checks: [
+      ...CHECKS_WORD,
+      'في «اقرَأ الجملة»: هل يستطيع طالب الصف الثالث قراءة الجملة كاملة، مثل «She goes to work by underground.»؟',
+      'هل تُقرأ ✅ و❌ والصورة المضاعفة بوضوح على أنها «There\'s» و«There isn\'t» و«There are»، وهل تُقرأ صورة الولد مقابل البنت على أنها «he» و«she»؟',
+      'في وحدة «Look at the stars» ست كلمات مصورة فقط، فالجولة ستة أسئلة: هل يكفي هذا أم تفضلون إخفاء النشاط هناك؟',
+      'هل تسبب أي صورة من صور الجمل لبسًا في الاسم المطلوب؟',
+    ],
+    meta: META_SENTENCE,
+    extraCss: CSS_SENTENCE,
+  },
+  4: {
+    title: 'مراجعة قراءة الصف الرابع',
+    eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف الرابع',
+    lead: (words, units, sentences, sentenceUnits) => `أضفنا إلى ركن اللغة الإنجليزية في الصف الرابع أربعة أنشطة قراءة: ثلاثة على كلمات كل وحدة كما في الصفوف السابقة، ونشاط رابع لقراءة جملة كاملة. الجمل هي جمل القواعد نفسها، وتُسمع بعد الإجابة فقط، ولا يظهر هذا النشاط لوحدة قبل موافقتكم على قواعدها أيضًا. خمس وحدات من التسع بلا نشاط جمل، لأن جملها بلا صور (المقارنات والماضي) أو لأن كلماتها بلا صور، وسبب كل منها مكتوب في وحدتها. كلمتا <span dir="ltr">Qatar</span> و<span dir="ltr">Qatari</span> مستبعدتان من «الحرف الأول» لأن حرف Q فيهما يُلفظ k. لا يُسمع في التطبيق صوت الحرف وحده؛ يظهر الحرف مكتوبًا فقط. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل كلمة في ${AR_DIGITS(units)} وحدات، ${wordCountAr(words)}، وجمل النشاط الرابع في ${AR_DIGITS(sentenceUnits)} وحدات، ${AR_DIGITS(sentences)} جملة.`,
+    acts: ACTS_SENTENCE,
+    checks: [
+      ...CHECKS_WORD,
+      'في «اقرَأ الجملة»: هل جملتا السؤال والجواب معًا، مثل «Where are you from? I\'m from Qatar.»، أطول مما يُحتمل في هذه المرحلة، أم يكفي عرض الجواب وحده؟',
+      'هل تُقرأ صورة العلم وملامح ✅ و❌ و👦 و👧 والصورة المضاعفة بوضوح على أنها «I\'m from» و«There isn\'t» و«he / she» و«There were two»؟',
+      'في وحدة «New Neighbours» ست كلمات مصورة فقط (الأعلام)، فالجولة ستة أسئلة: هل يكفي هذا أم تفضلون إخفاء النشاط هناك؟',
+      'هل توافقون على استبعاد Qatar وQatari من «الحرف الأول» (Q تُلفظ k)، وعلى استبعاد العبارات التي تبدأ بحرف علّة مثل «at the weekend» و«a bag of»؟',
+    ],
+    meta: META_SENTENCE,
+    extraCss: CSS_SENTENCE,
   },
 };
 

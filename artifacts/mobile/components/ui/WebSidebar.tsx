@@ -76,7 +76,7 @@ function SuggestFeatureLink({ active }: { active: boolean }) {
         },
       ]}
     >
-      <Ionicons name="bulb-outline" size={18} color={tint} />
+      <Ionicons name="bulb-outline" size={20} color={tint} />
       <Text style={[styles.suggestLabel, { color: tint }]}>{t('suggestFeature')}</Text>
     </Pressable>
   );

@@ -684,12 +684,19 @@ sweep in your staged files.
     scales.
   - Header bands are `Band`: a gradient that only deepens, and
     `cornerTheme.test.ts` measures white text on both stops.
+  - A band under the status bar (one that pays `insets.top`) calls
+    `useLightStatusBar()`, or its icons are dark on it in light mode;
+    `statusBar.test.ts` fails one that does not.
   - `designScale.test.ts` counts hand-written `shadowColor`, so new depth
     comes from the tokens.
   A teacher's phone lands on Today (`components/today/PhoneToday.tsx`), which
   shares `useTodayLesson()` with the desktop workspace — change the lesson
   logic there, never in one layout; tab visibility and the lesson-bar rule live
   in `services/tabVisibility.ts`.
+  Today's band wears the lesson's subject (`subjectTheme` in
+  `services/subjectTheme.ts`): a corner subject borrows its corner, any other its
+  catalog colour deepened for white text; each prep row has its own hue
+  (`PREP_ROWS[].color`).
   Progress is celebrated by `Celebrate` (`components/ui/Celebrate.tsx`) at four
   moments only — exam handed in, game over, last homework ticked, prep checklist
   all ready. The exam fires on a successful hand-in the student made (never the
@@ -702,3 +709,35 @@ sweep in your staged files.
   celebrate on opening Today.
   **Amber (`palette.live`) means *now*** (start class, due today, live) and
   nothing else.
+- **Icons take a scale size, and a concept's icon and colour come from `CONCEPTS`
+  (since 2026-10-23).** `constants/icons.ts` holds `ICON` (14/16/20/24 for UI
+  icons), `ICON_DISPLAY` (32/40/48/64 for empty states and hero glyphs) and
+  `CONCEPTS` (one icon and one colour per teaching concept: quiz, worksheet,
+  lesson plan, slides, activity, homework, evaluations, challenge, games,
+  classroom, parent message…). `toolCatalog.ts` and `PREP_ROWS` read from it, so
+  the quiz is one glyph in one colour on the Tools tab, the prep board and a
+  generator's header; a new tool adds a concept, never a literal colour. Outline
+  for actions and navigation, filled for status (`checkmark-circle`,
+  `close-circle`, `alert-circle`, `information-circle`) and the selected tab.
+  Never draw a tick, cross, warning or tip with an emoji (✓ ✕ ⚠ 💡 render
+  differently on every platform): use `<Ionicons>`. A row or card that leads
+  with an icon uses `IconTile` (`components/ui`), whose glyph is
+  `readableOn(color, colors.card)`; a raw tool colour drawn as a glyph on a card
+  goes through `readableOn(color, colors.card, 3)`, or it sinks on the dark card.
+  `iconSystem.test.ts` pins exactly this: every literal `<Ionicons size>` is on the
+  scale; one icon family (plus the whiteboard eraser); `CONCEPTS` colours carry
+  white at 4.5:1, Tools-tab pairs are at least CIEDE2000 8 apart on the light card
+  and on the dark one, and none is amber; the catalog and the prep board read from
+  `CONCEPTS`; ✓ ✕ ✗ ⚠ 💡 ✅ ❌ are absent from `.tsx` chrome; `relatedResourcesDone`
+  has no leading emoji; the Tools tab, Today and the chat menu use `readableOn` on
+  the tool glyph. **Not tested, only convention:** outline for actions and filled
+  for status, and which rows use `IconTile`.
+  **Iqraa draws its own icons for the main concepts (since 2026-10-23).**
+  `constants/glyphs.ts` holds sixteen approved drawings (24 grid, 1.75 stroke,
+  outline + 18% tint), drawn by `Glyph` / `ConceptIcon` (`components/ui/Glyph.tsx`,
+  react-native-svg). A concept names its drawing in `CONCEPTS[…].glyph`, a corner
+  in `CORNERS[…].drawing`; draw a concept with `<ConceptIcon icon glyph …>`, never
+  a bare `<Ionicons name={tool.icon}>`, or the drawing silently falls back to the
+  stock glyph. A new drawing must be used or listed in `HELD` with its reason
+  (`glyphs.test.ts`); `library` and `messages` wait for the tab bar, which should
+  not mix drawn and stock icons.
