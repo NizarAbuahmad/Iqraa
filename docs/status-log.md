@@ -10,6 +10,39 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## SEO / GEO / AEO review: one spelling, preview cards for app links — 2026-10-23
+
+A review of the landing site (`NizarAbuahmad/Site_Iqra`, iqrra.com — its changes are in that repo's
+own draft PR) and of what this repo ships to the web. Done from source only: the review sandbox
+could not reach iqrra.com, app.iqrra.com or any social account, so **nothing was checked live**,
+and the Ahrefs / Similarweb / Supermetrics connectors would not connect, so no keyword volumes.
+
+**Changed here.**
+- `scripts/inject-pwa.mjs` now writes Open Graph and `twitter:card` tags into the web `index.html`.
+  WhatsApp and similar scrapers do not run the bundle, so a pasted `/take/CODE`, class code or
+  shared material rendered as a bare URL. The image is the marketing site's `img/og.jpg` by
+  absolute URL — if that file is renamed in the other repo, previews lose their image with no
+  error here. The app stays de-indexed: `_headers` still sends `noindex`, which a preview
+  scraper does not read. Verified by running the script on a synthetic `index.html` (tags land,
+  second run is a no-op); the real `expo export` was not run.
+- Play listing copy (`marketing/play-store/listing-{ar,en}.md`) uses «إقرأ» and "Iqrra", matching
+  the site, the app and CI's brand rule. Titles stay within Play's 30 characters (27 and 30). The
+  marketing plan's spelling-drift bullet is marked decided. **If a listing is already saved in
+  Play Console, its title and descriptions must be changed by hand to match.**
+
+**Not done, and why.**
+- Lesson-level landing pages (the plan's «تحضير درس X» queries have no page; 57 grade-by-subject
+  pages exist, 1,862 lessons do not). Real risk of scaled thin content — pilot on Grade 10
+  maths and chemistry with real outcomes and a sample worksheet before generating any more.
+- Keyword wording («تحضير الحصص» in titles vs «تحضير درس» in the target queries) is a hypothesis;
+  check Search Console before changing a title.
+- No named author on any blog post, no About page; Search Console / Bing verification not found in
+  the repo (may be DNS) — confirm the sitemap is submitted.
+- No English page or `hreflang`. Google Play is left out of `sameAs` and `llms.txt` until the
+  listing is live.
+- The English half of the site's privacy policy still names "the Iqra team" as data controller.
+  That is a legal party name; whoever owns the policy decides.
+
 ## Chat app-help, nineteenth live pass: 18 more wordings for answers that already existed — 2026-10-23
 
 A 30-question pass on app.iqrra.com found 18 questions answered by the model for which the app

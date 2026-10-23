@@ -5,7 +5,7 @@
 ## App name (30)
 
 ```
-Iqraa — Lesson prep for Jordan
+Iqrra — Lesson prep for Jordan
 ```
 
 ## Short description (80)
@@ -17,7 +17,7 @@ Lesson plans, quizzes and worksheets for the Jordanian curriculum, in Arabic.
 ## Full description (4000)
 
 ```
-Iqraa is a lesson-prep companion built Arabic-first for the Jordanian national curriculum — not a translated template engine.
+Iqrra is a lesson-prep companion built Arabic-first for the Jordanian national curriculum — not a translated template engine.
 
 Pick your grade, subject and lesson from the curriculum itself, and get classroom-ready material for tomorrow's lesson in minutes.
 
@@ -32,7 +32,7 @@ Pick your grade, subject and lesson from the curriculum itself, and get classroo
 
 ■ Grounded in the textbook
 
-Content is grounded in Jordanian Ministry of Education textbooks for grades 1 to 10, covering Arabic, mathematics, science, chemistry, physics, biology, earth science, English, Islamic education, social studies, geography, history, financial literacy, digital skills and vocational education. Pick a lesson and Iqraa works from your book's lesson — not from generic content.
+Content is grounded in Jordanian Ministry of Education textbooks for grades 1 to 10, covering Arabic, mathematics, science, chemistry, physics, biology, earth science, English, Islamic education, social studies, geography, history, financial literacy, digital skills and vocational education. Pick a lesson and Iqrra works from your book's lesson — not from generic content.
 
 ■ Checked mathematics
 
@@ -50,7 +50,7 @@ Create your classes, add students, share a join code, and keep evaluations and m
 
 Student data stays inside the teacher's own workspace. You can delete your account and everything attached to it from inside the app at any time: Settings → Delete account.
 
-Iqraa — less prep time, better teaching.
+Iqrra — less prep time, better teaching.
 ```
 
 ## Notes

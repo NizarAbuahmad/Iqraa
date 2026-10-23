@@ -72,8 +72,12 @@ clock.
 `iqraa-web.pages.dev` is another company's Qur'an app (see "Privacy policy URL"
 below), and it ships on Google Play under the name *Iqraa*. Search the store
 for your title before you commit to it — Play rejects listings likely to be
-confused with an existing app. `اقرأ — رفيقك في تحضير الحصص` is distinct enough
-to be defensible, but know what you are sitting next to.
+confused with an existing app. `إقرأ — رفيقك في تحضير الحصص` is distinct enough
+to be defensible, but know what you are sitting next to. (The listing copy was
+re-spelled on 2026-10-23 from «اقرأ» to the brand's «إقرأ» and from *Iqraa* to
+*Iqrra*, matching the site and the app. Search the store for **both** spellings,
+and if a listing is already saved in Play Console, change its title and
+descriptions to match `listing-ar.md` / `listing-en.md`.)
 
 ### 1. ~~`privacy@iqraa.app` is a placeholder~~ — resolved
 
