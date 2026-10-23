@@ -11,7 +11,7 @@ import { hubLessonsForGrade } from '../englishHub.ts';
 import { G9_TABLES } from '../englishGrammarG9.ts';
 
 const L = (unit: number, lesson: number) => `kbl-g9-eng-s1-nccd-u${unit}_l${lesson}`;
-/** The pilot's two lessons; the thirteen authored lessons are tested in englishGrammarG9Items.test.ts. */
+/** The pilot's two lessons; the nineteen authored lessons are tested in englishGrammarG9Items.test.ts. */
 const UNITS = grammarUnitsForGrade(9).filter(u => /-u4_l[13]$/.test(u.lessonId));
 const G9 = hubLessonsForGrade(9);
 const order = new Map(G9.map((l, i) => [l.id, i]));
@@ -116,11 +116,11 @@ test('the generator produces the designed sentences: 122 in all', () => {
 
 const docs = new URL('../../../../docs/', import.meta.url);
 
-test('the Grade 9 form lists every sentence once (the pilot\'s 122 and the 520 authored), a data page for Unit 4, and a note per lesson', async () => {
+test('the Grade 9 form lists every sentence once (the pilot\'s 122 and the 760 authored), a data page for Unit 4, and a note per lesson', async () => {
   const { renderGrammarReviewHtml } = await import('../englishGrammarReview.ts');
   const html = renderGrammarReviewHtml(9);
-  assert.equal((html.match(/<td class="sentence" dir="ltr">/g) ?? []).length, 122 + 520);
-  assert.equal((html.match(/<section class="unit"/g) ?? []).length, 2 + 13);
+  assert.equal((html.match(/<td class="sentence" dir="ltr">/g) ?? []).length, 122 + 760);
+  assert.equal((html.match(/<section class="unit"/g) ?? []).length, 2 + 19);
   assert.equal((html.match(/<section class="data"/g) ?? []).length, 1);
   assert.equal((html.match(/<table class="data-table"/g) ?? []).length, 4);
   assert.ok(html.includes('مراجعة قواعد الصف التاسع'));
@@ -129,8 +129,8 @@ test('the Grade 9 form lists every sentence once (the pilot\'s 122 and the 520 a
   }
   assert.ok(html.includes('<span class="yn yn-no" dir="ltr">Doughnuts are healthier than carrots.</span>'));
   assert.ok(html.includes('<span class="yn yn-yes" dir="ltr">Are carrots healthier than doughnuts? → Yes, they are.</span>'));
-  // A note under each of the 15 unit pages, and one block for the book topics the hub has no lesson for.
-  assert.equal((html.match(/class="not-covered"/g) ?? []).length, 2 + 13 + 1);
+  // A note under each of the 21 unit pages; every grammar topic of the book has a hub lesson, so no block of gaps.
+  assert.equal((html.match(/class="not-covered"/g) ?? []).length, 2 + 19);
   // Grade 9's data page lists Grade 9's adjectives only, and Grade 4's lists its own.
   assert.ok(!html.includes('more colourful'));
 });

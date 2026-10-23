@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { arCountPhrase, arMarksPhrase, arQuestionsPhrase, enMarksPhrase } from '../arCount.ts';
+import { getT } from '../i18n.ts';
 
 describe('arCountPhrase', () => {
   it('covers all four Arabic number classes', () => {
@@ -42,5 +43,18 @@ describe('marks and question counts on the student exam', () => {
   it('passes through a value it cannot read rather than inventing a count', () => {
     assert.equal(arMarksPhrase(''), '');
     assert.equal(enMarksPhrase(''), '');
+  });
+});
+
+describe('the quiz result pill', () => {
+  // `questionCountPill` once used arCountPhrase with «سؤال واحد» as the singular,
+  // so any paper of eleven or more read «15 سؤال واحد».
+  it('says «15 سؤالًا» for a long paper and the dual and plural below it', () => {
+    const t = getT('ar') as unknown as (key: string, ...args: unknown[]) => string;
+    assert.equal(t('questionCountPill', 1), 'سؤال واحد');
+    assert.equal(t('questionCountPill', 2), 'سؤالان');
+    assert.equal(t('questionCountPill', 7), '7 أسئلة');
+    assert.equal(t('questionCountPill', 15), '15 سؤالًا');
+    assert.equal(t('questionCountPill', 40), '40 سؤالًا');
   });
 });

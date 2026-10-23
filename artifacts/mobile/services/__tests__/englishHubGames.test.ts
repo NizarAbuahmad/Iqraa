@@ -31,9 +31,15 @@ import {
   starsFor,
 } from '../englishHub/games.ts';
 
+/**
+ * The lessons the word activities run on. A grammar-only lesson (too few words, e.g. the first conditional has none)
+ * shows grammar cards only: the lesson screen hides every word activity on it, so these rounds never meet it.
+ */
+const WORD_LESSONS = ENGLISH_HUB_LESSONS.filter(l => !l.grammarOnly);
+
 describe('listen and choose', () => {
   it('always offers the answer once, among distinct same-lesson options', () => {
-    for (const lesson of ENGLISH_HUB_LESSONS) {
+    for (const lesson of WORD_LESSONS) {
       const pool = new Set(lesson.words.map(w => w.en));
       for (const q of buildListenRound(lesson.words, makeRng(7))) {
         assert.equal(q.options[q.answerIndex], q.word.en, lesson.id);
@@ -66,7 +72,7 @@ describe('match', () => {
   });
 
   it('puts every English card in one column and every Arabic card in the other', () => {
-    for (const lesson of ENGLISH_HUB_LESSONS) {
+    for (const lesson of WORD_LESSONS) {
       const { en, ar } = buildMatchColumns(lesson.words, makeRng(9));
       assert.ok(en.every(c => c.lang === 'en'), lesson.id);
       assert.ok(ar.every(c => c.lang === 'ar'), lesson.id);
@@ -76,7 +82,7 @@ describe('match', () => {
   it('never sets a card beside its own answer, for any lesson or seed', () => {
     // Two independent shuffles line a pair up by chance; side by side that is
     // the answer handed over, so a row must never face its own match.
-    for (const lesson of ENGLISH_HUB_LESSONS) {
+    for (const lesson of WORD_LESSONS) {
       for (let seed = 1; seed <= 25; seed += 1) {
         const { en, ar } = buildMatchColumns(lesson.words, makeRng(seed));
         for (let row = 0; row < en.length; row += 1) {
@@ -112,7 +118,7 @@ describe('spelling', () => {
   });
 
   it('prefers single words when a lesson has enough', () => {
-    for (const lesson of ENGLISH_HUB_LESSONS) {
+    for (const lesson of WORD_LESSONS) {
       const singles = lesson.words.filter(w => !w.en.includes(' '));
       if (singles.length < 4) continue;
       for (const w of buildSpellRound(lesson.words, makeRng(5))) assert.ok(!w.en.includes(' '), w.en);
@@ -122,7 +128,7 @@ describe('spelling', () => {
 
 describe('scramble', () => {
   it('shuffles into the right letters, never already solved, for every G1-4 lesson', () => {
-    for (const lesson of ENGLISH_HUB_LESSONS) {
+    for (const lesson of WORD_LESSONS) {
       for (const q of buildScrambleRound(lesson.words, makeRng(11))) {
         const original = normaliseSpelling(q.word.en).split('');
         // .sort() mutates in place, so each side gets its own copy.
@@ -152,7 +158,7 @@ describe('scramble', () => {
   });
 
   it('prefers single words when a lesson has enough', () => {
-    for (const lesson of ENGLISH_HUB_LESSONS) {
+    for (const lesson of WORD_LESSONS) {
       const singles = lesson.words.filter(w => !w.en.includes(' '));
       if (singles.length < 4) continue;
       for (const q of buildScrambleRound(lesson.words, makeRng(5))) assert.ok(!q.word.en.includes(' '), q.word.en);
@@ -163,7 +169,7 @@ describe('scramble', () => {
 describe('picture matching', () => {
   it('pairs every emoji with the exact word it stands for, using only picturable words', () => {
     let sawAny = false;
-    for (const lesson of ENGLISH_HUB_LESSONS) {
+    for (const lesson of WORD_LESSONS) {
       if (!lessonHasPictureMatch(lesson.words)) continue;
       sawAny = true;
       const { pictures, words } = buildPictureBoard(lesson.words, makeRng(3));
@@ -181,7 +187,7 @@ describe('picture matching', () => {
   });
 
   it('never offers a lesson with fewer than 4 picturable words', () => {
-    for (const lesson of ENGLISH_HUB_LESSONS) {
+    for (const lesson of WORD_LESSONS) {
       const picturable = lesson.words.filter(w => isPicturable(w.en));
       assert.equal(lessonHasPictureMatch(lesson.words), picturable.length >= 4, lesson.id);
     }
@@ -189,7 +195,7 @@ describe('picture matching', () => {
 
   it('never shows two different words the same picture', () => {
     const seen = new Map<string, string>();
-    for (const lesson of ENGLISH_HUB_LESSONS) {
+    for (const lesson of WORD_LESSONS) {
       for (const w of lesson.words) {
         const p = wordPicture(w.en);
         if (!p) continue;
@@ -241,7 +247,7 @@ describe('flashcard pictures', () => {
   });
 
   it('agrees with isPicturable for every hub word', () => {
-    for (const lesson of ENGLISH_HUB_LESSONS) {
+    for (const lesson of WORD_LESSONS) {
       for (const w of lesson.words) assert.equal(wordPicture(w.en) !== null, isPicturable(w.en), w.en);
     }
   });
@@ -249,7 +255,7 @@ describe('flashcard pictures', () => {
 
 describe('speaking', () => {
   it('draws from the same single-word pool as spelling', () => {
-    for (const lesson of ENGLISH_HUB_LESSONS) {
+    for (const lesson of WORD_LESSONS) {
       const singles = lesson.words.filter(w => !w.en.includes(' '));
       if (singles.length < 4) continue;
       for (const w of buildSpeakingRound(lesson.words, makeRng(5))) assert.ok(!w.en.includes(' '), w.en);

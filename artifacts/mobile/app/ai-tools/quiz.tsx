@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -38,6 +38,7 @@ import {
   ALL_QUESTION_COUNTS, buildWideRequest, clampCountIndex, scopeFormState, visibleCountOptions,
 } from '@/services/wideScopeRequest';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope } from '@/services/generationScope';
 import { createVerificationTracker } from '@/services/verificationTracker';
 import { readIndexParam } from '@/services/materialParams';
@@ -51,7 +52,6 @@ import {
   optionMarkerState,
   parsePoints,
   removeQuestionAt } from '@/services/quizEdits';
-import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { useFavorite } from '@/hooks/useFavorite';
 import { useGeneratorExport } from '@/hooks/useGeneratorExport';
@@ -69,10 +69,25 @@ import { usePickedLesson } from '@/hooks/usePickedLesson';
 import { carriedLessonTopic } from '@/services/pickedLesson';
 import { nextFrame } from '@/services/nextFrame';
 import { QUIZ_TYPE_ORDER, type QuizType } from '@workspace/exam-paper';
+import { conceptOf } from '@/constants/icons';
+import { SPACE } from '@/constants/theme';
+import { readableOn } from '@/services/readableColor';
+import { moreRowsLabel, previewRows, summaryLine } from '@/services/generatorSummary';
+import { SegmentedControl } from '@/components/generator/SegmentedControl';
+import { Stepper } from '@/components/generator/Stepper';
+import { ChipGroup } from '@/components/generator/ChipGroup';
+import { LessonCard } from '@/components/generator/LessonCard';
+import { DockedAction, DOCKED_BAR_HEIGHT } from '@/components/generator/DockedAction';
+import { GeneratorLayout, useIsDesktopGenerator } from '@/components/generator/GeneratorLayout';
+import { PaperPreview } from '@/components/generator/PaperPreview';
 
-const ACCENT = palette.primary;
-/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
-const ACCENT_FILL = palette.hero;
+/**
+ * The quiz's own colour, from the concept list the Tools tab and the prep board
+ * read (`constants/icons.ts`). It carries white text at 4.5:1, so it is the fill
+ * for solid buttons; as text or a ring on a card the screen uses `accentInk`
+ * (`readableOn`), which stays readable on the dark card.
+ */
+const ACCENT = conceptOf('quiz').color;
 
 type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed';
 type DifficultyLevel = 'normal' | 'high' | 'difficult' | 'mixed';
@@ -177,7 +192,18 @@ export default function QuizScreen() {
   // reports no scope for a moment mid-pick (unit A to unit B), and a reset would
   // lose the teacher's 30 each time.
   const effNumQIdx = clampCountIndex(numQIdx, wideScope.isWide);
+  const isDesktop = useIsDesktopGenerator();
+  const accentInk = readableOn(ACCENT, colors.card);
+  // The lesson card opens by itself while there is no lesson, and when the grade or
+  // subject clears it; typing a title must not fold the field away mid-word, so only
+  // the button (or an empty topic) changes it. Never unmounts the pickers below.
+  const [lessonOpen, setLessonOpen] = useState(() => !topic.trim());
+  useEffect(() => { if (!topic.trim()) setLessonOpen(true); }, [topic]);
   const [loading, setLoading] = useState(false);
+  // Counts presses of generate. The status scroll depends on it as well as on the phase: a refusal
+  // returns before `setError('')`, so pressing again with the same refusal leaves the phase at 'error'
+  // and, without this, would show the teacher nothing.
+  const [attempt, setAttempt] = useState(0);
   /**
    * Held across renders so Cancel can reach the in-flight request. A cancel
    * that only cleared the spinner would leave the call running and still
@@ -380,6 +406,7 @@ export default function QuizScreen() {
   const generate = async (opts?: { regenerate?: boolean }) => {
     // Read before any setState clears it — this is what the teacher is
     // looking at, and what a regeneration must not hand back.
+    setAttempt(n => n + 1);
     const previous = result;
     // Everything a failed or cancelled run must hand back: the paper, its
     // badges and edits, and the scope it was generated under. It used to be
@@ -580,26 +607,67 @@ export default function QuizScreen() {
     cancel: t('cancel'),
   };
 
-  return (
-    <View style={{ flex: 1 }}>
-    <ScrollView
-      ref={scrollRef}
-      style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{ paddingBottom: 140, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
-      <ToolHeader topPad={topPad} isRTL={isRTL} title={t('createQuizTitle')} concept="quiz" subtitle={t('quizSubtitle')} />
+  // What the button will make, said before it is pressed (docked bar on a phone, preview on desktop).
+  const summary = summaryLine({
+    questions: NUM_Q_OPTIONS[effNumQIdx],
+    minutes: DURATION_OPTIONS[durationIdx],
+    marks: MARKS_OPTIONS[marksIdx],
+    kinds: selectedTypes.size,
+  }, uiLang);
+  // A grade/subject pair with no book: the note that says so lives in the lesson card's body,
+  // so the card stays open for as long as it applies (the same test `StrandedSelectionNote` makes).
+  const stranded = subjectHidden?.[subjectIdx] === true;
+  // What GenerationStatus shows. Under the form it is out of sight of a docked button, so a
+  // phone scrolls it into view when this leaves 'idle' (a refusal such as scopeNoCurriculum or
+  // subjectTopicMismatch, a network error, the spinner and its Cancel).
+  const statusPhase = loading ? 'loading' : cancelled ? 'cancelled' : (error && topic.trim()) ? 'error' : 'idle';
+  const statusY = useRef(0);
+  const reduceMotion = useReduceMotion();
+  // Layout effect, not effect: the jump is made before the frame is painted, so there is no flash
+  // of the form first. No animated scroll under reduced motion.
+  useLayoutEffect(() => {
+    if (isDesktop || statusPhase === 'idle') return;
+    scrollRef.current?.scrollTo({ y: Math.max(0, statusY.current - SPACE.lg), animated: !reduceMotion });
+  }, [statusPhase, attempt]);
+  // The result's own save bar takes the bottom of a phone while a fresh paper is unsaved.
+  const saveBarVisible = !!result && !loading && !savedId && saveLabel === 'save';
+  const typeOptions = QUIZ_TYPE_ORDER.map(type => ({ id: type, label: TYPE_LABEL[type] }));
+  const ticked = QUIZ_TYPE_ORDER.filter(type => selectedTypes.has(type));
+  const preview = previewRows(ticked, NUM_Q_OPTIONS[effNumQIdx]!, 6);
 
-      {/* Form */}
-      <View style={{ padding: 20 }}>
-        <View style={{ marginBottom: 20 }}>
-          <ExamKindSwitch active="paper" />
-        </View>
-        <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} hidden={teacherScope.gradeHidden} colors={colors} isRTL={isRTL} accent={ACCENT} />
+  const action = (docked: boolean) => (
+    <DockedAction
+      summary={summary}
+      label={loading ? t('generatingQuiz') : t('generateQuizBtn')}
+      onPress={() => generate()}
+      loading={loading}
+      disabled={!topic.trim()}
+      // A greyed-out primary button with nothing next to it reads as a broken
+      // product rather than an unmet precondition. It says which one.
+      hint={t('genNeedLessonHint')}
+      accent={ACCENT}
+      docked={docked}
+      hidden={docked && saveBarVisible}
+    />
+  );
+
+  const form = (
+    <>
+      <ExamKindSwitch active="paper" accent={ACCENT} />
+
+      <LessonCard
+        gradeLabel={gradeNames[gradeIdx]!}
+        subjectLabel={subjectNames[subjectIdx]!}
+        subjectId={subjects[subjectIdx].id}
+        topic={topic}
+        grounded={!!pickedLesson.lessonId || wideScope.isWide}
+        expanded={lessonOpen || stranded}
+        locked={!topic.trim() || stranded}
+        onToggle={() => setLessonOpen(open => !open)}
+      >
+        <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} hidden={teacherScope.gradeHidden} colors={colors} isRTL={isRTL} accent={accentInk} />
         <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t(teacherScope.strandedNoteKey(grades[gradeIdx].id, subjectIdx))} isRTL={isRTL} colors={colors} />
-        <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} hidden={subjectHidden} />
+        <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={accentInk} hidden={subjectHidden} />
 
         <TopicSelector
           subjectId={subjects[subjectIdx].id}
@@ -613,32 +681,10 @@ export default function QuizScreen() {
           lang={lang}
           isRTL={isRTL}
           colors={colors}
-          accent={ACCENT}
+          accent={accentInk}
           hasError={!!error && !topic}
           t={t}
         />
-
-        {wideScope.isWide && (
-          <PickerField
-            label={t('distributionLabel')}
-            value={t(wideScope.distribution === 'balanced' ? 'distributionBalanced' : 'distributionRandom')}
-            options={[t('distributionBalanced'), t('distributionRandom')]}
-            onChange={i => wideScope.setDistribution(DISTRIBUTIONS[i]!)}
-            colors={colors} isRTL={isRTL} accent={ACCENT}
-          />
-        )}
-
-        <PickerField label={t('levelLabel')} value={diffLabels[diffIdx]} options={diffLabels} onChange={setDiffIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
-        <PickerField label={t('quizDurationLabel')} value={durationLabels[durationIdx]} options={durationLabels} onChange={setDurationIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
-        <PickerField label={t('totalMarksLabel')} value={marksLabels[marksIdx]} options={marksLabels} onChange={setMarksIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
-        <PickerField label={t('numQuestionsLabel')} value={numQLabels[effNumQIdx]} options={numQLabels.slice(0, visibleCountOptions(wideScope.isWide))} onChange={setNumQIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
-
-        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left', marginBottom: 10 }]}>{t('questionTypesLabel')}</Text>
-        <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-          {QUIZ_TYPE_ORDER.map(type => (
-            <CheckboxRow key={type} label={TYPE_LABEL[type]} checked={selectedTypes.has(type)} onToggle={() => toggleType(type)} accent={ACCENT} colors={colors} isRTL={isRTL} />
-          ))}
-        </View>
 
         {/*
           The validation error (an empty topic) stays here, next to the field
@@ -646,22 +692,67 @@ export default function QuizScreen() {
           beside the spinner they replace — they used to render above the form,
           out of sight of the button that had just been pressed.
         */}
-        {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontSize: 15, lineHeight: 24, fontFamily: 'Almarai_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
-        <Button label={loading ? t('generatingQuiz') : t('generateQuizBtn')} onPress={() => generate()} loading={loading} disabled={!topic.trim()} fullWidth />
-        {/*
-          A greyed-out primary button with nothing next to it reads as a broken
-          product rather than an unmet precondition. It says which one.
-        */}
-        {!topic.trim() ? (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
-            {t('needTopicHint')}
-          </Text>
-        ) : null}
+        {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontSize: 15, lineHeight: 24, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
+      </LessonCard>
+
+      <SegmentedControl label={t('levelLabel')} options={diffLabels} index={diffIdx} onChange={setDiffIdx} accent={ACCENT} />
+
+      <View style={{ gap: SPACE.sm }}>
+        <Stepper label={t('numQuestionsLabel')} options={numQLabels.slice(0, visibleCountOptions(wideScope.isWide))} index={effNumQIdx} onChange={setNumQIdx} accent={ACCENT} />
+        <Stepper label={t('quizDurationLabel')} options={durationLabels} index={durationIdx} onChange={setDurationIdx} accent={ACCENT} />
+        <Stepper label={t('totalMarksLabel')} options={marksLabels} index={marksIdx} onChange={setMarksIdx} accent={ACCENT} />
       </View>
 
-      {/* Loading */}
+      <ChipGroup label={t('questionTypesLabel')} options={typeOptions} selected={selectedTypes} onToggle={toggleType} min={1} accent={ACCENT} />
+
+      {wideScope.isWide && (
+        <SegmentedControl
+          label={t('distributionLabel')}
+          options={[t('distributionBalanced'), t('distributionRandom')]}
+          index={Math.max(0, DISTRIBUTIONS.indexOf(wideScope.distribution))}
+          onChange={i => wideScope.setDistribution(DISTRIBUTIONS[i]!)}
+          accent={ACCENT}
+        />
+      )}
+    </>
+  );
+
+  const side = (
+    <>
+      <PaperPreview
+        title={t('createQuizTitle')}
+        subtitle={`${topic.trim() || t('selectLesson')} · ${gradeNames[gradeIdx]}`}
+        rows={preview.rows.map(r => ({ n: r.n, tag: r.type ? TYPE_LABEL[r.type] : null }))}
+        more={moreRowsLabel(preview.remainder, uiLang)}
+        footer={[`${t('totalMarksLabel')} ${MARKS_OPTIONS[marksIdx]}`, durationLabels[durationIdx]!]}
+        note={t('genPreviewQuizNote')}
+        accent={ACCENT}
+      />
+      {action(false)}
+    </>
+  );
+
+  return (
+    <View style={{ flex: 1 }}>
+    <ScrollView
+      ref={scrollRef}
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={{ paddingBottom: DOCKED_BAR_HEIGHT + SPACE.xxl + insets.bottom, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Header */}
+      <ToolHeader topPad={topPad} isRTL={isRTL} title={t('createQuizTitle')} concept="quiz" subtitle={t('quizSubtitle')} />
+
+      {/* Form */}
+      <View style={{ padding: isDesktop ? SPACE.xxl : SPACE.xl }}>
+        <GeneratorLayout form={form} side={side} isDesktop={isDesktop} />
+      </View>
+
+      {/* Loading. The wrapper only records where this sits, for the scroll above. */}
+      <View onLayout={e => { statusY.current = e.nativeEvent.layout.y; }}>
       <GenerationStatus
-        phase={loading ? 'loading' : cancelled ? 'cancelled' : (error && topic.trim()) ? 'error' : 'idle'}
+        phase={statusPhase}
         loadingLabel={t('generatingQuiz')}
         errorDetail={error}
         onCancel={cancelGenerate}
@@ -669,9 +760,10 @@ export default function QuizScreen() {
         colors={colors}
         isRTL={isRTL}
         lang={uiLang}
-        accent={ACCENT}
+        accent={accentInk}
         t={t}
       />
+      </View>
 
       {/* Result */}
       {/* What the material is anchored to. Shown both ways: a teacher needs to
@@ -712,9 +804,9 @@ export default function QuizScreen() {
           <View style={[styles.quizHeader, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '40', borderRadius: colors.radius }]}>
             <Text style={[styles.quizTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: outRTL ? 'right' : 'left' }]}>{result.title}</Text>
             <View style={[styles.quizMeta, { flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
-              <MetaPill icon="time-outline" text={`${result.duration} ${outT('min')}`} color={ACCENT} />
-              <MetaPill icon="star-outline" text={`${result.totalPoints} ${outT('pts')}`} color={ACCENT} />
-              <MetaPill icon="help-circle-outline" text={outT('questionCountPill', result.questions.length)} color={ACCENT} />
+              <MetaPill icon="time-outline" text={`${result.duration} ${outT('min')}`} color={accentInk} />
+              <MetaPill icon="star-outline" text={`${result.totalPoints} ${outT('pts')}`} color={accentInk} />
+              <MetaPill icon="help-circle-outline" text={outT('questionCountPill', result.questions.length)} color={accentInk} />
             </View>
           </View>
 
@@ -747,7 +839,7 @@ export default function QuizScreen() {
             style={({ pressed }) => [
               styles.presentBtn,
               {
-                backgroundColor: ACCENT_FILL,
+                backgroundColor: ACCENT,
                 borderRadius: colors.radius,
                 flexDirection: isRTL ? 'row-reverse' : 'row',
                 opacity: pressed ? 0.88 : 1,
@@ -763,21 +855,21 @@ export default function QuizScreen() {
 
           <Pressable
             onPress={() => setShowAnswers(v => !v)}
-            style={[styles.toggleBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
+            style={[styles.toggleBtn, { borderColor: accentInk, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
           >
-            <Ionicons name={showAnswers ? 'eye-off-outline' : 'eye-outline'} size={16} color={ACCENT} />
-            <Text style={[{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>
+            <Ionicons name={showAnswers ? 'eye-off-outline' : 'eye-outline'} size={16} color={accentInk} />
+            <Text style={[{ color: accentInk, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>
               {showAnswers ? t('hideAnswers') : t('showAnswers')}
             </Text>
           </Pressable>
 
           {result.questions.map((q, i) => {
-            const tc = TYPE_COLOR[q.type as QuizType] ?? ACCENT;
+            const tc = TYPE_COLOR[q.type as QuizType] ?? accentInk;
             const o = effectiveOutcomes[i];
             return (
               <View key={q.id} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
                 <View style={[styles.qTop, { flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
-                  <View style={[styles.qNumCircle, { backgroundColor: ACCENT_FILL }]}>
+                  <View style={[styles.qNumCircle, { backgroundColor: ACCENT }]}>
                     <Text style={[{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 12 }]}>{i + 1}</Text>
                   </View>
                   <View style={[styles.typeBadge, { backgroundColor: tc + '18' }]}>
@@ -925,7 +1017,7 @@ export default function QuizScreen() {
 
       {result && !loading && (
         <GeneratorResultActions
-          accent={ACCENT}
+          accent={accentInk}
           savedId={savedId}
           onToast={showToast}
           saveState={saveLabel}
@@ -942,8 +1034,9 @@ export default function QuizScreen() {
         />
       )}
     </ScrollView>
+    {isDesktop ? null : action(true)}
     {result && !loading && (
-      <GeneratorSaveBar accent={ACCENT} savedId={savedId} saveState={saveLabel} onSave={handleSave} onExport={() => setShowExport(true)} />
+      <GeneratorSaveBar accent={accentInk} savedId={savedId} saveState={saveLabel} onSave={handleSave} onExport={() => setShowExport(true)} />
     )}
 
     <ExportMenu
@@ -976,20 +1069,6 @@ function MetaPill({ icon, text, color }: { icon: keyof typeof Ionicons.glyphMap;
   );
 }
 
-function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL }: {
-  label: string; checked: boolean; onToggle: () => void;
-  accent: string; colors: ReturnType<typeof useColors>; isRTL: boolean;
-}) {
-  return (
-    <Pressable onPress={onToggle} style={[styles.checkRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-      <View style={[styles.checkbox, { borderColor: checked ? accent : colors.border, backgroundColor: checked ? accent : 'transparent' }]}>
-        {checked && <Ionicons name="checkmark" size={14} color="#fff" />}
-      </View>
-      <Text style={[{ color: colors.foreground, fontFamily: checked ? 'ReadexPro_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
-    </Pressable>
-  );
-}
-
 /**
  * The shared dropdown wearing this screen's skin: a shorter list and an
  * amber-tinted selected row. (The open trigger's border tint used to be bound
@@ -1005,10 +1084,6 @@ function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
 const styles = StyleSheet.create({
   verifyRow: { alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 8 },
   verifyText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 12, flex: 1 },
-  label: { fontSize: 13, marginBottom: 6 },
-  checkboxGroup: { borderWidth: 1, padding: 14, marginBottom: 16, gap: 4 },
-  checkRow: { alignItems: 'center', gap: 12, paddingVertical: 8 },
-  checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   quizHeader: { padding: 16, borderWidth: 1, marginBottom: 16 },
   quizTitle: { fontSize: 16, marginBottom: 12 },
   quizMeta: { gap: 8, flexWrap: 'wrap' },
