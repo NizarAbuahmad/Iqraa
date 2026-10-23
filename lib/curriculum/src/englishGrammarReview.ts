@@ -11,12 +11,14 @@
  * fails when the committed copy is stale.
  */
 import {
-  ADJECTIVE_FORMS, PAST_OVERRIDES, grammarUnit, grammarUnitsForGrade, pastTense, pluralOf, unitSentences, type GrammarSentence, type GrammarUnit,
+  ADJECTIVE_FORMS, PAST_OVERRIDES, grammarUnit, grammarUnitsForGrade, pastTense, pluralOf, unitGrade, unitSentences, type GrammarSentence, type GrammarUnit,
 } from './englishGrammar.ts';
 import { NOT_COVERED_G2 } from './englishGrammarG2.ts';
 import { NOT_COVERED_G3 } from './englishGrammarG3.ts';
 import { G4_TABLES, NOT_COVERED_G4 } from './englishGrammarG4.ts';
-import { G9_TABLES, G9_HUB_GAPS, NOT_COVERED_G9 } from './englishGrammarG9.ts';
+import { NOT_COVERED_G5 } from './englishGrammarG5.ts';
+import { G5_ITEM_LESSONS } from './englishGrammarG5Items.ts';
+import { G9_TABLES, NOT_COVERED_G9 } from './englishGrammarG9.ts';
 import { G9_ITEM_LESSONS } from './englishGrammarG9Items.ts';
 import { allHubWords, hubLesson, hubLessonsForGrade } from './englishHub.ts';
 import { wordPicture } from './englishPictures.ts';
@@ -39,7 +41,7 @@ const NOTES: Record<string, string> = {
 };
 
 /** Per grade: lesson id → why part of it is not covered (Grade 1 uses `NOTES` instead). */
-const NOT_COVERED: Record<number, Record<string, string[]>> = { 2: NOT_COVERED_G2, 3: NOT_COVERED_G3, 4: NOT_COVERED_G4, 9: NOT_COVERED_G9 };
+const NOT_COVERED: Record<number, Record<string, string[]>> = { 2: NOT_COVERED_G2, 3: NOT_COVERED_G3, 4: NOT_COVERED_G4, 5: NOT_COVERED_G5, 9: NOT_COVERED_G9 };
 
 /** Wraps each run of English in `dir="ltr"`, so a phrase with punctuation does not scramble inside an Arabic line. */
 export const ltr = (s: string) =>
@@ -186,11 +188,11 @@ function wordsOutsideLists(sentences: GrammarSentence[]): string[] {
 
 const KIND_AR = 'النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.';
 
-/** A Grade 9 lesson of hand-written items: sentence, correct answer and distractor, the silent twin, and the kind, grouped by topic. */
+/** A lesson of hand-written items (Grade 5 or 9): sentence, correct answer and distractor, the silent twin, and the kind, grouped by topic. */
 function renderAuthoredUnit(u: GrammarUnit, idx: number): string {
   const lesson = hubLesson(u.lessonId)!;
   const sentences = unitSentences(u);
-  const statement = G9_ITEM_LESSONS.find(l => l.lessonId === u.lessonId)!.statement;
+  const statement = [...G5_ITEM_LESSONS, ...G9_ITEM_LESSONS].find(l => l.lessonId === u.lessonId)!.statement;
   const topics = [...new Set(sentences.map(s => s.patternId))];
   let n = 0;
   const rows = topics.map(topic => {
@@ -214,12 +216,12 @@ function renderAuthoredUnit(u: GrammarUnit, idx: number): string {
   <section class="unit" id="unit-${idx + 1}">
     <header class="unit-head">
       <div class="unit-meta"><span>${sem}</span><span>${unitLabelAr(lesson.unitNumber)}</span><span>${sentenceCountAr(sentences.length)}</span></div>
-      <h2><span dir="ltr">${esc(lesson.unitTitle)}</span> <span class="unit-ar">${esc(lesson.unitTitleAr)}</span> <span class="lesson-id" dir="ltr">${esc(lesson.id.replace(/^kbl-g9-eng-/, ''))}</span></h2>
+      <h2><span dir="ltr">${esc(lesson.unitTitle)}</span> <span class="unit-ar">${esc(lesson.unitTitleAr)}</span> <span class="lesson-id" dir="ltr">${esc(lesson.id.replace(/^kbl-g\d+-eng-/, ''))}</span></h2>
       <p class="unit-note"><b>تأكدوا أولًا:</b> هل يطابق هذا الدرس صفحة الكتاب؟ يقول الكتاب: <span dir="ltr">«${esc(statement)}»</span></p>
       <ul class="patterns" dir="ltr">${topics.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
       <p class="unit-note">${KIND_AR}</p>
       <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">${outside.length ? esc(outside.join(', ')) : '—'}</span></p>
-      ${notCoveredList(NOT_COVERED[9]?.[u.lessonId])}
+      ${notCoveredList(NOT_COVERED[unitGrade(u)]?.[u.lessonId])}
     </header>
     <div class="table-wrap">
       <table>
@@ -372,6 +374,31 @@ const GRADE_COPY: Record<number, GradeCopy> = {
   .data-table td { font-size: .95rem; }
   @media print { .data { break-before: page; } }`,
   },
+  5: {
+    title: 'مراجعة قواعد الصف الخامس',
+    eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف الخامس',
+    lead: (total, units) => `هذه مراجعة قواعد الصف الخامس: ${AR_DIGITS(units)} دروس كُتبت جملها واحدةً واحدة، لكل جملة إجابتها الصحيحة وخيار مموِّه غير سليم لغويًا. الكتاب يعطي موضوع كل درس ومثالًا أو مثالين فقط، فكل جملة هنا كتبناها نحن، وتُراجَع هنا قبل أي ظهور لها. لا صور في أي درس. <b>لن يرى الطلاب أي درس قبل أن توافقوا عليه.</b> هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة.`,
+    acts: `
+      <div class="act"><b>اختر الكلمة</b>جملة فيها فراغ، وخياران: الصحيح أمام المموِّه، مثل <span dir="ltr">washes / wash</span> أو <span dir="ltr">was looking / was look</span>.</div>
+      <div class="act"><b>رتّب الجملة</b>كلمات الجملة مبعثرة، ويرتّبها الطالب بالنقر. حتى ٩ كلمات.</div>
+      <div class="act"><b>صح أم خطأ</b>تُعرض الجملة نفسها، أو توأمها الخاطئ باستبدال الإجابة بالمموِّه. <b>هذا النشاط صامت:</b> لا يُسمَع فيه أي جملة، صحيحة أو خاطئة، حتى لا يسمع الطالب إنجليزية خاطئة ولا تدل الصامتة على الجواب.</div>
+    `,
+    checks: [
+      'هل الجملة صحيحة لغويًا، وبالصيغة التي يدرّسها الكتاب؟',
+      'هل رقم الدرس يطابق صفحة الكتاب؟ (يقول الكتاب بالإنجليزية في أعلى كل صفحة.)',
+      'هل أي مموِّه مقبول أحيانًا في صفك؟',
+      'في «الكلمات خارج قوائم المفردات»: وافقوا على الكلمات المناسبة للصف الخامس واشطبوا الباقي.',
+      'هل جمل المضارع التام واضحة دون مقارنة بالماضي البسيط؟',
+      'هل طول الجمل مناسب لـ «رتّب الجملة»؟',
+    ],
+    // YESNO_CSS is what styles the false twin (`.yn`) and the not-covered list; without it the twin wraps one word per line.
+    extraCss: YESNO_CSS + `
+  .kind { font-family: var(--latin); font-size: .82rem; border-radius: 6px; padding: 1px 8px; border: 1px solid var(--rule); }
+  .kind-form { background: var(--wrong-bg); color: var(--wrong); }
+  .kind-meaning { background: var(--tint); color: var(--teal); }
+  .topic-row th { text-align: start; background: var(--tint); font-family: var(--latin); font-weight: 600; }
+  .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }`,
+  },
   9: {
     title: 'مراجعة قواعد الصف التاسع',
     eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف التاسع',
@@ -391,7 +418,6 @@ const GRADE_COPY: Record<number, GradeCopy> = {
       'هل جمل بلا سياق، مثل «How many grapes are there?»، مقبولة في الصف التاسع، أم تفضلون أن تأتي كل جملة داخل مشهد قصير؟',
       'هل طول الجمل مناسب لـ «رتّب الجملة»؟',
     ],
-    extra: `<div class="card gaps"><h3>دروس القواعد التي لا يحملها المركز</h3>${notCoveredList(G9_HUB_GAPS)}</div>`,
     extraCss: YESNO_CSS + `
   .build-half { display: block; color: var(--muted); font-size: .78rem; font-weight: 400; white-space: nowrap; }
   .data { display: grid; gap: 14px; }
@@ -402,7 +428,6 @@ const GRADE_COPY: Record<number, GradeCopy> = {
   .kind-meaning { background: var(--tint); color: var(--teal); }
   .topic-row th { text-align: start; background: var(--tint); font-family: var(--latin); font-weight: 600; }
   .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }
-  .gaps { margin-top: 4px; }
   @media print { .data { break-before: page; } }`,
   },
 };
