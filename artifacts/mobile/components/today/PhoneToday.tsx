@@ -22,7 +22,8 @@ import { useTodayLesson } from '@/hooks/useTodayLesson';
 import { useLightStatusBar } from '@/hooks/useLightStatusBar';
 import { palette } from '@/constants/colors';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
-import { Band, BRAND_MOTIF_OPACITY } from '@/components/ui/Band';
+import { Band } from '@/components/ui/Band';
+import { BRAND_BAND, subjectTheme } from '@/services/subjectTheme';
 import { Surface, useSurface } from '@/components/ui/Surface';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Entrance } from '@/components/ui/Entrance';
@@ -49,6 +50,9 @@ export function PhoneToday() {
   const { user } = useAuth();
   const isAr = lang === 'ar';
   const today = useTodayLesson('today_phone');
+  // The band wears the lesson's subject, as on desktop (`subjectTheme`).
+  const theme = subjectTheme(today.active?.subjectId);
+  const hero = theme === BRAND_BAND ? colors.ink : theme.hero;
   const {
     topic, periodLine, next, setup, nudgeDismissed, classes, board, summary, toggleSkip,
     gradeLabel, subjectLabel, toolParams, quickTools, suggestions, startingClass, startClassError,
@@ -79,9 +83,9 @@ export function PhoneToday() {
         keyboardShouldPersistTaps="handled"
       >
         <Band
-          color={colors.ink}
-          motif="leaf"
-          motifOpacity={BRAND_MOTIF_OPACITY}
+          color={hero}
+          motif={theme.motif}
+          motifOpacity={theme.motifOpacity}
           style={{
             paddingTop: insets.top + SPACE.md,
             paddingHorizontal: SPACE.lg,

@@ -56,6 +56,44 @@ nobody sees any of it yet.** Spec:
 the data page** of `docs/english-grammar-g9-review.html`, printed; then set its `reviewedBy` in
 `englishGrammarG9.ts` and merge.
 
+## Grade 5 in the English corner — words glossed, recordings still to make, 2026-10-22
+
+The English corner offered Grades 1–4, 9 and 10; Grade 5 had no tab. Its two books
+(`iqra_curriculum_g5_english_sem1|2.json`, 221 distinct words in 10 lessons) were in the
+curriculum, but every vocabulary entry had `ar: ""`, and the hub drops a word with no Arabic
+without saying so — so the whole grade vanished with no error.
+
+- **Built:** all 221 words glossed in the two JSON files (the same place Grades 1–4 keep
+  theirs), Grade 5 added to `ENGLISH_HUB_GRADES` (`[1, 2, 3, 4, 5, 9, 10]`) and to `BOOKS` in
+  `englishHub.ts`. The browse banner, `hubGrade` and the lesson screen need no change: they
+  read the grade list. Grade 5 gets the vocabulary activities. **No grammar or reading
+  exists for it**, and **"Match the picture" is not offered in any Grade 5 lesson**: 6 of its
+  words have an emoji and no lesson reaches the 4 the game needs, so a pupil sees six
+  activities, not seven.
+- **The glosses are drafted by Claude and no teacher has reviewed them.** Same status as the
+  Grade 9–10 glosses. Judgement calls worth a teacher's eye: «comic» as «قصة مصوّرة»,
+  «juggle» as «يلعب بالكرات (جغلة)», «purse» as «كيس نقود» against «wallet» as «محفظة»,
+  «ray» as «سمكة الراي», «playful» as «يحب اللعب». Correct them in the JSON; the hub reads
+  them from there.
+- **Tests (`englishHub.test.ts`):** Grade 5 has 10 lessons in units 1–10; no drillable word in
+  a Grade 1–5 book is left without Arabic (this is the guard for the failure above); a word
+  repeated across Grade 5 lessons has one meaning; the tab order is pinned. The existing
+  "no two words in a lesson share a meaning" test covers Match. Without the change they fail.
+- **Not done: recordings.** 190 of the 221 Grade 5 words have no MP3 in `english-audio/`
+  (checked by HEAD request on 2026-10-22; 31 are shared with earlier grades). Until
+  `pnpm --filter @workspace/curriculum run english-audio` is run with the OpenAI and R2 keys,
+  **web speaks the word with the browser's voice and native is silent**, which makes «استمع
+  واختر» unplayable on a phone. Run it before the merge deploys. The script voices Grade 5 in
+  the teenage register (only grades 1–4 are "young"); change `YOUNG_WORDS` if Grade 5 should
+  match.
+- **Correction:** the Grade 9–10 note under «An English corner for Grades 1–4» says their audio
+  is not generated. It is: 12 sampled words per grade, 72 of 72 present on 2026-10-22.
+- **Not done:** Grades 6, 7 and 8 (their books hold no vocabulary at all — extraction first,
+  as for 9–10) and Grade 10 semester 2.
+- **Checked:** `pnpm test` in `lib/curriculum`: the new tests pass. Three suites
+  (`extraction`, `quranCorner`, `r2`) fail the same way without this change. **Not checked:**
+  the app typecheck (the container has no `node_modules`) and the screen in a browser.
+
 **Accounts, messages, evaluation setup and the corners (2026-10-22, seventeenth live pass).**
 Of 30 questions, 9 were right and 21 went to the model; the recheck of the sixteenth pass was
 24/24. Checked in code: «الإعدادات» ← «الحسابات على هذا الجهاز» switches, adds and removes saved
@@ -105,6 +143,31 @@ screens. Left with the model, not verified in code: sorting homework by due date
 Sections below are in the order they were written, not strictly by date.
 
 ---
+
+## Today wears the lesson's subject — 2026-10-22
+
+- **Why.** After the design refresh a teacher looked at desktop Today and said
+  "nothing changed" — rightly: the refresh had reached the corners, the library,
+  the profile and the phone, but the desktop workspace still drew its own navy band
+  with glows, bordered grey cards, grey quick-tool boxes, and five prep rows in one
+  teal, the same for every lesson.
+- **What changed.** The band is a `Band` in the lesson's subject (`subjectTheme`,
+  `services/subjectTheme.ts`): maths, English, the sciences and Islamic studies wear
+  their corner's hero and motif; any other subject its catalog colour deepened until
+  white reads at 4.5:1 (social studies is deep pink, Arabic teal); no subject keeps
+  the navy. The band also shows how ready the lesson is («٠ من ٥ جاهزة» with a bar).
+  Each prep row has its own hue (`PREP_ROWS[].color`: plan indigo, worksheet teal,
+  quiz violet, slides blue, activity orange), tinted until made and solid once made.
+  The cards, quick tools and assistant panel are `useSurface()` / `PressableScale`,
+  and each class chip carries its subject's colour. Phone Today takes the same band
+  colour. «ابدأ الحصة الآن» keeps its amber with a light edge, which a warm band needs.
+- **Pinned.** `subjectTheme.test.ts` (white on every subject's band, corners match,
+  common subjects differ, chip text on both cards) and `todayLook.test.ts` (distinct
+  row hues, the band follows the subject on both sizes, no hand-built glows, no
+  `borderWidth` on the surfaces).
+- **Verified:** mobile tests and typecheck; the web build at 1600px with an English,
+  a maths and a social-studies lesson, light and dark, and at phone size.
+- **Not verified:** Android.
 
 ## The desktop Tools grid reads right to left in Arabic — 2026-10-22
 
