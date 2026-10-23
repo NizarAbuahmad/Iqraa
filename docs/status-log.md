@@ -10,6 +10,47 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## The tab bar is drawn — 2026-10-23
+
+Step three of the icon work. The phone tab bar and the desktop sidebar draw
+Iqraa's own icons, so the one piece of navigation that sits on every screen no
+longer mixes two styles. Back arrows, chevrons and the many small action icons
+are still stock Ionicons. #1203 put sixteen drawings in the app and held `library` and `messages` back for
+this, because three drawn tabs beside four stock ones would mix two styles in one
+row. The four missing ones (Today, Ask, Tools, Profile) were shown on the review
+sheet and approved the same day.
+
+**What changed**
+- `constants/glyphs.ts` gains `today` (a calendar page with the day marked),
+  `ask` (one round bubble with a spark), `tools` (a toolbox) and `profile` (a
+  person in a circle). The set is twenty.
+- `Glyph` takes `tint` (default on). Idle tabs are outline; the selected tab
+  carries the 18% tint, which keeps the rule «outline, then filled when
+  selected». Solid dots stay in both states.
+- `app/(tabs)/_layout.tsx` draws every tab with `tabIcon(name)`. iOS used to draw
+  SF Symbols and the other platforms Ionicons, so the bar differed per platform;
+  it is now one drawing everywhere. `WebSidebar` reads the same entries and no
+  longer takes `isIOS`. The School tab (parents and students) wears the classes
+  drawing; Messages wears the two-bubble drawing, so it no longer needs the
+  envelope that kept it from reading like Ask.
+- The `expo-symbols` package is no longer imported anywhere. It stays in
+  `package.json` on purpose: removing a native module changes the native surface
+  and would need an `app.json` version bump. Removing it can wait for the next
+  native build.
+
+**Pinned:** `glyphs.test.ts` now pins the twenty, that the tab bar draws the seven
+entries in order with `<Glyph … tint={focused}>`, that no stock icon or
+`expo-symbols` import returns to the layout, that the sidebar draws the same
+entries, and that `tint={false}` removes a tinted part's fill. `HELD` is empty.
+
+**Verified:** mobile tests and typecheck, and web-build screenshots of the phone
+bar and the desktop sidebar in light and dark.
+
+**Not verified:** the bar on an Android or iOS device. On iOS the bar sat on a
+blur with SF Symbols; the drawn icons sit on the same blur, but how they look at
+24px over it has not been seen. The command palette still names tabs by Ionicons
+glyph (`iconNameFor`), which is a font-name API and is unchanged.
+
 ## Neon leaves the Free plan before launch — 2026-10-23
 
 **Status: applied by the owner on 2026-10-23**, in the Neon console (screenshots): plan Launch,

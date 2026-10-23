@@ -733,11 +733,13 @@ sweep in your staged files.
   the tool glyph. **Not tested, only convention:** outline for actions and filled
   for status, and which rows use `IconTile`.
   **Iqraa draws its own icons for the main concepts (since 2026-10-23).**
-  `constants/glyphs.ts` holds sixteen approved drawings (24 grid, 1.75 stroke,
+  `constants/glyphs.ts` holds twenty approved drawings (24 grid, 1.75 stroke,
   outline + 18% tint), drawn by `Glyph` / `ConceptIcon` (`components/ui/Glyph.tsx`,
-  react-native-svg). A concept names its drawing in `CONCEPTS[…].glyph`, a corner
+  react-native-svg). The tab bar and the desktop sidebar draw their tabs with
+  `tabIcon(name)` in `app/(tabs)/_layout.tsx`: outline when idle, tinted when
+  selected (`tint={focused}`), on every platform. A tab added to the bar needs a
+  drawing, not an Ionicons name. A concept names its drawing in `CONCEPTS[…].glyph`, a corner
   in `CORNERS[…].drawing`; draw a concept with `<ConceptIcon icon glyph …>`, never
   a bare `<Ionicons name={tool.icon}>`, or the drawing silently falls back to the
   stock glyph. A new drawing must be used or listed in `HELD` with its reason
-  (`glyphs.test.ts`); `library` and `messages` wait for the tab bar, which should
-  not mix drawn and stock icons.
+  (`glyphs.test.ts`; it is empty today).
