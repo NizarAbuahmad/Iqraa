@@ -78,8 +78,11 @@ Checked 2026-10-22:
   39931238295). The connection ceiling checks out (20 instances, pooled endpoint, `max_connections` 225).
   **The latency gate failed (C1, 2026-10-23): +336 ms p95 on a 15-statement request,
   budget +100 ms** — each statement becomes three round trips and one costs about 11 ms from
-  europe-west1 to Frankfurt; it must not be switched on until a mitigation passes the same benchmark.
-  Not done: that mitigation, enabling it in production, and making the `row-level security` check required — the steps and
+  europe-west1 to Frankfurt; a mitigation (one held read-only connection per request, inbox first; spec
+  2026-10-23) is built, and it must not be switched on until `bench:rls`'s `held` column passes the gate
+  (`held` p95 added ≤ +100 ms on the inbox-shaped request, no listed route over +100 ms, every unlisted route's
+  cost, about 22 ms per statement, known and accepted or listed). Nothing says it has passed.
+  Not done: the `held` measurement (from Cloud Shell, the way the failed run was measured), enabling it in production, and making the `row-level security` check required — the steps and
   the switch are in `docs/rls-rollout-checklist.md`.
 - **Draft PR #730** (teacher visibility into English Corner practice) changes the schema,
   conflicts with `main`, and needs `pnpm --filter @workspace/db run generate` after it is updated.
@@ -101,6 +104,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-23 — Generator screens: the shared pieces and the quiz
 - 2026-10-23 — The "now" amber is only for now
 - 2026-10-23 — The tab bar is drawn
 - 2026-10-23 — Neon leaves the Free plan before launch
@@ -130,11 +134,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-21 — Cards lift, presses give, screens arrive — 2026-10-21
 - 2026-10-20 — Grade 2 reading in the English corner — built, shown to nobody yet
 - 2026-10-19 — Grade 2 grammar in the English corner — built, shown to nobody yet
-- 2026-10-19 — Arabic, Islamic, civic, digital and PE lessons get their book pages in decks
 
 ## Finding older detail, and recording new work
 
-- The log has 363 sections. Anything cited elsewhere as
+- The log has 367 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line
