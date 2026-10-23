@@ -16,6 +16,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { ConceptIcon } from './Glyph';
 import { missingPrepView, prepSummary, savedAgo, type PrepRow } from '@/services/lessonBoard';
 import { readableOn, textOn } from '@/services/readableColor';
 
@@ -251,8 +252,9 @@ export function LessonPrepBoard({
                   row.skipped && styles.dim,
                 ]}
               >
-                <Ionicons
-                  name={row.icon as keyof typeof Ionicons.glyphMap}
+                <ConceptIcon
+                  icon={row.icon as keyof typeof Ionicons.glyphMap}
+                  glyph={row.glyph}
                   size={compact ? 16 : 20}
                   color={row.done ? textOn(row.color) : readableOn(row.color, colors.card)}
                 />

@@ -13,6 +13,7 @@
 
 import type { ClassroomActivity } from './ai/AIService.ts';
 import { CONCEPTS } from '../constants/icons.ts';
+import type { GlyphId } from '../constants/glyphs.ts';
 import { isWideScopeFormState } from './materialLessonId.ts';
 
 /** The five materials the product actually pushes, in the order a teacher prepares them. */
@@ -45,6 +46,8 @@ export type PrepRowMeta = {
   emoji: string;
   /** Ionicons name — the board draws it in a tile; the emoji stays for chat text. */
   icon: string;
+  /** Iqraa's own drawing for the row, drawn in place of `icon`. */
+  glyph?: GlyphId;
   labelAr: string;
   labelEn: string;
   /** The generator that makes this material. */
@@ -73,11 +76,11 @@ export type PrepRow = PrepRowMeta & {
 
 /** Icon and colour come from `CONCEPTS` (`constants/icons.ts`), shared with the Tools tab. */
 export const PREP_ROWS: PrepRowMeta[] = [
-  { type: 'lesson-plan', emoji: '📘', icon: CONCEPTS['lesson-plan'].icon, labelAr: 'خطة الدرس', labelEn: 'Lesson plan', route: '/ai-tools/lesson-plan', color: CONCEPTS['lesson-plan'].color },
-  { type: 'worksheet', emoji: '📝', icon: CONCEPTS['worksheet'].icon, labelAr: 'ورقة عمل', labelEn: 'Worksheet', route: '/ai-tools/worksheet', color: CONCEPTS['worksheet'].color },
-  { type: 'quiz', emoji: '✅', icon: CONCEPTS['quiz'].icon, labelAr: 'اختبار قصير', labelEn: 'Quiz', route: '/ai-tools/quiz', color: CONCEPTS['quiz'].color },
-  { type: 'slides', emoji: '🎬', icon: CONCEPTS['slides'].icon, labelAr: 'عرض الحصة', labelEn: 'Class slides', route: '/ai-tools/slides', color: CONCEPTS['slides'].color },
-  { type: 'activity', emoji: '🎯', icon: CONCEPTS['activity'].icon, labelAr: 'نشاط صفّي', labelEn: 'Class activity', route: '/ai-tools/activity', color: CONCEPTS['activity'].color },
+  { type: 'lesson-plan', emoji: '📘', icon: CONCEPTS['lesson-plan'].icon, glyph: CONCEPTS['lesson-plan'].glyph, labelAr: 'خطة الدرس', labelEn: 'Lesson plan', route: '/ai-tools/lesson-plan', color: CONCEPTS['lesson-plan'].color },
+  { type: 'worksheet', emoji: '📝', icon: CONCEPTS['worksheet'].icon, glyph: CONCEPTS['worksheet'].glyph, labelAr: 'ورقة عمل', labelEn: 'Worksheet', route: '/ai-tools/worksheet', color: CONCEPTS['worksheet'].color },
+  { type: 'quiz', emoji: '✅', icon: CONCEPTS['quiz'].icon, glyph: CONCEPTS['quiz'].glyph, labelAr: 'اختبار قصير', labelEn: 'Quiz', route: '/ai-tools/quiz', color: CONCEPTS['quiz'].color },
+  { type: 'slides', emoji: '🎬', icon: CONCEPTS['slides'].icon, glyph: CONCEPTS['slides'].glyph, labelAr: 'عرض الحصة', labelEn: 'Class slides', route: '/ai-tools/slides', color: CONCEPTS['slides'].color },
+  { type: 'activity', emoji: '🎯', icon: CONCEPTS['activity'].icon, glyph: CONCEPTS['activity'].glyph, labelAr: 'نشاط صفّي', labelEn: 'Class activity', route: '/ai-tools/activity', color: CONCEPTS['activity'].color },
 ];
 
 /**

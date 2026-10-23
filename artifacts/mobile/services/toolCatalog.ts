@@ -8,13 +8,16 @@
  * inline, the tools tab navigates); this file only says what the tools are.
  */
 import type { Ionicons } from '@expo/vector-icons';
-import { CONCEPTS, type ConceptId } from '../constants/icons.ts';
+import { conceptOf, type ConceptId } from '../constants/icons.ts';
+import type { GlyphId } from '../constants/glyphs.ts';
 
 export interface ToolDef {
   id: string;
   titleKey: string;
   descKey: string;
   icon: keyof typeof Ionicons.glyphMap;
+  /** Iqraa's own drawing, when the concept has one; drawn by `ConceptIcon`. */
+  glyph?: GlyphId;
   color: string;
   route?: string;
   routeParams?: Record<string, string>;
@@ -57,10 +60,10 @@ export type WorkflowSection = {
  * pair the prep board draws, so the quiz is one icon in one colour wherever a
  * teacher meets it. `iconSystem.test.ts` fails a literal colour in this file.
  */
-const look = (concept: ConceptId): Pick<ToolDef, 'icon' | 'color'> => ({
-  icon: CONCEPTS[concept].icon,
-  color: CONCEPTS[concept].color,
-});
+const look = (concept: ConceptId): Pick<ToolDef, 'icon' | 'color' | 'glyph'> => {
+  const c = conceptOf(concept);
+  return { icon: c.icon, color: c.color, ...(c.glyph ? { glyph: c.glyph } : {}) };
+};
 
 /** Core teaching jobs — ordered by when teachers use them. */
 const BEFORE_CLASS_ALL: ToolDef[] = [

@@ -9,6 +9,7 @@
 import React from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { ConceptIcon } from '@/components/ui/Glyph';
 import type { ToolDef } from '@/services/toolCatalog';
 import { readableOn } from '@/services/readableColor';
 
@@ -152,7 +153,7 @@ export function ComposerToolsMenu({
                       accessibilityLabel={labelFor(tool)}
                     >
                       <View style={[styles.iconWrap, { backgroundColor: tool.color + '18' }]}>
-                        <Ionicons name={tool.icon} size={20} color={readableOn(tool.color, colors.card, 3)} />
+                        <ConceptIcon icon={tool.icon} glyph={tool.glyph} size={20} color={readableOn(tool.color, colors.card, 3)} />
                       </View>
                       <View style={{ flex: 1, gap: 1 }}>
                         <View style={[styles.titleRow, { flexDirection: rowDir }]}>

@@ -44,7 +44,7 @@ import { TopicSelector } from '@/components/ui/TopicSelector';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { Button } from '@/components/ui/Button';
 import { IconTile } from '@/components/ui/IconTile';
-import { CONCEPTS } from '@/constants/icons';
+import { conceptOf } from '@/constants/icons';
 import { saveItem, updateItem } from '@/services/workspace';
 import { MaterialClassField } from '@/components/ui/MaterialClassField';
 import { Toast } from '@/components/ui/Toast';
@@ -462,7 +462,7 @@ export default function LessonFlowScreen() {
             >
               <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={24} color="#fff" />
             </Pressable>
-            <IconTile icon={CONCEPTS['lesson-flow'].icon} color={CONCEPTS['lesson-flow'].color} size={36} tone="onBand" />
+            <IconTile icon={conceptOf('lesson-flow').icon} glyph={conceptOf('lesson-flow').glyph} color={conceptOf('lesson-flow').color} size={36} tone="onBand" />
             <View style={{ flex: 1 }}>
               <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }]}>
                 <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
