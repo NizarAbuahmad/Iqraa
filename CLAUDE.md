@@ -604,3 +604,19 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   celebrate on opening Today.
   **Amber (`palette.live`) means *now*** (start class, due today, live) and
   nothing else.
+- **Icons take a scale size, and a concept's icon and colour come from `CONCEPTS`
+  (since 2026-10-23).** `constants/icons.ts` holds `ICON` (14/16/20/24 for UI
+  icons), `ICON_DISPLAY` (32/40/48/64 for empty states and hero glyphs) and
+  `CONCEPTS` (one icon and one colour per teaching concept: quiz, worksheet,
+  lesson plan, slides, activity, homework, evaluations, challenge, games,
+  classroom, parent message…). `toolCatalog.ts` and `PREP_ROWS` read from it, so
+  the quiz is one glyph in one colour on the Tools tab, the prep board and a
+  generator's header; a new tool adds a concept, never a literal colour. Outline
+  for actions and navigation, filled for status (`checkmark-circle`,
+  `close-circle`, `alert-circle`, `information-circle`) and the selected tab.
+  Never draw a tick, cross, warning or tip with an emoji (✓ ✕ ⚠ 💡 render
+  differently on every platform): use `<Ionicons>`. A row or card that leads
+  with an icon uses `IconTile` (`components/ui`), whose glyph is
+  `readableOn(color, colors.card)`. No concept may be amber, and white text must
+  read on every concept colour. `iconSystem.test.ts` enforces all of it,
+  including that every literal `<Ionicons size>` is on the scale.

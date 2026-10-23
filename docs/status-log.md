@@ -10,6 +10,76 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Icons follow one system — 2026-10-23
+
+- **What was wrong.** An audit of the app's icons found 709 `Ionicons` uses in 172 files
+  in 15 different sizes between 12 and 48 (mostly 16, 18, 20 and 22 side by side in one
+  row); 161 of them muted grey, so few carried any meaning; outline and filled mixed with
+  no rule; emoji standing in for UI icons in about 32 files (✓ ✕ ✗ ⚠ 💡 📖 ✅ …), which
+  draw differently on every platform; and one concept drawn differently in different
+  places. The quiz was `checkmark-circle-outline` on the Tools tab and
+  `checkmark-done-outline` on the prep board; lesson plan, worksheet and homework shared
+  one teal; the quiz and the class challenge shared `#B54708`, a step from the amber
+  (`palette.live`) that means "now"; evaluations were grey.
+- **What changed.**
+  - `constants/icons.ts` (pure data): `ICON` 14/16/20/24 for UI icons, `ICON_DISPLAY`
+    32/40/48/64 for empty-state and hero glyphs, and `CONCEPTS`, one icon and one colour
+    per teaching concept (14 of them). `services/toolCatalog.ts` and `PREP_ROWS` in
+    `services/lessonBoard.ts` read from it and hold no colour literal. The prep rows' five
+    hues are unchanged; the Tools tab moved to match them (worksheet `#0E8F86` to
+    `#0F766E`, lesson plan `#007C74` to `#4338CA`, quiz `#B54708` to `#7C3AED` with the
+    prep board's icon, challenge `#B54708` to `#BE123C`, homework `#007C74` to `#0E7490`,
+    evaluations `#64748B` to `#BE185D`, parent message `#6D28D9` to `#A21CAF`; the hidden
+    lesson-flow and prompt-slides moved off the slides and quiz colours).
+  - **Sizes.** Every literal `<Ionicons size>` in `app/` and `components/` is on the
+    scale: 355 icons in 128 files remapped by script (12 to 15 → 14/16, 17 to 20 → 20,
+    21 to 26 → 24, 28 to 32, 34 to 72 → nearest display size), then the icons in fixed
+    boxes checked by hand (the prep board's done badge went 16 to 18, the 18px checkboxes
+    in register and the prep panel went to 20). `BackButton` and `NotificationBell`
+    default to 24. The one `Feather` use became `Ionicons`; the whiteboard's
+    `MaterialCommunityIcons` eraser stays (Ionicons has no eraser glyph).
+  - **Emoji to icons.** 24 sites: the prep checklist in chat (✅ ⬜), ticks in the roster
+    name chip, the drill score, the lesson-flow header and the admin invite; the 💡 filter
+    chips; the four `ToolHeader` emoji (🏆 🖥️ ✉️ 🔐); 🎧 🎮 🔬 🔑 🔍 beside labels; 📚 🗓️ 📖 in
+    the topic dropdown; `✕` in an accessibility label (it was read aloud as "multiplication
+    x"). Kept as content: medals and podiums, 🎉 celebration text, 🙏 in a thank-you, ⭐
+    stars in the English corner, 🔥 and 🤷 on the game board, the grammar activities'
+    ✅/❌ and 👦/👧 pictures, the chip labels the chat builds, and everything in i18n.
+  - **Outline for actions, filled for status.** The tab bars and the desktop sidebar
+    already followed it (selected filled, unselected outline). 47 status marks that were
+    outline (`alert-circle`, `warning`, `information-circle`, `checkmark-circle` beside
+    text) are filled; actions (clear, remove, mark all read) stay outline.
+  - **`IconTile`** (`components/ui/IconTile.tsx`): a 36/44/56 rounded square tinted
+    `color + '1F'` with the glyph in `readableOn(color, colors.card)`, so it holds 4.5:1 in
+    dark mode. Used on the settings and profile rows, the classes list (the class's first
+    subject colour through `subjectChipColor`) and every generator header
+    (`ToolHeader concept=…`, a white tile on the band). The Tools tab and Today quick-tool
+    tiles were left: they are 64 and 40 px with a 1A tint, so IconTile would change their
+    look.
+  - The classes list card now reverses its row in Arabic. `flexDirection: 'row'` does not
+    flip on web, so the card read tile, name, bin, chevron from the left.
+- **Pinned.** `services/__tests__/iconSystem.test.ts`: every literal Ionicons size
+  (including both arms of a ternary) is on the scale; no second icon family outside one
+  allow-listed eraser; every concept carries white text at 4.5:1; no two concepts closer
+  than ΔE 8 (CIE76; the nearest pair is lesson plan and classroom, two indigos at 8.4);
+  none in the amber hue band (25° to 50° at saturation above 0.6) or within ΔE 7 of
+  `#B54708`/`#B45309`; the tool catalog and the prep board equal `CONCEPTS` and each
+  other for every shared concept, with no colour literal in either file; no ✓ ✕ ✗ ⚠ 💡 ✅ ❌
+  in app chrome (comments skipped; the grammar pictures and the internal `app/dev/cqv`
+  screens are allow-listed with a reason). No existing test was changed.
+- **Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 6,861 tests, 6,851 pass, 10
+  skipped, 0 fail; the web bundle built and Today, Tools, profile (scrolled), settings,
+  classes, the library, the Math hub, the play hub, and the quiz and slides headers looked
+  at, phone and desktop, light and dark, in Arabic.
+- **Not verified.** No device: Android and iOS were not run, so the icon fonts at the new
+  sizes are only seen on web. The live-game screens size their glyphs by a runtime scale
+  (`markSize`, `S(16)` in the host view), so they are not on the scale. `constants/
+  materialKind.ts` (the workspace's "موادي" list and the printed copies' accents) still
+  has its own icons and hues (the quiz is `help-circle-outline` in rose, the worksheet
+  brown): it is a deliberate table with a dark-mode variant and export twins, left for its
+  own change. `typeColor` in `services/continueTeaching.ts` still colours the quiz amber
+  and is not called by any screen.
+
 **Accounts, messages, evaluation setup and the corners (2026-10-22, seventeenth live pass).**
 Of 30 questions, 9 were right and 21 went to the model; the recheck of the sixteenth pass was
 24/24. Checked in code: «الإعدادات» ← «الحسابات على هذا الجهاز» switches, adds and removes saved
