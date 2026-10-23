@@ -9,7 +9,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { hubLesson } from '@workspace/curriculum/englishHub';
-import { offeredGrammar } from '@workspace/curriculum/englishGrammar';
+import { hubLessonVisible, offeredGrammar } from '@workspace/curriculum/englishGrammar';
 import { offeredReading, offeredReadingSentences } from '@workspace/curriculum/englishReading';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -54,7 +54,8 @@ export default function EnglishHubLessonScreen() {
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
   const { lessonId } = useLocalSearchParams<{ lessonId: string }>();
-  const lesson = hubLesson(lessonId ?? '');
+  // A grammar-only lesson is not reachable, even by its URL, until a teacher has signed its grammar.
+  const lesson = lessonId && hubLessonVisible(lessonId) ? hubLesson(lessonId) : undefined;
   const { progress, record } = useHubProgress();
   const [activity, setActivity] = useState<HubActivity | null>(null);
   // Bumped to remount an activity for "play again" with a fresh shuffle.
@@ -180,8 +181,9 @@ export default function EnglishHubLessonScreen() {
 
     return (
       <View style={{ gap: 10 }}>
-        {HUB_ACTIVITIES.filter(a => a !== 'picture' || lessonHasPictureMatch(lesson.words)).map(card)}
-        {readingCards.length > 0 ? (
+        {/* A grammar-only lesson has too few words for the word and reading activities: grammar cards only. */}
+        {lesson.grammarOnly ? null : HUB_ACTIVITIES.filter(a => a !== 'picture' || lessonHasPictureMatch(lesson.words)).map(card)}
+        {!lesson.grammarOnly && readingCards.length > 0 ? (
           <>
             <Text style={[styles.section, { color: colors.foreground, textAlign: align }]}>{t('hubReading')}</Text>
             {readingCards.map(card)}

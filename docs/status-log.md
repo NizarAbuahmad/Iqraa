@@ -10,6 +10,158 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 5 grammar in the English corner — built, shown to nobody yet, 2026-10-23
+
+The ten Grade 5 grammar lessons that were already in the hub (`kbl-g5-eng-s1-nccd-u1_l1` … `s2-nccd-u10_l1`) now have
+grammar activities: Choose the word, Build the sentence and True or false. **All ten units are `reviewedBy: null`
+(`englishGrammarG5.ts`), so no teacher or student sees a card yet.** Spec:
+`docs/superpowers/specs/2026-10-23-english-corner-grammar-g5-design.md`; plan:
+`docs/superpowers/plans/2026-10-23-english-corner-grammar-g5.md`. Same engine and rules as the Grade 9 authored
+lessons; no app, server, schema or migration change, and no hub change (the ten lessons have 14-28 words each, so
+they were already visible).
+
+- **400 hand-written items, 40 a lesson, all `form`, none `meaning`** (`englishGrammarG5Items.ts`, `G5_ITEM_LESSONS`),
+  each with a `statement` equal to `objectives[0]` of its lesson (a test reads the JSON). 31 sub-topics in pinned
+  sizes. S1: U1 present simple with before/after/when (`third-person-s` 14, `before-after` 14, `when-clauses` 12); U2
+  comparatives and superlatives (`taller-forms` 10, `more-forms` 10, `superlatives` 12, `irregular` 8); U3 past simple
+  was/were and did (`was-were` 14, `did-questions` 14, `regular-irregular` 12); U4 will/won't (`will` 14, `wont` 12,
+  `will-questions` 14); U5 relative clauses (`who` 14, `where` 14, `which` 12). S2: U6 past simple, irregular verbs and
+  did; U7 past continuous; U8 should/shouldn't; U9 present perfect; U10 present perfect with ever/never (each three
+  sub-topics, 40 items). Sentences are nine words or fewer (`buildCap(5)`), with no real or book-character names, and
+  the distractor is ungrammatical in standard English, for example the bare verb for a participle, a doubled marker
+  («the most kindest», never «the most» before a short adjective, never «-fuller»), a misplaced negative, `Have he`,
+  or statement order in a wh-question (the full list is rule 4 of the plan,
+  `docs/superpowers/plans/2026-10-23-english-corner-grammar-g5.md`). No item turns on the past simple against the present perfect, and a distractor a teacher
+  might accept («the most kind», `-ful` adjectives with `-er`) was replaced rather than flagged.
+- **True or false is silent** (twins are never voiced) and **Yes or No is not offered**, exactly as the Grade 9
+  authored lessons; Choose and Build play the correct sentence after the answer. Nothing is pictured.
+- **The teacher's form takes a grade** (`englishGrammarReview.ts`): `renderAuthoredUnit` reads the statement from
+  `[...G5_ITEM_LESSONS, ...G9_ITEM_LESSONS]` and the not-covered notes by `unitGrade(u)` instead of assuming Grade 9;
+  `GRADE_COPY[5]` carries the title, lead, activity descriptions and checks, and says «topic» because the Grade 5 book
+  gives a topic line with an example, not an «I can» line. `scripts/grammar-sheet.ts` now runs `[1, 2, 3, 4, 5, 9]` and
+  wrote `docs/english-grammar-g5-review.html` (10 units, 400 sentences, 31 topic rows, 42 pages in an A4 landscape print
+  emulation) and `docs/english-grammar-g5-sheet.md`. `[5].extraCss` is `YESNO_CSS` plus five lines, which is a deviation
+  from the plan: without it the false-twin column wrapped one word a line and the not-covered list was unstyled
+  (78 pages). The Grade 1-4 and 9 forms and the reading forms stayed byte-identical (tests pin them).
+  `NOT_COVERED_G5` is two shared bullets plus one a lesson (silent True or false and no Yes or No; and what that lesson
+  leaves out).
+- **Tests added:** `englishGrammarG5Items.test.ts` (sizes, statements, caps, uniqueness, banned names, the form),
+  `englishGrammarG5.test.ts` (ten unsigned units, all hub lessons, nothing offered) and, in the app,
+  `englishGrammarG5ItemGames.test.ts` (Choose, Build and True or false on all ten, Yes or No on none, no twin voiced).
+  `englishGrammarEngine.test.ts` pinned «Grade 5 has no grammar units»; it now says every Grade 5 unit is grade 5 and
+  Grade 6 is the empty grade.
+- **Verified:** root `pnpm run typecheck` clean (api-server, mobile, scripts); `@workspace/curriculum` `test` 636
+  tests, 636 passing, 0 failing; its `verify` 197 files, 3306 lessons, 0 errors; the **full mobile suite 6975 tests,
+  6965 passing, 10 skipped, 0 failing** (394 s; the run before this change had 2 failing, both
+  the Grade 9 `englishHubGames.test.ts` narrowing, fixed since). **In a browser** at 390 px in Arabic and English, web
+  build with `EXPO_PUBLIC_DEMO_MODE=true`, sign-offs in the working tree only (restored straight after, `grep -c "LOCAL
+  CHECK"` is 0, `git status` clean): unsigned, the S1 U1 and S2 U8 lessons show the six word activities and no grammar
+  cards; signed, both open with a «Grammar» section of Choose, Build and True or false and no Yes or No. Over a whole
+  round of eight in each activity, in both lessons and both languages: Choose and Build play the correct sentence
+  after the answer (a recording URL and the browser voice as fallback; 8 of 8 questions each, 0 plays before) and True
+  or false has no speaker button before or after answering and plays nothing (0 of 8); a nine-word Build round wraps
+  its slots and tiles onto two and three rows and an eight-word Choose stem onto two lines, with no horizontal scroll at
+  any step. I read the screenshots.
+- **Not verified:** the 400 sentences by a teacher (a script cannot tell wrong English from right; the printed form is
+  the review); the match of each lesson id to the printed book page; on a device; audio, which does not exist for
+  these sentences (the browser check heard the fallback voice, because `english-audio` needs the OpenAI and R2 keys and
+  has not been run for them).
+- **Known limits:** the past simple, the past continuous and the present perfect test form, not the choice between
+  them; a wrong True or false answer shows «Correct answer: False», not the corrected sentence; the form's vocabulary
+  check is a printed list (irregular pasts and comparatives are listed because the stem rule cannot match them),
+  not a test; only six Grade 5 words have pictures, so none are used.
+- **Found on the way, not fixed here:** (1) in every grade's not-covered notes the Arabic «و» is glued to an English
+  word («وafter», «وshouldn't»), and on the printed form it renders as a stray letter beside the Latin run («wheng
+  afterg»): it is in the Grade 2, 3, 4 and 9 notes too (8-13 lines each), so it is old, and it is a separate task to
+  rewrite the notes with a space or a comma. (After the final review the three Arabic wording fixes were made: the U2 note no longer ends
+  in an English run followed by a full stop, the U6 note says «الماضي البسيط والمضارع التام», the U10 note says «never في
+  الجملة الخبرية»; the form's lead sentence now says the book gives «مثالًا أو مثالين» per lesson, not one sentence; and
+  the data test's past-simple guard now checks every word of the U9 and U10 distractors against a list of irregular
+  pasts, and a new test pins «ever» to questions.)
+  (2) The units have a few optional minor review notes for the teacher, none blocking: a handful of stilted
+  sentences (a broken microwave, «seen a dishwasher», «touch a rash»), «stay home» against «stay at home», the plural
+  «was» distractors («The dolphins was swimming») that some dialects use, the missing-auxiliary twins in U7, which are
+  fragments rather than wrong verb forms.
+- **To switch a lesson on:** a Grade 5 English teacher signs that lesson's page of
+  `docs/english-grammar-g5-review.html`, printed, and checks the book-page line; audio is recorded for the correct
+  sentences; then the unit's `reviewedBy` is set in `englishGrammarG5.ts`.
+
+## Grammar-only hub lessons, and the last five Grade 9 grammar lessons — built, shown to nobody yet, 2026-10-23
+
+The hub now carries lessons that have too few words for the word activities, for their grammar only, and the five
+Grade 9 lessons that unlocks have their grammar: used to (S1 U2 l3), the present perfect with already, ever, just,
+never and yet (S2 U7 l1), the present perfect with for and since (U7 l2), the first conditional (S2 U8 l5) and
+reported speech (S2 U9 l3). With these, **every Grade 9 lesson the book gives a grammar statement has grammar
+activities** (21 lessons). **All five units are `reviewedBy: null` (`englishGrammarG9.ts`).** Spec:
+`docs/superpowers/specs/2026-10-23-english-corner-grammar-g9-grammar-only-lessons-design.md`; plan:
+`docs/superpowers/plans/2026-10-23-english-corner-grammar-g9-grammar-only-lessons.md`.
+
+- **The hub model** (`lib/curriculum/src/englishHub.ts`): `GRAMMAR_ONLY_LESSONS` (the five ids) and
+  `HubLesson.grammarOnly`; a lesson is built when it has four or more words **or** is listed. A test pins that each
+  listed id has under four words and a grammar unit, and that no other lesson is flagged. Grade 9 goes from 36 to
+  41 hub lessons; no other grade changes. The list lives in the hub file because `englishGrammar.ts` imports it.
+- **Visibility** (`hubLessonVisible`, `englishGrammar.ts`): a lesson with words is always visible; a grammar-only one
+  only once its grammar unit is signed. The lesson index, the lesson screen and the curriculum page's «open in the
+  hub» link all use it, so an unsigned grammar-only lesson is absent from the index and its direct URL says «lesson
+  not found». A grammar-only lesson shows grammar cards only (no word or reading section); its index row says
+  «grammar activities» (new string, Arabic and English).
+- **200 hand-written items**, 40 a lesson, under the same rules as the other fourteen (`englishGrammarG9Items.ts`):
+  all `form`, no `meaning`. used to: `used-to-affirmative` 14, `didnt-use-to` 12, `did-use-to-questions` 14;
+  present perfect I: `already-just` 14, `ever-never` 14, `yet-negatives` 12; for and since: `for` 14, `since` 14,
+  `have-has` 12; first conditional: `will-clause` 14, `if-clause` 14, `negatives-questions` 12; reported speech:
+  `say-tell` 16, `ask` 12, `reported-questions` 12. No reported-speech item turns on the tense shift («said she was
+  tired» and «said she is tired» are both acceptable), so the distractor is a missing object, a wrong word order or
+  «said me»; the first-conditional distractors are the second-conditional form or a «will» inside the if-clause.
+  Nineteen authored lessons, 760 items in all.
+- **The teacher's form** has the five pages (with the book-statement check, the kinds and the word list), and the
+  «lessons the hub does not carry» card is gone because no topic is left without a lesson; a test pins that.
+  «didn't use to» against «didn't used to» (which some teachers accept both ways) is one flagged topic of 12 items.
+- **Tests that assumed every hub lesson has words** were narrowed on purpose: `englishHub.test.ts` («at least four
+  words» unless `grammarOnly`; «in the vocabulary list» unless `grammarOnly`) and `englishHubGames.test.ts` (the word
+  activities run on `WORD_LESSONS`, because the screen hides them on a grammar-only lesson).
+- **Verified:** curriculum 619 tests, root typecheck, and the mobile suite: its one full run had 6906 passing, 10
+  skipped and 2 failing, both in `englishHubGames.test.ts` (the narrowing above); that file then passed alone (31),
+  and the full suite was not re-run whole on this tree. **In a browser**
+  at 390 px in Arabic and English, with sign-offs in the working tree only (restored straight after; never
+  committed; `grep -c "LOCAL CHECK"` is 0): unsigned, the Grade 9 index has 36 lessons, none of the five, and each
+  direct URL says «lesson not found»; signed, it has 41 with five «grammar activities» rows, each of the five opens
+  with Choose, Build and True or false and no Yes or No, no flashcards, no word or reading section, True or false
+  has no speaker button before or after answering, and a lesson with words (S1 U1 l1) is unchanged; no horizontal
+  scroll.
+- **Not verified:** the 200 sentences by a teacher (a script cannot tell wrong English from right); the match of
+  each lesson id to the printed book page; on a device; the audio, which needs the pending `english-audio` run
+  (OpenAI and R2 keys) for the 200 correct sentences and the five lessons' few words.
+- **Known limits:** reported speech tests form, not the tense shift; the present perfects and the first conditional
+  test form, not the choice between near-synonyms; a lesson that appears only after a signature is new behaviour,
+  tested but not yet seen on a device; the vocabulary check is a printed list, not a test.
+
+**To switch a lesson on:** record the audio; a Grade 9 English teacher signs that lesson's page of
+`docs/english-grammar-g9-review.html`, printed, and checks the book-page line at its top; then set the unit's
+`reviewedBy` in `englishGrammarG9.ts` and merge. The lesson appears in the hub from that moment.
+
+## Grade 9 grammar: the passive added, and a wrong «no hub lesson» corrected — 2026-10-23
+
+The thirteen-lesson entry below, its spec, the teacher's form and PR #1204 all said the passive (S2 U10 l1) has
+no hub lesson, so it was left out. **That was wrong:** `kbl-g9-eng-s2-nccd-u10_l1` («Vocabulary and Grammar») is
+in the hub with 7 words. The hub listing showed it; it was read past. Re-checked against the hub for all 21
+Grade 9 grammar lessons: 15 had grammar (the pilot's two and the thirteen), this one is in the hub with none, and
+**five** are not in the hub (used to, the two present perfects, the first conditional, reported speech), each
+with fewer than four words (3, 1, 2, 0 and 2).
+
+- **Built:** the passive lesson, 40 hand-written items under the same rules (`englishGrammarG9Items.ts`):
+  `present-passive` 14 («is spoken» / «is speak»), `past-passive` 14 («was built» / «was build») and
+  `questions-negatives` 12 («Was the window broken» / «Was the window break»), all `form`. The distractor is
+  always the verb in its first form, never a participle that could fit. Fourteen lessons, 560 items, hidden like
+  the rest (`reviewedBy: null`).
+- **Corrected:** the form's «lessons the hub does not carry» block no longer lists the passive (a test pins it),
+  the spec, and the passage in the entry below. The form and sheet were regenerated; every other document is
+  byte-identical.
+- **Verified:** curriculum 612 tests, the two Grade 9 app test files, root typecheck. **Not verified:** the new
+  sentences by a teacher, as for the others; the audio (the 40 correct sentences join the pending
+  `english-audio` run).
+- **Still open:** the five lessons the hub does not carry need a change to how the hub builds lessons (its own
+  spec).
+
 ## Claude writes the documents, 2026-10-23
 
 **Built, not switched on.** Lesson plans, worksheets, quizzes and slide decks (`prompt-slides`) can now be
@@ -806,7 +958,8 @@ it yet.** Spec: `docs/superpowers/specs/2026-10-23-english-corner-grammar-g9-les
   and the reading forms are byte-identical apart from the Grade 9 intro.
 - **Left out on purpose:** used to (U2), the two present perfects (U7), the first conditional (U8), reported
   speech (U9) and the passive (U10) have no hub lesson (the hub offers one only with four or more words; Unit 7
-  has none at all); personality adjectives (U1 l3) cannot be right or wrong.
+  has none at all); personality adjectives (U1 l3) cannot be right or wrong. **Corrected the same day (see the
+  entry above): the passive does have a hub lesson, S2 U10 l1 with 7 words, and was simply not built.**
 - **Verified:** curriculum 612 tests, mobile 6905 pass / 10 skipped / 0 fail on the tree before one pilot test
   was corrected to select Unit 4 by lesson id (that file re-run: pass), root typecheck. **In a browser** at
   390 px in Arabic and English, with sign-offs in the working tree only (restored straight after; never
