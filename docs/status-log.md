@@ -10,6 +10,24 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Register: the terms checkbox is visible — 2026-10-23
+
+Reported from the live page: on `/register` the terms line did not read as something to tick.
+The unticked box was `colors.border` (near-white) on the white card, and the sentence beside
+it was 11px muted grey, so it looked like a caption with a gap in front of it.
+
+**What changed** (`app/(auth)/register.tsx`, styling only; the toggle, the links, the Google
+gate and the sign-up payload are untouched)
+- The row is a framed panel (`colors.input` fill, 1px `mutedForeground` outline, 48 minimum
+  height) that turns primary-tinted when ticked.
+- The box is 24px with a 2px `mutedForeground` outline on a `colors.card` fill; the tick is
+  `ICON.lg` in `colors.primaryForeground` (it was a hard-coded `#fff`, which is dark-on-light
+  in dark mode's primary).
+- The sentence is 13px in `colors.foreground`.
+
+**Verified:** `pnpm run typecheck`; `iconSystem`, `designScale` and `statusBar` tests.
+**Not verified:** how it looks in a browser (phone, desktop, light, dark, RTL).
+
 ## Generator screens: the shared pieces and the quiz — 2026-10-23
 
 PR 1 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`: the band wears
