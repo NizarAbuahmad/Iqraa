@@ -17,9 +17,12 @@ import { readFileSync } from "node:fs";
 
 import {
   getChatModel,
+  getDocumentModel,
   getGenerationModel,
   getPricing,
+  getPromptSlidesModel,
   getUserBudgetLimitUsd,
+  isClaudeModel,
   pricedModels,
   recordAudioUsage,
 } from "../aiBudget.ts";
@@ -39,9 +42,19 @@ describe("getPricing", () => {
   });
 
   it("prices the models the product can actually be pointed at", () => {
-    for (const model of ["gpt-4o-mini", "claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5"]) {
+    for (const model of [
+      "gpt-4o-mini", "claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5",
+      "claude-sonnet-5-5", "claude-haiku-5-5",
+    ]) {
       assert.ok(pricedModels().includes(model), `${model} is unpriced`);
     }
+  });
+
+  it("prices the Claude models documents can run on, and under the unknown-model ceiling", () => {
+    // Sonnet 5.5 is the one the generators are pointed at: an unpriced id would
+    // be billed at the fallback ($10/$50) and trip the cap five times early.
+    assert.deepEqual(getPricing("claude-sonnet-5-5"), { input: 2, output: 10 });
+    assert.deepEqual(getPricing("claude-haiku-5-5"), { input: 0.1, output: 0.5 });
   });
 
   it("prices Sonnet 5 at its standard rate, not the introductory one", () => {
@@ -170,6 +183,89 @@ describe("generation vs chat model", () => {
       assert.equal(getGenerationModel(), "gpt-4o-mini");
       assert.equal(getChatModel(), "gpt-5.4-nano");
     });
+  });
+});
+
+/**
+ * Which model a document is written by.
+ *
+ * `AI_MODEL_DOCUMENTS` moves lesson plans, worksheets, quizzes and slide decks
+ * to another model (Claude Sonnet 5.5) without touching `AI_MODEL_GENERATE`,
+ * which exam generation, grading and the verified-derivative path read and send
+ * straight to the OpenAI client. Two things must hold: nothing changes while it
+ * is unset, and a Claude id with no key must never be returned — that would
+ * answer every request with an error.
+ */
+describe("document model", () => {
+  const KEYS = [
+    "AI_MODEL", "AI_MODEL_GENERATE", "AI_MODEL_DOCUMENTS", "AI_MODEL_PROMPT_SLIDES", "ANTHROPIC_API_KEY",
+  ] as const;
+  const withEnv = (env: Partial<Record<(typeof KEYS)[number], string>>, fn: () => void) => {
+    const saved = Object.fromEntries(KEYS.map((k) => [k, process.env[k]]));
+    try {
+      for (const k of KEYS) delete process.env[k];
+      for (const [k, v] of Object.entries(env)) process.env[k] = v;
+      fn();
+    } finally {
+      for (const k of KEYS) {
+        if (saved[k] === undefined) delete process.env[k];
+        else process.env[k] = saved[k]!;
+      }
+    }
+  };
+  const DOCS = ["lesson-plan", "worksheet", "quiz", "prompt-slides"];
+
+  it("tells Claude ids from OpenAI ids", () => {
+    assert.equal(isClaudeModel("claude-sonnet-5-5"), true);
+    assert.equal(isClaudeModel("gpt-5.4-mini"), false);
+  });
+
+  it("changes nothing while AI_MODEL_DOCUMENTS is unset", () => {
+    withEnv({ AI_MODEL_GENERATE: "gpt-5.4-mini", ANTHROPIC_API_KEY: "k" }, () => {
+      for (const kind of DOCS) assert.equal(getDocumentModel(kind), "gpt-5.4-mini");
+      assert.equal(getPromptSlidesModel(), "gpt-5.4-mini");
+    });
+  });
+
+  it("moves exactly the four document kinds to the configured model", () => {
+    withEnv(
+      { AI_MODEL_GENERATE: "gpt-5.4-mini", AI_MODEL_DOCUMENTS: "claude-sonnet-5-5", ANTHROPIC_API_KEY: "k" },
+      () => {
+        for (const kind of DOCS) assert.equal(getDocumentModel(kind), "claude-sonnet-5-5");
+        assert.equal(getPromptSlidesModel(), "claude-sonnet-5-5");
+      },
+    );
+  });
+
+  it("leaves every other generator, and AI_MODEL_GENERATE itself, on the OpenAI model", () => {
+    withEnv(
+      { AI_MODEL_GENERATE: "gpt-5.4-mini", AI_MODEL_DOCUMENTS: "claude-sonnet-5-5", ANTHROPIC_API_KEY: "k" },
+      () => {
+        for (const kind of ["homework", "activity", "classroom-activity", "lesson-teaching", "infographic", "solve"]) {
+          assert.equal(getDocumentModel(kind), "gpt-5.4-mini", kind);
+        }
+        // The call sites that talk to the OpenAI client read this one directly.
+        assert.equal(getGenerationModel(), "gpt-5.4-mini");
+      },
+    );
+  });
+
+  it("keeps the OpenAI model when a Claude model is set but there is no key", () => {
+    withEnv({ AI_MODEL_GENERATE: "gpt-5.4-mini", AI_MODEL_DOCUMENTS: "claude-sonnet-5-5" }, () => {
+      for (const kind of DOCS) assert.equal(getDocumentModel(kind), "gpt-5.4-mini");
+      assert.equal(getPromptSlidesModel(), "gpt-5.4-mini");
+    });
+  });
+
+  it("lets the slides variable pick its own model, and still skips a Claude id without a key", () => {
+    withEnv(
+      { AI_MODEL_GENERATE: "gpt-5.4-mini", AI_MODEL_DOCUMENTS: "claude-sonnet-5-5", AI_MODEL_PROMPT_SLIDES: "gpt-5.4", ANTHROPIC_API_KEY: "k" },
+      () => assert.equal(getPromptSlidesModel(), "gpt-5.4"),
+    );
+    withEnv(
+      { AI_MODEL_GENERATE: "gpt-5.4-mini", AI_MODEL_PROMPT_SLIDES: "claude-haiku-5-5" },
+      () => assert.equal(getPromptSlidesModel(), "gpt-5.4-mini"),
+    );
   });
 });
 

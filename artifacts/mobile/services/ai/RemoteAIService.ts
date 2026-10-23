@@ -50,6 +50,19 @@ class TimeoutError extends Error {
   }
 }
 
+/**
+ * How long a lesson plan, worksheet, quiz or slide deck may take to come back.
+ *
+ * These are written by Claude Sonnet 5.5 once the API's `AI_MODEL_DOCUMENTS` is
+ * set. Measured on identical prompts, a document takes 11-33 s (the OpenAI model
+ * it replaces took 4-13 s) and a request that needs a top-up or a regenerate
+ * retry makes a second call — so a deck can legitimately take a minute. The 45 s
+ * default would end those requests on the teacher's screen while the server was
+ * still working, and `prompt-slides` has no offline fallback to hide it. Only
+ * these four calls get the longer wait; everything else keeps the default.
+ */
+const DOCUMENT_TIMEOUT_MS = 90_000;
+
 async function postJSON<T>(
   path: string,
   body: unknown,
@@ -112,7 +125,7 @@ export class RemoteAIService extends AIService {
   async generateLessonPlan(req: AIRequest, opts?: GenerateOptions): Promise<LessonPlanOutput> {
     return generateWithProvenance(
       'lesson-plan',
-      () => postJSON<LessonPlanOutput>('/generate/lesson-plan', req, opts),
+      () => postJSON<LessonPlanOutput>('/generate/lesson-plan', req, opts, DOCUMENT_TIMEOUT_MS),
       () => this.fallback.generateLessonPlan(req),
     );
   }
@@ -128,7 +141,7 @@ export class RemoteAIService extends AIService {
       // model's own codes for its own questions, and a bank-built format
       // question carries none. (On a wide scope no format is built anyway.)
       async () => appendFormats(
-        tagWorksheetLessons(await postJSON<WorksheetOutput>('/generate/worksheet', requestWithoutFormats(req), opts), req),
+        tagWorksheetLessons(await postJSON<WorksheetOutput>('/generate/worksheet', requestWithoutFormats(req), opts, DOCUMENT_TIMEOUT_MS), req),
         req,
         splitFormatTypes(req.questionTypes ?? []).formats,
       ),
@@ -139,7 +152,7 @@ export class RemoteAIService extends AIService {
   async generateQuiz(req: AIRequest, opts?: GenerateOptions): Promise<QuizOutput> {
     return generateWithProvenance(
       'quiz',
-      async () => tagQuizLessons(await postJSON<QuizOutput>('/generate/quiz', req, opts), req),
+      async () => tagQuizLessons(await postJSON<QuizOutput>('/generate/quiz', req, opts, DOCUMENT_TIMEOUT_MS), req),
       () => this.fallback.generateQuiz(req),
     );
   }
@@ -207,7 +220,7 @@ export class RemoteAIService extends AIService {
   async generatePromptSlides(req: PromptSlidesRequest, opts?: GenerateOptions): Promise<ClassroomActivity> {
     const activity = await generateWithProvenance(
       'prompt-slides',
-      () => postJSON<ClassroomActivity>('/generate/prompt-slides', req, opts),
+      () => postJSON<ClassroomActivity>('/generate/prompt-slides', req, opts, DOCUMENT_TIMEOUT_MS),
       () => { throw new Error('prompt-slides has no offline fallback'); },
       { demoMode: false, strict: true },
     );
