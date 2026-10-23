@@ -48,6 +48,7 @@ import { className, classNameFor } from '@/services/materialClass';
 import { todayLabel } from '@/services/dateLabels';
 import { palette } from '@/constants/colors';
 import { PhoneToday } from '@/components/today/PhoneToday';
+import { readableOn } from '@/services/readableColor';
 
 const START_CLASS_COLOR = palette.live;
 const SIDE_PANEL_WIDTH = 356;
@@ -135,7 +136,7 @@ function LessonWorkspace() {
           >
             {startingClass
               ? <ActivityIndicator size="small" color="#fff" />
-              : <Ionicons name="tv-outline" size={15} color="#fff" />}
+              : <Ionicons name="tv-outline" size={16} color="#fff" />}
             <Text style={s.btnText}>{t('startClass')}</Text>
           </Pressable>
           <Pressable
@@ -147,7 +148,7 @@ function LessonWorkspace() {
             ]}
             accessibilityRole="button"
           >
-            <Ionicons name="swap-horizontal" size={15} color="#fff" />
+            <Ionicons name="swap-horizontal" size={16} color="#fff" />
             <Text style={s.btnText}>{t('changeLesson')}</Text>
           </Pressable>
         </View>
@@ -157,7 +158,7 @@ function LessonWorkspace() {
       <View style={s.bandLesson}>
         {periodLine ? (
           <View style={[s.periodPill, { backgroundColor: colors.accent, flexDirection: rowDir, alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-            <Ionicons name={next?.happeningNow ? 'radio-button-on' : 'time-outline'} size={13} color={colors.accentForeground} />
+            <Ionicons name={next?.happeningNow ? 'radio-button-on' : 'time-outline'} size={14} color={colors.accentForeground} />
             <Text style={[s.periodText, { color: colors.accentForeground }]}>{periodLine}</Text>
           </View>
         ) : null}
@@ -235,7 +236,7 @@ function LessonWorkspace() {
 
             {startClassError ? (
               <View style={[s.errorRow, { backgroundColor: colors.destructive + '14', flexDirection: rowDir }]}>
-                <Ionicons name="alert-circle-outline" size={14} color={colors.destructive} />
+                <Ionicons name="alert-circle" size={14} color={colors.destructive} />
                 <Text style={[s.errorText, { color: colors.destructive, textAlign: align }]}>{startClassError}</Text>
               </View>
             ) : null}
@@ -279,7 +280,7 @@ function LessonWorkspace() {
                 accessibilityLabel={t(tool.titleKey as never)}
               >
                 <View style={[s.toolIcon, { backgroundColor: tool.color + '1F' }]}>
-                  <Ionicons name={tool.icon} size={24} color={tool.color} />
+                  <Ionicons name={tool.icon} size={24} color={readableOn(tool.color, colors.card, 3)} />
                 </View>
                 <Text numberOfLines={1} style={[s.toolText, { color: colors.foreground }]}>
                   {t(tool.titleKey as never)}

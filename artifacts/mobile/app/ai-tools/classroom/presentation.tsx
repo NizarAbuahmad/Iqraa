@@ -252,7 +252,7 @@ function MediaView({
             accessibilityLabel={slide.mediaCaption || ''}
           />
           <View style={mediaStyles.zoomHint} pointerEvents="none">
-            <Ionicons name="expand" size={18} color="#fff" />
+            <Ionicons name="expand" size={20} color="#fff" />
           </View>
         </Pressable>
       ) : Platform.OS === 'web' && embed ? (
@@ -270,7 +270,7 @@ function MediaView({
         // no player component to fall back to, and browsers already render a
         // usable one for free.
         <View style={mediaStyles.audioFrame}>
-          <Ionicons name="musical-notes" size={28} color={T.accent} />
+          <Ionicons name="musical-notes" size={32} color={T.accent} />
           {React.createElement('audio', {
             src: url,
             controls: true,
@@ -434,7 +434,7 @@ function TeacherPanel({
         <View style={panelStyles.handle} />
         {/* Header */}
         <View style={[panelStyles.header, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Ionicons name="school-outline" size={18} color={T.accent} />
+          <Ionicons name="school-outline" size={20} color={T.accent} />
           <Text style={[panelStyles.headerText, { fontFamily: 'ReadexPro_700Bold' }]}>{t('teacherPanelTitle')}</Text>
           <Pressable onPress={close} style={panelStyles.closeBtn} hitSlop={12} accessibilityRole="button" accessibilityLabel={t('close')}>
             <Ionicons name="close" size={20} color={T.muted} />
@@ -537,7 +537,7 @@ function QuestionOptions({
               >
                 {isolateForeignRuns(opt)}
               </Text>
-              {isCorrect && <Ionicons name="checkmark-circle" size={26} color={TIMER_GREEN} />}
+              {isCorrect && <Ionicons name="checkmark-circle" size={24} color={TIMER_GREEN} />}
             </View>
           );
         })}
@@ -555,7 +555,7 @@ function QuestionOptions({
           },
         ]}
       >
-        <Ionicons name={revealed ? 'eye-off-outline' : 'checkmark-circle-outline'} size={18} color={revealed ? T.muted : TIMER_GREEN} />
+        <Ionicons name={revealed ? 'eye-off-outline' : 'checkmark-circle-outline'} size={20} color={revealed ? T.muted : TIMER_GREEN} />
         <Text style={[qStyles.revealBtnText, { color: revealed ? T.muted : TIMER_GREEN, fontFamily: 'ReadexPro_600SemiBold' }]}>
           {revealed ? t('hideAnswer') : t('revealAnswer')}
         </Text>
@@ -879,7 +879,7 @@ function FlowView({ nodes, cycle, accent, isRTL, loopLabel }: {
               <Text style={[slideStyles.flowText, { writingDirection: dir }]}>{isolateForeignRuns(n)}</Text>
             </Reveal>
             {i < nodes.length - 1 && (
-              <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={28} color={accent} />
+              <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={32} color={accent} />
             )}
           </React.Fragment>
         ))}
@@ -1279,7 +1279,7 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
       {/* Unlock code badge */}
       {slide.unlockCode && slide.type === 'reveal' && (
         <View style={slideStyles.codeBadge}>
-          <Text style={[slideStyles.codeLabel, { fontFamily: 'ReadexPro_500Medium' }]}>🔑</Text>
+          <Ionicons name="key-outline" size={32} color={TIMER_GREEN} />
           <Text style={[slideStyles.codeValue, { fontFamily: 'ReadexPro_700Bold' }]}>{slide.unlockCode}</Text>
         </View>
       )}
@@ -1706,7 +1706,7 @@ export default function PresentationScreen() {
       <View style={[styles.topBar, { paddingTop: insets.top + 8, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         {/* Exit */}
         <Pressable onPress={() => { void exitPresentation(); }} style={styles.exitBtn} hitSlop={12}>
-          <Ionicons name="close" size={22} color={T.muted} />
+          <Ionicons name="close" size={24} color={T.muted} />
         </Pressable>
 
         {/* Fullscreen — the projector's own control, so the teacher never has
@@ -1730,7 +1730,7 @@ export default function PresentationScreen() {
             accessibilityRole="button"
             accessibilityLabel={muted ? t('gameSoundOn') : t('gameSoundOff')}
           >
-            <Ionicons name={muted ? 'volume-mute-outline' : 'volume-high-outline'} size={19} color={T.muted} />
+            <Ionicons name={muted ? 'volume-mute-outline' : 'volume-high-outline'} size={20} color={T.muted} />
           </Pressable>
         )}
 
@@ -1743,7 +1743,7 @@ export default function PresentationScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('playAsGameBack')}
           >
-            <Ionicons name="albums-outline" size={19} color={T.muted} />
+            <Ionicons name="albums-outline" size={20} color={T.muted} />
           </Pressable>
         )}
 
@@ -1756,7 +1756,7 @@ export default function PresentationScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('playAsGame')}
           >
-            <Ionicons name="trophy-outline" size={19} color={teamPickerOpen ? T.primary : T.muted} />
+            <Ionicons name="trophy-outline" size={20} color={teamPickerOpen ? T.primary : T.muted} />
           </Pressable>
         )}
 
@@ -1797,7 +1797,7 @@ export default function PresentationScreen() {
             accessibilityRole="button"
             accessibilityLabel={timerPaused ? t('resumeTimer') : t('pauseTimer')}
           >
-            <Ionicons name={timerPaused ? 'pause-circle-outline' : 'timer-outline'} size={13} color={tColor} />
+            <Ionicons name={timerPaused ? 'pause-circle-outline' : 'timer-outline'} size={14} color={tColor} />
             <Text style={[styles.timerText, { color: tColor, fontFamily: 'ReadexPro_700Bold' }]}>{mm}:{ss}</Text>
           </Pressable>
         ) : (
@@ -1835,7 +1835,7 @@ export default function PresentationScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('livePlayLive')}
           >
-            <Ionicons name="radio-outline" size={18} color={T.primary} />
+            <Ionicons name="radio-outline" size={20} color={T.primary} />
             <Text style={[styles.liveBtnText, { fontFamily: 'ReadexPro_700Bold' }]}>{liveBusy ? t('livePlayLiveBusy') : t('livePlayLive')}</Text>
           </Pressable>
           {!!liveError && <Text style={[styles.liveError, { fontFamily: 'ReadexPro_600SemiBold' }]}>{liveError}</Text>}
@@ -1983,7 +1983,7 @@ export default function PresentationScreen() {
                 onPress={() => { setAnswerVisible(v => !v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
                 style={[styles.revealBtn, { borderColor: TIMER_GREEN + '60', backgroundColor: TIMER_GREEN + '12', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
               >
-                <Ionicons name="checkmark-circle-outline" size={16} color={TIMER_GREEN} />
+                <Ionicons name="checkmark-circle" size={16} color={TIMER_GREEN} />
                 <Text style={[styles.revealBtnText, { color: TIMER_GREEN, fontFamily: 'ReadexPro_600SemiBold' }]}>
                   {answerVisible ? t('hideAnswer') : t('revealAnswer')}
                 </Text>
@@ -2111,7 +2111,7 @@ export default function PresentationScreen() {
             aria-selected={penOn}
             accessibilityLabel={t('penTool')}
           >
-            <Ionicons name={penOn ? 'brush' : 'brush-outline'} size={18} color={penOn ? T.accent : T.muted} />
+            <Ionicons name={penOn ? 'brush' : 'brush-outline'} size={20} color={penOn ? T.accent : T.muted} />
             {compactBar ? null : (
               <Text numberOfLines={1} style={[styles.actionLabel, penOn && { color: T.accent }, { fontFamily: 'Almarai_400Regular' }]}>
                 {t('penTool')}
@@ -2128,7 +2128,7 @@ export default function PresentationScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('whiteboardTool')}
           >
-            <Ionicons name="easel-outline" size={18} color={T.muted} />
+            <Ionicons name="easel-outline" size={20} color={T.muted} />
             {compactBar ? null : (
               <Text numberOfLines={1} style={[styles.actionLabel, { fontFamily: 'Almarai_400Regular' }]}>
                 {t('whiteboardTool')}
@@ -2144,7 +2144,7 @@ export default function PresentationScreen() {
               accessibilityLabel={timerPaused ? t('resumeTimer') : t('pauseTimer')}
               aria-selected={timerPaused}
             >
-              <Ionicons name={timerPaused ? 'play-outline' : 'pause-outline'} size={18} color={timerPaused ? T.accent : T.muted} />
+              <Ionicons name={timerPaused ? 'play-outline' : 'pause-outline'} size={20} color={timerPaused ? T.accent : T.muted} />
               <Text numberOfLines={1} style={[styles.actionLabel, timerPaused && { color: T.accent }, { fontFamily: 'Almarai_400Regular' }]}>
                 {timerPaused ? t('resumeTimer') : t('pauseTimer')}
               </Text>
@@ -2158,7 +2158,7 @@ export default function PresentationScreen() {
               accessibilityRole="button"
               accessibilityLabel={t('restartTimer')}
             >
-              <Ionicons name="refresh-outline" size={18} color={T.muted} />
+              <Ionicons name="refresh-outline" size={20} color={T.muted} />
               {compactBar ? null : (
                 <Text numberOfLines={1} style={[styles.actionLabel, { fontFamily: 'Almarai_400Regular' }]}>
                   {t('restartTimer')}
@@ -2174,7 +2174,7 @@ export default function PresentationScreen() {
               accessibilityRole="button"
               accessibilityLabel={t('teacherPanelTitle')}
             >
-              <Ionicons name="school-outline" size={18} color={T.accent} />
+              <Ionicons name="school-outline" size={20} color={T.accent} />
               {compactBar ? null : (
                 <Text numberOfLines={1} style={[styles.actionLabel, { color: T.accent, fontFamily: 'ReadexPro_500Medium' }]}>
                   {t('teacherPanelTitle')}
@@ -2373,7 +2373,6 @@ const makeSlideStyles = (T: DeckTheme) => StyleSheet.create({
   formulaBox: { backgroundColor: T.card, borderRadius: 16, borderWidth: 1, borderColor: T.border, paddingVertical: 22, paddingHorizontal: 18, alignItems: 'center' },
   formula: { fontSize: 30, color: T.text, textAlign: 'center', lineHeight: 46 },
   codeBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 28, backgroundColor: TIMER_GREEN + '12', borderRadius: 14, borderWidth: 1, borderColor: TIMER_GREEN + '40', padding: 20 },
-  codeLabel: { fontSize: 28 },
   codeValue: { fontSize: 48, color: TIMER_GREEN },
 });
 

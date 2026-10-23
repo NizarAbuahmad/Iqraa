@@ -69,7 +69,7 @@ function ItemRow({
       style={[styles.row, surface, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
     >
       <View style={[styles.icon, { backgroundColor: colors.secondary }]}>
-        <Ionicons name={KIND_ICON[item.kind]} size={22} color={colors.primary} />
+        <Ionicons name={KIND_ICON[item.kind]} size={24} color={colors.primary} />
       </View>
       <View style={{ flex: 1 }}>
         <Text
@@ -84,7 +84,7 @@ function ItemRow({
           {lessonTitle ? ` · ${lessonTitle}` : ''}
         </Text>
       </View>
-      <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
+      <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedForeground} />
     </PressableScale>
   );
 }

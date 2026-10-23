@@ -282,7 +282,7 @@ const translations = {
     homeAiToolsTitle: 'مسار التحضير',
     smartTemplatesTitle: 'ابدأ بسرعة',
     openDocument: 'افتح',
-    relatedResourcesDone: '✅ تم تجهيز المادة.',
+    relatedResourcesDone: 'تم تجهيز المادة.',
     relatedResourcesHint: 'قد يفيدك أيضًا:',
     relatedCreateAll: '✨ أنشئ الكل',
 
@@ -3529,7 +3529,7 @@ const translations = {
     homeAiToolsTitle: 'Preparation steps',
     smartTemplatesTitle: 'Start fast',
     openDocument: 'Open',
-    relatedResourcesDone: '✅ Created successfully.',
+    relatedResourcesDone: 'Created successfully.',
     relatedResourcesHint: 'You may also need:',
     relatedCreateAll: '✨ Create all',
 

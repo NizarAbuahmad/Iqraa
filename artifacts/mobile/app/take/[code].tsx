@@ -446,7 +446,7 @@ export default function TakeExamScreen() {
     return (
       <View style={{ flex: 1 }}>
         <View style={[styles.center, { backgroundColor: colors.background, padding: 32, gap: 12 }]}>
-          <Ionicons name="checkmark-circle" size={56} color={ACCENT} />
+          <Ionicons name="checkmark-circle" size={64} color={ACCENT} />
           <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 20 }}>
             {t('takeHandedIn')}
           </Text>

@@ -436,7 +436,7 @@ export default function ActivityScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <ToolHeader topPad={topPad} isRTL={isRTL} title={t('createActivityTitle')} eyebrow={{ icon: 'flash', label: t('activityBadge') }} />
+      <ToolHeader topPad={topPad} isRTL={isRTL} title={t('createActivityTitle')} concept="activity" eyebrow={{ icon: 'flash', label: t('activityBadge') }} />
 
       {/* Form */}
       <View style={styles.form}>
@@ -633,7 +633,7 @@ function ActivityResult({ activity, colors, isRTL, t, lang }: {
       {/* Steps */}
       <View style={{ marginBottom: 16 }}>
         <View style={[styles.resultSectionHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Ionicons name="list-outline" size={15} color={ACCENT_LOCAL} />
+          <Ionicons name="list-outline" size={16} color={ACCENT_LOCAL} />
           <Text style={[styles.resultSectionTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('sectionActivitySteps')}
           </Text>
@@ -664,7 +664,7 @@ function ActivityResult({ activity, colors, isRTL, t, lang }: {
 function MetaPill({ icon, label, color }: { icon: keyof typeof Ionicons.glyphMap; label: string; color: string }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6 }}>
-      <Ionicons name={icon} size={13} color={color} />
+      <Ionicons name={icon} size={14} color={color} />
       <Text style={{ fontSize: 12, color, fontFamily: 'ReadexPro_500Medium' }}>{label}</Text>
     </View>
   );
@@ -723,7 +723,7 @@ function ResultSection({ title, icon, isRTL, children }: {
   return (
     <View style={{ marginBottom: 16 }}>
       <View style={[styles.resultSectionHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <Ionicons name={icon} size={15} color={ACCENT_LOCAL} />
+        <Ionicons name={icon} size={16} color={ACCENT_LOCAL} />
         <Text style={[styles.resultSectionTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{title}</Text>
       </View>
       <View style={[styles.resultSectionBody, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>

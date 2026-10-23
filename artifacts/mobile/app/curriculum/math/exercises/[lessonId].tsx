@@ -183,7 +183,7 @@ export default function MathExerciseLessonScreen() {
                       style={[styles.option, { borderColor: mark ?? colors.border, borderWidth: mark ? 2 : 1, flexDirection: row }]}
                     >
                       <MathParagraph text={o} style={textStyle} isRTL={isRTL} containerStyle={{ flex: 1 }} />
-                      {mark ? <Ionicons name={isKey ? 'checkmark-circle' : 'close-circle'} size={18} color={mark} /> : null}
+                      {mark ? <Ionicons name={isKey ? 'checkmark-circle' : 'close-circle'} size={20} color={mark} /> : null}
                     </Pressable>
                   );
                 })}

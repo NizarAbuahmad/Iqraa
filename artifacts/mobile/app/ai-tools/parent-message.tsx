@@ -497,7 +497,7 @@ export default function ParentMessageScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 60, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }} keyboardShouldPersistTaps="handled">
-        <ToolHeader topPad={topPad} isRTL={isRTL} title={t('parentMsgTitle')} subtitle={t('parentMsgSubtitle')} leading="✉️" sourceBadge={false} />
+        <ToolHeader topPad={topPad} isRTL={isRTL} title={t('parentMsgTitle')} subtitle={t('parentMsgSubtitle')} concept="parent-msg" sourceBadge={false} />
 
         <View style={{ padding: 20 }}>
           <Field label={t('parentMsgStudentName')} colors={colors} isRTL={isRTL}>
@@ -519,7 +519,7 @@ export default function ParentMessageScreen() {
               style={[styles.pickLink, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
               hitSlop={6}
             >
-              <Ionicons name="people-outline" size={15} color={ACCENT} />
+              <Ionicons name="people-outline" size={16} color={ACCENT} />
               <Text style={[styles.pickLinkText, { color: ACCENT, fontFamily: 'ReadexPro_500Medium' }]}>
                 {t('pickFromMyClasses')}
               </Text>
@@ -777,7 +777,7 @@ export default function ParentMessageScreen() {
               }]}>
                 {attachmentKind(attachment) === 'image'
                   ? <Image source={{ uri: attachment }} style={styles.attachThumb} resizeMode="cover" />
-                  : <Ionicons name="document-text-outline" size={22} color={ACCENT} />}
+                  : <Ionicons name="document-text-outline" size={24} color={ACCENT} />}
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
                     {t(attachmentKind(attachment) === 'image' ? 'parentMsgAttachedPhoto' : 'parentMsgAttachedPdf')}
@@ -803,7 +803,7 @@ export default function ParentMessageScreen() {
                       flexDirection: isRTL ? 'row-reverse' : 'row', gap: 5,
                     }]}
                   >
-                    <Ionicons name={icon} size={15} color={ACCENT} />
+                    <Ionicons name={icon} size={16} color={ACCENT} />
                     <Text style={[styles.pillText, { color: colors.foreground, fontFamily: 'Almarai_400Regular' }]}>{t(label)}</Text>
                   </Pressable>
                 ))}
@@ -837,7 +837,7 @@ export default function ParentMessageScreen() {
                     hitSlop={6}
                     style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}
                   >
-                    <Ionicons name={on ? 'checkbox' : 'square-outline'} size={22} color={on ? ACCENT : colors.mutedForeground} />
+                    <Ionicons name={on ? 'checkbox' : 'square-outline'} size={24} color={on ? ACCENT : colors.mutedForeground} />
                     <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14 }}>{name}</Text>
                   </Pressable>
                 );
@@ -867,7 +867,7 @@ export default function ParentMessageScreen() {
           >
             {sending
               ? <ActivityIndicator size="small" color="#fff" />
-              : <Ionicons name="paper-plane-outline" size={18} color="#fff" />}
+              : <Ionicons name="paper-plane-outline" size={20} color="#fff" />}
             <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 14 }}>{t('parentMsgSendInApp')}</Text>
           </Pressable>
 
@@ -907,7 +907,7 @@ export default function ParentMessageScreen() {
               style={[styles.pickLink, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
               hitSlop={6}
             >
-              <Ionicons name="chatbubble-ellipses-outline" size={15} color={ACCENT} />
+              <Ionicons name="chatbubble-ellipses-outline" size={16} color={ACCENT} />
               <Text style={[styles.pickLinkText, { color: ACCENT, fontFamily: 'ReadexPro_500Medium' }]}>
                 {t('parentMsgOpenChat', s.name)}
               </Text>

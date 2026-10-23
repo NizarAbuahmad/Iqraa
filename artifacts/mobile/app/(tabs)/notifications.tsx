@@ -277,7 +277,7 @@ export default function NotificationsScreen() {
               {bulkBusy ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Ionicons name="trash-outline" size={18} color="#fff" />
+                <Ionicons name="trash-outline" size={20} color="#fff" />
               )}
               <Text style={[styles.headerActionText, { color: '#fff' }]}>{t('messagingBulkHide', selected.size)}</Text>
             </Pressable>
@@ -303,7 +303,7 @@ export default function NotificationsScreen() {
             The sheet now says what is missing and how to fix it.
           */}
           <Pressable onPress={() => setNewChatOpen(true)} hitSlop={10} accessibilityRole="button" style={[styles.headerActionPrimary, { flexDirection: isRTL ? 'row-reverse' : 'row', backgroundColor: colors.primary }]}>
-            <Ionicons name="create-outline" size={18} color="#fff" />
+            <Ionicons name="create-outline" size={20} color="#fff" />
             <Text style={[styles.headerActionText, { color: '#fff' }]}>{t('messagingNewMessage')}</Text>
           </Pressable>
         </View>
@@ -386,7 +386,7 @@ export default function NotificationsScreen() {
                 {selectMode ? (
                   <Ionicons
                     name={isSelected ? 'checkmark-circle' : 'ellipse-outline'}
-                    size={26}
+                    size={24}
                     color={isSelected ? colors.primary : colors.mutedForeground}
                   />
                 ) : null}
@@ -474,7 +474,7 @@ export default function NotificationsScreen() {
                 {t('messagingStartConversation')}
               </Text>
               <Pressable onPress={() => setNewChatOpen(false)} hitSlop={10}>
-                <Ionicons name="close" size={22} color={colors.mutedForeground} />
+                <Ionicons name="close" size={24} color={colors.mutedForeground} />
               </Pressable>
             </View>
             {contactsList(openContact)}

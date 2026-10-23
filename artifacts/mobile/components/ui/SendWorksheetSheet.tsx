@@ -102,7 +102,7 @@ export function SendWorksheetSheet({ visible, worksheet, lessonId, language, acc
                   <Text style={[styles.note, { color: colors.mutedForeground, textAlign: align }]}>{t('sendToClassNoClasses')}</Text>
                 ) : classes.map(c => (
                   <Pressable key={c.id} accessibilityRole="button" aria-selected={classId === c.id} onPress={() => setClassId(c.id)} style={choice(classId === c.id)}>
-                    <Ionicons name={classId === c.id ? 'radio-button-on' : 'radio-button-off'} size={18} color={classId === c.id ? accent : colors.mutedForeground} />
+                    <Ionicons name={classId === c.id ? 'radio-button-on' : 'radio-button-off'} size={20} color={classId === c.id ? accent : colors.mutedForeground} />
                     <Text style={[styles.choiceText, { color: colors.foreground, textAlign: align }]}>{(isRTL ? c.nameAr : c.name) || c.name || c.nameAr}</Text>
                   </Pressable>
                 ))}
@@ -110,7 +110,7 @@ export function SendWorksheetSheet({ visible, worksheet, lessonId, language, acc
                 <Text style={[styles.label, { color: colors.mutedForeground, textAlign: align }]}>{t('sendToClassObjective')}</Text>
                 {objectives.map(o => (
                   <Pressable key={o.id} accessibilityRole="button" aria-selected={objectiveId === o.id} onPress={() => setObjectiveId(o.id)} style={choice(objectiveId === o.id)}>
-                    <Ionicons name={objectiveId === o.id ? 'radio-button-on' : 'radio-button-off'} size={18} color={objectiveId === o.id ? accent : colors.mutedForeground} />
+                    <Ionicons name={objectiveId === o.id ? 'radio-button-on' : 'radio-button-off'} size={20} color={objectiveId === o.id ? accent : colors.mutedForeground} />
                     <Text style={[styles.choiceText, { color: colors.foreground, textAlign: align }]}>{(isRTL ? o.descriptionAr : o.description) || o.descriptionAr || o.description}</Text>
                   </Pressable>
                 ))}
