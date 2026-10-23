@@ -167,6 +167,11 @@ test('five Grade 9 lessons are grammar-only: listed, under the word floor, and n
   for (const id of GRAMMAR_ONLY) assert.ok(hubLesson(id)!.words.length < MIN_HUB_WORDS, id);
 });
 
+test('every grammar-only lesson has a grammar unit', async () => {
+  const { grammarUnit } = await import('../englishGrammar.ts');
+  for (const id of GRAMMAR_ONLY) assert.ok(grammarUnit(id), id);
+});
+
 test('the hub has 41 Grade 9 lessons now and every other grade is unchanged', () => {
   assert.deepEqual([1, 2, 3, 4, 5, 9, 10].map(g => hubLessonsForGrade(g).length), [10, 9, 8, 9, 10, 41, 20]);
 });

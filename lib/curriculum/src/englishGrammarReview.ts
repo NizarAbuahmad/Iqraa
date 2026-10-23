@@ -16,7 +16,7 @@ import {
 import { NOT_COVERED_G2 } from './englishGrammarG2.ts';
 import { NOT_COVERED_G3 } from './englishGrammarG3.ts';
 import { G4_TABLES, NOT_COVERED_G4 } from './englishGrammarG4.ts';
-import { G9_TABLES, G9_HUB_GAPS, NOT_COVERED_G9 } from './englishGrammarG9.ts';
+import { G9_TABLES, NOT_COVERED_G9 } from './englishGrammarG9.ts';
 import { G9_ITEM_LESSONS } from './englishGrammarG9Items.ts';
 import { allHubWords, hubLesson, hubLessonsForGrade } from './englishHub.ts';
 import { wordPicture } from './englishPictures.ts';
@@ -391,7 +391,6 @@ const GRADE_COPY: Record<number, GradeCopy> = {
       'هل جمل بلا سياق، مثل «How many grapes are there?»، مقبولة في الصف التاسع، أم تفضلون أن تأتي كل جملة داخل مشهد قصير؟',
       'هل طول الجمل مناسب لـ «رتّب الجملة»؟',
     ],
-    extra: `<div class="card gaps"><h3>دروس القواعد التي لا يحملها المركز</h3>${notCoveredList(G9_HUB_GAPS)}</div>`,
     extraCss: YESNO_CSS + `
   .build-half { display: block; color: var(--muted); font-size: .78rem; font-weight: 400; white-space: nowrap; }
   .data { display: grid; gap: 14px; }
@@ -402,7 +401,6 @@ const GRADE_COPY: Record<number, GradeCopy> = {
   .kind-meaning { background: var(--tint); color: var(--teal); }
   .topic-row th { text-align: start; background: var(--tint); font-family: var(--latin); font-weight: 600; }
   .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }
-  .gaps { margin-top: 4px; }
   @media print { .data { break-before: page; } }`,
   },
 };
