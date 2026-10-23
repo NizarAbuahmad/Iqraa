@@ -68,6 +68,93 @@ production change in it is one extra field on an admin-only route.
   off), a bill above about $30, Neon incidents during school hours (Sunday to Thursday, about
   07:30-14:00 Amman), a need for an SLA or a longer restore window, connection limits biting.
 
+## Leftover icon colours follow CONCEPTS — 2026-10-23
+
+Closes the "Not verified" list of «Icons follow one system» (the tables that still kept their
+own icon and colour). A table entry that IS a teaching concept now reads `CONCEPTS`
+(`constants/icons.ts`); one that is not has a colour of its own that carries white at 4.5:1, is
+not amber, and is at least CIEDE2000 7 from every concept colour. Nothing in `glyphs.ts`,
+`Glyph.tsx` or the tab layout was touched.
+
+**What changed, old to new** (hex are the light-mode fills; icons only where they moved)
+- **«موادي», the viewer header, class materials** (`constants/materialKind.ts`, now re-exporting
+  pure data from the new `constants/materialKindData.ts`):
+  lesson `#006D65` to `#4338CA`; worksheet `#8A5A00` to `#0F766E` (the old brown was in the
+  amber family); quiz `#B0284F` to `#7C3AED` and `help-circle-outline` to
+  `checkmark-done-outline`; flow `#44506A` to `#4D7C0F`; activity `#3F7A1E` to `#C2410C` and
+  `game-controller-outline` to `people-outline`; slides `#1F5FA8` to `#0369A1`; prompt slides
+  `#1F5FA8` to `#1D4ED8` (they no longer share one blue); whiteboard, the one kind that is not a
+  concept, `#9A3F12` to slate `#475569`. The dark-card variants are derived
+  (`readableOn(fill, #111F36, 7)`), not typed.
+- **Printed and projected copies** (`DOC_ACCENT` in `services/exportHtml.ts`) follow, so a document is
+  one colour in print, on the projector and in «موادي»: lesson `#006D65` to `#4338CA`,
+  worksheet `#8A5A00` to `#0F766E`, quiz `#B0284F` to `#7C3AED`, activity `#3F7A1E` to `#C2410C`.
+- **Library shelves** (`app/curriculum/resources.tsx`, data in the new `constants/shelfLook.ts`).
+  Worksheet, games and presentations are concepts: worksheet `#0E8F86` to `#0F766E`
+  (`list-outline`), games `#15803D` unchanged, presentation `#C2410C` (the activity's orange) to the
+  slides concept `#0369A1` (`tv-outline`). The six file kinds: audio `#B45309` (exactly
+  `palette.live`) to `#115F40`; infographic `#7C3AED` (the quiz's violet) to `#9C0D71`; image
+  `#0E7490` (the homework's cyan) to `#20576F`; template `#4F46E5` (5.4 from the lesson plan's
+  indigo) to `#96412C`; video `#DC2626` and document `#475569` kept. All shelf icons are outline
+  now, like `RESOURCE_KIND_ICON`; that table's worksheet, game and presentation entries also read
+  `CONCEPTS`. The «open / print» pills use `textOn(accent)` instead of
+  `palette.primaryForeground`, which is navy in dark mode and sat on the old fills at 2.3:1 to 4.3:1 (about 3:1 for most); the
+  shelf glyphs on a card go through `readableOn(…, colors.card, 3)`.
+- **Lesson-flow steps** (builder `app/ai-tools/lesson-flow.tsx` and viewer `app/workspace/view.tsx`,
+  which each kept a literal copy; now one table, `constants/lessonFlowSteps.ts`): activity
+  `flash-outline` `#4F46E5` to the activity concept (`people-outline`, `#C2410C`); worksheet
+  `document-text-outline` `#6D28D9` to the worksheet concept (`list-outline`, `#0F766E`); warm-up
+  `#C2410C` (the activity's colour exactly) to `#96412C`; guided practice, the brand teal 3.2 from
+  the worksheet teal, to `#20576F`; exit ticket `palette.warning` (`#B54708` light, true amber
+  dark, and a literal `#B54708` in the viewer) to `#9C0D71`. Objectives stays ink. Step glyphs
+  on the card are lifted with `readableOn`.
+- `typeColor` in `services/continueTeaching.ts` (called by no screen) reads `CONCEPTS`; its quiz
+  was amber `#C9860A`.
+
+**Pinned** (`services/__tests__/iconSystem.test.ts`, 14 new tests, 31 in the file):
+- every saved-material kind (read from `MaterialType` in `workspace.ts`) has an icon, a fill and a
+  dark fill; a concept kind equals its `CONCEPTS` entry; only `board` is not a concept; the data
+  file holds no hex but the slate and the dark card (which must equal `palette.card` in
+  `colors.ts`), and `materialKind.ts` holds none;
+- material fills carry white at 4.5:1, none is amber, all at least ΔE2000 7 apart; dark fills are at
+  least 7:1 on the dark card; `DOC_ACCENT` equals `MATERIAL_FILL` for its four kinds; `typeColor`
+  equals `CONCEPTS`;
+- the shelf table covers exactly `SHELF_ORDER`; concept shelves read `CONCEPTS` (and so do their
+  `RESOURCE_KIND_ICON` entries); `resources.tsx` declares no shelf table of its own; shelf icons are
+  outline; the six file shelves carry white at 4.5:1, are not amber and are at least 7 from every
+  concept; all nine shelves are at least ΔE2000 8 apart on the light card and 7 apart after the
+  dark-card lift (the Tools tab's 8 would need the audio emerald and worksheet teal to move: 7.8);
+- the two concept steps read `CONCEPTS`; the three own-colour steps carry white at 4.5:1, are not
+  amber, are 7 from every concept, and with ink and the two concept steps are 8 apart (light) and
+  7 (dark); neither flow screen spells a step icon or the old step colours itself.
+  Mutation-checked: putting the amber back on the audio shelf fails the shelf test.
+
+**Verified:** `pnpm run typecheck` clean; mobile `pnpm test` 6,925 tests, 6,915 pass, 10 skipped,
+0 fail. Web build at 390 px, Arabic (RTL), light and dark, API stubbed: the Library overview
+(tabs and shelf headers), the «موادي» list with one of each of the eight kinds, and a saved lesson
+flow in the viewer. Eight materials and nine shelves read as eight and nine different colours in
+both schemes.
+
+**Not verified:** Android and iOS devices; the lesson-flow builder's step cards (they only appear
+after a generation, so they were typechecked and share the viewer's table, not looked at); a
+printed PDF (the new `DOC_ACCENT` was not rendered through `expo-print`).
+
+**Left as they were, on purpose**
+- `#B45309` (exactly `palette.live`) is still the game accent of «multiply» (`app/play/index.tsx:44`)
+  and the lesson game «spot» (`app/play/lesson/[lessonId].tsx:36`), and `#B54708` a star in
+  `app/ai-tools/classroom/index.tsx:118`: game and corner accents, governed by
+  `gameAccents.test.ts`, not concept tables. They break the amber rule and want their own change.
+- The «launch classroom» button in `lesson-flow.tsx` and the «Class screen» action in
+  `workspace/view.tsx` are `#4F46E5`, a near twin of the lesson plan's indigo; the activity hub's
+  card accents (`services/classroomRouting.ts`) and the admin `ACCENT` are the same indigo. Which
+  concept each is was not clear enough to remap.
+- Materials, shelves and flow steps still draw stock Ionicons, not the Iqraa drawings
+  (`ConceptIcon`): a material icon is a font glyph name used across six screens.
+- The old `materialKind.ts` comment said the palette avoided purple because the site's DESIGN.md
+  rules it out. That file lives in the site repo and was not checked; the quiz concept was already
+  violet from «Icons follow one system», so the materials now follow it.
+- The viewer's objectives bullets (`#081B3A`) are still near-invisible on the dark card.
+
 ## Teachers see their class's Math Corner practice — 2026-10-23
 
 **What a teacher sees.** A maths class's «الطلبة» tab has a «تمارين الرياضيات»
