@@ -25,9 +25,18 @@ refusal, timeout, no leak), `heldConnection.test.ts` and `heldReads.test.ts` (th
 least one statement and the enforcement-off server logs none (mutation-checked: removing the mount turns it red).
 A one-off real run of the built API against local Postgres showed the inbox held for a teacher (8 statements,
 ~20 ms) and a parent (7 statements, ~13 ms), and `/messaging/contacts` not held. **Not verified:** the real saving
-— run `bench:rls` from the API's region against the rehearsal project's pooled endpoint and read the `held`
-column (gate: ≤ +100 ms p95). Routes not on the list, and every write, still pay about 22 ms per statement;
-`RLS_ENFORCE` is still unset in production.
+— run `bench:rls` from Cloud Shell (the same way as the failed run, so the numbers compare; its distance to Neon
+is probably close to Cloud Run's but it is not the same place) against the rehearsal project's pooled endpoint and
+read the `held` column. The gate: the `held` p95 added ≤ +100 ms on the inbox-shaped request, no listed route over
++100 ms, and every unlisted route's cost known (about 22 ms per statement) and accepted or added to the list; the
+gate has not been run, so nothing says it passed. Routes not on the list, and every write, still pay about 22 ms
+per statement; `RLS_ENFORCE` is still unset in production. After a flip, the debug log line `held scope ended`
+shows the real hold times.
+
+Follow-up (final review): `openScope` now validates the identity itself (`assertValidIdentity`, shared with
+`asUser`) before writing it into the scope SQL, so a future caller passing a raw value cannot inject SQL; and the
+held-route guard in `heldReads.test.ts` also refuses `.for("update"|"share"|"no key update"|"key share")`, which a
+READ ONLY transaction rejects.
 
 ## Row-level security rehearsed on a separate Neon project, 2026-10-23
 

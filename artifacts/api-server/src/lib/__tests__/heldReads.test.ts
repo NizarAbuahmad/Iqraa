@@ -15,8 +15,12 @@ const src = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
 const MOUNT = /router\.get\(\s*"([^"]+)"\s*,\s*holdScopedConnection\b/g;
 const CALLS_OUT = /\b(fetch|sendExpoPush|pushWithin|generateContent|streamChat|openai)\b/i;
-/** The held scope is READ ONLY, and a transaction would take a second pool slot. */
-const WRITES = /\.(insert|update|delete|transaction)\(/;
+/**
+ * The held scope is READ ONLY, and a transaction would take a second pool slot. A row lock
+ * (`.for("update")` and its siblings) is refused in a READ ONLY transaction too; it is matched as
+ * the method call with a lock-mode literal so the word "for" in a comment or a loop cannot trip it.
+ */
+const WRITES = /\.(insert|update|delete|transaction)\(|\.for\(\s*["'](update|share|no key update|key share)["']/;
 
 function sources(dir: string): string[] {
   return readdirSync(dir).flatMap(name => {
@@ -93,6 +97,11 @@ describe("which routes may hold a database connection", () => {
 
   test("the guards catch what they are for", () => {
     assert.match("await db.insert(x)", WRITES, "an insert must trip the write guard");
+    for (const mode of ["update", "share", "no key update", "key share"]) {
+      assert.match(`await db.select().from(t).for("${mode}")`, WRITES, `.for("${mode}") takes a row lock, which a READ ONLY transaction refuses`);
+    }
+    assert.match(`db.select().from(t).for('update')`, WRITES, "single quotes too");
+    assert.doesNotMatch(`// wait for (the row) to settle\nfor (const r of rows) {}`, WRITES, "the word for is not a row lock");
     assert.match("await pushWithin(a, b)", CALLS_OUT, "a push must trip the calls-out guard");
   });
 

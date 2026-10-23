@@ -101,19 +101,23 @@ GitHub's runners are not in your Cloud Run region — so C1 is still separate.)
   per statement. Cause: with enforcement on each statement is three round trips (BEGIN + scope, the
   statement, COMMIT) instead of one, and one round trip is about 11 ms here (the API is in
   europe-west1, the database in Frankfurt). Tick this only after a mitigation below brings the same
-  benchmark under the budget, measured from the API's region.
+  benchmark under the budget, run from Cloud Shell the same way as the failed run so the numbers compare.
   **Mitigation built (2026-10-23, spec `docs/superpowers/specs/2026-10-23-rls-latency-request-scoped-connection-design.md`):**
   the inbox (`GET /messaging/threads`) holds one scoped, read-only connection per request, so it pays about
   three round trips instead of three per statement. The held read ends when the response finishes, so a slow
-  client keeps the connection until then (bounded by the 5 s hold timeout). Re-run `bench:rls` from Cloud Shell
-  once this has shipped and read the `held` column; **the gate is the `held` p95 added ≤ +100 ms**. Every route
-  not on `artifacts/api-server/src/lib/heldReads.ts` still pays the `on` column (about 22 ms per statement), so
-  decide whether that is acceptable or which route to add next. After the flip, `LOG_LEVEL=debug` logs
-  `held scope ended` with the statements and milliseconds each held request used.
+  client keeps the connection until then (bounded by the 5 s hold timeout, which frees a handler stuck outside
+  the database; a long-running statement still holds its slot until it finishes). Re-run `bench:rls` **from
+  Cloud Shell**, the same way as the failed run, so the numbers are comparable, and read the `held` column;
+  **the gate is the `held` p95 added ≤ +100 ms** (the full gate is on the **Gate** line below). Cloud Shell's
+  distance to Neon is probably close to Cloud Run's, but it is not the same place; after the flip,
+  `LOG_LEVEL=debug` logs `held scope ended` with the statements and milliseconds each held request used, which
+  are the real hold times. Every route not on `artifacts/api-server/src/lib/heldReads.ts` still pays the `on`
+  column (about 22 ms per statement), so decide whether that is acceptable or which route to add next.
   **Note on comparing runs:** the script now runs three modes (off, on, held) and defaults to 8 statements per
   request (`BENCH_STATEMENTS` overrides); the recorded +336.5 ms was measured at 15 statements, so the next run's
   `on` column is not like-for-like with it — compare per-statement figures (about 22 ms per statement then).
-  Original instruction (as first written, for the record; it describes the two-mode, 15-statement script): against the rehearsal project's **pooled** string, from
+  Original instruction (as first written, for the record; it describes the two-mode, 15-statement script, and its
+  "from the API's region if you can" is superseded: the re-run is from Cloud Shell, as above): against the rehearsal project's **pooled** string, from
   the API's region if you can (a Cloud Run job, or a VM there; numbers from a laptop overstate
   the cost). Run the benchmark: `BENCH_DATABASE_URL='<pooled string of the rehearsal
   project>' pnpm --filter @workspace/db run bench:rls` (`lib/db/scripts/bench-rls.ts`; read-only; it
@@ -122,8 +126,9 @@ GitHub's runners are not in your Cloud Run region — so C1 is still separate.)
   0.3 ms a statement, which is a floor, not a forecast. Multiply the difference by the statements in a typical request (the
   teacher inbox is the heaviest read, roughly fifteen).
 
-  **Gate:** p95 within budget — suggested ≤ +100 ms on the inbox, ≤ +25 % elsewhere. If it
-  fails, do not flip. Mitigations, in order: co-locate Cloud Run with Neon; a request-scoped
+  **Gate:** the `held` p95 added ≤ +100 ms on the inbox-shaped request, no listed route over +100 ms, and every
+  unlisted route's cost known (about 22 ms per statement) and either accepted or added to the list. This replaces
+  the original "≤ +25 % elsewhere", which would fail every unlisted route. If it fails, do not flip. Mitigations, in order: co-locate Cloud Run with Neon; a request-scoped
   transaction for routes that never call a model; fewer statements per request.
 - [x] **C2. Connection ceiling — passed 2026-10-23.** Cloud Run `maxScale` 20, `minScale` 1; the API's
   `DATABASE_URL` points at the Neon **pooled** host (`…-pooler…`); the database's `max_connections` is

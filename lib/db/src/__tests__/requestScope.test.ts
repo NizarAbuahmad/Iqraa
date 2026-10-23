@@ -170,4 +170,30 @@ describe("request-scoped connection", { skip: !TEST_URL && "RLS_TEST_DATABASE_UR
       await off.end();
     }
   });
+
+  test("openScope refuses an identity that could carry SQL, and still opens one for a valid identity", async () => {
+    // The identity is interpolated into a multi-statement simple query (no bind parameters),
+    // so openScope must validate it itself rather than trust that asUser did.
+    assert.throws(() => scoped.openScope({ userId: "not-a-uuid", role: "teacher" }), /userId is not a uuid/);
+    assert.throws(
+      () => scoped.openScope({ userId: `${ids.teacherA}'); drop table users; --`, role: "teacher" }),
+      /userId is not a uuid/,
+    );
+    assert.throws(
+      () => scoped.openScope({ userId: ids.teacherA!, role: "teacher'; drop table users; --" }),
+      /role must be lower_snake_case/,
+    );
+    const scope = scoped.openScope(identity("teacherA", "teacher"));
+    assert.ok(scope, "a valid identity still gets a scope");
+    await scope.end();
+  });
+
+  test("with enforcement off, openScope does not validate: it returns undefined for any identity", async () => {
+    const off = new ScopedPool({ connectionString: TEST_URL, max: 1 }, false);
+    try {
+      assert.equal(off.openScope({ userId: "not-a-uuid", role: "x'; --" }), undefined);
+    } finally {
+      await off.end();
+    }
+  });
 });

@@ -1,6 +1,6 @@
 // lib/db/src/scopedPool.ts
 import pg from "pg";
-import { currentIdentity, type Identity } from "./identity.ts";
+import { assertValidIdentity, currentIdentity, type Identity } from "./identity.ts";
 import { currentScope, RequestScope, ScopeEnded } from "./requestScope.ts";
 
 const BEGIN_RE = /^\s*begin\b/i;
@@ -78,6 +78,8 @@ export class ScopedPool extends pg.Pool {
    */
   openScope(identity: Identity, holdTimeoutMs = 5000): RequestScope | undefined {
     if (!this.enforce) return undefined;
+    // scopeSqlFor writes these into a simple query with no bind parameters: do not trust the caller.
+    assertValidIdentity(identity);
     return new RequestScope(
       this,
       () => (super.connect as any).call(this),

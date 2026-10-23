@@ -67,7 +67,10 @@ open on an idle connection, which pins a server connection behind Neon's transac
 4. **End of scope.** The scope is closed from `res.on('finish')` / `res.on('close')` using the `RequestScope`
    object captured when the middleware ran — not the async store, which the `close` callback does not
    inherit. It `COMMIT`s (or `ROLLBACK`s after an error) and releases; a connection that cannot roll back is
-   destroyed. A hold timeout (5 s) rolls back and destroys it so a stuck handler cannot pin a pool slot.
+   destroyed. A hold timeout (5 s) rolls back and releases it, which bounds a handler stuck outside the database
+   (in JavaScript). The `ROLLBACK` queues behind any statement already running, so a long-running statement still
+   holds its slot until it finishes; the per-statement path behaves the same, and a `statement_timeout` would be a
+   separate hardening.
 5. **Allow-list, not default.** A reviewed list of GET routes, each with a reason, in
    `artifacts/api-server/src/lib/heldReads.ts`: routes that make no model call, no HTTP call and no push
    while the handler runs (the connection is held that long). A test asserts every entry is a GET and none is
@@ -88,7 +91,7 @@ original "+25 % elsewhere" budget would fail every unlisted route and is replace
 - **Measure as it runs:** a held scope counts its statements and how long it was held, and logs both
   when it ends, so the allow-list and the budget use real numbers.
 - `bench:rls` gains a `held` mode (one scope, N statements, one commit). **Gate:** inbox-shaped request,
-  p95 added ≤ +100 ms, measured the same way as the failed run.
+  p95 added ≤ +100 ms, measured the same way as the failed run (from Cloud Shell).
 - New tests in `lib/db/src/__tests__`: identity isolation with two users interleaved on a pool of one; the
   scope ends on finish, on close and on error; the pool returns to `idle == total` after N requests (no
   leak); a write in a held scope errors; after the scope ends a statement still runs scoped; enforcement-off

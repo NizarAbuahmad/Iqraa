@@ -10,8 +10,9 @@
 //
 // Read-only: it only runs `select count(*) ... where teacher_id = <random uuid>`, so it writes nothing.
 // Point it at the REHEARSAL project (migrations applied, so the iqraa_app role exists), not production.
-// Run it from the API's region if you can: the extra cost is round trips, so a faraway machine
-// overstates it. Use the pooled endpoint, because that is what production uses.
+// Run it from Cloud Shell, the same way as the failed 2026-10-23 run, so the numbers compare (the
+// extra cost is round trips, so a laptop overstates it; Cloud Shell's distance to Neon is probably
+// close to Cloud Run's but not the same). Use the pooled endpoint, because that is what production uses.
 import { randomUUID } from "node:crypto";
 import { asUser } from "../src/identity.ts";
 import { runInScope } from "../src/requestScope.ts";

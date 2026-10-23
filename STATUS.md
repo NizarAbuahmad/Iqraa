@@ -79,8 +79,10 @@ Checked 2026-10-22:
   **The latency gate failed (C1, 2026-10-23): +336 ms p95 on a 15-statement request,
   budget +100 ms** — each statement becomes three round trips and one costs about 11 ms from
   europe-west1 to Frankfurt; a mitigation (one held read-only connection per request, inbox first; spec
-  2026-10-23) is built, and it must not be switched on until `bench:rls`'s `held` column passes the gate.
-  Not done: the `held` measurement from the API's region, enabling it in production, and making the `row-level security` check required — the steps and
+  2026-10-23) is built, and it must not be switched on until `bench:rls`'s `held` column passes the gate
+  (`held` p95 added ≤ +100 ms on the inbox-shaped request, no listed route over +100 ms, every unlisted route's
+  cost, about 22 ms per statement, known and accepted or listed). Nothing says it has passed.
+  Not done: the `held` measurement (from Cloud Shell, the way the failed run was measured), enabling it in production, and making the `row-level security` check required — the steps and
   the switch are in `docs/rls-rollout-checklist.md`.
 - **Draft PR #730** (teacher visibility into English Corner practice) changes the schema,
   conflicts with `main`, and needs `pnpm --filter @workspace/db run generate` after it is updated.
