@@ -37,3 +37,14 @@ export function readableOn(hex: string, surface: string, min = 4.5): string {
 export function textOn(fill: string): string {
   return contrast('#FFFFFF', fill) >= contrast('#0B1B33', fill) ? '#FFFFFF' : '#0B1B33';
 }
+
+/**
+ * `hex` drawn at `alpha` (0–1) over `surface`, as the opaque colour that results.
+ * A tinted chip or banner is `accent` at a low alpha over whatever is behind it;
+ * to say what text on it reads like, the text colour has to be judged against
+ * THIS colour and not against the plain surface (`readableOn(accent, tintOver(accent, a, surface))`).
+ */
+export function tintOver(hex: string, alpha: number, surface: string): string {
+  const fg = parse(hex), bg = parse(surface);
+  return toHex(fg.map((v, i) => bg[i]! + (v - bg[i]!) * alpha) as RGB);
+}

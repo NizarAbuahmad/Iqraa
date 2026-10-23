@@ -1054,6 +1054,8 @@ const translations = {
     genPreviewWorksheetNote: 'ورقة تدريب جاهزة للطباعة، ومعها مفتاح الإجابات.',
     genPreviewHomeworkNote: 'تمرين بيتي جاهز للطباعة، ومعه مفتاح الإجابات.',
     genPreviewLessonPlanNote: 'خطة قابلة للتعديل بعد إعدادها، وتُصدَّر إلى Word أو PDF.',
+    genPreviewActivityNote: 'نشاط بخطوات مرتّبة ومدة لكل خطوة، ويُصدَّر إلى Word أو PDF.',
+    genSectionObjective: 'الهدف',
     // The homework tool shares the worksheet screen; its button names what it makes.
     genHomeworkBtn: 'جهّز الواجب البيتي',
     // No direction word: the button is below the form on a phone and beside it on desktop.
@@ -4328,6 +4330,8 @@ const translations = {
     genPreviewWorksheetNote: 'A print-ready practice sheet, with its answer key.',
     genPreviewHomeworkNote: 'A print-ready home exercise, with its answer key.',
     genPreviewLessonPlanNote: 'An editable plan, ready to export to Word or PDF.',
+    genPreviewActivityNote: 'An activity with timed steps, ready to export to Word or PDF.',
+    genSectionObjective: 'Objective',
     genHomeworkBtn: 'Prepare homework',
     genNeedLessonHint: 'Pick a lesson to enable this.',
 

@@ -10,6 +10,63 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Generator screens: the activity — 2026-10-23
+
+PR 4 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`. The activity screen
+(`app/ai-tools/activity.tsx`) is built from the shared pieces of `components/generator/`. Mobile only:
+nothing here changes what is asked of the model, the API, or what is stored.
+
+**What changed**
+| Field | Control |
+|---|---|
+| Grade, subject, `TopicSelector`, the inline error | `LessonCard` body (unchanged pickers, `StrandedSelectionNote`, `hasError`) |
+| Activity type (`activityTypeIdx`, 5 labels, default index 1) | `ChipGroup` in the new `single` mode over `ACTIVITY_TYPE_IDS`, moving the same index |
+| Duration (`durationIdx`, 20/30/45/60) | `SegmentedControl` over the same index and array |
+| Objective (`objective`) | the same multiline `TextInput`, in a labelled `useSurface()` card |
+| Generate | one `DockedAction`, disabled with `genNeedLessonHint` while there is no topic (as the quiz and worksheet) |
+
+- **A new shared mode.** Five long Arabic type labels do not fit a segmented control (at most four short ones),
+  so `ChipGroup` gained an opt-in `single` mode: the group is a `radiogroup`, each chip a `radio` with
+  `aria-checked`, pressing the chosen chip does nothing, and the at-least-one lock is not used. Multi mode
+  (the quiz's and the worksheet's types) is unchanged, and a test fails a `single` prop on either of those.
+  The spec's mapping line says so.
+- **A contrast fix in the shared chip, found by the review.** A selected chip's label was judged against the
+  plain card but drawn on its own 12% tint, which measured 4.35:1 for the activity orange in light mode (quiz
+  violet 4.19 and worksheet teal 4.36 in dark). A selected chip is now an opaque fill (`tintOver`, new in
+  `services/readableColor.ts`) and its label, tick and ring are `readableOn(accent, thatFill)`. A test checks
+  every generator concept colour (quiz, worksheet, homework, lesson plan, activity, slides) in light and dark
+  against the real card and page colours, at 4.5:1; it also pins that the old method fails for the activity
+  colour. `SegmentedControl` has no such flaw (its selected segment is the plain card), and a test pins that.
+  The selected chips on the quiz, worksheet and homework are therefore a touch more solid than before.
+- `ACCENT` is the concept colour (orange). The result view's private `#C2410C` copies are gone; text, icons
+  and outlines on a card use `accentInk`, the step-number circle is an `ACCENT` fill with `textOn(ACCENT)`, and
+  the ready banner's ink is judged against its tint over the page (`tintOver`). The file has no hex literal and
+  no `palette` import. Source tests: no raw `ACCENT` as ink, and a second that puts three back to prove it bites.
+- **Preview:** six skeleton rows in the order `ActivityResult` prints them (objective, materials, steps, tips,
+  differentiation, assessment), titles in the CONTENT language, a test that reads the result's own source to
+  keep the order in step. Summary: «30 دقيقة · جماعي». The result's «الهدف» heading and the preview's title
+  are the same i18n key, so they cannot drift. i18n: `genPreviewActivityNote`, `genSectionObjective`.
+- The docked bar renders on a phone and under the preview on desktop, with the `attempt` counter in the scroll
+  effect's dependencies; the shared tests for both now cover this screen too.
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,127 tests, 7,117 pass, 10 skipped, 0 fail.
+Web-build screenshots, Arabic: phone (390) and desktop (1366), light and dark, with a lesson and without (the
+disabled button and its reason); English at 360 (the five chips wrap to three rows); a generated activity in dark.
+An independent review found no blocker; its should-fix items (the chip contrast, the banner contrast, an unused
+import, a weak guard test, a duplicated heading) are fixed.
+
+**Not verified:** any device (the Android keyboard hiding the bar while the objective box is focused, the iOS
+safe area, touch feel, screen readers, whether Space activates a `role="radio"` chip on web); the chips' look
+after the contrast change on the quiz and the worksheet in the browser; a wide scope; a live-AI activity.
+
+**Known limits.** The same flaw as the activity banner is likely in three places this PR does not touch: the lesson
+plan's ready banner, the worksheet's success banner and the quiz header's pills (ink judged against the card but
+drawn on `ACCENT+'15'` over the page, about 4.2-4.4:1 in light mode; not measured). Found by the review and not
+fixed here, because it is on every generator screen: after Cancel, `cancelled` stays set and the phase expression
+puts it before `error`, so a later refusal (`scopeNoCurriculum`, `subjectTopicMismatch`, `wideScopeUngrounded`)
+shows «أُلغي» instead of the refusal; on this screen no press can reach a refusal with an empty topic, but the
+quiz, worksheet and lesson plan can. The slides screen is still on the old teal and dropdowns.
+
 ## Generator screens: the lesson plan — 2026-10-23
 
 PR 3 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`. The lesson-plan screen
@@ -67,8 +124,8 @@ browser.
 
 **Known limits.** The skeleton rows show section titles, not content. The ticked checkbox's fill is about 1.9:1
 against the dark card (the tick itself carries the state). Most of the screen's new tests pin source text; they
-freeze the code but cannot show it scrolls correctly. The activity and slides screens are still on the old
-teal and dropdowns.
+freeze the code but cannot show it scrolls correctly. The activity (done in the next entry up) and slides screens were
+still on the old teal and dropdowns when this shipped.
 
 ## Generator screens: the worksheet and homework — 2026-10-23
 

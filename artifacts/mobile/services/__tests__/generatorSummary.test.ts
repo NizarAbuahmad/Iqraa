@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { summaryLine, previewRows, moreRowsLabel, lessonPlanSections } from '../generatorSummary.ts';
+import { summaryLine, previewRows, moreRowsLabel, lessonPlanSections, activitySections } from '../generatorSummary.ts';
 
 /*
   The docked bar's one-line summary and the desktop paper preview's rows. Both
@@ -127,4 +127,22 @@ test('the lesson plan sections come in teaching order, with the prior review onl
   assert.equal(rows.length, 11);
   assert.equal(remainder, 0);
   assert.deepEqual(rows.map(r => r.type), withReview);
+});
+
+test('an activity names its duration and type: «30 دقيقة · جماعي»', () => {
+  assert.equal(summaryLine({ minutes: 30, level: 'جماعي' }, 'ar'), '30 دقيقة · جماعي');
+  assert.equal(summaryLine({ minutes: 20, level: 'لعبة تعليمية' }, 'ar'), '20 دقيقة · لعبة تعليمية');
+  assert.equal(summaryLine({ minutes: 60, level: 'Group work' }, 'en'), '60 min · Group work');
+  // The four durations the screen offers all take «دقيقة».
+  for (const m of [20, 30, 45, 60]) assert.equal(summaryLine({ minutes: m }, 'ar'), `${m} دقيقة`);
+});
+
+test('the activity sections come in the order the result prints them', () => {
+  assert.deepEqual(activitySections(), ['objective', 'materials', 'steps', 'teacherTips', 'differentiation', 'assessment']);
+  const { rows, remainder } = previewRows(activitySections(), 6, 6);
+  assert.equal(rows.length, 6);
+  assert.equal(remainder, 0);
+  assert.deepEqual(rows.map(r => r.type), activitySections());
+  // A fresh array each time: a caller cannot reorder the shared list.
+  assert.notEqual(activitySections(), activitySections());
 });
