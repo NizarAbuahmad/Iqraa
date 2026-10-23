@@ -135,3 +135,39 @@ export type ActivitySection = (typeof ACTIVITY_SECTIONS)[number];
 export function activitySections(): ActivitySection[] {
   return [...ACTIVITY_SECTIONS];
 }
+
+/**
+ * What a slide deck is built from, in the order the builders put it
+ * (`buildLessonDeck` / `buildRevisionDeck` in `lessonSlides.ts`). A section is
+ * left out of a real deck when neither the book nor the plan has anything for it,
+ * so this is the SHAPE the deck is made from and never a promise of a slide
+ * count. A unit / semester / book deck is a revision session: no vocabulary or
+ * worked examples, a round per unit instead. Practice and homework follow the
+ * practice switch; worked examples follow theirs and never appear on a wide scope.
+ */
+export type DeckSection =
+  | 'title' | 'outcomes' | 'scope' | 'goals' | 'warmup' | 'vocabulary' | 'explanation' | 'units'
+  | 'checks' | 'examples' | 'practice' | 'summary' | 'exitTicket' | 'homework';
+
+export function deckSections(opts: { wide: boolean; examples: boolean; practice: boolean }): DeckSection[] {
+  const lesson: DeckSection[] = ['title', 'outcomes', 'warmup', 'vocabulary', 'explanation', 'checks', 'examples', 'practice', 'summary', 'exitTicket', 'homework'];
+  const revision: DeckSection[] = ['title', 'scope', 'goals', 'warmup', 'units', 'checks', 'practice', 'summary', 'exitTicket', 'homework'];
+  return (opts.wide ? revision : lesson).filter(s => {
+    if (s === 'examples') return opts.examples && !opts.wide;
+    if (s === 'practice' || s === 'homework') return opts.practice;
+    return true;
+  });
+}
+
+/** «شرائح · أمثلة · تدريب»: what the deck will carry, from the switches that are on. */
+export function deckOptionsSummary(
+  opts: { wide: boolean; examples: boolean; practice: boolean; attachments: boolean },
+  lang: SummaryLang,
+): string {
+  const ar = lang === 'ar';
+  const parts = [opts.wide ? (ar ? 'شرائح مراجعة' : 'Revision slides') : (ar ? 'شرائح' : 'Slides')];
+  if (opts.examples && !opts.wide) parts.push(ar ? 'أمثلة' : 'Examples');
+  if (opts.practice) parts.push(ar ? 'تدريب' : 'Practice');
+  if (opts.attachments && !opts.wide) parts.push(ar ? 'مرفقاتي' : 'My attachments');
+  return parts.join(' · ');
+}

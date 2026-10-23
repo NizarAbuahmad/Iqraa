@@ -744,7 +744,7 @@ sweep in your staged files.
   stock glyph. A new drawing must be used or listed in `HELD` with its reason
   (`glyphs.test.ts`; it is empty today).
 - **A generator screen is built from `components/generator/` (since 2026-10-23; the
-  quiz, the worksheet/homework, the lesson plan and the activity are ported, slides follows).** `ToolHeader` takes the band's colour
+  all five are ported: quiz, worksheet/homework, lesson plan, activity, slides).** `ToolHeader` takes the band's colour
   from its `concept`; the form is `SegmentedControl` (a list of at most four labels),
   `Stepper` (a numeric list: it moves the screen's INDEX through the real option
   array, never a number), `ChipGroup` (multi-select, or `single` for a long single choice), one `LessonCard` wrapping the
@@ -761,6 +761,6 @@ sweep in your staged files.
   never conditional, no `PickerField` for a short list, validation, no `palette`, no
   hand-written hex in the shared pieces, 44-point targets, `aria-*` state), and white
   text at 4.5:1 on every concept band. **Only convention:** which list becomes which
-  control on a screen not yet ported (a field whose real options are not a short list
+  control on a new generator screen (a field whose real options are not a short list
   stays a dropdown), and how it looks (check it in `pnpm run dev:mobile:web`, phone
   and desktop, light and dark, RTL).

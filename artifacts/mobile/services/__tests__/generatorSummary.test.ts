@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { summaryLine, previewRows, moreRowsLabel, lessonPlanSections, activitySections } from '../generatorSummary.ts';
+import { summaryLine, previewRows, moreRowsLabel, lessonPlanSections, activitySections, deckSections, deckOptionsSummary } from '../generatorSummary.ts';
+import { chipLocked } from '../chipRules.ts';
 
 /*
   The docked bar's one-line summary and the desktop paper preview's rows. Both
@@ -145,4 +146,41 @@ test('the activity sections come in the order the result prints them', () => {
   assert.deepEqual(rows.map(r => r.type), activitySections());
   // A fresh array each time: a caller cannot reorder the shared list.
   assert.notEqual(activitySections(), activitySections());
+});
+
+test('a deck summary names what is switched on: «شرائح · أمثلة · تدريب»', () => {
+  assert.equal(deckOptionsSummary({ wide: false, examples: true, practice: true, attachments: false }, 'ar'), 'شرائح · أمثلة · تدريب');
+  assert.equal(deckOptionsSummary({ wide: false, examples: false, practice: false, attachments: false }, 'ar'), 'شرائح');
+  assert.equal(deckOptionsSummary({ wide: false, examples: true, practice: true, attachments: true }, 'ar'), 'شرائح · أمثلة · تدريب · مرفقاتي');
+  assert.equal(deckOptionsSummary({ wide: false, examples: true, practice: false, attachments: false }, 'en'), 'Slides · Examples');
+});
+
+test('a wide deck is a revision: it takes no examples and no attachments whatever is stored', () => {
+  assert.equal(deckOptionsSummary({ wide: true, examples: true, practice: true, attachments: true }, 'ar'), 'شرائح مراجعة · تدريب');
+  assert.equal(deckOptionsSummary({ wide: true, examples: true, practice: false, attachments: true }, 'en'), 'Revision slides');
+});
+
+test('a lesson deck is built from these sections in this order, examples and practice only when switched on', () => {
+  assert.deepEqual(deckSections({ wide: false, examples: true, practice: true }),
+    ['title', 'outcomes', 'warmup', 'vocabulary', 'explanation', 'checks', 'examples', 'practice', 'summary', 'exitTicket', 'homework']);
+  assert.deepEqual(deckSections({ wide: false, examples: false, practice: false }),
+    ['title', 'outcomes', 'warmup', 'vocabulary', 'explanation', 'checks', 'summary', 'exitTicket']);
+});
+
+test('a revision deck has a round per unit and no vocabulary, outcomes or examples', () => {
+  const wide = deckSections({ wide: true, examples: true, practice: true });
+  assert.deepEqual(wide, ['title', 'scope', 'goals', 'warmup', 'units', 'checks', 'practice', 'summary', 'exitTicket', 'homework']);
+  assert.ok(!wide.includes('examples') && !wide.includes('vocabulary') && !wide.includes('outcomes'));
+  assert.deepEqual(deckSections({ wide: true, examples: false, practice: false }), ['title', 'scope', 'goals', 'warmup', 'units', 'checks', 'summary', 'exitTicket']);
+});
+
+test('chips lock by one rule: a multi-select keeps its last min, min 0 locks nothing, a single choice never locks', () => {
+  const base = { single: false, on: true, off: false, counted: 1, min: 1 };
+  assert.equal(chipLocked(base), true, 'the last selected chip of a min-1 group is locked');
+  assert.equal(chipLocked({ ...base, counted: 2 }), false);
+  assert.equal(chipLocked({ ...base, on: false }), false, 'an unselected chip is not locked');
+  assert.equal(chipLocked({ ...base, min: 0 }), false, 'with min 0 the only selected chip can still be cleared');
+  assert.equal(chipLocked({ ...base, counted: 0, min: 0 }), false);
+  assert.equal(chipLocked({ ...base, off: true }), false, 'a disabled chip is inert, not locked');
+  assert.equal(chipLocked({ ...base, single: true }), false, 'a single choice never locks the chosen chip');
 });
