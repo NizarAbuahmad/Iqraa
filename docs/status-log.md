@@ -24,7 +24,7 @@ practised are not listed.
 new best, so attempts count). The server checks the lesson is a catalog
 **mathematics** lesson (`modules/mathPractice/practice.ts`, 1 ≤ total ≤ 20) and
 writes one row per `self`-linked roster row of the account into the new
-`math_practice_results` table (migration 0013, additive, DEFERRED RLS + grant like
+`math_practice_results` table (migration 0014, additive, DEFERRED RLS + grant like
 `game_results`), keeping the best ratio (a tie keeps the old row) and counting
 attempts. An account with no roster row gets `{ saved: false }` and keeps its
 score on the device only. `GET /classes/:id/math-practice` (teacher, own live

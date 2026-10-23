@@ -99,6 +99,13 @@
       "when": 1792742806948,
       "tag": "0013_true_kulan_gath",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792747624738,
+      "tag": "0014_light_sinister_six",
+      "breakpoints": true
     }
   ]
 }
