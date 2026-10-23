@@ -9,11 +9,16 @@
  * that are plainly true; opinion rows are never judged. Both units ship `reviewedBy: null`: they are offered to
  * nobody until a teacher signs the printed form. `NOT_COVERED_G9` is what the form says is left out.
  *
- * Imports only types from the engine: `englishGrammar.ts` imports this file.
+ * The thirteen authored lessons (spec 2026-10-23-english-corner-grammar-g9-lessons-design.md) come from `englishGrammarG9Items.ts`.
+ *
+ * Imports only types from the engine, and the hub (which does not import the engine): `englishGrammar.ts` imports this file.
  */
 import type { GrammarUnit } from './englishGrammar.ts';
+import { G9_ITEM_LESSONS } from './englishGrammarG9Items.ts';
+import { hubLessonsForGrade } from './englishHub.ts';
 
 const L = (unit: number, lesson: number) => `kbl-g9-eng-s1-nccd-u${unit}_l${lesson}`;
+const L2 = (s: string) => `kbl-g9-eng-${s}`;
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
 
 type Pair = { big: string; small: string; adj: string };
@@ -58,7 +63,9 @@ const FOOD_MASS = ['cream', 'honey', 'jam', 'salt', 'sugar', 'porridge', 'milk',
 const phrase = (right: string, wrong: string) => ({ kind: 'phrase' as const, right, wrong });
 const FORM = (wrong: 'base' | 'comparative') => ({ kind: 'form' as const, slot: 'adj', wrong });
 
-export const GRAMMAR_UNITS_G9: GrammarUnit[] = [
+const HUB_ORDER = new Map(hubLessonsForGrade(9).map((l, i) => [l.id, i]));
+
+const UNITS_G9: GrammarUnit[] = [
   {
     // Comparatives and superlatives. No pictures; True or false and Yes or No only from the written pairs.
     lessonId: L(4, 1),
@@ -93,7 +100,12 @@ export const GRAMMAR_UNITS_G9: GrammarUnit[] = [
     ],
     slots: { pl: FOOD_COUNT, mass: FOOD_MASS },
   },
+  // The thirteen authored lessons (hand-written items; see `englishGrammarG9Items.ts`). Unsigned like the pilot.
+  ...G9_ITEM_LESSONS.map(l => ({ lessonId: l.lessonId, reviewedBy: null, patterns: [], slots: {}, items: l.items }) satisfies GrammarUnit),
 ];
+
+/** In the book's order, so the sheet reads unit by unit. */
+export const GRAMMAR_UNITS_G9: GrammarUnit[] = [...UNITS_G9].sort((a, b) => HUB_ORDER.get(a.lessonId)! - HUB_ORDER.get(b.lessonId)!);
 
 /** The written rows a teacher checks, printed on the form's data page (built there, so the page cannot drift from the units). */
 export const G9_TABLES = {
@@ -104,6 +116,19 @@ export const G9_TABLES = {
   foodCount: FOOD_COUNT,
   foodMass: FOOD_MASS,
 };
+
+/**
+ * Book grammar topics with no hub lesson, so no activity: the hub offers a lesson only with at least four hub words.
+ * Printed once on the Grade 9 form. No `"`, `&`, `<` or `>`.
+ */
+export const G9_HUB_GAPS: string[] = [
+  'used to (الوحدة الثانية): درسها بلا كلمات كافية في المركز.',
+  'المضارع التام، present perfect، مع already, ever, just, never, yet ومع for, since (الوحدة السابعة): لا يوجد درس قواعد في المركز لهذه الوحدة أصلًا.',
+  'الجملة الشرطية الأولى، first conditional (الوحدة الثامنة): درسها بلا كلمات كافية في المركز.',
+  'الكلام المنقول، reported speech، مع say, tell, ask (الوحدة التاسعة): درسه بلا كلمات كافية في المركز.',
+  'المبني للمجهول، the passive (الوحدة العاشرة): درسه بلا كلمات كافية في المركز.',
+  'إضافة هذه الدروس تتطلب تغييرًا في طريقة بناء دروس المركز، وهو عمل منفصل.',
+];
 
 /**
  * What a Grade 9 lesson does not cover, and why — printed on the teacher's form. One bullet per item,
@@ -119,5 +144,63 @@ export const NOT_COVERED_G9: Record<string, string[]> = {
     'لا صور في هذه الوحدة، والاسم هو الذي يحدد الاختيار: many مع المعدود بالجمع وmuch مع غير المعدود، وa few مع الأول وa little مع الثاني.',
     'الأطعمة صُنِّفت يدويًا في صفحة البيانات: معدودة بالجمع (grapes وolives وmushrooms وpancakes وdoughnuts وcroissants وmuffins وcarrots) وغير معدودة (cream وhoney وjam وsalt وsugar وporridge وmilk وrice).',
     'some وany وenough غير مشمولة: اقتصرنا على many وmuch وa few وa little مع too many وtoo much.',
+  ],
+  [L2('s1-nccd-u1_l1')]: [
+    'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
+    '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+    'الجمل المختارة لـ «now» تُحدِّد المضارع المستمر بكلمة في الجملة (Listen! وRight now)، ويُسمّى الخيار الآخر «معنى» لا «خطأ»؛ والعادة المؤقتة (is playing every Saturday this month) غير مشمولة لأنها تقبل الصيغتين.',
+  ],
+  [L2('s1-nccd-u1_l3')]: [
+    'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
+    '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+    'صفات الشخصية غير مشمولة: لا يمكن أن تكون الشخصية صحيحة أو خاطئة، والدرس هنا للضمائر الانعكاسية فقط.',
+  ],
+  [L2('s1-nccd-u1_l4')]: [
+    'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
+    '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+  ],
+  [L2('s1-nccd-u2_l1')]: [
+    'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
+    '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+  ],
+  [L2('s1-nccd-u3_l1')]: [
+    'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
+    '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+  ],
+  [L2('s1-nccd-u3_l4')]: [
+    'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
+    '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+  ],
+  [L2('s1-nccd-u5_l1')]: [
+    'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
+    '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+    'جمل mustn\'t وdon\'t have to مختارة بجملة ثانية تستبعد الخيار الآخر، وتُسمّى «معنى» لا «خطأ»؛ أما should فخياراتها أخطاء في الصيغة فقط.',
+  ],
+  [L2('s1-nccd-u5_l3')]: [
+    'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
+    '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+  ],
+  [L2('s2-nccd-u6_l1')]: [
+    'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
+    '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+    'هذا الدرس يختبر شكل الجملة فقط (are meet، going study)، لا الاختيار بين المضارع المستمر وgoing to وwill لأن لكل منها أكثر من إجابة مقبولة.',
+  ],
+  [L2('s2-nccd-u6_l3')]: [
+    'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
+    '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+    'هذا الدرس يختبر شكل الجملة فقط (going rain، will to be)، لا الاختيار بين going to وwill لأن لكل منهما أكثر من إجابة مقبولة.',
+  ],
+  [L2('s2-nccd-u8_l1')]: [
+    'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
+    '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+  ],
+  [L2('s2-nccd-u9_l1')]: [
+    'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
+    '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+    'الظروف مثل before وby (before her parents arrived) تُبيِّن ترتيب الحدثين لكنها لا تجعل الماضي البسيط خطأً، فخيارات هذا الدرس أخطاء في الصيغة (had finish) فقط.',
+  ],
+  [L2('s2-nccd-u10_l4')]: [
+    'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
+    '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
   ],
 };

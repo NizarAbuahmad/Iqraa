@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   allGrammarSpoken, buildCap, comparativeOf, grammarUnitsForGrade, pastTense, pluralOf, presentParticiple, superlativeOf, thirdPerson, unitGrade, unitSentences,
-  withArticle, type GrammarUnit,
+  withArticle, type GrammarItem, type GrammarUnit,
 } from '../englishGrammar.ts';
 
 test('Grade 2 word forms: irregular plurals, words with no article, a/an', () => {
@@ -326,4 +326,46 @@ test('a claim can swap two pairs of slots, so a capitalised first word swaps wit
   }]));
   assert.equal(s.text, 'Carrots are healthier than doughnuts.');
   assert.deepEqual(s.claim, { falseText: 'Doughnuts are healthier than carrots.' });
+});
+
+// ─── Authored items (Grade 9; spec: docs/superpowers/specs/2026-10-23-english-corner-grammar-g9-lessons-design.md) ───
+
+const itemUnit = (items: GrammarItem[]): GrammarUnit => ({ lessonId: 'kbl-g9-eng-s1-nccd-u1_l1', reviewedBy: null, patterns: [], slots: {}, items });
+const anItem = (over: Partial<GrammarItem> = {}): GrammarItem => ({
+  topic: 'now', text: 'Listen! The baby is crying.', answer: 'is crying', distractor: 'cries', kind: 'meaning', ...over,
+});
+
+test('an item becomes a picture-free sentence with a phrase Choose and a silent false twin', () => {
+  const [s] = unitSentences(itemUnit([anItem()]));
+  assert.equal(s.text, 'Listen! The baby is crying.');
+  assert.equal(s.patternId, 'now');
+  assert.equal(s.picture, null);
+  assert.equal(s.yesNo, null);
+  assert.equal(s.kind, 'meaning');
+  assert.deepEqual(s.choose, { kind: 'phrase', start: 3, length: 2, right: 'is crying', wrong: 'cries' });
+  assert.deepEqual(s.claim, { falseText: 'Listen! The baby cries.', voiced: false });
+  assert.deepEqual(s.build, { tokens: ['Listen!', 'The', 'baby', 'is', 'crying.'], text: 'Listen! The baby is crying.', prompt: null });
+});
+
+test('an item keeps the sentence punctuation on the replaced words, mid-sentence and at the end', () => {
+  const [mid, end] = unitSentences(itemUnit([
+    anItem({ text: 'While I was walking, it started to rain.', answer: 'was walking', distractor: 'was walk', kind: 'form' }),
+    anItem({ text: 'She enjoys reading.', answer: 'reading', distractor: 'to read', kind: 'form' }),
+  ]));
+  assert.equal(mid.claim!.falseText, 'While I was walk, it started to rain.');
+  assert.equal(end.claim!.falseText, 'She enjoys to read.');
+});
+
+test('an item is refused when its answer is missing, repeated, or the same as its distractor', () => {
+  assert.throws(() => unitSentences(itemUnit([anItem({ answer: 'is smiling' })])), /not in/);
+  assert.throws(() => unitSentences(itemUnit([anItem({ text: 'It is a cat. It is a dog.', answer: 'is', distractor: 'was' })])), /more than once/);
+  assert.throws(() => unitSentences(itemUnit([anItem({ distractor: 'is crying' })])), /differs/);
+});
+
+test('pattern sentences carry no kind and a voiced claim, so Grades 1–4 and Unit 4 are unchanged', () => {
+  for (const grade of [2, 3, 4, 9]) for (const u of grammarUnitsForGrade(grade)) for (const s of unitSentences(u)) {
+    if (u.items?.length) continue;
+    assert.equal(s.kind, undefined, s.text);
+    if (s.claim) assert.equal(s.claim.voiced, undefined, s.text);
+  }
 });
