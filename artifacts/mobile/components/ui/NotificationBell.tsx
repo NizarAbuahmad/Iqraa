@@ -8,6 +8,7 @@ import { badgeLabel, setUnreadMessages, useUnreadMessages } from '@/services/unr
 import { listThreads, markAllThreadsRead, type ChatThreadSummary } from '@/services/messaging';
 import { relativeTime } from '@/services/relativeTime';
 import { Avatar } from '@/components/ui/Avatar';
+import { ICON } from '@/constants/icons';
 
 const PANEL_WIDTH = 360;
 
@@ -17,7 +18,7 @@ const PANEL_WIDTH = 360;
  * as "the bell takes me to chat" rather than "show me what is new".
  * `onDark` draws it in white for a dark header band (phone Today).
  */
-export function NotificationBell({ size = 22, onDark = false }: { size?: number; onDark?: boolean }) {
+export function NotificationBell({ size = ICON.xl, onDark = false }: { size?: number; onDark?: boolean }) {
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
   const unread = useUnreadMessages();
@@ -137,7 +138,7 @@ export function NotificationBell({ size = 22, onDark = false }: { size?: number;
                     >
                       {isGroup ? (
                         <View style={[styles.groupIcon, { backgroundColor: colors.secondary }]}>
-                          <Ionicons name="people" size={18} color={colors.primary} />
+                          <Ionicons name="people" size={20} color={colors.primary} />
                         </View>
                       ) : (
                         <Avatar firstName={other?.firstName ?? '?'} lastName={other?.lastName} size={36} colors={colors} />

@@ -72,6 +72,7 @@ export default function ClassroomHubScreen() {
           isRTL={isRTL}
           title={lang === 'ar' ? 'أنشطة الحصة' : 'Activity Marketplace'}
           subtitle={lang === 'ar' ? `${arCountPhrase(ACTIVITY_CARDS.length, 'نشاط تفاعلي جاهز', 'نشاطان تفاعليان جاهزان', 'أنشطة تفاعلية جاهزة')} — اختر نشاطاً وابدأ الحصة` : `${ACTIVITY_CARDS.length} interactive activities — pick one and launch in seconds`}
+          concept="classroom"
           eyebrow={{ icon: 'storefront-outline', label: t('classroomBadge') }}
         >
           {/* Search */}
@@ -137,7 +138,7 @@ export default function ClassroomHubScreen() {
                   </Text>
                 </View>
                 <View style={styles.featuredArrow}>
-                  <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color="#fff" />
+                  <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color="#fff" />
                 </View>
               </View>
               <View style={[styles.featuredMeta, { flexDirection: isRTL ? 'row-reverse' : 'row', borderTopColor: 'rgba(255,255,255,0.2)' }]}>
@@ -159,7 +160,7 @@ export default function ClassroomHubScreen() {
 
           {filtered.length === 0 ? (
             <View style={[styles.empty, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-              <Text style={{ fontSize: 32 }}>🔍</Text>
+              <Ionicons name="search-outline" size={32} color={colors.mutedForeground} />
               <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: 'center' }]}>
                 {lang === 'ar' ? 'لا توجد أنشطة مطابقة لبحثك' : 'No activities match your search'}
               </Text>
@@ -196,7 +197,7 @@ export default function ClassroomHubScreen() {
                         {t(card.descKey as any)}
                       </Text>
                     </View>
-                    <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={readableOn(card.accentColor, colors.card)} style={{ alignSelf: 'center' }} />
+                    <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={readableOn(card.accentColor, colors.card)} style={{ alignSelf: 'center' }} />
                   </View>
 
                   <View style={[styles.metaRow, { flexDirection: isRTL ? 'row-reverse' : 'row', borderTopColor: colors.border }]}>
@@ -218,7 +219,7 @@ export default function ClassroomHubScreen() {
 function MetaPill({ icon, label, color }: { icon: keyof typeof Ionicons.glyphMap; label: string; color: string }) {
   return (
     <View style={styles.metaPill}>
-      <Ionicons name={icon} size={11} color={color} />
+      <Ionicons name={icon} size={14} color={color} />
       <Text style={[styles.metaPillText, { color, fontFamily: 'ReadexPro_500Medium' }]}>{label}</Text>
     </View>
   );
@@ -227,7 +228,7 @@ function MetaPill({ icon, label, color }: { icon: keyof typeof Ionicons.glyphMap
 function FeaturedPill({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; label: string }) {
   return (
     <View style={styles.metaPill}>
-      <Ionicons name={icon} size={11} color="rgba(255,255,255,0.8)" />
+      <Ionicons name={icon} size={14} color="rgba(255,255,255,0.8)" />
       <Text style={[styles.metaPillText, { color: 'rgba(255,255,255,0.9)', fontFamily: 'ReadexPro_500Medium' }]}>{label}</Text>
     </View>
   );

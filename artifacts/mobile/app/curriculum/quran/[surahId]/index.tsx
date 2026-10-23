@@ -78,7 +78,7 @@ function QuranReader() {
           accessibilityRole="button"
           style={[styles.primary, { backgroundColor: colors.primary, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
         >
-          <Ionicons name="school-outline" size={18} color={colors.primaryForeground} />
+          <Ionicons name="school-outline" size={20} color={colors.primaryForeground} />
           <Text style={{ color: colors.primaryForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
             {t('quranMemorize')}
           </Text>
@@ -169,7 +169,7 @@ function QuranReader() {
                 {gradeName(l.gradeId)} · {t('quranAyahsLabel')} {digits(segmentsText([{ from: l.from, to: l.to }]))}
               </Text>
             </View>
-            <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
+            <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedForeground} />
           </Pressable>
         );
       })}

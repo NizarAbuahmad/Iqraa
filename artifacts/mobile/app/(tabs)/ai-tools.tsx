@@ -2,6 +2,7 @@ import React from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { ConceptIcon } from '@/components/ui/Glyph';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -17,6 +18,7 @@ import { trackEvent } from '@/services/analytics';
 import { pickPrefillParams } from '@/services/lessonPrep';
 import { loadLessonPick } from '@/services/lessonContext';
 import { classToolParamsFromRoute, type ClassToolParams } from '@/services/classToolParams';
+import { readableOn } from '@/services/readableColor';
 import {
   TAB_TOOLS,
   type ToolDef,
@@ -84,7 +86,7 @@ function ToolCard({
       style={[styles.gridCard, phone && styles.gridCardPhone, surface]}
     >
       <View style={[styles.gridIconWrap, { backgroundColor: tool.color + '1A', borderRadius: 16 }]}>
-        <Ionicons name={tool.icon} size={30} color={tool.color} />
+        <ConceptIcon icon={tool.icon} glyph={tool.glyph} size={32} color={readableOn(tool.color, colors.card, 3)} />
       </View>
       <View style={[styles.gridTitleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: 'center' }]}>
@@ -92,7 +94,7 @@ function ToolCard({
         </Text>
         {tool.badgeKey && (
           <View style={[styles.badge, { backgroundColor: tool.color + '22' }]}>
-            <Text style={[styles.badgeText, { color: tool.color, fontFamily: 'ReadexPro_600SemiBold' }]}>
+            <Text style={[styles.badgeText, { color: readableOn(tool.color, colors.card), fontFamily: 'ReadexPro_600SemiBold' }]}>
               {t(tool.badgeKey as any)}
             </Text>
           </View>
@@ -156,7 +158,8 @@ export default function AIToolsScreen() {
         <View
           style={[
             styles.list,
-            isDesktop ? styles.listGrid : [styles.listGridPhone, { flexDirection: isRTL ? 'row-reverse' : 'row' }],
+            isDesktop ? styles.listGrid : styles.listGridPhone,
+            { flexDirection: isRTL ? 'row-reverse' : 'row' },
           ]}
         >
           {TAB_TOOLS.map(tool => (
@@ -167,7 +170,7 @@ export default function AIToolsScreen() {
 
       {DEMO_MODE && (
         <View style={[styles.note, { backgroundColor: colors.muted, borderRadius: colors.radius, marginHorizontal: 20, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Ionicons name="information-circle-outline" size={16} color={colors.mutedForeground} />
+          <Ionicons name="information-circle" size={16} color={colors.mutedForeground} />
           <Text style={[styles.noteText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('aiToolsNote')}
           </Text>
@@ -191,7 +194,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   list: { paddingHorizontal: 20, gap: 10, paddingBottom: 8 },
-  listGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
+  listGrid: { flexWrap: 'wrap', gap: 14 },
   listGridPhone: { flexWrap: 'wrap', gap: SPACE.md },
   gridCard: {
     flexBasis: '31%',

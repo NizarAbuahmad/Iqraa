@@ -65,10 +65,10 @@ function DrillCard({ drill, accent }: { drill: VocabularyDrill; accent: string }
                 {option}
               </Text>
               {picked !== null && isAnswer ? (
-                <Ionicons name="checkmark-circle" size={18} color={RIGHT} />
+                <Ionicons name="checkmark-circle" size={20} color={RIGHT} />
               ) : null}
               {picked !== null && chosen && !isAnswer ? (
-                <Ionicons name="close-circle" size={18} color={WRONG} />
+                <Ionicons name="close-circle" size={20} color={WRONG} />
               ) : null}
             </Pressable>
           );

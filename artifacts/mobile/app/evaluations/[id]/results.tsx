@@ -193,7 +193,7 @@ export default function ResultsDashboardScreen() {
 
       {error ? (
         <View style={[styles.errorBox, { borderColor: colors.destructive, margin: 20, marginBottom: 0 }]}>
-          <Ionicons name="alert-circle-outline" size={18} color={colors.destructive} />
+          <Ionicons name="alert-circle" size={20} color={colors.destructive} />
           <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', flex: 1, textAlign: align }}>
             {error}
           </Text>

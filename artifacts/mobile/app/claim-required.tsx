@@ -167,7 +167,7 @@ export default function ClaimRequiredScreen() {
 
         <View style={[styles.roleCard, { borderColor: colors.border, backgroundColor: colors.muted, borderRadius: colors.radius }]}>
           <View style={[styles.roleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Ionicons name="person-circle-outline" size={18} color={colors.mutedForeground} />
+            <Ionicons name="person-circle-outline" size={20} color={colors.mutedForeground} />
             <Text style={[styles.roleText, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
               {t('claimRequiredSignedInAs', roleLabel(role))}
             </Text>
@@ -236,7 +236,7 @@ export default function ClaimRequiredScreen() {
                 },
               ]}
             >
-              <Ionicons name="swap-horizontal" size={18} color={colors.primary} />
+              <Ionicons name="swap-horizontal" size={20} color={colors.primary} />
               <Text style={[styles.roleButtonText, { color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
                 {t('claimRequiredWrongRole')}
               </Text>
@@ -290,7 +290,7 @@ export default function ClaimRequiredScreen() {
 
         {error ? (
           <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+            <Ionicons name="alert-circle" size={16} color={colors.destructive} />
             <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
               {error}
             </Text>

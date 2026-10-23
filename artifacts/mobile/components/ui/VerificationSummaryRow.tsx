@@ -28,7 +28,7 @@ export function VerificationSummaryRow({ summary }: { summary: VerificationSumma
             ? (['shield-checkmark', PROVED, t('quizVerifiedCount', line.symbolic, line.total)] as const)
             : line.kind === 'unreviewed'
               ? ([
-                  'alert-circle-outline',
+                  'alert-circle',
                   colors.warning,
                   line.unreviewed === line.total
                     ? t('answersUnreviewedAll')

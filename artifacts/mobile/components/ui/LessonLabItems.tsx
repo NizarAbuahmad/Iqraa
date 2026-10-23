@@ -31,7 +31,7 @@ export function LessonLabItems({ lessonId, isAr, picks, onChange }: Props) {
   return (
     <View style={[styles.box, { borderColor: colors.border, backgroundColor: colors.card }]}>
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
-        <Ionicons name="flask-outline" size={18} color={colors.primary} />
+        <Ionicons name="flask-outline" size={20} color={colors.primary} />
         <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, flex: 1, textAlign: align }}>
           {t('slidesFromLab')}
         </Text>
@@ -49,7 +49,7 @@ export function LessonLabItems({ lessonId, isAr, picks, onChange }: Props) {
             aria-checked={on}
             style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }}
           >
-            <Ionicons name={on ? 'checkbox' : 'square-outline'} size={22} color={on ? colors.primary : colors.mutedForeground} />
+            <Ionicons name={on ? 'checkbox' : 'square-outline'} size={24} color={on ? colors.primary : colors.mutedForeground} />
             <Text
               numberOfLines={2}
               style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: align }}

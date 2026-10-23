@@ -78,7 +78,7 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean, unread: number)
         isIOS ? (
           <SymbolView name={focused ? 'square.grid.2x2.fill' : 'square.grid.2x2'} tintColor={color} size={22} />
         ) : (
-          <Ionicons name={focused ? 'grid' : 'grid-outline'} size={22} color={color} />
+          <Ionicons name={focused ? 'grid' : 'grid-outline'} size={24} color={color} />
         ),
     },
     {
@@ -95,7 +95,7 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean, unread: number)
             size={22}
           />
         ) : (
-          <Ionicons name={focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline'} size={22} color={color} />
+          <Ionicons name={focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline'} size={24} color={color} />
         ),
     },
     {
@@ -108,7 +108,7 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean, unread: number)
         isIOS ? (
           <SymbolView name={focused ? 'graduationcap.fill' : 'graduationcap'} tintColor={color} size={22} />
         ) : (
-          <Ionicons name={focused ? 'school' : 'school-outline'} size={22} color={color} />
+          <Ionicons name={focused ? 'school' : 'school-outline'} size={24} color={color} />
         ),
     },
     {
@@ -121,7 +121,7 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean, unread: number)
         isIOS ? (
           <SymbolView name={focused ? 'books.vertical.fill' : 'books.vertical'} tintColor={color} size={22} />
         ) : (
-          <Ionicons name={focused ? 'library' : 'library-outline'} size={22} color={color} />
+          <Ionicons name={focused ? 'library' : 'library-outline'} size={24} color={color} />
         ),
     },
     {
@@ -136,7 +136,7 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean, unread: number)
             size={22}
           />
         ) : (
-          <Ionicons name={focused ? 'sparkles' : 'sparkles-outline'} size={22} color={color} />
+          <Ionicons name={focused ? 'sparkles' : 'sparkles-outline'} size={24} color={color} />
         ),
     },
     {
@@ -152,7 +152,7 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean, unread: number)
         ) : (
           // An envelope, not a second chat bubble: sitting beside «اسأل إقرأ»
           // the two tabs read as the same thing.
-          <Ionicons name={focused ? 'mail' : 'mail-outline'} size={22} color={color} />
+          <Ionicons name={focused ? 'mail' : 'mail-outline'} size={24} color={color} />
         ),
     },
     {
@@ -163,7 +163,7 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean, unread: number)
         isIOS ? (
           <SymbolView name={focused ? 'person.circle.fill' : 'person.circle'} tintColor={color} size={22} />
         ) : (
-          <Ionicons name={focused ? 'person-circle' : 'person-circle-outline'} size={22} color={color} />
+          <Ionicons name={focused ? 'person-circle' : 'person-circle-outline'} size={24} color={color} />
         ),
     },
   ];

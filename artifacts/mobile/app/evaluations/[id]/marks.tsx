@@ -233,7 +233,7 @@ export default function PaperMarksScreen() {
       >
         {loadError ? (
           <View style={[styles.banner, { borderColor: colors.destructive, flexDirection: rowDir }]}>
-            <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+            <Ionicons name="alert-circle" size={16} color={colors.destructive} />
             <Text style={{ flex: 1, color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: TYPE.body, textAlign: align }}>{loadError}</Text>
             <Pressable onPress={() => void load()} hitSlop={8} accessibilityRole="button">
               <Text style={{ color: colors.destructive, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textDecorationLine: 'underline' }}>{t('retry')}</Text>
@@ -284,7 +284,7 @@ export default function PaperMarksScreen() {
                 accessibilityRole="button"
                 style={[styles.secondary, { borderColor: released ? colors.border : ACCENT, opacity: busy !== null || holdRelease ? 0.5 : 1, flexDirection: rowDir }]}
               >
-                <Ionicons name={released ? 'eye-off-outline' : 'megaphone-outline'} size={18} color={released ? colors.mutedForeground : ACCENT} />
+                <Ionicons name={released ? 'eye-off-outline' : 'megaphone-outline'} size={20} color={released ? colors.mutedForeground : ACCENT} />
                 <Text style={{ color: released ? colors.mutedForeground : ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.body }}>
                   {t(released ? 'hideResultsBtn' : 'releaseResultsBtn')}
                 </Text>
@@ -372,7 +372,7 @@ function MarkRow({
       <View style={styles.mark}>
         {state.dirty ? (
           <View accessible accessibilityLabel={t('marksGridUnsaved', '1')}>
-            <Ionicons name="ellipse" size={10} color={palette.warning} />
+            <Ionicons name="ellipse" size={14} color={palette.warning} />
           </View>
         ) : row.status.kind === 'saved' ? (
           <View accessible accessibilityLabel={t('marksGridSaved')}>

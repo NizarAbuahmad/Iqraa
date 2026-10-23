@@ -12,12 +12,51 @@ import {
 } from '../englishHub.ts';
 import { LESSONS } from '../catalog.ts';
 import { ENGLISH_VOCABULARY } from '../vocabulary.ts';
+import g1s1 from '../data/iqra_curriculum_g1_english_sem1.json' with { type: 'json' };
+import g1s2 from '../data/iqra_curriculum_g1_english_sem2.json' with { type: 'json' };
+import g2s1 from '../data/iqra_curriculum_g2_english_sem1.json' with { type: 'json' };
+import g2s2 from '../data/iqra_curriculum_g2_english_sem2.json' with { type: 'json' };
+import g3s1 from '../data/iqra_curriculum_g3_english_sem1.json' with { type: 'json' };
+import g3s2 from '../data/iqra_curriculum_g3_english_sem2.json' with { type: 'json' };
+import g4s1 from '../data/iqra_curriculum_g4_english_sem1.json' with { type: 'json' };
+import g4s2 from '../data/iqra_curriculum_g4_english_sem2.json' with { type: 'json' };
+import g5s1 from '../data/iqra_curriculum_g5_english_sem1.json' with { type: 'json' };
+import g5s2 from '../data/iqra_curriculum_g5_english_sem2.json' with { type: 'json' };
 import glossesRaw from '../data/english_vocabulary_ar.json' with { type: 'json' };
 
 const GLOSSES = glossesRaw as Record<string, string>;
 
-test('every grade 1–4 has hub lessons', () => {
-  for (const g of [1, 2, 3, 4]) assert.ok(hubLessonsForGrade(g).length > 0, `grade ${g}`);
+test('every grade 1–5 has hub lessons', () => {
+  for (const g of [1, 2, 3, 4, 5]) assert.ok(hubLessonsForGrade(g).length > 0, `grade ${g}`);
+});
+
+test('grade 5 offers every unit of both books (5 + 5), each with its words', () => {
+  const lessons = hubLessonsForGrade(5);
+  assert.equal(lessons.length, 10);
+  assert.deepEqual([...new Set(lessons.map(l => l.semester))], [1, 2]);
+  assert.deepEqual(lessons.map(l => l.unitNumber), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  for (const l of lessons) assert.ok(l.unitTitleAr, `${l.id}: no Arabic unit title`);
+});
+
+// The hub drops a word with no Arabic without a word of complaint, which is how all
+// of Grade 5 went missing: its book had 246 words and every `ar` was empty.
+test('no drillable word in a Grade 1–5 book is left without Arabic', () => {
+  const books = [
+    g1s1, g1s2, g2s1, g2s2, g3s1, g3s2, g4s1, g4s2, g5s1, g5s2,
+  ] as { units: { lessons: { id: string; vocabulary?: { en: string; ar: string }[] }[] }[] }[];
+  const bare: string[] = [];
+  for (const b of books) for (const u of b.units) for (const l of u.lessons)
+    for (const v of l.vocabulary ?? []) if (isDrillableWord(v.en) && !v.ar?.trim()) bare.push(`${l.id}: ${v.en}`);
+  assert.deepEqual(bare, []);
+});
+
+test('a word repeated across Grade 5 lessons has one meaning everywhere', () => {
+  const meaning = new Map<string, string>();
+  for (const l of hubLessonsForGrade(5)) for (const w of l.words) {
+    const prev = meaning.get(w.en.toLowerCase());
+    assert.ok(!prev || prev === w.ar, `${w.en}: «${prev}» and «${w.ar}»`);
+    meaning.set(w.en.toLowerCase(), w.ar);
+  }
 });
 
 test('grades 9 and 10 have hub lessons, built from the vocabulary list', () => {
@@ -29,8 +68,8 @@ test('grades 9 and 10 have hub lessons, built from the vocabulary list', () => {
   }
 });
 
-test('grade tabs only ever append — the selected grade is a URL param', () => {
-  assert.deepEqual([...ENGLISH_HUB_GRADES], [1, 2, 3, 4, 9, 10]);
+test('grade tabs are in grade order — the selected grade is a URL param carried by value, not position', () => {
+  assert.deepEqual([...ENGLISH_HUB_GRADES], [1, 2, 3, 4, 5, 9, 10]);
 });
 
 test('every drillable 9–10 word has a gloss, and every gloss names a real word', () => {
