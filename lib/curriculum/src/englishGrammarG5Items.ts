@@ -6,9 +6,10 @@
  * The rule for a distractor: every item is `form` — the distractor is ungrammatical in standard English, never a form
  * that could fit — and comes from one list only: the bare verb for a past or third-person form, a doubled or missing
  * auxiliary, the wrong agreement, `to` after a modal, `will` inside a time clause, the wrong relative word (a person
- * word for a thing, `where` for a person), a question in statement word order, `more` or `most` on a short adjective or
- * `-er`/`-est` on a long one, a regular ending on an irregular verb. Never `which` for a person; never `saw` or `did`
- * for a present perfect. Every sentence is nine words or fewer, so Build always takes it whole. No names: a pronoun or
+ * word for a thing, `where` for a person), a question in statement word order, `more` on a short adjective or
+ * `-er`/`-est` on a long one, a doubled comparative marker (`more worse`, `the most kindest`), a regular ending on an
+ * irregular verb. Never `the most` + a short adjective (`the most kind`), never `-fuller`/`-fullest` on a -ful
+ * adjective, never `which` for a person, never `saw` or `did` for a present perfect. Every sentence is nine words or fewer, so Build always takes it whole. No names: a pronoun or
  * a family word (`Mum`, `Dad`, `Granny`). `statement` is the book's own line for the lesson id (its `objectives[0]`,
  * read back by a test from the data file).
  *
@@ -96,32 +97,32 @@ export const G5_ITEM_LESSONS: { lessonId: string; statement: string; items: Gram
         ['She is more confident than her sister.', 'more confident', 'confidenter'],
         ['My brother is more hard-working than me.', 'more hard-working', 'hard-workinger'],
         ['This book is more interesting than that one.', 'more interesting', 'interestinger'],
-        ['He is more cheerful than his friend.', 'more cheerful', 'cheerfuller'],
+        ['She is more responsible than her brother.', 'more responsible', 'responsibler'],
         ['This bag is more expensive than that one.', 'more expensive', 'expensiver'],
-        ['My dad is more careful than me.', 'more careful', 'carefuller'],
+        ['Your pizza is more delicious than mine.', 'more delicious', 'deliciouser'],
         ['A lion is more dangerous than a cat.', 'more dangerous', 'dangerouser'],
         ['Football is more exciting than tennis.', 'more exciting', 'excitinger'],
-        ['My sister is more helpful than my brother.', 'more helpful', 'helpfuller'],
+        ['My homework is more important than TV.', 'more important', 'importanter'],
       ]),
       ...items('superlatives', [
-        ['She is the kindest girl here.', 'the kindest', 'the most kind'],
-        ['He is the tallest boy in our class.', 'the tallest', 'the most tall'],
-        ['My mum is the shortest person in our family.', 'the shortest', 'the most short'],
-        ['This is the biggest cake in the shop.', 'the biggest', 'the most big'],
-        ['Granny is the oldest person in our family.', 'the oldest', 'the most old'],
-        ['He is the fastest boy in the school.', 'the fastest', 'the most fast'],
+        ['She is the kindest girl here.', 'the kindest', 'the most kindest'],
+        ['He is the tallest boy in our class.', 'the tallest', 'the most tallest'],
+        ['My mum is the shortest person in our family.', 'the shortest', 'the most shortest'],
+        ['This is the biggest cake in the shop.', 'the biggest', 'the most biggest'],
+        ['Granny is the oldest person in our family.', 'the oldest', 'the most oldest'],
+        ['He is the fastest boy in the school.', 'the fastest', 'the most fastest'],
         ['She is the most confident girl in the class.', 'the most confident', 'the confidentest'],
         ['My brother is the most hard-working boy here.', 'the most hard-working', 'the hard-workingest'],
         ['This is the most interesting book here.', 'the most interesting', 'the interestingest'],
-        ['He is the most cheerful boy I know.', 'the most cheerful', 'the cheerfullest'],
+        ['He is the most popular boy I know.', 'the most popular', 'the popularest'],
         ['That is the most expensive toy in the shop.', 'the most expensive', 'the expensivest'],
-        ['She is the most helpful girl in our class.', 'the most helpful', 'the helpfullest'],
+        ['She is the most intelligent girl in our class.', 'the most intelligent', 'the intelligentest'],
       ]),
       ...items('irregular', [
         ['My pizza is better than your pizza.', 'better', 'gooder'],
         ['She is the best singer in our class.', 'the best', 'the goodest'],
         ['He is better at football than me.', 'better', 'more good'],
-        ['Today is the worst day of the week.', 'the worst', 'the most bad'],
+        ['Today is the worst day of the week.', 'the worst', 'the most worst'],
         ["My English is worse than my sister's.", 'worse', 'badder'],
         ['This is the best toy shop here.', 'the best', 'the most best'],
         ['Your spelling is worse than mine.', 'worse', 'more worse'],

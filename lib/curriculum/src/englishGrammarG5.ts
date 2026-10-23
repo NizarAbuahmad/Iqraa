@@ -26,9 +26,9 @@ const L = (s: string) => `kbl-g5-eng-${s}`;
 
 /** What a Grade 5 lesson does not cover, and why — printed on the teacher's form. One bullet per item, no `"`, `&`, `<` or `>`. */
 export const NOT_COVERED_G5: Record<string, string[]> = {
-  [L('s1-nccd-u1_l1')]: [...SHARED, 'جمل before وafter وwhen تُحدِّد الفعل المفرد (washes) دون سؤال عن ترتيب الأحداث نفسه.'],
+  [L('s1-nccd-u1_l1')]: [...SHARED, 'جمل before وafter وwhen تُحدِّد صيغة الفعل مع he وshe وit (washes) وأن will لا تأتي بعد when، دون سؤال عن ترتيب الأحداث نفسه.'],
   [L('s1-nccd-u2_l1')]: [...SHARED, 'الصفات الشاذة (good وbad) في موضوع واحد صغير، ولا مقارنة بـ as … as.'],
   [L('s1-nccd-u3_l1')]: [...SHARED, 'الخيارات الخاطئة أخطاء في الصيغة (had بعد did، sended)، لا اختيار بين الماضي البسيط والماضي المستمر.'],
-  [L('s1-nccd-u4_l1')]: [...SHARED, "will وwon't فقط، دون going to لأن لكل منهما أكثر من إجابة مقبولة في المستقبل."],
-  [L('s1-nccd-u5_l1')]: [...SHARED, 'who للأشخاص وwhich للأشياء وwhere للأماكن في فاعل الجملة الموصولة؛ الاستعمال بصفة مفعول (the man who we saw) غير مختبَر.'],
+  [L('s1-nccd-u4_l1')]: [...SHARED, "will وwon't فقط، دون going to، لأن الاختيار بينها وبين will كثيرًا ما يقبل الإجابتين."],
+  [L('s1-nccd-u5_l1')]: [...SHARED, 'who للأشخاص وwhich للأشياء وwhere للأماكن؛ وwho دائمًا فاعلٌ في جملة الصلة، أما who بصفة مفعول (the man who we saw) فغير مختبَر.'],
 };
