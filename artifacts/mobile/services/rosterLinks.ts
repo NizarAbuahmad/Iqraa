@@ -2,7 +2,9 @@
  * Who holds a roster name. The server sends, per student, the accounts linked
  * to that row (`GET /classes/:id`); these helpers pick what a row shows.
  */
-export type RosterLinkRelation = 'self' | 'guardian';
+import { dateLocale } from './dateLabels.ts';
+
+export type RosterLinkRelation ='self' | 'guardian';
 
 export interface RosterLink {
   userId: string;
@@ -22,11 +24,11 @@ export function linkDisplayName(link: Pick<RosterLink, 'firstName' | 'lastName'>
   return `${link.firstName} ${link.lastName}`.replace(/\s+/g, ' ').trim();
 }
 
-/** "23 Oct" / «٢٣ أكتوبر», in Amman time like every other school date here. Empty for an unreadable value. */
+/** "23 Oct" / «23 أكتوبر» (Latin digits, like every interface date), in Amman time like every other school date here. Empty for an unreadable value. */
 export function formatLinkedOn(iso: string, lang: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString(lang === 'ar' ? 'ar-JO' : 'en-GB', {
+  return d.toLocaleDateString(dateLocale(lang === 'ar' ? 'ar' : 'en'), {
     day: 'numeric',
     month: 'short',
     timeZone: 'Asia/Amman',
