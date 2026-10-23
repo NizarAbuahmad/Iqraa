@@ -368,8 +368,15 @@ chips and a per-platform table (calls, cache hits, cost, p50, p95).
 - Rows from before this ships have no platform and are **not backfilled** — `users.signup_platform`
   is where someone joined, not where they used the AI. «Unknown» is all of history until then.
 - The spent / cap line is the whole month's spend whatever chip is picked.
-- Verified: typecheck, `requestPlatform.test.ts`, `mountOrder.test.ts`. **Not** verified: the new
-  Drizzle queries and a real insert against Postgres, and the screen in a browser.
+- Verified: typecheck, `requestPlatform.test.ts`, `mountOrder.test.ts`; and on a throwaway local
+  database (all 16 migrations applied from empty, then dropped): `recordGeneration` run through the
+  real middleware stored web / android / ios / null, `/admin/ai-costs` returned the right rows and
+  totals for no filter, `web`, `mobile` and `unknown`, 400 for `bogus` and `constructor`, and the
+  dashboard (Expo web against that API) showed the chips filtering the Kind table while the
+  Platform table stayed whole.
+- **Not** verified: a real model call end to end (the local API runs `AI_LIVE_MODE=false`, so rows were
+  written through `recordGeneration` directly), Android / a device, and a re-screenshot after the last
+  12 px of spacing above the chips.
 
 ## The tab bar is drawn — 2026-10-23
 

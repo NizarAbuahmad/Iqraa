@@ -348,7 +348,7 @@ export default function AdminDashboardScreen() {
                       isRTL={isRTL}
                       colors={colors}
                     />
-                    <View style={[styles.filterRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                    <View style={[styles.filterRow, { flexDirection: isRTL ? 'row-reverse' : 'row', marginTop: 12 }]}>
                       {([
                         ['all', 'الكل', 'All'],
                         ['mobile', 'التطبيق', 'Mobile'],
