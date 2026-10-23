@@ -12,7 +12,7 @@ import type { TabEntry } from '@/app/(tabs)/_layout';
 
 const SIDEBAR_WIDTH = 240;
 
-function SidebarRow({ entry, isIOS, active }: { entry: TabEntry; isIOS: boolean; active: boolean }) {
+function SidebarRow({ entry, active }: { entry: TabEntry; active: boolean }) {
   const colors = useColors();
   const { t } = useLanguage();
   const [hovered, setHovered] = useState(false);
@@ -32,7 +32,7 @@ function SidebarRow({ entry, isIOS, active }: { entry: TabEntry; isIOS: boolean;
         },
       ]}
     >
-      {entry.icon({ color: active ? colors.primary : colors.mutedForeground, focused: active, isIOS })}
+      {entry.icon({ color: active ? colors.primary : colors.mutedForeground, focused: active })}
       <Text
         style={[
           styles.label,
@@ -84,11 +84,9 @@ function SuggestFeatureLink({ active }: { active: boolean }) {
 
 export function WebSidebar({
   entries,
-  isIOS,
   lessonCard,
 }: {
   entries: TabEntry[];
-  isIOS: boolean;
   /** The teacher's current-lesson card, above the nav; null for roles with no lesson to switch. */
   lessonCard?: React.ReactNode;
 }) {
@@ -129,7 +127,7 @@ export function WebSidebar({
       {entries
         .filter((entry) => entry.visible)
         .map((entry) => (
-          <SidebarRow key={entry.name} entry={entry} isIOS={isIOS} active={isTabActive(pathname, entry.name)} />
+          <SidebarRow key={entry.name} entry={entry} active={isTabActive(pathname, entry.name)} />
         ))}
       {/* Brand and nav first, the lesson being prepared last: it is context, not navigation. */}
       <View style={styles.footer}>

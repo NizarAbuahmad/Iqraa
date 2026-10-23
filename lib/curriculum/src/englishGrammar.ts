@@ -77,11 +77,27 @@ export interface GrammarPattern {
   };
 }
 
+/** A hand-written Grade 9 item: the whole sentence, the words a child must choose, and the distractor it is offered against. */
+export interface GrammarItem {
+  /** The sub-topic it belongs to (printed on the teacher's form; the sentence's `patternId`). */
+  topic: string;
+  text: string;
+  /** The correct word or phrase, exactly once in `text`. */
+  answer: string;
+  /** Offered against `answer` in Choose; `text` with `answer` replaced by it is the false twin of True or false. */
+  distractor: string;
+  /** `form`: the distractor is ungrammatical. `meaning`: it is grammatical but excluded by something in the sentence itself. */
+  kind: 'form' | 'meaning';
+}
+
 export interface GrammarUnit {
   lessonId: string;
   /** A teacher's sign-off. `null` → the unit is offered to nobody. */
   reviewedBy: { name: string; date: string } | null;
+  /** Empty on a unit of authored `items` (Grade 9, S1 U1–U10 except U4's two). */
   patterns: GrammarPattern[];
+  /** Hand-written sentences, each with its answer and distractor; expanded after the patterns. */
+  items?: GrammarItem[];
   /** Words of this lesson or an earlier lesson of the same grade, never a later one. */
   slots: Record<string, string[]>;
 }
@@ -101,7 +117,7 @@ export interface GrammarSentence {
   /** Another word of the picture slot, with a picture, for True or false. */
   falsePicture: string | null;
   /** The false twin of a picture-free claim, for True or false; null for every other sentence. */
-  claim: { falseText: string } | null;
+  claim: { falseText: string; /** `false`: the twin is ungrammatical, so True or false plays no sound for this sentence. */ voiced?: false } | null;
   /** Null unless the pattern has `yesNo` and the picture exists. `otherQuestion` is a `match` item's No question. */
   yesNo: {
     kind: 'match' | 'marker' | 'fact';
@@ -119,6 +135,8 @@ export interface GrammarSentence {
    * half with the question as `prompt`. Null when it can be built neither way.
    */
   build: { tokens: string[]; text: string; prompt: string | null } | null;
+  /** An authored item's kind (`form` or `meaning`); absent on a pattern sentence. */
+  kind?: 'form' | 'meaning';
 }
 
 // ─── Articles and plurals ─────────────────────────────────────────────────
@@ -569,6 +587,33 @@ export function unitSentences(unit: GrammarUnit): GrammarSentence[] {
       });
     }
   }
+  for (const it of unit.items ?? []) {
+    const tokens = it.text.split(/\s+/).filter(Boolean);
+    if (it.answer === it.distractor) throw new Error(`"${it.text}": the distractor differs from the answer or the item is not a choice`);
+    const want = it.answer.split(' ').length;
+    let found = 0;
+    for (let i = 0; i + want <= tokens.length; i += 1) if (spanText(tokens, [i, want]) === it.answer) found += 1;
+    if (found > 1) throw new Error(`"${it.answer}" appears more than once in «${it.text}»`);
+    const [start, length] = phraseSpan(tokens, it.answer);
+    // Punctuation on the last answer word («reading.», «was walking,») moves to the distractor's last word.
+    const tail = /[.?!,]+$/.exec(tokens[start + length - 1])?.[0] ?? '';
+    const twin = [...tokens.slice(0, start), ...(it.distractor + tail).split(' '), ...tokens.slice(start + length)];
+    out.push({
+      key: `${unit.lessonId}|${it.topic}|${it.text}`,
+      lessonId: unit.lessonId,
+      patternId: it.topic,
+      text: tokens.join(' '),
+      tokens,
+      picture: null,
+      marker: null,
+      choose: { kind: 'phrase', start, length, right: it.answer, wrong: it.distractor },
+      falsePicture: null,
+      claim: { falseText: twin.join(' '), voiced: false },
+      yesNo: null,
+      build: buildOf(tokens, cap),
+      kind: it.kind,
+    });
+  }
   return out;
 }
 
@@ -587,7 +632,7 @@ export function allGrammarSpoken(): string[] {
   for (const u of GRAMMAR_UNITS) {
     for (const s of unitSentences(u)) {
       out.add(s.text);
-      if (s.claim) out.add(s.claim.falseText);
+      if (s.claim && s.claim.voiced !== false) out.add(s.claim.falseText);
       if (s.build?.prompt) out.add(s.build.prompt);
       const y = s.yesNo;
       if (!y) continue;
