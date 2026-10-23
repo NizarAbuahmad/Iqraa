@@ -23,6 +23,7 @@ import liveRouter from "./live";
 import liveHostRouter from "./liveHost";
 import familyScheduleRouter from "./familySchedule";
 import familyHomeworkRouter from "./familyHomework";
+import mathPracticeRouter from "./mathPractice";
 import studentLessonExplanationRouter from "./studentLessonExplanation";
 import mediaRouter from "./media";
 import practiceRouter from "./practice";
@@ -123,6 +124,9 @@ router.use(familyScheduleRouter);
 // «الواجبات» for students and parents — path-scoped to /student/homework and
 // /parent/homework; students may tick off, parents only read.
 router.use(familyHomeworkRouter);
+// Math Corner practice — path-scoped to /student/math-practice (students save
+// their best score) and /classes/:id/math-practice (the teacher reads it).
+router.use(mathPracticeRouter);
 // «اشرح لي الدرس» — authenticated, student-only, path-scoped to
 // /student/lesson-explanation. Read-only over the pool; makes no model call.
 router.use(studentLessonExplanationRouter);

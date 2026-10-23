@@ -10,6 +10,43 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Teachers see their class's Math Corner practice — 2026-10-23
+
+**What a teacher sees.** A maths class's «الطلبة» tab has a «تمارين الرياضيات»
+row (shown when student accounts are on, the class has students and maths is one
+of its subjects). It opens a sheet listing each student who practised, and under
+each name every lesson with the student's best «اختبر نفسك» score and how many
+sets they finished («ضَرْبُ الأَعْدادِ · ٦ من ١٠ · ٣ محاولات»). Students who have not
+practised are not listed.
+
+**How it gets there.** A student account's finished set is sent to
+`PUT /student/math-practice` `{ lessonId, correct, total }` (every set, not only a
+new best, so attempts count). The server checks the lesson is a catalog
+**mathematics** lesson (`modules/mathPractice/practice.ts`, 1 ≤ total ≤ 20) and
+writes one row per `self`-linked roster row of the account into the new
+`math_practice_results` table (migration 0013, additive, DEFERRED RLS + grant like
+`game_results`), keeping the best ratio (a tie keeps the old row) and counting
+attempts. An account with no roster row gets `{ saved: false }` and keeps its
+score on the device only. `GET /classes/:id/math-practice` (teacher, own live
+class) reads it through class membership, as `/homework/:id/game-results` does.
+The device copy (`mathExerciseProgress.ts`) still drives the student's own
+screens and works offline; a failed send is dropped, not retried.
+
+**Verified.** `mathPractice.db.test.ts` against a real Postgres: wrong roles
+403, flag off 403, bad bodies 400, an unlinked account saves nothing, a write
+lands only on the account's own self-linked row (not a guardian-only row of the
+same child, not a classmate), best ratio kept with attempts counted, the teacher
+reads only their own live class (another teacher's class and an archived class
+are 404). In a browser against a throwaway database: a student finished two sets
+(6/10 then 2/10); the teacher's sheet showed «٦ من ١٠» with three attempts.
+`mountOrder.test.ts` pins both routes behind a token.
+
+**Not built / not verified.** No per-lesson summary across the class (which
+lessons nobody practised), no export, no push to the teacher. A student whose
+first sets ran before this ships has device-only bests until they finish a set
+again. Not checked on Android. **Migration number:** PR #1185 also adds a 0013;
+whichever merges second regenerates its migration.
+
 ## Iqraa draws its own icons — 2026-10-23
 
 Step two of the icon work. Sixteen drawings, approved from a review sheet
