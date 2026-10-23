@@ -22,6 +22,7 @@
  */
 import { sanitizeResultForStudent, studentResultReady, type StudentResult } from "./studentView.ts";
 import { examDeadline } from "./studentResponse.ts";
+import { studentReviewReady } from "./answerReview.ts";
 
 export interface ExamForStudent {
   id: string;
@@ -35,6 +36,8 @@ export interface ExamForStudent {
   timeLimitMin: number | null;
   totalMarks: unknown;
   releaseResultsToStudent: boolean;
+  /** The teacher turned on the answer review. Absent reads as `false`. */
+  showSolutionsToStudent?: boolean;
   publishedAt: Date | null;
   closedAt: Date | null;
   /**
@@ -96,6 +99,8 @@ export interface StudentExamRow {
   /** When a sitting already under way runs out, if the exam is timed. */
   deadlineAt: string | null;
   result: StudentResult | null;
+  /** «راجع إجاباتك» may open — `studentReviewReady`, and never for a paper exam (it has no questions to show). */
+  review: boolean;
 }
 
 function linkIsOpen(exam: ExamForStudent, now: Date): boolean {
@@ -152,6 +157,15 @@ export function studentExamRow(
         ? examDeadline(sitting?.startedAt ?? null, exam.timeLimitMin, 0)?.toISOString() ?? null
         : null,
     result: released && result ? sanitizeResultForStudent(result) : null,
+    review:
+      handedIn &&
+      !paper &&
+      studentReviewReady({
+        status: exam.status,
+        released: exam.releaseResultsToStudent,
+        solutionsShown: exam.showSolutionsToStudent === true,
+        result: result ?? undefined,
+      }),
   };
 }
 
@@ -181,5 +195,6 @@ export function sortStudentExams(rows: readonly StudentExamRow[]): StudentExamRo
  * pick the child's name.
  */
 export function guardianExamRow(row: StudentExamRow): StudentExamRow {
-  return { ...row, shareCode: null };
+  // The review is read through /student/…, which a parent cannot reach.
+  return { ...row, shareCode: null, review: false };
 }
