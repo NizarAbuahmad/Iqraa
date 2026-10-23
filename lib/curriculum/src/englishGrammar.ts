@@ -408,6 +408,17 @@ export function offeredGrammar(lessonId: string): GrammarSentence[] | null {
   return unit?.reviewedBy ? unitSentences(unit) : null;
 }
 
+/**
+ * Is this hub lesson shown to students? A lesson with words always is. A grammar-only lesson (too few words for the
+ * word activities) is only once a teacher has signed its grammar unit: otherwise it would be an empty page in the
+ * public index. `offered` is `offeredGrammar` unless a test passes a stand-in.
+ */
+export function hubLessonVisible(lessonId: string, offered: (id: string) => unknown = offeredGrammar): boolean {
+  const lesson = hubLesson(lessonId);
+  if (!lesson) return false;
+  return !lesson.grammarOnly || Boolean(offered(lessonId));
+}
+
 // ─── Realising a pattern ──────────────────────────────────────────────────
 
 const SLOT = /\{(?:(a|s|v|3|ing|cmp|sup|ed):)?([A-Za-z0-9]+)\}/g;
