@@ -26,7 +26,7 @@ import { and, asc, desc, eq, gte, ilike, isNotNull, isNull, lt, or, sql } from "
 import { getBudgetStatus, getUserBudgetLimitUsd } from "../lib/aiBudget.js";
 import { currentPeriodStart } from "../lib/aiUsageLog.js";
 import { RATE_LIMITS } from "../lib/rateLimit.js";
-import { parseSchoolAssignment, parseSchoolInput } from "../lib/adminSchools.js";
+import { parseSchoolAssignment, parseSchoolIdFilter, parseSchoolInput } from "../lib/adminSchools.js";
 import { parseDateRange, parseMetricInput, parsePublicIdea, parseSiteSignup, siteKeyMatches, toCsv, UUID } from "../lib/adminMetrics.js";
 import { notifyAdminsOfWaitlistSignup } from "../lib/adminNotify.js";
 import { sendAppInviteEmail } from "../lib/email.js";
@@ -336,12 +336,19 @@ router.get("/admin/users", authMiddleware, requireRole(...ADMIN_ROLES), async (r
       res.status(400).json({ error: range.error });
       return;
     }
+    let schoolId: string | undefined;
+    try {
+      schoolId = parseSchoolIdFilter(req.query["schoolId"]);
+    } catch (msg) {
+      res.status(400).json({ error: String(msg) });
+      return;
+    }
     const where = and(
       q ? or(ilike(users.email, like), ilike(users.firstName, like), ilike(users.lastName, like)) : undefined,
       req.query["status"] === "suspended" ? isNotNull(users.suspendedAt) : undefined,
       // The schools screen lists teachers, and a school's own teachers.
       typeof req.query["role"] === "string" && req.query["role"] ? eq(users.role, req.query["role"]) : undefined,
-      typeof req.query["schoolId"] === "string" && UUID.test(req.query["schoolId"]) ? eq(users.schoolId, req.query["schoolId"]) : undefined,
+      schoolId ? eq(users.schoolId, schoolId) : undefined,
       range.from ? gte(users.createdAt, range.from) : undefined,
       range.to ? lt(users.createdAt, range.to) : undefined,
     );
