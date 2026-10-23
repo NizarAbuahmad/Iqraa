@@ -33,6 +33,109 @@ stay with the model.
 hidden, reached only through chat), sorting homework by due date (unverified), and teaching
 questions. **Not claimed:** whether live-game results are stored after the game ends.
 
+## Grade 9 grammar, thirteen lessons in the English corner — built, shown to nobody yet, 2026-10-23
+
+Grammar activities on thirteen more Grade 9 hub lessons (S1 U1, U2, U3, U5; S2 U6, U8, U9, U10), after the
+Unit 4 pilot: tenses, reflexive and indefinite pronouns, relative pronouns, modals, verb patterns and the
+second conditional. **All thirteen units are `reviewedBy: null` (`englishGrammarG9.ts`), so nobody sees any of
+it yet.** Spec: `docs/superpowers/specs/2026-10-23-english-corner-grammar-g9-lessons-design.md`; plan:
+`docs/superpowers/plans/2026-10-23-english-corner-grammar-g9-lessons.md`.
+
+- **520 hand-written items, 40 a lesson** (`lib/curriculum/src/englishGrammarG9Items.ts`). Each is a whole
+  sentence of nine words or fewer with its correct answer and a distractor, written by us: the book's data
+  has «I can» statements only. No pictures, no Yes or No.
+- **The rule for a distractor.** It is `form` (ungrammatical in standard English) or `meaning` (grammatical but
+  excluded by something in the sentence itself), never a form that could fit. First-draft items that failed
+  this were dropped («is playing» for a habit, «walked» for «was walking» after «While», «by the time …
+  already» as proof the past simple is wrong). `meaning` is used only for the «now» markers of U1 l1 and the
+  prohibition items of U5 l1; the two future lessons (U6) test sentence form only and the form says so.
+- **Engine, additive** (`englishGrammar.ts`): `GrammarUnit.items` (`GrammarItem`), expanded by `unitSentences`
+  into a phrase Choose, a false twin for True or false and a whole-sentence Build; `GrammarSentence.kind`;
+  `claim.voiced: false`, so `allGrammarSpoken` never lists a twin. Grades 1–4 and the pilot are unchanged.
+- **True or false is silent on these items, true and false alike** (`isSilentTrueFalse`, the True or false
+  screen): the twin is ungrammatical so it must not be read aloud, and sound on one only would give the answer
+  away. Choose and Build still play the correct sentence after the child answers.
+- **The teacher's form** (`docs/english-grammar-g9-review.html`, sheet `-sheet.md`): one page per lesson
+  grouped by topic, with the sentence, correct answer, distractor, the silent twin and the kind; a first check
+  at the top of each page against the book's own «I can» line (pinned by a test that reads it back from
+  `data/iqra_curriculum_g9_eng_sem{1,2}.json`); the words found in no hub list, for the teacher to approve or
+  strike; and one block for the book topics the hub has no lesson for. The Unit 4 pages, the Grade 1–4 forms
+  and the reading forms are byte-identical apart from the Grade 9 intro.
+- **Left out on purpose:** used to (U2), the two present perfects (U7), the first conditional (U8), reported
+  speech (U9) and the passive (U10) have no hub lesson (the hub offers one only with four or more words; Unit 7
+  has none at all); personality adjectives (U1 l3) cannot be right or wrong.
+- **Verified:** curriculum 612 tests, mobile 6905 pass / 10 skipped / 0 fail on the tree before one pilot test
+  was corrected to select Unit 4 by lesson id (that file re-run: pass), root typecheck. **In a browser** at
+  390 px in Arabic and English, with sign-offs in the working tree only (restored straight after; never
+  committed; `grep -c "LOCAL CHECK"` is 0): all thirteen lessons offer Choose, Build and True or false and no
+  Yes or No, with no horizontal scroll; True or false shows no speaker button before or after answering, and a
+  control on Unit 4 (voiced) does show one; the form's authored page at 390 px and wide.
+- **Not verified:** the sentences by a teacher (a script cannot tell wrong English from right: the mechanical
+  tests catch a malformed item only); the match between each lesson id and the printed book page (the id carries
+  the book's own «I can» line, but a teacher with the book open must confirm); on a device; the audio, which
+  needs the pending `english-audio` run (OpenAI and R2 keys) for the 520 correct sentences.
+- **Known limits:** the hub gap above; u6 tests form, not the choice between going to, will and the present
+  continuous; the vocabulary check is a printed list, not a test; after answering a false item a child is not
+  shown the correct form (the screen stays silent and shows only «the correct answer: false»).
+
+**To switch a lesson on:** record the audio; a Grade 9 English teacher signs that lesson's page of
+`docs/english-grammar-g9-review.html`, printed, and checks the book-page line at its top; then set the unit's
+`reviewedBy` in `englishGrammarG9.ts` and merge.
+
+## Students review their answers, with maths worked steps — 2026-10-22
+
+**What changed.** A released result used to be a level and a percentage; a
+student could not see which questions they got wrong. On a **closed** exam the
+teacher now presses «اعرض الإجابات والحلول للطلبة», and each student gets
+«راجع إجاباتك والحلول» under the result in «اختباراتي»
+(`app/exam-review/[id].tsx`): every question with their answer, the correct
+one, the marks, and for maths the worked steps. On a maths exam the teacher
+first presses «جهّز خطوات الحل»; the model is given each question **and its
+key** and asked only for the steps to it (`modules/assessment/workedSteps.ts`),
+and the steps show under each question on the teacher's screen to be read
+before showing.
+
+**The gate** (`studentReviewReady`, `modules/assessment/answerReview.ts`):
+closed + results released + review on + a final (non-provisional) mark.
+Closed is what protects the key — an open exam is still being sat and retakes
+run only while it is open — so turning the review on needs a closed exam and
+re-publishing turns it off. Answers leave as display text, never the raw
+`expectedAnswer`.
+
+**Schema:** `evaluations.show_solutions_to_student`,
+`evaluation_questions.worked_steps` (migration 0011, additive).
+
+**Verified:** API suite 2,139/2,139; `answerReview.db.test.ts` (5, real
+Postgres over HTTP: hidden while open, before release, after hiding, from
+other students and parents, and after re-publish) plus 45 neighbouring DB
+tests; mobile suite green except the CRLF-only `TopicSelector` source check;
+teacher screen, «اختباراتي» and the review screen rendered from the worktree.
+
+**Not verified / not covered:** live step generation against a real model
+(local AI was off); the steps are unchecked by design — the teacher reads
+them. Parents («نتائج أبنائي»), link-only students (`/take`) and editing a
+single step are not built.
+
+---
+
+
+## A vowelled unit title gets its icon and photo, 2026-10-23
+
+A teacher's whole-book revision deck for Grade 1 maths (66 lessons, 12 units, no book
+pictures — no Grade 1 or 2 student book is on disk) showed the same «books» icon on
+every unit break and no unit photo. Cause: the primary books print unit titles with every
+vowel mark («الْأَعْدادُ ضِمْنَ مَنْزِلَتَيْنِ»), and a mark between two letters stops the
+topic table's «أعداد» matching, so `iconForTopic` / `photoQueryForTopic` found nothing for
+any vocalised title — in every subject of grades 1-6, not only maths.
+
+- `topicRule` (`deckIcons.ts`) matches on the title with the marks and tatweel stripped
+  (`ً-ٟ`, `ٰ`, `ـ`; Arabic-Indic digits are not marks).
+- The calculator row also knows «جمع / طرح / منزلة» (addition, subtraction, place).
+- Verified: the rebuilt Grade 1 maths deck's twelve breaks now carry the calculator icon;
+  `deckIcons.test.ts` pins five vowelled titles. **Not verified:** the Unsplash photo that
+  follows the icon (quota), and still no book picture for Grade 1-2 maths — that needs the
+  NCCD books on disk.
+
 ## Duplicate-key 409s answered 500 — 2026-10-22
 
 drizzle-orm 0.45 rethrows every driver
