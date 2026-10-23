@@ -1701,3 +1701,61 @@ describe('accounts, messages, evaluation setup and the corners (seventeenth live
     });
   }
 });
+
+describe('live games, the interactive class, slides, activities, quizzes and worksheets (eighteenth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['كيف أبدأ لعبة مباشرة يجيب عليها الطلبة من هواتفهم؟', 'howLiveGameStart'],
+    ['how do i start a live game', 'howLiveGameStart'],
+    ['كيف ينضم الطلبة إلى اللعبة المباشرة؟', 'howLiveGameJoin'],
+    ['how do students join the live game', 'howLiveGameJoin'],
+    ['كم طالباً يمكنه المشاركة في اللعبة المباشرة؟', 'howLiveGameLimit'],
+    ['how many students can play in the live game', 'howLiveGameLimit'],
+    ['كيف أرى نتائج اللعبة المباشرة بعد انتهائها؟', 'howLiveGameResults'],
+    ['ما هي الحصة التفاعلية؟', 'howClassroomAbout'],
+    ['what is the interactive class', 'howClassroomAbout'],
+    ['كيف أبني عرضاً تفاعلياً للصف؟', 'howInteractiveDeck'],
+    ['كيف أنشئ شرائح من نص أكتبه أنا؟', 'howSlidesOwnText'],
+    ['كيف أختار قالب الشرائح؟', 'howSlideTheme'],
+    ['how do i choose the slide theme', 'howSlideTheme'],
+    ['كيف أستخدم السبورة في الحصة؟', 'howWhiteboard'],
+    ['كيف أحفظ ما كتبته على السبورة؟', 'howWhiteboard'],
+    ['how do i save what i wrote on the whiteboard', 'howWhiteboard'],
+    ['ما أنواع الأنشطة الصفية المتاحة؟', 'howActivityTypes'],
+    ['كيف أحدد عدد الطلبة في المجموعة للنشاط؟', 'howActivityGroupSize'],
+    ['ما أنواع الأسئلة في الاختبار القصير؟', 'howQuizTypes'],
+    ['كيف أضيف سؤال مقالي للاختبار القصير؟', 'howQuizTypes'],
+    ['كيف أخلط ترتيب أسئلة الاختبار القصير؟', 'howQuizTypes'],
+    ['how do i add an essay question to the quiz', 'howQuizTypes'],
+    ['كيف أطلب من إقرأ أسئلة أصعب؟', 'howDifficulty'],
+    ['how do i make the questions harder', 'howDifficulty'],
+    ['كيف أحدد مستوى ورقة العمل للطلبة المتفوقين؟', 'howWorksheetLevels'],
+    ['كيف أضيف مثالاً محلولاً لورقة العمل؟', 'howWorksheetExample'],
+    ['how do i add a worked example to the worksheet', 'howWorksheetExample'],
+    ['كيف أقلل عدد الأسئلة في ورقة العمل؟', 'howWorksheetCount'],
+    ['كيف أرسل رسالة جماعية لأولياء الأمور عن الواجب؟', 'howBroadcast'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  const stayWithModel = [
+    'كيف أشرح الاحتمال للطلبة',
+    'كم طالباً في الصف العاشر',
+    'what types of questions are best for a quiz',
+    'how do i make a live demo for students',
+    'ما هي الحصة الجيدة',
+    'كيف أستخدم السبورة التقليدية في شرح المعادلات',
+    'كيف أحفظ الطلبة أسماء العناصر',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howLiveGameStart', 'howLiveGameJoin', 'howLiveGameLimit', 'howLiveGameResults', 'howClassroomAbout', 'howInteractiveDeck', 'howSlidesOwnText', 'howSlideTheme', 'howActivityTypes', 'howActivityGroupSize', 'howQuizTypes', 'howWorksheetLevels', 'howWorksheetExample', 'howWorksheetCount']);
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});

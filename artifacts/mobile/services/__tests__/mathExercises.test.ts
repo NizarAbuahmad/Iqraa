@@ -11,7 +11,9 @@ import {
   exerciseGradeOf,
   exerciseLessonPath,
   exerciseUnits,
+  normalizeClassPractice,
   parseBests,
+  practiceByStudent,
   recordBest,
   resolveExerciseLesson,
 } from '../mathExercises.ts';
@@ -79,6 +81,27 @@ describe('best scores', () => {
       parseBests(JSON.stringify({ a: { correct: 11, total: 10 }, b: { correct: 1.5, total: 3 }, c: { correct: 0, total: 0 }, d: null, e: { correct: 2, total: 4 } })),
       { e: { correct: 2, total: 4 } },
     );
+  });
+});
+
+describe('class practice (teacher view)', () => {
+  it('keeps well-formed rows, drops the rest, and groups by student in server order', () => {
+    const rows = normalizeClassPractice([
+      { studentId: 's1', displayName: 'سارة', lessonId: 'L1', correct: 4, total: 5, attempts: 3, practicedAt: '2026-10-23T08:00:00.000Z' },
+      { studentId: 's1', displayName: 'سارة', lessonId: 'L2', correct: 7, total: 10 },
+      { studentId: 's2', displayName: 'نور', lessonId: 'L1', correct: 1, total: 10, attempts: 1 },
+      { studentId: '', lessonId: 'L1', correct: 1, total: 2 },
+      { studentId: 's3', lessonId: 'L1', correct: 1, total: 0 },
+      { studentId: 's3', lessonId: 'L1', correct: '1', total: 2 },
+      null,
+    ]);
+    assert.equal(rows.length, 3);
+    assert.equal(rows[1]!.attempts, 1, 'a missing attempt count reads as one');
+    assert.deepEqual(
+      practiceByStudent(rows).map(s => [s.displayName, s.lessons.map(l => l.lessonId)]),
+      [['سارة', ['L1', 'L2']], ['نور', ['L1']]],
+    );
+    assert.deepEqual(normalizeClassPractice(undefined), []);
   });
 });
 

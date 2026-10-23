@@ -26,7 +26,10 @@ Checked 2026-10-22:
 - **Math verifier** `iqraa-verifier`: `/api/healthz/verifier` answers `ok`, self-test `pass`.
 - **Web app** `app.iqrra.com` (Cloudflare Pages): 200. **Landing** `iqrra.com` (separate repo
   `Site_Iqra`, Vercel) answers 308 to `www.iqrra.com`, which is 200.
-- **Database:** Neon Postgres. The schema deploys as migrations (11 files in
+- **Database:** Neon Postgres, **Launch plan since 2026-10-23** (was Free: 100 compute-hours a
+  month, 30.92 used, after which Neon suspends the compute), autoscaling 0.25-0.5 CU, scale to
+  zero on, $10 spend alert — see «Neon leaves the Free plan before launch» in the log and the
+  first item under *Open*. The schema deploys as migrations (11 files in
   `lib/db/migrations`); `verify-schema` runs before every API deploy.
 - **Live config** (plain env on the service): `AI_LIVE_MODE=true`; models `gpt-5.4-mini`
   for generation and for chat; budgets `AI_BUDGET_USD=50`, per user `1`, per
@@ -52,6 +55,13 @@ Checked 2026-10-22:
   mobile-build-gradle, mobile-update, provider-eval, rls-neon-rehearsal, schema-check.
 
 ## Open
+
+- **Neon is on Launch (applied 2026-10-23 by the owner); two checks remain.** Autoscaling 0.25-0.5
+  CU, scale to zero on: about $10 a month expected, about $39 at most (estimates; read Neon's
+  Usage page weekly for a month). Check `pooled` on `GET /api/healthz/pool` (admin key) once this
+  deploys: if `false`, production's `DATABASE_URL` is a direct connection (218 direct
+  connections at the 0.5 CU maximum, fewer when scaled down); switch the secret to the pooled
+  string. Details and what is unverified: the log entry named above.
 
 Checked 2026-10-22:
 
@@ -91,6 +101,9 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-23 — The tab bar is drawn
+- 2026-10-23 — Neon leaves the Free plan before launch
+- 2026-10-23 — Leftover icon colours follow CONCEPTS
 - 2026-10-23 — Grade 9 grammar, thirteen lessons in the English corner — built, shown to nobody yet
 - 2026-10-23 — Iqraa draws its own icons
 - 2026-10-23 — Grade 9 grammar pilot (Unit 4) in the English corner — built, shown to nobody yet
@@ -118,14 +131,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-19 — Grade 2 grammar in the English corner — built, shown to nobody yet
 - 2026-10-19 — Arabic, Islamic, civic, digital and PE lessons get their book pages in decks
 - 2026-10-19 — Load test: the exam path holds, the sign-up rush does not
-- 2026-10-18 — One question-type order, one set of repeat-rule inputs
-- 2026-10-18 — One card for quizzes and evaluations
-- 2026-10-18 — Revision decks carry the book's own pictures and all its key terms
-- 2026-10-18 — Slides Maker decks stop looking like bare lists
 
 ## Finding older detail, and recording new work
 
-- The log has 350 sections. Anything cited elsewhere as
+- The log has 359 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line

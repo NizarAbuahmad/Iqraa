@@ -1,5 +1,5 @@
 // Iqraa's own icons (constants/glyphs.ts), approved 2026-10-23 from the review
-// sheet. These pin the drawings to the approved style and make sure each one is
+// sheet (sixteen), and the tab bar's four the same day. These pin the drawings to the approved style and make sure each one is
 // actually drawn where its concept appears, rather than sitting in a table.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -16,10 +16,10 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const ids = Object.keys(GLYPHS) as GlyphId[];
 const def = (id: GlyphId): GlyphDef => GLYPHS[id];
 
-test('the set is the sixteen that were approved', () => {
+test('the set is the twenty that were approved', () => {
   assert.deepEqual([...ids].sort(), [
-    'activity', 'challenge', 'classes', 'english', 'evaluations', 'games', 'homework', 'lab',
-    'lesson-plan', 'library', 'math', 'messages', 'quiz', 'quran', 'slides', 'worksheet',
+    'activity', 'ask', 'challenge', 'classes', 'english', 'evaluations', 'games', 'homework', 'lab',
+    'lesson-plan', 'library', 'math', 'messages', 'profile', 'quiz', 'quran', 'slides', 'today', 'tools', 'worksheet',
   ]);
   assert.equal(GLYPH_VIEWBOX, 24);
   assert.equal(GLYPH_STROKE, 1.75);
@@ -89,16 +89,14 @@ function* tsx(dir: string): Generator<string> {
 const files = ['app', 'components'].flatMap(d => [...tsx(join(root, d))]).map(f => ({ rel: relative(root, f), src: readFileSync(f, 'utf8') }));
 
 /** Drawn and approved, but held back with the reason — each must stay unused, so the list cannot rot. */
-const HELD: Partial<Record<GlyphId, string>> = {
-  library: 'its place is the tab bar, which would mix drawn and stock icons until Today, chat, tools and profile are drawn too',
-  messages: 'its place is the tab bar, which would mix drawn and stock icons until Today, chat, tools and profile are drawn too',
-};
+const HELD: Partial<Record<GlyphId, string>> = {};
 
 test('every drawing is used somewhere, or held back with a reason', () => {
   const used = new Set<string>();
   for (const c of Object.values(CONCEPTS)) { const g = (c as { glyph?: string }).glyph; if (g) used.add(g); }
   for (const corner of Object.values(CORNERS)) used.add(corner.drawing);
   for (const { src } of files) for (const m of src.matchAll(/glyph=\{?["']([a-z-]+)["']/g)) used.add(m[1]!);
+  for (const m of readFileSync(join(root, 'app', '(tabs)', '_layout.tsx'), 'utf8').matchAll(/\btabIcon\('([a-z-]+)'\)/g)) used.add(m[1]!);
   const prefGlyph = readFileSync(join(root, 'app', 'settings.tsx'), 'utf8').match(/const PREF_GLYPH[^=]*= \{([^}]*)\}/);
   assert.ok(prefGlyph, 'settings.tsx PREF_GLYPH not found');
   for (const m of prefGlyph[1]!.matchAll(/'([a-z-]+)'/g)) used.add(m[1]!);
@@ -122,4 +120,25 @@ test('the screens draw the drawing, not just carry it', () => {
     }
   }
   assert.match(src('app/curriculum/resources.tsx'), /glyph: CORNERS\[id\]\.drawing/);
+});
+
+test('every tab is drawn with its Iqraa icon, on every platform', () => {
+  const layout = readFileSync(join(root, 'app', '(tabs)', '_layout.tsx'), 'utf8');
+  const drawn = [...layout.matchAll(/\bicon: tabIcon\('([a-z-]+)'\)/g)].map(m => m[1]);
+  // One per tab, in the bar's order: Today, Ask, School, Library, Tools, Messages, Profile.
+  assert.deepEqual(drawn, ['today', 'ask', 'classes', 'library', 'tools', 'messages', 'profile']);
+  for (const id of drawn) assert.ok(GLYPHS[id as GlyphId], `tab icon ${id} is not a drawing`);
+  // iOS drew SF Symbols and the rest Ionicons, so the bar differed per platform; no second source may creep back.
+  assert.doesNotMatch(layout, /expo-symbols|SymbolView|<Ionicons/, 'a tab is drawn with a stock icon again');
+  assert.match(layout, /<Glyph name=\{name\} size=\{24\} color=\{color\} tint=\{focused\} \/>/, 'selected tabs carry the tint, idle ones are outline');
+  const side = readFileSync(join(root, 'components', 'ui', 'WebSidebar.tsx'), 'utf8');
+  assert.match(side, /entry\.icon\(\{ color: active \? colors\.primary : colors\.mutedForeground, focused: active \}\)/, 'the sidebar draws the same entry icons');
+});
+
+test('Glyph can draw the outline alone', () => {
+  const g = readFileSync(join(root, 'components', 'ui', 'Glyph.tsx'), 'utf8');
+  assert.match(g, /tint = true/, 'the tint is on unless asked off');
+  // Both arms, not just the opening: a swapped `tint ? {} : { fill }` must fail.
+  assert.match(g, /case 'tinted': return tint \? \{ fill: color, fillOpacity: GLYPH_TINT \} : \{\};/, 'a tinted part loses its fill when tint is off');
+  assert.match(g, /case 'tint': return tint \? \{ fill: color, fillOpacity: 0\.22, stroke: 'none' \} : \{ stroke: 'none' \};/, 'the flask liquid draws nothing when tint is off');
 });

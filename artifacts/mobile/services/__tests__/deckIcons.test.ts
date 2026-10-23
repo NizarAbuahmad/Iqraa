@@ -67,6 +67,21 @@ describe('iconForTopic', () => {
     for (const [text, icon] of cases) assert.equal(iconForTopic(text), icon, text);
   });
 
+  it('reads a title set with every vowel mark, as the primary books print them', () => {
+    // A whole Grade 1 maths book got the default books icon on every unit: «الْأَعْدادُ»
+    // has a mark between the letters, so «أعداد» did not match it.
+    const cases: [string, string][] = [
+      ['الْوَحْدَةُ التَّمْهيدِيَّةُ: الْأَعْدادُ حَتّى 10', 'calculator'],
+      ['الْأَعْدادُ ضِمْنَ مَنْزِلَتَيْنِ', 'calculator'],
+      ['الْجَمْعُ', 'calculator'],
+      ['الطَّرْحُ', 'calculator'],
+      ['مُعالَجَةُ الْبَياناتِ', 'bars'],
+    ];
+    for (const [text, icon] of cases) assert.equal(iconForTopic(text), icon, text);
+    // the marks are dropped for matching only: Arabic-Indic digits are not marks
+    assert.equal(iconForTopic('١٢٣'), null);
+  });
+
   it('has no opinion rather than a wrong one', () => {
     // «Unit» and «وحدة» are the word for a unit of the book, not a topic
     for (const text of ['وحدة عامة', 'Unit 3', '']) assert.equal(iconForTopic(text), null, text);
