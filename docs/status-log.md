@@ -10,6 +10,23 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## A way back to the games hub, 2026-10-23
+
+**Built.** A public game's game-over screen now has a visible «كل الألعاب» button back to `/play` (it
+offered only «العب مرة أخرى» and the teacher sign-up). A game opened from a lesson passes `onBack`, so
+there the same button reads «رجوع» and returns to the lesson, not to the hub. The header arrow and the
+button share one exit, and the arrow now carries an accessible label. The hub exit is `goToGames()`
+(`services/navigation.ts`): `dismissTo('/play')` when there is history, `replace('/play')` when there is
+none (a shared link, a refreshed tab). The old `replace` alone left the hub twice in the browser history
+(hub → game became hub → hub), so Back looked dead. `playBackToMenu` already existed and was unused.
+
+**Verified.** `pnpm run typecheck`, the whole mobile suite (7047 pass, 0 fail), and the new
+`gameShellBack.test.ts`, which reads the source (the runner cannot load React Native).
+
+**Not verified.** Not tried on a real iOS Safari or Android Chrome tab: whether `dismissTo` pops cleanly
+in the web history stack rather than pushing a second hub entry was read from expo-router's docs, not
+observed. Check it on `pnpm run dev:mobile:web` before relying on it.
+
 ## Claude writes the documents, 2026-10-23
 
 **Built, not switched on.** Lesson plans, worksheets, quizzes and slide decks (`prompt-slides`) can now be
