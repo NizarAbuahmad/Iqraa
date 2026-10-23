@@ -7,7 +7,7 @@
  * the cache update and the error text to the screen that owns the roster.
  */
 import React, { useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput, View, type TextStyle } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextStyle } from 'react-native';
 import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -54,6 +54,12 @@ export function EditStudentSheet({ student, saving, error, onSave, onClose }: Pr
       <KeyboardSafeView>
         <View style={styles.backdrop}>
           <View style={[styles.card, { backgroundColor: colors.card }]}>
+            <ScrollView
+              style={styles.scroll}
+              contentContainerStyle={styles.fields}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
             <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
               {t('editStudent')}
             </Text>
@@ -81,7 +87,11 @@ export function EditStudentSheet({ student, saving, error, onSave, onClose }: Pr
             />
 
             <Text style={labelStyle}>{t('studentGenderLabel')}</Text>
-            <View style={styles.genderRow}>
+            <View
+              accessibilityRole="radiogroup"
+              accessibilityLabel={t('studentGenderLabel')}
+              style={[styles.genderRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
               {GENDERS.map(g => {
                 const on = draft.gender === g.value;
                 return (
@@ -89,7 +99,7 @@ export function EditStudentSheet({ student, saving, error, onSave, onClose }: Pr
                     key={g.value}
                     onPress={() => set('gender', g.value)}
                     accessibilityRole="radio"
-                    aria-selected={on}
+                    aria-checked={on}
                     style={[
                       styles.genderBtn,
                       { borderColor: on ? colors.primary : colors.border, backgroundColor: on ? colors.primary : 'transparent' },
@@ -125,6 +135,7 @@ export function EditStudentSheet({ student, saving, error, onSave, onClose }: Pr
                 {error}
               </Text>
             ) : null}
+            </ScrollView>
 
             <View style={styles.actions}>
               <Pressable onPress={onClose} style={styles.btn}>
@@ -154,13 +165,15 @@ export function EditStudentSheet({ student, saving, error, onSave, onClose }: Pr
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: SPACE.xxl },
-  card: { width: '100%', maxWidth: 460, borderRadius: RADIUS.lg, padding: SPACE.xl, gap: SPACE.sm },
+  card: { width: '100%', maxWidth: 460, maxHeight: '90%', borderRadius: RADIUS.lg, padding: SPACE.xl, gap: SPACE.sm },
+  scroll: { flexShrink: 1 },
+  fields: { gap: SPACE.sm },
   title: { fontSize: TYPE.bodyLg, marginBottom: SPACE.xs },
   label: { fontSize: TYPE.caption, marginTop: SPACE.sm },
   hint: { fontSize: TYPE.label, lineHeight: 22 },
   input: { borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, fontSize: TYPE.body },
   note: { minHeight: 90, textAlignVertical: 'top' },
-  genderRow: { flexDirection: 'row', gap: SPACE.sm },
+  genderRow: { gap: SPACE.sm },
   genderBtn: { flex: 1, alignItems: 'center', paddingVertical: SPACE.md, borderRadius: RADIUS.md, borderWidth: 1 },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: SPACE.sm, marginTop: SPACE.sm },
   btn: { paddingHorizontal: SPACE.xl, paddingVertical: SPACE.md, borderRadius: RADIUS.md },
