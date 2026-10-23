@@ -136,6 +136,7 @@ import { correctAnswerText, solutionsDecision } from "../modules/assessment/answ
 import { announceResultsRelease } from "../lib/resultsReleaseNotify.ts";
 import { pushWithin } from "../lib/pushWithin.ts";
 import { announceExamDate, announcePaperResults } from "../lib/familyPushEvents.ts";
+import { isUniqueViolation } from "../lib/pgErrors.ts";
 import { examDateNotice, publishNotice } from "../modules/notifications/examDateNotice.ts";
 const router = Router();
 // Path-scoped — see the note in roster.ts. Unscoped, this swallowed every
@@ -1707,8 +1708,7 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
           .where(eq(evaluations.id, evaluation.id))
           .returning();
       } catch (err) {
-        const code = (err as { code?: string })?.code;
-        if (code !== "23505" || evaluation.shareCode) throw err;
+        if (!isUniqueViolation(err) || evaluation.shareCode) throw err;
         logger.warn({ evaluationId: evaluation.id }, "share code collision, retrying");
       }
     }
