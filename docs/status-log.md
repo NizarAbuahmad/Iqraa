@@ -95,6 +95,24 @@ single step are not built.
 
 ---
 
+
+## A vowelled unit title gets its icon and photo, 2026-10-23
+
+A teacher's whole-book revision deck for Grade 1 maths (66 lessons, 12 units, no book
+pictures — no Grade 1 or 2 student book is on disk) showed the same «books» icon on
+every unit break and no unit photo. Cause: the primary books print unit titles with every
+vowel mark («الْأَعْدادُ ضِمْنَ مَنْزِلَتَيْنِ»), and a mark between two letters stops the
+topic table's «أعداد» matching, so `iconForTopic` / `photoQueryForTopic` found nothing for
+any vocalised title — in every subject of grades 1-6, not only maths.
+
+- `topicRule` (`deckIcons.ts`) matches on the title with the marks and tatweel stripped
+  (`ً-ٟ`, `ٰ`, `ـ`; Arabic-Indic digits are not marks).
+- The calculator row also knows «جمع / طرح / منزلة» (addition, subtraction, place).
+- Verified: the rebuilt Grade 1 maths deck's twelve breaks now carry the calculator icon;
+  `deckIcons.test.ts` pins five vowelled titles. **Not verified:** the Unsplash photo that
+  follows the icon (quota), and still no book picture for Grade 1-2 maths — that needs the
+  NCCD books on disk.
+
 ## Duplicate-key 409s answered 500 — 2026-10-22
 
 drizzle-orm 0.45 rethrows every driver
