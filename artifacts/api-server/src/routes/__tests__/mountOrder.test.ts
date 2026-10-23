@@ -687,6 +687,17 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(teacher.status, 401, "the teacher homework route keeps its own guard");
   });
 
+  it("guards Math Corner practice for the student write and the teacher read", async () => {
+    const id = "00000000-0000-0000-0000-000000000000";
+    for (const [method, p] of [
+      ["PUT", "/student/math-practice"],
+      ["GET", `/classes/${id}/math-practice`],
+    ] as const) {
+      const res = await fetch(`${base}${p}`, { method });
+      assert.equal(res.status, 401, `${method} ${p} must require a token`);
+    }
+  });
+
   it("keeps the class join-code lookup public, and closed while student accounts are off", async () => {
     // The trap this guards: roster.ts mounts
     // `router.use(["/classes","/students"], authMiddleware, …)`, and Express
