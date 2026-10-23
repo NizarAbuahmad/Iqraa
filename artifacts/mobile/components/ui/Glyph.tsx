@@ -18,9 +18,12 @@ import type { IconName } from '@/constants/icons';
  * colour that already reads on its background (`readableOn`, or `textOn` on a
  * solid fill), exactly as it would for an Ionicons glyph.
  *
+ * `tint={false}` draws the outline alone (the tab bar's unselected state; the
+ * selected tab keeps its tint). Solid dots and the like stay.
+ *
  * Decorative: whatever row or button holds it supplies the label.
  */
-export function Glyph({ name, size, color }: { name: GlyphId; size: number; color: string }) {
+export function Glyph({ name, size, color, tint = true }: { name: GlyphId; size: number; color: string; tint?: boolean }) {
   // The clip is referenced by url(#id), so the id must be a plain token.
   const clipId = 'glyph-cut-' + useId().replace(/[^A-Za-z0-9_-]/g, '');
   const def = GLYPHS[name];
@@ -48,24 +51,24 @@ export function Glyph({ name, size, color }: { name: GlyphId; size: number; colo
           </ClipPath>
         </Defs>
       ) : null}
-      {cut ? <G clipPath={`url(#${clipId})`} clipRule="evenodd">{def.parts.filter(p => 'cut' in p).map((p, i) => part(p, i, color))}</G> : null}
-      {def.parts.filter(p => !cut || !('cut' in p)).map((p, i) => part(p, i + 100, color))}
+      {cut ? <G clipPath={`url(#${clipId})`} clipRule="evenodd">{def.parts.filter(p => 'cut' in p).map((p, i) => part(p, i, color, tint))}</G> : null}
+      {def.parts.filter(p => !cut || !('cut' in p)).map((p, i) => part(p, i + 100, color, tint))}
     </Svg>
   );
 }
 
-function paint(role: GlyphPart['role'], color: string) {
+function paint(role: GlyphPart['role'], color: string, tint: boolean) {
   switch (role) {
-    case 'tinted': return { fill: color, fillOpacity: GLYPH_TINT };
-    case 'tint': return { fill: color, fillOpacity: 0.22, stroke: 'none' };
+    case 'tinted': return tint ? { fill: color, fillOpacity: GLYPH_TINT } : {};
+    case 'tint': return tint ? { fill: color, fillOpacity: 0.22, stroke: 'none' } : { stroke: 'none' };
     case 'solid': return { fill: color, stroke: 'none' };
     case 'faint': return { strokeOpacity: 0.35 };
     default: return {};
   }
 }
 
-function part(p: GlyphPart, key: number, color: string) {
-  const look = paint(p.role, color);
+function part(p: GlyphPart, key: number, color: string, tint: boolean) {
+  const look = paint(p.role, color, tint);
   switch (p.el) {
     case 'path': return <Path key={key} d={p.d} {...look} />;
     case 'rect': return <Rect key={key} x={p.x} y={p.y} width={p.width} height={p.height} rx={p.rx} {...look} />;

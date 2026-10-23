@@ -19,6 +19,8 @@ export * from "./teachingPlans";
 export * from "./schedule";
 // Homework a teacher sets for a class, and who has ticked it off — see homework.ts
 export * from "./homework";
+// A student's best Math Corner exercise score per lesson — see mathPractice.ts
+export * from "./mathPractice";
 export * from "./assessmentConfig";
 export * from "./evaluations";
 export * from "./attempts";

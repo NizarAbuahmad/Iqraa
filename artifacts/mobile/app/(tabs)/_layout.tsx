@@ -4,14 +4,14 @@ import { useColors } from '@/hooks/useColors';
 import { scheme } from '@/constants/colors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
-import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { router, Tabs, usePathname } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { WebSidebar } from '@/components/ui/WebSidebar';
+import { Glyph } from '@/components/ui/Glyph';
+import type { GlyphId } from '@/constants/glyphs';
 import { CommandPalette } from '@/components/ui/CommandPalette';
 import { GlobalLessonBar } from '@/components/ui/GlobalLessonBar';
 import { NotificationBell } from '@/components/ui/NotificationBell';
@@ -46,7 +46,17 @@ function iconNameFor(name: string): string {
 /** Hides a tab without unregistering its route, so a deep link to it still resolves. */
 const HIDDEN = { tabBarButton: () => null, tabBarItemStyle: { display: 'none' as const } };
 
-type TabIcon = (args: { color: string; focused: boolean; isIOS: boolean }) => React.ReactNode;
+type TabIcon = (args: { color: string; focused: boolean }) => React.ReactNode;
+
+/**
+ * A tab is drawn with its Iqraa icon (`constants/glyphs.ts`) on every platform:
+ * outline when idle, with the 18% tint once selected. iOS used to draw SF
+ * Symbols here, and the other platforms Ionicons, so the bar looked different
+ * on each; the same drawing everywhere is the point.
+ */
+const tabIcon = (name: GlyphId): TabIcon => ({ color, focused }) => (
+  <Glyph name={name} size={24} color={color} tint={focused} />
+);
 
 /**
  * Single source of truth for tab metadata, consumed by both the native/mobile
@@ -74,12 +84,7 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean, unread: number)
       name: 'index',
       titleKey: 'tabToday',
       visible: tabVisible('index', { isTeacher, isDesktop }),
-      icon: ({ color, focused, isIOS }) =>
-        isIOS ? (
-          <SymbolView name={focused ? 'square.grid.2x2.fill' : 'square.grid.2x2'} tintColor={color} size={22} />
-        ) : (
-          <Ionicons name={focused ? 'grid' : 'grid-outline'} size={24} color={color} />
-        ),
+      icon: tabIcon('today'),
     },
     {
       // Desktop sidebar only. On a phone the route stays registered (hidden), so
@@ -87,16 +92,7 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean, unread: number)
       name: 'iqra',
       titleKey: 'tabIqra',
       visible: tabVisible('iqra', { isTeacher, isDesktop }),
-      icon: ({ color, focused, isIOS }) =>
-        isIOS ? (
-          <SymbolView
-            name={focused ? 'bubble.left.and.bubble.right.fill' : 'bubble.left.and.bubble.right'}
-            tintColor={color}
-            size={22}
-          />
-        ) : (
-          <Ionicons name={focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline'} size={24} color={color} />
-        ),
+      icon: tabIcon('ask'),
     },
     {
       // Parents and students only: the weekly timetable (homework joins it
@@ -104,12 +100,7 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean, unread: number)
       name: 'school',
       titleKey: 'tabSchool',
       visible: tabVisible('school', { isTeacher, isDesktop }),
-      icon: ({ color, focused, isIOS }) =>
-        isIOS ? (
-          <SymbolView name={focused ? 'graduationcap.fill' : 'graduationcap'} tintColor={color} size={22} />
-        ) : (
-          <Ionicons name={focused ? 'school' : 'school-outline'} size={24} color={color} />
-        ),
+      icon: tabIcon('classes'),
     },
     {
       // Route file kept as "curriculum"; it has shown the library since
@@ -117,27 +108,13 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean, unread: number)
       name: 'curriculum',
       titleKey: 'resourcesTitle',
       visible: tabVisible('curriculum', { isTeacher, isDesktop }),
-      icon: ({ color, focused, isIOS }) =>
-        isIOS ? (
-          <SymbolView name={focused ? 'books.vertical.fill' : 'books.vertical'} tintColor={color} size={22} />
-        ) : (
-          <Ionicons name={focused ? 'library' : 'library-outline'} size={24} color={color} />
-        ),
+      icon: tabIcon('library'),
     },
     {
       name: 'ai-tools',
       titleKey: 'tabTools',
       visible: tabVisible('ai-tools', { isTeacher, isDesktop }),
-      icon: ({ color, focused, isIOS }) =>
-        isIOS ? (
-          <SymbolView
-            name={focused ? 'wand.and.stars' : 'wand.and.stars.inverse'}
-            tintColor={color}
-            size={22}
-          />
-        ) : (
-          <Ionicons name={focused ? 'sparkles' : 'sparkles-outline'} size={24} color={color} />
-        ),
+      icon: tabIcon('tools'),
     },
     {
       // Route file is still "notifications" — was "Notifications", repurposed
@@ -146,25 +123,13 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean, unread: number)
       titleKey: 'tabAlerts',
       visible: tabVisible('notifications', { isTeacher, isDesktop }),
       badge: badgeLabel(unread),
-      icon: ({ color, focused, isIOS }) =>
-        isIOS ? (
-          <SymbolView name={focused ? 'envelope.fill' : 'envelope'} tintColor={color} size={22} />
-        ) : (
-          // An envelope, not a second chat bubble: sitting beside «اسأل إقرأ»
-          // the two tabs read as the same thing.
-          <Ionicons name={focused ? 'mail' : 'mail-outline'} size={24} color={color} />
-        ),
+      icon: tabIcon('messages'),
     },
     {
       name: 'profile',
       titleKey: 'tabProfile',
       visible: tabVisible('profile', { isTeacher, isDesktop }),
-      icon: ({ color, focused, isIOS }) =>
-        isIOS ? (
-          <SymbolView name={focused ? 'person.circle.fill' : 'person.circle'} tintColor={color} size={22} />
-        ) : (
-          <Ionicons name={focused ? 'person-circle' : 'person-circle-outline'} size={24} color={color} />
-        ),
+      icon: tabIcon('profile'),
     },
   ];
 }
@@ -305,7 +270,7 @@ function ClassicTabLayout() {
             entry.visible
               ? {
                   title: t(entry.titleKey),
-                  tabBarIcon: ({ color, focused }) => entry.icon({ color, focused, isIOS }),
+                  tabBarIcon: ({ color, focused }) => entry.icon({ color, focused }),
                   tabBarBadge: entry.badge,
                 }
               : HIDDEN
@@ -388,7 +353,6 @@ function ClassicTabLayout() {
     <View style={{ flex: 1, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
       <WebSidebar
         entries={tabEntries}
-        isIOS={isIOS}
         lessonCard={isTeacher ? <GlobalLessonBar layout="card" {...lessonProps} /> : null}
       />
       <View style={{ flex: 1 }}>

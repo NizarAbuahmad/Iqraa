@@ -10,6 +10,251 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## The tab bar is drawn — 2026-10-23
+
+Step three of the icon work. The phone tab bar and the desktop sidebar draw
+Iqraa's own icons, so the one piece of navigation that sits on every screen no
+longer mixes two styles. Back arrows, chevrons and the many small action icons
+are still stock Ionicons. #1203 put sixteen drawings in the app and held `library` and `messages` back for
+this, because three drawn tabs beside four stock ones would mix two styles in one
+row. The four missing ones (Today, Ask, Tools, Profile) were shown on the review
+sheet and approved the same day.
+
+**What changed**
+- `constants/glyphs.ts` gains `today` (a calendar page with the day marked),
+  `ask` (one round bubble with a spark), `tools` (a toolbox) and `profile` (a
+  person in a circle). The set is twenty.
+- `Glyph` takes `tint` (default on). Idle tabs are outline; the selected tab
+  carries the 18% tint, which keeps the rule «outline, then filled when
+  selected». Solid dots stay in both states.
+- `app/(tabs)/_layout.tsx` draws every tab with `tabIcon(name)`. iOS used to draw
+  SF Symbols and the other platforms Ionicons, so the bar differed per platform;
+  it is now one drawing everywhere. `WebSidebar` reads the same entries and no
+  longer takes `isIOS`. The School tab (parents and students) wears the classes
+  drawing; Messages wears the two-bubble drawing, so it no longer needs the
+  envelope that kept it from reading like Ask.
+- The `expo-symbols` package is no longer imported anywhere. It stays in
+  `package.json` on purpose: removing a native module changes the native surface
+  and would need an `app.json` version bump. Removing it can wait for the next
+  native build.
+
+**Pinned:** `glyphs.test.ts` now pins the twenty, that the tab bar draws the seven
+entries in order with `<Glyph … tint={focused}>`, that no stock icon or
+`expo-symbols` import returns to the layout, that the sidebar draws the same
+entries, and that `tint={false}` removes a tinted part's fill. `HELD` is empty.
+
+**Verified:** mobile tests and typecheck, and web-build screenshots of the phone
+bar and the desktop sidebar in light and dark.
+
+**Not verified:** the bar on an Android or iOS device. On iOS the bar sat on a
+blur with SF Symbols; the drawn icons sit on the same blur, but how they look at
+24px over it has not been seen. The command palette still names tabs by Ionicons
+glyph (`iconNameFor`), which is a font-name API and is unchanged.
+
+## Neon leaves the Free plan before launch — 2026-10-23
+
+**Status: applied by the owner on 2026-10-23**, in the Neon console (screenshots): plan Launch,
+primary compute autoscaling **0.25-0.5 CU** (Neon had set it to 8 CU on upgrade; saved at 0.5),
+scale to zero **on** (5 minutes), spend alert **$10**. This PR changes nothing in Neon; the only
+production change in it is one extra field on an admin-only route.
+
+- **Why.** The project (`Iqraa`, AWS Frankfurt, one branch, 0.25 CU compute) is on Neon's **Free
+  plan**: 100 compute-hours a month, and when they are used up Neon says the compute is
+  "suspended until the next billing period or until you upgrade", which is the whole app down.
+  The console showed **30.92 CU-hours used** since 1 October (screenshot, 2026-10-23), at quiet
+  traffic. A launch keeps the compute awake much longer and Neon may scale it up, so the
+  allowance could run out within days to about two weeks. That figure is an estimate, not a
+  measurement.
+- **Decision (owner, 2026-10-23): upgrade in place to Launch** (pay for use: $0.106 per CU-hour,
+  $0.35 per GB-month, no monthly minimum; 7-day restore window; autoscaling to 16 CU; scale to
+  zero can be switched off; logical replication). Settings to apply: autoscaling **min 0.25, max
+  0.5 CU**, scale to zero **on**. **Expected cost about $10 a month, ceiling about $39** (0.5 CU
+  x 730 h x $0.106). Both are arithmetic from the published rates, not an invoice. The trade-off
+  of scale to zero is a wait of "a few hundred milliseconds" on the first query after about five
+  idle minutes; switching it off costs roughly $10-12 a month more at 0.25 CU.
+- **Considered and not chosen: switching provider.** The database is about 39 MB, so storage is
+  irrelevant and any paid plan fixes the cap. The code is plain Postgres (`pg` + Drizzle, no Neon
+  packages, no Neon-only SQL), so a later move is possible, but a move now means rehearsing a
+  restore, getting migration 0008's `iqraa_app` role and row-level security to survive it, keeping
+  table ownership equal to the role in **both** `DATABASE_URL` secrets (GitHub Actions and Secret
+  Manager), and a cutover right before launch; the failure mode is rows silently missing. Cloud
+  SQL came to about $50 a month for 1 vCPU / 3.75 GB single-zone by arithmetic from Google's US
+  per-unit rates (Europe and shared-core prices not confirmed); Supabase Pro is $25 a month with
+  point-in-time recovery $100 a month extra and no uptime SLA. Neon Scale ($0.222 per CU-hour) is
+  the tier with a 99.95% SLA; not needed yet. Jordan's Personal Data Protection Law (No. 24 of
+  2023) restricts moving personal data out of Jordan unless the destination is adequate; it
+  applies to every candidate equally and is a question for a lawyer, not a reason to pick one.
+- **Code.** `GET /api/healthz/pool` (admin key) now also returns `pooled: true|false`: whether
+  `DATABASE_URL` goes through Neon's pooler (`-pooler` in the host). Only that yes/no leaves the
+  process; the host and string do not. At 0.25 CU Neon allows 104 `max_connections` (97 usable),
+  while the API can open `DB_POOL_MAX` (10) per instance across many instances; the pooler accepts
+  10,000 client connections in transaction mode, which this code is designed for (no prepared
+  statements, no advisory locks, `SET LOCAL` only inside transactions). Not exercised: the
+  `SET LOCAL` path runs only with `RLS_ENFORCE=on`, which is off in production, and has not been
+  run through Neon's pooler. `isPooledConnectionString` is
+  in `lib/db/src/poolConfig.ts`, with unit tests.
+- **Verified.** Limits and prices were read from Neon's plans, pricing, scale-to-zero and
+  connection-pooling pages and from the Change-plan screen on 2026-10-23. The code's coupling to
+  Neon was reviewed by reading it, not by running a migration. The helper is unit-tested.
+- **Not verified, still open.** (1) That the settings above hold under real traffic (the console accepted them; nothing has
+  been measured since). (2) Whether production's `DATABASE_URL` is
+  pooled: call `/api/healthz/pool` with the admin key after this deploys; if `pooled` is `false`,
+  switch the Secret Manager secret to the pooled string and roll a revision outside school hours.
+  (3) The real monthly cost; look at Neon's Usage page weekly for the first month. (4) Neon's
+  reliability: third-party trackers list about 29 incidents in 12 months, mostly short and
+  regional; Neon's own status page was not read. (5) A load test against Neon: the sandbox that
+  runs the load test blocks outbound connections on the Postgres port (5432; tested against two
+  public addresses, not against Neon), so `e2e/loadtest` was only run against a local database; the compute-hour and connection figures above come from the documentation.
+- **Review after two to four weeks:** a slow first request in the morning (turn scale to zero
+  off), a bill above about $30, Neon incidents during school hours (Sunday to Thursday, about
+  07:30-14:00 Amman), a need for an SLA or a longer restore window, connection limits biting.
+
+## Chat app-help, eighteenth live pass: live games, the interactive class, slides, activities, quizzes, worksheets — 2026-10-23
+
+A 30-question pass on app.iqrra.com found the chat answering app-specific "how do I" questions
+from the model, which invented menus (a generic "live game on a learning platform"), refused
+(«خارج مجال عملي») or gave general teaching advice. 14 new places and extra wordings for 4
+existing ones (`whiteboard`, `difficulty`, `broadcast`) in `artifacts/mobile/services/appHelp.ts`,
+with the answers (`how*`, ar + en) in `i18n.ts`: starting a live game (present a deck → «العب
+أسئلة العرض كتحدي بين الفرق» → «العب مباشرة على الأجهزة»), how students join (6-character code,
+name, no account), the 100-player / 3–30 question / 20 s limits (`MAX_PLAYERS`,
+`LIVE_MIN/MAX_QUESTIONS`, `LIVE_DEFAULT_SECONDS`), the end-of-game screen, what «الحصة
+التفاعلية» is, building an interactive deck and slides from pasted text (both through the
+hidden «إنشاء عرض تفاعلي», reached from «شرائح الدرس»), the six deck looks, activity types, the
+quiz's four question types, the worksheet's «ثلاثة مستويات دفعة واحدة», the automatic worked
+example and the question count. Every claim was read off the screen or constant it describes;
+the answers that say what does **not** exist (no essay question or shuffle in the quiz, no
+group-size field before building an activity, no button for the worked example) are the ones
+the model got wrong most confidently. Pinned in `appHelp.test.ts` with near-misses that must
+stay with the model.
+
+**Not done, deliberately:** «مسار الدرس» (its tool is `hidden`), the homework generator (also
+hidden, reached only through chat), sorting homework by due date (unverified), and teaching
+questions. **Not claimed:** whether live-game results are stored after the game ends.
+
+## Leftover icon colours follow CONCEPTS — 2026-10-23
+
+Closes the "Not verified" list of «Icons follow one system» (the tables that still kept their
+own icon and colour). A table entry that IS a teaching concept now reads `CONCEPTS`
+(`constants/icons.ts`); one that is not has a colour of its own that carries white at 4.5:1, is
+not amber, and is at least CIEDE2000 7 from every concept colour. Nothing in `glyphs.ts`,
+`Glyph.tsx` or the tab layout was touched.
+
+**What changed, old to new** (hex are the light-mode fills; icons only where they moved)
+- **«موادي», the viewer header, class materials** (`constants/materialKind.ts`, now re-exporting
+  pure data from the new `constants/materialKindData.ts`):
+  lesson `#006D65` to `#4338CA`; worksheet `#8A5A00` to `#0F766E` (the old brown was in the
+  amber family); quiz `#B0284F` to `#7C3AED` and `help-circle-outline` to
+  `checkmark-done-outline`; flow `#44506A` to `#4D7C0F`; activity `#3F7A1E` to `#C2410C` and
+  `game-controller-outline` to `people-outline`; slides `#1F5FA8` to `#0369A1`; prompt slides
+  `#1F5FA8` to `#1D4ED8` (they no longer share one blue); whiteboard, the one kind that is not a
+  concept, `#9A3F12` to slate `#475569`. The dark-card variants are derived
+  (`readableOn(fill, #111F36, 7)`), not typed.
+- **Printed and projected copies** (`DOC_ACCENT` in `services/exportHtml.ts`) follow, so a document is
+  one colour in print, on the projector and in «موادي»: lesson `#006D65` to `#4338CA`,
+  worksheet `#8A5A00` to `#0F766E`, quiz `#B0284F` to `#7C3AED`, activity `#3F7A1E` to `#C2410C`.
+- **Library shelves** (`app/curriculum/resources.tsx`, data in the new `constants/shelfLook.ts`).
+  Worksheet, games and presentations are concepts: worksheet `#0E8F86` to `#0F766E`
+  (`list-outline`), games `#15803D` unchanged, presentation `#C2410C` (the activity's orange) to the
+  slides concept `#0369A1` (`tv-outline`). The six file kinds: audio `#B45309` (exactly
+  `palette.live`) to `#115F40`; infographic `#7C3AED` (the quiz's violet) to `#9C0D71`; image
+  `#0E7490` (the homework's cyan) to `#20576F`; template `#4F46E5` (5.4 from the lesson plan's
+  indigo) to `#96412C`; video `#DC2626` and document `#475569` kept. All shelf icons are outline
+  now, like `RESOURCE_KIND_ICON`; that table's worksheet, game and presentation entries also read
+  `CONCEPTS`. The «open / print» pills use `textOn(accent)` instead of
+  `palette.primaryForeground`, which is navy in dark mode and sat on the old fills at 2.3:1 to 4.3:1 (about 3:1 for most); the
+  shelf glyphs on a card go through `readableOn(…, colors.card, 3)`.
+- **Lesson-flow steps** (builder `app/ai-tools/lesson-flow.tsx` and viewer `app/workspace/view.tsx`,
+  which each kept a literal copy; now one table, `constants/lessonFlowSteps.ts`): activity
+  `flash-outline` `#4F46E5` to the activity concept (`people-outline`, `#C2410C`); worksheet
+  `document-text-outline` `#6D28D9` to the worksheet concept (`list-outline`, `#0F766E`); warm-up
+  `#C2410C` (the activity's colour exactly) to `#96412C`; guided practice, the brand teal 3.2 from
+  the worksheet teal, to `#20576F`; exit ticket `palette.warning` (`#B54708` light, true amber
+  dark, and a literal `#B54708` in the viewer) to `#9C0D71`. Objectives stays ink. Step glyphs
+  on the card are lifted with `readableOn`.
+- `typeColor` in `services/continueTeaching.ts` (called by no screen) reads `CONCEPTS`; its quiz
+  was amber `#C9860A`.
+
+**Pinned** (`services/__tests__/iconSystem.test.ts`, 14 new tests, 31 in the file):
+- every saved-material kind (read from `MaterialType` in `workspace.ts`) has an icon, a fill and a
+  dark fill; a concept kind equals its `CONCEPTS` entry; only `board` is not a concept; the data
+  file holds no hex but the slate and the dark card (which must equal `palette.card` in
+  `colors.ts`), and `materialKind.ts` holds none;
+- material fills carry white at 4.5:1, none is amber, all at least ΔE2000 7 apart; dark fills are at
+  least 7:1 on the dark card; `DOC_ACCENT` equals `MATERIAL_FILL` for its four kinds; `typeColor`
+  equals `CONCEPTS`;
+- the shelf table covers exactly `SHELF_ORDER`; concept shelves read `CONCEPTS` (and so do their
+  `RESOURCE_KIND_ICON` entries); `resources.tsx` declares no shelf table of its own; shelf icons are
+  outline; the six file shelves carry white at 4.5:1, are not amber and are at least 7 from every
+  concept; all nine shelves are at least ΔE2000 8 apart on the light card and 7 apart after the
+  dark-card lift (the Tools tab's 8 would need the audio emerald and worksheet teal to move: 7.8);
+- the two concept steps read `CONCEPTS`; the three own-colour steps carry white at 4.5:1, are not
+  amber, are 7 from every concept, and with ink and the two concept steps are 8 apart (light) and
+  7 (dark); neither flow screen spells a step icon or the old step colours itself.
+  Mutation-checked: putting the amber back on the audio shelf fails the shelf test.
+
+**Verified:** `pnpm run typecheck` clean; mobile `pnpm test` 6,925 tests, 6,915 pass, 10 skipped,
+0 fail. Web build at 390 px, Arabic (RTL), light and dark, API stubbed: the Library overview
+(tabs and shelf headers), the «موادي» list with one of each of the eight kinds, and a saved lesson
+flow in the viewer. Eight materials and nine shelves read as eight and nine different colours in
+both schemes.
+
+**Not verified:** Android and iOS devices; the lesson-flow builder's step cards (they only appear
+after a generation, so they were typechecked and share the viewer's table, not looked at); a
+printed PDF (the new `DOC_ACCENT` was not rendered through `expo-print`).
+
+**Left as they were, on purpose**
+- `#B45309` (exactly `palette.live`) is still the game accent of «multiply» (`app/play/index.tsx:44`)
+  and the lesson game «spot» (`app/play/lesson/[lessonId].tsx:36`), and `#B54708` a star in
+  `app/ai-tools/classroom/index.tsx:118`: game and corner accents, governed by
+  `gameAccents.test.ts`, not concept tables. They break the amber rule and want their own change.
+- The «launch classroom» button in `lesson-flow.tsx` and the «Class screen» action in
+  `workspace/view.tsx` are `#4F46E5`, a near twin of the lesson plan's indigo; the activity hub's
+  card accents (`services/classroomRouting.ts`) and the admin `ACCENT` are the same indigo. Which
+  concept each is was not clear enough to remap.
+- Materials, shelves and flow steps still draw stock Ionicons, not the Iqraa drawings
+  (`ConceptIcon`): a material icon is a font glyph name used across six screens.
+- The old `materialKind.ts` comment said the palette avoided purple because the site's DESIGN.md
+  rules it out. That file lives in the site repo and was not checked; the quiz concept was already
+  violet from «Icons follow one system», so the materials now follow it.
+- The viewer's objectives bullets (`#081B3A`) are still near-invisible on the dark card.
+
+## Teachers see their class's Math Corner practice — 2026-10-23
+
+**What a teacher sees.** A maths class's «الطلبة» tab has a «تمارين الرياضيات»
+row (shown when student accounts are on, the class has students and maths is one
+of its subjects). It opens a sheet listing each student who practised, and under
+each name every lesson with the student's best «اختبر نفسك» score and how many
+sets they finished («ضَرْبُ الأَعْدادِ · ٦ من ١٠ · ٣ محاولات»). Students who have not
+practised are not listed.
+
+**How it gets there.** A student account's finished set is sent to
+`PUT /student/math-practice` `{ lessonId, correct, total }` (every set, not only a
+new best, so attempts count). The server checks the lesson is a catalog
+**mathematics** lesson (`modules/mathPractice/practice.ts`, 1 ≤ total ≤ 20) and
+writes one row per `self`-linked roster row of the account into the new
+`math_practice_results` table (migration 0014, additive, DEFERRED RLS + grant like
+`game_results`), keeping the best ratio (a tie keeps the old row) and counting
+attempts. An account with no roster row gets `{ saved: false }` and keeps its
+score on the device only. `GET /classes/:id/math-practice` (teacher, own live
+class) reads it through class membership, as `/homework/:id/game-results` does.
+The device copy (`mathExerciseProgress.ts`) still drives the student's own
+screens and works offline; a failed send is dropped, not retried.
+
+**Verified.** `mathPractice.db.test.ts` against a real Postgres: wrong roles
+403, flag off 403, bad bodies 400, an unlinked account saves nothing, a write
+lands only on the account's own self-linked row (not a guardian-only row of the
+same child, not a classmate), best ratio kept with attempts counted, the teacher
+reads only their own live class (another teacher's class and an archived class
+are 404). In a browser against a throwaway database: a student finished two sets
+(6/10 then 2/10); the teacher's sheet showed «٦ من ١٠» with three attempts.
+`mountOrder.test.ts` pins both routes behind a token.
+
+**Not built / not verified.** No per-lesson summary across the class (which
+lessons nobody practised), no export, no push to the teacher. A student whose
+first sets ran before this ships has device-only bests until they finish a set
+again. Not checked on Android. The migration is 0014: #1185 took 0013 first.
+
 ## Grade 9 grammar, thirteen lessons in the English corner — built, shown to nobody yet, 2026-10-23
 
 Grammar activities on thirteen more Grade 9 hub lessons (S1 U1, U2, U3, U5; S2 U6, U8, U9, U10), after the
@@ -94,6 +339,24 @@ them. Parents («نتائج أبنائي»), link-only students (`/take`) and ed
 single step are not built.
 
 ---
+
+
+## A vowelled unit title gets its icon and photo, 2026-10-23
+
+A teacher's whole-book revision deck for Grade 1 maths (66 lessons, 12 units, no book
+pictures — no Grade 1 or 2 student book is on disk) showed the same «books» icon on
+every unit break and no unit photo. Cause: the primary books print unit titles with every
+vowel mark («الْأَعْدادُ ضِمْنَ مَنْزِلَتَيْنِ»), and a mark between two letters stops the
+topic table's «أعداد» matching, so `iconForTopic` / `photoQueryForTopic` found nothing for
+any vocalised title — in every subject of grades 1-6, not only maths.
+
+- `topicRule` (`deckIcons.ts`) matches on the title with the marks and tatweel stripped
+  (`ً-ٟ`, `ٰ`, `ـ`; Arabic-Indic digits are not marks).
+- The calculator row also knows «جمع / طرح / منزلة» (addition, subtraction, place).
+- Verified: the rebuilt Grade 1 maths deck's twelve breaks now carry the calculator icon;
+  `deckIcons.test.ts` pins five vowelled titles. **Not verified:** the Unsplash photo that
+  follows the icon (quota), and still no book picture for Grade 1-2 maths — that needs the
+  NCCD books on disk.
 
 ## Duplicate-key 409s answered 500 — 2026-10-22
 
