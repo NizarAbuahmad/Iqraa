@@ -20,7 +20,8 @@ import { createRateLimiter } from "../lib/rateLimit";
 import { authMiddleware, requireRole, TEACHER_ROLES, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { generateShareCode } from "../modules/assessment/studentView";
 import { hostView, isEnded, nextState, validateCreate } from "../modules/live/rules.ts";
-import { isUniqueViolation, loadAnswersFor, loadScoreboard } from "../modules/live/store.ts";
+import { loadAnswersFor, loadScoreboard } from "../modules/live/store.ts";
+import { isUniqueViolation } from "../lib/pgErrors.ts";
 
 const router = Router();
 

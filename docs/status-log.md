@@ -10,6 +10,57 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Students review their answers, with maths worked steps — 2026-10-22
+
+**What changed.** A released result used to be a level and a percentage; a
+student could not see which questions they got wrong. On a **closed** exam the
+teacher now presses «اعرض الإجابات والحلول للطلبة», and each student gets
+«راجع إجاباتك والحلول» under the result in «اختباراتي»
+(`app/exam-review/[id].tsx`): every question with their answer, the correct
+one, the marks, and for maths the worked steps. On a maths exam the teacher
+first presses «جهّز خطوات الحل»; the model is given each question **and its
+key** and asked only for the steps to it (`modules/assessment/workedSteps.ts`),
+and the steps show under each question on the teacher's screen to be read
+before showing.
+
+**The gate** (`studentReviewReady`, `modules/assessment/answerReview.ts`):
+closed + results released + review on + a final (non-provisional) mark.
+Closed is what protects the key — an open exam is still being sat and retakes
+run only while it is open — so turning the review on needs a closed exam and
+re-publishing turns it off. Answers leave as display text, never the raw
+`expectedAnswer`.
+
+**Schema:** `evaluations.show_solutions_to_student`,
+`evaluation_questions.worked_steps` (migration 0011, additive).
+
+**Verified:** API suite 2,139/2,139; `answerReview.db.test.ts` (5, real
+Postgres over HTTP: hidden while open, before release, after hiding, from
+other students and parents, and after re-publish) plus 45 neighbouring DB
+tests; mobile suite green except the CRLF-only `TopicSelector` source check;
+teacher screen, «اختباراتي» and the review screen rendered from the worktree.
+
+**Not verified / not covered:** live step generation against a real model
+(local AI was off); the steps are unchecked by design — the teacher reads
+them. Parents («نتائج أبنائي»), link-only students (`/take`) and editing a
+single step are not built.
+
+---
+
+## Duplicate-key 409s answered 500 — 2026-10-22
+
+drizzle-orm 0.45 rethrows every driver
+error as a `DrizzleQueryError` with the pg error on `cause`, so `err.code === "23505"` never
+matched and every handled duplicate fell through to a 500: register, change-unverified-email,
+add-email and Google sign-in (`email_taken`), the `/take` name claim (`name_taken` — a student
+who lost the race saw «failed to start» instead of «someone already started»), and the
+share-code retry on publish (a collision failed the publish instead of retrying). All six now
+call `isUniqueViolation` (`artifacts/api-server/src/lib/pgErrors.ts`), which checks both
+places. Verified by `uniqueViolation.db.test.ts`: test-only triggers raise SQLSTATE 23505 at
+each write (the real collisions are races); before the fix all five reachable paths answered
+500, after it 409/409/409/409 and a retried 200. **Not covered:** Google sign-in, which needs
+a real Google token — same one-line change. The live-game routes (`live.ts`, `liveHost.ts`)
+had their own copy in `modules/live/store.ts`; they now import this one.
+
 ## Iqraa draws its own icons — 2026-10-23
 
 Step two of the icon work. Sixteen drawings, approved from a review sheet
