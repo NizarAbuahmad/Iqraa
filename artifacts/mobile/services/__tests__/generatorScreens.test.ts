@@ -264,6 +264,287 @@ test('a refusal, an error or the spinner scrolls into view above a docked button
   assert.match(quizCode, /<View onLayout=\{e => \{ statusY\.current = e\.nativeEvent\.layout\.y; \}\}>\s*<GenerationStatus/);
   // Before paint (no flash of the form first), docked bar only, never for 'idle'.
   assert.match(quizCode, /useLayoutEffect\(\(\) => \{\s*if \(isDesktop \|\| statusPhase === 'idle'\) return;/);
-  assert.match(quizCode, /scrollRef\.current\?\.scrollTo\(\{ y: Math\.max\(0, statusY\.current - SPACE\.lg\), animated: !reduceMotion \}\);\s*\}, \[statusPhase\]\);/);
+  assert.match(quizCode, /scrollRef\.current\?\.scrollTo\(\{ y: Math\.max\(0, statusY\.current - SPACE\.lg\), animated: !reduceMotion \}\);\s*\}, \[statusPhase, attempt\]\);/);
   assert.match(quizCode, /const reduceMotion = useReduceMotion\(\);/);
+});
+
+// ── ChipGroup: a disabled option ────────────────────────────────────────────
+
+test('a chip can be disabled: dimmed, aria-disabled, inert, still a 44-point target', () => {
+  const src = code(read('components', 'generator', 'ChipGroup.tsx'));
+  assert.match(src, /disabled\?: boolean;/, 'ChipOption lost its optional disabled flag');
+  assert.match(src, /aria-disabled=\{locked \|\| off\}/);
+  assert.match(src, /disabled=\{off\}/);
+  assert.match(src, /if \(locked \|\| off\) return;/, 'a disabled chip must not call onToggle');
+  assert.match(src, /opacity: off \? 0\.5 : 1/);
+  assert.match(src, /minHeight: 44/);
+  // The quiz passes no disabled flag, so none of it changes for the quiz.
+  assert.doesNotMatch(quizCode, /disabled: /);
+});
+
+// ── DockedAction: an optional secondary action ──────────────────────────────
+
+test('DockedAction takes an optional secondary action beside the primary, and the quiz does not pass one', () => {
+  const src = code(read('components', 'generator', 'DockedAction.tsx'));
+  assert.match(src, /secondary\?: DockedSecondary;/);
+  assert.match(src, /\{secondary \? \(/);
+  // The shared rules still cover the whole spot, whichever buttons it holds.
+  assert.match(src, /if \(hidden \|\| \(docked && keyboardOpen\)\) return null;/);
+  assert.match(src, /const note = disabled && hint \? hint : summary;/);
+  // Never pressable while the primary is loading, so one tap cannot start two generations.
+  assert.match(src, /secondary\.disabled === true \|\| loading/);
+  assert.match(src, /aria-disabled=\{secondaryOff\}/);
+  assert.match(src, /secondaryInk = readableOn\(accent, colors\.card\)/, 'the outlined label must stay readable on the dark card');
+  assert.doesNotMatch(quizCode, /secondary=/);
+});
+
+// ── The worksheet / homework screen ─────────────────────────────────────────
+
+const worksheet = read('app', 'ai-tools', 'worksheet.tsx');
+const worksheetCode = code(worksheet);
+
+test('the worksheet imports every shared piece and draws its controls with them', () => {
+  for (const name of ['SegmentedControl', 'Stepper', 'ChipGroup', 'LessonCard', 'DockedAction', 'GeneratorLayout', 'PaperPreview']) {
+    assert.match(worksheet, new RegExp(`from '@/components/generator/${name}'`), `worksheet.tsx does not import ${name}`);
+    assert.match(worksheetCode, new RegExp(`<${name}\\b`), `worksheet.tsx imports ${name} and does not draw it`);
+  }
+});
+
+test('the worksheet keeps TopicSelector mounted: inside the lesson card, never behind a condition', () => {
+  assert.equal((worksheetCode.match(/<TopicSelector\b/g) ?? []).length, 1);
+  assert.match(worksheetCode, /<LessonCard[\s\S]*<TopicSelector\b[\s\S]*<\/LessonCard>/, 'TopicSelector must sit inside LessonCard');
+  assert.doesNotMatch(worksheetCode, /lessonOpen\s*(\?|&&)/, 'the open state may only change the card, never mount or unmount the pickers');
+  assert.match(worksheetCode, /allowedKinds=\{\['lesson', 'unit', 'semester', 'book'\]\}/);
+  assert.match(worksheetCode, /onScopeChange=\{wideScope\.setScopeSel\}\s+offlineWideScope/);
+  assert.match(worksheetCode, /hasError=\{!!error && !topic\}/);
+  // The pickers the card wraps are the same ones, with the teacher's scope applied.
+  assert.match(worksheetCode, /<PickerField label=\{t\('grade'\)\}[^>]*hidden=\{teacherScope\.gradeHidden\}/);
+  assert.match(worksheetCode, /<StrandedSelectionNote\b/);
+  assert.match(worksheetCode, /<PickerField label=\{t\('subjects'\)\}[^>]*hidden=\{subjectHidden\}/);
+  assert.match(worksheetCode, /<LessonCard[\s\S]*<StrandedSelectionNote\b[\s\S]*<\/LessonCard>/, 'the note is part of the card body');
+});
+
+test('the worksheet still carries the lesson by id, and keeps its state names and saved positions', () => {
+  assert.match(worksheetCode, /usePickedLesson\(/);
+  assert.match(worksheetCode, /resolveGeneratorGrounding\(/);
+  assert.match(worksheetCode, /lessonId: pickedLesson\.lessonId/);
+  for (const name of ['gradeIdx', 'subjectIdx', 'diffIdx', 'numQIdx', 'selectedTypes', 'includePriorReview']) {
+    const cap = name[0]!.toUpperCase() + name.slice(1);
+    assert.match(worksheetCode, new RegExp(`\\[${name}, set${cap}\\] = useState`), `state ${name} was renamed or removed`);
+  }
+  assert.match(worksheetCode, /const \[topic, setTopic\] = useState/);
+  assert.match(worksheet, /const NUM_Q_OPTIONS = ALL_QUESTION_COUNTS;/);
+  assert.match(worksheet, /const DIFFICULTY_IDS: DifficultyLevel\[\] = \['normal', 'high', 'difficult'\];/);
+  // Appended, never inserted: the types are persisted in formState.
+  assert.match(worksheet, /const ALL_Q_TYPES: QType\[\] = \['multiple_choice', 'short_answer', 'fill_blank', 'true_false', 'word_problem', 'match', 'order', 'spot_error', 'graph'\];/);
+  assert.match(worksheet, /diffIdx, numQIdx: effNumQIdx, selectedTypes: JSON\.stringify\(Array\.from\(selectedTypes\)\)/);
+  assert.match(worksheet, /materialKind: isHomework \? 'homework' : 'worksheet',\s+isHomework,/);
+});
+
+test('difficulty and count are a segmented control and a stepper over the same arrays and indices', () => {
+  assert.match(worksheetCode, /<SegmentedControl label=\{t\('difficultyLabel'\)\} options=\{diffLabels\} index=\{diffIdx\} onChange=\{/);
+  assert.match(worksheetCode, /<Stepper label=\{t\('numQuestionsLabel'\)\} options=\{numQLabels\.slice\(0, visibleCountOptions\(wideScope\.isWide\)\)\} index=\{effNumQIdx\} onChange=\{setNumQIdx\}/);
+  assert.match(worksheetCode, /const effNumQIdx = clampCountIndex\(numQIdx, wideScope\.isWide\);/);
+  assert.match(worksheetCode, /const diffLabels = \[t\('difficultyNormal'\), t\('difficultyHigh'\), t\('difficultyDifficult'\)\];/);
+});
+
+test('no dropdown is left for a short list on the worksheet', () => {
+  assert.doesNotMatch(worksheetCode, /<PickerField\b[^>]*label=\{t\('(difficultyLabel|numQuestionsLabel|distributionLabel|questionTypesLabel)'\)\}/);
+  assert.doesNotMatch(worksheetCode, /<Button\b/, 'both generate actions are the DockedAction now');
+  assert.doesNotMatch(worksheetCode, /ALL_Q_TYPES\.filter\([^)]*\)\.map\(type => \{\s*const greyed/, 'the types are chips, not a column of checkbox rows');
+});
+
+test('in three-level mode the difficulty control switches papers, with the same handler as before', () => {
+  assert.match(worksheetCode, /onChange=\{i => \(levels \? showLevel\(i\) : setDiffIdx\(i\)\)\}/);
+  // showLevel is untouched: it files the paper on screen under its own level before swapping.
+  assert.match(worksheetCode, /const showLevel = \(i: number\) => \{\s+if \(!levels \|\| !result \|\| i === diffIdx\) return;/);
+});
+
+test('the distribution control appears on a wide scope only', () => {
+  assert.match(worksheetCode, /\{wideScope\.isWide && \(\s*<SegmentedControl\s+label=\{t\('distributionLabel'\)\}/);
+  assert.match(worksheetCode, /wideScope\.setDistribution\(DISTRIBUTIONS\[i\]!\)/);
+});
+
+test('a ported screen draws the docked bar on a phone and the inline action on desktop', () => {
+  // The worksheet once built `action` and never rendered `action(true)`: a phone had no button at all.
+  for (const [name, src] of [['quiz', code(read('app', 'ai-tools', 'quiz.tsx'))], ['worksheet', worksheetCode]] as const) {
+    assert.match(src, /\{isDesktop \? null : action\(true\)\}/, `${name}: no docked bar on a phone`);
+    assert.match(src, /\{action\(false\)\}/, `${name}: no inline action under the desktop preview`);
+  }
+});
+
+test('question types are chips with the at-least-one rule, and a greyed format stays disabled', () => {
+  assert.match(worksheetCode, /<ChipGroup\b[^>]*onToggle=\{toggleType\}[^>]*min=\{1\}/);
+  assert.match(worksheetCode, /if \(next\.size === 1\) return prev;/, 'toggleType lost its last-type guard');
+  // Same list, same filter, same greying as the old checkbox column.
+  assert.match(worksheetCode, /ALL_Q_TYPES\s*\.filter\(type => !isFormatKind\(type\) \|\| shownFormats\.includes\(type\)\)/);
+  assert.match(worksheetCode, /disabled: isFormatKind\(type\) && greyedFormats\.includes\(type\)/);
+  assert.match(worksheetCode, /isTickChecked\(o\.id, selectedTypes, tickCtx\)/, 'a greyed tick must draw unchecked');
+  assert.match(worksheetCode, /\{greyedFormats\.length > 0 \? \(/);
+  assert.match(worksheetCode, /t\('formatUnavailable'\)/);
+  // The request still sanitises the stored selection, so a greyed tick is dropped from it.
+  assert.match(worksheetCode, /questionTypes: Array\.from\(sanitizeQuestionTypes\(selectedTypes, tickCtx\)\)/);
+  assert.match(worksheetCode, /setSelectedTypes\(prev => sanitizeQuestionTypes\(prev, \{ isHomework, availability: null \}\)\)/);
+});
+
+test('the prior-knowledge review is still one checkbox: hidden on a wide scope, disabled with its note', () => {
+  assert.match(worksheetCode, /\{wideScope\.isWide \? null : \(\s*<View style=\{\[surface, styles\.priorCard\]\}>\s*<CheckboxRow/);
+  assert.match(worksheetCode, /checked=\{includePriorReview && priorReviewAvailable\}/);
+  assert.match(worksheetCode, /disabled=\{!priorReviewAvailable\}/);
+  assert.match(worksheetCode, /t\('priorReviewUnavailableNote'\)/);
+  assert.match(worksheetCode, /includePriorReview: wide \? false : includePriorReview,/);
+  assert.match(worksheetCode, /accessibilityRole="checkbox"\s+aria-checked=\{checked\}/);
+  assert.match(worksheetCode, /minHeight: 44/);
+});
+
+test('the worksheet screen keeps the worked-example note for the worksheet only', () => {
+  assert.match(worksheetCode, /\{isHomework \? null : \(\s*<Text[^>]*>\s*\{t\('numQuestionsIncludesExample'\)\}/);
+});
+
+test('both generate actions are in the docked spot, and neither can start while there is no lesson', () => {
+  assert.match(worksheetCode, /onPress=\{\(\) => generate\(\)\}/);
+  assert.match(worksheetCode, /secondary=\{\{ label: t\('worksheetThreeLevelsBtn'\), onPress: \(\) => generate\(\{ levels: true \}\), disabled: !topic\.trim\(\) \}\}/);
+  assert.match(worksheetCode, /disabled=\{!topic\.trim\(\)\}/);
+  // Not needTopicHint: it says «أعلاه»/"above", wrong when the button is in the desktop side column.
+  assert.match(worksheetCode, /hint=\{t\('genNeedLessonHint'\)\}/);
+  assert.doesNotMatch(worksheetCode, /needTopicHint/);
+  assert.match(worksheetCode, /\{error && !topic\.trim\(\) \? <Text/);
+  assert.match(worksheetCode, /if \(!topic\.trim\(\)\) \{ setError\(t\('topicRequired'\)\); return; \}/);
+  assert.match(worksheetCode, /hidden=\{docked && saveBarVisible\}/);
+  assert.match(worksheetCode, /\{action\(false\)\}/);
+  // The docked bar is the phone's; the desktop one sits under the preview.
+  assert.match(worksheet, /<GeneratorLayout form=\{form\} side=\{side\} isDesktop=\{isDesktop\} \/>/);
+});
+
+test('homework still shares the screen: the concept, title, subtitle and button follow isHomework', () => {
+  assert.match(worksheetCode, /const isHomework = readHomeworkParam\(params\.isHomework\);/);
+  assert.match(worksheetCode, /concept=\{isHomework \? 'homework' : 'worksheet'\}/);
+  assert.match(worksheetCode, /title=\{isHomework \? t\('createHomework'\) : t\('createWorksheetTitle'\)\}/);
+  assert.match(worksheetCode, /subtitle=\{isHomework \? t\('homeworkSubtitle'\) : t\('worksheetSubtitle'\)\}/);
+  assert.match(worksheetCode, /t\(isHomework \? 'genHomeworkBtn' : 'createWorksheetBtn'\)/);
+  assert.match(worksheetCode, /t\(isHomework \? 'genPreviewHomeworkNote' : 'genPreviewWorksheetNote'\)/);
+  assert.match(worksheetCode, /generateHomework\(req/);
+  assert.match(worksheetCode, /generateWorksheet\(req/);
+});
+
+test('the worksheet wears its concept colour (the homework its own), and not the global palette, in the form', () => {
+  assert.match(worksheetCode, /const ACCENT = conceptOf\(isHomework \? 'homework' : 'worksheet'\)\.color;/);
+  assert.match(worksheetCode, /const accentInk = readableOn\(ACCENT, colors\.card\);/);
+  assert.doesNotMatch(worksheetCode, /ACCENT_FILL/);
+  assert.doesNotMatch(worksheetCode, /ACCENT = palette/);
+  // Text and rings on a card use the ink; the pickers and the selector too.
+  assert.match(worksheetCode, /<TopicSelector[\s\S]*?accent=\{accentInk\}/);
+  assert.match(worksheetCode, /<PickerField label=\{t\('grade'\)\}[^>]*accent=\{accentInk\}/);
+  assert.match(worksheetCode, /<GenerationStatus[\s\S]*?accent=\{accentInk\}/);
+  assert.match(worksheetCode, /<GeneratorResultActions\s+accent=\{accentInk\}/);
+  assert.match(worksheetCode, /<GeneratorSaveBar accent=\{accentInk\}/);
+  // Solid fills (the buttons) take the concept colour itself, which carries white at 4.5:1.
+  assert.match(worksheetCode, /<DockedAction[\s\S]*?accent=\{ACCENT\}/);
+  assert.match(worksheetCode, /textOn\(accent\)/, 'the checkbox tick is textOn the fill, not a literal white');
+});
+
+test('the form region writes no colour by hand and no KeyboardAvoidingView', () => {
+  const form = worksheetCode.slice(worksheetCode.indexOf('const form = ('), worksheetCode.indexOf('const side = ('));
+  assert.ok(form.length > 500, 'could not isolate the form region');
+  assert.doesNotMatch(form, /#[0-9A-Fa-f]{3,8}\b/);
+  assert.doesNotMatch(form, /\brgba?\(/);
+  assert.doesNotMatch(form, /\bpalette\b/);
+  const checkbox = worksheetCode.slice(worksheetCode.indexOf('function CheckboxRow('), worksheetCode.indexOf('function PickerField('));
+  assert.doesNotMatch(checkbox, /#[0-9A-Fa-f]{3,8}\b/);
+  assert.doesNotMatch(worksheetCode, /KeyboardAvoidingView/);
+  assert.doesNotMatch(worksheetCode, /accessibilityState=/);
+});
+
+test('generation, saving and the result are untouched', () => {
+  assert.match(worksheetCode, /buildWorksheetRequest\(\{/);
+  assert.match(worksheetCode, /Promise\.allSettled\(LEVELS\.map\(d => call\(\{ \.\.\.baseReq, difficulty: d \}\)\)\)/);
+  assert.match(worksheetCode, /<GenerationStatus\b/);
+  assert.match(worksheetCode, /<GeneratorResultActions\b/);
+  assert.match(worksheetCode, /<GeneratorSaveBar\b/);
+  assert.match(worksheetCode, /onRegenerate=\{\(\) => generate\(\{ regenerate: true \}\)\}/);
+});
+
+test('a refusal, an error or the spinner scrolls into view above a docked button, without a flash or reduced-motion animation', () => {
+  assert.match(worksheetCode, /const statusPhase = loading \? 'loading' : cancelled \? 'cancelled' : \(error && topic\.trim\(\)\) \? 'error' : 'idle';/);
+  assert.match(worksheetCode, /<GenerationStatus\s+phase=\{statusPhase\}/);
+  assert.match(worksheetCode, /<View onLayout=\{e => \{ statusY\.current = e\.nativeEvent\.layout\.y; \}\}>\s*<GenerationStatus/);
+  assert.match(worksheetCode, /useLayoutEffect\(\(\) => \{\s*if \(isDesktop \|\| statusPhase === 'idle'\) return;/);
+  assert.match(worksheetCode, /scrollRef\.current\?\.scrollTo\(\{ y: Math\.max\(0, statusY\.current - SPACE\.lg\), animated: !reduceMotion \}\);\s*\}, \[statusPhase, attempt\]\);/);
+  assert.match(worksheetCode, /const reduceMotion = useReduceMotion\(\);/);
+});
+
+test('a stranded grade/subject pair keeps the worksheet lesson card open, so its note is never folded away', () => {
+  assert.match(worksheetCode, /const stranded = subjectHidden\?\.\[subjectIdx\] === true;/);
+  assert.match(worksheetCode, /expanded=\{lessonOpen \|\| stranded\}/);
+  assert.match(worksheetCode, /locked=\{!topic\.trim\(\) \|\| stranded\}/);
+});
+
+test('the summary counts the types the request will carry, not the chips ticked', () => {
+  assert.match(worksheetCode, /const requestTypes = sanitizeQuestionTypes\(selectedTypes, tickCtx\);/);
+  assert.match(worksheetCode, /const ticked = ALL_Q_TYPES\.filter\(type => requestTypes\.has\(type\)\);/);
+  assert.match(worksheetCode, /summaryLine\(\{ questions: NUM_Q_OPTIONS\[effNumQIdx\], kinds: ticked\.length, level: diffLabels\[diffIdx\] \}, uiLang\)/);
+});
+
+// ── Review fixes: ink on a card, the primary label, the repeated refusal ────
+
+test('the worksheet draws no text, icon or outline in the raw concept colour: on a card it is accentInk', () => {
+  // The concept colour is a fill (it carries white at 4.5:1); as ink on the dark card it is 3:1.
+  // Allowed raw uses: solid fills (`backgroundColor: ACCENT`, `accent={ACCENT}` props to fills) and
+  // alpha tints (`ACCENT + '15'`). Forbidden: `color: ACCENT`, `color={ACCENT}`, a ternary that
+  // yields ACCENT as a colour, and a bare `borderColor: ACCENT`.
+  const bad: string[] = [];
+  worksheetCode.split('\n').forEach((line, i) => {
+    if (/\bcolor\s*[:=]\s*\{?\s*ACCENT\b/.test(line)
+      || /\bcolor\s*[:=]\s*\{?[^\n]*?[?:]\s*ACCENT\b(?!\s*\+)/.test(line)
+      || /\bborderColor\s*:\s*ACCENT\b(?!\s*\+)/.test(line)) bad.push(`${i + 1}: ${line.trim().slice(0, 100)}`);
+  });
+  assert.deepEqual(bad, [], 'use accentInk (readableOn(ACCENT, colors.card)) for ink on a card');
+  assert.ok((worksheetCode.match(/\baccentInk\b/g) ?? []).length >= 20, 'the result area should read accentInk');
+  // The ACTIVE level tab is an ACCENT fill, so its label is textOn(ACCENT), not a fixed palette colour.
+  assert.match(worksheetCode, /color: active \? textOn\(ACCENT\) : accentInk,/);
+  assert.doesNotMatch(worksheetCode, /palette\.primaryForeground/);
+});
+
+test('the ink check itself catches the forms it is meant to catch', () => {
+  const flags = (line: string) => /\bcolor\s*[:=]\s*\{?\s*ACCENT\b/.test(line)
+    || /\bcolor\s*[:=]\s*\{?[^\n]*?[?:]\s*ACCENT\b(?!\s*\+)/.test(line)
+    || /\bborderColor\s*:\s*ACCENT\b(?!\s*\+)/.test(line);
+  for (const bad of [
+    "<Text style={{ color: ACCENT }}>",
+    '<Ionicons color={ACCENT} />',
+    "{ color: wanted ? ACCENT : colors.mutedForeground }",
+    "{ color: active ? palette.x : ACCENT }",
+    "{ borderColor: ACCENT, borderRadius: 1 }",
+  ]) assert.ok(flags(bad), `should flag: ${bad}`);
+  for (const ok of [
+    "{ backgroundColor: ACCENT, borderRadius: 1 }",
+    "{ backgroundColor: ACCENT + '15', borderColor: ACCENT + '30' }",
+    "{ color: active ? textOn(ACCENT) : accentInk }",
+    "<DockedAction accent={ACCENT} />",
+  ]) assert.ok(!flags(ok), `should not flag: ${ok}`);
+});
+
+test('the primary label is centred and may take two lines, and the secondary stays two lines', () => {
+  const src = code(read('components', 'generator', 'DockedAction.tsx'));
+  assert.match(src, /<Text numberOfLines=\{2\} style=\{\[styles\.label, \{ color: ink \}\]\}>\{label\}<\/Text>/);
+  assert.match(src, /label: \{[^}]*textAlign: 'center'/);
+  assert.match(src, /minHeight: 50/);
+  assert.match(src, /<Text numberOfLines=\{2\} style=\{\[styles\.secondaryLabel/);
+});
+
+test('a disabled chip never counts towards min', () => {
+  const src = code(read('components', 'generator', 'ChipGroup.tsx'));
+  assert.match(src, /const counted = options\.filter\(o => !o\.disabled && selected\.has\(o\.id\)\)\.length;/);
+  assert.match(src, /const locked = on && !off && counted <= min;/);
+  assert.doesNotMatch(src, /selected\.size/);
+});
+
+test('pressing generate again on the same refusal scrolls to it again: the effect also depends on an attempt counter', () => {
+  for (const [name, src] of [['quiz', quizCode], ['worksheet', worksheetCode]] as const) {
+    assert.match(src, /const \[attempt, setAttempt\] = useState\(0\);/, `${name}: no attempt counter`);
+    // Bumped first thing in generate, before any early return (the refusals), and nothing else about generate moves.
+    assert.match(src, /const generate = async \(opts\?: \{[^}]*\}\) => \{\s*(\/\/[^\n]*\n\s*)*setAttempt\(n => n \+ 1\);\s*const previous = result;/, `${name}: attempt is not bumped at the start of generate`);
+    assert.match(src, /\}, \[statusPhase, attempt\]\);/, `${name}: the effect ignores the attempt`);
+    assert.match(src, /if \(isDesktop \|\| statusPhase === 'idle'\) return;/, `${name}: an idle form must not scroll`);
+  }
 });

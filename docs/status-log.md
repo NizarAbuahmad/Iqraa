@@ -10,6 +10,68 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Generator screens: the worksheet and homework — 2026-10-23
+
+PR 2 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`. The worksheet screen
+(`app/ai-tools/worksheet.tsx`, which is also the homework tool through `isHomework`) is ported to the
+shared pieces of `components/generator/`, the same way the quiz was. Mobile only: nothing here changes
+what is asked of the model, the API, or what is stored. The homework tool is in the spec's "not in
+scope" list, but it is the same file and the same form, so it comes with the worksheet and wears its own
+concept colour (cyan) and button («جهّز الواجب البيتي»).
+
+**What changed**
+| Field | Control |
+|---|---|
+| Grade, subject, `TopicSelector` | `LessonCard` body (unchanged pickers, `StrandedSelectionNote`, `hasError`) |
+| Distribution (wide scope only) | `SegmentedControl`, same condition |
+| Difficulty (`diffIdx`) | `SegmentedControl`; the handler is still `levels ? showLevel(i) : setDiffIdx(i)` |
+| Question count (`numQIdx`) | `Stepper` over `numQLabels.slice(0, visibleCountOptions(wideScope.isWide))` |
+| Question types | `ChipGroup`, `min={1}`; a format the lesson's bank cannot build is a disabled chip |
+| Prior-knowledge review | one labelled checkbox row (hidden on a wide scope, disabled with its note) |
+| Both generate actions | one `DockedAction`: primary, plus the new `secondary` («ثلاثة مستويات دفعة واحدة») |
+
+- `ChipGroup` gained a per-chip `disabled` (dimmed, `aria-disabled`, not pressable, not counted
+  towards `min`). `DockedAction` gained an optional `secondary` action on the same row as the primary,
+  so the bar is no taller; the primary label may wrap to two lines (centred). Both are backward-compatible
+  with the quiz.
+- `ACCENT` is the concept colour (`conceptOf(isHomework ? 'homework' : 'worksheet').color`). Text, icons
+  and outlines on a card in the result area now use `accentInk` (`readableOn`): the first cut left about 19
+  uses of the raw colour, which measured 3.0:1 on the dark card (it was 8.9:1 with the old light teal).
+  The active level tab's label is `textOn(ACCENT)`.
+- `generatorSummary.ts`: the summary line can close with the level («20 سؤالًا · 3 أنواع · مرتفع»); the
+  line counts the types the REQUEST will carry (`sanitizeQuestionTypes`), not a greyed format's tick.
+- i18n: `genPreviewWorksheetNote`, `genPreviewHomeworkNote`, `genHomeworkBtn`, both languages
+  (the English homework button is «Prepare homework»; the English worksheet button keeps the name
+  `howMakeWorksheet` quotes).
+- Fixed in both ported screens (review): pressing generate again on the SAME refusal
+  (`subjectTopicMismatch`, `scopeNoCurriculum`, `wideScopeUngrounded`) did nothing visible, because the
+  scroll-to-status effect only fired when the phase changed. An `attempt` counter, bumped first thing in
+  `generate`, is now in its dependencies.
+- Found by the screenshots, not the tests: the first cut built `action` and never rendered
+  `action(true)`, so a phone had no generate button at all. `generatorScreens.test.ts` now pins
+  `{isDesktop ? null : action(true)}` and `{action(false)}` on both screens.
+
+**Pinned by tests** (`generatorScreens.test.ts`, `generatorSummary.test.ts`): the persisted state names,
+option arrays and `formState` of the worksheet; the lesson carried by id; `TopicSelector` once, inside
+`LessonCard`, never conditional; no `PickerField` left for a short list; the levels-mode difficulty
+handler; the at-least-one rule and the greyed-format chips; the prior-review conditions; both actions
+docked; no raw `ACCENT` as a colour in the file (a second test proves the checker flags the bad forms
+and lets fills and tints through); `attempt` in the scroll effect's dependencies on both screens.
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,077 tests, 7,067 pass, 10 skipped, 0 fail.
+Web-build screenshots, Arabic phone (390) and desktop (1366), light and dark, worksheet and homework,
+with and without a lesson; English at 360; a generated result in dark. An independent review found no
+blocker and the three defects above, all fixed.
+
+**Not verified:** any device (the Android keyboard hiding the bar, the iOS safe area, touch feel, screen
+readers); the English label at 320 dp; a wide scope (distribution control, hidden prior review); three-level
+mode switching papers; a lesson with a thin bank in the browser beyond the chemistry-free math lesson used.
+
+**Known limits.** The summary line does not name «three levels» while the teacher is about to press it; it
+names the selected level. The preview does not claim a worked example (that depends on the grounded
+lesson). The homework loading text still says «ورقة العمل» (`GenerationStatus` is out of scope). The
+result view's remaining raw-`ACCENT` fills and tints are unchanged.
+
 ## Grade 5 grammar in the English corner — built, shown to nobody yet, 2026-10-23
 
 The ten Grade 5 grammar lessons that were already in the hub (`kbl-g5-eng-s1-nccd-u1_l1` … `s2-nccd-u10_l1`) now have
