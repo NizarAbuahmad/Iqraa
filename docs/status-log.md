@@ -10,6 +10,29 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat app-help, eighteenth live pass: live games, the interactive class, slides, activities, quizzes, worksheets — 2026-10-23
+
+A 30-question pass on app.iqrra.com found the chat answering app-specific "how do I" questions
+from the model, which invented menus (a generic "live game on a learning platform"), refused
+(«خارج مجال عملي») or gave general teaching advice. 14 new places and extra wordings for 4
+existing ones (`whiteboard`, `difficulty`, `broadcast`) in `artifacts/mobile/services/appHelp.ts`,
+with the answers (`how*`, ar + en) in `i18n.ts`: starting a live game (present a deck → «العب
+أسئلة العرض كتحدي بين الفرق» → «العب مباشرة على الأجهزة»), how students join (6-character code,
+name, no account), the 100-player / 3–30 question / 20 s limits (`MAX_PLAYERS`,
+`LIVE_MIN/MAX_QUESTIONS`, `LIVE_DEFAULT_SECONDS`), the end-of-game screen, what «الحصة
+التفاعلية» is, building an interactive deck and slides from pasted text (both through the
+hidden «إنشاء عرض تفاعلي», reached from «شرائح الدرس»), the six deck looks, activity types, the
+quiz's four question types, the worksheet's «ثلاثة مستويات دفعة واحدة», the automatic worked
+example and the question count. Every claim was read off the screen or constant it describes;
+the answers that say what does **not** exist (no essay question or shuffle in the quiz, no
+group-size field before building an activity, no button for the worked example) are the ones
+the model got wrong most confidently. Pinned in `appHelp.test.ts` with near-misses that must
+stay with the model.
+
+**Not done, deliberately:** «مسار الدرس» (its tool is `hidden`), the homework generator (also
+hidden, reached only through chat), sorting homework by due date (unverified), and teaching
+questions. **Not claimed:** whether live-game results are stored after the game ends.
+
 ## Duplicate-key 409s answered 500 — 2026-10-22
 
 drizzle-orm 0.45 rethrows every driver
