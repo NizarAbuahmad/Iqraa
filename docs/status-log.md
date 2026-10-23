@@ -10,6 +10,63 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Iqraa draws its own icons — 2026-10-23
+
+Step two of the icon work. Sixteen drawings, approved from a review sheet
+(the "Iqraa Icon Set" artifact), now replace stock Ionicons glyphs for the
+concepts a teacher meets most. Before this, every tool and corner wore a glyph
+any Ionicons app shares.
+
+**What changed**
+- `constants/glyphs.ts` holds the drawings as data: lesson plan, worksheet,
+  quiz, slides, activity, homework, assessment, class challenge, classes,
+  library, messages, and the five corners (maths, lab, Quran, English, games).
+  One style for all of them: a 24-unit grid, a 1.75 stroke with round ends, and
+  two tones (the outline in the concept colour, the main shape filled at 18%).
+  The assessment's tick badge cuts its disc out of the sheet beneath with an
+  evenodd clip, so it reads on any background without painting one.
+- `components/ui/Glyph.tsx` draws them with react-native-svg (already in the
+  binary, so no native change and no `app.json` version bump). `ConceptIcon`
+  draws a concept's drawing when it has one and its stock glyph otherwise.
+- `CONCEPTS` gains `glyph` for the nine concepts that have one, the catalog and
+  `PREP_ROWS` carry it, and corners gain `drawing`. They are drawn on:
+  - the Tools tab;
+  - Today's quick tools, phone and desktop;
+  - the prep board;
+  - the chat "+" menu;
+  - generator headers (`ToolHeader` → `IconTile`);
+  - the library's corner tiles;
+  - «شُعبي» in the profile menu and each class card;
+  - the homework push setting.
+
+**Pinned:** `services/__tests__/glyphs.test.ts` pins:
+- the set is the approved sixteen;
+- each drawing is two-tone and stays inside its box;
+- a cut is declared and used;
+- the catalog, the prep rows and the corners carry their drawings;
+- every drawing is used, apart from a held list with reasons;
+- the shared pieces actually render them.
+
+`iconSystem.test.ts` now also checks literal `ConceptIcon`/`Glyph` sizes against
+the scale, and the readableOn check on tool glyphs.
+
+**Held back:** `library` and `messages` are drawn but unused. Their place is the
+tab bar, and drawing three of seven tabs would mix two styles in one row. They
+wait until Today, chat, tools and profile have drawings too. The interactive
+class, the parent message, lesson flow, prompt slides and GeoGebra have no
+drawing yet and keep their stock glyphs, so the Tools tab shows nine drawings
+and two stock icons.
+
+**Verified:**
+- mobile `pnpm test`: 6,864 pass, 0 fail;
+- typecheck clean;
+- web-build screenshots, light and dark, phone and desktop, of the Tools tab,
+  Today, the library, profile, classes and the quiz generator header.
+
+**Not verified:** rendering on Android and iOS devices. react-native-svg
+already draws the logo and the corner motifs there, but these exact drawings
+have not been checked at 16px on a phone.
+
 ## Grade 9 grammar pilot (Unit 4) in the English corner — built, shown to nobody yet, 2026-10-23
 
 The first Grade 9 grammar, on **one unit only**: S1 U4 «A good buy», two hub lessons —

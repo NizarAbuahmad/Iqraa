@@ -49,11 +49,11 @@ test('the scale is the one the sweep mapped onto', () => {
   assert.deepEqual([...ICON_DISPLAY], [32, 40, 48, 64]);
 });
 
-test('every literal Ionicons size is on the icon scale', () => {
+test('every literal icon size (Ionicons, ConceptIcon, Glyph) is on the icon scale', () => {
   const off: string[] = [];
   let seen = 0;
   for (const { rel, src } of files) {
-    for (const m of src.matchAll(/<Ionicons\b[\s\S]*?\/>/g)) {
+    for (const m of src.matchAll(/<(?:Ionicons|ConceptIcon|Glyph)\b[\s\S]*?\/>/g)) {
       for (const n of literalSizes(m[0])) {
         seen++;
         if (!SCALE.has(n)) off.push(`${rel}: size ${n}`);
@@ -255,9 +255,9 @@ const TOOL_GLYPH_FILES = [
 test('a tool glyph on a card goes through readableOn', () => {
   for (const rel of TOOL_GLYPH_FILES) {
     const src = readFileSync(join(root, rel), 'utf8');
-    assert.match(src, /<Ionicons name=\{tool\.icon\}[^>]*color=\{readableOn\(tool\.color, colors\.card, 3\)\}/, `${rel} draws the tool glyph without readableOn`);
+    assert.match(src, /<ConceptIcon icon=\{tool\.icon\} glyph=\{tool\.glyph\}[^>]*color=\{readableOn\(tool\.color, colors\.card, 3\)\}/, `${rel} draws the tool glyph without readableOn`);
   }
-  const raw = files.filter(f => /<Ionicons\b[^>]*color=\{tool\.color\}/.test(f.src)).map(f => f.rel);
+  const raw = files.filter(f => /<(?:Ionicons|ConceptIcon|Glyph)\b[^>]*color=\{tool\.color\}/.test(f.src)).map(f => f.rel);
   assert.deepEqual(raw, [], 'a raw tool.color glyph on a card: wrap it in readableOn(tool.color, colors.card, 3)');
 });
 

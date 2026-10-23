@@ -7,7 +7,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { goBack } from '@/services/navigation';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { IconTile } from '@/components/ui/IconTile';
-import { CONCEPTS, ICON, type ConceptId } from '@/constants/icons';
+import { ICON, conceptOf, type ConceptId } from '@/constants/icons';
 
 interface Props {
   title: string;
@@ -75,7 +75,7 @@ export function ToolHeader({ title, subtitle, eyebrow, leading, concept, sourceB
         </View>
       ) : null}
       <View style={[styles.titleRow, row]}>
-        {concept ? <IconTile icon={CONCEPTS[concept].icon} color={CONCEPTS[concept].color} size={36} tone="onBand" /> : null}
+        {concept ? <IconTile icon={conceptOf(concept).icon} glyph={conceptOf(concept).glyph} color={conceptOf(concept).color} size={36} tone="onBand" /> : null}
         {!concept && typeof leading === 'string' ? <Text style={styles.emoji}>{leading}</Text> : null}
         {!concept && leading && typeof leading === 'object' ? <Ionicons name={leading.icon} size={ICON.xl} color="#fff" /> : null}
         <Text style={[styles.title, align]}>{title}</Text>

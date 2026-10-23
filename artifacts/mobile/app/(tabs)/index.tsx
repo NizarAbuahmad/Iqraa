@@ -28,6 +28,7 @@ import {
 } from 'react-native';
 import { Redirect, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { ConceptIcon } from '@/components/ui/Glyph';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
@@ -280,7 +281,7 @@ function LessonWorkspace() {
                 accessibilityLabel={t(tool.titleKey as never)}
               >
                 <View style={[s.toolIcon, { backgroundColor: tool.color + '1F' }]}>
-                  <Ionicons name={tool.icon} size={24} color={readableOn(tool.color, colors.card, 3)} />
+                  <ConceptIcon icon={tool.icon} glyph={tool.glyph} size={24} color={readableOn(tool.color, colors.card, 3)} />
                 </View>
                 <Text numberOfLines={1} style={[s.toolText, { color: colors.foreground }]}>
                   {t(tool.titleKey as never)}

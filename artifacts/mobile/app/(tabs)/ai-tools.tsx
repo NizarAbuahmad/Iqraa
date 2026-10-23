@@ -2,6 +2,7 @@ import React from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { ConceptIcon } from '@/components/ui/Glyph';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -85,7 +86,7 @@ function ToolCard({
       style={[styles.gridCard, phone && styles.gridCardPhone, surface]}
     >
       <View style={[styles.gridIconWrap, { backgroundColor: tool.color + '1A', borderRadius: 16 }]}>
-        <Ionicons name={tool.icon} size={32} color={readableOn(tool.color, colors.card, 3)} />
+        <ConceptIcon icon={tool.icon} glyph={tool.glyph} size={32} color={readableOn(tool.color, colors.card, 3)} />
       </View>
       <View style={[styles.gridTitleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: 'center' }]}>

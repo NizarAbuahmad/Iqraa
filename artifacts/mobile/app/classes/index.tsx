@@ -328,7 +328,7 @@ function ClassesList() {
               style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }, numColumns > 1 && { flex: 1 }]}
             >
               {/* The tile wears the class's first subject, so a list of classes sorts by colour before it is read. */}
-              <IconTile icon="people-outline" color={subjectChipColor(classSubjectIds(item)[0], colors.card)} size={44} />
+              <IconTile icon="people-outline" glyph="classes" color={subjectChipColor(classSubjectIds(item)[0], colors.card)} size={44} />
               <View style={{ flex: 1 }}>
                 <Text
                   style={[

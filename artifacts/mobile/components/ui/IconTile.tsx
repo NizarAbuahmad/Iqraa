@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import type { GlyphId } from '@/constants/glyphs';
 import { TILE_ICON, type IconName, type TileSize } from '@/constants/icons';
 import { RADIUS } from '@/constants/theme';
 import { useColors } from '@/hooks/useColors';
 import { readableOn } from '@/services/readableColor';
+import { ConceptIcon } from './Glyph';
 
 /**
  * A rounded square that leads a list row or card: the glyph in its concept's
@@ -20,12 +21,15 @@ import { readableOn } from '@/services/readableColor';
  */
 export function IconTile({
   icon,
+  glyph,
   color,
   size = 44,
   tone = 'soft',
   style,
 }: {
   icon: IconName;
+  /** Iqraa's own drawing, drawn in place of `icon` when the concept has one. */
+  glyph?: GlyphId;
   color: string;
   size?: TileSize;
   tone?: 'soft' | 'onBand';
@@ -50,7 +54,7 @@ export function IconTile({
         style,
       ]}
     >
-      <Ionicons name={icon} size={TILE_ICON[size]} color={readableOn(color, onBand ? '#FFFFFF' : colors.card)} />
+      <ConceptIcon icon={icon} glyph={glyph} size={TILE_ICON[size]} color={readableOn(color, onBand ? '#FFFFFF' : colors.card)} />
     </View>
   );
 }

@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import type { GlyphId } from '@/constants/glyphs';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -32,8 +33,8 @@ function InfoRow({ icon, label, value, color, isRTL }: { icon: keyof typeof Ioni
   );
 }
 
-function SettingRow({ icon, label, onPress, destructive, isRTL, colors }: {
-  icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void;
+function SettingRow({ icon, glyph, label, onPress, destructive, isRTL, colors }: {
+  icon: keyof typeof Ionicons.glyphMap; glyph?: GlyphId; label: string; onPress: () => void;
   destructive?: boolean; isRTL: boolean; colors: ReturnType<typeof useColors>;
 }) {
   const surface = useSurface();
@@ -43,7 +44,7 @@ function SettingRow({ icon, label, onPress, destructive, isRTL, colors }: {
       accessibilityRole="button"
       style={[styles.settingRow, surface, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
     >
-      <IconTile icon={icon} color={destructive ? colors.destructive : colors.primary} size={36} />
+      <IconTile icon={icon} glyph={glyph} color={destructive ? colors.destructive : colors.primary} size={36} />
       <Text style={[styles.settingLabel, { color: destructive ? colors.destructive : colors.foreground, fontFamily: 'ReadexPro_500Medium', flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
         {label}
       </Text>
@@ -349,7 +350,7 @@ export default function ProfileScreen() {
                 actually calendar-shaped — it was sitting on خطط التدريس,
                 which is a list of plans, not a calendar. */}
             <View style={{ marginTop: 8, gap: 8 }}>
-              <SettingRow icon="people-outline" label={t('myClasses')} onPress={() => router.push('/classes')} isRTL={isRTL} colors={colors} />
+              <SettingRow icon="people-outline" glyph="classes" label={t('myClasses')} onPress={() => router.push('/classes')} isRTL={isRTL} colors={colors} />
               <SettingRow icon="clipboard-outline" label={t('myTeachingPlans')} onPress={() => router.push('/teaching-plans' as any)} isRTL={isRTL} colors={colors} />
               <SettingRow icon="time-outline" label={t('myWeeklySchedule')} onPress={() => router.push('/schedule' as any)} isRTL={isRTL} colors={colors} />
               <SettingRow icon="calendar-outline" label={t('myCalendar')} onPress={() => router.push('/calendar' as any)} isRTL={isRTL} colors={colors} />

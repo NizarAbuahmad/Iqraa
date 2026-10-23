@@ -24,6 +24,7 @@
  * none is amber; none is a near twin of another.
  */
 import type { Ionicons } from '@expo/vector-icons';
+import type { GlyphId } from './glyphs.ts';
 
 export type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -33,20 +34,25 @@ export type IconSize = (typeof ICON)[keyof typeof ICON];
 export const ICON_DISPLAY = [32, 40, 48, 64] as const;
 export type IconDisplaySize = (typeof ICON_DISPLAY)[number];
 
-export type Concept = { icon: IconName; color: string };
+/**
+ * `glyph` is Iqraa's own drawing (`constants/glyphs.ts`), drawn in place of
+ * `icon` by `ConceptIcon`; `icon` stays as the stock fallback and for surfaces
+ * that need a font glyph name (the command palette).
+ */
+export type Concept = { icon: IconName; color: string; glyph?: GlyphId };
 
 export const CONCEPTS = {
-  'lesson-plan': { icon: 'document-text-outline', color: '#4338CA' },
-  worksheet: { icon: 'list-outline', color: '#0F766E' },
-  quiz: { icon: 'checkmark-done-outline', color: '#7C3AED' },
-  slides: { icon: 'tv-outline', color: '#0369A1' },
-  activity: { icon: 'people-outline', color: '#C2410C' },
-  homework: { icon: 'home-outline', color: '#0E7490' },
-  evaluations: { icon: 'clipboard-outline', color: '#BE185D' },
+  'lesson-plan': { icon: 'document-text-outline', color: '#4338CA', glyph: 'lesson-plan' },
+  worksheet: { icon: 'list-outline', color: '#0F766E', glyph: 'worksheet' },
+  quiz: { icon: 'checkmark-done-outline', color: '#7C3AED', glyph: 'quiz' },
+  slides: { icon: 'tv-outline', color: '#0369A1', glyph: 'slides' },
+  activity: { icon: 'people-outline', color: '#C2410C', glyph: 'activity' },
+  homework: { icon: 'home-outline', color: '#0E7490', glyph: 'homework' },
+  evaluations: { icon: 'clipboard-outline', color: '#BE185D', glyph: 'evaluations' },
   /** The class-challenge tool (tool id `game`). */
-  challenge: { icon: 'trophy-outline', color: '#BE123C' },
+  challenge: { icon: 'trophy-outline', color: '#BE123C', glyph: 'challenge' },
   /** The public games hub. */
-  games: { icon: 'game-controller-outline', color: '#15803D' },
+  games: { icon: 'game-controller-outline', color: '#15803D', glyph: 'games' },
   classroom: { icon: 'grid-outline', color: '#3F6212' },
   'parent-msg': { icon: 'mail-outline', color: '#A21CAF' },
   'lesson-flow': { icon: 'git-branch-outline', color: '#4D7C0F' },
@@ -55,6 +61,9 @@ export const CONCEPTS = {
 } as const satisfies Record<string, Concept>;
 
 export type ConceptId = keyof typeof CONCEPTS;
+
+/** A concept widened to `Concept`, so `glyph` reads as optional on any id. */
+export const conceptOf = (id: ConceptId): Concept => CONCEPTS[id];
 
 /** `IconTile` sizes and the glyph each carries (always a step on the scale). */
 export const TILE_ICON = { 36: ICON.lg, 44: ICON.xl, 56: 32 } as const;

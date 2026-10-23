@@ -62,7 +62,7 @@ import { DeckThemePicker } from '@/components/slides/DeckThemePicker';
 import { SlideEditModal } from '@/components/slides/SlideEditModal';
 import { BackButton } from '@/components/ui/BackButton';
 import { IconTile } from '@/components/ui/IconTile';
-import { CONCEPTS } from '@/constants/icons';
+import { conceptOf } from '@/constants/icons';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -380,7 +380,7 @@ export default function PromptSlidesScreen() {
         >
           <BackButton color="#fff" style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 12 }}>
-            <IconTile icon={CONCEPTS['prompt-slides'].icon} color={CONCEPTS['prompt-slides'].color} size={44} tone="onBand" />
+            <IconTile icon={conceptOf('prompt-slides').icon} glyph={conceptOf('prompt-slides').glyph} color={conceptOf('prompt-slides').color} size={44} tone="onBand" />
             <View style={{ flex: 1 }}>
               <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
                 {t('promptSlidesTitle')}

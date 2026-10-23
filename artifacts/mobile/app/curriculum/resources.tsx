@@ -39,6 +39,7 @@ import { Image } from 'expo-image';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import type { GlyphId } from '@/constants/glyphs';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLightStatusBar } from '@/hooks/useLightStatusBar';
@@ -119,7 +120,7 @@ const ACCENT = palette.primary;
 /** A corner tile's icon colours — the corner's own, so its hue is learned before it is entered. */
 const cornerLook = (id: CornerId) => CORNERS[id][scheme];
 /** A front-row tile in its corner's look and pattern. */
-const cornerTile = (id: CornerId) => ({ look: cornerLook(id), motif: CORNERS[id].motif, motifOpacity: CORNERS[id].motifOpacity });
+const cornerTile = (id: CornerId) => ({ look: cornerLook(id), glyph: CORNERS[id].drawing, motif: CORNERS[id].motif, motifOpacity: CORNERS[id].motifOpacity });
 /** The curriculum and «my exams» tiles are the library's own: brand teal and the leaf. */
 const BRAND_TILE = {
   look: { hero: palette.hero, primary: palette.primary, primaryForeground: palette.primaryForeground } as TileLook,
@@ -621,6 +622,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
   type FrontTile = {
     key: string;
     icon: React.ComponentProps<typeof Ionicons>['name'];
+    glyph?: GlyphId;
     title: string;
     desc: string;
     descStrong?: boolean;
@@ -840,6 +842,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                 key={tile.key}
                 index={i}
                 icon={tile.icon}
+                glyph={tile.glyph}
                 title={tile.title}
                 desc={tile.desc}
                 descStrong={tile.descStrong}

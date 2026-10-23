@@ -14,6 +14,7 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { ConceptIcon } from '@/components/ui/Glyph';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -255,7 +256,7 @@ export function PhoneToday() {
                     style={[s.tool, surface]}
                   >
                     <View style={[s.toolIcon, { backgroundColor: tool.color + '1A' }]}>
-                      <Ionicons name={tool.icon} size={20} color={readableOn(tool.color, colors.card, 3)} />
+                      <ConceptIcon icon={tool.icon} glyph={tool.glyph} size={20} color={readableOn(tool.color, colors.card, 3)} />
                     </View>
                     <Text numberOfLines={2} style={[s.toolText, { color: colors.foreground }]}>
                       {t(tool.titleKey as never)}
