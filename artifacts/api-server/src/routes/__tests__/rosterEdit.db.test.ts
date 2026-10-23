@@ -1,6 +1,7 @@
 /**
  * Editing a roster row over HTTP, against a real database: the duplicate-name
- * refusal and the rename reaching linked code-only accounts.
+ * refusal and the rename reaching linked code-only accounts. The class roster
+ * read (`links`) is covered here too, since it shares the fixture.
  */
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -53,6 +54,26 @@ describeDb("editing a roster row over HTTP, against a real database", () => {
   after(async () => {
     await on?.stop();
     await db?.drop();
+  });
+
+  describe("GET /classes/:id", () => {
+    it("lists who holds each name, with the account's name and when it joined", async () => {
+      const res = await call(on, "GET", `/classes/${w.classes.c1}`, w.users.t1);
+      assert.equal(res.status, 200, on.logs().slice(-1500));
+      const sara = res.json.students.find((s: { id: string }) => s.id === w.students.sA1);
+      assert.equal(sara.linked, true);
+      const self = sara.links.find((l: { relation: string }) => l.relation === "self");
+      assert.equal(self.userId, w.users.studentA);
+      assert.equal(self.firstName, "سارة");
+      assert.ok(self.linkedAt);
+      assert.equal(sara.links.filter((l: { relation: string }) => l.relation === "guardian").length, 2);
+      assert.equal("linkedCount" in sara, false);
+    });
+
+    it("is another teacher's class: 404", async () => {
+      const res = await call(on, "GET", `/classes/${w.classes.c1}`, w.users.t2);
+      assert.equal(res.status, 404);
+    });
   });
 
   describe("PATCH /students/:id", () => {
