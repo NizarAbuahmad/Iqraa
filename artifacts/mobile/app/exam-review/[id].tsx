@@ -23,7 +23,8 @@ import { apiErrorMessage } from '@/services/apiErrorKey';
 import type { TranslationKey } from '@/services/i18n';
 import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
-import { RADIUS, TYPE } from '@/constants/theme';
+import { ICON } from '@/constants/icons';
+import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
@@ -75,7 +76,7 @@ export default function ExamReviewScreen() {
         contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 40, gap: 12, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
       >
         {error ? (
-          <View style={{ alignItems: 'center', gap: 10, marginTop: 40 }}>
+          <View style={{ alignItems: 'center', gap: SPACE.md, marginTop: 40 }}>
             <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>{error}</Text>
             <Pressable onPress={load} accessibilityRole="button" hitSlop={8}>
               <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textDecorationLine: 'underline' }}>{t('retry')}</Text>
@@ -123,7 +124,7 @@ function ReviewCard({
         </View>
         {verdict ? (
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 4 }}>
-            <Ionicons name={verdict.icon} size={16} color={verdictColor} />
+            <Ionicons name={verdict.icon} size={ICON.md} color={verdictColor} />
             <Text style={{ color: verdictColor, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{t(verdict.label)}</Text>
           </View>
         ) : null}
@@ -158,7 +159,7 @@ function ReviewCard({
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth },
   backBtn: { padding: 4, marginBottom: 8 },
-  card: { borderWidth: 1, padding: 14, gap: 10 },
+  card: { borderWidth: 1, padding: SPACE.lg, gap: SPACE.md },
   num: { width: 26, height: 26, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
-  steps: { borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 10, gap: 4 },
+  steps: { borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: SPACE.md, paddingVertical: SPACE.md, gap: SPACE.xs },
 });

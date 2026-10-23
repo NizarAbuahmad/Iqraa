@@ -58,6 +58,7 @@ import { apiErrorMessage } from '@/services/apiErrorKey';
 import { StudentResultCard, LEVEL_LABEL_KEY } from '@/components/StudentResultCard';
 import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
+import { ICON } from '@/constants/icons';
 import { SPACE, TYPE } from '@/constants/theme';
 import { BackButton } from '@/components/ui/BackButton';
 
@@ -480,7 +481,7 @@ function ExamRow({
           { flexDirection: isRTL ? 'row-reverse' : 'row', backgroundColor: colors.card, borderColor: ACCENT + '55', borderRadius: colors.radius },
         ]}
       >
-        <Ionicons name="school-outline" size={18} color={ACCENT} />
+        <Ionicons name="school-outline" size={ICON.lg} color={ACCENT} />
         <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
           {t('reviewOpenBtn')}
         </Text>

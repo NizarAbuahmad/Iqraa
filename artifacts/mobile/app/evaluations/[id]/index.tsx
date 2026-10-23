@@ -51,7 +51,8 @@ import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { groupSizeLabel } from '@/services/supportGroups';
 import { palette } from '@/constants/colors';
-import { TYPE } from '@/constants/theme';
+import { ICON } from '@/constants/icons';
+import { SPACE, TYPE } from '@/constants/theme';
 import { PROD_ORIGIN } from '@/services/siteOrigin';
 import { BackButton } from '@/components/ui/BackButton';
 import { ExamDateCard } from '@/components/ExamDateCard';
@@ -574,7 +575,7 @@ export default function EvaluationDetailScreen() {
           exam — there are no questions to show. Maths gets worked steps the
           teacher prepares, and reads under each question, before showing. */}
       {evaluation?.status === 'closed' && !paperExam && (
-        <View style={{ marginHorizontal: 20, marginTop: 10, gap: 6 }}>
+        <View style={{ marginHorizontal: 20, marginTop: 12, gap: SPACE.sm }}>
           {evaluation.subjectId === 'mathematics' && (
             <Pressable
               onPress={onPrepareSteps}
@@ -585,7 +586,7 @@ export default function EvaluationDetailScreen() {
               {busy === 'steps' ? (
                 <ActivityIndicator color={ACCENT} size="small" />
               ) : (
-                <Ionicons name="list-outline" size={18} color={ACCENT} />
+                <Ionicons name="list-outline" size={ICON.lg} color={ACCENT} />
               )}
               <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
                 {t('prepareStepsBtn')}
@@ -612,7 +613,7 @@ export default function EvaluationDetailScreen() {
           >
             <Ionicons
               name={evaluation.showSolutionsToStudent ? 'eye-off-outline' : 'school-outline'}
-              size={18}
+              size={ICON.lg}
               color={evaluation.showSolutionsToStudent ? colors.mutedForeground : ACCENT}
             />
             <Text style={{ color: evaluation.showSolutionsToStudent ? colors.mutedForeground : ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
