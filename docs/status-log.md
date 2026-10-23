@@ -30,6 +30,41 @@ book is downloaded from the curriculum card; I did not verify that no in-app rea
 exam only), copying an old exam within a class (`howCopyExam` answers a different question),
 the book-source question and the ready-made-homework question (neither looked into).
 
+## The lesson-prep panel says why a generation failed — 2026-10-23
+
+A teacher on the web app opened a Grade 1 lesson, tapped «حضّر خطة الدرس» and got
+only «تعذّر إتمام العملية. حاول مرة أخرى.» beside the orange «تعذّر الاتصال · محتوى
+تجريبي» badge. The panel's `catch {}` threw the error away, so nothing on screen
+could tell a spent allowance from a switched-off service from a server fault.
+
+**What changed**
+- `components/ui/LessonPrepPanel.tsx`: the generate call's `catch` now shows
+  `aiErrorText(e, t)`, the sentence the eight generator screens already use:
+  `aiQuotaSpent` («انتهت حصة التوليد الجديد لهذا الشهر…») for `user_quota_exceeded`
+  and `budget_exceeded`, and `aiUnavailable` («خدمة الذكاء الاصطناعي متوقفة
+  حاليًا. حاول لاحقًا.») for `live_mode_off`.
+- `lessonPrepPanelError.test.ts` reads the panel's source (it reaches react-native,
+  so `node --test` cannot load it) and fails a return to the bare `catch {}`.
+
+**What was checked**
+- The production API answers `/api/healthz` with 200 and allows the origin
+  `https://app.iqrra.com` (a preflight to `/api/generate/lesson-plan` returns the
+  matching `access-control-allow-origin`), and `/generate/lesson-plan` has no
+  subject or grade restriction, so none of those is the cause.
+
+**What was not**
+- **The cause of the teacher's failure is not known.** Server logs were not
+  readable from the session and the failing request was not captured. Its status
+  and body, from the browser's network tab, say which of 503 `live_mode_off`,
+  429 `budget_exceeded` / `user_quota_exceeded` / `generation_in_flight`, 502, 500
+  or 401 it was.
+- `generation_in_flight`, 502 and 500 still read as the generic line: the mapping
+  has no key for them, and «حاول مرة أخرى» is true for all three.
+- After a non-cap failure the app falls back to the offline generator, and for
+  this lesson that ended in an error too. Why the offline path has nothing for it
+  was not looked into.
+- Not seen on a device or in a browser.
+
 ## The "now" amber is only for now — 2026-10-23
 
 `palette.live` (`#B45309`) is the one warm accent in the app: «ابدأ الحصة», the class
