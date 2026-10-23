@@ -415,6 +415,36 @@ pooled secret saved with extra text around the URL failed with `getaddrinfo ENOT
 `pooled host:` line printing `***` instead of an address is the tell. PR #1187 made the pooled step skip when
 the confirmation or the empty-database guard fails.
 
+## Admin AI section: filter by mobile / web — 2026-10-23
+
+The dashboard's «الذكاء الاصطناعي» section now has All / Mobile / Web / Unknown
+chips and a per-platform table (calls, cache hits, cost, p50, p95).
+
+**What changed**
+- `ai_generations.platform` (nullable text, migration 0015, additive). `recordGeneration`
+  reads it from `lib/requestPlatform.ts`, an AsyncLocalStorage set by a middleware on
+  `/api` from `X-Iqraa-Platform` (the app already sends it on every call). No generator
+  signature changed. Anything with no header (cron, scripts, old builds) is null.
+- `GET /admin/ai-costs?platform=mobile|web|unknown` (400 on anything else) filters every
+  breakdown; `byPlatform` is deliberately unfiltered. «mobile» is android + ios.
+- The dashboard section reads `/admin/ai-costs` instead of `usage-summary`'s `ai.byKind` /
+  `ai.topSpenders`, so a chip tap does not re-run every query on the screen. Those two
+  fields are still returned, now unused by this screen.
+
+**Limits**
+- Rows from before this ships have no platform and are **not backfilled** — `users.signup_platform`
+  is where someone joined, not where they used the AI. «Unknown» is all of history until then.
+- The spent / cap line is the whole month's spend whatever chip is picked.
+- Verified: typecheck, `requestPlatform.test.ts`, `mountOrder.test.ts`; and on a throwaway local
+  database (all 16 migrations applied from empty, then dropped): `recordGeneration` run through the
+  real middleware stored web / android / ios / null, `/admin/ai-costs` returned the right rows and
+  totals for no filter, `web`, `mobile` and `unknown`, 400 for `bogus` and `constructor`, and the
+  dashboard (Expo web against that API) showed the chips filtering the Kind table while the
+  Platform table stayed whole.
+- **Not** verified: a real model call end to end (the local API runs `AI_LIVE_MODE=false`, so rows were
+  written through `recordGeneration` directly), Android / a device, and a re-screenshot after the last
+  12 px of spacing above the chips.
+
 ## The tab bar is drawn — 2026-10-23
 
 Step three of the icon work. The phone tab bar and the desktop sidebar draw
