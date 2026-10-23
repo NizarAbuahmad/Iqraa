@@ -25,6 +25,7 @@ import {
   classGroups,
   classMemberships,
   evaluations,
+  gameResults,
   homework,
   homeworkCompletions,
   rosterLinks,
@@ -34,7 +35,7 @@ import {
   type Homework,
   type HomeworkResource,
 } from "@workspace/db";
-import { and, count, countDistinct, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, count, countDistinct, desc, eq, inArray, isNull } from "drizzle-orm";
 import { authMiddleware, requireRole, TEACHER_ROLES, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { findLiveClass } from "../lib/classOwnership.js";
 import { parseClassResourceInput } from "../lib/classResource.js";
@@ -45,7 +46,9 @@ import { announceHomeworkPosted } from "../lib/familyPushEvents.ts";
 import { logger } from "../lib/logger";
 import { pushWithin } from "../lib/pushWithin.ts";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
-import { dueAtToDueDate, isUuid, parseCreate, parsePatch } from "../modules/homework/rules.ts";
+import { RESOURCES_MAX, dueAtToDueDate, isUuid, parseCreate, parsePatch } from "../modules/homework/rules.ts";
+import { GAME_TITLE_MAX, attachedGames, carryOverGames, gameResourceKey, isGame, type GameKind } from "../modules/homework/game.ts";
+import { getLessonById } from "@workspace/curriculum";
 
 const router = Router();
 
@@ -154,6 +157,26 @@ async function resolveResources(raw: unknown[], teacherId: string, attached: Hom
       out.push({ kind: "material", materialId: m.id, title: m.title, type: m.type });
       continue;
     }
+    // A lesson game: a real curriculum lesson and one of the three games. The
+    // title is the client's snapshot (trimmed, capped), else the lesson's own.
+    if ((item as { kind?: unknown } | null)?.kind === "game") {
+      const { lessonId, game, title } = item as { lessonId?: unknown; game?: unknown; title?: unknown };
+      if (typeof lessonId !== "string" || lessonId === "") return { error: "lessonId must be a curriculum lesson id" };
+      if (!isGame(game)) return { error: "game must be memory, scramble or spot" };
+      const key = gameResourceKey(lessonId, game);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const old = kept.get(key);
+      if (old) {
+        out.push(old);
+        continue;
+      }
+      const lesson = getLessonById(lessonId);
+      if (!lesson) return { error: "lessonId must be a curriculum lesson id" };
+      const snapshot = typeof title === "string" ? title.trim().slice(0, GAME_TITLE_MAX) : "";
+      out.push({ kind: "game", lessonId, game, title: snapshot || lesson.titleAr });
+      continue;
+    }
     const input = parseClassResourceInput(item);
     if ("error" in input) return { error: input.error };
     const key = `${input.source}:${input.nativeId}`;
@@ -172,7 +195,11 @@ async function resolveResources(raw: unknown[], teacherId: string, attached: Hom
 }
 
 function resourceKey(r: HomeworkResource): string {
-  return r.kind === "material" ? `material:${r.materialId}` : `${r.source}:${r.nativeId}`;
+  switch (r.kind) {
+    case "material": return `material:${r.materialId}`;
+    case "game": return gameResourceKey(r.lessonId, r.game);
+    default: return `${r.source}:${r.nativeId}`;
+  }
 }
 
 /** The homework's line in its class chat. Never fails the caller: the homework itself is saved. */
@@ -395,7 +422,9 @@ router.patch("/homework/:id", async (req: AuthenticatedRequest, res) => {
         res.status(400).json(r);
         return;
       }
-      resources = r;
+      // An app from before games drops the game items it cannot read and sends
+      // the rest back; without `gamesIncluded: true` the games it omitted stay.
+      resources = req.body?.gamesIncluded === true ? r : carryOverGames(r, existing.resources, RESOURCES_MAX);
     }
     // Only fields parsePatch produced, never `...req.body`: the class and the
     // teacher are not editable, whatever the client sends.
@@ -419,6 +448,49 @@ router.patch("/homework/:id", async (req: AuthenticatedRequest, res) => {
     res.json({ homework: out });
   } catch (err) {
     failHomework(res, err, "update homework");
+  }
+});
+
+/**
+ * Who played which attached game, and how well. Only children who are live
+ * members of the class right now (the same rule `withCounts` counts "done" by);
+ * a child who left keeps the row but drops out of this list.
+ */
+router.get("/homework/:id/game-results", async (req: AuthenticatedRequest, res) => {
+  try {
+    const existing = await ownedHomework(String(req.params["id"]), req.user!.id);
+    if (!existing) {
+      res.status(404).json(NO_HOMEWORK);
+      return;
+    }
+    const rows = await db
+      .select({
+        studentId: gameResults.studentId,
+        displayName: students.displayName,
+        lessonId: gameResults.lessonId,
+        game: gameResults.game,
+        score: gameResults.score,
+        total: gameResults.total,
+        attempts: gameResults.attempts,
+        playedAt: gameResults.playedAt,
+      })
+      .from(gameResults)
+      .innerJoin(
+        classMemberships,
+        and(eq(classMemberships.classGroupId, existing.classGroupId), eq(classMemberships.studentId, gameResults.studentId)),
+      )
+      .innerJoin(students, eq(students.id, gameResults.studentId))
+      .where(and(eq(gameResults.homeworkId, existing.id), isNull(students.archivedAt)))
+      .orderBy(asc(students.displayName), asc(gameResults.game), asc(gameResults.lessonId));
+    // Only what is attached now: a detached game's rows stay in the table but are not reported.
+    const attached = new Set(attachedGames(existing.resources).map(g => gameResourceKey(g.lessonId, g.game as GameKind)));
+    res.json({
+      results: rows
+        .filter(r => attached.has(gameResourceKey(r.lessonId, r.game as GameKind)))
+        .map(r => ({ ...r, playedAt: r.playedAt.toISOString() })),
+    });
+  } catch (err) {
+    failHomework(res, err, "load game results");
   }
 });
 

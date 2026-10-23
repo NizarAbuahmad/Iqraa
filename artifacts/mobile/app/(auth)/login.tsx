@@ -169,7 +169,7 @@ export default function LoginScreen() {
             ]}
             accessibilityLiveRegion="polite"
           >
-            <Ionicons name="checkmark-circle-outline" size={16} color={colors.success} />
+            <Ionicons name="checkmark-circle" size={16} color={colors.success} />
             <Text style={[styles.errorText, { color: colors.success, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
               {t('passwordResetDone')}
             </Text>
@@ -187,7 +187,7 @@ export default function LoginScreen() {
               },
             ]}
           >
-            <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+            <Ionicons name="alert-circle" size={16} color={colors.destructive} />
             <Text
               style={[
                 styles.errorText,

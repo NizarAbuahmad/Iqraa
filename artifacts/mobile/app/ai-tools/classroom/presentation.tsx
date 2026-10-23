@@ -46,6 +46,12 @@ import {
 } from '@/services/classGame';
 import { AwardRow, PodiumView, ScoreStrip, ScoreboardView } from '@/components/classroom/GameBoard';
 import { trackEvent } from '@/services/analytics';
+import { buildGameDeckFromSlides, canPlayAsGame } from '@/services/classDeck';
+import { createLiveGame } from '@/services/liveGameApi';
+import { LIVE_DEFAULT_SECONDS, LIVE_MIN_QUESTIONS, deckLang, liveQuestionsFromDeck } from '@/services/liveGame';
+import { RADIUS, SPACE, TYPE } from '@/constants/theme';
+import { toArabicDigits } from '@/services/labFormat';
+import { playGameCue, type GameCue } from '@/services/gameSounds';
 import { MathText } from '@/components/classroom/MathText';
 import { VerifiedBadge } from '@/components/classroom/VerifiedBadge';
 import { ImageViewerModal } from '@/components/ui/ImageViewer';
@@ -246,7 +252,7 @@ function MediaView({
             accessibilityLabel={slide.mediaCaption || ''}
           />
           <View style={mediaStyles.zoomHint} pointerEvents="none">
-            <Ionicons name="expand" size={18} color="#fff" />
+            <Ionicons name="expand" size={20} color="#fff" />
           </View>
         </Pressable>
       ) : Platform.OS === 'web' && embed ? (
@@ -264,7 +270,7 @@ function MediaView({
         // no player component to fall back to, and browsers already render a
         // usable one for free.
         <View style={mediaStyles.audioFrame}>
-          <Ionicons name="musical-notes" size={28} color={T.accent} />
+          <Ionicons name="musical-notes" size={32} color={T.accent} />
           {React.createElement('audio', {
             src: url,
             controls: true,
@@ -428,7 +434,7 @@ function TeacherPanel({
         <View style={panelStyles.handle} />
         {/* Header */}
         <View style={[panelStyles.header, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Ionicons name="school-outline" size={18} color={T.accent} />
+          <Ionicons name="school-outline" size={20} color={T.accent} />
           <Text style={[panelStyles.headerText, { fontFamily: 'ReadexPro_700Bold' }]}>{t('teacherPanelTitle')}</Text>
           <Pressable onPress={close} style={panelStyles.closeBtn} hitSlop={12} accessibilityRole="button" accessibilityLabel={t('close')}>
             <Ionicons name="close" size={20} color={T.muted} />
@@ -531,7 +537,7 @@ function QuestionOptions({
               >
                 {isolateForeignRuns(opt)}
               </Text>
-              {isCorrect && <Ionicons name="checkmark-circle" size={26} color={TIMER_GREEN} />}
+              {isCorrect && <Ionicons name="checkmark-circle" size={24} color={TIMER_GREEN} />}
             </View>
           );
         })}
@@ -549,7 +555,7 @@ function QuestionOptions({
           },
         ]}
       >
-        <Ionicons name={revealed ? 'eye-off-outline' : 'checkmark-circle-outline'} size={18} color={revealed ? T.muted : TIMER_GREEN} />
+        <Ionicons name={revealed ? 'eye-off-outline' : 'checkmark-circle-outline'} size={20} color={revealed ? T.muted : TIMER_GREEN} />
         <Text style={[qStyles.revealBtnText, { color: revealed ? T.muted : TIMER_GREEN, fontFamily: 'ReadexPro_600SemiBold' }]}>
           {revealed ? t('hideAnswer') : t('revealAnswer')}
         </Text>
@@ -873,7 +879,7 @@ function FlowView({ nodes, cycle, accent, isRTL, loopLabel }: {
               <Text style={[slideStyles.flowText, { writingDirection: dir }]}>{isolateForeignRuns(n)}</Text>
             </Reveal>
             {i < nodes.length - 1 && (
-              <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={28} color={accent} />
+              <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={32} color={accent} />
             )}
           </React.Fragment>
         ))}
@@ -1273,7 +1279,7 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
       {/* Unlock code badge */}
       {slide.unlockCode && slide.type === 'reveal' && (
         <View style={slideStyles.codeBadge}>
-          <Text style={[slideStyles.codeLabel, { fontFamily: 'ReadexPro_500Medium' }]}>🔑</Text>
+          <Ionicons name="key-outline" size={32} color={TIMER_GREEN} />
           <Text style={[slideStyles.codeValue, { fontFamily: 'ReadexPro_700Bold' }]}>{slide.unlockCode}</Text>
         </View>
       )}
@@ -1490,6 +1496,69 @@ export default function PresentationScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
+  /** «Play as Class Challenge»: this deck's own choice questions become a team game, from slide 1. */
+  const [teamPickerOpen, setTeamPickerOpen] = useState(false);
+  // Game sound cues; the mute button only shows in a game.
+  const [muted, setMuted] = useState(false);
+  const cue = (c: GameCue) => { if (game && !muted) playGameCue(c); };
+  // The deck, slide and ink the game replaced — so a stray tap mid-lesson is one tap to undo.
+  const [deckBeforeGame, setDeckBeforeGame] = useState<{ deck: ClassroomActivity; slideIndex: number; ink: Record<number, Stroke[]> } | null>(null);
+  const backToDeck = async () => {
+    if (!deckBeforeGame) return;
+    // Same guard as leaving: scores already given would be lost.
+    if (hasGameScores(game) && !(await confirm({
+      title: t('gameExitTitle'),
+      message: t('gameExitMsg'),
+      confirmLabel: t('playAsGameBack'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    }))) return;
+    setActivity(deckBeforeGame.deck);
+    setGame(null);
+    setInk(deckBeforeGame.ink);
+    setSlideIndex(deckBeforeGame.slideIndex);
+    initSlide(deckBeforeGame.deck.slides[deckBeforeGame.slideIndex]!);
+    setDeckBeforeGame(null);
+  };
+  // «العب مباشرة على الأجهزة»: the same questions, played by students on their own
+  // devices with a code; this deck stays open here and the host screen takes over.
+  const [liveBusy, setLiveBusy] = useState(false);
+  const [liveError, setLiveError] = useState('');
+  const startLiveGame = async () => {
+    if (!activity || liveBusy) return;
+    const questions = liveQuestionsFromDeck(activity);
+    if (questions.length < LIVE_MIN_QUESTIONS) return;
+    setLiveBusy(true);
+    setLiveError('');
+    try {
+      const { id } = await createLiveGame({
+        title: (activity.lesson || activity.activityName).slice(0, 100),
+        lang: deckLang(questions),
+        seconds: LIVE_DEFAULT_SECONDS,
+        questions,
+      });
+      setTeamPickerOpen(false);
+      router.push(`/ai-tools/classroom/live-host?id=${encodeURIComponent(id)}` as never);
+    } catch {
+      setLiveError(t('livePlayLiveFailed'));
+    } finally {
+      setLiveBusy(false);
+    }
+  };
+  const startGameFromDeck = (teams: number) => {
+    if (!activity) return;
+    const isAr = lang === 'ar';
+    const gameDeck = buildGameDeckFromSlides(activity, teams, isAr);
+    setDeckBeforeGame({ deck: activity, slideIndex, ink });
+    setTeamPickerOpen(false);
+    setActivity(gameDeck);
+    setGame(createGame(gameDeck.game!.teamCount, gameDeck.game!.questionCount, isAr));
+    setInk({});
+    setSlideIndex(0);
+    initSlide(gameDeck.slides[0]!);
+    trackEvent('game_started', { game: 'class-challenge', from: 'deck', teams, total: gameDeck.game!.questionCount });
+  };
+
   // The browser can leave fullscreen without us (Esc, F11), so read the state
   // back rather than tracking our own toggles — under both the standard and
   // the webkit-prefixed API, which `toggleFullscreen` already drove.
@@ -1500,6 +1569,12 @@ export default function PresentationScreen() {
     return onFullscreenChange(sync);
   }, []);
 
+  // Time's up on a game question: everyone stops thinking and hands go up.
+  useEffect(() => {
+    if (timerTotal > 0 && timerSec === 0 && activity?.slides[slideIndex]?.type === 'question') cue('timeup');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timerSec]);
+
   // One analytics event when a Class Challenge reaches its podium — once per
   // game, not again when the teacher steps back off the podium and returns.
   const onPodium = !!game && activity?.slides[slideIndex]?.type === 'podium';
@@ -1507,6 +1582,7 @@ export default function PresentationScreen() {
   useEffect(() => {
     if (!onPodium || !game || podiumTracked.current === game) return;
     podiumTracked.current = game;
+    cue('podium');
     const top = podium(game)[0]?.[0];
     trackEvent('game_finished', {
       game: 'class-challenge',
@@ -1630,7 +1706,7 @@ export default function PresentationScreen() {
       <View style={[styles.topBar, { paddingTop: insets.top + 8, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         {/* Exit */}
         <Pressable onPress={() => { void exitPresentation(); }} style={styles.exitBtn} hitSlop={12}>
-          <Ionicons name="close" size={22} color={T.muted} />
+          <Ionicons name="close" size={24} color={T.muted} />
         </Pressable>
 
         {/* Fullscreen — the projector's own control, so the teacher never has
@@ -1642,6 +1718,45 @@ export default function PresentationScreen() {
               size={20}
               color={T.muted}
             />
+          </Pressable>
+        )}
+
+        {/* Game sound on/off — a quiet school or an exam next door. */}
+        {game && (
+          <Pressable
+            onPress={() => setMuted(m => !m)}
+            style={styles.exitBtn}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel={muted ? t('gameSoundOn') : t('gameSoundOff')}
+          >
+            <Ionicons name={muted ? 'volume-mute-outline' : 'volume-high-outline'} size={20} color={T.muted} />
+          </Pressable>
+        )}
+
+        {/* Back from a game started here to the slides it replaced. */}
+        {game && deckBeforeGame && (
+          <Pressable
+            onPress={() => { void backToDeck(); }}
+            style={styles.exitBtn}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel={t('playAsGameBack')}
+          >
+            <Ionicons name="albums-outline" size={20} color={T.muted} />
+          </Pressable>
+        )}
+
+        {/* Turn this deck's own questions into a team game. */}
+        {canPlayAsGame(activity) && (
+          <Pressable
+            onPress={() => setTeamPickerOpen(o => !o)}
+            style={styles.exitBtn}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel={t('playAsGame')}
+          >
+            <Ionicons name="trophy-outline" size={20} color={teamPickerOpen ? T.primary : T.muted} />
           </Pressable>
         )}
 
@@ -1682,7 +1797,7 @@ export default function PresentationScreen() {
             accessibilityRole="button"
             accessibilityLabel={timerPaused ? t('resumeTimer') : t('pauseTimer')}
           >
-            <Ionicons name={timerPaused ? 'pause-circle-outline' : 'timer-outline'} size={13} color={tColor} />
+            <Ionicons name={timerPaused ? 'pause-circle-outline' : 'timer-outline'} size={14} color={tColor} />
             <Text style={[styles.timerText, { color: tColor, fontFamily: 'ReadexPro_700Bold' }]}>{mm}:{ss}</Text>
           </Pressable>
         ) : (
@@ -1694,6 +1809,36 @@ export default function PresentationScreen() {
       {hasTimer && (
         <View style={styles.timerBarTrack}>
           <View style={[styles.timerBarFill, { width: `${timerPct * 100}%` as any, backgroundColor: tColor }]} />
+        </View>
+      )}
+
+      {/* ── Team count for «play as Class Challenge» ── */}
+      {teamPickerOpen && canPlayAsGame(activity) && (
+        <View style={[styles.teamPicker, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Text style={[styles.teamPickerLabel, { fontFamily: 'ReadexPro_600SemiBold' }]}>{t('playAsGameTeams')}</Text>
+          {[2, 3, 4, 5, 6].map(n => (
+            <Pressable
+              key={n}
+              onPress={() => startGameFromDeck(n)}
+              style={styles.teamChip}
+              accessibilityRole="button"
+              accessibilityLabel={t('playAsGameTeamsN', n)}
+            >
+              <Text style={[styles.teamChipText, { fontFamily: 'ReadexPro_700Bold' }]}>{lang === 'ar' ? toArabicDigits(String(n)) : String(n)}</Text>
+            </Pressable>
+          ))}
+          {/* Or: every student on their own device, with a code. */}
+          <Pressable
+            onPress={() => void startLiveGame()}
+            disabled={liveBusy}
+            style={[styles.liveBtn, { flexDirection: isRTL ? 'row-reverse' : 'row', opacity: liveBusy ? 0.6 : 1 }]}
+            accessibilityRole="button"
+            accessibilityLabel={t('livePlayLive')}
+          >
+            <Ionicons name="radio-outline" size={20} color={T.primary} />
+            <Text style={[styles.liveBtnText, { fontFamily: 'ReadexPro_700Bold' }]}>{liveBusy ? t('livePlayLiveBusy') : t('livePlayLive')}</Text>
+          </Pressable>
+          {!!liveError && <Text style={[styles.liveError, { fontFamily: 'ReadexPro_600SemiBold' }]}>{liveError}</Text>}
         </View>
       )}
 
@@ -1754,12 +1899,16 @@ export default function PresentationScreen() {
               state={game}
               questionIndex={slide.questionIndex}
               isRTL={isRTL}
-              onToggle={teamId => setGame(g => (g ? toggleAward(g, slide.questionIndex!, teamId) : g))}
-              onAll={() => setGame(g => {
-                if (!g) return g;
-                const everyone = g.teams.every(team => (g.awards[slide.questionIndex!] ?? []).includes(team.id));
-                return setAwards(g, slide.questionIndex!, everyone ? [] : g.teams.map(team => team.id));
-              })}
+              onToggle={teamId => {
+                // A chime for an award given, not for one taken back.
+                if (!(game.awards[slide.questionIndex!] ?? []).includes(teamId)) cue('correct');
+                setGame(g => (g ? toggleAward(g, slide.questionIndex!, teamId) : g));
+              }}
+              onAll={() => {
+                const everyone = game.teams.every(team => (game.awards[slide.questionIndex!] ?? []).includes(team.id));
+                if (!everyone) cue('correct');
+                setGame(g => (g ? setAwards(g, slide.questionIndex!, everyone ? [] : g.teams.map(team => team.id)) : g));
+              }}
               onNobody={() => setGame(g => (g ? toggleNobody(g, slide.questionIndex!) : g))}
               labels={{ prompt: t('gameWhoScored'), all: t('gameAwardAll'), nobody: t('gameAwardNobody') }}
             />
@@ -1834,7 +1983,7 @@ export default function PresentationScreen() {
                 onPress={() => { setAnswerVisible(v => !v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
                 style={[styles.revealBtn, { borderColor: TIMER_GREEN + '60', backgroundColor: TIMER_GREEN + '12', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
               >
-                <Ionicons name="checkmark-circle-outline" size={16} color={TIMER_GREEN} />
+                <Ionicons name="checkmark-circle" size={16} color={TIMER_GREEN} />
                 <Text style={[styles.revealBtnText, { color: TIMER_GREEN, fontFamily: 'ReadexPro_600SemiBold' }]}>
                   {answerVisible ? t('hideAnswer') : t('revealAnswer')}
                 </Text>
@@ -1962,7 +2111,7 @@ export default function PresentationScreen() {
             aria-selected={penOn}
             accessibilityLabel={t('penTool')}
           >
-            <Ionicons name={penOn ? 'brush' : 'brush-outline'} size={18} color={penOn ? T.accent : T.muted} />
+            <Ionicons name={penOn ? 'brush' : 'brush-outline'} size={20} color={penOn ? T.accent : T.muted} />
             {compactBar ? null : (
               <Text numberOfLines={1} style={[styles.actionLabel, penOn && { color: T.accent }, { fontFamily: 'Almarai_400Regular' }]}>
                 {t('penTool')}
@@ -1979,7 +2128,7 @@ export default function PresentationScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('whiteboardTool')}
           >
-            <Ionicons name="easel-outline" size={18} color={T.muted} />
+            <Ionicons name="easel-outline" size={20} color={T.muted} />
             {compactBar ? null : (
               <Text numberOfLines={1} style={[styles.actionLabel, { fontFamily: 'Almarai_400Regular' }]}>
                 {t('whiteboardTool')}
@@ -1995,7 +2144,7 @@ export default function PresentationScreen() {
               accessibilityLabel={timerPaused ? t('resumeTimer') : t('pauseTimer')}
               aria-selected={timerPaused}
             >
-              <Ionicons name={timerPaused ? 'play-outline' : 'pause-outline'} size={18} color={timerPaused ? T.accent : T.muted} />
+              <Ionicons name={timerPaused ? 'play-outline' : 'pause-outline'} size={20} color={timerPaused ? T.accent : T.muted} />
               <Text numberOfLines={1} style={[styles.actionLabel, timerPaused && { color: T.accent }, { fontFamily: 'Almarai_400Regular' }]}>
                 {timerPaused ? t('resumeTimer') : t('pauseTimer')}
               </Text>
@@ -2009,7 +2158,7 @@ export default function PresentationScreen() {
               accessibilityRole="button"
               accessibilityLabel={t('restartTimer')}
             >
-              <Ionicons name="refresh-outline" size={18} color={T.muted} />
+              <Ionicons name="refresh-outline" size={20} color={T.muted} />
               {compactBar ? null : (
                 <Text numberOfLines={1} style={[styles.actionLabel, { fontFamily: 'Almarai_400Regular' }]}>
                   {t('restartTimer')}
@@ -2025,7 +2174,7 @@ export default function PresentationScreen() {
               accessibilityRole="button"
               accessibilityLabel={t('teacherPanelTitle')}
             >
-              <Ionicons name="school-outline" size={18} color={T.accent} />
+              <Ionicons name="school-outline" size={20} color={T.accent} />
               {compactBar ? null : (
                 <Text numberOfLines={1} style={[styles.actionLabel, { color: T.accent, fontFamily: 'ReadexPro_500Medium' }]}>
                   {t('teacherPanelTitle')}
@@ -2125,6 +2274,13 @@ const makeStyles = (T: DeckTheme) => StyleSheet.create({
   dotTarget: { paddingVertical: 10, paddingHorizontal: 2, justifyContent: 'center' },
   counterBox: { minWidth: 54, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: T.card, borderWidth: 1, borderColor: T.border },
   counterText: { fontSize: 13, color: T.text },
+  teamPicker: { alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, paddingBottom: 10 },
+  teamPickerLabel: { fontSize: 14, color: T.text },
+  teamChip: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: T.card, borderWidth: 1, borderColor: T.primary },
+  teamChipText: { fontSize: 15, color: T.primary },
+  liveBtn: { alignItems: 'center', gap: SPACE.xs, height: 40, paddingHorizontal: SPACE.md, borderRadius: RADIUS.pill, backgroundColor: T.card, borderWidth: 1, borderColor: T.primary },
+  liveBtnText: { fontSize: TYPE.label, color: T.primary },
+  liveError: { flexBasis: '100%', textAlign: 'center', fontSize: TYPE.caption, color: T.text },
   actionRow: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 10 },
   // flexShrink so an unexpected width narrows these instead of letting them
   // spill over the nav buttons, which is what the overlap on a real phone was.
@@ -2217,7 +2373,6 @@ const makeSlideStyles = (T: DeckTheme) => StyleSheet.create({
   formulaBox: { backgroundColor: T.card, borderRadius: 16, borderWidth: 1, borderColor: T.border, paddingVertical: 22, paddingHorizontal: 18, alignItems: 'center' },
   formula: { fontSize: 30, color: T.text, textAlign: 'center', lineHeight: 46 },
   codeBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 28, backgroundColor: TIMER_GREEN + '12', borderRadius: 14, borderWidth: 1, borderColor: TIMER_GREEN + '40', padding: 20 },
-  codeLabel: { fontSize: 28 },
   codeValue: { fontSize: 48, color: TIMER_GREEN },
 });
 

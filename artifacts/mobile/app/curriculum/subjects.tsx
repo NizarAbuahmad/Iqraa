@@ -38,7 +38,7 @@ function DownloadChip({ label, url, icon, color }: {
         { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.7 : 1 },
       ]}
     >
-      <Ionicons name={icon} size={15} color={color} />
+      <Ionicons name={icon} size={16} color={color} />
       <Text style={[styles.downloadChipText, { color: colors.foreground, fontFamily: 'Almarai_400Regular' }]} numberOfLines={1}>
         {label}
       </Text>
@@ -172,7 +172,7 @@ export default function SubjectsScreen() {
                   {cardMeta}
                 </Text>
               </View>
-              <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
+              <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedForeground} />
             </Pressable>
 
             {/* The printed book teachers actually hold — NCCD PDFs, or the

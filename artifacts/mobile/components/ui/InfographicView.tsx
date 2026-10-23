@@ -80,7 +80,7 @@ export function InfographicView({ data, colors, isRTL }: {
       ))}
 
       <View style={[styles.takeaway, { flexDirection: row, backgroundColor: colors.primary + '14', borderColor: colors.primary + '55' }]}>
-        <Ionicons name="bulb" size={18} color={colors.primary} />
+        <Ionicons name="bulb" size={20} color={colors.primary} />
         <Text style={[styles.takeawayText, { color: colors.foreground, textAlign: align, writingDirection: dir }]}>
           {data.takeaway}
         </Text>

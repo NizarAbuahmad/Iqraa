@@ -112,7 +112,7 @@ export default function AddEmailScreen() {
 
             {error ? (
               <View style={[styles.banner, { backgroundColor: colors.destructive + '14', borderColor: colors.destructive + '33', flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+                <Ionicons name="alert-circle" size={16} color={colors.destructive} />
                 <Text style={[styles.bannerText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>{error}</Text>
               </View>
             ) : null}

@@ -1,5 +1,5 @@
 {
-  "id": "a214f708-b4f5-4c09-bc88-34694ec3e24f",
+  "id": "4d931a3f-c4e0-4082-bd94-06f6d8d0cce3",
   "prevId": "e54e0201-d7ba-4f8b-ba00-cad1f50d90fe",
   "version": "7",
   "dialect": "postgresql",
@@ -1498,6 +1498,130 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.game_results": {
+      "name": "game_results",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "homework_id": {
+          "name": "homework_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lesson_id": {
+          "name": "lesson_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "game": {
+          "name": "game",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "score": {
+          "name": "score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total": {
+          "name": "total",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "played_at": {
+          "name": "played_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "game_results_student_idx": {
+          "name": "game_results_student_idx",
+          "columns": [
+            {
+              "expression": "student_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "game_results_homework_id_homework_id_fk": {
+          "name": "game_results_homework_id_homework_id_fk",
+          "tableFrom": "game_results",
+          "tableTo": "homework",
+          "columnsFrom": [
+            "homework_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "game_results_student_id_students_id_fk": {
+          "name": "game_results_student_id_students_id_fk",
+          "tableFrom": "game_results",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "game_results_unique": {
+          "name": "game_results_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "homework_id",
+            "student_id",
+            "lesson_id",
+            "game"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.homework": {
       "name": "homework",
       "schema": "",
@@ -2297,12 +2421,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "worked_steps": {
-          "name": "worked_steps",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
         "deleted_at": {
           "name": "deleted_at",
           "type": "timestamp with time zone",
@@ -2544,13 +2662,6 @@
         },
         "release_results_to_student": {
           "name": "release_results_to_student",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "show_solutions_to_student": {
-          "name": "show_solutions_to_student",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,

@@ -10,10 +10,6 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-Sections below are in the order they were written, not strictly by date.
-
----
-
 ## Students review their answers, with maths worked steps — 2026-10-22
 
 **What changed.** A released result used to be a level and a percentage; a
@@ -50,6 +46,665 @@ single step are not built.
 
 ---
 
+## Iqraa draws its own icons — 2026-10-23
+
+Step two of the icon work. Sixteen drawings, approved from a review sheet
+(the "Iqraa Icon Set" artifact), now replace stock Ionicons glyphs for the
+concepts a teacher meets most. Before this, every tool and corner wore a glyph
+any Ionicons app shares.
+
+**What changed**
+- `constants/glyphs.ts` holds the drawings as data: lesson plan, worksheet,
+  quiz, slides, activity, homework, assessment, class challenge, classes,
+  library, messages, and the five corners (maths, lab, Quran, English, games).
+  One style for all of them: a 24-unit grid, a 1.75 stroke with round ends, and
+  two tones (the outline in the concept colour, the main shape filled at 18%).
+  The assessment's tick badge cuts its disc out of the sheet beneath with an
+  evenodd clip, so it reads on any background without painting one.
+- `components/ui/Glyph.tsx` draws them with react-native-svg (already in the
+  binary, so no native change and no `app.json` version bump). `ConceptIcon`
+  draws a concept's drawing when it has one and its stock glyph otherwise.
+- `CONCEPTS` gains `glyph` for the nine concepts that have one, the catalog and
+  `PREP_ROWS` carry it, and corners gain `drawing`. They are drawn on:
+  - the Tools tab;
+  - Today's quick tools, phone and desktop;
+  - the prep board;
+  - the chat "+" menu;
+  - generator headers (`ToolHeader` → `IconTile`);
+  - the library's corner tiles;
+  - «شُعبي» in the profile menu and each class card;
+  - the homework push setting.
+
+**Pinned:** `services/__tests__/glyphs.test.ts` pins:
+- the set is the approved sixteen;
+- each drawing is two-tone and stays inside its box;
+- a cut is declared and used;
+- the catalog, the prep rows and the corners carry their drawings;
+- every drawing is used, apart from a held list with reasons;
+- the shared pieces actually render them.
+
+`iconSystem.test.ts` now also checks literal `ConceptIcon`/`Glyph` sizes against
+the scale, and the readableOn check on tool glyphs.
+
+**Held back:** `library` and `messages` are drawn but unused. Their place is the
+tab bar, and drawing three of seven tabs would mix two styles in one row. They
+wait until Today, chat, tools and profile have drawings too. The interactive
+class, the parent message, lesson flow, prompt slides and GeoGebra have no
+drawing yet and keep their stock glyphs, so the Tools tab shows nine drawings
+and two stock icons.
+
+**Verified:**
+- mobile `pnpm test`: 6,864 pass, 0 fail;
+- typecheck clean;
+- web-build screenshots, light and dark, phone and desktop, of the Tools tab,
+  Today, the library, profile, classes and the quiz generator header.
+
+**Not verified:** rendering on Android and iOS devices. react-native-svg
+already draws the logo and the corner motifs there, but these exact drawings
+have not been checked at 16px on a phone.
+
+## Grade 9 grammar pilot (Unit 4) in the English corner — built, shown to nobody yet, 2026-10-23
+
+The first Grade 9 grammar, on **one unit only**: S1 U4 «A good buy», two hub lessons —
+comparatives and superlatives (`kbl-g9-eng-s1-nccd-u4_l1`, 42 sentences) and quantifiers
+(`…u4_l3`, 80). **Both are `reviewedBy: null` in `lib/curriculum/src/englishGrammarG9.ts`, so
+nobody sees any of it yet.** Spec:
+`docs/superpowers/specs/2026-10-23-english-corner-grammar-g9-pilot-design.md`; plan:
+`docs/superpowers/plans/2026-10-23-english-corner-grammar-g9-pilot.md`.
+
+- **Why a pilot.** The book's JSON for Grade 9 has objectives only — no example sentences — so
+  every sentence is authored by us and checked by a teacher. One unit shows whether that content
+  model works before the other nine units and Grade 10 are written.
+- **Nothing is pictured.** A food does not show «healthier». True or false and Yes or No come only
+  from ten written pairs (`PLURAL_PAIRS`, `MASS_PAIRS`), each plainly true; the false twin is the
+  same sentence with the two sides swapped. Opinion rows («Pancakes are tastier than porridge.»)
+  and superlative rows («the most expensive dish on the menu») are Choose and Build only, never
+  judged.
+- **Engine changes (shared, Grades 1–4 unchanged).** Eight Grade 9 `ADJECTIVE_FORMS`
+  (cheap, healthy, tasty, and five «more / most» adjectives); `claim.swap` takes a list of pairs
+  (the capitalised sentence start and the lower-case question both swap); Grade 4's data page was
+  pinned with `GRADE_FOUR_ADJECTIVES` so the shared table's growth did not change its form.
+  `games.ts`, the screens and the strings needed nothing.
+- **Quantifiers by the noun.** Eight hand-classed counted foods and eight uncounted; five patterns
+  per class (How many/much…, There aren't many/much…, too many/much, Are there many…? / Is there
+  much…?, a few / a little), the choice decided by the noun. «some», «any» and «enough» are left
+  out, and the form says so.
+- **The teacher's form** is `docs/english-grammar-g9-review.html` (sheet:
+  `docs/english-grammar-g9-sheet.md`), written by `lib/curriculum/scripts/grammar-sheet.ts` and
+  pinned by a test: two unit pages and a data page of four tables — the ten comparison pairs with
+  their false twins, the adjective forms, the 16 foods by class, and the six opinion rows. The
+  Grade 1–4 forms and sheets are byte-identical.
+- **Verified:** curriculum 593 tests, mobile 6867 pass / 10 skipped / 0 fail, root typecheck.
+  **In a browser** at 390 px in Arabic and English, with sign-offs in the working tree only
+  (restored straight after; never committed; `grep -c "LOCAL CHECK"` is 0): `u4_l1` offers all
+  four cards and `u4_l3` Choose and Build only; True or false and Yes or No show a text with no
+  picture; the Choose options are real forms («more popular» / «most popular», «many» / «much»);
+  no horizontal scroll.
+- **Not verified:** on a device; with a teacher; the audio — it needs the pending `english-audio`
+  run (OpenAI and R2 keys).
+- **Known limit:** a sentence such as «How many grapes are there?» has no context; the form asks
+  the teacher whether that is acceptable at Grade 9.
+
+**To switch a unit on:** record the audio; a Grade 9 English teacher signs that unit's page **and
+the data page** of `docs/english-grammar-g9-review.html`, printed; then set its `reviewedBy` in
+`englishGrammarG9.ts` and merge.
+
+## Icons follow one system — 2026-10-23
+
+- **What was wrong.** An audit of the app's icons found 709 `Ionicons` uses in 172 files
+  in 15 different sizes between 12 and 48 (mostly 16, 18, 20 and 22 side by side in one
+  row); 161 of them muted grey, so few carried any meaning; outline and filled mixed with
+  no rule; emoji standing in for UI icons in about 32 files (✓ ✕ ✗ ⚠ 💡 📖 ✅ …), which
+  draw differently on every platform; and one concept drawn differently in different
+  places. The quiz was `checkmark-circle-outline` on the Tools tab and
+  `checkmark-done-outline` on the prep board; lesson plan, worksheet and homework shared
+  one teal; the quiz and the class challenge shared `#B54708`, a step from the amber
+  (`palette.live`) that means "now"; evaluations were grey.
+- **What changed.**
+  - `constants/icons.ts` (pure data): `ICON` 14/16/20/24 for UI icons, `ICON_DISPLAY`
+    32/40/48/64 for empty-state and hero glyphs, and `CONCEPTS`, one icon and one colour
+    per teaching concept (14 of them). `services/toolCatalog.ts` and `PREP_ROWS` in
+    `services/lessonBoard.ts` read from it and hold no colour literal. The prep rows' five
+    hues are unchanged; the Tools tab moved to match them (worksheet `#0E8F86` to
+    `#0F766E`, lesson plan `#007C74` to `#4338CA`, quiz `#B54708` to `#7C3AED` with the
+    prep board's icon, challenge `#B54708` to `#BE123C`, homework `#007C74` to `#0E7490`,
+    evaluations `#64748B` to `#BE185D`, parent message `#6D28D9` to `#A21CAF`, and the
+    classroom hub `#4F46E5` to the olive `#3F6212`, which had been an indigo beside the lesson
+    plan's; the hidden
+    lesson-flow and prompt-slides moved off the slides and quiz colours).
+  - **Sizes.** Every literal `<Ionicons size>` in `app/` and `components/` is on the
+    scale: 355 icons in 128 files remapped by script (12 to 15 → 14/16, 17 to 20 → 20,
+    21 to 26 → 24, 28 to 32, 34 to 72 → nearest display size), then the icons in fixed
+    boxes checked by hand (the prep board's done badge went 16 to 18, the 18px checkboxes
+    in register and the prep panel went to 20). `BackButton` and `NotificationBell`
+    default to 24. The one `Feather` use became `Ionicons`; the whiteboard's
+    `MaterialCommunityIcons` eraser stays (Ionicons has no eraser glyph).
+  - **Emoji to icons.** 24 sites: the prep checklist in chat (✅ ⬜), ticks in the roster
+    name chip, the drill score, the lesson-flow header and the admin invite; the 💡 filter
+    chips; the four `ToolHeader` emoji (🏆 🖥️ ✉️ 🔐); 🎧 🎮 🔬 🔑 🔍 beside labels; 📚 🗓️ 📖 in
+    the topic dropdown; `✕` in an accessibility label (it was read aloud as "multiplication
+    x"). Kept as content: medals and podiums, 🎉 celebration text, 🙏 in a thank-you, ⭐
+    stars in the English corner, 🔥 and 🤷 on the game board, the grammar activities'
+    ✅/❌ and 👦/👧 pictures, the chip labels the chat builds, and everything in i18n.
+  - **Outline for actions, filled for status.** The tab bars and the desktop sidebar
+    already followed it (selected filled, unselected outline). 47 status marks that were
+    outline (`alert-circle`, `warning`, `information-circle`, `checkmark-circle` beside
+    text) are filled; actions (clear, remove, mark all read) stay outline.
+  - **`IconTile`** (`components/ui/IconTile.tsx`): a 36/44/56 rounded square tinted
+    `color + '1F'` with the glyph in `readableOn(color, colors.card)`: 4.5:1 against the
+    card, and on the tint itself about 4:1 at worst, which clears the 3:1 a graphic needs.
+    The Tools tab, the home quick tools and the chat «+» menu lift their raw tool colour
+    the same way (`readableOn(tool.color, colors.card, 3)`) so a glyph does not sink on the
+    dark card. Used on the settings and profile rows, the classes list (the class's first
+    subject colour through `subjectChipColor`) and every generator header
+    (`ToolHeader concept=…`, a white tile on the band). The Tools tab and Today quick-tool
+    tiles were left: they are 64 and 40 px with a 1A tint, so IconTile would change their
+    look.
+  - The classes list card now reverses its row in Arabic. `LanguageContext` pins
+    `I18nManager` to LTR, so a plain `flexDirection: 'row'` never mirrors, on web or native,
+    and the card read tile, name, bin, chevron from the left.
+  - `relatedResourcesDone` lost its leading ✅ in both languages (its panel now draws a
+    `checkmark-circle`, so the tick showed twice). The roster name chip and the drill score
+    kept their meaning for screen readers: the chip has `aria-selected` (the web build ignores `accessibilityState`), the
+    score reads «N correct out of M».
+- **Pinned.** `services/__tests__/iconSystem.test.ts`: every literal Ionicons size
+  (including both arms of a ternary) is on the scale; no second icon family outside one
+  allow-listed eraser; every concept carries white text at 4.5:1; Tools-tab concepts at least
+  CIEDE2000 8 apart on the light card and after `readableOn(…, '#111F36', 3)` on the dark
+  one (minimum 9.4 light, 8.5 dark, both lesson plan against quiz, two prep-board hues that
+  were kept; 10 would need one of them to move), and every concept at least 7 from every
+  other; none in the amber hue band (25° to 50° at saturation above 0.6) or within
+  CIEDE2000 3 of `#B54708`/`#B45309` (the activity orange is the nearest, 3.5 from
+  `#B54708`); the CIEDE2000 helper against Sharma's published pairs; the four screens that
+  draw a tool glyph on a card use `readableOn`; `relatedResourcesDone` has no leading emoji; the tool catalog and the prep board equal `CONCEPTS` and each
+  other for every shared concept, with no colour literal in either file; no ✓ ✕ ✗ ⚠ 💡 ✅ ❌
+  in app chrome (comments skipped; the grammar pictures and the internal `app/dev/cqv`
+  screens are allow-listed with a reason). No existing test was changed.
+- **Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 6,861 tests, 6,851 pass, 10
+  skipped, 0 fail; the web bundle built and Today, Tools, profile (scrolled), settings,
+  classes, the library, the Math hub, the play hub, and the quiz and slides headers looked
+  at, phone and desktop, light and dark, in Arabic.
+- **Not verified.** No device: Android and iOS were not run, so the icon fonts at the new
+  sizes are only seen on web. The live-game screens size their glyphs by a runtime scale
+  (`markSize`, `S(16)` in the host view), so they are not on the scale. `constants/
+  materialKind.ts` (the workspace's "موادي" list and the printed copies' accents) still
+  has its own icons and hues (the quiz is `help-circle-outline` in rose, the worksheet
+  brown): it is a deliberate table with a dark-mode variant and export twins, left for its
+  own change. `typeColor` in `services/continueTeaching.ts` still colours the quiz amber
+  and is not called by any screen. Other icon and colour tables that still disagree with
+  `CONCEPTS`: `app/ai-tools/lesson-flow.tsx:435` (the worksheet step is
+  `document-text-outline` in `#6D28D9`), `app/workspace/view.tsx:930` (the same), and
+  `app/curriculum/resources.tsx:112` (the library's worksheet shelf is `#0E8F86`; its audio
+  shelf is `#B45309`, **exactly `palette.live`**, the amber that means "now" — that one
+  breaks the amber rule and should change first). The outline/filled rule and `IconTile`
+  use are conventions, not tests.
+
+## Grade 5 in the English corner — words glossed, recordings still to make, 2026-10-22
+
+The English corner offered Grades 1–4, 9 and 10; Grade 5 had no tab. Its two books
+(`iqra_curriculum_g5_english_sem1|2.json`, 221 distinct words in 10 lessons) were in the
+curriculum, but every vocabulary entry had `ar: ""`, and the hub drops a word with no Arabic
+without saying so — so the whole grade vanished with no error.
+
+- **Built:** all 221 words glossed in the two JSON files (the same place Grades 1–4 keep
+  theirs), Grade 5 added to `ENGLISH_HUB_GRADES` (`[1, 2, 3, 4, 5, 9, 10]`) and to `BOOKS` in
+  `englishHub.ts`. The browse banner, `hubGrade` and the lesson screen need no change: they
+  read the grade list. Grade 5 gets the vocabulary activities. **No grammar or reading
+  exists for it**, and **"Match the picture" is not offered in any Grade 5 lesson**: 6 of its
+  words have an emoji and no lesson reaches the 4 the game needs, so a pupil sees six
+  activities, not seven.
+- **The glosses are drafted by Claude and no teacher has reviewed them.** Same status as the
+  Grade 9–10 glosses. Judgement calls worth a teacher's eye: «comic» as «قصة مصوّرة»,
+  «juggle» as «يلعب بالكرات (جغلة)», «purse» as «كيس نقود» against «wallet» as «محفظة»,
+  «ray» as «سمكة الراي», «playful» as «يحب اللعب». Correct them in the JSON; the hub reads
+  them from there.
+- **Tests (`englishHub.test.ts`):** Grade 5 has 10 lessons in units 1–10; no drillable word in
+  a Grade 1–5 book is left without Arabic (this is the guard for the failure above); a word
+  repeated across Grade 5 lessons has one meaning; the tab order is pinned. The existing
+  "no two words in a lesson share a meaning" test covers Match. Without the change they fail.
+- **Not done: recordings.** 190 of the 221 Grade 5 words have no MP3 in `english-audio/`
+  (checked by HEAD request on 2026-10-22; 31 are shared with earlier grades). Until
+  `pnpm --filter @workspace/curriculum run english-audio` is run with the OpenAI and R2 keys,
+  **web speaks the word with the browser's voice and native is silent**, which makes «استمع
+  واختر» unplayable on a phone. Run it before the merge deploys. The script voices Grade 5 in
+  the teenage register (only grades 1–4 are "young"); change `YOUNG_WORDS` if Grade 5 should
+  match.
+- **Correction:** the Grade 9–10 note under «An English corner for Grades 1–4» says their audio
+  is not generated. It is: 12 sampled words per grade, 72 of 72 present on 2026-10-22.
+- **Not done:** Grades 6, 7 and 8 (their books hold no vocabulary at all — extraction first,
+  as for 9–10) and Grade 10 semester 2.
+- **Checked:** `pnpm test` in `lib/curriculum`: the new tests pass. Three suites
+  (`extraction`, `quranCorner`, `r2`) fail the same way without this change. **Not checked:**
+  the app typecheck (the container has no `node_modules`) and the screen in a browser.
+
+**Accounts, messages, evaluation setup and the corners (2026-10-22, seventeenth live pass).**
+Of 30 questions, 9 were right and 21 went to the model; the recheck of the sixteenth pass was
+24/24. Checked in code: «الإعدادات» ← «الحسابات على هذا الجهاز» switches, adds and removes saved
+accounts (the login screen lists them too) and there is no sign-out from all devices; the intro
+shows once before sign-in and has no replay; the bell panel has «علّم الكل مقروءًا»; Messages has
+no mute, no message search and attaches an image only, but shows «شوهدت» on a read message;
+«تقييم جديد» offers eight question types (read-aloud and dictation are added as separate buttons),
+three levels and 5–30 questions, and has no pass-mark setting (the mastery gate's 80% is fixed);
+the evaluation page has a «من الكتاب المدرسي» figure panel and no figure upload; the Lab, Quran
+corner and Math corner screens say what they hold (five maths tools plus lesson exercises).
+Existing answers the wording missed: PowerPoint export of slides (`howSaveSlides`), regenerating
+and re-marking questions (`howEditExamQuestions`), adding students in bulk (`howAddStudent`).
+Left with the model: nothing from this pass that the code settles.
+
+**Today, lesson games, files and the mastery gate (2026-10-22, sixteenth live pass).**
+Of 30 questions, 6 were right (4 teaching controls) and 24 went to the model; the recheck of
+the fifteenth pass was 21/21. Checked in code: the «اليوم» tab shows the current or next period
+and its lesson, and «جاهزية الدرس» lists one row per material with its own «أنشئ» and a
+«تخطّي» (there is no create-everything button); the lesson page shows «العب بمصطلحات الدرس»
+only where the lesson has `MIN_LESSON_TERMS` (4) key terms, opening three games
+(`services/lessonGames.ts`); the lesson bar's «إلغاء تثبيت الدرس» and «تغيير الدرس» pin and unpin;
+«ملفاتي» has a search box, a favourites filter, ⋯ → open/edit/choose class/duplicate/delete, no
+folders and no trash; a saved file reaches a class from either «ملفاتي» or the class's «الملفات» tab;
+a worksheet becomes something students solve through `howSendWorksheet`; a teacher sees student
+work only through evaluations (results dashboard, student record); a lesson unlocks at
+`MASTERY_PASS_PERCENT` (80) on the previous lesson's quiz, a teacher can unlock it by hand, a
+student retakes up to `MAX_RETAKES` (3); an exam date shows to school teachers and, once the exam is
+published and attached, to the class's families (`examVisibleToFamilies`). Existing answers the
+wording missed: school calendar, adding a grade/subject, students solving a worksheet on phones.
+Left with the model: nothing from this pass that the code settles.
+
+**Chat, homework, results and sign-in (2026-10-22, fifteenth live pass).**
+Of 30 questions, 9 were right and 21 went to the model. Checked in code: the chat keeps no
+history (`howChatHistory` existed; «امسح المحادثة» missed it), has no voice input, no
+read-aloud and no image upload (`DOCUMENT_UPLOAD_ENABLED = false`), and its replies carry
+«نسخ»/«تصدير»; there is no font-size setting. Homework is edited or deleted by tapping it in
+the class's «الواجبات» tab, and goes to the whole class. «لوحة النتائج» shows «المتوسط العام»
+and «توزيع المستويات». A teacher cannot reopen an exam: `attempts` is unique per student and
+exam, and the only retake is the student's «أعد المحاولة» on a failed single-lesson quiz
+(`retakeDecision`, `MASTERY_GATE=true`, 3 tries). Open-response types
+(`short_answer`, `open_ended`, `problem_solving`) have no `grade`, so a paper with one stays
+provisional until the teacher enters its mark. Settings shows the monthly AI allowance as a
+percentage with a renewal date, not a count. Google sign-in is on the sign-in and sign-up
+screens. Left with the model, not verified in code: sorting homework by due date.
+«كيف أصحح الأسئلة المقالية؟» stays a teaching question.
+
+Sections below are in the order they were written, not strictly by date.
+
+---
+
+## Today wears the lesson's subject — 2026-10-22
+
+- **Why.** After the design refresh a teacher looked at desktop Today and said
+  "nothing changed" — rightly: the refresh had reached the corners, the library,
+  the profile and the phone, but the desktop workspace still drew its own navy band
+  with glows, bordered grey cards, grey quick-tool boxes, and five prep rows in one
+  teal, the same for every lesson.
+- **What changed.** The band is a `Band` in the lesson's subject (`subjectTheme`,
+  `services/subjectTheme.ts`): maths, English, the sciences and Islamic studies wear
+  their corner's hero and motif; any other subject its catalog colour deepened until
+  white reads at 4.5:1 (social studies is deep pink, Arabic teal); no subject keeps
+  the navy. The band also shows how ready the lesson is («٠ من ٥ جاهزة» with a bar).
+  Each prep row has its own hue (`PREP_ROWS[].color`: plan indigo, worksheet teal,
+  quiz violet, slides blue, activity orange), tinted until made and solid once made.
+  The cards, quick tools and assistant panel are `useSurface()` / `PressableScale`,
+  and each class chip carries its subject's colour. Phone Today takes the same band
+  colour. «ابدأ الحصة الآن» keeps its amber with a light edge, which a warm band needs.
+- **Pinned.** `subjectTheme.test.ts` (white on every subject's band, corners match,
+  common subjects differ, chip text on both cards) and `todayLook.test.ts` (distinct
+  row hues, the band follows the subject on both sizes, no hand-built glows, no
+  `borderWidth` on the surfaces).
+- **Verified:** mobile tests and typecheck; the web build at 1600px with an English,
+  a maths and a social-studies lesson, light and dark, and at phone size.
+- **Not verified:** Android.
+
+## The desktop Tools grid reads right to left in Arabic — 2026-10-22
+
+- **What was wrong.** The Tools tab's grid on desktop was `flexDirection: 'row'`
+  whatever the language, so in Arabic the first tool («شرائح الدرس») sat top-left and
+  the order ran left to right, while the phone grid (flipped by `isRTL` since #1174)
+  started top-right.
+- **Fix.** Both sizes take their direction from `isRTL` (`app/(tabs)/ai-tools.tsx`);
+  `listGrid` no longer fixes its own.
+- **Pinned.** `toolsGrid.test.ts` fails a `flexDirection` inside `listGrid` and checks
+  the direction is applied to both sizes.
+- **Verified:** mobile tests and typecheck; the web build at 1366px in Arabic (first
+  tool top-right) and English (top-left), and at phone size (unchanged).
+
+## Live games: students answer from any device — 2026-10-22
+
+**What changed.** In the presenter, the 🏆 picker gets «العب مباشرة على الأجهزة»: the
+deck's own choice questions (`scoreableSlides`, the one rule for what a game may score)
+become a live game hosted at `/ai-tools/classroom/live-host?id=…` (teacher-only). The
+projector shows a big code and a QR for `app.iqrra.com/live`; students join on **any
+browser device** — a school computer lab, tablets, or at home for an evening review (phones
+are banned in Jordanian classrooms, so the copy says «جهاز», never «هاتف») — with the code
+and a typed name, **no account**; a signed-in student is recorded as such («دخل بحساب
+طالب»), the host never sees the account's name. Each question: coloured options with a
+shape and a letter (colour is never the only cue), a server-anchored countdown, «أجاب ٢ من
+٣»; reveal (automatic when everyone answered or time ran out) shows the distribution, the
+correct option and the top five; players see ✓/✗, «+٩٣٥ نقطة», «المركز ١ من ٣»; the end is
+a podium. A reload resumes from the stored player token.
+
+**Server.** Tables `live_games`, `live_players`, `live_answers` (migration
+`0012_numerous_stature.sql`, additive, DEFERRED RLS with hand-written GRANTs, plain `db`).
+Host: `POST /live-host/games`, `GET /live-host/games/:id`, `POST …/advance`
+(`start|reveal|next|end`, any other move 409), `POST …/kick`. Public: `POST /live/:code/join`
+(optional student session → `user_id`), `GET /live/:code/state` and `POST /live/:code/answer`
+with `X-Live-Token` (32 random bytes, only the sha256 stored). Scoring uses only the server
+clock: correct = round(500 + 500 × time left / seconds), 2 s grace, one answer per question.
+The answer key never reaches a player before the reveal (pinned by a test).
+**Limits** (from the security review): no per-IP ceiling on valid polls — a school's
+classes share one address — only a per-token limit plus a per-IP limit charged for rejected
+tokens; join 240/min per IP; 100 players per game (row-locked count); an unknown code and an
+unknown token get the same 401; names reject invisible/RTL-override/filler characters and
+need a letter or digit; 30 games per teacher per hour; games older than 7 days are deleted
+on each create (the retention rule for children's typed names). Clients back off on 429.
+
+**Verified.** Root typecheck; api-server suite 2,390 pass with a real Postgres (live DB test
+19, also with `RLS_ENFORCE` on), rules unit 33, `mountOrder`, `rlsCoverage` on a fresh
+database; mobile suite pass except the known local CRLF `scopeSelection` (live tests 36).
+**End to end in headless Chromium** on a throwaway database, run twice (before and after
+the review fixes): teacher quiz → present → 🏆 → «العب مباشرة» → lobby with code and QR;
+three devices join (two anonymous, one signed-in student), a duplicate name refused; fast
+correct 935, slower correct 847, wrong 0; auto-reveal on all-answered and on time-out;
+ranks «من ٣»; podium; a reload keeps the final rank. **Not verified:** a real classroom
+(30 devices, one NAT), the QR scanned by a camera, Android, load (each poll is a few reads
+plus a rate-limit upsert). Scores are not saved to a student's record.
+
+## Status-bar icons read on the corner bands — 2026-10-22
+
+- **What was wrong.** Every corner screen (`CornerFrame`), every game (`GameShell`'s
+  accent header) and the library opened as a page draw a dark band under the status
+  bar. Nothing set the icon colour there, so the system default applied: dark icons
+  in light mode, on a dark band. Today had the same bug and fixed it for itself in #1174.
+- **Fix.** One hook, `useLightStatusBar()` (`hooks/useLightStatusBar.ts`), called by
+  `CornerFrame`, `GameShell`, the library page and Today. A screen holds a *request*
+  for light icons while focused (`services/statusBarRequests.ts`); the icons are light
+  while any request is held. Today's set-on-focus, reset-on-blur would have failed on a
+  push from one dark screen to another: the new screen's focus effect runs at mount,
+  before the navigator blurs the one it covers, so the reset landed last.
+- **Pinned.** `statusBar.test.ts`: the push order stays light, a release counts once,
+  every `<Band>` that pays `insets.top` calls the hook (code lines only: profile's band
+  sits under the tab header, and says so in a comment), and nothing sets
+  `light-content` by hand.
+- **Verified:** mobile tests and typecheck.
+- **Not verified:** on a device. The status bar exists only on Android and iOS, and
+  the web build is a no-op, so this has not been seen running.
+
+## Grade 4 reading in the English corner — built, shown to nobody yet, 2026-10-22
+
+Reading activities for Grade 4, after Grades 1–3: the three word activities on the 9
+hub lessons and «Read the sentence» on four of them. **Every unit is `reviewedBy: null`
+in `READING_UNITS` (`lib/curriculum/src/englishReading.ts`), so nobody sees any of it
+yet.** Spec: `docs/superpowers/specs/2026-10-22-english-corner-reading-g4-design.md`;
+plan: `docs/superpowers/plans/2026-10-22-english-corner-reading-g4.md`.
+
+- **Word activities.** First letter on all 9 lessons. Read and find on S1 U1, U3, U4, U5,
+  S2 U8 and U10 (the lessons whose words have pictures). Starts with on the same lessons
+  except S1 U1. S1 U2, S2 U7 and S2 U9 have First letter only.
+- **One new first-sound exception, `hard-q`.** «Qatar» and «Qatari» start with Q but are
+  said /k/, so they are skipped (a new `SoundSkip` reason and form text); «quickly»,
+  «quiet» and «quietly» are /kw/ and stay. No Grade 1–3 word starts «qa», so the older
+  forms did not change. The rule leaves out **45** of the 172 words (43 by the old rule,
+  2 by this one), each listed on the form with its reason.
+- **A consequence found while building:** S1 U1's pictured words are its six flags, and
+  with Qatar, Egypt and the two multi-word countries skipped only Jordan (j) and Spain (s)
+  have a first sound, under the floor of three letters. So **S1 U1 has no Starts with**;
+  the form says so.
+- **Read the sentence** on S1 U1 (30 sentences, 6 flags → a round of 6), S1 U3 (24, round
+  of 8), S1 U5 (21, 13 picture words, round of 8: the 16 job sentences have he / she
+  partners, the five clothes sentences none) and S2 U8 (32, round of 8). It needs the
+  unit's reading and grammar sign-offs. `readSentencePool` now serves Grades 2, 3 and 4;
+  Grade 1 stays out. Five lessons have no sentence activity (S1 U2, S1 U4, S2 U7, U9, U10:
+  no pictured sentences) and the form says why.
+- **Code change is curriculum only.** `games.ts`, the screen, the lesson card and the
+  strings needed nothing; tests pin the data (`englishReadingG4.test.ts`) and the
+  builder on the Grade 4 pools (`englishReadingG4Games.test.ts`).
+- **The teacher's form** is `docs/english-reading-g4-review.html` (9 unit pages, 172
+  words, 107 sentences, six «غير مشمول» notes), written by the `grammar-sheet` script
+  and pinned by a test. The Grade 1–3 reading forms and all grammar sheets and forms are
+  byte-identical.
+- **Verified:** curriculum 581 tests, mobile 6782 pass / 10 skipped / 0 fail, root
+  typecheck. **In a browser** at 390 px in Arabic and English, with sign-offs in the
+  working tree only (restored straight after; never committed; `grep -c "LOCAL CHECK"`
+  is 0): the sentence card shows on S1 U1, U5 and S2 U8 once both sign-offs are set; S1 U3
+  and S1 U4 with reading but not grammar signed show the word cards and no sentence card;
+  S1 U1 has no Starts with; S2 U7 shows First letter only; unsigned lessons show nothing;
+  an S1 U1 round is 6 questions then «Finished», S1 U5 and S2 U8 rounds are 8; the flags
+  with the girl and boy markers and S2 U8's doubled pictures fit; no horizontal scroll.
+- **Not verified:** on a device; with a teacher; the audio — «Read the sentence» plays the
+  grammar recording after the answer and adds none of its own, so it needs the pending
+  `english-audio` run (OpenAI and R2 keys).
+- **Known limit:** S1 U1's round is 6 questions, not 8, because it has six flags; the
+  form asks the teacher whether that is enough, and whether the two-sentence «Where are
+  you from? I'm from Qatar.» is too long to read.
+
+**To switch a unit on:** record the audio; sign and set the unit's grammar
+(`englishGrammarG4.ts`); a Grade 4 English teacher signs that unit's page of
+`docs/english-reading-g4-review.html`, printed; then set its `reviewedBy` in
+`englishReading.ts` and merge.
+
+## Game buttons read in dark mode — 2026-10-22
+
+- **What was wrong.** A game's «العب مرة أخرى» (and the maths drill's «ابدأ», the
+  lesson game's «التالي») set the game's accent as its fill through `style`, so the
+  label kept `Button`'s own colour: white in light mode, but navy in dark mode, which
+  measured 2.2–4.3:1 on every game accent.
+- **Fix.** `Button` takes `fill`: the background, with its label picked by `textOn`.
+  The three game buttons use it, and every game accent now carries white text, like
+  the header on the same colour. Capitals' teal `#0E8F86` was 3.97:1 under white
+  (its header title too, in both modes); it is now `#0B7F77` (4.87:1).
+- **Pinned.** `gameAccents.test.ts` measures every game and tile accent against
+  white and `textOn`, and fails any `<Button>` that sets `backgroundColor` by style.
+  It found the third button (the lesson game's) that a plain grep had missed.
+- **Verified:** mobile tests and typecheck; the web build at phone size in light and
+  dark: the colour game's game-over panel, the multiplication drill and Capitals.
+- **Not verified:** Android.
+
+## A lesson game can be homework, and the teacher sees the scores — 2026-10-22
+
+**What changed.** In a class's «الواجبات», «لعبة من الدرس» attaches a lesson game
+(memory, unscramble or spot-the-term) from the class's own grade and subjects
+(`components/classes/GamePickerSheet.tsx`, lessons from `gameLessonsForScope`). The
+attachment is a new `homework.resources` kind, `{kind:"game", lessonId, game, title}`
+(`lessonId` checked against the curriculum, `game` against the three). A student opens it
+from «المدرسة» → `/play/lesson/<id>?game=…&hw=<homework>`; when a **signed-in student**
+finishes a round of **the attached game**, the app posts it
+(`PUT /student/homework/:id/game-result`), the footer says «أُرسلت نتيجتك إلى المعلم»
+(retry on failure), and the homework is ticked done for the same roster rows. The teacher's
+homework row gets «النتائج» (`GET /homework/:id/game-results`, `GameResultsSheet`): each
+student's best score and attempts. Student and parent homework items carry `gameResults`
+and show «نتيجتك: ٦ من ٦» / «نتيجة طفلك: …».
+
+**Storage.** New table `game_results` (migration `0011_cuddly_captain_america.sql`, additive,
+granted to `iqraa_app`, RLS-classified DEFERRED like `homework_completions`): one row per
+homework × roster row × **lesson** × game — a result must name the attached lesson as well
+as the game, so two memory games from different lessons are two results, and another
+lesson's round never counts. Results of a game no longer attached are not returned. It keeps
+the **best** score/total ratio (a tie keeps the existing),
+`attempts` counted, `played_at` updated. The best-of rule is in two places on purpose —
+`isBetterResult` (`modules/homework/game.ts`, unit-tested) and the atomic upsert in
+`lib/homeworkGame.ts` (db-tested). Rows are the caller's own `self` rows in the class
+(`ownHomeworkRows`, now shared with `setHomeworkDone`); every failure is a 404.
+Memory's real score is moves, so a finished memory round posts `score = total = pairs`.
+**Older apps** do not know the `game` kind and drop it, then a teacher's edit PATCHes the
+whole list: so a PATCH without `gamesIncluded: true` keeps the existing games it omitted
+(this client always sends the flag; with it the list is authoritative). Scores are reported
+by the client — fine for practice, never used for mastery.
+
+**Verified.** Workspace typecheck; api-server suite 2,324 pass with a real Postgres
+(homework + family db tests cover create/reject, best-of, tie, attempts, 404s, teacher
+ownership, family lists); `rlsCoverage` 6/6 on a database migrated from scratch; mobile
+suite pass except the known local CRLF `scopeSelection`. End to end in headless Chromium
+against this branch's API on a throwaway migrated database with the family fixtures:
+teacher's homework row and picker; student «المدرسة» → 🎮 → spot 6/6 → «أُرسلت نتيجتك»;
+API and teacher sheet «سارة … ٦ من ٦»; student and parent see the score, homework moved to
+«تم إنجازه». **Not verified / not built:** Android; English-corner activities as homework
+and English-corner progress on the server (still device-only); a parent push for a score.
+
+## Any deck plays as Class Challenge, with sound — 2026-10-22
+
+**What changed.** The presenter shows a 🏆 button on any deck that is not
+already a game and holds at least three scoreable choice questions (options and
+an in-range key): a quiz deck, a «ابدأ الحصة» warm-up, a lesson deck's checks, a
+saved deck reopened from ملفاتي. The teacher picks 2–6 teams and the same deck
+restarts as Class Challenge — its own questions, keys, pictures and badges, no
+generation (`buildGameDeckFromSlides` in `services/classDeck.ts`; the quiz-built
+game and this one share `gameIntroSlide` / `pushGameRounds`). A question slide
+brings only its badge, hint and picture or graph (an allowlist — a kept `layout`
+would draw over the stem). «العودة إلى الشرائح» puts the original deck, slide
+and ink back (confirming first once scores exist). In a game, a chime
+plays when a team is awarded (not when an award is taken back), a low tone when
+a question's timer runs out, a short fanfare on the podium; a speaker button
+mutes them for the session (`services/gameSounds.ts`, three synthesized WAVs in
+`assets/sounds/`, ~88 KB).
+
+**Verified:** typecheck; `classDeck.test.ts` (new builder + the existing quiz
+game tests unchanged); headless Chromium on the web build with a real local
+teacher — quiz (demo generation, G10 circles) → «اعرض على الشاشة» → 🏆 → 4
+teams → question 1 → reveal (bank badge carried over) → award: ١٠٠ on the strip
+and `correct.wav` fetched → back to the slides (confirm, then the 17-slide deck
+at slide 1). **Not verified:** that the cues are audible on a
+projector or on Android, the timer and podium cues (same path, not driven).
+
+**Not done from the games plan's Phase 2, on purpose:** a separate «save
+game»: saving a game deck as `slides` would make «ابدأ الحصة» present it as the
+lesson's deck (`savedDeckFor` takes the newest), and replay is already covered —
+save the quiz or deck, reopen it, press 🏆. Bank-first questions in
+`/ai-tools/game`: the shared pool already serves a repeat lesson instantly and
+the offline path already draws from the banks. Printed bingo cards: the prompt's
+`printables` are instructions, not card data — it needs its own design.
+
+## Progress is celebrated — 2026-10-22
+
+- **Four moments.** `Celebrate` (`components/ui/Celebrate.tsx`) marks an exam handed in,
+  a game over, the last homework ticked and a lesson's prep checklist reaching all ready.
+  The exam fires on a successful hand-in the student made; a forced hand-in (time up, or
+  the exam closed) does not celebrate, and neither does a paper reopened already handed in
+  or `already_submitted`. The other three fire only when the state crosses into done
+  (`justCompleted`, `services/celebration.ts`; the prep checklist through `prepCrossing`,
+  which wraps it), never on opening a screen that is already complete: Today opened at 5 of
+  5, a switch to a lesson that is already ready, or a reloaded finished homework list is
+  not a moment.
+- **What each one waits for.** Homework celebrates after the save succeeds, only for a tick
+  (not an untick), and only when no other homework save is still in flight (that save's
+  optimistic change may yet roll back). The last save to finish judges the list as it is
+  rendered now, so ticking the last two quickly still celebrates, once. The prep checklist is judged only when the saved materials came from the
+  server (or nobody is signed in) and the lesson's «غير مطلوب» choices have been read for
+  that lesson; `getItems` never rejects and turns a failed or timed-out read into the
+  device-only list, so the board reads `getAllItemsChecked()` and a degraded read drops the
+  baseline instead of becoming it (otherwise the next good read at 5 of 5 would celebrate on
+  opening Today). On web the window-focus reload only runs while Today is the focused screen.
+- **How it looks.** A confetti burst, a badge, a success haptic and a screen-reader
+  announcement; with reduced motion only the badge fades. The badge sits in the upper
+  third so it never covers the next action, and a non-perfect game end is confetti only
+  (the game's own panel already says «أحسنت!»).
+- **The classroom presentation keeps its own celebration**; it is not touched.
+- **Verified:** `pnpm test` (mobile) and `pnpm run typecheck`. `celebration.test.ts` pins
+  the crossing and `prepCrossing` (opening at 5 of 5, a degraded read, a stale skips list,
+  a change of lesson); `celebrateMoments.test.ts` reads each screen's source for the rule it
+  depends on (exam: after the submit and not on the forced path; homework: after the awaited
+  save, behind the tick and no-other-save-in-flight guard; Today: `prepCrossing` over a
+  checked read). Screenshots of the game-over burst were taken in a browser in light, dark
+  and reduced motion. The badge position on the exam hand-in and the perfect-score badge was
+  checked by reading the code only.
+- **Not verified:** screenshots of the homework and prep-checklist moments; the haptic and
+  the screen-reader announcement, on a device.
+
+## Math Corner exercises: learn or test yourself on a lesson from the book, 2026-10-22
+
+**What a user can do.** The Math Corner hub's first card, «تمارين الدروس», opens
+`/curriculum/math/exercises`: grade chips 1–10 (a teacher starts on the first
+grade they teach), then the grade's maths units and lessons in book order. A
+lesson (`/curriculum/math/exercises/<kb lesson id>`) shows ten multiple-choice
+questions, easy → hard, in two modes:
+- **تعلّم (learn):** «أظهر الحل» per question highlights the key and shows the
+  checked working where a person wrote it (`steps.ts`; today only Grade 10 bank
+  items have any). A teacher also gets «أظهر كل الإجابات» to go through the set
+  with the class, and «نسخ الرابط», which copies the lesson's production link.
+- **اختبر نفسك (test yourself):** a tap marks the answer at once and locks it
+  (green key, red wrong pick, working if any); a score line counts up, and the
+  end offers «أعد المحاولة» (same set) or «تمارين جديدة».
+Students reach it with no gating change (`/curriculum` prefix).
+
+**Best score per lesson, on this device.** Finishing a test-yourself set saves
+the lesson's best score (`services/mathExerciseProgress.ts`, AsyncStorage key
+`mathExercises.best.v1.<user id>`, so two children on one family phone keep
+separate lists). The lesson list shows «أفضل نتيجة: 8 من 10» under a lesson, and
+test mode shows it under the running score. Scores compare as fractions because
+a thin lesson's set can be shorter than ten (`recordBest`; a tie keeps the longer
+set), and stored JSON is read defensively (`parseBests`); both are tested.
+Checked in a browser: finish a set, the list shows the best, and it survives a
+full page reload. **Not built:** nothing reaches the server, so a new phone or a
+cleared app starts from zero and a teacher cannot see who practised, the same v1
+limit as the English corner's stars.
+
+**Where the questions come from.** `services/mathExercises.ts` lists only the
+lessons `hasMathBank` covers (445 of 485 Grade 1–10 maths lessons on 2026-10-22)
+and draws each item from the same lesson-keyed bank as worksheets and quizzes
+(`takeConcreteMath`, with its own session set). Multiple choice only, because the
+bank's key is the option as displayed, so marking is string equality. A thin
+lesson gives a shorter set rather than a repeat (some Grade 10 lessons give 3–8).
+**The extracted book items are not used**: they are held behind `BOOK_ITEMS_LIVE`
+until a person compares them with the printed pages, and a student screen must
+not get round that gate. `mathExercises.test.ts` builds every covered lesson's
+set in both languages and checks every key is one of its distinct options.
+
+**«؟» as a blank stays inside its equation (`isolateForeignRuns`).** The bank's
+Grade 1–6 stems write the missing number as «؟» («88 × ؟ = 1056»). It was not in
+the run class, so the equation was cut into pieces that the bidi algorithm
+reordered («× 88 ؟ 1056 =»), on every screen that shows these stems. A «؟» next
+to an operator is now part of the run, and such a run gets a left-to-right
+override inside its isolate, because «؟» is an Arabic letter to bidi and would
+turn the digits after it Arabic (rule W2). A «؟» straight after a digit ends the
+sentence and stays in the flow. Checked by glyph position in a browser, not by
+eye: every stem on a Grade 5 lesson read in typed order.
+
+## Grade 4 grammar in the English corner — built, shown to nobody yet, 2026-10-22
+
+Grammar for Grade 4, after Grades 1–3. 9 hub lessons (S1 U1–U5, S2 U7–U10), **454
+sentences**. S2 U6 is a revision unit with no word list, so it is not a hub lesson.
+**Every unit is `reviewedBy: null` in `GRAMMAR_UNITS_G4`
+(`lib/curriculum/src/englishGrammarG4.ts`), so nobody sees any of it yet.** Spec:
+`docs/superpowers/specs/2026-10-22-english-corner-grammar-g4-design.md`; plan:
+`docs/superpowers/plans/2026-10-22-english-corner-grammar-g4.md`.
+
+- **Pictures only where a picture shows what the sentence says.** The book's grammar is
+  comparison, modals and the past simple, and a picture shows none of them. Countries,
+  foods and jobs (S1 U1, U3, U5) are pictured; S2 U8 is pictured only for there was /
+  wasn't / were. S1 U2, S2 U7, U9 and U10 carry none (Choose and Build).
+- **Engine, all additive** (`englishGrammar.ts`): `{cmp:}` and `{sup:}` read an explicit
+  `ADJECTIVE_FORMS` table (11 adjectives); `{ed:}` is the past (+ed, +d, `stop` →
+  `stopped`, irregulars in `PAST_OVERRIDES`); a form Choose can name its wrong option
+  (`base`, `past`, `comparative`) so the child only ever sees real forms («higher» /
+  «high», «the deepest» / «the deeper», «used» / «use»); a `claim` gives a picture-free
+  True or false (a true sentence or its swapped twin); a `fact` Yes or No no longer
+  needs a picture; the hint «✅ = it was there».
+- **True or false and Yes or No without pictures, S1 U4 only,** from six written ranking
+  pairs (mountain > hill, lake > pool, sea > lake, river > stream, lion > rabbit, shark
+  > goldfish). Every pair is on the form's data page. The app's two screens hide the
+  picture area when an item has none.
+- **Build the sentence keeps its cap of 9.** A longer pair builds its answer half.
+- **The teacher's form and sheet** are `docs/english-grammar-g4-review.html` and
+  `-sheet.md`, written by the `grammar-sheet` script and pinned by tests. A **data
+  page** at the front prints eight tables a teacher must check: the comparisons and
+  their false twins, the adjective forms, countable / uncountable foods, the eight
+  must / mustn't rules, nationalities, the past forms, the invented timetable, and the
+  adverb rows. Grade 1–3 sheets and forms and all three reading forms are
+  byte-identical. Open points for the teacher are listed in the spec.
+- **Left out on purpose:** ordinal numbers (the book gives no sentence frame), dates and
+  times beyond S1 U2's examples, S2 U6, new pictures, and reading (the next spec).
+- **Audio** is a separate step and has not been run: `english-audio` now also voices the
+  Grade 4 sentences, the Build prompts and the false twins. It needs OpenAI and R2 keys.
+- **Verified:** curriculum 572 tests, mobile 6662 pass / 10 skipped / 0 fail, root
+  typecheck. **In a browser** at 390 px in Arabic and English with five units signed off
+  in the working tree only (restored straight after; never committed;
+  `grep -c "LOCAL CHECK"` is 0): the activity matrix of all nine lessons (an unsigned unit
+  showed nothing), S1 U4 True or false (six items, swapped twins judged false, no picture)
+  and Yes or No (eight picture-free facts), S2 U8's hint, S2 U9's «visited / visit»
+  Choose, S1 U1's flag Yes or No, and no horizontal scroll anywhere.
+- **Not verified:** on a device; with a teacher; every ranking pair as a fact (the
+  teacher checks them); the audio.
+
+**To switch a unit on:** record the audio; a Grade 4 English teacher signs that unit's
+page of `docs/english-grammar-g4-review.html`, printed (and the data page); then set its
+`reviewedBy` in `englishGrammarG4.ts` and merge. Grade 4 reading is the next spec.
+
 ## Lesson games from a lesson's key terms — 2026-10-22
 
 **What changed.** A lesson with at least four key terms (`keywordsAr`) gets
@@ -79,7 +734,109 @@ one not scoring) played to the game-over panel. **Not verified:** PostHog
 delivery (no key locally), the lesson-page button (behind teacher login),
 Android.
 
----
+## Grade 3 reading in the English corner — built, shown to nobody yet, 2026-10-22
+
+Reading activities for Grade 3, after Grades 1 and 2: the three word activities on
+the 8 hub lessons and «Read the sentence» on three of them. **Every unit is
+`reviewedBy: null` in `READING_UNITS` (`lib/curriculum/src/englishReading.ts`), so
+nobody sees any of it yet.** Spec:
+`docs/superpowers/specs/2026-10-22-english-corner-reading-g3-design.md`; plan:
+`docs/superpowers/plans/2026-10-22-english-corner-reading-g3.md`.
+
+- **Word activities.** First letter on all 8 lessons; Read and find and Starts with
+  on S1 U3, U5, S2 U7, U9, U10 (the lessons whose words have pictures). S1 U2, S1 U4
+  and S2 U8 get First letter only. The Grade 1 first-sound rule needed no new
+  exception: it leaves out 20 words, all listed on the form with the reason.
+- **Read the sentence** on S1 U3 (26 sentences, round of 8), S1 U5 (22, round of 8;
+  the six transport sentences come as he / she pairs, so the other sex's picture is
+  a wrong answer) and S2 U9 (18, **round of 6**: six pictured words, each as
+  There's / There isn't / There are, so the first other form is the partner). The
+  rule is Grade 2's, on the data: pictured grammar sentences that are not Yes or No,
+  at least 6 distinct picture words. `readSentencePool` now serves Grades 2 and 3;
+  Grade 1 stays excluded. It needs the reading AND the grammar sign-off of the unit.
+- **Code change is curriculum only.** `games.ts`, the screen, the lesson card and
+  the strings are grade-agnostic and needed nothing; tests pin the builder on the
+  Grade 3 pools (`englishReadingG3Games.test.ts`) and the data
+  (`englishReadingG3.test.ts`).
+- **The teacher's form** is `docs/english-reading-g3-review.html` (8 unit pages, 126
+  words, 66 sentences, a «غير مشمول» note for the 7 lessons with a gap), written by
+  the `grammar-sheet` script and pinned by a test. The Grade 1 and 2 reading forms
+  and all grammar sheets and forms are byte-identical.
+- **Verified:** curriculum 544 tests, mobile 6647 pass / 10 skipped / 0 fail,
+  root typecheck. **In a browser** at 390 px in Arabic and English, with sign-offs
+  in the working tree only (restored straight after; never committed): the sentence
+  card shows on S1 U5 and S2 U9 only; S1 U3 with reading but not grammar signed
+  shows the three word cards and no sentence card; S2 U7 shows words only; an
+  unsigned unit shows nothing; no horizontal scroll; a full S2 U9 round is exactly 6
+  questions then «Finished»; S1 U5 rounds are 8; the partner cards (girl's
+  underground against «He goes…», the single ✅ clock against «There are clocks.»)
+  fit and read clearly.
+- **Not verified:** on a device; with real teacher sign-off; the audio — «Read the
+  sentence» plays the grammar recording after the answer and adds none of its own,
+  so it needs the pending `english-audio` run (OpenAI and R2 keys).
+- **Known limit:** S2 U9's round is 6 questions, not 8, because only six of its
+  words have pictures; the form asks the teacher whether that is enough.
+
+**To switch a unit on:** record the audio; sign and set the unit's grammar
+(`englishGrammarG3.ts`); a Grade 3 English teacher signs that unit's page of
+`docs/english-reading-g3-review.html`, printed; then set its `reviewedBy` in
+`englishReading.ts` and merge. Grade 4 is the next grade.
+
+## Grade 3 grammar in the English corner — built, shown to nobody yet, 2026-10-22
+
+Grammar for Grade 3, after Grades 1 and 2. 8 hub lessons (S1 U2–U5, S2 U7–U10),
+**324 sentences**. S1 U1 (this / these / that / those) and S2 U6 are book units
+with no vocabulary list, so they are not hub lessons and have no grammar here.
+**Every unit is `reviewedBy: null` in `GRAMMAR_UNITS_G3`
+(`lib/curriculum/src/englishGrammarG3.ts`), so nobody sees any of it yet.** Spec:
+`docs/superpowers/specs/2026-10-21-english-corner-grammar-g3-design.md`; plan:
+`docs/superpowers/plans/2026-10-21-english-corner-grammar-g3.md`.
+
+- **Pictures only where the sentence is shown by them.** S1 U2 (routines), S1 U4
+  (activities), S2 U7 (farm actions) and S2 U8 (forest) carry none, because their
+  words are verbs and phrases. They get Choose the word and Build the sentence
+  (S2 U10 gets Build and Yes or No: every pattern there is a Yes or No, and a Yes
+  or No sentence is never a Choose item). True or false is on S1 U3, U5 and S2 U9;
+  Yes or No on S2 U9 and U10. No new pictures.
+- **Engine, all additive** (`englishGrammar.ts`): plural and article forms for
+  Grade 3 words (`mangoes`, `ice lollies`, `glasses`, `shampoo`); verb forms
+  `{v:slot}` (a base verb phrase, one tile per word), `{3:slot}` (third person:
+  `has`, `goes`, `does`, `watches`, `roller skates`) and `{ing:slot}`; a verb-form
+  Choose (`plays` against `play`, found by comparing the two realisations);
+  `rows` (explicit slot values: a routine with its time, an animal with its
+  ability); a `fact` Yes or No (`Can penguins swim?`, answered from the row) and
+  a `hint` («✅ = it's there»); and Build's `build` field.
+- **Build the sentence: a cap of 9 for Grade 3, 7 for Grades 1–2** (`buildCap`).
+  A longer question-and-answer pair builds its **answer half**, the question
+  printed and spoken above the tiles; the form says so under the sentence. A
+  sentence that can be built neither way is `build: null` and a test fails for any
+  Grade 3 sentence like that. A Yes or No round is as long as the lesson's
+  distinct pictures (six on S2 U9), one picture each.
+- **The teacher's form and sheet** are `docs/english-grammar-g3-review.html` and
+  `-sheet.md`, written by the same `grammar-sheet` script; tests pin them. Grade 1
+  and 2 sheets and forms and both reading forms are byte-identical. Open points
+  for the teacher: the 16 animal-ability facts (every row listed), «✅ = it's
+  there», building only the answer half of long pairs, the paired routine times,
+  and the third-person forms.
+- **A known defect, not fixed for Grades 1–2:** their slot Choose measured the
+  wrong word with the right word's span, so «I'm wearing boots.» offers «boots»
+  against just «a» (4 rows: Grade 1 boots, socks; Grade 2 boots, shoes). Grade 3
+  measures the other word's own span; Grades 1–2 keep the old measure so their
+  printed forms stay byte-identical. The fix is one condition (`grade >= 3` in
+  `unitSentences`) plus regenerated docs; raised as a separate task.
+- **Audio** is a separate step and has not been run: `english-audio` now also
+  voices the Grade 3 sentences and the Build prompts (the question halves). It
+  needs OpenAI and R2 keys.
+- **Checked in a browser** at 390 px in Arabic and English with units signed off in
+  the working tree only (restored straight after; never committed): the activity
+  matrix per lesson, a picture-free verb-form Choose, an answer-half Build (question
+  above with a hear button, six answer tiles, judged right), Yes or No `fact` with
+  no hint and `marker` with the «it's there» hint, no horizontal scroll, and an
+  unsigned unit showing nothing.
+
+**To switch a unit on:** record the audio; a Grade 3 English teacher signs that
+unit's page of `docs/english-grammar-g3-review.html`, printed; then set its
+`reviewedBy` in `englishGrammarG3.ts` and merge. Grade 3 reading is the next spec.
 
 ## Teachers' phones open on Today — 2026-10-22
 
@@ -5292,7 +6049,7 @@ picture.
   `scripts/render_lesson_pages.py` renders from our own copy of the student book
   (so the page named is by construction the page shown) into the existing
   `book-pages/<kbLessonId>/<n>.jpg` store and lists it in `book-page-links.json`
-  (`pdfUrl: null`, ≤ 20 pages a lesson). 778 lessons / 4,776 pages added (1.05 GB, all in the bucket).
+  (`pdfUrl: null`, ≤ 20 pages a lesson). 778 lessons / 4,776 pages added (1.05 GB, all in the bucket); the second pass below adds more.
 - **Only confident matches.** Score ≥ 0.9; 17 weaker matches were dropped (several
   landed on the contents page), and so was the whole Grade 7 PE S1 book (its «sure»
   hits were page 2) and one Grade 3 Arabic S2 entry opening on page 3.
@@ -5300,10 +6057,29 @@ picture.
   with no figures of its own shows up to 3 book pages («من كتاب الطالب»); a
   revision unit with no figures shows the opener page of its first lesson that has
   one. A lesson that has figures is unchanged.
-- **Still without pages:** 20 books (386 lessons) with no student PDF on disk —
-  Grades 1–2 Arabic/Islamic/PE, Grades 4–6 PE and digital, Grade 8 Arabic S2 —
-  need an NCCD download; PE books (all grades except 3), Grade 7 digital S2, Grade
-  5 Arabic S2 (3/25) and parts of Grade 8/9 digital and civic did not map.
+- **Second pass, 2026-10-22.** Two scoring fixes in `map_lesson_pages.py` took the
+  PE books from 2/13 to all lessons, Grade 5 Arabic S2 from 3/25 to 25/25, civic and
+  the digital books to nearly all: a lesson number set in huge type («2» at 24 pt) is no
+  longer the whole heading (the title is also looked for under the largest span that
+  holds a word); a diagonal «draft copy» watermark (72 pt) is ignored; a Latin subtitle
+  in the title's size no longer counts against an Arabic title. 141 lessons added and 9
+  existing lessons moved to their real opener (the first pass had pointed several civic
+  and digital lessons at a body page). 1,288 lessons / 9,487 pages are now listed.
+- **Third pass, 2026-10-22: the other subjects.** The mapper also reads maths, science,
+  social, vocational, arts, financial literacy, geography, history and the grade 10
+  science books (`SUBJECT_KEYS`; `dump_lesson_titles.mjs --all`). Only lessons that
+  showed no picture at all were added (a lesson with figures keeps its figures), and a
+  match found through the contents table had to agree with the opener page's own heading
+  (>= 0.6) or it was dropped: 344 of 396 candidates kept (Grade 6 maths p2-5, Grade 8
+  social and similar were wrong pages). 1,632 lessons / 11,648 pages are now listed.
+  English has no source PDFs registered, so it is untouched.
+- **Biology book pages 9 and 10** (the finch beaks, the snail Figure 1) are cropped from
+  our copy as `p009`/`p010` (unit 1 lesson 1; in R2) — unit 1 now opens with the book's
+  own experiment.
+- **Still without pages:** 20 books (386 lessons) with no student PDF on disk — Grades
+  1–2 Arabic/Islamic/PE, Grades 4–5 PE and digital, Grade 8 Arabic S2 — need an NCCD
+  download; a handful of lessons whose opener scores under 0.9 (Grade 8 digital S2
+  «تمدد الشبكة», one Grade 9 PE S2 lesson) are left to the text-only deck.
 - Bucket: pages are in `iqraa-public/book-pages/`; the app shows nothing new until
   the OTA ships.
 

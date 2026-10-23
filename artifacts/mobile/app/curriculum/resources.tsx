@@ -39,8 +39,10 @@ import { Image } from 'expo-image';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import type { GlyphId } from '@/constants/glyphs';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
+import { useLightStatusBar } from '@/hooks/useLightStatusBar';
 import { useLanguage } from '@/context/LanguageContext';
 import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { getMyExams, getMyGradeIds } from '@/services/studentExam';
@@ -118,7 +120,7 @@ const ACCENT = palette.primary;
 /** A corner tile's icon colours — the corner's own, so its hue is learned before it is entered. */
 const cornerLook = (id: CornerId) => CORNERS[id][scheme];
 /** A front-row tile in its corner's look and pattern. */
-const cornerTile = (id: CornerId) => ({ look: cornerLook(id), motif: CORNERS[id].motif, motifOpacity: CORNERS[id].motifOpacity });
+const cornerTile = (id: CornerId) => ({ look: cornerLook(id), glyph: CORNERS[id].drawing, motif: CORNERS[id].motif, motifOpacity: CORNERS[id].motifOpacity });
 /** The curriculum and «my exams» tiles are the library's own: brand teal and the leaf. */
 const BRAND_TILE = {
   look: { hero: palette.hero, primary: palette.primary, primaryForeground: palette.primaryForeground } as TileLook,
@@ -312,7 +314,7 @@ function ResourceRow({
           onError={() => setThumbFailed(true)}
         />
       ) : !isVideo ? (
-        <Ionicons name={KIND_ICON[item.kind]} size={large ? 36 : 24} color={accent} />
+        <Ionicons name={KIND_ICON[item.kind]} size={large ? 40 : 24} color={accent} />
       ) : null}
       {isVideo ? (
         <View style={[styles.playBadge, large ? styles.playBadgeLarge : styles.playBadgeSmall, { backgroundColor: ACCENT_FILL }]}>
@@ -388,7 +390,7 @@ function ResourceRow({
             />
           ) : isBook ? null : (
             <View style={[styles.thumb, styles.thumbFallback, { backgroundColor: colors.muted }]}>
-              <Ionicons name={KIND_ICON[item.kind]} size={22} color={accent} />
+              <Ionicons name={KIND_ICON[item.kind]} size={24} color={accent} />
             </View>
           )}
           <View style={{ flex: 1 }}>
@@ -410,7 +412,7 @@ function ResourceRow({
           ) : item.url ? (
             <Ionicons
               name={isVideo ? forwardIcon : 'open-outline'}
-              size={18}
+              size={20}
               color={isVideo ? ACCENT : colors.mutedForeground}
               accessibilityElementsHidden
               importantForAccessibility="no"
@@ -614,10 +616,13 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
   // As a tab, the lesson bar (or the slim bell header) above already pays for
   // the status bar; pushed as its own route, nothing does.
   const heroTop = asTab ? 12 : insets.top + 12;
+  // Pushed as its own route, the teal band is what sits under the status bar.
+  useLightStatusBar(!asTab);
 
   type FrontTile = {
     key: string;
     icon: React.ComponentProps<typeof Ionicons>['name'];
+    glyph?: GlyphId;
     title: string;
     desc: string;
     descStrong?: boolean;
@@ -692,7 +697,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
               accessibilityRole="button"
               style={[styles.addBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
-              <Ionicons name="add-circle-outline" size={18} color={ACCENT_FILL} />
+              <Ionicons name="add-circle-outline" size={20} color={ACCENT_FILL} />
               <Text style={[styles.addBtnText, { color: ACCENT_FILL, fontFamily: 'ReadexPro_600SemiBold' }]}>
                 {t('libraryAddResource')}
               </Text>
@@ -726,7 +731,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
             },
           ]}
         >
-          <Ionicons name="search" size={18} color={colors.mutedForeground} />
+          <Ionicons name="search" size={20} color={colors.mutedForeground} />
           <TextInput
             value={query}
             onChangeText={setQuery}
@@ -837,6 +842,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                 key={tile.key}
                 index={i}
                 icon={tile.icon}
+                glyph={tile.glyph}
                 title={tile.title}
                 desc={tile.desc}
                 descStrong={tile.descStrong}
@@ -891,7 +897,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
           })}
           {shelves.length === 0 ? (
             <View style={styles.empty}>
-              <Ionicons name="library-outline" size={36} color={colors.mutedForeground} />
+              <Ionicons name="library-outline" size={40} color={colors.mutedForeground} />
               <Text
                 style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}
               >
@@ -1018,7 +1024,7 @@ function ShelfTabs({
           interactionStyle(state as PressState, on ? ACCENT : colors.border),
         ]}
       >
-        {icon ? <Ionicons name={icon} size={18} color={on ? palette.primaryForeground : iconColor} /> : null}
+        {icon ? <Ionicons name={icon} size={20} color={on ? palette.primaryForeground : iconColor} /> : null}
         <Text
           style={[
             styles.tabText,

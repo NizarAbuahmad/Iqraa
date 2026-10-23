@@ -759,7 +759,7 @@ export default function WorksheetScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <ToolHeader topPad={topPad} isRTL={isRTL} title={isHomework ? t('createHomework') : t('createWorksheetTitle')} subtitle={isHomework ? t('homeworkSubtitle') : t('worksheetSubtitle')} />
+      <ToolHeader topPad={topPad} isRTL={isRTL} title={isHomework ? t('createHomework') : t('createWorksheetTitle')} concept={isHomework ? 'homework' : 'worksheet'} subtitle={isHomework ? t('homeworkSubtitle') : t('worksheetSubtitle')} />
 
       {/* Form */}
       <View style={{ padding: 20 }}>
@@ -941,7 +941,7 @@ export default function WorksheetScreen() {
           above it does not wait for the verifier. */}
       {result && workingProvenance(result).needsAiNote && (
         <View style={{ marginHorizontal: 20, marginBottom: 12, gap: 8, alignItems: 'center', flexDirection: isRTL ? 'row-reverse' : 'row' }}>
-          <Ionicons name="alert-circle-outline" size={14} color={colors.warning} />
+          <Ionicons name="alert-circle" size={14} color={colors.warning} />
           <Text style={{ flex: 1, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, color: colors.warning, textAlign: isRTL ? 'right' : 'left' }}>
             {t('workingUnreviewed')}
           </Text>
@@ -970,7 +970,7 @@ export default function WorksheetScreen() {
             </View>
           ) : null}
           <View style={[styles.successBanner, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '30', borderRadius: colors.radius, flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
-            <Ionicons name="document-text" size={18} color={ACCENT} />
+            <Ionicons name="document-text" size={20} color={ACCENT} />
             <Text style={[{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, flex: 1, textAlign: outRTL ? 'right' : 'left' }]}>{result.title}</Text>
           </View>
 
@@ -980,7 +980,7 @@ export default function WorksheetScreen() {
               style={[styles.noticeBox, { flexDirection: isRTL ? 'row-reverse' : 'row', borderColor: colors.border, backgroundColor: colors.card, borderRadius: colors.radius }]}
               accessibilityRole="alert"
             >
-              <Ionicons name="information-circle-outline" size={18} color={colors.mutedForeground} style={{ marginTop: 2 }} />
+              <Ionicons name="information-circle" size={20} color={colors.mutedForeground} style={{ marginTop: 2 }} />
               <Text style={[styles.noticeText, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left' }]}>
                 {t('formatsMissing', result.missingFormats.map(k => typeLabels[k]).join(isRTL ? '، ' : ', '))}
               </Text>
@@ -1031,7 +1031,7 @@ export default function WorksheetScreen() {
             ]}
             accessibilityRole="button"
           >
-            <Ionicons name="tv-outline" size={18} color="#fff" />
+            <Ionicons name="tv-outline" size={20} color="#fff" />
             <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 14 }}>
               {t('presentOnScreen')}
             </Text>
@@ -1065,7 +1065,7 @@ export default function WorksheetScreen() {
               accessibilityLabel={outT('workedExampleTitle')}
             >
               <View style={[styles.akHeader, { flexDirection: outRTL ? 'row-reverse' : 'row', marginTop: 0 }]}>
-                <Ionicons name="create-outline" size={15} color={ACCENT} />
+                <Ionicons name="create-outline" size={16} color={ACCENT} />
                 <Text style={[styles.akTitle, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', textAlign: outRTL ? 'right' : 'left' }]}>{outT('workedExampleTitle')}</Text>
               </View>
               <MathParagraph
@@ -1087,7 +1087,7 @@ export default function WorksheetScreen() {
               ))}
               {exampleOutcome?.verifiedBy === 'symbolic' ? (
                 <View style={[styles.verifyRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                  <Ionicons name="shield-checkmark" size={12} color="#067647" />
+                  <Ionicons name="shield-checkmark" size={14} color="#067647" />
                   <Text style={[styles.verifyText, { fontSize: 11, color: palette.success, textAlign: isRTL ? 'right' : 'left' }]}>
                     {t('verifiedBySymbolic')}
                   </Text>
@@ -1198,7 +1198,7 @@ export default function WorksheetScreen() {
                             accessibilityRole="button"
                             style={[styles.figureBtn, { flexDirection: outRTL ? 'row-reverse' : 'row', marginLeft: outRTL ? 0 : 'auto', marginRight: outRTL ? 'auto' : 0 }, wanted && { backgroundColor: ACCENT + '1A', borderColor: ACCENT }]}
                           >
-                            <Ionicons name="image-outline" size={15} color={wanted ? ACCENT : colors.mutedForeground} />
+                            <Ionicons name="image-outline" size={16} color={wanted ? ACCENT : colors.mutedForeground} />
                             <Text style={[styles.figureBtnText, { color: wanted ? ACCENT : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
                               {t(q.figure ? 'changeFigure' : 'attachFigure')}
                             </Text>
@@ -1212,7 +1212,7 @@ export default function WorksheetScreen() {
                         accessibilityLabel={t('deleteQuestion')}
                         style={lessonFigures.length > 0 ? undefined : { marginLeft: outRTL ? 0 : 'auto', marginRight: outRTL ? 'auto' : 0 }}
                       >
-                        <Ionicons name="trash-outline" size={15} color={colors.mutedForeground} />
+                        <Ionicons name="trash-outline" size={16} color={colors.mutedForeground} />
                       </Pressable>
                     </View>
                   </View>
@@ -1225,7 +1225,7 @@ export default function WorksheetScreen() {
           {showAnswers && result.answerKey.length > 0 && (
             <View style={{ marginBottom: 8 }}>
               <View style={[styles.akHeader, { flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
-                <Ionicons name="key-outline" size={15} color={ACCENT} />
+                <Ionicons name="key-outline" size={16} color={ACCENT} />
                 <Text style={[styles.akTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: outRTL ? 'right' : 'left' }]}>{outT('answerKeyTitle')}</Text>
               </View>
               <View style={[styles.akBody, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
@@ -1269,7 +1269,7 @@ export default function WorksheetScreen() {
                       ) : null}
                       {proved ? (
                         <View style={[styles.verifyRow, { marginTop: 2, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                          <Ionicons name="shield-checkmark" size={12} color="#067647" />
+                          <Ionicons name="shield-checkmark" size={14} color="#067647" />
                           <Text style={[styles.verifyText, { fontSize: 11, color: palette.success, textAlign: isRTL ? 'right' : 'left' }]}>
                             {t('verifiedBySymbolic')}
                           </Text>
@@ -1376,7 +1376,7 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled
       style={[styles.checkRow, { flexDirection: isRTL ? 'row-reverse' : 'row', opacity: disabled ? disabledOpacity : 1 }]}
     >
       <View style={[styles.checkbox, { borderColor: checked ? accent : colors.border, backgroundColor: checked ? accent : 'transparent' }]}>
-        {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
+        {checked && <Ionicons name="checkmark" size={14} color="#fff" />}
       </View>
       <Text style={[{ color: disabled ? colors.mutedForeground : colors.foreground, fontFamily: checked ? 'ReadexPro_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
     </Pressable>

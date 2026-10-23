@@ -41,8 +41,12 @@
  * screens, so a visitor without an account can tell us what would make them
  * sign up. Signed out it posts to the public, rate-limited `POST /site/ideas`;
  * signed in, to `/feedback` as before.
+ *
+ * `/live` is a student joining the teacher's live game with a code and a typed
+ * name — no account, like `/take`. Only the player screens live under it; the
+ * teacher's host screen is `/ai-tools/classroom/live-host`, which stays private.
  */
-const PUBLIC_ROUTES = ['/take', '/legal', '/play', '/curriculum/english', '/suggest-feature'];
+const PUBLIC_ROUTES = ['/take', '/legal', '/play', '/curriculum/english', '/suggest-feature', '/live'];
 
 export function isPublicRoute(pathname: string | null | undefined): boolean {
   if (!pathname) return false;

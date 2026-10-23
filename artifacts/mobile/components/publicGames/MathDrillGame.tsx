@@ -74,7 +74,7 @@ export function MathDrillGame({ initial }: { initial: DrillConfig }) {
     <GameShell
       titleKey={TITLES[config.op]}
       accent={ACCENT}
-      gameOver={phase === 'over' ? { message: t('playDrillResult', result.correct, result.attempted), score: result.correct, total: result.attempted } : null}
+      gameOver={phase === 'over' ? { message: t('playDrillResult', result.correct, result.attempted), perfect: result.attempted > 0 && result.correct === result.attempted, score: result.correct, total: result.attempted } : null}
       onReplay={start}
     >
       {phase === 'playing' ? (
@@ -153,7 +153,7 @@ export function MathDrillGame({ initial }: { initial: DrillConfig }) {
           </View>
 
           <View style={{ marginTop: 'auto', gap: 10 }}>
-            <Button label={t('playDrillStart')} onPress={start} style={{ backgroundColor: ACCENT }} fullWidth size="lg" />
+            <Button label={t('playDrillStart')} onPress={start} fill={ACCENT} fullWidth size="lg" />
             <Button label={t('playDrillShare')} onPress={share} variant="secondary" fullWidth />
             {copied ? (
               <Text style={{ color: RIGHT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: 'center' }}>
@@ -227,7 +227,14 @@ function DrillRound({ config, onDone }: { config: DrillConfig; onDone: (r: Resul
         <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
           {t('playDrillTimeLeft', secsLeft)}
         </Text>
-        <Text style={{ color: RIGHT, fontFamily: 'ReadexPro_700Bold', fontSize: 16 }}>✓ {state.correct}</Text>
+        <View
+          accessible
+          accessibilityLabel={t('playDrillResult', state.correct, state.attempted)}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+        >
+          <Ionicons name="checkmark-circle" size={20} color={RIGHT} />
+          <Text style={{ color: RIGHT, fontFamily: 'ReadexPro_700Bold', fontSize: 16 }}>{state.correct}</Text>
+        </View>
       </View>
       <View style={[styles.track, { backgroundColor: colors.border }]}>
         <View style={{ width: `${(msLeft / (config.seconds * 1000)) * 100}%`, height: '100%', backgroundColor: ACCENT, borderRadius: 3 }} />
@@ -259,7 +266,7 @@ function DrillRound({ config, onDone }: { config: DrillConfig; onDone: (r: Resul
                 ]}
               >
                 {key === 'back' ? (
-                  <Ionicons name="backspace-outline" size={26} color={colors.foreground} />
+                  <Ionicons name="backspace-outline" size={24} color={colors.foreground} />
                 ) : (
                   <Text style={[styles.padText, { color: colors.foreground }]}>{key}</Text>
                 )}

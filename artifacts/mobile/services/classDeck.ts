@@ -527,6 +527,158 @@ export function assembleDeckSlides(parts: {
   ].map((s, i) => ({ ...s, slideNumber: i + 1 }));
 }
 
+function gameIntroSlide(title: string, lessonTitle: string, teamCount: number, isAr: boolean): ActivitySlide {
+  return {
+    slideNumber: 1,
+    type: 'intro',
+    title: isAr ? `🏆 تحدي الصف — ${title}` : `🏆 Class Challenge — ${title}`,
+    content: isAr
+      ? `${lessonTitle}\n\nالقواعد:\n• الصف مقسوم إلى ${arCountPhrase(teamCount, 'فريق', 'فريقين', 'فرق')}\n${sharedThinkingRules(true)}\n• عند انتهاء الوقت: كل فريق يرفع يده للإجابة\n• الفريق المصيب يأخذ ١٠٠ نقطة — والإجابات المتتالية تعطي نقاطًا إضافية`
+      : `${lessonTitle}\n\nRules:\n• The class is split into ${teamCount} teams\n${sharedThinkingRules(false)}\n• When time ends: each team raises a hand to answer\n• A correct team scores 100 points — consecutive answers earn a bonus`,
+    durationSeconds: 0,
+  };
+}
+
+/** One scoreable game question. `keep` is carried onto the slide as is (a deck's graph, picture, badge). */
+interface GameRound {
+  content: string;
+  options: string[];
+  correctIndex: number;
+  answer: string;
+  explanation?: string;
+  keep?: Partial<ActivitySlide>;
+}
+
+/** The questions, a scoreboard every `SCOREBOARD_EVERY`, and the podium. */
+function pushGameRounds(slides: ActivitySlide[], rounds: GameRound[], lessonTitle: string, isAr: boolean): void {
+  rounds.forEach((r, i) => {
+    slides.push({
+      ...r.keep,
+      slideNumber: slides.length + 1,
+      type: 'question',
+      title: isAr ? `سؤال ${i + 1}` : `Question ${i + 1}`,
+      content: r.content,
+      options: r.options,
+      correctIndex: r.correctIndex,
+      questionIndex: i,
+      durationSeconds: GAME_THINK_SECONDS,
+      teacher: {
+        expectedAnswer: r.answer,
+        teachingTips: isAr
+          ? 'اكشف الإجابة أولًا، ثم اضغط على الفرق التي أصابت.'
+          : 'Reveal the answer first, then tap the teams that were right.',
+        ...(r.explanation ? { commonMisconceptions: r.explanation } : {}),
+      },
+    });
+
+    // Break for the board — but never immediately before the podium, which
+    // shows the same standings one slide later.
+    const isLast = i === rounds.length - 1;
+    if (!isLast && (i + 1) % SCOREBOARD_EVERY === 0) {
+      slides.push({
+        slideNumber: slides.length + 1,
+        type: 'scoreboard',
+        title: isAr ? '📊 الترتيب الحالي' : '📊 Standings',
+        content: isAr
+          ? `بعد ${i + 1} من ${arCountPhrase(rounds.length, 'سؤال', 'سؤالين', 'أسئلة')}`
+          : `After ${i + 1} of ${rounds.length} questions`,
+        durationSeconds: 0,
+      });
+    }
+  });
+
+  slides.push({
+    slideNumber: slides.length + 1,
+    type: 'podium',
+    title: isAr ? '🏆 النتيجة النهائية' : '🏆 Final Result',
+    content: isAr ? `تحدي «${lessonTitle}»` : `“${lessonTitle}” challenge`,
+    durationSeconds: 0,
+  });
+}
+
+/** Fewer than this and a "game" is over before the teams are told apart. */
+export const MIN_GAME_QUESTIONS = 3;
+
+/** A deck's own choice questions that a game can score: options and an in-range key. */
+export function scoreableSlides(deck: ClassroomActivity): ActivitySlide[] {
+  return deck.slides.filter(s =>
+    s.type === 'question'
+    && (s.options?.length ?? 0) >= 2
+    && typeof s.correctIndex === 'number'
+    && s.correctIndex >= 0
+    && s.correctIndex < s.options!.length);
+}
+
+/**
+ * What a deck's question slide brings into the game: its badge, hint and the
+ * picture or graph the question reads off. An allowlist, not a spread — a kept
+ * `layout` would draw a stat/compare/table body in place of the question stem.
+ */
+function keptQuestionFields(s: ActivitySlide): Partial<ActivitySlide> {
+  const keep: Partial<ActivitySlide> = {};
+  for (const k of ['hint', 'verified', 'verifiedBy', 'computedAnswer', 'aiWritten', 'graphCommands', 'visual', 'icon',
+    'visualOnReveal', 'sideImageUrl', 'sideImageCaption', 'sideImageCredit'] as const) {
+    if (s[k] !== undefined) (keep as Record<string, unknown>)[k] = s[k];
+  }
+  return keep;
+}
+
+/** Whether the presenter can offer «play as Class Challenge» for this deck. */
+export function canPlayAsGame(deck: ClassroomActivity | null): boolean {
+  return !!deck && !deck.game && scoreableSlides(deck).length >= MIN_GAME_QUESTIONS;
+}
+
+/**
+ * Any deck → Class Challenge, from the choice questions it already holds — a
+ * lesson deck's checks, a revision deck, a quiz deck. No generation: the
+ * questions, keys, pictures and badges are the deck's own, so the game is
+ * exactly as trustworthy as the deck it came from. Open `challenge` slides are
+ * left out for the reason `buildGameDeckFromQuiz` gives.
+ */
+export function buildGameDeckFromSlides(deck: ClassroomActivity, teamCount: number, isAr: boolean): ClassroomActivity {
+  const teams = Math.max(2, Math.min(6, Math.floor(teamCount) || 2));
+  const lessonTitle = deck.lesson || deck.activityName;
+  const source = scoreableSlides(deck);
+  const slides: ActivitySlide[] = [gameIntroSlide(isAr ? 'مراجعة الدرس' : 'Lesson review', lessonTitle, teams, isAr)];
+  pushGameRounds(slides, source.map(s => ({
+    content: s.content,
+    options: s.options!,
+    correctIndex: s.correctIndex!,
+    answer: s.options![s.correctIndex!]!,
+    explanation: s.teacher?.commonMisconceptions,
+    keep: keptQuestionFields(s),
+  })), lessonTitle, isAr);
+
+  return {
+    activityName: isAr ? `تحدي الصف — ${lessonTitle}` : `Class Challenge — ${lessonTitle}`,
+    activityType: 'class-game',
+    grade: deck.grade,
+    subject: deck.subject,
+    lesson: lessonTitle,
+    themeId: deck.themeId,
+    duration: Math.max(10, source.length * 2),
+    difficulty: 'standard',
+    groupType: 'groups',
+    learningObjective: isAr
+      ? `مراجعة «${lessonTitle}» كمنافسة بين الفرق مع إجابة كل الطلبة`
+      : `Review “${lessonTitle}” as a team contest with every student answering`,
+    materials: isAr ? ['شاشة عرض', 'تقسيم الصف إلى فرق'] : ['Projector', 'Class split into teams'],
+    teacherPreparation: isAr
+      ? `قسّم الصف إلى ${arCountPhrase(teams, 'فريق', 'فريقين', 'فرق')} قبل البدء.`
+      : `Split the class into ${teams} teams before starting.`,
+    teacherNotes: [],
+    answerKey: source.map((s, i) => {
+      const a = s.options![s.correctIndex!];
+      return isAr ? `سؤال ${i + 1}: ${a}` : `Q${i + 1}: ${a}`;
+    }),
+    printables: [],
+    assessment: '',
+    extensionChallenge: '',
+    game: { teamCount: teams, questionCount: source.length, isAr },
+    slides,
+  };
+}
+
 /**
  * Quiz → Class Challenge deck (the team game).
  *
@@ -566,63 +718,20 @@ export function buildGameDeckFromQuiz(
     .map(q => ({ q, correct: indexOfAnswer(q.options!, q.correctAnswer) }))
     .filter(({ correct }) => correct >= 0);
 
-  const slides: ActivitySlide[] = [{
-    slideNumber: 1,
-    type: 'intro',
-    title: isAr ? `🏆 تحدي الصف — ${quiz.title}` : `🏆 Class Challenge — ${quiz.title}`,
-    content: isAr
-      ? `${lessonTitle}\n\nالقواعد:\n• الصف مقسوم إلى ${arCountPhrase(teamCount, 'فريق', 'فريقين', 'فرق')}\n${sharedThinkingRules(true)}\n• عند انتهاء الوقت: كل فريق يرفع يده للإجابة\n• الفريق المصيب يأخذ ١٠٠ نقطة — والإجابات المتتالية تعطي نقاطًا إضافية`
-      : `${lessonTitle}\n\nRules:\n• The class is split into ${teamCount} teams\n${sharedThinkingRules(false)}\n• When time ends: each team raises a hand to answer\n• A correct team scores 100 points — consecutive answers earn a bonus`,
-    durationSeconds: 0,
-  }];
+  const slides: ActivitySlide[] = [gameIntroSlide(quiz.title, lessonTitle, teamCount, isAr)];
 
   const objSlide = objectivesSlide(opts.lesson ?? null, lessonTitle, isAr, slides.length + 1);
   if (objSlide) slides.push(objSlide);
   pushFigures(slides, opts.lesson?.id, isAr, opts.figureUri);
 
-  scoreable.forEach(({ q, correct }, i) => {
-    slides.push({
-      slideNumber: slides.length + 1,
-      type: 'question',
-      title: isAr ? `سؤال ${i + 1}` : `Question ${i + 1}`,
-      content: q.text,
-      options: q.options,
-      correctIndex: correct,
-      verified: opts.verified === true,
-      questionIndex: i,
-      durationSeconds: GAME_THINK_SECONDS,
-      teacher: {
-        expectedAnswer: q.correctAnswer,
-        teachingTips: isAr
-          ? 'اكشف الإجابة أولًا، ثم اضغط على الفرق التي أصابت.'
-          : 'Reveal the answer first, then tap the teams that were right.',
-        ...(q.explanation ? { commonMisconceptions: q.explanation } : {}),
-      },
-    });
-
-    // Break for the board — but never immediately before the podium, which
-    // shows the same standings one slide later.
-    const isLast = i === scoreable.length - 1;
-    if (!isLast && (i + 1) % SCOREBOARD_EVERY === 0) {
-      slides.push({
-        slideNumber: slides.length + 1,
-        type: 'scoreboard',
-        title: isAr ? '📊 الترتيب الحالي' : '📊 Standings',
-        content: isAr
-          ? `بعد ${i + 1} من ${arCountPhrase(scoreable.length, 'سؤال', 'سؤالين', 'أسئلة')}`
-          : `After ${i + 1} of ${scoreable.length} questions`,
-        durationSeconds: 0,
-      });
-    }
-  });
-
-  slides.push({
-    slideNumber: slides.length + 1,
-    type: 'podium',
-    title: isAr ? '🏆 النتيجة النهائية' : '🏆 Final Result',
-    content: isAr ? `تحدي «${lessonTitle}»` : `“${lessonTitle}” challenge`,
-    durationSeconds: 0,
-  });
+  pushGameRounds(slides, scoreable.map(({ q, correct }) => ({
+    content: q.text,
+    options: q.options!,
+    correctIndex: correct,
+    answer: q.correctAnswer,
+    explanation: q.explanation,
+    keep: { verified: opts.verified === true },
+  })), lessonTitle, isAr);
 
   return {
     activityName: isAr ? `تحدي الصف — ${quiz.title}` : `Class Challenge — ${quiz.title}`,
