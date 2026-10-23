@@ -31,7 +31,8 @@ import { logger } from "../lib/logger";
 import { createRateLimiter } from "../lib/rateLimit";
 import { hashAccessToken, issueAccessToken, normalizeShareCode } from "../modules/assessment/studentView";
 import { hasRoom, isEnded, isExpired, normalizeName, playerView, scoreAnswer } from "../modules/live/rules.ts";
-import { isUniqueViolation, loadScoreboard } from "../modules/live/store.ts";
+import { loadScoreboard } from "../modules/live/store.ts";
+import { isUniqueViolation } from "../lib/pgErrors.ts";
 
 const router = Router();
 

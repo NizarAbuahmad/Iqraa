@@ -22,8 +22,8 @@ call `isUniqueViolation` (`artifacts/api-server/src/lib/pgErrors.ts`), which che
 places. Verified by `uniqueViolation.db.test.ts`: test-only triggers raise SQLSTATE 23505 at
 each write (the real collisions are races); before the fix all five reachable paths answered
 500, after it 409/409/409/409 and a retried 200. **Not covered:** Google sign-in, which needs
-a real Google token — same one-line change. The live-game branch has its own copy of the
-helper in `modules/live/store.ts`; it should import this one.
+a real Google token — same one-line change. The live-game routes (`live.ts`, `liveHost.ts`)
+had their own copy in `modules/live/store.ts`; they now import this one.
 
 ## Iqraa draws its own icons — 2026-10-23
 
