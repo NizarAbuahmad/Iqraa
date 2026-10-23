@@ -49,8 +49,8 @@ tested without a database like the rest of that file.
   (`users.loginCodeHash` set, no password, no Google id) with
   `namesForNewAccount(role, newName)` — but only when the account's current
   first/last name equals `namesForNewAccount(role, oldName)`, i.e. the person has
-  not edited it. Done with `systemDb` inside one transaction with the student
-  update (it writes another user's row). `roster.ts` is already in
+  not edited it. Done with `systemDb` right after the student update, not in the same
+  transaction (a second connection cannot share one); a failure is logged and the saved rename stands. `roster.ts` is already in
   `systemDbFiles.test.ts`.
 - Class chat titles derive from the class, not the child, so nothing else moves.
 
