@@ -11,6 +11,7 @@
  * Pure TypeScript, so `node --test` can run it.
  */
 import { normalize } from './commandPalette.ts';
+import { isPurposeQuestion } from './appHelp.ts';
 
 export type ToolAsk = 'game' | 'slides' | 'test' | 'dictation';
 
@@ -49,6 +50,8 @@ const REQUEST_CUE =
 
 /** The tool screen a chat message is asking for, or null. */
 export function toolAskFromQuery(query: string): ToolAsk | null {
+  // «how do i make my slides more engaging» asks for advice, not for the builder.
+  if (isPurposeQuestion(query)) return null;
   const q = normalize(query.replace(/[؟?!.,،]/g, ' '));
   const kind = PATTERNS.find(([, re]) => re.test(q))?.[0] ?? null;
   if (!kind) return null;
@@ -66,8 +69,8 @@ export function toolAskReply(kind: ToolAsk, lang: 'ar' | 'en', topic?: string | 
   switch (kind) {
     case 'game':
       return isAr
-        ? `جهّزت لك أداة الألعاب${onLesson}. اضغط الزر لفتحها واختيار نوع اللعبة:`
-        : `The game builder is ready${onLesson}. Tap to open it and pick a game:`;
+        ? `جهّزت لك تحدي الصف${onLesson}. اضغط الزر لتقسيم الصف إلى فرق وبدء اللعبة:`
+        : `Class Challenge is ready${onLesson}. Tap to split the class into teams and start:`;
     case 'slides':
       return isAr
         ? `جهّزت لك أداة العروض${onLesson}. اضغط الزر لبناء الشرائح:`

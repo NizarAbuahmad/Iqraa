@@ -38,7 +38,7 @@ export default function ComingSoonScreen() {
       {/* Body */}
       <View style={styles.body}>
         <View style={[styles.iconWrap, { backgroundColor: colors.primary + '15', borderRadius: 40 }]}>
-          <Ionicons name="construct-outline" size={56} color={colors.primary} />
+          <Ionicons name="construct-outline" size={64} color={colors.primary} />
         </View>
 
         <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: 'center' }]}>

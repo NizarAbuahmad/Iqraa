@@ -6,6 +6,7 @@
 // this only stops the count from growing: a new screen that uses the scale
 // passes, one that invents a 19px font fails. When you move a screen onto the
 // scale, lower the ceiling to the new count so it cannot creep back.
+// `shadowColor` is counted the same way: new depth comes from `ELEVATION` through `useSurface()`.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
@@ -13,7 +14,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { RADIUS, SPACE, TYPE } from '../../constants/theme.ts';
 
-const CEILING = { fontSize: 324, borderRadius: 336, spacing: 1369 };
+const CEILING = { fontSize: 324, borderRadius: 336, spacing: 1369, shadowColor: 8 };
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -56,4 +57,9 @@ test('corner radii off the radius scale do not grow', () => {
 test('spacing off the 4-point scale does not grow', () => {
   const n = offScale(/\b(?:padding|margin)(?:Horizontal|Vertical|Top|Bottom|Left|Right|Start|End)?: ?(-?\d+)\b|\bgap: ?(\d+)\b/g, spaceSteps);
   assert.ok(n <= CEILING.spacing, `${n} spacing values are off SPACE in constants/theme.ts (ceiling ${CEILING.spacing}) — use a SPACE step`);
+});
+
+test('hand-written shadows do not grow — use ELEVATION', () => {
+  const n = sources.reduce((k, s) => k + (s.match(/\bshadowColor\s*:/g) ?? []).length, 0);
+  assert.ok(n <= CEILING.shadowColor, `${n} hand-written shadowColor values (ceiling ${CEILING.shadowColor}) — use ELEVATION in constants/theme.ts through useSurface()`);
 });

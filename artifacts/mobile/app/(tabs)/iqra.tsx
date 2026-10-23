@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { isTabActive } from '@/services/tabRoute';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
@@ -27,6 +28,7 @@ function useSafeTabBarHeight(): number {
   }
 }
 import { Ionicons } from '@expo/vector-icons';
+import { ICON } from '@/constants/icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -539,7 +541,7 @@ function ContextBanner({
               flex: 1,
             }]}
           >
-            <Ionicons name="location-outline" size={13} color={topic ? colors.primary : colors.mutedForeground} />
+            <Ionicons name="location-outline" size={14} color={topic ? colors.primary : colors.mutedForeground} />
             <Text
               numberOfLines={1}
               style={[ctxStyles.pillText, {
@@ -551,7 +553,7 @@ function ContextBanner({
             >
               {topic ? `${t('currentlyTeaching')}: ${topic}` : t('setTeachingContext')}
             </Text>
-            <Ionicons name="chevron-down" size={13} color={colors.mutedForeground} style={{ marginStart: 4 }} />
+            <Ionicons name="chevron-down" size={14} color={colors.mutedForeground} style={{ marginStart: 4 }} />
           </Pressable>
           {topic ? (
             <Pressable onPress={handleClear} hitSlop={8} style={ctxStyles.clearBtn}>
@@ -711,7 +713,7 @@ function ContextBanner({
                 },
               ]}
             >
-              <Ionicons name="chatbubble-ellipses-outline" size={18} color={draftTopic.trim() ? colors.primaryForeground : colors.mutedForeground} />
+              <Ionicons name="chatbubble-ellipses-outline" size={20} color={draftTopic.trim() ? colors.primaryForeground : colors.mutedForeground} />
               <Text style={[ctxStyles.askBtnText, {
                 color: draftTopic.trim() ? colors.primaryForeground : colors.mutedForeground,
                 fontFamily: 'ReadexPro_700Bold',
@@ -792,15 +794,17 @@ function LessonPrepProgressCard({
         {isRTL ? 'ما أنجزناه:' : 'Completed:'}
       </Text>
       {progress.done.map(item => (
-        <Text
-          key={item.id}
-          style={[
-            prepStyles.line,
-            { color: colors.foreground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' },
-          ]}
-        >
-          ✅ {item.label}
-        </Text>
+        <View key={item.id} style={[prepStyles.lineRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Ionicons name="checkmark-circle" size={ICON.md} color={colors.success} />
+          <Text
+            style={[
+              prepStyles.line,
+              { flex: 1, color: colors.foreground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' },
+            ]}
+          >
+            {item.label}
+          </Text>
+        </View>
       ))}
       {progress.remaining.length > 0 ? (
         <>
@@ -818,15 +822,17 @@ function LessonPrepProgressCard({
             {isRTL ? 'ما تبقّى للدرس:' : 'Still needed for the lesson:'}
           </Text>
           {progress.remaining.map(item => (
-            <Text
-              key={item.id}
-              style={[
-                prepStyles.line,
-                { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' },
-              ]}
-            >
-              ⬜ {item.label}
-            </Text>
+            <View key={item.id} style={[prepStyles.lineRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <Ionicons name="ellipse-outline" size={ICON.md} color={colors.mutedForeground} />
+              <Text
+                style={[
+                  prepStyles.line,
+                  { flex: 1, color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' },
+                ]}
+              >
+                {item.label}
+              </Text>
+            </View>
           ))}
         </>
       ) : null}
@@ -858,6 +864,7 @@ const prepStyles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 2,
   },
+  lineRow: { alignItems: 'center', gap: 6 },
   line: {
     fontFamily: 'Almarai_400Regular',
     fontSize: 13,
@@ -1279,7 +1286,7 @@ function MessageBubble({
                 accessibilityRole="button"
                 accessibilityLabel={action.label}
               >
-                <Ionicons name={action.icon} size={13} color={action.color} />
+                <Ionicons name={action.icon} size={14} color={action.color} />
                 <Text style={[styles.msgActionText, { color: action.color }]}>{action.label}</Text>
               </Pressable>
             ))}
@@ -1426,6 +1433,13 @@ export default function IqraScreen() {
     askId?: string;
     /** Nonce from the tab bar's GlobalLessonBar — see askId above for why. */
     openLessonPicker?: string;
+    /**
+     * Where the opener wants the teacher back once the picker closes (picked
+     * or dismissed). Today and the lesson bar set it: the chat is not in the
+     * phone tab bar, so without it a teacher who only wanted to change the
+     * lesson is left in a chat with no tab highlighted.
+     */
+    returnTo?: string;
   }>();
 
   const mode: Mode = 'teacher';
@@ -1475,6 +1489,19 @@ export default function IqraScreen() {
   const [startingClass, setStartingClass] = useState(false);
   const [startClassError, setStartClassError] = useState('');
   const [changeLessonOpen, setChangeLessonOpen] = useState(false);
+  /** Set only while a picker opened by the `openLessonPicker` param is up; an in-chat open leaves it null. */
+  const pickerReturnTo = useRef<string | null>(null);
+  /** True for the same tick as a returnTo close: the picker's confirm then calls onAsk, whose overview would land in a chat the teacher has just left. */
+  const skipNextAsk = useRef(false);
+  const onPickerOpenChange = useCallback((open: boolean) => {
+    setChangeLessonOpen(open);
+    const to = pickerReturnTo.current;
+    if (open || !to) return;
+    pickerReturnTo.current = null; // consumed: a later in-chat open must not bounce
+    skipNextAsk.current = true;
+    setTimeout(() => { skipNextAsk.current = false; }, 0); // a dismiss calls no onAsk; never let the flag outlive this tick
+    router.navigate(to as never);
+  }, []);
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
   /**
    * The message whose material is on the canvas, or null for a plain thread.
@@ -1951,7 +1978,13 @@ export default function IqraScreen() {
   // The tab bar's GlobalLessonBar lives outside this screen and has no direct
   // handle on changeLessonOpen — it navigates here with a nonce instead.
   useEffect(() => {
-    if (params.openLessonPicker) setChangeLessonOpen(true);
+    if (!params.openLessonPicker) return;
+    // Only a same-app path, and never the chat itself (that would be a loop).
+    const to = params.returnTo;
+    pickerReturnTo.current =
+      to && to.startsWith('/') && !to.startsWith('//') && !to.includes('\\') && !isTabActive(to, 'iqra') ? to : null;
+    setChangeLessonOpen(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the nonce; returnTo rides with it
   }, [params.openLessonPicker]);
 
   const sendMessage = useCallback(
@@ -3542,7 +3575,7 @@ export default function IqraScreen() {
               backgroundColor: colors.secondary,
             }}
           >
-            <Ionicons name={setupNeed === 'class' ? 'people-outline' : 'calendar-outline'} size={18} color={colors.primary} />
+            <Ionicons name={setupNeed === 'class' ? 'people-outline' : 'calendar-outline'} size={20} color={colors.primary} />
             <Text style={{ flex: 1, fontSize: 14, lineHeight: 22, fontFamily: 'Almarai_400Regular', color: colors.foreground, textAlign: isRTL ? 'right' : 'left' }}>
               {t('chatSetupTitle')}
             </Text>
@@ -3570,7 +3603,7 @@ export default function IqraScreen() {
               backgroundColor: colors.secondary,
             }}
           >
-            <Ionicons name="time-outline" size={13} color={colors.primary} />
+            <Ionicons name="time-outline" size={14} color={colors.primary} />
             <Text style={{ fontSize: 13, fontFamily: 'ReadexPro_600SemiBold', color: colors.primary }}>{periodLine}</Text>
           </View>
         ) : null}
@@ -3779,7 +3812,7 @@ export default function IqraScreen() {
           currentTopic={teachingCtx}
           hidePill
           externalOpen={changeLessonOpen}
-          onExternalOpenChange={setChangeLessonOpen}
+          onExternalOpenChange={onPickerOpenChange}
           onGlobalPick={(pick) => {
             // Changing the lesson in chat updates the app-wide context too —
             // home and the tools hub follow (one source of truth).
@@ -3819,6 +3852,7 @@ export default function IqraScreen() {
             }
           }}
           onAsk={(topic, pick) => {
+            if (skipNextAsk.current) { skipNextAsk.current = false; return; } // picked from Today/the lesson bar: no overview in a chat nobody is looking at
             // `onContextChange` just fired and queued the pin update for this
             // same topic, but React hasn't applied it yet — `sessionMemory`
             // in this closure is still the *previous* lesson. Passing that
@@ -4161,7 +4195,7 @@ export default function IqraScreen() {
             >
               <Ionicons
                 name={isRTL ? 'arrow-back' : 'arrow-forward'}
-                size={18}
+                size={20}
                 color={input.trim() ? colors.primaryForeground : colors.mutedForeground}
               />
             </Pressable>

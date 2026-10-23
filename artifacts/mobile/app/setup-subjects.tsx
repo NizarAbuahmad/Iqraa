@@ -251,7 +251,7 @@ export default function SetupSubjectsScreen() {
                   hitSlop={8}
                   accessibilityLabel={t('teacherSetupRemoveGrade', gradeName)}
                 >
-                  <Ionicons name="trash-outline" size={18} color={colors.mutedForeground} />
+                  <Ionicons name="trash-outline" size={20} color={colors.mutedForeground} />
                 </Pressable>
               </View>
               <View style={[styles.chips, isRTL && { flexDirection: 'row-reverse' }]}>
@@ -298,7 +298,7 @@ export default function SetupSubjectsScreen() {
 
         {error ? (
           <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+            <Ionicons name="alert-circle" size={16} color={colors.destructive} />
             <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
               {error}
             </Text>

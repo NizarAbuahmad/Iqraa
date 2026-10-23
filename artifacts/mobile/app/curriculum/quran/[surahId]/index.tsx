@@ -23,7 +23,7 @@ import { getLessonById } from '@/services/knowledgeBase';
 import { openExternal } from '@/services/externalLinks';
 import { memorizePath, resolveSurahParam } from '@/services/quranLinks';
 import { toArabicDigits } from '@/services/labFormat';
-import { LabFrame } from '@/components/lab/LabFrame';
+import { CornerFrame } from '@/components/corners/CornerFrame';
 import { QuranGate } from '@/components/quran/QuranGate';
 import { QuranAudioNote, QuranListenButton } from '@/components/quran/QuranAudioControls';
 import { useQuranAudio } from '@/hooks/useQuranAudio';
@@ -37,23 +37,24 @@ function QuranReader() {
   const audio = useQuranAudio();
   const align = isRTL ? 'right' : 'left';
   const digits = (s: string | number) => (lang === 'ar' ? toArabicDigits(String(s)) : String(s));
+  const [showSourceDetails, setShowSourceDetails] = React.useState(false);
 
   const surah = resolveSurahParam(surahId);
   if (!surah) {
     return (
-      <LabFrame title={t('quranTitle')}>
+      <CornerFrame title={t('quranTitle')}>
         <Text style={[styles.missing, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
           {t('quranNotFound')}
         </Text>
-      </LabFrame>
+      </CornerFrame>
     );
   }
 
   if (!fontReady) {
     return (
-      <LabFrame title={surah.nameAr}>
+      <CornerFrame title={surah.nameAr}>
         <ActivityIndicator color={colors.primary} style={{ marginTop: SPACE.xl }} />
-      </LabFrame>
+      </CornerFrame>
     );
   }
 
@@ -67,7 +68,7 @@ function QuranReader() {
     : `${t('quranAyahsLabel')} ${digits(segmentsText(surah.segments, sep))}`;
 
   return (
-    <LabFrame title={surah.nameAr} subtitle={subtitle}>
+    <CornerFrame title={surah.nameAr} subtitle={subtitle}>
       <View style={[styles.actions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Pressable
           onPress={() => {
@@ -77,7 +78,7 @@ function QuranReader() {
           accessibilityRole="button"
           style={[styles.primary, { backgroundColor: colors.primary, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
         >
-          <Ionicons name="school-outline" size={18} color={colors.primaryForeground} />
+          <Ionicons name="school-outline" size={20} color={colors.primaryForeground} />
           <Text style={{ color: colors.primaryForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
             {t('quranMemorize')}
           </Text>
@@ -168,7 +169,7 @@ function QuranReader() {
                 {gradeName(l.gradeId)} · {t('quranAyahsLabel')} {digits(segmentsText([{ from: l.from, to: l.to }]))}
               </Text>
             </View>
-            <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
+            <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedForeground} />
           </Pressable>
         );
       })}
@@ -180,23 +181,47 @@ function QuranReader() {
         <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align, marginTop: 4 }}>
           {t('quranSourceBody')}
         </Text>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align, marginTop: SPACE.sm }}>
+          {t('quranSourceRights')}
+        </Text>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align, marginTop: SPACE.sm }}>
+          {t('quranSourceChanges')}
+        </Text>
+        <View style={{ marginTop: 8, gap: SPACE.xs, alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
+          <Pressable onPress={() => void openExternal(QURAN_CORNER.source.url)} accessibilityRole="link">
+            <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
+              {t('quranSourceLink')} · github.com/quran-ws/quran-text
+            </Text>
+          </Pressable>
+          <Pressable onPress={() => void openExternal(QURAN_CORNER.source.licenseUrl)} accessibilityRole="link">
+            <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
+              {t('quranSourceLicenceLink')}
+            </Text>
+          </Pressable>
+        </View>
         <Pressable
-          onPress={() => void openExternal(QURAN_CORNER.source.url)}
-          accessibilityRole="link"
-          style={{ marginTop: 8, alignSelf: isRTL ? 'flex-end' : 'flex-start' }}
+          onPress={() => setShowSourceDetails(v => !v)}
+          accessibilityRole="button"
+          aria-expanded={showSourceDetails}
+          style={{ marginTop: SPACE.md, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 4, alignSelf: isRTL ? 'flex-end' : 'flex-start' }}
         >
-          <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
-            {t('quranSourceLink')} · github.com/quran-ws/quran-text
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption }}>
+            {t('quranSourceDetails')}
           </Text>
+          <Ionicons name={showSourceDetails ? 'chevron-up' : 'chevron-down'} size={14} color={colors.mutedForeground} />
         </Pressable>
-        <Text selectable style={{ color: colors.mutedForeground, fontSize: 11, marginTop: 8, textAlign: 'left', writingDirection: 'ltr' }}>
-          {QURAN_CORNER.notice}
-        </Text>
-        <Text selectable style={{ color: colors.mutedForeground, fontSize: 11, marginTop: SPACE.sm, textAlign: 'left', writingDirection: 'ltr' }}>
-          {`${QURAN_CORNER.source.version} · sha256 ${QURAN_CORNER.source.sha256.slice(0, 12)}`}
-        </Text>
+        {showSourceDetails ? (
+          <>
+            <Text selectable style={{ color: colors.mutedForeground, fontSize: 11, marginTop: 8, textAlign: 'left', writingDirection: 'ltr' }}>
+              {QURAN_CORNER.notice}
+            </Text>
+            <Text selectable style={{ color: colors.mutedForeground, fontSize: 11, marginTop: SPACE.sm, textAlign: 'left', writingDirection: 'ltr' }}>
+              {`${QURAN_CORNER.source.version} · sha256 ${QURAN_CORNER.source.sha256.slice(0, 12)}`}
+            </Text>
+          </>
+        ) : null}
       </View>
-    </LabFrame>
+    </CornerFrame>
   );
 }
 

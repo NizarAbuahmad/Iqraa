@@ -17,12 +17,12 @@ export interface DeckPhoto {
  * Never throws — no photo (unset server key, no results, offline) is a
  * normal outcome the deck must not stall or error on.
  */
-export async function searchDeckPhoto(query: string): Promise<DeckPhoto | null> {
+export async function searchDeckPhoto(query: string, page = 1): Promise<DeckPhoto | null> {
   const q = query.trim();
   if (!q) return null;
   try {
     const { photo } = await apiJson<{ photo: DeckPhoto | null }>(
-      `/media/unsplash-photo?query=${encodeURIComponent(q)}`,
+      `/media/unsplash-photo?query=${encodeURIComponent(q)}${page > 1 ? `&page=${page}` : ''}`,
     );
     return photo;
   } catch {

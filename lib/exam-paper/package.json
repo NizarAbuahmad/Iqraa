@@ -1,0 +1,19 @@
+{
+  "name": "@workspace/exam-paper",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --experimental-strip-types --test \"src/**/__tests__/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@workspace/math-practice": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:"
+  }
+}

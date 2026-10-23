@@ -34,13 +34,17 @@ import { useAuth } from '@/context/AuthContext';
 import { getChildSchedules, getMySchedule } from '@/services/familyScheduleApi';
 import { getChildHomework, getMyHomework, setHomeworkDone } from '@/services/homeworkApi';
 import { openResource } from '@/services/openResource';
+import { LESSON_GAME_TITLE_KEY } from '@/services/lessonGames';
 import {
   ammanToday,
+  allTrackedDone,
   applyDone,
   dueBadge,
   formatDueDate,
+  gameScoreText,
   homeworkSections,
   resourceKey,
+  resultForGame,
   untrackedMode,
   type ChildHomework,
   type FamilyHomework,
@@ -66,6 +70,9 @@ import { apiErrorMessage } from '@/services/apiErrorKey';
 import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Celebrate } from '@/components/ui/Celebrate';
+import { justCompleted } from '@/services/celebration';
 
 const ACCENT = palette.primary;
 /** Minimum touch target for the tick box. */
@@ -87,10 +94,14 @@ export default function SchoolScreen() {
   // Homework has its own list, error and sequence so it fails and reloads on
   // its own; `selected` is shared because both lists use the same child keys.
   const [homework, setHomework] = useState<ChildHomework[] | null>(null);
+  // The list as last rendered, for a save that finishes after another tick.
+  const homeworkNow = useRef(homework);
+  homeworkNow.current = homework;
   const [hwError, setHwError] = useState('');
   // Ids whose save is in flight: the ref is the synchronous guard against a
   // double tap, the state only drives the dimmed look.
   const hwInFlight = useRef<Set<string>>(new Set());
+  const [celebrateHw, setCelebrateHw] = useState(false);
   const [hwSaving, setHwSaving] = useState<ReadonlySet<string>>(new Set());
 
   // Exams have their own list, error and sequence, like homework: one failing
@@ -171,11 +182,29 @@ export default function SchoolScreen() {
       setHwError('');
       // A load that started before this tap must not land on top of it.
       hwSeq.current++;
+      // The child's list as it stood before this tick, captured inside the
+      // updater: `homework` in this closure is stale (deps are `[t]`).
+      const seen: { before: FamilyHomework[] } = { before: [] };
       const patch = (fn: (items: FamilyHomework[]) => FamilyHomework[]) =>
-        setHomework(prev => prev && prev.map(k => (k.key === childKey ? { ...k, homework: fn(k.homework) } : k)));
+        setHomework(prev => prev && prev.map(k => {
+          if (k.key !== childKey) return k;
+          seen.before = k.homework;
+          return { ...k, homework: fn(k.homework) };
+        }));
       patch(items => applyDone(items, item.id, next));
       try {
         await setHomeworkDone(item.id, next);
+        // Only a tick that the server accepted, and only once no other save is
+        // still out (an optimistic tick may yet roll back). The last save to
+        // finish judges the list as it stands now, so ticking the last two
+        // quickly still finishes it. (`hwInFlight` still holds this id here;
+        // its `finally` removes it.)
+        const othersInFlight = [...hwInFlight.current].some(id => id !== item.id);
+        const now = homeworkNow.current?.find(k => k.key === childKey)?.homework ?? [];
+        if (next && !othersInFlight && justCompleted(
+          { key: childKey, complete: allTrackedDone(seen.before) },
+          { key: childKey, complete: allTrackedDone(now) },
+        )) setCelebrateHw(true);
       } catch (e) {
         patch(items => items.map(h => (h.id === item.id ? item : h)));
         setHwError(apiErrorMessage(e, 'hwSaveFailed', t));
@@ -282,7 +311,7 @@ export default function SchoolScreen() {
                 { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: rowDir },
               ]}
             >
-              <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+              <Ionicons name="alert-circle" size={16} color={colors.destructive} />
               <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
                 {hwError}
               </Text>
@@ -295,17 +324,12 @@ export default function SchoolScreen() {
           ) : null}
 
           {hwEmpty ? (
-            <View style={styles.hwEmpty}>
-              <View style={[styles.emptyIcon, { backgroundColor: ACCENT + '1F' }]}>
-                <Ionicons name="book-outline" size={30} color={ACCENT} />
-              </View>
-              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.bodyLg, textAlign: 'center' }}>
-                {t('hwEmptyTitle')}
-              </Text>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.body, lineHeight: 24, textAlign: 'center' }}>
-                {t(isParent ? 'hwEmptyDescParent' : 'hwEmptyDesc')}
-              </Text>
-            </View>
+            <EmptyState
+              icon="book-outline"
+              title={t('hwEmptyTitle')}
+              body={t(isParent ? 'hwEmptyDescParent' : 'hwEmptyDesc')}
+              style={{ paddingTop: 0, paddingHorizontal: 0 }}
+            />
           ) : null}
 
           {hw.sections.map(group => (
@@ -350,7 +374,7 @@ export default function SchoolScreen() {
                 { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: rowDir },
               ]}
             >
-              <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+              <Ionicons name="alert-circle" size={16} color={colors.destructive} />
               <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
                 {examError}
               </Text>
@@ -390,7 +414,7 @@ export default function SchoolScreen() {
                 { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: rowDir },
               ]}
             >
-              <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+              <Ionicons name="alert-circle" size={16} color={colors.destructive} />
               <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
                 {error}
               </Text>
@@ -403,17 +427,12 @@ export default function SchoolScreen() {
           ) : null}
 
           {empty ? (
-            <View style={styles.empty}>
-              <View style={[styles.emptyIcon, { backgroundColor: ACCENT + '1F' }]}>
-                <Ionicons name="calendar-outline" size={30} color={ACCENT} />
-              </View>
-              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 17, textAlign: 'center' }}>
-                {t('schoolEmptyTitle')}
-              </Text>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
-                {t(isParent ? 'schoolEmptyDescParent' : 'schoolEmptyDesc')}
-              </Text>
-            </View>
+            <EmptyState
+              icon="calendar-outline"
+              title={t('schoolEmptyTitle')}
+              body={t(isParent ? 'schoolEmptyDescParent' : 'schoolEmptyDesc')}
+              style={{ paddingTop: 0, paddingHorizontal: 0 }}
+            />
           ) : null}
 
           {child?.schedule.days.map(day => (
@@ -457,9 +476,10 @@ export default function SchoolScreen() {
           <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: align }}>
             {t(isParent ? 'childResultsTitle' : 'myExamsTitle')}
           </Text>
-          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
+          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedForeground} />
         </Pressable>
       </ScrollView>
+      <Celebrate visible={celebrateHw} size="small" message={t('celebrateHomeworkAll')} onDone={() => setCelebrateHw(false)} />
     </View>
   );
 }
@@ -592,7 +612,7 @@ function HomeworkRow({
         >
           <Ionicons
             name={item.done ? 'checkmark-circle' : 'ellipse-outline'}
-            size={26}
+            size={24}
             color={item.done ? ACCENT : colors.mutedForeground}
           />
         </View>
@@ -609,7 +629,7 @@ function HomeworkRow({
         >
           <Ionicons
             name={item.done ? 'checkbox' : 'square-outline'}
-            size={26}
+            size={24}
             color={item.done ? ACCENT : colors.mutedForeground}
           />
         </Pressable>
@@ -671,20 +691,34 @@ function HomeworkRow({
             </Text>
           </Pressable>
         ) : null}
-        {item.resources.map(r => (
-          <Pressable
-            key={resourceKey(r)}
-            accessibilityRole="link"
-            hitSlop={8}
-            onPress={() => openResource(r, { teacher: false, isAr: isRTL, homeworkId: item.id })}
-            style={{ flexDirection: rowDir, alignItems: 'center', gap: SPACE.xs, paddingVertical: SPACE.xs }}
-          >
-            <Ionicons name="attach-outline" size={16} color={ACCENT} />
-            <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textAlign: align }}>
-              {r.title}
-            </Text>
-          </Pressable>
-        ))}
+        {item.resources.map(r => {
+          const isGame = r.kind === 'game';
+          const result = isGame ? resultForGame(item.gameResults, r.lessonId, r.game) : null;
+          return (
+            <View key={resourceKey(r)}>
+              <Pressable
+                accessibilityRole="link"
+                hitSlop={8}
+                onPress={() => openResource(r, { teacher: false, isAr: isRTL, homeworkId: item.id })}
+                style={{ flexDirection: rowDir, alignItems: 'center', gap: SPACE.xs, paddingVertical: SPACE.xs }}
+              >
+                {isGame ? (
+                  <Ionicons name="game-controller-outline" size={16} color={ACCENT} />
+                ) : (
+                  <Ionicons name="attach-outline" size={16} color={ACCENT} />
+                )}
+                <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textAlign: align }}>
+                  {isGame ? `${t(LESSON_GAME_TITLE_KEY[r.game])}: ${r.title}` : r.title}
+                </Text>
+              </Pressable>
+              {result ? (
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
+                  {t(isParent ? 'hwGameChildResult' : 'hwGameYourResult', gameScoreText(result.score, result.total, isRTL))}
+                </Text>
+              ) : null}
+            </View>
+          );
+        })}
       </View>
     </View>
   );
@@ -696,13 +730,10 @@ const styles = StyleSheet.create({
   desc: { fontSize: 15, lineHeight: 24, marginTop: 4 },
   errorBanner: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1 },
   errorText: { flex: 1, fontSize: 15, lineHeight: 24 },
-  empty: { alignItems: 'center', gap: SPACE.md, paddingHorizontal: 24, paddingTop: 40 },
-  emptyIcon: { width: 64, height: 64, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center', marginBottom: SPACE.sm },
   chip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: SPACE.lg, paddingVertical: 8 },
   dayCard: { borderWidth: 1, padding: SPACE.lg },
   todayChip: { borderRadius: 999, paddingHorizontal: SPACE.md, paddingVertical: 2 },
   periodBadge: { width: 34, height: 34, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
-  hwEmpty: { alignItems: 'center', gap: SPACE.md, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.xl },
   hwRow: { alignItems: 'flex-start', gap: SPACE.md, borderWidth: 1, padding: SPACE.md },
   hwMark: { width: TOUCH, height: TOUCH, alignItems: 'center', justifyContent: 'center' },
   hwBadge: { borderRadius: RADIUS.pill, paddingHorizontal: SPACE.md, paddingVertical: SPACE.xxs },

@@ -128,7 +128,7 @@ export default function VerifyEmailScreen() {
           onPress={() => router.replace('/(auth)/login')}
           style={[styles.back, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
         >
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
+          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.foreground} />
         </Pressable>
 
         <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -141,14 +141,14 @@ export default function VerifyEmailScreen() {
         <View style={[styles.card, { backgroundColor: colors.card, borderRadius: colors.radius * 1.5, borderColor: colors.border }]}>
           {error ? (
             <View style={[styles.banner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+              <Ionicons name="alert-circle" size={16} color={colors.destructive} />
               <Text style={[styles.bannerText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text>
             </View>
           ) : null}
 
           {notice ? (
             <View style={[styles.banner, { backgroundColor: colors.primary + '18', borderColor: colors.primary + '44', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <Ionicons name="checkmark-circle-outline" size={16} color={colors.primary} />
+              <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
               <Text style={[styles.bannerText, { color: colors.primary, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{notice}</Text>
             </View>
           ) : null}

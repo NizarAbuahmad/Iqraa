@@ -97,20 +97,20 @@ describe("parsePatch", () => {
 });
 
 // The bound is on the Amman CALENDAR DAY, not on the instant: "today" is the
-// Amman date of `now`; the earliest accepted due date is today - 30 days and the
+// Amman date of `now`; the earliest accepted due date is today itself and the
 // latest is today + 366 days, both inclusive, compared as YYYY-MM-DD. So a due
 // date is judged the way a teacher reads it, and midnight in Amman (21:00Z) moves
 // the window by a whole day.
 describe("due date bounds", () => {
-  const MSG = "dueDate must be within the last 30 days and the next year";
+  const MSG = "dueDate must be today or later, and within the next year";
   const OUT = { ok: false, error: MSG, code: "due_date_out_of_range" };
   const create = (dueDate: string, now = NOW) => parseCreate({ classGroupId: CLASS, title: "t", dueDate }, now);
   const patch = (dueDate: string, now = NOW) => parsePatch({ dueDate }, now);
 
-  it("accepts exactly 30 days back and rejects 31, on create and on patch", () => {
-    assert.equal(create("2026-09-12").ok, true);
-    assert.equal(patch("2026-09-12").ok, true);
-    for (const r of [create("2026-09-11"), patch("2026-09-11")]) {
+  it("accepts today and rejects yesterday, on create and on patch", () => {
+    assert.equal(create("2026-10-12").ok, true);
+    assert.equal(patch("2026-10-12").ok, true);
+    for (const r of [create("2026-10-11"), patch("2026-10-11"), create("2026-09-12")]) {
       assert.deepEqual(r, OUT);
     }
   });
@@ -123,8 +123,8 @@ describe("due date bounds", () => {
   });
   it("counts days in Amman: after 21:00Z it is already tomorrow there", () => {
     const late = new Date("2026-10-12T21:30:00Z"); // 00:30 on 2026-10-13 in Amman
-    assert.equal(create("2026-09-13", late).ok, true);
-    assert.deepEqual(create("2026-09-12", late), OUT);
+    assert.equal(create("2026-10-13", late).ok, true);
+    assert.deepEqual(create("2026-10-12", late), OUT);
     assert.equal(create("2027-10-14", late).ok, true);
     assert.deepEqual(create("2027-10-15", late), OUT);
   });

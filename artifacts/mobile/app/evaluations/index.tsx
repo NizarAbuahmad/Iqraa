@@ -24,6 +24,7 @@ import { LoadError } from '@/components/ui/LoadError';
 import { Button } from '@/components/ui/Button';
 import { BackButton } from '@/components/ui/BackButton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ExamKindSwitch } from '@/components/ui/ExamKindSwitch';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -101,7 +102,7 @@ export default function EvaluationsScreen() {
         onPress={() => router.push('/evaluations/new')}
         style={[styles.deskNewBtn, { backgroundColor: ACCENT_FILL }]}
       >
-        <Ionicons name="add" size={18} color="#fff" />
+        <Ionicons name="add" size={20} color="#fff" />
         <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>{t('newEvaluation')}</Text>
       </Pressable>
     </View>
@@ -125,6 +126,10 @@ export default function EvaluationsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {header}
+
+      <View style={[{ paddingHorizontal: 20, paddingTop: 16 }, centered]}>
+        <ExamKindSwitch active="evaluation" />
+      </View>
 
       {loading ? (
         <View style={styles.center}>
@@ -220,7 +225,7 @@ export default function EvaluationsScreen() {
           onPress={() => router.push('/evaluations/new')}
           style={[styles.fab, { backgroundColor: ACCENT_FILL, bottom: insets.bottom + 24 }]}
         >
-          <Ionicons name="add" size={26} color="#fff" />
+          <Ionicons name="add" size={24} color="#fff" />
         </Pressable>
       )}
     </View>

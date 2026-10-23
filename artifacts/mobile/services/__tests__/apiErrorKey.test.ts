@@ -50,6 +50,13 @@ describe('apiErrorKey', () => {
     assert.equal(apiErrorKey(err(undefined, 429), 'fb'), 'errTooManyRequests');
   });
 
+  it('says the service is busy when the server shed the request, instead of "login failed"', () => {
+    assert.equal(apiErrorKey(err('hashing_busy', 503), 'fb'), 'errServerBusy');
+    assert.equal(apiErrorKey(err('db_busy', 503), 'fb'), 'errServerBusy');
+    // A bare 503 (an edge page, a cold API) says nothing about why, so it keeps the screen's own message.
+    assert.equal(apiErrorKey(err(undefined, 503), 'fb'), 'fb');
+  });
+
   it('says "offline" when the request never reached the server', () => {
     assert.equal(apiErrorKey(new TypeError('Failed to fetch'), 'fb'), 'errOffline');
     assert.equal(apiErrorKey(Object.assign(new Error('aborted'), { name: 'AbortError' }), 'fb'), 'errOffline');

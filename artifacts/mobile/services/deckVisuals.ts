@@ -523,6 +523,8 @@ export type ChartGeometry =
       bars: {
         x: number; y: number; w: number; h: number; fill: string;
         label: string; labelX: number; labelY: number;
+        /** The bar's own number, above it: 12 and 120 draw the same height. */
+        value: string; valueY: number;
       }[];
     };
 
@@ -592,6 +594,7 @@ export function chartGeometry(
     return {
       x, y: pad + h - bh, w: barW, h: bh, fill: seriesColor(i),
       label: categories[i]!, labelX: x + barW / 2, labelY: height - 10,
+      value: String(Math.round(v * 100) / 100), valueY: pad + h - bh - 6,
     };
   });
   return { kind: 'bars', bars };
@@ -613,7 +616,8 @@ function chartSvg(block: Extract<VisualBlock, { kind: 'chart' }>, width: number,
   return g.bars
     .map(b =>
       `<rect x="${num(b.x)}" y="${num(b.y)}" width="${num(b.w)}" height="${num(b.h)}" fill="${b.fill}" rx="3"/>`
-      + `<text x="${num(b.labelX)}" y="${num(b.labelY)}" font-size="15" text-anchor="middle" fill="#4B5563">${esc(b.label)}</text>`)
+      + `<text x="${num(b.labelX)}" y="${num(b.labelY)}" font-size="15" text-anchor="middle" fill="#4B5563">${esc(b.label)}</text>`
+      + `<text x="${num(b.labelX)}" y="${num(b.valueY)}" font-size="15" font-weight="bold" text-anchor="middle" fill="#374151">${esc(b.value)}</text>`)
     .join('');
 }
 
@@ -761,10 +765,15 @@ export function usableChartVisual(raw: unknown): VisualBlock | null {
   if (!values.some(n => n > 0)) return null;
   if (new Set(categories).size !== categories.length) return null;
 
+  // A pie redraws its values as shares of their own total, so «45%, 30%» came
+  // out as 60/40 beside text saying 45 and 30. Only a whole stays a pie; bars
+  // never misstate a number.
+  const total = values.reduce((a, b) => a + b, 0);
+  const chartType = v.chartType === 'pie' && Math.abs(total - 100) > 5 ? 'bar' : v.chartType;
   const caption = typeof v.caption === 'string' ? v.caption.trim() : '';
   return {
     kind: 'chart',
-    chartType: v.chartType,
+    chartType,
     categories,
     values,
     ...(caption ? { caption } : {}),

@@ -512,7 +512,7 @@ export default function LessonPlanScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <ToolHeader topPad={topPad} isRTL={isRTL} title={t('generateLessonPlanTitle')} eyebrow={{ icon: 'sparkles', label: t('aiLessonPlanBadge') }} />
+      <ToolHeader topPad={topPad} isRTL={isRTL} title={t('generateLessonPlanTitle')} concept="lesson-plan" eyebrow={{ icon: 'sparkles', label: t('aiLessonPlanBadge') }} />
 
       {/* Form */}
       <View style={styles.form}>
@@ -823,7 +823,7 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled
       style={[styles.checkRow, { flexDirection: isRTL ? 'row-reverse' : 'row', opacity: disabled ? 0.6 : 1 }]}
     >
       <View style={[styles.checkbox, { borderColor: checked ? accent : colors.border, backgroundColor: checked ? accent : 'transparent' }]}>
-        {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
+        {checked && <Ionicons name="checkmark" size={14} color="#fff" />}
       </View>
       <Text style={[{ color: disabled ? colors.mutedForeground : colors.foreground, fontFamily: checked ? 'ReadexPro_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
     </Pressable>

@@ -187,8 +187,13 @@ export function iconForGlyph(glyph: string): DeckIconName | null {
  * read its own title), so a rule needs a stem that means the subject, not one
  * that merely occurs in it.
  */
-const TOPIC_ICONS: readonly (readonly [RegExp, DeckIconName])[] = [
+const TOPIC_ICONS: readonly (readonly [RegExp, DeckIconName, string?])[] = [
   [/كيمياء|كيميائ|تفاعل|مخبر|تجرب|chemi|reaction|experiment|laborator/i, 'flask'],
+  // Biology topics whose picture is not their icon's usual one: evolution wants
+  // fossils and nature, not the plants and greenery a leaf stands for, and
+  // microbes want a microscope.
+  [/تطور|انتخاب طبيعي|داروين|evolution|darwin|natural selection/i, 'leaf', 'evolution fossil nature'],
+  [/فيروس|فيرويد|بريون|بكتيريا|بكتري|جراثيم|ميكروب|فطريات|طلائعيات|أثريات|virus|viroid|prion|bacteria|microb|fung|protist|archae/i, 'flask', 'microscope microorganisms laboratory'],
   [/ذرة|ذرات|ذري|نووي|حركة|قوة|قوى|سرعة|تسارع|كهرباء|كهربائ|مغناطيس|ميكانيك|فيزياء|atom|nuclear|motion|force|speed|electric|magnet|physic/i, 'atom'],
   [/نبات|خلية|خلايا|حيوان|بيئ|كائن|تنفس|بناء ضوئي|وراثة|plant|\bcell|animal|ecosystem|organism|habitat|biolog/i, 'leaf'],
   [/طاقة|ضوء|حرارة|شمس|energy|\blight|\bheat|solar/i, 'sun'],
@@ -205,10 +210,13 @@ const TOPIC_ICONS: readonly (readonly [RegExp, DeckIconName])[] = [
   [/قراءة|لغة|قواعد|إملاء|كتابة|أدب|شعر|قصة|reading|\btext|language|grammar|spelling|writing|literature|poem|story/i, 'book'],
 ];
 
-export function iconForTopic(text: string): DeckIconName | null {
+function topicRule(text: string): readonly [RegExp, DeckIconName, string?] | null {
   const t = typeof text === 'string' ? text : '';
-  for (const [re, name] of TOPIC_ICONS) if (re.test(t)) return name;
-  return null;
+  return TOPIC_ICONS.find(([re]) => re.test(t)) ?? null;
+}
+
+export function iconForTopic(text: string): DeckIconName | null {
+  return topicRule(text)?.[1] ?? null;
 }
 
 /**
@@ -238,8 +246,8 @@ const TOPIC_PHOTO_QUERIES: Partial<Record<DeckIconName, string>> = {
 
 /** The English photo search for a topic named in `text`, or `null` when none is recognised. */
 export function photoQueryForTopic(text: string): string | null {
-  const icon = iconForTopic(text);
-  return icon ? (TOPIC_PHOTO_QUERIES[icon] ?? null) : null;
+  const rule = topicRule(text);
+  return rule ? (rule[2] ?? TOPIC_PHOTO_QUERIES[rule[1]] ?? null) : null;
 }
 
 /**

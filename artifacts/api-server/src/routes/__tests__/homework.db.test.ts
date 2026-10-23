@@ -163,13 +163,24 @@ describeDb("teacher homework over HTTP, against a real database", () => {
       const r = await create(w.users.t1, { classGroupId: w.classes.c1, title: "far", dueDate: "2062-01-01" });
       assert.equal(r.status, 400, r.text);
       assert.deepEqual(r.json, {
-        error: "dueDate must be within the last 30 days and the next year",
+        error: "dueDate must be today or later, and within the next year",
         code: "due_date_out_of_range",
       });
       assert.equal(await count(), before, "no row inserted");
       const past = await create(w.users.t1, { classGroupId: w.classes.c1, title: "past", dueDate: ammanDay(-45) });
       assert.equal(past.status, 400);
       assert.equal(past.json.code, "due_date_out_of_range");
+    });
+
+    it("rejects yesterday but accepts today, and writes nothing for yesterday", async () => {
+      const count = async () => (await db.pool.query(`SELECT count(*)::int AS n FROM homework`)).rows[0].n as number;
+      const before = await count();
+      const yesterday = await create(w.users.t1, { classGroupId: w.classes.c1, title: "yesterday", dueDate: ammanDay(-1) });
+      assert.equal(yesterday.status, 400, yesterday.text);
+      assert.equal(yesterday.json.code, "due_date_out_of_range");
+      assert.equal(await count(), before, "no row inserted");
+      const today = await create(w.users.t1, { classGroupId: w.classes.c1, title: "today", dueDate: ammanDay(0) });
+      assert.equal(today.status, 201, today.text);
     });
 
     it("gives only the range error a machine code", async () => {
@@ -303,7 +314,7 @@ describeDb("teacher homework over HTTP, against a real database", () => {
       assert.ok(after.getTime() > before.getTime());
     });
 
-    it("lets a homework that is already past the 30-day window be edited when its due date is resent unchanged", async () => {
+    it("lets a homework whose due day has passed be edited when its due date is resent unchanged", async () => {
       // The mobile edit form always resends dueDate, so bounding an unchanged date
       // would make every edit of an old homework a 400.
       const old = ammanDay(-45);
@@ -321,7 +332,7 @@ describeDb("teacher homework over HTTP, against a real database", () => {
       const moved = await call(server, "PATCH", `/homework/${id}`, w.users.t1, { title: "moved", dueDate: ammanDay(-46) });
       assert.equal(moved.status, 400, moved.text);
       assert.deepEqual(moved.json, {
-        error: "dueDate must be within the last 30 days and the next year",
+        error: "dueDate must be today or later, and within the next year",
         code: "due_date_out_of_range",
       });
       assert.equal((await rowOf(id))?.title, "old fixed");
@@ -461,6 +472,167 @@ describeDb("teacher homework over HTTP, against a real database", () => {
 
       const again = await call(server, "DELETE", `/homework/${id}`, w.users.t1);
       assert.equal(again.status, 404, "already archived");
+    });
+  });
+
+  describe("lesson games as attachments", () => {
+    // A real lesson id (the same one other suites resolve through getLessonById).
+    const LESSON = "kbl-math-s2-nccd-u5_l4";
+    const LESSON2 = "kbl-hist-s1-nccd-u1_l1";
+    const game = (extra: Record<string, unknown> = {}) => ({ kind: "game", lessonId: LESSON, game: "memory", title: "  لعبة الذاكرة  ", ...extra });
+    const post = (resources: unknown[], userId = w.users.t1) =>
+      create(userId, { classGroupId: w.classes.c1, title: "games", dueDate: DUE, resources });
+    const stored = async (id: string) =>
+      (await db.pool.query(`SELECT resources FROM homework WHERE id = $1`, [id])).rows[0].resources as any[];
+
+    it("stores a game with the title snapshot trimmed, and falls back to the lesson's own title", async () => {
+      const r = await post([game(), game({ game: "spot", title: "   " }), game({ game: "scramble", title: "x".repeat(300) })]);
+      assert.equal(r.status, 201, server.logs().slice(-1500));
+      const res = r.json.homework.resources as any[];
+      assert.deepEqual(res[0], { kind: "game", lessonId: LESSON, game: "memory", title: "لعبة الذاكرة" });
+      assert.equal(res[1].game, "spot");
+      assert.ok(res[1].title.length > 0 && res[1].title.trim() === res[1].title, "falls back to the lesson title");
+      assert.equal(res[2].title.length, 200, "capped at 200");
+      assert.deepEqual(await stored(r.json.homework.id), res);
+    });
+
+    it("drops a repeat of the same lesson game, but keeps the same lesson's other games", async () => {
+      const r = await post([game(), game({ title: "again" }), game({ game: "spot" })]);
+      assert.equal(r.status, 201);
+      assert.deepEqual((r.json.homework.resources as any[]).map(x => x.game), ["memory", "spot"]);
+    });
+
+    it("rejects a lesson that is not in the curriculum, a bad game, and a missing lessonId with 400, writing nothing", async () => {
+      const before = (await db.pool.query(`SELECT count(*)::int AS n FROM homework`)).rows[0].n;
+      for (const bad of [
+        game({ lessonId: "no-such-lesson" }),
+        game({ lessonId: "" }),
+        game({ lessonId: 5 }),
+        game({ lessonId: undefined }),
+        game({ game: "chess" }),
+        game({ game: undefined }),
+      ]) {
+        const r = await post([bad]);
+        assert.equal(r.status, 400, JSON.stringify(bad));
+      }
+      assert.equal((await db.pool.query(`SELECT count(*)::int AS n FROM homework`)).rows[0].n, before);
+    });
+
+    it("keeps an attached game through a PATCH that resends the list, and can add one", async () => {
+      const made = (await post([game()])).json.homework.id as string;
+      const p = await call(server, "PATCH", `/homework/${made}`, w.users.t1, { resources: [game(), game({ game: "scramble" })] });
+      assert.equal(p.status, 200, server.logs().slice(-1500));
+      assert.deepEqual((p.json.homework.resources as any[]).map(x => x.game), ["memory", "scramble"]);
+      const bad = await call(server, "PATCH", `/homework/${made}`, w.users.t1, { resources: [game({ lessonId: "nope" })] });
+      assert.equal(bad.status, 400);
+    });
+
+    describe("an older app editing the list", () => {
+      const patch = (id: string, body: Record<string, unknown>) => call(server, "PATCH", `/homework/${id}`, w.users.t1, body);
+      const keys = (r: any) => (r.json.homework.resources as any[]).map(x => `${x.lessonId}:${x.game}`);
+
+      it("keeps the games it left out when `gamesIncluded` is absent or not exactly true", async () => {
+        for (const flag of [{}, { gamesIncluded: false }, { gamesIncluded: "true" }]) {
+          const id = (await post([game(), game({ lessonId: LESSON2, game: "spot" })])).json.homework.id as string;
+          const r = await patch(id, { resources: [], ...flag });
+          assert.equal(r.status, 200, server.logs().slice(-1500));
+          assert.deepEqual(keys(r), [`${LESSON}:memory`, `${LESSON2}:spot`], JSON.stringify(flag));
+          assert.deepEqual((await stored(id)).map((x: any) => x.game), ["memory", "spot"]);
+        }
+      });
+
+      it("puts the body's own items first, and does not duplicate a game the body resent", async () => {
+        const id = (await post([game(), game({ game: "spot" })])).json.homework.id as string;
+        const r = await patch(id, { resources: [game({ game: "spot" })] });
+        assert.deepEqual(keys(r), [`${LESSON}:spot`, `${LESSON}:memory`]);
+      });
+
+      it("treats the list as authoritative with `gamesIncluded: true`: no game in it removes the game", async () => {
+        const id = (await post([game(), game({ game: "spot" })])).json.homework.id as string;
+        const r = await patch(id, { resources: [game({ game: "spot" })], gamesIncluded: true });
+        assert.deepEqual(keys(r), [`${LESSON}:spot`]);
+        const none = await patch(id, { resources: [], gamesIncluded: true });
+        assert.deepEqual(none.json.homework.resources, []);
+        assert.deepEqual(await stored(id), []);
+      });
+
+      it("leaves the list alone when the body has no `resources` at all", async () => {
+        const id = (await post([game()])).json.homework.id as string;
+        const r = await patch(id, { title: "renamed" });
+        assert.equal(r.status, 200);
+        assert.deepEqual(keys(r), [`${LESSON}:memory`]);
+      });
+    });
+
+    describe("results", () => {
+      let hwId: string;
+      const results = (userId: string | undefined, id: string) => call(server, "GET", `/homework/${id}/game-results`, userId);
+      const insert = (studentId: string, g: string, score: number, total: number, attempts = 1, lessonId = LESSON) =>
+        db.pool.query(
+          `INSERT INTO game_results (homework_id, student_id, lesson_id, game, score, total, attempts) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [hwId, studentId, lessonId, g, score, total, attempts],
+        );
+      before(async () => {
+        hwId = (await post([game(), game({ game: "spot" }), game({ lessonId: LESSON2 })])).json.homework.id as string;
+      });
+
+      it("is an empty list while nobody has played", async () => {
+        const r = await results(w.users.t1, hwId);
+        assert.equal(r.status, 200, r.text);
+        assert.deepEqual(r.json, { results: [] });
+      });
+
+      it("lists each child's results with their name, by name then game, and drops a child who is not a live member", async () => {
+        await insert(w.students.sA1, "spot", 2, 4, 3);
+        await insert(w.students.sA1, "memory", 5, 6);
+        await insert(w.students.aA, "memory", 1, 6);
+        // Noor is in another class (c3): a stray row must not surface here.
+        await insert(w.students.nB1, "memory", 6, 6);
+        // The same game for a second lesson is its own row.
+        await insert(w.students.sA1, "memory", 3, 3, 2, LESSON2);
+        const r = await results(w.users.t1, hwId);
+        assert.equal(r.status, 200, r.text);
+        const list = r.json.results as any[];
+        assert.deepEqual(
+          list.map(x => [x.studentId, x.lessonId, x.game, x.score, x.total, x.attempts]),
+          [
+            [w.students.aA, LESSON, "memory", 1, 6, 1],
+            [w.students.sA1, LESSON2, "memory", 3, 3, 2],
+            [w.students.sA1, LESSON, "memory", 5, 6, 1],
+            [w.students.sA1, LESSON, "spot", 2, 4, 3],
+          ],
+          "ordered by displayName (آدم before سارة), then game, then lesson id (hist before math)",
+        );
+        assert.deepEqual(Object.keys(list[0]).sort(), ["attempts", "displayName", "game", "lessonId", "playedAt", "score", "studentId", "total"]);
+        assert.equal(list[0].displayName, "آدم");
+        assert.ok(!Number.isNaN(Date.parse(list[0].playedAt)));
+      });
+
+      it("does not return a detached game's results, and returns them again if it is re-attached (rows are kept)", async () => {
+        const patch = (resources: unknown[]) =>
+          call(server, "PATCH", `/homework/${hwId}`, w.users.t1, { resources, gamesIncluded: true });
+        const pairs = async () => ((await results(w.users.t1, hwId)).json.results as any[]).map(x => `${x.lessonId}:${x.game}`);
+        // Detach lesson 2's memory and lesson 1's spot.
+        assert.equal((await patch([game()])).status, 200);
+        assert.deepEqual([...new Set(await pairs())], [`${LESSON}:memory`]);
+        assert.equal((await db.pool.query(`SELECT count(*)::int AS n FROM game_results WHERE homework_id = $1`, [hwId])).rows[0].n, 5);
+        // A different lesson's memory result does not stand in for an attached one.
+        assert.equal((await patch([game({ lessonId: LESSON2 })])).status, 200);
+        assert.deepEqual(await pairs(), [`${LESSON2}:memory`]);
+        // Re-attach everything.
+        assert.equal((await patch([game(), game({ game: "spot" }), game({ lessonId: LESSON2 })])).status, 200);
+        assert.equal((await pairs()).length, 4);
+      });
+
+      it("answers 404 for another teacher, a missing id, a malformed id and archived homework; 401/403 for no token and a family", async () => {
+        assert.equal((await results(w.users.t2, hwId)).status, 404);
+        assert.equal((await results(w.users.t1, RANDOM_UUID)).status, 404);
+        assert.equal((await results(w.users.t1, "not-a-uuid")).status, 404);
+        assert.equal((await results(w.users.t1, h.hw.hwArchived)).status, 404);
+        assert.equal((await results(undefined, hwId)).status, 401);
+        assert.equal((await results(w.users.parentA, hwId)).status, 403);
+        assert.equal((await results(w.users.studentA, hwId)).status, 403);
+      });
     });
   });
 

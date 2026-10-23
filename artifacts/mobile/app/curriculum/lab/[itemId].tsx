@@ -16,7 +16,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { getLessonById } from '@/services/knowledgeBase';
 import { labShareUrl, resolveLabParam } from '@/services/labLinks';
 import { copyToClipboard } from '@/services/share';
-import { LabFrame } from '@/components/lab/LabFrame';
+import { CornerFrame } from '@/components/corners/CornerFrame';
 import { LabLawCard } from '@/components/lab/LabLawCard';
 import { LabExternalCard } from '@/components/lab/LabExternalCard';
 import { LabFigureStrip } from '@/components/lab/LabFigureStrip';
@@ -31,11 +31,11 @@ export default function LabPresentScreen() {
   const item = resolveLabParam(itemId);
   if (!item) {
     return (
-      <LabFrame title={t('labTitle')}>
+      <CornerFrame title={t('labTitle')}>
         <Text style={[styles.missing, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
           {t('labNotFound')}
         </Text>
-      </LabFrame>
+      </CornerFrame>
     );
   }
 
@@ -54,7 +54,7 @@ export default function LabPresentScreen() {
   };
 
   return (
-    <LabFrame title={lang === 'ar' ? item.titleAr : item.titleEn} subtitle={lessonTitle}>
+    <CornerFrame title={lang === 'ar' ? item.titleAr : item.titleEn} subtitle={lessonTitle}>
       <View style={[styles.actions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Pressable
           onPress={copyLink}
@@ -73,7 +73,7 @@ export default function LabPresentScreen() {
       {item.kind === 'external' ? <LabExternalCard item={item} /> : null}
 
       <LabFigureStrip lessonId={item.lessonId} />
-    </LabFrame>
+    </CornerFrame>
   );
 }
 

@@ -22,6 +22,8 @@ import { dateLocale } from '@/services/dateLabels';
 import { askForPushPermission, getPushPermissionState, pushAskCopy, type PushPermissionState } from '@/services/pushTokens';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { BackButton } from '@/components/ui/BackButton';
+import { IconTile } from '@/components/ui/IconTile';
+import type { GlyphId } from '@/constants/glyphs';
 import { SPACE, TYPE } from '@/constants/theme';
 import { PUSH_PREF_ROWS, showsFamilyPushPrefs, withPref, type PushPrefCategory, type PushPrefs } from '@/services/pushPrefs';
 import { fetchPushPrefs, savePushPref } from '@/services/pushPrefsApi';
@@ -31,6 +33,8 @@ const PREF_ICON: Record<PushPrefCategory, keyof typeof Ionicons.glyphMap> = {
   exams: 'calendar-outline',
   results: 'ribbon-outline',
 };
+/** A category with an Iqraa drawing (`constants/glyphs.ts`) draws it in place of its stock icon. */
+const PREF_GLYPH: Partial<Record<PushPrefCategory, GlyphId>> = { homework: 'homework' };
 
 type AiUsage = { spentUsd: number | null; limitUsd: number; resetsAt: string };
 
@@ -404,7 +408,7 @@ export default function SettingsScreen() {
                   <React.Fragment key={row.category}>
                     {i > 0 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
                     <View style={[styles.settingRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                      <Ionicons name={PREF_ICON[row.category]} size={20} color={colors.primary} />
+                      <IconTile icon={PREF_ICON[row.category]} glyph={PREF_GLYPH[row.category]} color={colors.primary} size={36} />
                       <View style={{ flex: 1, gap: SPACE.xxs }}>
                         <Text style={[styles.settingLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
                           {t(row.labelKey)}
@@ -575,7 +579,7 @@ function SettingRow({ icon, label, colors, isRTL, right, onPress, destructive }:
   const tint = destructive ? colors.destructive : colors.primary;
   const inner = (
     <View style={[styles.settingRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-      <Ionicons name={icon} size={20} color={tint} />
+      <IconTile icon={icon} color={tint} size={36} />
       <Text style={[styles.settingLabel, { color: destructive ? colors.destructive : colors.foreground, fontFamily: 'ReadexPro_500Medium', flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
         {label}
       </Text>
@@ -594,7 +598,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 28 },
   sectionLabel: { fontSize: 11, marginBottom: 8 },
   card: { borderWidth: 1, overflow: 'hidden', marginBottom: 4 },
-  settingRow: { alignItems: 'center', padding: 16, gap: 12 },
+  settingRow: { alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, gap: 12 },
   settingLabel: { fontSize: 15 },
   divider: { height: 1, marginHorizontal: 16 },
   langToggle: { paddingHorizontal: 14, paddingVertical: 7 },

@@ -56,6 +56,10 @@ const BY_CODE = {
   due_date_out_of_range: 'hwErrDueRange',
   // Anywhere.
   rate_limited: 'errTooManyRequests',
+  // The API shed the request: its hashing queue or database pool was full
+  // (api-server lib/passwordHash.ts, lib/dbBusy.ts). Retry-After says 2-3 s.
+  hashing_busy: 'errServerBusy',
+  db_busy: 'errServerBusy',
 } as const;
 
 export type ApiErrorKey = (typeof BY_CODE)[keyof typeof BY_CODE] | 'errOffline';

@@ -1,7 +1,8 @@
 import React from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { ConceptIcon } from '@/components/ui/Glyph';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -9,13 +10,17 @@ import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { DEMO_MODE } from '@/services/ai/demoMode';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { useSurface } from '@/components/ui/Surface';
+import { SPACE } from '@/constants/theme';
 import { openGeogebraGraphing } from '@/services/geogebra';
 import { trackEvent } from '@/services/analytics';
 import { pickPrefillParams } from '@/services/lessonPrep';
 import { loadLessonPick } from '@/services/lessonContext';
 import { classToolParamsFromRoute, type ClassToolParams } from '@/services/classToolParams';
+import { readableOn } from '@/services/readableColor';
 import {
-  ALL_TOOLS,
+  TAB_TOOLS,
   type ToolDef,
 } from '@/services/toolCatalog';
 
@@ -56,114 +61,53 @@ function ToolCard({
   isRTL,
   colors,
   t,
-  compact,
-  grid,
+  phone,
   forClass,
 }: {
   tool: ToolDef;
   isRTL: boolean;
   colors: ReturnType<typeof useColors>;
   t: (key: any) => string;
-  compact?: boolean;
-  grid?: boolean;
+  /** Two to a row on a phone; the desktop grid sizes its own columns. */
+  phone?: boolean;
   /** Set when the teacher came from a class's الموارد tab. */
   forClass: ClassToolParams | null;
 }) {
   const isExternal = !!tool.externalAction;
   const { lang } = useLanguage();
+  const surface = useSurface();
 
-  // A left-icon/right-text row reads fine at phone width, but stretched
-  // across a desktop grid tile it leaves the icon and chevron stranded at
-  // opposite edges of mostly empty space. The grid tile centers everything
-  // instead — icon on top, bigger, the way a launcher tile or app icon reads.
-  if (grid) {
-    return (
-      <Pressable
-        onPress={() => { void runToolAction(tool, lang, forClass); }}
-        style={({ pressed }) => [
-          styles.gridCard,
-          {
-            backgroundColor: colors.card,
-            borderColor: colors.border,
-            borderRadius: colors.radius,
-            opacity: pressed ? 0.8 : 1,
-          },
-        ]}
-      >
-        <View style={[styles.gridIconWrap, { backgroundColor: tool.color + '1A', borderRadius: 16 }]}>
-          <Ionicons name={tool.icon} size={30} color={tool.color} />
-        </View>
-        <View style={[styles.gridTitleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: 'center' }]}>
-            {t(tool.titleKey as any)}
-          </Text>
-          {tool.badgeKey && (
-            <View style={[styles.badge, { backgroundColor: tool.color + '22' }]}>
-              <Text style={[styles.badgeText, { color: tool.color, fontFamily: 'ReadexPro_600SemiBold' }]}>
-                {t(tool.badgeKey as any)}
-              </Text>
-            </View>
-          )}
-        </View>
-        <Text
-          style={[styles.cardDesc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}
-          numberOfLines={2}
-        >
-          {t(tool.descKey as any)}
-        </Text>
-        {isExternal && <Ionicons name="open-outline" size={14} color={colors.mutedForeground} />}
-      </Pressable>
-    );
-  }
-
+  // One card on every size: the icon on top, centred, the way a launcher tile
+  // reads. A left-icon/right-text row left the icon and chevron stranded at
+  // opposite edges of mostly empty space once it was stretched across a tile.
   return (
-    <Pressable
+    <PressableScale
       onPress={() => { void runToolAction(tool, lang, forClass); }}
-      style={({ pressed }) => [
-        styles.card,
-        compact && styles.cardCompact,
-        {
-          backgroundColor: colors.card,
-          borderColor: colors.border,
-          borderRadius: colors.radius,
-          opacity: pressed ? 0.8 : 1,
-          flexDirection: isRTL ? 'row-reverse' : 'row',
-        },
-      ]}
+      style={[styles.gridCard, phone && styles.gridCardPhone, surface]}
     >
-      <View style={[
-        styles.iconWrap,
-        compact && styles.iconWrapCompact,
-        { backgroundColor: tool.color + '1A', borderRadius: 14 },
-      ]}>
-        <Ionicons name={tool.icon} size={compact ? 22 : 28} color={tool.color} />
+      <View style={[styles.gridIconWrap, { backgroundColor: tool.color + '1A', borderRadius: 16 }]}>
+        <ConceptIcon icon={tool.icon} glyph={tool.glyph} size={32} color={readableOn(tool.color, colors.card, 3)} />
       </View>
-      <View style={{ flex: 1 }}>
-        <View style={[styles.titleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: compact ? 14 : 15 }]}>
-            {t(tool.titleKey as any)}
-          </Text>
-          {tool.badgeKey && (
-            <View style={[styles.badge, { backgroundColor: tool.color + '22' }]}>
-              <Text style={[styles.badgeText, { color: tool.color, fontFamily: 'ReadexPro_600SemiBold' }]}>
-                {t(tool.badgeKey as any)}
-              </Text>
-            </View>
-          )}
-        </View>
-        <Text
-          style={[styles.cardDesc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
-          numberOfLines={compact ? 2 : 3}
-        >
-          {t(tool.descKey as any)}
+      <View style={[styles.gridTitleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+        <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: 'center' }]}>
+          {t((tool.tabTitleKey ?? tool.titleKey) as any)}
         </Text>
+        {tool.badgeKey && (
+          <View style={[styles.badge, { backgroundColor: tool.color + '22' }]}>
+            <Text style={[styles.badgeText, { color: readableOn(tool.color, colors.card), fontFamily: 'ReadexPro_600SemiBold' }]}>
+              {t(tool.badgeKey as any)}
+            </Text>
+          </View>
+        )}
       </View>
-      <Ionicons
-        name={isExternal ? 'open-outline' : (isRTL ? 'chevron-back' : 'chevron-forward')}
-        size={18}
-        color={colors.mutedForeground}
-      />
-    </Pressable>
+      <Text
+        style={[styles.cardDesc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}
+        numberOfLines={2}
+      >
+        {t((tool.tabDescKey ?? tool.descKey) as any)}
+      </Text>
+      {isExternal && <Ionicons name="open-outline" size={14} color={colors.mutedForeground} />}
+    </PressableScale>
   );
 }
 
@@ -211,16 +155,22 @@ export default function AIToolsScreen() {
           helping a teacher choose. WORKFLOW still orders the list, and still
           groups the home screen and command palette. */}
       <View style={[styles.section, { paddingTop: 16 }]}>
-        <View style={[styles.list, isDesktop && styles.listGrid]}>
-          {ALL_TOOLS.map(tool => (
-            <ToolCard key={tool.id} tool={tool} isRTL={isRTL} colors={colors} t={t} grid={isDesktop} forClass={forClass} />
+        <View
+          style={[
+            styles.list,
+            isDesktop ? styles.listGrid : styles.listGridPhone,
+            { flexDirection: isRTL ? 'row-reverse' : 'row' },
+          ]}
+        >
+          {TAB_TOOLS.map(tool => (
+            <ToolCard key={tool.id} tool={tool} isRTL={isRTL} colors={colors} t={t} phone={!isDesktop} forClass={forClass} />
           ))}
         </View>
       </View>
 
       {DEMO_MODE && (
         <View style={[styles.note, { backgroundColor: colors.muted, borderRadius: colors.radius, marginHorizontal: 20, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Ionicons name="information-circle-outline" size={16} color={colors.mutedForeground} />
+          <Ionicons name="information-circle" size={16} color={colors.mutedForeground} />
           <Text style={[styles.noteText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('aiToolsNote')}
           </Text>
@@ -244,23 +194,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   list: { paddingHorizontal: 20, gap: 10, paddingBottom: 8 },
-  listGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
+  listGrid: { flexWrap: 'wrap', gap: 14 },
+  listGridPhone: { flexWrap: 'wrap', gap: SPACE.md },
   gridCard: {
     flexBasis: '31%',
     flexGrow: 1,
     minWidth: 220,
     alignItems: 'center',
     padding: 20,
-    borderWidth: 1,
     gap: 8,
   },
+  // Two to a row: the desktop tile's 220px floor would leave one column on a phone.
+  gridCardPhone: { flexBasis: '46%', minWidth: 0, padding: SPACE.lg },
   gridIconWrap: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   gridTitleRow: { alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' },
-  card: { alignItems: 'center', padding: 16, borderWidth: 1, gap: 14 },
-  cardCompact: { padding: 14 },
-  iconWrap: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  iconWrapCompact: { width: 44, height: 44 },
-  titleRow: { alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' },
   cardTitle: { fontSize: 15 },
   badge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 },
   badgeText: { fontSize: 10 },

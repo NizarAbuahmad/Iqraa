@@ -64,17 +64,18 @@ import { GeneratorResultActions, GeneratorSaveBar } from '@/components/ui/Genera
 import { buildQuizHTML, buildQuizSlidesHTML, formatQuizText } from '@/services/share';
 import { buildQuizDocx } from '@/services/quizDocx';
 import { ToolHeader } from '@/components/ui/ToolHeader';
+import { ExamKindSwitch } from '@/components/ui/ExamKindSwitch';
 import { palette } from '@/constants/colors';
 import { useWarmGrounding } from '@/hooks/useWarmGrounding';
 import { usePickedLesson } from '@/hooks/usePickedLesson';
 import { carriedLessonTopic } from '@/services/pickedLesson';
 import { nextFrame } from '@/services/nextFrame';
+import { QUIZ_TYPE_ORDER, type QuizType } from '@workspace/exam-paper';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
 
-type QType = 'multiple_choice' | 'true_false' | 'fill_blank' | 'short_answer';
 type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed';
 type DifficultyLevel = 'normal' | 'high' | 'difficult' | 'mixed';
 
@@ -84,7 +85,6 @@ const MARKS_OPTIONS = [10, 20, 25, 30, 40, 50, 100];
 const NUM_Q_OPTIONS = ALL_QUESTION_COUNTS;
 /** What a unit / semester / book paper is anchored to: the scope itself, never one lesson its label happens to match. */
 const WIDE_GROUNDING = { lesson: null, grounded: true };
-const ALL_Q_TYPES: QType[] = ['multiple_choice', 'true_false', 'fill_blank', 'short_answer'];
 const DIFFICULTY_IDS: DifficultyLevel[] = ['normal', 'high', 'difficult', 'mixed'];
 const DIFFICULTY_MAP: Record<DifficultyLevel, Difficulty> = {
   normal: 'easy',
@@ -114,9 +114,9 @@ export default function QuizScreen() {
   const numQLabels = NUM_Q_OPTIONS.map(n => String(n));
   const diffLabels = [t('difficultyNormal'), t('difficultyHigh'), t('difficultyDifficult'), t('difficultyMixed')];
 
-  const parseTypes = (raw?: string): Set<QType> => {
+  const parseTypes = (raw?: string): Set<QuizType> => {
     if (!raw) return new Set(['multiple_choice', 'true_false', 'short_answer']);
-    try { return new Set(JSON.parse(raw) as QType[]); } catch { return new Set(['multiple_choice', 'true_false', 'short_answer']); }
+    try { return new Set(JSON.parse(raw) as QuizType[]); } catch { return new Set(['multiple_choice', 'true_false', 'short_answer']); }
   };
 
   // An index the picker list cannot honour is NOT index 0 — see
@@ -181,7 +181,7 @@ export default function QuizScreen() {
   const [durationIdx, setDurationIdx] = useState(readIndexParam(params.durationIdx, DURATION_OPTIONS.length, 2));
   const [marksIdx, setMarksIdx] = useState(readIndexParam(params.marksIdx, MARKS_OPTIONS.length, 1));
   const [numQIdx, setNumQIdx] = useState(readIndexParam(params.numQIdx, NUM_Q_OPTIONS.length, 2));
-  const [selectedTypes, setSelectedTypes] = useState<Set<QType>>(parseTypes(params.selectedTypes));
+  const [selectedTypes, setSelectedTypes] = useState<Set<QuizType>>(parseTypes(params.selectedTypes));
   // 25 and 30 exist on a wide scope only. Derived, not written back: the selector
   // reports no scope for a moment mid-pick (unit A to unit B), and a reset would
   // lose the teacher's 30 each time.
@@ -260,7 +260,7 @@ export default function QuizScreen() {
     if (result) setSaveLabel('save');
   }, [result]);
 
-  const toggleType = (type: QType) => {
+  const toggleType = (type: QuizType) => {
     setSelectedTypes(prev => {
       const next = new Set(prev);
       if (next.has(type)) {
@@ -274,7 +274,7 @@ export default function QuizScreen() {
   };
 
   // The form's checkboxes are chrome; the badges on the quiz are the quiz's.
-  const typeLabels = (tr: typeof t): Record<QType, string> => ({
+  const typeLabels = (tr: typeof t): Record<QuizType, string> => ({
     multiple_choice: tr('typeMultipleChoice'),
     true_false: tr('typeTrueFalse'),
     fill_blank: tr('typeFillBlank'),
@@ -282,7 +282,7 @@ export default function QuizScreen() {
   });
   const TYPE_LABEL = typeLabels(t);
   const OUT_TYPE_LABEL = typeLabels(outT);
-  const TYPE_COLOR: Record<QType, string> = {
+  const TYPE_COLOR: Record<QuizType, string> = {
     multiple_choice: palette.warning,
     true_false: palette.info,
     fill_blank: palette.warning,
@@ -599,10 +599,13 @@ export default function QuizScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <ToolHeader topPad={topPad} isRTL={isRTL} title={t('createQuizTitle')} subtitle={t('quizSubtitle')} />
+      <ToolHeader topPad={topPad} isRTL={isRTL} title={t('createQuizTitle')} concept="quiz" subtitle={t('quizSubtitle')} />
 
       {/* Form */}
       <View style={{ padding: 20 }}>
+        <View style={{ marginBottom: 20 }}>
+          <ExamKindSwitch active="paper" />
+        </View>
         <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} hidden={teacherScope.gradeHidden} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t(teacherScope.strandedNoteKey(grades[gradeIdx].id, subjectIdx))} isRTL={isRTL} colors={colors} />
         <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} hidden={subjectHidden} />
@@ -641,7 +644,7 @@ export default function QuizScreen() {
 
         <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left', marginBottom: 10 }]}>{t('questionTypesLabel')}</Text>
         <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-          {ALL_Q_TYPES.map(type => (
+          {QUIZ_TYPE_ORDER.map(type => (
             <CheckboxRow key={type} label={TYPE_LABEL[type]} checked={selectedTypes.has(type)} onToggle={() => toggleType(type)} accent={ACCENT} colors={colors} isRTL={isRTL} />
           ))}
         </View>
@@ -761,7 +764,7 @@ export default function QuizScreen() {
             ]}
             accessibilityRole="button"
           >
-            <Ionicons name="tv-outline" size={18} color="#fff" />
+            <Ionicons name="tv-outline" size={20} color="#fff" />
             <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 14 }}>
               {t('presentOnScreen')}
             </Text>
@@ -778,7 +781,7 @@ export default function QuizScreen() {
           </Pressable>
 
           {result.questions.map((q, i) => {
-            const tc = TYPE_COLOR[q.type as QType] ?? ACCENT;
+            const tc = TYPE_COLOR[q.type as QuizType] ?? ACCENT;
             const o = effectiveOutcomes[i];
             return (
               <View key={q.id} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
@@ -787,7 +790,7 @@ export default function QuizScreen() {
                     <Text style={[{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 12 }]}>{i + 1}</Text>
                   </View>
                   <View style={[styles.typeBadge, { backgroundColor: tc + '18' }]}>
-                    <Text style={[{ color: tc, fontFamily: 'ReadexPro_500Medium', fontSize: 11 }]}>{OUT_TYPE_LABEL[q.type as QType] ?? q.type}</Text>
+                    <Text style={[{ color: tc, fontFamily: 'ReadexPro_500Medium', fontSize: 11 }]}>{OUT_TYPE_LABEL[q.type as QuizType] ?? q.type}</Text>
                   </View>
                   <View style={{ flexDirection: outRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10, marginLeft: outRTL ? 0 : 'auto', marginRight: outRTL ? 'auto' : 0 }}>
                     <View style={{ minWidth: 54 }}>
@@ -811,7 +814,7 @@ export default function QuizScreen() {
                       accessibilityRole="button"
                       accessibilityLabel={t('deleteQuestion')}
                     >
-                      <Ionicons name="trash-outline" size={15} color={colors.mutedForeground} />
+                      <Ionicons name="trash-outline" size={16} color={colors.mutedForeground} />
                     </Pressable>
                   </View>
                 </View>
@@ -820,7 +823,7 @@ export default function QuizScreen() {
                     checked. The aggregate row above still covers the rest. */}
                 {o?.verifiedBy === 'symbolic' ? (
                   <View style={[styles.verifyRow, { marginTop: 0, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    <Ionicons name="shield-checkmark" size={13} color="#067647" />
+                    <Ionicons name="shield-checkmark" size={14} color="#067647" />
                     <Text style={[styles.verifyText, { color: palette.success, textAlign: isRTL ? 'right' : 'left' }]}>
                       {t('verifiedBySymbolic')}
                     </Text>
@@ -875,7 +878,7 @@ export default function QuizScreen() {
                         >
                           <Ionicons
                             name={isCorrect ? 'checkmark-circle' : 'ellipse-outline'}
-                            size={17}
+                            size={20}
                             color={isCorrect ? palette.success : colors.mutedForeground}
                           />
                         </Pressable>
@@ -989,7 +992,7 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL }: {
   return (
     <Pressable onPress={onToggle} style={[styles.checkRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
       <View style={[styles.checkbox, { borderColor: checked ? accent : colors.border, backgroundColor: checked ? accent : 'transparent' }]}>
-        {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
+        {checked && <Ionicons name="checkmark" size={14} color="#fff" />}
       </View>
       <Text style={[{ color: colors.foreground, fontFamily: checked ? 'ReadexPro_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
     </Pressable>

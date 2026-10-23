@@ -187,7 +187,7 @@ export function CodeSignupForm({ role, termsAccepted, lang, colors, isRTL, t }: 
 function ErrorBanner({ text, colors, isRTL }: { text: string; colors: any; isRTL: boolean }) {
   return (
     <View style={[styles.banner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-      <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+      <Ionicons name="alert-circle" size={16} color={colors.destructive} />
       <Text style={[styles.bannerText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
         {text}
       </Text>

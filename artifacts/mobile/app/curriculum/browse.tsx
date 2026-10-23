@@ -8,6 +8,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
+import { scheme } from '@/constants/colors';
+import { CORNERS } from '@/constants/corners';
 import { useLanguage } from '@/context/LanguageContext';
 import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
 import {
@@ -56,7 +58,7 @@ function SubjectCard({ subject, onPress, isRTL }: { subject: Subject; onPress: (
       ]}
     >
       <View style={[styles.subjectIcon, { backgroundColor: subject.color + '22', borderRadius: 14 }]}>
-        <Ionicons name={SUBJECT_ICONS[subject.id] ?? 'book-outline'} size={26} color={subject.color} />
+        <Ionicons name={SUBJECT_ICONS[subject.id] ?? 'book-outline'} size={24} color={subject.color} />
       </View>
       <Text style={[styles.subjectName, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: 'center' }]} numberOfLines={2}>
         {name}
@@ -242,24 +244,24 @@ export default function CurriculumBrowseScreen() {
                 onPress={() => router.push({ pathname: '/curriculum/english', params: { grade: String(selectedGrade.level) } } as never)}
                 style={({ pressed }) => [
                   styles.hubBanner,
-                  { backgroundColor: colors.hero, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.9 : 1 },
+                  { backgroundColor: CORNERS.english[scheme].hero, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.9 : 1 },
                 ]}
               >
-                <Text style={{ fontSize: 28 }}>🎧</Text>
+                <Ionicons name="headset-outline" size={32} color="#fff" />
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 16, textAlign: isRTL ? 'right' : 'left' }}>{t('hubTitle')}</Text>
                   <Text style={{ color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
                     {t('hubListenDesc')} · {t('hubSpell')} · {t('hubMatch')}
                   </Text>
                 </View>
-                <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color="#fff" />
+                <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color="#fff" />
               </Pressable>
             ) : null}
           </>
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Ionicons name="search-outline" size={36} color={colors.mutedForeground} />
+            <Ionicons name="search-outline" size={40} color={colors.mutedForeground} />
             <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
               {t('noSubjectsFound')}
             </Text>

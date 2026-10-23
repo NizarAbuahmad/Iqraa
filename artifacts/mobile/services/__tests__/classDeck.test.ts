@@ -27,6 +27,8 @@ import {
   buildDeckFromQuiz,
   buildDeckFromWorksheet,
   buildGameDeckFromQuiz,
+  buildGameDeckFromSlides,
+  canPlayAsGame,
   objectivesSlide,
 } from '../classDeck.ts';
 import type { ActivitySlide, QuizOutput, WorksheetOutput } from '../ai/AIService.ts';
@@ -452,6 +454,12 @@ describe('book figures on quiz and worksheet decks', () => {
     }
   });
 
+  it('titles each figure slide differently when the lesson has several', () => {
+    const shown = figs(buildDeckFromQuiz(QUIZ, 'الدوائر', true, { lesson: WITH_FIGURES, figureUri: uri }));
+    assert.ok(shown.length > 1, 'probe: the lesson holds several figures');
+    assert.equal(new Set(shown.map(s => s.title)).size, shown.length);
+  });
+
   it('places them before the first question, not after the answers', () => {
     const deck = buildDeckFromQuiz(QUIZ, 'الدوائر', true, { lesson: WITH_FIGURES, figureUri: uri });
     const firstFigure = deck.slides.findIndex(s => s.mediaUrl?.startsWith('asset://'));
@@ -484,5 +492,51 @@ describe('deck header grade and subject', () => {
     assert.equal(deck.grade, 'الصف الأول');
     assert.equal(deck.subject, 'العلوم');
     assert.equal(buildDeckFromQuiz(QUIZ, 'درس', true).grade, '');
+  });
+});
+
+describe('buildGameDeckFromSlides', () => {
+  const q = (n: number, extra: Partial<ActivitySlide> = {}): ActivitySlide => ({
+    slideNumber: n, type: 'question', title: `Q${n}`, content: `stem ${n}`,
+    options: ['a', 'b', 'c'], correctIndex: 1, durationSeconds: 60, ...extra,
+  });
+  const deck = {
+    ...buildDeckFromQuiz(QUIZ, 'درس', true),
+    lesson: 'الكسور',
+    slides: [
+      { slideNumber: 1, type: 'intro' as const, title: 'i', content: 'c', durationSeconds: 0 },
+      q(2, { verified: true, verifiedBy: 'bank' as const, layout: 'stat' as const, stat: { value: '5', label: 'x' } }),
+      { slideNumber: 3, type: 'challenge' as const, title: 'open', content: 'write it', durationSeconds: 0 },
+      q(4), q(5, { correctIndex: 7 }), q(6), q(7),
+      { slideNumber: 8, type: 'summary' as const, title: 's', content: 's', durationSeconds: 0 },
+    ],
+  };
+
+  it('keeps only choice questions with an in-range key, in order, and scores them', () => {
+    const game = buildGameDeckFromSlides(deck, 4, true);
+    const questions = game.slides.filter(s => s.type === 'question');
+    assert.deepEqual(questions.map(s => s.content), ['stem 2', 'stem 4', 'stem 6', 'stem 7']);
+    assert.deepEqual(questions.map(s => s.questionIndex), [0, 1, 2, 3]);
+    assert.deepEqual(game.game, { teamCount: 4, questionCount: 4, isAr: true });
+    assert.equal(game.slides.at(-1)!.type, 'podium');
+    assert.equal(game.slides.filter(s => s.type === 'scoreboard').length, 1);
+    assert.deepEqual(game.slides.map(s => s.slideNumber), game.slides.map((_, i) => i + 1));
+  });
+
+  it("carries a question slide's own badge and key, and clamps the team count", () => {
+    const game = buildGameDeckFromSlides(deck, 9, true);
+    const first = game.slides.find(s => s.type === 'question')!;
+    assert.equal(first.verifiedBy, 'bank');
+    assert.equal(first.layout, undefined, 'a layout would draw over the question stem');
+    assert.equal(first.teacher?.expectedAnswer, 'b');
+    assert.equal(game.game?.teamCount, 6);
+    assert.deepEqual(game.printables, []);
+  });
+
+  it('is offered only for a non-game deck with enough scoreable questions', () => {
+    assert.equal(canPlayAsGame(deck), true);
+    assert.equal(canPlayAsGame(buildGameDeckFromSlides(deck, 4, true)), false);
+    assert.equal(canPlayAsGame({ ...deck, slides: deck.slides.slice(0, 4) }), false);
+    assert.equal(canPlayAsGame(null), false);
   });
 });

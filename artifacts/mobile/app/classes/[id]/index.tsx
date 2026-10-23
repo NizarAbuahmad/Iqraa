@@ -682,7 +682,7 @@ export default function ClassDetailScreen() {
 
   const errorBanner = displayError ? (
     <View style={[styles.errorBox, { borderColor: colors.destructive }]}>
-      <Ionicons name="alert-circle-outline" size={18} color={colors.destructive} />
+      <Ionicons name="alert-circle" size={20} color={colors.destructive} />
       <Text
         style={{
           color: colors.destructive,
@@ -748,7 +748,7 @@ export default function ClassDetailScreen() {
   /** The tab has items, just none in the focused subject — «لا موارد بعد» would be a lie. */
   const emptyForSubject = (
     <View style={styles.empty}>
-      <Ionicons name="filter-outline" size={36} color={colors.mutedForeground} />
+      <Ionicons name="filter-outline" size={40} color={colors.mutedForeground} />
       <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
         {t('nothingForSubject', subjectLabel(focus, lang))}
       </Text>
@@ -831,7 +831,7 @@ export default function ClassDetailScreen() {
             hitSlop={8}
             style={[styles.classChatPill, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
-            <Ionicons name="chatbubbles-outline" size={15} color="#fff" />
+            <Ionicons name="chatbubbles-outline" size={16} color="#fff" />
             <Text style={[styles.classChatPillText, { fontFamily: 'ReadexPro_500Medium' }]}>
               {t('messagingClassChat')}
             </Text>
@@ -846,7 +846,7 @@ export default function ClassDetailScreen() {
               hitSlop={8}
               style={[styles.classChatPill, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
-              <Ionicons name="key-outline" size={15} color="#fff" />
+              <Ionicons name="key-outline" size={16} color="#fff" />
               <Text style={[styles.classChatPillText, { fontFamily: 'ReadexPro_500Medium' }]}>
                 {t('joinCodeTitle')}
               </Text>
@@ -904,7 +904,7 @@ export default function ClassDetailScreen() {
                     accessibilityRole="button"
                     style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, paddingVertical: 8 }}
                   >
-                    <Ionicons name={selecting ? 'close-circle-outline' : 'checkbox-outline'} size={18} color={ACCENT} />
+                    <Ionicons name={selecting ? 'close-circle-outline' : 'checkbox-outline'} size={20} color={ACCENT} />
                     <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
                       {t(selecting ? 'rosterSelectDone' : 'rosterSelect')}
                     </Text>
@@ -947,7 +947,7 @@ export default function ClassDetailScreen() {
               ]}
             >
               {selecting ? (
-                <Ionicons name={selected.has(item.id) ? 'checkbox' : 'square-outline'} size={22} color={selected.has(item.id) ? ACCENT : colors.mutedForeground} />
+                <Ionicons name={selected.has(item.id) ? 'checkbox' : 'square-outline'} size={24} color={selected.has(item.id) ? ACCENT : colors.mutedForeground} />
               ) : null}
               <View style={{ flex: 1 }}>
                 <Text
@@ -998,7 +998,7 @@ export default function ClassDetailScreen() {
               >
                 <Ionicons
                   name={item.teacherNote ? 'create' : 'create-outline'}
-                  size={18}
+                  size={20}
                   color={item.teacherNote ? ACCENT : colors.mutedForeground}
                 />
               </Pressable>
@@ -1028,7 +1028,7 @@ export default function ClassDetailScreen() {
                   {/* A key, not a speech bubble: this opens the student's link
                       code. The bubble read as "chat with them" and hid the one
                       thing teachers were hunting for. */}
-                  <Ionicons name="key-outline" size={18} color={colors.mutedForeground} />
+                  <Ionicons name="key-outline" size={20} color={colors.mutedForeground} />
                 </Pressable>
               ) : null}
               {selecting ? null : (
@@ -1177,7 +1177,7 @@ export default function ClassDetailScreen() {
         accessibilityLabel={t(tab === 'students' ? 'addStudents' : tab === 'exams' ? 'attachExam' : 'attachMaterial')}
         style={[styles.fab, { backgroundColor: ACCENT_FILL, bottom: insets.bottom + 24 }]}
       >
-        <Ionicons name={tab === 'students' ? 'person-add' : 'add'} size={22} color="#fff" />
+        <Ionicons name={tab === 'students' ? 'person-add' : 'add'} size={24} color="#fff" />
       </Pressable>
       )}
 
@@ -1214,7 +1214,7 @@ export default function ClassDetailScreen() {
                     }}
                     style={[styles.pickRow, { borderColor: colors.border, flex: 1, justifyContent: 'center', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                   >
-                    <Ionicons name="copy-outline" size={18} color={colors.mutedForeground} />
+                    <Ionicons name="copy-outline" size={20} color={colors.mutedForeground} />
                     <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium' }}>{t('messagingCopyCode')}</Text>
                   </Pressable>
                   <Pressable
@@ -1227,7 +1227,7 @@ export default function ClassDetailScreen() {
                     }}
                     style={[styles.pickRow, { borderColor: colors.border, flex: 1, justifyContent: 'center', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                   >
-                    <Ionicons name="share-outline" size={18} color={colors.mutedForeground} />
+                    <Ionicons name="share-outline" size={20} color={colors.mutedForeground} />
                     <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium' }}>{t('joinCodeShare')}</Text>
                   </Pressable>
                 </View>
@@ -1247,7 +1247,7 @@ export default function ClassDetailScreen() {
                 <ActivityIndicator size="small" color={ACCENT} />
               ) : (
                 <>
-                  <Ionicons name="refresh-outline" size={18} color={ACCENT} />
+                  <Ionicons name="refresh-outline" size={20} color={ACCENT} />
                   <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }}>
                     {group?.joinCode ? t('joinCodeRegenerate') : t('joinCodeGenerate')}
                   </Text>
@@ -1590,7 +1590,7 @@ export default function ClassDetailScreen() {
                 >
                   <Ionicons
                     name={MATERIAL_ICON[item.type]}
-                    size={18}
+                    size={20}
                     color={MATERIAL_COLOR[item.type]}
                   />
                   <Text
@@ -1620,7 +1620,7 @@ export default function ClassDetailScreen() {
                 { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' },
               ]}
             >
-              <Ionicons name="library-outline" size={18} color={ACCENT} />
+              <Ionicons name="library-outline" size={20} color={ACCENT} />
               <Text
                 style={{
                   color: ACCENT,
@@ -1645,7 +1645,7 @@ export default function ClassDetailScreen() {
                   { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' },
                 ]}
               >
-                <Ionicons name="flask-outline" size={18} color={ACCENT} />
+                <Ionicons name="flask-outline" size={20} color={ACCENT} />
                 <Text
                   style={{
                     color: ACCENT,
@@ -1679,7 +1679,7 @@ export default function ClassDetailScreen() {
                 { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' },
               ]}
             >
-              <Ionicons name="add-circle-outline" size={18} color={ACCENT} />
+              <Ionicons name="add-circle-outline" size={20} color={ACCENT} />
               <Text
                 style={{
                   color: ACCENT,
@@ -1801,7 +1801,7 @@ export default function ClassDetailScreen() {
                   {attachingExamId === item.id ? (
                     <ActivityIndicator size="small" color={ACCENT} />
                   ) : (
-                    <Ionicons name="add-circle-outline" size={18} color={ACCENT} />
+                    <Ionicons name="add-circle-outline" size={20} color={ACCENT} />
                   )}
                 </Pressable>
               )}
@@ -1820,7 +1820,7 @@ export default function ClassDetailScreen() {
                 { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' },
               ]}
             >
-              <Ionicons name="add-circle-outline" size={18} color={ACCENT} />
+              <Ionicons name="add-circle-outline" size={20} color={ACCENT} />
               <Text
                 style={{
                   color: ACCENT,

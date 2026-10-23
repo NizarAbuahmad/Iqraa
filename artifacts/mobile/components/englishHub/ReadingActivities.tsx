@@ -1,6 +1,6 @@
 /**
- * The English corner's three Grade 1 reading activities: Read and find, First
- * letter, Starts with. Every decision with a right answer comes from
+ * The English corner's reading activities: Grade 1's Read and find, First
+ * letter, Starts with, and Grade 2's Read the sentence. Every decision with a right answer comes from
  * `services/englishHub/games.ts`; these only render and count.
  *
  * Letters and words are laid out left to right whatever the UI language. Audio
@@ -9,14 +9,15 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import type { GrammarSentence } from '@workspace/curriculum/englishGrammar';
 import type { HubWord } from '@workspace/curriculum/englishHub';
 import { TYPE } from '@/constants/theme';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { playWord } from '@/services/englishAudio';
-import { buildFirstLetterRound, buildReadFindRound, buildStartsWithRound, wordPicture } from '@/services/englishHub/games';
+import { buildFirstLetterRound, buildReadFindRound, buildReadSentenceRound, buildStartsWithRound, wordPicture } from '@/services/englishHub/games';
 import { HearButton, Progress, RIGHT, WRONG } from './Activities';
-import { Feedback } from './GrammarActivities';
+import { Feedback, GrammarPicture } from './GrammarActivities';
 
 type Finish = (correct: number, total: number) => void;
 
@@ -152,6 +153,37 @@ export function StartsWith({ words, onFinish }: { words: readonly HubWord[]; onF
   );
 }
 
+// ─── Read the sentence (Grade 2) ────────────────────────────────────────────
+
+export function ReadSentence({ pool, onFinish }: { pool: readonly GrammarSentence[]; onFinish: Finish }) {
+  const colors = useColors();
+  const tint = useTint();
+  const round = useMemo(() => buildReadSentenceRound(pool), [pool]);
+  const { q, i, picked, pick, next } = useRound(round, onFinish);
+  return (
+    <View style={styles.page}>
+      <Progress i={i} n={round.length} />
+      <Text style={[styles.sentenceText, { color: colors.foreground }]}>{q.sentence.text}</Text>
+      {/* Heard only once answered: before, the sound would do the reading. */}
+      <View style={styles.choiceRow}>
+        {q.options.map((o, k) => (
+          <Pressable
+            key={`${o.word}|${o.count}|${o.marker ?? ''}`}
+            onPress={() => pick(k, () => void playWord(q.sentence.text))}
+            accessibilityRole="button"
+            // The picture would read the answer out to a screen reader: number the cards instead.
+            accessibilityLabel={String(k + 1)}
+            style={[styles.sentenceCard, tint(picked, k, q.answerIndex)]}
+          >
+            <GrammarPicture word={o.word} count={o.count} marker={o.marker} small />
+          </Pressable>
+        ))}
+      </View>
+      {picked !== null ? <Feedback ok={picked === q.answerIndex} answer={q.sentence.text} onNext={() => next()} sentence={q.sentence.text} /> : null}
+    </View>
+  );
+}
+
 /** Pictures are artwork, sized as in `Activities.tsx`, not taken from the TYPE scale. */
 const PICTURE_SIZE = 64;
 /** Starts with's letter is the thing asked about, as the picture is elsewhere: sized as one, larger than any text. */
@@ -167,4 +199,7 @@ const styles = StyleSheet.create({
   letter: { fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.hero, writingDirection: 'ltr' },
   bigLetter: { fontFamily: 'ReadexPro_700Bold', fontSize: LETTER_SIZE, lineHeight: LETTER_SIZE + 16, writingDirection: 'ltr' },
   bigWord: { fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.hero, textAlign: 'center', writingDirection: 'ltr' },
+  // Up to a marker and two pictures per card: three of them must fit a 390 px screen.
+  sentenceCard: { flex: 1, minWidth: 96, maxWidth: 112, minHeight: 104, borderWidth: 1.5, borderRadius: 16, alignItems: 'center', justifyContent: 'center', paddingVertical: 8 },
+  sentenceText: { fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.headline, lineHeight: TYPE.headline + 8, textAlign: 'center', writingDirection: 'ltr' },
 });

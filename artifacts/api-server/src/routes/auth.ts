@@ -1,7 +1,7 @@
 import { Router, type Request } from "express";
 import { signupSource } from "../lib/adminMetrics.js";
 import { termsAcceptance } from "../lib/termsAcceptance.ts";
-import bcrypt from "bcryptjs";
+import { comparePassword, hashPassword, shedWhenHashingBusy } from "../lib/passwordHash.js";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { OAuth2Client } from "google-auth-library";
@@ -459,7 +459,7 @@ async function hasAnyTeachingData(userId: string): Promise<boolean> {
 }
 
 // POST /auth/register
-router.post("/register", registerLimiter, registerEmailLimiter, async (req, res) => {
+router.post("/register", shedWhenHashingBusy(), registerLimiter, registerEmailLimiter, async (req, res) => {
   try {
     const { firstName, lastName, email, password, confirmPassword, role: rawRole } =
       req.body as {
@@ -532,7 +532,7 @@ router.post("/register", registerLimiter, registerEmailLimiter, async (req, res)
       return;
     }
 
-    const passwordHash = await bcrypt.hash(password, 12);
+    const passwordHash = await hashPassword(password);
     const [user] = await db
       .insert(users)
       .values({
@@ -727,7 +727,7 @@ router.post("/resend-verification", resendVerificationLimiter, resendVerificatio
  * owed a notification — a different feature with a different threat model,
  * not this one widened.
  */
-router.post("/change-unverified-email", changeEmailLimiter, changeEmailAddressLimiter, async (req, res) => {
+router.post("/change-unverified-email", shedWhenHashingBusy(), changeEmailLimiter, changeEmailAddressLimiter, async (req, res) => {
   try {
     const { email, password, newEmail } = req.body as {
       email?: string;
@@ -757,7 +757,7 @@ router.post("/change-unverified-email", changeEmailLimiter, changeEmailAddressLi
     // One message for "no such account" and "wrong password", same as login:
     // this route is reachable without a session, so it must not confirm which
     // addresses have pending signups.
-    if (!user?.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
+    if (!user?.passwordHash || !(await comparePassword(password, user.passwordHash))) {
       res.status(401).json({ error: "Invalid email or password", code: "invalid_credentials" });
       return;
     }
@@ -892,7 +892,7 @@ router.post("/forgot-password", forgotPasswordLimiter, forgotPasswordEmailLimite
  * user id (lib/passwordReset.ts), so it cannot be looked up on its own, and a
  * code is only ever valid for the account it was sent to.
  */
-router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
+router.post("/reset-password", shedWhenHashingBusy(), resetPasswordLimiter, async (req, res) => {
   try {
     const { email, code, password, confirmPassword } = req.body as {
       email?: string;
@@ -949,7 +949,7 @@ router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
       return;
     }
 
-    const passwordHash = await bcrypt.hash(password, 12);
+    const passwordHash = await hashPassword(password);
     // One transaction, so the user row stays locked until the sessions are
     // gone — the lock `/refresh` takes before rotating a token.
     await db.transaction(async tx => {
@@ -1525,7 +1525,7 @@ router.post("/code-login", codeLoginLimiter, async (req, res) => {
  * code goes to it, and `POST /verify-email` (which hands back a fresh session)
  * finishes it. The login code keeps working throughout and afterwards.
  */
-router.post("/add-email", authMiddleware, addEmailUserLimiter, addEmailAddressLimiter, async (req: AuthenticatedRequest, res) => {
+router.post("/add-email", shedWhenHashingBusy(), authMiddleware, addEmailUserLimiter, addEmailAddressLimiter, async (req: AuthenticatedRequest, res) => {
   try {
     const { email, password } = (req.body ?? {}) as { email?: unknown; password?: unknown };
 
@@ -1548,7 +1548,7 @@ router.post("/add-email", authMiddleware, addEmailUserLimiter, addEmailAddressLi
     // Conditional on the column still being null: this route is for accounts
     // without an address. Changing a verified one is a different, riskier act
     // (it moves where password resets go) and is not offered here.
-    const passwordHash = await bcrypt.hash(password, 12);
+    const passwordHash = await hashPassword(password);
     const [updated] = await db
       .update(users)
       .set({ email: address, passwordHash, emailVerified: false })
@@ -1578,7 +1578,7 @@ router.post("/add-email", authMiddleware, addEmailUserLimiter, addEmailAddressLi
 });
 
 // POST /auth/login
-router.post("/login", loginLimiter, loginEmailLimiter, async (req, res) => {
+router.post("/login", shedWhenHashingBusy(), loginLimiter, loginEmailLimiter, async (req, res) => {
   try {
     const { email, password } = req.body as { email?: unknown; password?: unknown };
 
@@ -1603,7 +1603,7 @@ router.post("/login", loginLimiter, loginEmailLimiter, async (req, res) => {
       return;
     }
 
-    const valid = await bcrypt.compare(password, user.passwordHash);
+    const valid = await comparePassword(password, user.passwordHash);
     if (!valid) {
       res.status(401).json({ error: "Invalid email or password", code: "invalid_credentials" });
       return;
@@ -2400,6 +2400,7 @@ const deleteAccountLimiter = createRateLimiter({
 
 router.delete(
   "/users/me",
+  shedWhenHashingBusy(),
   authMiddleware,
   deleteAccountLimiter,
   async (req: AuthenticatedRequest, res) => {
@@ -2421,7 +2422,7 @@ router.delete(
       };
       if (account.passwordHash) {
         const ok = typeof password === "string" && password
-          ? await bcrypt.compare(password, account.passwordHash)
+          ? await comparePassword(password, account.passwordHash)
           : false;
         if (!ok) {
           res.status(401).json({ error: "Password is incorrect", code: "password_incorrect" });

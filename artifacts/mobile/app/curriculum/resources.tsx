@@ -39,8 +39,10 @@ import { Image } from 'expo-image';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import type { GlyphId } from '@/constants/glyphs';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
+import { useLightStatusBar } from '@/hooks/useLightStatusBar';
 import { useLanguage } from '@/context/LanguageContext';
 import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { getMyExams, getMyGradeIds } from '@/services/studentExam';
@@ -66,10 +68,13 @@ import { ENGLISH_HUB_GRADES } from '@workspace/curriculum/englishHub';
 import type { TranslationKey } from '@/services/i18n';
 import { cellWidthPercent, isVisualKind, libraryColumns, previewCount } from '@/services/libraryLayout';
 import { QURAN_CORNER_RELEASED, quranCornerVisible } from '@/services/quranRelease';
-import { palette } from '@/constants/colors';
+import { palette, scheme } from '@/constants/colors';
+import { CORNERS, type CornerId, type MotifId } from '@/constants/corners';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { RESOURCE_KIND_ICON as KIND_ICON, RESOURCE_KIND_LABEL as KIND_LABEL } from '@/constants/resourceKind';
 import { BackButton } from '@/components/ui/BackButton';
+import { Band, BRAND_MOTIF_OPACITY } from '@/components/ui/Band';
+import { LibraryTile, type TileLook } from '@/components/library/LibraryTile';
 
 type Cols = 1 | 2 | 3;
 
@@ -112,6 +117,16 @@ const SHELF_COLOR: Record<Shelf, string> = {
 };
 
 const ACCENT = palette.primary;
+/** A corner tile's icon colours — the corner's own, so its hue is learned before it is entered. */
+const cornerLook = (id: CornerId) => CORNERS[id][scheme];
+/** A front-row tile in its corner's look and pattern. */
+const cornerTile = (id: CornerId) => ({ look: cornerLook(id), glyph: CORNERS[id].drawing, motif: CORNERS[id].motif, motifOpacity: CORNERS[id].motifOpacity });
+/** The curriculum and «my exams» tiles are the library's own: brand teal and the leaf. */
+const BRAND_TILE = {
+  look: { hero: palette.hero, primary: palette.primary, primaryForeground: palette.primaryForeground } as TileLook,
+  motif: 'leaf' as MotifId,
+  motifOpacity: BRAND_MOTIF_OPACITY,
+};
 
 function itemThumbnail(item: ResourceItem): string | null {
   if (item.thumbnailUrl) return item.thumbnailUrl;
@@ -299,7 +314,7 @@ function ResourceRow({
           onError={() => setThumbFailed(true)}
         />
       ) : !isVideo ? (
-        <Ionicons name={KIND_ICON[item.kind]} size={large ? 36 : 24} color={accent} />
+        <Ionicons name={KIND_ICON[item.kind]} size={large ? 40 : 24} color={accent} />
       ) : null}
       {isVideo ? (
         <View style={[styles.playBadge, large ? styles.playBadgeLarge : styles.playBadgeSmall, { backgroundColor: ACCENT_FILL }]}>
@@ -375,7 +390,7 @@ function ResourceRow({
             />
           ) : isBook ? null : (
             <View style={[styles.thumb, styles.thumbFallback, { backgroundColor: colors.muted }]}>
-              <Ionicons name={KIND_ICON[item.kind]} size={22} color={accent} />
+              <Ionicons name={KIND_ICON[item.kind]} size={24} color={accent} />
             </View>
           )}
           <View style={{ flex: 1 }}>
@@ -397,7 +412,7 @@ function ResourceRow({
           ) : item.url ? (
             <Ionicons
               name={isVideo ? forwardIcon : 'open-outline'}
-              size={18}
+              size={20}
               color={isVideo ? ACCENT : colors.mutedForeground}
               accessibilityElementsHidden
               importantForAccessibility="no"
@@ -601,10 +616,66 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
   // As a tab, the lesson bar (or the slim bell header) above already pays for
   // the status bar; pushed as its own route, nothing does.
   const heroTop = asTab ? 12 : insets.top + 12;
+  // Pushed as its own route, the teal band is what sits under the status bar.
+  useLightStatusBar(!asTab);
+
+  type FrontTile = {
+    key: string;
+    icon: React.ComponentProps<typeof Ionicons>['name'];
+    glyph?: GlyphId;
+    title: string;
+    desc: string;
+    descStrong?: boolean;
+    look: TileLook;
+    motif: MotifId;
+    motifOpacity: number;
+    go: () => void;
+  };
+  // The curriculum itself (the books, by grade, subject, unit and lesson) is
+  // the first tile. It opens the browser rather than a shelf, so it is not in
+  // `shelves`.
+  const englishLevel = gradeInfo && (ENGLISH_HUB_GRADES as readonly number[]).includes(gradeInfo.level) ? gradeInfo.level : null;
+  const front: FrontTile[] = [
+    {
+      key: 'curriculum', icon: 'book', title: t('curriculumTitle'), desc: t('libraryCurriculumDesc'), ...BRAND_TILE,
+      go: () => router.push({ pathname: '/curriculum/browse' as never, params: { gradeId: grade } }),
+    },
+    ...(englishLevel !== null
+      ? [{
+          key: 'english', icon: 'headset' as const, title: t('hubTitle'), desc: t('hubListenDesc'), ...cornerTile('english'),
+          go: () => router.push({ pathname: '/curriculum/english' as never, params: { grade: String(englishLevel) } }),
+        }]
+      : []),
+    {
+      key: 'lab', icon: 'flask-outline', title: t('labEntryTitle'), desc: t('labEntryHint'), ...cornerTile('lab'),
+      go: () => router.push('/curriculum/lab' as never),
+    },
+    {
+      key: 'math', icon: 'calculator-outline', title: t('mathEntryTitle'), desc: t('mathEntryHint'), ...cornerTile('math'),
+      go: () => router.push('/curriculum/math' as never),
+    },
+    ...(quranCornerVisible(QURAN_CORNER_RELEASED, __DEV__)
+      ? [{
+          key: 'quran', icon: 'book-outline' as const, title: t('quranTitle'), desc: t('quranEntryHint'), ...cornerTile('quran'),
+          go: () => router.push('/curriculum/quran' as never),
+        }]
+      : []),
+    ...(isStudent || isParent
+      ? [{
+          key: 'exams',
+          icon: 'document-text' as const,
+          title: t(isParent ? 'childResultsTitle' : 'myExamsTitle'),
+          desc: isParent ? t('childResultsTileDesc') : waitingExams ? t('myExamsTileCount', waitingExams) : t('myExamsTileDesc'),
+          descStrong: !!waitingExams,
+          ...BRAND_TILE,
+          go: () => router.push('/my-exams' as never),
+        }]
+      : []),
+  ];
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: heroTop }]}>
+      <Band color={ACCENT_FILL} motif="leaf" style={[styles.hero, { paddingTop: heroTop }]}>
         {asTab ? null : (
           <BackButton color="#fff" style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
         )}
@@ -626,14 +697,14 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
               accessibilityRole="button"
               style={[styles.addBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
-              <Ionicons name="add-circle-outline" size={18} color={ACCENT_FILL} />
+              <Ionicons name="add-circle-outline" size={20} color={ACCENT_FILL} />
               <Text style={[styles.addBtnText, { color: ACCENT_FILL, fontFamily: 'ReadexPro_600SemiBold' }]}>
                 {t('libraryAddResource')}
               </Text>
             </Pressable>
           ) : null}
         </View>
-      </View>
+      </Band>
 
       <ScrollView
         contentContainerStyle={{ paddingBottom: asTab ? 120 : 48, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
@@ -660,7 +731,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
             },
           ]}
         >
-          <Ionicons name="search" size={18} color={colors.mutedForeground} />
+          <Ionicons name="search" size={20} color={colors.mutedForeground} />
           <TextInput
             value={query}
             onChangeText={setQuery}
@@ -766,161 +837,24 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
         ) : (
           <>
           <View style={[styles.tiles, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            {/* The curriculum itself — the books, by grade, subject, unit and
-                lesson — is the library's first tile. It opens the browser
-                rather than a shelf, so it is not in `shelves`. */}
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push({ pathname: '/curriculum/browse' as never, params: { gradeId: grade } });
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={`${t('curriculumTitle')}, ${t('libraryCurriculumDesc')}`}
-              style={({ pressed }) => [
-                styles.tile,
-                { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
-              ]}
-            >
-              <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
-                <Ionicons name="book" size={26} color={ACCENT} />
-              </View>
-              <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
-                {t('curriculumTitle')}
-              </Text>
-              <Text numberOfLines={2} style={[styles.tileCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
-                {t('libraryCurriculumDesc')}
-              </Text>
-            </Pressable>
-            {gradeInfo && (ENGLISH_HUB_GRADES as readonly number[]).includes(gradeInfo.level) ? (
-              <Pressable
+            {front.map((tile, i) => (
+              <LibraryTile
+                key={tile.key}
+                index={i}
+                icon={tile.icon}
+                glyph={tile.glyph}
+                title={tile.title}
+                desc={tile.desc}
+                descStrong={tile.descStrong}
+                look={tile.look}
+                motif={tile.motif}
+                motifOpacity={tile.motifOpacity}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push({ pathname: '/curriculum/english' as never, params: { grade: String(gradeInfo.level) } });
+                  tile.go();
                 }}
-                accessibilityRole="button"
-                accessibilityLabel={`${t('hubTitle')}, ${t('hubListenDesc')}`}
-                style={({ pressed }) => [
-                  styles.tile,
-                  { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
-                ]}
-              >
-                <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
-                  <Ionicons name="headset" size={26} color={ACCENT} />
-                </View>
-                <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
-                  {t('hubTitle')}
-                </Text>
-                <Text numberOfLines={2} style={[styles.tileCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
-                  {t('hubListenDesc')}
-                </Text>
-              </Pressable>
-            ) : null}
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push('/curriculum/lab' as never);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={`${t('labEntryTitle')}, ${t('labEntryHint')}`}
-              style={({ pressed }) => [
-                styles.tile,
-                { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
-              ]}
-            >
-              <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
-                <Ionicons name="flask-outline" size={26} color={ACCENT} />
-              </View>
-              <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
-                {t('labEntryTitle')}
-              </Text>
-              <Text numberOfLines={2} style={[styles.tileCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
-                {t('labEntryHint')}
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push('/curriculum/math' as never);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={`${t('mathEntryTitle')}, ${t('mathEntryHint')}`}
-              style={({ pressed }) => [
-                styles.tile,
-                { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
-              ]}
-            >
-              <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
-                <Ionicons name="calculator-outline" size={26} color={ACCENT} />
-              </View>
-              <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
-                {t('mathEntryTitle')}
-              </Text>
-              <Text numberOfLines={2} style={[styles.tileCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
-                {t('mathEntryHint')}
-              </Text>
-            </Pressable>
-            {quranCornerVisible(QURAN_CORNER_RELEASED, __DEV__) ? (
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push('/curriculum/quran' as never);
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={`${t('quranTitle')}, ${t('quranEntryHint')}`}
-                style={({ pressed }) => [
-                  styles.tile,
-                  { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
-                ]}
-              >
-                <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
-                  <Ionicons name="book-outline" size={26} color={ACCENT} />
-                </View>
-                <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
-                  {t('quranTitle')}
-                </Text>
-                <Text numberOfLines={2} style={[styles.tileCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
-                  {t('quranEntryHint')}
-                </Text>
-              </Pressable>
-            ) : null}
-            {isStudent || isParent ? (
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push('/my-exams' as never);
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={
-                  isParent
-                    ? `${t('childResultsTitle')}, ${t('childResultsTileDesc')}`
-                    : `${t('myExamsTitle')}, ${waitingExams ? t('myExamsTileCount', waitingExams) : t('myExamsTileDesc')}`
-                }
-                style={({ pressed }) => [
-                  styles.tile,
-                  { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
-                ]}
-              >
-                <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
-                  <Ionicons name="document-text" size={26} color={ACCENT} />
-                </View>
-                <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
-                  {t(isParent ? 'childResultsTitle' : 'myExamsTitle')}
-                </Text>
-                <Text
-                  numberOfLines={2}
-                  style={[
-                    styles.tileCount,
-                    {
-                      color: waitingExams ? ACCENT : colors.mutedForeground,
-                      fontFamily: waitingExams ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
-                      textAlign: 'center',
-                    },
-                  ]}
-                >
-                  {isParent ? t('childResultsTileDesc') : waitingExams ? t('myExamsTileCount', waitingExams) : t('myExamsTileDesc')}
-                </Text>
-              </Pressable>
-            ) : null}
+              />
+            ))}
           </View>
           {/* The overview: every shelf, a preview of each, and a way into it.
               This replaces the grid of shelf tiles, which led to a page of its
@@ -963,7 +897,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
           })}
           {shelves.length === 0 ? (
             <View style={styles.empty}>
-              <Ionicons name="library-outline" size={36} color={colors.mutedForeground} />
+              <Ionicons name="library-outline" size={40} color={colors.mutedForeground} />
               <Text
                 style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}
               >
@@ -1090,7 +1024,7 @@ function ShelfTabs({
           interactionStyle(state as PressState, on ? ACCENT : colors.border),
         ]}
       >
-        {icon ? <Ionicons name={icon} size={18} color={on ? palette.primaryForeground : iconColor} /> : null}
+        {icon ? <Ionicons name={icon} size={20} color={on ? palette.primaryForeground : iconColor} /> : null}
         <Text
           style={[
             styles.tabText,
@@ -1161,10 +1095,6 @@ const styles = StyleSheet.create({
   viewAllText: { fontSize: 14 },
   section: { paddingTop: 14, gap: 10 },
   tiles: { flexWrap: 'wrap', gap: 12, paddingHorizontal: 20, paddingTop: 14 },
-  tile: { flexGrow: 1, flexBasis: '30%', minWidth: 104, maxWidth: 220, alignItems: 'center', gap: 6, borderWidth: 1, paddingVertical: 16, paddingHorizontal: 8 },
-  tileIcon: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  tileLabel: { fontSize: 14, textAlign: 'center' },
-  tileCount: { fontSize: 13 },
   shelfHeader: { alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 20, flexWrap: 'wrap' },
   shelfTitleRow: { alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: 17, paddingHorizontal: 20 },

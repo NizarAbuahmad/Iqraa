@@ -242,6 +242,16 @@ jobs:
       # of a vCPU/memory-second, billed continuously) to remove that stall.
       # Revert this line if the cost isn't worth it — nothing else depends on it.
       #
+      # `--cpu 2` and PASSWORD_HASH_WORKERS=2 (added 2026-10-19): password hashing
+      # runs in worker threads (lib/passwordHash.ts) and one vCPU does ~3 hashes
+      # a second, so a sign-up rush took ~38 s per 100 accounts. Measured with
+      # e2e/loadtest on a local API pinned to two cores: 100 accounts in ~19 s,
+      # a database-free /healthz still p95 7 ms, 0 errors, peak RSS 258 MiB (of
+      # the 512Mi above). Keep the two numbers together: workers = vCPU leaves the
+      # request thread to share a core with a worker once both are busy, which the
+      # run above shows is fine; more workers than vCPU only adds contention.
+      # Cost: the always-on instance (--min-instances 1) now bills two vCPUs.
+      #
       # AI_MODEL_CHAT (added 2026-10-16): had been set by hand to gpt-5.4-nano,
       # which no eval had measured for chat (STATUS.md, "Decided 2026-08-22"),
       # and teachers found the answers weak. gpt-5.4-mini is what generation
@@ -255,11 +265,11 @@ jobs:
             --allow-unauthenticated \
             --port 8080 \
             --memory 512Mi \
-            --cpu 1 \
+            --cpu 2 \
             --concurrency 80 \
             --timeout 300 \
             --min-instances 1 \
-            --update-env-vars "GIT_SHA=${GITHUB_SHA::7},AI_USER_BUDGET_USD=1,AI_STUDENT_BUDGET_USD=0.20,AI_MODEL_CHAT=gpt-5.4-mini"
+            --update-env-vars "GIT_SHA=${GITHUB_SHA::7},AI_USER_BUDGET_USD=1,AI_STUDENT_BUDGET_USD=0.20,AI_MODEL_CHAT=gpt-5.4-mini,PASSWORD_HASH_WORKERS=2"
 
       # gcloud reporting success is not evidence the new code is serving. It
       # has printed a success line while traffic stayed pinned to an older

@@ -794,6 +794,13 @@
     },
     {
       "sourceId": "bio-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "kbLessonId": "kbl-biology-s1-nccd-u1_l1",
+      "matchedBy": "hand-checked: the extractor found no unit heading before page 22, so these four figures (p011 gradualism vs punctuated equilibrium, p012 homologous limbs, p015 geographic isolation, p018c selection by a predator) came out with unit null; each depicts the evolution of living organisms, unit 1's only lesson, confirmed by looking at them"
+    },
+    {
+      "sourceId": "bio-s1-student-book",
       "unit": 2,
       "lesson": 1,
       "kbLessonId": "kbl-biology-s1-nccd-u2_l1",

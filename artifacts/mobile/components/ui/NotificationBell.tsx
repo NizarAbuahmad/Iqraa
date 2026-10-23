@@ -8,6 +8,7 @@ import { badgeLabel, setUnreadMessages, useUnreadMessages } from '@/services/unr
 import { listThreads, markAllThreadsRead, type ChatThreadSummary } from '@/services/messaging';
 import { relativeTime } from '@/services/relativeTime';
 import { Avatar } from '@/components/ui/Avatar';
+import { ICON } from '@/constants/icons';
 
 const PANEL_WIDTH = 360;
 
@@ -15,8 +16,9 @@ const PANEL_WIDTH = 360;
  * Bell with an unread-message count. Opens a panel of the unread
  * conversations in place — it used to jump straight to the inbox, which read
  * as "the bell takes me to chat" rather than "show me what is new".
+ * `onDark` draws it in white for a dark header band (phone Today).
  */
-export function NotificationBell({ size = 22 }: { size?: number }) {
+export function NotificationBell({ size = ICON.xl, onDark = false }: { size?: number; onDark?: boolean }) {
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
   const unread = useUnreadMessages();
@@ -77,7 +79,7 @@ export function NotificationBell({ size = 22 }: { size?: number }) {
         accessibilityRole="button"
         accessibilityLabel={unread > 0 ? `${t('bellTitle')}: ${t('unread', unread)}` : t('bellTitle')}
       >
-        <Ionicons name={unread > 0 ? 'notifications' : 'notifications-outline'} size={size} color={unread > 0 ? colors.primary : colors.foreground} />
+        <Ionicons name={unread > 0 ? 'notifications' : 'notifications-outline'} size={size} color={onDark ? '#FFFFFF' : unread > 0 ? colors.primary : colors.foreground} />
         {label ? (
           <View style={[styles.badge, { backgroundColor: colors.destructive }]}>
             <Text style={styles.badgeText}>{label}</Text>
@@ -136,7 +138,7 @@ export function NotificationBell({ size = 22 }: { size?: number }) {
                     >
                       {isGroup ? (
                         <View style={[styles.groupIcon, { backgroundColor: colors.secondary }]}>
-                          <Ionicons name="people" size={18} color={colors.primary} />
+                          <Ionicons name="people" size={20} color={colors.primary} />
                         </View>
                       ) : (
                         <Avatar firstName={other?.firstName ?? '?'} lastName={other?.lastName} size={36} colors={colors} />

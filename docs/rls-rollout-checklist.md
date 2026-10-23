@@ -7,7 +7,8 @@ person-with-Neon-and-Cloud-Run-access checklist; the reasoning is in
 (`docs/superpowers/plans/2026-10-13-row-level-security.md`).
 
 Tick a box only when you have seen the result. Do not skip ahead: A is about production as
-it is today, B–C gate the switch, D–E are the switch. When a step has a **Gate**, a failed
+it is today, B–C gate the switch, D–E are the switch. A2 and A3 were done on 2026-10-16; the
+rest is open. When a step has a **Gate**, a failed
 gate means stop and do not flip.
 
 Values used below: Cloud Run service `iqraa-api`, region `europe-west1`, project
@@ -15,99 +16,99 @@ Values used below: Cloud Run service `iqraa-api`, region `europe-west1`, project
 
 ## A. Is production healthy right now?
 
-The migration ran in production on 2026-10-14 without the pre-merge ownership check
-having been done, so this is the check that was skipped.
+- [x] **A2. Table ownership — passed 2026-10-16.** Connected with the Secret Manager
+  `DATABASE_URL` (the one Cloud Run reads): `current_user = neondb_owner`, and **0** tables in
+  `public` owned by anyone else. So the API's role owns every table and bypasses RLS: the
+  migration changed nothing for it. (The URL was read with `gcloud secrets versions access
+  latest`; if Cloud Run pins an older secret version, re-check against that version.)
+- [x] **A3. Same role in both connection strings — passed by inference.** Enabling RLS on a
+  table needs ownership; the production migration succeeded and every table is owned by
+  `neondb_owner`, so the migrating role is `neondb_owner` or a member of it.
+- [ ] **A1. Look at the app and the logs.**
+  1. Cloud Shell: search the logs since the deploy for the two error phrases —
 
-- [ ] **A1. Look at the app.** Sign in as a teacher, open the inbox, open a class, open an
-  evaluation. In the Cloud Run logs for `iqraa-api` search for `permission denied` and
-  `row-level security`. **Gate:** none.
-- [ ] **A2. Check table ownership** with the *exact* `DATABASE_URL` Cloud Run uses (read-only):
+     ```bash
+     gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="iqraa-api" AND ("permission denied" OR "row-level security")' \
+       --project iqraa-auth-507315 --freshness=3d --limit=20 \
+       --format='value(timestamp,severity,textPayload,jsonPayload.msg)'
+     ```
+  2. Sign in as a teacher: open the inbox, a class and an evaluation, and send one test message.
 
-  ```bash
-  psql "$CLOUD_RUN_DATABASE_URL" \
-    -c "select current_user" \
-    -c "select tablename, tableowner from pg_tables where schemaname='public' order by 1"
-  ```
+  **Gate:** the search prints nothing and every screen loads with data.
 
-  **Gate:** `current_user` equals `tableowner` on **every** row. If not, the API's role is
-  subject to the new policies and has no policy of its own. Make that role the owner
-  (`ALTER TABLE … OWNER TO …`, a separate reviewed change) before anything else.
-- [ ] **A3. Check the two connection strings name the same role:** GitHub's
-  `secrets.DATABASE_URL` (the `production migrations` job in `deploy.yml`) and Cloud Run's
-  `DATABASE_URL`. The `SECURITY DEFINER` helpers are owned by the *migrating* role and bypass
-  RLS only if that role also owns the tables. **Gate:** same role.
+## B. Rehearse on a separate Neon project (never production)
 
-## B. Rehearse on a Neon branch (never production)
+Use a **new, empty Neon project**, not a branch of production: a branch of today's production
+already has `0008`, so "apply the migration" would prove nothing. The test suites create their
+own fixtures, so an empty database is enough.
 
-- [ ] **B1. Branch production in Neon.** Note the connection string as `BRANCH_URL`.
-  It must use the **same role** as Cloud Run's `DATABASE_URL` (a branch made in the console may
-  default to a different owner role, which makes the later checks meaningless). Confirm with:
+**Shortcut: let GitHub run B3 and B4.** The workflow `.github/workflows/rls-neon-rehearsal.yml`
+applies the migrations to the rehearsal project and runs the suites on the direct **and** pooled
+endpoints, so no local Node setup is needed. After B1, add two repository secrets
+(Settings → Secrets and variables → Actions): `NEON_REHEARSAL_DIRECT_URL` and
+`NEON_REHEARSAL_POOLED_URL`. Then Actions → *RLS Neon rehearsal* → *Run workflow*, and type
+`rehearsal-not-production`. It refuses any database that already has tables in `public` and
+was not created by the workflow itself, so a production string pasted by mistake stops at the
+first step. A green run is B3 and B4 passed; B2 can be skipped. (It does not measure latency —
+GitHub's runners are not in your Cloud Run region — so C1 is still separate.)
 
-  ```bash
-  psql "$BRANCH_URL" -c "select current_user"
-  ```
-- [ ] **B2. Make sure the branch is one where `0008` has not run.** Production already has it,
-  so a branch of today's production will report "nothing to apply" and prove nothing. Branch
-  from a point in time before 2026-10-14 00:55 UTC, or reset the branch's `drizzle` schema and
-  `public` schema and re-apply from scratch. Then:
-
-  ```bash
-  DATABASE_URL="$BRANCH_URL" pnpm --filter @workspace/db run migrate -- --from-env
-  ```
-
-  **Gate:** it applies `0008` without error. This proves the Neon owner role can
-  `CREATE ROLE` and `GRANT iqraa_app TO CURRENT_USER`.
-- [ ] **B3. Run the database tests against the branch** — through the **pooled** endpoint if
-  production uses one:
+- [ ] **B1. Create the project.** In the Neon console create `iqraa-rls-rehearsal` in the
+  **same region as the production Neon database** (latency in C1 is only meaningful there).
+  Copy the **direct** and the **pooled** connection strings into a private note — never into
+  chat or the repo.
+- [ ] **B2. Get the code** (Cloud Shell or any machine with Node 22+ — the tests use
+  `--experimental-strip-types`):
 
   ```bash
-  RLS_TEST_DATABASE_URL="$BRANCH_URL" pnpm --filter @workspace/db run test
+  git clone https://github.com/NizarAbuahmad/Iqraa.git && cd Iqraa
+  node -v                                  # v22 or newer
+  corepack enable && pnpm install
+  pnpm --filter @workspace/api-server run build
+  ```
+- [ ] **B3. Apply the migrations to the empty project:**
+
+  ```bash
+  export DIRECT_URL='<direct string>'  POOLED_URL='<pooled string>'
+  DATABASE_URL="$DIRECT_URL" pnpm --filter @workspace/db run migrate -- --from-env
   ```
 
-  **Gate:** every test passes (42 at the time of writing). This proves `SET LOCAL ROLE` and
-  `set_config(…, true)` survive the pooler. If it fails behind the pooler, retry on the direct
-  endpoint and record which endpoint production uses. The suites create throwaway users and
-  delete them; on a branch that is safe.
+  **Gate:** all migrations apply, including `0008`, with no error. This proves the Neon owner
+  role can `CREATE ROLE` and `GRANT iqraa_app TO CURRENT_USER`.
+- [ ] **B4. Run the database tests on both endpoints:**
+
+  ```bash
+  RLS_TEST_DATABASE_URL="$DIRECT_URL"  pnpm --filter @workspace/db run test
+  RLS_TEST_DATABASE_URL="$POOLED_URL"  pnpm --filter @workspace/db run test
+  ```
+
+  **Gate:** every test passes on **both** (42 at the time of writing). The pooled run proves
+  `SET LOCAL ROLE` and `set_config(…, true)` survive the pooler. The suite includes
+  `rlsDiff.test.ts`, which boots the built API with enforcement off and on and replays the main
+  teacher, parent and student flows — pushes, blocks, retakes, inbox order — so it replaces a
+  hand click-through of those flows. Record which endpoint production uses.
 
 ## C. Measure and check limits
 
-- [ ] **C1. Measure the added latency from where the API runs** (a Cloud Run job, or a VM in
-  the API's region — numbers from a laptop overstate the cost). Use the benchmark script in
-  the plan, Task 7 Step 3: it prints ms per statement with enforcement off and on. Then
-  multiply the difference by the statements in a typical request (the teacher inbox is the
-  heaviest read).
+- [ ] **C1. Measure the added latency** against the rehearsal project's **pooled** string, from
+  the API's region if you can (a Cloud Run job, or a VM there; numbers from a laptop overstate
+  the cost). Use the benchmark in the plan, Task 7 Step 3: it prints ms per statement with
+  enforcement off and on. Multiply the difference by the statements in a typical request (the
+  teacher inbox is the heaviest read, roughly fifteen).
 
   **Gate:** p95 within budget — suggested ≤ +100 ms on the inbox, ≤ +25 % elsewhere. If it
   fails, do not flip. Mitigations, in order: co-locate Cloud Run with Neon; a request-scoped
   transaction for routes that never call a model; fewer statements per request.
 - [ ] **C2. Check the connection ceiling.** With enforcement on an instance holds **two** pools
-  (default 10 connections each). **Gate:** Neon's `max_connections` (or the pooler's limit) is
-  at least `2 × 10 × <Cloud Run --max-instances>`. If not, set `max` explicitly on both pools in
-  `lib/db/src/index.ts` (a code change) or lower `--max-instances`.
-- [ ] **C3. Walk the flows by hand against an enforcing API pointed at the branch.** Do **not**
-  do this by adding the branch URL to the production Cloud Run service: a new revision of
-  `iqraa-api` carries its env vars forward, and the next deploy would ship the branch database
-  to production traffic. Instead run the API locally (see `LOCAL_SETUP.md`):
+  (default 10 connections each). **Gate:** the production Neon database's `max_connections` (or
+  the pooler's limit) is at least `20 × <Cloud Run --max-instances>`. Read `maxScale` with:
 
   ```bash
-  pnpm --filter @workspace/api-server run build
-  DATABASE_URL="$BRANCH_URL" RLS_ENFORCE=on pnpm run dev:api   # :8080
+  gcloud run services describe iqraa-api --region europe-west1 --project iqraa-auth-507315 \
+    --format='value(spec.template.metadata.annotations)'
   ```
 
-  and point the web app at it. (If you must use Cloud Run, create a **separate** service for
-  it, e.g. `iqraa-api-rls`, never the production one.) Walk these and watch the API's output for
-  `permission denied` and `row-level security`:
-
-  - [ ] Teacher: roster, create a class, add a student, issue a claim code, DM a parent, post in
-    a class group, release results, reissue a parent's login code.
-  - [ ] Parent: claim a student with the code, open the inbox, read a thread, reply (the thread
-    must move to the top of the teacher's inbox), open `/parent/exams`.
-  - [ ] Student: claim their record, take an exam from a share link, read results, retake a
-    failed exam if mastery gating is on.
-  - [ ] A parent blocked by a teacher cannot open a new thread with them.
-  - [ ] Push notifications arrive for a teacher's post (check a device, not just the API log).
-
-  **Gate:** every flow works and the log has no `permission denied` / `row-level security`.
+  If the limit is too low, set `max` explicitly on both pools in `lib/db/src/index.ts` (a code
+  change) or lower `--max-instances`.
 
 ## D. Switch it on
 

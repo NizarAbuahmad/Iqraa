@@ -4,6 +4,7 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import * as pkg from '@workspace/exam-paper';
 
 import { EXAM_TYPE_ORDER, examBlockDirection, examBlockHeading, examBlockMarks, examBlocks } from '../examBlocks.ts';
 import { quizBlocks } from '../quizPaper.ts';
@@ -67,5 +68,9 @@ describe('examBlocks', () => {
   it('covers every type an evaluation can hold', () => {
     const all: QuestionType[] = ['multiple_choice', 'true_false', 'matching', 'fill_blank', 'short_answer', 'open_ended', 'problem_solving', 'practical_task', 'read_aloud', 'dictation'];
     assert.deepEqual([...EXAM_TYPE_ORDER].sort(), [...all].sort());
+  });
+
+  it("is the shared package's own list, not an equal copy", () => {
+    assert.equal(EXAM_TYPE_ORDER, pkg.EXAM_TYPE_ORDER);
   });
 });

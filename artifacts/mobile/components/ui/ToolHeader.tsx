@@ -1,10 +1,13 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { SPACE, TYPE } from '@/constants/theme';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { goBack } from '@/services/navigation';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
+import { IconTile } from '@/components/ui/IconTile';
+import { ICON, conceptOf, type ConceptId } from '@/constants/icons';
 
 interface Props {
   title: string;
@@ -13,6 +16,12 @@ interface Props {
   eyebrow?: { icon: keyof typeof Ionicons.glyphMap; label: string };
   /** An emoji or icon beside the title. */
   leading?: string | { icon: keyof typeof Ionicons.glyphMap };
+  /**
+   * The tool's teaching concept (`constants/icons.ts`): its icon, in its colour,
+   * on a white tile. Wins over `leading`. Every generator screen passes one, so
+   * the quiz wears the same glyph here as on the Tools tab and the prep board.
+   */
+  concept?: ConceptId;
   /** The demo/live pill. Off only for screens that never generate. */
   sourceBadge?: boolean;
   topPad: number;
@@ -26,9 +35,9 @@ interface Props {
  * this band with their own colour, title size and badge order, so the tools
  * read as separate products; the band is now always the primary teal.
  */
-export function ToolHeader({ title, subtitle, eyebrow, leading, sourceBadge = true, topPad, isRTL, children }: Props) {
+export function ToolHeader({ title, subtitle, eyebrow, leading, concept, sourceBadge = true, topPad, isRTL, children }: Props) {
   const colors = useColors();
-  const { t } = useLanguage();
+  const { t, lang, toggleLang } = useLanguage();
   const row = { flexDirection: isRTL ? 'row-reverse' : 'row' } as const;
   const align = { textAlign: isRTL ? 'right' : 'left' } as const;
   return (
@@ -40,19 +49,35 @@ export function ToolHeader({ title, subtitle, eyebrow, leading, sourceBadge = tr
           accessibilityRole="button"
           accessibilityLabel={t('back')}
         >
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
+          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={ICON.xl} color="#fff" />
         </Pressable>
-        {sourceBadge ? <AiSourceBadge onDark isRTL={isRTL} /> : null}
+        <View style={[styles.navEnd, row]}>
+          {/* After sign-in the only other switch is in Settings, which a
+              full-screen tool gives no way to reach — and what a tool writes
+              is in the app's language. */}
+          <Pressable
+            onPress={() => { void toggleLang(); }}
+            hitSlop={8}
+            style={styles.langPill}
+            accessibilityRole="button"
+            accessibilityLabel={t('changeLanguage')}
+          >
+            <Ionicons name="language-outline" size={14} color="#fff" />
+            <Text style={styles.langPillText}>{lang === 'ar' ? 'English' : 'عربي'}</Text>
+          </Pressable>
+          {sourceBadge ? <AiSourceBadge onDark isRTL={isRTL} /> : null}
+        </View>
       </View>
       {eyebrow ? (
         <View style={[styles.eyebrow, row, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-          <Ionicons name={eyebrow.icon} size={13} color="#fff" />
+          <Ionicons name={eyebrow.icon} size={14} color="#fff" />
           <Text style={styles.eyebrowText}>{eyebrow.label}</Text>
         </View>
       ) : null}
       <View style={[styles.titleRow, row]}>
-        {typeof leading === 'string' ? <Text style={styles.emoji}>{leading}</Text> : null}
-        {leading && typeof leading === 'object' ? <Ionicons name={leading.icon} size={22} color="#fff" /> : null}
+        {concept ? <IconTile icon={conceptOf(concept).icon} glyph={conceptOf(concept).glyph} color={conceptOf(concept).color} size={36} tone="onBand" /> : null}
+        {!concept && typeof leading === 'string' ? <Text style={styles.emoji}>{leading}</Text> : null}
+        {!concept && leading && typeof leading === 'object' ? <Ionicons name={leading.icon} size={ICON.xl} color="#fff" /> : null}
         <Text style={[styles.title, align]}>{title}</Text>
       </View>
       {subtitle ? <Text style={[styles.subtitle, align]}>{subtitle}</Text> : null}
@@ -64,6 +89,17 @@ export function ToolHeader({ title, subtitle, eyebrow, leading, sourceBadge = tr
 const styles = StyleSheet.create({
   band: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
   nav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  navEnd: { alignItems: 'center', gap: 8 },
+  langPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACE.xs,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    borderRadius: 999,
+    paddingHorizontal: SPACE.md,
+    paddingVertical: SPACE.xs,
+  },
+  langPillText: { color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption },
   eyebrow: {
     alignItems: 'center',
     gap: 5,
