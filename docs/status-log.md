@@ -10,6 +10,52 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 9 grammar pilot (Unit 4) in the English corner — built, shown to nobody yet, 2026-10-23
+
+The first Grade 9 grammar, on **one unit only**: S1 U4 «A good buy», two hub lessons —
+comparatives and superlatives (`kbl-g9-eng-s1-nccd-u4_l1`, 42 sentences) and quantifiers
+(`…u4_l3`, 80). **Both are `reviewedBy: null` in `lib/curriculum/src/englishGrammarG9.ts`, so
+nobody sees any of it yet.** Spec:
+`docs/superpowers/specs/2026-10-23-english-corner-grammar-g9-pilot-design.md`; plan:
+`docs/superpowers/plans/2026-10-23-english-corner-grammar-g9-pilot.md`.
+
+- **Why a pilot.** The book's JSON for Grade 9 has objectives only — no example sentences — so
+  every sentence is authored by us and checked by a teacher. One unit shows whether that content
+  model works before the other nine units and Grade 10 are written.
+- **Nothing is pictured.** A food does not show «healthier». True or false and Yes or No come only
+  from ten written pairs (`PLURAL_PAIRS`, `MASS_PAIRS`), each plainly true; the false twin is the
+  same sentence with the two sides swapped. Opinion rows («Pancakes are tastier than porridge.»)
+  and superlative rows («the most expensive dish on the menu») are Choose and Build only, never
+  judged.
+- **Engine changes (shared, Grades 1–4 unchanged).** Eight Grade 9 `ADJECTIVE_FORMS`
+  (cheap, healthy, tasty, and five «more / most» adjectives); `claim.swap` takes a list of pairs
+  (the capitalised sentence start and the lower-case question both swap); Grade 4's data page was
+  pinned with `GRADE_FOUR_ADJECTIVES` so the shared table's growth did not change its form.
+  `games.ts`, the screens and the strings needed nothing.
+- **Quantifiers by the noun.** Eight hand-classed counted foods and eight uncounted; five patterns
+  per class (How many/much…, There aren't many/much…, too many/much, Are there many…? / Is there
+  much…?, a few / a little), the choice decided by the noun. «some», «any» and «enough» are left
+  out, and the form says so.
+- **The teacher's form** is `docs/english-grammar-g9-review.html` (sheet:
+  `docs/english-grammar-g9-sheet.md`), written by `lib/curriculum/scripts/grammar-sheet.ts` and
+  pinned by a test: two unit pages and a data page of four tables — the ten comparison pairs with
+  their false twins, the adjective forms, the 16 foods by class, and the six opinion rows. The
+  Grade 1–4 forms and sheets are byte-identical.
+- **Verified:** curriculum 593 tests, mobile 6867 pass / 10 skipped / 0 fail, root typecheck.
+  **In a browser** at 390 px in Arabic and English, with sign-offs in the working tree only
+  (restored straight after; never committed; `grep -c "LOCAL CHECK"` is 0): `u4_l1` offers all
+  four cards and `u4_l3` Choose and Build only; True or false and Yes or No show a text with no
+  picture; the Choose options are real forms («more popular» / «most popular», «many» / «much»);
+  no horizontal scroll.
+- **Not verified:** on a device; with a teacher; the audio — it needs the pending `english-audio`
+  run (OpenAI and R2 keys).
+- **Known limit:** a sentence such as «How many grapes are there?» has no context; the form asks
+  the teacher whether that is acceptable at Grade 9.
+
+**To switch a unit on:** record the audio; a Grade 9 English teacher signs that unit's page **and
+the data page** of `docs/english-grammar-g9-review.html`, printed; then set its `reviewedBy` in
+`englishGrammarG9.ts` and merge.
+
 **Accounts, messages, evaluation setup and the corners (2026-10-22, seventeenth live pass).**
 Of 30 questions, 9 were right and 21 went to the model; the recheck of the sixteenth pass was
 24/24. Checked in code: «الإعدادات» ← «الحسابات على هذا الجهاز» switches, adds and removes saved

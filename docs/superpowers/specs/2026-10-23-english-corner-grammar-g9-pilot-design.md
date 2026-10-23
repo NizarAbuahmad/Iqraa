@@ -1,6 +1,6 @@
 # English corner: Grade 9 grammar pilot (Unit 4) — design
 
-**Status:** proposed (awaiting review). **Scope:** Grade 9 English **grammar**, **one unit only**: S1 U4
+**Status:** implemented (PR #1171; where the build differs from what was first written, the text says how). **Scope:** Grade 9 English **grammar**, **one unit only**: S1 U4
 «A good buy», on its two grammar hub lessons (`kbl-g9-eng-s1-nccd-u4_l1` comparatives and
 superlatives, `kbl-g9-eng-s1-nccd-u4_l3` quantifiers). The other nine Grade 9 units, Grade 10, and
 reading comprehension are separate specs that follow once this pilot has shown the content model works.
@@ -135,10 +135,11 @@ The number-matched yes / no answers are separate patterns for the plural and unc
 | «How many {foods} are there?» / «How much {food} is there?» | many / much |
 | «There aren't many {foods}.» / «There isn't much {food}.» | many / much |
 | «There are too many {foods}.» / «There's too much {food}.» | many / much |
+| «Are there many {foods}?» / «Is there much {food}?» | many / much |
 | «I'd like a few {foods}, please.» / «I'd like a little {food}, please.» | a few / a little |
 
-Only the Grade 9 food classes and the patterns above are new data; the totals (about 122 sentences) are
-pinned once built.
+Only the Grade 9 food classes and the patterns above are new data. Built: 42 sentences on `u4_l1`, 80 on
+`u4_l3`, 122 in all (pinned in `englishGrammarG9.test.ts`).
 
 ## Where it lives
 
