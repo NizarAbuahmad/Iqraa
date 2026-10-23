@@ -311,6 +311,12 @@ export interface TrueFalseQuestion {
   isTrue: boolean;
 }
 
+/**
+ * True or false plays no sound for a hand-written Grade 9 item, true or false alike: its false twin is ungrammatical,
+ * so it must not be read aloud, and sound on only one of the two would give the answer away.
+ */
+export const isSilentTrueFalse = (s: GrammarSentence): boolean => s.claim?.voiced === false;
+
 function judgeable(s: GrammarSentence): boolean {
   return Boolean((s.picture && s.falsePicture) || s.claim);
 }
