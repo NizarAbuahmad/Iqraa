@@ -12,7 +12,7 @@
  *   pnpm --filter @workspace/curriculum run grammar-sheet
  *
  * A test fails when a committed file differs from the generator, so re-run
- * this after any change to src/englishGrammar.ts, src/englishGrammarG2.ts, src/englishGrammarG3.ts, src/englishGrammarG4.ts, src/englishGrammarG9.ts or
+ * this after any change to src/englishGrammar.ts, src/englishGrammarG2.ts, src/englishGrammarG3.ts, src/englishGrammarG4.ts, src/englishGrammarG9.ts, src/englishGrammarG9Items.ts or
  * src/englishReading.ts and commit the result.
  */
 import { writeFileSync } from 'node:fs';
