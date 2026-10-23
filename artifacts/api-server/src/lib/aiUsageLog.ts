@@ -27,6 +27,7 @@
  * The message goes to the log, where it is already gated.
  */
 import { logger } from "./logger.ts";
+import { currentPlatform } from "./requestPlatform.ts";
 
 export type GenerationRecord = {
   userId?: string | null;
@@ -97,6 +98,7 @@ export async function recordGeneration(row: GenerationRecord): Promise<void> {
       completionTokens: row.completionTokens,
       costUsd: row.costUsd.toFixed(6),
       durationMs: row.durationMs ?? null,
+      platform: currentPlatform(),
     });
     lastFailure = null;
   } catch (err) {
