@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { summaryLine, previewRows, moreRowsLabel } from '../generatorSummary.ts';
+import { summaryLine, previewRows, moreRowsLabel, lessonPlanSections } from '../generatorSummary.ts';
 
 /*
   The docked bar's one-line summary and the desktop paper preview's rows. Both
@@ -92,4 +92,39 @@ test('an empty or blank level adds nothing, and the quiz line is unchanged', () 
   assert.equal(summaryLine({ questions: 10, level: '' }, 'ar'), '10 أسئلة');
   assert.equal(summaryLine({ questions: 10, level: '   ' }, 'ar'), '10 أسئلة');
   assert.equal(summaryLine({ questions: 10, minutes: 20, marks: 20, kinds: 4 }, 'ar'), '10 أسئلة · 20 دقيقة · 20 درجة · 4 أنواع');
+});
+
+test('a lesson plan names its duration, sections and style: «45 دقيقة · 10 أقسام · التعليم المباشر»', () => {
+  assert.equal(summaryLine({ minutes: 45, sections: 10, level: 'التعليم المباشر' }, 'ar'), '45 دقيقة · 10 أقسام · التعليم المباشر');
+  assert.equal(summaryLine({ minutes: 90, sections: 11, level: 'التعلم التعاوني' }, 'ar'), '90 دقيقة · 11 قسمًا · التعلم التعاوني');
+  assert.equal(summaryLine({ minutes: 30, sections: 10, level: 'Direct instruction' }, 'en'), '30 min · 10 sections · Direct instruction');
+});
+
+test('each Arabic section count takes the noun form its number class needs', () => {
+  assert.equal(summaryLine({ sections: 1 }, 'ar'), 'قسم واحد');
+  assert.equal(summaryLine({ sections: 2 }, 'ar'), 'قسمان');
+  assert.equal(summaryLine({ sections: 3 }, 'ar'), '3 أقسام');
+  assert.equal(summaryLine({ sections: 10 }, 'ar'), '10 أقسام');
+  assert.equal(summaryLine({ sections: 11 }, 'ar'), '11 قسمًا');
+  assert.equal(summaryLine({ sections: 1 }, 'en'), '1 section');
+});
+
+test('the Arabic minutes of the four lesson durations agree', () => {
+  for (const [m, want] of [[30, '30 دقيقة'], [45, '45 دقيقة'], [60, '60 دقيقة'], [90, '90 دقيقة']] as const) {
+    assert.equal(summaryLine({ minutes: m }, 'ar'), want);
+  }
+});
+
+test('the lesson plan sections come in teaching order, with the prior review only when asked', () => {
+  const without = lessonPlanSections(false);
+  const withReview = lessonPlanSections(true);
+  assert.deepEqual(without, ['objectives', 'materials', 'introduction', 'mainActivity', 'guidedPractice', 'independentPractice', 'closure', 'assessment', 'differentiation', 'homework']);
+  assert.equal(without.length, 10);
+  assert.equal(withReview.length, 11);
+  assert.equal(withReview[2], 'priorReview', 'the review sits between the materials and the introduction, as LessonPlanView prints it');
+  // One row per section: nothing is cut, so no «+ N more» line is needed.
+  const { rows, remainder } = previewRows(withReview, withReview.length, 11);
+  assert.equal(rows.length, 11);
+  assert.equal(remainder, 0);
+  assert.deepEqual(rows.map(r => r.type), withReview);
 });

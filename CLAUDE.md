@@ -744,7 +744,7 @@ sweep in your staged files.
   stock glyph. A new drawing must be used or listed in `HELD` with its reason
   (`glyphs.test.ts`; it is empty today).
 - **A generator screen is built from `components/generator/` (since 2026-10-23; the
-  quiz and the worksheet/homework are ported, the other three follow).** `ToolHeader` takes the band's colour
+  quiz, the worksheet/homework and the lesson plan are ported, the other two follow).** `ToolHeader` takes the band's colour
   from its `concept`; the form is `SegmentedControl` (a list of at most four labels),
   `Stepper` (a numeric list: it moves the screen's INDEX through the real option
   array, never a number), `ChipGroup` (multi-select), one `LessonCard` wrapping the

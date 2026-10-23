@@ -17,13 +17,15 @@ export interface SummaryCounts {
   marks?: number;
   /** How many question types are ticked. */
   kinds?: number;
+  /** How many sections a lesson plan has. */
+  sections?: number;
 }
 
 export interface SummaryParts extends SummaryCounts {
   /**
-   * A word and not a count — the difficulty level («متوسط»), already in the
-   * display language. It closes the line: «20 سؤالًا · 3 أنواع · متوسط». The
-   * worksheet has no duration or marks to name, so the level takes their place.
+   * A word and not a count, already in the display language. It closes the line:
+   * the worksheet's difficulty level («20 سؤالًا · 3 أنواع · متوسط»), the lesson
+   * plan's teaching style («45 دقيقة · 10 أقسام · التعليم المباشر»).
    */
   level?: string;
 }
@@ -37,11 +39,19 @@ function arKinds(n: number): string {
   return arCountPhrase(n, 'نوع', 'نوعان', 'أنواع');
 }
 
+/** «قسم واحد» / «قسمان» / «10 أقسام» / «11 قسمًا». */
+function arSections(n: number): string {
+  if (n === 1) return 'قسم واحد';
+  if (n >= 11) return `${n} قسمًا`;
+  return arCountPhrase(n, 'قسم', 'قسمان', 'أقسام');
+}
+
 const AR: Record<keyof SummaryCounts, (n: number) => string> = {
   questions: arQuestionsPhrase,
   minutes: n => arCountPhrase(n, 'دقيقة', 'دقيقتان', 'دقائق'),
   marks: n => arCountPhrase(n, 'درجة', 'درجتان', 'درجات'),
   kinds: arKinds,
+  sections: arSections,
 };
 
 const EN: Record<keyof SummaryCounts, (n: number) => string> = {
@@ -49,9 +59,10 @@ const EN: Record<keyof SummaryCounts, (n: number) => string> = {
   minutes: n => `${n} min`,
   marks: n => plural(n, 'mark', 'marks'),
   kinds: n => plural(n, 'type', 'types'),
+  sections: n => plural(n, 'section', 'sections'),
 };
 
-const ORDER: (keyof SummaryCounts)[] = ['questions', 'minutes', 'marks', 'kinds'];
+const ORDER: (keyof SummaryCounts)[] = ['questions', 'minutes', 'marks', 'kinds', 'sections'];
 
 /** «10 أسئلة · 20 دقيقة · 20 درجة · 4 أنواع», in a fixed order whatever order the caller named them (a `level` word last). */
 export function summaryLine(parts: SummaryParts, lang: SummaryLang): string {
@@ -92,4 +103,21 @@ export function moreRowsLabel(remainder: number, lang: SummaryLang): string {
   if (remainder === 2) return '+ سؤالان آخران';
   if (remainder <= 10) return `+ ${remainder} أسئلة أخرى`;
   return `+ ${remainder} سؤالًا آخر`;
+}
+
+/**
+ * The sections a lesson plan is made of, in the order the screen prints them
+ * (`LessonPlanView`'s order: the order a teacher teaches in). The prior-review
+ * section exists only when the teacher asked for one. The preview draws one
+ * skeleton row per section; it never shows content.
+ */
+export const LESSON_PLAN_SECTIONS = [
+  'objectives', 'materials', 'priorReview', 'introduction', 'mainActivity',
+  'guidedPractice', 'independentPractice', 'closure', 'assessment', 'differentiation', 'homework',
+] as const;
+
+export type LessonPlanSection = (typeof LESSON_PLAN_SECTIONS)[number];
+
+export function lessonPlanSections(withPriorReview: boolean): LessonPlanSection[] {
+  return LESSON_PLAN_SECTIONS.filter(s => s !== 'priorReview' || withPriorReview);
 }

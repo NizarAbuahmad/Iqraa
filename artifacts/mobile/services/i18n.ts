@@ -1053,6 +1053,7 @@ const translations = {
     genPreviewQuizNote: 'ورقة جاهزة للطباعة، ومعها مفتاح الإجابات.',
     genPreviewWorksheetNote: 'ورقة تدريب جاهزة للطباعة، ومعها مفتاح الإجابات.',
     genPreviewHomeworkNote: 'تمرين بيتي جاهز للطباعة، ومعه مفتاح الإجابات.',
+    genPreviewLessonPlanNote: 'خطة قابلة للتعديل بعد إعدادها، وتُصدَّر إلى Word أو PDF.',
     // The homework tool shares the worksheet screen; its button names what it makes.
     genHomeworkBtn: 'جهّز الواجب البيتي',
     // No direction word: the button is below the form on a phone and beside it on desktop.
@@ -4326,6 +4327,7 @@ const translations = {
     genPreviewQuizNote: 'A print-ready paper, with its answer key.',
     genPreviewWorksheetNote: 'A print-ready practice sheet, with its answer key.',
     genPreviewHomeworkNote: 'A print-ready home exercise, with its answer key.',
+    genPreviewLessonPlanNote: 'An editable plan, ready to export to Word or PDF.',
     genHomeworkBtn: 'Prepare homework',
     genNeedLessonHint: 'Pick a lesson to enable this.',
 
