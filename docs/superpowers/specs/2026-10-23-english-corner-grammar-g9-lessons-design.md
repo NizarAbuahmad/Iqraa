@@ -1,6 +1,6 @@
 # English corner: Grade 9 grammar, the thirteen hub lessons — design
 
-**Status:** proposed (awaiting review). **Scope:** Grade 9 English **grammar** on the thirteen hub lessons, outside
+**Status:** implemented (PR #1204; where the build differs from what was first written, the text says how). **Scope:** Grade 9 English **grammar** on the thirteen hub lessons, outside
 Unit 4, that carry a grammar topic of the book (table below). Builds on the Unit 4 pilot
 (`2026-10-23-english-corner-grammar-g9-pilot-design.md`, PR #1171, merged) and the engine in
 `lib/curriculum/src/englishGrammar.ts`. Not in this spec: the six book topics the hub has no lesson for, Grade 10,
@@ -132,7 +132,9 @@ No server, schema or migration change. Progress stays on the device.
   `right` appears exactly once, as whole words; `answer` ≠ `distractor`; the twin is not one of the unit's true
   sentences; `allGrammarSpoken` omits unvoiced twins and keeps true sentences; the existing units' output is
   unchanged.
-- **Data (`englishGrammarG9Items.test.ts`):** the thirteen lessons are hub lessons and match the id table above;
+- **Data (`englishGrammarG9Items.test.ts`):** the thirteen lessons are hub lessons and match the id table above, and each
+  lesson's book statement equals the `objectives[0]` of that id in `data/iqra_curriculum_g9_eng_sem{1,2}.json` (added while
+  planning, so the mapping to the book's data is pinned, not only printed);
   every unit is unsigned and `offered…` is `null` for each; each topic has at least 6 items; every sentence is at
   most 9 tokens; no duplicate sentence within a lesson; every item has a `kind`; per-lesson totals and the
   `form` / `meaning` counts are pinned; the sentences contain no real person's name.
@@ -165,6 +167,7 @@ or false on a Grade 9 lesson, no horizontal scroll, an unsigned lesson shows not
 - No audio is recorded (`english-audio` needs the OpenAI and R2 keys), and True or false on these lessons is
   silent by design.
 - The mapping to the printed pages is unchecked until a teacher does it.
+- After a child answers a false item the screen shows only «the correct answer: false», not the correct form, because True or false is silent here.
 
 ## Switching a lesson on
 
