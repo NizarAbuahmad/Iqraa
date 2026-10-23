@@ -10,6 +10,62 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Neon leaves the Free plan before launch — 2026-10-23
+
+**Status: decided, not yet applied.** The upgrade is a click in the Neon console that only the
+owner can make; nothing about production changed in this PR except one extra field on an
+admin-only route.
+
+- **Why.** The project (`Iqraa`, AWS Frankfurt, one branch, 0.25 CU compute) is on Neon's **Free
+  plan**: 100 compute-hours a month, and when they are used up Neon says the compute is
+  "suspended until the next billing period or until you upgrade", which is the whole app down.
+  The console showed **30.92 CU-hours used** since 1 October (screenshot, 2026-10-23), at quiet
+  traffic. A launch keeps the compute awake much longer and Neon may scale it up, so the
+  allowance could run out within days to about two weeks. That figure is an estimate, not a
+  measurement.
+- **Decision (owner, 2026-10-23): upgrade in place to Launch** (pay for use: $0.106 per CU-hour,
+  $0.35 per GB-month, no monthly minimum; 7-day restore window; autoscaling to 16 CU; scale to
+  zero can be switched off; logical replication). Settings to apply: autoscaling **min 0.25, max
+  0.5 CU**, scale to zero **on**. **Expected cost about $10 a month, ceiling about $39** (0.5 CU
+  x 730 h x $0.106). Both are arithmetic from the published rates, not an invoice. The trade-off
+  of scale to zero is a wait of "a few hundred milliseconds" on the first query after about five
+  idle minutes; switching it off costs roughly $10-12 a month more at 0.25 CU.
+- **Considered and not chosen: switching provider.** The database is about 39 MB, so storage is
+  irrelevant and any paid plan fixes the cap. The code is plain Postgres (`pg` + Drizzle, no Neon
+  packages, no Neon-only SQL), so a later move is possible, but a move now means rehearsing a
+  restore, getting migration 0008's `iqraa_app` role and row-level security to survive it, keeping
+  table ownership equal to the role in **both** `DATABASE_URL` secrets (GitHub Actions and Secret
+  Manager), and a cutover right before launch; the failure mode is rows silently missing. Cloud
+  SQL came to about $50 a month for 1 vCPU / 3.75 GB single-zone by arithmetic from Google's US
+  per-unit rates (Europe and shared-core prices not confirmed); Supabase Pro is $25 a month with
+  point-in-time recovery $100 a month extra and no uptime SLA. Neon Scale ($0.222 per CU-hour) is
+  the tier with a 99.95% SLA; not needed yet. Jordan's Personal Data Protection Law (No. 24 of
+  2023) restricts moving personal data out of Jordan unless the destination is adequate; it
+  applies to every candidate equally and is a question for a lawyer, not a reason to pick one.
+- **Code.** `GET /api/healthz/pool` (admin key) now also returns `pooled: true|false`: whether
+  `DATABASE_URL` goes through Neon's pooler (`-pooler` in the host). Only that yes/no leaves the
+  process; the host and string do not. At 0.25 CU Neon allows 104 `max_connections` (97 usable),
+  while the API can open `DB_POOL_MAX` (10) per instance across many instances; the pooler accepts
+  10,000 client connections in transaction mode, which this code is designed for (no prepared
+  statements, no advisory locks, `SET LOCAL` only inside transactions). Not exercised: the
+  `SET LOCAL` path runs only with `RLS_ENFORCE=on`, which is off in production, and has not been
+  run through Neon's pooler. `isPooledConnectionString` is
+  in `lib/db/src/poolConfig.ts`, with unit tests.
+- **Verified.** Limits and prices were read from Neon's plans, pricing, scale-to-zero and
+  connection-pooling pages and from the Change-plan screen on 2026-10-23. The code's coupling to
+  Neon was reviewed by reading it, not by running a migration. The helper is unit-tested.
+- **Not verified, still open.** (1) The upgrade itself. (2) Whether production's `DATABASE_URL` is
+  pooled: call `/api/healthz/pool` with the admin key after this deploys; if `pooled` is `false`,
+  switch the Secret Manager secret to the pooled string and roll a revision outside school hours.
+  (3) The real monthly cost; look at Neon's Usage page weekly for the first month. (4) Neon's
+  reliability: third-party trackers list about 29 incidents in 12 months, mostly short and
+  regional; Neon's own status page was not read. (5) A load test against Neon: the sandbox that
+  runs the load test blocks outbound connections on the Postgres port (5432; tested against two
+  public addresses, not against Neon), so `e2e/loadtest` was only run against a local database; the compute-hour and connection figures above come from the documentation.
+- **Review after two to four weeks:** a slow first request in the morning (turn scale to zero
+  off), a bill above about $30, Neon incidents during school hours (Sunday to Thursday, about
+  07:30-14:00 Amman), a need for an SLA or a longer restore window, connection limits biting.
+
 ## Iqraa draws its own icons — 2026-10-23
 
 Step two of the icon work. Sixteen drawings, approved from a review sheet

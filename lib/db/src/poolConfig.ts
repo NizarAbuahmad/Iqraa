@@ -46,3 +46,23 @@ export function poolOptions(
     connectionTimeoutMillis: intInRange(env["DB_CONNECT_TIMEOUT_MS"], 1000, 60_000, DEFAULT_CONNECT_TIMEOUT_MS),
   };
 }
+
+/**
+ * Does this connection string go through Neon's pooler (PgBouncer, transaction
+ * mode)? A pooled host has `-pooler` after the endpoint id
+ * (`ep-xxx-pooler.region.aws.neon.tech`); a direct one does not.
+ *
+ * It matters because a direct connection is capped by the compute's
+ * `max_connections` (97 usable at 0.25 CU) while the pooler accepts 10,000
+ * client connections, and this API can open DB_POOL_MAX per instance across
+ * many instances. Only the host is examined, so a password or database name
+ * containing "-pooler" does not count, and the string itself is never returned.
+ */
+export function isPooledConnectionString(connectionString: string | undefined): boolean {
+  if (!connectionString) return false;
+  try {
+    return new URL(connectionString).hostname.includes("-pooler");
+  } catch {
+    return false;
+  }
+}

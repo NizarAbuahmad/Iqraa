@@ -26,7 +26,9 @@ Checked 2026-10-22:
 - **Math verifier** `iqraa-verifier`: `/api/healthz/verifier` answers `ok`, self-test `pass`.
 - **Web app** `app.iqrra.com` (Cloudflare Pages): 200. **Landing** `iqrra.com` (separate repo
   `Site_Iqra`, Vercel) answers 308 to `www.iqrra.com`, which is 200.
-- **Database:** Neon Postgres. The schema deploys as migrations (11 files in
+- **Database:** Neon Postgres, **Free plan** (100 compute-hours a month, **30.92 used** by
+  2026-10-23; when they run out Neon suspends the compute) — see «Neon leaves the Free plan before
+  launch» in the log and the first item under *Open*. The schema deploys as migrations (11 files in
   `lib/db/migrations`); `verify-schema` runs before every API deploy.
 - **Live config** (plain env on the service): `AI_LIVE_MODE=true`; models `gpt-5.4-mini`
   for generation and for chat; budgets `AI_BUDGET_USD=50`, per user `1`, per
@@ -52,6 +54,13 @@ Checked 2026-10-22:
   mobile-build-gradle, mobile-update, provider-eval, rls-neon-rehearsal, schema-check.
 
 ## Open
+
+- **Move Neon off the Free plan before launch** (decided 2026-10-23, **not yet done**; the owner
+  does it in the Neon console). Launch plan, autoscaling 0.25-0.5 CU, scale to zero on: about
+  $10 a month expected, about $39 at most (estimates). Then check `pooled` on
+  `GET /api/healthz/pool` (admin key): if `false`, production's `DATABASE_URL` is a direct
+  connection, which at 0.25 CU allows only 97 usable connections; switch the secret to the pooled
+  string. Details and what is unverified: the log entry named above.
 
 Checked 2026-10-22:
 
@@ -82,6 +91,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-23 — Neon leaves the Free plan before launch
 - 2026-10-23 — Iqraa draws its own icons
 - 2026-10-23 — Grade 9 grammar pilot (Unit 4) in the English corner — built, shown to nobody yet
 - 2026-10-23 — Icons follow one system
@@ -111,7 +121,6 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-18 — One question-type order, one set of repeat-rule inputs
 - 2026-10-18 — One card for quizzes and evaluations
 - 2026-10-18 — Revision decks carry the book's own pictures and all its key terms
-- 2026-10-18 — Slides Maker decks stop looking like bare lists
 
 ## Finding older detail, and recording new work
 

@@ -275,7 +275,12 @@ range falls back to the default rather than reaching `pg`, where `0` would mean
 | `DB_SYSTEM_POOL_MAX` | `DB_POOL_MAX` | the second (owner) pool that exists only with `RLS_ENFORCE=on` |
 | `DB_CONNECT_TIMEOUT_MS` | 10000 | how long a query waits for a free connection, 1000–60000 |
 
-Neon sees `DB_POOL_MAX × max instances` connections (× 2 with RLS on). Read the
+Neon sees `DB_POOL_MAX × max instances` connections (× 2 with RLS on). A **direct**
+connection is capped by the compute's `max_connections` (104 at 0.25 CU, 97 usable); Neon's
+**pooler** (`-pooler` in the host) accepts 10,000 client connections in transaction mode, which this
+code is designed for (the row-level-security `SET LOCAL` path has not been run through it). `GET /api/healthz/pool` reports `pooled: true|false` for the running
+`DATABASE_URL` (a yes/no only, never the host). Neon's plan and compute settings, and why, are in
+the log entry «Neon leaves the Free plan before launch». Read the
 service's `maxScale` and Neon's limit before raising it — `--max-instances` is
 not pinned in `deploy.yml`, so the console value is the one in force. A query
 that waits past `DB_CONNECT_TIMEOUT_MS` fails: the auth middleware and the
