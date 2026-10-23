@@ -1042,6 +1042,18 @@ const translations = {
     changeLesson: 'تغيير الدرس',
     unpinLesson: 'إلغاء تثبيت الدرس',
 
+    // ── Generator screens: the shared pieces (components/generator) ──
+    genLessonFromCurriculum: 'من المنهاج',
+    genLessonDone: 'تم',
+    genStepperLess: 'أنقص',
+    genStepperMore: 'زِد',
+    genPreviewTitle: 'ما ستحصل عليه',
+    genPreviewName: 'الاسم',
+    genPreviewDate: 'التاريخ',
+    genPreviewQuizNote: 'ورقة جاهزة للطباعة، ومعها مفتاح الإجابات.',
+    // No direction word: the button is below the form on a phone and beside it on desktop.
+    genNeedLessonHint: 'اختر الدرس ليصبح الزر جاهزًا.',
+
     // ── Workspace home (desktop web) ──────────────────────────────
     tabToday: 'اليوم',
     celebrateHandedIn: 'أحسنت! سُلّمت ورقتك',
@@ -1748,7 +1760,7 @@ const translations = {
     verifiedComputed: (a: string) => `حسبها المُحقِّق مستقلًّا: ${a}`,
     quizVerifiedCount: (n: number, total: number) =>
       `تحقّق المُحقِّق الرمزي من ${n} من أصل ${total} إجابة`,
-    questionCountPill: (n: number) => arCountPhrase(n, 'سؤال واحد', 'سؤالان', 'أسئلة'),
+    questionCountPill: (n: number) => arQuestionsPhrase(n),
     // The paper stops where the lesson's question bank does.
     shortPaperNotice: (produced: number, requested: number) =>
       `هذه الورقة أقصر مما طلبت: لا يتوفر لهذا الدرس إلا ${arCountPhrase(produced, 'سؤال واحد', 'سؤالان', 'أسئلة')} من أصل ${requested}، ولم نملأ الباقي بأسئلة عامة لا تخص الدرس.`,
@@ -4297,6 +4309,17 @@ const translations = {
     iqraArtifactNeedTopic: 'Sure — which lesson should this material cover? Type the lesson name or pick a topic below.',
     changeLesson: 'Change lesson',
     unpinLesson: 'Unpin lesson',
+
+    // ── Generator screens: the shared pieces (components/generator) ──
+    genLessonFromCurriculum: 'From the curriculum',
+    genLessonDone: 'Done',
+    genStepperLess: 'Decrease',
+    genStepperMore: 'Increase',
+    genPreviewTitle: 'What you will get',
+    genPreviewName: 'Name',
+    genPreviewDate: 'Date',
+    genPreviewQuizNote: 'A print-ready paper, with its answer key.',
+    genNeedLessonHint: 'Pick a lesson to enable this.',
 
     // ── Workspace home (desktop web) ──────────────────────────────
     tabToday: 'Today',
