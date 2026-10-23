@@ -21,8 +21,8 @@ connection needs one. One round trip is about 11 ms from europe-west1 (Cloud Run
 each statement pays about +22 ms.
 
 Two caveats on that table. The "15 statements" was an estimate (the plan's «roughly fifteen»); the real
-inbox (`GET /messaging/threads`, `routes/messaging.ts`) runs 7 scoped statements for a teacher (8 for a
-parent or student, who also read their blocks), one of them a `Promise.all` pair, so its added cost today is
+inbox (`GET /messaging/threads`, `routes/messaging.ts`) runs 7 or 8 scoped statements, depending on the
+account's data (several queries are conditional), one of them a `Promise.all` pair, so its added cost today is
 about +150–175 ms, not +336 ms — still over budget. And the benchmark ran from Cloud Shell, whose distance
 to Neon is not Cloud Run's. (The auth lookup that opens every request is already on `systemDb`, one round
 trip; an earlier draft of this spec proposed moving it and was wrong.)

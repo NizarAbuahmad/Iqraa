@@ -10,6 +10,25 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Row-level security: one scoped connection per request, inbox first — built, switched off, 2026-10-23
+
+`ScopedPool#openScope` / `RequestScope` (`lib/db/src/requestScope.ts`) hold one `BEGIN READ ONLY` scoped
+connection for a whole request; `middlewares/holdScopedConnection.ts` opens it after `authMiddleware` and closes it
+from `res` `finish`/`close`; it is mounted only on `GET /messaging/threads`, pinned by `lib/heldReads.ts` and
+`heldReads.test.ts`. A write error or the 5 s hold timeout ends the scope, and later statements fall back to the
+per-statement scoped path. Enforcement off is unchanged.
+
+**Verified:** the new `requestScope.test.ts` (identity isolation under interleaving, commit and release, read-only
+refusal, timeout, no leak), `heldConnection.test.ts` and `heldReads.test.ts` (the latter also pins every use of
+`holdScopedConnection` in the API source). `rlsDiff.test.ts` now asserts, through the real built bundle with
+`LOG_LEVEL=debug`, that the enforcement-on server logs `held scope ended` for `GET /api/messaging/threads` with at
+least one statement and the enforcement-off server logs none (mutation-checked: removing the mount turns it red).
+A one-off real run of the built API against local Postgres showed the inbox held for a teacher (8 statements,
+~20 ms) and a parent (7 statements, ~13 ms), and `/messaging/contacts` not held. **Not verified:** the real saving
+— run `bench:rls` from the API's region against the rehearsal project's pooled endpoint and read the `held`
+column (gate: ≤ +100 ms p95). Routes not on the list, and every write, still pay about 22 ms per statement;
+`RLS_ENFORCE` is still unset in production.
+
 ## Row-level security rehearsed on a separate Neon project, 2026-10-23
 
 The `RLS Neon rehearsal` workflow (`.github/workflows/rls-neon-rehearsal.yml`, run 39931238295, green) applied

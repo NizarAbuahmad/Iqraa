@@ -102,6 +102,14 @@ GitHub's runners are not in your Cloud Run region — so C1 is still separate.)
   statement, COMMIT) instead of one, and one round trip is about 11 ms here (the API is in
   europe-west1, the database in Frankfurt). Tick this only after a mitigation below brings the same
   benchmark under the budget, measured from the API's region.
+  **Mitigation built (2026-10-23, spec `docs/superpowers/specs/2026-10-23-rls-latency-request-scoped-connection-design.md`):**
+  the inbox (`GET /messaging/threads`) holds one scoped, read-only connection per request, so it pays about
+  three round trips instead of three per statement. The held read ends when the response finishes, so a slow
+  client keeps the connection until then (bounded by the 5 s hold timeout). Re-run `bench:rls` from Cloud Shell
+  once this has shipped and read the `held` column; **the gate is the `held` p95 added ≤ +100 ms**. Every route
+  not on `artifacts/api-server/src/lib/heldReads.ts` still pays the `on` column (about 22 ms per statement), so
+  decide whether that is acceptable or which route to add next. After the flip, `LOG_LEVEL=debug` logs
+  `held scope ended` with the statements and milliseconds each held request used.
   Original instruction: against the rehearsal project's **pooled** string, from
   the API's region if you can (a Cloud Run job, or a VM there; numbers from a laptop overstate
   the cost). Run the benchmark: `BENCH_DATABASE_URL='<pooled string of the rehearsal
