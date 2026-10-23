@@ -1,6 +1,6 @@
 # English corner: Grade 5 grammar — design
 
-**Status:** proposed (awaiting review). **Scope:** grammar activities (Choose, Build, True or false) for the ten Grade 5
+**Status:** implemented (PR #1212). **Scope:** grammar activities (Choose, Build, True or false) for the ten Grade 5
 grammar lessons already in the English hub. Builds on the authored-items engine of the Grade 9 work
 (`lib/curriculum/src/englishGrammar.ts`: `GrammarItem`, `unitSentences`, `buildCap`) and its review form
 (`englishGrammarReview.ts`, `renderAuthoredUnit`). Not in this spec: Grade 10 grammar, Grade 9 reading comprehension,
