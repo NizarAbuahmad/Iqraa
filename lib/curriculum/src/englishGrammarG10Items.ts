@@ -5,7 +5,7 @@
  *
  * The rule for a distractor: it is `form` (ungrammatical in standard English: the bare verb or the wrong inflection,
  * the wrong agreement, `to` or -ing after the wrong verb, a missing or doubled auxiliary, a plainly wrong article) or
- * `meaning` (grammatical, but excluded by a marker in the sentence itself: a habit or «now» word, a count, a duration
+ * `meaning` (grammatical, but excluded by a marker in the sentence itself: a habit word, or Look!, Listen!, right now, at the moment, a count, a duration
  * on a finished task, an event that cuts an action short, «by the time», a time word that fixes remember or forget).
  * Never a form that could fit, and `meaning` only in the sub-topics the test pins as `meaning`. Every sentence is nine
  * words or fewer, so Build always takes it whole. No names: a pronoun, a family word (`Mum`, `Dad`) or a Jordanian
@@ -163,7 +163,7 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['She has been writing her essay since seven.', 'has been writing', 'has written'],
         ['I have been reading this book for a week.', 'have been reading', 'have read'],
         ['They have been building the spaceship for years.', 'have been building', 'have built'],
-        ['We have been cleaning the house all morning.', 'have been cleaning', 'have cleaned'],
+        ['She has been writing this letter all morning.', 'has been writing', 'has written'],
         ['How long have you been doing your homework?', 'been doing', 'done'],
         ['Dad has been repairing the car since lunch.', 'has been repairing', 'has repaired'],
         ['He has been painting the kitchen for three hours.', 'has been painting', 'has painted'],
@@ -173,7 +173,7 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['He has been learning the poem since breakfast.', 'has been learning', 'has learned'],
         ['I have been drawing this map for two hours.', 'have been drawing', 'have drawn'],
         ['She has been packing her bag for an hour.', 'has been packing', 'has packed'],
-        ['How long have you been washing the dishes?', 'been washing', 'washed'],
+        ['How long have you been tidying your room?', 'been tidying', 'tidied'],
       ]),
       // A bare verb or the wrong agreement, never a past simple.
       ...items('forms', 'form', [
@@ -285,7 +285,7 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['By the time I finished, everyone had gone home.', 'had gone home', 'went home'],
         ['By the time he arrived, the race had begun.', 'had begun', 'began'],
         ['By the time we returned, the cake had disappeared.', 'had disappeared', 'disappeared'],
-        ['By the time I answered, the ringing had stopped.', 'had stopped', 'stopped'],
+        ['By the time I arrived, the bus had left.', 'had left', 'left'],
         ['By the time I returned, Dad had fallen asleep.', 'had fallen', 'fell'],
         ['By the time she arrived, I had cleaned up.', 'had cleaned', 'cleaned'],
       ]),
