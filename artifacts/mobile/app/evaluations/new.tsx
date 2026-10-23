@@ -700,7 +700,7 @@ export default function NewEvaluationScreen() {
               {scanning ? (
                 <ActivityIndicator size="small" color={ACCENT} />
               ) : (
-                <Ionicons name="scan-outline" size={18} color={ACCENT} />
+                <Ionicons name="scan-outline" size={20} color={ACCENT} />
               )}
               <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, flexShrink: 1, textAlign: 'center' }}>
                 {scanning ? t('paperScanReading') : t('paperScanBtn')}
@@ -865,7 +865,7 @@ function CheckboxRow({
   return (
     <Pressable onPress={onToggle} style={[styles.checkRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
       <View style={[styles.checkbox, { borderColor: checked ? accent : colors.border, backgroundColor: checked ? accent : 'transparent' }]}>
-        {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
+        {checked && <Ionicons name="checkmark" size={14} color="#fff" />}
       </View>
       <Text
         style={{ color: colors.foreground, fontFamily: checked ? 'ReadexPro_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }}

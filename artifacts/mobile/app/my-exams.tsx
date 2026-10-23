@@ -198,7 +198,7 @@ export default function MyExamsScreen() {
       >
         {error ? (
           <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+            <Ionicons name="alert-circle" size={16} color={colors.destructive} />
             <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
               {error}
             </Text>
@@ -217,7 +217,7 @@ export default function MyExamsScreen() {
         {groups !== null && groups.every(g => g.exams.length === 0) ? (
           <View style={styles.empty}>
             <View style={[styles.emptyIcon, { backgroundColor: ACCENT + '1F' }]}>
-              <Ionicons name="document-text-outline" size={30} color={ACCENT} />
+              <Ionicons name="document-text-outline" size={32} color={ACCENT} />
             </View>
             <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 17, textAlign: 'center' }}>
               {t('myExamsEmptyTitle')}
@@ -461,7 +461,7 @@ function ExamRow({
             </Text>
           </View>
         ) : action === 'toggle_result' ? (
-          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedForeground} />
+          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={colors.mutedForeground} />
         ) : null}
       </View>
 

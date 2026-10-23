@@ -149,7 +149,7 @@ export default function LessonsScreen() {
                   {t('lessonsCount', lessonCount)}
                 </Text>
               </View>
-              <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
+              <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedForeground} />
             </Pressable>
           );
         }}

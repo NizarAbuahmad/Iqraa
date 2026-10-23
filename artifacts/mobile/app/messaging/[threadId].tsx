@@ -435,7 +435,7 @@ export default function ThreadScreen() {
             style={{ flex: 1, alignItems: 'center', gap: 10, flexDirection: isRTL ? 'row-reverse' : 'row' }}
           >
             <View style={[styles.groupIcon, { backgroundColor: colors.secondary }]}>
-              <Ionicons name="people" size={18} color={colors.primary} />
+              <Ionicons name="people" size={20} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text
@@ -602,7 +602,7 @@ export default function ThreadScreen() {
         ) : null}
         <View style={[styles.inputWrap, { backgroundColor: colors.muted, borderRadius: 24 }, isRTL && { flexDirection: 'row-reverse' }]}>
           <Pressable onPress={handlePickImage} hitSlop={10} style={{ paddingBottom: 6 }} accessibilityRole="button" accessibilityLabel={t('attachImage')}>
-            <Ionicons name="image-outline" size={22} color={colors.mutedForeground} />
+            <Ionicons name="image-outline" size={24} color={colors.mutedForeground} />
           </Pressable>
           <TextInput
             style={[styles.input, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align }]}
@@ -625,7 +625,7 @@ export default function ThreadScreen() {
             ) : (
             <Ionicons
               name={isRTL ? 'arrow-back' : 'arrow-forward'}
-              size={18}
+              size={20}
               color={input.trim() || attachment ? colors.primaryForeground : colors.mutedForeground}
             />
             )}
@@ -645,7 +645,7 @@ export default function ThreadScreen() {
                   <Pressable onPress={toggleStudentPosting} disabled={togglingPosting} style={styles.menuRow}>
                     <Ionicons
                       name={thread.studentPostingEnabled ? 'checkbox' : 'square-outline'}
-                      size={18}
+                      size={20}
                       color={thread.studentPostingEnabled ? colors.primary : colors.mutedForeground}
                     />
                     <Text style={[styles.menuText, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
@@ -672,7 +672,7 @@ export default function ThreadScreen() {
                     onPress={() => { setMenuOpen(false); router.push(`/classes/${thread.classGroupId}`); }}
                     style={styles.menuRow}
                   >
-                    <Ionicons name="key-outline" size={18} color={colors.foreground} />
+                    <Ionicons name="key-outline" size={20} color={colors.foreground} />
                     <Text style={[styles.menuText, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
                       {t('messagingStudentCodes')}
                     </Text>
@@ -680,14 +680,14 @@ export default function ThreadScreen() {
                 ) : null}
                 {isOwnerOfGroup ? (
                   <Pressable onPress={() => { setMenuOpen(false); setManageOpen(true); }} style={styles.menuRow}>
-                    <Ionicons name="people-outline" size={18} color={colors.foreground} />
+                    <Ionicons name="people-outline" size={20} color={colors.foreground} />
                     <Text style={[styles.menuText, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
                       {t('messagingManageMembers')}
                     </Text>
                   </Pressable>
                 ) : thread?.type === 'custom_group' ? (
                   <Pressable onPress={() => { setMenuOpen(false); void handleLeaveGroup(); }} disabled={leaving} style={styles.menuRow}>
-                    <Ionicons name="exit-outline" size={18} color={colors.destructive} />
+                    <Ionicons name="exit-outline" size={20} color={colors.destructive} />
                     <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
                       {t('messagingLeaveGroup')}
                     </Text>
@@ -698,7 +698,7 @@ export default function ThreadScreen() {
                     included. A custom group's owner has no «leave» either. */}
                 {thread?.type === 'class_group' || isOwnerOfGroup ? (
                   <Pressable onPress={handleHide} disabled={hiding} style={styles.menuRow}>
-                    <Ionicons name="eye-off-outline" size={18} color={colors.destructive} />
+                    <Ionicons name="eye-off-outline" size={20} color={colors.destructive} />
                     <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
                       {t('messagingHideGroup')}
                     </Text>
@@ -708,13 +708,13 @@ export default function ThreadScreen() {
             ) : (
               <>
                 <Pressable onPress={toggleBlock} disabled={blocking} style={styles.menuRow}>
-                  <Ionicons name={thread?.isBlocked ? 'checkmark-circle-outline' : 'ban-outline'} size={18} color={colors.destructive} />
+                  <Ionicons name={thread?.isBlocked ? 'checkmark-circle-outline' : 'ban-outline'} size={20} color={colors.destructive} />
                   <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
                     {thread?.isBlocked ? t('messagingUnblock') : t('messagingBlock')}
                   </Text>
                 </Pressable>
                 <Pressable onPress={handleHide} disabled={hiding} style={styles.menuRow}>
-                  <Ionicons name="trash-outline" size={18} color={colors.destructive} />
+                  <Ionicons name="trash-outline" size={20} color={colors.destructive} />
                   <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
                     {t('messagingDeleteConversation')}
                   </Text>
@@ -734,7 +734,7 @@ export default function ThreadScreen() {
                 {t('messagingManageMembers')}
               </Text>
               <Pressable onPress={() => setManageOpen(false)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('close')}>
-                <Ionicons name="close" size={22} color={colors.mutedForeground} />
+                <Ionicons name="close" size={24} color={colors.mutedForeground} />
               </Pressable>
             </View>
             <FlatList
@@ -766,7 +766,7 @@ export default function ThreadScreen() {
               onPress={() => setAddMembersOpen(true)}
               style={[styles.addMembersRow, { borderColor: colors.primary, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
-              <Ionicons name="person-add-outline" size={18} color={colors.primary} />
+              <Ionicons name="person-add-outline" size={20} color={colors.primary} />
               <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium' }}>{t('messagingPickMembers')}</Text>
             </Pressable>
           </Pressable>
@@ -787,7 +787,7 @@ export default function ThreadScreen() {
                 </Text>
               </View>
               <Pressable onPress={() => setMembersOpen(false)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('cancel')}>
-                <Ionicons name="close" size={22} color={colors.mutedForeground} />
+                <Ionicons name="close" size={24} color={colors.mutedForeground} />
               </Pressable>
             </View>
             <FlatList
@@ -867,7 +867,7 @@ export default function ThreadScreen() {
                   }}
                   style={styles.menuRow}
                 >
-                  <Ionicons name="flag-outline" size={18} color={colors.destructive} />
+                  <Ionicons name="flag-outline" size={20} color={colors.destructive} />
                   <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
                     {t('messageReportAction')}
                   </Text>

@@ -112,7 +112,7 @@ export function CurrentLessonCard({
       accessibilityRole="alert"
       accessibilityLiveRegion="polite"
     >
-      <Ionicons name="alert-circle-outline" size={14} color={ERROR_ACCENT} />
+      <Ionicons name="alert-circle" size={14} color={ERROR_ACCENT} />
       <Text style={[styles.errorText, { color: ERROR_ACCENT, textAlign: align, flex: 1 }]}>
         {startClassError}
       </Text>
@@ -152,7 +152,7 @@ export function CurrentLessonCard({
         {startClassBusy ? (
           <ActivityIndicator size="small" color={colors.primaryForeground || '#fff'} />
         ) : (
-          <Ionicons name="tv-outline" size={13} color={colors.primaryForeground || '#fff'} />
+          <Ionicons name="tv-outline" size={14} color={colors.primaryForeground || '#fff'} />
         )}
         <Text
           numberOfLines={1}
@@ -172,7 +172,7 @@ export function CurrentLessonCard({
         accessibilityRole="button"
         accessibilityLabel={changeLabel}
       >
-        <Ionicons name="swap-horizontal" size={13} color={colors.primaryForeground || '#fff'} />
+        <Ionicons name="swap-horizontal" size={14} color={colors.primaryForeground || '#fff'} />
       </Pressable>
     );
 

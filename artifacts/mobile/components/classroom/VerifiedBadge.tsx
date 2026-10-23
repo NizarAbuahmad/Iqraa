@@ -29,7 +29,7 @@ export function VerifiedBadge({ verifiedBy, computedAnswer, isRTL, t, inline }: 
   return (
     <View style={inline ? styles.wrapInline : styles.wrap}>
       <View style={[styles.badge, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <Ionicons name={symbolic ? 'shield-checkmark' : 'library-outline'} size={inline ? 15 : 16} color={color} />
+        <Ionicons name={symbolic ? 'shield-checkmark' : 'library-outline'} size={16} color={color} />
         <Text style={[styles.text, { fontFamily: 'ReadexPro_600SemiBold', color }]}>
           {symbolic ? t('verifiedBySymbolic') : t('verifiedByBank')}
         </Text>

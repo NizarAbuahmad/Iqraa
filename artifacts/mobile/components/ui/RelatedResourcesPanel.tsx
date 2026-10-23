@@ -1,6 +1,8 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { ICON } from '@/constants/icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -46,16 +48,19 @@ export function RelatedResourcesPanel({ toolId = 'lesson-plan', topic, isRTL }: 
         { backgroundColor: colors.card, borderColor: colors.border },
       ]}
     >
-      <Text
-        style={[
-          styles.done,
-          { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: rtl ? 'right' : 'left' },
-        ]}
-      >
-        {toolId === 'lesson-plan'
-          ? (lang === 'ar' ? '✅ خطة الدرس جاهزة.' : '✅ Lesson plan created.')
-          : t('relatedResourcesDone')}
-      </Text>
+      <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
+        <Ionicons name="checkmark-circle" size={ICON.lg} color={colors.success} />
+        <Text
+          style={[
+            styles.done,
+            { flex: 1, color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: rtl ? 'right' : 'left' },
+          ]}
+        >
+          {toolId === 'lesson-plan'
+            ? (lang === 'ar' ? 'خطة الدرس جاهزة.' : 'Lesson plan created.')
+            : t('relatedResourcesDone')}
+        </Text>
+      </View>
       <Text
         style={[
           styles.hint,

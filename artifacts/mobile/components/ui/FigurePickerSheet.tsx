@@ -68,7 +68,7 @@ export function FigurePickerSheet({ visible, figures, current, onPick, onClose, 
               onPress={() => onPick(null)}
               style={[styles.row, { borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
-              <Ionicons name="close-circle-outline" size={18} color={colors.mutedForeground} />
+              <Ionicons name="close-circle-outline" size={20} color={colors.mutedForeground} />
               <Text style={[styles.rowText, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium' }]}>{labels.none}</Text>
             </Pressable>
           ) : null}

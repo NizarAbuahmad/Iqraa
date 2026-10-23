@@ -1645,3 +1645,59 @@ describe('Today, lesson games, files and the mastery gate (sixteenth live pass)'
     });
   }
 });
+
+describe('accounts, messages, evaluation setup and the corners (seventeenth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['كيف أبدل بين حسابين في التطبيق؟', 'howSwitchAccount'],
+    ['how do i switch accounts', 'howSwitchAccount'],
+    ['كيف أسجل الخروج من كل الأجهزة؟', 'howLogoutAll'],
+    ['كيف أعيد مشاهدة المقدمة التعريفية للتطبيق؟', 'howIntroReplay'],
+    ['كيف أقرأ كل الإشعارات دفعة واحدة؟', 'howMarkAllRead'],
+    ['how do i mark all notifications as read', 'howMarkAllRead'],
+    ['كيف أكتم محادثة معينة؟', 'howMuteChat'],
+    ['هل تظهر لي إشعارات القراءة في الرسائل؟', 'howReadReceipts'],
+    ['كيف أبحث عن رسالة قديمة؟', 'howSearchMessages'],
+    ['كيف أرسل ملفاً في الرسائل؟', 'howSendFileMessage'],
+    ['كيف أحدد عدد أسئلة التقييم؟', 'howEvalSetup'],
+    ['what question types can an evaluation have', 'howEvalSetup'],
+    ['كيف أختار أهداف الدرس للتقييم؟', 'howEvalSetup'],
+    ['كيف أضبط علامة النجاح للتقييم؟', 'howEvalPassMark'],
+    ['كيف أغير علامة سؤال في التقييم؟', 'howEditExamQuestions'],
+    ['كيف أعيد توليد أسئلة التقييم؟', 'howEditExamQuestions'],
+    ['how do i regenerate the exam questions', 'howEditExamQuestions'],
+    ['كيف أضيف رسماً أو شكلاً إلى سؤال؟', 'howEvalFigures'],
+    ['كيف أصدر الشرائح بصيغة بوربوينت؟', 'howSaveSlides'],
+    ['how do i export the slides as powerpoint', 'howSaveSlides'],
+    ['ما هو المختبر الافتراضي؟', 'howLabAbout'],
+    ['what is in the quran corner', 'howQuranAbout'],
+    ['كيف أستخدم الآلة الحاسبة في زاوية الرياضيات؟', 'howMathTools'],
+    ['كيف أضيف طلاباً دفعة واحدة من قائمة؟', 'howAddStudent'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  const stayWithModel = [
+    'كيف أبدل بين حسابين في معادلة',
+    'how do i switch between two methods of solving equations',
+    'كيف أكتم صوت الطلاب في الحصة',
+    'how do i search for old exam papers online',
+    'كيف أحدد عدد الأسئلة المناسب لاختبار قصير',
+    'what question types are best for a chemistry test',
+    'كيف أستخدم الآلة الحاسبة في حساب المساحة',
+    'what is a virtual lab experiment',
+    'كيف أرسل ملاحظة لأهل الطالب',
+    'how do i set the passing grade for my class policy',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howSwitchAccount', 'howLogoutAll', 'howIntroReplay', 'howMarkAllRead', 'howMuteChat', 'howReadReceipts', 'howSearchMessages', 'howSendFileMessage', 'howEvalSetup', 'howEvalPassMark', 'howEvalFigures', 'howLabAbout', 'howQuranAbout', 'howMathTools']);
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});

@@ -23,6 +23,8 @@ import { nccdG3EnglishSem1, g3EnglishSem1LessonKbId } from './catalogs/g3English
 import { nccdG3EnglishSem2, g3EnglishSem2LessonKbId } from './catalogs/g3EnglishSem2.ts';
 import { nccdG4EnglishSem1, g4EnglishSem1LessonKbId } from './catalogs/g4EnglishSem1.ts';
 import { nccdG4EnglishSem2, g4EnglishSem2LessonKbId } from './catalogs/g4EnglishSem2.ts';
+import { nccdG5EnglishSem1, g5EnglishSem1LessonKbId } from './catalogs/g5EnglishSem1.ts';
+import { nccdG5EnglishSem2, g5EnglishSem2LessonKbId } from './catalogs/g5EnglishSem2.ts';
 import { buildG9EngSem1BrowserCatalog } from './catalogs/g9EngSem1.ts';
 import { buildG9EngSem2BrowserCatalog } from './catalogs/g9EngSem2.ts';
 import { buildEngSem1BrowserCatalog } from './catalogs/g10EnglishSem1.ts';
@@ -60,6 +62,8 @@ const BOOKS: [number, 1 | 2, NccdCurriculumFile, (id: string) => string][] = [
   [3, 2, nccdG3EnglishSem2, g3EnglishSem2LessonKbId],
   [4, 1, nccdG4EnglishSem1, g4EnglishSem1LessonKbId],
   [4, 2, nccdG4EnglishSem2, g4EnglishSem2LessonKbId],
+  [5, 1, nccdG5EnglishSem1, g5EnglishSem1LessonKbId],
+  [5, 2, nccdG5EnglishSem2, g5EnglishSem2LessonKbId],
 ];
 
 /** A topic label, not a word: digits, ranges, slashes, "ordinal numbers: …". */
@@ -166,8 +170,12 @@ function build(): HubLesson[] {
 
 export const ENGLISH_HUB_LESSONS: HubLesson[] = [...build(), ...buildFromVocabulary()];
 
-/** Tab order. Append only — the picked grade is carried as a value in the URL, but keep the habit. */
-export const ENGLISH_HUB_GRADES = [1, 2, 3, 4, 9, 10] as const;
+/**
+ * Tab order: grade order. The picked grade travels as its number in the URL, never as a
+ * position, so a grade can be slotted in (5 went between 4 and 9). Grades 6–8 are not
+ * here yet: their books carry no vocabulary to drill.
+ */
+export const ENGLISH_HUB_GRADES = [1, 2, 3, 4, 5, 9, 10] as const;
 
 export function hubLessonsForGrade(grade: number): HubLesson[] {
   return ENGLISH_HUB_LESSONS.filter(l => l.grade === grade);

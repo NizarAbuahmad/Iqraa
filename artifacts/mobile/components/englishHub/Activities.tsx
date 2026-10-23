@@ -50,7 +50,7 @@ export function HearButton({ word, big }: { word: string; big?: boolean }) {
       accessibilityLabel={t('hubHear')}
       style={[styles.hear, { backgroundColor: colors.primary, width: big ? 88 : 48, height: big ? 88 : 48 }]}
     >
-      <Ionicons name="volume-high" size={big ? 40 : 22} color={colors.primaryForeground} />
+      <Ionicons name="volume-high" size={big ? 40 : 24} color={colors.primaryForeground} />
     </Pressable>
   );
 }
@@ -567,11 +567,11 @@ export function Speaking({ words }: { words: HubWord[] }) {
             { backgroundColor: rec.phase === 'recording' ? WRONG : colors.card, borderColor: rec.phase === 'recording' ? WRONG : colors.border },
           ]}
         >
-          <Ionicons name={rec.phase === 'recording' ? 'stop' : 'mic'} size={30} color={rec.phase === 'recording' ? '#fff' : colors.primary} />
+          <Ionicons name={rec.phase === 'recording' ? 'stop' : 'mic'} size={32} color={rec.phase === 'recording' ? '#fff' : colors.primary} />
         </Pressable>
         {rec.uri ? (
           <Pressable onPress={() => void playLocalUri(rec.uri!)} style={[styles.navBtn, { borderColor: colors.border }]}>
-            <Ionicons name="play" size={18} color={colors.foreground} />
+            <Ionicons name="play" size={20} color={colors.foreground} />
           </Pressable>
         ) : null}
       </View>

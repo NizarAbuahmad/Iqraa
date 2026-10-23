@@ -53,8 +53,8 @@ export function ConfirmHost() {
         >
           <View style={[styles.icon, { backgroundColor: `${tone}1F` }]}>
             <Ionicons
-              name={opts.destructive ? 'warning-outline' : 'help-circle-outline'}
-              size={26}
+              name={opts.destructive ? 'warning' : 'help-circle'}
+              size={24}
               color={tone}
             />
           </View>

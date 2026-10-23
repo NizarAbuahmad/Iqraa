@@ -63,7 +63,7 @@ export default function PlayHubScreen() {
               style={[styles.card, surface]}
             >
               <View style={[styles.iconWrap, { backgroundColor: `${g.color}1a` }]}>
-                <Ionicons name={g.icon} size={26} color={g.color} />
+                <Ionicons name={g.icon} size={24} color={g.color} />
               </View>
               <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16, textAlign: 'center' }}>
                 {t(g.titleKey)}
@@ -72,7 +72,7 @@ export default function PlayHubScreen() {
                 {t(g.descKey)}
               </Text>
               <View style={[styles.gradeChip, { backgroundColor: `${g.color}14` }]}>
-                <Ionicons name="school-outline" size={13} color={readableOn(g.color, colors.card)} />
+                <Ionicons name="school-outline" size={14} color={readableOn(g.color, colors.card)} />
                 <Text style={{ color: readableOn(g.color, colors.card), fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
                   {gradeBandLabel(PLAY_GAME_GRADES[g.id], lang)}
                 </Text>
