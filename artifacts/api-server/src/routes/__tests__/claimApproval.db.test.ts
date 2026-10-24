@@ -127,6 +127,16 @@ describeDb("class-code claims wait for the teacher, over HTTP, against a real da
       assert.deepEqual(await requests(fresh), []);
     });
 
+    it("a student already linked to a name who enters the class code again queues nothing", async () => {
+      const row = await newRow("دانا");
+      const id = await newStudentUser("relink");
+      await q(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [row, id]);
+      const res = await call(on, "POST", "/auth/claim", id, { claimCode: CLASS_CODE, studentId: row });
+      assert.equal(res.status, 201, on.logs().slice(-1500));
+      assert.deepEqual(await requests(row), []);
+      assert.equal((await selfLinks(row)).length, 1);
+    });
+
     it("a parent picking a name off the class list links at once", async () => {
       const row = await newRow("سلمى");
       const res = await call(on, "POST", "/auth/claim", w.users.parentB, { claimCode: CLASS_CODE, studentId: row });

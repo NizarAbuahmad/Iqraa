@@ -427,6 +427,20 @@ async function linkRosterRowInTx(
   // Nothing here touches roster_links, so the account stays without access until the
   // teacher approves (routes/roster.ts).
   if (claimNeedsApproval(resolved)) {
+    // Already this child's account (a per-student code, or an approved request):
+    // entering the class code again must not queue a request for a link it holds.
+    const [mine] = await tx
+      .select({ id: rosterLinks.id })
+      .from(rosterLinks)
+      .where(
+        and(
+          eq(rosterLinks.studentId, resolved.studentId),
+          eq(rosterLinks.relation, "self"),
+          eq(rosterLinks.userId, userId),
+        ),
+      )
+      .limit(1);
+    if (mine) return "linked";
     // Counted under the same row lock as the checks above, and BEFORE this account's
     // earlier request is replaced, so a refused pick costs it nothing.
     const [{ n } = { n: 0 }] = await tx
