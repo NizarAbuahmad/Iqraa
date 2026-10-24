@@ -115,6 +115,19 @@ describeDb("class-code claims wait for the teacher, over HTTP, against a real da
       assert.equal(res.status, 200);
       assert.deepEqual(await requests(w.students.aA), []);
     });
+
+    it("withdrawing with ?pendingOnly=1 never removes a link the teacher approved meanwhile", async () => {
+      const linkedRow = await newRow("جود");
+      const waitingRow = await newRow("لمى");
+      const id = await newStudentUser("approvedMeanwhile");
+      await q(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [linkedRow, id]);
+      await q(`INSERT INTO roster_link_requests (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [waitingRow, id]);
+      const res = await call(on, "DELETE", "/auth/claim?pendingOnly=1", id);
+      assert.equal(res.status, 200);
+      assert.equal(res.json.hasRosterLink, true);
+      assert.deepEqual(await requests(waitingRow), []);
+      assert.equal((await selfLinks(linkedRow)).length, 1, "the approved link survives");
+    });
   });
 
   describe("the claims that are NOT held", () => {

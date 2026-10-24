@@ -1177,6 +1177,13 @@ router.delete("/claim", authMiddleware, async (req: AuthenticatedRequest, res) =
   try {
     // A pick that is still waiting is withdrawn with the rest — "choose a different name".
     await db.delete(rosterLinkRequests).where(eq(rosterLinkRequests.userId, req.user!.id));
+    // `?pendingOnly=1`: withdraw the waiting pick and nothing else. The waiting card
+    // uses it, because the teacher may have approved since the card last looked and an
+    // unconditional unlink would delete that fresh link.
+    if (req.query["pendingOnly"] === "1") {
+      res.json({ hasRosterLink: await hasAnyRosterLink(req.user!.id) });
+      return;
+    }
     const removed = await db
       .delete(rosterLinks)
       .where(eq(rosterLinks.userId, req.user!.id))
