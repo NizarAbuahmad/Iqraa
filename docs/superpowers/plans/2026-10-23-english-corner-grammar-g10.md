@@ -374,7 +374,7 @@ describe('the Grade 10 teacher form', () => {
 });
 ```
 
-(The chip counts below follow the pinned sizes in `SIZES` as Task 2 finally set them (206 meaning + 234 form = 440; Task 2 switched u5_l1 `arrangements-timetables` to form because every future form fits a fixed time); read the real totals from the test file and use those if they differ. The class attribute on the kind chip is `class="kind kind-${s.kind}"` in `renderAuthoredUnit`; if the generated HTML spells it differently, match the real markup. The 218/222 counts come from the pinned sizes: 218 meaning + 222 form = 440.)
+(The chip counts in the test above follow the pinned sizes in `SIZES` as Task 2 finally set them (206 meaning + 234 form = 440; Task 2 switched u5_l1 `arrangements-timetables` to form because every future form fits a fixed time); read the real totals from the test file and use those if they differ. The class attribute on the kind chip is `class="kind kind-${s.kind}"` in `renderAuthoredUnit`; if the generated HTML spells it differently, match the real markup. The 206/234 counts come from the pinned sizes: 206 meaning + 234 form = 440.)
 
 - [ ] **Step 2: Run to verify it fails** (`GRADE_COPY[10]` is undefined, so `renderGrammarReviewHtml(10)` throws).
 
