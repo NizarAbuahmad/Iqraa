@@ -50,9 +50,19 @@ A teacher's review of the English corner (Grades 2–5), with three phone record
   re-encoded them: 201 reprocessed, 0 rejected, 5.61 MB → 1.11 MB, the originals backed up under `english-audio-original/`, and
   `_manifest.json` has 201 entries at process version 1. Checked live: `garage` 1.03 s (0.83 s of speech), `loudly` 0.82 s,
   `firefighter` 1.12 s, mean level −25 to −26 dB on seven clips, and faster-whisper `small.en` agreed with the word on 20 of 20
-  sampled live clips. **The other 1,050 older clips are still unprocessed** — before this run the manifest listed none
-  of the 1,248 at process version 1 — so `--reprocess` without `--only` is still the step that trims and levels them
-  (#1262's measurements on them were local only).
+  sampled live clips. **The older clips were reprocessed the same day** (before that the manifest listed none of the 1,248 at
+  process version 1; #1262's measurements on them were local only): `english-audio --reprocess` with no `--only` — 1,046
+  reprocessed, 201 skipped (already done), 29.50 MB → 5.90 MB, every replaced original backed up under
+  `english-audio-original/`, and `_manifest.json` now has 1,247 entries, all at version 1.
+  **One clip was rejected and left as stored: `tie` is still blank** (0.36 s at −91 dB, the recording the #1262 audit found), so
+  «tie» plays silence in the app. Re-voice it with `--only tie` and check it.
+  Sample of 28 live clips (20 random older ones plus `tie` and the October re-voices `chair`, `cheap`, `hippo`, `pea`, `chef`,
+  and `eraser`, `mum`): all trimmed (0.6–1.2 s) and at −25 to −26 dB mean. faster-whisper `small.en` flagged 5: `tie` (blank),
+  and `bedroom` («Dead Room»), `pea` («P»), `socks` («Sucks») — which read the same way on the untouched originals, so they
+  are the checker's limits, not processing. **`cheap` reads «Sheep» after processing and «cheap» before.** Its onset is intact
+  (the first frames rise −27, −17, −13 dB below the peak before and −26, −16, −13 after; speech 0.61 s → 0.59 s), so processing
+  did not clip the «ch»; the louder level is what tips the checker. It is the word the model once said as «sheep» (the
+  2026-10-04 audit), so **someone should listen to `cheap`.**
 
 ## Chat app-help, twenty-fourth live pass: 8 more wordings and a terms-of-service answer — 2026-10-24
 
