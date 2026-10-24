@@ -198,14 +198,13 @@ describeDb("parent approval for email students", () => {
       assert.equal((await lookup(on, token)).status, 200);
       assert.equal((await decide(on, token, { decision: "declined" })).status, 200);
       // The server's log reaches us through a pipe, at its own pace. Lines are written in request order, so once the
-      // marker request's line (config, counted before and after) is here the earlier ones are too.
-      const configLines = () => on.logs().split("/guardian-consent/config").length - 1;
-      const seen = configLines();
-      assert.equal((await call(on, "GET", "/guardian-consent/config")).status, 200);
+      // line of a request with a path nobody else uses is here, the earlier ones are too.
+      const marker = `/log-marker-${crypto.randomBytes(6).toString("hex")}`;
+      assert.equal((await call(on, "GET", marker)).status, 404);
       const deadline = Date.now() + 10_000;
-      while (configLines() <= seen && Date.now() < deadline) await new Promise(r => setTimeout(r, 100));
+      while (!on.logs().includes(marker) && Date.now() < deadline) await new Promise(r => setTimeout(r, 100));
       const logs = on.logs();
-      assert.ok(configLines() > seen, "the marker request never appeared in the server log, so the check proves nothing");
+      assert.ok(logs.includes(marker), "the marker request never appeared in the server log, so the check proves nothing");
       assert.ok(logs.includes("/guardian-consent/lookup") && logs.includes("/guardian-consent/decide"), "the requests themselves are logged");
       assert.ok(!logs.includes(token), "the bearer token reached the server log");
       assert.ok(!/guardian-consent\/[A-Za-z0-9_-]{43}/i.test(logs), "a token-shaped path segment reached the server log");
@@ -368,6 +367,25 @@ describeDb("parent approval for email students", () => {
       assert.equal(me.json.guardianStatus, "waiting");
       assert.equal(me.json.guardianParentEmailMasked, "mu***@example.test");
       assert.equal((await lookup(on, token)).json.status, "open");
+    });
+
+    it("the token leaves the server only in the mail: the request's answer and /me never contain it", async () => {
+      const kid = await mkUser("student");
+      const res = await ask(kid, "mail.only@example.test");
+      assert.equal(res.status, 200, res.text);
+      const token = links().at(-1)!;
+      assert.equal(token.length, 43);
+      const me = await call(on, "GET", "/auth/me", kid);
+      const again = await call(on, "GET", "/auth/me", kid);
+      for (const body of [res.text, me.text, again.text]) {
+        assert.ok(!body.includes(token), "the plaintext token is in a response body");
+        assert.ok(!body.includes(sha(token)), "the stored hash is in a response body");
+      }
+      // Only its hash is stored, and the lookup answers with the child's name and a status, nothing that identifies it.
+      const [row] = await q<{ token_hash: string }>(`SELECT token_hash FROM guardian_consents WHERE user_id = $1`, [kid]);
+      assert.equal(row.token_hash, sha(token));
+      const looked = await lookup(on, token);
+      assert.ok(!looked.text.includes(token) && !looked.text.includes(sha(token)));
     });
 
     it("asking again supersedes the old link: only the newest one works", async () => {
@@ -587,6 +605,8 @@ describeDb("parent approval for email students", () => {
       assert.equal(links().length, before + 1, "the parent is mailed once, after verification");
       const [after] = await q<{ token_hash: string | null }>(`SELECT token_hash FROM guardian_consents WHERE id = $1`, [row.id]);
       assert.equal(after.token_hash, sha(links().at(-1)!));
+      // The verifying student's own response does not carry the parent's token either.
+      assert.ok(!verified.text.includes(links().at(-1)!), "the parent's token is in the student's verify-email response");
 
       const token = verified.json.accessToken as string;
       const held = await fetch(`${on.base}/student/exams`, { headers: { Authorization: `Bearer ${token}` } });
@@ -705,6 +725,91 @@ describeDb("parent approval for email students", () => {
       assert.equal((await call(off, "POST", "/auth/role", t2, { role: "student", ageConfirmed: true })).status, 200);
       const [ticked] = await q<{ guardian_confirmed_at: Date | null }>(`SELECT guardian_confirmed_at FROM users WHERE id = $1`, [t2]);
       assert.ok(ticked.guardian_confirmed_at, "the flag-off switch still records the tick");
+    });
+  });
+
+  describe("the teacher's vouching: claims and links", () => {
+    const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // the share-code alphabet: no I, L, O, 0, 1
+    const code6 = () => Array.from({ length: 6 }, () => ALPHABET[crypto.randomInt(ALPHABET.length)]).join("");
+    const exams = (id: string) => call(on, "GET", "/student/exams", id);
+    const heldStill = (r: { status: number; json: any }) => {
+      assert.equal(r.status, 403);
+      assert.equal(r.json.code, "guardian_approval_required");
+    };
+
+    /** A teacher with a class (class code set) holding one roster row, optionally with a per-student code. */
+    async function classWithRow(o: { studentCode?: string } = {}) {
+      const teacher = await mkUser("teacher");
+      // Writing to a roster needs the teacher's own consent attestation (lib/rosterConsent.ts).
+      await q(`UPDATE users SET roster_consent_at = now(), roster_consent_version = '2026-09-05.v1' WHERE id = $1`, [teacher]);
+      const classCode = code6();
+      const [cls] = await q<{ id: string }>(
+        `INSERT INTO class_groups (teacher_id, name, subject_id, subject_ids, join_code, join_code_expires_at)
+         VALUES ($1, 'c', 'mathematics', '["mathematics"]'::jsonb, $2, now() + interval '30 days') RETURNING id`,
+        [teacher, classCode],
+      );
+      const [row] = await q<{ id: string }>(
+        `INSERT INTO students (teacher_id, display_name, claim_code, claim_code_expires_at)
+         VALUES ($1, 'Roster Kid', $2, CASE WHEN $2::text IS NOT NULL THEN now() + interval '30 days' END) RETURNING id`,
+        [teacher, o.studentCode ?? null],
+      );
+      await q(`INSERT INTO class_memberships (class_group_id, student_id) VALUES ($1, $2)`, [cls.id, row.id]);
+      return { teacher, classCode, rowId: row.id };
+    }
+
+    it("a class-code claim stays held until the teacher approves it, then unlocks", async () => {
+      const { teacher, classCode, rowId } = await classWithRow();
+      const kid = await mkUser("student");
+      heldStill(await exams(kid));
+
+      const claim = await call(on, "POST", "/auth/claim", kid, { claimCode: classCode, studentId: rowId });
+      assert.equal(claim.status, 202, claim.text);
+      assert.equal(claim.json.pending, true);
+      // Waiting for the teacher is not the teacher having vouched.
+      heldStill(await exams(kid));
+      assert.equal((await call(on, "GET", "/auth/me", kid)).json.guardianStatus, "needed");
+      assert.equal((await call(on, "GET", "/auth/claim", kid)).status, 200, "the claim screen stays reachable while held");
+
+      const [req] = await q<{ id: string }>(`SELECT id FROM roster_link_requests WHERE student_id = $1 AND user_id = $2`, [rowId, kid]);
+      const approved = await call(on, "POST", `/students/${rowId}/link-requests/${req.id}/approve`, teacher);
+      assert.equal(approved.status, 200, approved.text);
+      assert.equal((await exams(kid)).status, 200, "unlocked once the teacher has approved");
+      assert.equal((await call(on, "GET", "/auth/me", kid)).json.guardianStatus, "not_required");
+    });
+
+    it("a request waiting for the teacher, with no link, does not unlock on its own", async () => {
+      const { rowId } = await classWithRow();
+      const kid = await mkUser("student");
+      await q(`INSERT INTO roster_link_requests (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [rowId, kid]);
+      heldStill(await exams(kid));
+      assert.equal((await call(on, "GET", "/auth/me", kid)).json.guardianStatus, "needed");
+    });
+
+    it("the per-student code the teacher wrote links at once and unlocks", async () => {
+      const studentCode = code6();
+      const { rowId } = await classWithRow({ studentCode });
+      const kid = await mkUser("student");
+      heldStill(await exams(kid));
+      const claim = await call(on, "POST", "/auth/claim", kid, { claimCode: studentCode });
+      assert.equal(claim.status, 201, claim.text);
+      assert.equal(claim.json.studentId, rowId);
+      assert.equal((await exams(kid)).status, 200);
+    });
+
+    it("a link to an archived roster row does not count: the student is held, and held again if the row is archived later", async () => {
+      const { rowId } = await classWithRow();
+      const kid = await mkUser("student");
+      await q(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [rowId, kid]);
+      assert.equal((await exams(kid)).status, 200, "a live link unlocks");
+      await q(`UPDATE students SET archived_at = now() WHERE id = $1`, [rowId]);
+      heldStill(await exams(kid));
+      assert.equal((await call(on, "GET", "/auth/me", kid)).json.guardianStatus, "needed");
+
+      const { rowId: archivedFromStart } = await classWithRow();
+      await q(`UPDATE students SET archived_at = now() WHERE id = $1`, [archivedFromStart]);
+      const other = await mkUser("student");
+      await q(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [archivedFromStart, other]);
+      heldStill(await exams(other));
     });
   });
 
