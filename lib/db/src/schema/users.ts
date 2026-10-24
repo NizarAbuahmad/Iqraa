@@ -89,6 +89,14 @@ export const users = pgTable("users", {
   termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
   termsVersion: text("terms_version").notNull().default(""),
   /**
+   * When a student who signed up with an email (no teacher's code) confirmed
+   * they are an adult or have a guardian's agreement — see
+   * `api-server/src/lib/ageConfirmation.ts`. Null for everyone else: a teacher
+   * is not asked, and a parent or code-only student arrives through a teacher's
+   * code, which already vouches for them.
+   */
+  guardianConfirmedAt: timestamp("guardian_confirmed_at", { withTimezone: true }),
+  /**
    * Grade and subject catalog ids (`@workspace/curriculum`'s GRADES/SUBJECTS)
    * this teacher picked at signup. Empty on every non-teacher account, and on
    * a teacher who hasn't completed setup yet — that emptiness is the signal

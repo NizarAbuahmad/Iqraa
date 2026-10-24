@@ -23,6 +23,8 @@ import { askForPushPermission, getPushPermissionState, pushAskCopy, type PushPer
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { BackButton } from '@/components/ui/BackButton';
 import { IconTile } from '@/components/ui/IconTile';
+import { CheckRow } from '@/components/ui/CheckRow';
+import { switchNeedsAgeConfirmation } from '@/services/signupMethod';
 import type { GlyphId } from '@/constants/glyphs';
 import { SPACE, TYPE } from '@/constants/theme';
 import { PUSH_PREF_ROWS, showsFamilyPushPrefs, withPref, type PushPrefCategory, type PushPrefs } from '@/services/pushPrefs';
@@ -48,9 +50,17 @@ export default function SettingsScreen() {
   // A teacher account made by mistake (the old pre-selected signup pill, or
   // Google on the login screen) can still become a parent/student while it
   // owns no class or student — the server decides (lib/roleSwitch.ts).
-  const canChangeType = studentAccounts && user?.role === 'teacher';
+  // A student with no class can too (since 2026-10-23): the claim screen used
+  // to be their way out, and an email student is no longer sent there.
+  const canChangeType = studentAccounts && (
+    user?.role === 'teacher' || (user?.role === 'student' && user.hasRosterLink === false)
+  );
   const [typeOpen, setTypeOpen] = useState(false);
-  const [nextRole, setNextRole] = useState<'parent' | 'student' | null>(null);
+  const [nextRole, setNextRole] = useState<'teacher' | 'parent' | 'student' | null>(null);
+  // Becoming a student asks what signing up as one asks: an adult, or a
+  // guardian's agreement. The server refuses the switch without it.
+  const [ageOk, setAgeOk] = useState(false);
+  const askAge = nextRole !== null && switchNeedsAgeConfirmation(user?.role, nextRole);
   const [switching, setSwitching] = useState(false);
   const [typeError, setTypeError] = useState('');
   const [sendingTest, setSendingTest] = useState(false);
@@ -201,14 +211,20 @@ export default function SettingsScreen() {
 
   const handleSwitchRole = async () => {
     if (!nextRole || switching) return;
+    if (askAge && !ageOk) { setTypeError(t('errAgeConfirmRequired')); return; }
     setSwitching(true);
     setTypeError('');
     try {
-      // On success the routing gate moves the account to /claim-required.
-      await switchRole(nextRole);
+      // On success the routing gate moves the account on: a parent to
+      // /claim-required, a teacher to /setup-subjects, a student into the app.
+      await switchRole(nextRole, { ageConfirmed: askAge && ageOk });
     } catch (e) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setTypeError(t(e instanceof ApiError && e.code === 'role_locked_teaching' ? 'accountTypeLockedTeaching' : 'claimRequiredSwitchFailed'));
+      setTypeError(t(
+        e instanceof ApiError && e.code === 'role_locked_teaching' ? 'accountTypeLockedTeaching'
+          : e instanceof ApiError && e.code === 'age_confirmation_required' ? 'errAgeConfirmRequired'
+          : 'claimRequiredSwitchFailed',
+      ));
       setSwitching(false);
     }
   };
@@ -502,18 +518,25 @@ export default function SettingsScreen() {
                 label={t('accountType')}
                 isRTL={isRTL}
                 colors={colors}
-                right={<Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{t('roleTeacher')}</Text>}
-                onPress={() => { setTypeOpen(o => !o); setNextRole(null); setTypeError(''); }}
+                right={<Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{t(user?.role === 'student' ? 'roleStudent' : 'roleTeacher')}</Text>}
+                onPress={() => { setTypeOpen(o => !o); setNextRole(null); setAgeOk(false); setTypeError(''); }}
               />
               {typeOpen && (
                 <View style={{ paddingHorizontal: 16, paddingBottom: 14 }}>
                   <PillSelector
                     label={t('claimRequiredPickRole')}
                     hint={t('accountTypeSwitchNote')}
-                    options={[
-                      { value: 'parent', label: t('roleParent') },
-                      { value: 'student', label: t('roleStudent') },
-                    ]}
+                    options={
+                      user?.role === 'student'
+                        ? [
+                            { value: 'teacher', label: t('roleTeacher') },
+                            { value: 'parent', label: t('roleParent') },
+                          ]
+                        : [
+                            { value: 'parent', label: t('roleParent') },
+                            { value: 'student', label: t('roleStudent') },
+                          ]
+                    }
                     value={nextRole}
                     onChange={setNextRole}
                     colors={colors}
@@ -522,6 +545,13 @@ export default function SettingsScreen() {
                     haptics
                     containerStyle={{ marginBottom: 12 }}
                   />
+                  {askAge ? (
+                    <View style={{ marginBottom: 12 }}>
+                      <CheckRow checked={ageOk} onPress={() => setAgeOk(v => !v)} isRTL={isRTL} colors={colors}>
+                        {t('ageConfirmLabel')}
+                      </CheckRow>
+                    </View>
+                  ) : null}
                   {typeError ? (
                     <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }}>
                       {typeError}
@@ -531,7 +561,7 @@ export default function SettingsScreen() {
                     label={t('claimRequiredSwitchSubmit')}
                     onPress={handleSwitchRole}
                     loading={switching}
-                    disabled={!nextRole || switching}
+                    disabled={!nextRole || switching || (askAge && !ageOk)}
                     size="sm"
                   />
                 </View>

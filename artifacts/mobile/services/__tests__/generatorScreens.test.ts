@@ -1203,7 +1203,7 @@ test('the docked bar yields to an unsaved deck on a phone, and the rebuild stays
 });
 
 test('the slides toast is lifted above the docked bar while the bar is shown on a phone', () => {
-  assert.match(slidesCode, /<Toast [\s\S]*?bottomOffset=\{isDesktop \|\| deckUnsaved \? 0 : DOCKED_BAR_HEIGHT\} \/>/);
+  // (The lift itself is the shared helper: see the test on `toastLift` at the end of this file.)
   const toast = code(read('components', 'ui', 'Toast.tsx'));
   assert.match(toast, /bottomOffset\?: number;/);
   assert.match(toast, /bottomOffset = 0/, 'every other screen\'s toast stays where it was');
@@ -1350,4 +1350,33 @@ test('GenerationStatus takes its phase type from the one service, not a second d
   assert.match(src, /import type \{ GenerationPhase \} from '@\/services\/generationPhase';/);
   assert.match(src, /export type \{ GenerationPhase \};/);
   assert.doesNotMatch(src, /type GenerationPhase =/);
+});
+
+// ── The toast clears the docked bar ─────────────────────────────────────────
+
+test('every generator lifts its toast over the docked bar through the one helper, with the same condition it hides the bar by', () => {
+  const screens = [
+    ['quiz', quizCode, 'saveBarVisible'], ['worksheet', worksheetCode, 'saveBarVisible'], ['lesson plan', lessonPlanCode, 'saveBarVisible'],
+    ['activity', activityCode, 'saveBarVisible'], ['slides', slidesCode, 'deckUnsaved'],
+  ] as const;
+  for (const [name, src, hidden] of screens) {
+    assert.match(src, /import \{ toastLift \} from '@\/services\/dockedBar';/, name);
+    assert.match(src, /import \{ useKeyboardVisible \} from '@\/hooks\/useKeyboardVisible';/, name);
+    assert.match(src, /const keyboardOpen = useKeyboardVisible\(\);/, name);
+    assert.match(src, new RegExp(`const toastBottom = toastLift\\(\\{ isDesktop, barHidden: ${hidden}, keyboardOpen \\}\\);`), `${name}: not computed through toastLift with the bar's own hidden condition`);
+    assert.match(src, /<Toast [\s\S]*?bottomOffset=\{toastBottom\} \/>/, `${name}: the toast is not lifted`);
+    // The same condition really is what hides the bar on that screen.
+    assert.match(src, new RegExp(`hidden=\\{docked && ${hidden}\\}`), `${name}: the bar is hidden by another condition`);
+    assert.doesNotMatch(src, /bottomOffset=\{isDesktop/, `${name}: an inline expression is back`);
+  }
+});
+
+test('the bar\'s height is one constant in a pure file, re-exported by DockedAction so the screens\' imports keep working', () => {
+  assert.match(code(read('services', 'dockedBar.ts')), /export const DOCKED_BAR_HEIGHT = 108;/);
+  const dock = code(read('components', 'generator', 'DockedAction.tsx'));
+  assert.match(dock, /import \{ DOCKED_BAR_HEIGHT \} from '@\/services\/dockedBar';/);
+  assert.match(dock, /export \{ DOCKED_BAR_HEIGHT \};/);
+  assert.doesNotMatch(dock, /DOCKED_BAR_HEIGHT = /, 'a second definition of the height');
+  // The toast takes a lift and defaults to none, so every other screen\'s toast is where it was.
+  assert.match(code(read('components', 'ui', 'Toast.tsx')), /bottomOffset = 0/);
 });

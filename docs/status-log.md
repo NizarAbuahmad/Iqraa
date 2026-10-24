@@ -50,6 +50,98 @@ failure is logged by ids only, never the name.
 `docs/superpowers/specs/2026-10-23-roster-edit-and-claim-approval-design.md`. Until then a class code
 still lets anyone pick any free name; the claimed-by line and unlink are the check.
 
+## Students choose an email or a teacher's code — 2026-10-23
+
+A student could sign up only with a teacher's code (`POST /auth/redeem`, no email): the register
+screen hid the email and Google forms as soon as «طالب» was picked, and an email student made by
+the roundabout route (sign up as a teacher, switch role) was held on `/claim-required` until a
+teacher's code was entered. Not every student has an email, but some do and a code is not
+something every student has on day one.
+
+**What changed**
+- **Register screen:** a student picks «برمز المعلم» or «ببريد إلكتروني» (no default;
+  `services/signupMethod.ts`). The email form is the teacher's form (and Google) with
+  `role: 'student'`, plus a checkbox: an adult, or a guardian agrees. A parent is code-only as before.
+- **API:** `/auth/register` and `/auth/google` refuse a new student without `ageConfirmed: true`
+  (`age_confirmation_required`, `lib/ageConfirmation.ts`) and store `users.guardian_confirmed_at`
+  (migration 0016, one nullable column; renumbered from 0015 when main's `ai_generations.platform` took it).
+- **Claim gate:** `needsRosterClaim` no longer holds a student (a parent still is); `needsGradeSetup`
+  no longer waits behind it for a student. An email student uses the library, corners, games and
+  lesson explanations with no class; `/student/*` routes answer 200 with an empty list. The school tab
+  and `/my-exams` say "join a class" with a button to `/join-class`, which now calls
+  `markRosterClaimed(true)`. Settings offers the account-type switch to a student with no class
+  (the claim screen was their only exit).
+- **Lockout:** `canReissueLoginCode` (`lib/loginCodeReissue.ts`). A code-only student who added an
+  email (`/auth/add-email`) had a password hash, so the teacher's reissue answered
+  `not_a_code_account`, while password sign-in needs a *verified* email: a mistyped address plus a
+  lost code was a lockout. Reissue now works until the email is verified.
+- **Wording:** privacy §5, terms §1 and the header comment in `constants/legal.ts`, `LEGAL_VERSION`
+  2026-10-23 (everyone is asked to accept again). The teacher-shared claim message said the code is
+  asked "after verifying your email", false since 2026-10-10; it now says no email is needed.
+  The in-app help `howStudentSignIn` mentions the email option. `/join-class` told a student with no
+  class to "join another class… another child" (`joinClassCopyKeys`, `services/joinClassCopy.ts`): it
+  now says «الانضمام إلى شعبة» with a first-class sentence for a student with `hasRosterLink === false`,
+  and keeps the old wording for everyone else. The `lib/features.ts` comment on `STUDENT_ACCOUNTS`
+  names both student paths.
+- **One `CheckRow` on the register screen.** #1229 («Make the register terms checkbox visible»)
+  landed on `main` while this PR was open and restyled the terms row (a framed panel, a dark outline)
+  and gave `styles.termsRow` a border width. The age-confirmation row had been copied from the old
+  one: it reused `termsRow` without a border colour, which draws a black frame, and kept the old box.
+  Git merged the file with no conflict, so only looking at the screen showed it. Both rows now render
+  one `CheckRow` (`components/ui/CheckRow.tsx`), so they cannot drift apart again.
+- **Switching an existing account into «student» asks for the same confirmation.** The sign-up asked,
+  but `POST /auth/role` did not, so a teacher or an unlinked parent could become a student with no
+  tick — the same door by another way. `decideRoleSwitch` (`lib/roleSwitch.ts`) now refuses a change
+  *into* student without `ageConfirmed: true` (400 `age_confirmation_required`, checked after every
+  lock so a linked or teaching account is still told why it is locked), and the route stores
+  `guardian_confirmed_at` when it succeeds. `POST /auth/google` on an existing account of another
+  role goes through the same decision. The three screens that switch a role ask for it with the shared
+  `CheckRow`, and the confirm button stays off until it is ticked: Settings → account type,
+  `/claim-required`, and `/setup-subjects` (whose pills used to switch on the tap: tapping «طالب» now
+  opens the box and a confirm button instead). The rule the screens share is
+  `switchNeedsAgeConfirmation` (`services/signupMethod.ts`); leaving the role, or staying a student,
+  asks for nothing.
+
+**Verified.** `pnpm run typecheck`; api-server `pnpm build && pnpm test` (2238 pass on the last merge
+with `main`; 2202 when first written); mobile
+`pnpm test` (7157 tests, 7147 pass, 10 skipped, 0 fail on the last merge; the first run, 7019 tests, had
+3 failures that were mine:
+`i18nTerminology` refuses «class code» and «guardian» in English, and `emptyState.test.ts` counts
+exactly two `EmptyState` in `school.tsx`, so the no-class card is its own component,
+`components/NoClassPrompt.tsx`); the new unit tests (`ageConfirmation`, `loginCodeReissue`,
+`signupMethod`, the changed `routeGating` and `claimCodeMessage` cases). In Chromium (430px, English)
+against the built web bundle and the local API: «طالب» shows the method picker and nothing else until
+a choice is made; «برمز المعلم» shows one code input and no password; «ببريد إلكتروني» shows five inputs
+(two passwords), the note and the age box; submit goes nowhere with nothing ticked or with the terms
+only, and reaches `/verify-email` with both; after verifying, sign-in lands on `/setup-grade`, not
+`/claim-required`; Skip leads to the library, the School tab shows «لم تنضم إلى شعبة بعد» with a
+«Join a class» button, which opens `/join-class`. Against the built API on a throwaway local Postgres with
+`STUDENT_ACCOUNTS=true`, all 17 migrations applied from empty, and by `curl`: a student without
+`ageConfirmed` gets 400, with it 201 and `guardian_confirmed_at` set, a teacher needs none; a verified
+email student has `hasRosterLink:false` and `/student/exams|grades|homework|schedule` and
+`/messaging/contacts` all 200 empty; after `/auth/claim` with a class code `hasRosterLink:true` and
+`gradeIds` fill in; a code-only student who added a mistyped, unverified email gets a new login code
+from the teacher (old code dead, new one signs in), and once the email is verified the same call is
+refused (409).
+
+A second pass on a rebuilt bundle, in **English and in Arabic (RTL)**, with a fresh classless student
+each time: the register screen (both paths), sign-in → `/setup-grade` → Skip → library → School tab
+prompt → the first-class `/join-class` wording → typing a teacher's per-student link code → «تم الانضمام
+إلى الشعبة بنجاح» / "You have joined the class" → the School tab no longer shows the prompt and shows
+the ordinary homework and exams view. The Arabic screenshots read right to left (picker, note, both
+checkboxes, form).
+
+**Not verified.** Android and iOS devices; the Google button (no client id locally); joining with a
+*class* code and picking a name from the list in the browser (a per-student code was used; the
+class-code claim was checked by `curl`); a parent through the unchanged code path in the browser. The
+Arabic strings were reviewed once and aligned to «شعبة» / «رمز الربط», not by a second native reader.
+Not a lawyer's review (the legal text is drafted, not reviewed).
+
+**Known limits.** `/auth/redeem` and `/auth/code-login` still have no committed handler tests. The
+store declaration itself (outside the repo) still needs to say students can sign up with an email.
+The confirmation is a tick, not a check: nothing here verifies an age or contacts a guardian, and a
+minor can tick it.
+
 ## Chat app-help, twentieth live pass: 14 more wordings, and one new answer (subject average) — 2026-10-23
 
 A 30-question pass on app.iqrra.com found 14 questions answered by the model for which the app
@@ -67,6 +159,32 @@ an invented «التقارير» screen. Both halves are the existing `howClassA
 **Not done:** «أنضم إلى مدرستي» (the school-join flow for a teacher is not something I
 verified), the book-source question and the ready-made-homework question (neither looked into),
 «أحفظ خطة الدرس بصيغة وورد» (already answered by the generic «PDF أو Word» export text).
+
+## Generator screens: the toast clears the docked bar — 2026-10-24
+
+A small follow-up to the five generator-screen ports. Mobile only. On a phone the generate button is docked at the
+bottom, and the toast (save, export, report…) sat at a fixed height that put it under the bar's summary line on the
+quiz, worksheet, lesson plan and activity; slides lifted its own. Now one pure helper, `toastLift({ isDesktop,
+barHidden, keyboardOpen })` in the new `services/dockedBar.ts`, returns the bar's height (`DOCKED_BAR_HEIGHT`, moved
+there and re-exported by `DockedAction`) only while the bar is really on screen: a phone, the screen's own bar-hiding
+condition not holding (an unsaved result's save bar on four screens, an unsaved deck on slides), and the soft keyboard
+closed (`useKeyboardVisible`; the bar hides while it is open, so the toast drops back, which also closes the limitation
+slides' entry listed). All five screens pass it as `Toast`'s `bottomOffset` (added with the slides port; default 0, so
+every other screen's toast is unchanged), and slides' inline expression is gone.
+
+**Pinned by** `dockedBar.test.ts` (exactly one of the eight input combinations lifts) and source pins in
+`generatorScreens.test.ts` (each screen imports the helper and the keyboard hook, computes `toastBottom` from the same
+condition it passes as `hidden` to `DockedAction`, passes it to `Toast`; no inline expression and no second height
+definition).
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,196 tests, 7,186 pass, 10 skipped, 0 fail.
+
+**Not verified:** the toast's actual position on a phone or in the browser (a demo session cannot easily raise a toast
+over the docked bar); any device.
+
+**Known limits.** Still open from the earlier entries: Retry after a failed three-levels run regenerates one paper
+(`onRetry={generate}` is passed bare), and `app/evaluations/new.tsx` keeps a translucent `ACCENT + '15'` selected row
+(likely 4.1 to 4.4:1 in dark), outside the five screens.
 
 ## Generator screens: Cancel then a refusal, and the banner contrast — 2026-10-23
 
