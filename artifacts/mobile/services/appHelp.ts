@@ -290,6 +290,7 @@ const SCREENS: AppPlace[] = [
   { id: 'lab-about', route: '/curriculum/lab', labelKey: 'labEntryTitle', pathKeys: ['resourcesTitle'], isTool: false, keywords: [], howKey: 'howLabAbout' },
   { id: 'quran-about', route: '/curriculum/quran', labelKey: 'quranTitle', pathKeys: ['resourcesTitle'], isTool: false, keywords: [], howKey: 'howQuranAbout' },
   { id: 'math-tools', route: '/curriculum/math', labelKey: 'mathEntryTitle', pathKeys: ['resourcesTitle'], isTool: false, keywords: [], howKey: 'howMathTools' },
+  { id: 'terms', route: '/legal/terms', labelKey: 'termsOfService', pathKeys: ['tabProfile', 'settings'], isTool: false, keywords: ['شروط الخدمه', 'شروط الاستخدام', 'terms of service', 'terms of use'], howKey: 'howTerms' },
   { id: 'subject-average', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howSubjectAverage' },
   { id: 'live-game-start', route: '/ai-tools/classroom', labelKey: 'toolClassroomTitle', pathKeys: ['tabTools', 'toolsDuringClass'], isTool: false, keywords: [], howKey: 'howLiveGameStart' },
   { id: 'live-game-join', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howLiveGameJoin' },
@@ -1443,6 +1444,10 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
   {
     id: 'calendar',
     res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:see|view|find)\s+(?:the\s+)?(?:scheduled\s+)?lessons\s+(?:scheduled\s+)?in\s+(?:the\s+)?calendar` + EN_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`(?:see|view)\s+(?:my\s+)?colleagues['’]?\s+exams(?:\s+(?:in|at)\s+(?:the\s+|my\s+)?school)?` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:ارى|اري|اشوف|اعرض)\s+(?:ال)?دروس\s+(?:ال)?مجدوله\s+في\s+(?:ال)?تقويم` + AR_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:ارى|اري|اشوف|اعرض)\s+امتحانات\s+(?:زملائي|زملاء(?:ي)?)(?:\s+في\s+(?:ال)?مدرسه)?` + AR_RULE_TAIL),
       new RegExp(EN_RULE_LEAD + String.raw`(?:see|open|find|view|check)\s+(?:the\s+)?school\s+calendar` + EN_RULE_TAIL),
       new RegExp(AR_RULE_LEAD + String.raw`(?:اري|اشوف|افتح|الاقي|اجد)\s+تقويم\s+(?:ال)?مدرسه` + AR_RULE_TAIL),
       new RegExp(EN_RULE_LEAD + String.raw`(?:open|view|see|show|check|use)\s+(?:(?:my|the)\s+)?calendar` + EN_RULE_TAIL),
@@ -1622,6 +1627,8 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
   {
     id: 'privacy',
     res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:read|see|view|open|find)\s+(?:the\s+)?privacy\s+policy` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اطلع|اطّلع|ارى|اري|اشوف|افتح|اقرا)\s+(?:علي\s+)?سياسه\s+(?:ال)?خصوصيه` + AR_RULE_TAIL),
       new RegExp(
         String.raw`^(?:هل\s+)?(?:بياناتي|معلوماتي|بيانات\s+(?:ال)?طلاب|بيانات\s+طلابي)\s+(?:امنه|محميه|بامان|في\s+امان|سريه)` + AR_RULE_TAIL,
       ),
@@ -1653,6 +1660,10 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
   {
     id: 'library-videos',
     res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:search|look)\s+(?:in\s+(?:the\s+)?library\s+)?for\s+(?:a\s+)?video\s+(?:for|of|on)\s+(?:the\s+)?(?:a\s+)?\w+\s+lesson` + EN_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`filter\s+(?:the\s+)?library\s+(?:resources\s+)?by\s+(?:type|kind)` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:ابحث|بحث)\s+في\s+(?:ال)?مكتبه\s+عن\s+فيديو\s+(?:ل|لل)\s*درس\s+\S+` + AR_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اصفي|تصفيه|اصفّي)\s+موارد\s+(?:ال)?مكتبه\s+حسب\s+(?:ال)?نوع` + AR_RULE_TAIL),
       new RegExp(EN_RULE_LEAD + String.raw`(?:open|watch|find|play)\s+(?:a\s+|the\s+)?lesson\s+video\s+(?:from|in)\s+(?:the\s+)?library` + EN_RULE_TAIL),
       new RegExp(AR_RULE_LEAD + String.raw`(?:افتح|اشاهد|اشوف|ارى|اري|اشغل)\s+(?:ال)?فيديو\S*\s+(?:ال)?درس\s+(?:من|في)\s+(?:ال)?مكتبه` + AR_RULE_TAIL),
       new RegExp(
@@ -2083,6 +2094,8 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
   {
     id: 'games-list',
     res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:what|which)\s+(?:are\s+)?(?:the\s+)?(?:iqra|iqraa|iqrra)\s+games\s+(?:are\s+)?available` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:ما|ماهي|ما\s+هي)\s+(?:ال)?العاب\s+اقرا\s+(?:ال)?متاحه` + AR_RULE_TAIL),
       new RegExp(
         String.raw`^(?:what|which)\s+(?:educational\s+|learning\s+)?games\s+(?:are\s+(?:there|in\s+the\s+app)(?:\s+in\s+the\s+app)?|does\s+(?:the\s+app|iqrra|iqraa)\s+have|can\s+i\s+play(?:\s+in\s+the\s+app)?)` + EN_RULE_TAIL,
       ),
@@ -2616,6 +2629,13 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       new RegExp(EN_RULE_LEAD + String.raw`(?:see|get|find|calculate)\s+(?:the\s+)?average\s+(?:marks|grades|scores)\s+(?:of\s+(?:the\s+)?(?:class|students)\s+)?(?:in|for)\s+(?:a\s+|the\s+whole\s+)?(?:whole\s+)?subject` + EN_RULE_TAIL),
       new RegExp(AR_RULE_LEAD + String.raw`(?:ارى|اري|اشوف|احسب|اعرف)\s+متوسط\s+(?:علامات|درجات)\s+(?:ال)?(?:صف|شعبه|طلبه|طلاب)\s+في\s+(?:ماده\s+)?(?:ال)?\S+\s+(?:كلها|كامله|كاملا)` + AR_RULE_TAIL),
       new RegExp(AR_RULE_LEAD + String.raw`(?:ارى|اري|اشوف|احسب|اعرف)\s+متوسط\s+(?:علامات|درجات)\s+(?:ال)?(?:صف|شعبه|طلبه|طلاب)\s+في\s+ماده` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'terms',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:read|see|view|open|find)\s+(?:the\s+)?terms\s+(?:of\s+(?:service|use)|and\s+conditions)` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اطلع|اطّلع|ارى|اري|اشوف|افتح|اقرا|اشاهد)\s+(?:علي\s+)?شروط\s+(?:ال)?(?:استخدام|خدمه)` + AR_RULE_TAIL),
     ],
   },
   {
