@@ -30,7 +30,7 @@ import { deleteObject, deletePublicObject, isPublicR2Configured, newAvatarKey, p
 import { googleClientIds } from "../lib/googleClients.js";
 import { decideGoogleLink, googleRoleConflict } from "../lib/googleLink.js";
 import { decideRefresh, refreshTokenTtlMs } from "../lib/refreshPolicy.js";
-import { studentAccountsEnabled } from "../lib/features.js";
+import { guardianApprovalEnabled, studentAccountsEnabled } from "../lib/features.js";
 import { syncClassThreadsForStudent } from "../lib/classThread.js";
 import { audioKeysForTeacher } from "../lib/attemptAudio.ts";
 import {
@@ -58,6 +58,9 @@ import { resolveClaimCode, type ClaimResolution, type ClaimRole } from "../lib/r
 import { generateLoginCode, hashLoginCode } from "../lib/loginCode.ts";
 import { guardianLimitReached } from "../lib/guardianLimit.ts";
 import { hasLiveRosterLink } from "../lib/rosterLinkState.ts";
+import { guardianStatus } from "../lib/guardianGate.ts";
+import { GUARDIAN_LIMITS, limitReached, maskEmail, normalizeParentEmail } from "../lib/guardianConsent.ts";
+import { currentRequest, issueAndSend, queueRequest, recentCounts } from "../lib/guardianRequests.ts";
 import { claimNeedsApproval, pendingLimitReached } from "../lib/claimDecision.ts";
 import { namesForNewAccount, redeemRoleCheck } from "../lib/redeemPolicy.ts";
 import { studentGradeIds } from "../lib/studentGrades.ts";
@@ -134,6 +137,7 @@ const changeEmailLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 30
 // attempts" for something ten classmates had just done.
 const perUser = (req: Request) => (req as AuthenticatedRequest).user?.id ?? req.ip ?? "unknown";
 const claimLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 10, name: "claim", key: perUser });
+const guardianRequestLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 20, name: "guardian-request", key: perUser });
 
 /*
  * Signing up from a code has no email to key a limit on, and the IP is the wrong
@@ -1677,6 +1681,72 @@ router.post("/add-email", shedWhenHashingBusy(), authMiddleware, addEmailUserLim
   }
 });
 
+/** The current request reduced to what `guardianStatus` reads; null when the flag is off or none exists. */
+async function currentRequestView(userId: string) {
+  if (!guardianApprovalEnabled()) return null;
+  const cur = await currentRequest(userId);
+  return cur ? { decision: cur.decision, expiresAt: cur.expiresAt } : null;
+}
+
+/**
+ * POST /auth/guardian-request — a held student gives (or changes) their parent's email and a link is mailed.
+ *
+ * Allowed through the middleware gate (lib/guardianGate.ts) because it is how a held student gets out. Each call
+ * supersedes the previous link. Limited to 3 a day per student and 5 a day per parent address, counted from
+ * `guardian_consents`, on top of the per-user hourly limiter above.
+ */
+router.post("/guardian-request", authMiddleware, guardianRequestLimiter, async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!guardianApprovalEnabled()) {
+      res.status(404).json({ code: "guardian_approval_disabled", error: "Not available" });
+      return;
+    }
+    const [user] = await db.select().from(users).where(eq(users.id, req.user!.id)).limit(1);
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    const status = guardianStatus(user, {
+      flagOn: true,
+      hasLiveLink: user.role === "student" ? await hasLiveRosterLink(user.id) : false,
+      request: await currentRequestView(user.id),
+      now: new Date(),
+    });
+    if (status === "approved") {
+      res.status(409).json({ error: "This account is already approved", code: "guardian_already_approved" });
+      return;
+    }
+    if (status === "not_required") {
+      res.status(409).json({ error: "This account does not need a parent's approval", code: "guardian_not_required" });
+      return;
+    }
+    if (!user.emailVerified) {
+      res.status(409).json({ error: "Verify your own email first", code: "email_not_verified" });
+      return;
+    }
+    const parent = normalizeParentEmail((req.body ?? {}).parentEmail, user.email);
+    if (!parent.ok) {
+      res.status(parent.status).json({ error: parent.error, code: parent.code });
+      return;
+    }
+    const counts = await recentCounts(user.id, parent.email);
+    if (limitReached(counts.forStudent, GUARDIAN_LIMITS.perStudentPerDay) || limitReached(counts.forParent, GUARDIAN_LIMITS.perParentPerDay)) {
+      res.status(429).json({ error: "Too many requests. Try again tomorrow.", code: "guardian_rate_limited" });
+      return;
+    }
+    await queueRequest(user.id, parent.email);
+    const issued = await issueAndSend(user.id);
+    res.json({
+      parentEmailMasked: maskEmail(parent.email),
+      emailSent: issued.ok ? issued.emailSent : false,
+      expiresAt: issued.ok ? issued.expiresAt : null,
+    });
+  } catch (err) {
+    logger.error({ err }, "guardian request failed");
+    res.status(500).json({ error: "Could not send the request" });
+  }
+});
+
 // POST /auth/login
 router.post("/login", shedWhenHashingBusy(), loginLimiter, loginEmailLimiter, async (req, res) => {
   try {
@@ -2228,6 +2298,14 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
         ? await hasLiveRosterLink(user.id)
         : undefined;
 
+    const guardian = guardianStatus(user, {
+      flagOn: guardianApprovalEnabled(),
+      hasLiveLink: hasRosterLink === true,
+      request: user.role === "student" ? await currentRequestView(user.id) : null,
+      now: new Date(),
+    });
+    const guardianRequest = guardian === "waiting" || guardian === "declined" ? await currentRequest(user.id) : null;
+
     res.json({
       id: user.id,
       firstName: user.firstName,
@@ -2260,6 +2338,10 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
       teachingAssignments: user.teachingAssignments,
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,
+      // Whether a parent must approve this student's account, and where the request stands. The app reads it on
+      // every boot and again whenever a call answers guardian_approval_required.
+      guardianStatus: guardian,
+      ...(guardianRequest ? { guardianParentEmailMasked: maskEmail(guardianRequest.parentEmail) } : {}),
       ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
     });
   } catch (err) {

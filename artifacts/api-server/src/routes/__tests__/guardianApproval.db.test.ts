@@ -53,7 +53,8 @@ describeDb("parent approval for email students", () => {
 
   before(async () => {
     db = await setupTestDb();
-    on = await startServer({ databaseUrl: db.url, env: { GUARDIAN_APPROVAL: "true" } });
+    // No mail key: the parent's link is then logged (outside production) instead of sent, which is how tests read it.
+    on = await startServer({ databaseUrl: db.url, env: { GUARDIAN_APPROVAL: "true", RESEND_API_KEY: undefined } });
     off = await startServer({ databaseUrl: db.url });
   });
   after(async () => {
@@ -234,6 +235,138 @@ describeDb("parent approval for email students", () => {
       blocked(await call(on, "GET", "/student/exams", kid));
       await linked(kid);
       assert.equal((await call(on, "GET", "/student/exams", kid)).status, 200);
+    });
+  });
+
+  describe("asking for approval and reading the status", () => {
+    /** Every parent link the `on` server has logged so far, oldest first. */
+    const links = () => [...on.logs().matchAll(/\/guardian\/([A-Za-z0-9_-]{43})/g)].map(m => m[1]);
+    /** The server's log reaches us through a pipe, at its own pace, so a link is polled for rather than assumed. */
+    async function linkCountReaches(count: number) {
+      const deadline = Date.now() + 10_000;
+      while (links().length < count && Date.now() < deadline) await new Promise(r => setTimeout(r, 100));
+      assert.ok(links().length >= count, `the ${count}th parent link never appeared in the server log (saw ${links().length})`);
+    }
+    const askRaw = (userId: string, parentEmail: unknown) => call(on, "POST", "/auth/guardian-request", userId, { parentEmail });
+    /** Asks, and on success waits until the link this request mailed is in the log, so `links().at(-1)` is its own. */
+    async function ask(userId: string, parentEmail: unknown) {
+      const before = links().length;
+      const res = await askRaw(userId, parentEmail);
+      if (res.status === 200) await linkCountReaches(before + 1);
+      return res;
+    }
+
+    it("a pending student asks: a link is issued once, the row is stored hashed, and /me says waiting", async () => {
+      const kid = await mkUser("student");
+      const me0 = await call(on, "GET", "/auth/me", kid);
+      assert.equal(me0.json.guardianStatus, "needed");
+      assert.equal(me0.json.guardianParentEmailMasked, undefined);
+
+      const before = links().length;
+      const res = await ask(kid, " Mum@Example.test ");
+      // A held student is let through the gate to this route, so it must not be answered with the hold itself.
+      assert.notEqual(res.json?.code, "guardian_approval_required");
+      assert.equal(res.status, 200, res.text);
+      assert.equal(res.json.parentEmailMasked, "mu***@example.test");
+      assert.equal(typeof res.json.emailSent, "boolean");
+      assert.equal(links().length, before + 1, "exactly one link was issued");
+      const token = links().at(-1)!;
+
+      const [row] = await q<{ parent_email: string; token_hash: string; expires_at: Date }>(
+        `SELECT parent_email, token_hash, expires_at FROM guardian_consents WHERE user_id = $1`,
+        [kid],
+      );
+      assert.equal(row.parent_email, "mum@example.test");
+      assert.equal(row.token_hash, sha(token));
+      assert.ok(Math.abs(row.expires_at.getTime() - (Date.now() + 7 * 86400_000)) < 60_000, "seven days");
+
+      const me = await call(on, "GET", "/auth/me", kid);
+      assert.equal(me.json.guardianStatus, "waiting");
+      assert.equal(me.json.guardianParentEmailMasked, "mu***@example.test");
+      assert.equal((await call(on, "GET", `/guardian-consent/${token}`)).json.status, "open");
+    });
+
+    it("asking again supersedes the old link: only the newest one works", async () => {
+      const kid = await mkUser("student");
+      assert.equal((await ask(kid, "a@example.test")).status, 200);
+      const first = links().at(-1)!;
+      assert.equal((await ask(kid, "b@example.test")).status, 200);
+      const second = links().at(-1)!;
+      assert.notEqual(first, second);
+      assert.equal((await call(on, "GET", `/guardian-consent/${first}`)).json.status, "invalid");
+      assert.equal((await call(on, "GET", `/guardian-consent/${second}`)).json.status, "open");
+    });
+
+    it("a declined student can ask again with another address and is then waiting again", async () => {
+      const kid = await mkUser("student");
+      assert.equal((await ask(kid, "a@example.test")).status, 200);
+      await call(on, "POST", `/guardian-consent/${links().at(-1)}`, undefined, { decision: "declined" });
+      assert.equal((await call(on, "GET", "/auth/me", kid)).json.guardianStatus, "declined");
+      assert.equal((await ask(kid, "b@example.test")).status, 200);
+      assert.equal((await call(on, "GET", "/auth/me", kid)).json.guardianStatus, "waiting");
+    });
+
+    it("refuses a missing, malformed or own address (400) before issuing anything", async () => {
+      const kid = await mkUser("student", { email: "kid@example.test" });
+      const before = links().length;
+      for (const [value, code] of [[undefined, "parent_email_required"], ["nope", "parent_email_invalid"], ["KID@example.test", "parent_email_is_own"]] as const) {
+        const r = await ask(kid, value);
+        assert.equal(r.status, 400, String(value));
+        assert.equal(r.json.code, code);
+      }
+      assert.equal(links().length, before);
+      assert.deepEqual(await q(`SELECT 1 FROM guardian_consents WHERE user_id = $1`, [kid]), []);
+    });
+
+    it("needs the student's own email verified first (409)", async () => {
+      const kid = await mkUser("student", { verified: false });
+      const r = await ask(kid, "p@example.test");
+      assert.equal(r.status, 409);
+      assert.equal(r.json.code, "email_not_verified");
+    });
+
+    it("is not for anyone who is not held: approved, linked, code-only, teacher (409 or 403, nothing queued)", async () => {
+      const approved = await mkUser("student", { approved: true });
+      const r = await ask(approved, "p@example.test");
+      assert.equal(r.status, 409);
+      assert.equal(r.json.code, "guardian_already_approved");
+      const teacher = await mkUser("teacher");
+      const t = await ask(teacher, "p@example.test");
+      assert.equal(t.status, 409);
+      assert.equal(t.json.code, "guardian_not_required");
+      assert.deepEqual(await q(`SELECT 1 FROM guardian_consents WHERE user_id = ANY($1::uuid[])`, [[approved, teacher]]), []);
+    });
+
+    it("stops at 3 requests a day per student and 5 a day per parent address (429)", async () => {
+      const kid = await mkUser("student");
+      for (let i = 0; i < 3; i += 1) assert.equal((await ask(kid, `p${i}@example.test`)).status, 200, `request ${i + 1}`);
+      const over = await ask(kid, "p9@example.test");
+      assert.equal(over.status, 429);
+      assert.equal(over.json.code, "guardian_rate_limited");
+
+      for (let i = 0; i < 5; i += 1) {
+        const other = await mkUser("student");
+        assert.equal((await ask(other, "shared@example.test")).status, 200, `student ${i + 1}`);
+      }
+      const sixth = await mkUser("student");
+      assert.equal((await ask(sixth, "shared@example.test")).status, 429);
+    });
+
+    it("with the flag off the route does not exist for them (404) and /me says not_required", async () => {
+      const kid = await mkUser("student");
+      const r = await call(off, "POST", "/auth/guardian-request", kid, { parentEmail: "p@example.test" });
+      assert.equal(r.status, 404);
+      assert.equal(r.json.code, "guardian_approval_disabled");
+      assert.equal((await call(off, "GET", "/auth/me", kid)).json.guardianStatus, "not_required");
+    });
+
+    it("/me says not_required for a teacher, a code-only student and a linked student, approved for an approved one", async () => {
+      const teacher = await mkUser("teacher");
+      const codeOnly = await mkUser("student", { email: null });
+      const approved = await mkUser("student", { approved: true });
+      assert.equal((await call(on, "GET", "/auth/me", teacher)).json.guardianStatus, "not_required");
+      assert.equal((await call(on, "GET", "/auth/me", codeOnly)).json.guardianStatus, "not_required");
+      assert.equal((await call(on, "GET", "/auth/me", approved)).json.guardianStatus, "approved");
     });
   });
 });
