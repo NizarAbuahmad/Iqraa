@@ -178,3 +178,47 @@ export async function decideByToken(
     return "ok";
   });
 }
+
+/**
+ * `sendQueuedGuardianRequest`, but the caller waits at most `ms` for it (Cloud Run throttles CPU once a response
+ * has gone out, so work is awaited rather than left running; see `pushWithin.ts`). Past the cap the caller carries
+ * on and the send finishes in the background. Never throws, and the timer is always cleared.
+ */
+export async function sendQueuedGuardianRequestWithin(userId: string, ms: number = 4_000): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const capped = new Promise<"capped">(resolve => {
+    timer = setTimeout(() => resolve("capped"), ms);
+  });
+  // `sendQueuedGuardianRequest` already swallows its own errors; the catch is for anything it could not foresee.
+  const running = sendQueuedGuardianRequest(userId).then(
+    () => "done" as const,
+    err => {
+      logger.error({ err, userId }, "could not send the queued guardian request");
+      return "failed" as const;
+    },
+  );
+  const outcome = await Promise.race([running, capped]);
+  clearTimeout(timer);
+  if (outcome === "capped") logger.warn({ userId, ms }, "guardian request still sending when the response went out");
+}
+
+/**
+ * Retires the student's open request (queued, unissued or issued, not yet decided) so no link out there can approve
+ * them and `/me` goes back to "needed". For a path that proves the address WITHOUT the sign-up having been the
+ * student's own: a row someone else pre-created on this address chose the parent's address too, and must not get to
+ * mail it (`lib/googleLink.ts`).
+ */
+export async function supersedeOpenRequests(userId: string): Promise<number> {
+  const rows = await db
+    .update(guardianConsents)
+    .set({ supersededAt: new Date() })
+    .where(
+      and(
+        eq(guardianConsents.userId, userId),
+        isNull(guardianConsents.decidedAt),
+        isNull(guardianConsents.supersededAt),
+      ),
+    )
+    .returning({ id: guardianConsents.id });
+  return rows.length;
+}

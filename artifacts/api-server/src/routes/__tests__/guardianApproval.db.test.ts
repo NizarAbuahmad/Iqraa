@@ -10,6 +10,7 @@ import { describeDb } from "../../test-support/gate.ts";
 import { setupTestDb, type TestDb } from "../../test-support/testDb.ts";
 import { startServer, type TestServer } from "../../test-support/startServer.ts";
 import { call } from "../../test-support/http.ts";
+import { hashResetCode } from "../../lib/passwordReset.ts";
 
 const sha = (s: string) => crypto.createHash("sha256").update(s).digest("hex");
 const newToken = () => crypto.randomBytes(32).toString("base64url");
@@ -55,7 +56,7 @@ describeDb("parent approval for email students", () => {
     db = await setupTestDb();
     // No mail key: the parent's link is then logged (outside production) instead of sent, which is how tests read it.
     on = await startServer({ databaseUrl: db.url, env: { GUARDIAN_APPROVAL: "true", RESEND_API_KEY: undefined } });
-    off = await startServer({ databaseUrl: db.url });
+    off = await startServer({ databaseUrl: db.url, env: { RESEND_API_KEY: undefined } });
   });
   after(async () => {
     await on?.stop();
@@ -450,7 +451,9 @@ describeDb("parent approval for email students", () => {
 
       const verified = await call(on, "POST", "/auth/verify-email", undefined, { email, code });
       assert.equal(verified.status, 200, verified.text);
-      await until("the parent's link", () => links().length >= before + 1);
+      // The request is awaited by /verify-email, so the link is logged before the response. The marker request's own log
+      // line comes after it, which makes the exact count (one, not two) a real check without polling for it.
+      await logsCaughtUp(on);
       assert.equal(links().length, before + 1, "the parent is mailed once, after verification");
       const [after] = await q<{ token_hash: string | null }>(`SELECT token_hash FROM guardian_consents WHERE id = $1`, [row.id]);
       assert.equal(after.token_hash, sha(links().at(-1)!));
@@ -476,6 +479,54 @@ describeDb("parent approval for email students", () => {
       await logsCaughtUp(on);
       assert.equal(links().length, before, "no queued request, so nothing to mail");
       assert.deepEqual(await q(`SELECT 1 FROM guardian_consents c JOIN users u ON u.id = c.user_id WHERE u.email = $1`, [email]), []);
+    });
+
+    /** Plants a password-reset code for the user (the real one is only ever emailed) and uses it. */
+    async function resetPassword(userId: string, email: string) {
+      const NEW_PASSWORD = "AnotherStrong2Password!";
+      await q(
+        `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, now() + interval '15 minutes')`,
+        [userId, hashResetCode(userId, "424242")],
+      );
+      return call(on, "POST", "/auth/reset-password", undefined, { email, code: "424242", password: NEW_PASSWORD, confirmPassword: NEW_PASSWORD });
+    }
+
+    it("a password reset that verifies the address retires the queued request: no mail, held as needed", async () => {
+      const email = "reset1@example.test";
+      const before = links().length;
+      assert.equal((await signUp(on, email, { parentEmail: "reset.parent@example.test" })).status, 201);
+      const [u] = await q<{ id: string }>(`SELECT id FROM users WHERE email = $1`, [email]);
+      const code = await verificationCode(on, email);
+      const [queued] = await q<{ id: string; superseded_at: Date | null }>(`SELECT id, superseded_at FROM guardian_consents WHERE user_id = $1`, [u.id]);
+      assert.equal(queued.superseded_at, null);
+
+      const reset = await resetPassword(u.id, email);
+      assert.equal(reset.status, 200, reset.text);
+      const [after] = await q<{ superseded_at: Date | null; decided_at: Date | null; token_hash: string | null }>(
+        `SELECT superseded_at, decided_at, token_hash FROM guardian_consents WHERE id = $1`,
+        [queued.id],
+      );
+      assert.ok(after.superseded_at, "the queued row is superseded");
+      assert.equal(after.token_hash, null, "and was never issued");
+      assert.equal((await q<{ email_verified: boolean }>(`SELECT email_verified FROM users WHERE id = $1`, [u.id]))[0].email_verified, true);
+      assert.equal((await call(on, "GET", "/auth/me", u.id)).json.guardianStatus, "needed");
+
+      // The address is verified now, so the sign-up code cannot be used to get the request mailed after all.
+      const again = await call(on, "POST", "/auth/verify-email", undefined, { email, code });
+      assert.equal(again.status, 400);
+      assert.equal(again.json.code, "already_verified");
+      await logsCaughtUp(on);
+      assert.equal(links().length, before, "no mail went to the parent the squatter named");
+    });
+
+    it("a password reset on an already-verified student leaves their open request alone", async () => {
+      const kid = await mkUser("student", { email: "reset2@example.test" });
+      const token = await mkConsent(kid);
+      const reset = await resetPassword(kid, "reset2@example.test");
+      assert.equal(reset.status, 200, reset.text);
+      const [c] = await q<{ superseded_at: Date | null }>(`SELECT superseded_at FROM guardian_consents WHERE token_hash = $1`, [sha(token)]);
+      assert.equal(c.superseded_at, null);
+      assert.equal((await call(on, "GET", "/auth/me", kid)).json.guardianStatus, "waiting");
     });
 
     it("the parent-address limit applies at sign-up: a sixth student on one address is refused (429) and not created", async () => {
@@ -522,6 +573,8 @@ describeDb("parent approval for email students", () => {
       assert.equal(noTick.status, 400);
       assert.equal(noTick.json.code, "age_confirmation_required");
       assert.equal((await call(off, "POST", "/auth/role", t2, { role: "student", ageConfirmed: true })).status, 200);
+      const [ticked] = await q<{ guardian_confirmed_at: Date | null }>(`SELECT guardian_confirmed_at FROM users WHERE id = $1`, [t2]);
+      assert.ok(ticked.guardian_confirmed_at, "the flag-off switch still records the tick");
     });
   });
 });

@@ -2,6 +2,7 @@ import { Router, type Request } from "express";
 import { signupSource } from "../lib/adminMetrics.js";
 import { termsAcceptance } from "../lib/termsAcceptance.ts";
 import { ageConfirmation } from "../lib/ageConfirmation.ts";
+import { guardianSignup } from "../lib/guardianSignup.ts";
 import { comparePassword, hashPassword, shedWhenHashingBusy } from "../lib/passwordHash.js";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
@@ -66,7 +67,8 @@ import {
   issueAndSend,
   queueRequest,
   recentCounts,
-  sendQueuedGuardianRequest,
+  sendQueuedGuardianRequestWithin,
+  supersedeOpenRequests,
 } from "../lib/guardianRequests.ts";
 import { claimNeedsApproval, pendingLimitReached } from "../lib/claimDecision.ts";
 import { namesForNewAccount, redeemRoleCheck } from "../lib/redeemPolicy.ts";
@@ -562,25 +564,16 @@ router.post("/register", shedWhenHashingBusy(), registerLimiter, registerEmailLi
     // A student with an email has no teacher's code vouching for them. With GUARDIAN_APPROVAL on, a parent
     // approves by email (lib/guardianConsent.ts); with it off they tick that they are an adult or have a
     // guardian's agreement (lib/ageConfirmation.ts). The live app still sends the tick until the flag is on.
-    const holdForParent = role === "student" && guardianApprovalEnabled();
-    let parentEmail = "";
-    if (holdForParent) {
-      const parent = normalizeParentEmail((req.body as { parentEmail?: unknown }).parentEmail, email);
-      if (!parent.ok) {
-        res.status(parent.status).json({ error: parent.error, code: parent.code });
-        return;
-      }
-      if (limitReached(await countForParent(parent.email), GUARDIAN_LIMITS.perParentPerDay)) {
-        res.status(429).json({ error: "Too many requests for that address. Try again tomorrow.", code: "guardian_rate_limited" });
-        return;
-      }
-      parentEmail = parent.email;
-    }
-    const age: ReturnType<typeof ageConfirmation> = holdForParent
-      ? { ok: true, guardianConfirmedAt: null }
-      : ageConfirmation(req.body, role);
+    const age = await guardianSignup({
+      flagOn: guardianApprovalEnabled(),
+      role,
+      body: req.body,
+      studentEmail: email,
+      countForParent,
+      ageConfirmation,
+    });
     if (!age.ok) {
-      res.status(age.status).json({ error: age.error, code: age.code });
+      res.status(age.status).json(age.body);
       return;
     }
 
@@ -616,9 +609,9 @@ router.post("/register", shedWhenHashingBusy(), registerLimiter, registerEmailLi
     if (!user) throw new Error("Failed to create user");
 
     // Queued with no token: the parent is mailed only after the student has verified their own address.
-    if (holdForParent) {
+    if (age.parentEmail) {
       try {
-        await queueRequest(user.id, parentEmail);
+        await queueRequest(user.id, age.parentEmail);
       } catch (err) {
         // The account exists and can ask again from the waiting screen; this must not turn a sign-up into a 500.
         logger.error({ err, userId: user.id }, "could not queue the guardian request at sign-up");
@@ -714,7 +707,8 @@ router.post("/verify-email", verifyEmailLimiter, verifyEmailAddressLimiter, asyn
       .returning();
 
     // The student's own address is now proved, so a parent's approval request queued at sign-up can be mailed.
-    if (verified.role === "student") await sendQueuedGuardianRequest(verified.id);
+    // Capped at 4 s and never throwing: the verification has succeeded whatever the mail provider does.
+    if (verified.role === "student") await sendQueuedGuardianRequestWithin(verified.id);
 
     const { accessToken, refreshTokenValue } = generateTokens(verified.id, verified.email, verified.role);
     await storeRefreshToken(verified.id, refreshTokenValue, req.headers.origin);
@@ -999,7 +993,7 @@ router.post("/reset-password", shedWhenHashingBusy(), resetPasswordLimiter, asyn
     const invalid = () => res.status(400).json({ error: "Invalid or expired code", code: "invalid_code" });
 
     const [user] = await db
-      .select({ id: users.id })
+      .select({ id: users.id, emailVerified: users.emailVerified })
       .from(users)
       .where(eq(users.email, email.toLowerCase().trim()))
       .limit(1);
@@ -1050,6 +1044,19 @@ router.post("/reset-password", shedWhenHashingBusy(), resetPasswordLimiter, asyn
       // the ones already open.
       await tx.delete(refreshTokens).where(eq(refreshTokens.userId, user.id));
     });
+
+    // This verified an address that /verify-email never saw. A parent's approval request queued at sign-up on an
+    // unverified row was chosen by whoever created the row (see lib/googleLink.ts), so it is retired, not mailed:
+    // the account is held until its owner asks for approval themselves.
+    if (!user.emailVerified) {
+      try {
+        await supersedeOpenRequests(user.id);
+      } catch (err) {
+        // The password is already reset; a stale queued row is never mailed from here, only from /verify-email,
+        // which now refuses an already-verified address.
+        logger.error({ err, userId: user.id }, "could not retire the guardian request after a password reset");
+      }
+    }
 
     logger.info({ userId: user.id }, "password reset completed");
     res.json({ ok: true });
@@ -2046,6 +2053,13 @@ router.post("/google", googleLimiter, async (req, res) => {
                 eq(emailVerificationTokens.used, false),
               ),
             );
+          // A parent's address chosen at sign-up on this row was chosen by whoever created it, so it is retired,
+          // not mailed: the real owner is held until they ask for approval themselves.
+          try {
+            await supersedeOpenRequests(linkedId);
+          } catch (err) {
+            logger.error({ err, userId: linkedId }, "could not retire the guardian request after a Google link");
+          }
           logger.info(
             { userId: linkedId },
             "google linked to an unverified account — password cleared, pending codes burned",
@@ -2080,25 +2094,16 @@ router.post("/google", googleLimiter, async (req, res) => {
         }
 
         // Same as /register: a parent's approval when GUARDIAN_APPROVAL is on, the age tick otherwise.
-        const holdForParent = role === "student" && guardianApprovalEnabled();
-        let parentEmail = "";
-        if (holdForParent) {
-          const parent = normalizeParentEmail((req.body as { parentEmail?: unknown }).parentEmail, email);
-          if (!parent.ok) {
-            res.status(parent.status).json({ error: parent.error, code: parent.code });
-            return;
-          }
-          if (limitReached(await countForParent(parent.email), GUARDIAN_LIMITS.perParentPerDay)) {
-            res.status(429).json({ error: "Too many requests for that address. Try again tomorrow.", code: "guardian_rate_limited" });
-            return;
-          }
-          parentEmail = parent.email;
-        }
-        const age: ReturnType<typeof ageConfirmation> = holdForParent
-          ? { ok: true, guardianConfirmedAt: null }
-          : ageConfirmation(req.body, role);
+        const age = await guardianSignup({
+          flagOn: guardianApprovalEnabled(),
+          role,
+          body: req.body,
+          studentEmail: email,
+          countForParent,
+          ageConfirmation,
+        });
         if (!age.ok) {
-          res.status(age.status).json({ error: age.error, code: age.code });
+          res.status(age.status).json(age.body);
           return;
         }
 
@@ -2121,10 +2126,10 @@ router.post("/google", googleLimiter, async (req, res) => {
           .returning();
 
         // Google has already proved the address, so the parent can be mailed at once.
-        if (holdForParent && user) {
+        if (age.parentEmail && user) {
           try {
-            await queueRequest(user.id, parentEmail);
-            await sendQueuedGuardianRequest(user.id);
+            await queueRequest(user.id, age.parentEmail);
+            await sendQueuedGuardianRequestWithin(user.id);
           } catch (err) {
             logger.error({ err, userId: user.id }, "could not queue the guardian request for a Google sign-up");
           }
