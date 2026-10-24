@@ -88,6 +88,7 @@ import { HomeworkTab } from '@/components/classes/HomeworkTab';
 import { MathPracticeSheet } from '@/components/classes/MathPracticeSheet';
 import { EditStudentSheet } from '@/components/classes/EditStudentSheet';
 import { ClaimedByLine } from '@/components/classes/ClaimedByLine';
+import { LinkRequestsBanner } from '@/components/classes/LinkRequestsBanner';
 import { SPACE } from '@/constants/theme';
 import type { SupportGroup } from '@/services/supportGroups';
 import {
@@ -908,6 +909,7 @@ export default function ClassDetailScreen() {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <View style={{ gap: 10 }}>
+              {studentAccounts && id ? <LinkRequestsBanner classId={id} /> : null}
               {errorBanner}
               {studentAccounts && students.length > 0 && (
                 <JoinStatusSection
