@@ -3,10 +3,13 @@ import assert from 'node:assert/strict';
 import { GRAMMAR_UNITS_G10, NOT_COVERED_G10 } from '../englishGrammarG10.ts';
 import { offeredGrammar } from '../englishGrammar.ts';
 
-const IDS = ['u1_l1', 'u1_l5', 'u2_l1', 'u2_l4', 'u3_l1', 'u3_l4', 'u3_l5', 'u4_l1', 'u4_l4', 'u5_l1', 'u5_l3'].map(s => `kbl-eng-s1-nccd-${s}`);
+const IDS = [
+  ...['u1_l1', 'u1_l5', 'u2_l1', 'u2_l4', 'u3_l1', 'u3_l4', 'u3_l5', 'u4_l1', 'u4_l4', 'u5_l1', 'u5_l3'].map(s => `kbl-eng-s1-nccd-${s}`),
+  ...['u6_l1', 'u6_l4', 'u7_l1', 'u7_l5', 'u8_l1'].map(s => `kbl-eng-s2-nccd-${s}`),
+];
 
 describe('Grade 10 grammar units', () => {
-  it('are the eleven grammar lessons, in hub order, all unsigned', () => {
+  it('are the grammar lessons, Semester 1 then Semester 2, in hub order, all unsigned', () => {
     assert.deepEqual(GRAMMAR_UNITS_G10.map(u => u.lessonId), IDS);
     for (const u of GRAMMAR_UNITS_G10) {
       assert.equal(u.reviewedBy, null, u.lessonId);

@@ -1,6 +1,7 @@
 /**
- * Grade 10 grammar: the eleven authored Semester 1 lessons whose book statement is a grammar topic (spec:
- * docs/superpowers/specs/2026-10-23-english-corner-grammar-g10-design.md). Every item is a whole sentence with its
+ * Grade 10 grammar: the authored Semester 1 and Semester 2 lessons whose book statement is a grammar topic (specs:
+ * docs/superpowers/specs/2026-10-23-english-corner-grammar-g10-design.md for Semester 1,
+ * docs/superpowers/specs/2026-10-24-english-corner-grammar-g10-s2-design.md for Semester 2). Every item is a whole sentence with its
  * correct answer and a distractor, written by us and checked by a teacher on the printed form; nothing here is pictured.
  *
  * The rule for a distractor: it is `form` (ungrammatical in standard English: the bare verb or the wrong inflection,
@@ -9,7 +10,10 @@
  * marker in the sentence itself: a habit word, or Look!, Listen!, right now, at the moment, a count, a duration
  * on a finished task, an event that cuts an action short, «by the time», a time word that fixes remember or forget, a
  * past time word, a reason or a second sentence after mustn't or don't have to, a decision made on the spot, a warning
- * or a sign of what is about to happen, a time point with «still» or an activity with no end, «by» with a count).
+ * or a sign of what is about to happen, a time point with «still» or an activity with no end, «by» with a count, a
+ * condition the sentence marks as impossible (Imagine …, If I were …) or likely (Tomorrow …), a self-done marker
+ * (myself) or a service marker (by experts, a mechanic), a past fact or past time word for an unreal past, evidence in
+ * the sentence for must or can't).
  * Never a form that could fit, and `meaning` only in the sub-topics the test pins as `meaning`. Every sentence is nine
  * words or fewer, so Build always takes it whole. No names: a pronoun, a family word (`Mum`, `Dad`) or a Jordanian
  * place. `statement` is the book's own «I can» line for the lesson id (its `objectives[0]`, read back by a test).
@@ -23,6 +27,7 @@ const items = (topic: string, kind: GrammarItem['kind'], rows: Row[]): GrammarIt
   rows.map(([text, answer, distractor]) => ({ topic, kind, text, answer, distractor }));
 
 const L = (s: string) => `kbl-eng-s1-nccd-${s}`;
+const L2 = (s: string) => `kbl-eng-s2-nccd-${s}`;
 
 export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: GrammarItem[] }[] = [
   {
@@ -662,6 +667,299 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ["I won't be working overtime tomorrow.", 'working', 'work'],
         ['They will have saved enough money by then.', 'saved', 'save'],
         ['He will be commuting by train next year.', 'commuting', 'commute'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L2('u6_l1'),
+    statement: 'I can use the first and second conditional to talk about possible and hypothetical situations.',
+    items: [
+      // If + present, will + bare verb. The errors: will inside the if-clause (only with a subject that cannot be
+      // willing, so «if you will …» never reads as a polite request), a wrong form after will, the wrong agreement.
+      ...items('first-conditional', 'form', [
+        ['If it rains, we will stay home.', 'rains', 'will rain'],
+        ['If I see Dad, I will tell him.', 'will tell', 'will telling'],
+        ['If you study hard, you will pass the exam.', 'will pass', 'will to pass'],
+        ['If she misses the bus, she will be late.', 'misses', 'miss'],
+        ['If we leave now, we will catch the train.', 'will catch', 'will caught'],
+        ['If he eats too much, he will feel sick.', 'eats', 'eat'],
+        ['If you are hungry, I will make lunch.', 'will make', 'will makes'],
+        ['If it snows, the schools will close.', 'will close', 'will closing'],
+        ['If they win, they will celebrate tonight.', 'win', 'wins'],
+        ["If you don't hurry, you will miss the bus.", "don't", "doesn't"],
+        ["She won't come if she is ill.", 'is', 'are'],
+        ['Will you come if she invites you?', 'invites', 'invite'],
+      ]),
+      // If + past, would + bare verb. The errors: would inside the if-clause (only with have or live, never an action
+      // someone could be willing to do: «If you would ask him» is a polite form), would + to, -ing, a past or -s. was
+      // and were are never set against each other: both are accepted after I, he, she and it.
+      ...items('second-conditional', 'form', [
+        ['If I had a car, I would drive.', 'would drive', 'would to drive'],
+        ['If she lived in Aqaba, she would swim.', 'lived', 'would live'],
+        ['If I knew the answer, I would tell you.', 'would tell', 'would told'],
+        ['If we had more time, we would visit Petra.', 'had', 'would have'],
+        ['If he studied more, he would get better marks.', 'would get', 'would getting'],
+        ['If you asked him, he would help.', 'would help', 'would helped'],
+        ['If I found a wallet, I would return it.', 'would return', 'would to return'],
+        ['If Dad had a day off, he would cook.', 'would cook', 'would cooks'],
+        ['If we lived near the sea, we would fish.', 'would fish', 'would fishing'],
+        ['If she spoke French, she would teach it.', 'would teach', 'would taught'],
+        ['What would you do if you lost your phone?', 'do', 'to do'],
+        ["I wouldn't worry if I were you.", 'worry', 'worried'],
+      ]),
+      // A condition the sentence marks as impossible or unreal («Imagine you had …», «If I were a bird», «If dogs could
+      // talk») takes would; will is ruled out by that marker. A likely condition in the present tense with a near time
+      // («Tomorrow», «This weekend», «tonight») takes will; would is ruled out by the present-tense if-clause. No «I
+      // would» on the likely side: «If it rains, I would stay home» can be advice («if I were you»).
+      ...items('imagine-vs-real', 'meaning', [
+        ['Imagine you had wings. You would fly.', 'would fly', 'will fly'],
+        ['Imagine we had no phones. Life would be quiet.', 'would be', 'will be'],
+        ['Imagine you were invisible. Nobody would see you.', 'would see', 'will see'],
+        ['Imagine I could fly. I would never walk.', 'would never walk', 'will never walk'],
+        ['Imagine you lived on the moon. You would float.', 'would float', 'will float'],
+        ['Imagine there were no cars. Cities would be quieter.', 'would be', 'will be'],
+        ['Imagine you spoke every language. You would travel everywhere.', 'would travel', 'will travel'],
+        ['If I were a bird, I would fly away.', 'would fly', 'will fly'],
+        ['If I were you, I would apologise.', 'would apologise', 'will apologise'],
+        ["If I were a teacher, I'd give no homework.", "I'd give", "I'll give"],
+        ['If I were taller, I would play basketball.', 'would play', 'will play'],
+        ['If dogs could talk, they would tell stories.', 'would tell', 'will tell'],
+        ['Tomorrow, if it rains, we will play indoors.', 'will play', 'would play'],
+        ["This weekend, if it's sunny, we will go swimming.", 'will go', 'would go'],
+        ['If the bus is late tonight, we will walk.', 'will walk', 'would walk'],
+        ['If our team wins tomorrow, the school will celebrate.', 'will celebrate', 'would celebrate'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L2('u6_l4'),
+    statement: 'I can use the zero conditional to talk about real situations that are always true.',
+    items: [
+      // If + present simple, present simple: a general truth. No distractor has will or would (a test pins it): «If you
+      // heat ice, it will melt» is a sound first conditional. The errors are agreement, -ing, a past participle or a
+      // doubled auxiliary. No bare verb that is also an adjective (clean, open, dry), which could fit.
+      ...items('if-present', 'form', [
+        ['If you heat ice, it melts.', 'melts', 'melt'],
+        ['If you mix red and white, you get pink.', 'get', 'gets'],
+        ['If you boil water, it turns into steam.', 'turns', 'turning'],
+        ['If it rains, the ground gets wet.', 'gets', 'get'],
+        ['If you press this button, the machine stops.', 'stops', 'stopping'],
+        ['If you drop glass, it breaks.', 'breaks', 'broken'],
+        ['If people eat too much sugar, they gain weight.', 'gain', 'gains'],
+        ['If you put oil in water, it floats.', 'floats', 'float'],
+        ['If you leave milk out, it goes bad.', 'goes', 'go'],
+        ['If babies are hungry, they cry.', 'cry', 'cries'],
+        ['If you exercise every day, you feel better.', 'feel', 'feels'],
+        ['If iron gets wet, it rusts.', 'gets', 'get'],
+        ['If the traffic light is red, cars stop.', 'stop', 'stops'],
+        ['If you heat butter, it becomes liquid.', 'becomes', 'is becomes'],
+      ]),
+      // The same with when, in either clause order.
+      ...items('when-general-truths', 'form', [
+        ['Plants die when they get no water.', 'get', 'gets'],
+        ['When you heat water, it boils.', 'boils', 'boil'],
+        ['When it gets dark, the street lights come on.', 'come', 'comes'],
+        ["When I drink coffee, I can't sleep.", 'drink', 'drinks'],
+        ['Metal expands when you heat it.', 'expands', 'expand'],
+        ['When you mix blue and yellow, you get green.', 'mix', 'mixes'],
+        ['My dog barks when someone knocks.', 'knocks', 'knock'],
+        ['When the bell rings, the students leave.', 'rings', 'ringing'],
+        ['Fish die when the water is dirty.', 'is', 'are'],
+        ['When people are tired, they make mistakes.', 'make', 'makes'],
+        ['When it snows, the roads become dangerous.', 'become', 'becomes'],
+        ['Milk turns sour when it gets warm.', 'turns', 'turn'],
+        ['When you press the switch, the light comes on.', 'comes', 'come'],
+        ['When water freezes, it becomes ice.', 'freezes', 'frozen'],
+      ]),
+      // Questions and negatives: do/does agrees with the subject and takes the bare verb.
+      ...items('questions-negatives', 'form', [
+        ['What happens if you freeze water?', 'freeze', 'freezes'],
+        ["If you don't water plants, they die.", 'die', 'dies'],
+        ['What happens when you heat metal?', 'happens', 'happen'],
+        ['Does ice melt if you heat it?', 'melt', 'melts'],
+        ["If you don't sleep, you feel tired.", "don't", "doesn't"],
+        ["Plants don't grow if they get no light.", "don't", "doesn't"],
+        ["What does your cat do when it's hungry?", 'does', 'do'],
+        ["Iron doesn't float if you put it in water.", 'float', 'floats'],
+        ['Why do leaves fall when it gets cold?', 'fall', 'falls'],
+        ["If it doesn't rain, the grass turns brown.", "doesn't", "don't"],
+        ["Do you get a headache if you don't eat?", 'get', 'gets'],
+        ["A car doesn't start if the battery is flat.", 'start', 'starts'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L2('u7_l1'),
+    statement: 'I can use reporting verbs to report stories.',
+    items: [
+      // promise, offer, refuse, agree, claim, threaten + to-infinitive: -ing or a bare verb is the error. No verb whose
+      // -ing or bare form could be a noun after it («offered help»). No tense shift is tested anywhere in this lesson.
+      ...items('verb-patterns', 'form', [
+        ['She promised to call me.', 'to call', 'calling'],
+        ['He offered to carry my bag.', 'to carry', 'carrying'],
+        ['They refused to pay for the damage.', 'to pay', 'paying'],
+        ['My brother agreed to help me.', 'to help', 'helping'],
+        ['The boy promised to return the book.', 'to return', 'returning'],
+        ['Dad offered to drive us to Amman.', 'to drive', 'driving'],
+        ['She refused to answer my question.', 'to answer', 'answering'],
+        ['We agreed to meet at the library.', 'to meet', 'meeting'],
+        ['He threatened to tell the teacher.', 'to tell', 'telling'],
+        ['The shop agreed to replace the phone.', 'to replace', 'replacing'],
+        ['She offered to lend me her notes.', 'to lend', 'lending'],
+        ['I promised not to be late.', 'not to be', 'not being'],
+        ['He claimed to know the answer.', 'to know', 'knowing'],
+        ['My sister refused to share her sweets.', 'to share', 'sharing'],
+        ['The teacher agreed to postpone the test.', 'to postpone', 'postponing'],
+        ['Mum promised to make a cake.', 'to make', 'make'],
+      ]),
+      // admit, deny, suggest, apologise for + -ing: the to-infinitive is the error. suggest also takes «that we go», so
+      // only the -ing pattern is tested; «admit to doing» is English, so «to» never stands alone as the distractor.
+      ...items('admit-deny-suggest', 'form', [
+        ['He denied breaking the vase.', 'breaking', 'to break'],
+        ['She admitted taking my pen.', 'taking', 'to take'],
+        ['She suggested going by bus.', 'going', 'to go'],
+        ['The boy admitted cheating in the test.', 'cheating', 'to cheat'],
+        ['They denied making the mess.', 'making', 'to make'],
+        ['He apologised for being late.', 'being', 'to be'],
+        ['Dad suggested eating out tonight.', 'eating', 'to eat'],
+        ['She denied eating the last biscuit.', 'eating', 'to eat'],
+        ['I admitted forgetting my homework.', 'forgetting', 'to forget'],
+        ['We apologised for making so much noise.', 'making', 'to make'],
+        ['The teacher suggested reading the story again.', 'reading', 'to read'],
+        ['He admitted losing the keys.', 'losing', 'to lose'],
+        ['She denied telling anyone the secret.', 'telling', 'to tell'],
+        ['Mum suggested visiting our grandparents.', 'visiting', 'to visit'],
+      ]),
+      // tell, warn, remind, advise, ask + object + to-infinitive. The errors: said for told, a missing object (after
+      // tell and remind), -ing or a bare verb after the object. Never asked with and without an object against each
+      // other (both are English), and never advise with -ing and no object («advised resting» is English).
+      ...items('tell-ask-warn', 'form', [
+        ['Mum told me to wait.', 'told me', 'said me'],
+        ['The teacher told us to sit down.', 'to sit', 'sitting'],
+        ['Dad warned me not to touch the oven.', 'not to touch', 'not touching'],
+        ['She reminded me to bring my book.', 'to bring', 'bringing'],
+        ['The coach told the players to rest.', 'told the players', 'said the players'],
+        ['She asked me to open the window.', 'to open', 'opening'],
+        ['The doctor advised me to drink water.', 'to drink', 'drink'],
+        ['Our teacher reminded us to switch off our phones.', 'reminded us', 'reminded'],
+        ['He told his sister to close the door.', 'told his sister', 'told to his sister'],
+        ['The guide warned us to stay together.', 'to stay', 'staying'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L2('u7_l5'),
+    statement: 'I can use reported questions to talk about what someone else said.',
+    items: [
+      // After asked, wondered or wanted to know, a wh-question takes statement order: no do and no inversion. Pronoun
+      // or do-support cases only: no «what» + be + a noun («what the problem was»), where many speakers accept both.
+      // The tense is never what differs (both «where I lived» and «where I live» are fine).
+      ...items('ask-wonder', 'form', [
+        ['He asked where I lived.', 'where I lived', 'where did I live'],
+        ['She asked what I wanted.', 'what I wanted', 'what did I want'],
+        ['They asked when the film started.', 'the film started', 'did the film start'],
+        ['I wondered why she was upset.', 'she was', 'was she'],
+        ['Mum asked where I had been.', 'I had been', 'had I been'],
+        ['He wondered how the machine worked.', 'the machine worked', 'did the machine work'],
+        ['The teacher asked why I was late.', 'I was', 'was I'],
+        ['She asked how much the ticket cost.', 'the ticket cost', 'did the ticket cost'],
+        ['I wondered what time it was.', 'it was', 'was it'],
+        ['They asked where we were going.', 'we were', 'were we'],
+        ['He wanted to know what I thought.', 'I thought', 'did I think'],
+        ['She wondered who I was talking to.', 'I was', 'was I'],
+        ['Dad asked how long the journey took.', 'the journey took', 'did the journey take'],
+        ['My friend asked why I had left early.', 'I had left', 'had I left'],
+      ]),
+      // A yes or no question becomes if or whether + statement order. «that» is never offered: «asked that …» is a
+      // request form.
+      ...items('if-whether', 'form', [
+        ['She asked if I was ready.', 'if I was', 'if was I'],
+        ['They wondered whether it was true.', 'whether it was', 'whether was it'],
+        ['He asked if I liked football.', 'if I liked', 'if did I like'],
+        ['Mum asked whether I had finished.', 'whether I had', 'whether had I'],
+        ['The teacher asked if we understood.', 'if we understood', 'if did we understand'],
+        ['I wondered if the shop was open.', 'if the shop was', 'if was the shop'],
+        ['She asked whether I could swim.', 'whether I could', 'whether could I'],
+        ['They asked if we needed help.', 'if we needed', 'if did we need'],
+        ['He wanted to know if I was coming.', 'if I was', 'if was I'],
+        ['Dad asked whether the bus had left.', 'whether the bus had', 'whether had the bus'],
+        ['She wondered if her friends were angry.', 'if her friends were', 'if were her friends'],
+        ['The doctor asked if I felt better.', 'if I felt', 'if did I feel'],
+      ]),
+      // The same order with an object after asked and a modal or an auxiliary in the question.
+      ...items('word-order', 'form', [
+        ['She asked me where I could park.', 'I could park', 'could I park'],
+        ['He asked us how many brothers we had.', 'we had', 'did we have'],
+        ['The officer asked me where I was from.', 'I was', 'was I'],
+        ['They asked me what I was doing.', 'I was doing', 'was I doing'],
+        ['She asked me how I had found it.', 'I had found', 'had I found'],
+        ['He asked me which bus I took.', 'I took', 'did I take'],
+        ['Mum asked us what we had eaten.', 'we had eaten', 'had we eaten'],
+        ['The man asked me where he could buy tickets.', 'he could buy', 'could he buy'],
+        ['She asked me how old I was.', 'I was', 'was I'],
+        ['They asked us when we would arrive.', 'we would arrive', 'would we arrive'],
+        ['He asked me what I meant.', 'I meant', 'did I mean'],
+        ["My teacher asked me why I hadn't come.", "I hadn't", "hadn't I"],
+        ['She asked me how long I had waited.', 'I had waited', 'had I waited'],
+        ['Dad asked me where I had put his keys.', 'I had put', 'had I put'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L2('u8_l1'),
+    statement: 'I can use the passive to talk about different actions.',
+    items: [
+      // be + past participle, agreeing with the subject. The errors: the bare verb or the past simple for the
+      // participle (irregular verbs, so the two differ), or the wrong be. No bare verb that is also an adjective
+      // («is clean», «is open»), and no missing be, which can leave a grammatical active («The bridge built»).
+      ...items('present-past', 'form', [
+        ['The bridge was built long ago.', 'was built', 'was build'],
+        ['English is spoken in many countries.', 'spoken', 'spoke'],
+        ['This letter was written by my grandfather.', 'written', 'wrote'],
+        ['The cakes were eaten in minutes.', 'were', 'was'],
+        ['Rice is grown in many hot countries.', 'grown', 'grew'],
+        ['My bike was stolen last night.', 'stolen', 'stole'],
+        ['The windows are cleaned every week.', 'are', 'is'],
+        ['The story was told by my grandmother.', 'told', 'tell'],
+        ['These photos were taken in Petra.', 'taken', 'took'],
+        ['The car is washed every Friday.', 'is washed', 'is wash'],
+        ['The winners were given medals.', 'given', 'gave'],
+        ['Our house was painted last year.', 'was painted', 'was paint'],
+        ['Arabic is taught at every school.', 'is taught', 'is teach'],
+        ['The song was sung by the whole class.', 'sung', 'sang'],
+      ]),
+      // modal + be + past participle. The errors: no be, to after the modal, been after the modal, a bare verb or a
+      // past simple after be.
+      ...items('with-modals', 'form', [
+        ['The door must be locked.', 'be locked', 'be lock'],
+        ['Phones must be switched off.', 'be switched', 'switched'],
+        ['This medicine should be kept cold.', 'be kept', 'be keep'],
+        ['The homework must be finished today.', 'must be', 'must to be'],
+        ['The tickets can be bought online.', 'be bought', 'be buy'],
+        ['Plastic bottles can be recycled.', 'can be', 'can'],
+        ['The rules must be followed by everyone.', 'be followed', 'be follow'],
+        ['The work will be done tomorrow.', 'will be done', 'will be did'],
+        ['Students must be told about the test.', 'must be told', 'must told'],
+        ['The letter might be sent tomorrow.', 'be sent', 'be send'],
+        ["This room can't be used today.", 'be used', 'been used'],
+        ['The plants should be watered every day.', 'should be', 'should'],
+      ]),
+      // A passive question inverts be (no do); a negative puts not after be.
+      ...items('questions-negatives', 'form', [
+        ['Were the letters sent yesterday?', 'Were', 'Did'],
+        ['Was the window broken by the wind?', 'Was', 'Did'],
+        ["The match wasn't cancelled.", "wasn't cancelled", "wasn't cancel"],
+        ['Is English spoken in your home?', 'Is', 'Does'],
+        ['Where was this photo taken?', 'taken', 'took'],
+        ["The sandwiches weren't eaten at the party.", "weren't", "didn't"],
+        ['When was the school built?', 'was', 'did'],
+        ['Are the rooms cleaned every day?', 'Are', 'Do'],
+        ['The emails were not sent.', 'were not', 'not were'],
+        ["The homework isn't checked on Fridays.", "isn't checked", "isn't check"],
+        ['Why was the trip cancelled?', 'cancelled', 'cancel'],
+        ['Is this bread made locally?', 'made', 'make'],
+        ["The new rules weren't explained to us.", 'explained', 'explain'],
+        ['Who was the prize given to?', 'given', 'gave'],
       ]),
     ],
   },
