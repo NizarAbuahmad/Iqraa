@@ -17,8 +17,9 @@ by `lib/curriculum/scripts/generate-english-audio.ts`). An audit of the 1,050 st
 the plan found:
 
 - **Wrong register for Grade 5, 9 and 10 sentences.** The script put every grammar string in the
-  young set ("all are Grade 1–2"), so the ~1,950 Grade 5/9/10 grammar strings would have been read
-  "to a six-year-old child … a little slowly". None of the 2,990 grammar strings is voiced yet, so
+  young set ("all are Grade 1–2"), so about 1,700 Grade 5/9/10 grammar strings (and more as Grade 10
+  Semester 2 lands) would have been read "to a six-year-old child … a little slowly". None of the
+  2,990 grammar strings is voiced yet, so
   this cost nothing to fix.
 - **Dead air:** median 0.69 s of silence after the word (286 clips over 1 s, max 2.0 s), median
   0.16 s before it (max 1.1 s); 17.6 of 32.3 minutes are outside the speech (14.0 of them after it).
@@ -40,11 +41,24 @@ the plan found:
   or over 6 s of speech), then a gain to a −24 dBFS speech level (±12 dB, peak never over
   −1.5 dBFS), a cut keeping 0.06 s before and 0.15 s after the speech, and a 40 kbps 24 kHz mono
   MP3. `PROCESS_VERSION = 1`.
-- The generator rejects a bad take (listed, not uploaded), processes every kept one, needs ffmpeg
-  (exit 2) unless `--no-process`, and keeps `english-audio/_manifest.json` (text, register, model,
-  voice, process version, speech length, bytes per slug). New `--reprocess`: no OpenAI key,
+- The generator rejects a bad take (listed, not uploaded), processes every kept one, and checks the
+  RESULT before uploading it (`processedVerdict`: it still passes the verdict, lost at most 0.1 s of
+  speech, kept at most 0.12 s / 0.25 s of silence, peaks within 0.5 dB of the ceiling — otherwise
+  rejected as `processing` and not stored, and the run stops if the first 10 all fail, so a broken
+  ffmpeg build damages nothing). It needs ffmpeg (exit 2) unless `--no-process` (uploaded not
+  checked or processed). It keeps `english-audio/_manifest.json` (text, register, model, voice,
+  process version, speech length, bytes per slug), merge-written every 50 uploads and at the end,
+  and stamps every upload with `x-amz-meta-process-version`. New `--reprocess`: no OpenAI key,
   downloads each stored clip, processes it and puts it back under the same key and cache header;
-  skips clips already at the current process version, leaves a failing one untouched and lists it.
+  skips clips whose metadata or manifest entry is at the current process version, leaves a failing
+  one untouched and lists it. A refused R2 credential stops the run once, like a refused TTS key.
+  Run one instance at a time.
+- **Backups:** before a stored clip is first replaced (`--reprocess`, `--force`, `--only`), it is
+  copied to `english-audio-original/<slug>.mp3` — a sibling prefix the clip listing never reads —
+  unless a backup is already there (never overwritten); a clip whose backup fails is not replaced.
+  To restore: copy `english-audio-original/<slug>.mp3` back over `english-audio/<slug>.mp3`
+  (Cloudflare dashboard or any S3 client on the R2 endpoint) and delete the slug's entry in
+  `_manifest.json`; the backup has no process-version metadata, so the next `--reprocess` takes it.
 - `pnpm --filter @workspace/curriculum run english-audio-audit` (new): no credentials, `HEAD`s every
   planned clip on the public URL (6 at a time, backoff on 429/5xx with `Retry-After`) and prints
   coverage by grade and source; `--missing`, `--deep` (downloads and measures), `--fail-on-missing`.
@@ -66,14 +80,17 @@ rejected as blank; of the 1,049 kept, size median 28.1 → 5.3 KB (ratio 0.21, m
 `paint`, `a-plate-of`, `project` — are at the +12 dB clamp), peak max −2.6 dBFS. No frame louder
 than −43.5 dBFS (output level) was cut from any clip. Speech spans are within 40 ms of the raw ones
 or longer (a raised clip's soft edges cross the threshold) except `doughnut`, 0.07 s shorter: the
-removed part is a −44 dBFS click 70 ms before the word, not the word. 40 kbps keeps the spectrum
+removed part is a −44 dBFS click 70 ms before the word, not the word. The upload check passes all
+1,049 processed clips, and rejects 1,042 of them when handed the untrimmed clip instead (what a
+build that ignored the cut would produce). 40 kbps keeps the spectrum
 up to 10 kHz within about 1 dB on `snake`, `safe`, `blue`, `giraffe`. The new audit, run against
 the live bucket, reproduces 1,050 voiced and 3,188 missing (190 Grade 5 and 8 Grade 9 words and
 all 2,990 grammar strings); `--deep` reproduces the figures above.
 
 **Not done:** no clip was re-voiced or reprocessed and nothing was uploaded — the generator was not
 run in any mode. Nobody listened to the processed clips. The first real run is `pnpm --filter
-@workspace/curriculum run english-audio -- --reprocess` (cleans the 1,050 and writes the manifest;
+@workspace/curriculum run english-audio -- --reprocess` (backs up each original it replaces
+to `english-audio-original/`, cleans the 1,049 good clips and writes the manifest;
 `tie` is listed, re-voice it with `--only tie`), then the plain run (voices the 3,188 missing,
 processed). `evening.mp3` has no trailing silence and may be cut off; listen before trusting it.
 

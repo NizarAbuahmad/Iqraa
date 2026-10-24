@@ -9,9 +9,14 @@
  * is measured first and REJECTED — not uploaded, listed with its reason — when it is
  * blank, too short or too long (`clipVerdict`); a kept one is trimmed of its leading
  * and trailing silence, levelled to one speech level and re-encoded at 40 kbps
- * (`src/englishAudioProcess.ts`, run through ffmpeg by `audioFfmpeg.ts`) before it
- * is stored. `english-audio/_manifest.json` records how each clip was made (text,
- * register, model, voice, process version, speech length, bytes).
+ * (`src/englishAudioProcess.ts`, run through ffmpeg by `audioFfmpeg.ts`), and the
+ * RESULT is measured again and rejected (reason `processing`) unless it still holds
+ * its speech, its silences are trimmed and its peak is under the ceiling
+ * (`processedVerdict`) — so an ffmpeg build that mishandles the cut damages nothing.
+ * `english-audio/_manifest.json` records how each clip was made (text, register,
+ * model, voice, process version, speech length, bytes); every processed upload also
+ * carries `x-amz-meta-process-version`, so a lost manifest cannot get a clip
+ * processed twice.
  *
  *   pnpm --filter @workspace/curriculum run english-audio [-- <flags>]
  *
@@ -24,11 +29,24 @@
  *                  word a `PRONUNCIATION` hint first). With --reprocess: reprocess just these.
  *   --reprocess    no model, no OpenAI key: download each stored clip, measure it,
  *                  trim, level and re-encode it, and put it back under the same key.
- *                  Skips clips the manifest says were made under the current
- *                  `PROCESS_VERSION`; a clip that fails the verdict is left as it is
- *                  and listed (re-voice it with --only). Not with --force.
- *   --no-process   upload the model's MP3 as returned (no ffmpeg needed); the
- *                  manifest records processVersion 0 so a later --reprocess picks it up.
+ *                  Skips clips whose metadata or manifest entry says they were made under
+ *                  the current `PROCESS_VERSION`; a clip that fails a verdict is left as
+ *                  it is and listed (re-voice it with --only). Not with --force.
+ *   --no-process   upload the model's MP3 as returned, not checked or processed (no
+ *                  ffmpeg needed); it is recorded as processVersion 0 so a later
+ *                  --reprocess picks it up.
+ *
+ * Backups: before a stored clip is replaced for the first time (by --reprocess,
+ * --force or --only), it is copied to `english-audio-original/<slug>.mp3` — a
+ * sibling prefix, so the listing here never counts it. An existing backup is never
+ * overwritten (it stays the first, model-made original), and a clip whose backup
+ * cannot be made is not replaced. To restore one, copy it back over
+ * `english-audio/<slug>.mp3` (Cloudflare dashboard, or any S3 client against the R2
+ * endpoint) and delete the slug's entry from `_manifest.json`; the backup carries no
+ * process-version metadata, so the next --reprocess will process it again.
+ *
+ * Run ONE instance at a time: two runs would overwrite each other's manifest.
+ * The manifest is merge-written every 50 uploads and at the end.
  *
  * Needs OPENAI_API_KEY (except --reprocess and --dry-run), R2 credentials with
  * write access to `iqraa-public`, and ffmpeg with libmp3lame on PATH (except
@@ -38,31 +56,41 @@
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
-import { GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  CopyObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 
 import { loadEnvFile } from '../../../scripts/load-env.mjs';
 import { audioSlug } from '../src/englishHub.ts';
 import {
   AUDIO_MODEL,
   AUDIO_VOICE,
+  ENGLISH_AUDIO_BACKUP_PREFIX,
   ENGLISH_AUDIO_MANIFEST_KEY,
   ENGLISH_AUDIO_PREFIX,
+  PROCESS_VERSION_METADATA,
   audioPlan,
   emptyManifest,
   instructionsFor,
+  metadataProcessVersion,
   needsReprocess,
   parseManifest,
   type AudioItem,
   type AudioManifest,
 } from '../src/englishAudioPlan.ts';
-import { PROCESS_VERSION, clipVerdict } from '../src/englishAudioProcess.ts';
+import { PROCESS_VERSION, clipVerdict, processedVerdict } from '../src/englishAudioProcess.ts';
 import { assertFfmpeg, measureClip, processClip } from './audioFfmpeg.ts';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 loadEnvFile(path.join(HERE, '..', '..', '..', '.env'));
 
 const BUCKET = process.env.R2_PUBLIC_BUCKET || 'iqraa-public';
-/** Matches `ENGLISH_AUDIO_BASE_URL` in the app (pinned by `englishAudioPlan.test.ts`). */
+/** Matches `ENGLISH_AUDIO_BASE_URL` in the app (pinned by `englishAudioLocation.test.ts`). */
 const PREFIX = ENGLISH_AUDIO_PREFIX;
 /** Short, not immutable: `--force`, `--only` and `--reprocess` rewrite under the same key. */
 const CLIP_CACHE = 'public, max-age=86400';
@@ -165,9 +193,53 @@ async function speak(item: AudioItem): Promise<Buffer> {
   }
 }
 
-async function put(slug: string, body: Buffer, cacheControl = CLIP_CACHE): Promise<void> {
+const clipKey = (slug: string) => `${PREFIX}/${slug}.mp3`;
+const backupKey = (slug: string) => `${ENGLISH_AUDIO_BACKUP_PREFIX}/${slug}.mp3`;
+
+function isNotFound(err: unknown): boolean {
+  const e = err as { name?: string; $metadata?: { httpStatusCode?: number } };
+  return e.name === 'NotFound' || e.name === 'NoSuchKey' || e.$metadata?.httpStatusCode === 404;
+}
+
+/** An R2 refusal of the credentials (not of one object): every later request would fail the same way. */
+function isAccessDenied(err: unknown): boolean {
+  const e = err as { name?: string; $metadata?: { httpStatusCode?: number } };
+  return e.name === 'AccessDenied' || e.$metadata?.httpStatusCode === 401 || e.$metadata?.httpStatusCode === 403;
+}
+
+/**
+ * Copies the stored clip to `english-audio-original/<slug>.mp3` unless a backup is
+ * already there — never overwriting one, so it stays the first original. Throws if
+ * the backup cannot be made; the caller then does not replace the clip.
+ */
+async function backupOnce(slug: string): Promise<void> {
+  try {
+    await client.send(new HeadObjectCommand({ Bucket: BUCKET, Key: backupKey(slug) }));
+    return; // already backed up
+  } catch (err) {
+    if (!isNotFound(err)) throw err;
+  }
   await client.send(
-    new PutObjectCommand({ Bucket: BUCKET, Key: `${PREFIX}/${slug}.mp3`, Body: body, ContentType: 'audio/mpeg', CacheControl: cacheControl }),
+    new CopyObjectCommand({
+      Bucket: BUCKET,
+      Key: backupKey(slug),
+      CopySource: `${BUCKET}/${clipKey(slug).split('/').map(encodeURIComponent).join('/')}`,
+    }),
+  );
+  backedUp += 1;
+}
+
+/** Stores a clip, stamped with the process version it was made under (0: not processed). */
+async function put(slug: string, body: Buffer, processVersion: number, cacheControl = CLIP_CACHE): Promise<void> {
+  await client.send(
+    new PutObjectCommand({
+      Bucket: BUCKET,
+      Key: clipKey(slug),
+      Body: body,
+      ContentType: 'audio/mpeg',
+      CacheControl: cacheControl,
+      Metadata: { [PROCESS_VERSION_METADATA]: String(processVersion) },
+    }),
   );
 }
 
@@ -197,24 +269,78 @@ if (unknown.length) {
 
 let voiced = 0;
 let reprocessed = 0;
+let skippedByMetadata = 0;
+let backedUp = 0;
+let uploads = 0;
 let bytesBefore = 0;
 let bytesAfter = 0;
-let manifestChanged = false;
+/** Slugs this run changed in the manifest: a merge-write keeps these, and takes everything else from the stored copy. */
+const touched = new Set<string>();
 const rejected: { slug: string; reason: string }[] = [];
 const failed: string[] = [];
+/** Processing rejects among the first clips: if every one of the first few fails, the ffmpeg build is wrong — stop. */
+let processingTried = 0;
+let processingRejected = 0;
+const PROCESSING_PROBE = 10;
 
-function record(item: AudioItem, processVersion: number, speechS: number | null, bytes: number): void {
-  manifest.items[item.slug] = { text: item.text, register: item.register, model: AUDIO_MODEL, voice: AUDIO_VOICE, processVersion, speechS, bytes };
-  manifestChanged = true;
+let manifestWrite: Promise<void> = Promise.resolve();
+/**
+ * Merge-writes the manifest: re-reads the stored one, keeps this run's entries over
+ * it, writes the result. Serialised, so two workers never write at once. Best effort
+ * every 50 uploads (a failure is printed and the run goes on); `final` makes a failure
+ * fail the run.
+ */
+function writeManifest(final: boolean): Promise<void> {
+  manifestWrite = manifestWrite.then(async () => {
+    if (!touched.size) return;
+    try {
+      const latest = await readManifest();
+      for (const [slug, it] of Object.entries(latest.items)) if (!touched.has(slug)) manifest.items[slug] = it;
+      await client.send(
+        new PutObjectCommand({
+          Bucket: BUCKET,
+          Key: ENGLISH_AUDIO_MANIFEST_KEY,
+          Body: JSON.stringify(manifest, null, 1),
+          ContentType: 'application/json',
+          CacheControl: 'public, max-age=60',
+        }),
+      );
+    } catch (err) {
+      console.error(`could not write ${ENGLISH_AUDIO_MANIFEST_KEY}: ${(err as Error).message}`);
+      if (final) process.exitCode = 1;
+    }
+  });
+  return manifestWrite;
 }
 
-/** One model result → verdict → processed (or raw with --no-process) → stored. */
+function record(slug: string, entry: AudioManifest['items'][string]): void {
+  manifest.items[slug] = entry;
+  touched.add(slug);
+}
+
+/** After each successful upload; every 50th writes the manifest, so a killed run loses at most 49 entries. */
+async function uploaded(): Promise<void> {
+  uploads += 1;
+  if (uploads % 50 === 0) await writeManifest(false);
+}
+
+/** A processed clip that fails `processedVerdict`: listed, not stored. Stops the run when the first clips all fail. */
+function processingReject(slug: string, detail: string): void {
+  rejected.push({ slug, reason: `processing (${detail})` });
+  processingRejected += 1;
+  if (processingTried >= PROCESSING_PROBE && processingRejected === processingTried && !stopped) {
+    console.error(`the first ${processingTried} processed clips all failed the check — the ffmpeg build is likely wrong. Stopping.`);
+    stopped = true;
+  }
+}
+
+/** One model result → verdict → processed and checked (or raw with --no-process) → stored. */
 async function voiceOne(item: AudioItem): Promise<void> {
   const raw = await speak(item);
   let stored = raw;
+  let entry: AudioManifest['items'][string];
   if (noProcess) {
-    await put(item.slug, raw);
-    record(item, 0, null, raw.length);
+    entry = { text: item.text, register: item.register, model: AUDIO_MODEL, voice: AUDIO_VOICE, processVersion: 0, speechS: null, bytes: raw.length };
   } else {
     const verdict = clipVerdict(await measureClip(raw));
     if (!verdict.ok) {
@@ -222,18 +348,46 @@ async function voiceOne(item: AudioItem): Promise<void> {
       return;
     }
     const p = await processClip(raw);
+    processingTried += 1;
+    const checked = processedVerdict(p.before, p.after);
+    if (!checked.ok) return processingReject(item.slug, checked.detail);
     stored = p.out;
-    await put(item.slug, stored);
-    record(item, PROCESS_VERSION, Math.round(p.after.speechS * 100) / 100, stored.length);
+    entry = {
+      text: item.text, register: item.register, model: AUDIO_MODEL, voice: AUDIO_VOICE,
+      processVersion: PROCESS_VERSION, speechS: Math.round(p.after.speechS * 100) / 100, bytes: stored.length,
+    };
   }
+  // Replacing a stored clip (--force, --only): keep its first original.
+  if (already.has(item.slug)) await backupOnce(item.slug);
+  await put(item.slug, stored, entry.processVersion);
+  record(item.slug, entry);
   bytesBefore += raw.length;
   bytesAfter += stored.length;
   voiced += 1;
+  await uploaded();
 }
 
-/** One stored clip → verdict → processed → stored again under the same key and cache header. A reject is left untouched. */
+/**
+ * One stored clip → skipped if its metadata says it is processed → verdict →
+ * processed and checked → backed up once → stored again under the same key and
+ * cache header. A reject is left untouched.
+ */
 async function reprocessOne(item: AudioItem): Promise<void> {
-  const res = await client.send(new GetObjectCommand({ Bucket: BUCKET, Key: `${PREFIX}/${item.slug}.mp3` }));
+  const key = clipKey(item.slug);
+  const head = await client.send(new HeadObjectCommand({ Bucket: BUCKET, Key: key }));
+  // A clip with no manifest entry was made by this script before the manifest
+  // existed: the same model and voice, and the register the plan gives it (checked
+  // 2026-10-24 for all 1,050 then stored: every one was a hub word, voiced young
+  // exactly when it is in a Grade 1–4 lesson).
+  const base = manifest.items[item.slug] ?? { text: item.text, register: item.register, model: AUDIO_MODEL, voice: AUDIO_VOICE };
+  const stamped = metadataProcessVersion(head.Metadata);
+  if (stamped >= PROCESS_VERSION) {
+    // Processed already; the manifest lost it (a killed run). Put it back on record.
+    record(item.slug, { ...base, processVersion: stamped, speechS: null, bytes: head.ContentLength ?? 0 });
+    skippedByMetadata += 1;
+    return;
+  }
+  const res = await client.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
   const stored = Buffer.from(await res.Body!.transformToByteArray());
   const verdict = clipVerdict(await measureClip(stored));
   if (!verdict.ok) {
@@ -241,22 +395,16 @@ async function reprocessOne(item: AudioItem): Promise<void> {
     return;
   }
   const p = await processClip(stored);
-  await put(item.slug, p.out, res.CacheControl || CLIP_CACHE);
-  // A clip with no manifest entry was made by this script before the manifest
-  // existed: the same model and voice, and the register the plan gives it (checked
-  // 2026-10-24 for all 1,050 then stored: every one was a hub word, voiced young
-  // exactly when it is in a Grade 1–4 lesson).
-  const prev = manifest.items[item.slug];
-  manifest.items[item.slug] = {
-    ...(prev ?? { text: item.text, register: item.register, model: AUDIO_MODEL, voice: AUDIO_VOICE }),
-    processVersion: PROCESS_VERSION,
-    speechS: Math.round(p.after.speechS * 100) / 100,
-    bytes: p.out.length,
-  };
-  manifestChanged = true;
+  processingTried += 1;
+  const checked = processedVerdict(p.before, p.after);
+  if (!checked.ok) return processingReject(item.slug, checked.detail);
+  await backupOnce(item.slug);
+  await put(item.slug, p.out, PROCESS_VERSION, res.CacheControl || CLIP_CACHE);
+  record(item.slug, { ...base, processVersion: PROCESS_VERSION, speechS: Math.round(p.after.speechS * 100) / 100, bytes: p.out.length });
   bytesBefore += stored.length;
   bytesAfter += p.out.length;
   reprocessed += 1;
+  await uploaded();
 }
 
 const CONCURRENCY = 4;
@@ -271,6 +419,14 @@ async function runAll(todo: AudioItem[], one: (item: AudioItem) => Promise<void>
           await one(item);
         } catch (err) {
           if (stopped) return;
+          // Like the TTS 401/403: a refused credential fails every clip the same way.
+          if (isAccessDenied(err)) {
+            const e = err as { name?: string; message?: string };
+            console.error(`R2 refused ${item.slug} (${e.name}: ${e.message ?? 'access denied'}). Nothing more will be written.`);
+            console.error('these credentials need Object Read & Write on iqraa-public.');
+            stopped = true;
+            return;
+          }
           failed.push(item.slug);
           console.error(`${item.slug}: ${(err as Error).message}`);
         }
@@ -290,7 +446,7 @@ if (reprocess) {
   todo = candidates.filter(i => needsReprocess(manifest, i.slug, PROCESS_VERSION));
   skipped = candidates.length - todo.length;
   console.log(
-    `${already.size} clips stored, ${skipped} already at process version ${PROCESS_VERSION}, ${todo.length} to reprocess` +
+    `${already.size} clips stored, ${skipped} at process version ${PROCESS_VERSION} by the manifest, ${todo.length} to check and reprocess` +
       (orphans.length ? `, ${orphans.length} not in the plan (left as they are)` : ''),
   );
   if (missing.length) console.log(`  not stored, nothing to reprocess (voice them with --only): ${missing.join(', ')}`);
@@ -301,7 +457,7 @@ if (reprocess) {
   const young = todo.filter(i => i.register === 'young').length;
   console.log(
     `${plan.length} recordings in the plan, ${skipped} already voiced, ${todo.length} to voice (${young} young, ${todo.length - young} teen)` +
-      (noProcess ? ' — --no-process: stored as the model returns them' : ''),
+      (noProcess ? ' — --no-process: uploaded as the model returns them, not checked or processed' : ''),
   );
 }
 
@@ -314,36 +470,25 @@ if (dryRun) {
 
 await runAll(todo, reprocess ? reprocessOne : voiceOne);
 
-// Written once, also when some clips failed: the clips that did go up are stored
-// and must be on record, or a later --reprocess would run them through again.
-if (manifestChanged) {
-  try {
-    await client.send(
-      new PutObjectCommand({
-        Bucket: BUCKET,
-        Key: ENGLISH_AUDIO_MANIFEST_KEY,
-        Body: JSON.stringify(manifest, null, 1),
-        ContentType: 'application/json',
-        CacheControl: 'public, max-age=60',
-      }),
-    );
-  } catch (err) {
-    console.error(`could not write ${ENGLISH_AUDIO_MANIFEST_KEY}: ${(err as Error).message}`);
-    process.exitCode = 1;
-  }
-}
+// Also when some clips failed: the clips that did go up are stored and must be on
+// record (their metadata is the second guard against processing them twice).
+await writeManifest(true);
 
 const mb = (b: number) => (b / 1048576).toFixed(2);
 if (stopped) process.exitCode = 2;
 console.log(
   reprocess
-    ? `reprocessed ${reprocessed}, skipped ${skipped}`
-    : `voiced ${voiced}${noProcess ? ' (not processed: --no-process)' : ''}, skipped ${skipped}`,
+    ? `reprocessed ${reprocessed}, skipped ${skipped + skippedByMetadata}` +
+        (skippedByMetadata ? ` (${skippedByMetadata} by their process-version metadata, now back in the manifest)` : '')
+    : `voiced ${voiced}${noProcess ? ' (uploaded as the model returned them: not checked or processed)' : ''}, skipped ${skipped}`,
 );
+if (backedUp) console.log(`backed up ${backedUp} replaced originals → ${BUCKET}/${ENGLISH_AUDIO_BACKUP_PREFIX}/`);
 if (voiced + reprocessed) console.log(`bytes ${mb(bytesBefore)} MB → ${mb(bytesAfter)} MB → ${BUCKET}/${PREFIX}/`);
 if (rejected.length) {
-  console.error(`${rejected.length} rejected (${reprocess ? 'left as stored' : 'not uploaded'}) — re-voice with --only:`);
+  console.error(`${rejected.length} rejected (${reprocess ? 'left as stored' : 'not uploaded'}):`);
   for (const r of rejected) console.error(`  ${r.slug}: ${r.reason}`);
+  console.error('  blank / too-short / too-long: re-voice with --only <slug>.');
+  console.error('  processing: the processed clip failed its check — look at the ffmpeg build before retrying.');
   process.exitCode = process.exitCode || 1;
 }
 if (failed.length) {

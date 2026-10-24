@@ -25,7 +25,7 @@ import { clipVerdict, type ClipStats } from '../src/englishAudioProcess.ts';
 
 /**
  * Duplicated from `ENGLISH_AUDIO_BASE_URL` in `artifacts/mobile/services/englishAudio.ts`
- * (the app and this library do not share code); `englishAudioPlan.test.ts` pins the two equal.
+ * (the app and this library do not share code); `englishAudioLocation.test.ts` pins the two equal.
  */
 export const DEFAULT_AUDIO_BASE_URL = 'https://pub-d9ddd8f74e734a21824518b812652124.r2.dev/english-audio';
 
@@ -39,13 +39,16 @@ const failOnMissing = process.argv.includes('--fail-on-missing');
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
-/** `Retry-After` as milliseconds: delta-seconds or an HTTP date. */
+/** The longest `Retry-After` honoured: a server asking for an hour should not hang the audit for one. */
+const MAX_RETRY_AFTER_MS = 60_000;
+
+/** `Retry-After` as milliseconds (delta-seconds or an HTTP date), capped at `MAX_RETRY_AFTER_MS`. */
 function retryAfterMs(header: string | null): number {
   if (!header) return 0;
   const s = Number(header);
-  if (Number.isFinite(s)) return Math.max(0, s * 1000);
   const t = Date.parse(header);
-  return Number.isFinite(t) ? Math.max(0, t - Date.now()) : 0;
+  const ms = Number.isFinite(s) ? s * 1000 : Number.isFinite(t) ? t - Date.now() : 0;
+  return Math.min(MAX_RETRY_AFTER_MS, Math.max(0, ms));
 }
 
 /** 0.5 s, 1 s, 2 s … capped at 30 s, plus a little jitter so six workers do not retry in step. */
