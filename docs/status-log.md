@@ -277,9 +277,14 @@ type the Google address.
 - **The divider under the Google button reads «أو أنشئ حسابك ببريدك الإلكتروني»**
   (`orSignUpWithEmail`) instead of a bare «أو». `orDivider` stays for the sign-in screen.
 - The Google button's own text («Continue as <name>» with the address) is drawn by Google's
-  script in an iframe, so it cannot be restyled or relabelled from here.
+  script in an iframe, so it cannot be restyled or relabelled from here. It shows whichever
+  Google account the browser has active, not the last address used on Iqrra, so it must not be
+  captioned "last email used". A line under it says what it is (`googleAccountHint`: «حساب Google
+  المسجّل على هذا الجهاز. اضغط السهم لاختيار حساب آخر.»), **web only**: the phone app has no such
+  button and opens the account chooser every time.
 
-**Verified:** mobile `pnpm run typecheck`; mobile `pnpm test` (7,385 tests, 7,375 pass, 10 skipped, 0 fail).
+**Verified:** mobile `pnpm run typecheck`; mobile `pnpm test` (7,385 tests, 7,375 pass, 10 skipped,
+0 fail; 7,480 / 7,470 after the `googleAccountHint` line was added).
 **Not verified:** how it looks in a browser (phone, desktop, light, dark, RTL), and that the
 role pills, student method choice and the Google gate behave together on the screen. Nobody
 has loaded the deployed `/register` since the change.
