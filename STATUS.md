@@ -116,6 +116,7 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 
 - 2026-10-24 — Printed grammar forms fit the page, sign-off no longer covers rows, and True or false says right or wrong without pictures
 - 2026-10-24 — Grade 10 grammar (Semester 1) in the English corner — built, shown to nobody yet
+- 2026-10-24 — Generator screens: Retry repeats the run, and the evaluations picker row
 - 2026-10-24 — Generator screens: the toast clears the docked bar
 - 2026-10-23 — Students choose an email or a teacher's code
 - 2026-10-23 — Generator screens: Cancel then a refusal, and the banner contrast
@@ -147,7 +148,7 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 
 ## Finding older detail, and recording new work
 
-- The log has 384 sections. Anything cited elsewhere as
+- The log has 390 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line

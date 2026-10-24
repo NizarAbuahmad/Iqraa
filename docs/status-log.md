@@ -335,6 +335,36 @@ an invented «التقارير» screen. Both halves are the existing `howClassA
 verified), the book-source question and the ready-made-homework question (neither looked into),
 «أحفظ خطة الدرس بصيغة وورد» (already answered by the generic «PDF أو Word» export text).
 
+## Generator screens: Retry repeats the run, and the evaluations picker row — 2026-10-24
+
+The last two open items of the generator-screens work. Mobile only.
+
+**Retry repeats what was asked.** `GenerationStatus` hands its Retry button's press event to `onRetry`, so a screen that
+wrote `onRetry={generate}` passed that event to `generate` as its options, and on the worksheet a failed «ثلاثة مستويات»
+was retried as a single paper. The worksheet now records the run's options at the top of `generate` (`lastRunRef`, set
+right after the attempt is counted, before any refusal can return) and Retry calls `generate(lastRunRef.current)`, so a
+failed three-levels run is retried as three levels (a regenerate is carried the same way). The new pure
+`services/runOptions.ts` reads options defensively: only a literal `true` counts as a mode, so a press event or anything
+else can never switch one on. The quiz and lesson plan (no levels mode) now pass `() => generate()`, as activity and
+slides already did; a grep of `onRetry=` across `app/` found no other bare `generate`. Pinned by `runOptions.test.ts` and
+source tests for each screen's Retry arrow and the worksheet's ref, recording order and `generate(lastRunRef.current)`.
+
+**The evaluations builder's picker row.** `app/evaluations/new.tsx`'s local `PickerField` was the last screen in `app/`
+passing `accent + '15'`, so its wrapper now uses `selectedRow(accent, card)` (an opaque fill with matching ink), like the
+five generator screens. **The earlier entries guessed this row was likely 4.1 to 4.4:1 in dark. It was not:** this
+screen's accent is `palette.primary`, which measures 5.51 in light and 7.55 in dark either way, so the change makes the
+screen consistent and fixes no failing contrast; a test pins that the row stays at 4.5:1 or more and no worse than before
+in both modes. `app/admin/library.tsx` and `app/evaluations/[id]/scan-class.tsx` pass no `selectedTint` (they use the
+default secondary fill with a `palette.primary` label, a documented palette pair) and were left alone. The doc comment in
+`PickerField.tsx` no longer says a screen still passes `accent + '15'`.
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,290 tests, 7,280 pass, 10 skipped, 0 fail.
+
+**Not verified:** a real failed three-levels press followed by Retry (demo generation does not fail) beyond the source
+pins; the evaluations screen in a browser; any device.
+
+**Known limits.** None left from the generator-screens work except the device-only checks its entries list.
+
 ## Generator screens: the toast clears the docked bar — 2026-10-24
 
 A small follow-up to the five generator-screen ports. Mobile only. On a phone the generate button is docked at the
