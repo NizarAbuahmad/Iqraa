@@ -10,6 +10,30 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat app-help, twenty-eighth live pass: three short answers and wordings for five existing ones — 2026-10-24
+
+The pass was only half usable: from its seventh question the demo account answered «انتهت حصة
+التوليد الجديد لهذا الشهر» to everything that needed the model (17 of 30, all ten curriculum
+questions among them), so nothing about the model's answers can be said from it. The in-app
+answers still ran, and they found: «أرفع ملفاً إلى ملفاتي» (`howUploadFile`: there is no upload),
+«أضيف مرفقاً إلى الواجب» (`howAddHomework`), «أنسخ الاختبار القصير إلى الحافظة» and «أحفظه كملف
+وورد» (`faqA4`: «نسخ» and «تصدير» under every result — «القصير» was the word the matcher did not
+know) and «أطبع شرائح الدرس» (`howSaveSlides`; it had got the generic export answer, which says
+PDF or Word where the slides screen says PDF or PPTX).
+
+Three new short answers, each checked in code: `howRenameExam` (the server's
+`PATCH /evaluations/:id` takes only `classGroupId`, `examDate` and `examTime`, and the title is
+typed at «تقييم جديد»), `howExamAddTyped` («أضِف سؤالًا من إعدادك» opens `EditQuestionModal`,
+whose «نوع السؤال» chips come from `EDITABLE_TYPES`; a «صح / خطأ» question has «العبارة» and
+«الإجابة الصحيحة»), and `howWhoJoined` (a student row shows an «انضم» pill and «الحساب:» once an
+account is linked — `app/classes/[id]/index.tsx`). Pinned in `appHelp.test.ts` with near-misses
+that stay with the model.
+
+**Not checked, because of the allowance:** whether the model's answers to the curriculum controls
+are right this time; the app questions that fell to the model after the allowance ran out. The
+cap is the account's monthly generation allowance — a pass of 30 questions spends it, and this
+account has now had many passes.
+
 ## English corner: all ten grades, the official books, and free listening and reading sites, 2026-10-24
 
 The English corner had tabs for Grades 1–5, 9 and 10, so a student in Grade 6, 7 or 8 found no
