@@ -12,6 +12,7 @@ import {
   users,
   refreshTokens,
   rosterLinks,
+  rosterLinkRequests,
   lessonMedia,
   chatMessages,
   classGroups,
@@ -56,6 +57,7 @@ import {
 import { resolveClaimCode, type ClaimResolution, type ClaimRole } from "../lib/rosterClaim.js";
 import { generateLoginCode, hashLoginCode } from "../lib/loginCode.ts";
 import { guardianLimitReached } from "../lib/guardianLimit.ts";
+import { claimNeedsApproval, pendingLimitReached } from "../lib/claimDecision.ts";
 import { namesForNewAccount, redeemRoleCheck } from "../lib/redeemPolicy.ts";
 import { studentGradeIds } from "../lib/studentGrades.ts";
 import { resyncClassGroupThreadIfExists } from "../lib/classThread.js";
@@ -336,18 +338,22 @@ async function hasLiveRosterLink(userId: string): Promise<boolean> {
 
 type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-type ClaimWriteOutcome = "linked" | "taken" | "guardian_taken" | "guardian_limit";
+type ClaimWriteOutcome = "linked" | "pending" | "taken" | "guardian_taken" | "guardian_limit" | "pending_limit";
 
 /**
  * What a refused claim answers. One table for `/claim` and `/redeem`, so the two
  * cannot word the same refusal differently — the app translates by `code`.
  */
-const CLAIM_REFUSALS: Record<Exclude<ClaimWriteOutcome, "linked">, { error: string; code: string }> = {
+const CLAIM_REFUSALS: Record<Exclude<ClaimWriteOutcome, "linked" | "pending">, { error: string; code: string }> = {
   taken: { error: "This student is already linked to an account", code: "claim_already_linked" },
   guardian_taken: { error: "A parent account is already linked to this student", code: "claim_guardian_taken" },
   guardian_limit: {
     error: "This student already has the most parent accounts allowed. Ask the teacher to remove one.",
     code: "claim_guardian_limit",
+  },
+  pending_limit: {
+    error: "Too many accounts are waiting on this name. Ask the teacher.",
+    code: "claim_pending_limit",
   },
 };
 
@@ -416,6 +422,27 @@ async function linkRosterRowInTx(
         ),
       );
     if (guardianLimitReached(n)) return "guardian_limit";
+  }
+  // A student's pick off the CLASS list waits for the teacher (lib/claimDecision.ts).
+  // Nothing here touches roster_links, so the account stays without access until the
+  // teacher approves (routes/roster.ts).
+  if (claimNeedsApproval(resolved)) {
+    // Counted under the same row lock as the checks above, and BEFORE this account's
+    // earlier request is replaced, so a refused pick costs it nothing.
+    const [{ n } = { n: 0 }] = await tx
+      .select({ n: sql<number>`count(*)::int` })
+      .from(rosterLinkRequests)
+      .where(and(eq(rosterLinkRequests.studentId, resolved.studentId), ne(rosterLinkRequests.userId, userId)));
+    if (pendingLimitReached(n)) return "pending_limit";
+    // One waiting pick per account: choosing another name replaces the first.
+    await tx
+      .delete(rosterLinkRequests)
+      .where(and(eq(rosterLinkRequests.userId, userId), ne(rosterLinkRequests.studentId, resolved.studentId)));
+    await tx
+      .insert(rosterLinkRequests)
+      .values({ studentId: resolved.studentId, userId, relation: resolved.relation })
+      .onConflictDoNothing();
+    return "pending";
   }
   await tx
     .insert(rosterLinks)
@@ -1031,6 +1058,16 @@ router.post("/claim", authMiddleware, claimLimiter, async (req: AuthenticatedReq
 
     const userId = req.user!.id;
     const outcome = await db.transaction(tx => linkRosterRowInTx(tx, userId, resolved));
+    if (outcome === "pending") {
+      const [row] = await db
+        .select({ displayName: students.displayName })
+        .from(students)
+        .where(eq(students.id, resolved.studentId))
+        .limit(1);
+      // 202, not 201: nothing was linked. The app shows a waiting screen, not the class.
+      res.status(202).json({ pending: true, studentId: resolved.studentId, studentName: row?.displayName ?? "" });
+      return;
+    }
     if (outcome !== "linked") {
       res.status(409).json(CLAIM_REFUSALS[outcome]);
       return;
@@ -1103,7 +1140,12 @@ router.get("/claim", authMiddleware, async (req: AuthenticatedRequest, res) => {
       if (!seen) byStudent.set(r.studentId, { studentId: r.studentId, displayName: r.displayName, gradeId });
       else if (!seen.gradeId) seen.gradeId = gradeId;
     }
-    res.json({ links: [...byStudent.values()] });
+    const pending = await db
+      .select({ studentId: students.id, displayName: students.displayName })
+      .from(rosterLinkRequests)
+      .innerJoin(students, eq(students.id, rosterLinkRequests.studentId))
+      .where(and(eq(rosterLinkRequests.userId, req.user!.id), isNull(students.archivedAt)));
+    res.json({ links: [...byStudent.values()], pending });
   } catch (err) {
     logger.error({ err }, "claim list failed");
     res.status(500).json({ error: "Failed to load your links" });
@@ -1119,6 +1161,8 @@ router.get("/claim", authMiddleware, async (req: AuthenticatedRequest, res) => {
  */
 router.delete("/claim", authMiddleware, async (req: AuthenticatedRequest, res) => {
   try {
+    // A pick that is still waiting is withdrawn with the rest — "choose a different name".
+    await db.delete(rosterLinkRequests).where(eq(rosterLinkRequests.userId, req.user!.id));
     const removed = await db
       .delete(rosterLinks)
       .where(eq(rosterLinks.userId, req.user!.id))
@@ -1320,7 +1364,7 @@ function codeAccountUser(user: typeof users.$inferSelect, hasRosterLink: boolean
 
 /** Thrown inside the redeem transaction to roll the new user back when the roster row turns out to be taken. */
 class RedeemRefused extends Error {
-  constructor(readonly outcome: Exclude<ClaimWriteOutcome, "linked">) {
+  constructor(readonly outcome: Exclude<ClaimWriteOutcome, "linked" | "pending">) {
     super(outcome);
   }
 }
@@ -1412,6 +1456,9 @@ router.post("/redeem", redeemIpLimiter, redeemCodeLimiter, async (req, res) => {
     const loginCode = generateLoginCode();
     const names = namesForNewAccount(role, student.displayName);
 
+    // `as boolean`: assigned inside the transaction callback, which control-flow
+    // analysis does not follow, so a bare `false` initialiser narrows every read below to `false`.
+    let held = false as boolean;
     let user: typeof users.$inferSelect;
     try {
       user = await db.transaction(async tx => {
@@ -1436,7 +1483,8 @@ router.post("/redeem", redeemIpLimiter, redeemCodeLimiter, async (req, res) => {
         if (!created) throw new Error("Failed to create user");
 
         const outcome = await linkRosterRowInTx(tx, created.id, resolved);
-        if (outcome !== "linked") throw new RedeemRefused(outcome);
+        if (outcome !== "linked" && outcome !== "pending") throw new RedeemRefused(outcome);
+        held = outcome === "pending";
         return created;
       });
     } catch (err) {
@@ -1447,7 +1495,7 @@ router.post("/redeem", redeemIpLimiter, redeemCodeLimiter, async (req, res) => {
       throw err;
     }
 
-    if (resolved.relation === "self") {
+    if (resolved.relation === "self" && !held) {
       try {
         await syncClassThreadsForStudent(resolved.studentId);
         await resyncClassThreadsOfStudent(resolved.studentId);
@@ -1465,7 +1513,9 @@ router.post("/redeem", redeemIpLimiter, redeemCodeLimiter, async (req, res) => {
       accessToken,
       refreshToken: refreshTokenValue,
       loginCode,
-      user: codeAccountUser(user, true),
+      // A held claim has no link yet; the app's routing gate then waits on the teacher.
+      user: codeAccountUser(user, !held),
+      ...(held ? { pending: true, studentName: student.displayName } : {}),
     });
   } catch (err) {
     logger.error({ err }, "redeem failed");
