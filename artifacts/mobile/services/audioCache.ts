@@ -20,11 +20,13 @@ import {
   AUDIO_CACHE_ROOT,
   AUDIO_CACHE_VERSION,
   MIN_CLIP_BYTES,
+  MP3_SNIFF_BYTES,
   PREFETCH_CONCURRENCY,
   audioCacheFolder,
   cacheFileName,
   createFailureMemory,
   isTempFile,
+  looksLikeMp3,
   lruVictims,
   runLimited,
   slugFromCacheFile,
@@ -54,6 +56,8 @@ export interface FsLike {
   exists(path: FsPath): boolean;
   /** Bytes; 0 when missing. */
   size(path: FsPath): number;
+  /** The first `n` bytes of a file (fewer if it is shorter). */
+  head(path: FsPath, n: number): Uint8Array;
   /** What a player is handed (`file:///…`). */
   uri(path: FsPath): string;
   /** Deletes a file or a folder with everything in it. */
@@ -67,10 +71,23 @@ export interface FsLike {
 export interface AudioCache {
   /** The saved copy's URI, or null (never saved, or the OS cleared it). A hit counts as a use. */
   localUri(slug: string): string | null;
-  /** Saves a copy in the background unless one exists, one is on its way, or the link said not to. */
+  /**
+   * Saves a copy in the background (after a tap) unless one exists, one is on its way, or the
+   * link said not to. Queued ahead of prefetch items still waiting for a slot.
+   */
   save(slug: string): Promise<void>;
-  /** Saves each of `slugs`, `PREFETCH_CONCURRENCY` at a time. */
-  prefetch(slugs: readonly string[]): Promise<void>;
+  /**
+   * Saves each of `slugs` in the background. Replaces the previous prefetch: its items not yet
+   * started are dropped. Every download, prefetch or save, shares `PREFETCH_CONCURRENCY` slots.
+   */
+  prefetch(slugs: readonly string[]): Prefetch;
+}
+
+export interface Prefetch {
+  /** Resolves when this prefetch has nothing left to do (finished, replaced or cancelled). Never rejects. */
+  done: Promise<void>;
+  /** Stops it taking more items; a download already in flight finishes. No effect once replaced. */
+  cancel(): void;
 }
 
 export interface AudioCacheOptions {
@@ -93,7 +110,6 @@ export function createAudioCache(opts: AudioCacheOptions): AudioCache {
 
   /** slug → what is on disk. Null until the folder has been read (once per session). */
   let index: Map<string, { size: number; lastUsed: number }> | null = null;
-  const inFlight = new Map<string, Promise<void>>();
 
   const tryRemove = (path: FsPath) => {
     try {
@@ -152,11 +168,34 @@ export function createAudioCache(opts: AudioCacheOptions): AudioCache {
     }
   }
 
-  async function download(slug: string): Promise<void> {
+  // ─── One limit for every download ───────────────────────────────────────
+  // `PREFETCH_CONCURRENCY` slots shared by every prefetch and every save after a
+  // tap, so the rate-limited link never sees more than that from this phone. A
+  // tap's save is queued ahead of prefetch items still waiting.
+  let active = 0;
+  const waiting: (() => void)[] = [];
+  const acquire = (urgent: boolean): Promise<void> =>
+    new Promise(resolve => {
+      const go = () => {
+        active++;
+        resolve();
+      };
+      if (active < PREFETCH_CONCURRENCY) go();
+      else if (urgent) waiting.unshift(go);
+      else waiting.push(go);
+    });
+  const release = () => {
+    active--;
+    waiting.shift()?.();
+  };
+
+  /** Downloads one clip into place, in a slot the caller holds. */
+  async function transfer(slug: string): Promise<void> {
     const tmp = at(tempFileName(slug));
     const dest = at(cacheFileName(slug));
     try {
       const idx = load();
+      fs.ensureDir(dir); // the OS may have cleared the cache folder since `load()` made it
       tryRemove(tmp); // a leftover would make the download refuse to overwrite it
       try {
         await fs.download(urlFor(slug), tmp);
@@ -166,6 +205,11 @@ export function createAudioCache(opts: AudioCacheOptions): AudioCache {
       }
       const size = fs.size(tmp);
       if (size < MIN_CLIP_BYTES) return;
+      if (!looksLikeMp3(fs.head(tmp, MP3_SNIFF_BYTES))) {
+        // A 200 that is not a clip (a block page): as good as missing for this session.
+        failures.note(slug, 404);
+        return;
+      }
       if (fs.exists(dest)) tryRemove(dest);
       fs.move(tmp, dest);
       idx.set(slug, { size, lastUsed: now() });
@@ -177,23 +221,63 @@ export function createAudioCache(opts: AudioCacheOptions): AudioCache {
     }
   }
 
-  function save(slug: string): Promise<void> {
+  /** A clip on its way. `wanted` is the prefetch that asked for it; null once a tap wants it too. */
+  interface Job {
+    wanted: (() => boolean) | null;
+    done: Promise<void>;
+  }
+  const jobs = new Map<string, Job>();
+
+  function enqueue(slug: string, wanted: (() => boolean) | null): Promise<void> {
     try {
       if (!slug) return Promise.resolve();
-      if (present(slug)) return Promise.resolve();
-      const pending = inFlight.get(slug);
-      if (pending) return pending;
-      if (failures.shouldSkip(slug)) return Promise.resolve();
-      const p = download(slug).finally(() => inFlight.delete(slug));
-      inFlight.set(slug, p);
-      return p;
+      const existing = jobs.get(slug);
+      if (existing) {
+        if (!wanted) existing.wanted = null; // a tap keeps it wanted whatever the prefetch does
+        return existing.done;
+      }
+      if (present(slug) || failures.shouldSkip(slug)) return Promise.resolve();
+      const job: Job = { wanted, done: Promise.resolve() };
+      job.done = (async () => {
+        await acquire(!wanted);
+        try {
+          // Checked again in the slot: a newer prefetch, a cancel or a 429 may have come while it waited.
+          if (job.wanted && !job.wanted()) return;
+          if (failures.shouldSkip(slug) || present(slug)) return;
+          await transfer(slug);
+        } catch {
+          // Not saved.
+        } finally {
+          release();
+          jobs.delete(slug);
+        }
+      })();
+      jobs.set(slug, job);
+      return job.done;
     } catch {
       return Promise.resolve();
     }
   }
 
-  async function prefetch(slugs: readonly string[]): Promise<void> {
-    await runLimited([...new Set(slugs)], PREFETCH_CONCURRENCY, save);
+  function save(slug: string): Promise<void> {
+    return enqueue(slug, null);
+  }
+
+  /** Bumped by every prefetch and by its cancel: a prefetch runs only while it is the newest. */
+  let generation = 0;
+
+  function prefetch(slugs: readonly string[]): Prefetch {
+    const mine = ++generation;
+    const wanted = () => generation === mine;
+    const done = runLimited([...new Set(slugs)], PREFETCH_CONCURRENCY, async slug => {
+      if (wanted()) await enqueue(slug, wanted);
+    });
+    return {
+      done,
+      cancel() {
+        if (generation === mine) generation++;
+      },
+    };
   }
 
   return { localUri, save, prefetch };

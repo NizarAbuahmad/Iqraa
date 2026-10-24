@@ -70,10 +70,12 @@ export default function EnglishHubLessonScreen() {
   const readingSentences = useMemo(() => offeredReadingSentences(lessonId ?? ''), [lessonId]);
   // On a phone, fetch this lesson's clips ahead so its activities play without the network
   // (a no-op on the web). Grammar strings only once the grammar is offered: they are not shown before.
+  // Leaving the lesson cancels what has not started.
   const lessonShown = Boolean(lesson);
   const grammarShown = grammar !== null;
   useEffect(() => {
-    if (lessonId && lessonShown) prefetchLessonAudio(lessonId, { grammar: grammarShown });
+    if (!lessonId || !lessonShown) return undefined;
+    return prefetchLessonAudio(lessonId, { grammar: grammarShown });
   }, [lessonId, lessonShown, grammarShown]);
   const row = isRTL ? 'row-reverse' : 'row';
   const align = isRTL ? 'right' : 'left';

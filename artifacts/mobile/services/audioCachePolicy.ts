@@ -23,7 +23,10 @@ export function audioCacheFolder(version: number = AUDIO_CACHE_VERSION): string 
   return `v${version}`;
 }
 
-/** Total size kept; over it, the least recently used clips go. The whole corner is a few tens of MB. */
+/**
+ * Total size kept; over it, the least recently used clips go. Far above what the corner needs:
+ * the bucket's manifest listed 652 clips totalling 3.8 MB (checked 2026-10-24).
+ */
 export const AUDIO_CACHE_CAP_BYTES = 40 * 1024 * 1024;
 
 /**
@@ -33,7 +36,23 @@ export const AUDIO_CACHE_CAP_BYTES = 40 * 1024 * 1024;
  */
 export const MIN_CLIP_BYTES = 1024;
 
-/** Background downloads in flight at once (a lesson's prefetch). */
+/**
+ * How many bytes `looksLikeMp3` reads from the start of a download.
+ */
+export const MP3_SNIFF_BYTES = 3;
+
+/**
+ * Whether a downloaded body starts like an MP3: an ID3 tag ("ID3"), or an MPEG
+ * frame sync (0xFF, then a byte whose top three bits are set). A 200 that is a
+ * block page or an error document passes the size floor but not this, and would
+ * otherwise be kept and "played" as silence for good.
+ */
+export function looksLikeMp3(head: Uint8Array): boolean {
+  if (head.length >= 3 && head[0] === 0x49 && head[1] === 0x44 && head[2] === 0x33) return true;
+  return head.length >= 2 && head[0] === 0xff && (head[1] & 0xe0) === 0xe0;
+}
+
+/** Background downloads in flight at once, across the whole cache (every prefetch and every save after a tap). */
 export const PREFETCH_CONCURRENCY = 2;
 
 /** After a 429 the background fetchers wait this long before trying the link again. */

@@ -56,20 +56,27 @@ function nativeSource(word: string): { uri: string } {
   return { uri: remote };
 }
 
+const NOTHING_TO_CANCEL = () => {};
+
 /**
- * Fetches a hub lesson's clips onto the phone in the background, two at a time,
- * so its activities play without the network. Called once when the lesson
- * screen opens; fire-and-forget. `grammar: false` while the lesson's grammar is
- * not offered (no teacher has signed it), so only the words are fetched.
- * Nothing on the web — the browser has its own cache.
+ * Fetches a hub lesson's clips onto the phone in the background so its
+ * activities play without the network. Called from the lesson screen's effect,
+ * which hands the returned cancel back as its cleanup: leaving the lesson stops
+ * its queue, and opening another replaces it. Every background download in the
+ * cache shares two slots (`audioCache.ts`). `grammar: false` while the lesson's
+ * grammar is not offered (no teacher has signed it), so only the words are
+ * fetched. Nothing on the web — the browser has its own cache.
  */
-export function prefetchLessonAudio(lessonId: string, opts: { grammar?: boolean } = {}): void {
-  if (Platform.OS === 'web') return;
+export function prefetchLessonAudio(lessonId: string, opts: { grammar?: boolean } = {}): () => void {
+  if (Platform.OS === 'web') return NOTHING_TO_CANCEL;
   try {
     const slugs = lessonAudioTexts(lessonId, opts).map(audioSlug);
-    void cache().prefetch(slugs).catch(() => {});
+    const run = cache().prefetch(slugs);
+    void run.done.catch(() => {});
+    return () => run.cancel();
   } catch {
     // A lesson that cannot be fetched ahead still plays from the network.
+    return NOTHING_TO_CANCEL;
   }
 }
 

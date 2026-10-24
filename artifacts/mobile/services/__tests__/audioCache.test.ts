@@ -10,17 +10,27 @@ import assert from 'node:assert/strict';
 import { createAudioCache, type FsEntry, type FsLike } from '../audioCache.ts';
 import { MIN_CLIP_BYTES, RATE_LIMIT_COOLDOWN_MS, createFailureMemory, tempFileName } from '../audioCachePolicy.ts';
 
-type Reply = { status: number; bytes: number } | { status: 'offline'; partial: number };
+/** A reply's body: `head` is its first bytes (an ID3 tag unless a test says otherwise). */
+type Reply = { status: number; bytes: number; head?: Uint8Array } | { status: 'offline'; partial: number };
 
-/** Files keyed by their path from the cache root ("english-audio/v1/cat.mp3"); a folder is a key with no size. */
+const ascii = (s: string) => Uint8Array.from([...s].map(c => c.charCodeAt(0)));
+const ID3 = ascii('ID3');
+
+/**
+ * Files keyed by their path from the cache root ("english-audio/v1/cat.mp3"); a folder is a key with no size.
+ * Like the real thing, a download or a move into a folder that does not exist fails.
+ */
 function fakeFs(replies: Record<string, Reply> = {}, clock: () => number = () => 0) {
-  const files = new Map<string, { size: number; mtime: number }>();
+  const files = new Map<string, { size: number; mtime: number; head?: Uint8Array }>();
   const dirs = new Set<string>();
   const downloads: string[] = [];
   let running = 0;
   let peak = 0;
   let gate: Promise<void> | null = null;
   const key = (p: string[]) => p.join('/');
+  const needParent = (p: string[]) => {
+    if (!dirs.has(key(p.slice(0, -1)))) throw new Error(`no folder for ${key(p)}`);
+  };
   const fs: FsLike = {
     listDir(path) {
       const prefix = key(path) + '/';
@@ -43,6 +53,11 @@ function fakeFs(replies: Record<string, Reply> = {}, clock: () => number = () =>
     },
     exists: path => files.has(key(path)),
     size: path => files.get(key(path))?.size ?? 0,
+    head(path, n) {
+      const f = files.get(key(path));
+      if (!f) throw new Error('no file');
+      return (f.head ?? new Uint8Array()).slice(0, n);
+    },
     uri: path => `file:///cache/${key(path)}`,
     remove(path) {
       const k = key(path);
@@ -54,6 +69,7 @@ function fakeFs(replies: Record<string, Reply> = {}, clock: () => number = () =>
       const f = files.get(key(from));
       if (!f) throw new Error('no source');
       if (files.has(key(to))) throw new Error('destination exists');
+      needParent(to);
       files.delete(key(from));
       files.set(key(to), f);
     },
@@ -64,15 +80,16 @@ function fakeFs(replies: Record<string, Reply> = {}, clock: () => number = () =>
       try {
         if (gate) await gate;
         await Promise.resolve();
+        needParent(to);
         const slug = url.split('/').pop()!.replace(/\.mp3$/, '');
         const r = replies[slug] ?? { status: 200, bytes: 5000 };
         if (r.status === 'offline') {
           // Android streams into the target: a dropped connection can leave part of it.
-          if (r.partial) files.set(key(to), { size: r.partial, mtime: clock() });
+          if (r.partial) files.set(key(to), { size: r.partial, mtime: clock(), head: ID3 });
           throw new Error('Unable to download a file: timeout');
         }
         if (r.status !== 200) throw new Error(`Unable to download a file: response has status: ${r.status}`);
-        files.set(key(to), { size: r.bytes, mtime: clock() });
+        files.set(key(to), { size: r.bytes, mtime: clock(), head: r.head ?? ID3 });
       } finally {
         running--;
       }
@@ -119,7 +136,7 @@ describe('hit or miss', () => {
     const s = setup();
     await s.cache.save('cat');
     await s.cache.save('cat');
-    await s.cache.prefetch(['cat']);
+    await s.cache.prefetch(['cat']).done;
     assert.equal(s.downloads.length, 1);
   });
 
@@ -143,8 +160,18 @@ describe('hit or miss', () => {
     const s = setup();
     await s.cache.save('cat');
     s.files.delete(clip('cat'));
-    await s.cache.prefetch(['cat']);
+    await s.cache.prefetch(['cat']).done;
     assert.equal(s.downloads.length, 2);
+  });
+
+  it('the OS clearing the whole folder mid-session does not stop the next save', async () => {
+    const s = setup();
+    await s.cache.save('cat');
+    s.fs.remove(['english-audio']);
+    assert.ok(!s.dirs.has('english-audio/v1'));
+    await s.cache.save('dog');
+    assert.ok(s.cache.localUri('dog'), 'saved into a re-created folder');
+    assert.equal(s.cache.localUri('cat'), null);
   });
 
   it('copies saved in an earlier session are found', async () => {
@@ -170,6 +197,28 @@ describe('nothing partial is ever playable', () => {
     assert.equal(s.cache.localUri('cat'), null);
     assert.ok(s.cache.localUri('dog'));
     assert.deepEqual([...s.files.keys()], [clip('dog')]);
+  });
+
+  it('a 200 that is not an MP3 (a block page) is not kept, and not fetched again in the background', async () => {
+    const html = ascii('<!DOCTYPE html><html>' + 'x'.repeat(5000));
+    const s = setup({ cat: { status: 200, bytes: 5 * 1024, head: html } });
+    await s.cache.save('cat');
+    assert.equal(s.cache.localUri('cat'), null);
+    assert.deepEqual([...s.files.keys()], []);
+    await s.cache.save('cat');
+    await s.cache.prefetch(['cat']).done;
+    assert.equal(s.downloads.length, 1);
+  });
+
+  it('an ID3-tagged body and a bare frame-sync body are kept', async () => {
+    const s = setup({
+      tagged: { status: 200, bytes: 4000, head: ascii('ID3\u0004') },
+      bare: { status: 200, bytes: 4000, head: Uint8Array.from([0xff, 0xfb, 0x90, 0x64]) },
+    });
+    await s.cache.save('tagged');
+    await s.cache.save('bare');
+    assert.ok(s.cache.localUri('tagged'));
+    assert.ok(s.cache.localUri('bare'));
   });
 
   it('a non-200 leaves nothing behind', async () => {
@@ -251,23 +300,23 @@ describe('the rate-limited link', () => {
     await s.cache.save('gone');
     s.advance(10 * RATE_LIMIT_COOLDOWN_MS);
     await s.cache.save('gone');
-    await s.cache.prefetch(['gone']);
+    await s.cache.prefetch(['gone']).done;
     assert.equal(s.downloads.length, 1);
   });
 
   it('a 429 pauses background fetches for the cool-down, then they resume', async () => {
     const s = setup({ cat: { status: 429, bytes: 0 } });
     await s.cache.save('cat');
-    await s.cache.prefetch(['dog', 'cow']);
+    await s.cache.prefetch(['dog', 'cow']).done;
     assert.deepEqual(s.downloads, [url('cat')]);
     s.advance(RATE_LIMIT_COOLDOWN_MS);
-    await s.cache.prefetch(['dog', 'cow']);
+    await s.cache.prefetch(['dog', 'cow']).done;
     assert.equal(s.downloads.length, 3);
   });
 
   it('a 429 halfway through a prefetch stops the rest of it', async () => {
     const s = setup({ b: { status: 429, bytes: 0 } });
-    await s.cache.prefetch(['a', 'b', 'c', 'd', 'e', 'f']);
+    await s.cache.prefetch(['a', 'b', 'c', 'd', 'e', 'f']).done;
     // 'a' and 'b' start together; 'b' answers 429, so of the rest at most the one
     // already in flight beside it runs.
     assert.ok(s.downloads.length <= 3, String(s.downloads.length));
@@ -277,7 +326,7 @@ describe('the rate-limited link', () => {
   it('a prefetch never has more than two downloads in flight', async () => {
     const s = setup();
     const open = s.hold();
-    const done = s.cache.prefetch(['a', 'b', 'c', 'd', 'e', 'f', 'g']);
+    const { done } = s.cache.prefetch(['a', 'b', 'c', 'd', 'e', 'f', 'g']);
     await new Promise(r => setTimeout(r, 5));
     assert.equal(s.downloads.length, 2);
     open();
@@ -289,8 +338,87 @@ describe('the rate-limited link', () => {
   it('a prefetch skips what is already saved and repeats in its own list', async () => {
     const s = setup();
     await s.cache.save('a');
-    await s.cache.prefetch(['a', 'b', 'b', 'c']);
+    await s.cache.prefetch(['a', 'b', 'b', 'c']).done;
     assert.deepEqual(s.downloads, [url('a'), url('b'), url('c')]);
+  });
+});
+
+describe('one limit for the whole cache', () => {
+  const tick = () => new Promise(r => setTimeout(r, 5));
+
+  it('two prefetches and two taps’ saves never have more than two downloads in flight', async () => {
+    const s = setup();
+    const open = s.hold();
+    const first = s.cache.prefetch(['a1', 'a2', 'a3', 'a4']);
+    const second = s.cache.prefetch(['b1', 'b2', 'b3', 'b4']);
+    const taps = [s.cache.save('t1'), s.cache.save('t2')];
+    await tick();
+    assert.equal(s.downloads.length, 2, 'two in flight while the link is held');
+    open();
+    await Promise.all([first.done, second.done, ...taps]);
+    assert.equal(s.peak(), 2);
+    for (const k of ['b1', 'b2', 'b3', 'b4', 't1', 't2']) assert.ok(s.cache.localUri(k), k);
+  });
+
+  it('a second prefetch drops the first one’s items that had not started', async () => {
+    const s = setup();
+    const open = s.hold();
+    const first = s.cache.prefetch(['a1', 'a2', 'a3', 'a4', 'a5']);
+    await tick();
+    const second = s.cache.prefetch(['b1', 'b2']);
+    open();
+    await Promise.all([first.done, second.done]);
+    assert.deepEqual(s.downloads.slice(0, 2), [url('a1'), url('a2')], 'the two already in flight finish');
+    assert.deepEqual(s.downloads.slice(2).sort(), [url('b1'), url('b2')]);
+    for (const k of ['a3', 'a4', 'a5']) assert.equal(s.cache.localUri(k), null, k);
+  });
+
+  it('cancel stops a prefetch taking anything more', async () => {
+    const s = setup();
+    const open = s.hold();
+    const p = s.cache.prefetch(['a', 'b', 'c', 'd', 'e']);
+    await tick();
+    p.cancel();
+    open();
+    await p.done;
+    assert.equal(s.downloads.length, 2);
+  });
+
+  it('cancelling an older prefetch does not cancel the newer one', async () => {
+    const s = setup();
+    const first = s.cache.prefetch(['a']);
+    const second = s.cache.prefetch(['b', 'c', 'd']);
+    first.cancel();
+    await Promise.all([first.done, second.done]);
+    for (const k of ['b', 'c', 'd']) assert.ok(s.cache.localUri(k), k);
+  });
+
+  it('a tap’s save goes ahead of prefetch items still waiting for a slot', async () => {
+    const s = setup();
+    const open = s.hold();
+    const first = s.cache.prefetch(['a1', 'a2']); // holds both slots
+    await tick();
+    const second = s.cache.prefetch(['b1', 'b2']); // waits for a slot
+    await tick();
+    const tap = s.cache.save('tapped');
+    open();
+    await Promise.all([first.done, second.done, tap]);
+    assert.equal(s.downloads[2], url('tapped'));
+  });
+
+  it('a tap on a clip a cancelled prefetch had queued still saves it', async () => {
+    const s = setup();
+    const open = s.hold();
+    const first = s.cache.prefetch(['a1', 'a2']); // holds both slots
+    await tick();
+    const second = s.cache.prefetch(['b1', 'b2']); // b1, b2 queued, not started
+    await tick();
+    const tap = s.cache.save('b1'); // the tap makes b1 wanted whatever happens to the prefetch
+    second.cancel();
+    open();
+    await Promise.all([first.done, second.done, tap]);
+    assert.ok(s.cache.localUri('b1'));
+    assert.equal(s.cache.localUri('b2'), null, 'cancelled before it started');
   });
 });
 
@@ -304,6 +432,7 @@ describe('never rejects', () => {
       ensureDir: boom,
       exists: boom,
       size: boom,
+      head: boom,
       uri: boom,
       remove: boom,
       move: boom,
@@ -312,7 +441,7 @@ describe('never rejects', () => {
     const cache = createAudioCache({ fs, urlFor: url });
     assert.equal(cache.localUri('cat'), null);
     await cache.save('cat');
-    await cache.prefetch(['cat', 'dog']);
+    await cache.prefetch(['cat', 'dog']).done;
   });
 
   it('a move that fails leaves no clip and resolves', async () => {

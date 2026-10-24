@@ -31,6 +31,15 @@ export const expoFs: FsLike = {
   },
   exists: path => file(path).exists,
   size: path => file(path).size ?? 0,
+  head(path, n) {
+    // `FileHandle.readBytes` (expo-file-system 19): reads only the first bytes, not the whole clip.
+    const h = file(path).open();
+    try {
+      return h.readBytes(n);
+    } finally {
+      h.close();
+    }
+  },
   uri: path => file(path).uri,
   remove(path) {
     const f = file(path);

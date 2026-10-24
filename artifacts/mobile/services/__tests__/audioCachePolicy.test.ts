@@ -11,6 +11,7 @@ import {
   cacheFileName,
   createFailureMemory,
   isTempFile,
+  looksLikeMp3,
   lruVictims,
   runLimited,
   slugFromCacheFile,
@@ -65,6 +66,27 @@ describe('lruVictims', () => {
 
   it('ties break by name so the order is stable', () => {
     assert.deepEqual(lruVictims([f('b', 10, 5), f('a', 10, 5)], 10), ['a']);
+  });
+});
+
+describe('looksLikeMp3', () => {
+  const bytes = (...b: number[]) => Uint8Array.from(b);
+  const text = (s: string) => Uint8Array.from([...s].map(c => c.charCodeAt(0)));
+
+  it('an ID3 tag, or an MPEG frame sync, is an MP3', () => {
+    assert.equal(looksLikeMp3(text('ID3')), true);
+    assert.equal(looksLikeMp3(bytes(0xff, 0xfb, 0x90)), true); // MPEG-1 Layer III
+    assert.equal(looksLikeMp3(bytes(0xff, 0xf3)), true); // MPEG-2 Layer III
+    assert.equal(looksLikeMp3(bytes(0xff, 0xe2)), true); // top three bits set is the sync
+  });
+
+  it('an HTML block page, an XML error, empty or short reads are not', () => {
+    assert.equal(looksLikeMp3(text('<!DOCTYPE html>')), false);
+    assert.equal(looksLikeMp3(text('<?xml')), false);
+    assert.equal(looksLikeMp3(bytes(0xff, 0x1f)), false); // 0xFF, but not a frame sync
+    assert.equal(looksLikeMp3(bytes(0xff)), false);
+    assert.equal(looksLikeMp3(text('ID')), false);
+    assert.equal(looksLikeMp3(bytes()), false);
   });
 });
 

@@ -47,7 +47,8 @@ describe('the web path is untouched', () => {
     const start = src.indexOf('export function prefetchLessonAudio(');
     assert.ok(start >= 0, 'prefetchLessonAudio not exported');
     const firstLine = src.slice(start).split('\n').slice(1).find(l => l.trim());
-    assert.equal(firstLine?.trim(), "if (Platform.OS === 'web') return;");
+    assert.equal(firstLine?.trim(), "if (Platform.OS === 'web') return NOTHING_TO_CANCEL;");
+    assert.match(src, /^const NOTHING_TO_CANCEL = \(\) => \{\};$/m);
   });
 });
 
@@ -62,6 +63,11 @@ describe('the lesson screen fetches ahead', () => {
     assert.ok(effect >= 0 && call - effect < 200, 'the call sits inside a useEffect');
     const notFound = screen.indexOf('if (!lesson) {');
     assert.ok(notFound > call, 'the effect runs before the early return');
+  });
+
+  it('the effect returns the cancel, so leaving the lesson stops its queue', () => {
+    assert.match(screen, /return prefetchLessonAudio\(lessonId, \{ grammar: grammarShown \}\);/);
+    assert.match(src, /export function prefetchLessonAudio\([^)]*\): \(\) => void \{/);
   });
 });
 
