@@ -32,6 +32,29 @@ near-misses that stay with the model («حوّل ورقة العمل إلى مل
 and the class pass rate — I found no screen for any of the three (the results dashboard shows a
 status and a percentage, not a time, and there is no pass mark), so an app answer would invent
 one. A «حددي» (feminine) in the model's worksheet-to-quiz answer is the model's, not the app's.
+## Tests for the login-code reissue route — 2026-10-24
+
+`POST /students/:id/links/:userId/login-code` (a teacher gives a parent or student who lost their personal
+login code a new one) had only the rule `canReissueLoginCode` under a unit test. New
+`routes/__tests__/loginCodeReissue.db.test.ts` runs the route against a real database, 9 tests, with accounts
+made through the real `/auth/redeem` and `/auth/add-email`. Tests only; no production code changed.
+
+**What it pins:** a code-only account gets a new code and only its hash is stored; the old code stops signing in;
+every open session of that account is deleted and the old refresh token no longer renews; a teacher who does not
+own the student, and an account not linked to that student, are both 404 and nothing changes (the other
+account's code keeps working); no token is 401 and a student's own token is refused; the lockout case the rule
+was changed for (an email and password added but the address never verified) is reissued, and once the address is
+verified the same call is a 409 `not_a_code_account` that leaves the current code working; a Google account, an
+account that never had a code and a verified email-and-password account are each 409 and nothing is minted.
+
+**Verified:** 9/9 against a local Postgres 16; the whole api-server suite passes 2557/2557 with
+`REQUIRE_DB_TESTS=true`; `pnpm run typecheck` clean. Two mutation checks, each rebuilt and run: dropping the
+refresh-token delete failed exactly the two session tests; replacing the rule with "any account" failed the
+lockout test and all three refusal tests. Both restored.
+
+**Not covered:** the teacher-consent gate on the roster routes (the test teachers carry `roster_consent_at` so
+the route can be reached; no test asserts the `roster_consent_required` refusal by its code), the race between a
+reissue and a sign-in on the row lock, and the `logger.info` line.
 
 ## English corner: Dana's review (Grades 2, 4, 5) — three glosses, one picture, 201 recordings uploaded — 2026-10-24
 
