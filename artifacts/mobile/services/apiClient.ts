@@ -6,7 +6,7 @@ import * as storage from './secureStorage';
 import { fetchWithTimeout } from './fetchWithTimeout';
 import { originHeaders } from './clientPlatform';
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, isSessionLost } from './sessionLoss';
-import { isGuardianRequiredBody } from './guardianApproval';
+import { noteGuardianForbidden } from './guardianForbidden';
 
 const LOCAL_DEV_API = 'http://localhost:8080/api';
 
@@ -238,18 +238,9 @@ export async function apiFetch(
     if (isSessionLost(path, hadRefreshToken)) _onRefreshFailed?.();
   }
 
-  if (res.status === 403 && _onGuardianRequired) {
-    // A clone, so the caller can still read the body. Fire and forget: nothing waits on this. `clone()` throws
-    // on a transport that cannot (Expo's native fetch, used for the chat stream, answers "Not implemented"),
-    // and that must never turn a 403 into a rejected call: the caller still reads the real answer.
-    try {
-      void res.clone().text().then(text => {
-        if (isGuardianRequiredBody(text)) _onGuardianRequired?.();
-      }).catch(() => {});
-    } catch {
-      // The next call over a transport that can clone will report it.
-    }
-  }
+  // A clone is read, so the caller can still read the body (see guardianForbidden.ts).
+  // The callback is read when the body arrives, not now, as before.
+  noteGuardianForbidden(res, _onGuardianRequired ? () => _onGuardianRequired?.() : null);
 
   return res;
 }
