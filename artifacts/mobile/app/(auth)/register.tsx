@@ -157,6 +157,36 @@ export default function RegisterScreen() {
     confirmPassword === password &&
     readyToSignUp;
 
+  // The agreement boxes close the form, just above the button that creates the
+  // account, so they are the last thing read before the tap. They govern every
+  // way to sign up here, Google included: «متابعة عبر Google» stays gated on
+  // them (`readyToSignUp`) and its hint says where they are. It used to sit under
+  // «إنشاء حساب» and gate only the password form, so Google created accounts
+  // nobody had asked to accept anything.
+  const agreements = (
+    <>
+      <CheckRow checked={termsAccepted} onPress={() => setTermsAccepted(v => !v)} isRTL={isRTL} colors={colors}>
+        {lang === 'ar' ? 'أوافق على ' : 'I agree to the '}
+        {/* Underlined: the two links fill most of the sentence, and
+            tapping one opened the policy when the tap was meant to tick
+            the box. Only «أوافق على» and the box itself toggle. */}
+        <Text style={{ color: colors.primary, textDecorationLine: 'underline' }} accessibilityRole="link" onPress={() => router.push('/legal/terms')}>
+          {t('termsOfService')}
+        </Text>
+        {lang === 'ar' ? ' و' : ' and '}
+        <Text style={{ color: colors.primary, textDecorationLine: 'underline' }} accessibilityRole="link" onPress={() => router.push('/legal/privacy')}>
+          {t('privacyPolicy')}
+        </Text>
+      </CheckRow>
+
+      {askAge ? (
+        <CheckRow checked={ageConfirmed} onPress={() => setAgeConfirmed(v => !v)} isRTL={isRTL} colors={colors}>
+          {t('ageConfirmLabel')}
+        </CheckRow>
+      ) : null}
+    </>
+  );
+
   const formPanel = (
     <View
       style={[styles.formPanel, isWide && styles.formPanelWide]}
@@ -257,32 +287,6 @@ export default function RegisterScreen() {
             </>
           ) : null}
 
-          {/* Shown whether or not a role pill is picked — hiding it until then
-              read as "no Google signup here". /setup-subjects re-asks the role
-              for any Google-created account anyway. */}
-          {/* Above both ways to sign up, because it governs both. It used to sit
-              under «إنشاء حساب» and gate the password form only, so «متابعة
-              عبر Google» created accounts nobody had asked to accept anything. */}
-          <CheckRow checked={termsAccepted} onPress={() => setTermsAccepted(v => !v)} isRTL={isRTL} colors={colors}>
-            {lang === 'ar' ? 'أوافق على ' : 'I agree to the '}
-            {/* Underlined: the two links fill most of the sentence, and
-                tapping one opened the policy when the tap was meant to tick
-                the box. Only «أوافق على» and the box itself toggle. */}
-            <Text style={{ color: colors.primary, textDecorationLine: 'underline' }} accessibilityRole="link" onPress={() => router.push('/legal/terms')}>
-              {t('termsOfService')}
-            </Text>
-            {lang === 'ar' ? ' و' : ' and '}
-            <Text style={{ color: colors.primary, textDecorationLine: 'underline' }} accessibilityRole="link" onPress={() => router.push('/legal/privacy')}>
-              {t('privacyPolicy')}
-            </Text>
-          </CheckRow>
-
-          {askAge ? (
-            <CheckRow checked={ageConfirmed} onPress={() => setAgeConfirmed(v => !v)} isRTL={isRTL} colors={colors}>
-              {t('ageConfirmLabel')}
-            </CheckRow>
-          ) : null}
-
           {form === 'choose' ? null : codeSignup ? (
             <CodeSignupForm
               // Remounted per role: the name picker and the typed code belong to
@@ -291,6 +295,7 @@ export default function RegisterScreen() {
               // `signupForm` returns 'code' for a parent or a student only.
               role={chosenRole as 'parent' | 'student'}
               termsAccepted={termsAccepted}
+              agreements={agreements}
               lang={lang}
               colors={colors}
               isRTL={isRTL}
@@ -311,7 +316,7 @@ export default function RegisterScreen() {
               </View>
               {!readyToSignUp ? (
                 <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-                  {t(termsAccepted ? 'ageConfirmFirst' : 'registerAcceptTermsFirst')}
+                  {t(termsAccepted ? 'ageConfirmBelow' : 'registerAcceptTermsBelow')}
                 </Text>
               ) : null}
               {googleLoading ? (
@@ -322,8 +327,11 @@ export default function RegisterScreen() {
 
               <View style={[styles.dividerRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+                {/* Says what the fields below are. A bare «أو» left the email
+                    field looking like a second place to type the Google
+                    address. */}
                 <Text style={[styles.dividerText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-                  {t('orDivider')}
+                  {t('orSignUpWithEmail')}
                 </Text>
                 <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
               </View>
@@ -402,6 +410,8 @@ export default function RegisterScreen() {
             }
             isRTL={isRTL}
           />
+
+          {agreements}
 
           <Button
             label={t('createAccount')}
