@@ -10,6 +10,38 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Tests for the code-only account routes — 2026-10-24
+
+`POST /auth/redeem`, `POST /auth/code-login` and `POST /auth/add-email` had no committed test: they were
+driven by hand when they shipped (see «Students choose an email or a teacher's code»). New
+`routes/__tests__/codeAccounts.db.test.ts` runs them against a real database through the built bundle,
+18 tests. Tests only; no production code changed.
+
+**What it pins:** a student's own code makes a code-only student linked `self`, named after the roster row,
+with `email`, `password_hash` and `guardian_confirmed_at` null; the login code is returned once and only its
+sha256 is stored; a taken student's code is a 409 and the refused sign-up leaves no user behind (the
+transaction rolls back); a parent gets a `guardian` link, named «ولي أمر» + the child, and a second parent may
+use the same per-student code; a class code needs a name picked (`claim_needs_name`), refuses a name not on that
+class (`claim_name_not_in_class`) and refuses a parent (`claim_parent_needs_student_code`); an unknown, expired,
+blank or whitespace code is one `claim_code_invalid`, and a missing role or missing terms is refused before any
+lookup; all three routes are closed with `student_accounts_disabled` when `STUDENT_ACCOUNTS` is off.
+`code-login` signs in with the code in any spelling (case, spaces, dashes), answers one 401 for wrong,
+malformed, missing or teacher-length codes, never accepts a teacher's code, reports a suspension only after the
+right code, and stamps `last_login`. `add-email` needs a session, a valid address and a strong password; stores
+the address trimmed and lower-cased, unverified, with a bcrypt hash and a verification token, leaves the login
+code working, keeps email-and-password sign-in refused until verified, leaves an account that already has an
+email untouched (`email_already_set`) and refuses an address another account holds (`email_taken`).
+
+**Verified:** the file passes 18/18 against a local Postgres 16; the whole api-server suite passes 2508/2508
+with `REQUIRE_DB_TESTS=true`. A mutation check: dropping `isNull(users.email)` from `add-email`'s update made
+exactly the `email_already_set` test fail; restored, the file passes again.
+
+**Not covered:** the rate limiters (`redeem`, `redeem-code`, `code-login`, `add-email-*` ceilings are not
+exercised), the two-students-redeem-at-once race on the row lock (needs concurrent requests; the `taken`
+refusal is covered, the interleaving is not), the class-thread sync after a redeem (it only logs on failure),
+and `POST /students/:id/links/:userId/login-code` (the reissue route, whose rule has its own unit test in
+`loginCodeReissue.test.ts`).
+
 ## Chat app-help, twenty-third live pass: 13 more wordings for answers that already existed — 2026-10-24
 
 A 30-question pass on app.iqrra.com found 13 questions answered by the model for which the app
