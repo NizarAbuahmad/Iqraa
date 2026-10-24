@@ -174,4 +174,66 @@ describeDb("parent approval for email students", () => {
       assert.equal(post.status, 404);
     });
   });
+
+  describe("the gate", () => {
+    async function linked(userId: string) {
+      const teacher = await mkUser("teacher");
+      const [stu] = await q<{ id: string }>(`INSERT INTO students (teacher_id, display_name) VALUES ($1, 'x') RETURNING id`, [teacher]);
+      await q(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [stu.id, userId]);
+    }
+    const blocked = (r: { status: number; json: any }) => {
+      assert.equal(r.status, 403);
+      assert.equal(r.json.code, "guardian_approval_required");
+    };
+
+    it("holds a pending email student on a route from each router, and lets the allowlist through", async () => {
+      const kid = await mkUser("student");
+      blocked(await call(on, "GET", "/student/exams", kid));
+      blocked(await call(on, "GET", "/messaging/contacts", kid));
+      blocked(await call(on, "POST", "/auth/role", kid, { role: "parent" }));
+      blocked(await call(on, "POST", "/auth/add-email", kid, { email: "x@example.test", password: "Sufficiently1Strong!" }));
+      blocked(await call(on, "GET", "/auth/me/ai-usage", kid));
+
+      const me = await call(on, "GET", "/auth/me", kid);
+      assert.equal(me.status, 200, me.text);
+      const claim = await call(on, "GET", "/auth/claim", kid);
+      assert.notEqual(claim.status, 403, "joining a class with a teacher's code stays open");
+    });
+
+    it("never holds a code-only student, a linked student, an approved student, a teacher or a parent", async () => {
+      const codeOnly = await mkUser("student", { email: null });
+      const linkedKid = await mkUser("student");
+      await linked(linkedKid);
+      const approved = await mkUser("student", { approved: true });
+      const teacher = await mkUser("teacher");
+      const parent = await mkUser("parent");
+      for (const id of [codeOnly, linkedKid, approved]) {
+        const r = await call(on, "GET", "/student/exams", id);
+        assert.equal(r.status, 200, `${id}: ${r.text}`);
+      }
+      assert.notEqual((await call(on, "GET", "/classes", teacher)).status, 403);
+      assert.notEqual((await call(on, "GET", "/parent/exams", parent)).json?.code, "guardian_approval_required");
+    });
+
+    it("is inert with the flag off: the same pending student reaches everything", async () => {
+      const kid = await mkUser("student");
+      const r = await call(off, "GET", "/student/exams", kid);
+      assert.equal(r.status, 200, r.text);
+    });
+
+    it("lifts the moment a parent approves, without a new sign-in", async () => {
+      const kid = await mkUser("student");
+      blocked(await call(on, "GET", "/student/exams", kid));
+      const token = await mkConsent(kid);
+      assert.equal((await call(on, "POST", `/guardian-consent/${token}`, undefined, { decision: "approved", confirmGuardian: true })).status, 200);
+      assert.equal((await call(on, "GET", "/student/exams", kid)).status, 200);
+    });
+
+    it("lifts when a teacher's per-student code links the account", async () => {
+      const kid = await mkUser("student");
+      blocked(await call(on, "GET", "/student/exams", kid));
+      await linked(kid);
+      assert.equal((await call(on, "GET", "/student/exams", kid)).status, 200);
+    });
+  });
 });

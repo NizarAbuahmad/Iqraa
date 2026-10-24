@@ -5,6 +5,9 @@ import { eq } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import { suspendedMayReach } from "../lib/suspension.js";
 import { isPoolExhausted, sendDbBusy } from "../lib/dbBusy.js";
+import { guardianApprovalEnabled } from "../lib/features.js";
+import { guardianMayReach, needsLinkLookup, pendingGuardian } from "../lib/guardianGate.js";
+import { hasLiveRosterLink } from "../lib/rosterLinkState.js";
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -64,6 +67,7 @@ export async function authMiddleware(
         lastName: users.lastName,
         suspendedAt: users.suspendedAt,
         suspendedReason: users.suspendedReason,
+        guardianApprovedAt: users.guardianApprovedAt,
       })
       .from(users)
       .where(eq(users.id, payload.sub))
@@ -88,7 +92,26 @@ export async function authMiddleware(
       return;
     }
 
-    const { suspendedAt: _suspendedAt, suspendedReason: _suspendedReason, ...principal } = user;
+    // A student with an email and no teacher's code is held until a parent approves (lib/guardianGate.ts), here
+    // for the same reason suspension is: a route added tomorrow is closed to them by default. The cheap checks run
+    // first, so the roster-link query is asked only of a student who could be held and is not on the allowlist.
+    const guardianOn = guardianApprovalEnabled();
+    if (needsLinkLookup(user, guardianOn) && !guardianMayReach(req.method, req.originalUrl || req.url)) {
+      if (pendingGuardian(user, { flagOn: guardianOn, hasLiveLink: await hasLiveRosterLink(user.id) })) {
+        res.status(403).json({
+          error: "A parent must approve this account first.",
+          code: "guardian_approval_required",
+        });
+        return;
+      }
+    }
+
+    const {
+      suspendedAt: _suspendedAt,
+      suspendedReason: _suspendedReason,
+      guardianApprovedAt: _guardianApprovedAt,
+      ...principal
+    } = user;
     req.user = principal;
     // Everything downstream — handlers, helpers, fire-and-forget work they
     // start — runs as this user, so Postgres row-level security can tell who
