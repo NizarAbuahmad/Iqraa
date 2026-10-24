@@ -147,12 +147,21 @@ describeDb("parent approval for email students", () => {
       const token = await mkConsent(kid);
       await call(on, "GET", `/guardian-consent/${token}`);
       await call(on, "POST", `/guardian-consent/${token}`, undefined, { decision: "declined" });
+      // Express routes paths case-insensitively, so this spelling reaches the same handler.
+      await call(on, "GET", `/Guardian-Consent/${token}`);
       await call(on, "GET", "/guardian-consent/config");
-      await new Promise(r => setTimeout(r, 500));
+      // The server's log reaches us through a pipe, at its own pace. Lines are written in request order, so once the
+      // last request's line (config) is here the earlier ones are too.
+      const wanted = ["/guardian-consent/:token", "/Guardian-Consent/:token", "/guardian-consent/config"];
+      const deadline = Date.now() + 10_000;
+      while (!wanted.every(w => on.logs().includes(w)) && Date.now() < deadline) {
+        await new Promise(r => setTimeout(r, 100));
+      }
       const logs = on.logs();
+      for (const w of wanted) {
+        assert.ok(logs.includes(w), `${w} never appeared in the server log, so the check proves nothing`);
+      }
       assert.ok(!logs.includes(token), "the bearer token reached the server log");
-      assert.ok(logs.includes("/guardian-consent/:token"), "the request was not logged at all, so the check proves nothing");
-      assert.ok(logs.includes("/guardian-consent/config"), "the config path must stay readable");
     });
 
     it("with the flag off the page and the decision are closed (404), only config answers", async () => {
