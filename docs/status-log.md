@@ -10,6 +10,29 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Timetable: a period saves with a labelled button, and an empty slot cannot be saved — 2026-10-24
+
+A teacher on app.iqrra.com added their timetable and Today kept saying «أضف جدولك الأسبوعي».
+Reproduced in the real app (throwaway Postgres, built API and web bundle, Chromium at phone
+width): the API and `timetableSetupStep` are right — once a slot holds a class the prompt turns
+into «… ليس لها خطة وتيرة» (plan step), so a prompt still on the timetable step means no slot
+had a class. Two things on «جدول الحصص» led there. (1) The period editor's only labelled
+button was «إلغاء»; a period saved only on its bare ✓ icon, so typing a time and pressing the
+labelled button threw it away, and with no period no slot can be saved. (2) The slot editor opens
+with «بدون شعبة» highlighted and a live «احفظ»: saving without tapping a class stored an empty
+slot, which the prompt ignores. Now: the new-period row's button reads «إضافة حصة»
+(`scheduleAddPeriod`, which existed unused), the modal's closing button is «تم»
+(`schedulePeriodsDone`), and «احفظ» in the slot editor is disabled until class, subject or note
+changed.
+
+Verified: `pnpm run typecheck`; mobile `pnpm test` (7,186 pass, 10 skipped); the whole flow
+re-run in the browser on the rebuilt bundle (add period → assign class → Today shows the plan
+prompt). **Not verified:** that this is what the reporting teacher did (they were asked and did
+not answer), Arabic/RTL on a device, and no test pins these two screens (they import
+`react-native`, which the bare `node --test` runner cannot load). Not changed: after a
+correct setup Today's lesson card still shows no «الحصة القادمة» line until the class has a
+pacing plan — the prompt now says so, but the card itself gives no sign the timetable saved.
+
 ## Chat app-help, twentieth live pass: 14 more wordings, and one new answer (subject average) — 2026-10-23
 
 A 30-question pass on app.iqrra.com found 14 questions answered by the model for which the app
