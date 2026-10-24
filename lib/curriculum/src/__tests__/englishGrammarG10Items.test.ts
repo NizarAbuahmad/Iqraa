@@ -13,6 +13,7 @@ import { GRAMMAR_ONLY_LESSONS, hubLesson } from '../englishHub.ts';
 const dataFile = () => JSON.parse(readFileSync(new URL('../data/iqra_curriculum_g10_english_sem1.json', import.meta.url), 'utf8'));
 const L = (s: string) => `kbl-eng-s1-nccd-${s}`;
 const FIRST = ['u1_l1', 'u1_l5', 'u2_l1', 'u2_l4', 'u3_l1'].map(L);
+const REST = ['u3_l4', 'u3_l5', 'u4_l1', 'u4_l4', 'u5_l1', 'u5_l3'].map(L);
 const sentencesOf = (id: string) => unitSentences(grammarUnit(id)!);
 const ids = () => G10_ITEM_LESSONS.map(l => l.lessonId);
 
@@ -23,11 +24,17 @@ const SIZES: Record<string, Record<string, [number, 'form' | 'meaning']>> = {
   [L('u2_l1')]: { 'result-count': [14, 'meaning'], duration: [14, 'meaning'], forms: [12, 'form'] },
   [L('u2_l4')]: { ing: [14, 'form'], to: [14, 'form'], 'change-of-meaning': [12, 'meaning'] },
   [L('u3_l1')]: { interrupted: [14, 'meaning'], 'earlier-event': [14, 'meaning'], forms: [12, 'form'] },
+  [L('u3_l4')]: { 'used-to-states': [14, 'meaning'], 'would-habits': [12, 'meaning'], forms: [14, 'form'] },
+  [L('u3_l5')]: { 'could-you-tell': [14, 'form'], 'do-you-know': [14, 'form'], 'if-whether': [12, 'form'] },
+  [L('u4_l1')]: { obligation: [14, 'meaning'], 'ability-permission': [14, 'meaning'], forms: [12, 'form'] },
+  [L('u4_l4')]: { defining: [12, 'form'], 'non-defining': [14, 'form'], 'whose-where': [14, 'form'] },
+  [L('u5_l1')]: { 'will-decisions': [10, 'meaning'], 'going-to-evidence': [10, 'meaning'], 'arrangements-timetables': [12, 'form'], forms: [8, 'form'] },
+  [L('u5_l3')]: { continuous: [14, 'meaning'], perfect: [14, 'meaning'], forms: [12, 'form'] },
 };
 
 describe('Grade 10 authored lessons', () => {
-  it('start with the five lessons of Task 1, unsigned and offered to nobody', () => {
-    assert.deepEqual(ids().slice(0, 5), FIRST);
+  it('are the eleven hub lessons in order, unsigned and offered to nobody', () => {
+    assert.deepEqual(ids(), [...FIRST, ...REST]);
     for (const id of ids()) {
       assert.ok(hubLesson(id), id);
       assert.equal(hubLesson(id)!.grade, 10, id);
@@ -48,6 +55,14 @@ describe('Grade 10 authored lessons', () => {
       const lesson = dataFile().units.flatMap((u: any) => u.lessons).find((x: any) => x.id === key);
       assert.equal(lesson?.objectives?.[0], l.statement, l.lessonId);
     }
+  });
+
+  it('are eleven lessons and 440 items, 206 of them meaning-decided', () => {
+    assert.equal(G10_ITEM_LESSONS.length, 11);
+    assert.equal(G10_ITEM_LESSONS.reduce((n, l) => n + sentencesOf(l.lessonId).length, 0), 440);
+    assert.equal(grammarUnitsForGrade(10).length, 11);
+    const meaning = ids().flatMap(id => sentencesOf(id)).filter(x => x.kind === 'meaning').length;
+    assert.equal(meaning, Object.values(SIZES).flatMap(s => Object.values(s)).filter(([, k]) => k === 'meaning').reduce((n, [size]) => n + size, 0));
   });
 
   it('give 40 items a lesson in the pinned sub-topic sizes and kinds', () => {

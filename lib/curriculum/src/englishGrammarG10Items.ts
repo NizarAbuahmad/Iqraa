@@ -4,9 +4,12 @@
  * correct answer and a distractor, written by us and checked by a teacher on the printed form; nothing here is pictured.
  *
  * The rule for a distractor: it is `form` (ungrammatical in standard English: the bare verb or the wrong inflection,
- * the wrong agreement, `to` or -ing after the wrong verb, a missing or doubled auxiliary, a plainly wrong article) or
- * `meaning` (grammatical, but excluded by a marker in the sentence itself: a habit word, or Look!, Listen!, right now, at the moment, a count, a duration
- * on a finished task, an event that cuts an action short, «by the time», a time word that fixes remember or forget).
+ * the wrong agreement, `to` or -ing after the wrong verb, a missing or doubled auxiliary, a plainly wrong article, the
+ * wrong relative word, question word order inside an indirect question) or `meaning` (grammatical, but excluded by a
+ * marker in the sentence itself: a habit word, or Look!, Listen!, right now, at the moment, a count, a duration
+ * on a finished task, an event that cuts an action short, «by the time», a time word that fixes remember or forget, a
+ * past time word, a reason or a second sentence after mustn't or don't have to, a decision made on the spot, a warning
+ * or a sign of what is about to happen, a time point with «still» or an activity with no end, «by» with a count).
  * Never a form that could fit, and `meaning` only in the sub-topics the test pins as `meaning`. Every sentence is nine
  * words or fewer, so Build always takes it whole. No names: a pronoun, a family word (`Mum`, `Dad`) or a Jordanian
  * place. `statement` is the book's own «I can» line for the lesson id (its `objectives[0]`, read back by a test).
@@ -302,6 +305,357 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['Where were you going when I saw you?', 'were', 'was'],
         ['She succeeded because she had trained hard.', 'trained', 'train'],
         ["What were you doing at eight o'clock?", 'doing', 'do'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L('u3_l4'),
+    statement: 'I can use used to and would to talk about past habits and routines.',
+    items: [
+      // A state verb (have, be, live, know, like, love, own, hate, believe) in the past takes used to, never would. Each
+      // sentence carries a past time word («As a child», «Years ago», «when I was ten»), so the twin cannot be read as
+      // a conditional («I would have a dog [if …]»).
+      ...items('used-to-states', 'meaning', [
+        ['As a child, I used to have a dog.', 'used to', 'would'],
+        ['As children, we used to live in Irbid.', 'used to', 'would'],
+        ['Years ago, this shop used to be a bakery.', 'used to', 'would'],
+        ['As a child, he used to love sweets.', 'used to', 'would'],
+        ['When I was ten, I used to like football.', 'used to', 'would'],
+        ['My grandmother used to own free-range chickens years ago.', 'used to', 'would'],
+        ['In the past, people used to know their neighbours.', 'used to', 'would'],
+        ['When she was young, she used to hate vegetables.', 'used to', 'would'],
+        ['As a boy, Dad used to be very shy.', 'used to', 'would'],
+        ['Before we moved, we used to have a garden.', 'used to', 'would'],
+        ['Years ago, my hair used to be long.', 'used to', 'would'],
+        ['When I was younger, I used to believe everything.', 'used to', 'would'],
+        ['Long ago, our town used to have one school.', 'used to', 'would'],
+        ['At primary school, I used to love maths.', 'used to', 'would'],
+      ]),
+      // A repeated action in the past takes would. used to and the past simple fit too, so neither is offered; the
+      // distractor is will, which the past time word in every sentence («As children», «In those days», «Last summer»)
+      // rules out. «every summer» alone would not: «Every summer we will swim here» is English.
+      ...items('would-habits', 'meaning', [
+        ['As children, we would swim here every summer.', 'would', 'will'],
+        ['When I was young, Dad would read me stories.', 'would', 'will'],
+        ['In those days, we would walk to school.', 'would', 'will'],
+        ['Years ago, my grandmother would bake wholemeal bread.', 'would', 'will'],
+        ['As a boy, Dad would play football every evening.', 'would', 'will'],
+        ['Back then, we would buy locally grown vegetables.', 'would', 'will'],
+        ['As kids, we would visit Aqaba every summer.', 'would', 'will'],
+        ['When I was little, Mum would sing to me.', 'would', 'will'],
+        ['At my old school, we would sing every morning.', 'would', 'will'],
+        ['When Dad was a student, he would study late.', 'would', 'will'],
+        ['In the old days, people would cook on fires.', 'would', 'will'],
+        ['Last summer, we would go fishing every morning.', 'would', 'will'],
+      ]),
+      // used to and would take the bare verb; did … use to (not used to) in questions and negatives.
+      ...items('forms', 'form', [
+        ["She didn't use to like fish.", 'use', 'used'],
+        ["We didn't use to eat organic food.", 'use', 'used'],
+        ['I used to play football every day.', 'play', 'playing'],
+        ['He used to have long hair.', 'have', 'had'],
+        ['We used to live near the sea.', 'used', 'use'],
+        ['Did your father use to work here?', 'work', 'worked'],
+        ['Every evening, my grandfather would tell us stories.', 'tell', 'told'],
+        ['We would always drink freshly-squeezed juice.', 'drink', 'drinking'],
+        ['They would often swim in the river.', 'swim', 'to swim'],
+        ['Mum used to make bread at home.', 'make', 'made'],
+        ['There used to be a farm here.', 'be', 'been'],
+        ['He used to eat only locally grown fruit.', 'eat', 'eats'],
+        ['Did they use to grow vegetables?', 'grow', 'grew'],
+        ['Every summer, we would visit our grandparents.', 'visit', 'visiting'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L('u3_l5'),
+    statement: 'I can use indirect questions to make polite requests or to ask for opinions and information.',
+    items: [
+      // After «Could you tell me», statement order: no inversion and no do. No subject question («who made it»), whose
+      // order is the same either way, and no «what» + be + a noun («what the problem is»), where many speakers accept both.
+      ...items('could-you-tell', 'form', [
+        ['Could you tell me where it is?', 'where it is', 'where is it'],
+        ['Could you tell me what time it is?', 'it is', 'is it'],
+        ['Could you tell me where the station is?', 'the station is', 'is the station'],
+        ['Could you tell me how much this costs?', 'this costs', 'does this cost'],
+        ['Could you tell me when the shop opens?', 'the shop opens', 'does the shop open'],
+        ['Could you tell me what this word means?', 'this word means', 'does this word mean'],
+        ['Could you tell me where the herbs are?', 'the herbs are', 'are the herbs'],
+        ['Could you tell me how you cook this?', 'you cook', 'do you cook'],
+        ['Could you tell me why the bus is late?', 'the bus is', 'is the bus'],
+        ['Could you tell me how fermented food is made?', 'fermented food is', 'is fermented food'],
+        ['Could you tell me where I can buy wheat?', 'I can buy', 'can I buy'],
+        ['Could you tell me how long the film lasts?', 'the film lasts', 'does the film last'],
+        ['Could you tell me how old this building is?', 'this building is', 'is this building'],
+        ['Could you tell me what you think?', 'you think', 'do you think'],
+      ]),
+      // The same after «Do you know» and «Do you have any idea».
+      ...items('do-you-know', 'form', [
+        ['Do you know where the museum is?', 'the museum is', 'is the museum'],
+        ['Do you know what time the bank closes?', 'the bank closes', 'does the bank close'],
+        ['Do you know how much wheat costs?', 'wheat costs', 'does wheat cost'],
+        ['Do you know why she is upset?', 'she is', 'is she'],
+        ['Do you know where they live?', 'they live', 'do they live'],
+        ['Do you know what nutrition means?', 'nutrition means', 'does nutrition mean'],
+        ['Do you know when the next bus comes?', 'the next bus comes', 'does the next bus come'],
+        ['Do you know where I can find fresh produce?', 'I can find', 'can I find'],
+        ['Do you know what he wants for lunch?', 'he wants', 'does he want'],
+        ['Do you know how long the journey takes?', 'the journey takes', 'does the journey take'],
+        ['Do you have any idea where my keys are?', 'my keys are', 'are my keys'],
+        ['Do you know what processed food contains?', 'processed food contains', 'does processed food contain'],
+        ['Do you know how this machine works?', 'this machine works', 'does this machine work'],
+        ['Do you know where the nearest pharmacy is?', 'the nearest pharmacy is', 'is the nearest pharmacy'],
+      ]),
+      // A yes or no question becomes if or whether + statement order.
+      ...items('if-whether', 'form', [
+        ['Do you know if he is here?', 'if he is', 'if is he'],
+        ['Could you tell me if the shop is open?', 'if the shop is', 'if is the shop'],
+        ['I wonder whether it will rain tomorrow.', 'whether it will', 'whether will it'],
+        ['Do you know if this bread contains gluten?', 'if this bread contains', 'if does this bread contain'],
+        ['Could you tell me whether the train is late?', 'whether the train is', 'whether is the train'],
+        ["I'd like to know if you eat meat.", 'if you eat', 'if do you eat'],
+        ['Can you tell me whether they are coming?', 'whether they are', 'whether are they'],
+        ['Do you know whether the museum opens today?', 'whether the museum opens', 'whether does the museum open'],
+        ['I wonder if she likes fermented food.', 'if she likes', 'if does she like'],
+        ['Could you tell me if this is organic?', 'if this is', 'if is this'],
+        ['Do you know if they have wholemeal bread?', 'if they have', 'if do they have'],
+        ["I'm not sure whether he can come.", 'whether he can', 'whether can he'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L('u4_l1'),
+    statement: 'I can use a variety of modal and related verbs.',
+    items: [
+      // mustn't (it is forbidden) or don't have to (it is not necessary), fixed by the second sentence or clause: a
+      // danger or a rule («It's dangerous», «It's not allowed») makes it a ban; «It's free», «optional», «isn't
+      // required» or «but you can» makes it unnecessary. No reason that could also be advice («I can hear you»).
+      ...items('obligation', 'meaning', [
+        ["You mustn't leave bags unattended. It isn't safe.", "mustn't", "don't have to"],
+        ["Passengers mustn't smoke on the plane. It's forbidden.", "mustn't", "don't have to"],
+        ["You mustn't cheat in exams. It's against the rules.", "mustn't", "don't have to"],
+        ["You mustn't swim here. It's dangerous.", "mustn't", "don't have to"],
+        ["You mustn't park here. It's illegal.", "mustn't", "don't have to"],
+        ["You mustn't cross here. It's not safe.", "mustn't", "don't have to"],
+        ["Visitors mustn't feed the animals. It's not allowed.", "mustn't", "don't have to"],
+        ["You don't have to pay. It's free.", "don't have to", "mustn't"],
+        ["You don't have to come, but you can.", "don't have to", "mustn't"],
+        ["The trip is optional. You don't have to go.", "don't have to", "mustn't"],
+        ["You don't have to stay, but you're welcome to.", "don't have to", "mustn't"],
+        ["The museum is free. Visitors don't have to pay.", "don't have to", "mustn't"],
+        ["Ties aren't required. You don't have to wear one.", "don't have to", "mustn't"],
+        ["You don't have to bring anything. We have everything.", "don't have to", "mustn't"],
+      ]),
+      // A past time word («when he was five», «Last night») takes could or was able to, a future one («Next year»,
+      // «Tomorrow») will be able to; the distractor is the present (can, am able to) or the other tense. could and was
+      // able to are never set against each other: both fit too often. No «As a child, I …» here: «As a child, I can't
+      // vote» is present.
+      ...items('ability-permission', 'meaning', [
+        ['He could swim when he was five.', 'could', 'can'],
+        ["When I was little, I couldn't stay up late.", "couldn't", "can't"],
+        ['Yesterday, I was able to finish early.', 'was able to', 'am able to'],
+        ['Next year, she will be able to drive.', 'will be able to', 'was able to'],
+        ['Last year, we could wear jeans on Fridays.', 'could', 'can'],
+        ["When I was ten, I couldn't ride a bike.", "couldn't", "can't"],
+        ["Last night, we weren't able to book a flight.", "weren't able to", "aren't able to"],
+        ['Years ago, my grandfather could run very fast.', 'could', 'can'],
+        ["Ten years ago, we couldn't buy tickets online.", "couldn't", "can't"],
+        ['Tomorrow, we will be able to visit Petra.', 'will be able to', 'were able to'],
+        ["Last week, I couldn't find my passport.", "couldn't", "can't"],
+        ['When we were young, we could play outside.', 'could', 'can'],
+        ["Two days ago, he wasn't able to walk.", "wasn't able to", "isn't able to"],
+        ["Last month, she couldn't see clearly.", "couldn't", "can't"],
+      ]),
+      // A modal takes the bare verb (no to, -ing, -s or past); have to agrees with its subject; ought to is not used here.
+      ...items('forms', 'form', [
+        ['You must wear a helmet.', 'wear', 'to wear'],
+        ['You must fasten your seatbelt.', 'fasten', 'fastens'],
+        ['She can speak three languages.', 'speak', 'speaks'],
+        ['He has to work at weekends.', 'has', 'have'],
+        ['Does she have to wear a uniform?', 'have', 'has'],
+        ['Passengers must switch phones to flight mode.', 'switch', 'switching'],
+        ["We don't have to book a flight.", "don't", "doesn't"],
+        ['They might come later.', 'come', 'coming'],
+        ['Bags must go in the overhead locker.', 'go', 'to go'],
+        ['Could you help me, please?', 'help', 'to help'],
+        ['I had to wait for an hour.', 'wait', 'waited'],
+        ["He wasn't able to come yesterday.", 'come', 'came'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L('u4_l4'),
+    statement: 'I can use defining and non-defining relative clauses.',
+    items: [
+      // A person takes who or that, never which; a thing takes which or that, never who (no animals: a pet can be who).
+      ...items('defining', 'form', [
+        ['The girl who sits here is my cousin.', 'who', 'which'],
+        ['The cyclist who won the race is my brother.', 'who', 'which'],
+        ['This is the car which my father bought.', 'which', 'who'],
+        ['Pedestrians who cross here must be careful.', 'who', 'which'],
+        ['The bus that goes to Aqaba is full.', 'that', 'who'],
+        ['Fuels which pollute the air are bad for us.', 'which', 'who'],
+        ['The man that fixed our car was friendly.', 'that', 'which'],
+        ['I know a teacher who cycles to work.', 'who', 'which'],
+        ['Cars that use diesel engines cause smog.', 'that', 'who'],
+        ['The road which leads to Petra is busy.', 'which', 'who'],
+        ['People who share cars help the environment.', 'who', 'which'],
+        ['The pavement that runs past our school is narrow.', 'that', 'who'],
+      ]),
+      // A clause between commas never takes that.
+      ...items('non-defining', 'form', [
+        ['My brother, who lives in Aqaba, is a pilot.', 'who', 'that'],
+        ['Petra, which is very old, attracts many tourists.', 'which', 'that'],
+        ['Our car, which has a diesel engine, is old.', 'which', 'that'],
+        ['My uncle, who is a cyclist, never drives.', 'who', 'that'],
+        ['Smog, which is toxic, is a big problem.', 'which', 'that'],
+        ['Amman, which is the capital, has heavy traffic.', 'which', 'that'],
+        ['Our teacher, who walks to school, is very fit.', 'who', 'that'],
+        ['The motorway, which opened last year, is very busy.', 'which', 'that'],
+        ['My father, who drives every day, hates congestion.', 'who', 'that'],
+        ['Carpooling, which saves money, is popular here.', 'which', 'that'],
+        ['My sister, who is a doctor, cycles to work.', 'who', 'that'],
+        ['Aqaba, which is on the coast, is very hot.', 'which', 'that'],
+        ['Our neighbour, who owns a bike shop, is friendly.', 'who', 'that'],
+        ['Exhaust fumes, which come from cars, pollute the air.', 'which', 'that'],
+      ]),
+      // whose for possession (who cannot stand before a noun); where for a place when the clause has no object
+      // («where I grew up»: «which I grew up» lacks its «in»).
+      ...items('whose-where', 'form', [
+        ["That's the man whose car was stolen.", 'whose', 'who'],
+        ['I have a friend whose father is a pilot.', 'whose', 'who'],
+        ['The cyclist whose bike broke walked home.', 'whose', 'who'],
+        ['She is the girl whose brother won.', 'whose', 'who'],
+        ['We met a woman whose son drives a bus.', 'whose', 'who'],
+        ['The boy whose bag I found thanked me.', 'whose', 'who'],
+        ['Drivers whose cars pollute must pay more.', 'whose', 'who'],
+        ['This is the house where I grew up.', 'where', 'which'],
+        ['Amman is the city where I live.', 'where', 'which'],
+        ['That is the street where the accident happened.', 'where', 'which'],
+        ['Is this the café where you work?', 'where', 'which'],
+        ['The park where children play is clean.', 'where', 'which'],
+        ['Aqaba is a city where people swim all year.', 'where', 'which'],
+        ['This is the road where cyclists are safe.', 'where', 'which'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L('u5_l1'),
+    statement: 'I can use a variety of forms to talk about future events and situations.',
+    items: [
+      // A decision made on the spot («The phone's ringing.», «Oh, I forgot …», «OK, …») takes will. going to is not
+      // offered (many speakers say «OK, I'm going to call him»); the distractor is the present simple, which cannot
+      // make an offer or a decision («I answer it»).
+      ...items('will-decisions', 'meaning', [
+        ["The phone's ringing. I'll answer it.", "I'll answer", 'I answer'],
+        ["Oh, I forgot my keys. I'll go back.", "I'll go", 'I go'],
+        ["It's cold in here. I'll close the window.", "I'll close", 'I close'],
+        ["OK, I'll have the chicken, please.", "I'll have", 'I have'],
+        ["That bag looks heavy. I'll carry it.", "I'll carry", 'I carry'],
+        ["Wait, I'll help you with that.", "I'll help", 'I help'],
+        ["You look tired. I'll make you some tea.", "I'll make", 'I make'],
+        ["I forgot to call Mum! I'll do it now.", "I'll do", 'I do'],
+        ["We've got no milk. I'll buy some.", "I'll buy", 'I buy'],
+        ["I don't understand. I'll ask the teacher.", "I'll ask", 'I ask'],
+      ]),
+      // A sign of what is about to happen (dark clouds, «Watch out!», «Careful!») takes going to. will is not offered
+      // («Look at those clouds, it'll rain» is English too); the distractor is the present simple, and the warning says
+      // the event has not happened, so it cannot be a commentary («Look! He scores!»).
+      ...items('going-to-evidence', 'meaning', [
+        ["Look at those clouds! It's going to rain.", "It's going to rain", 'It rains'],
+        ['Watch out! That glass is going to fall.', 'is going to fall', 'falls'],
+        ["Be careful! You're going to drop it.", "You're going to drop", 'You drop'],
+        ["Hurry! We're going to miss the bus.", "We're going to miss", 'We miss'],
+        ['Watch out! The ball is going to hit you.', 'is going to hit', 'hits'],
+        ["The sky is very dark. It's going to snow.", "It's going to snow", 'It snows'],
+        ["Mind the step! You're going to trip.", "You're going to trip", 'You trip'],
+        ['Stop! The milk is going to boil over.', 'is going to boil', 'boils'],
+        ["Careful! You're going to spill your tea.", "You're going to spill", 'You spill'],
+        ['Look out! That ladder is going to fall.', 'is going to fall', 'falls'],
+      ]),
+      // A timetable (present simple) or an arrangement (present continuous). Form only: with a fixed time, will, going
+      // to and both presents all fit («The train will leave at nine tomorrow» is English), so the errors are in the form.
+      ...items('arrangements-timetables', 'form', [
+        ['The train leaves at nine tomorrow.', 'leaves', 'leave'],
+        ["I'm meeting my cousin tonight.", 'meeting', 'meet'],
+        ['We are flying to Aqaba on Friday.', 'flying', 'fly'],
+        ['The film starts at eight.', 'starts', 'start'],
+        ['What time does the bus leave?', 'leave', 'leaves'],
+        ['She is starting her new job on Monday.', 'is', 'are'],
+        ['Are you coming to the party tonight?', 'coming', 'come'],
+        ['The museum opens at nine tomorrow.', 'opens', 'open'],
+        ['My exams begin next week.', 'begin', 'begins'],
+        ['They are having a party on Saturday.', 'having', 'have'],
+        ['When does the term start?', 'start', 'starts'],
+        ["I'm seeing the dentist at four.", 'seeing', 'see'],
+      ]),
+      ...items('forms', 'form', [
+        ["I'm going to study medicine.", 'study', 'studying'],
+        ['She will be a responsible leader one day.', 'be', 'is'],
+        ['They are going to visit Petra.', 'are', 'is'],
+        ['Will you help me tomorrow?', 'help', 'helps'],
+        ['My sister is going to be a doctor.', 'be', 'to be'],
+        ['I think you will win the competition.', 'win', 'to win'],
+        ["We aren't going to give up.", 'give', 'giving'],
+        ['Are you going to apply for the job?', 'Are', 'Is'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L('u5_l3'),
+    statement: 'I can use the Future Continuous and the Future Perfect to talk about future events and situations.',
+    items: [
+      // A time point («At this time tomorrow», «At midnight») with an activity that has no end (sleep, relax, wait,
+      // work), or with «still»: the perfect («will have slept», «will still have studied») makes no sense. No activity
+      // that ends (watch the match, have dinner), which the perfect fits.
+      ...items('continuous', 'meaning', [
+        ['At this time tomorrow, I will be sleeping.', 'will be sleeping', 'will have slept'],
+        ['This time next week, I will be relaxing.', 'will be relaxing', 'will have relaxed'],
+        ['At midnight, I will still be studying.', 'be studying', 'have studied'],
+        ['At ten tonight, she will still be working.', 'be working', 'have worked'],
+        ['At noon, I will be waiting at the airport.', 'will be waiting', 'will have waited'],
+        ['This time next year, he will still be training.', 'be training', 'have trained'],
+        ['At six tomorrow, Dad will be driving.', 'will be driving', 'will have driven'],
+        ['At this time tomorrow, they will still be travelling.', 'be travelling', 'have travelled'],
+        ["Don't call me at nine. I will be swimming.", 'will be swimming', 'will have swum'],
+        ['This time on Friday, we will be camping.', 'will be camping', 'will have camped'],
+        ['At six, the children will still be playing outside.', 'be playing', 'have played'],
+        ['At four, I will be resting at home.', 'will be resting', 'will have rested'],
+        ['When you arrive, we will still be eating.', 'be eating', 'have eaten'],
+        ['Next month, I will still be working freelance.', 'be working', 'have worked'],
+      ]),
+      // «By» + a deadline with a count of finished things takes the perfect, as the present perfect's count does:
+      // «By Friday, I will be writing five emails» makes no sense.
+      ...items('perfect', 'meaning', [
+        ['By Friday, I will have written five emails.', 'will have written', 'will be writing'],
+        ['By next year, she will have visited ten countries.', 'will have visited', 'will be visiting'],
+        ['By next summer, I will have saved 200 dinars.', 'will have saved', 'will be saving'],
+        ['By noon, we will have walked ten kilometres.', 'will have walked', 'will be walking'],
+        ['By the deadline, he will have finished three reports.', 'will have finished', 'will be finishing'],
+        ['By tonight, I will have read two chapters.', 'will have read', 'will be reading'],
+        ['By Sunday, the team will have played six matches.', 'will have played', 'will be playing'],
+        ['By next week, they will have built three houses.', 'will have built', 'will be building'],
+        ['By next month, she will have painted five pictures.', 'will have painted', 'will be painting'],
+        ['By tomorrow, we will have sold 100 tickets.', 'will have sold', 'will be selling'],
+        ['By summer, he will have learned 500 words.', 'will have learned', 'will be learning'],
+        ['By lunchtime, I will have answered twenty questions.', 'will have answered', 'will be answering'],
+        ['By Monday, they will have interviewed ten people.', 'will have interviewed', 'will be interviewing'],
+        ['By Saturday, I will have finished four exams.', 'will have finished', 'will be finishing'],
+      ]),
+      // will be + -ing, will have + past participle: a bare verb, the wrong auxiliary or a past simple is a form error.
+      ...items('forms', 'form', [
+        ['I will be working late tonight.', 'working', 'work'],
+        ['She will have finished by noon.', 'finished', 'finish'],
+        ['They will be waiting outside.', 'be', 'being'],
+        ['He will have left before you arrive.', 'have', 'has'],
+        ['Will you be using the car tonight?', 'using', 'use'],
+        ['We will have eaten by eight.', 'eaten', 'ate'],
+        ['By then, I will have graduated.', 'graduated', 'graduate'],
+        ['The employer will be interviewing people all day.', 'interviewing', 'interview'],
+        ['Will they have finished by Friday?', 'have', 'has'],
+        ["I won't be working overtime tomorrow.", 'working', 'work'],
+        ['They will have saved enough money by then.', 'saved', 'save'],
+        ['He will be commuting by train next year.', 'commuting', 'commute'],
       ]),
     ],
   },
