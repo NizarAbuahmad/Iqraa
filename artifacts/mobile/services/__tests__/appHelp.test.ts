@@ -2089,3 +2089,55 @@ describe('students, homework, worksheets, exam reminders, book pictures, slides 
     });
   }
 });
+
+describe('results, who opened an exam, a forgotten password, a link, no going back, no voice notes — wordings of answers (twenty-seventh live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['كيف أخفي العلامات عن الطلبة؟', 'howReleaseResults'],
+    ['how do i hide the marks from students', 'howReleaseResults'],
+    ['كيف أعرف عدد الطلبة الذين فتحوا الامتحان؟', 'howExamSubmissions'],
+    ['how do i see how many students opened the exam', 'howExamSubmissions'],
+    ['كيف أستعيد كلمة المرور إذا نسيتها؟', 'howChangePassword'],
+    ['كيف أضيف شعار مدرستي إلى الأوراق؟', 'howWorksheetHeader'],
+    ['كيف أرى أداء طالب معين عبر الامتحانات؟', 'howStudentRecord'],
+    ['كيف أبدّل الصف الذي أدرّسه؟', 'howAddGrade'],
+    ['how do i switch the grade i teach', 'howAddGrade'],
+    ['كيف أضيف رابط يوتيوب إلى خطة الدرس؟', 'howMediaLink'],
+    ['how do i add a youtube link to the lesson plan', 'howMediaLink'],
+    ['كيف أمنع الطلبة من العودة إلى سؤال سابق؟', 'howExamNoBack'],
+    ['how do i stop students going back to a previous question', 'howExamNoBack'],
+    ['كيف أرسل ملاحظة صوتية للطلبة؟', 'howVoiceNote'],
+    ['how do i send a voice note to my students', 'howVoiceNote'],
+    // The twenty-sixth pass: answers that existed under wordings the matcher did not know.
+    ['كيف أحذف واجباً أرسلته للطلبة؟', 'howHomeworkEdit'],
+    ['how do i delete a homework i already sent', 'howHomeworkEdit'],
+    ['كيف أضع مدة زمنية للاختبار؟', 'howExamTime'],
+    ['كيف أخلط ترتيب أسئلة الامتحان لكل طالب؟', 'howExamShuffle'],
+    ['how do i shuffle the exam questions for each student', 'howExamShuffle'],
+    ['كيف أستخدم السبورة البيضاء؟', 'howWhiteboard'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  const stayWithModel = [
+    'كيف أخفي الإجابات عن الطلبة في ورقة العمل',
+    'كيف أضيف رابط يوتيوب إلى الشريحة',
+    'كيف أمنع الطلبة من الغش في الامتحان',
+    'كيف أستعيد كلمة المرور في ويندوز',
+    'كيف أرى أداء الاقتصاد الأردني',
+    'كيف أبدّل الصف في مسألة التناسب',
+    'كيف أرسل ملاحظة صوتية في تطبيق آخر',
+    'كيف أخلط محلولين',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howReleaseResults', 'howExamSubmissions', 'howChangePassword', 'howWorksheetHeader', 'howStudentRecord', 'howAddGrade', 'howMediaLink', 'howExamNoBack', 'howVoiceNote', 'howHomeworkEdit', 'howExamTime', 'howExamShuffle', 'howWhiteboard']);
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});
