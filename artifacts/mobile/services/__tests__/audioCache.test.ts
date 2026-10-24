@@ -420,6 +420,56 @@ describe('one limit for the whole cache', () => {
     assert.ok(s.cache.localUri('b1'));
     assert.equal(s.cache.localUri('b2'), null, 'cancelled before it started');
   });
+
+  it('cancel then the same lesson again, in one tick, loses nothing', async () => {
+    const s = setup();
+    const lesson = ['c1', 'c2', 'c3', 'c4'];
+    const first = s.cache.prefetch(lesson);
+    first.cancel();
+    const again = s.cache.prefetch(lesson);
+    await Promise.all([first.done, again.done]);
+    for (const k of lesson) assert.ok(s.cache.localUri(k), k);
+  });
+
+  it('a newer prefetch takes over a clip an older one had queued', async () => {
+    const s = setup();
+    const open = s.hold();
+    const taps = [s.cache.save('t1'), s.cache.save('t2')]; // hold both slots
+    await tick();
+    const lessonA = s.cache.prefetch(['shared', 'onlyA']); // 'shared' queued under A
+    await tick();
+    const lessonB = s.cache.prefetch(['shared']); // B wants it too; A is now superseded
+    open();
+    await Promise.all([...taps, lessonA.done, lessonB.done]);
+    assert.ok(s.cache.localUri('shared'), 'B wanted it, so it is fetched');
+  });
+
+  it('a tap then a prefetch of the same clip keeps it wanted when that prefetch is cancelled', async () => {
+    const s = setup();
+    const open = s.hold();
+    const first = s.cache.prefetch(['a1', 'a2']); // holds both slots
+    await tick();
+    const tap = s.cache.save('x'); // queued, wanted by a tap
+    const later = s.cache.prefetch(['x']);
+    await tick();
+    later.cancel();
+    open();
+    await Promise.all([first.done, tap, later.done]);
+    assert.ok(s.cache.localUri('x'));
+  });
+
+  it('a tap on a clip a prefetch had queued moves it to the front of the queue', async () => {
+    const s = setup();
+    const open = s.hold();
+    const first = s.cache.prefetch(['a1', 'a2']); // holds both slots
+    await tick();
+    const second = s.cache.prefetch(['b1', 'b2']); // b1, b2 queued in that order
+    await tick();
+    const tap = s.cache.save('b2');
+    open();
+    await Promise.all([first.done, second.done, tap]);
+    assert.equal(s.downloads[2], url('b2'), 'the tapped clip goes first');
+  });
 });
 
 describe('never rejects', () => {

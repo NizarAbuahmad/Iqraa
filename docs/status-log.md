@@ -23,8 +23,9 @@ unchanged.
 - **A lesson's clips ahead.** `prefetchLessonAudio(lessonId, { grammar })` (no-op on the web), from one effect on
   `app/curriculum/english/[lessonId].tsx` when a visible lesson opens: its words, plus its grammar strings only once the
   grammar is offered (signed). The effect's cleanup cancels it (leaving the lesson stops what has not started), and a
-  new prefetch replaces the previous one's unstarted items. **Two downloads in flight for the whole cache** — every
-  prefetch and every save after a tap share two slots, a tap's save queued ahead of waiting prefetch items — so the
+  new prefetch takes over the previous one's unstarted items it also wants and drops the rest. **Two downloads in flight
+  for the whole cache** — every prefetch and every save after a tap share two slots, and a tap's save goes to the front
+  of the queue, including a clip a prefetch had already queued — so the
   rate-limited link never sees more than two at once from one phone. The list is `lessonAudioTexts` in
   `lib/curriculum/src/englishAudioPlan.ts` (new subpath `@workspace/curriculum/englishAudioPlan`): the lesson's words and
   `unitSpoken`, so the silent True-or-false twins are never fetched. A test pins that every slug it returns is in
@@ -43,17 +44,18 @@ unchanged.
   Android, «… status 429» on iOS).
 - **Where the logic is.** `services/audioCache.ts` (all decisions, over an injectable `FsLike`), `services/audioCacheStore.ts`
   (the thin `expo-file-system` mapping, not loadable by `node --test`), `services/englishAudio.ts` (wiring).
-- **Checked:** new tests — `audioCachePolicy.test.ts` 16, `audioCache.test.ts` 30 (fake file system: hit/miss, a dropped
+- **Checked:** new tests — `audioCachePolicy.test.ts` 16, `audioCache.test.ts` 34 (fake file system: hit/miss, a dropped
   download leaves nothing playable, the 1 KB floor, an HTML 200 rejected and ID3 / frame-sync bodies kept, temp-then-rename,
   LRU order and cap, version purge, the folder cleared mid-session, 404/429 memory with an injected clock, two prefetches
-  plus two taps never more than two in flight, a second prefetch dropping the first's unstarted items, cancel, a tap
-  jumping the queue, OS-cleared files, a file system that throws everywhere), `englishAudioPhone.test.ts` 8 (source pins:
+  plus two taps never more than two in flight, a second prefetch dropping the first's unstarted items, cancel, cancel
+  then the same lesson in one tick, a newer prefetch taking over a queued clip, a tap jumping the queue (also for a clip
+  already queued) and staying wanted through a later prefetch's cancel, OS-cleared files, a file system that throws everywhere), `englishAudioPhone.test.ts` 8 (source pins:
   the web branch still goes straight to `playRecordingOrSpeak(englishAudioUrl(word), word)`, prefetch is a no-op on web,
   the URL and slug mapping are unchanged, the recorder's `playUri` is not routed through the cache, the screen calls
   prefetch from one effect above its early return and returns its cancel), `lib/curriculum` `englishLessonAudio.test.ts` 7
-  (Grade 1, a Grade 9 grammar-only lesson, a Grade 10 Semester 2 lesson). Four mutations (floor removed; download straight
-  into the clip name; no global limit; no folder re-create) each failed the suite. `pnpm run typecheck` clean;
-  `lib/curriculum` tests 743/743 and `verify` 0 errors; the English and audio mobile tests 199/199; the full mobile suite
+  (Grade 1, a Grade 9 grammar-only lesson, a Grade 10 Semester 2 lesson). Five mutations (floor removed; download straight
+  into the clip name; no global limit; no folder re-create; a prefetch overwriting a tap's claim) each failed the suite. `pnpm run typecheck` clean;
+  `lib/curriculum` tests 743/743 and `verify` 0 errors; the English and audio mobile tests 203/203; the full mobile suite
   7,396 passed, 0 failed, 10 skipped (of 7,406; run before the review fixes, which touched only the cache files, the lesson
   screen's effect and their tests). Web build at 390 px (Playwright, Chromium), also before the fixes: a Grade 1
   lesson opens, makes **no** clip request on open, a Flashcards «Listen» requests `…/english-audio/bag.mp3` directly, and

@@ -171,22 +171,33 @@ export function createAudioCache(opts: AudioCacheOptions): AudioCache {
   // ─── One limit for every download ───────────────────────────────────────
   // `PREFETCH_CONCURRENCY` slots shared by every prefetch and every save after a
   // tap, so the rate-limited link never sees more than that from this phone. A
-  // tap's save is queued ahead of prefetch items still waiting.
+  // tap's save goes to the front of the queue — a new one, and one a prefetch
+  // had already queued for the same clip.
   let active = 0;
   const waiting: (() => void)[] = [];
-  const acquire = (urgent: boolean): Promise<void> =>
+  /** Waits for a slot. While it waits, `job.waiter` is its place in the queue, so a tap can move it up. */
+  const acquire = (job: Job, urgent: boolean): Promise<void> =>
     new Promise(resolve => {
       const go = () => {
+        job.waiter = null;
         active++;
         resolve();
       };
       if (active < PREFETCH_CONCURRENCY) go();
-      else if (urgent) waiting.unshift(go);
-      else waiting.push(go);
+      else {
+        job.waiter = go;
+        if (urgent) waiting.unshift(go);
+        else waiting.push(go);
+      }
     });
   const release = () => {
     active--;
     waiting.shift()?.();
+  };
+  /** A tap on a clip already waiting: to the front of the queue. */
+  const promote = (job: Job) => {
+    const i = job.waiter ? waiting.indexOf(job.waiter) : -1;
+    if (i > 0) waiting.unshift(...waiting.splice(i, 1));
   };
 
   /** Downloads one clip into place, in a slot the caller holds. */
@@ -221,10 +232,15 @@ export function createAudioCache(opts: AudioCacheOptions): AudioCache {
     }
   }
 
-  /** A clip on its way. `wanted` is the prefetch that asked for it; null once a tap wants it too. */
+  /**
+   * A clip on its way. `wanted` asks the newest prefetch that asked for it whether it is still
+   * current; null once a tap wants it (then it is always wanted).
+   */
   interface Job {
     wanted: (() => boolean) | null;
     done: Promise<void>;
+    /** Its place in `waiting` while it waits for a slot; null once it has one. */
+    waiter: (() => void) | null;
   }
   const jobs = new Map<string, Job>();
 
@@ -233,13 +249,19 @@ export function createAudioCache(opts: AudioCacheOptions): AudioCache {
       if (!slug) return Promise.resolve();
       const existing = jobs.get(slug);
       if (existing) {
-        if (!wanted) existing.wanted = null; // a tap keeps it wanted whatever the prefetch does
+        if (!wanted) {
+          existing.wanted = null; // a tap keeps it wanted whatever any prefetch does
+          promote(existing);
+        } else if (existing.wanted) {
+          // A newer prefetch takes it over: generations only grow, so the newest closure is the one to ask.
+          existing.wanted = wanted;
+        }
         return existing.done;
       }
       if (present(slug) || failures.shouldSkip(slug)) return Promise.resolve();
-      const job: Job = { wanted, done: Promise.resolve() };
+      const job: Job = { wanted, done: Promise.resolve(), waiter: null };
       job.done = (async () => {
-        await acquire(!wanted);
+        await acquire(job, !wanted);
         try {
           // Checked again in the slot: a newer prefetch, a cancel or a 429 may have come while it waited.
           if (job.wanted && !job.wanted()) return;
