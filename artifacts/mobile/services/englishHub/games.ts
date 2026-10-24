@@ -321,6 +321,15 @@ function judgeable(s: GrammarSentence): boolean {
   return Boolean((s.picture && s.falsePicture) || s.claim);
 }
 
+/**
+ * Which subtitle the True or false card wears. «Does the sentence match the picture?» is only true for a lesson whose
+ * sentences have pictures (Grades 1-4); the hand-written Grade 5, 9 and 10 items have none, and the card there asks
+ * whether the sentence is right or wrong. Mirrors `buildTrueFalseRound`: a picture is shown only when the sentence has one.
+ */
+export function trueFalseDescKey(sentences: readonly GrammarSentence[]): 'hubGTrueDesc' | 'hubGTrueDescPlain' {
+  return sentences.some(s => s.picture) ? 'hubGTrueDesc' : 'hubGTrueDescPlain';
+}
+
 /** Half the round (rounded up) is true, the rest false, then the order is shuffled. */
 export function buildTrueFalseRound(sentences: readonly GrammarSentence[], rng: () => number = Math.random): TrueFalseQuestion[] {
   const picked = sample(sentences.filter(judgeable), ROUND_LENGTH, rng);
