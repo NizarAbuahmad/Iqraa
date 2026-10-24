@@ -35,7 +35,9 @@ import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/Button';
 import { PillSelector } from '@/components/ui/PillSelector';
 import { CheckRow } from '@/components/ui/CheckRow';
-import { switchNeedsAgeConfirmation } from '@/services/signupMethod';
+import { guardianConfigStale, switchNeedsAgeConfirmation } from '@/services/signupMethod';
+import { resetGuardianConfigCache, useGuardianConfig } from '@/services/guardianConfig';
+import { SPACE, TYPE } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useJoinCodeLookup } from '@/hooks/useJoinCodeLookup';
 import { RosterCodeClaimForm } from '@/components/RosterCodeClaimForm';
@@ -82,8 +84,12 @@ export default function ClaimRequiredScreen() {
   const roleChanging = pendingRole !== role;
   // Becoming a student asks what signing up as one asks: an adult, or a
   // guardian's agreement. The server refuses the switch without it.
+  // When the server has a parent approve email students (guardian.enabled) the
+  // tick goes and a one-line note says the account will wait for a parent.
+  const guardian = useGuardianConfig();
   const [ageOk, setAgeOk] = useState(false);
-  const askAge = pickerOpen && switchNeedsAgeConfirmation(role, nextRole);
+  const askAge = pickerOpen && switchNeedsAgeConfirmation(role, nextRole, guardian.enabled);
+  const noteParent = pickerOpen && guardian.enabled && nextRole === 'student' && role !== 'student';
   // A teacher has no class code to enter, so there is nothing to show for one.
   const toTeacher = pendingRole === 'teacher';
   const roleLabel = (r: SwitchableRole) =>
@@ -131,6 +137,8 @@ export default function ClaimRequiredScreen() {
       return true;
     } catch (e) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      // The server's switch differs from the copy this screen read: ask again.
+      if (e instanceof ApiError && guardianConfigStale(e.code)) { resetGuardianConfigCache(); guardian.refresh(); }
       setError(t(e instanceof ApiError && e.code === 'age_confirmation_required' ? 'errAgeConfirmRequired' : 'claimRequiredSwitchFailed'));
       return false;
     } finally {
@@ -227,7 +235,12 @@ export default function ClaimRequiredScreen() {
                   </CheckRow>
                 </View>
               ) : null}
-              <View style={[styles.roleActions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              {noteParent ? (
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 22, marginBottom: SPACE.md, textAlign: isRTL ? 'right' : 'left' }}>
+                  {t('guardianSwitchNote')}
+                </Text>
+              ) : null}
+              <View style={[styles.roleActions,{ flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <Button
                   label={t('claimRequiredSwitchSubmit')}
                   onPress={handleSwitchRole}

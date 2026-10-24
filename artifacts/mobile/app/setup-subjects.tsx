@@ -44,6 +44,9 @@ import { Button } from '@/components/ui/Button';
 import { PillSelector } from '@/components/ui/PillSelector';
 import { CheckRow } from '@/components/ui/CheckRow';
 import { ApiError } from '@/services/apiClient';
+import { guardianConfigStale, switchNeedsAgeConfirmation } from '@/services/signupMethod';
+import { resetGuardianConfigCache, useGuardianConfig } from '@/services/guardianConfig';
+import { TYPE } from '@/constants/theme';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { getPickerGrades, getSubjectsForGrade } from '@/services/curriculumData';
 import { goBack } from '@/services/navigation';
@@ -127,14 +130,20 @@ export default function SetupSubjectsScreen() {
   // box and a confirm button, and the server refuses the switch without the tick.
   const [studentPending, setStudentPending] = useState(false);
   const [ageOk, setAgeOk] = useState(false);
+  // When the server has a parent approve email students (guardian.enabled) there is no box: the student pill
+  // switches straight away, as parent does, and a note says the account will wait for a parent.
+  const guardian = useGuardianConfig();
+  const askAge = switchNeedsAgeConfirmation(user?.role, 'student', guardian.enabled);
   const doSwitch = async (role: 'parent' | 'student') => {
     if (switchingRole) return;
     setSwitchingRole(true);
     setError('');
     try {
-      await switchRole(role, { ageConfirmed: role === 'student' && ageOk });
+      await switchRole(role, { ageConfirmed: role === 'student' && askAge && ageOk });
     } catch (e) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      // The server's switch differs from the copy this screen read: ask again.
+      if (e instanceof ApiError && guardianConfigStale(e.code)) { resetGuardianConfigCache(); guardian.refresh(); }
       setError(t(e instanceof ApiError && e.code === 'age_confirmation_required' ? 'errAgeConfirmRequired' : 'claimRequiredSwitchFailed'));
       setSwitchingRole(false);
     }
@@ -142,7 +151,11 @@ export default function SetupSubjectsScreen() {
   const handleRole = async (role: 'teacher' | 'parent' | 'student') => {
     if (switchingRole) return;
     if (role === 'teacher') { setStudentPending(false); setAgeOk(false); return; }
-    if (role === 'student') { setStudentPending(true); return; }
+    if (role === 'student') {
+      if (guardian.enabled) { setStudentPending(false); await doSwitch('student'); return; }
+      setStudentPending(true);
+      return;
+    }
     setStudentPending(false);
     await doSwitch('parent');
   };
@@ -236,14 +249,21 @@ export default function SetupSubjectsScreen() {
 
         {!editMode && studentAccounts && studentPending ? (
           <View style={{ marginBottom: 20, gap: 12 }}>
-            <CheckRow checked={ageOk} onPress={() => setAgeOk(v => !v)} isRTL={isRTL} colors={colors}>
-              {t('ageConfirmLabel')}
-            </CheckRow>
+            {askAge ? (
+              <CheckRow checked={ageOk} onPress={() => setAgeOk(v => !v)} isRTL={isRTL} colors={colors}>
+                {t('ageConfirmLabel')}
+              </CheckRow>
+            ) : (
+              // The switch came on after the box opened (the config answers late): no tick, the note instead.
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 22, textAlign: align }}>
+                {t('guardianSwitchNote')}
+              </Text>
+            )}
             <Button
               label={t('claimRequiredSwitchSubmit')}
               onPress={() => void doSwitch('student')}
               loading={switchingRole}
-              disabled={!ageOk || switchingRole}
+              disabled={(askAge && !ageOk) || switchingRole}
               size="sm"
             />
           </View>

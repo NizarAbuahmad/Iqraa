@@ -24,7 +24,8 @@ import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { BackButton } from '@/components/ui/BackButton';
 import { IconTile } from '@/components/ui/IconTile';
 import { CheckRow } from '@/components/ui/CheckRow';
-import { switchNeedsAgeConfirmation } from '@/services/signupMethod';
+import { guardianConfigStale, switchNeedsAgeConfirmation } from '@/services/signupMethod';
+import { resetGuardianConfigCache, useGuardianConfig } from '@/services/guardianConfig';
 import type { GlyphId } from '@/constants/glyphs';
 import { SPACE, TYPE } from '@/constants/theme';
 import { PUSH_PREF_ROWS, showsFamilyPushPrefs, withPref, type PushPrefCategory, type PushPrefs } from '@/services/pushPrefs';
@@ -59,8 +60,12 @@ export default function SettingsScreen() {
   const [nextRole, setNextRole] = useState<'teacher' | 'parent' | 'student' | null>(null);
   // Becoming a student asks what signing up as one asks: an adult, or a
   // guardian's agreement. The server refuses the switch without it.
+  // When the server has a parent approve email students (guardian.enabled) the
+  // tick goes and a one-line note says the account will wait for a parent.
+  const guardian = useGuardianConfig();
   const [ageOk, setAgeOk] = useState(false);
-  const askAge = nextRole !== null && switchNeedsAgeConfirmation(user?.role, nextRole);
+  const askAge = nextRole !== null && switchNeedsAgeConfirmation(user?.role, nextRole, guardian.enabled);
+  const noteParent = guardian.enabled && nextRole === 'student' && user?.role !== 'student';
   const [switching, setSwitching] = useState(false);
   const [typeError, setTypeError] = useState('');
   const [sendingTest, setSendingTest] = useState(false);
@@ -220,6 +225,8 @@ export default function SettingsScreen() {
       await switchRole(nextRole, { ageConfirmed: askAge && ageOk });
     } catch (e) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      // The server's switch differs from the copy this screen read: ask again.
+      if (e instanceof ApiError && guardianConfigStale(e.code)) { resetGuardianConfigCache(); guardian.refresh(); }
       setTypeError(t(
         e instanceof ApiError && e.code === 'role_locked_teaching' ? 'accountTypeLockedTeaching'
           : e instanceof ApiError && e.code === 'age_confirmation_required' ? 'errAgeConfirmRequired'
@@ -551,6 +558,11 @@ export default function SettingsScreen() {
                         {t('ageConfirmLabel')}
                       </CheckRow>
                     </View>
+                  ) : null}
+                  {noteParent ? (
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 22, marginBottom: SPACE.md, textAlign: isRTL ? 'right' : 'left' }}>
+                      {t('guardianSwitchNote')}
+                    </Text>
                   ) : null}
                   {typeError ? (
                     <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }}>

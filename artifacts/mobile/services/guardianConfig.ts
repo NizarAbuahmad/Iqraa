@@ -3,7 +3,7 @@
  * screens need the answer before anyone is signed in, so it is a public GET. Fail OFF: an unreachable server
  * leaves today's behaviour (the age tick) in place, and the server's own answer to a sign-up settles it.
  */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { guardianApi } from './guardianApi.ts';
 
 export type GuardianConfig = { enabled: boolean; failed?: true };
@@ -36,8 +36,12 @@ export async function fetchGuardianConfig(
   return { enabled: false, failed: true };
 }
 
-export function useGuardianConfig(): { enabled: boolean; loading: boolean } {
+export function useGuardianConfig(): { enabled: boolean; loading: boolean; refresh: () => void } {
   const [state, setState] = useState<{ enabled: boolean; loading: boolean }>(() => (cached ? { enabled: cached.enabled, loading: false } : { enabled: false, loading: true }));
+  // Bumped by `refresh()`: a screen that was refused because its copy of the switch was stale clears the cache
+  // (resetGuardianConfigCache) and calls this to read it again without leaving the screen.
+  const [round, setRound] = useState(0);
+  const refresh = useCallback(() => setRound(n => n + 1), []);
   useEffect(() => {
     // Always ask, even if `cached` is set by now: another screen can fill it between the first render and this
     // effect, and returning early left `loading` true for good (the bug `features.ts` documents). A cache hit
@@ -45,6 +49,6 @@ export function useGuardianConfig(): { enabled: boolean; loading: boolean } {
     let live = true;
     void fetchGuardianConfig().then(c => { if (live) setState({ enabled: c.enabled, loading: false }); });
     return () => { live = false; };
-  }, []);
-  return state;
+  }, [round]);
+  return { enabled: state.enabled, loading: state.loading, refresh };
 }
