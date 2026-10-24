@@ -389,3 +389,64 @@ describe('the student lesson explanation screen', () => {
     assert.equal(isNonTeacherRoute('/curriculum/lesson-explanation'), true);
   });
 });
+
+import { GUARDIAN_WAITING_ROUTE, guardianRedirect, needsGuardianApproval } from '../routeGating.ts';
+
+describe('/guardian is a public route', () => {
+  it('is public, and a route that merely starts with the same letters is not', () => {
+    assert.equal(isPublicRoute('/guardian'), true);
+    assert.equal(isPublicRoute('/guardian/anything'), true);
+    assert.equal(isPublicRoute('/guardian-waiting'), false);
+    assert.equal(isPublicRoute('/guardians'), false);
+  });
+});
+
+describe('/guardian-waiting is a non-teacher route', () => {
+  it('lets a held student stay on the waiting screen', () => {
+    assert.equal(isNonTeacherRoute('/guardian-waiting'), true);
+  });
+});
+
+describe('needsGuardianApproval', () => {
+  it('holds a student whose status is needed, waiting or declined, and no one else', () => {
+    for (const s of ['needed', 'waiting', 'declined']) {
+      assert.equal(needsGuardianApproval({ role: 'student', guardianStatus: s as any }), true, s);
+    }
+    for (const s of ['not_required', 'approved', undefined]) {
+      assert.equal(needsGuardianApproval({ role: 'student', guardianStatus: s as any }), false, String(s));
+    }
+    for (const role of ['teacher', 'parent', 'school_admin', 'system_admin']) {
+      assert.equal(needsGuardianApproval({ role, guardianStatus: 'needed' }), false, role);
+    }
+    assert.equal(needsGuardianApproval(null), false);
+  });
+});
+
+describe('guardianRedirect', () => {
+  const held = { role: 'student', guardianStatus: 'waiting' as const };
+  it('sends a held student anywhere outside the three open screens to the waiting screen', () => {
+    assert.equal(guardianRedirect(held, '/(tabs)'), GUARDIAN_WAITING_ROUTE);
+    assert.equal(guardianRedirect(held, '/notifications'), GUARDIAN_WAITING_ROUTE);
+    assert.equal(guardianRedirect(held, '/setup-grade'), GUARDIAN_WAITING_ROUTE);
+    assert.equal(guardianRedirect(held, '/'), GUARDIAN_WAITING_ROUTE);
+  });
+  it('leaves the waiting screen, joining a class with a teacher code, and deleting the account alone', () => {
+    for (const p of [GUARDIAN_WAITING_ROUTE, '/join-class', '/delete-account']) {
+      assert.equal(guardianRedirect(held, p), null, p);
+    }
+  });
+  it('does not treat a lookalike path as open', () => {
+    assert.equal(guardianRedirect(held, '/join-classes'), GUARDIAN_WAITING_ROUTE);
+    assert.equal(guardianRedirect(held, '/delete-account-now'), GUARDIAN_WAITING_ROUTE);
+  });
+  it('moves a student who is no longer held off the waiting screen', () => {
+    assert.equal(guardianRedirect({ role: 'student', guardianStatus: 'approved' }, GUARDIAN_WAITING_ROUTE), '/(tabs)');
+    assert.equal(guardianRedirect({ role: 'student', guardianStatus: 'not_required' }, GUARDIAN_WAITING_ROUTE), '/(tabs)');
+    assert.equal(guardianRedirect({ role: 'teacher' }, GUARDIAN_WAITING_ROUTE), '/(tabs)');
+  });
+  it('does nothing for anyone not held, elsewhere', () => {
+    assert.equal(guardianRedirect({ role: 'student', guardianStatus: 'approved' }, '/notifications'), null);
+    assert.equal(guardianRedirect({ role: 'teacher' }, '/(tabs)'), null);
+    assert.equal(guardianRedirect(null, '/(tabs)'), null);
+  });
+});

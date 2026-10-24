@@ -37,6 +37,10 @@ export function needsAgeConfirmation(role: SignupRole | null, method: StudentSig
  * `ageConfirmed` with a 400, so a screen that skips the box gets an error it
  * cannot explain. Staying a student, or leaving the role, asks for nothing.
  */
-export function switchNeedsAgeConfirmation(from: string | null | undefined, to: string): boolean {
-  return to === 'student' && from !== 'student';
+export function switchNeedsAgeConfirmation(
+  from: string | null | undefined,
+  to: string,
+  guardianEnabled = false,
+): boolean {
+  return to === 'student' && from !== 'student' && !guardianEnabled;
 }

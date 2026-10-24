@@ -12,6 +12,8 @@
  * — or a fresh sign-in — should hand them over to the tabs.
  */
 
+import type { GuardianUserLike } from './guardianApproval.ts';
+
 /**
  * Routes that belong to someone who is not a teacher and never will be.
  *
@@ -46,7 +48,8 @@
  * name — no account, like `/take`. Only the player screens live under it; the
  * teacher's host screen is `/ai-tools/classroom/live-host`, which stays private.
  */
-const PUBLIC_ROUTES = ['/take', '/legal', '/play', '/curriculum/english', '/suggest-feature', '/live'];
+// `/guardian`: a parent opens the approval link from an email on a device where nobody is signed in.
+const PUBLIC_ROUTES = ['/take', '/legal', '/play', '/curriculum/english', '/suggest-feature', '/live', '/guardian'];
 
 export function isPublicRoute(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
@@ -90,6 +93,8 @@ const NON_TEACHER_ROUTES = [
   // «اقترح ميزة» is linked from the profile tab for every role, like /faq.
   '/suggest-feature',
   '/delete-account',
+  // A student held for a parent's approval waits here (see `guardianRedirect`).
+  '/guardian-waiting',
   // Adding an email to an account made from a teacher's code — only a parent or
   // student can be one, so it belongs here and nowhere on the teacher side.
   '/add-email',
@@ -235,4 +240,33 @@ export function needsTeacherSetup(
 ): boolean {
   if (!user || user.role !== 'teacher') return false;
   return (user.gradeIds?.length ?? 0) === 0 && (user.subjectIds?.length ?? 0) === 0;
+}
+
+// ─── Held for a parent's approval ────────────────────────────────────────────
+
+export const GUARDIAN_WAITING_ROUTE = '/guardian-waiting';
+
+/** A student the server is holding until a parent approves (status needed, waiting or declined). */
+export function needsGuardianApproval(user: GuardianUserLike | null | undefined): boolean {
+  if (!user || user.role !== 'student') return false;
+  return user.guardianStatus === 'needed' || user.guardianStatus === 'waiting' || user.guardianStatus === 'declined';
+}
+
+/** The only places a held student may be: the waiting screen, joining a class with a teacher's code (which lifts
+ *  the hold), and deleting the account. Everything else answers 403 from the server anyway. */
+const HELD_MAY_OPEN = [GUARDIAN_WAITING_ROUTE, '/join-class', '/delete-account'];
+
+function isHeldMayOpen(pathname: string): boolean {
+  return HELD_MAY_OPEN.some(p => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+/**
+ * Where the root layout should send a signed-in user for the parent-approval rule, or null to leave them be:
+ * a held student goes to the waiting screen from anywhere else; a user who is not (or no longer) held is moved
+ * off the waiting screen to the tabs.
+ */
+export function guardianRedirect(user: GuardianUserLike | null | undefined, pathname: string): string | null {
+  if (needsGuardianApproval(user)) return isHeldMayOpen(pathname) ? null : GUARDIAN_WAITING_ROUTE;
+  if (user && pathname === GUARDIAN_WAITING_ROUTE) return '/(tabs)';
+  return null;
 }

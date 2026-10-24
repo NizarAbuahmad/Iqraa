@@ -28,6 +28,13 @@ const BY_CODE = {
   student_accounts_disabled: 'errStudentAccountsDisabled',
   terms_required: 'errTermsRequired',
   age_confirmation_required: 'errAgeConfirmRequired',
+  // Parent approval for email students.
+  parent_email_required: 'errParentEmailRequired',
+  parent_email_invalid: 'errParentEmailInvalid',
+  parent_email_is_own: 'errParentEmailIsOwn',
+  email_not_verified: 'errEmailNotVerifiedYet',
+  guardian_rate_limited: 'errGuardianRateLimited',
+  guardian_approval_required: 'errGuardianApprovalRequired',
   role_locked_teaching: 'accountTypeLockedTeaching',
   role_locked_linked: 'accountTypeLockedLinked',
   password_incorrect: 'errPasswordIncorrect',

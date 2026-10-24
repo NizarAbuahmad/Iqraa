@@ -71,3 +71,18 @@ describe('switchNeedsAgeConfirmation', () => {
     assert.equal(switchNeedsAgeConfirmation(undefined, 'student'), true);
   });
 });
+
+describe('switchNeedsAgeConfirmation with the parent-approval switch', () => {
+  it('asks for the tick as before when the switch is off or unspecified', () => {
+    assert.equal(switchNeedsAgeConfirmation('teacher', 'student'), true);
+    assert.equal(switchNeedsAgeConfirmation('teacher', 'student', false), true);
+  });
+  it('asks for nothing when a parent approves instead', () => {
+    assert.equal(switchNeedsAgeConfirmation('teacher', 'student', true), false);
+    assert.equal(switchNeedsAgeConfirmation('parent', 'student', true), false);
+  });
+  it('still never asks for a change that is not into student', () => {
+    assert.equal(switchNeedsAgeConfirmation('student', 'parent', false), false);
+    assert.equal(switchNeedsAgeConfirmation('student', 'student', false), false);
+  });
+});
