@@ -636,27 +636,34 @@ export function allGrammarSentences(): string[] {
 }
 
 /**
- * Every string the grammar activities speak: each sentence, and for Yes or No the
- * question alone and the No exchange («Is it a plane? No, it isn't.»). Voiced before
- * a unit is signed off, like the sentences.
+ * Every string one unit's activities speak, in first-seen order without repeats:
+ * each sentence, the voiced false claim, the build prompt, and for Yes or No the
+ * question alone and the No exchange («Is it a plane? No, it isn't.»). Per unit so
+ * the audio plan can voice each string in its grade's register.
  */
-export function allGrammarSpoken(): string[] {
+export function unitSpoken(unit: GrammarUnit): string[] {
   const out = new Set<string>();
-  for (const u of GRAMMAR_UNITS) {
-    for (const s of unitSentences(u)) {
-      out.add(s.text);
-      if (s.claim && s.claim.voiced !== false) out.add(s.claim.falseText);
-      if (s.build?.prompt) out.add(s.build.prompt);
-      const y = s.yesNo;
-      if (!y) continue;
-      out.add(y.question);
-      if (y.otherQuestion) {
-        out.add(y.otherQuestion);
-        out.add(`${y.otherQuestion} ${y.no}`);
-      }
+  for (const s of unitSentences(unit)) {
+    out.add(s.text);
+    if (s.claim && s.claim.voiced !== false) out.add(s.claim.falseText);
+    if (s.build?.prompt) out.add(s.build.prompt);
+    const y = s.yesNo;
+    if (!y) continue;
+    out.add(y.question);
+    if (y.otherQuestion) {
+      out.add(y.otherQuestion);
+      out.add(`${y.otherQuestion} ${y.no}`);
     }
   }
   return [...out];
+}
+
+/**
+ * Every string the grammar activities speak, across every unit (`unitSpoken`).
+ * Voiced before a unit is signed off, like the sentences.
+ */
+export function allGrammarSpoken(): string[] {
+  return [...new Set(GRAMMAR_UNITS.flatMap(unitSpoken))];
 }
 
 // ─── The teacher's sheet ──────────────────────────────────────────────────
