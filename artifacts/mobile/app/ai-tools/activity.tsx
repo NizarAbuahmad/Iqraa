@@ -53,7 +53,8 @@ import { buildScopeRequest, scopeFormState } from '@/services/wideScopeRequest';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { conceptOf } from '@/constants/icons';
 import { SPACE, TYPE } from '@/constants/theme';
-import { readableOn, textOn, tintOver } from '@/services/readableColor';
+import { readableOn, textOn, tintOver, selectedRow } from '@/services/readableColor';
+import { generationPhase } from '@/services/generationPhase';
 import { activitySections, previewRows, summaryLine, type ActivitySection } from '@/services/generatorSummary';
 import { SegmentedControl } from '@/components/generator/SegmentedControl';
 import { ChipGroup } from '@/components/generator/ChipGroup';
@@ -231,6 +232,8 @@ export default function ActivityScreen() {
       // A «subject mismatch» refusal is about the old pairing; it used to
       // stay on screen in red under the now-empty topic field.
       setError('');
+      // …and a Cancel from the old pairing: «أُلغي» is about a run that no longer matters.
+      setCancelled(false);
       prevGradeRef.current = gradeIdx;
       prevSubjectRef.current = subjectIdx;
     }
@@ -263,6 +266,9 @@ export default function ActivityScreen() {
   const generate = async (opts?: { regenerate?: boolean }) => {
     // Counted first, before any refusal below returns: the status scroll depends on it.
     setAttempt(n => n + 1);
+    // A Cancel leaves `cancelled` set, and it outranks an error in the status block: clear it before any
+    // refusal below can return, or «أُلغي» would be shown over the refusal's own message.
+    setCancelled(false);
     // Read before any setState clears it — this is what the teacher is
     // looking at, and what a regeneration must not hand back.
     const previous = result;
@@ -479,7 +485,7 @@ export default function ActivityScreen() {
   // What GenerationStatus shows. Under the form it is out of sight of a docked button, so a
   // phone scrolls it into view when this leaves 'idle' (a refusal such as scopeNoCurriculum or
   // subjectTopicMismatch, a network error, the spinner and its Cancel).
-  const statusPhase = loading ? 'loading' : cancelled ? 'cancelled' : (error && topic.trim()) ? 'error' : 'idle';
+  const statusPhase = generationPhase({ loading, cancelled, failed: !!(error && topic.trim()) });
   const statusY = useRef(0);
   const reduceMotion = useReduceMotion();
   // Layout effect, not effect: the jump is made before the frame is painted, so there is no flash
@@ -710,7 +716,7 @@ function ActivityResult({ activity, colors, isRTL, t }: {
   // Text, icons and outlines on a card are the ink; the tints behind them are the concept colour itself.
   const ink = readableOn(ACCENT, colors.card);
   // The ready banner is not on a card: it is the accent at 8% over the page, so its text is judged against that.
-  const bannerInk = readableOn(ACCENT, tintOver(ACCENT, 0x15 / 255, colors.background));
+  const bannerInk = readableOn(ink, tintOver(ACCENT, 0x15 / 255, colors.background));
   return (
     <View style={{ paddingHorizontal: 20, paddingTop: 4 }}>
       {/* Success banner */}
@@ -864,7 +870,8 @@ function BodyText({ text, colors, isRTL }: { text: string; colors: ReturnType<ty
  * teal of the default.
  */
 function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
-  return <SharedPickerField selectedTint={props.accent + '15'} {...props} />;
+  const row = selectedRow(props.accent, props.colors.card);
+  return <SharedPickerField selectedTint={row.fill} {...props} accent={row.ink} />;
 }
 
 const styles = StyleSheet.create({

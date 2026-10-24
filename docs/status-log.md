@@ -50,6 +50,69 @@ failure is logged by ids only, never the name.
 `docs/superpowers/specs/2026-10-23-roster-edit-and-claim-approval-design.md`. Until then a class code
 still lets anyone pick any free name; the claimed-by line and unlink are the check.
 
+## Chat app-help, twentieth live pass: 14 more wordings, and one new answer (subject average) — 2026-10-23
+
+A 30-question pass on app.iqrra.com found 14 questions answered by the model for which the app
+already had a written answer (`howAttendance` — «لا يوجد تسجيل حضور», `howClassChat`,
+`howRegenerate`, `howEmailMaterial`, `howQuestionBank`, `howClassScan`, `howExamQr`,
+`howMathTools`, `howMasteryGate`, `howFilesToClass`, `howStudentRecord`, `howNotifications`,
+`howDeleteAccount`, `howCopyExam`). Two were an app card where the steps existed: «أفعّل
+الإشعارات على هاتفي» got only the «الرسائل» card and «أحذف حسابي نهائياً» only the «حسابي» card.
+Wordings added to the existing rule ids in `appHelp.ts`. One new answer, `howSubjectAverage`
+(ar + en): the app has the average per exam («لوحة النتائج») and each student's exam
+percentages («ملف الطالب»), and nothing for a whole subject, which the model had answered with
+an invented «التقارير» screen. Both halves are the existing `howClassAverage` and
+`howStudentRecord`, not new claims. Pinned in `appHelp.test.ts` with teaching near-misses.
+
+**Not done:** «أنضم إلى مدرستي» (the school-join flow for a teacher is not something I
+verified), the book-source question and the ready-made-homework question (neither looked into),
+«أحفظ خطة الدرس بصيغة وورد» (already answered by the generic «PDF أو Word» export text).
+
+## Generator screens: Cancel then a refusal, and the banner contrast — 2026-10-23
+
+A follow-up to the five generator-screen ports (the two known limits their entries listed). Mobile only:
+nothing here changes what is asked of the model, the API, or what is stored.
+
+**Cancel, then a refusal.** After a Cancel, `cancelled` stayed set until validation passed, and the phase
+expression put it before `error`, so a later refusal (`scopeNoCurriculum`, `subjectTopicMismatch`,
+`wideScopeUngrounded`) showed «أُلغي» instead of the refusal. Fixed at the root on all five screens (quiz,
+worksheet/homework, lesson plan, activity, slides): `generate` calls `setCancelled(false)` right after the attempt
+is counted, before any refusal can return, and changing the grade or the subject after a Cancel clears it as well
+(the reset effect cleared `error` but not `cancelled`). The five inline phase expressions are now one pure
+`generationPhase({ loading, cancelled, failed })` (`services/generationPhase.ts`; `GenerationStatus` imports its
+type). With `cancelled` cleared first, a refusal gives phase `idle`, so the lesson plan's `topicRefusal` early
+return and slides' `|| refusal` early return in the status-scroll effect (which existed only because of this bug)
+are gone. Every regenerate, retry, English-refresh and report-a-problem path goes through `generate`, so they clear
+it too. Pinned by `generationPhase.test.ts` (it documents the old bug and the fix) and per-screen source tests.
+
+**Banner and tint contrast.** The same flaw the activity banner had (ink judged against the card but drawn on a
+tint over the PAGE) was measured everywhere in the five screens, with the real card and page colours. Failing
+before: the worksheet/homework ready banner (light, homework 4.39), the quiz header pills (light 3.72 to 4.25,
+dark 4.10 to 4.54), the worksheet's attach-figure button (dark, worksheet 4.46, homework 4.11) and the selected row
+of every dropdown (dark 4.08 to 4.41). The lesson plan's banner (6.34 light, 4.98 dark) and the quiz and slides
+banners were already fine. Fixed with `tintOver` + `readableOn` (and a new pure `selectedRow(accent, card)` that
+gives a dropdown's selected row an opaque fill and the matching ink; the local `PickerField` wrapper on each screen
+uses it): ink starts from the old accent ink and only moves when the tint needs it, so it never lowers contrast
+(dark banners stay at 5.01 worksheet and 5.07 activity). After: the worst case over all six generator colours in
+both modes is 4.51 (banner 4.51, pill 4.58, figure button 4.51, selected row 4.55); examples: homework banner light
+4.77, quiz pills light 4.80, dark 4.74. The quiz header pills are now one opaque fill. The tests pin the numbers and
+also assert that the old way of judging still fails for the colour it failed for, so they are not vacuous.
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,157 tests, 7,147 pass, 10 skipped, 0 fail.
+Web-build screenshots before the last small ink changes: the quiz, worksheet and homework results in light and dark
+and the lesson plan. An independent review found no blocker; its should-fix items (a test measuring the wrong
+colour, stale comments, a duplicated type, the dark banner ink dipping, and the same stuck-«أُلغي» after a
+grade/subject change) are fixed.
+
+**Not verified:** any device; the contrast fixes are measured, and the final ink tweaks were not re-shot in the
+browser; Cancel then a refusal was reasoned and source-pinned, and not driven in a browser (demo generation does
+not refuse).
+
+**Known limits.** `onRetry={generate}` on the worksheet, quiz and lesson plan passes `generate` bare, so Retry
+after a failed three-levels run regenerates one paper. `app/evaluations/new.tsx` still uses a translucent
+`ACCENT + '15'` selected row (likely 4.1 to 4.4 in dark); it is outside the five screens. The toast and docked-bar
+overlap on the four screens other than slides is still open.
+
 ## Generator screens: the slides — 2026-10-23
 
 PR 5 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`, the last of the five tools. The
