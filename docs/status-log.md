@@ -90,6 +90,107 @@ account, run a request-supersede that touches no rows when none exists. Design:
   - Queued rows never mailed still count toward the 5-a-day parent cap.
   - A request superseded between queue and issue answers 200 `emailSent: false`.
 
+## English audio: a speech-to-text check of every recording — 2026-10-24
+
+A recording can be the wrong word (the first voicing of «chair» was «share»), and only an ear found it. `english-audio-check`
+listens instead: it downloads each clip in `audioPlan()` from the public bucket, transcribes it with a speech-to-text model
+and reports where what is said differs from what the app expects. **Read-only**: it writes nothing to the bucket and never
+re-voices; it writes only a report and a cache and their `.tmp` / `.bak` files, all git-ignored by default. No app, API, schema or dependency change.
+
+- **Pure logic, tested** (`lib/curriculum/src/englishAudioCheck.ts`, `__tests__/englishAudioCheck.test.ts`): normalising
+  (case, apostrophes, punctuation, hyphens, digits → words, British → American spelling, a homophone table), the verdicts,
+  the cost estimate, the cache and the checking loop with its dependencies injected, the report. The command
+  (`scripts/check-english-audio.ts`) only wires flags, the real fetch and the real API call.
+- **Verdicts.** `match` (equal once normalised), `close`, `mismatch`, `silent` (nothing heard), and `missing` / `error`.
+  **`close` is deliberately narrow:** a single word of 6+ letters whose heard form is the expected one plus or minus one
+  inflection ending (`s es d ed ing er ers`), or a text of several words within floor(10%) of its words in word edits (none
+  under 10 words). A one-letter or one-word difference in a short text is the very confusion the check exists to find
+  («I am ten» / «I am two», «carrot» / «parrot», «bit» / «bet»), so those are `mismatch`. `close` rows go to a «Close: worth a
+  glance» table; only `mismatch` and `silent` produce the `english-audio -- --only a,b,c` line.
+- **The model is never told the expected text** (it would agree with whatever it was told): `language=en`, `temperature=0`
+  and a generic prompt only, and the uploaded file is named `clip.mp3`, not the slug (the slug is the expected text).
+  Model `gpt-4o-transcribe` by default.
+- **Flags:** `--only a,b` (slugs or words), `--grade N`, `--source word|grammar`, `--limit N`, `--model`, `--cache <file>`,
+  `--refresh`, `--out <file>` (the same report as `.json` beside it), `--dry-run`, `--fail-on-mismatch` (exit 1 on a
+  mismatch, a silent clip **or a clip that could not be checked**); an unknown flag, or `--cache` and `--out` that would
+  write the same file, is refused (exit 2).
+- **Key.** `OPENAI_API_KEY` from the environment or the repo-root `.env` (as the generator does); empty or `sk-your…` is
+  refused (exit 2), and so is a key with a space, control, line-break or non-ASCII character (`isPlausibleApiKey`: `fetch`
+  would throw an error quoting the header value) with a message that says nothing about the key; never printed, logged or
+  written to the report or the cache. A 401/403, a 404 / `model_not_found` (a typo in `--model`) or a 429 with code
+  `insufficient_quota` stops the run once (`shouldStopRun`) and prints OpenAI's reason with the key (and anything shaped like
+  one) removed; an ordinary 429 is waited out, and any other 4xx is one `error` row. The quota 429 is retried (five attempts per
+  clip, a few seconds) before it stops. `OPENAI_BASE_URL` and `AUDIO_BASE_URL` override the two endpoints (that is how it was
+  smoke-tested); the banner names the transcription host. Each attempt has a timeout (60 s for the API, 30 s for a clip;
+  opt-in in `audioHttp.ts`, the audit passes none).
+- **A stopped run is PARTIAL.** `checkClips` can return fewer results than clips when the API refuses the key, so the
+  command decides from `stopped`, never from the length: the report is headed PARTIAL with how many of how many were checked
+  (also as one line on stdout), the cache is still saved (it is also saved every 100 clips and on Ctrl+C), exit code 2.
+- **The cache is written atomically** (`<cache>.tmp`, then renamed); a cache file that has content but no readable
+  transcripts is copied once to `<cache>.bak` before it is replaced; if a `.bak` already holds something different, the run
+  refuses (exit 2, nothing written) instead of losing either file. `--refresh` replaces the transcripts of the clips it
+  re-heard, and a clip that now comes back silent loses its old one (`mergeRefreshed`).
+- **The fetch helper moved.** `retryAfterMs`, `backoffMs`, the request-with-backoff and the worker pool left
+  `audit-english-audio.ts` for `scripts/audioHttp.ts`; both commands use it. `englishAudioLocation.test.ts` now also pins the
+  check's default bucket URL to the app's.
+
+**How to run it** (`pnpm --filter @workspace/curriculum run english-audio-check -- <flags>`; behind a proxy add
+`NODE_USE_ENV_PROXY=1`): `-- --dry-run --source word` first (HEAD only, no key: counts, bytes, minutes, a cost estimate), then
+`-- --source word --limit 50` and read the report, then `-- --source word`. **Today that is about 1,248 transcriptions and
+roughly 15-20 minutes** (3 in flight). The 3,383 grammar sentences are not voiced yet, so a run without `--source word` asks the
+bucket for each, is answered 404 and lists them under «Missing» (the Markdown lists the first 50 and says so; the JSON has all);
+once they are voiced the full run is about 4,600 transcriptions and roughly 30-50 minutes. A re-run pays only for clips whose
+size or ETag changed (and asks again about a silent one). The console also says how many rows were `close` or missing.
+
+**Verified.**
+- Offline end to end against a local fake server (OpenAI endpoint and bucket both faked; the real API was never called) with 6
+  real clips (`moon eraser chair apples pink friday`) and canned transcripts: 4 `match`, 1 `mismatch` («chair» heard as
+  «Share.»), 1 `silent`, the `--only chair,pink` line, Markdown and JSON written, the request carried
+  `language=en temperature=0 response_format=json` and the generic prompt and the `Authorization` header. A second run sent 1
+  clip to the transcriber (the silent one, which is not cached), 5 came from the cache; with the silent clip left out, 0. The
+  fake server saw the uploaded file named `clip.mp3` on every request (it told the clips apart by their bytes), so the request
+  carries neither the slug nor the expected text; the prompt is the generic one.
+  `--refresh` sent 6. A server answering 429 with `Retry-After: 1` was waited out (12 requests for 6 clips, run ok in 3 s). A
+  400 on one clip became one `error` row and the run went on. A server answering 401 stopped the run with exit 2, printed its
+  message with the key replaced by `[key]`, the key appearing in no output, report or cache; a server that accepts 2 clips and
+  then refuses gave a PARTIAL report «2 of 6», 2 cached transcripts, exit 2, and finishing against a good server then
+  re-used those 2. `--dry-run` made no transcription request and needed no key. `--fail-on-mismatch` exits 1 on a mismatch and
+  0 without; no key, the placeholder and bad flags exit 2.
+- Also offline, after review: keys with a line break, a tab, a space or a non-ASCII letter are refused (exit 2, no request
+  reached the server, nothing of the key printed); a 429 `insufficient_quota` and a 404 `model_not_found` each stop the run
+  with OpenAI's scrubbed message and a PARTIAL report; a `--refresh` where a clip now comes back silent drops its seeded
+  stale transcript; a cache file that is not a cache is copied to `.bak` and replaced, with no `.tmp` left; `--fail-on-mismatch`
+  exits 1 for a run whose only problem is an `error` row; an attempt that hangs is aborted at `timeoutMs` and retried.
+- The live bucket, read-only: `--dry-run --source word` found all 1,248 hub-word clips present (7.01 MB, **at most 24.5
+  minutes at an assumed 40 kbps; about $0.147 for the audio alone** at OpenAI's per-minute estimate; the gpt-4o models bill by
+  tokens, so the prompt and the transcript add text tokens and the real bill on 1-2 s clips could be up to about double, not a
+  ceiling). The first version assumed 128 kbps and printed 7.7
+  minutes and $0.046 as an «upper bound»; that was backwards: the same bytes hold MORE seconds at a lower bitrate, and the
+  processed clips are 40 kbps (apples.mp3: 4,437 bytes, 0.84 s by ffprobe). 40 is the lowest bitrate in the bucket, so the
+  estimate can only over-count. It is an estimate of seconds from bytes, not a measurement.
+- The keyless audit against the live bucket, before and after the helper move: **byte-identical output** (1,248 voiced, 3,383
+  missing, 0 errors, of 4,631).
+
+**Not done.** The real OpenAI transcription call has never been made: no key was used and nothing has been transcribed, so
+how `gpt-4o-transcribe` actually hears these clips (how many rows land in each table) is unknown. The prices in
+`PRICE_PER_MINUTE_USD` are OpenAI's per-minute estimates as of 2026-10 for the audio only (the gpt-4o models bill by tokens, so
+expect up to about double on very short clips): check the pricing page before a big run. The 3,383 grammar sentences are not voiced yet,
+so there is nothing to check for them. Not in CI.
+
+**Honest limits.** It hears the word, not how it is said: accent and stress errors («EE-ray-ser» for «eraser») pass, because
+recognisers forgive them. A mismatch means a person should listen, not that the clip is wrong (homophones, rare words such as
+«doughnut», «sitcom»). A **homophone group lets a wrong recording pass**: pair / pear / pare, flower / flour and plane / plain
+sound the same to the recogniser and are folded to one form. The `er` and `ing` suffix closes can land a different word in the
+Close table (number / numb). Contractions are not expanded («I'm» / «I am» differ), and «prise» / «prize» fold together. A
+transcription POST aborted by the 60 s timeout and retried could in theory be billed twice (OpenAI bills on completion; unlikely),
+and a body that stalls after the headers arrive is not retried (one `error` row). The first run may be
+noisy: the `close` and `mismatch` strictness is deliberate (a one-letter or one-word difference in a short text is the very
+confusion being looked for), and if a real run shows too many harmless rows it can be loosened by a flag later; no such flag
+exists now. A host that cannot be reached stops the run after 10 clips in a row fail to connect (exit 2, «the transcription API
+is unreachable»); a report written after a stop, or with error rows, never says «Nothing needs a listen». The output folders of
+`--cache` and `--out` are created before the first request. Left as they are: Ctrl+C exits with `process.exit` after saving the cache; `--out x.json` names its JSON `x.json.json`; the
+`--cache`/`--out` collision check is case-sensitive.
+
 ## English corner: all ten grades, the official books, and free listening and reading sites, 2026-10-24
 
 The English corner had tabs for Grades 1–5, 9 and 10, so a student in Grade 6, 7 or 8 found no
@@ -266,9 +367,14 @@ type the Google address.
 - **The divider under the Google button reads «أو أنشئ حسابك ببريدك الإلكتروني»**
   (`orSignUpWithEmail`) instead of a bare «أو». `orDivider` stays for the sign-in screen.
 - The Google button's own text («Continue as <name>» with the address) is drawn by Google's
-  script in an iframe, so it cannot be restyled or relabelled from here.
+  script in an iframe, so it cannot be restyled or relabelled from here. It shows whichever
+  Google account the browser has active, not the last address used on Iqrra, so it must not be
+  captioned "last email used". A line under it says what it is (`googleAccountHint`: «حساب Google
+  المسجّل على هذا الجهاز. اضغط السهم لاختيار حساب آخر.»), **web only**: the phone app has no such
+  button and opens the account chooser every time.
 
-**Verified:** mobile `pnpm run typecheck`; mobile `pnpm test` (7,385 tests, 7,375 pass, 10 skipped, 0 fail).
+**Verified:** mobile `pnpm run typecheck`; mobile `pnpm test` (7,385 tests, 7,375 pass, 10 skipped,
+0 fail; 7,480 / 7,470 after the `googleAccountHint` line was added).
 **Not verified:** how it looks in a browser (phone, desktop, light, dark, RTL), and that the
 role pills, student method choice and the Google gate behave together on the screen. Nobody
 has loaded the deployed `/register` since the change.

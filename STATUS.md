@@ -120,6 +120,7 @@ From session notes **(notes)**:
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
 - 2026-10-24 — Parent approval for email students: the server (off)
+- 2026-10-24 — English audio: a speech-to-text check of every recording
 - 2026-10-24 — English corner: all ten grades, the official books, and free listening and reading sites
 - 2026-10-24 — English audio on phones: clips are saved on the device and a lesson's clips are fetched ahead
 - 2026-10-24 — Tests for the roster consent gate
@@ -148,11 +149,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-23 — Grade 9 grammar, thirteen lessons in the English corner — built, shown to nobody yet
 - 2026-10-23 — Iqraa draws its own icons
 - 2026-10-23 — Grade 9 grammar pilot (Unit 4) in the English corner — built, shown to nobody yet
-- 2026-10-23 — Icons follow one system
 
 ## Finding older detail, and recording new work
 
-- The log has 408 sections. Anything cited elsewhere as
+- The log has 409 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line

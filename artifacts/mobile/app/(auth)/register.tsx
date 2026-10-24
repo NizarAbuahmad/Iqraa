@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Pressable, ScrollView,
+  Platform, Pressable, ScrollView,
   StyleSheet, Text, View,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -314,6 +314,16 @@ export default function RegisterScreen() {
               >
                 <GoogleSignInButton onCredential={handleGoogleCredential} locale={lang} />
               </View>
+              {/* Google's own button reads «Continue as <name>» with whichever
+                  Google account the browser has active — not the last address
+                  used on Iqrra — and offers another through its arrow. Web
+                  only: the phone app opens the account chooser every time and
+                  has no such button. */}
+              {Platform.OS === 'web' ? (
+                <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
+                  {t('googleAccountHint')}
+                </Text>
+              ) : null}
               {!readyToSignUp ? (
                 <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
                   {t(termsAccepted ? 'ageConfirmBelow' : 'registerAcceptTermsBelow')}
