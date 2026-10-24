@@ -62,6 +62,7 @@ describe('Grade 10 authored lessons', () => {
     assert.equal(G10_ITEM_LESSONS.reduce((n, l) => n + sentencesOf(l.lessonId).length, 0), 440);
     assert.equal(grammarUnitsForGrade(10).length, 11);
     const meaning = ids().flatMap(id => sentencesOf(id)).filter(x => x.kind === 'meaning').length;
+    assert.equal(meaning, 206);
     assert.equal(meaning, Object.values(SIZES).flatMap(s => Object.values(s)).filter(([, k]) => k === 'meaning').reduce((n, [size]) => n + size, 0));
   });
 

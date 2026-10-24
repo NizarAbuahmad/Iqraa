@@ -322,12 +322,12 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['As a child, he used to love sweets.', 'used to', 'would'],
         ['When I was ten, I used to like football.', 'used to', 'would'],
         ['My grandmother used to own free-range chickens years ago.', 'used to', 'would'],
-        ['In the past, people used to know their neighbours.', 'used to', 'would'],
+        ['In the past, this street used to be quiet.', 'used to', 'would'],
         ['When she was young, she used to hate vegetables.', 'used to', 'would'],
         ['As a boy, Dad used to be very shy.', 'used to', 'would'],
         ['Before we moved, we used to have a garden.', 'used to', 'would'],
         ['Years ago, my hair used to be long.', 'used to', 'would'],
-        ['When I was younger, I used to believe everything.', 'used to', 'would'],
+        ['As a boy, I used to fear the dark.', 'used to', 'would'],
         ['Long ago, our town used to have one school.', 'used to', 'would'],
         ['At primary school, I used to love maths.', 'used to', 'would'],
       ]),
@@ -428,15 +428,17 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
     statement: 'I can use a variety of modal and related verbs.',
     items: [
       // mustn't (it is forbidden) or don't have to (it is not necessary), fixed by the second sentence or clause: a
-      // danger or a rule («It's dangerous», «It's not allowed») makes it a ban; «It's free», «optional», «isn't
-      // required» or «but you can» makes it unnecessary. No reason that could also be advice («I can hear you»).
+      // danger or a rule («It's dangerous», «It's not allowed») on something nobody is ever required to do (touch live
+      // wires, cheat) makes it a ban; «It's free», «optional», «isn't required» or «but you can» makes it unnecessary.
+      // No place or action that could merely be optional («swim here. It's dangerous» reads either way), and no reason
+      // that could also be advice («I can hear you»).
       ...items('obligation', 'meaning', [
-        ["You mustn't leave bags unattended. It isn't safe.", "mustn't", "don't have to"],
+        ["You mustn't leave bags unattended. Security will remove them.", "mustn't", "don't have to"],
         ["Passengers mustn't smoke on the plane. It's forbidden.", "mustn't", "don't have to"],
         ["You mustn't cheat in exams. It's against the rules.", "mustn't", "don't have to"],
-        ["You mustn't swim here. It's dangerous.", "mustn't", "don't have to"],
-        ["You mustn't park here. It's illegal.", "mustn't", "don't have to"],
-        ["You mustn't cross here. It's not safe.", "mustn't", "don't have to"],
+        ["You mustn't touch the wires. They're live.", "mustn't", "don't have to"],
+        ["You mustn't drive without a licence. It's illegal.", "mustn't", "don't have to"],
+        ["You mustn't play with fire. It's dangerous.", "mustn't", "don't have to"],
         ["Visitors mustn't feed the animals. It's not allowed.", "mustn't", "don't have to"],
         ["You don't have to pay. It's free.", "don't have to", "mustn't"],
         ["You don't have to come, but you can.", "don't have to", "mustn't"],
@@ -556,7 +558,7 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ["You look tired. I'll make you some tea.", "I'll make", 'I make'],
         ["I forgot to call Mum! I'll do it now.", "I'll do", 'I do'],
         ["We've got no milk. I'll buy some.", "I'll buy", 'I buy'],
-        ["I don't understand. I'll ask the teacher.", "I'll ask", 'I ask'],
+        ["Sorry, I don't understand this. I'll ask the teacher.", "I'll ask", 'I ask'],
       ]),
       // A sign of what is about to happen (dark clouds, «Watch out!», «Careful!») takes going to. will is not offered
       // («Look at those clouds, it'll rain» is English too); the distractor is the present simple, and the warning says
@@ -567,7 +569,7 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ["Be careful! You're going to drop it.", "You're going to drop", 'You drop'],
         ["Hurry! We're going to miss the bus.", "We're going to miss", 'We miss'],
         ['Watch out! The ball is going to hit you.', 'is going to hit', 'hits'],
-        ["The sky is very dark. It's going to snow.", "It's going to snow", 'It snows'],
+        ["Look at the sky! It's going to snow.", "It's going to snow", 'It snows'],
         ["Mind the step! You're going to trip.", "You're going to trip", 'You trip'],
         ['Stop! The milk is going to boil over.', 'is going to boil', 'boils'],
         ["Careful! You're going to spill your tea.", "You're going to spill", 'You spill'],
@@ -609,13 +611,13 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
       // work), or with «still»: the perfect («will have slept», «will still have studied») makes no sense. No activity
       // that ends (watch the match, have dinner), which the perfect fits.
       ...items('continuous', 'meaning', [
-        ['At this time tomorrow, I will be sleeping.', 'will be sleeping', 'will have slept'],
+        ['At this time tomorrow, I will still be sleeping.', 'be sleeping', 'have slept'],
         ['This time next week, I will be relaxing.', 'will be relaxing', 'will have relaxed'],
         ['At midnight, I will still be studying.', 'be studying', 'have studied'],
         ['At ten tonight, she will still be working.', 'be working', 'have worked'],
         ['At noon, I will be waiting at the airport.', 'will be waiting', 'will have waited'],
         ['This time next year, he will still be training.', 'be training', 'have trained'],
-        ['At six tomorrow, Dad will be driving.', 'will be driving', 'will have driven'],
+        ['At six tomorrow, Dad will still be driving.', 'be driving', 'have driven'],
         ['At this time tomorrow, they will still be travelling.', 'be travelling', 'have travelled'],
         ["Don't call me at nine. I will be swimming.", 'will be swimming', 'will have swum'],
         ['This time on Friday, we will be camping.', 'will be camping', 'will have camped'],
@@ -624,23 +626,25 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['When you arrive, we will still be eating.', 'be eating', 'have eaten'],
         ['Next month, I will still be working freelance.', 'be working', 'have worked'],
       ]),
-      // «By» + a deadline with a count of finished things takes the perfect, as the present perfect's count does:
-      // «By Friday, I will be writing five emails» makes no sense.
+      // «By» + a deadline with a count of events that happen one at a time (won six matches, rung four times) takes the
+      // perfect: a continuous cannot hold a count of instant events («By noon, the bell will be ringing four times»).
+      // No activity that can be under way at the deadline (build, write, visit, interview), where «will be building
+      // three houses» is natural.
       ...items('perfect', 'meaning', [
-        ['By Friday, I will have written five emails.', 'will have written', 'will be writing'],
-        ['By next year, she will have visited ten countries.', 'will have visited', 'will be visiting'],
-        ['By next summer, I will have saved 200 dinars.', 'will have saved', 'will be saving'],
-        ['By noon, we will have walked ten kilometres.', 'will have walked', 'will be walking'],
-        ['By the deadline, he will have finished three reports.', 'will have finished', 'will be finishing'],
-        ['By tonight, I will have read two chapters.', 'will have read', 'will be reading'],
-        ['By Sunday, the team will have played six matches.', 'will have played', 'will be playing'],
-        ['By next week, they will have built three houses.', 'will have built', 'will be building'],
-        ['By next month, she will have painted five pictures.', 'will have painted', 'will be painting'],
-        ['By tomorrow, we will have sold 100 tickets.', 'will have sold', 'will be selling'],
-        ['By summer, he will have learned 500 words.', 'will have learned', 'will be learning'],
-        ['By lunchtime, I will have answered twenty questions.', 'will have answered', 'will be answering'],
-        ['By Monday, they will have interviewed ten people.', 'will have interviewed', 'will be interviewing'],
+        ['By Monday, our team will have won six matches.', 'will have won', 'will be winning'],
+        ['By half-time, he will have scored two goals.', 'will have scored', 'will be scoring'],
+        ['By tonight, I will have sent fifty messages.', 'will have sent', 'will be sending'],
         ['By Saturday, I will have finished four exams.', 'will have finished', 'will be finishing'],
+        ['By lunchtime, I will have received ten emails.', 'will have received', 'will be receiving'],
+        ['By sunset, we will have caught twenty fish.', 'will have caught', 'will be catching'],
+        ['By morning, the baby will have woken twice.', 'will have woken', 'will be waking'],
+        ['By bedtime, I will have passed three levels.', 'will have passed', 'will be passing'],
+        ['By ten, the bus will have stopped six times.', 'will have stopped', 'will be stopping'],
+        ['By tomorrow, I will have called her five times.', 'will have called', 'will be calling'],
+        ['By tonight, Mum will have phoned me three times.', 'will have phoned', 'will be phoning'],
+        ['By noon, the bell will have rung four times.', 'will have rung', 'will be ringing'],
+        ['By Sunday, I will have watered the plants twice.', 'will have watered', 'will be watering'],
+        ['By Friday, it will have rained three times.', 'will have rained', 'will be raining'],
       ]),
       // will be + -ing, will have + past participle: a bare verb, the wrong auxiliary or a past simple is a form error.
       ...items('forms', 'form', [
