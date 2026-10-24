@@ -72,12 +72,6 @@ Checked 2026-10-22:
   deploys: if `false`, production's `DATABASE_URL` is a direct connection (218 direct
   connections at the 0.5 CU maximum, fewer when scaled down); switch the secret to the pooled
   string. Details and what is unverified: the log entry named above.
-- **The printed grammar review forms for Grades 3, 4, 5 and 9 clip their left-hand (last) columns
-  when printed in A4 landscape** (measured 2026-10-24: overhang 47, 690, 390 and 762 px): on Grades 4,
-  5 and 9 the tick box and notes column fall off the page (Grade 4 and 9 also the kind column); on
-  Grade 3 about a third of the notes column (its tick box stays); Grades 1, 2 and 10 fit (Grade 10
-  with its own print CSS). Fixing them alters their committed forms, so it is its own change. Entry: «Grade 10 grammar
-  (Semester 1) in the English corner» in the log.
 
 Checked 2026-10-22:
 
@@ -120,7 +114,9 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-24 — Printed grammar forms fit the page, sign-off no longer covers rows, and True or false says right or wrong without pictures
 - 2026-10-24 — Grade 10 grammar (Semester 1) in the English corner — built, shown to nobody yet
+- 2026-10-24 — Generator screens: Retry repeats the run, and the evaluations picker row
 - 2026-10-24 — Generator screens: the toast clears the docked bar
 - 2026-10-23 — Students choose an email or a teacher's code
 - 2026-10-23 — Generator screens: Cancel then a refusal, and the banner contrast
@@ -148,12 +144,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-22 — Grade 4 reading in the English corner — built, shown to nobody yet
 - 2026-10-22 — Game buttons read in dark mode
 - 2026-10-22 — A lesson game can be homework, and the teacher sees the scores
-- 2026-10-22 — Any deck plays as Class Challenge, with sound
-- 2026-10-22 — Progress is celebrated
 
 ## Finding older detail, and recording new work
 
-- The log has 383 sections. Anything cited elsewhere as
+- The log has 390 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line
