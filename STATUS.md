@@ -114,6 +114,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-24 — Tests for the roster consent gate
 - 2026-10-24 — Tests for the login-code reissue route
 - 2026-10-24 — Grade 10 grammar (Semester 2) in the English corner — built, shown to nobody yet
 - 2026-10-24 — English audio: voice register fixed, clips trimmed and levelled, and an audit that needs no keys
@@ -143,11 +144,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-22 — Today wears the lesson's subject
 - 2026-10-22 — Grade 5 in the English corner — words glossed, recordings still to make
 - 2026-10-22 — The desktop Tools grid reads right to left in Arabic
-- 2026-10-22 — Live games: students answer from any device
 
 ## Finding older detail, and recording new work
 
-- The log has 401 sections. Anything cited elsewhere as
+- The log has 404 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line
