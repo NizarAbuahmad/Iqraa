@@ -55,9 +55,11 @@ One additive migration (nothing destructive):
 - `users.guardian_approved_at timestamptz NULL`. Set only when a parent approves. `guardian_confirmed_at` (the
   tick) stays as history and is no longer written.
 - New table `guardian_consents`: `id uuid pk`, `user_id uuid not null → users(id) on delete cascade`,
-  `parent_email text not null` (lower-cased, trimmed), `token_hash text not null unique` (sha256 of a 32-byte random
-  token; only the hash is stored), `created_at`, `expires_at` (created + 7 days), `sent_at NULL`, `decided_at NULL`,
-  `decision text NULL` (`approved` or `declined`), `superseded_at NULL`. Indexes on `user_id` and on
+  `parent_email text not null` (lower-cased, trimmed), `token_hash text NULL unique` (sha256 of a 32-byte random
+  token; only the hash is stored), `created_at`, `sent_at NULL`, `expires_at NULL` (sent + 7 days), `decided_at NULL`,
+  `decision text NULL` (`approved` or `declined`), `superseded_at NULL`. **`token_hash` and `expires_at` stay null
+  until the mail is issued**: sign-up queues a request before the student has verified their own email, and the
+  plaintext token must exist only at the moment it is mailed (it is never stored). Indexes on `user_id` and on
   `(parent_email, created_at)` for the rate limit. One **current** request per student: a new request sets
   `superseded_at` on the previous open one.
 - RLS: the table is read and written only through `systemDb` (the public parent route has no user). It is classified
@@ -66,9 +68,15 @@ One additive migration (nothing destructive):
 
 ## Flows
 
-**Sign-up (register and Google, student, email path).** The age tick is replaced by a required `parentEmail`.
-Refused 400 `parent_email_required` / `parent_email_invalid`, and 400 `parent_email_is_own` when it equals the
-student's own address. The row is created with `sent_at NULL`. **Nothing is mailed to the parent yet.**
+**Sign-up (register and Google, student, email path).** With `GUARDIAN_APPROVAL=true` the age tick is replaced by a
+required `parentEmail`. Refused 400 `parent_email_required` / `parent_email_invalid`, and 400
+`parent_email_is_own` when it equals the student's own address, and 429 `guardian_rate_limited` over the parent-address
+limit. A request row is queued with no token. **Nothing is mailed to the parent yet.** With the flag **off** the
+server behaves exactly as today: the tick is required and any `parentEmail` is ignored. (The live app still sends
+the tick, so the server must keep asking for it until the flag is on.)
+
+**`GET /guardian-consent/config`** (public) returns `{enabled}`, so the app knows which of the two sign-up forms to
+show. Unlike the other two public routes it works with the flag off.
 
 **After the student's own email is verified** (`POST /auth/verify-email`; at once for Google, whose address is
 already verified), the server sends the parent mail and sets `sent_at`. Waiting until then means the sign-up form
@@ -101,9 +109,11 @@ verify it first.
 `approved`, `needed` (pending, no request sent yet), `waiting`, `declined`, plus `guardianParentEmailMasked`. The
 app reads it on every boot and also re-reads it whenever any call returns `guardian_approval_required`.
 
-**Role switch.** `POST /auth/role` (and the Google existing-account conflict path) **no longer ask for an age tick**:
-`ageConfirmed` is removed from the three role-switch screens and from `decideRoleSwitch`. Switching into student
-simply produces a pending account, which lands on the waiting screen and asks for the parent's email there.
+**Role switch.** With the flag on, `POST /auth/role` (and the Google existing-account conflict path) **no longer ask
+for an age tick**: switching into student simply produces a pending account, which lands on the waiting screen and
+asks for the parent's email there. `decideRoleSwitch` takes an `ageTickRequired` input (default true, so today's
+behaviour is unchanged) that the routes set to `!guardianApprovalEnabled()`. With the flag off the tick is asked as
+today. The tick boxes leave the three role-switch screens in PR B, once the app reads `config.enabled`.
 
 ## Abuse limits
 
