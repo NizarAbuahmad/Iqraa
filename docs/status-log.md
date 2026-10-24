@@ -10,6 +10,46 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Roster: edit a student, and see which account holds each name — 2026-10-23
+
+The pencil on a roster row used to open only the note; a teacher could not fix a misspelt name
+(`PATCH /students/:id` and `updateStudent` already took `displayName`, no screen sent it). It now
+opens one sheet: name, register number, gender, note (`EditStudentSheet`), sending only what changed
+(`studentEdit.ts`). Each joined row also shows «الحساب:» with the account's name and join date (`ClaimedByLine`), from a new
+`links` array on `GET /classes/:id` (the old `linked` flag stays).
+
+**Rules.** A rename that matches another live student in any of that student's classes is a 409
+`student_name_taken` (same whitespace/case key as the add route, no Arabic folding; other classes
+and other teachers may reuse the name). After a rename, linked code-only accounts (a login
+code, no password and no Google id) are re-derived from the new roster name — only if they still carry what the
+old name would have produced, so a name a person chose is never overwritten. That write uses
+`systemDb` (`routes/roster.ts` was already pinned) in a second step after the roster update, not
+the same transaction; a failure is logged by id and the saved rename stands.
+
+**Verified (locally, on the final head 7d7c29a):** root `pnpm run typecheck` is clean (libs, api-server,
+mobile, scripts). api-server `pnpm build` then `pnpm test`: 2200 tests, 2200 pass, 0 fail — but 22 DB-backed
+suites print `# SKIP` (no Postgres here; the runner's summary line still says `skipped 0` because it
+does not count skipped suites), including `rosterEdit.db.test.ts` («editing a roster row over HTTP,
+against a real database»). mobile `pnpm test`: 7024 tests, 7014 pass, 0 fail, 10 skipped (all ten are
+chemistry knowledge-base search cases, nothing in this change); «no interface screen prints a date in
+Arabic-Indic digits» passes. In CI on head 1b87839 (which already held the API change and the DB test)
+Typecheck, Build api-server, Test api-server (`REQUIRE_DB_TESTS=true`, so `rosterEdit.db.test.ts` ran
+against a real Postgres and passed) and Test db were green; "Test mobile" failed with exactly one test,
+the Arabic-Indic date one above, because `formatLinkedOn` used a plain `ar-JO` locale. Commit 319d790
+switched it to the repo's `dateLocale()`, so an Arabic date prints Latin digits («23 تشرين الأول»).
+
+**Not verified.** CI on the final head had not been read when this was written; see the PR for it. No
+browser or device pass: RTL layout, dark mode, the keyboard lift, the sheet's scrolling on a short phone
+and the on-screen text of the duplicate-name message were not looked at (no database or API here).
+**Known limits.** The duplicate-name check and the update are separate queries, so two simultaneous
+renames to the same name can both pass (the add route behaves the same). Archived classes count toward
+the 409. The account-name sync is a second step after the roster update, not one transaction, and a
+failure is logged by ids only, never the name.
+
+**Not built (PR 2, next):** teacher approval of class-code joins — design in
+`docs/superpowers/specs/2026-10-23-roster-edit-and-claim-approval-design.md`. Until then a class code
+still lets anyone pick any free name; the claimed-by line and unlink are the check.
+
 ## Grade 10 grammar (Semester 1) in the English corner — built, shown to nobody yet, 2026-10-24
 
 The eleven Grade 10 Semester 1 lessons whose book statement is a grammar topic now have grammar activities: Choose the
