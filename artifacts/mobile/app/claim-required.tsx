@@ -43,6 +43,8 @@ import { RosterError, claimRosterCode } from '@/services/roster';
 import { AccountRow } from '@/components/ui/AccountRow';
 import { ApiError } from '@/services/apiClient';
 import { claimErrorKey } from '@/services/claimCodeGate';
+import { ClaimWaitingCard } from '@/components/ClaimWaitingCard';
+import { useClaimWaiting } from '@/hooks/useClaimWaiting';
 
 /** The three the register screen offers — and the only three POST /auth/role takes. */
 type SwitchableRole = 'teacher' | 'parent' | 'student';
@@ -56,6 +58,13 @@ export default function ClaimRequiredScreen() {
   const { code, setCode, roster, className, studentId, setStudentId, state, canSubmit: canSubmitCode, needsConfirm, confirmed, setConfirmed, pickedName } = useJoinCodeLookup();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  // Claims the teacher has not answered yet. A class-code pick by a student is
+  // held (api-server lib/claimDecision.ts), and the account stays on this screen.
+  const waiting = useClaimWaiting({
+    adoptLinksOnMount: true,
+    onLinked: () => { markRosterClaimed(); router.replace('/(tabs)'); },
+  });
+  const screen = waiting.screen;
 
   const role: SwitchableRole = user?.role === 'student' || user?.role === 'teacher' ? user.role : 'parent';
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -63,7 +72,9 @@ export default function ClaimRequiredScreen() {
   const [switching, setSwitching] = useState(false);
 
   const align = isRTL ? 'right' : 'left';
-  const canSubmit = canSubmitCode && !submitting;
+  // Not before the first read of the account's claims has settled: a held claim
+  // replaces the form with the waiting card, and the form must not be usable in between.
+  const canSubmit = canSubmitCode && !submitting && waiting.loaded;
   // What the picker currently points at, applied or not. Everything below the
   // card reads this rather than `role`, so choosing a type reshapes the screen
   // at once instead of only after the separate "change type" button is pressed.
@@ -139,8 +150,14 @@ export default function ClaimRequiredScreen() {
     setSubmitting(true);
     setError('');
     try {
-      await claimRosterCode(code.trim(), roster ? studentId : undefined);
+      const result = await claimRosterCode(code.trim(), roster ? studentId : undefined);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (result.status === 'pending') {
+        // Held for the teacher: nothing is linked, so the gate must not open.
+        waiting.hold({ studentId: result.studentId, displayName: result.studentName });
+        setSubmitting(false);
+        return;
+      }
       markRosterClaimed();
       router.replace('/(tabs)');
     } catch (err) {
@@ -285,40 +302,72 @@ export default function ClaimRequiredScreen() {
           </View>
         )}
 
-        {toTeacher ? null : <RosterCodeClaimForm
-          code={code}
-          onChangeCode={setCode}
-          roster={roster}
-          className={className}
-          studentId={studentId}
-          onSelectStudent={setStudentId}
-          state={state}
-          userRole={pendingRole}
-          confirming={confirmed}
-          pickedName={pickedName}
-          onChangeMind={() => setConfirmed(false)}
-          colors={colors}
-          isRTL={isRTL}
-          t={t}
-        />}
+        {screen.mode === 'waiting' && !toTeacher ? (
+          <>
+            {/* The screen-level error (a saved-account switch that failed) is shown here too. */}
+            {error ? (
+              <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', marginBottom: 16 }]}>
+                <Ionicons name="alert-circle" size={16} color={colors.destructive} />
+                <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                  {error}
+                </Text>
+              </View>
+            ) : null}
+            <ClaimWaitingCard
+              studentName={screen.studentName}
+              checking={waiting.checking}
+              error={waiting.error}
+              onCheck={() => void waiting.check()}
+              onChange={() => void waiting.change()}
+              colors={colors}
+              isRTL={isRTL}
+              t={t}
+            />
+          </>
+        ) : (
+          <>
+            {screen.declined && !toTeacher ? (
+              <Text style={[styles.desc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                {t('claimDeclined')}
+              </Text>
+            ) : null}
 
-        {error ? (
-          <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Ionicons name="alert-circle" size={16} color={colors.destructive} />
-            <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
-              {error}
-            </Text>
-          </View>
-        ) : null}
+            {toTeacher ? null : <RosterCodeClaimForm
+              code={code}
+              onChangeCode={setCode}
+              roster={roster}
+              className={className}
+              studentId={studentId}
+              onSelectStudent={setStudentId}
+              state={state}
+              userRole={pendingRole}
+              confirming={confirmed}
+              pickedName={pickedName}
+              onChangeMind={() => setConfirmed(false)}
+              colors={colors}
+              isRTL={isRTL}
+              t={t}
+            />}
 
-        <Button
-          label={confirmed && !toTeacher ? t('joinConfirmYes') : t('claimRequiredSubmit')}
-          onPress={handleSubmit}
-          loading={submitting || switching}
-          disabled={toTeacher ? switching : !canSubmit || switching || (askAge && !ageOk)}
-          fullWidth
-          style={{ marginTop: 24 }}
-        />
+            {error ? (
+              <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <Ionicons name="alert-circle" size={16} color={colors.destructive} />
+                <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                  {error}
+                </Text>
+              </View>
+            ) : null}
+
+            <Button
+              label={confirmed && !toTeacher ? t('joinConfirmYes') : t('claimRequiredSubmit')}
+              onPress={handleSubmit}
+              loading={submitting || switching}
+              disabled={toTeacher ? switching : !canSubmit || switching || (askAge && !ageOk)}
+              fullWidth
+              style={{ marginTop: 24 }}
+            />
+          </>
+        )}
 
         {/* The only other exit. This screen is mandatory and the back gesture
             is off, so a student whose code has expired — or who signed in on

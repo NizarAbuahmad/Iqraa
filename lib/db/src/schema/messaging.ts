@@ -52,6 +52,41 @@ export const rosterLinks = pgTable(
   ],
 );
 
+/**
+ * A student's claim on a roster name that is waiting for the teacher's yes.
+ *
+ * Kept apart from `roster_links` on purpose. A link means "this account may
+ * see and act as this child", and about 120 places read it that way (chat
+ * contacts, homework, exams, parent letters). A `status` column on that table
+ * would make every one of them filter it correctly, forever; a row here is
+ * invisible to all of them, so an unapproved account has no access by
+ * construction. Approval is one insert into `roster_links` plus deleting the
+ * requests (routes/roster.ts); a claim made with a per-student code, or by a
+ * parent, never comes here (lib/claimDecision.ts `claimNeedsApproval`).
+ *
+ * Several accounts may wait on the same name — a classmate squatting it must
+ * not lock the real child out — up to MAX_PENDING_CLAIMS_PER_STUDENT.
+ */
+export const rosterLinkRequests = pgTable(
+  "roster_link_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => students.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    relation: text("relation").$type<RosterLinkRelation>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  t => [
+    unique("roster_link_requests_unique").on(t.studentId, t.userId),
+    index("roster_link_requests_student_idx").on(t.studentId),
+    index("roster_link_requests_user_idx").on(t.userId),
+  ],
+);
+
 export type ChatThreadType = "direct" | "class_group" | "custom_group";
 
 export const chatThreads = pgTable(
