@@ -129,6 +129,152 @@ URL says «lesson not found».** Spec: `docs/superpowers/specs/2026-10-24-englis
   sentences; then the unit's `reviewedBy` is set in `englishGrammarG10.ts`. The lesson appears in the Grade 10 index only once
   its unit is signed. Until audio exists the Semester 2 lessons would be spoken by the browser voice.
 
+## English audio: voice register fixed, clips trimmed and levelled, and an audit that needs no keys — 2026-10-24
+
+The English corner plays pre-voiced MP3s from the public bucket (`english-audio/<slug>.mp3`, made
+by `lib/curriculum/scripts/generate-english-audio.ts`). An audit of the 1,050 stored clips and of
+the plan found:
+
+- **Wrong register for Grade 5, 9 and 10 sentences.** The script put every grammar string in the
+  young set ("all are Grade 1–2"), so about 1,700 Grade 5/9/10 grammar strings (and more as Grade 10
+  Semester 2 lands) would have been read "to a six-year-old child … a little slowly". None of the
+  2,990 grammar strings is voiced yet, so
+  this cost nothing to fix.
+- **Dead air:** median 0.69 s of silence after the word (286 clips over 1 s, max 2.0 s), median
+  0.16 s before it (max 1.1 s); 17.6 of 32.3 minutes are outside the speech (14.0 of them after it).
+- **Size:** 128 kbps for one spoken word (29.6 MB, median 28 KB).
+- **Uneven loudness:** speech level p5 −33.2, median −29.0, p95 −25.4 dBFS, from −37.8 (`paint`)
+  to −21.6 (`duck`).
+- **One blank recording:** `tie.mp3` is 0.36 s of silence (peak −90 dBFS); nothing rejected it.
+- **No record of how a clip was made**, and **no way to check coverage without credentials.**
+
+**What changed (tooling only; the app is untouched):**
+
+- `lib/curriculum/src/englishAudioPlan.ts` (new, pure): `audioPlan()` — one item per slug with its
+  text, register, source and grades. Young = used by a Grade 1–4 lesson or grammar unit; everything
+  else teen (4,238 recordings on `main`: 1,707 young, 2,531 teen). The instructions, `PRONUNCIATION`,
+  model and voice moved here from the script, wording unchanged. `englishGrammar.ts` gained
+  `unitSpoken(unit)`; `allGrammarSpoken()` is now the union of it, same output, same order.
+- `lib/curriculum/src/englishAudioProcess.ts` (new, pure) and `scripts/audioFfmpeg.ts` (ffmpeg):
+  a verdict on the raw model output (blank: peak under −40 dBFS or no speech frame; under 0.15 s
+  or over 6 s of speech), then a gain to a −24 dBFS speech level (±12 dB, peak never over
+  −1.5 dBFS), a cut keeping 0.06 s before and 0.15 s after the speech, and a 40 kbps 24 kHz mono
+  MP3. `PROCESS_VERSION = 1`.
+- The generator rejects a bad take (listed, not uploaded), processes every kept one, and checks the
+  RESULT before uploading it (`processedVerdict`: it still passes the verdict, lost at most 0.1 s of
+  speech, kept at most 0.12 s / 0.25 s of silence, peaks within 0.5 dB of the ceiling — otherwise
+  rejected as `processing` and not stored, and the run stops if the first 10 all fail, so a broken
+  ffmpeg build damages nothing). It needs ffmpeg (exit 2) unless `--no-process` (uploaded not
+  checked or processed). It keeps `english-audio/_manifest.json` (text, register, model, voice,
+  process version, speech length, bytes per slug), merge-written every 50 uploads and at the end,
+  and stamps every upload with `x-amz-meta-process-version`. New `--reprocess`: no OpenAI key,
+  downloads each stored clip, processes it and puts it back under the same key and cache header;
+  skips clips whose metadata or manifest entry is at the current process version, leaves a failing
+  one untouched and lists it. A refused R2 credential stops the run once, like a refused TTS key.
+  Run one instance at a time.
+- **Backups:** before a stored clip is first replaced (`--reprocess`, `--force`, `--only`), it is
+  copied to `english-audio-original/<slug>.mp3` — a sibling prefix the clip listing never reads —
+  unless a backup is already there (never overwritten); a clip whose backup fails is not replaced.
+  To restore: copy `english-audio-original/<slug>.mp3` back over `english-audio/<slug>.mp3` and
+  delete the slug's entry in `_manifest.json`. A backup of one of the 1,050 pre-existing clips has
+  no process-version stamp; one made later by re-voicing a clip this script processed carries
+  `process-version=1` (CopyObject keeps metadata). Restoring with an S3 client copy keeps the
+  backup's stamp, so `--reprocess` correctly skips a stamped one; re-uploading through the
+  Cloudflare dashboard drops it, so the next `--reprocess` processes the clip. If the clip was
+  restored because processing damaged it, keep it out of the next `--reprocess` (name the others
+  with `--only`, or fix the cause first), or it is processed — and damaged — again.
+- `pnpm --filter @workspace/curriculum run english-audio-audit` (new): no credentials, `HEAD`s every
+  planned clip on the public URL (6 at a time, backoff on 429/5xx with `Retry-After`) and prints
+  coverage by grade and source; `--missing`, `--deep` (downloads and measures), `--fail-on-missing`.
+
+**Rulings, measured on the 1,050 clips.** The cut is `atrim` at sample positions computed from the
+same 10 ms frames the audit measures, not `silenceremove`: run after the gain, the latter's sliding
+window disagreed with the frames and left 0.13–0.28 s of leading or up to 0.43 s of trailing
+silence on 23 clips. The gain is computed on the speech span the result will have (a raised
+clip's soft edges join it), which moved 18 more clips inside ±1.5 dB. The cut is decided 1.5 dB
+above the −45 dBFS threshold at the output level: the encoder moves a faint frame by about a
+decibel, and many clips have a −44 to −49 dBFS click about 0.1 s before the word. The MP3 is
+written to a temp file outside the repo, not a pipe, because ffmpeg writes the gapless header only
+to a seekable output — through a pipe every clip gained 46 ms of encoder priming.
+
+**Measured (the pipeline run locally over all 1,050 downloaded clips; nothing uploaded):** `tie`
+rejected as blank; of the 1,049 kept, size median 28.1 → 5.3 KB (ratio 0.21, max 0.33), 32.3 →
+19.1 minutes, trailing silence max 0.17 s (was 2.0), leading max 0.06 s (was 1.1), speech level p5
+−24.5 / median −24.4 / p95 −24.2 dBFS with 1,046 within ±1.5 dB of −24 (the three outside —
+`paint`, `a-plate-of`, `project` — are at the +12 dB clamp), peak max −2.6 dBFS. No frame louder
+than −43.5 dBFS (output level) was cut from any clip. Speech spans are within 40 ms of the raw ones
+or longer (a raised clip's soft edges cross the threshold) except `doughnut`, 0.07 s shorter: the
+removed part is a −44 dBFS click 70 ms before the word, not the word. The upload check passes all
+1,049 processed clips, and rejects 1,042 of them when handed the untrimmed clip instead (what a
+build that ignored the cut would produce). 40 kbps keeps the spectrum
+up to 10 kHz within about 1 dB on `snake`, `safe`, `blue`, `giraffe`. The new audit, run against
+the live bucket, reproduces 1,050 voiced and 3,188 missing (190 Grade 5 and 8 Grade 9 words and
+all 2,990 grammar strings); `--deep` reproduces the figures above.
+
+**Not done:** no clip was re-voiced or reprocessed and nothing was uploaded — the generator was not
+run in any mode. Nobody listened to the processed clips. The first real run is `pnpm --filter
+@workspace/curriculum run english-audio -- --reprocess` (backs up each original it replaces
+to `english-audio-original/`, cleans the 1,049 good clips and writes the manifest;
+`tie` is listed, re-voice it with `--only tie`), then the plain run (voices the 3,188 missing,
+processed). `evening.mp3` has no trailing silence and may be cut off; listen before trusting it.
+
+**Next:** serve the clips from a custom domain instead of `r2.dev` (rate-limited), a native
+fallback and an offline cache in the app, and a speech-to-text round trip that checks each clip
+says its text.
+
+## Class-code claims wait for the teacher — 2026-10-24
+
+A student who picks their name off the **class** code used to become that child at once, so anyone who
+had the code could take any name in the class. Now the pick is held as a row in the new
+`roster_link_requests` table (migration 0017) and the teacher approves it from the class's Students tab.
+Nothing reads that table as access: an unapproved account has no `roster_links` row, so chat contacts,
+homework, exams and parent letters all see nothing. `roster_links` has no `status` column and must not get one.
+
+**What changed.** Server: `claimNeedsApproval` / `pendingLimitReached` (`lib/claimDecision.ts`), the held path in
+`linkRosterRowInTx` (`routes/auth.ts`, shared by `/claim` and `/redeem`), `GET /classes/:id/link-requests`,
+`POST /students/:id/link-requests/:requestId/approve|reject` (`routes/roster.ts`), `DELETE /auth/claim?pendingOnly=1`.
+App: `ClaimWaitingCard` + `useClaimWaiting` (shown by `claim-required`, `join-class`, and a note under the login
+code on code-only signup), `LinkRequestsBanner` on the Students tab, services `claimResult`, `claimWaiting`,
+`linkRequests`, and 16 strings (ar + en).
+
+**Rules.** Only a `self` claim made through the class code is held; per-student codes and parents link at once.
+Up to five accounts may wait on one name (409 `claim_pending_limit` for the sixth, which keeps its earlier pick);
+an account holds one waiting pick (choosing another replaces it; re-entering a held or already-linked name queues
+nothing). `POST /auth/claim` answers 202 `{pending, studentId, studentName}` for a held claim; `/redeem` answers 201
+as before with `hasRosterLink: false`, `pending`, `studentName`. Approval consumes the request, re-reads the
+sender's role (`claim_request_stale` if it is no longer a student), inserts the link (the partial unique index
+`roster_links_one_self_idx` answers `claim_already_linked`), clears the rest of that name's requests and syncs
+class threads. Switching role deletes the account's waiting requests. The student's `pending` list shows only
+requests a teacher could still answer (live student, live class of that teacher). The teacher's list says
+whether an account was just created from the class code (`codeSignup`) because such an account is named after the
+roster name it picked and so proves nothing; rows asking for the same name are flagged as competing.
+
+**Verified (final head, locally).** Root `pnpm run typecheck` clean. api-server `pnpm build` then `pnpm test`
+against a throwaway Postgres 16 with `REQUIRE_DB_TESTS=true`: 2524 tests, 2524 pass, 0 skipped — including
+`claimApproval.db.test.ts` and `linkRequests.db.test.ts`, and both again with `RLS_ENFORCE=on`. `lib/db`
+`pnpm test` (the row-level-security suites, `rlsCoverage`, `rlsMatrix`, `rlsDiff`) against the migrated throwaway
+database: 66 tests, 66 pass. Mobile `pnpm test`: 7245 tests, 7235 pass, 0 fail, 10 skipped. The math-verifier suite
+was not run here (no `sympy`); CI runs it and the branch does not touch it. CI on the pull request ran the same
+suites on each pushed head.
+
+**Not verified.** None of the screens (waiting card, join-class, signup note, banner) was run in a browser or on a
+device: layout, RTL, dark mode and the real approve/reject round trip are unchecked. Approve-versus-withdraw
+races have no interleaving test (outcomes are pinned; the `FOR UPDATE` on the sender's `users` row is what
+serialises approve against a role switch). `rlsDiff` has no step for the new teacher routes; their queries were
+read against the policies and run under `RLS_ENFORCE=on` in the HTTP tests only.
+
+**Known limits.** (1) The teacher gets no push or badge: a student waits until the teacher opens the class's
+Students tab, and the student has no push on approval either — they use "Check again". (2) A rejected student
+can ask again, and a squatter can repeat that up to the cap of five; the teacher rejects them one by one.
+(3) A held student with no class lands on the grade picker after signup — the routing gate (`needsRosterClaim`,
+parents only) was deliberately not widened. (4) `codeSignup` turns false once a code-only account adds an
+email, so such a request shows the name twice again. (5) Analytics: `class_joined` now fires only for a link made
+at once; a held join and an approval emit no event. (6) `failRoster` in `routes/roster.ts` logs the raw error
+object (existing behaviour, three more callers now). (7) **Rollout:** installed Android builds read any 2xx from
+`/auth/claim` as joined — on a 202 an old build shows the app empty (no data is exposed) and sends the student back
+to the code screen on the next `/auth/me`; teachers see the banner only on a build that has this change, and
+the `production` OTA is manual.
+
 ## Tests for the code-only account routes — 2026-10-24
 
 `POST /auth/redeem`, `POST /auth/code-login` and `POST /auth/add-email` had no committed test: they were
