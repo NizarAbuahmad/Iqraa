@@ -57,6 +57,7 @@ import {
 import { resolveClaimCode, type ClaimResolution, type ClaimRole } from "../lib/rosterClaim.js";
 import { generateLoginCode, hashLoginCode } from "../lib/loginCode.ts";
 import { guardianLimitReached } from "../lib/guardianLimit.ts";
+import { hasLiveRosterLink } from "../lib/rosterLinkState.ts";
 import { claimNeedsApproval, pendingLimitReached } from "../lib/claimDecision.ts";
 import { namesForNewAccount, redeemRoleCheck } from "../lib/redeemPolicy.ts";
 import { studentGradeIds } from "../lib/studentGrades.ts";
@@ -316,22 +317,6 @@ async function hasAnyRosterLink(userId: string): Promise<boolean> {
     .select({ id: rosterLinks.id })
     .from(rosterLinks)
     .where(eq(rosterLinks.userId, userId))
-    .limit(1);
-  return !!row;
-}
-
-/**
- * A link to a live roster row — what the claim gate (`hasRosterLink` on the
- * user) asks. A student whose only link is to an archived row used to pass
- * the gate into an app with no class, no teacher and no contacts;
- * `/messaging/contacts` already drops archived rows, and this is that rule.
- */
-async function hasLiveRosterLink(userId: string): Promise<boolean> {
-  const [row] = await db
-    .select({ id: rosterLinks.id })
-    .from(rosterLinks)
-    .innerJoin(students, eq(students.id, rosterLinks.studentId))
-    .where(and(eq(rosterLinks.userId, userId), isNull(students.archivedAt)))
     .limit(1);
   return !!row;
 }

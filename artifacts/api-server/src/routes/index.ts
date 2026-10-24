@@ -17,6 +17,7 @@ import scheduleRouter from "./schedule";
 import examCalendarRouter from "./examCalendar";
 import evaluationsRouter from "./evaluations";
 import attemptsRouter from "./attempts";
+import guardianConsentRouter from "./guardianConsent";
 import studentAttemptRouter from "./studentAttempt";
 import studentExamsRouter from "./studentExams";
 import liveRouter from "./live";
@@ -107,6 +108,8 @@ router.use(attemptsRouter);
 // token check, both path-scoped inside the router. Mounted *after* the
 // teacher routers so it cannot shadow them, and asserted in mountOrder.test.ts
 // both ways: reachable without a token, and not having made anything else so.
+// The parent's approval page: public (the parent has no account), every path under /guardian-consent, rate limited.
+router.use(guardianConsentRouter);
 router.use(studentAttemptRouter);
 // Live (Kahoot-style) games. /live/* is the players' side — public like /take,
 // token-authenticated and rate-limited inside the router, with every limiter
