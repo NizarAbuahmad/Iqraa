@@ -87,3 +87,20 @@ describe('safeRole', () => {
     assert.equal(safeRole(42), undefined);
   });
 });
+
+describe('scrub: parent consent links', () => {
+  const TOKEN = 'AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-abcde';
+  it('removes a fragment and a bare consent token', () => {
+    assert.ok(!scrub(`Failed at https://app.iqrra.com/guardian#${TOKEN}`).includes(TOKEN));
+    assert.ok(!scrub(`bad token ${TOKEN} here`).includes(TOKEN));
+    // A token that starts or ends with "-" must go too.
+    const EDGE = `-${TOKEN.slice(1, 42)}-`;
+    assert.equal(EDGE.length, 43);
+    assert.ok(!scrub(`edge ${EDGE} end`).includes(EDGE));
+    assert.match(scrub('see https://x.test/p#frag-ment_123456789012'), /#<fragment>/);
+  });
+  it('leaves ordinary words and short ids alone', () => {
+    assert.equal(scrub('Cannot read property of undefined'), 'Cannot read property of undefined');
+    assert.match(scrub('item #12 failed'), /#12/);
+  });
+});

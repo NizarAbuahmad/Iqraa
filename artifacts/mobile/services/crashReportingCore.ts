@@ -28,6 +28,10 @@ const RULES: ReadonlyArray<readonly [RegExp, string]> = [
   [/\b(?=[A-Z0-9]*\d)(?=[A-Z0-9]*[A-Z])[A-Z0-9]{12}\b/g, '<code>'],
   // Phone numbers, national ids, verification codes.
   [/\b\d{6,}\b/g, '<number>'],
+  // A parent's consent link carries its token in the fragment; the token alone is 43 base64url characters.
+  [/#[A-Za-z0-9_-]{16,}/g, '#<fragment>'],
+  // Not `\b`: a base64url token may start or end with "-", which is not a word character.
+  [/(?<![A-Za-z0-9_-])[A-Za-z0-9_-]{43}(?![A-Za-z0-9_-])/g, '<token>'],
   [/\?[^\s"'`)]*/g, '?<query>'],
 ];
 
