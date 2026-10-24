@@ -24,6 +24,7 @@
     "./premade": "./src/premade.ts",
     "./vocabulary": "./src/vocabulary.ts",
     "./englishHub": "./src/englishHub.ts",
+    "./englishAudioPlan": "./src/englishAudioPlan.ts",
     "./englishPictures": "./src/englishPictures.ts",
     "./englishGrammar": "./src/englishGrammar.ts",
     "./englishReading": "./src/englishReading.ts",
