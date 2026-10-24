@@ -847,6 +847,10 @@ import {
   G4_PE_S1_CURRICULUM_BOOK_ID,
   buildG4PhysicalEducationSem1BrowserCatalog,
 } from './catalogs/g4PhysicalEducationSem1.ts';
+import {
+  G8_PE_S1_CURRICULUM_BOOK_ID,
+  buildG8PeSem1BrowserCatalog,
+} from './catalogs/g8PeSem1.ts';
 
 export interface Grade {
   id: string;
@@ -1004,7 +1008,8 @@ export const SUBJECTS: Subject[] = [
   // Fifth brand-new subject added this week, and the first skills-based
   // rather than knowledge-based one — see g9PeSem1.ts for what that changes
   // about the data shape. Extended to grade-7 on 2026-09-12 once its book
-  // arrived — the two are not contiguous (no Grade 8 PE book exists).
+  // arrived — the two were not contiguous (no Grade 8 PE book existed; its
+  // Semester 1 book was attached 2026-10-24, see below).
   // Extended to grade-3 on 2026-09-18 once its book arrived — also not
   // contiguous with grade-6/7/9 (no grades 4/5 PE books). Unlike
   // g6PhysicalEducationSem1.ts (title-only), Grade 3's book prints a real
@@ -1029,7 +1034,12 @@ export const SUBJECTS: Subject[] = [
   // Extended to grade-4 on 2026-10-07 once its Semester 1 book arrived
   // (Semester 2 not attached yet) — the first Grade 4 PE book; same real box
   // shape, see g4PhysicalEducationSem1.ts.
-  { id: 'physical-education', name: 'Physical Education', nameAr: 'التربية الرياضية', icon: 'fitness-outline', color: '#DC2626', grades: ['grade-1', 'grade-2', 'grade-3', 'grade-6', 'grade-7', 'grade-9', 'grade-5', 'grade-10', 'grade-4'] },
+  // Extended to grade-8 on 2026-10-24 once its Semester 1 book was read
+  // (Semester 2 not attached yet) — the last official NCCD student book the
+  // catalog was missing. NCCD publishes it only as a view-only online
+  // flipbook (no PDF), so it was transcribed from the rendered pages; same
+  // real box shape, see g8PeSem1.ts.
+  { id: 'physical-education', name: 'Physical Education', nameAr: 'التربية الرياضية', icon: 'fitness-outline', color: '#DC2626', grades: ['grade-1', 'grade-2', 'grade-3', 'grade-6', 'grade-7', 'grade-9', 'grade-5', 'grade-10', 'grade-4', 'grade-8'] },
   // Sixth brand-new subject, added 2026-09-09 as part of the Grade 8 batch.
   // Combines three domains (Art, Music, Drama) NCCD prints as one book —
   // see g8CreativeArts.ts. Extended to grade-7 on 2026-09-12 once its book
@@ -1670,6 +1680,10 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // yet). 'physical-education' extended to grade-4 in SUBJECTS.grades above.
   // See g4PhysicalEducationSem1.ts.
   G4_PE_S1_CURRICULUM_BOOK_ID,
+  // Grade 8 Physical Education, Semester 1 only (no Semester 2 book attached
+  // yet). 'physical-education' extended to grade-8 in SUBJECTS.grades above.
+  // See g8PeSem1.ts.
+  G8_PE_S1_CURRICULUM_BOOK_ID,
   // Grade 5 Vocational Education, both semesters — found on disk 2026-09-20
   // via a cross-check against the official NCCD textbook list.
   // 'vocational-education' is already in MVP_SUBJECT_IDS, but
@@ -4216,7 +4230,8 @@ export const BOOKS: Book[] = [
   // ── Physical Education Grade 7 – Semesters 1 and 2 ─────────────────────────
   // Extends the subject to grade-7 (SUBJECTS.grades updated) — the first
   // Grade 7 subject with no Grade 8 precedent at all (no Grade 8 PE book
-  // exists). Skills-based, no teacher guide, same shape as Grade 9 PE.
+  // existed then; Grade 8 Semester 1 followed 2026-10-24, see g8PeSem1.ts).
+  // Skills-based, no teacher guide, same shape as Grade 9 PE.
   {
     id: G7_PE_S1_CURRICULUM_BOOK_ID,
     title: 'Physical Education – Grade 7, Semester 1',
@@ -5375,6 +5390,29 @@ export const BOOKS: Book[] = [
     semester: 1,
     pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Sport/G4/1/Sport%20G4%20S1%202026%20.pdf',
   },
+  // ── Physical Education Grade 8 – Semester 1 ────────────────────────────────
+  // Extends the subject to grade-8 (SUBJECTS.grades updated), closing
+  // `physical-education:grade-8`, the last official NCCD student book the
+  // catalog was missing. NCCD publishes this one ONLY as a view-only online
+  // flipbook (nccd.gov.jo/Ar/Pages/TextBooksGrade/75), so there is no PDF and
+  // `pdfUrl` is deliberately unset; the content was read on screen. Real-
+  // content layout like g10PeSem1.ts: main idea + bilingual glossary per
+  // lesson. No teacher guide, so objectives stay empty. 2nd printing (2026)
+  // of the 2025 trial edition. Semester 2 is not attached yet. See
+  // g8PeSem1.ts.
+  {
+    id: G8_PE_S1_CURRICULUM_BOOK_ID,
+    title: 'Physical Education – Grade 8, Semester 1',
+    titleAr: 'التربية الرياضية – الصف الثامن – الفصل الأول',
+    subjectId: 'physical-education',
+    gradeId: 'grade-8',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
   {
     id: 'book-phys-11',
     title: 'Physics – Grade 11',
@@ -6346,6 +6384,7 @@ const _g5PhysicalEducationSem1Browser = buildG5PhysicalEducationSem1BrowserCatal
 const _g5PhysicalEducationSem2Browser = buildG5PhysicalEducationSem2BrowserCatalog();
 const _g10PeSem1Browser = buildG10PeSem1BrowserCatalog();
 const _g4PhysicalEducationSem1Browser = buildG4PhysicalEducationSem1BrowserCatalog();
+const _g8PeSem1Browser = buildG8PeSem1BrowserCatalog();
 
 // ─── Authored-Bloom's enrichment for NCCD browser rows ───────────────────────
 //
@@ -6651,6 +6690,7 @@ export const UNITS: Unit[] = [
   ..._g5PhysicalEducationSem2Browser.units,
   ..._g10PeSem1Browser.units,
   ..._g4PhysicalEducationSem1Browser.units,
+  ..._g8PeSem1Browser.units,
 ];
 
 /** Active lessons — legacy Math/Chem G10 rows replaced by NCCD-sourced browser rows. */
@@ -6853,6 +6893,7 @@ export const LESSONS: Lesson[] = [
   ..._g5PhysicalEducationSem2Browser.lessons,
   ..._g10PeSem1Browser.lessons,
   ..._g4PhysicalEducationSem1Browser.lessons,
+  ..._g8PeSem1Browser.lessons,
 ];
 
 /** Math Grade 10 Semester 1 book id (NCCD-backed). */
