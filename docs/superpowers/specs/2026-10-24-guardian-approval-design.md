@@ -154,8 +154,10 @@ student may call `POST /auth/role` to leave the student role (to parent or teach
   `PUBLIC_ROUTES`, because the parent has no account. It must stay out of analytics screen tracking and crash
   breadcrumbs, or the fragment's reason for existing is lost.
   **As built:** `guardianGate` (same file) also stops the later gates for a held student, and the screens a held
-  student may open are `/guardian-waiting`, `/join-class` and `/delete-account`. Changing role (parent, teacher) is
-  done from the waiting screen itself, not from a route of its own. The waiting screen has no plain "send the same
+  student may open are `/guardian-waiting`, `/join-class` and `/delete-account`. Changing role is done from the
+  waiting screen itself, not from a route of its own, and it offers "I am a parent" and no teacher exit (the final
+  review found "I am a teacher" a one-tap way round the hold, advertised to the child being held; the server still
+  allows that switch, see *Limits*). The waiting screen has no plain "send the same
   link again": the app holds only the masked address, so sending again means entering an address.
 - Copy in `services/i18n.ts`, Arabic first (`arabic-copy-reviewer` on every string).
 
@@ -211,6 +213,10 @@ the flag is on.
   (a teacher has vouched), and nothing proves a teacher is real: a second mailbox signed up as a teacher with a
   roster row does it, and it overrides a parent's decline. The parent's approval proves a mailbox; this proves a
   sign-up.
+- **The hold is advisory for a child who signs up as a teacher.** The server lets a held student switch role, and the
+  waiting screen no longer advertises the teacher switch, but a child who picks "teacher" at sign-up is never held.
+- **The parent page has no privacy-policy link** and states no data processing beyond one sentence. Put it in front
+  of the lawyer with the rest of the wording.
 - **A decline does not bind.** The student may ask the same or another parent again, 3 requests a day.
 - **A parent address can be filled by strangers.** Five unverified sign-ups naming one address use up its 5-a-day cap
   for 24 hours, so a real child of that parent is refused until it clears.

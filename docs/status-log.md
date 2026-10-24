@@ -13,7 +13,8 @@ Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 ## Parent approval for email students — the app (PR B) — 2026-10-24
 
 The app half of the gate in the entry below. **Nothing changes for anyone while `GUARDIAN_APPROVAL` is unset**, and
-no server file is touched (`git diff 18c2790..HEAD -- artifacts/api-server lib` is empty). With the server's flag on,
+the app commits touch no server file (the one server change made after the final review, a12d41d, is in the entry
+below). With the server's flag on,
 a student who signed up with an email and no teacher's code now lands on a waiting screen instead of a wall of 403s,
 and a parent can approve or decline from a page that needs no account. Design:
 `docs/superpowers/specs/2026-10-24-guardian-approval-design.md` (amended: see its *Client* section).
@@ -31,8 +32,12 @@ and a parent can approve or decline from a page that needs no account. Design:
   `routeGating.test.ts` walks five start paths to a fixed point.
 - **Waiting screen** (`app/guardian-waiting.tsx`): "needed" and "declined" show an address field, "waiting" shows the
   masked address and polls `/auth/me` every 20 s, plus "Check again". Exits: a teacher's link code (`/join-class`, which
-  lifts the hold), "I am a parent" and "I am a teacher" (role switch), sign out, delete account. The screens a held student
-  may open are exactly `/guardian-waiting`, `/join-class`, `/delete-account`.
+  lifts the hold), "I am a parent" (role switch), sign out, delete account. It no longer offers "I am a teacher": the final
+  review found it a one-tap way round the hold, advertised to the child being held (see the limit below). The screens a
+  held student may open are exactly `/guardian-waiting`, `/join-class`, `/delete-account`. The public routes (`/play`,
+  `/live`, `/take`, `/curriculum/english`, `/legal`, `/suggest-feature`) are outside the gate by design, as on the
+  server, which holds only authenticated student routes. A `needed` status that still carries a masked address means
+  the sent link expired; the waiting screen says so and asks for an email (`guardianWaitingView`, tested).
 - **Parent page** (`app/guardian.tsx`, `/guardian#{token}`, public): reads the token once from `location.hash` into state;
   "I approve" needs the confirm tick (no request without it); closed states for an unusable, expired or decided link.
   `guardianPageSource.test.ts` scans the source: no `console`, storage, `Linking`, `router`, analytics, `testID` or
@@ -45,16 +50,22 @@ and a parent can approve or decline from a page that needs no account. Design:
 - **403 hook and `refreshUser`:** `apiClient` calls a registered callback on a 403 whose body is
   `guardian_approval_required` (clone in a try/catch: a transport that cannot clone must not reject the call; 5 s debounce);
   `AuthContext.refreshUser` re-reads `/auth/me`; the status lives on the session user and survives `updateProfile`.
+  The hook's body is now `services/guardianForbidden.ts` (`noteGuardianForbidden`, tested with real `Response` objects
+  and a throwing `clone`), and `layoutGateOrder.test.ts` pins in the layout's source that `isPublicRoute(` comes before
+  `guardianGate(`, which comes before the roster-claim, teacher-setup, grade-setup and non-teacher gates, and that the
+  guardian block returns before the next gate.
 - **The token never reaches a third party:** `shouldTrackScreen` drops `/guardian` from screen analytics, and the crash-report
   scrub (`crashReportingCore.ts`) removes `#fragment` and any bare 43-character token. Those two rules run right after the
   JWT and Bearer rules and before the number and code rules, so a token holding a digit run is not half-rewritten; the
   JWT rule must stay first because a JWT signature is also 43 base64url characters.
 - **Flag off:** `GET /guardian-consent/config` says whether it is on and fails off. One deliberate difference: while the
   config loads on the student-email path, neither the tick nor the parent field shows and submit is disabled — about one
-  request, up to about 4 s if only that endpoint fails. A parent opening a link while the flag is off sees "This link does
+  request. The honest worst case is a request that hangs: 3 attempts x 15 s timeout plus 4 s of back-off, about 49 s,
+  and failures are not cached, so each mount repeats it. It is rarely visible, because the fetch starts when the
+  register screen opens. A parent opening a link while the flag is off sees "This link does
   not work", with no retry loop.
 - **Mutation checks** (edit with the Edit tool, run 9 test files / 150 tests, restore, green again, `git diff --stat`
-  clean after each; all ten caught):
+  clean after each; all thirteen caught, the last three from the final-review fixes):
   1. `needsGuardianApproval` also holds `approved`: 5 failures ("holds a student whose status is needed, waiting or
      declined, and no one else", plus the `guardianRedirect` and `guardianGate` not-held cases).
   2. `/guardian` removed from `PUBLIC_ROUTES`: "is public, and a route that merely starts with the same letters is not".
@@ -74,6 +85,12 @@ and a parent can approve or decline from a page that needs no account. Design:
      base64url characters".
   10. `console.log(token)` in `app/guardian.tsx`: "rule: never console.*" and "every line that mentions the token is the
      state read, a guard, or one of the two guardianApi calls".
+  11. `guardianWaitingView` ignoring the masked address on `needed`: 1 failure ("needed with a masked address: the link
+     expired, says so with the address, and asks for an email").
+  12. The try/catch removed from `noteGuardianForbidden`: 1 failure (the throwing-`clone` test, "swallows a clone() that
+     throws…").
+  13. The `guardianGate` block moved below the grade-setup gate in `app/_layout.tsx`: 4 failures (before the roster-claim,
+     teacher-setup and grade-setup gates, and "the block after guardianGate( returns…").
 - **Browser run** (Chromium via Playwright against the real web build and the real API on a throwaway Postgres; flag on
   and off; 390 and 1280 wide; light and dark; English and Arabic; RTL checked by eye and by measuring the masked address):
   register with the parent field (disabled until a valid-looking address; "own address" refused with a translated text);
@@ -87,11 +104,13 @@ and a parent can approve or decline from a page that needs no account. Design:
   the student-email pills still said "right away" (fixed, `studentEmailNoteParent`), the waiting screen ran full width on
   desktop (fixed, 560 max); two are listed below.
   **Not driven:** Android and iOS; Google sign-up and Google link; a real class join with a teacher's code; actually deleting
-  an account; the 20 s poll timed in Arabic; the settings role switch with the flag off; any real mail (no key set).
-- **Counts:** `pnpm run typecheck` at the root clean; `cd artifacts/mobile && pnpm test`: 7,579 tests in 1,306
-  suites, 7,569 passed, 0 failed, 10 skipped (the same 10 as before this work); the brand grep
-  from `ci.yml` clean; `git diff --stat 18c2790..HEAD -- artifacts/api-server lib` empty, so the api-server suite was not
-  rerun for this PR.
+  an account; the 20 s poll timed in Arabic; the settings role switch with the flag off; any real mail (no key set); the
+  `/claim-required` role switch, in either flag state; and the two browser bugs fixed in 2a44b4e (the register note and
+  the waiting-screen width), which were fixed after the browser run and not re-driven.
+- **Counts (after the final-review fixes):** `pnpm run typecheck` at the root clean; `cd artifacts/mobile && pnpm test`:
+  7,601 tests in 1,310 suites, 7,591 passed, 0 failed, 10 skipped (the same 10 as before this work); the brand grep
+  from `ci.yml` clean. The app commits touch no server file; the api-server suite was rerun once for the server fix
+  a12d41d (2,679 passing, see the entry below).
 - **Not verified / known limits:**
   - Android and iOS have never run this; the web build is the only thing driven. The keyboard and safe-area behaviour on
     the waiting screen is by the repo's convention, not by eye on a phone.
@@ -106,7 +125,17 @@ and a parent can approve or decline from a page that needs no account. Design:
   - About 150 ms of the Library tab shows right after verification for a new held student, then the waiting screen: the
     status is read by a second `/auth/me` after the session starts. The same moment fires one burst of 403s from
     background calls; they do not repeat.
-  - A held student can switch role to teacher at will (the server allows it, documented in the server entry).
+  - A held student can switch role to teacher at will: the waiting screen no longer offers "I am a teacher", but the
+    server still allows the switch, so the hold is advisory for any child who signs up as a teacher. A known limit.
+  - A student made from a teacher's code who later adds an email is never held (server commit a12d41d). The teacher's code
+    vouched for them at sign-up, and without the exemption a student whose class-code claim was still pending would be
+    held the moment they added an email and could not verify it from the waiting screen.
+  - That closes the unverified-email dead end for teacher-code students. An email student with an unverified email
+    cannot be in that state, because sign-up verifies the address before the account is held.
+  - An approved student who opens the app offline stays on the waiting screen until the device is back online.
+  - A held student whose class-code claim is pending sees only the parent-approval text.
+  - The parent page links no privacy policy and states no data processing beyond one sentence. Put it in front of the
+    lawyer.
   - `constants/legal.ts` still describes the age tick; `LEGAL_VERSION` is unchanged.
   - No e2e spec was added: the e2e job runs with `STUDENT_ACCOUNTS=false`, so a student never reaches this flow there.
 - **Owner steps before the flag is turned on:**
@@ -118,7 +147,13 @@ and a parent can approve or decline from a page that needs no account. Design:
   4. Deploy the app: the web bundle ships with the merge; Android by an OTA (`mobile-update.yml`, then the `production`
      channel by hand). No native change was made and `app.json` `version` is untouched, so an OTA reaches the installed
      binaries.
-  5. Then set `GUARDIAN_APPROVAL=true` on the API service. Existing email students are locked until a parent approves.
+  5. Confirm Resend click tracking is OFF for this mail. A tracked link, or a mail scanner such as Outlook Safe Links,
+     puts the `#fragment` (the approval token) into third-party logs.
+  6. Confirm Cloudflare Pages Web Analytics auto-injection is off for the app domain, or that it does not record URL
+     fragments.
+  7. Check the share of users on the new bundle (PostHog) before the flag: an older bundle gets blanket 403s with no
+     waiting screen, and fails sign-up with `parent_email_required`.
+  8. Then set `GUARDIAN_APPROVAL=true` on the API service. Existing email students are locked until a parent approves.
 
 ## Parent approval for email students — server (PR A) — 2026-10-24
 
@@ -168,16 +203,18 @@ account, run a request-supersede that touches no rows when none exists. Design:
   6. both advisory locks removed: the race reproduced in 4 of 5 runs ("six at once for one student" and
      "seven students at once for one parent address", one or both); run 1 passed, so the two concurrency
      tests are strong but not deterministic.
-- **Checked (final fix wave, after the token moved out of the URL):** `pnpm run typecheck` clean in
+- **Checked (final fix wave, after the token moved out of the URL; figures updated after the login-code exemption,
+  a12d41d):** `pnpm run typecheck` clean in
   `artifacts/api-server` and at the repo root; api-server `pnpm build` then `pnpm test` with the database and
-  `REQUIRE_DB_TESTS=true`: 2,674 tests, 0 failed, 0 skipped; `guardianApproval.db.test.ts` 49 tests, run 3
-  times alone, all green; `guardianGate` unit file 33, `guardianConsentEmail` 6. The earlier `@workspace/db test` run (66 tests) had 1 failure in
+  `REQUIRE_DB_TESTS=true`: 2,679 tests, 0 failed, 0 skipped; `guardianApproval.db.test.ts` 52 tests (49 before the
+  exemption, run 3 times alone then, all green); `guardianGate` unit file 35, `guardianConsentEmail` 6. The earlier `@workspace/db test` run (66 tests) had 1 failure in
   `rlsDiff.test.ts` ("every read answers the same…": the order of `participants` in
   `GET /messaging/threads/class/:id`, a read with no ORDER BY, in a file this branch does not touch). That file
   alone failed 2 of 5 reruns and three further full runs passed 66 of 66, so it looks like an ordering flake; it
   was not run on a clean `main`, and `lib/db` has not changed since, so it was not rerun. No file under
   `artifacts/mobile` is touched. The brand grep from `ci.yml` is clean. Mutation: with the live-join gate
   neutralised, 2 of the 3 live-join tests fail.
+  One more mutation, for the login-code exemption (a12d41d): dropping it was caught by 8 tests.
 - **Not verified / known limits:**
   - The Google sign-up path was reviewed, not exercised (no Google credential); the supersede call on the
     Google-link path and the new-account branch have no route-level test.
