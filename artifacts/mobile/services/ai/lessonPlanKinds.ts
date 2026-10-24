@@ -59,6 +59,18 @@ export function sciencePlanHasCalculations(subjectId: string | undefined): boole
 }
 
 /**
+ * Does a lesson of this subject have a problem to work step by step? A deck's
+ * «أمثلة محلولة» chip (and its example slides) is offered only then: maths,
+ * physics and chemistry, and a subject we cannot place. Same rule as the API's
+ * `usesWorkedExample` (`artifacts/api-server/src/lib/lessonKinds.ts`) — both
+ * places move together, or a live and an offline paper disagree.
+ */
+export function usesWorkedExample(subjectId: string | undefined): boolean {
+  const kind = lessonKindFor(subjectId);
+  return kind === 'calc' || sciencePlanHasCalculations(subjectId);
+}
+
+/**
  * «لـ» + «التحويل» is «للتحويل», «بـ» + «التصنيف» is «بالتصنيف». The plan
  * strings used to glue the prefix on with a tatweel («لـالتَّحْويلُ»), which is
  * not how either is written.

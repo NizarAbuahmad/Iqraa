@@ -10,6 +10,32 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Slides screen: no «أمثلة محلولة» chip for subjects with nothing to solve, and «ابدأ من فكرتك» is its own button — 2026-10-24
+
+A teacher building a History deck (Grade 10) was offered «أمثلة محلولة» and «تدريب», and under them
+sat «أو اكتب وصف العرض بكلماتك ←» as bare text that read as a third option of the same chip group
+although it leaves the screen for `/ai-tools/prompt-slides`.
+
+- **Examples are offered only where a problem can be worked** (`usesWorkedExample` in
+  `lessonPlanKinds.ts`: maths, physics, chemistry, and an unplaced subject; the API has the same rule
+  in `lessonKinds.ts` for worksheets, and the two move together). The chip was only ever hidden for a
+  unit / semester / book scope, and its flag defaults to `true`, so hiding the chip alone would still
+  have built an example slide: both `buildLessonDeck` calls, the summary and the preview now take the
+  effective `examplesOn`. The raw flag is left as the teacher had it (and is what a saved deck
+  records), so switching back to maths finds the chip as it was.
+- **«تدريب وواجب» stays for every subject** (decided with the product owner): guided and independent
+  practice and the homework slide make sense for history.
+- **«ابدأ من فكرتك بدل الدرس ←»** is an outlined button below the chips with the line «لا تريد درسًا من
+  المنهاج؟ اكتب ما تريد عرضه وسنجهّز الشرائح منه» (`slidesFromPromptLink` / `slidesFromPromptHint`).
+  The three Arabic help answers and the English one that quoted the old wording
+  (`howSlideAddReorder`, `howInteractiveDeck`, `howSlidesOwnText`) quote the new one, and a test
+  fails if the old string comes back anywhere in the translations.
+
+Verified: `pnpm run typecheck`, the mobile suite, and `usesWorkedExample.test.ts` (subject table and a
+deck built with examples off). **Not verified:** how the button looks on a device (phone / desktop,
+light / dark, RTL): this session had no browser on the running app. `toolSlidesDesc` still says
+«…وأمثلة محلولة» for every subject; I left that card text alone.
+
 ## Chat app-help, twenty-first live pass: 19 more wordings for answers that already existed — 2026-10-24
 
 A 30-question pass on app.iqrra.com found 19 questions answered by the model, or by a bare

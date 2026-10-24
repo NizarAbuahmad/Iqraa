@@ -31,6 +31,7 @@ import type { ActivitySlide, ClassroomActivity, LessonPlanOutput, LessonTeaching
 import { resolveGeneratorGrounding, type GeneratorGrounding } from '@/services/kbContext';
 import { usePickedLesson } from '@/hooks/usePickedLesson';
 import { carriedLessonTopic } from '@/services/pickedLesson';
+import { usesWorkedExample } from '@/services/ai/lessonPlanKinds';
 import { buildLessonDeck, buildRevisionDeck } from '@/services/lessonSlides';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import {
@@ -203,6 +204,11 @@ export default function SlidesScreen() {
   // A reopened deck comes back with the toggles it was built with.
   const [includeExamples, setIncludeExamples] = useState(() => readFlagParam(params.includeExamples, true));
   const [includePractice, setIncludePractice] = useState(() => readFlagParam(params.includePractice, true));
+  // A history, Arabic or Quran lesson has no problem to work step by step, so the examples chip is not
+  // offered for it and its flag (true by default) must not build example slides either. The flag itself is
+  // left as the teacher had it, so going back to a maths lesson finds the chip as it was.
+  const subjectHasExamples = usesWorkedExample(subjects[subjectIdx].id);
+  const examplesOn = includeExamples && subjectHasExamples;
   /**
    * Off by default, and deliberately: a teacher's attachments are their own
    * files pinned to the lesson, not deck content. Merging them in
@@ -610,7 +616,7 @@ export default function SlidesScreen() {
           lesson: grounding.lesson,
           subject: isAr ? subjects[subjectIdx].nameAr : subjects[subjectIdx].name,
           grade: isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
-          includeExamples,
+          includeExamples: examplesOn,
           includePractice,
           graphCommands: extractGraphCommands([
             trimmed,
@@ -761,7 +767,7 @@ export default function SlidesScreen() {
         plan: lessonPlan,
         subject: isAr ? subjects[subjectIdx].nameAr : subjects[subjectIdx].name,
         grade: isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
-        includeExamples,
+        includeExamples: examplesOn,
         includePractice,
         graphCommands,
         checks,
@@ -1015,14 +1021,15 @@ export default function SlidesScreen() {
   };
 
   // What the button will make, said before it is pressed (docked bar on a phone, preview on desktop).
-  // The switches are the three booleans below, unchanged; a switch the screen does not offer (examples and
-  // attachments on a wide scope, attachments with nothing attached) is neither drawn nor claimed.
-  const offerExamples = !wideScope.isWide;
+  // The switches are the three booleans below, unchanged; a switch the screen does not offer (examples on a
+  // wide scope or for a subject with nothing to work through, attachments on a wide scope or with nothing
+  // attached) is neither drawn nor claimed.
+  const offerExamples = !wideScope.isWide && subjectHasExamples;
   const offerAttachments = hasAttachments && !wideScope.isWide;
   const summary = deckOptionsSummary({
-    wide: wideScope.isWide, examples: includeExamples, practice: includePractice, attachments: includeAttachments && offerAttachments,
+    wide: wideScope.isWide, examples: examplesOn, practice: includePractice, attachments: includeAttachments && offerAttachments,
   }, uiLang);
-  const sections = deckSections({ wide: wideScope.isWide, examples: includeExamples, practice: includePractice });
+  const sections = deckSections({ wide: wideScope.isWide, examples: examplesOn, practice: includePractice });
   const preview = previewRows(sections, sections.length, sections.length);
   // The section titles are the deck's own headings, so they are in the language it will be built in
   // (the picked subject's, `lang`), not the interface's: an English deck is headed in English.
@@ -1078,7 +1085,7 @@ export default function SlidesScreen() {
     ...(offerAttachments ? [{ id: 'attachments' as const, label: t('genSlidesOptAttachments') }] : []),
   ];
   const includeSelected = new Set<DeckOption>([
-    ...(includeExamples ? ['examples' as const] : []),
+    ...(examplesOn ? ['examples' as const] : []),
     ...(includePractice ? ['practice' as const] : []),
     ...(includeAttachments ? ['attachments' as const] : []),
   ]);
@@ -1170,16 +1177,22 @@ export default function SlidesScreen() {
       />
 
       {/* The free-prompt deck used to be its own card beside this one, with a
-          near-identical name. It is the same output from a different start. */}
+          near-identical name. It is the same output from a different start.
+          It is drawn apart from the «what to add» chips above, as its own outlined
+          button with a line saying when to use it: as bare text under the chips it
+          read as one more option of that group, and it leaves this screen. */}
       <PressableScale
         // Carry the typed topic across: the prompt screen reads it as its
         // opening prompt, so the teacher does not retype what they just wrote.
         onPress={() => router.push({ pathname: '/ai-tools/prompt-slides', params: topic.trim() ? { prompt: topic.trim() } : {} })}
         accessibilityRole="link"
-        style={styles.promptLink}
+        style={[styles.promptLink, { borderColor: accentInk, borderRadius: colors.radius }]}
       >
-        <Text style={{ color: accentInk, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>
+        <Text style={{ color: accentInk, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.label, textAlign: isRTL ? 'right' : 'left' }}>
           {t('slidesFromPromptLink')}
+        </Text>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>
+          {t('slidesFromPromptHint')}
         </Text>
       </PressableScale>
 
@@ -1374,7 +1387,7 @@ function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
 }
 
 const styles = StyleSheet.create({
-  promptLink: { alignSelf: 'center', alignItems: 'center', justifyContent: 'center', minHeight: 44, paddingHorizontal: SPACE.lg },
+  promptLink: { alignSelf: 'stretch', alignItems: 'stretch', justifyContent: 'center', gap: SPACE.xs, minHeight: 44, marginHorizontal: SPACE.xl, marginTop: SPACE.lg, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, borderWidth: 1 },
   previewCard: { borderWidth: 1, padding: 16, marginBottom: 12 },
   previewTitle: { fontSize: 17, marginBottom: 4 },
   previewMeta: { fontSize: 12 },

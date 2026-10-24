@@ -1069,18 +1069,45 @@ test('the three switches are one multi-select chip group over the same booleans,
   assert.match(slidesCode, /<ChipGroup\s+label=\{t\('genSlidesIncludeLabel'\)\}\s+options=\{includeOptions\}\s+selected=\{includeSelected\}\s+onToggle=\{toggleOption\}\s+min=\{0\}/);
   assert.doesNotMatch(slidesCode, /<ChipGroup\s+single/);
   // The conditions the toggles had, unchanged: examples and attachments never on a wide scope; attachments only when there are some.
-  assert.match(slidesCode, /const offerExamples = !wideScope\.isWide;/);
+  // Examples also need a subject with a problem to work (`usesWorkedExample`): a history deck is offered none.
+  assert.match(slidesCode, /const subjectHasExamples = usesWorkedExample\(subjects\[subjectIdx\]\.id\);\s*const examplesOn = includeExamples && subjectHasExamples;/);
+  assert.match(slidesCode, /const offerExamples = !wideScope\.isWide && subjectHasExamples;/);
   assert.match(slidesCode, /const offerAttachments = hasAttachments && !wideScope\.isWide;/);
   assert.match(slidesCode, /\.\.\.\(offerExamples \? \[\{ id: 'examples' as const, label: t\('genSlidesOptExamples'\) \}\] : \[\]\),\s*\{ id: 'practice' as const, label: t\('genSlidesOptPractice'\) \},\s*\.\.\.\(offerAttachments \? \[\{ id: 'attachments' as const, label: t\('genSlidesOptAttachments'\) \}\] : \[\]\),/);
   // Each chip flips its own boolean and nothing else, and a hidden chip leaves its boolean exactly as it was.
   assert.match(slidesCode, /if \(id === 'examples'\) setIncludeExamples\(v => !v\);\s*else if \(id === 'practice'\) setIncludePractice\(v => !v\);\s*else setIncludeAttachments\(v => !v\);/);
-  assert.match(slidesCode, /\.\.\.\(includeExamples \? \['examples' as const\] : \[\]\),\s*\.\.\.\(includePractice \? \['practice' as const\] : \[\]\),\s*\.\.\.\(includeAttachments \? \['attachments' as const\] : \[\]\),/);
+  assert.match(slidesCode, /\.\.\.\(examplesOn \? \['examples' as const\] : \[\]\),\s*\.\.\.\(includePractice \? \['practice' as const\] : \[\]\),\s*\.\.\.\(includeAttachments \? \['attachments' as const\] : \[\]\),/);
   // min 0 really lets every chip be cleared: the lock rule is the tested pure one, and min is not raised.
   assert.match(code(read('components', 'generator', 'ChipGroup.tsx')), /const locked = chipLocked\(\{ single, on, off, counted, min \}\);/);
   assert.match(code(read('components', 'generator', 'ChipGroup.tsx')), /min = 0/);
   assert.equal(chipLocked({ single: false, on: true, off: false, counted: 1, min: 0 }), false);
   // Generation reads the same three booleans.
-  assert.match(slidesCode, /includeExamples,\s*includePractice,\s*graphCommands: extractGraphCommands/);
+  // Both builders get the EFFECTIVE examples flag, so a hidden chip (history, a wide scope's twin) builds no example slide.
+  assert.match(slidesCode, /includeExamples: examplesOn,\s*includePractice,\s*graphCommands: extractGraphCommands/);
+  assert.match(slidesCode, /includeExamples: examplesOn,\s*includePractice,\s*graphCommands,\s*checks,/);
+  assert.doesNotMatch(slidesCode, /^\s*includeExamples,$/m, 'a builder is handed the raw flag');
+});
+
+test('«ابدأ من فكرتك» is its own outlined button with a hint, not text under the chips', () => {
+  const form = slidesCode.slice(slidesCode.indexOf('const form = ('), slidesCode.indexOf('const side = ('));
+  assert.ok(form.indexOf('<ChipGroup') < form.indexOf("t('slidesFromPromptLink')"));
+  assert.ok(form.includes("t('slidesFromPromptHint')"));
+  assert.match(slidesCode, /promptLink: \{[^}]*borderWidth: 1/);
+  const T = translations as any;
+  for (const lang of ['ar', 'en'] as const) {
+    for (const key of ['slidesFromPromptLink', 'slidesFromPromptHint']) assert.ok(String(T[lang][key] ?? '').trim(), `${lang}.${key} is missing`);
+  }
+  // The old wording is gone from the app, including the help answers that quoted it.
+  for (const lang of ['ar', 'en'] as const) {
+    for (const [key, value] of Object.entries(T[lang])) {
+      assert.ok(!String(value).includes('اكتب وصف العرض بكلماتك') && !String(value).includes('describe the slides in your own words'), `${lang}.${key} still quotes the old link`);
+    }
+  }
+  // Every help answer that names the button names it as it is now.
+  for (const key of ['howSlideAddReorder', 'howInteractiveDeck', 'howSlidesOwnText']) {
+    assert.ok(String(T.ar[key]).includes(T.ar.slidesFromPromptLink), `ar.${key} does not quote the button`);
+  }
+  assert.ok(String(T.en.howSlideAddReorder).includes(T.en.slidesFromPromptLink));
 });
 
 test('the slides button is not disabled; every refusal is shown in the lesson card and brought into view, and a second press scrolls again', () => {
@@ -1123,9 +1150,9 @@ test('the slides pad for the docked bar and lock the draft deck while it is prel
   assert.match(slidesCode, /\{deck && \(!loading \|\| preliminary\) && \(/);
 });
 
-test('«من وصف حر» stays a quiet link in the form, reachable on phone and desktop, 44 points', () => {
+test('the own-idea button stays in the form (never the docked bar), reachable on phone and desktop, 44 points', () => {
   assert.match(slidesCode, /router\.push\(\{ pathname: '\/ai-tools\/prompt-slides', params: topic\.trim\(\) \? \{ prompt: topic\.trim\(\) \} : \{\} \}\)/);
-  assert.match(slidesCode, /<PressableScale[^>]*onPress=\{\(\) => router\.push[\s\S]*?accessibilityRole="link"\s+style=\{styles\.promptLink\}/);
+  assert.match(slidesCode, /<PressableScale[^>]*onPress=\{\(\) => router\.push[\s\S]*?accessibilityRole="link"\s+style=\{\[styles\.promptLink, /);
   assert.match(slidesCode, /promptLink: \{[^}]*minHeight: 44/);
   assert.match(slidesCode, /t\('slidesFromPromptLink'\)/);
   // It is part of the form, not of the docked bar.
@@ -1151,18 +1178,18 @@ test('the slides wear their concept colour: no palette, no hand-written colour, 
 });
 
 test('the raw-accent check bites in the slides\' own source', () => {
-  const from = "color: accentInk, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption";
+  const from = "color: accentInk, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.label";
   assert.ok(slidesCode.includes(from), 'fixture drifted');
-  assert.equal(rawAccentLines(slidesCode.replace(from, "color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption")).length, 1);
+  assert.equal(rawAccentLines(slidesCode.replace(from, "color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.label")).length, 1);
 });
 
 test('the slides preview draws the sections a deck is built from, in the content language, and claims no slide count', () => {
-  assert.match(slidesCode, /const sections = deckSections\(\{ wide: wideScope\.isWide, examples: includeExamples, practice: includePractice \}\);/);
+  assert.match(slidesCode, /const sections = deckSections\(\{ wide: wideScope\.isWide, examples: examplesOn, practice: includePractice \}\);/);
   assert.match(slidesCode, /previewRows\(sections, sections\.length, sections\.length\)/);
   assert.match(slidesCode, /const previewT = getT\(lang\);/);
   assert.match(slidesCode, /previewT\(r\.type === 'exitTicket' && wideScope\.isWide \? 'genDeckExitTicketRevision' : DECK_SECTION_LABEL_KEY\[r\.type\]\)/);
   assert.doesNotMatch(slidesCode, /\bt\(DECK_SECTION_LABEL_KEY/);
-  assert.match(slidesCode, /const summary = deckOptionsSummary\(\{\s*wide: wideScope\.isWide, examples: includeExamples, practice: includePractice, attachments: includeAttachments && offerAttachments,\s*\}, uiLang\);/);
+  assert.match(slidesCode, /const summary = deckOptionsSummary\(\{\s*wide: wideScope\.isWide, examples: examplesOn, practice: includePractice, attachments: includeAttachments && offerAttachments,\s*\}, uiLang\);/);
   assert.match(slidesCode, /nameLine=\{false\}/);
   const side = slidesCode.slice(slidesCode.indexOf('const side = ('), slidesCode.indexOf('return (\n    <View style={{ flex: 1, backgroundColor'));
   assert.doesNotMatch(side, /slideCount|deck\.slides/, 'the preview cannot know how many slides there will be');
