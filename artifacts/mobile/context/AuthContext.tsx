@@ -154,6 +154,18 @@ export interface RedeemData {
   acceptedTerms: boolean;
 }
 
+/**
+ * What `redeemCode` hands back. `pending` is true when the picked name on a
+ * class code is held for the teacher (the account exists, has no roster link,
+ * and `studentName` is the name it asked for); absent reads as not held.
+ */
+export interface RedeemResult {
+  loginCode: string;
+  finish: () => Promise<void>;
+  pending?: boolean;
+  studentName?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
@@ -179,7 +191,7 @@ interface AuthContextType {
    * by the server) and calls `finish()` once the person has saved it. Opening it
    * sooner would route them straight past the one screen that tells them.
    */
-  redeemCode: (data: RedeemData) => Promise<{ loginCode: string; finish: () => Promise<void> }>;
+  redeemCode: (data: RedeemData) => Promise<RedeemResult>;
   /** Signs back in with the personal login code. Signs the user in on success, same as login. */
   loginWithCode: (code: string) => Promise<void>;
   /**
@@ -608,8 +620,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const redeemCode = useCallback(async (data: RedeemData) => {
-    const res = await apiJson<{ accessToken: string; refreshToken: string; loginCode: string; user: ApiUser }>(
+  const redeemCode = useCallback(async (data: RedeemData): Promise<RedeemResult> => {
+    const res = await apiJson<{ accessToken: string; refreshToken: string; loginCode: string; user: ApiUser; pending?: boolean; studentName?: string }>(
       '/auth/redeem',
       {
         method: 'POST',
@@ -629,6 +641,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     trackEvent('signup_started', { method: 'code', role: data.role });
     return {
       loginCode: res.loginCode,
+      pending: res.pending === true,
+      studentName: typeof res.studentName === 'string' ? res.studentName : undefined,
       finish: async () => {
         await adoptSession(res.accessToken, res.refreshToken, res.user);
         await clearPendingLoginCode();

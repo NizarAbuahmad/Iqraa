@@ -22,4 +22,14 @@ describe('claimScreenState', () => {
   it('says it was declined when a waiting request disappears without a link', () => {
     assert.deepEqual(claimScreenState([], true), { mode: 'form', studentName: '', declined: true });
   });
+
+  it('reads an approval as a decline unless the caller checked links first', () => {
+    // An approved request is gone from `pending` exactly like a declined one, so
+    // ([], true) is "declined" by design. hooks/useClaimWaiting.ts therefore reads
+    // `links` BEFORE `pending` and lets the account in when there is a link; a
+    // caller that skips that step would show «your teacher did not approve» to a
+    // student whose teacher just said yes.
+    assert.equal(claimScreenState([], true).declined, true);
+    assert.equal(claimScreenState([], true).mode, 'form');
+  });
 });
