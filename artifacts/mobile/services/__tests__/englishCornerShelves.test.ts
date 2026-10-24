@@ -17,7 +17,9 @@ const shelves = readFileSync(join(root, 'components/englishHub/ResourceShelves.t
 
 test('the grade tabs come from the corner grades, not the word-game grades', () => {
   assert.match(screen, /ENGLISH_CORNER_GRADES\.map\(/);
-  assert.doesNotMatch(screen, /ENGLISH_HUB_GRADES/);
+  // The header comment names ENGLISH_HUB_GRADES to explain the difference; the code must not use it.
+  assert.doesNotMatch(screen, /import[^;]*ENGLISH_HUB_GRADES/);
+  assert.doesNotMatch(screen, /ENGLISH_HUB_GRADES[.)]/);
 });
 
 test('the corner shows all ten grades', () => {

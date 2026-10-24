@@ -3246,7 +3246,7 @@ const translations = {
     hubBooksSub: 'تُفتح من موقع وزارة التربية.',
     hubBookStudent: (sem: number) => `كتاب الطالب – الفصل ${sem === 1 ? 'الأول' : 'الثاني'}`,
     hubBookActivity: (sem: number) => `كتاب النشاط – الفصل ${sem === 1 ? 'الأول' : 'الثاني'}`,
-    hubFreeTitle: 'استمع واقرأ مجانًا',
+    hubFreeTitle: 'استماع وقراءة مجانًا',
     hubFreeSub: 'مواقع مجانية تُفتح في المتصفح. مناسبة لصفّك.',
     hubFreeSignup: 'حساب مجاني',
     hubSkillListen: 'استماع',
