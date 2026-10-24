@@ -157,8 +157,10 @@ export const CLAIM_REQUIRED_ROUTE = '/claim-required';
  * and no teacher's code, and use what needs no class: the library, the
  * corners, the games, lesson explanations. The code is only for joining a
  * class, from `/join-class`. Every `/student/*` route answers empty for an
- * account with no link, and nothing hard-errors. A code-only student always
- * has a link at creation, so this changes nothing for them.
+ * account with no link, and nothing hard-errors. A code-only student's link
+ * can be held until the teacher approves it, so they may have none either: they
+ * go to the grade picker, then the tabs, and meet the waiting card from
+ * `/join-class`. This gate is for parents only and changes nothing for them.
  */
 export function needsRosterClaim(
   user: { role: string; hasRosterLink?: boolean } | null | undefined,

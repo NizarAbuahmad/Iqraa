@@ -456,12 +456,20 @@ export interface LinkRequest {
   firstName: string;
   lastName: string;
   requestedAt: string;
+  /**
+   * The account has no email: it was just created from the class code and its
+   * name was copied from the roster, so «name — claimed by name» proves nothing.
+   */
+  codeSignup: boolean;
 }
 
 export async function listLinkRequests(classId: string): Promise<LinkRequest[]> {
   const res = await apiFetch(`/classes/${classId}/link-requests`);
-  const data = await readJson<{ requests: LinkRequest[] }>(res, 'Loading join requests');
-  return data.requests;
+  const data = await readJson<{ requests: (Omit<LinkRequest, 'codeSignup'> & { codeSignup?: boolean })[] }>(
+    res,
+    'Loading join requests',
+  );
+  return data.requests.map(r => ({ ...r, codeSignup: r.codeSignup === true }));
 }
 
 /** Link the waiting account as the student's own. 409 `claim_already_linked` when the name already has one. */

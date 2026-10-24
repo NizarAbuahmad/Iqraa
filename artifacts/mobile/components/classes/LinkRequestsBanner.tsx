@@ -21,6 +21,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { RosterError, approveLinkRequest, listLinkRequests, rejectLinkRequest, type LinkRequest } from '@/services/roster';
 import { classLinkRequestsQueryKey, classQueryKey } from '@/services/rosterQueryKeys';
 import { formatLinkedOn, linkDisplayName } from '@/services/rosterLinks';
+import { competingWarning } from '@/services/linkRequests';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 
 /** How long an answer's failure notice stays up once the list it was about has emptied. */
@@ -102,6 +103,7 @@ export function LinkRequestsBanner({ classId }: { classId: string }) {
         const busy = busyId === request.id;
         const locked = busyId !== null;
         const when = formatLinkedOn(request.requestedAt, lang);
+        const competing = competingWarning(requests, request.studentId);
         return (
           <View key={request.id} style={[styles.row, { borderTopColor: colors.border }]}>
             <Text style={[styles.name, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
@@ -111,7 +113,17 @@ export function LinkRequestsBanner({ classId }: { classId: string }) {
               {t('rosterClaimedByLabel')} {linkDisplayName(request)}
               {when ? ` · ${when}` : ''}
             </Text>
-            <View style={[styles.actions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            {request.codeSignup ? (
+              <Text style={[styles.caution, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                {t('linkRequestCodeAccount')}
+              </Text>
+            ) : null}
+            {competing > 0 ? (
+              <Text style={[styles.caution, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                {t('linkRequestsCompeting', competing)}
+              </Text>
+            ) : null}
+            <View style={[styles.actions,{ flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <PressableScale
                 onPress={() => void act(request, 'approve')}
                 disabled={locked}
@@ -163,6 +175,7 @@ const styles = StyleSheet.create({
   row: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: SPACE.md, gap: SPACE.xxs },
   name: { fontSize: TYPE.body },
   account: { fontSize: TYPE.caption, lineHeight: 21 },
+  caution: { fontSize: TYPE.caption, lineHeight: 21 },
   actions: { gap: SPACE.sm, marginTop: SPACE.sm },
   btn: {
     minHeight: 44,
