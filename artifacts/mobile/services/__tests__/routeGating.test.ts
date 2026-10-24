@@ -239,9 +239,15 @@ describe('needsRosterClaim', () => {
     assert.equal(needsRosterClaim({ role: 'teacher' }), false);
   });
 
-  it('gates a parent or student with zero roster links', () => {
+  it('gates a parent with zero roster links', () => {
     assert.equal(needsRosterClaim({ role: 'parent', hasRosterLink: false }), true);
-    assert.equal(needsRosterClaim({ role: 'student', hasRosterLink: false }), true);
+  });
+
+  it('does not gate a student with zero roster links — an email student uses the app without a class', () => {
+    // Since 2026-10-23 a student may sign up with an email and no teacher's
+    // code. The code is only for joining a class (/join-class), and every
+    // /student/* route answers empty for an account with no link.
+    assert.equal(needsRosterClaim({ role: 'student', hasRosterLink: false }), false);
   });
 
   it('clears once a roster link exists', () => {
@@ -317,9 +323,15 @@ describe('needsGradeSetup', () => {
     assert.equal(needsGradeSetup({ role: 'parent', hasRosterLink: true, gradeIds: ['grade-4', 'grade-9'] }), false);
   });
 
-  it('waits behind the claim gate — an unlinked account claims first', () => {
-    assert.equal(needsGradeSetup({ role: 'student', hasRosterLink: false }), false);
+  it('waits behind the claim gate for a parent — an unlinked parent claims first', () => {
     assert.equal(needsGradeSetup({ role: 'parent', hasRosterLink: false, gradeIds: [] }), false);
+  });
+
+  it('does not wait for a student with no link — there is no claim gate in front of them', () => {
+    // Otherwise a student who signed up with an email would keep the whole
+    // grades 1-10 catalog, because /student/grades is empty without a class.
+    assert.equal(needsGradeSetup({ role: 'student', hasRosterLink: false }), true);
+    assert.equal(needsGradeSetup({ role: 'student', hasRosterLink: false, gradeIds: ['grade-10'] }), false);
   });
 
   it('never gates a teacher or admin', () => {

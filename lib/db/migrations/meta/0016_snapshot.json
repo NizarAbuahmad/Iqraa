@@ -1,5 +1,5 @@
 {
-  "id": "fee2a57f-4816-45c5-ab5b-39f1c5097227",
+  "id": "ff177ecd-26e3-44cf-9c79-6248cd4c1531",
   "prevId": "cd3e8ac0-4376-41c5-9e33-d491b416835c",
   "version": "7",
   "dialect": "postgresql",
@@ -478,6 +478,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "''"
+        },
+        "guardian_confirmed_at": {
+          "name": "guardian_confirmed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         },
         "grade_ids": {
           "name": "grade_ids",
@@ -6719,12 +6725,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "invited_at": {
-          "name": "invited_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {
