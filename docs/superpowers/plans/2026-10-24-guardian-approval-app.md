@@ -396,6 +396,10 @@ describe('scrub: parent consent links', () => {
   it('removes a fragment and a bare consent token', () => {
     assert.ok(!scrub(`Failed at https://app.iqrra.com/guardian#${TOKEN}`).includes(TOKEN));
     assert.ok(!scrub(`bad token ${TOKEN} here`).includes(TOKEN));
+    // A token that starts or ends with "-" must go too.
+    const EDGE = `-${TOKEN.slice(1, 42)}-`;
+    assert.equal(EDGE.length, 43);
+    assert.ok(!scrub(`edge ${EDGE} end`).includes(EDGE));
     assert.match(scrub('see https://x.test/p#frag-ment_123456789012'), /#<fragment>/);
   });
   it('leaves ordinary words and short ids alone', () => {
@@ -441,7 +445,8 @@ export function shouldTrackScreen(pathname: string): boolean {
 ```ts
   // A parent's consent link carries its token in the fragment; the token alone is 43 base64url characters.
   [/#[A-Za-z0-9_-]{16,}/g, '#<fragment>'],
-  [/\b[A-Za-z0-9_-]{43}\b/g, '<token>'],
+  // Not `\b`: a base64url token may start or end with "-", which is not a word character.
+  [/(?<![A-Za-z0-9_-])[A-Za-z0-9_-]{43}(?![A-Za-z0-9_-])/g, '<token>'],
 ```
 Check the existing rules do not already swallow this (a 43-char token must not be rewritten by an earlier rule into something that still contains it) — the test above is the proof.
 
