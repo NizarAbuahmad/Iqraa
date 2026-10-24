@@ -34,6 +34,125 @@ not a rule), the settings screen's contents, the geometry sketchpad and the func
 parabola (the model's usage tips are more useful than the Math Corner location answer), showing a
 lab experiment, and «أضيف شعبة جديدة بعد ما أنشأت حسابي» (card only; I did not find the rule
 that owns `howAddClass`).
+## Grade 10 grammar (Semester 2) in the English corner — built, shown to nobody yet, 2026-10-24
+
+The ten Grade 10 Semester 2 lessons whose book statement is a grammar topic now have grammar activities: Choose the word,
+Build the sentence and True or false. Semester 2 has no vocabulary rows (`english_vocabulary.json` holds none for
+`kbl-eng-s2-…`), so the hub never listed it; **all ten are grammar-only hub lessons** (`GRAMMAR_ONLY_LESSONS` goes from 6 ids to
+16) and **the Grade 10 hub goes from 21 to 31 lessons**. **All 21 Grade 10 units are `reviewedBy: null`
+(`englishGrammarG10.ts`), so no teacher or student sees a card, no Semester 2 lesson is in the Grade 10 index, and a direct
+URL says «lesson not found».** Spec: `docs/superpowers/specs/2026-10-24-english-corner-grammar-g10-s2-design.md`; plan:
+`docs/superpowers/plans/2026-10-24-english-corner-grammar-g10-s2.md`. Same engine and rules as Semester 1, Grade 9 and Grade 5;
+**no app screen, server, schema or migration change** (the app's own test file only grew).
+
+- **400 hand-written items, 40 a lesson, 30 sub-topics** (`englishGrammarG10Items.ts`, `G10_ITEM_LESSONS` now 21 entries,
+  each `statement` equal to `objectives[0]` of its lesson, read back from the JSON by a test). **102 are `meaning` and 298 are
+  `form`; Grade 10 as a whole is 21 lessons, 840 items, 308 `meaning` and 532 `form`.** Lessons (sub-topic size and kind):
+  - `u6_l1` first and second conditional: `first-conditional` 12 and `second-conditional` 12 form, `imagine-vs-real` 16 meaning.
+  - `u6_l4` zero conditional: `if-present` 14, `when-general-truths` 14, `questions-negatives` 12, all form.
+  - `u7_l1` reporting verbs: `verb-patterns` 16, `admit-deny-suggest` 14, `tell-ask-warn` 10, all form.
+  - `u7_l5` reported questions: `ask-wonder` 14, `if-whether` 12, `word-order` 14, all form. Reported speech tests no tense
+    shift (both «said she was tired» and «said she is tired» pass): the items turn on the verb pattern, the object,
+    `if`/`whether` and word order.
+  - `u8_l1` the passive: `present-past` 14, `with-modals` 12, `questions-negatives` 14, all form.
+  - `u8_l6` have/get something done: `have-something-done` 12 and `get-something-done` 12 form, `service-vs-self` 16 meaning.
+  - `u9_l1` third conditional: `third-conditional` 14 form, `past-unreal` 14 meaning, `would-have-forms` 12 form.
+  - `u9_l4` I wish and if only: `wish-present` 14 form, `wish-past-regrets` 14 meaning, `if-only` 12 form.
+  - `u10_l1` speculating about the present: `must-cant` 14 meaning, `might-may` 12 form, `be-v-ing` 14 form.
+  - `u10_l3` speculating about the past: `must-have` 14 meaning, `might-could-have` 12 form, `cant-have` 14 meaning.
+  - Sentences are nine words or fewer (`buildCap(10)`), no real or book-character names (family words and Jordan, Amman, Aqaba,
+    Petra, Irbid only), nothing religious, political or sensitive. A distractor is `form` (ungrammatical in standard English) or `meaning`
+    (grammatical, excluded by something in the sentence itself), never a form that could fit; each sub-topic's comment in
+    the data file says what decides the answer and which distractors were left out on purpose.
+- **Deviation from the spec: «imagine-vs-real» no longer has a «likely» side.** The spec said «Imagine …» and «If I were …»
+  against a real, likely condition. The first draft wrote that with mixed-conditional twins («Tomorrow, if it rains, we
+  would play indoors», «If I were a bird, I will fly away»), and the review found 9 of the 16 rows were really form errors or
+  twins a teacher could accept. The topic stays 16 `meaning` rows (so 102 and 298 stand) but every row is now an unreal
+  situation stated in its own sentence («Imagine …», «Suppose …» with a past verb) followed by a `would` result, and the
+  twin is a sound, stand-alone `will` sentence the opening word rules out. No row relies on a time word or on were/could +
+  will. The cost: the topic tests only the unreal opener, not likely against unlikely. The spec's marker sentence, the
+  `u6_l1` note in `NOT_COVERED_G10` and the sub-topic comment say so.
+- **Other plan example rows changed, no kind switched.** `u8_l6`: «We had the house painted by experts» was not used (its twin
+  «We painted the house by experts» is a form error); the service side is decided by a sentence saying the speaker cannot do
+  it, was away, did not do it or who did it, and the self side by `myself`/`ourselves`… plus a second clue («Nobody
+  helped.», «without a barber»). `u9_l1`: «We lost. If we had trained, we would have won.» was 10 words and «We lost» does
+  not rule out the mixed conditional, so every `past-unreal` row carries a past time word in the result clause («You'd have met
+  her yesterday if you'd come.»). `u10_l3`: «The lights were off. They must have left.» became «Their car is gone. …», because
+  lights that are off do not rule out «can't have left». No sub-topic switched between `meaning` and `form`.
+- **Hub and teacher's form.** `GRAMMAR_ONLY_LESSONS` gains the ten ids (`englishHub.ts`; `hubLessonVisible` hides each until
+  its unit is signed). `GRADE_COPY[10]` (`englishGrammarReview.ts`): the lead now says «الفصلان الأول والثاني», its list of
+  two-form choices gains «الشرط الأول أو الثاني», and the check line about lessons that need a wider context now names the
+  conditionals and speculation (must and can't). Nothing else in the renderer changed: 21 sections, each labelled with its
+  semester and unit. `docs/english-grammar-g10-review.html` is now 21 units, 840 sentences and 840 form or meaning chips,
+  and `docs/english-grammar-g10-sheet.md` was regenerated; the other grades' forms and the reading forms are byte-identical
+  (tests pin them). Measured in Chromium after the last data change: at 390 px the page does not scroll sideways, and in
+  print media at 1032 px no table cell crosses the page edge and no sign-off box overlaps a row in any of the 21 units; it
+  prints at 99 A4 landscape pages.
+- **True or false is silent** and **Yes or No is not offered**, as in Semester 1; Choose and Build play the correct sentence
+  after the answer. Nothing is pictured.
+- **Tests:** `englishGrammarG10Items.test.ts` (21 lessons, 840 items, every sub-topic's size and kind pinned for all 21,
+  statements against the Semester 1 or 2 JSON, caps, uniqueness, banned names, 308 and 532, a `must of`/`could of` guard, a guard
+  that no `u6_l4` distractor has will or would, the glued-«و» check over the whole form), `englishGrammarG10.test.ts` (21 units in hub order, all unsigned, each note plain
+  text), `englishHub.test.ts` (sixteen grammar-only ids, 31 Grade 10 lessons) and, in the app,
+  `englishGrammarG10ItemGames.test.ts` (Choose, Build and True or false on all 21, Yes or No on none, no twin voiced).
+- **Verified (2026-10-24, on `ccr-d9db5f6c-mgwkuo`):** root `pnpm run typecheck` clean (api-server, mobile, scripts);
+  `@workspace/curriculum` `test` **691 tests, 691 passing** with `env -u R2_ACCESS_KEY_ID -u R2_BUCKET -u R2_ENDPOINT -u
+  R2_SECRET_ACCESS_KEY` (with the sandbox's `R2_*` variables set `r2.test.ts` fails by design, as in every earlier entry), its
+  `verify` 197 files, 3306 lessons, 0 errors; the **full mobile suite 7303 tests, 7293 passing, 10 skipped, 0 failing**
+  (360 s). The api-server suites were not run: nothing there changed. **In a browser** at 390 px in Arabic and English, web
+  build with `EXPO_PUBLIC_DEMO_MODE=true`: unsigned, the Grade 10 index has 20 rows (units 1-5), no «grammar activities» row
+  and none of the ten Semester 2 lessons, and each of their URLs says «lesson not found». Then, with
+  **a temporary sign-off on the ten Semester 2 units in the working tree** (`reviewedBy: { name: 'LOCAL CHECK', … }`, restored
+  straight after with `git checkout`; `grep -rc "LOCAL CHECK"` over `lib/curriculum/src` and `artifacts/mobile/services` shows no
+  non-zero count; `git status` shows only the docs), the index has 30 rows (units 1-10, the Semester 1 Articles lesson stays
+  unsigned) and ten «grammar activities» rows, each under its unit; every one of the ten lesson pages holds a «Grammar» section
+  of exactly Choose, Build and True or false, with no Yes or No and no flashcards. Over a round of eight in each activity on
+  `u6_l1`, `u8_l6` and `u10_l3` (two questions on the other seven), in both languages: Choose and Build play the correct
+  sentence after the answer (a recording URL and the browser voice as fallback; every question, 0 plays before answering),
+  True or false shows no speaker button before or after answering and plays nothing, nine-tile Build rounds wrap their nine
+  slots onto two rows and their tiles onto two or three, the longest Choose stem met was nine words, and there is no
+  horizontal scroll at any step. I read the screenshots (the Semester 2 index rows in both languages, a lesson page in each
+  language, nine-tile Build rounds, Choose after answering, True or false before and after answering).
+- **Not verified:** the 400 sentences by a teacher (a script cannot tell wrong English from right; the printed form is the
+  review) — **no teacher has read a sentence**; the match of each lesson id to the printed book page; on a device; audio, which
+  does not exist for these sentences (the browser check heard the fallback voice, because `english-audio` needs the OpenAI and
+  R2 keys and has not been run for them); the browser check used a temporary local sign-off, never a committed one; and the
+  `e2e/` smoke test was not run (nothing it drives changed).
+- **Where a teacher will push back (the risky lessons and rows):**
+  1. **The conditionals** (u6_l1, u6_l4, u9_l1): `imagine-vs-real` tests only that «Imagine/Suppose + past» makes `will`
+     wrong, and «Imagine you have wings. You will fly.» would be acceptable English (no row offers the opener's tense as the
+     choice). `u9_l1 third-conditional` has four rows whose twin is «If I would have known», which informal American English
+     uses; standard grammar rules it out and the plan allows it. «If she lived in Aqaba, she would swim» was changed to test
+     `would swim` / `would swam`, because «If she would live» can mean willing.
+  2. **Wish and unreal past, with one-sided answers.** `past-unreal` (u9_l1) and `wish-past-regrets` (u9_l4), 14 rows each,
+     all have the perfect side as the answer: a clean present marker (now, today) does not rule out `would have` or `had` +
+     participle, so there is no opposite side, and a student who always picks the perfect form scores full marks inside the
+     topic. The twin is ruled out by a past time word («yesterday»), which a teacher may call a form error rather than
+     meaning. «I wish I studied last year» is heard in informal speech. `wish-present` answers `were`, with no was/were
+     contrast.
+  3. **Speculation** (u10_l1, u10_l3): `must-cant` and `must-have` rest on evidence a teacher may find soft («Everyone is laughing.
+     The film must be funny.», «My keys are gone. I must have lost them.» — they could be stolen), `cant-have` is always
+     `can't have`, and «could have took» / «might have ate» are dialect forms used as `form` distractors.
+  4. **Have/get something done** (u8_l6): `service-vs-self` is decided logically (a sentence says the speaker could not,
+     did not or was away), not grammatically, and a bare `myself` could be read as emphatic; the rows carry a second clue.
+     Bare-verb distractors that make a noun with the object («car repair», «a phone fix») were replaced by -ing or
+     object-after-participle errors; «had a swimming pool dug» / «digged» may be less familiar than «built».
+  5. **Smaller:** a reported question with inverted order («He asked where did I live») is accepted in Irish and Indian
+     English (the rows follow the standard rule); «admitted cheating in the test» is British («on the test» in American
+     English); «it don't» in a zero-conditional twin is dialect, wrong in standard English; «I have the only key. He can't have entered.»
+     would read more naturally with «got in», but that makes 10 words.
+- **Known limits:** the choice between forms is tested only where something in the sentence decides it, so some topics
+  that English also allows both ways (the tense after a reporting verb, `would` in a first-conditional result) are
+  not tested at all; a wrong True or false answer shows «Correct answer: False», not the corrected sentence; nothing is
+  pictured. The reviews were one per task, a fix round for each of the first two (the Task 1 round rewrote
+  imagine-vs-real, the Task 2 round applied nine review minors) and a final whole-branch fix wave (real distractors in the
+  `u6_l4` note, the form's lead no longer says the Semester 2 lessons have no book vocabulary, softer evidence rows
+  strengthened, one near-duplicate replaced).
+- **To switch a lesson on:** a Grade 10 English teacher reads and signs that lesson's page of
+  `docs/english-grammar-g10-review.html`, printed, and checks the book-page line; audio is recorded for the correct
+  sentences; then the unit's `reviewedBy` is set in `englishGrammarG10.ts`. The lesson appears in the Grade 10 index only once
+  its unit is signed. Until audio exists the Semester 2 lessons would be spoken by the browser voice.
+
 ## English audio: voice register fixed, clips trimmed and levelled, and an audit that needs no keys — 2026-10-24
 
 The English corner plays pre-voiced MP3s from the public bucket (`english-audio/<slug>.mp3`, made
