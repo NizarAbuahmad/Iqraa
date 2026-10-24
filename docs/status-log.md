@@ -54,6 +54,31 @@ tab at all, and nothing in it led to the books' own reading or listening. Draft 
   (`docs/english-reading-g{1-4}-review.html`, `docs/english-grammar-g*-review.html`); this change
   signs nothing.
 
+## Tests for the roster consent gate — 2026-10-24
+
+`lib/rosterConsent.ts` refuses a roster write (POST/PATCH/PUT/DELETE under `/classes` and `/students`) from a
+teacher who has not attested that their school holds the parental consent, and leaves reads open. Nothing
+asserted that by its code: every other DB test sets `roster_consent_at` on its teachers so the gate stays out of
+the way. New `routes/__tests__/rosterConsent.db.test.ts` runs it against a real database, 6 tests. Tests only; no
+production code changed.
+
+**What it pins:** a teacher with no attestation gets 403 `roster_consent_required` (with the current
+`consentVersion`) on creating a class, deleting a student and reissuing a login code, and nothing is created or
+deleted; the same teacher can still read `/classes` and `/students`; no token is a 401, not the consent refusal;
+`POST /auth/roster-consent` with an out-of-date statement version is a 409 `roster_consent_version_mismatch` that
+records nothing and leaves the gate shut; with the current version it stores the time and the version and the
+same writes then go through; attesting again moves the timestamp and keeps the version.
+
+**Verified:** 6/6 against a local Postgres 16; the whole api-server suite passes 2563/2563 with
+`REQUIRE_DB_TESTS=true`; `pnpm run typecheck` clean. Mutation check: leaving `/students` out of the gate's mount in
+`routes/roster.ts` failed the write test; restored, 6/6. The test reads the version from the server's own refusal
+instead of importing it, because `lib/rosterConsent.ts` pulls in the database client and a source-level import
+cannot load it under `node --test`.
+
+**Not covered:** the gate's 503 `roster_consent_unavailable` branch (a failing users read), PATCH and PUT
+methods (only POST and DELETE are driven), and the other routers that say they are deliberately not gated
+(homework, schedule, teaching plans).
+
 ## Register: the agreement boxes close the form, and the email divider says what it is — 2026-10-24
 
 Two things asked for after #1229 («Register: the terms checkbox is visible») went live: the terms
@@ -101,6 +126,7 @@ near-misses that stay with the model («حوّل ورقة العمل إلى مل
 and the class pass rate — I found no screen for any of the three (the results dashboard shows a
 status and a percentage, not a time, and there is no pass mark), so an app answer would invent
 one. A «حددي» (feminine) in the model's worksheet-to-quiz answer is the model's, not the app's.
+
 ## Tests for the login-code reissue route — 2026-10-24
 
 `POST /students/:id/links/:userId/login-code` (a teacher gives a parent or student who lost their personal
