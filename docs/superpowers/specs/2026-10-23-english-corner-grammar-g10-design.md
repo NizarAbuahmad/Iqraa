@@ -1,6 +1,6 @@
 # English corner: Grade 10 grammar, Semester 1 — design
 
-**Status:** proposed (awaiting review). **Scope:** grammar activities (Choose, Build, True or false) for the eleven Grade 10
+**Status:** implemented (PR #1235). **Scope:** grammar activities (Choose, Build, True or false) for the eleven Grade 10
 Semester 1 lessons whose book statement is a grammar topic: ten already in the English hub, and Articles, which becomes a
 grammar-only hub lesson. Builds on the authored-items engine (`lib/curriculum/src/englishGrammar.ts`), the grammar-only
 hub mechanism (`GRAMMAR_ONLY_LESSONS`, `hubLessonVisible`) and the generalised teacher form

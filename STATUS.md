@@ -72,6 +72,11 @@ Checked 2026-10-22:
   deploys: if `false`, production's `DATABASE_URL` is a direct connection (218 direct
   connections at the 0.5 CU maximum, fewer when scaled down); switch the secret to the pooled
   string. Details and what is unverified: the log entry named above.
+- **The printed grammar review forms for Grades 3, 4, 5 and 9 clip their right-hand columns off the
+  page in A4 landscape** (measured 2026-10-24: overhang 47, 690, 390 and 762 px; Grades 1 and 2 fit;
+  Grade 10 was fixed with its own print CSS), so a teacher cannot tick or annotate those printouts.
+  Fixing them alters their committed forms, so it is its own change. Entry: «Grade 10 grammar
+  (Semester 1) in the English corner» in the log.
 
 Checked 2026-10-22:
 
@@ -114,6 +119,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-24 — Grade 10 grammar (Semester 1) in the English corner — built, shown to nobody yet
 - 2026-10-24 — Generator screens: the toast clears the docked bar
 - 2026-10-23 — Students choose an email or a teacher's code
 - 2026-10-23 — Generator screens: Cancel then a refusal, and the banner contrast
@@ -143,12 +149,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-22 — A lesson game can be homework, and the teacher sees the scores
 - 2026-10-22 — Any deck plays as Class Challenge, with sound
 - 2026-10-22 — Progress is celebrated
-- 2026-10-22 — Math Corner exercises: learn or test yourself on a lesson from the book
-- 2026-10-22 — Grade 4 grammar in the English corner — built, shown to nobody yet
 
 ## Finding older detail, and recording new work
 
-- The log has 382 sections. Anything cited elsewhere as
+- The log has 383 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line
