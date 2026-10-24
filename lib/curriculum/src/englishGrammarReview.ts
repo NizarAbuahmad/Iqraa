@@ -293,6 +293,27 @@ const YESNO_CSS = `
   .not-covered { margin: 0; padding-inline-start: 1.3em; display: grid; gap: 4px; font-size: .92rem; color: var(--muted); }
   .not-covered [dir="ltr"] { font-family: var(--latin); }`;
 
+/**
+ * The forms are right-to-left and the cells that hold English are `white-space: nowrap`, so in print the widest
+ * row sets the table's width and whatever does not fit is cut off the LEFT edge of the page (the kind chip, the
+ * tick box and the notes). On paper the sentence and the false twin wrap, and the type is a little smaller.
+ * Screen rendering is untouched: everything is inside `@media print`. Grades 5, 9 and 10 share this block.
+ */
+const PRINT_FIT_CSS = `
+  @media print {
+    td.sentence, .yn { white-space: normal; }
+    th.note, td.note { width: 12%; }
+    td.sentence { font-size: .9rem; }
+    th, td { padding: 4px 5px; }
+    .yn, .opt { font-size: .82rem; }
+  }`;
+
+/** Grades 3 and 4 also have the picture, «اختر الكلمة» and yes/no columns, so those wrap too on paper. */
+const PRINT_FIT_PICTURES_CSS = PRINT_FIT_CSS + `
+  @media print {
+    td.choose, td.yesno, .build-half { white-space: normal; }
+  }`;
+
 const GRADE_COPY: Record<number, GradeCopy> = {
   1: {
     title: 'مراجعة قواعد الصف الأول',
@@ -351,7 +372,7 @@ const GRADE_COPY: Record<number, GradeCopy> = {
       'هل الكلمات مناسبة لطالب الصف الثالث؟',
     ],
     extraCss: YESNO_CSS + `
-  .build-half { display: block; color: var(--muted); font-size: .78rem; font-weight: 400; white-space: nowrap; }`,
+  .build-half { display: block; color: var(--muted); font-size: .78rem; font-weight: 400; white-space: nowrap; }` + PRINT_FIT_PICTURES_CSS,
   },
   4: {
     title: 'مراجعة قواعد الصف الرابع',
@@ -378,7 +399,7 @@ const GRADE_COPY: Record<number, GradeCopy> = {
   .data { display: grid; gap: 14px; }
   .data .table-wrap table { min-width: 0; }
   .data-table td { font-size: .95rem; }
-  @media print { .data { break-before: page; } }`,
+  @media print { .data { break-before: page; } }` + PRINT_FIT_PICTURES_CSS,
   },
   5: {
     title: 'مراجعة قواعد الصف الخامس',
@@ -403,7 +424,7 @@ const GRADE_COPY: Record<number, GradeCopy> = {
   .kind-form { background: var(--wrong-bg); color: var(--wrong); }
   .kind-meaning { background: var(--tint); color: var(--teal); }
   .topic-row th { text-align: start; background: var(--tint); font-family: var(--latin); font-weight: 600; }
-  .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }`,
+  .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }` + PRINT_FIT_CSS,
   },
   9: {
     title: 'مراجعة قواعد الصف التاسع',
@@ -434,7 +455,7 @@ const GRADE_COPY: Record<number, GradeCopy> = {
   .kind-meaning { background: var(--tint); color: var(--teal); }
   .topic-row th { text-align: start; background: var(--tint); font-family: var(--latin); font-weight: 600; }
   .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }
-  @media print { .data { break-before: page; } }`,
+  @media print { .data { break-before: page; } }` + PRINT_FIT_CSS,
   },
   10: {
     title: 'مراجعة قواعد الصف العاشر',
@@ -460,14 +481,7 @@ const GRADE_COPY: Record<number, GradeCopy> = {
   .kind-form { background: var(--wrong-bg); color: var(--wrong); }
   .kind-meaning { background: var(--tint); color: var(--teal); }
   .topic-row th { text-align: start; background: var(--tint); font-family: var(--latin); font-weight: 600; }
-  .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }
-  @media print {
-    td.sentence, .yn { white-space: normal; }
-    th.note, td.note { width: 12%; }
-    td.sentence { font-size: .9rem; }
-    th, td { padding: 4px 5px; }
-    .yn, .opt { font-size: .82rem; }
-  }`,
+  .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }` + PRINT_FIT_CSS,
   },
 };
 

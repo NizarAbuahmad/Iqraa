@@ -123,6 +123,16 @@
   .data .table-wrap table { min-width: 0; }
   .data-table td { font-size: .95rem; }
   @media print { .data { break-before: page; } }
+  @media print {
+    td.sentence, .yn { white-space: normal; }
+    th.note, td.note { width: 12%; }
+    td.sentence { font-size: .9rem; }
+    th, td { padding: 4px 5px; }
+    .yn, .opt { font-size: .82rem; }
+  }
+  @media print {
+    td.choose, td.yesno, .build-half { white-space: normal; }
+  }
 </style>
 </head>
 <body>
