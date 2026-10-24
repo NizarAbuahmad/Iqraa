@@ -49,9 +49,11 @@ export interface HomeworkMaterialResource {
  * homework: it opens `/play/lesson/<lessonId>?game=…&hw=…` and the student's
  * result is posted back. `title` is the lesson's Arabic title. The game names
  * are spelled here, not imported, because this file takes no imports.
+ * `exercises` is the Math Corner's «اختبر نفسك» set for a maths lesson: it opens
+ * `/curriculum/math/exercises/<lessonId>?hw=…` instead, and reports the same way.
  */
-export type HomeworkGameName = 'memory' | 'scramble' | 'spot';
-export const HOMEWORK_GAMES: readonly HomeworkGameName[] = ['memory', 'scramble', 'spot'];
+export type HomeworkGameName = 'memory' | 'scramble' | 'spot' | 'exercises';
+export const HOMEWORK_GAMES: readonly HomeworkGameName[] = ['memory', 'scramble', 'spot', 'exercises'];
 export interface HomeworkGameResource {
   kind: 'game';
   lessonId: string;
