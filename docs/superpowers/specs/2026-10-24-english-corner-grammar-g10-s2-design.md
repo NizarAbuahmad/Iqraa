@@ -1,6 +1,6 @@
 # English corner: Grade 10 Semester 2 grammar — design
 
-**Status:** proposed (awaiting review). **Scope:** grammar activities (Choose, Build, True or false) for the ten Grade 10
+**Status:** approved (2026-10-24), plan written. **Scope:** grammar activities (Choose, Build, True or false) for the ten Grade 10
 Semester 2 lessons whose book statement is a grammar topic, each as a **grammar-only hub lesson**. Builds on the Semester 1
 work (`2026-10-23-english-corner-grammar-g10-design.md`, PR #1235, merged), the authored-items engine
 (`lib/curriculum/src/englishGrammar.ts`), the grammar-only hub mechanism (`GRAMMAR_ONLY_LESSONS`, `hubLessonVisible`) and the
@@ -34,9 +34,8 @@ grammar.
    so reporting-verb and reported-question items turn on the verb pattern, the object, `if`/`whether` and word order.
 5. **Overlap with Grade 9** (conditionals, passive, reported speech) is accepted; the Grade 10 items are written separately and
    are harder.
-6. **Stacked on the branch of PR #1247** (the printed-forms and subtitle fixes), because the Semester 2 form pages benefit
-   from the print rule and the sign-off fix in the same renderer. If #1247 merges first, the work moves to a fresh branch
-   from `main`.
+6. **Built on `main` after PR #1247** (the printed-forms and subtitle fixes, merged first), so the Semester 2 form pages
+   get the print rule and the sign-off fix.
 7. **Every unit ships `reviewedBy: null`.**
 
 ## The sentences
