@@ -171,7 +171,7 @@ export default function GuardianWaitingScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: SPACE.lg, gap: SPACE.lg },
+  content: { paddingHorizontal: SPACE.lg, gap: SPACE.lg, maxWidth: 560, width: '100%', alignSelf: 'center' },
   card: { padding: SPACE.lg },
   head: { alignItems: 'center', gap: SPACE.md },
   title: { fontSize: TYPE.bodyLg, flex: 1 },

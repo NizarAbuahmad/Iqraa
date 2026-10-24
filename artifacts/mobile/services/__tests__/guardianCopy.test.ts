@@ -8,7 +8,7 @@ const KEYS = [
   'guardianParentEmailLabel', 'guardianParentEmailHint', 'guardianSend', 'guardianChangeEmail',
   'guardianSendFailed', 'guardianSavedNotSent', 'guardianCheckNow', 'guardianJoinWithCode', 'guardianWrongTypeTitle', 'guardianSwitchToParent',
   'guardianSwitchToTeacher', 'guardianSwitchFailed', 'guardianSwitchNote', 'registerParentEmailLabel',
-  'registerParentEmailHint', 'registerParentEmailFirst', 'errParentEmailRequired', 'errParentEmailInvalid',
+  'registerParentEmailHint', 'registerParentEmailFirst', 'studentEmailNoteParent', 'errParentEmailRequired', 'errParentEmailInvalid',
   'errParentEmailIsOwn', 'errEmailNotVerifiedYet', 'errGuardianRateLimited', 'errGuardianApprovalRequired',
   'parentConsentTitle', 'parentConsentMeaning', 'parentConsentConfirm', 'parentConsentConfirmFirst',
   'parentConsentApprove', 'parentConsentDecline', 'parentConsentApprovedDone', 'parentConsentDeclinedDone',

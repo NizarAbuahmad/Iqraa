@@ -314,7 +314,7 @@ export default function RegisterScreen() {
               />
               {studentMethod === 'email' ? (
                 <Text style={[styles.terms, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-                  {t('studentEmailNote')}
+                  {askParent ? t('studentEmailNoteParent') : t('studentEmailNote')}
                 </Text>
               ) : null}
             </>
