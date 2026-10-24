@@ -5,7 +5,12 @@
  */
 import type { HomeworkResource } from "@workspace/db";
 
-export const GAMES =["memory", "scramble", "spot"] as const;
+/**
+ * `exercises` is the Math Corner's «اختبر نفسك» set for a maths lesson: not a game,
+ * but it attaches, scores and reports exactly like one, so it shares the rows.
+ */
+export const GAMES =["memory", "scramble", "spot", "exercises"] as const;
+export const GAMES_TEXT = "memory, scramble, spot or exercises";
 export type GameKind = (typeof GAMES)[number];
 
 export const GAME_TITLE_MAX = 200;
@@ -35,7 +40,7 @@ export function parseGameResult(body: unknown): ParsedGameResult {
   if (typeof lessonId !== "string" || lessonId === "" || lessonId.length > GAME_LESSON_ID_MAX) {
     return fail(`lessonId must be a lesson id of at most ${GAME_LESSON_ID_MAX} characters`);
   }
-  if (!isGame(game)) return fail("game must be memory, scramble or spot");
+  if (!isGame(game)) return fail(`game must be ${GAMES_TEXT}`);
   if (!Number.isInteger(total) || (total as number) < 1 || (total as number) > GAME_TOTAL_MAX) {
     return fail(`total must be a whole number from 1 to ${GAME_TOTAL_MAX}`);
   }
