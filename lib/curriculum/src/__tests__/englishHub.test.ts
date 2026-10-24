@@ -3,9 +3,11 @@ import assert from 'node:assert/strict';
 import {
   ENGLISH_HUB_GRADES,
   ENGLISH_HUB_LESSONS,
+  GRAMMAR_ONLY_LESSONS,
   MIN_HUB_WORDS,
   allHubWords,
   audioSlug,
+  hubLesson,
   hubLessonsForGrade,
   hubWordFromBook,
   isDrillableWord,
@@ -63,7 +65,8 @@ test('grades 9 and 10 have hub lessons, built from the vocabulary list', () => {
   for (const g of [9, 10]) assert.ok(hubLessonsForGrade(g).length > 0, `grade ${g}`);
   const vocabLessons = new Set(ENGLISH_VOCABULARY.map(w => w.lessonId));
   for (const l of [...hubLessonsForGrade(9), ...hubLessonsForGrade(10)]) {
-    assert.ok(vocabLessons.has(l.id), l.id);
+    // A grammar-only lesson may have no vocabulary at all (the first conditional has none).
+    if (!l.grammarOnly) assert.ok(vocabLessons.has(l.id), l.id);
     assert.ok(l.unitNumber > 0 && l.unitTitle && l.unitTitleAr, `${l.id}: unit not resolved`);
   }
 });
@@ -88,7 +91,8 @@ test('every hub lesson resolves in the browser catalog', () => {
 
 test('every word is glossed, drillable and unique within its lesson', () => {
   for (const l of ENGLISH_HUB_LESSONS) {
-    assert.ok(l.words.length >= MIN_HUB_WORDS, l.id);
+    // A grammar-only lesson is in the hub for its grammar and has too few words for the word activities.
+    assert.ok(l.grammarOnly ? l.words.length < MIN_HUB_WORDS : l.words.length >= MIN_HUB_WORDS, l.id);
     const seen = new Set<string>();
     for (const w of l.words) {
       assert.ok(w.ar.trim(), `${l.id}: ${w.en} has no Arabic`);
@@ -150,4 +154,25 @@ test('"robot" is رجل آلي, as a Grade 1 English teacher asked (2026-10-15)'
   const glosses = ENGLISH_HUB_LESSONS.flatMap(l => l.words).filter(w => w.en === 'robot').map(w => w.ar);
   assert.ok(glosses.length > 0);
   for (const ar of glosses) assert.equal(ar, 'رجل آلي');
+});
+
+const GRAMMAR_ONLY = [
+  'kbl-g9-eng-s1-nccd-u2_l3', 'kbl-g9-eng-s2-nccd-u7_l1', 'kbl-g9-eng-s2-nccd-u7_l2', 'kbl-g9-eng-s2-nccd-u8_l5', 'kbl-g9-eng-s2-nccd-u9_l3',
+  'kbl-eng-s1-nccd-u1_l5',
+];
+
+test('six lessons are grammar-only (five in Grade 9, Articles in Grade 10): listed, under the word floor, and no other lesson is', () => {
+  assert.deepEqual([...GRAMMAR_ONLY_LESSONS], GRAMMAR_ONLY);
+  const flagged = ENGLISH_HUB_LESSONS.filter(l => l.grammarOnly).map(l => l.id).sort();
+  assert.deepEqual(flagged, [...GRAMMAR_ONLY].sort());
+  for (const id of GRAMMAR_ONLY) assert.ok(hubLesson(id)!.words.length < MIN_HUB_WORDS, id);
+});
+
+test('every grammar-only lesson has a grammar unit', async () => {
+  const { grammarUnit } = await import('../englishGrammar.ts');
+  for (const id of GRAMMAR_ONLY) assert.ok(grammarUnit(id), id);
+});
+
+test('the hub has 41 Grade 9 and 21 Grade 10 lessons now and every other grade is unchanged', () => {
+  assert.deepEqual([1, 2, 3, 4, 5, 9, 10].map(g => hubLessonsForGrade(g).length), [10, 9, 8, 9, 10, 41, 21]);
 });

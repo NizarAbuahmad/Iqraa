@@ -2,14 +2,14 @@
   "sourceId": "geo-s2-student-book",
   "figures": [
     {
-      "file": "p009.png",
+      "file": "p009-v2.png",
       "sourceId": "geo-s2-student-book",
       "pdfPage": 9,
       "rect": [
+        109.4,
         122.6,
-        154.0,
-        457.3,
-        345.3
+        463.3,
+        375.0
       ],
       "unit": 1,
       "lesson": 1,
@@ -114,30 +114,14 @@
       "lessonStartPage": 56
     },
     {
-      "file": "p067.png",
+      "file": "p067b-v2.png",
       "sourceId": "geo-s2-student-book",
       "pdfPage": 67,
       "rect": [
-        45.5,
-        35.0,
-        224.9,
-        110.8
-      ],
-      "unit": 3,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 56
-    },
-    {
-      "file": "p067b.png",
-      "sourceId": "geo-s2-student-book",
-      "pdfPage": 67,
-      "rect": [
-        129.9,
-        140.9,
-        440.3,
-        526.1
+        134.0,
+        145.4,
+        532.7,
+        523.0
       ],
       "unit": 3,
       "lesson": 1,
@@ -194,14 +178,14 @@
       "lessonStartPage": 68
     },
     {
-      "file": "p077.png",
+      "file": "p077-v2.png",
       "sourceId": "geo-s2-student-book",
       "pdfPage": 77,
       "rect": [
-        0.0,
-        327.6,
-        304.3,
-        621.2
+        39.0,
+        353.7,
+        300.9,
+        617.2
       ],
       "unit": 3,
       "lesson": 3,
@@ -210,14 +194,14 @@
       "lessonStartPage": 77
     },
     {
-      "file": "p077b.png",
+      "file": "p077b-v2.png",
       "sourceId": "geo-s2-student-book",
       "pdfPage": 77,
       "rect": [
-        294.9,
-        527.9,
-        385.6,
-        633.1
+        256.0,
+        531.0,
+        389.4,
+        669.6
       ],
       "unit": 3,
       "lesson": 3,
@@ -226,14 +210,14 @@
       "lessonStartPage": 77
     },
     {
-      "file": "p078.png",
+      "file": "p078-v2.png",
       "sourceId": "geo-s2-student-book",
       "pdfPage": 78,
       "rect": [
-        69.4,
-        45.5,
-        242.1,
-        193.0
+        50.0,
+        36.0,
+        326.0,
+        212.5
       ],
       "unit": 3,
       "lesson": 3,
@@ -242,14 +226,14 @@
       "lessonStartPage": 77
     },
     {
-      "file": "p080.png",
+      "file": "p080-v2.png",
       "sourceId": "geo-s2-student-book",
       "pdfPage": 80,
       "rect": [
-        105.6,
-        159.0,
-        362.7,
-        368.7
+        104.0,
+        146.0,
+        492.0,
+        400.5
       ],
       "unit": 3,
       "lesson": 3,
@@ -274,14 +258,14 @@
       "lessonStartPage": 77
     },
     {
-      "file": "p086.png",
+      "file": "p086-v2.png",
       "sourceId": "geo-s2-student-book",
       "pdfPage": 86,
       "rect": [
         0.0,
         0.0,
-        419.6,
-        342.8
+        545.0,
+        357.2
       ],
       "unit": 3,
       "lesson": 3,

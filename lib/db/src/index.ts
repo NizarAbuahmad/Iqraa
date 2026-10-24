@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "./schema";
 import { ScopedPool } from "./scopedPool";
+import type { Identity } from "./identity";
 import { isPooledConnectionString, poolOptions } from "./poolConfig";
 
 const { Pool } = pg;
@@ -72,3 +73,13 @@ export function poolStats() {
 export { asUser, currentIdentity, type Identity } from "./identity";
 
 export * from "./schema";
+
+export { runInScope, type RequestScope } from "./requestScope";
+
+/**
+ * A held scope for the request in flight (see requestScope.ts), or undefined while
+ * enforcement is off. Only routes allow-listed in the API's lib/heldReads.ts may use it.
+ */
+export function openRequestScope(identity: Identity, holdTimeoutMs?: number) {
+  return pool.openScope(identity, holdTimeoutMs);
+}

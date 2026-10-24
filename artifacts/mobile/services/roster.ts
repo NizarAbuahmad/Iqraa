@@ -10,6 +10,7 @@
 import { apiFetch } from './apiClient.ts';
 import { trackEvent } from './analytics.ts';
 import type { AddLabResourceBody, AddResourceBody, ClassResource } from './classResources.ts';
+import type { RosterLink } from './rosterLinks.ts';
 import type { StudentRecord } from './studentRecord.ts';
 import type { SupportGroup } from './supportGroups';
 
@@ -42,6 +43,8 @@ export interface RosterStudent {
   createdAt: string;
   /** Somebody has signed up against this name. Absent from the class list endpoint, which does not compute it. */
   linked?: boolean;
+  /** Accounts linked to this name, oldest first. Absent from servers older than the field and from `/students`. */
+  links?: RosterLink[];
 }
 
 export interface NewStudent {
@@ -276,6 +279,13 @@ export async function removeClassResource(classId: string, resourceId: string): 
   await readJson(res, 'Removing resource');
 }
 
+export interface StudentChanges {
+  displayName?: string;
+  externalRef?: string;
+  teacherNote?: string;
+  gender?: '' | 'male' | 'female';
+}
+
 /**
  * Edit a student. Replaces `renameStudent`, which took only a name and which
  * no screen ever called — one PATCH endpoint, one client function.
@@ -285,7 +295,7 @@ export async function removeClassResource(classId: string, resourceId: string): 
  */
 export async function updateStudent(
   studentId: string,
-  changes: { displayName?: string; externalRef?: string; teacherNote?: string; gender?: '' | 'male' | 'female' },
+  changes: StudentChanges,
 ): Promise<RosterStudent> {
   const res = await apiFetch(`/students/${studentId}`, {
     method: 'PATCH',

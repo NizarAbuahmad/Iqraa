@@ -8,8 +8,8 @@
  * fetched only to fill what the book does not hold (hook, practice, closure),
  * and the screen says which of the two the deck came from.
  */
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,12 +19,11 @@ import { useLanguage } from '@/context/LanguageContext';
 import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { TopicSelector } from '@/components/ui/TopicSelector';
-import { PickerField } from '@/components/ui/PickerField';
+import { PickerField as SharedPickerField } from '@/components/ui/PickerField';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
 import { aiErrorMessageKey, aiErrorText, isAbortError, throwIfAborted } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
-import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
@@ -69,15 +68,57 @@ import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { groundedSubjectConflict, scopeWithoutCurriculum, subjectPickerLabels, topicPickerParams, scopeFromParams, topicForScope } from '@/services/lessonPrep';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { ToolHeader } from '@/components/ui/ToolHeader';
-import { palette } from '@/constants/colors';
 import { useWarmGrounding } from '@/hooks/useWarmGrounding';
 import { nextFrame } from '@/services/nextFrame';
 import { useWideScope } from '@/hooks/useWideScope';
 import { revisionPhrase } from '@/services/revisionScope';
 import { scopeLabel, type ScopeSelection } from '@/services/scopeSelection';
 import { buildScopeRequest, scopeFormState } from '@/services/wideScopeRequest';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { conceptOf } from '@/constants/icons';
+import { SPACE, TYPE } from '@/constants/theme';
+import { readableOn, selectedRow } from '@/services/readableColor';
+import { generationPhase } from '@/services/generationPhase';
+import { deckOptionsSummary, deckSections, previewRows, type DeckSection } from '@/services/generatorSummary';
+import { getT } from '@/services/i18n';
+import { ChipGroup } from '@/components/generator/ChipGroup';
+import { LessonCard } from '@/components/generator/LessonCard';
+import { DockedAction, DOCKED_BAR_HEIGHT } from '@/components/generator/DockedAction';
+import { toastLift } from '@/services/dockedBar';
+import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
+import { GeneratorLayout, useIsDesktopGenerator } from '@/components/generator/GeneratorLayout';
+import { PaperPreview } from '@/components/generator/PaperPreview';
+import { PressableScale } from '@/components/ui/PressableScale';
 
-const ACCENT = palette.primary;
+/**
+ * The slides' own colour, from the concept list the Tools tab and the prep board
+ * read (`constants/icons.ts`). It carries white at 4.5:1, so it is the fill for
+ * solid buttons and the tint behind a banner; as text, an icon or an outline on a
+ * card the screen uses `accentInk` (`readableOn`), which stays readable on the
+ * dark card.
+ */
+const ACCENT = conceptOf('slides').color;
+
+/** The i18n title of each section the preview draws, as the deck builders title it. */
+const DECK_SECTION_LABEL_KEY = {
+  title: 'genDeckTitle',
+  outcomes: 'genDeckOutcomes',
+  scope: 'genDeckScope',
+  goals: 'genDeckGoals',
+  warmup: 'genDeckWarmup',
+  vocabulary: 'genDeckVocabulary',
+  explanation: 'genDeckExplanation',
+  units: 'genDeckUnits',
+  checks: 'genDeckChecks',
+  examples: 'genDeckExamples',
+  practice: 'genDeckPractice',
+  summary: 'genDeckSummary',
+  exitTicket: 'genDeckExitTicket',
+  homework: 'genDeckHomework',
+} as const satisfies Record<DeckSection, string>;
+
+/** What the «what to add» chips toggle: the three switches a deck is built with. */
+type DeckOption = 'examples' | 'practice' | 'attachments';
 /** What a unit / semester / book deck is anchored to: the scope itself, never one lesson its label happens to match. */
 const WIDE_GROUNDING: GeneratorGrounding = { lesson: null, grounded: true, score: 0, context: '', ungroundedNote: '' };
 
@@ -89,6 +130,8 @@ export default function SlidesScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang: uiLang } = useLanguage();
   const scrollRef = useRef<ScrollView>(null);
+  const accentInk = readableOn(ACCENT, colors.card);
+  const isDesktop = useIsDesktopGenerator();
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const grades = getPickerGrades();
@@ -227,6 +270,15 @@ export default function SlidesScreen() {
    * fail the same way again.
    */
   const [validationError, setValidationError] = useState('');
+  // Counts presses of generate. The scrolls to the status block and to a refusal depend on it as well as on
+  // their own state: a refusal repeated leaves `validationError` (and a failure `error`) unchanged, so
+  // without this a second press would show the teacher nothing.
+  const [attempt, setAttempt] = useState(0);
+  // The lesson card opens by itself while there is no lesson, and whenever a refusal is showing in it;
+  // typing a title must not fold the field away mid-word, so only the button (or an empty topic, or a
+  // refusal) changes it. Never unmounts the pickers below.
+  const [lessonOpen, setLessonOpen] = useState(() => !topic.trim());
+  useEffect(() => { if (!topic.trim() || validationError) setLessonOpen(true); }, [topic, validationError]);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
@@ -476,6 +528,11 @@ export default function SlidesScreen() {
    * explanation the teacher had just reported.
    */
   const generate = async (regen: ReturnType<typeof regenerationFields> = {}) => {
+    // Counted first, before any refusal below returns: the scrolls depend on it.
+    setAttempt(n => n + 1);
+    // A Cancel leaves `cancelled` set, and it outranks an error in the status block: clear it before any
+    // refusal below can return, or «أُلغي» would be shown over the refusal's own message.
+    setCancelled(false);
     const trimmed = topic.trim();
     const refuse = (msg: string) => { setValidationError(msg); setError(''); setCancelled(false); };
     if (!trimmed) { refuse(t('topicRequired')); return; }
@@ -957,119 +1014,217 @@ export default function SlidesScreen() {
     router.push('/ai-tools/classroom/presentation' as any);
   };
 
-  const Toggle = ({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) => (
-    <Pressable
-      onPress={() => { onChange(!value); Haptics.selectionAsync(); }}
-      style={[styles.toggle, {
-        borderColor: value ? ACCENT : colors.border,
-        backgroundColor: value ? palette.selected : colors.card,
-        borderRadius: colors.radius,
-        flexDirection: isRTL ? 'row-reverse' : 'row',
-      }]}
-    >
-      <Ionicons
-        name={value ? 'checkbox' : 'square-outline'}
-        size={20}
-        color={value ? ACCENT : colors.mutedForeground}
+  // What the button will make, said before it is pressed (docked bar on a phone, preview on desktop).
+  // The switches are the three booleans below, unchanged; a switch the screen does not offer (examples and
+  // attachments on a wide scope, attachments with nothing attached) is neither drawn nor claimed.
+  const offerExamples = !wideScope.isWide;
+  const offerAttachments = hasAttachments && !wideScope.isWide;
+  const summary = deckOptionsSummary({
+    wide: wideScope.isWide, examples: includeExamples, practice: includePractice, attachments: includeAttachments && offerAttachments,
+  }, uiLang);
+  const sections = deckSections({ wide: wideScope.isWide, examples: includeExamples, practice: includePractice });
+  const preview = previewRows(sections, sections.length, sections.length);
+  // The section titles are the deck's own headings, so they are in the language it will be built in
+  // (the picked subject's, `lang`), not the interface's: an English deck is headed in English.
+  const previewT = getT(lang);
+  const stranded = subjectHidden?.[subjectIdx] === true;
+  // What GenerationStatus shows. Under the form it is out of sight of a docked button, so a phone scrolls
+  // it into view when this leaves 'idle' (the spinner and its Cancel, or a failure).
+  const statusPhase = generationPhase({ loading, cancelled, failed: !!error });
+  const statusY = useRef(0);
+  const reduceMotion = useReduceMotion();
+  // A refusal is the form's to show, not the status block's. `generate` clears `cancelled` first and a
+  // refusal clears `error`, so the phase is 'idle' then and the status scroll below returns by itself.
+  const refusal = !!validationError;
+  // Layout effect, not effect: the jump is made before the frame is painted, so there is no flash
+  // of the form first. No animated scroll under reduced motion.
+  useLayoutEffect(() => {
+    if (isDesktop || statusPhase === 'idle') return;
+    scrollRef.current?.scrollTo({ y: Math.max(0, statusY.current - SPACE.lg), animated: !reduceMotion });
+  }, [statusPhase, attempt]);
+  // This screen's button is NOT disabled without a topic: pressing it is what shows the refusal beside the
+  // lesson (no topic, no curriculum for this scope, a topic from another subject, a scope that cannot be
+  // grounded: every one is about the lesson). The button is docked away from that field on a phone and in
+  // the side column on desktop, so on both the press brings the refusal into view. Its place in the scroll
+  // content is the difference of two window positions measured together (the current scroll offset
+  // cancels out); a second press scrolls again.
+  const contentTopRef = useRef<View>(null);
+  const refusalRef = useRef<View>(null);
+  const { height: windowHeight } = useWindowDimensions();
+  useLayoutEffect(() => {
+    if (!refusal) return;
+    const top = contentTopRef.current;
+    const target = refusalRef.current;
+    if (!top || !target) return;
+    top.measureInWindow((_x, topY) => {
+      target.measureInWindow((_tx, targetY) => {
+        scrollRef.current?.scrollTo({ y: Math.max(0, targetY - topY - Math.round(windowHeight * 0.4)), animated: !reduceMotion });
+      });
+    });
+  }, [refusal, attempt]);
+
+  // An unsaved (or edited-since-saved) deck is on screen: one tap on a docked «جهّز الشرائح» would rebuild it
+  // and lose the edits (`forgetSaved`), so on a phone the bar yields, as the other generators' bar yields to
+  // an unsaved result. `workspace.saved` is lit only when the stored copy IS the deck on screen: a deck the
+  // teacher saved, or a reopened one whose stored content equals what is shown, so the bar stays under those.
+  // The rebuild is still reachable: the same action sits inline at the end of the form, above the results.
+  const deckUnsaved = !!deck && !loading && !workspace.saved;
+  // The toast sits above the docked bar while the bar is really on screen (a phone, not yielded to the screen's own bar, keyboard closed).
+  const keyboardOpen = useKeyboardVisible();
+  const toastBottom = toastLift({ isDesktop, barHidden: deckUnsaved, keyboardOpen });
+  const includeOptions: { id: DeckOption; label: string }[] = [
+    ...(offerExamples ? [{ id: 'examples' as const, label: t('genSlidesOptExamples') }] : []),
+    { id: 'practice' as const, label: t('genSlidesOptPractice') },
+    ...(offerAttachments ? [{ id: 'attachments' as const, label: t('genSlidesOptAttachments') }] : []),
+  ];
+  const includeSelected = new Set<DeckOption>([
+    ...(includeExamples ? ['examples' as const] : []),
+    ...(includePractice ? ['practice' as const] : []),
+    ...(includeAttachments ? ['attachments' as const] : []),
+  ]);
+  const toggleOption = (id: DeckOption) => {
+    if (id === 'examples') setIncludeExamples(v => !v);
+    else if (id === 'practice') setIncludePractice(v => !v);
+    else setIncludeAttachments(v => !v);
+  };
+
+  const action = (docked: boolean) => (
+    <DockedAction
+      summary={summary}
+      label={loading ? t('slidesBuilding') : t('slidesBuild')}
+      onPress={() => generate()}
+      loading={loading}
+      accent={ACCENT}
+      docked={docked}
+      hidden={docked && deckUnsaved}
+    />
+  );
+
+  const form = (
+    <>
+      <LessonCard
+        gradeLabel={uiLang === 'ar' ? grades[gradeIdx].nameAr : grades[gradeIdx].name}
+        subjectLabel={subjectNames[subjectIdx]!}
+        subjectId={subjects[subjectIdx].id}
+        topic={topic}
+        grounded={!!pickedLesson.lessonId || wideScope.isWide}
+        expanded={lessonOpen || stranded || refusal}
+        locked={!topic.trim() || stranded || refusal}
+        onToggle={() => setLessonOpen(open => !open)}
+      >
+        <PickerField label={t('grade')} value={uiLang === 'ar' ? grades[gradeIdx].nameAr : grades[gradeIdx].name} options={grades.map(g => (uiLang === 'ar' ? g.nameAr : g.name))} onChange={setGradeIdx} hidden={teacherScope.gradeHidden} colors={colors} isRTL={isRTL} accent={accentInk} maxHeight={220} />
+        <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t(teacherScope.strandedNoteKey(grades[gradeIdx].id, subjectIdx))} isRTL={isRTL} colors={colors} />
+        <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} hidden={subjectHidden} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={accentInk} maxHeight={220} />
+
+        <TopicSelector
+          subjectId={subjects[subjectIdx].id}
+          gradeId={grades[gradeIdx].id}
+          value={topic}
+          onChange={v => { setTopic(v); setError(''); setValidationError(''); }}
+          onSelectionDetail={pickedLesson.onSelectionDetail}
+          allowedKinds={['lesson', 'unit', 'semester', 'book']}
+          onScopeChange={wideScope.setScopeSel}
+          offlineWideScope
+          lang={lang}
+          isRTL={isRTL}
+          colors={colors}
+          accent={accentInk}
+          hasError={!!validationError && !topic}
+          t={t}
+        />
+
+        {/*
+          Validation errors (no topic, no curriculum for this scope, a topic
+          from another subject) stay here, next to the lesson they are about.
+          Generation failures go to GenerationStatus, beside the spinner they
+          replace — its Retry would only fail a validation the same way.
+        */}
+        {validationError ? (
+          <View ref={refusalRef} collapsable={false}>
+            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>
+              {validationError}
+            </Text>
+          </View>
+        ) : null}
+      </LessonCard>
+
+      {/* Directly under the lesson card, because that is what these
+          attach to: pin a video to «الاشتقاق» once and every future deck
+          for that lesson carries it — and so does Class Mode, which has
+          read this store all along. */}
+      {/* Keyed by the topic string: for a wide scope that is the label, shared
+          by every grade's «الكتاب كاملًا». Nothing to pin to. */}
+      {!wideScope.isWide && <LessonResources topic={topic.trim()} onChange={setAttached} />}
+      <LessonAttachments lessonId={groundedLessonId} onChange={setUploadedAttachments} />
+      <LessonLabItems lessonId={groundedLessonId} isAr={isAr} picks={labPicks} onChange={setLabPicks} />
+
+      {/* A wide deck has no book examples and takes no attachments (see generate): those chips are not offered,
+          and the booleans behind them are left as they are, exactly as the toggles left them. */}
+      <ChipGroup
+        label={t('genSlidesIncludeLabel')}
+        options={includeOptions}
+        selected={includeSelected}
+        onToggle={toggleOption}
+        min={0}
+        accent={ACCENT}
       />
-      <Text style={[styles.toggleText, {
-        color: value ? ACCENT : colors.mutedForeground,
-        fontFamily: value ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
-      }]}>
-        {label}
-      </Text>
-    </Pressable>
+
+      {/* The free-prompt deck used to be its own card beside this one, with a
+          near-identical name. It is the same output from a different start. */}
+      <PressableScale
+        // Carry the typed topic across: the prompt screen reads it as its
+        // opening prompt, so the teacher does not retype what they just wrote.
+        onPress={() => router.push({ pathname: '/ai-tools/prompt-slides', params: topic.trim() ? { prompt: topic.trim() } : {} })}
+        accessibilityRole="link"
+        style={styles.promptLink}
+      >
+        <Text style={{ color: accentInk, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>
+          {t('slidesFromPromptLink')}
+        </Text>
+      </PressableScale>
+
+      {/* While the docked bar yields to an unsaved deck (a phone), the rebuild stays here, above the results. */}
+      {!isDesktop && deckUnsaved ? action(false) : null}
+    </>
+  );
+
+  const side = (
+    <>
+      <PaperPreview
+        title={t('slidesTitle')}
+        subtitle={`${topic.trim() || t('selectLesson')} · ${uiLang === 'ar' ? grades[gradeIdx].nameAr : grades[gradeIdx].name}`}
+        rows={preview.rows.map(r => ({ n: r.n, tag: r.type ? previewT(r.type === 'exitTicket' && wideScope.isWide ? 'genDeckExitTicketRevision' : DECK_SECTION_LABEL_KEY[r.type]) : null }))}
+        more=""
+        footer={[uiLang === 'ar' ? grades[gradeIdx].nameAr : grades[gradeIdx].name, subjectNames[subjectIdx]!]}
+        note={t('genPreviewDeckNote')}
+        accent={ACCENT}
+        nameLine={false}
+      />
+      {action(false)}
+    </>
   );
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={{ paddingBottom: 60, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
+        contentContainerStyle={{ paddingBottom: DOCKED_BAR_HEIGHT + SPACE.xxl + insets.bottom, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <ToolHeader topPad={topPad} isRTL={isRTL} title={t('slidesTitle')} subtitle={t('slidesSubtitle')} concept="slides" />
-
-        <View style={styles.form}>
-          <PickerField label={t('grade')} value={uiLang === 'ar' ? grades[gradeIdx].nameAr : grades[gradeIdx].name} options={grades.map(g => (uiLang === 'ar' ? g.nameAr : g.name))} onChange={setGradeIdx} hidden={teacherScope.gradeHidden} colors={colors} isRTL={isRTL} accent={ACCENT} maxHeight={220} selectedTint={ACCENT + '15'} />
-          <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t(teacherScope.strandedNoteKey(grades[gradeIdx].id, subjectIdx))} isRTL={isRTL} colors={colors} />
-          <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} hidden={subjectHidden} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} maxHeight={220} selectedTint={ACCENT + '15'} />
-
-          <TopicSelector
-            subjectId={subjects[subjectIdx].id}
-            gradeId={grades[gradeIdx].id}
-            value={topic}
-            onChange={v => { setTopic(v); setError(''); setValidationError(''); }}
-            onSelectionDetail={pickedLesson.onSelectionDetail}
-            allowedKinds={['lesson', 'unit', 'semester', 'book']}
-            onScopeChange={wideScope.setScopeSel}
-            offlineWideScope
-            lang={lang}
-            isRTL={isRTL}
-            colors={colors}
-            accent={ACCENT}
-            hasError={!!validationError && !topic}
-            t={t}
-          />
-
-          {/* Directly under the lesson picker, because that is what these
-              attach to: pin a video to «الاشتقاق» once and every future deck
-              for that lesson carries it — and so does Class Mode, which has
-              read this store all along. */}
-          {/* Keyed by the topic string: for a wide scope that is the label, shared
-              by every grade's «الكتاب كاملًا». Nothing to pin to. */}
-          {!wideScope.isWide && <LessonResources topic={topic.trim()} onChange={setAttached} />}
-          <LessonAttachments lessonId={groundedLessonId} onChange={setUploadedAttachments} />
-          <LessonLabItems lessonId={groundedLessonId} isAr={isAr} picks={labPicks} onChange={setLabPicks} />
-
-          <View style={{ gap: 10, marginBottom: 18 }}>
-            {/* A wide deck has no book examples and takes no attachments (see generate). */}
-            {!wideScope.isWide && (
-              <Toggle label={t('slidesIncludeExamples')} value={includeExamples} onChange={setIncludeExamples} />
-            )}
-            <Toggle label={t('slidesIncludePractice')} value={includePractice} onChange={setIncludePractice} />
-            {hasAttachments && !wideScope.isWide ? (
-              <Toggle label={t('slidesIncludeAttachments')} value={includeAttachments} onChange={setIncludeAttachments} />
-            ) : null}
-          </View>
-
-          {/*
-            Validation errors (no topic, no curriculum for this scope, a topic
-            from another subject) stay here, next to the form they are about.
-            Generation failures go to GenerationStatus, beside the spinner they
-            replace — its Retry would only fail a validation the same way.
-          */}
-          {validationError ? (
-            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
-              {validationError}
-            </Text>
-          ) : null}
-
-          <Button
-            label={loading ? t('slidesBuilding') : t('slidesBuild')}
-            onPress={() => generate()}
-            loading={loading}
-            fullWidth
-          />
-          {/* The free-prompt deck used to be its own card beside this one, with a
-              near-identical name. It is the same output from a different start. */}
-          <Pressable
-            // Carry the typed topic across: the prompt screen reads it as its
-            // opening prompt, so the teacher does not retype what they just wrote.
-            onPress={() => router.push({ pathname: '/ai-tools/prompt-slides', params: topic.trim() ? { prompt: topic.trim() } : {} })}
-            accessibilityRole="link"
-            hitSlop={8}
-            style={{ alignSelf: 'center', marginTop: 14 }}
-          >
-            <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
-              {t('slidesFromPromptLink')}
-            </Text>
-          </Pressable>
+        {/* The wrapper only gives the refusal scroll an origin to measure from. */}
+        <View ref={contentTopRef} collapsable={false}>
+          <ToolHeader topPad={topPad} isRTL={isRTL} title={t('slidesTitle')} subtitle={t('slidesSubtitle')} concept="slides" />
         </View>
 
+        <View style={{ padding: isDesktop ? SPACE.xxl : SPACE.xl }}>
+          <GeneratorLayout form={form} side={side} isDesktop={isDesktop} />
+        </View>
+
+        {/* The wrapper only records where this sits, for the scroll above. */}
+        <View onLayout={e => { statusY.current = e.nativeEvent.layout.y; }}>
         <GenerationStatus
-          phase={loading ? 'loading' : cancelled ? 'cancelled' : error ? 'error' : 'idle'}
+          phase={statusPhase}
           loadingLabel={preliminary ? t('slidesBuildingRest') : t('slidesBuilding')}
           errorDetail={error}
           onCancel={cancelGenerate}
@@ -1077,9 +1232,10 @@ export default function SlidesScreen() {
           colors={colors}
           isRTL={isRTL}
           lang={uiLang}
-          accent={ACCENT}
+          accent={accentInk}
           t={t}
         />
+        </View>
 
         {deck && (!loading || preliminary) && (
           // One switch for the whole block: while the draft is on screen
@@ -1128,10 +1284,10 @@ export default function SlidesScreen() {
                     <Ionicons
                       name={v.anySymbolic ? 'shield-checkmark' : 'library-outline'}
                       size={14}
-                      color={v.anySymbolic ? palette.success : colors.mutedForeground}
+                      color={v.anySymbolic ? colors.success : colors.mutedForeground}
                     />
                     <Text style={[styles.verifyText, {
-                      color: v.anySymbolic ? palette.success : colors.mutedForeground,
+                      color: v.anySymbolic ? colors.success : colors.mutedForeground,
                       textAlign: isRTL ? 'right' : 'left',
                     }]}>
                       {v.anySymbolic
@@ -1191,6 +1347,7 @@ export default function SlidesScreen() {
 
         {deck && !loading && <FeedbackWidget materialType="slides" toolId="slides" />}
       </ScrollView>
+      {isDesktop ? null : action(true)}
 
       <SlideEditModal
         editor={editor}
@@ -1201,15 +1358,23 @@ export default function SlidesScreen() {
         t={t}
       />
 
-      <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
+      <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} bottomOffset={toastBottom} />
     </View>
   );
 }
 
+/**
+ * The shared dropdown, for the two long lists (grade, subject), with the selected
+ * row tinted with the `accent` it is given (the tool's ink) so it is not the fixed
+ * teal of the default.
+ */
+function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
+  const row = selectedRow(props.accent, props.colors.card);
+  return <SharedPickerField selectedTint={row.fill} {...props} accent={row.ink} />;
+}
+
 const styles = StyleSheet.create({
-  form: { padding: 20 },
-  toggle: { alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1.5 },
-  toggleText: { fontSize: 13 },
+  promptLink: { alignSelf: 'center', alignItems: 'center', justifyContent: 'center', minHeight: 44, paddingHorizontal: SPACE.lg },
   previewCard: { borderWidth: 1, padding: 16, marginBottom: 12 },
   previewTitle: { fontSize: 17, marginBottom: 4 },
   previewMeta: { fontSize: 12 },
