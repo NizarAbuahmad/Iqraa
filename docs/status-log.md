@@ -10,6 +10,28 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat app-help, twenty-second live pass: 10 more wordings for answers that already existed — 2026-10-24
+
+A 30-question pass on app.iqrra.com found 10 questions answered by the model or a bare tool card
+for which the app already had a written answer: what «جاهزية الدرس» means and preparing
+tomorrow's lesson (`howLessonPrep`), sending a homework to one class (`howAddHomework`, which is
+per class), which students have not handed in a homework (`howHomeworkDone`, which shows a count
+and not names), a class's performance on one objective (`howExamAnalysis`), asking students to
+retake an exam (`howExamRetake`: the teacher cannot open it, the student retakes), scanning a
+handwritten sheet (`howClassScan`), adding a question by hand to an exam draft
+(`howEditExamQuestions`), speaker notes (`howSlideNotes`, which says there is no field) and
+reviewing the English book's words (`howEnglishCorner`). No new answer strings; wordings added to
+existing rule ids in `appHelp.ts`, pinned in `appHelp.test.ts` with near-misses that stay with
+the model.
+
+**Left out on purpose** (an existing answer is close but not the one asked, or I did not verify
+the feature): «أرسل ملاحظة لولي أمر طالب معين» (a 17th-pass near-miss that must stay with the
+model), pinning a lesson to the top, reordering exam questions, saving an exam as a draft,
+renaming a saved file, putting a library picture on a slide, a timer for an activity,
+showing slides on a TV, a trial class in the timetable, switching between schools, listing the
+lessons not yet prepared, publishing an exam to a subset of students, and grading a student's
+homework (the model answers it as marking advice).
+
 ## Chat app-help, twenty-first live pass: 19 more wordings for answers that already existed — 2026-10-24
 
 A 30-question pass on app.iqrra.com found 19 questions answered by the model, or by a bare
