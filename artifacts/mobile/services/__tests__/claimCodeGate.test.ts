@@ -77,6 +77,7 @@ describe('claimErrorKey', () => {
     assert.equal(claimErrorKey('claim_parent_needs_student_code'), 'claimParentNeedsOwnCode');
     // A child can have only so many parent accounts; the teacher removes one to make room.
     assert.equal(claimErrorKey('claim_guardian_limit'), 'claimGuardianLimit');
+    assert.equal(claimErrorKey('claim_pending_limit'), 'claimPendingLimit');
   });
 
   it('falls back to a generic message for an unknown code', () => {
