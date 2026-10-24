@@ -53,9 +53,12 @@ A teacher's review of the English corner (Grades 2–5), with three phone record
   sampled live clips. **The older clips were reprocessed the same day** (before that the manifest listed none of the 1,248 at
   process version 1; #1262's measurements on them were local only): `english-audio --reprocess` with no `--only` — 1,046
   reprocessed, 201 skipped (already done), 29.50 MB → 5.90 MB, every replaced original backed up under
-  `english-audio-original/`, and `_manifest.json` now has 1,247 entries, all at version 1.
-  **One clip was rejected and left as stored: `tie` is still blank** (0.36 s at −91 dB, the recording the #1262 audit found), so
-  «tie» plays silence in the app. Re-voice it with `--only tie` and check it.
+  `english-audio-original/`, and `_manifest.json` then had 1,247 entries, all at version 1.
+  **One clip was rejected and left as stored: `tie` was blank** (0.36 s at −91 dB, the recording the #1262 audit found), so
+  «tie» played silence in the app. **Fixed the same day** with `english-audio --only tie` (first take accepted; the blank one
+  is backed up): live `tie.mp3` is 0.75 s (0.54 s of speech), −25.7 dB mean, ~40 kbps, faster-whisper `small.en` reads «tie»,
+  and the manifest now has all 1,248 entries at version 1. Heard by no one — «tie» is a one-syllable word the model has
+  already said wrongly once as silence, so a listener should confirm it.
   Sample of 28 live clips (20 random older ones plus `tie` and the October re-voices `chair`, `cheap`, `hippo`, `pea`, `chef`,
   and `eraser`, `mum`): all trimmed (0.6–1.2 s) and at −25 to −26 dB mean. faster-whisper `small.en` flagged 5: `tie` (blank),
   and `bedroom` («Dead Room»), `pea` («P»), `socks` («Sucks») — which read the same way on the untouched originals, so they
