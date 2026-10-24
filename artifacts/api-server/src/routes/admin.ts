@@ -29,6 +29,7 @@ import { RATE_LIMITS } from "../lib/rateLimit.js";
 import { parseSchoolAssignment, parseSchoolIdFilter, parseSchoolInput } from "../lib/adminSchools.js";
 import { parseDateRange, parseMetricInput, parsePublicIdea, parseSiteSignup, siteKeyMatches, toCsv, UUID } from "../lib/adminMetrics.js";
 import { notifyAdminsOfWaitlistSignup } from "../lib/adminNotify.js";
+import { fetchSubscriberCount } from "../lib/youtubeSubscribers.js";
 import { sendAppInviteEmail } from "../lib/email.js";
 import { isValidEmailAddress } from "../lib/emailAddress.js";
 import {
@@ -544,8 +545,39 @@ router.post(
   },
 );
 
-/** GET /admin/metrics — every hand-entered growth number, oldest first per key. */
+let youtubeTriedAt = 0;
+
+/**
+ * Today's YouTube subscriber count, fetched the first time an admin opens the
+ * dashboard each day — no scheduler to run, and a day nobody looks is a gap in
+ * a chart nobody saw. A number an admin already typed for today is kept, and a
+ * failed lookup is not retried for 30 minutes so a bad key costs one 4 s wait,
+ * not one per page load. Never throws: the dashboard loads without it.
+ */
+async function refreshYoutubeMetric(): Promise<void> {
+  const apiKey = process.env["YOUTUBE_API_KEY"];
+  if (!apiKey || Date.now() - youtubeTriedAt < 30 * 60 * 1000) return;
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const [have] = await db
+      .select({ id: manualMetrics.id })
+      .from(manualMetrics)
+      .where(and(eq(manualMetrics.key, "youtube"), eq(manualMetrics.recordedOn, today)))
+      .limit(1);
+    if (have) return;
+    youtubeTriedAt = Date.now();
+    const value = await fetchSubscriberCount(apiKey);
+    if (value == null) return;
+    await db.insert(manualMetrics).values({ key: "youtube", value, recordedOn: today }).onConflictDoNothing();
+  } catch {
+    // Deliberately no `err` in the log: the request URL carries the API key.
+    logger.warn("youtube subscriber refresh failed");
+  }
+}
+
+/** GET /admin/metrics — every growth number, oldest first per key. YouTube fills itself; the rest are typed in. */
 router.get("/admin/metrics", authMiddleware, requireRole(...ADMIN_ROLES), async (_req, res) => {
+  await refreshYoutubeMetric();
   try {
     const rows = await db
       .select({ key: manualMetrics.key, value: manualMetrics.value, date: manualMetrics.recordedOn })
