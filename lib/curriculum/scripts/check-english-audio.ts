@@ -23,14 +23,18 @@
  *                      for clips that changed. Saved every 100 clips, on Ctrl+C and when
  *                      the API stops the run.
  *   --refresh          ignore the cache (transcribe everything again; the new transcripts
- *                      replace the old ones, other cache entries are kept)
+ *                      replace the old ones, a clip that now comes back silent loses its
+ *                      old one, other cache entries are kept)
  *   --out <file>       the report, default ./english-audio-check.report.md; the same
  *                      report is written as JSON beside it (.json)
- *   --fail-on-mismatch exit 1 when anything is a mismatch or silent (for a release check)
+ *   --fail-on-mismatch exit 1 when anything is a mismatch or silent, or could not be
+ *                      checked at all (an error row): for a release check, where an
+ *                      unchecked clip is not a pass
  *
- * Exit code: 0; 1 with --fail-on-mismatch and a mismatch/silent; 2 for a refusal (no key,
- * a bad flag, or the API answering 401/403, which stops the run once and leaves a PARTIAL
- * report and the cache).
+ * Exit code: 0; 1 with --fail-on-mismatch and a mismatch, silent or error row; 2 for a
+ * refusal (no key, a bad flag, or the API refusing every request: 401/403, an unknown
+ * model or endpoint, an exhausted quota; the run stops once and leaves a PARTIAL report
+ * and the cache).
  *
  * Key: `OPENAI_API_KEY`, from the environment or the repo-root `.env` (as the generator
  * does). An empty one or the `sk-your…` placeholder is refused. The key is never printed,
@@ -53,11 +57,13 @@
  *    endings can land a different word there (number/numb).
  *  - The first full run is about 4,600 requests and costs money. `PRICE_PER_MINUTE_USD`
  *    holds LIST prices as of 2026-10: check OpenAI's pricing page before a big run. The
- *    dry-run estimate assumes 128 kbps, an upper bound for the 40 kbps clips.
+ *    dry-run estimate assumes 40 kbps, the lowest bitrate in the bucket: a lower bitrate
+ *    holds MORE seconds in the same bytes, so for any clip (the first 201 are 128 kbps and
+ *    shorter than their bytes suggest at 40) it can only over-count.
  *  - The public r2.dev link rate-limits; the fetch inherits the audit's backoff. Node's
  *    `fetch` may ignore `HTTPS_PROXY`; behind a proxy run with `NODE_USE_ENV_PROXY=1`.
  */
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { constants, copyFileSync, existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -66,11 +72,14 @@ import {
   StopRun,
   checkClips,
   estimateCostUsd,
+  isPlausibleApiKey,
+  mergeRefreshed,
   onlyLine,
   parseSpeechCache,
   renderReportMarkdown,
   secondsFromBytes,
   serializeSpeechCache,
+  shouldStopRun,
   summarizeResults,
   type CheckResult,
   type SpeechCache,
@@ -93,6 +102,8 @@ const OPENAI_BASE = (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1')
 /** Generic on purpose: it must not name the expected text. */
 const GENERIC_PROMPT = 'An English vocabulary word or sentence, spoken with a British accent.';
 const DEFAULT_MODEL = 'gpt-4o-transcribe';
+const CLIP_TIMEOUT_MS = 30_000;
+const TRANSCRIBE_TIMEOUT_MS = 60_000;
 const FETCH_CONCURRENCY = 6; // HEAD requests in --dry-run
 const CHECK_CONCURRENCY = 3; // downloads + transcriptions in flight
 const TRANSCRIBE_ATTEMPTS = 5;
@@ -203,7 +214,7 @@ if (dryRun) {
   const seconds = secondsFromBytes(bytes);
   const cost = estimateCostUsd(seconds, model);
   console.log(`  would be sent: ${present.length} present, ${missing} missing from the bucket${errors ? `, ${errors} could not be checked (re-run)` : ''}`);
-  console.log(`  total ${(bytes / 1048576).toFixed(2)} MB, at most ${(seconds / 60).toFixed(1)} min of audio (assuming 128 kbps; the 40 kbps clips are shorter than this)`);
+  console.log(`  total ${(bytes / 1048576).toFixed(2)} MB, at most ${(seconds / 60).toFixed(1)} min of audio (assuming 40 kbps, the lowest bitrate in the bucket, so no more than this)`);
   console.log(
     cost === null
       ? `  cost with ${model}: price unknown for this model`
@@ -220,6 +231,11 @@ const apiKey = (process.env.OPENAI_API_KEY ?? '').trim();
 if (!apiKey || apiKey.startsWith('sk-your')) {
   fail('OPENAI_API_KEY is not set (or is still the placeholder) in the environment or the repo-root .env. Use --dry-run to count without a key.');
 }
+// A space, line break, control or non-ASCII character in the key makes `fetch` throw an error
+// that carries the whole header value. Refuse it here, without saying anything about the key.
+if (!isPlausibleApiKey(apiKey)) {
+  fail('OPENAI_API_KEY has a character that cannot be in a key (a space, line break, control or non-ASCII character). Check the environment or the repo-root .env.');
+}
 
 /** Text from the API or the network for printing: the key and anything shaped like one removed. */
 function scrub(text: string): string {
@@ -229,7 +245,7 @@ function scrub(text: string): string {
 // ─── The real dependencies ────────────────────────────────────────────────
 
 async function fetchClip(item: AudioItem) {
-  const res = await requestWithBackoff(clipUrl(item), 'GET');
+  const res = await requestWithBackoff(clipUrl(item), 'GET', { timeoutMs: CLIP_TIMEOUT_MS });
   if (res.status === 404) {
     await res.body?.cancel();
     return 'missing' as const;
@@ -248,30 +264,41 @@ let requestsSent = 0;
 
 async function transcribe(bytes: Uint8Array, item: AudioItem): Promise<string> {
   const form = new FormData();
-  form.append('file', new Blob([new Uint8Array(bytes)], { type: 'audio/mpeg' }), `${item.slug}.mp3`);
+  form.append('file', new Blob([new Uint8Array(bytes)], { type: 'audio/mpeg' }), 'clip.mp3');
   form.append('model', model);
   form.append('language', 'en');
   form.append('response_format', 'json');
   form.append('temperature', '0');
   form.append('prompt', GENERIC_PROMPT);
   requestsSent += 1;
-  const res = await requestWithBackoff(`${OPENAI_BASE}/audio/transcriptions`, 'POST', {
-    headers: { Authorization: `Bearer ${apiKey}` },
-    body: form,
-    maxAttempts: TRANSCRIBE_ATTEMPTS,
-  });
+  let res: Response;
+  try {
+    res = await requestWithBackoff(`${OPENAI_BASE}/audio/transcriptions`, 'POST', {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      body: form,
+      maxAttempts: TRANSCRIBE_ATTEMPTS,
+      timeoutMs: TRANSCRIBE_TIMEOUT_MS,
+    });
+  } catch (e) {
+    // A transport error can quote what it was given (a header value); nothing of it gets out unscrubbed.
+    throw new Error(scrub(String((e as { message?: unknown } | null)?.message ?? e)));
+  }
   if (!res.ok) {
     const body = await res.text().catch(() => '');
     let reason = '';
+    let code: string | undefined;
     try {
-      reason = (JSON.parse(body) as { error?: { message?: unknown } }).error?.message as string;
+      const err = (JSON.parse(body) as { error?: { message?: unknown; code?: unknown } }).error;
+      if (typeof err?.message === 'string') reason = err.message;
+      if (typeof err?.code === 'string') code = err.code;
     } catch {
       // not JSON
     }
-    if (typeof reason !== 'string') reason = '';
-    // A bad key, a missing scope or a project without the model fails every clip the same
-    // way: stop once, with OpenAI's reason, instead of thousands of errors.
-    if (res.status === 401 || res.status === 403) throw new StopRun(scrub(`transcription API ${res.status}: ${reason || 'refused'}`));
+    // A refused key, a missing model or an exhausted quota fails every clip the same way:
+    // stop once, with OpenAI's reason, instead of thousands of error rows.
+    if (shouldStopRun(res.status, code)) {
+      throw new StopRun(scrub(`transcription API ${res.status}${code ? ` (${code})` : ''}: ${reason || 'refused'}`));
+    }
     throw new Error(scrub(`transcription API ${res.status}: ${reason || body.slice(0, 200)}`));
   }
   const json = (await res.json().catch(() => null)) as { text?: unknown } | null;
@@ -284,7 +311,18 @@ async function transcribe(bytes: Uint8Array, item: AudioItem): Promise<string> {
 let stored: SpeechCache = {};
 if (existsSync(cachePath)) {
   try {
-    stored = parseSpeechCache(readFileSync(cachePath, 'utf8'));
+    const raw = readFileSync(cachePath, 'utf8');
+    stored = parseSpeechCache(raw);
+    // Something is in the file but none of it is a cache (an old format, a damaged file, the
+    // wrong file): saving would replace it, so keep a copy once.
+    if (Object.keys(stored).length === 0 && raw.trim() !== '' && raw.trim() !== '{}') {
+      try {
+        copyFileSync(cachePath, `${cachePath}.bak`, constants.COPYFILE_EXCL);
+        console.error(`${cachePath} holds no transcripts that could be read; a copy is kept as ${cachePath}.bak before it is replaced.`);
+      } catch {
+        console.error(`${cachePath} holds no transcripts that could be read; it will be replaced (${cachePath}.bak already exists).`);
+      }
+    }
   } catch (err) {
     console.error(`could not read ${cachePath} (${(err as Error).message}); starting without it.`);
   }
@@ -292,10 +330,17 @@ if (existsSync(cachePath)) {
 /** What the run reads and updates in place: empty with --refresh, so nothing is reused. */
 const working: SpeechCache = refresh ? {} : stored;
 
-function saveCache(): void {
+/**
+ * Atomic (written beside, then renamed over), so a kill mid-write cannot leave half a cache.
+ * With --refresh the new transcripts replace the old ones and entries for other clips stay;
+ * `results` (the finished run) also lets a clip that came back silent drop its stale one.
+ */
+function saveCache(results?: CheckResult[]): void {
   try {
-    // --refresh: the new transcripts replace the old ones; entries for other clips stay.
-    writeFileSync(cachePath, serializeSpeechCache(refresh ? { ...stored, ...working } : stored));
+    const tmp = `${cachePath}.tmp`;
+    const out = refresh ? (results ? mergeRefreshed(stored, working, results) : { ...stored, ...working }) : stored;
+    writeFileSync(tmp, serializeSpeechCache(out));
+    renameSync(tmp, cachePath);
   } catch (err) {
     console.error(`could not write ${cachePath}: ${(err as Error).message}`);
   }
@@ -309,8 +354,17 @@ process.on('SIGINT', () => {
 
 // ─── Run ──────────────────────────────────────────────────────────────────
 
+/** Only the host of a URL, for the banner: where the clips go, never a path or a credential. */
+function hostOf(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return '(not a valid URL)';
+  }
+}
+
 console.log(
-  `${selected.length} of ${plan.length} recordings selected — model ${model}, clips from ${AUDIO_BASE}/` +
+  `${selected.length} of ${plan.length} recordings selected — model ${model} via ${hostOf(OPENAI_BASE)}, clips from ${AUDIO_BASE}/` +
     (refresh ? ', cache ignored (--refresh)' : `, ${Object.keys(stored).length} transcripts cached`),
 );
 
@@ -326,9 +380,8 @@ const run = await checkClips(selected, {
     }
   },
 });
-saveCache();
-
 const { results, stopped } = run;
+saveCache(results);
 // `results` may be shorter than `selected` after a stop; `stopped` decides, never the length.
 const partial = stopped;
 /** Why it stopped, without a trailing full stop (the API's own message ends with one). */
@@ -375,6 +428,7 @@ writeFileSync(jsonPath, JSON.stringify(report, null, 2) + '\n');
 
 console.log('');
 for (const line of summarizeResults(results)) console.log(line);
+if (partial) console.log(`\nPARTIAL: stopped after ${results.length} of ${selected.length} (${stopText}).`);
 
 const problems = results.filter((r: CheckResult) => r.verdict === 'mismatch' || r.verdict === 'silent');
 if (problems.length) {
@@ -384,10 +438,9 @@ if (problems.length) {
   }
   if (problems.length > SHOWN_PROBLEMS) console.log(`  … and ${problems.length - SHOWN_PROBLEMS} more in the report`);
   console.log(`\nre-voice them, after listening:\n  ${only}`);
-} else if (!partial) {
-  console.log('\nnothing needs a listen.');
 }
 const errored = results.filter(r => r.verdict === 'error');
+if (problems.length === 0 && errored.length === 0 && !partial) console.log('\nnothing needs a listen.');
 if (errored.length) {
   console.log(`\n${errored.length} could not be checked (re-run to retry): ${errored.slice(0, 5).map(r => `${r.item.slug}: ${r.detail ?? ''}`).join('; ')}`);
 }
@@ -400,6 +453,6 @@ if (partial) {
       `The report above is PARTIAL (${results.length} of ${selected.length} checked); the cache keeps what was paid for.`,
   );
   process.exitCode = 2;
-} else if (failOnMismatch && problems.length > 0) {
+} else if (failOnMismatch && problems.length + errored.length > 0) {
   process.exitCode = 1;
 }

@@ -245,14 +245,59 @@ export function estimateCostUsd(totalSeconds: number, model: string): number | n
   return (seconds / 60) * (PRICE_PER_MINUTE_USD[model] as number);
 }
 
-/** Clips made before the 40 kbps processing were 128 kbps: an upper bound on seconds. */
-export const ASSUMED_KBPS = 128;
+/**
+ * The clips in the bucket are 40 kbps (processed) or 128 kbps (the first 201, as the model
+ * returned them). The lower the bitrate, the MORE seconds the same bytes hold, so 40 is the
+ * assumption that can only over-count: an upper bound on seconds and on cost. (128 would
+ * under-count the processed clips by a factor of 3: apples.mp3, 4,437 bytes, is 0.84 s.)
+ */
+export const ASSUMED_KBPS = 40;
 
 export function secondsFromBytes(bytes: number, kbps: number = ASSUMED_KBPS): number {
   return (bytes * 8) / (kbps * 1000);
 }
 
+// ─── The API ───────────────────────────────────────────────────────────────
+
+/**
+ * A key that can go in an `Authorization` header: printable ASCII with no space, so no
+ * control character, line break or non-ASCII letter. Anything else makes `fetch` throw an
+ * error that carries the header value, which must never reach a screen or a report.
+ */
+export function isPlausibleApiKey(key: string): boolean {
+  return /^[!-~]+$/.test(key);
+}
+
+/**
+ * Whether a refusal from the transcription API will be the same for every clip, so the run
+ * should stop once instead of filling the report with errors: a refused key (401/403), an
+ * unknown endpoint or model (404, `model_not_found`) and an exhausted quota (429 with code
+ * `insufficient_quota`; an ordinary 429 is a rate limit and is waited out).
+ */
+export function shouldStopRun(status: number, code: string | undefined): boolean {
+  if (status === 401 || status === 403 || status === 404) return true;
+  if (code === 'model_not_found') return true;
+  return status === 429 && code === 'insufficient_quota';
+}
+
 // ─── Cache ─────────────────────────────────────────────────────────────────
+
+/**
+ * The cache to save after a `--refresh` run. A refreshed clip's new transcript replaces the
+ * old one, and one that came back silent (so was not cached) drops the stale transcript
+ * instead of letting it survive; an error, a missing clip or a clip the run never reached
+ * keeps what it had, and so does every clip the run did not select.
+ */
+export function mergeRefreshed(stored: SpeechCache, fresh: SpeechCache, results: CheckResult[]): SpeechCache {
+  const merged: SpeechCache = { ...stored };
+  for (const r of results) {
+    if (r.verdict === 'error' || r.verdict === 'missing') continue;
+    const slug = r.item.slug;
+    if (Object.hasOwn(fresh, slug)) merged[slug] = fresh[slug] as CacheEntry;
+    else delete merged[slug];
+  }
+  return merged;
+}
 
 export interface CacheEntry {
   size: number;

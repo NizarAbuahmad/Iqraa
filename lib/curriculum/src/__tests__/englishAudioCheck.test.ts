@@ -10,12 +10,15 @@ import {
   checkClips,
   compareSpoken,
   estimateCostUsd,
+  isPlausibleApiKey,
+  mergeRefreshed,
   normalizeSpoken,
   onlyLine,
   parseSpeechCache,
   renderReportMarkdown,
   secondsFromBytes,
   serializeSpeechCache,
+  shouldStopRun,
   summarizeResults,
 } from '../englishAudioCheck.ts';
 import type { CacheEntry, CheckDeps, CheckResult, SpeechCache } from '../englishAudioCheck.ts';
@@ -316,12 +319,17 @@ describe('cost estimate', () => {
   it('lists the three models with their list prices', () => {
     assert.deepEqual(PRICE_PER_MINUTE_USD, { 'gpt-4o-transcribe': 0.006, 'gpt-4o-mini-transcribe': 0.003, 'whisper-1': 0.006 });
   });
-  it('reads seconds off a size at the assumed bitrate', () => {
-    assert.equal(ASSUMED_KBPS, 128);
-    assert.equal(secondsFromBytes(16000), 1);
-    assert.equal(secondsFromBytes(16000, 128), 1);
+  it('reads seconds off a size at the assumed bitrate: 40 kbps, the lowest in the bucket, so an upper bound', () => {
+    assert.equal(ASSUMED_KBPS, 40);
+    assert.equal(secondsFromBytes(5000), 1);
+    assert.equal(secondsFromBytes(16000), 3.2);
     assert.equal(secondsFromBytes(5000, 40), 1);
+    assert.equal(secondsFromBytes(16000, 128), 1);
     assert.equal(secondsFromBytes(0), 0);
+    // A measured clip: apples.mp3 is 4,437 bytes and 0.84 s long (ffprobe).
+    assert.ok(secondsFromBytes(4437) >= 0.84);
+    // Any clip made at a higher bitrate is shorter for the same bytes, so 40 kbps never under-counts.
+    assert.ok(secondsFromBytes(4437) >= secondsFromBytes(4437, 128));
   });
 });
 
@@ -847,5 +855,66 @@ describe('renderReportMarkdown', () => {
   it('never carries a key or the key placeholder', () => {
     assert.ok(!md.includes('sk-'));
     assert.ok(!md.includes('OPENAI_API_KEY'));
+  });
+});
+
+describe('isPlausibleApiKey', () => {
+  it('accepts a printable ASCII token', () => {
+    assert.equal(isPlausibleApiKey('sk-proj-AbC_123-xyz'), true);
+    assert.equal(isPlausibleApiKey('smoke-test-key'), true);
+  });
+  it('refuses empty, spaces, control characters, line breaks and non-ASCII', () => {
+    assert.equal(isPlausibleApiKey(''), false);
+    assert.equal(isPlausibleApiKey('sk-abc def'), false);
+    assert.equal(isPlausibleApiKey('sk-abc\ndef'), false);
+    assert.equal(isPlausibleApiKey('sk-abc\rdef'), false);
+    assert.equal(isPlausibleApiKey('sk-abc\tdef'), false);
+    assert.equal(isPlausibleApiKey('sk-abc' + String.fromCharCode(0) + 'def'), false);
+    assert.equal(isPlausibleApiKey('sk-abc' + String.fromCharCode(0x7f)), false);
+    assert.equal(isPlausibleApiKey('sk-abc\u00e9'), false);
+    assert.equal(isPlausibleApiKey('sk-abc\u2028def'), false);
+  });
+});
+
+describe('shouldStopRun', () => {
+  it('stops on a refused key, a missing model or endpoint, and an exhausted quota', () => {
+    assert.equal(shouldStopRun(401, undefined), true);
+    assert.equal(shouldStopRun(403, 'whatever'), true);
+    assert.equal(shouldStopRun(404, undefined), true);
+    assert.equal(shouldStopRun(400, 'model_not_found'), true);
+    assert.equal(shouldStopRun(429, 'insufficient_quota'), true);
+  });
+  it('does not stop on one bad clip or an ordinary rate limit', () => {
+    assert.equal(shouldStopRun(400, undefined), false);
+    assert.equal(shouldStopRun(400, 'invalid_request_error'), false);
+    assert.equal(shouldStopRun(413, undefined), false);
+    assert.equal(shouldStopRun(429, 'rate_limit_exceeded'), false);
+    assert.equal(shouldStopRun(429, undefined), false);
+    assert.equal(shouldStopRun(500, undefined), false);
+  });
+});
+
+describe('mergeRefreshed', () => {
+  const entry = (heard: string): CacheEntry => ({ size: 1, etag: 'e', heard });
+  const res = (slug: string, verdict: CheckResult['verdict']): CheckResult => ({ item: mk(slug), heard: '', verdict });
+  it('keeps entries for clips the run did not touch', () => {
+    const merged = mergeRefreshed({ a: entry('A'), b: entry('B') }, { a: entry('A2') }, [res('a', 'match')]);
+    assert.equal(merged['a']!.heard, 'A2');
+    assert.equal(merged['b']!.heard, 'B');
+  });
+  it('a refreshed clip that came back silent drops the stale transcript', () => {
+    const merged = mergeRefreshed({ a: entry('Old words'), b: entry('B') }, {}, [res('a', 'silent')]);
+    assert.equal('a' in merged, false);
+    assert.equal(merged['b']!.heard, 'B');
+  });
+  it('an error, a missing clip or a clip never reached keeps its old transcript', () => {
+    const stored = { a: entry('A'), b: entry('B'), c: entry('C') };
+    const merged = mergeRefreshed(stored, {}, [res('a', 'error'), res('b', 'missing')]);
+    assert.deepEqual(Object.keys(merged).sort(), ['a', 'b', 'c']);
+  });
+  it('does not change its inputs', () => {
+    const stored = { a: entry('Old') };
+    mergeRefreshed(stored, {}, [res('a', 'silent')]);
+    assert.equal(stored.a.heard, 'Old');
   });
 });

@@ -28,17 +28,27 @@ re-voices; it writes only a report and a cache, both git-ignored. No app, API, s
   («I am ten» / «I am two», «carrot» / «parrot», «bit» / «bet»), so those are `mismatch`. `close` rows go to a «Close: worth a
   glance» table; only `mismatch` and `silent` produce the `english-audio -- --only a,b,c` line.
 - **The model is never told the expected text** (it would agree with whatever it was told): `language=en`, `temperature=0`
-  and a generic prompt only. Model `gpt-4o-transcribe` by default.
+  and a generic prompt only, and the uploaded file is named `clip.mp3`, not the slug (the slug is the expected text).
+  Model `gpt-4o-transcribe` by default.
 - **Flags:** `--only a,b` (slugs or words), `--grade N`, `--source word|grammar`, `--limit N`, `--model`, `--cache <file>`,
-  `--refresh`, `--out <file>` (the same report as `.json` beside it), `--dry-run`, `--fail-on-mismatch`; an unknown flag, or
-  `--cache` and `--out` that would write the same file, is refused (exit 2).
+  `--refresh`, `--out <file>` (the same report as `.json` beside it), `--dry-run`, `--fail-on-mismatch` (exit 1 on a
+  mismatch, a silent clip **or a clip that could not be checked**); an unknown flag, or `--cache` and `--out` that would
+  write the same file, is refused (exit 2).
 - **Key.** `OPENAI_API_KEY` from the environment or the repo-root `.env` (as the generator does); empty or `sk-your…` is
-  refused (exit 2); never printed, logged or written to the report or the cache. A 401/403 stops the run once and prints
-  OpenAI's reason with the key (and anything shaped like one) removed. `OPENAI_BASE_URL` and `AUDIO_BASE_URL` override the two
-  endpoints (that is how it was smoke-tested).
+  refused (exit 2), and so is a key with a space, control, line-break or non-ASCII character (`isPlausibleApiKey`: `fetch`
+  would throw an error quoting the header value) with a message that says nothing about the key; never printed, logged or
+  written to the report or the cache. A 401/403, a 404 / `model_not_found` (a typo in `--model`) or a 429 with code
+  `insufficient_quota` stops the run once (`shouldStopRun`) and prints OpenAI's reason with the key (and anything shaped like
+  one) removed; an ordinary 429 is waited out, and any other 4xx is one `error` row. The quota 429 is retried (five attempts per
+  clip, a few seconds) before it stops. `OPENAI_BASE_URL` and `AUDIO_BASE_URL` override the two endpoints (that is how it was
+  smoke-tested); the banner names the transcription host. Each attempt has a timeout (60 s for the API, 30 s for a clip;
+  opt-in in `audioHttp.ts`, the audit passes none).
 - **A stopped run is PARTIAL.** `checkClips` can return fewer results than clips when the API refuses the key, so the
-  command decides from `stopped`, never from the length: the report is headed PARTIAL with how many of how many were checked,
-  the cache is still saved (it is also saved every 100 clips and on Ctrl+C), exit code 2.
+  command decides from `stopped`, never from the length: the report is headed PARTIAL with how many of how many were checked
+  (also as one line on stdout), the cache is still saved (it is also saved every 100 clips and on Ctrl+C), exit code 2.
+- **The cache is written atomically** (`<cache>.tmp`, then renamed); a cache file that has content but no readable
+  transcripts is copied once to `<cache>.bak` before it is replaced. `--refresh` replaces the transcripts of the clips it
+  re-heard, and a clip that now comes back silent loses its old one (`mergeRefreshed`).
 - **The fetch helper moved.** `retryAfterMs`, `backoffMs`, the request-with-backoff and the worker pool left
   `audit-english-audio.ts` for `scripts/audioHttp.ts`; both commands use it. `englishAudioLocation.test.ts` now also pins the
   check's default bucket URL to the app's.
@@ -52,15 +62,25 @@ the report, then the full run. A re-run pays only for clips whose size or ETag c
   real clips (`moon eraser chair apples pink friday`) and canned transcripts: 4 `match`, 1 `mismatch` («chair» heard as
   «Share.»), 1 `silent`, the `--only chair,pink` line, Markdown and JSON written, the request carried
   `language=en temperature=0 response_format=json` and the generic prompt and the `Authorization` header. A second run sent 1
-  clip to the transcriber (the silent one, which is not cached), 5 came from the cache; with the silent clip left out, 0.
+  clip to the transcriber (the silent one, which is not cached), 5 came from the cache; with the silent clip left out, 0. The
+  fake server saw the uploaded file named `clip.mp3` on every request (it told the clips apart by their bytes), so the request
+  carries neither the slug nor the expected text; the prompt is the generic one.
   `--refresh` sent 6. A server answering 429 with `Retry-After: 1` was waited out (12 requests for 6 clips, run ok in 3 s). A
   400 on one clip became one `error` row and the run went on. A server answering 401 stopped the run with exit 2, printed its
   message with the key replaced by `[key]`, the key appearing in no output, report or cache; a server that accepts 2 clips and
   then refuses gave a PARTIAL report «2 of 6», 2 cached transcripts, exit 2, and finishing against a good server then
   re-used those 2. `--dry-run` made no transcription request and needed no key. `--fail-on-mismatch` exits 1 on a mismatch and
   0 without; no key, the placeholder and bad flags exit 2.
-- The live bucket, read-only: `--dry-run --source word` found all 1,248 hub-word clips present (7.01 MB, at most 7.7 minutes
-  at an assumed 128 kbps, at most $0.046 at the list price).
+- Also offline, after review: keys with a line break, a tab, a space or a non-ASCII letter are refused (exit 2, no request
+  reached the server, nothing of the key printed); a 429 `insufficient_quota` and a 404 `model_not_found` each stop the run
+  with OpenAI's scrubbed message and a PARTIAL report; a `--refresh` where a clip now comes back silent drops its seeded
+  stale transcript; a cache file that is not a cache is copied to `.bak` and replaced, with no `.tmp` left; `--fail-on-mismatch`
+  exits 1 for a run whose only problem is an `error` row; an attempt that hangs is aborted at `timeoutMs` and retried.
+- The live bucket, read-only: `--dry-run --source word` found all 1,248 hub-word clips present (7.01 MB, **at most 24.5
+  minutes at an assumed 40 kbps, at most $0.147** at the list price). The first version assumed 128 kbps and printed 7.7
+  minutes and $0.046 as an «upper bound»; that was backwards: the same bytes hold MORE seconds at a lower bitrate, and the
+  processed clips are 40 kbps (apples.mp3: 4,437 bytes, 0.84 s by ffprobe). 40 is the lowest bitrate in the bucket, so the
+  estimate can only over-count. It is an estimate of seconds from bytes, not a measurement.
 - The keyless audit against the live bucket, before and after the helper move: **byte-identical output** (1,248 voiced, 3,383
   missing, 0 errors, of 4,631).
 
@@ -73,7 +93,9 @@ so there is nothing to check for them. Not in CI.
 recognisers forgive them. A mismatch means a person should listen, not that the clip is wrong (homophones, rare words such as
 «doughnut», «sitcom»). A **homophone group lets a wrong recording pass**: pair / pear / pare, flower / flour and plane / plain
 sound the same to the recogniser and are folded to one form. The `er` and `ing` suffix closes can land a different word in the
-Close table (number / numb). Contractions are not expanded («I'm» / «I am» differ), and «prise» / «prize» fold together.
+Close table (number / numb). Contractions are not expanded («I'm» / «I am» differ), and «prise» / «prize» fold together. Left as
+they are: Ctrl+C exits with `process.exit` after saving the cache; `--out x.json` names its JSON `x.json.json`; the
+`--cache`/`--out` collision check is case-sensitive.
 
 ## English audio on phones: clips are saved on the device and a lesson's clips are fetched ahead — 2026-10-24
 

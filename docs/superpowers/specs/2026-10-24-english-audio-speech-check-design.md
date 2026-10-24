@@ -35,8 +35,9 @@ level but cannot tell what was said.
 - **Input:** `audioPlan()` filtered by `--only a,b` (slugs or words), `--grade N`, `--source word|grammar`, `--limit N`; each
   clip is downloaded from the public base URL with the audit's backoff (`Retry-After` honoured and capped, concurrency 6).
   A clip that is missing from the bucket is reported as `missing`, not checked.
-- **Transcription:** `POST /v1/audio/transcriptions` (multipart, the MP3 as is), concurrency 3, retry on 429/5xx with backoff,
-  stop at the first 401/403 with OpenAI's reason (as the generator does). The API call sits behind an injectable
+- **Transcription:** `POST /v1/audio/transcriptions` (multipart, the MP3 as is, uploaded under the neutral name `clip.mp3`
+  because the slug is the expected text), concurrency 3, retry on 429/5xx with backoff, stop at the first 401/403, unknown
+  model/endpoint (404, `model_not_found`) or `insufficient_quota` with OpenAI's reason (as the generator does). The API call sits behind an injectable
   `transcribe(bytes, opts)` function so tests never touch the network.
 - **Comparison (pure, tested):** normalise both texts — lowercase; Unicode apostrophes to `'`; strip punctuation; hyphens and
   runs of spaces to one space; digits to number words and back (`5` ≡ `five`); British/American spelling pairs
@@ -89,7 +90,8 @@ No app, server, schema or migration change; nothing is uploaded; no new dependen
 - The `er` and `ing` inflection endings can make `close` land a different word (number / numb); the Close table is
   for a glance, not a verdict.
 - `PRICE_PER_MINUTE_USD` holds list prices as of 2026-10; check OpenAI's page before a big run. The dry-run estimate
-  assumes 128 kbps, which is an upper bound for the 40 kbps clips.
+  assumes 40 kbps, the lowest bitrate in the bucket (a lower bitrate holds more seconds in the same bytes), so it can only
+  over-count; the live 1,248 hub words come to at most 24.5 minutes and $0.147.
 - A transcript with nothing in it is not cached, so a re-run asks about a silent clip again (it costs a fraction of a
   cent and may be a transient failure).
 - The first full run costs money and time (about 4,600 requests); the cache and `--dry-run` exist for that.

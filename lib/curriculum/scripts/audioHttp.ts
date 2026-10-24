@@ -33,6 +33,11 @@ export interface RequestOptions {
   headers?: Record<string, string>;
   /** Sent on every attempt, so it must be re-sendable (a string, `FormData`, a `Blob`). */
   body?: NonNullable<Parameters<typeof fetch>[1]>['body'];
+  /**
+   * Opt-in, per attempt (headers and body both): an attempt that takes longer is aborted
+   * and retried like any other transport failure. Off by default, so the audit is unchanged.
+   */
+  timeoutMs?: number;
 }
 
 /**
@@ -49,7 +54,12 @@ export async function requestWithBackoff(
   for (let attempt = 0; ; attempt += 1) {
     let res: Response;
     try {
-      res = await fetch(url, { method, headers: opts.headers, body: opts.body });
+      res = await fetch(url, {
+        method,
+        headers: opts.headers,
+        body: opts.body,
+        signal: opts.timeoutMs ? AbortSignal.timeout(opts.timeoutMs) : undefined,
+      });
     } catch (err) {
       if (attempt >= maxAttempts - 1) throw err;
       await sleep(backoffMs(attempt));
