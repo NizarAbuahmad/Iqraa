@@ -63,6 +63,82 @@ object (existing behaviour, three more callers now). (7) **Rollout:** installed 
 to the code screen on the next `/auth/me`; teachers see the banner only on a build that has this change, and
 the `production` OTA is manual.
 
+## Printed grammar forms fit the page, the sign-off no longer covers rows, and True or false says right or wrong without pictures — 2026-10-24
+
+Four small fixes found while building Grade 10 grammar (#1235); none changes a sentence, and no `-sheet.md` changed.
+
+- **The printed forms clipped.** The forms are right-to-left and their tables are `nowrap`, so in A4 landscape the
+  widest row set the table width and the last columns were cut off the left edge of the page. Measured in
+  Chromium print media at 1032 px (cell edge off the page before → after): Grade 3 38 → 0 px (a third of the notes
+  column), Grade 4 726 → 0 (tick, notes and yes/no columns), Grade 5 403 → 0 (notes), Grade 9 799 → 0 (kind,
+  tick, notes); Grades 1 and 2 already fit; Grade 10 got the same fix in #1235. Pages: Grade 3 45 → 34, 4 57 → 54, 5
+  42 → 44, 9 93 → 96. Every rule is inside `@media print`: at 390 px the screen layout is byte-for-byte what it was.
+- **The sign-off box covered the last rows.** The unit was a grid in print, so when its table ran onto a second page
+  the verdict and signature box was drawn over the last one to three rows (their sentences and tick boxes) and
+  left blank pages. Measured over the 7 grammar and 4 reading forms: 86 overlapping sign-offs and 11 blank pages
+  before, 0 and 0 after; page counts unchanged except reading Grade 2 (33 → 32) and Grade 4 (41 → 39), where the
+  blank pages went. This existed in every form from Grade 1 on.
+- **Arabic «و» glued to an English word.** The notes wrote «وafter»; the English run is an LTR span and the «و»
+  rendered like a stray letter. `ltr()` now puts a space after a standalone «و» before a Latin letter (and four
+  hand-written strings and the Grade 4 reading form's three leftovers are spaced). The rendered text of every
+  grammar and reading form has 0 glued cases; a test scans all of them. The changed docs differ from the old only by
+  inserted spaces (and the print rules): grammar Grades 1–5, 9 and reading Grades 2–4.
+- **True or false and Yes or No subtitles assumed a picture.** On the lesson screen True or false said «Does the
+  sentence match the picture?» and Yes or No said «Pick the answer that fits the picture» on lessons with none. Now a
+  lesson whose right-or-wrong questions have no picture says «Is the sentence right or wrong?» (every Grade 5, 9 and
+  10 lesson, Grade 4 Semester 1 Unit 4 and the picture-free Grade 3 and 4 lessons), and Yes or No on Grade 4 S1 U4
+  and Grade 9 S1 U4 says «Pick the right answer to the question». The rule is a pure helper pinned by tests against
+  the real lesson data.
+
+**Verified:** curriculum 688 tests, focused mobile suites 130, root typecheck; the print measurements above in
+Chromium; page images read for one page of every grade (Grade 3 page 6 shows the sign-off under row 40 with rows
+36–40 legible). **Not verified:** other browsers' print engines and a real printer (only Chromium's PDF output was
+measured); the lesson-screen subtitles in a browser (tested as data, not as a screenshot). **Known limit:** the
+teacher sheets (`-sheet.md`) still describe True or false as «beside its own picture», which is wrong for Grades 5, 9
+and 10; changing it would rewrite those committed sheets, so it is left for a later change.
+
+## Chat app-help, twenty-second live pass: 10 more wordings for answers that already existed — 2026-10-24
+
+A 30-question pass on app.iqrra.com found 10 questions answered by the model or a bare tool card
+for which the app already had a written answer: what «جاهزية الدرس» means and preparing
+tomorrow's lesson (`howLessonPrep`), sending a homework to one class (`howAddHomework`, which is
+per class), which students have not handed in a homework (`howHomeworkDone`, which shows a count
+and not names), a class's performance on one objective (`howExamAnalysis`), asking students to
+retake an exam (`howExamRetake`: the teacher cannot open it, the student retakes), scanning a
+handwritten sheet (`howClassScan`), adding a question by hand to an exam draft
+(`howEditExamQuestions`), speaker notes (`howSlideNotes`, which says there is no field) and
+reviewing the English book's words (`howEnglishCorner`). No new answer strings; wordings added to
+existing rule ids in `appHelp.ts`, pinned in `appHelp.test.ts` with near-misses that stay with
+the model.
+
+**Left out on purpose** (an existing answer is close but not the one asked, or I did not verify
+the feature): «أرسل ملاحظة لولي أمر طالب معين» (a 17th-pass near-miss that must stay with the
+model), pinning a lesson to the top, reordering exam questions, saving an exam as a draft,
+renaming a saved file, putting a library picture on a slide, a timer for an activity,
+showing slides on a TV, a trial class in the timetable, switching between schools, listing the
+lessons not yet prepared, publishing an exam to a subset of students, and grading a student's
+homework (the model answers it as marking advice).
+
+## Chat app-help, twenty-first live pass: 19 more wordings for answers that already existed — 2026-10-24
+
+A 30-question pass on app.iqrra.com found 19 questions answered by the model, or by a bare
+tool card, for which the app already had a written answer: the student's link code
+(`howLinkParent`), a forgotten login code, hiding published results, the pass mark and renewing
+an expired exam link (the answers say the app has no pass-mark setting and what to press to
+renew), setting a homework due date, renaming and copying a class, blocking a user, read
+receipts, library videos, the lesson memory game, the function grapher, the weekly schedule on
+Today, the price, using the chat by voice, updating the app and reporting a problem in a
+generated question (`howReportProblem`; the model had sent the teacher to a non-existent
+«أدوات الذكاء الاصطناعي» tab). One was worse than a card: «أطبع نسخة الطالب من الامتحان» got the
+generic «PDF أو Word» export text although `howPrintExam` says the Evaluations exams are not
+printed from the app. No new answer strings; wordings added to existing rule ids in
+`appHelp.ts`, pinned in `appHelp.test.ts` with near-misses that stay with the model.
+
+**Not done:** «أضع تذكيرًا لحصة قادمة» (the app has an exam reminder answer, not one for a
+class, and I did not check for a class reminder), «أنضم إلى مدرستي», the book-source question
+and the ready-made-homework question, «أصدّر الواجب كملف PDF» (already answered by the generic
+export text, which is accurate for a homework result).
+
 ## Roster: edit a student, and see which account holds each name — 2026-10-23
 
 The pencil on a roster row used to open only the note; a teacher could not fix a misspelt name
@@ -311,6 +387,36 @@ an invented «التقارير» screen. Both halves are the existing `howClassA
 **Not done:** «أنضم إلى مدرستي» (the school-join flow for a teacher is not something I
 verified), the book-source question and the ready-made-homework question (neither looked into),
 «أحفظ خطة الدرس بصيغة وورد» (already answered by the generic «PDF أو Word» export text).
+
+## Generator screens: Retry repeats the run, and the evaluations picker row — 2026-10-24
+
+The last two open items of the generator-screens work. Mobile only.
+
+**Retry repeats what was asked.** `GenerationStatus` hands its Retry button's press event to `onRetry`, so a screen that
+wrote `onRetry={generate}` passed that event to `generate` as its options, and on the worksheet a failed «ثلاثة مستويات»
+was retried as a single paper. The worksheet now records the run's options at the top of `generate` (`lastRunRef`, set
+right after the attempt is counted, before any refusal can return) and Retry calls `generate(lastRunRef.current)`, so a
+failed three-levels run is retried as three levels (a regenerate is carried the same way). The new pure
+`services/runOptions.ts` reads options defensively: only a literal `true` counts as a mode, so a press event or anything
+else can never switch one on. The quiz and lesson plan (no levels mode) now pass `() => generate()`, as activity and
+slides already did; a grep of `onRetry=` across `app/` found no other bare `generate`. Pinned by `runOptions.test.ts` and
+source tests for each screen's Retry arrow and the worksheet's ref, recording order and `generate(lastRunRef.current)`.
+
+**The evaluations builder's picker row.** `app/evaluations/new.tsx`'s local `PickerField` was the last screen in `app/`
+passing `accent + '15'`, so its wrapper now uses `selectedRow(accent, card)` (an opaque fill with matching ink), like the
+five generator screens. **The earlier entries guessed this row was likely 4.1 to 4.4:1 in dark. It was not:** this
+screen's accent is `palette.primary`, which measures 5.51 in light and 7.55 in dark either way, so the change makes the
+screen consistent and fixes no failing contrast; a test pins that the row stays at 4.5:1 or more and no worse than before
+in both modes. `app/admin/library.tsx` and `app/evaluations/[id]/scan-class.tsx` pass no `selectedTint` (they use the
+default secondary fill with a `palette.primary` label, a documented palette pair) and were left alone. The doc comment in
+`PickerField.tsx` no longer says a screen still passes `accent + '15'`.
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,290 tests, 7,280 pass, 10 skipped, 0 fail.
+
+**Not verified:** a real failed three-levels press followed by Retry (demo generation does not fail) beyond the source
+pins; the evaluations screen in a browser; any device.
+
+**Known limits.** None left from the generator-screens work except the device-only checks its entries list.
 
 ## Generator screens: the toast clears the docked bar — 2026-10-24
 
@@ -1202,6 +1308,36 @@ grid and the lesson chooser in light and dark mode, RTL, and the drill's play-ag
 button on the new green (it takes `fill`, so the label is chosen by `textOn`; the test
 pins 7.13:1 white, not the screen).
 
+## Register: the terms checkbox is visible (#1229) — 2026-10-23
+
+Reported from the live page: on `/register` the terms line did not read as something to tick.
+The unticked box was `colors.border` (near-white) on the white card, and the sentence beside
+it was 11px muted grey, so it looked like a caption with a gap in front of it.
+
+**What changed** (styling only; the toggle, the two links, the Google gate and the sign-up
+payload are untouched)
+- The row is a framed panel (`colors.input` fill, 1px `mutedForeground` outline, 48 minimum
+  height) that turns primary-tinted when ticked.
+- The box is 24px with a 2px `mutedForeground` outline on a `colors.card` fill; the tick is
+  `ICON.lg` in `colors.primaryForeground` (it was a hard-coded `#fff`, which is poor contrast on
+  the light primary dark mode uses).
+- The sentence is 13px in `colors.foreground`.
+- Where it lives now: #1229 wrote this inline in `app/(auth)/register.tsx`; a later change moved
+  it into the shared `CheckRow` (`components/ui/CheckRow.tsx`) with these values, so the age
+  confirmation row matches. Change the look there. See «Students choose an email or a teacher's
+  code» below for why.
+
+**Verified:** mobile `pnpm run typecheck`; the `iconSystem`, `designScale` and `statusBar` tests;
+CI green on the PR head; the merge commit's `deploy.yml` run succeeded.
+**Not verified:** how it looks in a browser (phone, desktop, light, dark, RTL). Nobody has
+looked at the deployed `/register` since the change.
+
+**Process note.** `main` merged a PR roughly every ten minutes while this one was open and
+`typecheck + tests` takes about nine, so the branch fell behind five times. Four of those were
+conflicts in this file, because every PR adds its entry under the same header line; the PR
+merged only after its entry was taken out, and this entry was added afterwards. If a PR keeps
+losing that race, put its entry in a follow-up the same way.
+
 ## Book figure crops: audited, re-cropped, fragments dropped — 2026-10-22
 
 **What changed.** Every book figure a lesson can reach (2,576 across 66 books;
@@ -1297,6 +1433,26 @@ chips and a per-platform table (calls, cache hits, cost, p50, p95).
 - **Not** verified: a real model call end to end (the local API runs `AI_LIVE_MODE=false`, so rows were
   written through `recordGeneration` directly), Android / a device, and a re-screenshot after the last
   12 px of spacing above the chips.
+
+
+## The primary-grade and remaining books get their lesson pages too, 2026-10-24
+
+The 17 student books that had no PDF on disk (Grades 1-2 Arabic, Islamic and PE; Grades 3-5
+PE; Grade 6 digital; Grade 8 Arabic S2) were downloaded from the catalog's NCCD links
+(about 1.4 GB, kept in a scratch folder outside the repo) and put through the same page
+mapper as the other books (see «Arabic, Islamic, civic, digital and PE lessons get their
+book pages in decks»).
+
+- `map_lesson_pages.py --pdfs <json>` takes a `{kbBookId: pdf path}` map for books
+  `extract_book_figures.BOOKS` does not register.
+- 259 lessons mapped; a lesson found through the contents table had to agree with its
+  opener page's own heading (>= 0.6), so 180 are kept and 79 are left text-only (mostly
+  Grade 1-2 Islamic lessons, whose opener heading did not read as the lesson title; not
+  looked into further). Pages are in `iqraa-public/book-pages/`.
+- Still without pages: English (no source PDFs registered), the dropped 79 and the 52
+  maths/social/etc. lessons dropped in the earlier pass, Grade 4/5 digital literacy (no
+  student book exists), and lessons whose opener scored under 0.9.
+- Not verified on a device; phones need the build whose runtime matches the OTA.
 
 ## The tab bar is drawn — 2026-10-23
 
