@@ -10,6 +10,21 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Row-level security: the held connection measured — the inbox passes the latency gate, 2026-10-24
+
+`bench:rls` (three modes) run from Cloud Shell against the rehearsal Neon project's pooled endpoint, 8 statements
+per request: median 92.8 ms off / 270.9 ms on / 108.9 ms held; p95 96.7 / 442.7 / 117.6 ms. A held route
+(today only `GET /messaging/threads`, PR #1223) adds **+20.8 ms at p95**, inside the +100 ms budget; a route that
+is not held adds +346 ms at p95 for the same 8 statements (about 22 ms per statement at the median). This closes
+checklist C1 for the inbox; the first run's failure (+336.5 ms at 15 statements, 2026-10-23) is kept in the
+checklist.
+
+**Not verified:** real hold times and the real cost of every unlisted route under production traffic (after a flip,
+`LOG_LEVEL=debug` shows `held scope ended` with each request's statement count and hold time); the other
+routes' statement counts, which decide which to add to `heldReads.ts` next. `RLS_ENFORCE` is still unset in
+production; switching it on is the owner's step (checklist D) after deciding whether the ~22 ms per statement on
+unlisted routes is acceptable.
+
 ## Chat app-help, twenty-second live pass: 10 more wordings for answers that already existed — 2026-10-24
 
 A 30-question pass on app.iqrra.com found 10 questions answered by the model or a bare tool card

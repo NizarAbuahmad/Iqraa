@@ -92,14 +92,15 @@ Checked 2026-10-22:
   `0008`). Rehearsed on 2026-10-23 on a separate empty Neon project: all migrations apply and the
   database suite passes 46/46 on both the direct and the pooled endpoint (workflow run
   39931238295). The connection ceiling checks out (20 instances, pooled endpoint, `max_connections` 225).
-  **The latency gate failed (C1, 2026-10-23): +336 ms p95 on a 15-statement request,
-  budget +100 ms** — each statement becomes three round trips and one costs about 11 ms from
-  europe-west1 to Frankfurt; a mitigation (one held read-only connection per request, inbox first; spec
-  2026-10-23) is built, and it must not be switched on until `bench:rls`'s `held` column passes the gate
-  (`held` p95 added ≤ +100 ms on the inbox-shaped request, no listed route over +100 ms, every unlisted route's
-  cost, about 22 ms per statement, known and accepted or listed). Nothing says it has passed.
-  Not done: the `held` measurement (from Cloud Shell, the way the failed run was measured), enabling it in production, and making the `row-level security` check required — the steps and
-  the switch are in `docs/rls-rollout-checklist.md`.
+  **Latency (C1):** the first benchmark (2026-10-23) failed — +336 ms p95 on a 15-statement request, budget
+  +100 ms — because each statement becomes three round trips of about 11 ms (europe-west1 to Frankfurt). The
+  held connection (one read-only connection per request, inbox first; PR #1223, spec 2026-10-23) was measured on
+  2026-10-24 from Cloud Shell against the rehearsal project's pooled endpoint: an 8-statement request adds
+  **+20.8 ms at p95** held (budget +100 ms: passes), against +346 ms without it. Routes not on the held list
+  still pay about 22 ms per statement, so each is known and accepted or added to the list
+  (`artifacts/api-server/src/lib/heldReads.ts`). Not done: switching it on in production, deciding which
+  more routes to hold, and making the `row-level security` check required — the steps and the switch are in
+  `docs/rls-rollout-checklist.md`.
 - **Draft PR #730** (teacher visibility into English Corner practice) changes the schema,
   conflicts with `main`, and needs `pnpm --filter @workspace/db run generate` after it is updated.
 - **The E2E smoke test is not a required check** yet; make it one after about a week
