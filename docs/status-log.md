@@ -10,6 +10,31 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat app-help, twenty-fourth live pass: 8 more wordings and a terms-of-service answer — 2026-10-24
+
+A 30-question pass (18 app, 12 curriculum) on app.iqrra.com found app questions answered by the
+model for which the app already had an answer: «ما ألعاب إقرأ المتاحة» (`howGamesList`), the
+lessons scheduled in the calendar and **colleagues' exams** (`howCalendar`: the model refused
+«لأسباب تتعلق بالخصوصية» although the calendar has a «عرض امتحانات المدرسة» switch), the privacy
+policy (`howPrivacy`, which the model called outside its scope), a library video for a lesson and
+filtering the library by type (`howLibraryVideos`). One new short answer, `howTerms` (ar + en):
+«شروط الخدمة» is the row under «سياسة الخصوصية» in Settings (`app/settings.tsx`, route
+`/legal/terms`) and the link at the foot of sign-in and sign-up. Wordings added to existing rule
+ids in `appHelp.ts` plus a new `terms` place and rule, pinned in `appHelp.test.ts` with
+near-misses that stay with the model.
+
+**Found, not fixed (a model answer, not the matcher):** asked «ما هي أنواع الروابط الكيميائية؟»
+the model listed single, double and triple covalent bonds and the metallic bond and **left out the
+ionic bond**; and for «س² − ٥س + ٦ = ٠» it solved correctly (2 and 3) but said the two numbers
+have sum 5, where the pair that factors it is −2 and −3 with sum −5. Neither is in the app-help
+code; the first is a question about how the chat grounds a chemistry answer on a lesson.
+
+**Left out on purpose:** the number of teams in Class Challenge (the answer belongs to the tool,
+not a rule), the settings screen's contents, the geometry sketchpad and the function grapher for a
+parabola (the model's usage tips are more useful than the Math Corner location answer), showing a
+lab experiment, and «أضيف شعبة جديدة بعد ما أنشأت حسابي» (card only; I did not find the rule
+that owns `howAddClass`).
+
 ## Chat app-help, twenty-third live pass: 13 more wordings for answers that already existed — 2026-10-24
 
 A 30-question pass on app.iqrra.com found 13 questions answered by the model for which the app
