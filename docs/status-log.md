@@ -10,6 +10,74 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## English corner: all ten grades, the official books, and free listening and reading sites, 2026-10-24
+
+The English corner had tabs for Grades 1–5, 9 and 10, so a student in Grade 6, 7 or 8 found no
+tab at all, and nothing in it led to the books' own reading or listening. Draft PR #1268.
+
+- **Built:** `ENGLISH_CORNER_GRADES` (`[1..10]`, `lib/curriculum/src/englishLinks.ts`) now drives the
+  grade tabs. `ENGLISH_HUB_GRADES` is unchanged and still means "grades with word lists to play";
+  `browse.tsx` and `resources.tsx` read it. A grade with no word lists (6–8) shows «ألعاب الكلمات
+  لهذا الصف قادمة» instead of an empty page; Grade 10 says Semester 2 word games are coming: its ten Semester 2 hub lessons are grammar-only and unsigned, so hidden, and there are no word lists for them. The note is read from the data (no visible Semester 2 lesson), so it goes away by itself when one appears. Under every grade's lessons: a **books shelf** (the grade's Ministry student book per
+  semester, plus the activity book where one exists, read from the catalog's `pdfUrl` /
+  `activityPdfUrl`) and a **free sites shelf** picked by grade band: British Council LearnEnglish
+  Kids and Teens, BBC Learning English, VOA Learning English, Starfall, Storyline Online, Oxford
+  Owl (free account) and National Geographic Kids. They open through `openExternal`; nothing is
+  fetched or copied, so none of it needs a licence record like `external_resources.json`.
+  `playEnglishDesc` now says Grades 1–5 and 9–10 (it omitted Grade 5).
+- **Tests:** `englishLinks.test.ts` (ten grades; https; both languages; every grade has a listening
+  and a reading site and both semesters' student book) and `services/__tests__/englishCornerShelves.test.ts`
+  (the tabs read `ENGLISH_CORNER_GRADES`, both shelves render, links go through `openExternal`, no
+  `palette`, every key exists in both languages).
+- **Checked:** `pnpm run typecheck` clean; mobile suite 7,338 tests, 0 failures; curriculum suite 693
+  of 694 (the one failure, `R2 helpers are inert, not broken, when unconfigured`, fails the same on a
+  clean checkout); curriculum `verify` 0 errors; the brand grep from `ci.yml` clean. In the web build
+  (Playwright, Chromium): all ten tabs; Grades 7 and 8 show the notice and 4 books + the right sites;
+  Grade 10 shows the Semester 2 note; light/English and dark/Arabic RTL screenshots read correctly;
+  a link opens a new tab and leaves the app tab where it was. URLs: BBC, VOA, Starfall, Storyline
+  Online, Oxford Owl and National Geographic Kids answered 200; the British Council Kids and Teens
+  paths were read from the sites' own sitemap and navigation.
+- **First push failed CI, and why:** `ci.yml` bans the bare spelling «اقرأ» anywhere in `i18n.ts`,
+  verb included, because that file names the product. The heading «استمع واقرأ مجانًا» tripped it;
+  it is now «استماع وقراءة مجانًا». A new Arabic string in a named file must avoid the substring.
+- **Not checked:** the Ministry PDFs on `nccd.gov.jo` and the British Council pages could not be
+  opened from the build container (timeout / 403); open one per grade by hand. A real phone.
+- **Not done, and a correction to an earlier claim:** the books' **own listening audio is not in the
+  app**. The only decoded listening QR codes are English Grades 9–10 (24 rows in
+  `knowledge-base/book-qr-links.json`) and none answered when last probed (2026-09-15). **No English
+  lesson has per-lesson book-page images** (`book-page-links.json` lists none; an earlier note that
+  Grades 7–10 had them read the wrong section of that file). Still open: rendering and uploading
+  English book pages, Grade 5 recordings (190 of 221 words), Grade 10 Semester 2 vocabulary, and
+  word lists for Grades 6–8.
+- **Still hidden from students, on purpose:** all Grade 1–4 reading units (36) and every grammar
+  unit are `reviewedBy: null`. Turning them on is a teacher signing the review sheets
+  (`docs/english-reading-g{1-4}-review.html`, `docs/english-grammar-g*-review.html`); this change
+  signs nothing.
+
+## Chat app-help, twenty-seventh live pass: three short answers and wordings for ten existing ones — 2026-10-24
+
+A 30-question pass (20 app, 10 curriculum — all ten answers correct) on app.iqrra.com found app
+questions answered by the model for which the app already had an answer, and three it did not:
+«أخفي العلامات عن الطلبة» (`howReleaseResults`, whose last sentence names «إخفاء النتائج عن
+الطلبة»), «عدد الطلبة الذين فتحوا الامتحان» (`howExamSubmissions`: the dashboard lists every
+paper), a forgotten password (`howChangePassword` already says «نسيت كلمة المرور؟»; the model
+called it outside its scope), «شعار مدرستي» on the papers (`howWorksheetHeader`; the model
+described an «add logo» option that does not exist), one student's results across the exams
+(`howStudentRecord`) and switching the grade I teach (`howAddGrade`; the model said to type it
+into the chat). Four more were left over from the 26th pass: deleting a homework already sent
+(`howHomeworkEdit`), a time limit on a quiz (`howExamTime`), shuffling the questions per student
+(`howExamShuffle`) and «السبورة البيضاء» (`howWhiteboard`).
+
+Three new short answers, each a negative or a pointer I checked in code: `howMediaLink` (the
+lesson plan has no link field; `components/ui/LessonResources.tsx` on the slides screen takes a
+YouTube or image link and makes it a slide, and `SlideEditModal` replaces a slide's video),
+`howExamNoBack` (`app/take/[code].tsx` always shows «السابق» and «التالي») and `howVoiceNote`
+(nothing in `app/messaging` records or sends audio). Pinned in `appHelp.test.ts` with near-misses
+that stay with the model.
+
+**Left to the model on purpose:** turning a quiz into a game, flashcards for a teacher, the
+in-class timer (all teaching advice; the app has no matching tool), the question most students
+got wrong, a note on a student's paper and restoring a deleted exam (I found no screen for any).
 ## English audio on phones: clips are saved on the device and a lesson's clips are fetched ahead — 2026-10-24
 
 On a phone every tap streamed its clip from `pub-…r2.dev/english-audio/<slug>.mp3`, so a weak connection or the
