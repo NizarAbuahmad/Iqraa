@@ -1,0 +1,59 @@
+// artifacts/api-server/src/lib/__tests__/guardianConsentEmail.test.ts
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+
+import { guardianConsentBodyHtml, guardianConsentSubject } from "../guardianConsentEmail.ts";
+
+// The retired spelling of the Arabic brand, in guillemets. Built from code points so the source never holds the literal
+// that CI's "Brand is «إقرأ»" check rejects under artifacts/*/src.
+const OLD_BRAND = String.fromCodePoint(0x00ab, 0x0627, 0x0642, 0x0631, 0x0623, 0x00bb);
+
+const LINK = "https://app.iqrra.com/guardian#AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-abcde";
+
+describe("guardianConsentBodyHtml", () => {
+  const html = guardianConsentBodyHtml("سلمى", LINK);
+
+  it("names the child and carries the link as the button target, once per language block", () => {
+    assert.ok(html.includes("سلمى"));
+    // One button in the Arabic block and one in the English block, and nowhere else (no bare-text copy of the link).
+    assert.equal(html.split(`href="${LINK}"`).length - 1, 2);
+    assert.equal(html.split(LINK).length - 1, 2);
+  });
+  it("is bilingual, Arabic first, with the brand spelled the way CI requires", () => {
+    assert.ok(html.indexOf('dir="rtl"') < html.indexOf('dir="ltr"'));
+    assert.ok(html.includes("«إقرأ»"));
+    assert.ok(html.includes("Iqrra"));
+    assert.ok(!html.includes("Iqraa"));
+    assert.ok(!html.includes(OLD_BRAND));
+  });
+  it("says what approving means and that the link lasts seven days", () => {
+    assert.ok(html.includes("7 أيام"));
+    assert.ok(html.includes("7 days"));
+    assert.match(html, /parent or legal guardian/i);
+    assert.ok(html.includes("وليّ"));
+  });
+  it("escapes the child's name and the link: a first name is typed by the student", () => {
+    const evil = guardianConsentBodyHtml('<img src=x onerror=alert(1)>"', 'https://x.test/?a="b"&c=<d>');
+    assert.ok(!evil.includes("<img src=x"));
+    assert.ok(evil.includes("&lt;img"));
+    assert.ok(!evil.includes('href="https://x.test/?a="b"'));
+    assert.ok(evil.includes("&quot;"));
+  });
+  it("puts the child's name in a <bdi> everywhere it appears, in both language blocks, escaped", () => {
+    const [arabic, english] = html.split('<hr style="border:none;border-top:1px solid #E2E8F0;" />');
+    assert.equal(arabic.split("<bdi>سلمى</bdi>").length - 1, 2);
+    assert.equal(english.split("<bdi>سلمى</bdi>").length - 1, 2);
+    // Every occurrence of the name is inside a <bdi>: removing the wrapped ones leaves none.
+    assert.ok(!html.split("<bdi>سلمى</bdi>").join("").includes("سلمى"));
+
+    const evil = guardianConsentBodyHtml("<b>&", LINK);
+    assert.equal(evil.split("<bdi>&lt;b&gt;&amp;</bdi>").length - 1, 4);
+    assert.ok(!evil.includes("<bdi><b>"));
+    // An empty name still renders as a dash, isolated the same way.
+    assert.equal(guardianConsentBodyHtml("  ", LINK).split("<bdi>—</bdi>").length - 1, 4);
+  });
+  it("has a bilingual subject that names Iqrra", () => {
+    assert.ok(guardianConsentSubject.includes("Iqrra"));
+    assert.ok(guardianConsentSubject.includes("إقرأ"));
+  });
+});

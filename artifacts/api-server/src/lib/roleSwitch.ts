@@ -61,6 +61,11 @@ export interface RoleSwitchInput {
    * `true` by the routes; absent means no.
    */
   ageConfirmed?: boolean;
+  /**
+   * Whether a change into student needs the tick. True (the default) until `GUARDIAN_APPROVAL` is on: then a
+   * parent's approval replaces it, and switching into student just produces an account held for approval.
+   */
+  ageTickRequired?: boolean;
 }
 
 export async function decideRoleSwitch(input: RoleSwitchInput): Promise<RoleSwitchDecision> {
@@ -95,7 +100,7 @@ export async function decideRoleSwitch(input: RoleSwitchInput): Promise<RoleSwit
   // otherwise have switched.
   const settle = (): RoleSwitchDecision => {
     const changed = role !== input.currentRole;
-    if (changed && role === "student" && input.ageConfirmed !== true) {
+    if (changed && role === "student" && (input.ageTickRequired ?? true) && input.ageConfirmed !== true) {
       return {
         ok: false,
         status: 400,

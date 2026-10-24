@@ -28,6 +28,9 @@ import { db, liveAnswers, liveGames, livePlayers, users } from "@workspace/db";
 import type { LiveGame } from "@workspace/db";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
+import { guardianApprovalEnabled } from "../lib/features.js";
+import { needsLinkLookup, pendingGuardian } from "../lib/guardianGate.ts";
+import { hasLiveRosterLink } from "../lib/rosterLinkState.ts";
 import { createRateLimiter } from "../lib/rateLimit";
 import { hashAccessToken, issueAccessToken, normalizeShareCode } from "../modules/assessment/studentView";
 import { hasRoom, isEnded, isExpired, normalizeName, playerView, scoreAnswer } from "../modules/live/rules.ts";
@@ -71,7 +74,10 @@ async function gameByCode(rawCode: unknown): Promise<LiveGame | undefined> {
 /**
  * A student's own session, if the join request carried one. Optional by
  * design: a bad, expired or absent session is simply an anonymous player, and
- * only a student role is recorded.
+ * only a student role is recorded. A student held for a parent's approval is
+ * not recorded either: this route verifies the token itself, so the middleware
+ * gate never saw it, and an unapproved account must not leave its identity on a
+ * game row. They can still play, as anonymous as anyone with the code.
  */
 async function studentUserId(req: Request): Promise<string | null> {
   const header = req.headers.authorization;
@@ -81,11 +87,21 @@ async function studentUserId(req: Request): Promise<string | null> {
     const payload = jwt.verify(header.slice(7), secret, { algorithms: ["HS256"] }) as { sub?: string; type?: string };
     if (payload.type !== "access" || !payload.sub) return null;
     const [user] = await db
-      .select({ id: users.id, role: users.role, suspendedAt: users.suspendedAt })
+      .select({
+        id: users.id,
+        role: users.role,
+        suspendedAt: users.suspendedAt,
+        email: users.email,
+        guardianApprovedAt: users.guardianApprovedAt,
+      })
       .from(users)
       .where(eq(users.id, payload.sub))
       .limit(1);
-    return user && user.role === "student" && !user.suspendedAt ? user.id : null;
+    if (!user || user.role !== "student" || user.suspendedAt) return null;
+    // The same rule as the middleware: the roster-link query runs only for a student who could be held.
+    const flagOn = guardianApprovalEnabled();
+    const hasLiveLink = needsLinkLookup(user, flagOn) ? await hasLiveRosterLink(user.id) : false;
+    return pendingGuardian(user, { flagOn, hasLiveLink }) ? null : user.id;
   } catch {
     return null;
   }

@@ -10,6 +10,86 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Parent approval for email students — server (PR A) — 2026-10-24
+
+A student who signs up with an email and no teacher's code is, today, held by one unverified tick. This is
+the server half of a real gate: with `GUARDIAN_APPROVAL=true` such a student is held (403
+`guardian_approval_required`) until a parent approves by email. **The flag is off by default, and with it
+unset nobody sees a change:** no sign-up, sign-in or route behaves differently. Three things do happen on
+merge, flag or no flag: (1) the auth middleware (and the live-game join in `routes/live.ts`) reads one extra column,
+`users.guardian_approved_at`, on every authenticated request, so **migration 0018 must be applied before the new revision takes traffic**
+(`deploy.yml` migrates first); (2) `GET /auth/me` gains `guardianStatus`, which is `"not_required"` while the
+flag is off; (3) two paths, a password reset for an unverified account and a Google link of an unverified
+account, run a request-supersede that touches no rows when none exists. Design:
+`docs/superpowers/specs/2026-10-24-guardian-approval-design.md`.
+
+- **Built:** the gate is in `authMiddleware` with an allowlist (`lib/guardianGate.ts`: me, guardian-request,
+  role switch, logout, erase self, the class-claim routes), so a route added tomorrow is closed by default;
+  the roster-link query runs only for a student who could be held. `guardian_consents` is an owner-only table
+  and `users.guardian_approved_at` a new column (migration 0018). `lib/guardianRequests.ts` queues a
+  request at sign-up and mails it only after the student verifies their own address; at most 3 a day per
+  student and 5 a day per parent address, serialised by two transaction advisory locks. The token is 32
+  random bytes, only its SHA-256 is stored, it lasts 7 days and is single use through one conditional UPDATE
+  (`decideByToken`). **The token never travels in a URL path or query (ruling R10):** the mail links to
+  `{origin}/guardian#{token}`, a fragment a browser never sends to a server, and the parent's page posts it in a
+  body to `POST /guardian-consent/lookup` and `POST /guardian-consent/decide` (`GET /guardian-consent/config`
+  stays; `GET /guardian-consent/<token>` is a 404). That replaced a path-redaction helper (`lib/logUrl.ts`),
+  which is gone: a path segment would also have reached Cloud Run's request log, which the app cannot redact.
+  `POST /auth/guardian-request` asks again (supersedes the old link); `/me` returns `guardianStatus` and a
+  masked parent address. A held student may call `POST /auth/role` (ruling R11), so one who picked the wrong role
+  is not stuck; and the public live-game join, which verifies the access token itself and so never met the
+  middleware gate, now records no user id for a held student (ruling R12).
+- **Flag on vs off:** on, sign-up and Google sign-up ask for a parent's address instead of the age tick, and
+  switching role into student just yields a held account. Off, the age tick works exactly as before.
+- **Mutation checks** (edit, build, run `guardianApproval.db.test.ts`, restore, rebuild, green; each caught):
+  1. `hasLiveLink: true` in the middleware: 4 failures (the gate, "lifts the moment a parent approves",
+     "lifts when a teacher's per-student code links the account", the sign-up flow).
+  2. `GET /student/exams` added to the allowlist: the unit test `stops GET /api/student/exams` plus the same
+     four DB failures.
+  3. `isNull(decidedAt)` removed from `decideByToken`: "approving needs the parent's confirmation…" and
+     "two parents clicking at once: exactly one wins".
+  4. the superseding UPDATE removed from `queueRequest`: "asking again supersedes the old link" and
+     "six at once for one student…".
+  5. the mail call removed from `/verify-email`: "queues the request at sign-up, mails the parent only
+     after the student verifies, then holds them".
+  6. both advisory locks removed: the race reproduced in 4 of 5 runs ("six at once for one student" and
+     "seven students at once for one parent address", one or both); run 1 passed, so the two concurrency
+     tests are strong but not deterministic.
+- **Checked (final fix wave, after the token moved out of the URL):** `pnpm run typecheck` clean in
+  `artifacts/api-server` and at the repo root; api-server `pnpm build` then `pnpm test` with the database and
+  `REQUIRE_DB_TESTS=true`: 2,674 tests, 0 failed, 0 skipped; `guardianApproval.db.test.ts` 49 tests, run 3
+  times alone, all green; `guardianGate` unit file 33, `guardianConsentEmail` 6. The earlier `@workspace/db test` run (66 tests) had 1 failure in
+  `rlsDiff.test.ts` ("every read answers the same…": the order of `participants` in
+  `GET /messaging/threads/class/:id`, a read with no ORDER BY, in a file this branch does not touch). That file
+  alone failed 2 of 5 reruns and three further full runs passed 66 of 66, so it looks like an ordering flake; it
+  was not run on a clean `main`, and `lib/db` has not changed since, so it was not rerun. No file under
+  `artifacts/mobile` is touched. The brand grep from `ci.yml` is clean. Mutation: with the live-join gate
+  neutralised, 2 of the 3 live-join tests fail.
+- **Not verified / known limits:**
+  - The Google sign-up path was reviewed, not exercised (no Google credential); the supersede call on the
+    Google-link path and the new-account branch have no route-level test.
+  - The mail was never sent through Resend (no key locally).
+  - The app (PR B) does not exist, so turning the flag on today would lock existing email students out with
+    no waiting screen. Do not set it.
+  - The parent-consent wording is a draft and needs a legal and native-Arabic review.
+  - Email consent proves access to a mailbox, not that the person is the parent.
+  - A self-made teacher account that holds a roster row can unlock a held student: the teacher approving a
+    class-code claim is the exemption, and nothing proves a teacher is real (a second mailbox does it), so it
+    also overrides a parent's decline. The parent's approval proves a mailbox, this proves a sign-up.
+  - A decline does not bind: the student may ask the same or another parent again (3 a day).
+  - Five unverified sign-ups naming one parent address fill that address's 5-a-day cap for 24 hours, so a
+    real parent's own child can be refused for a day.
+  - `/me` says `waiting` even when the mail failed to send; only `emailSent: false` in the answer to the
+    request itself says so.
+  - A request queued with the flag on and verified after it was turned off is never mailed.
+  - PR B must keep `/guardian` out of analytics screen tracking and crash breadcrumbs: the fragment is
+    out of the server's reach, not out of the page's.
+  - A student who resets their password or links Google on an unverified address loses the queued request
+    and must re-enter the parent's address.
+  - `change-unverified-email` can repoint to the parent's address after the own-address check.
+  - Queued rows never mailed still count toward the 5-a-day parent cap.
+  - A request superseded between queue and issue answers 200 `emailSent: false`.
+
 ## English audio: a speech-to-text check of every recording — 2026-10-24
 
 A recording can be the wrong word (the first voicing of «chair» was «share»), and only an ear found it. `english-audio-check`
@@ -110,7 +190,6 @@ exists now. A host that cannot be reached stops the run after 10 clips in a row 
 is unreachable»); a report written after a stop, or with error rows, never says «Nothing needs a listen». The output folders of
 `--cache` and `--out` are created before the first request. Left as they are: Ctrl+C exits with `process.exit` after saving the cache; `--out x.json` names its JSON `x.json.json`; the
 `--cache`/`--out` collision check is case-sensitive.
-
 
 ## English corner: all ten grades, the official books, and free listening and reading sites, 2026-10-24
 
