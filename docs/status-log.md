@@ -53,12 +53,13 @@ other grade changes.
   `docs/english-grammar-g10-sheet.md`. The Grade 1-5 and 9 forms and the reading forms stayed byte-identical (tests pin
   them). The lead says «١١ درسًا» (singular after ten) and the Arabic «و» is spaced from English words in every note.
 - **Tests added:** `englishGrammarG10Items.test.ts` (sizes and kinds per sub-topic, statements, caps, uniqueness, banned
-  names, 206 and 234, the form), `englishGrammarG10.test.ts` (eleven unsigned units, all in the hub, nothing offered)
+  names, 206 and 234, the form, a has/have in every u2_l1 `forms` twin, no «و» glued to an English word anywhere in the
+  printed Grade 10 form), `englishGrammarG10.test.ts` (eleven unsigned units, all in the hub, nothing offered)
   and, in the app, `englishGrammarG10ItemGames.test.ts` (Choose, Build and True or false on all eleven, Yes or No on none,
   no twin voiced). `englishHub.test.ts` pins six grammar-only lessons and 21 Grade 10 hub lessons.
 - **Verified (2026-10-24, after `main` was merged in):** root `pnpm run typecheck` clean (api-server, mobile, scripts);
-  `@workspace/curriculum` `test` **653 tests, 652 passing, 1 failing** with the sandbox's `R2_*` variables set — the one is
-  `r2.test.ts`, which expects them unset — and **653 of 653** with `env -u R2_ACCESS_KEY_ID -u R2_BUCKET -u R2_ENDPOINT -u
+  `@workspace/curriculum` `test` **655 tests, 654 passing, 1 failing** with the sandbox's `R2_*` variables set — the one is
+  `r2.test.ts`, which expects them unset — and **655 of 655** with `env -u R2_ACCESS_KEY_ID -u R2_BUCKET -u R2_ENDPOINT -u
   R2_SECRET_ACCESS_KEY`; its `verify` 197 files, 3306 lessons, 0 errors; the **full mobile suite 7216 tests, 7206 passing,
   10 skipped, 0 failing** (345 s). **In a browser** at 390 px in Arabic and English, web build with
   `EXPO_PUBLIC_DEMO_MODE=true`, sign-offs in the working tree only (restored straight after with `git checkout`,
@@ -86,19 +87,21 @@ other grade changes.
   (3) **future continuous and future perfect** (u5_l3), where a row can read naturally either way; (4) **the two «didn't
   use to» rows** (u3_l4), because «didn't used to» is common in informal writing and some teachers accept it (the note
   says so); and the rows the reviews listed as weakly defensible: «sending fifty messages» and «the bus stopping six
-  times» (u5_l3 perfect rows), «watering the plants twice», and «You mustn't bring anything. We have everything.»
-  (u4_l1, the weakest `don't have to` row). Smaller, not blocking: `habit-markers` twins with «on Fridays» or «every day»
-  can read as temporary; two «when he dropped it» rows have an odd clause order; «A man knocked.» uses knock
+  times» (u5_l3 perfect rows), and «watering the plants twice». Smaller, not blocking:
+  `habit-markers` twins with «on Fridays» or «every day» can read as temporary (an adverb such as «usually» now sits
+  inside the answer, so its twin keeps standard order, «is usually walking»; the «never» rows were replaced by «five days
+  a week» and «once a month»); two rows («when he dropped it», «when she burnt her hand») have an odd clause order; «A man knocked.» uses knock
   intransitively; the 14 «By the time» rows are repetitive; «this street used to be quiet» (`would be quiet` weak).
 - **Known limits:** the choice between forms is tested only where one word of the sentence decides it, which is why
   «this week», «always» and «currently» are not used for the present tenses; a wrong True or false answer shows «Correct
   answer: False», not the corrected sentence; the True or false card's subtitle still says «Does the sentence match the
   picture?» (shared copy, as on Grades 5 and 9); nothing is pictured.
 - **Found on the way, not fixed here (new):** the **printed grammar review forms for Grades 3, 4, 5 and 9 clip their
-  right-hand columns off the page in A4 landscape print** (measured with Chromium `page.pdf` on each form: overhang 47,
-  690, 390 and 762 px; Grades 1 and 2 fit). `td.sentence` and `.yn` are `white-space: nowrap`, so the table is wider than
-  the page and the tick box, the notes column and the start of the longer false twins fall off it — **a teacher cannot tick
-  or annotate those printouts.** Grade 10 had the same problem (444 px at first) and was fixed with Grade-10-only CSS,
+  left-hand (last) columns when printed in A4 landscape** (measured with Chromium `page.pdf` on each form: overhang 47,
+  690, 390 and 762 px). `td.sentence` and `.yn` are `white-space: nowrap`, so the table is wider than the page; the forms
+  are right to left, so the overflow is on the left: on Grades 4, 5 and 9 the tick box and notes column fall off the page
+  (Grade 4 and 9 also the kind column); on Grade 3 about a third of the notes column (its tick box stays); Grades 1, 2
+  and 10 fit. Grade 10 had the same problem (444 px at first) and was fixed with Grade-10-only CSS,
   which now fits. The other four need their own change, because it alters their committed forms (their byte-identity is
   pinned by tests, which would have to move with them). Listed in STATUS.md «Open».
 - **To switch a lesson on:** a Grade 10 English teacher reads and signs that lesson's page of

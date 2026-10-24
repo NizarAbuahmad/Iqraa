@@ -29,20 +29,22 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
     lessonId: L('u1_l1'),
     statement: 'I can use Present Simple and Present Continuous to talk about habits and temporary situations.',
     items: [
-      // A habit word (every day, usually, often, rarely, never, on Fridays) rules out the continuous.
+      // A habit word (every day, usually, often, rarely, on Fridays, five days a week, once a month) rules out the
+      // continuous. An adverb before the verb is inside the answer, so the twin keeps standard order («is usually
+      // walking», never «usually is walking»). No «never»: «He is never wearing …» reads as a complaint, like «always».
       ...items('habit-markers', 'meaning', [
-        ['She usually walks to school.', 'walks', 'is walking'],
-        ['My father rarely wears a suit.', 'wears', 'is wearing'],
-        ['We often celebrate birthdays at home.', 'celebrate', 'are celebrating'],
-        ['He never wears his uniform at weekends.', 'wears', 'is wearing'],
+        ['She usually walks to school.', 'usually walks', 'is usually walking'],
+        ['My father rarely wears a suit.', 'rarely wears', 'is rarely wearing'],
+        ['We often celebrate birthdays at home.', 'often celebrate', 'are often celebrating'],
+        ['He wears his uniform five days a week.', 'wears', 'is wearing'],
         ['The shop opens at eight every day.', 'opens', 'is opening'],
         ['My brother plays football on Fridays.', 'plays', 'is playing'],
-        ['Mum usually cooks dinner.', 'cooks', 'is cooking'],
-        ['Students rarely dress casually at our school.', 'dress', 'are dressing'],
-        ['We never wear jeans to school.', 'wear', 'are wearing'],
+        ['Mum usually cooks dinner.', 'usually cooks', 'is usually cooking'],
+        ['Students rarely dress casually at our school.', 'rarely dress', 'are rarely dressing'],
+        ['We wear jeans to school once a month.', 'wear', 'are wearing'],
         ['She checks her email every day.', 'checks', 'is checking'],
         ['We visit our grandparents on Fridays.', 'visit', 'are visiting'],
-        ['Dad often reads the newspaper in the morning.', 'reads', 'is reading'],
+        ['Dad often reads the newspaper in the morning.', 'often reads', 'is often reading'],
       ]),
       // Only now, right now, at the moment, Look! and Listen! (never «this week» or «always»: both forms fit those).
       ...items('temporary-markers', 'meaning', [
@@ -429,7 +431,7 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
     items: [
       // mustn't (it is forbidden) or don't have to (it is not necessary), fixed by the second sentence or clause: a
       // danger or a rule («It's dangerous», «It's not allowed») on something nobody is ever required to do (touch live
-      // wires, cheat) makes it a ban; «It's free», «optional», «isn't required» or «but you can» makes it unnecessary.
+      // wires, cheat) makes it a ban; «It's free», «optional», «isn't required», «isn't compulsory» or «but you can» makes it unnecessary.
       // No place or action that could merely be optional («swim here. It's dangerous» reads either way), and no reason
       // that could also be advice («I can hear you»).
       ...items('obligation', 'meaning', [
@@ -446,7 +448,7 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ["You don't have to stay, but you're welcome to.", "don't have to", "mustn't"],
         ["The museum is free. Visitors don't have to pay.", "don't have to", "mustn't"],
         ["Ties aren't required. You don't have to wear one.", "don't have to", "mustn't"],
-        ["You don't have to bring anything. We have everything.", "don't have to", "mustn't"],
+        ["Sport isn't compulsory. You don't have to play.", "don't have to", "mustn't"],
       ]),
       // A past time word («when he was five», «Last night») takes could or was able to, a future one («Next year»,
       // «Tomorrow») will be able to; the distractor is the present (can, am able to) or the other tense. could and was

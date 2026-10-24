@@ -41,7 +41,7 @@ needs `GRAMMAR_ONLY_LESSONS`.
 
 | Lesson (`kbl-eng-s1-nccd-…`) | Book statement | Sub-topics (count: kind) | Example: correct / distractor |
 | --- | --- | --- | --- |
-| `u1_l1` | use Present Simple and Present Continuous to talk about habits and temporary situations | `habit-markers` 12 meaning · `temporary-markers` 12 meaning · `stative` 8 form · `questions` 8 form | «She usually walks to school.» walks / is walking |
+| `u1_l1` | use Present Simple and Present Continuous to talk about habits and temporary situations | `habit-markers` 12 meaning · `temporary-markers` 12 meaning · `stative` 8 form · `questions` 8 form | «She usually walks to school.» usually walks / is usually walking |
 | `u1_l5` (grammar-only) | use articles to talk about general and specific things | `a-an` 8 form · `already-mentioned` 12 meaning · `unique-things` 10 form · `no-article` 10 form | «She has an umbrella.» an / a |
 | `u2_l1` | distinguish between the Present Perfect Simple and the Present Perfect Continuous | `result-count` 14 meaning · `duration` 14 meaning · `forms` 12 form | «I have written five emails today.» have written / have been writing |
 | `u2_l4` | use a range of verbs taking the infinitive or the -ing form | `ing` 14 form · `to` 14 form · `change-of-meaning` 12 meaning | «She enjoys reading detective stories.» reading / to read |
@@ -50,7 +50,7 @@ needs `GRAMMAR_ONLY_LESSONS`.
 | `u3_l5` | use indirect questions to make polite requests or to ask for opinions and information | `could-you-tell` 14 form · `do-you-know` 14 form · `if-whether` 12 form | «Could you tell me where it is?» where it is / where is it |
 | `u4_l1` | use a variety of modal and related verbs | `obligation` 14 meaning · `ability-permission` 14 meaning · `forms` 12 form | «You mustn't touch the wires. They're live.» mustn't / don't have to |
 | `u4_l4` | use defining and non-defining relative clauses | `defining` 12 form · `non-defining` 14 form · `whose-where` 14 form | «My brother, who lives in Aqaba, is a pilot.» who / that |
-| `u5_l1` | use a variety of forms to talk about future events and situations | `will-decisions` 10 meaning · `going-to-evidence` 10 meaning · `arrangements-timetables` 12 meaning · `forms` 8 form | «Look at those clouds! It's going to rain.» going to rain / will rain |
+| `u5_l1` | use a variety of forms to talk about future events and situations | `will-decisions` 10 meaning · `going-to-evidence` 10 meaning · `arrangements-timetables` 12 form (changed in the build: every future form fits a fixed time; 206 meaning / 234 form) · `forms` 8 form | «Look at those clouds! It's going to rain.» going to rain / rains |
 | `u5_l3` | use the Future Continuous and the Future Perfect | `continuous` 14 meaning · `perfect` 14 meaning · `forms` 12 form | «At this time tomorrow, I will be flying.» will be flying / will have flown |
 
 Sizes sum to 40 a lesson and are pinned by a test. The `statement` column is the book's `objectives[0]` abbreviated; the data

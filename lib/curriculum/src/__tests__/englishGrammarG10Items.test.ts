@@ -123,6 +123,13 @@ describe('Grade 10 authored lessons', () => {
     }
   });
 
+  it('keep a have/has auxiliary in every present perfect form twin, so no twin is a regular past', () => {
+    for (const x of sentencesOf(L('u2_l1')).filter(y => y.patternId === 'forms')) {
+      const words = x.claim!.falseText.toLowerCase().replace(/[.,?!]/g, '').split(/\s+/);
+      assert.ok(words.some(w => ['has', 'have', "hasn't", "haven't"].includes(w)), `${x.text}: ${x.claim!.falseText}`);
+    }
+  });
+
   it('send true sentences to the audio list and no twin', () => {
     const spoken = new Set(allGrammarSpoken());
     for (const id of ids()) for (const x of sentencesOf(id)) {
@@ -157,6 +164,11 @@ describe('the Grade 10 teacher form', () => {
   });
   it('lists every sentence', () => {
     for (const id of ids()) for (const x of sentencesOf(id)) assert.ok(html.includes(x.text.replace(/'/g, '&#39;')) || html.includes(x.text), x.text);
+  });
+  it('never glues «و» to an English word in its printed text', () => {
+    const text = html.replace(/<[^>]+>/g, '');
+    const glued = text.match(/[ء-ي]و[A-Za-z]|(^|\s)و[A-Za-z]/g) ?? [];
+    assert.deepEqual(glued, []);
   });
   it('leaves the other grades alone', () => {
     for (const g of [1, 2, 3, 4, 5, 9]) assert.equal(docs(`english-grammar-g${g}-review.html`), renderGrammarReviewHtml(g), `grade ${g}`);

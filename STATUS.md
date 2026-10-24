@@ -72,10 +72,11 @@ Checked 2026-10-22:
   deploys: if `false`, production's `DATABASE_URL` is a direct connection (218 direct
   connections at the 0.5 CU maximum, fewer when scaled down); switch the secret to the pooled
   string. Details and what is unverified: the log entry named above.
-- **The printed grammar review forms for Grades 3, 4, 5 and 9 clip their right-hand columns off the
-  page in A4 landscape** (measured 2026-10-24: overhang 47, 690, 390 and 762 px; Grades 1 and 2 fit;
-  Grade 10 was fixed with its own print CSS), so a teacher cannot tick or annotate those printouts.
-  Fixing them alters their committed forms, so it is its own change. Entry: «Grade 10 grammar
+- **The printed grammar review forms for Grades 3, 4, 5 and 9 clip their left-hand (last) columns
+  when printed in A4 landscape** (measured 2026-10-24: overhang 47, 690, 390 and 762 px): on Grades 4,
+  5 and 9 the tick box and notes column fall off the page (Grade 4 and 9 also the kind column); on
+  Grade 3 about a third of the notes column (its tick box stays); Grades 1, 2 and 10 fit (Grade 10
+  with its own print CSS). Fixing them alters their committed forms, so it is its own change. Entry: «Grade 10 grammar
   (Semester 1) in the English corner» in the log.
 
 Checked 2026-10-22:

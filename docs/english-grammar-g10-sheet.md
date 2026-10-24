@@ -15,18 +15,18 @@ Not reviewed yet — shown to nobody.
 
 | Sentence | Picture | Choose | True or false: wrong picture |
 |---|---|---|---|
-| She usually walks to school. | — | **walks** / is walking | _She usually is walking to school._ |
-| My father rarely wears a suit. | — | **wears** / is wearing | _My father rarely is wearing a suit._ |
-| We often celebrate birthdays at home. | — | **celebrate** / are celebrating | _We often are celebrating birthdays at home._ |
-| He never wears his uniform at weekends. | — | **wears** / is wearing | _He never is wearing his uniform at weekends._ |
+| She usually walks to school. | — | **usually walks** / is usually walking | _She is usually walking to school._ |
+| My father rarely wears a suit. | — | **rarely wears** / is rarely wearing | _My father is rarely wearing a suit._ |
+| We often celebrate birthdays at home. | — | **often celebrate** / are often celebrating | _We are often celebrating birthdays at home._ |
+| He wears his uniform five days a week. | — | **wears** / is wearing | _He is wearing his uniform five days a week._ |
 | The shop opens at eight every day. | — | **opens** / is opening | _The shop is opening at eight every day._ |
 | My brother plays football on Fridays. | — | **plays** / is playing | _My brother is playing football on Fridays._ |
-| Mum usually cooks dinner. | — | **cooks** / is cooking | _Mum usually is cooking dinner._ |
-| Students rarely dress casually at our school. | — | **dress** / are dressing | _Students rarely are dressing casually at our school._ |
-| We never wear jeans to school. | — | **wear** / are wearing | _We never are wearing jeans to school._ |
+| Mum usually cooks dinner. | — | **usually cooks** / is usually cooking | _Mum is usually cooking dinner._ |
+| Students rarely dress casually at our school. | — | **rarely dress** / are rarely dressing | _Students are rarely dressing casually at our school._ |
+| We wear jeans to school once a month. | — | **wear** / are wearing | _We are wearing jeans to school once a month._ |
 | She checks her email every day. | — | **checks** / is checking | _She is checking her email every day._ |
 | We visit our grandparents on Fridays. | — | **visit** / are visiting | _We are visiting our grandparents on Fridays._ |
-| Dad often reads the newspaper in the morning. | — | **reads** / is reading | _Dad often is reading the newspaper in the morning._ |
+| Dad often reads the newspaper in the morning. | — | **often reads** / is often reading | _Dad is often reading the newspaper in the morning._ |
 | Look! The baby is smiling. | — | **is smiling** / smiles | _Look! The baby smiles._ |
 | Listen! Someone is singing next door. | — | **is singing** / sings | _Listen! Someone sings next door._ |
 | We are having lunch right now. | — | **are having** / have | _We have lunch right now._ |
@@ -357,7 +357,7 @@ Not reviewed yet — shown to nobody.
 | You don't have to stay, but you're welcome to. | — | **don't have to** / mustn't | _You mustn't stay, but you're welcome to._ |
 | The museum is free. Visitors don't have to pay. | — | **don't have to** / mustn't | _The museum is free. Visitors mustn't pay._ |
 | Ties aren't required. You don't have to wear one. | — | **don't have to** / mustn't | _Ties aren't required. You mustn't wear one._ |
-| You don't have to bring anything. We have everything. | — | **don't have to** / mustn't | _You mustn't bring anything. We have everything._ |
+| Sport isn't compulsory. You don't have to play. | — | **don't have to** / mustn't | _Sport isn't compulsory. You mustn't play._ |
 | He could swim when he was five. | — | **could** / can | _He can swim when he was five._ |
 | When I was little, I couldn't stay up late. | — | **couldn't** / can't | _When I was little, I can't stay up late._ |
 | Yesterday, I was able to finish early. | — | **was able to** / am able to | _Yesterday, I am able to finish early._ |
