@@ -30,6 +30,7 @@ import { contentLang } from '@/services/contentLanguage';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import type { LessonPlanOutput } from '@/services/ai/AIService';
 import { regenerationFields } from '@/services/ai/regeneration';
+import { aiErrorText } from '@/services/ai/aiProvenance';
 import { getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
 import {
   buildLessonPrepRequest,
@@ -164,8 +165,11 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
       setGrounded(built.grounded);
       setGroundedLesson(built.groundedLessonTitle);
       setResult(out);
-    } catch {
-      setError(t('generationFailed'));
+    } catch (e) {
+      // The same sentence the generator screens show: «allowance spent» or «AI is
+      // switched off» say what happened, where the bare line sent a teacher to
+      // retry something that would keep failing. The badge records the rest.
+      setError(aiErrorText(e, t));
     } finally {
       setLoading(false);
     }

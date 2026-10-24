@@ -93,6 +93,9 @@
     .sheet { gap: 0; max-width: none; }
     .intro { max-width: none; }
     .unit { break-before: page; }
+    /* A grid places the sign-off where the table would have ended without the page break, over its last rows. */
+    .unit { display: block; }
+    .unit > * + * { margin-top: 14px; }
     .table-wrap { overflow: visible; border-radius: 0; }
     table { min-width: 0; }
     tr, .signoff { break-inside: avoid; }
@@ -746,7 +749,7 @@
         </tr>
         </tbody>
       </table>
-    </div><p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>جمل «<span dir="ltr">Is it a car? Yes, it is.</span>» وأخواتها لها نشاط «نعم أم لا» الخاص في القواعد، فلا تظهر في «اقرَأ الجملة».</li><li><span dir="ltr">action figure</span> و<span dir="ltr">building set</span> بلا صورة، فلا تظهر جملتاهما في «اقرَأ الجملة».</li></ul>
+    </div><p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>جمل «<span dir="ltr">Is it a car? Yes, it is.</span>» وأخواتها لها نشاط «نعم أم لا» الخاص في القواعد، فلا تظهر في «اقرَأ الجملة».</li><li><span dir="ltr">action figure</span> و <span dir="ltr">building set</span> بلا صورة، فلا تظهر جملتاهما في «اقرَأ الجملة».</li></ul>
     <div class="signoff">
       <div class="verdict">
         <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
@@ -2685,7 +2688,7 @@
         </tr>
         </tbody>
       </table>
-    </div><p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>جمل الوحدة تختلف باسم الشخص (<span dir="ltr">dad</span> و<span dir="ltr">mum</span> و<span dir="ltr">grandad</span> و<span dir="ltr">granny</span>) والصورة هي الغرفة فقط، أي أربع صور لا غير، فلا يظهر «اقرَأ الجملة». تبقى أنشطة الكلمات الثلاثة.</li></ul>
+    </div><p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>جمل الوحدة تختلف باسم الشخص (<span dir="ltr">dad</span> و <span dir="ltr">mum</span> و <span dir="ltr">grandad</span> و <span dir="ltr">granny</span>) والصورة هي الغرفة فقط، أي أربع صور لا غير، فلا يظهر «اقرَأ الجملة». تبقى أنشطة الكلمات الثلاثة.</li></ul>
     <div class="signoff">
       <div class="verdict">
         <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>

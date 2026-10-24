@@ -30,7 +30,8 @@ export type RoleSwitchErrorCode =
   | "role_locked"
   | "role_locked_linked"
   | "role_locked_teaching"
-  | "student_accounts_disabled";
+  | "student_accounts_disabled"
+  | "age_confirmation_required";
 
 export type RoleSwitchDecision =
   | { ok: true; role: SwitchableRole; changed: boolean }
@@ -52,6 +53,14 @@ export interface RoleSwitchInput {
    * back, which an unlinked parent/student may. Asked only for a teacher.
    */
   hasTeachingData: () => Promise<boolean>;
+  /**
+   * The caller ticked «أنا بالغ، أو وليّ أمري موافق». Asked only of a change
+   * **into** student: an account that signs up as a student with an email
+   * confirms this (`lib/ageConfirmation.ts`), and switching an existing account
+   * into the role is the same act through another door. Read as a literal
+   * `true` by the routes; absent means no.
+   */
+  ageConfirmed?: boolean;
 }
 
 export async function decideRoleSwitch(input: RoleSwitchInput): Promise<RoleSwitchDecision> {
@@ -81,6 +90,22 @@ export async function decideRoleSwitch(input: RoleSwitchInput): Promise<RoleSwit
     };
   }
 
+  // Last, after every lock: a refusal for being linked or teaching stays the
+  // truthful answer, and a missing tick is only reported to someone who could
+  // otherwise have switched.
+  const settle = (): RoleSwitchDecision => {
+    const changed = role !== input.currentRole;
+    if (changed && role === "student" && input.ageConfirmed !== true) {
+      return {
+        ok: false,
+        status: 400,
+        code: "age_confirmation_required",
+        error: "Confirm you are an adult, or that a parent or guardian agrees, to become a student",
+      };
+    }
+    return { ok: true, role, changed };
+  };
+
   // Before the no-op shortcut, so that every `ok` decision — changed or not —
   // is one made about an account with nothing attached to its current role.
   if (isTeacher) {
@@ -92,7 +117,7 @@ export async function decideRoleSwitch(input: RoleSwitchInput): Promise<RoleSwit
         error: "This account already has classes or students",
       };
     }
-    return { ok: true, role, changed: role !== input.currentRole };
+    return settle();
   }
 
   if (await input.hasRosterLink()) {
@@ -104,5 +129,5 @@ export async function decideRoleSwitch(input: RoleSwitchInput): Promise<RoleSwit
     };
   }
 
-  return { ok: true, role, changed: role !== input.currentRole };
+  return settle();
 }

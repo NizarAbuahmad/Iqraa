@@ -42,6 +42,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { TeachingAssignment, useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { PillSelector } from '@/components/ui/PillSelector';
+import { CheckRow } from '@/components/ui/CheckRow';
+import { ApiError } from '@/services/apiClient';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { getPickerGrades, getSubjectsForGrade } from '@/services/curriculumData';
 import { goBack } from '@/services/navigation';
@@ -120,17 +122,29 @@ export default function SetupSubjectsScreen() {
   // own way back to teacher.
   const studentAccounts = useStudentAccountsEnabled();
   const [switchingRole, setSwitchingRole] = useState(false);
-  const handleRole = async (role: 'teacher' | 'parent' | 'student') => {
-    if (role === 'teacher' || switchingRole) return;
+  // Becoming a student asks what signing up as one asks — an adult, or a
+  // guardian's agreement — so that pill does not switch on the tap: it opens the
+  // box and a confirm button, and the server refuses the switch without the tick.
+  const [studentPending, setStudentPending] = useState(false);
+  const [ageOk, setAgeOk] = useState(false);
+  const doSwitch = async (role: 'parent' | 'student') => {
+    if (switchingRole) return;
     setSwitchingRole(true);
     setError('');
     try {
-      await switchRole(role);
-    } catch {
+      await switchRole(role, { ageConfirmed: role === 'student' && ageOk });
+    } catch (e) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(t('claimRequiredSwitchFailed'));
+      setError(t(e instanceof ApiError && e.code === 'age_confirmation_required' ? 'errAgeConfirmRequired' : 'claimRequiredSwitchFailed'));
       setSwitchingRole(false);
     }
+  };
+  const handleRole = async (role: 'teacher' | 'parent' | 'student') => {
+    if (switchingRole) return;
+    if (role === 'teacher') { setStudentPending(false); setAgeOk(false); return; }
+    if (role === 'student') { setStudentPending(true); return; }
+    setStudentPending(false);
+    await doSwitch('parent');
   };
 
   const [assignments, setAssignments] = useState<TeachingAssignment[]>(() => initialAssignments(user));
@@ -210,14 +224,29 @@ export default function SetupSubjectsScreen() {
               { value: 'parent', label: t('roleParent') },
               { value: 'student', label: t('roleStudent') },
             ]}
-            value="teacher"
+            value={studentPending ? 'student' : 'teacher'}
             onChange={handleRole}
             colors={colors}
             isRTL={isRTL}
             accent={colors.primary}
             haptics
-            containerStyle={{ marginBottom: 20 }}
+            containerStyle={{ marginBottom: studentPending ? 12 : 20 }}
           />
+        ) : null}
+
+        {!editMode && studentAccounts && studentPending ? (
+          <View style={{ marginBottom: 20, gap: 12 }}>
+            <CheckRow checked={ageOk} onPress={() => setAgeOk(v => !v)} isRTL={isRTL} colors={colors}>
+              {t('ageConfirmLabel')}
+            </CheckRow>
+            <Button
+              label={t('claimRequiredSwitchSubmit')}
+              onPress={() => void doSwitch('student')}
+              loading={switchingRole}
+              disabled={!ageOk || switchingRole}
+              size="sm"
+            />
+          </View>
         ) : null}
 
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>

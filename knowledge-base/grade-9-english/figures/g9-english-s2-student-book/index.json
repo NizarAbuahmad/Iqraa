@@ -2,14 +2,14 @@
   "sourceId": "g9-english-s2-student-book",
   "figures": [
     {
-      "file": "p006.png",
+      "file": "p006-v2.png",
       "sourceId": "g9-english-s2-student-book",
       "pdfPage": 6,
       "rect": [
-        309.5,
-        331.3,
-        577.7,
-        598.0
+        304.0,
+        337.0,
+        584.0,
+        631.0
       ],
       "unit": 1,
       "lesson": 1,
@@ -66,14 +66,14 @@
       "lessonStartPage": null
     },
     {
-      "file": "p011.png",
+      "file": "p011-v2.png",
       "sourceId": "g9-english-s2-student-book",
       "pdfPage": 11,
       "rect": [
-        274.8,
-        51.7,
-        639.0,
-        593.8
+        298.0,
+        24.0,
+        612.3,
+        576.0
       ],
       "unit": 1,
       "lesson": 4,
@@ -210,14 +210,14 @@
       "lessonStartPage": null
     },
     {
-      "file": "p026.png",
+      "file": "p026-v2.png",
       "sourceId": "g9-english-s2-student-book",
       "pdfPage": 26,
       "rect": [
-        -0.1,
-        -0.1,
-        603.9,
-        858.9
+        35.0,
+        34.0,
+        304.0,
+        258.0
       ],
       "unit": 2,
       "lesson": 6,

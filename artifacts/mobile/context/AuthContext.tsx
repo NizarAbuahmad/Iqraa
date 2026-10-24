@@ -135,6 +135,12 @@ export interface RegisterData {
    * (`LEGAL_VERSION`) — see `api-server/src/lib/termsAcceptance.ts`.
    */
   acceptedTerms?: boolean;
+  /**
+   * A student signing up with an email (no teacher's code) ticked «أنا بالغ أو
+   * وافق وليّ أمري». The server refuses a new student account without it — see
+   * `api-server/src/lib/ageConfirmation.ts`. Sent for no other role.
+   */
+  ageConfirmed?: boolean;
 }
 
 /** What a parent or student sends to create an account from a teacher's code alone. */
@@ -158,7 +164,7 @@ interface AuthContextType {
    * "Continue with Google" button, which used to ignore the role pill
    * entirely and silently create a teacher.
    */
-  loginWithGoogle: (credential: string, signup?: Pick<RegisterData, 'role' | 'acceptedTerms'>) => Promise<void>;
+  loginWithGoogle: (credential: string, signup?: Pick<RegisterData, 'role' | 'acceptedTerms' | 'ageConfirmed'>) => Promise<void>;
   /**
    * Creates the account but does NOT sign in — a password account starts
    * unverified and the server refuses login until `verifyEmail` succeeds.
@@ -238,8 +244,12 @@ interface AuthContextType {
    * only while this account has claimed no roster row — i.e. exactly while the
    * gate is holding it on `/claim-required`, which is the only screen that
    * offers it. Throws with the server's own `code` in `message` otherwise.
+   *
+   * A change **into** student also needs `{ ageConfirmed: true }` — the box the
+   * sign-up asks («أنا بالغ، أو وليّ أمري موافق») — or the server answers 400
+   * `age_confirmation_required`. See `switchNeedsAgeConfirmation`.
    */
-  switchRole: (role: 'teacher' | 'parent' | 'student') => Promise<void>;
+  switchRole: (role: 'teacher' | 'parent' | 'student', opts?: { ageConfirmed?: boolean }) => Promise<void>;
   /**
    * The other accounts signed in on this device, most recently used first.
    * Never includes the open one, and carries no credentials.
@@ -509,7 +519,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = useCallback(async (
     credential: string,
-    signup?: Pick<RegisterData, 'role' | 'acceptedTerms'>,
+    signup?: Pick<RegisterData, 'role' | 'acceptedTerms' | 'ageConfirmed'>,
   ) => {
     // `isNewAccount` is optional on purpose: an app build can outlive the API
     // revision that answers it (and predates it during a rollout). Absent is
@@ -530,6 +540,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Read only when this credential creates an account; someone
           // signing back in is not asked again.
           acceptedTerms: signup?.acceptedTerms === true,
+          ageConfirmed: signup?.ageConfirmed === true,
           termsVersion: LEGAL_VERSION,
         }),
       },
@@ -564,6 +575,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           confirmPassword: payload.confirmPassword,
           role: payload.role,
           acceptedTerms: payload.acceptedTerms === true,
+          ageConfirmed: payload.ageConfirmed === true,
           termsVersion: LEGAL_VERSION,
         }),
       },
@@ -789,10 +801,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void markGradeSetupSkipped(skipUserId);
   }, [skipUserId]);
 
-  const switchRole = useCallback(async (role: 'teacher' | 'parent' | 'student') => {
+  const switchRole = useCallback(async (
+    role: 'teacher' | 'parent' | 'student',
+    opts?: { ageConfirmed?: boolean },
+  ) => {
     const updated = await apiJson<{ role: UserRole; hasRosterLink?: boolean }>('/auth/role', {
       method: 'POST',
-      body: JSON.stringify({ role }),
+      // Sent only for a student: the server reads it for no other role.
+      body: JSON.stringify({ role, ...(role === 'student' ? { ageConfirmed: opts?.ageConfirmed === true } : {}) }),
     });
     // No token refresh: the API re-reads users.role on every request, so the
     // role inside the access token decides nothing (middlewares/auth.ts).
