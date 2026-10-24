@@ -2008,3 +2008,41 @@ describe('chat history, plan objectives, books, the Math Corner tools and follow
     });
   }
 });
+
+describe('games, the calendar, privacy and terms, library searches — wordings of answers that already existed (twenty-fourth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['ما هي ألعاب إقرأ المتاحة؟', 'howGamesList'],
+    ['كيف أرى الدروس المجدولة في التقويم؟', 'howCalendar'],
+    ['كيف أرى امتحانات زملائي في المدرسة؟', 'howCalendar'],
+    ['how do i view my colleagues exams', 'howCalendar'],
+    ['كيف أطّلع على سياسة الخصوصية؟', 'howPrivacy'],
+    ['how do i read the privacy policy', 'howPrivacy'],
+    ['كيف أشاهد شروط الاستخدام؟', 'howTerms'],
+    ['كيف أطّلع على شروط الخدمة؟', 'howTerms'],
+    ['كيف أبحث في المكتبة عن فيديو لدرس الذرة؟', 'howLibraryVideos'],
+    ['كيف أصفّي موارد المكتبة حسب النوع؟', 'howLibraryVideos'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  const stayWithModel = [
+    'كيف أطلع الطلبة على شروط الامتحان',
+    'كيف أرى الدروس التي لم أدرّسها',
+    'كيف أرى امتحانات الطلبة السابقة',
+    'كيف أبحث عن فيديو لدرس الذرة في يوتيوب',
+    'كيف أصفي الماء من الشوائب',
+    'كيف أشاهد شروط تفاعل الاستبدال',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howGamesList', 'howCalendar', 'howPrivacy', 'howTerms', 'howLibraryVideos']);
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});

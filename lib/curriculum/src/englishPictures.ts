@@ -79,7 +79,13 @@ const WORD_EMOJI: Record<string, string> = {
  * above the word, the way the book prints each word under its picture — an
  * emoji standing in for the book's art, so a word with none shows text alone.
  */
-export function wordPicture(word: string): string | null {
+export function wordPicture(word: string, ar?: string): string | null {
+  // Same word, another thing: in Grade 2 semester 2 unit 6 "orange" is the fruit
+  // (glossed «برتقالة»), everywhere else the colour. Keyed on the gloss, so the word,
+  // its recording and the colour lessons are untouched. A caller that holds only the
+  // English string (the reading games) still gets the colour. (A Grade 2 teacher's
+  // review, 2026-10-24.)
+  if (word === 'orange' && ar === 'برتقالة') return '🍊';
   return WORD_EMOJI[word] ?? null;
 }
 
