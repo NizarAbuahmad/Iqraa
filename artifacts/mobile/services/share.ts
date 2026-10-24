@@ -24,6 +24,7 @@ import { buildWordDocument } from './docxBuild.ts';
 import { buildMinistryPlanDocx, type MinistryLessonPage } from './ministryPlan.ts';
 import { trackEvent } from '@/services/analytics';
 import { capturePdf } from './pdfCapture';
+import { saveBlob } from './webSave.ts';
 
 // Re-exported here so existing callers (`import { buildDeckSlidesHTML } from
 // '@/services/share'`) don't need to know it actually lives in its own pure
@@ -198,13 +199,7 @@ export async function saveRemoteImage(url: string, filename: string): Promise<vo
   }
 
   if (Platform.OS === 'web') {
-    const objectUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = objectUrl;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(objectUrl); }, 1000);
+    await saveBlob(blob, filename);
     return;
   }
 
@@ -264,14 +259,7 @@ async function saveDocx(doc: import('docx').Document, filename: string): Promise
   if (Platform.OS === 'web') {
     // On web, expo-file-system File API and expo-sharing are unavailable.
     // Generate a Blob and trigger a browser download instead.
-    const blob = await Packer.toBlob(doc);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${filename}.docx`;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+    await saveBlob(await Packer.toBlob(doc), `${filename}.docx`);
     return;
   }
 

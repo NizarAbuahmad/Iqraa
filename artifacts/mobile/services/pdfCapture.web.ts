@@ -14,6 +14,7 @@
  */
 
 import { planPageSlices } from './pdfPagination.ts';
+import { isIOSWeb, saveBlob } from './webSave.ts';
 
 const A4_W = 210;
 const A4_H = 297;
@@ -23,6 +24,10 @@ const SLIDE_SELECTOR = '.slide, .deck-slide';
 // Browsers cap a canvas around 16k px on a side (and silently return a blank
 // one beyond it), so a long document trades resolution for fitting at all.
 const MAX_CANVAS_PX = 16000;
+// iOS Safari also caps a canvas's total area (16,777,216 px) and, past it,
+// returns a blank canvas or throws — a multi-page document at scale 2 is well
+// over. Keep a margin under the limit.
+const IOS_MAX_CANVAS_AREA = 16_000_000;
 
 function pdfFilename(name: string): string {
   const clean = name.replace(/[\\/:*?"<>|]+/g, ' ').trim().replace(/\.pdf$/i, '');
@@ -92,7 +97,11 @@ async function buildPdf(iframe: HTMLIFrameElement, html2canvas: Html2Canvas, jsP
   iframe.style.width = `${PORTRAIT_PX_WIDTH}px`;
   const width = doc.body.scrollWidth;
   const height = doc.body.scrollHeight;
-  const scale = Math.min(2, MAX_CANVAS_PX / height);
+  const scale = Math.min(
+    2,
+    MAX_CANVAS_PX / height,
+    isIOSWeb() ? Math.sqrt(IOS_MAX_CANVAS_AREA / (width * height)) : Infinity,
+  );
   const canvas = await html2canvas(doc.body, {
     ...opts, scale, width, height, windowWidth: width, windowHeight: height,
   });
@@ -148,7 +157,8 @@ export async function capturePdf(iframe: HTMLIFrameElement, filename: string): P
   const faces = all.filter(f => f.status === 'loaded');
   faces.forEach(f => fontSet(document).add(f));
   try {
-    (await buildPdf(iframe, html2canvas, jsPDF)).save(pdfFilename(filename));
+    const pdf = await buildPdf(iframe, html2canvas, jsPDF);
+    await saveBlob(pdf.output('blob'), pdfFilename(filename));
   } finally {
     faces.forEach(f => fontSet(document).delete(f));
   }
