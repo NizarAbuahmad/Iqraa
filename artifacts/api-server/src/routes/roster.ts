@@ -75,6 +75,7 @@ import {
 } from "../lib/classResource.js";
 import { labClassResourceSnapshot, parseLabClassResourceInput } from "../lib/labClassResource.js";
 import { subjectColumns, withSubjectIds } from "../lib/classSubjects.js";
+import { nameKey, nameTakenBy, renamedAccountNames } from "../lib/rosterRename.ts";
 
 const router = Router();
 
@@ -190,10 +191,6 @@ router.get("/classes/:id", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
-    // linkedCount answers the one question a shared join code creates: who has
-    // actually signed up, and who is still just a name I typed. Counted here
-    // rather than fetched per row — a thirty-name roster would otherwise be
-    // thirty round trips to render one column of ticks.
     const roster = await db
       .select({
         id: students.id,
@@ -203,18 +200,53 @@ router.get("/classes/:id", async (req: AuthenticatedRequest, res) => {
         teacherNote: students.teacherNote,
         gender: students.gender,
         createdAt: students.createdAt,
-        linkedCount: count(rosterLinks.id),
       })
       .from(classMemberships)
       .innerJoin(students, eq(students.id, classMemberships.studentId))
-      .leftJoin(rosterLinks, eq(rosterLinks.studentId, students.id))
       .where(and(eq(classMemberships.classGroupId, classId), isNull(students.archivedAt)))
-      .groupBy(students.id)
       .orderBy(asc(students.displayName));
+
+    // Who holds each name, not just whether anyone does. Read in one query for
+    // the whole roster rather than one per row, and with the same
+    // students → roster_links → users join the contacts picker uses
+    // (routes/messaging.ts), so the teacher's own scoped connection can read
+    // the linked accounts' names without systemDb.
+    const linkRows =
+      roster.length === 0
+        ? []
+        : await db
+            .select({
+              studentId: students.id,
+              userId: users.id,
+              relation: rosterLinks.relation,
+              firstName: users.firstName,
+              lastName: users.lastName,
+              linkedAt: rosterLinks.createdAt,
+            })
+            .from(students)
+            .innerJoin(rosterLinks, eq(rosterLinks.studentId, students.id))
+            .innerJoin(users, eq(users.id, rosterLinks.userId))
+            .where(
+              and(
+                eq(students.teacherId, req.user!.id),
+                inArray(students.id, roster.map(s => s.id)),
+              ),
+            )
+            .orderBy(asc(rosterLinks.createdAt));
+
+    const linksByStudent = new Map<string, Omit<(typeof linkRows)[number], "studentId">[]>();
+    for (const { studentId, ...link } of linkRows) {
+      const list = linksByStudent.get(studentId) ?? [];
+      list.push(link);
+      linksByStudent.set(studentId, list);
+    }
 
     res.json({
       class: withSubjectIds(group),
-      students: roster.map(({ linkedCount, ...s }) => ({ ...s, linked: linkedCount > 0 })),
+      students: roster.map(s => {
+        const links = linksByStudent.get(s.id) ?? [];
+        return { ...s, links, linked: links.length > 0 };
+      }),
     });
   } catch (err) {
     failRoster(res, err, "get class", "Failed to load class");
@@ -710,8 +742,6 @@ router.post("/classes/:id/students", async (req: AuthenticatedRequest, res) => {
      * students with identical names in one class have to be distinguished by
      * the teacher — their own register has the same problem.
      */
-    const nameKey = (name: string) => name.replace(/\s+/g, " ").trim().toLowerCase();
-
     const alreadyInClass = await db
       .select({ displayName: students.displayName })
       .from(classMemberships)
@@ -1021,17 +1051,108 @@ router.delete("/classes/:id/resources/:rid", async (req: AuthenticatedRequest, r
   }
 });
 
+/**
+ * After a rename, the linked code-only accounts (a login code set, no password,
+ * no Google id) are named from the roster row, so they are re-derived here — but
+ * only while they still carry the OLD roster name (see lib/rosterRename.ts).
+ *
+ * systemDb: it writes other users' rows, which the app role cannot. That is a
+ * second connection, so this cannot share a transaction with the roster update;
+ * it runs after it and only logs on failure, because the rename the teacher
+ * asked for has already been saved and must not be reported as failed.
+ *
+ * What a failure logs: the student id, the account id being written (when
+ * there is one) and the database error code. It never logs the error object:
+ * drizzle's query error carries the SQL parameters in its message, and for the
+ * update those are the child's new first and last name.
+ */
+async function syncLinkedAccountNames(studentId: string, oldName: string, newName: string): Promise<void> {
+  let userId: string | undefined;
+  try {
+    const linked = await systemDb
+      .select({
+        userId: users.id,
+        relation: rosterLinks.relation,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        loginCodeHash: users.loginCodeHash,
+        passwordHash: users.passwordHash,
+        googleId: users.googleId,
+      })
+      .from(rosterLinks)
+      .innerJoin(users, eq(users.id, rosterLinks.userId))
+      .where(eq(rosterLinks.studentId, studentId));
+
+    for (const account of linked) {
+      if (!account.loginCodeHash || account.passwordHash || account.googleId) continue;
+      const next = renamedAccountNames({
+        relation: account.relation,
+        oldRosterName: oldName,
+        newRosterName: newName,
+        current: account,
+      });
+      if (next) {
+        userId = account.userId;
+        await systemDb.update(users).set(next).where(eq(users.id, account.userId));
+      }
+    }
+  } catch (err) {
+    const e = err as { code?: unknown; cause?: { code?: unknown } } | null;
+    const code = [e?.cause?.code, e?.code].find((c): c is string => typeof c === "string");
+    logger.error({ studentId, userId, code }, "renaming a student's linked accounts failed — the roster name was saved");
+  }
+}
+
 const STUDENT_GENDERS = new Set(["male", "female", ""]);
 
 router.patch("/students/:id", async (req: AuthenticatedRequest, res) => {
   try {
     const studentId = req.params["id"] as string;
     const patch: Record<string, unknown> = { updatedAt: new Date() };
+    let renamedFrom: string | null = null;
     if (req.body?.displayName !== undefined) {
       const displayName = trimmed(req.body.displayName);
       if (!displayName) {
         res.status(400).json({ error: "displayName cannot be empty" });
         return;
+      }
+      const [current] = await db
+        .select({ displayName: students.displayName })
+        .from(students)
+        .where(and(eq(students.id, studentId), eq(students.teacherId, req.user!.id)))
+        .limit(1);
+      if (!current) {
+        res.status(404).json({ error: "Student not found" });
+        return;
+      }
+      if (displayName !== current.displayName) {
+        // The same rule the add route applies: a name already in one of this
+        // student's classes would split a child's results across two look-alike
+        // rows. Other classes and other teachers are free to reuse it.
+        const myClasses = db
+          .select({ id: classMemberships.classGroupId })
+          .from(classMemberships)
+          .where(eq(classMemberships.studentId, studentId));
+        const peers = await db
+          .selectDistinct({ displayName: students.displayName })
+          .from(classMemberships)
+          .innerJoin(students, eq(students.id, classMemberships.studentId))
+          .where(
+            and(
+              inArray(classMemberships.classGroupId, myClasses),
+              ne(students.id, studentId),
+              eq(students.teacherId, req.user!.id),
+              isNull(students.archivedAt),
+            ),
+          );
+        if (nameTakenBy(displayName, peers.map(p => p.displayName))) {
+          res.status(409).json({
+            error: "A student with this name is already in the class",
+            code: "student_name_taken",
+          });
+          return;
+        }
+        renamedFrom = current.displayName;
       }
       patch["displayName"] = displayName;
     }
@@ -1060,6 +1181,9 @@ router.patch("/students/:id", async (req: AuthenticatedRequest, res) => {
     if (!row) {
       res.status(404).json({ error: "Student not found" });
       return;
+    }
+    if (renamedFrom !== null) {
+      await syncLinkedAccountNames(studentId, renamedFrom, row.displayName);
     }
     res.json({ student: row });
   } catch (err) {
