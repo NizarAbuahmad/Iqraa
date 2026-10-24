@@ -142,6 +142,19 @@ describeDb("parent approval for email students", () => {
       assert.deepEqual(results.map(r => r.status).sort(), [200, 410, 410]);
     });
 
+    it("never writes the link's token to the request log, but still logs the request", async () => {
+      const kid = await mkUser("student");
+      const token = await mkConsent(kid);
+      await call(on, "GET", `/guardian-consent/${token}`);
+      await call(on, "POST", `/guardian-consent/${token}`, undefined, { decision: "declined" });
+      await call(on, "GET", "/guardian-consent/config");
+      await new Promise(r => setTimeout(r, 500));
+      const logs = on.logs();
+      assert.ok(!logs.includes(token), "the bearer token reached the server log");
+      assert.ok(logs.includes("/guardian-consent/:token"), "the request was not logged at all, so the check proves nothing");
+      assert.ok(logs.includes("/guardian-consent/config"), "the config path must stay readable");
+    });
+
     it("with the flag off the page and the decision are closed (404), only config answers", async () => {
       const kid = await mkUser("student");
       const token = await mkConsent(kid);

@@ -11,6 +11,7 @@ import helmet from "helmet";
 import { pinoHttp } from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { redactedUrl } from "./lib/logUrl";
 import { platformContext } from "./lib/requestPlatform";
 import { isPoolExhausted, sendDbBusy } from "./lib/dbBusy";
 
@@ -29,7 +30,7 @@ app.use(
         return {
           id: req.id,
           method: req.method,
-          url: req.url?.split("?")[0],
+          url: redactedUrl(req.url?.split("?")[0]),
         };
       },
       res(res) {
@@ -182,7 +183,7 @@ app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
   // answering 500 tells them nothing they can act on. Named explicitly because
   // it is now reachable by ordinary use: a teacher photographing a paper.
   if ((err as { type?: string })?.type === "entity.too.large") {
-    logger.warn({ url: req.url }, "request body too large");
+    logger.warn({ url: redactedUrl(req.url) }, "request body too large");
     res.status(413).json({
       error: "That upload is too large. Try again at a lower quality.",
       code: "payload_too_large",
@@ -196,18 +197,18 @@ app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
   const parserStatus = (err as { status?: number; type?: string })?.status;
   const parserType = (err as { type?: string })?.type;
   if (typeof parserType === "string" && parserStatus && parserStatus >= 400 && parserStatus < 500) {
-    logger.warn({ url: req.url, type: parserType }, "malformed request body");
+    logger.warn({ url: redactedUrl(req.url), type: parserType }, "malformed request body");
     res.status(parserStatus).json({ error: "Malformed request body", code: parserType });
     return;
   }
   // No database connection came free in time (lib/db poolConfig). The caller
   // did nothing wrong and a retry will probably work, so say that.
   if (isPoolExhausted(err)) {
-    logger.error({ err, url: req.url }, "database pool exhausted");
+    logger.error({ err, url: redactedUrl(req.url) }, "database pool exhausted");
     sendDbBusy(res);
     return;
   }
-  logger.error({ err, url: req.url }, "unhandled error");
+  logger.error({ err, url: redactedUrl(req.url) }, "unhandled error");
   res.status(500).json({ error: "Internal server error" });
 });
 
