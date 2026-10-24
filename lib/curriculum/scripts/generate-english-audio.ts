@@ -10,10 +10,15 @@
  * "chair" — or "EE-ray-ser" for "eraser"; give the word a `PRONUNCIATION` hint
  * first). `--dry-run` reports and touches nothing.
  *
- *   pnpm --filter @workspace/curriculum run english-audio [-- --dry-run | --force | --only a,b]
+ *   pnpm --filter @workspace/curriculum run english-audio [-- --dry-run | --force | --only a,b | --out dir]
+ *
+ * `--out dir` writes the files there and uploads nothing: voice, listen, measure, then upload exactly those
+ * files with `--only a,b --from dir` (a plain re-run would voice every word again, and the new takes would
+ * not be the ones you checked).
  *
  * Needs OPENAI_API_KEY and R2 credentials with write access to `iqraa-public`.
  */
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -69,6 +74,18 @@ const PRONUNCIATION: Record<string, string> = {
   eraser:
     'Pronounce it the British way, ih-RAY-zuh (/ɪˈreɪzə/): a short "i" at the start, not "ee"; ' +
     'stress on "RAY"; a "z" sound in the middle, not "s"; no "r" sound at the end.',
+  // A Grade 2 teacher (2026-10-24): "not accurate". The recording was GA-rzh: a short
+  // "a" and then straight into the "zh" with the second vowel all but missing
+  // (measured: its energy is a tenth of the first vowel's).
+  garage:
+    'Pronounce it the British way, GA-rahzh (/ˈɡærɑːʒ/): stress on the first syllable, a short "a" as in "cat"; ' +
+    'then a clear, full, long "ah" as in "father" in the second syllable, ending in the "zh" of "measure". ' +
+    'Do not swallow the second vowel, and do not stress the end ("ga-RAHZH").',
+  // A Grade 4 teacher (2026-10-24): "loudly" is too slow. Measured across all 750 single
+  // words, it and "firefighter" are the two worst: 1.7 s of speech for two syllables, 2.5
+  // times "quietly" — "a little slowly" is read too literally on some words.
+  loudly: 'Say it at a quick, natural speaking pace, LOUD-lee: two short syllables as one smooth word, nothing stretched.',
+  firefighter: 'Say it at a quick, natural speaking pace, FIRE-fy-ter: one smooth word, no pause between the parts.',
 };
 
 /** Every string the grammar activities speak (Grades 1 and 2: sentences, Yes or No questions and the No exchange), voiced like the grade's words; all are Grade 1–2, so all are the young voice. */
@@ -87,6 +104,11 @@ function instructionsFor(word: string): string {
 
 const force = process.argv.includes('--force');
 const dryRun = process.argv.includes('--dry-run');
+/** `--out <dir>`: write the MP3s there and upload nothing — to listen to or measure a take first. */
+const outDir = process.argv.includes('--out') ? process.argv[process.argv.indexOf('--out') + 1] : null;
+if (outDir) fs.mkdirSync(outDir, { recursive: true });
+/** `--from <dir>`: upload the checked MP3s already in `dir` (from `--out`) instead of voicing the words again. */
+const fromDir = process.argv.includes('--from') ? process.argv[process.argv.indexOf('--from') + 1] : null;
 const onlyArg = process.argv[process.argv.indexOf('--only') + 1];
 const only = process.argv.includes('--only') ? new Set(onlyArg?.split(',').map(audioSlug)) : null;
 /** Set on the first auth/access refusal; every worker stops at its next word. */
@@ -192,7 +214,13 @@ async function worker(slice: [string, string][]): Promise<void> {
   for (const [slug, word] of slice) {
     if (stopped) return;
     try {
-      const body = await speak(word);
+      const body = fromDir ? fs.readFileSync(path.join(fromDir, `${slug}.mp3`)) : await speak(word);
+      if (outDir) {
+        fs.writeFileSync(path.join(outDir, `${slug}.mp3`), body);
+        bytes += body.length;
+        done += 1;
+        continue;
+      }
       await client.send(
         new PutObjectCommand({
           Bucket: BUCKET,
@@ -218,7 +246,7 @@ const slices = Array.from({ length: CONCURRENCY }, (_, i) => todo.filter((_, n) 
 await Promise.all(slices.map(worker));
 
 if (stopped) process.exitCode = 2;
-console.log(`voiced ${done} words (${(bytes / 1048576).toFixed(1)} MB) → ${BUCKET}/${PREFIX}/`);
+console.log(`voiced ${done} words (${(bytes / 1048576).toFixed(1)} MB) → ${outDir ?? `${BUCKET}/${PREFIX}/`}`);
 if (failed.length) {
   console.error(`${failed.length} failed — re-run to retry: ${failed.slice(0, 10).join(', ')}`);
   process.exitCode = 1;

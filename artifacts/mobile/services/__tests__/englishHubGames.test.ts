@@ -177,13 +177,23 @@ describe('picture matching', () => {
       assert.ok(pictures.every(c => c.kind === 'emoji') && words.every(c => c.kind === 'word'), lesson.id);
       for (const emoji of pictures) {
         const word = words.find(c => c.pairId === emoji.pairId)!;
-        assert.ok(lesson.words.some(w => w.en === word.text), `${word.text} not in ${lesson.id}`);
-        assert.equal(emoji.text, wordPicture(word.text));
+        const hub = lesson.words.find(w => w.en === word.text);
+        assert.ok(hub, `${word.text} not in ${lesson.id}`);
+        assert.equal(emoji.text, wordPicture(hub.en, hub.ar));
         assert.ok(isPictureMatch(emoji, word));
         assert.ok(!isPictureMatch(emoji, emoji));
       }
     }
     assert.ok(sawAny, 'no lesson in G1-4 had enough picturable words to test against');
+  });
+
+  it('draws "orange" as the fruit only where the book glosses it as one (Grade 2 teacher, 2026-10-24)', () => {
+    assert.equal(wordPicture('orange'), '🟠');
+    assert.equal(wordPicture('orange', 'برتقالي'), '🟠');
+    assert.equal(wordPicture('orange', 'برتقالة'), '🍊');
+    const fruit = WORD_LESSONS.filter(l => l.words.some(w => w.en === 'orange' && w.ar === 'برتقالة'));
+    assert.equal(fruit.length, 1, 'exactly one lesson means the fruit');
+    assert.deepEqual([fruit[0].grade, fruit[0].semester, fruit[0].unitNumber], [2, 2, 6]);
   });
 
   it('never offers a lesson with fewer than 4 picturable words', () => {

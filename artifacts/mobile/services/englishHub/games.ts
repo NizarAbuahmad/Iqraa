@@ -206,7 +206,7 @@ export function buildPictureBoard(words: readonly HubWord[], rng: () => number =
   const picturable = words.filter(w => isPicturable(w.en));
   const picked = sample(picturable, MATCH_PAIRS, rng);
   const { left, right } = columnsWithNoGiveaway(
-    picked.map((w, pairId): PictureCard => ({ id: `${pairId}-emoji`, kind: 'emoji', text: wordPicture(w.en)!, pairId })),
+    picked.map((w, pairId): PictureCard => ({ id: `${pairId}-emoji`, kind: 'emoji', text: wordPicture(w.en, w.ar)!, pairId })),
     picked.map((w, pairId): PictureCard => ({ id: `${pairId}-word`, kind: 'word', text: w.en, pairId })),
     rng,
   );
