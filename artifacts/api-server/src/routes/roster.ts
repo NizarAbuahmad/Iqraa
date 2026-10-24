@@ -28,6 +28,7 @@ import {
   evaluations,
   libraryResources,
   parentContacts,
+  rosterLinkRequests,
   rosterLinks,
   students,
   chatMessageReads,
@@ -49,6 +50,7 @@ import {
 } from "../middlewares/auth.js";
 import { logger } from "../lib/logger";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
+import { isUniqueViolation } from "../lib/pgErrors.js";
 import { generateShareCode } from "../modules/assessment/studentView.ts";
 import { generateLoginCode, hashLoginCode } from "../lib/loginCode.ts";
 import { canReissueLoginCode } from "../lib/loginCodeReissue.ts";
@@ -854,6 +856,152 @@ router.delete("/classes/:id/students/:studentId", async (req: AuthenticatedReque
     res.json({ removed: studentId });
   } catch (err) {
     failRoster(res, err, "remove student", "Failed to remove student");
+  }
+});
+
+// ─── Class-code claims waiting for the teacher ───────────────────────────────
+// A student who picks a name off the class code is held in roster_link_requests
+// (routes/auth.ts); until the teacher approves it the account has no roster
+// link and so no access to anything. See lib/claimDecision.ts.
+
+/** After a link is made: into this teacher's class chats for the child, as the claim route does. Never throws. */
+async function syncThreadsAfterApproval(studentId: string, teacherId: string): Promise<void> {
+  try {
+    await syncClassThreadsForStudent(studentId);
+    const classes = await db
+      .select({ classGroupId: classMemberships.classGroupId })
+      .from(classMemberships)
+      .innerJoin(classGroups, eq(classGroups.id, classMemberships.classGroupId))
+      .where(and(eq(classMemberships.studentId, studentId), eq(classGroups.teacherId, teacherId), isNull(classGroups.archivedAt)));
+    for (const c of classes) await resyncClassGroupThreadIfExists(c.classGroupId, teacherId);
+  } catch (err) {
+    logger.warn({ studentId, code: (err as { code?: unknown } | null)?.code }, "class thread sync after approval failed");
+  }
+}
+
+router.get("/classes/:id/link-requests", async (req: AuthenticatedRequest, res) => {
+  try {
+    const classId = req.params["id"] as string;
+    if (!isUuid(classId) || !(await findLiveClass(classId, req.user!.id))) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+
+    const rows = await db
+      .select({
+        id: rosterLinkRequests.id,
+        studentId: students.id,
+        studentName: students.displayName,
+        userId: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        requestedAt: rosterLinkRequests.createdAt,
+      })
+      .from(rosterLinkRequests)
+      .innerJoin(students, eq(students.id, rosterLinkRequests.studentId))
+      .innerJoin(
+        classMemberships,
+        and(eq(classMemberships.studentId, students.id), eq(classMemberships.classGroupId, classId)),
+      )
+      .innerJoin(users, eq(users.id, rosterLinkRequests.userId))
+      .where(
+        and(
+          eq(students.teacherId, req.user!.id),
+          isNull(students.archivedAt),
+          // A request from an account that has since become something else is not a student claim.
+          eq(users.role, "student"),
+        ),
+      )
+      .orderBy(asc(rosterLinkRequests.createdAt));
+
+    // A name that already has a student account has nothing left to approve.
+    const taken = rows.length === 0
+      ? []
+      : await db
+          .select({ studentId: rosterLinks.studentId })
+          .from(rosterLinks)
+          .where(and(inArray(rosterLinks.studentId, rows.map(r => r.studentId)), eq(rosterLinks.relation, "self")));
+    const takenIds = new Set(taken.map(t => t.studentId));
+
+    res.json({ requests: rows.filter(r => !takenIds.has(r.studentId)) });
+  } catch (err) {
+    failRoster(res, err, "list link requests", "Failed to load join requests");
+  }
+});
+
+/** The request, only if it is for this teacher's live student. "Not found" either way. */
+async function findOwnRequest(requestId: string, studentId: string, teacherId: string) {
+  if (!isUuid(requestId) || !isUuid(studentId)) return null;
+  const [row] = await db
+    .select({ id: rosterLinkRequests.id, userId: rosterLinkRequests.userId, role: users.role })
+    .from(rosterLinkRequests)
+    .innerJoin(students, eq(students.id, rosterLinkRequests.studentId))
+    .innerJoin(users, eq(users.id, rosterLinkRequests.userId))
+    .where(
+      and(
+        eq(rosterLinkRequests.id, requestId),
+        eq(rosterLinkRequests.studentId, studentId),
+        eq(students.teacherId, teacherId),
+        isNull(students.archivedAt),
+      ),
+    )
+    .limit(1);
+  return row ?? null;
+}
+
+router.post("/students/:id/link-requests/:requestId/approve", async (req: AuthenticatedRequest, res) => {
+  try {
+    const studentId = req.params["id"] as string;
+    const requestId = req.params["requestId"] as string;
+    const request = await findOwnRequest(requestId, studentId, req.user!.id);
+    if (!request) {
+      res.status(404).json({ error: "Request not found" });
+      return;
+    }
+
+    // An account that switched to another role while it waited is not a student;
+    // linking it as the child's own account would give a teacher account a child's
+    // exam answers. Drop the request instead.
+    if (request.role !== "student") {
+      await db.delete(rosterLinkRequests).where(eq(rosterLinkRequests.id, request.id));
+      res.status(409).json({ error: "That request is no longer valid", code: "claim_request_stale" });
+      return;
+    }
+
+    try {
+      await db.insert(rosterLinks).values({ studentId, userId: request.userId, relation: "self" });
+    } catch (err) {
+      // roster_links_one_self_idx: one student account per name, enforced where a race cannot get past it.
+      if (isUniqueViolation(err)) {
+        res.status(409).json({ error: "This student is already linked to an account", code: "claim_already_linked" });
+        return;
+      }
+      throw err;
+    }
+
+    // Everyone else who was waiting on this name is answered by the link itself.
+    await db.delete(rosterLinkRequests).where(eq(rosterLinkRequests.studentId, studentId));
+    await syncThreadsAfterApproval(studentId, req.user!.id);
+
+    res.json({ approved: request.id, studentId, userId: request.userId });
+  } catch (err) {
+    failRoster(res, err, "approve link request", "Failed to approve the request");
+  }
+});
+
+router.post("/students/:id/link-requests/:requestId/reject", async (req: AuthenticatedRequest, res) => {
+  try {
+    const studentId = req.params["id"] as string;
+    const requestId = req.params["requestId"] as string;
+    const request = await findOwnRequest(requestId, studentId, req.user!.id);
+    if (!request) {
+      res.status(404).json({ error: "Request not found" });
+      return;
+    }
+    await db.delete(rosterLinkRequests).where(eq(rosterLinkRequests.id, request.id));
+    res.json({ rejected: request.id });
+  } catch (err) {
+    failRoster(res, err, "reject link request", "Failed to reject the request");
   }
 });
 
