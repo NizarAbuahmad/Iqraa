@@ -37,6 +37,99 @@ the subscriber count of `@IQRRA_ME` and stores it as that day's `youtube` row.
   real YouTube reply with the production key, and the card in a browser (the response shape
   is unchanged).
 
+## English audio: voice register fixed, clips trimmed and levelled, and an audit that needs no keys — 2026-10-24
+
+The English corner plays pre-voiced MP3s from the public bucket (`english-audio/<slug>.mp3`, made
+by `lib/curriculum/scripts/generate-english-audio.ts`). An audit of the 1,050 stored clips and of
+the plan found:
+
+- **Wrong register for Grade 5, 9 and 10 sentences.** The script put every grammar string in the
+  young set ("all are Grade 1–2"), so about 1,700 Grade 5/9/10 grammar strings (and more as Grade 10
+  Semester 2 lands) would have been read "to a six-year-old child … a little slowly". None of the
+  2,990 grammar strings is voiced yet, so
+  this cost nothing to fix.
+- **Dead air:** median 0.69 s of silence after the word (286 clips over 1 s, max 2.0 s), median
+  0.16 s before it (max 1.1 s); 17.6 of 32.3 minutes are outside the speech (14.0 of them after it).
+- **Size:** 128 kbps for one spoken word (29.6 MB, median 28 KB).
+- **Uneven loudness:** speech level p5 −33.2, median −29.0, p95 −25.4 dBFS, from −37.8 (`paint`)
+  to −21.6 (`duck`).
+- **One blank recording:** `tie.mp3` is 0.36 s of silence (peak −90 dBFS); nothing rejected it.
+- **No record of how a clip was made**, and **no way to check coverage without credentials.**
+
+**What changed (tooling only; the app is untouched):**
+
+- `lib/curriculum/src/englishAudioPlan.ts` (new, pure): `audioPlan()` — one item per slug with its
+  text, register, source and grades. Young = used by a Grade 1–4 lesson or grammar unit; everything
+  else teen (4,238 recordings on `main`: 1,707 young, 2,531 teen). The instructions, `PRONUNCIATION`,
+  model and voice moved here from the script, wording unchanged. `englishGrammar.ts` gained
+  `unitSpoken(unit)`; `allGrammarSpoken()` is now the union of it, same output, same order.
+- `lib/curriculum/src/englishAudioProcess.ts` (new, pure) and `scripts/audioFfmpeg.ts` (ffmpeg):
+  a verdict on the raw model output (blank: peak under −40 dBFS or no speech frame; under 0.15 s
+  or over 6 s of speech), then a gain to a −24 dBFS speech level (±12 dB, peak never over
+  −1.5 dBFS), a cut keeping 0.06 s before and 0.15 s after the speech, and a 40 kbps 24 kHz mono
+  MP3. `PROCESS_VERSION = 1`.
+- The generator rejects a bad take (listed, not uploaded), processes every kept one, and checks the
+  RESULT before uploading it (`processedVerdict`: it still passes the verdict, lost at most 0.1 s of
+  speech, kept at most 0.12 s / 0.25 s of silence, peaks within 0.5 dB of the ceiling — otherwise
+  rejected as `processing` and not stored, and the run stops if the first 10 all fail, so a broken
+  ffmpeg build damages nothing). It needs ffmpeg (exit 2) unless `--no-process` (uploaded not
+  checked or processed). It keeps `english-audio/_manifest.json` (text, register, model, voice,
+  process version, speech length, bytes per slug), merge-written every 50 uploads and at the end,
+  and stamps every upload with `x-amz-meta-process-version`. New `--reprocess`: no OpenAI key,
+  downloads each stored clip, processes it and puts it back under the same key and cache header;
+  skips clips whose metadata or manifest entry is at the current process version, leaves a failing
+  one untouched and lists it. A refused R2 credential stops the run once, like a refused TTS key.
+  Run one instance at a time.
+- **Backups:** before a stored clip is first replaced (`--reprocess`, `--force`, `--only`), it is
+  copied to `english-audio-original/<slug>.mp3` — a sibling prefix the clip listing never reads —
+  unless a backup is already there (never overwritten); a clip whose backup fails is not replaced.
+  To restore: copy `english-audio-original/<slug>.mp3` back over `english-audio/<slug>.mp3` and
+  delete the slug's entry in `_manifest.json`. A backup of one of the 1,050 pre-existing clips has
+  no process-version stamp; one made later by re-voicing a clip this script processed carries
+  `process-version=1` (CopyObject keeps metadata). Restoring with an S3 client copy keeps the
+  backup's stamp, so `--reprocess` correctly skips a stamped one; re-uploading through the
+  Cloudflare dashboard drops it, so the next `--reprocess` processes the clip. If the clip was
+  restored because processing damaged it, keep it out of the next `--reprocess` (name the others
+  with `--only`, or fix the cause first), or it is processed — and damaged — again.
+- `pnpm --filter @workspace/curriculum run english-audio-audit` (new): no credentials, `HEAD`s every
+  planned clip on the public URL (6 at a time, backoff on 429/5xx with `Retry-After`) and prints
+  coverage by grade and source; `--missing`, `--deep` (downloads and measures), `--fail-on-missing`.
+
+**Rulings, measured on the 1,050 clips.** The cut is `atrim` at sample positions computed from the
+same 10 ms frames the audit measures, not `silenceremove`: run after the gain, the latter's sliding
+window disagreed with the frames and left 0.13–0.28 s of leading or up to 0.43 s of trailing
+silence on 23 clips. The gain is computed on the speech span the result will have (a raised
+clip's soft edges join it), which moved 18 more clips inside ±1.5 dB. The cut is decided 1.5 dB
+above the −45 dBFS threshold at the output level: the encoder moves a faint frame by about a
+decibel, and many clips have a −44 to −49 dBFS click about 0.1 s before the word. The MP3 is
+written to a temp file outside the repo, not a pipe, because ffmpeg writes the gapless header only
+to a seekable output — through a pipe every clip gained 46 ms of encoder priming.
+
+**Measured (the pipeline run locally over all 1,050 downloaded clips; nothing uploaded):** `tie`
+rejected as blank; of the 1,049 kept, size median 28.1 → 5.3 KB (ratio 0.21, max 0.33), 32.3 →
+19.1 minutes, trailing silence max 0.17 s (was 2.0), leading max 0.06 s (was 1.1), speech level p5
+−24.5 / median −24.4 / p95 −24.2 dBFS with 1,046 within ±1.5 dB of −24 (the three outside —
+`paint`, `a-plate-of`, `project` — are at the +12 dB clamp), peak max −2.6 dBFS. No frame louder
+than −43.5 dBFS (output level) was cut from any clip. Speech spans are within 40 ms of the raw ones
+or longer (a raised clip's soft edges cross the threshold) except `doughnut`, 0.07 s shorter: the
+removed part is a −44 dBFS click 70 ms before the word, not the word. The upload check passes all
+1,049 processed clips, and rejects 1,042 of them when handed the untrimmed clip instead (what a
+build that ignored the cut would produce). 40 kbps keeps the spectrum
+up to 10 kHz within about 1 dB on `snake`, `safe`, `blue`, `giraffe`. The new audit, run against
+the live bucket, reproduces 1,050 voiced and 3,188 missing (190 Grade 5 and 8 Grade 9 words and
+all 2,990 grammar strings); `--deep` reproduces the figures above.
+
+**Not done:** no clip was re-voiced or reprocessed and nothing was uploaded — the generator was not
+run in any mode. Nobody listened to the processed clips. The first real run is `pnpm --filter
+@workspace/curriculum run english-audio -- --reprocess` (backs up each original it replaces
+to `english-audio-original/`, cleans the 1,049 good clips and writes the manifest;
+`tie` is listed, re-voice it with `--only tie`), then the plain run (voices the 3,188 missing,
+processed). `evening.mp3` has no trailing silence and may be cut off; listen before trusting it.
+
+**Next:** serve the clips from a custom domain instead of `r2.dev` (rate-limited), a native
+fallback and an offline cache in the app, and a speech-to-text round trip that checks each clip
+says its text.
+
 ## Class-code claims wait for the teacher — 2026-10-24
 
 A student who picks their name off the **class** code used to become that child at once, so anyone who
