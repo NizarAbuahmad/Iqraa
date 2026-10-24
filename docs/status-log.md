@@ -36,8 +36,8 @@ URL says «lesson not found».** Spec: `docs/superpowers/specs/2026-10-24-englis
   - `u9_l4` I wish and if only: `wish-present` 14 form, `wish-past-regrets` 14 meaning, `if-only` 12 form.
   - `u10_l1` speculating about the present: `must-cant` 14 meaning, `might-may` 12 form, `be-v-ing` 14 form.
   - `u10_l3` speculating about the past: `must-have` 14 meaning, `might-could-have` 12 form, `cant-have` 14 meaning.
-  - Sentences are nine words or fewer (`buildCap(10)`), no real or book-character names (family words and Amman, Aqaba, Petra,
-    Irbid only), nothing religious, political or sensitive. A distractor is `form` (ungrammatical in standard English) or `meaning`
+  - Sentences are nine words or fewer (`buildCap(10)`), no real or book-character names (family words and Jordan, Amman, Aqaba,
+    Petra, Irbid only), nothing religious, political or sensitive. A distractor is `form` (ungrammatical in standard English) or `meaning`
     (grammatical, excluded by something in the sentence itself), never a form that could fit; each sub-topic's comment in
     the data file says what decides the answer and which distractors were left out on purpose.
 - **Deviation from the spec: «imagine-vs-real» no longer has a «likely» side.** The spec said «Imagine …» and «If I were …»
@@ -67,8 +67,8 @@ URL says «lesson not found».** Spec: `docs/superpowers/specs/2026-10-24-englis
 - **True or false is silent** and **Yes or No is not offered**, as in Semester 1; Choose and Build play the correct sentence
   after the answer. Nothing is pictured.
 - **Tests:** `englishGrammarG10Items.test.ts` (21 lessons, 840 items, every sub-topic's size and kind pinned for all 21,
-  statements against the Semester 1 or 2 JSON, caps, uniqueness, banned names, 308 and 532, a `must of`/`could of` guard, the
-  glued-«و» check over the whole form), `englishGrammarG10.test.ts` (21 units in hub order, all unsigned, each note plain
+  statements against the Semester 1 or 2 JSON, caps, uniqueness, banned names, 308 and 532, a `must of`/`could of` guard, a guard
+  that no `u6_l4` distractor has will or would, the glued-«و» check over the whole form), `englishGrammarG10.test.ts` (21 units in hub order, all unsigned, each note plain
   text), `englishHub.test.ts` (sixteen grammar-only ids, 31 Grade 10 lessons) and, in the app,
   `englishGrammarG10ItemGames.test.ts` (Choose, Build and True or false on all 21, Yes or No on none, no twin voiced).
 - **Verified (2026-10-24, on `ccr-d9db5f6c-mgwkuo`):** root `pnpm run typecheck` clean (api-server, mobile, scripts);
@@ -115,14 +115,15 @@ URL says «lesson not found».** Spec: `docs/superpowers/specs/2026-10-24-englis
      object-after-participle errors; «had a swimming pool dug» / «digged» may be less familiar than «built».
   5. **Smaller:** a reported question with inverted order («He asked where did I live») is accepted in Irish and Indian
      English (the rows follow the standard rule); «admitted cheating in the test» is British («on the test» in American
-     English); «it don't» in a zero-conditional twin is dialect, wrong in standard English; `u6_l4` «Metal expands when you
-     heat it.» and «What happens when you heat metal?» are near-neighbours; «I have the only key. He can't have entered.»
+     English); «it don't» in a zero-conditional twin is dialect, wrong in standard English; «I have the only key. He can't have entered.»
      would read more naturally with «got in», but that makes 10 words.
 - **Known limits:** the choice between forms is tested only where something in the sentence decides it, so some topics
   that English also allows both ways (the tense after a reporting verb, `would` in a first-conditional result) are
   not tested at all; a wrong True or false answer shows «Correct answer: False», not the corrected sentence; nothing is
-  pictured. The reviews (one per task, then a fix round for each of the first two) are in the commit history:
-  `d8921511`, `839f3cff` (imagine-vs-real rewritten), `d41fa9d0`, `2bddada6`, `49d72f5e` (nine review minors).
+  pictured. The reviews were one per task, a fix round for each of the first two (the Task 1 round rewrote
+  imagine-vs-real, the Task 2 round applied nine review minors) and a final whole-branch fix wave (real distractors in the
+  `u6_l4` note, the form's lead no longer says the Semester 2 lessons have no book vocabulary, softer evidence rows
+  strengthened, one near-duplicate replaced).
 - **To switch a lesson on:** a Grade 10 English teacher reads and signs that lesson's page of
   `docs/english-grammar-g10-review.html`, printed, and checks the book-page line; audio is recorded for the correct
   sentences; then the unit's `reviewedBy` is set in `englishGrammarG10.ts`. The lesson appears in the Grade 10 index only once

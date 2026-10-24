@@ -609,7 +609,7 @@ Not reviewed yet — shown to nobody.
 | When water freezes, it becomes ice. | — | **freezes** / frozen | _When water frozen, it becomes ice._ |
 | What happens if you freeze water? | — | **freeze** / freezes | _What happens if you freezes water?_ |
 | If you don't water plants, they die. | — | **die** / dies | _If you don't water plants, they dies._ |
-| What happens when you heat metal? | — | **happens** / happen | _What happen when you heat metal?_ |
+| What happens when you drop an egg? | — | **happens** / happen | _What happen when you drop an egg?_ |
 | Do cats purr when they are happy? | — | **purr** / purrs | _Do cats purrs when they are happy?_ |
 | If you don't sleep, you feel tired. | — | **don't** / doesn't | _If you doesn't sleep, you feel tired._ |
 | Buses don't run if it snows. | — | **don't** / doesn't | _Buses doesn't run if it snows._ |
@@ -835,7 +835,7 @@ Not reviewed yet — shown to nobody.
 | If you'd asked, I'd have helped earlier today. | — | **have helped** / help | _If you'd asked, I'd help earlier today._ |
 | We'd have arrived an hour ago by taxi. | — | **have arrived** / arrive | _We'd arrive an hour ago by taxi._ |
 | I was ill. Otherwise, I'd have gone last Friday. | — | **have gone** / go | _I was ill. Otherwise, I'd go last Friday._ |
-| I'd have stayed longer at yesterday's party. | — | **have stayed** / stay | _I'd stay longer at yesterday's party._ |
+| I'd have stayed longer yesterday, but I was tired. | — | **have stayed** / stay | _I'd stay longer yesterday, but I was tired._ |
 | With a car, we'd have visited Petra last weekend. | — | **have visited** / visit | _With a car, we'd visit Petra last weekend._ |
 | Without your help, I'd have failed last term. | — | **have failed** / fail | _Without your help, I'd fail last term._ |
 | If he'd played, he'd have scored last night. | — | **have scored** / score | _If he'd played, he'd score last night._ |
@@ -962,9 +962,9 @@ Not reviewed yet — shown to nobody.
 | There's snow everywhere. It must have snowed. | — | **must have** / can't have | _There's snow everywhere. It can't have snowed._ |
 | You're soaking! You must have walked in the rain. | — | **must have** / can't have | _You're soaking! You can't have walked in the rain._ |
 | The cake is gone. Someone must have eaten it. | — | **must have** / can't have | _The cake is gone. Someone can't have eaten it._ |
-| The grass is short. Someone must have cut it. | — | **must have** / can't have | _The grass is short. Someone can't have cut it._ |
+| The kettle is hot. Someone must have boiled water. | — | **must have** / can't have | _The kettle is hot. Someone can't have boiled water._ |
 | The house smells of bread. Mum must have baked. | — | **must have** / can't have | _The house smells of bread. Mum can't have baked._ |
-| The glass is broken. It must have fallen. | — | **must have** / can't have | _The glass is broken. It can't have fallen._ |
+| The TV is warm. Dad must have watched it. | — | **must have** / can't have | _The TV is warm. Dad can't have watched it._ |
 | My keys are gone. I must have lost them. | — | **must have** / can't have | _My keys are gone. I can't have lost them._ |
 | There are footprints. Someone must have walked here. | — | **must have** / can't have | _There are footprints. Someone can't have walked here._ |
 | Everyone is clapping. She must have sung well. | — | **must have** / can't have | _Everyone is clapping. She can't have sung well._ |
@@ -987,7 +987,7 @@ Not reviewed yet — shown to nobody.
 | The food is untouched. They can't have been hungry. | — | **can't have** / must have | _The food is untouched. They must have been hungry._ |
 | The road is dry. It can't have rained. | — | **can't have** / must have | _The road is dry. It must have rained._ |
 | He stayed home. He can't have gone shopping. | — | **can't have** / must have | _He stayed home. He must have gone shopping._ |
-| That's impossible! He can't have finished already. | — | **can't have** / must have | _That's impossible! He must have finished already._ |
+| He started a minute ago. He can't have finished. | — | **can't have** / must have | _He started a minute ago. He must have finished._ |
 | She's only six. She can't have written this. | — | **can't have** / must have | _She's only six. She must have written this._ |
 | I have the only key. He can't have entered. | — | **can't have** / must have | _I have the only key. He must have entered._ |
 | My phone was off. You can't have reached me. | — | **can't have** / must have | _My phone was off. You must have reached me._ |

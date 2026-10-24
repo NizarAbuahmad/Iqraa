@@ -43,11 +43,11 @@ grammar.
 | Lesson (`kbl-eng-s2-nccd-…`) | Book statement (`objectives[0]`) | Sub-topics (count: kind) | Example: correct / distractor |
 | --- | --- | --- | --- |
 | `u6_l1` | use the first and second conditional to talk about possible and hypothetical situations | `first-conditional` 12 form · `second-conditional` 12 form · `imagine-vs-real` 16 meaning | «If it rains, we will stay home.» rains / will rain |
-| `u6_l4` | use the zero conditional to talk about real situations that are always true | `if-present` 14 form · `when-general-truths` 14 form · `questions-negatives` 12 form | «If you heat ice, it melts.» melts / will melted |
+| `u6_l4` | use the zero conditional to talk about real situations that are always true | `if-present` 14 form · `when-general-truths` 14 form · `questions-negatives` 12 form | «If you heat ice, it melts.» melts / melt |
 | `u7_l1` | use reporting verbs to report stories | `verb-patterns` 16 form · `admit-deny-suggest` 14 form · `tell-ask-warn` 10 form | «She suggested going by bus.» going / to go |
 | `u7_l5` | use reported questions to talk about what someone else said | `ask-wonder` 14 form · `if-whether` 12 form · `word-order` 14 form | «He asked where I lived.» where I lived / where did I live |
-| `u8_l1` | use the passive to talk about different actions | `present-past` 14 form · `with-modals` 12 form · `questions-negatives` 14 form | «The bridge was built in 1990.» was built / built |
-| `u8_l6` | use have/get something done to talk about services | `have-something-done` 12 form · `get-something-done` 12 form · `service-vs-self` 16 meaning | «I had my car repaired yesterday.» had my car repaired / had repaired my car |
+| `u8_l1` | use the passive to talk about different actions | `present-past` 14 form · `with-modals` 12 form · `questions-negatives` 14 form | «The bridge was built long ago.» was built / was build |
+| `u8_l6` | use have/get something done to talk about services | `have-something-done` 12 form · `get-something-done` 12 form · `service-vs-self` 16 meaning | «I had my car repaired yesterday.» repaired / repairing |
 | `u9_l1` | use the third conditional to talk about unreal situations in the past | `third-conditional` 14 form · `past-unreal` 14 meaning · `would-have-forms` 12 form | «If I had known, I would have called.» had known / would have known |
 | `u9_l4` | use I wish and if only to express regrets | `wish-present` 14 form · `wish-past-regrets` 14 meaning · `if-only` 12 form | «I wish I had studied last year.» had studied / studied |
 | `u10_l1` | use modal verbs to speculate about the present | `must-cant` 14 meaning · `might-may` 12 form · `be-v-ing` 14 form | «He has the keys, so he must be inside.» must / can't |
