@@ -6,7 +6,18 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isEntryRoute, isNonTeacherRoute, isPublicRoute, gradeSetupSkipKey, needsGradeSetup, needsRosterClaim, needsTeacherSetup } from '../routeGating.ts';
+import {
+  GUARDIAN_WAITING_ROUTE,
+  guardianRedirect,
+  gradeSetupSkipKey,
+  isEntryRoute,
+  isNonTeacherRoute,
+  isPublicRoute,
+  needsGradeSetup,
+  needsGuardianApproval,
+  needsRosterClaim,
+  needsTeacherSetup,
+} from '../routeGating.ts';
 
 describe('isEntryRoute', () => {
   it('treats the auth and onboarding routes as entries', () => {
@@ -390,8 +401,6 @@ describe('the student lesson explanation screen', () => {
   });
 });
 
-import { GUARDIAN_WAITING_ROUTE, guardianRedirect, needsGuardianApproval } from '../routeGating.ts';
-
 describe('/guardian is a public route', () => {
   it('is public, and a route that merely starts with the same letters is not', () => {
     assert.equal(isPublicRoute('/guardian'), true);
@@ -434,6 +443,11 @@ describe('guardianRedirect', () => {
     for (const p of [GUARDIAN_WAITING_ROUTE, '/join-class', '/delete-account']) {
       assert.equal(guardianRedirect(held, p), null, p);
     }
+  });
+  it('treats a sub-path of an open screen as open', () => {
+    assert.equal(guardianRedirect(held, '/join-class/x'), null);
+    assert.equal(guardianRedirect(held, '/delete-account/'), null);
+    assert.equal(guardianRedirect(held, '/guardian-waiting/x'), null);
   });
   it('does not treat a lookalike path as open', () => {
     assert.equal(guardianRedirect(held, '/join-classes'), GUARDIAN_WAITING_ROUTE);

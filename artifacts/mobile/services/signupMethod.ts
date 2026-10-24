@@ -36,6 +36,10 @@ export function needsAgeConfirmation(role: SignupRole | null, method: StudentSig
  * student: the server (`api-server/src/lib/roleSwitch.ts`) refuses one without
  * `ageConfirmed` with a 400, so a screen that skips the box gets an error it
  * cannot explain. Staying a student, or leaving the role, asks for nothing.
+ *
+ * `guardianEnabled` is the server's parent-approval switch: when it is on, a
+ * parent's approval replaces the tick, so the switch asks for nothing either.
+ * Optional and false by default, so an existing caller is unchanged.
  */
 export function switchNeedsAgeConfirmation(
   from: string | null | undefined,

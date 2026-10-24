@@ -99,6 +99,29 @@ describe('scrub: parent consent links', () => {
     assert.ok(!scrub(`edge ${EDGE} end`).includes(EDGE));
     assert.match(scrub('see https://x.test/p#frag-ment_123456789012'), /#<fragment>/);
   });
+  it('removes the whole token even when an earlier rule would match a piece of it', () => {
+    // A dash-flanked run of 6+ digits (<number>) or of 12 capitals/digits (<code>) inside a token must not
+    // pre-empt the token rule and leave the rest of the token behind.
+    const shapes = [
+      `${'a'.repeat(20)}-123456-${'b'.repeat(15)}`,
+      `${'a'.repeat(18)}-ABCDEFGH1234-${'b'.repeat(11)}`,
+      `123456-${'b'.repeat(36)}`,
+      `${'b'.repeat(36)}-123456`,
+    ];
+    for (const t of shapes) {
+      assert.equal(t.length, 43, t);
+      for (const text of [`bad token ${t} here`, `https://app.iqrra.com/guardian#${t}`]) {
+        const out = scrub(text);
+        for (let i = 0; i + 20 <= t.length; i++) {
+          assert.ok(!out.includes(t.slice(i, i + 20)), `${t.slice(i, i + 20)} survived in ${out}`);
+        }
+      }
+    }
+  });
+  it('still redacts numbers and codes that are not part of a token', () => {
+    assert.match(scrub('call 0791234567 now'), /<number>/);
+    assert.match(scrub('code ABCDEFGH1234 used'), /<code>/);
+  });
   it('leaves ordinary words and short ids alone', () => {
     assert.equal(scrub('Cannot read property of undefined'), 'Cannot read property of undefined');
     assert.match(scrub('item #12 failed'), /#12/);

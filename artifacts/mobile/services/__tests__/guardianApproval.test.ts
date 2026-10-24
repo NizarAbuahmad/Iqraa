@@ -19,6 +19,7 @@ describe('guardianFromApi', () => {
   });
   it('drops an unknown status and a non-string address', () => {
     assert.deepEqual(guardianFromApi({ guardianStatus: 'banana', guardianParentEmailMasked: 7 }), {});
+    assert.deepEqual(guardianFromApi({ guardianStatus: 'banana', guardianParentEmailMasked: 'mu***@x.test' }), {});
     assert.deepEqual(guardianFromApi({}), {});
     assert.deepEqual(guardianFromApi({ guardianStatus: null }), {});
   });
