@@ -13,6 +13,7 @@ import React, { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Surface } from '@/components/ui/Surface';
@@ -38,8 +39,11 @@ export default function GuardianWaitingScreen() {
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [switching, setSwitching] = useState(false);
   const [error, setError] = useState('');
+  const [switchError, setSwitchError] = useState('');
   const [note, setNote] = useState('');
+  const insets = useSafeAreaInsets();
 
   const poll = useCallback(async () => { await refreshUser(); }, [refreshUser]);
   usePollingRefresh(poll);
@@ -57,12 +61,15 @@ export default function GuardianWaitingScreen() {
     setNote('');
     try {
       const out = await guardianApi.request(address.trim());
-      setNote(out.emailSent ? t('guardianSentTo', out.parentEmailMasked) : t('guardianSendFailed'));
+      // The request is saved either way; a failed email must not read as if nothing was recorded.
+      setNote(out.emailSent ? t('guardianSentTo', out.parentEmailMasked) : t('guardianSavedNotSent'));
       setEditing(false);
       setEmail('');
       await refreshUser();
     } catch (e) {
       setError(apiErrorMessage(e, 'guardianSendFailed', t));
+      // A 409 (already approved, not required) means the state changed under us; let the gate move us promptly.
+      void refreshUser();
     } finally {
       setBusy(false);
     }
@@ -76,15 +83,15 @@ export default function GuardianWaitingScreen() {
   }
 
   async function leaveAs(role: 'parent' | 'teacher') {
-    setBusy(true);
-    setError('');
+    setSwitching(true);
+    setSwitchError('');
     try {
       await switchRole(role);
       // The role is no longer student, so the root layout moves this screen on.
     } catch (e) {
-      setError(apiErrorMessage(e, 'guardianSwitchFailed', t));
+      setSwitchError(apiErrorMessage(e, 'guardianSwitchFailed', t));
     } finally {
-      setBusy(false);
+      setSwitching(false);
     }
   }
 
@@ -95,7 +102,11 @@ export default function GuardianWaitingScreen() {
     : t('guardianNeededDesc');
 
   return (
-    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={{ backgroundColor: colors.background }}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + SPACE.section, paddingBottom: insets.bottom + SPACE.section }]}
+      keyboardShouldPersistTaps="handled"
+    >
       <Surface style={styles.card}>
         <View style={[styles.head, { flexDirection: rowDir }]}>
           <Ionicons name="time-outline" size={ICON.xl} color={readableOn(colors.primary, colors.card, 3)} />
@@ -141,9 +152,10 @@ export default function GuardianWaitingScreen() {
         </Pressable>
         <Text style={[styles.desc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>{t('guardianWrongTypeTitle')}</Text>
         <View style={[styles.switchRow, { flexDirection: rowDir }]}>
-          <Button label={t('guardianSwitchToParent')} variant="secondary" size="sm" onPress={() => leaveAs('parent')} disabled={busy} style={{ flex: 1 }} />
-          <Button label={t('guardianSwitchToTeacher')} variant="secondary" size="sm" onPress={() => leaveAs('teacher')} disabled={busy} style={{ flex: 1 }} />
+          <Button label={t('guardianSwitchToParent')} variant="secondary" size="sm" onPress={() => leaveAs('parent')} disabled={switching} style={{ flex: 1 }} />
+          <Button label={t('guardianSwitchToTeacher')} variant="secondary" size="sm" onPress={() => leaveAs('teacher')} disabled={switching} style={{ flex: 1 }} />
         </View>
+        {switchError ? <Text accessibilityLiveRegion="polite" style={[styles.desc, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>{switchError}</Text> : null}
       </Surface>
 
       <View style={[styles.exits, { flexDirection: rowDir }]}>
@@ -159,7 +171,7 @@ export default function GuardianWaitingScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: SPACE.lg, paddingTop: SPACE.hero, gap: SPACE.lg },
+  content: { paddingHorizontal: SPACE.lg, gap: SPACE.lg },
   card: { padding: SPACE.lg },
   head: { alignItems: 'center', gap: SPACE.md },
   title: { fontSize: TYPE.bodyLg, flex: 1 },

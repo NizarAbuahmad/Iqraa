@@ -33,7 +33,7 @@ import { AuthProvider, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { hasSeenAppIntro } from '@/services/appIntro';
 import { shouldTrackScreen } from '@/services/screenTracking';
-import { CLAIM_REQUIRED_ROUTE, guardianRedirect, isEntryRoute, isNonTeacherRoute, isPublicRoute, GRADE_SETUP_ROUTE, needsGradeSetup, needsRosterClaim, needsTeacherSetup, TEACHER_SETUP_ROUTE } from '@/services/routeGating';
+import { CLAIM_REQUIRED_ROUTE, guardianGate, isEntryRoute, isNonTeacherRoute, isPublicRoute, GRADE_SETUP_ROUTE, needsGradeSetup, needsRosterClaim, needsTeacherSetup, TEACHER_SETUP_ROUTE } from '@/services/routeGating';
 import { identifyUser, initAnalytics, resetAnalyticsIdentity, trackEvent, trackScreen } from '@/services/analytics';
 import { subscribeToGenerations } from '@/services/ai/aiProvenance';
 import { clearCrashContext, initCrashReporting, setCrashContext } from '@/services/crashReporting';
@@ -80,9 +80,12 @@ function RootLayoutNav() {
     // A student the server is holding for a parent's approval goes to the waiting screen from anywhere else,
     // and a student who is no longer held is moved off it. Before the other gates, which would send a held
     // student to screens the server refuses (grade setup saves through a route that is not open to them).
-    const guardianTarget = signedIn && user ? guardianRedirect(user, pathname) : null;
-    if (guardianTarget) {
-      router.replace(guardianTarget as any);
+    // A held student is consumed here on the open screens too (waiting, join-class, delete-account): they are
+    // not redirected, but the later gates must not run for them either, or an email student with no grades
+    // is sent to /setup-grade and back by this gate, forever (see `guardianGate`).
+    const g = signedIn && user ? guardianGate(user, pathname) : { redirect: null, stop: false };
+    if (g.redirect) router.replace(g.redirect as any);
+    if (g.stop) {
       wasLoading.current = false;
       wasSignedIn.current = signedIn;
       return;
@@ -246,7 +249,7 @@ function RootLayoutNav() {
       <Stack.Screen name="add-email" options={{ headerShown: false }} />
       <Stack.Screen name="claim-required" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="guardian-waiting" options={{ headerShown: false, gestureEnabled: false }} />
-      <Stack.Screen name="setup-subjects"options={{ headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="setup-subjects" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="setup-grade" options={{ headerShown: false }} />
     </Stack>
     <AppSplash visible={isLoading} onLayout={() => SplashScreen.hideAsync().catch(() => {})} />

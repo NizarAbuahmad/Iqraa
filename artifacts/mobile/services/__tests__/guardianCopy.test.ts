@@ -6,7 +6,7 @@ import { getT } from '../i18n.ts';
 const KEYS = [
   'guardianNeededTitle', 'guardianNeededDesc', 'guardianWaitingTitle', 'guardianDeclinedTitle', 'guardianDeclinedDesc',
   'guardianParentEmailLabel', 'guardianParentEmailHint', 'guardianSend', 'guardianChangeEmail',
-  'guardianSendFailed', 'guardianCheckNow', 'guardianJoinWithCode', 'guardianWrongTypeTitle', 'guardianSwitchToParent',
+  'guardianSendFailed', 'guardianSavedNotSent', 'guardianCheckNow', 'guardianJoinWithCode', 'guardianWrongTypeTitle', 'guardianSwitchToParent',
   'guardianSwitchToTeacher', 'guardianSwitchFailed', 'guardianSwitchNote', 'registerParentEmailLabel',
   'registerParentEmailHint', 'registerParentEmailFirst', 'errParentEmailRequired', 'errParentEmailInvalid',
   'errParentEmailIsOwn', 'errEmailNotVerifiedYet', 'errGuardianRateLimited', 'errGuardianApprovalRequired',

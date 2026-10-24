@@ -270,3 +270,17 @@ export function guardianRedirect(user: GuardianUserLike | null | undefined, path
   if (user && pathname === GUARDIAN_WAITING_ROUTE) return '/(tabs)';
   return null;
 }
+
+/**
+ * What the root layout does with the parent-approval rule: where to send the user (`redirect`) and whether the
+ * later gates (roster claim, teacher setup, grade setup, non-teacher bounce, entry-route handling) must be skipped
+ * on this pass (`stop`). A held student on one of the open screens is not redirected but IS stopped: left to the
+ * grade-setup gate, an email student with no grades would be sent to /setup-grade and straight back, forever.
+ */
+export function guardianGate(
+  user: GuardianUserLike | null | undefined,
+  pathname: string,
+): { redirect: string | null; stop: boolean } {
+  const redirect = guardianRedirect(user, pathname);
+  return { redirect, stop: redirect !== null || needsGuardianApproval(user) };
+}
