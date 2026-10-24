@@ -103,6 +103,59 @@ processed). `evening.mp3` has no trailing silence and may be cut off; listen bef
 fallback and an offline cache in the app, and a speech-to-text round trip that checks each clip
 says its text.
 
+## Class-code claims wait for the teacher — 2026-10-24
+
+A student who picks their name off the **class** code used to become that child at once, so anyone who
+had the code could take any name in the class. Now the pick is held as a row in the new
+`roster_link_requests` table (migration 0017) and the teacher approves it from the class's Students tab.
+Nothing reads that table as access: an unapproved account has no `roster_links` row, so chat contacts,
+homework, exams and parent letters all see nothing. `roster_links` has no `status` column and must not get one.
+
+**What changed.** Server: `claimNeedsApproval` / `pendingLimitReached` (`lib/claimDecision.ts`), the held path in
+`linkRosterRowInTx` (`routes/auth.ts`, shared by `/claim` and `/redeem`), `GET /classes/:id/link-requests`,
+`POST /students/:id/link-requests/:requestId/approve|reject` (`routes/roster.ts`), `DELETE /auth/claim?pendingOnly=1`.
+App: `ClaimWaitingCard` + `useClaimWaiting` (shown by `claim-required`, `join-class`, and a note under the login
+code on code-only signup), `LinkRequestsBanner` on the Students tab, services `claimResult`, `claimWaiting`,
+`linkRequests`, and 16 strings (ar + en).
+
+**Rules.** Only a `self` claim made through the class code is held; per-student codes and parents link at once.
+Up to five accounts may wait on one name (409 `claim_pending_limit` for the sixth, which keeps its earlier pick);
+an account holds one waiting pick (choosing another replaces it; re-entering a held or already-linked name queues
+nothing). `POST /auth/claim` answers 202 `{pending, studentId, studentName}` for a held claim; `/redeem` answers 201
+as before with `hasRosterLink: false`, `pending`, `studentName`. Approval consumes the request, re-reads the
+sender's role (`claim_request_stale` if it is no longer a student), inserts the link (the partial unique index
+`roster_links_one_self_idx` answers `claim_already_linked`), clears the rest of that name's requests and syncs
+class threads. Switching role deletes the account's waiting requests. The student's `pending` list shows only
+requests a teacher could still answer (live student, live class of that teacher). The teacher's list says
+whether an account was just created from the class code (`codeSignup`) because such an account is named after the
+roster name it picked and so proves nothing; rows asking for the same name are flagged as competing.
+
+**Verified (final head, locally).** Root `pnpm run typecheck` clean. api-server `pnpm build` then `pnpm test`
+against a throwaway Postgres 16 with `REQUIRE_DB_TESTS=true`: 2524 tests, 2524 pass, 0 skipped — including
+`claimApproval.db.test.ts` and `linkRequests.db.test.ts`, and both again with `RLS_ENFORCE=on`. `lib/db`
+`pnpm test` (the row-level-security suites, `rlsCoverage`, `rlsMatrix`, `rlsDiff`) against the migrated throwaway
+database: 66 tests, 66 pass. Mobile `pnpm test`: 7245 tests, 7235 pass, 0 fail, 10 skipped. The math-verifier suite
+was not run here (no `sympy`); CI runs it and the branch does not touch it. CI on the pull request ran the same
+suites on each pushed head.
+
+**Not verified.** None of the screens (waiting card, join-class, signup note, banner) was run in a browser or on a
+device: layout, RTL, dark mode and the real approve/reject round trip are unchecked. Approve-versus-withdraw
+races have no interleaving test (outcomes are pinned; the `FOR UPDATE` on the sender's `users` row is what
+serialises approve against a role switch). `rlsDiff` has no step for the new teacher routes; their queries were
+read against the policies and run under `RLS_ENFORCE=on` in the HTTP tests only.
+
+**Known limits.** (1) The teacher gets no push or badge: a student waits until the teacher opens the class's
+Students tab, and the student has no push on approval either — they use "Check again". (2) A rejected student
+can ask again, and a squatter can repeat that up to the cap of five; the teacher rejects them one by one.
+(3) A held student with no class lands on the grade picker after signup — the routing gate (`needsRosterClaim`,
+parents only) was deliberately not widened. (4) `codeSignup` turns false once a code-only account adds an
+email, so such a request shows the name twice again. (5) Analytics: `class_joined` now fires only for a link made
+at once; a held join and an approval emit no event. (6) `failRoster` in `routes/roster.ts` logs the raw error
+object (existing behaviour, three more callers now). (7) **Rollout:** installed Android builds read any 2xx from
+`/auth/claim` as joined — on a 202 an old build shows the app empty (no data is exposed) and sends the student back
+to the code screen on the next `/auth/me`; teachers see the banner only on a build that has this change, and
+the `production` OTA is manual.
+
 ## Tests for the code-only account routes — 2026-10-24
 
 `POST /auth/redeem`, `POST /auth/code-login` and `POST /auth/add-email` had no committed test: they were

@@ -154,6 +154,12 @@ describeDb("code-only accounts: redeem, code-login, add-email", () => {
       const ok = await redeem({ claimCode: CLASS_CODE.toLowerCase(), role: "student", studentId: rows.dina });
       assert.equal(ok.status, 201, ok.text);
       assert.equal(ok.json.user.firstName, "دينا");
+      // A student's pick off the CLASS code waits for the teacher: the account exists, holds
+      // a request, and has no roster link until approved (claimApproval.db.test.ts).
+      assert.equal(ok.json.pending, true);
+      assert.equal(ok.json.user.hasRosterLink, false);
+      assert.deepEqual(await q(`SELECT 1 FROM roster_links WHERE student_id = $1`, [rows.dina]), []);
+      assert.equal((await q(`SELECT 1 FROM roster_link_requests WHERE student_id = $1`, [rows.dina])).length, 1);
     });
 
     it("a parent cannot use the shared class code: they need the code written for their child", async () => {
@@ -294,7 +300,8 @@ describeDb("code-only accounts: redeem, code-login, add-email", () => {
       });
 
       it("an address another account holds is 409 email_taken, whichever case it is typed in", async () => {
-        const [dina] = await q<{ id: string }>(`SELECT user_id AS id FROM roster_links WHERE student_id = $1`, [rows.dina]);
+        // Dina signed up with the class code, so her account is waiting on a request, not linked.
+        const [dina] = await q<{ id: string }>(`SELECT user_id AS id FROM roster_link_requests WHERE student_id = $1`, [rows.dina]);
         const res = await call(on, "POST", "/auth/add-email", dina.id, { email: "T@Example.Test", password: PASSWORD });
         assert.equal(res.status, 409, res.text);
         assert.equal(res.json.code, "email_taken");
