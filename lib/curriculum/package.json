@@ -27,6 +27,7 @@
     "./englishPictures": "./src/englishPictures.ts",
     "./englishGrammar": "./src/englishGrammar.ts",
     "./englishReading": "./src/englishReading.ts",
+    "./englishLinks": "./src/englishLinks.ts",
     "./passages": "./src/passages.ts",
     "./bookItems": "./src/bookItems.ts",
     "./catalogs/*": "./src/catalogs/*.ts",
