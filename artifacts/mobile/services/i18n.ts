@@ -153,6 +153,7 @@ const translations = {
     // points down, not up.
     registerAcceptTermsBelow: 'ضع علامة الموافقة على الشروط في أسفل النموذج أولًا.',
     orSignUpWithEmail: 'أو أنشئ حسابك ببريدك الإلكتروني',
+    googleAccountHint: 'حساب Google المسجّل على هذا الجهاز. اضغط السهم لاختيار حساب آخر.',
     loginGoogleTermsNotice: 'إن كنت تنشئ حسابًا جديدًا بالمتابعة عبر Google فأنت توافق على',
     errPasswordIncorrect: 'كلمة المرور غير صحيحة.',
     errEmailMismatch: 'البريد الإلكتروني لا يطابق بريد الحساب.',
@@ -3554,6 +3555,7 @@ const translations = {
     registerAcceptTermsFirst: 'Tick the terms box above first.',
     registerAcceptTermsBelow: 'Tick the terms box at the bottom of the form first.',
     orSignUpWithEmail: 'Or create your account with your own email',
+    googleAccountHint: 'The Google account signed in on this device. Tap the arrow to choose another.',
     loginGoogleTermsNotice: 'If continuing with Google creates a new account, you agree to the',
     errPasswordIncorrect: 'Incorrect password.',
     errEmailMismatch: 'That email does not match this account.',
