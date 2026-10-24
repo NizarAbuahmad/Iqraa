@@ -10,6 +10,29 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat app-help, twenty-fifth live pass: one new answer and seven wordings — 2026-10-24
+
+A 30-question pass (20 app, 10 curriculum — all ten answers correct) on app.iqrra.com found
+app questions answered by the model, or by the wrong answer, for which the app already had one:
+«أضيف طالباً واحداً إلى الشعبة» got the new-class steps (`howAddStudent` did not accept «واحد»),
+posting a homework in the class chat (`howAddHomework` ends with it), turning a worksheet into an
+exam for students (`howSendWorksheet`), a reminder of the exam date for parents
+(`howExamParents`; the model refused), adding the book's picture to an exam question
+(`howEvalFigures`) and saving the slides as PowerPoint (`howSaveSlides`: «شرائحي» was not
+recognised). One new short answer, `howEditStudent` (ar + en): the pencil beside a student's name
+on the class's Students tab opens «تعديل بيانات الطالب» (name, register number, gender, the
+teacher's note; `components/classes/EditStudentSheet.tsx`). Pinned in `appHelp.test.ts` with
+near-misses that stay with the model («حوّل ورقة العمل إلى ملف PDF», «غيّر اسم الطالب في الاختبار
+الذي كتبه»…).
+
+**Checked and already right:** «أعيد فتح امتحان مغلق» got the close-exam answer, which ends
+«لفتحه مجددًا اضغط انشر التقييم», so reopening *is* answered; it is now pinned.
+
+**Left to the model on purpose:** printing the student list, telling who handed an exam in late,
+and the class pass rate — I found no screen for any of the three (the results dashboard shows a
+status and a percentage, not a time, and there is no pass mark), so an app answer would invent
+one. A «حددي» (feminine) in the model's worksheet-to-quiz answer is the model's, not the app's.
+
 ## English corner: Dana's review (Grades 2, 4, 5) — three glosses, one picture, 201 recordings uploaded — 2026-10-24
 
 A teacher's review of the English corner (Grades 2–5), with three phone recordings (a Grade 2 «garage» card, a Grade 4
