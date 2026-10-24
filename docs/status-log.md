@@ -129,6 +129,33 @@ URL says «lesson not found».** Spec: `docs/superpowers/specs/2026-10-24-englis
   sentences; then the unit's `reviewedBy` is set in `englishGrammarG10.ts`. The lesson appears in the Grade 10 index only once
   its unit is signed. Until audio exists the Semester 2 lessons would be spoken by the browser voice.
 
+## Admin dashboard: the YouTube number fills itself — 2026-10-24
+
+The «YouTube» card under «التنزيلات والمتابعون» no longer needs typing. The first
+time an admin opens the dashboard each day, `GET /admin/metrics` asks YouTube for
+the subscriber count of `@IQRRA_ME` and stores it as that day's `youtube` row.
+
+**What changed**
+- `lib/youtubeSubscribers.ts`: `channels.list?part=statistics&forHandle=IQRRA_ME`
+  (1 quota unit, the existing `YOUTUBE_API_KEY`, 4 s timeout). Looked up by handle, so no
+  channel id is configured. It is **not** `teacherChannel.ts`, which is a third party's channel.
+- `refreshYoutubeMetric` in `routes/admin.ts`: skipped when today already has a `youtube` row
+  (a typed number wins), when the key is unset, or within 30 minutes of a failed try. Never
+  throws, and logs no error object because the request URL carries the key. Rows it writes have
+  `recorded_by` null.
+- No scheduler, no migration, no new secret.
+
+**Limits**
+- A day nobody opens the dashboard has no row — a gap, not a wrong number.
+- YouTube rounds public counts above 1,000 to three significant figures.
+- Instagram, Facebook, LinkedIn, X and Play downloads are still typed in: each needs its own
+  credentials or app review (see the advice behind this change).
+- Verified: unit tests for the parser, typecheck, and on a throwaway local database against a
+  stubbed YouTube reply — first load stored 137 (handle `IQRRA_ME`), second load did not call
+  again, and a number already typed for the day was kept with no lookup. **Not** verified: a
+  real YouTube reply with the production key, and the card in a browser (the response shape
+  is unchanged).
+
 ## English audio: voice register fixed, clips trimmed and levelled, and an audit that needs no keys — 2026-10-24
 
 The English corner plays pre-voiced MP3s from the public bucket (`english-audio/<slug>.mp3`, made
