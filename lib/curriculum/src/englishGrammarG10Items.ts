@@ -971,12 +971,12 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
       // wrong have. Never «had repaired my car» (a sound past perfect). No bare verb that makes a noun with the object
       // («the heater check», «car wash», «kitchen paint»), and -ing only where the object cannot do the action.
       ...items('have-something-done', 'form', [
-        ['I had my car repaired yesterday.', 'repaired', 'repair'],
+        ['I had my car repaired yesterday.', 'repaired', 'repairing'],
         ['Dad had his eyes tested.', 'tested', 'testing'],
         ['They had a swimming pool dug.', 'dug', 'digged'],
         ['She had her bedroom decorated.', 'decorated', 'decorate'],
         ['He had his letter translated into English.', 'translated', 'translate'],
-        ["I'm having a new sink installed tomorrow.", 'installed', 'install'],
+        ["I'm having a new sink installed tomorrow.", 'installed', 'installing'],
         ['They had the pizza delivered to school.', 'delivered', 'deliver'],
         ['He has his suits made in Amman.', 'has', 'have'],
         ['Did you have the old tree removed?', 'removed', 'remove'],
@@ -987,7 +987,7 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
       // get + object + past participle. The errors: the bare verb, a past simple, the wrong get, or the object after
       // the participle («got repaired his watch»). No -ing: «get the engine running» is English.
       ...items('get-something-done', 'form', [
-        ['She got her phone fixed.', 'fixed', 'fix'],
+        ['She got her phone fixed.', 'her phone fixed', 'fixed her phone'],
         ['Dad got his watch repaired.', 'his watch repaired', 'repaired his watch'],
         ['Where did you get your glasses made?', 'made', 'make'],
         ['You should get your passport renewed.', 'renewed', 'renew'],
@@ -1005,19 +1005,19 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
       // self-done action. Both sides are sound sentences. No «by experts» or «by a tailor» after the self-done twin:
       // «We painted the house by experts» is a form error, not a meaning one.
       ...items('service-vs-self', 'meaning', [
-        ['I cleaned the windows myself.', 'cleaned the windows', 'had the windows cleaned'],
-        ['We painted our bedroom ourselves.', 'painted our bedroom', 'had our bedroom painted'],
+        ['I cleaned the windows myself. Nobody helped.', 'cleaned the windows', 'had the windows cleaned'],
+        ["We painted our bedroom ourselves. We didn't pay anyone.", 'painted our bedroom', 'had our bedroom painted'],
         ["Dad fixed the tap himself. He didn't call anyone.", 'fixed the tap', 'had the tap fixed'],
         ['She knitted this scarf with her own hands.', 'knitted this scarf', 'had this scarf knitted'],
         ["I repaired my bike myself with my dad's tools.", 'repaired my bike', 'had my bike repaired'],
-        ['My brother cuts his hair himself.', 'cuts his hair', 'has his hair cut'],
+        ['My brother cuts his hair himself, without a barber.', 'cuts his hair', 'has his hair cut'],
         ['We washed the car ourselves to save money.', 'washed the car', 'had the car washed'],
-        ['Mum baked the birthday cake herself.', 'baked the birthday cake', 'had the birthday cake baked'],
+        ["Mum baked the cake herself. She didn't order it.", 'baked the cake', 'had the cake baked'],
         ["I can't cut hair, so I had mine cut.", 'had mine cut', 'cut mine'],
         ["Dad can't repair cars, so he gets his fixed.", 'gets his fixed', 'fixes his'],
         ["She can't sew, so she had the dress made.", 'had the dress made', 'made the dress'],
         ["I didn't iron my shirts. I had them ironed.", 'had them ironed', 'ironed them'],
-        ['We were travelling, so we had the plants watered.', 'had the plants watered', 'watered the plants'],
+        ['We were abroad, so we had the plants watered.', 'had the plants watered', 'watered the plants'],
         ['I had my suit shortened. A tailor did it.', 'had my suit shortened', 'shortened my suit'],
         ['We had our photo taken. A photographer took it.', 'had our photo taken', 'took our photo'],
         ['We had our garden designed. An expert did it.', 'had our garden designed', 'designed our garden'],
@@ -1065,7 +1065,7 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ["Without your help, I'd have failed last term.", 'have failed', 'fail'],
         ["If he'd played, he'd have scored last night.", 'have scored', 'score'],
         ["With more money, I'd have flown there last month.", 'have flown', 'fly'],
-        ['Outside the freezer, the ice would have melted yesterday.', 'would have melted', 'would melt'],
+        ['Left outside, the ice would have melted yesterday.', 'would have melted', 'would melt'],
         ["I'd have told you last night, but I forgot.", 'have told', 'tell'],
       ]),
       // would have + past participle, with or without an if-clause. The errors: would had, would have + a bare verb
@@ -1124,7 +1124,7 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['If only we had booked the tickets last week.', 'had booked', 'booked'],
         ['My brother wishes he had trained harder last season.', 'had trained', 'trained'],
         ['I wish I had called my grandmother last weekend.', 'had called', 'called'],
-        ["If only I had checked yesterday's homework.", 'had checked', 'checked'],
+        ['If only I had checked my homework yesterday.', 'had checked', 'checked'],
         ["She wishes she hadn't missed the bus yesterday.", "hadn't missed", "didn't miss"],
       ]),
       // If only + past perfect, could or would. The errors: had + a bare verb or a past simple, to or a past after
@@ -1183,7 +1183,7 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['My brother may know her number.', 'may know', 'may knows'],
       ]),
       // modal + be + -ing for what is happening now. The errors: no be, a bare verb after be, is for be. Never the
-      // modal + a bare verb («He must sleep» is a sound obligation), and no bare verb that is also a noun after be.
+      // modal + a bare verb («He must sleep» is a sound obligation), and no bare verb that makes a grammatical phrase after be.
       ...items('be-v-ing', 'form', [
         ['He must be sleeping now.', 'be sleeping', 'sleeping'],
         ['They might be watching TV.', 'be watching', 'be watch'],
@@ -1211,7 +1211,7 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
       ...items('must-have', 'meaning', [
         ['The ground is wet. It must have rained.', 'must have', "can't have"],
         ['Their car is gone. They must have left.', 'must have', "can't have"],
-        ["She's holding the cup. She must have won.", 'must have', "can't have"],
+        ["She's holding the trophy. She must have won.", 'must have', "can't have"],
         ['He ate three burgers. He must have been hungry.', 'must have', "can't have"],
         ["There's snow everywhere. It must have snowed.", 'must have', "can't have"],
         ["You're soaking! You must have walked in the rain.", 'must have', "can't have"],
