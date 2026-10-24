@@ -836,7 +836,7 @@ export default function LessonPlanScreen() {
         loadingLabel={t('craftingLessonPlan')}
         errorDetail={error}
         onCancel={cancelGenerate}
-        onRetry={generate}
+        onRetry={() => generate()}
         colors={colors}
         isRTL={isRTL}
         lang={uiLang}
