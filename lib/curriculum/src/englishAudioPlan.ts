@@ -195,3 +195,32 @@ export function audioPlan(): AudioItem[] {
   for (const u of GRAMMAR_UNITS) for (const t of unitSpoken(u)) add(t, 'grammar');
   return [...items.values()];
 }
+
+/**
+ * The clips one hub lesson plays, once per slug: its words, then the strings its
+ * grammar unit speaks (`unitSpoken`, which already leaves out the True-or-false
+ * twins nobody hears). The phone fetches these ahead when the lesson opens
+ * (`prefetchLessonAudio` in the app), so it reads the same two inputs `audioPlan()`
+ * does — every slug here is one the generator voices, and a test pins that.
+ *
+ * `grammar: false` for a lesson whose grammar no teacher has signed: the app does
+ * not show it, so fetching its sentences would spend the rate-limited link on
+ * clips nobody can reach.
+ */
+export function lessonAudioTexts(lessonId: string, opts: { grammar?: boolean } = {}): string[] {
+  const lesson = hubLesson(lessonId);
+  if (!lesson) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const add = (text: string) => {
+    const slug = audioSlug(text);
+    if (!slug || seen.has(slug)) return;
+    seen.add(slug);
+    out.push(text);
+  };
+  for (const w of lesson.words) add(w.en);
+  if (opts.grammar !== false) {
+    for (const u of GRAMMAR_UNITS) if (u.lessonId === lessonId) for (const t of unitSpoken(u)) add(t);
+  }
+  return out;
+}
