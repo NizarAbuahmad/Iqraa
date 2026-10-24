@@ -10,6 +10,26 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+
+## The primary-grade and remaining books get their lesson pages too, 2026-10-24
+
+The 17 student books that had no PDF on disk (Grades 1-2 Arabic, Islamic and PE; Grades 3-5
+PE; Grade 6 digital; Grade 8 Arabic S2) were downloaded from the catalog's NCCD links
+(about 1.4 GB, kept in a scratch folder outside the repo) and put through the same page
+mapper as the other books (see «Arabic, Islamic, civic, digital and PE lessons get their
+book pages in decks»).
+
+- `map_lesson_pages.py --pdfs <json>` takes a `{kbBookId: pdf path}` map for books
+  `extract_book_figures.BOOKS` does not register.
+- 259 lessons mapped; a lesson found through the contents table had to agree with its
+  opener page's own heading (>= 0.6), so 180 are kept and 79 are left text-only (mostly
+  Grade 1-2 Islamic lessons, whose opener heading did not read as the lesson title; not
+  looked into further). Pages are in `iqraa-public/book-pages/`.
+- Still without pages: English (no source PDFs registered), the dropped 79 and the 52
+  maths/social/etc. lessons dropped in the earlier pass, Grade 4/5 digital literacy (no
+  student book exists), and lessons whose opener scored under 0.9.
+- Not verified on a device; phones need the build whose runtime matches the OTA.
+
 ## The tab bar is drawn — 2026-10-23
 
 Step three of the icon work. The phone tab bar and the desktop sidebar draw
