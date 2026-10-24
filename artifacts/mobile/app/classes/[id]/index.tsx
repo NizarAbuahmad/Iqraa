@@ -909,7 +909,7 @@ export default function ClassDetailScreen() {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <View style={{ gap: 10 }}>
-              {studentAccounts && id ? <LinkRequestsBanner classId={id} /> : null}
+              {studentAccounts && id ? <LinkRequestsBanner key={id} classId={id} /> : null}
               {errorBanner}
               {studentAccounts && students.length > 0 && (
                 <JoinStatusSection

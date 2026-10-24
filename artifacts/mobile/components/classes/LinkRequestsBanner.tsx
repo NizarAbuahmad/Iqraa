@@ -11,7 +11,7 @@
  * It draws nothing while the list cannot be read: a teacher must never take an
  * empty-looking banner for «nobody is waiting».
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { PressableScale } from '@/components/ui/PressableScale';
@@ -19,11 +19,9 @@ import { Surface } from '@/components/ui/Surface';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { RosterError, approveLinkRequest, listLinkRequests, rejectLinkRequest, type LinkRequest } from '@/services/roster';
-import { classQueryKey } from '@/services/rosterQueryKeys';
+import { classLinkRequestsQueryKey, classQueryKey } from '@/services/rosterQueryKeys';
 import { formatLinkedOn, linkDisplayName } from '@/services/rosterLinks';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
-
-const requestsKey = (classId: string) => ['classLinkRequests', classId] as const;
 
 /** How long an answer's failure notice stays up once the list it was about has emptied. */
 const NOTICE_MS = 8000;
@@ -34,12 +32,15 @@ export function LinkRequestsBanner({ classId }: { classId: string }) {
   const queryClient = useQueryClient();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  // The state check alone can race two taps in one frame; this is set before the first await.
+  const answering = useRef(false);
   const align = isRTL ? 'right' : 'left';
 
+  // Always refetched on mount: the list must be fresh whenever the Students tab opens.
   const { data, isError } = useQuery({
-    queryKey: requestsKey(classId),
+    queryKey: classLinkRequestsQueryKey(classId),
     queryFn: () => listLinkRequests(classId),
-    staleTime: 30_000,
+    staleTime: 0,
   });
 
   useEffect(() => {
@@ -55,7 +56,8 @@ export function LinkRequestsBanner({ classId }: { classId: string }) {
   if (requests.length === 0 && !(error && !isError)) return null;
 
   const act = async (request: LinkRequest, kind: 'approve' | 'reject') => {
-    if (busyId) return;
+    if (answering.current) return;
+    answering.current = true;
     setBusyId(request.id);
     setError('');
     try {
@@ -65,10 +67,19 @@ export function LinkRequestsBanner({ classId }: { classId: string }) {
       // claim_request_stale, 404 and anything else all mean «look again»: the refetch below shows what is left.
       setError(t(err instanceof RosterError && err.code === 'claim_already_linked' ? 'linkRequestTaken' : 'linkRequestFailed'));
     } finally {
-      setBusyId(null);
-      // Both can have changed whatever the answer was.
-      void queryClient.invalidateQueries({ queryKey: requestsKey(classId) });
-      void queryClient.invalidateQueries({ queryKey: classQueryKey(classId) });
+      // Both can have changed whatever the answer was. Stay busy until the
+      // refetch lands, or the answered row shows live buttons for a round trip
+      // and a second tap on it 404s. invalidateQueries does not reject on a
+      // failed fetch; the read error shows as a hidden banner.
+      try {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: classLinkRequestsQueryKey(classId) }),
+          queryClient.invalidateQueries({ queryKey: classQueryKey(classId) }),
+        ]);
+      } finally {
+        answering.current = false;
+        setBusyId(null);
+      }
     }
   };
 
@@ -96,7 +107,7 @@ export function LinkRequestsBanner({ classId }: { classId: string }) {
             <Text style={[styles.name, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
               {request.studentName}
             </Text>
-            <Text style={[styles.account, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]} numberOfLines={1}>
+            <Text style={[styles.account, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]} numberOfLines={2}>
               {t('rosterClaimedByLabel')} {linkDisplayName(request)}
               {when ? ` · ${when}` : ''}
             </Text>
