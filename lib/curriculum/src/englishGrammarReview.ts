@@ -435,7 +435,7 @@ const GRADE_COPY: Record<number, GradeCopy> = {
   10: {
     title: 'مراجعة قواعد الصف العاشر',
     eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف العاشر',
-    lead: (total, units) => `هذه مراجعة قواعد الصف العاشر، الفصل الأول: ${AR_DIGITS(units)} دروس كُتبت جملها واحدةً واحدة، لكل جملة إجابتها الصحيحة وخيار مموِّه. الكتاب يعطي هدفًا لكل درس دون جمل نموذجية، فكل جملة هنا كتبناها نحن، وتُراجَع هنا قبل أي ظهور لها. كثير من الجمل يختبر الاختيار بين صيغتين (المضارع البسيط والمستمر، a أو the، will أو going to)، فنوع المموِّه مطبوع لكل جملة: <b>form</b> غير سليم لغويًا، و <b>meaning</b> سليم لكن كلمة في الجملة نفسها تستبعده. لا صور في أي درس. <b>لن يرى الطلاب أي درس قبل أن توافقوا عليه</b>، ودرس أدوات التعريف لا يظهر في الركن إلا بعد توقيعكم. هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة.`,
+    lead: (total, units) => `هذه مراجعة قواعد الصف العاشر، الفصل الأول: ${AR_DIGITS(units)} ${units > 10 ? 'درسًا' : 'دروس'} كُتبت جملها واحدةً واحدة، لكل جملة إجابتها الصحيحة وخيار مموِّه. الكتاب يعطي هدفًا لكل درس دون جمل نموذجية، فكل جملة هنا كتبناها نحن، وتُراجَع هنا قبل أي ظهور لها. كثير من الجمل يختبر الاختيار بين صيغتين (المضارع البسيط والمستمر، a أو the، will أو going to)، فنوع المموِّه مطبوع لكل جملة: <b>form</b> غير سليم لغويًا، و <b>meaning</b> سليم لكن كلمة في الجملة نفسها تستبعده. لا صور في أي درس. <b>لن يرى الطلاب أي درس قبل أن توافقوا عليه</b>، ودرس أدوات التعريف ليس له مفردات في الكتاب، فلا يظهر في الركن إلا بعد توقيعكم. هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة.`,
     acts: `
       <div class="act"><b>اختر الكلمة</b>جملة فيها فراغ، وخياران: الإجابة الصحيحة أمام المموِّه، مثل <span dir="ltr">had started / started</span> أو <span dir="ltr">where it is / where is it</span>.</div>
       <div class="act"><b>رتّب الجملة</b>كلمات الجملة مبعثرة، ويرتّبها الطالب بالنقر. حتى ٩ كلمات.</div>
@@ -456,7 +456,14 @@ const GRADE_COPY: Record<number, GradeCopy> = {
   .kind-form { background: var(--wrong-bg); color: var(--wrong); }
   .kind-meaning { background: var(--tint); color: var(--teal); }
   .topic-row th { text-align: start; background: var(--tint); font-family: var(--latin); font-weight: 600; }
-  .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }`,
+  .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }
+  @media print {
+    td.sentence, .yn { white-space: normal; }
+    th.note, td.note { width: 12%; }
+    td.sentence { font-size: .9rem; }
+    th, td { padding: 4px 5px; }
+    .yn, .opt { font-size: .82rem; }
+  }`,
   },
 };
 

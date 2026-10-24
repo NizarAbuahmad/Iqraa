@@ -123,6 +123,13 @@
   .kind-meaning { background: var(--tint); color: var(--teal); }
   .topic-row th { text-align: start; background: var(--tint); font-family: var(--latin); font-weight: 600; }
   .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }
+  @media print {
+    td.sentence, .yn { white-space: normal; }
+    th.note, td.note { width: 12%; }
+    td.sentence { font-size: .9rem; }
+    th, td { padding: 4px 5px; }
+    .yn, .opt { font-size: .82rem; }
+  }
 </style>
 </head>
 <body>
@@ -130,7 +137,7 @@
   <section class="intro">
     <div class="eyebrow">إقرأ · ركن اللغة الإنجليزية · الصف العاشر</div>
     <h1>مراجعة جمل القواعد قبل عرضها على الطلاب</h1>
-    <p class="lead">هذه مراجعة قواعد الصف العاشر، الفصل الأول: ١١ دروس كُتبت جملها واحدةً واحدة، لكل جملة إجابتها الصحيحة وخيار مموِّه. الكتاب يعطي هدفًا لكل درس دون جمل نموذجية، فكل جملة هنا كتبناها نحن، وتُراجَع هنا قبل أي ظهور لها. كثير من الجمل يختبر الاختيار بين صيغتين (المضارع البسيط والمستمر، a أو the، will أو going to)، فنوع المموِّه مطبوع لكل جملة: <b>form</b> غير سليم لغويًا، و <b>meaning</b> سليم لكن كلمة في الجملة نفسها تستبعده. لا صور في أي درس. <b>لن يرى الطلاب أي درس قبل أن توافقوا عليه</b>، ودرس أدوات التعريف لا يظهر في الركن إلا بعد توقيعكم. هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ٤٤٠ جملة.</p>
+    <p class="lead">هذه مراجعة قواعد الصف العاشر، الفصل الأول: ١١ درسًا كُتبت جملها واحدةً واحدة، لكل جملة إجابتها الصحيحة وخيار مموِّه. الكتاب يعطي هدفًا لكل درس دون جمل نموذجية، فكل جملة هنا كتبناها نحن، وتُراجَع هنا قبل أي ظهور لها. كثير من الجمل يختبر الاختيار بين صيغتين (المضارع البسيط والمستمر، a أو the، will أو going to)، فنوع المموِّه مطبوع لكل جملة: <b>form</b> غير سليم لغويًا، و <b>meaning</b> سليم لكن كلمة في الجملة نفسها تستبعده. لا صور في أي درس. <b>لن يرى الطلاب أي درس قبل أن توافقوا عليه</b>، ودرس أدوات التعريف ليس له مفردات في الكتاب، فلا يظهر في الركن إلا بعد توقيعكم. هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ٤٤٠ جملة.</p>
 
     <div class="acts">
       <div class="act"><b>اختر الكلمة</b>جملة فيها فراغ، وخياران: الإجابة الصحيحة أمام المموِّه، مثل <span dir="ltr">had started / started</span> أو <span dir="ltr">where it is / where is it</span>.</div>
@@ -3809,7 +3816,7 @@
       <ul class="patterns" dir="ltr"><li>will-decisions</li><li>going-to-evidence</li><li>arrangements-timetables</li><li>forms</li></ul>
       <p class="unit-note">النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.</p>
       <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">answer, apply, aqaba, ask, boil, boils, close, competition, dentist, exams, film, fly, flying, forgot, got, help, helps, hurry, ladder, leader, leave, leaves, medicine, meet, meeting, oh, ok, party, petra, please, rain, rains, sky, snow, snows, sorry, spill, step, term, think, tired, wait, we've</span></p>
-      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li><span dir="ltr">will</span> للقرار اللحظي، و <span dir="ltr">going to</span> لدليل ظاهر؛ والخيار الخاطئ في هذين الموضوعين هو المضارع البسيط (<span dir="ltr">I answer it</span>) لا الصيغة الأخرى، لأن الاختيار بين <span dir="ltr">will</span> و <span dir="ltr">going to</span> لخطة عامة تقبل كلتيهما. وموضوع الموعد والجدول يختبر شكل الجملة فقط لأن كل صيغة مستقبل تصلح مع وقت محدد.</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li><span dir="ltr">will</span> للقرار اللحظي، و <span dir="ltr">going to</span> لدليل ظاهر؛ والخيار الخاطئ في هذين الموضوعين هو المضارع البسيط (<span dir="ltr">I answer it</span>) لا الصيغة الأخرى، لأن الخطة العامة تقبل <span dir="ltr">will</span> و <span dir="ltr">going to</span> كلتيهما. وموضوع الموعد والجدول يختبر شكل الجملة فقط لأن كل صيغة مستقبل تصلح مع وقت محدد.</li></ul>
     </header>
     <div class="table-wrap">
       <table>
