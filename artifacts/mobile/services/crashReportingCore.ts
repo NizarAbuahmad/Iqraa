@@ -19,14 +19,17 @@ const MAX_MESSAGE = 300;
 const MAX_STACK = 4000;
 
 const RULES: ReadonlyArray<readonly [RegExp, string]> = [
-  // These two run FIRST: a token is base64url, so it can hold a dash-flanked run of digits or capitals that the
-  // number and login-code rules below would otherwise rewrite, leaving the rest of the token in the report.
+  [/\beyJ[\w-]{6,}\.[\w-]{6,}\.[\w-]{6,}/g, '<token>'],
+  [/\b(Bearer|Basic)\s+[\w.~+/=-]{8,}/gi, '$1 <token>'],
+  // These two run right after the JWT and Bearer rules and BEFORE the rest. A JWT's signature is also 43
+  // base64url characters, so they must not see one first (the signature would become <token> and the JWT rule
+  // would no longer match, leaving the header and payload in the report). A consent token is base64url too, so
+  // it can hold a dash-flanked run of digits or capitals that the number and login-code rules below would
+  // otherwise rewrite, leaving the rest of the token in the report.
   // A parent's consent link carries its token in the fragment; the token alone is 43 base64url characters.
   [/#[A-Za-z0-9_-]{16,}/g, '#<fragment>'],
   // Not `\b`: a base64url token may start or end with "-", which is not a word character.
   [/(?<![A-Za-z0-9_-])[A-Za-z0-9_-]{43}(?![A-Za-z0-9_-])/g, '<token>'],
-  [/\beyJ[\w-]{6,}\.[\w-]{6,}\.[\w-]{6,}/g, '<token>'],
-  [/\b(Bearer|Basic)\s+[\w.~+/=-]{8,}/gi, '$1 <token>'],
   [/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, '<email>'],
   // The student link, /take/ABC234: short-lived, but it opens a class roster.
   [/\/take\/[A-Za-z0-9]{4,}/g, '/take/<code>'],

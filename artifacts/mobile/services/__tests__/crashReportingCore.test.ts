@@ -118,6 +118,15 @@ describe('scrub: parent consent links', () => {
       }
     }
   });
+  it('still redacts a whole JWT, whose signature is also 43 base64url characters', () => {
+    const header = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
+    const payload = 'eyJzdWIiOiIxMjM0NTY3ODkwIiwicm9sZSI6InN0dWRlbnQifQ';
+    const sig = 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+    assert.equal(sig.length, 43);
+    const out = scrub(`Failed with token ${header}.${payload}.${sig} for user`);
+    assert.ok(!out.includes(header) && !out.includes(payload) && !out.includes(sig), out);
+    assert.equal(out, 'Failed with token <token> for user');
+  });
   it('still redacts numbers and codes that are not part of a token', () => {
     assert.match(scrub('call 0791234567 now'), /<number>/);
     assert.match(scrub('code ABCDEFGH1234 used'), /<code>/);
