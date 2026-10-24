@@ -39,11 +39,18 @@
  * Backups: before a stored clip is replaced for the first time (by --reprocess,
  * --force or --only), it is copied to `english-audio-original/<slug>.mp3` — a
  * sibling prefix, so the listing here never counts it. An existing backup is never
- * overwritten (it stays the first, model-made original), and a clip whose backup
- * cannot be made is not replaced. To restore one, copy it back over
- * `english-audio/<slug>.mp3` (Cloudflare dashboard, or any S3 client against the R2
- * endpoint) and delete the slug's entry from `_manifest.json`; the backup carries no
- * process-version metadata, so the next --reprocess will process it again.
+ * overwritten (it stays the first version this script replaced), and a clip whose
+ * backup cannot be made is not replaced. To restore one, copy it back over
+ * `english-audio/<slug>.mp3` and delete the slug's entry from `_manifest.json`.
+ * Metadata: a backup of one of the 1,050 clips stored before 2026-10-24 has no
+ * process-version stamp, but a backup made later, by re-voicing a clip this script
+ * processed, carries `process-version=1` (CopyObject keeps metadata). Restoring with
+ * an S3 client copy (against the R2 endpoint) keeps whatever stamp the backup has, so
+ * --reprocess correctly skips a stamped one; re-uploading the file through the
+ * Cloudflare dashboard drops the stamp, so the next --reprocess processes it. If the
+ * clip was restored BECAUSE processing damaged it, keep it out of the next
+ * --reprocess (name the others with --only, or fix the cause first), or it is
+ * processed — and damaged — again.
  *
  * Run ONE instance at a time: two runs would overwrite each other's manifest.
  * The manifest is merge-written every 50 uploads and at the end.

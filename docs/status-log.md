@@ -56,9 +56,14 @@ the plan found:
 - **Backups:** before a stored clip is first replaced (`--reprocess`, `--force`, `--only`), it is
   copied to `english-audio-original/<slug>.mp3` — a sibling prefix the clip listing never reads —
   unless a backup is already there (never overwritten); a clip whose backup fails is not replaced.
-  To restore: copy `english-audio-original/<slug>.mp3` back over `english-audio/<slug>.mp3`
-  (Cloudflare dashboard or any S3 client on the R2 endpoint) and delete the slug's entry in
-  `_manifest.json`; the backup has no process-version metadata, so the next `--reprocess` takes it.
+  To restore: copy `english-audio-original/<slug>.mp3` back over `english-audio/<slug>.mp3` and
+  delete the slug's entry in `_manifest.json`. A backup of one of the 1,050 pre-existing clips has
+  no process-version stamp; one made later by re-voicing a clip this script processed carries
+  `process-version=1` (CopyObject keeps metadata). Restoring with an S3 client copy keeps the
+  backup's stamp, so `--reprocess` correctly skips a stamped one; re-uploading through the
+  Cloudflare dashboard drops it, so the next `--reprocess` processes the clip. If the clip was
+  restored because processing damaged it, keep it out of the next `--reprocess` (name the others
+  with `--only`, or fix the cause first), or it is processed — and damaged — again.
 - `pnpm --filter @workspace/curriculum run english-audio-audit` (new): no credentials, `HEAD`s every
   planned clip on the public URL (6 at a time, backoff on 429/5xx with `Retry-After`) and prints
   coverage by grade and source; `--missing`, `--deep` (downloads and measures), `--fail-on-missing`.
