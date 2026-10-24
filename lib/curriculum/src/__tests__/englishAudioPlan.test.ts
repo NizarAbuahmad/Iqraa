@@ -6,8 +6,12 @@ import { GRAMMAR_UNITS, allGrammarSpoken, unitSpoken } from '../englishGrammar.t
 import {
   AUDIO_MODEL,
   AUDIO_VOICE,
+  ENGLISH_AUDIO_BACKUP_PREFIX,
   ENGLISH_AUDIO_MANIFEST_KEY,
+  ENGLISH_AUDIO_PREFIX,
+  PROCESS_VERSION_METADATA,
   PRONUNCIATION,
+  metadataProcessVersion,
   TEEN_INSTRUCTIONS,
   YOUNG_INSTRUCTIONS,
   audioPlan,
@@ -149,5 +153,24 @@ describe('manifest', () => {
   it('lives next to the clips and is not an .mp3, so the bucket listing never counts it', () => {
     assert.equal(ENGLISH_AUDIO_MANIFEST_KEY, 'english-audio/_manifest.json');
     assert.ok(!ENGLISH_AUDIO_MANIFEST_KEY.endsWith('.mp3'));
+  });
+});
+
+describe('backups and object metadata', () => {
+  it('backs up to a sibling prefix the clip listing (`english-audio/`) never reaches', () => {
+    assert.equal(ENGLISH_AUDIO_BACKUP_PREFIX, 'english-audio-original');
+    assert.ok(!`${ENGLISH_AUDIO_BACKUP_PREFIX}/cat.mp3`.startsWith(`${ENGLISH_AUDIO_PREFIX}/`));
+  });
+
+  it('reads the process version an object was stamped with, 0 when it has none', () => {
+    assert.equal(PROCESS_VERSION_METADATA, 'process-version');
+    assert.equal(metadataProcessVersion({ 'process-version': '1' }), 1);
+    assert.equal(metadataProcessVersion({ 'process-version': '3' }), 3);
+    assert.equal(metadataProcessVersion({ 'process-version': '0' }), 0);
+    assert.equal(metadataProcessVersion({}), 0);
+    assert.equal(metadataProcessVersion(undefined), 0);
+    assert.equal(metadataProcessVersion({ 'process-version': 'x' }), 0);
+    assert.equal(metadataProcessVersion({ 'process-version': '-1' }), 0);
+    assert.equal(metadataProcessVersion({ 'process-version': '1.5' }), 0);
   });
 });

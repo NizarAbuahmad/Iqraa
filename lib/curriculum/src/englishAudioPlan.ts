@@ -10,9 +10,9 @@
  * slug heard in any Grade 1–4 lesson — as a hub word, or as a string a Grade 1–4
  * grammar unit speaks — is young (so `--only eraser` stays in the voice of the rest
  * of its lesson); everything else is teen. Until 2026-10-24 every grammar string
- * young ("all are Grade 1–2"), which stopped being true once Grades 5, 9 and 10 got
- * grammar units: about 1,950 of their sentences would have been read as if to a
- * six-year-old. None had been voiced yet.
+ * was young ("all are Grade 1–2"), which stopped being true once Grades 5, 9 and 10
+ * got grammar units: about 1,700 of their grammar strings (more as Grade 10 Semester
+ * 2 lands) would have been read as if to a six-year-old. None had been voiced yet.
  */
 import { ENGLISH_HUB_LESSONS, allHubWords, audioSlug, hubLesson } from './englishHub.ts';
 import { GRAMMAR_UNITS, unitSpoken } from './englishGrammar.ts';
@@ -21,6 +21,20 @@ import { GRAMMAR_UNITS, unitSpoken } from './englishGrammar.ts';
 export const ENGLISH_AUDIO_PREFIX = 'english-audio';
 /** The manifest the generator keeps next to the clips (`<prefix>/_manifest.json`). */
 export const ENGLISH_AUDIO_MANIFEST_KEY = `${ENGLISH_AUDIO_PREFIX}/_manifest.json`;
+/**
+ * Where the generator copies a stored clip, once, before it first replaces it
+ * (`--reprocess`, `--force`, `--only`). A SIBLING prefix, never under
+ * `english-audio/`, or the bucket listing would read the backups as clips.
+ */
+export const ENGLISH_AUDIO_BACKUP_PREFIX = 'english-audio-original';
+/** Object metadata key (S3 `x-amz-meta-process-version`) stamped on every processed upload. */
+export const PROCESS_VERSION_METADATA = 'process-version';
+
+/** The process version an object's metadata records; 0 when it records none (or nonsense). */
+export function metadataProcessVersion(metadata: Record<string, string> | undefined): number {
+  const v = Number(metadata?.[PROCESS_VERSION_METADATA]);
+  return Number.isInteger(v) && v >= 0 ? v : 0;
+}
 
 export const AUDIO_MODEL = 'gpt-4o-mini-tts';
 export const AUDIO_VOICE = 'coral';

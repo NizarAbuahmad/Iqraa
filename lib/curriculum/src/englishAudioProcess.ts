@@ -93,6 +93,39 @@ export function clipVerdict(stats: ClipStats): ClipVerdict {
   return { ok: true };
 }
 
+/** A processed clip may lose at most this much speech against the raw one (the pre-word click `doughnut` loses is 0.07 s). */
+export const MAX_SPEECH_LOSS_S = 0.1;
+/** Silence a processed clip may keep before its speech (0.06 s kept, plus frame rounding). */
+export const MAX_PROCESSED_LEAD_S = 0.12;
+/** Silence a processed clip may keep after its speech (0.15 s kept, plus frame rounding). */
+export const MAX_PROCESSED_TRAIL_S = 0.25;
+/** How far over `PEAK_CEILING_DB` a processed clip's peak may decode (encoder overshoot). */
+export const PEAK_TOLERANCE_DB = 0.5;
+
+export type ProcessedVerdict = { ok: true } | { ok: false; reason: 'processing'; detail: string };
+
+/**
+ * Whether a PROCESSED clip may be stored, judged on what the encoder actually wrote
+ * (`after`, decoded again) against the raw clip (`before`). A different ffmpeg build
+ * that mishandled the cut, the gapless header or the input format would damage every
+ * clip the same way; this stops each upload instead of storing thousands of broken
+ * clips. All of: the result passes `clipVerdict`; it lost at most `MAX_SPEECH_LOSS_S`
+ * of speech; at most `MAX_PROCESSED_LEAD_S` / `MAX_PROCESSED_TRAIL_S` of silence is
+ * left; its peak is within `PEAK_TOLERANCE_DB` of the ceiling.
+ */
+export function processedVerdict(before: ClipStats, after: ClipStats): ProcessedVerdict {
+  const fail = (detail: string): ProcessedVerdict => ({ ok: false, reason: 'processing', detail });
+  const v = clipVerdict(after);
+  if (!v.ok) return fail(`result is ${v.reason}`);
+  if (after.speechS < before.speechS - MAX_SPEECH_LOSS_S) {
+    return fail(`speech ${before.speechS.toFixed(2)} s → ${after.speechS.toFixed(2)} s`);
+  }
+  if (after.leadS > MAX_PROCESSED_LEAD_S) return fail(`${after.leadS.toFixed(2)} s of silence left before the speech`);
+  if (after.trailS > MAX_PROCESSED_TRAIL_S) return fail(`${after.trailS.toFixed(2)} s of silence left after the speech`);
+  if (after.maxDb > PEAK_CEILING_DB + PEAK_TOLERANCE_DB) return fail(`peak ${after.maxDb.toFixed(1)} dBFS`);
+  return { ok: true };
+}
+
 /**
  * The gain, in dB, that brings a clip's speech level to `TARGET_MEAN_DB`: clamped to
  * ±`MAX_GAIN_DB`, and lowered whenever it would push the peak above `PEAK_CEILING_DB`.

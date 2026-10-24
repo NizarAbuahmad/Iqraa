@@ -14,6 +14,7 @@ import {
   TRIM_DECISION_MARGIN_DB,
   TRIM_THRESHOLD_DB,
   clipVerdict,
+  processedVerdict,
   ffmpegDecodeArgs,
   ffmpegEncodeArgs,
   ffmpegTrimFilter,
@@ -76,6 +77,41 @@ describe('gainDb', () => {
     for (const [mean, max] of [[-30, -4], [-40, -5], [-28, -2], [-35, -1.6]]) {
       assert.ok(max + gainDb(mean, max) <= PEAK_CEILING_DB + 1e-9);
     }
+  });
+});
+
+describe('processedVerdict', () => {
+  const before: ClipStats = { durationS: 1.8, speechS: 0.5, leadS: 0.2, trailS: 1.1, meanDb: -29, maxDb: -14 };
+  const after: ClipStats = { durationS: 0.71, speechS: 0.52, leadS: 0.06, trailS: 0.15, meanDb: -24, maxDb: -9 };
+  const reject = (a: ClipStats) => {
+    const v = processedVerdict(before, a);
+    assert.equal(v.ok, false);
+    return v.ok ? '' : (assert.equal(v.reason, 'processing'), v.detail);
+  };
+
+  it('keeps a good result, and one that lost under 0.1 s of speech', () => {
+    assert.deepEqual(processedVerdict(before, after), { ok: true });
+    assert.deepEqual(processedVerdict(before, { ...after, speechS: 0.41 }), { ok: true });
+    assert.deepEqual(processedVerdict(before, { ...after, leadS: 0.12, trailS: 0.25, maxDb: PEAK_CEILING_DB + 0.5 }), { ok: true });
+  });
+
+  it('rejects a result that fails the raw-clip verdict', () => {
+    assert.match(reject({ ...after, maxDb: -90 }), /blank/);
+    assert.match(reject({ ...after, speechS: 0, leadS: 0.7, trailS: 0.7 }), /blank/);
+    assert.match(reject({ ...after, speechS: 0.1 }), /too-short/);
+  });
+
+  it('rejects a result that lost more than 0.1 s of speech', () => {
+    assert.match(reject({ ...after, speechS: 0.39 }), /speech 0\.50 s → 0\.39 s/);
+  });
+
+  it('rejects a result that kept too much silence before or after', () => {
+    assert.match(reject({ ...after, leadS: 0.13 }), /before the speech/);
+    assert.match(reject({ ...after, trailS: 0.26 }), /after the speech/);
+  });
+
+  it('rejects a result that peaks over the ceiling by more than 0.5 dB', () => {
+    assert.match(reject({ ...after, maxDb: PEAK_CEILING_DB + 0.6 }), /peak/);
   });
 });
 

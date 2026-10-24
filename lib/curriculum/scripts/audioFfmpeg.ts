@@ -35,17 +35,30 @@ export function assertFfmpeg(): void {
   if (!r.stdout.includes('libmp3lame')) throw new Error('this ffmpeg has no libmp3lame encoder; install a full build.');
 }
 
-/** Runs ffmpeg with `input` on stdin and returns stdout. Rejects with stderr on a non-zero exit. */
+/** One clip takes well under a second; a run this long is hung (a stuck pipe, a prompt), not slow. */
+export const FFMPEG_TIMEOUT_MS = 60_000;
+
+/** Runs ffmpeg with `input` on stdin and returns stdout. Rejects with stderr on a non-zero exit, and kills it after `FFMPEG_TIMEOUT_MS`. */
 function run(args: string[], input: Buffer): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const p = spawn('ffmpeg', args, { stdio: ['pipe', 'pipe', 'pipe'] });
     const out: Buffer[] = [];
     const err: Buffer[] = [];
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      p.kill('SIGKILL');
+    }, FFMPEG_TIMEOUT_MS);
     p.stdout.on('data', (b: Buffer) => out.push(b));
     p.stderr.on('data', (b: Buffer) => err.push(b));
-    p.on('error', reject);
+    p.on('error', e => {
+      clearTimeout(timer);
+      reject(e);
+    });
     p.on('close', code => {
-      if (code === 0) resolve(Buffer.concat(out));
+      clearTimeout(timer);
+      if (timedOut) reject(new Error(`ffmpeg did not finish within ${FFMPEG_TIMEOUT_MS / 1000} s and was killed`));
+      else if (code === 0) resolve(Buffer.concat(out));
       else reject(new Error(`ffmpeg exited ${code}: ${Buffer.concat(err).toString('utf8').trim().slice(0, 300)}`));
     });
     // A clip ffmpeg rejects early closes stdin under us; the exit code reports it.
