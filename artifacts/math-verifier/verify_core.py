@@ -241,16 +241,62 @@ def solve_equation(question: str) -> list[Any]:
     return list(sols)
 
 
+def _split_value_list(text: str) -> str:
+    """
+    Read a comma between values as a separator, when it can only mean that.
+
+    'x = 1, 3' and '1, 3' list the solutions of ONE equation; 'x = 2, y = 3' is a
+    system and must stay refused, because set comparison against one equation's
+    roots would be meaningless. Measured 2026-10-12: every correct two-root key a
+    model wrote in the comma form came back 'multi-variable answer' and was never
+    verified, although 'x = 1 or x = 3' was accepted.
+
+    Fail closed everywhere the comma is not clearly a separator:
+      - inside brackets — '(3, -4)' is a point, not a list of values;
+      - not followed by a space — '1,000' and '2,5' are numbers with a thousands
+        separator or a decimal comma, and splitting them would turn a correct
+        key into a wrong one;
+      - labels naming more than one variable — 'x = 2, y = 3'.
+    Returns the text with the commas turned into ';', the separator the rest of
+    the parser already understands for 'or'.
+    """
+    pieces: list[str] = []
+    names: set[str] = set()
+    for segment in text.split(";"):
+        depth = 0
+        current = ""
+        for i, ch in enumerate(segment):
+            if ch in "([{":
+                depth += 1
+            elif ch in ")]}":
+                depth -= 1
+            if ch == ",":
+                if depth != 0:
+                    raise ValueError("multi-variable answer")
+                if segment[i + 1:i + 2] != " ":
+                    raise ValueError("ambiguous comma")
+                pieces.append(current)
+                current = ""
+            else:
+                current += ch
+        pieces.append(current)
+    for piece in pieces:
+        if "=" in piece:
+            names.add(piece.split("=")[0].strip())
+    if len(names) > 1:
+        raise ValueError("multi-variable answer")
+    return ";".join(pieces)
+
+
 def parse_solution_set(answer: str) -> list[Any]:
     """
     Turn a teacher-facing answer into a set of values.
-    Handles: 'x = 6' · 'x = 2 أو x = 3' · 'x = ±7' · 'x = 2 ± √3' · 'n = 4'.
+    Handles: 'x = 6' · 'x = 2 أو x = 3' · 'x = 1, 3' · 'x = ±7' · 'x = 2 ± √3' · 'n = 4'.
     Raises ValueError on multi-variable answers (systems) — a different check.
     """
-    text = _normalise_answer_text(answer)
-    # 'x = 2 ، y = 3' is a system; set comparison would be meaningless.
-    if "،" in text or "," in text:
-        raise ValueError("multi-variable answer")
+    text = _normalise_answer_text(answer).replace("،", ",")
+    if "," in text:
+        text = _split_value_list(text)
 
     values: list[Any] = []
     for part in (p for p in text.split(";") if p.strip()):
