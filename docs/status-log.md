@@ -10,6 +10,22 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## «أرسل دعوة التطبيق» now stays «أُرسلت الدعوة» after a reload — 2026-10-24
+
+On the collected-emails screen (`app/admin/signups.tsx`) a waitlist row showed «أُرسلت الدعوة»
+only for the visit it was sent in: the sent list was component state, so leaving the screen or
+reloading put «أرسل دعوة التطبيق» back and an address could be mailed twice without anyone
+noticing. `site_signups.invited_at` (nullable, migration `0017`, additive) is now stamped by
+`POST /admin/invites` on every row of that address (case-insensitive), `GET /admin/signups`
+returns it, and the row reads `invitedAt` first. The stamp is best-effort: the mail has already
+gone, so a failed write is logged and the response is still `ok`. The button stays pressable, so
+an admin can resend on purpose.
+
+**Verified:** `pnpm run typecheck`. **Not verified:** the endpoint against a real database and the
+screen in a browser (no Postgres in this session). **Limits:** an address typed into the invite
+box that has no signup row has nothing to stamp, so it shows as sent for that visit only; rows
+invited before this change show «أرسل دعوة التطبيق» once, since nothing recorded them.
+
 ## Students choose an email or a teacher's code — 2026-10-23
 
 A student could sign up only with a teacher's code (`POST /auth/redeem`, no email): the register
