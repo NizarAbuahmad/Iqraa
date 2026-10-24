@@ -2046,3 +2046,46 @@ describe('games, the calendar, privacy and terms, library searches — wordings 
     });
   }
 });
+
+describe('students, homework, worksheets, exam reminders, book pictures, slides — wordings of answers that already existed (twenty-fifth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['كيف أضيف طالباً واحداً إلى الشعبة؟', 'howAddStudent'],
+    ['كيف أضيف طالبا جديدا', 'howAddStudent'],
+    ['كيف أغيّر اسم طالب كتبته خطأ؟', 'howEditStudent'],
+    ['كيف أصحح اسم الطالب', 'howEditStudent'],
+    ['how do i correct a student\'s name', 'howEditStudent'],
+    ['كيف أنشر واجباً على محادثة الشعبة؟', 'howAddHomework'],
+    ['how do i post homework in the class chat', 'howAddHomework'],
+    ['كيف أحول ورقة العمل إلى اختبار للطلبة؟', 'howSendWorksheet'],
+    ['how do i turn the worksheet into a quiz for my students', 'howSendWorksheet'],
+    ['كيف أضبط تذكيراً بموعد الامتحان لأولياء الأمور؟', 'howExamParents'],
+    ['how do i set a reminder for the exam for the parents', 'howExamParents'],
+    ['كيف أضيف صورة الكتاب إلى سؤال في الامتحان؟', 'howEvalFigures'],
+    ['كيف أحفظ شرائحي كملف بوربوينت؟', 'howSaveSlides'],
+    // Reopening a closed exam was already answered: howCloseExam ends «لفتحه مجددًا اضغط انشر التقييم».
+    ['كيف أعيد فتح امتحان مغلق؟', 'howCloseExam'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  const stayWithModel = [
+    'كيف أحوّل ورقة العمل إلى ملف PDF',
+    'كيف أغير اسم الطالب في الاختبار الذي كتبه',
+    'كيف أضيف صورة الكتاب إلى الشريحة',
+    'كيف أحفظ شرائحي كملف صور',
+    'كيف أذكّر الطلبة بموعد الامتحان بأسلوب مشوّق',
+    'كيف أشرح اسم الطالب في جملة فعلية',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howEditStudent', 'howSendWorksheet', 'howExamParents', 'howEvalFigures', 'howSaveSlides', 'howAddStudent']);
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});

@@ -35,6 +35,54 @@ cannot load it under `node --test`.
 methods (only POST and DELETE are driven), and the other routers that say they are deliberately not gated
 (homework, schedule, teaching plans).
 
+## Register: the agreement boxes close the form, and the email divider says what it is — 2026-10-24
+
+Two things asked for after #1229 («Register: the terms checkbox is visible») went live: the terms
+row sat above everything, and under the Google button the email field read as a second place to
+type the Google address.
+
+**What changed** (`app/(auth)/register.tsx`, `components/CodeSignupForm.tsx`, `services/i18n.ts`)
+- **The terms row, and the age confirmation for an email student, now sit directly above the
+  «إنشاء حساب» button**, after the fields, in both the email form and the code form (which takes
+  them as an `agreements` prop and draws them above its own button). They used to sit above the
+  Google button and the whole form.
+- **«متابعة عبر Google» is still gated on them**, so its hint now points down
+  (`registerAcceptTermsBelow`, `ageConfirmBelow`); the hint under the create button keeps the
+  «above» wording, which is now true of the boxes above it. The cost: someone who wants Google
+  has to scroll to the bottom to tick, then back up.
+- **The divider under the Google button reads «أو أنشئ حسابك ببريدك الإلكتروني»**
+  (`orSignUpWithEmail`) instead of a bare «أو». `orDivider` stays for the sign-in screen.
+- The Google button's own text («Continue as <name>» with the address) is drawn by Google's
+  script in an iframe, so it cannot be restyled or relabelled from here.
+
+**Verified:** mobile `pnpm run typecheck`; mobile `pnpm test` (7,385 tests, 7,375 pass, 10 skipped, 0 fail).
+**Not verified:** how it looks in a browser (phone, desktop, light, dark, RTL), and that the
+role pills, student method choice and the Google gate behave together on the screen. Nobody
+has loaded the deployed `/register` since the change.
+
+## Chat app-help, twenty-fifth live pass: one new answer and seven wordings — 2026-10-24
+
+A 30-question pass (20 app, 10 curriculum — all ten answers correct) on app.iqrra.com found
+app questions answered by the model, or by the wrong answer, for which the app already had one:
+«أضيف طالباً واحداً إلى الشعبة» got the new-class steps (`howAddStudent` did not accept «واحد»),
+posting a homework in the class chat (`howAddHomework` ends with it), turning a worksheet into an
+exam for students (`howSendWorksheet`), a reminder of the exam date for parents
+(`howExamParents`; the model refused), adding the book's picture to an exam question
+(`howEvalFigures`) and saving the slides as PowerPoint (`howSaveSlides`: «شرائحي» was not
+recognised). One new short answer, `howEditStudent` (ar + en): the pencil beside a student's name
+on the class's Students tab opens «تعديل بيانات الطالب» (name, register number, gender, the
+teacher's note; `components/classes/EditStudentSheet.tsx`). Pinned in `appHelp.test.ts` with
+near-misses that stay with the model («حوّل ورقة العمل إلى ملف PDF», «غيّر اسم الطالب في الاختبار
+الذي كتبه»…).
+
+**Checked and already right:** «أعيد فتح امتحان مغلق» got the close-exam answer, which ends
+«لفتحه مجددًا اضغط انشر التقييم», so reopening *is* answered; it is now pinned.
+
+**Left to the model on purpose:** printing the student list, telling who handed an exam in late,
+and the class pass rate — I found no screen for any of the three (the results dashboard shows a
+status and a percentage, not a time, and there is no pass mark), so an app answer would invent
+one. A «حددي» (feminine) in the model's worksheet-to-quiz answer is the model's, not the app's.
+
 ## Tests for the login-code reissue route — 2026-10-24
 
 `POST /students/:id/links/:userId/login-code` (a teacher gives a parent or student who lost their personal
