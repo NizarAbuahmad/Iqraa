@@ -10,7 +10,7 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## English corner: Dana's review (Grades 2, 4, 5) — three glosses, one picture, recordings made but not yet uploaded — 2026-10-24
+## English corner: Dana's review (Grades 2, 4, 5) — three glosses, one picture, 201 recordings uploaded — 2026-10-24
 
 A teacher's review of the English corner (Grades 2–5), with three phone recordings (a Grade 2 «garage» card, a Grade 4
 «loudly» card, a Google lookup showing British ga·raazh against American gr·aazh). Checked against the data, not taken on trust.
@@ -34,9 +34,11 @@ A teacher's review of the English corner (Grades 2–5), with three phone record
   `small.en` flagged 22 of the 198; 10 were real (silent «squid»; «bake a cake», «go swimming», «tell a story», «keyboard»,
   «cheer» (→ «shear»), «comet», «appear», «metal», «explorer» mis-voiced) and were re-taken until Whisper agreed; the rest were
   homophones (buy/sell/sun), numbers written as digits and spelling («moustache»). `a cold` still reads «are cold» in Whisper
-  and was left. **Upload is a separate, owner-approved step:**
+  and was left. **Uploaded 2026-10-24 on the owner's go-ahead** (201 files, 5.6 MB, none failed) with
   `pnpm --filter @workspace/curriculum run english-audio -- --only <slugs> --from <dir>` (new `--from` uploads the checked files
-  instead of voicing again; `--out` writes locally and uploads nothing). Files carry `max-age=86400`.
+  instead of voicing again; `--out` writes locally and uploads nothing). Afterwards a HEAD check of all 1,248 hub words found
+  every one present (Grades 1–5, 9, 10: 0 missing), and `garage`, `loudly`, `firefighter`, `squid`, `purse` came back
+  byte-identical to what was uploaded. Files carry `max-age=86400`, so a phone that cached the old `garage`/`loudly` keeps it up to a day.
 - **Not done:** Grade 3 units 1 and 6 (the teacher noticed the review units are absent; Grades 1 and 2 have theirs — a content
   decision); Grade 5 is voiced in the teenage register as before; the «ردهة» wording for «hall» is the teacher's alternative.
 - **Checked:** `lib/curriculum` tests 677 of 678 (the one failure, `quranCorner`, cannot load `@quran.ws/text`, which this partial install lacks — nothing to do with English); the two
