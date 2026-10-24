@@ -45,3 +45,16 @@ test('text judged against the plain surface can fail on its own tint, which is w
   assert.ok(contrast('#C2410C', tint) < 4.5);
   assert.ok(contrast(readableOn('#C2410C', tint), tint) >= 4.5);
 });
+
+import { selectedRow, SELECTED_ROW_ALPHA } from '../readableColor.ts';
+
+test('a selected dropdown row is an opaque fill with an ink that reads on it', () => {
+  assert.equal(SELECTED_ROW_ALPHA, 0x15 / 255);
+  for (const surface of ['#FFFFFF', '#111F36']) {
+    for (const accent of ['#C2410C', '#0369A1', '#7C3AED', '#0F766E', '#4338CA', '#0E7490']) {
+      const row = selectedRow(readableOn(accent, surface), surface);
+      assert.equal(row.fill, tintOver(readableOn(accent, surface), SELECTED_ROW_ALPHA, surface));
+      assert.ok(contrast(row.ink, row.fill) >= 4.5, `${accent} on ${surface}`);
+    }
+  }
+});

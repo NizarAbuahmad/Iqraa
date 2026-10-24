@@ -13,8 +13,9 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CONCEPTS } from '../../constants/icons.ts';
 import { bandGradient } from '../band.ts';
-import { contrast, readableOn, tintOver } from '../readableColor.ts';
+import { contrast, readableOn, tintOver, selectedRow } from '../readableColor.ts';
 import { chipLocked } from '../chipRules.ts';
+import { generationPhase } from '../generationPhase.ts';
 import translations from '../i18n.ts';
 
 const ROOT = join(import.meta.dirname, '..', '..');
@@ -260,7 +261,7 @@ test('a stranded grade/subject pair keeps the lesson card open, so its note is n
 });
 
 test('a refusal, an error or the spinner scrolls into view above a docked button, without a flash or reduced-motion animation', () => {
-  assert.match(quizCode, /const statusPhase = loading \? 'loading' : cancelled \? 'cancelled' : \(error && topic\.trim\(\)\) \? 'error' : 'idle';/);
+  assert.match(quizCode, /const statusPhase = generationPhase\(\{ loading, cancelled, failed: !!\(error && topic\.trim\(\)\) \}\);/);
   assert.match(quizCode, /<GenerationStatus\s+phase=\{statusPhase\}/);
   // The position comes from the wrapper's own layout, recorded without a re-render.
   assert.match(quizCode, /<View onLayout=\{e => \{ statusY\.current = e\.nativeEvent\.layout\.y; \}\}>\s*<GenerationStatus/);
@@ -473,7 +474,7 @@ test('generation, saving and the result are untouched', () => {
 });
 
 test('a refusal, an error or the spinner scrolls into view above a docked button, without a flash or reduced-motion animation', () => {
-  assert.match(worksheetCode, /const statusPhase = loading \? 'loading' : cancelled \? 'cancelled' : \(error && topic\.trim\(\)\) \? 'error' : 'idle';/);
+  assert.match(worksheetCode, /const statusPhase = generationPhase\(\{ loading, cancelled, failed: !!\(error && topic\.trim\(\)\) \}\);/);
   assert.match(worksheetCode, /<GenerationStatus\s+phase=\{statusPhase\}/);
   assert.match(worksheetCode, /<View onLayout=\{e => \{ statusY\.current = e\.nativeEvent\.layout\.y; \}\}>\s*<GenerationStatus/);
   assert.match(worksheetCode, /useLayoutEffect\(\(\) => \{\s*if \(isDesktop \|\| statusPhase === 'idle'\) return;/);
@@ -551,10 +552,10 @@ test('pressing generate again on the same refusal scrolls to it again: the effec
   for (const [name, src] of [['quiz', quizCode], ['worksheet', worksheetCode], ['lesson plan', lessonPlanCode], ['activity', activityCode]] as const) {
     assert.match(src, /const \[attempt, setAttempt\] = useState\(0\);/, `${name}: no attempt counter`);
     // Bumped first thing in generate, before any early return (the refusals), and nothing else about generate moves.
-    assert.match(src, /const generate = async \(opts\?: \{[^}]*\}\) => \{\s*(\/\/[^\n]*\n\s*)*setAttempt\(n => n \+ 1\);\s*const previous = result;/, `${name}: attempt is not bumped at the start of generate`);
+    assert.match(src, /const generate = async \(opts\?: \{[^}]*\}\) => \{\s*(\/\/[^\n]*\n\s*)*setAttempt\(n => n \+ 1\);\s*(\/\/[^\n]*\n\s*)*setCancelled\(false\);\s*const previous = result;/, `${name}: attempt is not bumped at the start of generate`);
     assert.match(src, /\}, \[statusPhase, attempt\]\);/, `${name}: the effect ignores the attempt`);
-    // (The lesson plan also yields to a topic refusal: see its own test.)
-    assert.match(src, /if \(isDesktop \|\| statusPhase === 'idle'(?: \|\| topicRefusal)?\) return;/, `${name}: an idle form must not scroll`);
+    assert.match(src, /if \(isDesktop \|\| statusPhase === 'idle'\) return;/, `${name}: an idle form must not scroll`);
+    assert.doesNotMatch(src, /statusPhase === 'idle' \|\| (topicRefusal|refusal)/, `${name}: no special case for a refusal: cancelled is cleared first, so the phase is idle then`);
   }
 });
 
@@ -669,10 +670,10 @@ test('an empty-topic press brings the field into view on a phone AND on desktop,
   // Desktop too: the sticky button is in the side column and the field is at the top of the form.
   assert.match(lessonPlanCode, /useLayoutEffect\(\(\) => \{\s*if \(!topicRefusal\) return;/);
   assert.doesNotMatch(lessonPlanCode, /isDesktop \|\| !topicRefusal/);
-  // After a Cancel `cancelled` stays set; the status scroll must yield so only the field's scroll runs.
-  assert.match(lessonPlanCode, /useLayoutEffect\(\(\) => \{\s*if \(isDesktop \|\| statusPhase === 'idle' \|\| topicRefusal\) return;/);
-  // `topicRefusal` is declared before the status effect reads it.
-  assert.ok(lessonPlanCode.indexOf('const topicRefusal') < lessonPlanCode.indexOf("statusPhase === 'idle' || topicRefusal"));
+  // The status scroll has no refusal special case any more (`generate` clears `cancelled` first, so a topic refusal is phase 'idle').
+  assert.match(lessonPlanCode, /useLayoutEffect\(\(\) => \{\s*if \(isDesktop \|\| statusPhase === 'idle'\) return;/);
+  // No special case in the status effect: see the assertion above and the cancel tests at the end of this file.
+  assert.doesNotMatch(lessonPlanCode, /statusPhase === 'idle' \|\| topicRefusal/, 'no special case: cancelled is cleared first, so the phase is idle on a topic refusal');
   // Both positions are measured together, so the current scroll offset cancels out.
   assert.match(lessonPlanCode, /top\.measureInWindow\(\(_x, topY\) => \{\s*target\.measureInWindow\(\(_tx, targetY\) => \{\s*scrollRef\.current\?\.scrollTo\(\{ y: Math\.max\(0, targetY - topY - Math\.round\(windowHeight \* 0\.4\)\), animated: !reduceMotion \}\);/);
   assert.match(lessonPlanCode, /\}, \[topicRefusal, attempt\]\);/, 'without the attempt a repeated press with the same refusal scrolls nowhere');
@@ -680,10 +681,10 @@ test('an empty-topic press brings the field into view on a phone AND on desktop,
 });
 
 test('the lesson plan scrolls a refusal, an error or the spinner into view above the docked bar, and pads its content for the bar', () => {
-  assert.match(lessonPlanCode, /const statusPhase = loading \? 'loading' : cancelled \? 'cancelled' : \(error && topic\.trim\(\)\) \? 'error' : 'idle';/);
+  assert.match(lessonPlanCode, /const statusPhase = generationPhase\(\{ loading, cancelled, failed: !!\(error && topic\.trim\(\)\) \}\);/);
   assert.match(lessonPlanCode, /<GenerationStatus\s+phase=\{statusPhase\}/);
   assert.match(lessonPlanCode, /<View onLayout=\{e => \{ statusY\.current = e\.nativeEvent\.layout\.y; \}\}>\s*<GenerationStatus/);
-  assert.match(lessonPlanCode, /useLayoutEffect\(\(\) => \{\s*if \(isDesktop \|\| statusPhase === 'idle' \|\| topicRefusal\) return;/);
+  assert.match(lessonPlanCode, /useLayoutEffect\(\(\) => \{\s*if \(isDesktop \|\| statusPhase === 'idle'\) return;/);
   assert.match(lessonPlanCode, /scrollRef\.current\?\.scrollTo\(\{ y: Math\.max\(0, statusY\.current - SPACE\.lg\), animated: !reduceMotion \}\);\s*\}, \[statusPhase, attempt\]\);/);
   assert.match(lessonPlanCode, /const reduceMotion = useReduceMotion\(\);/);
   assert.match(lessonPlanCode, /paddingBottom: DOCKED_BAR_HEIGHT \+ SPACE\.xxl \+ insets\.bottom/);
@@ -874,7 +875,7 @@ test('the activity button is still disabled with no topic, and says why', () => 
 });
 
 test('the activity scrolls a refusal or the spinner into view above the docked bar, and pads for it', () => {
-  assert.match(activityCode, /const statusPhase = loading \? 'loading' : cancelled \? 'cancelled' : \(error && topic\.trim\(\)\) \? 'error' : 'idle';/);
+  assert.match(activityCode, /const statusPhase = generationPhase\(\{ loading, cancelled, failed: !!\(error && topic\.trim\(\)\) \}\);/);
   assert.match(activityCode, /<GenerationStatus\s+phase=\{statusPhase\}/);
   assert.match(activityCode, /<View onLayout=\{e => \{ statusY\.current = e\.nativeEvent\.layout\.y; \}\}>\s*<GenerationStatus/);
   assert.match(activityCode, /scrollRef\.current\?\.scrollTo\(\{ y: Math\.max\(0, statusY\.current - SPACE\.lg\), animated: !reduceMotion \}\);\s*\}, \[statusPhase, attempt\]\);/);
@@ -998,12 +999,12 @@ test('a selected segment\'s label reads at 4.5:1 on the card it is drawn on, in 
 });
 
 test('the activity\'s ready banner text reads at 4.5:1 on its tint over the page, in both themes', () => {
-  assert.match(activityCode, /const bannerInk = readableOn\(ACCENT, tintOver\(ACCENT, 0x15 \/ 255, colors\.background\)\);/);
+  assert.match(activityCode, /const bannerInk = readableOn\(ink, tintOver\(ACCENT, 0x15 \/ 255, colors\.background\)\);/);
   assert.match(activityCode, /color=\{bannerInk\}/);
   assert.match(activityCode, /\{ color: bannerInk, fontFamily/);
   for (const [theme, c] of Object.entries(themeColours())) {
     const fill = tintOver(CONCEPTS.activity.color, 0x15 / 255, c.background);
-    const ink = readableOn(CONCEPTS.activity.color, fill);
+    const ink = readableOn(readableOn(CONCEPTS.activity.color, c.card), fill);
     assert.ok(contrast(ink, fill) >= 4.5, `${theme}: banner ${ink} on ${fill} is ${contrast(ink, fill).toFixed(2)}:1`);
   }
 });
@@ -1103,15 +1104,15 @@ test('the slides button is not disabled; every refusal is shown in the lesson ca
   assert.match(slidesCode, /top\.measureInWindow\(\(_x, topY\) => \{\s*target\.measureInWindow\(\(_tx, targetY\) => \{\s*scrollRef\.current\?\.scrollTo\(\{ y: Math\.max\(0, targetY - topY - Math\.round\(windowHeight \* 0\.4\)\), animated: !reduceMotion \}\);/);
   assert.match(slidesCode, /\}, \[refusal, attempt\]\);/);
   assert.match(slidesCode, /<View ref=\{contentTopRef\} collapsable=\{false\}>\s*<ToolHeader/);
-  // The status scroll yields to a refusal, depends on the attempt, and its phase still reads the two-phase flow.
-  assert.match(slidesCode, /if \(isDesktop \|\| statusPhase === 'idle' \|\| refusal\) return;/);
+  // The status scroll depends on the attempt (a refusal is phase 'idle', so it returns by itself), and its phase still reads the two-phase flow.
+  assert.match(slidesCode, /if \(isDesktop \|\| statusPhase === 'idle'\) return;/);
   assert.match(slidesCode, /\}, \[statusPhase, attempt\]\);/);
-  assert.match(slidesCode, /const statusPhase = loading \? 'loading' : cancelled \? 'cancelled' : error \? 'error' : 'idle';/);
+  assert.match(slidesCode, /const statusPhase = generationPhase\(\{ loading, cancelled, failed: !!error \}\);/);
   assert.match(slidesCode, /<GenerationStatus\s+phase=\{statusPhase\}/);
   assert.match(slidesCode, /<View onLayout=\{e => \{ statusY\.current = e\.nativeEvent\.layout\.y; \}\}>\s*<GenerationStatus/);
   // The attempt is counted before anything can refuse.
   assert.match(slidesCode, /const \[attempt, setAttempt\] = useState\(0\);/);
-  assert.match(slidesCode, /const generate = async \(regen: ReturnType<typeof regenerationFields> = \{\}\) => \{\s*setAttempt\(n => n \+ 1\);\s*const trimmed = topic\.trim\(\);/);
+  assert.match(slidesCode, /const generate = async \(regen: ReturnType<typeof regenerationFields> = \{\}\) => \{\s*setAttempt\(n => n \+ 1\);\s*(\/\/[^\n]*\n\s*)*setCancelled\(false\);\s*const trimmed = topic\.trim\(\);/);
   assert.match(slidesCode, /loadingLabel=\{preliminary \? t\('slidesBuildingRest'\) : t\('slidesBuilding'\)\}/);
 });
 
@@ -1144,7 +1145,7 @@ test('the slides wear their concept colour: no palette, no hand-written colour, 
   assert.match(slidesCode, /<GenerationStatus[\s\S]*?accent=\{accentInk\}/);
   assert.match(slidesCode, /<DockedAction[\s\S]*?accent=\{ACCENT\}/);
   assert.match(/<PickerField label=\{t\('grade'\)\}[\s\S]*?\/>/.exec(slidesCode)?.[0] ?? '', /accent=\{accentInk\}/);
-  assert.match(slidesCode, /selectedTint=\{props\.accent \+ '15'\}/);
+  assert.match(slidesCode, /const row = selectedRow\(props\.accent, props\.colors\.card\);\s*return <SharedPickerField selectedTint=\{row\.fill\} \{\.\.\.props\} accent=\{row\.ink\} \/>;/);
   assert.doesNotMatch(slidesCode, /KeyboardAvoidingView/);
   assert.doesNotMatch(slidesCode, /accessibilityState=/);
 });
@@ -1224,4 +1225,129 @@ test('the slides wording: neutral count note, one attachments word, the revision
     for (const dead of ['slidesIncludeExamples', 'slidesIncludePractice', 'slidesIncludeAttachments']) assert.equal(T[lang][dead], undefined, `${lang}.${dead} is dead and was removed`);
   }
   assert.doesNotMatch(read('app', 'ai-tools', 'slides.tsx'), /slidesInclude/);
+});
+
+// ── Cancel, then a refused press ────────────────────────────────────────────
+
+test('every generator clears `cancelled` first in generate, before any refusal can return, and uses the one phase expression', () => {
+  const screens = [['quiz', quizCode], ['worksheet', worksheetCode], ['lesson plan', lessonPlanCode], ['activity', activityCode], ['slides', slidesCode]] as const;
+  for (const [name, src] of screens) {
+    const at = src.indexOf('const generate = async (');
+    assert.ok(at >= 0, `${name}: no generate`);
+    const body = src.slice(at, src.indexOf('Haptics.impactAsync', at));
+    const reset = body.indexOf('setCancelled(false);');
+    assert.ok(reset >= 0, `${name}: generate never clears cancelled`);
+    // Before the first refusal (setError / refuse) and right after the attempt is counted.
+    const firstRefusal = Math.min(...['setError(t(', 'refuse(t('].map(k => (body.indexOf(k) >= 0 ? body.indexOf(k) : Infinity)));
+    assert.ok(reset < firstRefusal, `${name}: cancelled is cleared after a refusal could already return`);
+    assert.ok(body.indexOf('setAttempt(n => n + 1);') < reset, `${name}: the attempt is counted first`);
+    assert.match(src, /import \{ generationPhase \} from '@\/services\/generationPhase';/, name);
+    assert.match(src, /const statusPhase = generationPhase\(\{ loading, cancelled, failed: /, name);
+    assert.doesNotMatch(src, /loading \? 'loading' : cancelled \? 'cancelled'/, `${name}: the phase expression is back inline`);
+  }
+});
+
+test('the paths that rebuild go through generate, so they clear a cancel too', () => {
+  // Regenerate buttons, the English refresh and slides\' report-a-problem all call generate; none sets its own phase.
+  for (const [name, src] of [['quiz', quizCode], ['worksheet', worksheetCode], ['lesson plan', lessonPlanCode], ['activity', activityCode]] as const) {
+    assert.match(src, /generate: \(\) => generate\(\)/, `${name}: English refresh`);
+    assert.match(src, /onRegenerate=\{\(\) => generate\(\{ regenerate: true \}\)\}/, `${name}: regenerate`);
+  }
+  assert.match(slidesCode, /await generate\(regenerationFields\(true, \{ variantId: teachingVariantId \}\)\);/);
+  assert.match(slidesCode, /generate: \(\) => generate\(\),/);
+});
+
+test('the status scroll needs no special case for a refusal any more: the phase is idle then', () => {
+  assert.doesNotMatch(lessonPlanCode, /statusPhase === 'idle' \|\| topicRefusal/);
+  assert.doesNotMatch(slidesCode, /statusPhase === 'idle' \|\| refusal/);
+});
+
+// ── Ink on a tint is judged against the tint ───────────────────────────────
+
+test('the ready banners, pills, figure button and selected dropdown rows read at 4.5:1 on their own tint, and never lower than the plain ink, for every concept colour in both modes', () => {
+  const tints = (id: keyof typeof CONCEPTS, c: { card: string; background: string }) => {
+    const accent = CONCEPTS[id].color;
+    const banner = tintOver(accent, 0x15 / 255, c.background);
+    const pill = tintOver(accent, 0x18 / 255, banner);
+    const figure = tintOver(accent, 0x1a / 255, c.card);
+    return { accent, banner, pill, figure };
+  };
+  for (const [theme, c] of Object.entries(themeColours())) {
+    for (const id of GENERATOR_CONCEPTS) {
+      const { accent, banner, pill, figure } = tints(id, c);
+      // The screens start from the plain ink (readableOn(accent, card)) and only move it further when the tint needs it,
+      // so a label is never LOWER in contrast than the ink it used to be.
+      const plain = readableOn(accent, c.card);
+      for (const [what, fill] of [['banner', banner], ['quiz pill', pill], ['figure button', figure]] as const) {
+        const ink = readableOn(plain, fill);
+        assert.ok(contrast(ink, fill) >= 4.5, `${id} on ${theme}: ${what} ${ink} on ${fill} is ${contrast(ink, fill).toFixed(2)}:1`);
+        assert.ok(contrast(ink, fill) >= Math.min(contrast(plain, fill), 4.5) - 1e-9, `${id} on ${theme}: ${what} got worse than the plain ink`);
+      }
+      // …and where the plain ink already read better than 4.5:1 on the tint, it is left exactly as it was.
+      if (contrast(plain, banner) >= 4.5) assert.equal(readableOn(plain, banner), plain, `${id} on ${theme}: a banner ink that already passed was moved`);
+      const row = selectedRow(plain, c.card);
+      assert.ok(contrast(row.ink, row.fill) >= 4.5, `${id} on ${theme}: selected picker row ${row.ink} on ${row.fill} is ${contrast(row.ink, row.fill).toFixed(2)}:1`);
+    }
+  }
+  const { light, dark } = themeColours();
+  // The flaws these replace, measured with the colours that had them: judged the old way each is under 4.5:1.
+  const oldInk = (id: keyof typeof CONCEPTS, c: { card: string }) => readableOn(CONCEPTS[id].color, c.card);
+  for (const id of ['homework', 'activity'] as const) {
+    assert.ok(contrast(oldInk(id, light), tints(id, light).banner) < 4.5, `${id} banner (light), judged against the card`);
+  }
+  // Quiz header pills: the label was accentInk on `accentInk + '18'` over the header, 3.7–4.5:1 across the colours and both modes.
+  for (const [theme, c] of [['light', light], ['dark', dark]] as const) {
+    // The pills exist on the quiz screen only, so the quiz's own colour is the one measured.
+    for (const id of ['quiz'] as const) {
+      const ink = oldInk(id, c);
+      const oldPill = tintOver(ink, 0x18 / 255, tints(id, c).banner);
+      assert.ok(contrast(ink, oldPill) < 4.5, `${id} pill (${theme}), judged the old way: ${contrast(ink, oldPill).toFixed(2)}:1`);
+    }
+  }
+  // The attach-figure button in dark mode: 4.46 for the worksheet's colour, 4.11 for the homework's.
+  assert.ok(contrast(oldInk('worksheet', dark), tints('worksheet', dark).figure) < 4.5, 'worksheet figure button (dark), judged against the card');
+  assert.ok(contrast(oldInk('homework', dark), tints('homework', dark).figure) < 4.5, 'homework figure button (dark), judged against the card');
+  // The dropdown's selected row in dark mode.
+  const oldRow = tintOver(oldInk('homework', dark), 0x15 / 255, dark.card);
+  assert.ok(contrast(oldInk('homework', dark), oldRow) < 4.5, 'dark selected row, judged against the card');
+});
+
+test('the screens draw those tints with ink judged against them', () => {
+  // Worksheet and homework: the banner on the page, the attach-figure button on the card. Both start from accentInk.
+  assert.match(worksheetCode, /const bannerInk = readableOn\(accentInk, tintOver\(ACCENT, 0x15 \/ 255, colors\.background\)\);/);
+  assert.match(worksheetCode, /const figureInk = readableOn\(accentInk, tintOver\(ACCENT, 0x1a \/ 255, colors\.card\)\);/);
+  assert.match(activityCode, /const bannerInk = readableOn\(ink, tintOver\(ACCENT, 0x15 \/ 255, colors\.background\)\);/);
+  assert.match(worksheetCode, /<Ionicons name="document-text" size=\{20\} color=\{bannerInk\} \/>/);
+  assert.match(worksheetCode, /wanted && \{ backgroundColor: ACCENT \+ '1A', borderColor: figureInk \}/);
+  assert.match(worksheetCode, /color=\{wanted \? figureInk : colors\.mutedForeground\}/);
+  // Quiz: the pills are drawn in an opaque fill and labelled for it.
+  assert.match(quizCode, /const pillFill = tintOver\(ACCENT, 0x18 \/ 255, tintOver\(ACCENT, 0x15 \/ 255, colors\.background\)\);/);
+  assert.match(quizCode, /const pillInk = readableOn\(accentInk, pillFill\);/);
+  assert.equal((quizCode.match(/color=\{pillInk\} fill=\{pillFill\}/g) ?? []).length, 3);
+  assert.match(quizCode, /backgroundColor: fill, borderRadius: 20/);
+  // Every screen's dropdown draws its selected row in an opaque fill with its own ink.
+  for (const [name, src] of [['quiz', quizCode], ['worksheet', worksheetCode], ['lesson plan', lessonPlanCode], ['activity', activityCode], ['slides', slidesCode]] as const) {
+    assert.match(src, /const row = selectedRow\(props\.accent, props\.colors\.card\);/, name);
+    assert.match(src, /selectedTint=\{row\.fill\}/, name);
+    assert.match(src, /accent=\{row\.ink\}/, name);
+    assert.doesNotMatch(src, /selectedTint=\{[^}]*\+ '15'\}/, `${name}: a translucent tint is back`);
+  }
+});
+
+test('changing the grade or the subject after a Cancel clears the Cancel too, on every generator', () => {
+  for (const [name, src] of [['quiz', quizCode], ['worksheet', worksheetCode], ['lesson plan', lessonPlanCode], ['activity', activityCode], ['slides', slidesCode]] as const) {
+    const at = src.indexOf('prevGradeRef.current !== gradeIdx');
+    assert.ok(at >= 0, `${name}: no grade/subject reset effect`);
+    const effect = src.slice(at, src.indexOf('prevSubjectRef.current = subjectIdx;', at));
+    assert.match(effect, /setCancelled\(false\);/, `${name}: the reset leaves «أُلغي» showing for the old pairing`);
+    assert.match(effect, /setError\(''\);/, name);
+    assert.match(effect, /setTopic\(''\);/, name);
+  }
+});
+
+test('GenerationStatus takes its phase type from the one service, not a second declaration', () => {
+  const src = code(read('components', 'ui', 'GenerationStatus.tsx'));
+  assert.match(src, /import type \{ GenerationPhase \} from '@\/services\/generationPhase';/);
+  assert.match(src, /export type \{ GenerationPhase \};/);
+  assert.doesNotMatch(src, /type GenerationPhase =/);
 });

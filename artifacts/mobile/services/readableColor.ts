@@ -48,3 +48,17 @@ export function tintOver(hex: string, alpha: number, surface: string): string {
   const fg = parse(hex), bg = parse(surface);
   return toHex(fg.map((v, i) => bg[i]! + (v - bg[i]!) * alpha) as RGB);
 }
+
+/** How much of the accent a selected dropdown row carries (0x15 of 0xFF). */
+export const SELECTED_ROW_ALPHA = 0x15 / 255;
+
+/**
+ * A selected dropdown row: the accent at a low alpha over `surface` (the card the
+ * list sits on), drawn as that one opaque `fill`, and the `ink` for the label and
+ * tick judged against THAT fill. Judged against the plain surface, a label sat at
+ * 4.1–4.4:1 on its own tint in dark mode.
+ */
+export function selectedRow(accent: string, surface: string): { fill: string; ink: string } {
+  const fill = tintOver(accent, SELECTED_ROW_ALPHA, surface);
+  return { fill, ink: readableOn(accent, fill) };
+}
