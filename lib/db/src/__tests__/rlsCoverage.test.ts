@@ -16,7 +16,7 @@ const PROTECTED = [
   "chat_blocks", "chat_message_reactions", "chat_message_reads", "chat_messages", "chat_participants",
   "chat_reports", "chat_threads", "class_groups", "class_memberships", "device_push_tokens",
   "evaluation_assignments", "evaluation_questions", "evaluations", "grade_overrides", "grading_jobs",
-  "mastery_overrides", "parent_contacts", "recommendations", "roster_links", "students",
+  "mastery_overrides", "parent_contacts", "recommendations", "roster_links", "roster_link_requests", "students",
 ] as const;
 
 /** RLS on, no policy, and no grant: only the owner connection (systemDb) can read them. */

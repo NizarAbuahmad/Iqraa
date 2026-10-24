@@ -47,6 +47,7 @@
     "upload-figures-r2": "node --experimental-strip-types scripts/upload-figures-r2.ts",
     "upload-book-pages-r2": "node --experimental-strip-types scripts/upload-book-pages-r2.ts",
     "english-audio": "node --experimental-strip-types scripts/generate-english-audio.ts",
+    "english-audio-audit": "node --experimental-strip-types scripts/audit-english-audio.ts",
     "quran-audio": "node --experimental-strip-types scripts/upload-quran-audio-r2.ts",
     "audit-r2": "node --experimental-strip-types scripts/audit-r2.ts",
     "build-quran-corner": "node --experimental-strip-types scripts/build-quran-corner.ts",
