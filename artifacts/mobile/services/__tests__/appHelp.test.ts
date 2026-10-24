@@ -1864,3 +1864,103 @@ describe('attendance, class messages, regenerating, the QR code, notifications a
     });
   }
 });
+
+describe('link codes, results, classes, messages and small answers — wordings of answers that already existed (twenty-first live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['كيف أعرف رمز الربط الخاص بالطالب؟', 'howLinkParent'],
+    ['كيف أعيد إصدار رمز دخول طالب نسي رمزه؟', 'howReissueLoginCode'],
+    ['كيف أخفي نتائج الامتحان عن الطلبة بعد نشرها؟', 'howReleaseResults'],
+    ['كيف أطبع نسخة الطالب من الامتحان؟', 'howPrintExam'],
+    ['كيف أغيّر علامة النجاح في الامتحان بعد نشره؟', 'howEvalPassMark'],
+    ['كيف أجدد رابط الامتحان المنتهي؟', 'howExamTime'],
+    ['how do i renew the expired exam link', 'howExamTime'],
+    ['كيف أحدد موعد تسليم الواجب؟', 'howAddHomework'],
+    ['كيف أعيد تسمية الشعبة؟', 'howRenameClass'],
+    ['how do i rename a class', 'howRenameClass'],
+    ['كيف أنسخ شعبة موجودة؟', 'howDuplicateClass'],
+    ['كيف أحجب مستخدماً في الرسائل؟', 'howBlock'],
+    ['كيف أعرف من قرأ رسالتي؟', 'howReadReceipts'],
+    ['how do i know who read my message', 'howReadReceipts'],
+    ['كيف أفتح فيديو الدرس من المكتبة؟', 'howLibraryVideos'],
+    ['كيف ألعب لعبة الذاكرة بمصطلحات الدرس؟', 'howLessonGames'],
+    ['كيف أستخدم راسم الاقترانات في الحصة؟', 'howMathTools'],
+    ['كيف أرى جدول الأسبوع على شاشة اليوم؟', 'howTodayScreen'],
+    ['كيف أعرف سعر الاشتراك؟', 'howPricing'],
+    ['how do i check the subscription price', 'howPricing'],
+    ['كيف أستخدم إقرأ بالصوت بدل الكتابة؟', 'howChatVoice'],
+    ['كيف أحدّث التطبيق إلى آخر نسخة؟', 'howUpdateApp'],
+    ['كيف أبلّغ عن مشكلة في سؤال مولّد؟', 'howReportProblem'],
+    ['how do i report a problem in a generated question', 'howReportProblem'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  const stayWithModel = [
+    'كيف أغير اسم الطالب في الدفتر',
+    'كيف أنسخ الدرس من الكتاب',
+    'كيف أحجب الإلهاء عن الطلبة',
+    'كيف أعرف من فهم الدرس',
+    'كيف أستخدم الفيديو في الحصة بفعالية',
+    'كيف أحدد موعد تسليم المشروع للطلبة',
+    'كيف أعرف سعر الكتاب',
+    'كيف أستخدم الصوت في الشرح',
+    'كيف أبلغ الطلبة عن مشكلة في الواجب',
+    'كيف أخفي الإجابة عن الطلبة أثناء الشرح',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howLinkParent', 'howReissueLoginCode', 'howReleaseResults', 'howPrintExam', 'howEvalPassMark', 'howExamTime', 'howAddHomework', 'howRenameClass', 'howDuplicateClass', 'howBlock', 'howReadReceipts', 'howLibraryVideos', 'howLessonGames', 'howMathTools', 'howTodayScreen', 'howPricing', 'howChatVoice', 'howUpdateApp', 'howReportProblem']);
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});
+
+describe('lesson readiness, homework, exam follow-ups and slide notes — wordings of answers that already existed (twenty-second live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['كيف أجهز درس الغد بسرعة من الصفحة الرئيسية؟', 'howLessonPrep'],
+    ['ما معنى جاهزية الدرس؟', 'howLessonPrep'],
+    ['what does lesson readiness mean', 'howLessonPrep'],
+    ['كيف أرسل واجباً لشعبة واحدة فقط؟', 'howAddHomework'],
+    ['كيف أعرف الطلاب الذين لم يسلّموا الواجب؟', 'howHomeworkDone'],
+    ['كيف أرى أداء الشعبة في هدف معين؟', 'howExamAnalysis'],
+    ['كيف أطلب من الطلبة إعادة الامتحان؟', 'howExamRetake'],
+    ['how do i ask the students to retake the exam', 'howExamRetake'],
+    ['كيف أمسح ورقة امتحان مكتوبة بخط اليد؟', 'howClassScan'],
+    ['كيف أضيف سؤالاً يدوياً إلى امتحان؟', 'howEditExamQuestions'],
+    ['how do i add a question manually to an exam', 'howEditExamQuestions'],
+    ['كيف أضيف ملاحظات المتحدث للشرائح؟', 'howSlideNotes'],
+    ['how do i add speaker notes to the slides', 'howSlideNotes'],
+    ['كيف أراجع كلمات كتاب الإنجليزي؟', 'howEnglishCorner'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  const stayWithModel = [
+    'كيف أجهز الطلبة لامتحان الغد',
+    'كيف أعرف الطلاب الذين لم يفهموا الدرس',
+    'كيف أرى أداء الطالب في الكتابة',
+    'كيف أطلب من الطلبة إعادة كتابة الإجابة',
+    'كيف أضيف سؤالاً شفهياً في الحصة',
+    'كيف أعرف الطلاب الذين لم يحضروا الحصة',
+    'كيف أرسل واجباً ممتعاً للطلبة',
+    'ما معنى الجاهزية النفسية للطلبة',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howLessonPrep', 'howAddHomework', 'howHomeworkDone', 'howExamAnalysis', 'howExamRetake', 'howClassScan', 'howEditExamQuestions', 'howSlideNotes', 'howEnglishCorner']);
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});
