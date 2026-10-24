@@ -1920,3 +1920,47 @@ describe('link codes, results, classes, messages and small answers — wordings 
     });
   }
 });
+
+describe('lesson readiness, homework, exam follow-ups and slide notes — wordings of answers that already existed (twenty-second live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['كيف أجهز درس الغد بسرعة من الصفحة الرئيسية؟', 'howLessonPrep'],
+    ['ما معنى جاهزية الدرس؟', 'howLessonPrep'],
+    ['what does lesson readiness mean', 'howLessonPrep'],
+    ['كيف أرسل واجباً لشعبة واحدة فقط؟', 'howAddHomework'],
+    ['كيف أعرف الطلاب الذين لم يسلّموا الواجب؟', 'howHomeworkDone'],
+    ['كيف أرى أداء الشعبة في هدف معين؟', 'howExamAnalysis'],
+    ['كيف أطلب من الطلبة إعادة الامتحان؟', 'howExamRetake'],
+    ['how do i ask the students to retake the exam', 'howExamRetake'],
+    ['كيف أمسح ورقة امتحان مكتوبة بخط اليد؟', 'howClassScan'],
+    ['كيف أضيف سؤالاً يدوياً إلى امتحان؟', 'howEditExamQuestions'],
+    ['how do i add a question manually to an exam', 'howEditExamQuestions'],
+    ['كيف أضيف ملاحظات المتحدث للشرائح؟', 'howSlideNotes'],
+    ['how do i add speaker notes to the slides', 'howSlideNotes'],
+    ['كيف أراجع كلمات كتاب الإنجليزي؟', 'howEnglishCorner'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  const stayWithModel = [
+    'كيف أجهز الطلبة لامتحان الغد',
+    'كيف أعرف الطلاب الذين لم يفهموا الدرس',
+    'كيف أرى أداء الطالب في الكتابة',
+    'كيف أطلب من الطلبة إعادة كتابة الإجابة',
+    'كيف أضيف سؤالاً شفهياً في الحصة',
+    'كيف أعرف الطلاب الذين لم يحضروا الحصة',
+    'كيف أرسل واجباً ممتعاً للطلبة',
+    'ما معنى الجاهزية النفسية للطلبة',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howLessonPrep', 'howAddHomework', 'howHomeworkDone', 'howExamAnalysis', 'howExamRetake', 'howClassScan', 'howEditExamQuestions', 'howSlideNotes', 'howEnglishCorner']);
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});
