@@ -38,8 +38,8 @@ export function makeGuardianApi(deps: GuardianApiDeps) {
     const url = `${await deps.baseUrl()}${path}`;
     const init: RequestInit = {
       method,
-      headers: { 'Content-Type': 'application/json' },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      // No body, no Content-Type: a plain GET stays a simple request and avoids a CORS preflight on web.
+      ...(body === undefined ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
     };
     let res: Response;
     try {
@@ -50,7 +50,13 @@ export function makeGuardianApi(deps: GuardianApiDeps) {
     const text = await res.text();
     let json: any = null;
     try { json = text ? JSON.parse(text) : null; } catch { /* not JSON */ }
-    if (!res.ok) throw new GuardianApiError(json?.error ?? `HTTP ${res.status}`, res.status, json?.code);
+    if (!res.ok) {
+      throw new GuardianApiError(
+        typeof json?.error === 'string' ? json.error : `HTTP ${res.status}`,
+        res.status,
+        typeof json?.code === 'string' ? json.code : undefined,
+      );
+    }
     return json as T;
   }
 
@@ -61,14 +67,23 @@ export function makeGuardianApi(deps: GuardianApiDeps) {
     },
 
     async lookup(token: string): Promise<ConsentLookup> {
-      const body = await publicCall<any>('POST', '/guardian-consent/lookup', { token });
+      let body: any;
+      try {
+        body = await publicCall<any>('POST', '/guardian-consent/lookup', { token });
+      } catch (e) {
+        // Approval switched off (or off mid-session): to the parent that is a link that does not work, not a retry.
+        if (e instanceof GuardianApiError && e.status === 404 && e.code === 'guardian_approval_disabled') return { status: 'invalid' };
+        throw e;
+      }
       if (body?.status === 'open' && typeof body.childFirstName === 'string') return { status: 'open', childFirstName: body.childFirstName };
       if (body?.status === 'expired' || body?.status === 'decided') return { status: body.status };
       return { status: 'invalid' };
     },
 
     async decide(token: string, decision: 'approved' | 'declined', confirmGuardian: boolean): Promise<{ decision: 'approved' | 'declined' }> {
-      const body = await publicCall<{ decision: 'approved' | 'declined' }>('POST', '/guardian-consent/decide', { token, decision, confirmGuardian });
+      const body = await publicCall<{ decision?: unknown } | null>('POST', '/guardian-consent/decide', { token, decision, confirmGuardian });
+      // A 200 that is not the answer we expect must not read as a recorded decision.
+      if (body?.decision !== 'approved' && body?.decision !== 'declined') throw new GuardianApiError('Unexpected response', 200);
       return { decision: body.decision };
     },
 

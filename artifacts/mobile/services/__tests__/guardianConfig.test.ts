@@ -20,6 +20,19 @@ describe('fetchGuardianConfig', () => {
     assert.deepEqual(await fetchGuardianConfig(async () => ({ enabled: true })), { enabled: true });
   });
 
+  it('only a boolean true switches it on', async () => {
+    assert.deepEqual(await fetchGuardianConfig(async () => ({ enabled: 'yes' as any })), { enabled: false });
+  });
+
+  it('a call that gives up returns what a concurrent call cached meanwhile', async () => {
+    let n = 0;
+    const alwaysBad = async () => { n += 1; throw new Error('offline'); };
+    const first = fetchGuardianConfig(alwaysBad, [20]);
+    assert.deepEqual(await fetchGuardianConfig(async () => ({ enabled: true })), { enabled: true });
+    assert.deepEqual(await first, { enabled: true });
+    assert.equal(n, 2);
+  });
+
   it('retries on the delays it is given before giving up', async () => {
     let n = 0;
     const flaky = async () => { n += 1; if (n < 3) throw new Error('x'); return { enabled: true }; };

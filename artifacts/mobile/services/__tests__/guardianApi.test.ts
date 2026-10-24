@@ -41,10 +41,46 @@ describe('guardianApi', () => {
   });
 
   it('decide: sends decision and confirmation, returns the decision', async () => {
-    let body = '';
-    const g = api(async (_u, init) => { body = String(init.body); return res(200, { decision: 'approved' }); });
+    let body = ''; let url = '';
+    const g = api(async (u, init) => { url = u; body = String(init.body); return res(200, { decision: 'approved' }); });
     assert.deepEqual(await g.decide(TOKEN, 'approved', true), { decision: 'approved' });
+    assert.equal(url, 'https://api.test/api/guardian-consent/decide');
+    assert.ok(!url.includes(TOKEN));
     assert.deepEqual(JSON.parse(body), { token: TOKEN, decision: 'approved', confirmGuardian: true });
+  });
+
+  it('decide: a 200 without a valid decision is a GuardianApiError, not a TypeError', async () => {
+    for (const body of [{}, null, { decision: 'maybe' }]) {
+      await assert.rejects(api(async () => res(200, body)).decide(TOKEN, 'approved', true), (e: any) => e instanceof GuardianApiError && e.message === 'Unexpected response' && e.status === 200);
+    }
+  });
+
+  it('errors: a non-string error field falls back to "HTTP <status>"', async () => {
+    const g = api(async () => res(500, { error: { x: 1 }, code: 7 }));
+    await assert.rejects(g.decide(TOKEN, 'declined', false), (e: any) => e instanceof GuardianApiError && e.message === 'HTTP 500' && e.status === 500 && e.code === undefined);
+  });
+
+  it('config: a GET carries no Content-Type', async () => {
+    let init: RequestInit = {};
+    await api(async (_u, i) => { init = i; return res(200, { enabled: true }); }).config();
+    assert.equal(init.headers, undefined);
+  });
+
+  it('lookup: expired and decided pass through', async () => {
+    assert.deepEqual(await api(async () => res(200, { status: 'expired' })).lookup(TOKEN), { status: 'expired' });
+    assert.deepEqual(await api(async () => res(200, { status: 'decided' })).lookup(TOKEN), { status: 'decided' });
+  });
+
+  it('lookup: open without a string childFirstName is "invalid"', async () => {
+    assert.deepEqual(await api(async () => res(200, { status: 'open' })).lookup(TOKEN), { status: 'invalid' });
+    assert.deepEqual(await api(async () => res(200, { status: 'open', childFirstName: 5 })).lookup(TOKEN), { status: 'invalid' });
+  });
+
+  it('lookup: approval switched off (404 guardian_approval_disabled) is "invalid"; other failures still throw', async () => {
+    const off = api(async () => res(404, { code: 'guardian_approval_disabled', error: 'Not available' }));
+    assert.deepEqual(await off.lookup(TOKEN), { status: 'invalid' });
+    await assert.rejects(api(async () => res(404, { error: 'nope' })).lookup(TOKEN), (e: any) => e instanceof GuardianApiError && e.status === 404);
+    await assert.rejects(api(async () => res(500, { error: 'x' })).lookup(TOKEN), (e: any) => e instanceof GuardianApiError && e.status === 500);
   });
 
   it('decide: a non-200 throws a GuardianApiError carrying status and code', async () => {

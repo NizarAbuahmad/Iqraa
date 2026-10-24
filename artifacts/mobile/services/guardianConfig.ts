@@ -31,6 +31,8 @@ export async function fetchGuardianConfig(
       if (attempt < retryDelaysMs.length) await new Promise(r => setTimeout(r, retryDelaysMs[attempt]));
     }
   }
+  // Another call may have filled the cache while this one was retrying.
+  if (cached) return cached;
   return { enabled: false, failed: true };
 }
 
