@@ -178,4 +178,76 @@ describeDb("class-code claims wait for the teacher, over HTTP, against a real da
       assert.deepEqual(await selfLinks(redeemRow), []);
     });
   });
+
+  describe("a waiting request nobody could answer is not shown to the account that made it", () => {
+    const wait = async (studentId: string, userId: string) =>
+      q(`INSERT INTO roster_link_requests (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [studentId, userId]);
+
+    it("a name taken out of every class does not appear in pending (and one still in a live class does)", async () => {
+      const id = await newStudentUser("removedFromClass");
+      const row = await newRow("ضحى");
+      await wait(row, id);
+      const before = await call(on, "GET", "/auth/claim", id);
+      assert.deepEqual(before.json.pending, [{ studentId: row, displayName: "ضحى" }]);
+
+      await q(`DELETE FROM class_memberships WHERE student_id = $1`, [row]);
+      const after = await call(on, "GET", "/auth/claim", id);
+      assert.equal(after.status, 200, on.logs().slice(-1500));
+      assert.deepEqual(after.json.pending, [], "the teacher's list hides it, so the card must not wait on it");
+    });
+
+    it("a name whose only class is archived does not appear either", async () => {
+      const id = await newStudentUser("archivedClass");
+      const row = await newRow("رزان");
+      await wait(row, id);
+      // c4 is the fixture's archived class.
+      await q(`DELETE FROM class_memberships WHERE student_id = $1`, [row]);
+      await q(`INSERT INTO class_memberships (class_group_id, student_id) VALUES ($1, $2)`, [w.classes.c4, row]);
+      const res = await call(on, "GET", "/auth/claim", id);
+      assert.deepEqual(res.json.pending, []);
+    });
+
+    it("a name in two live classes is listed once", async () => {
+      const id = await newStudentUser("twoClasses");
+      const row = await newRow("بيان");
+      await q(`INSERT INTO class_memberships (class_group_id, student_id) VALUES ($1, $2)`, [w.classes.c3, row]);
+      await wait(row, id);
+      const res = await call(on, "GET", "/auth/claim", id);
+      assert.deepEqual(res.json.pending, [{ studentId: row, displayName: "بيان" }]);
+    });
+  });
+
+  describe("withdrawing with ?pendingOnly=1 reports the live rule", () => {
+    it("a link to an archived name is not a link: hasRosterLink false", async () => {
+      const id = await newStudentUser("archivedLinkOnly");
+      const row = await newRow("غدير");
+      await q(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [row, id]);
+      await q(`UPDATE students SET archived_at = now() WHERE id = $1`, [row]);
+      const res = await call(on, "DELETE", "/auth/claim?pendingOnly=1", id);
+      assert.equal(res.status, 200, on.logs().slice(-1500));
+      assert.equal(res.json.hasRosterLink, false);
+      assert.equal((await selfLinks(row)).length, 1, "pendingOnly never removes a link");
+    });
+  });
+
+  describe("switching role (POST /auth/role)", () => {
+    it("withdraws the waiting request when the role actually changes", async () => {
+      const id = await newStudentUser("switcher");
+      const row = await newRow("تالا");
+      await q(`INSERT INTO roster_link_requests (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [row, id]);
+      const res = await call(on, "POST", "/auth/role", id, { role: "parent" });
+      assert.equal(res.status, 200, on.logs().slice(-1500));
+      assert.equal(res.json.role, "parent");
+      assert.deepEqual(await requests(row), [], "a waiting student pick must not survive a switch to parent");
+    });
+
+    it("leaves it alone when the role does not change", async () => {
+      const id = await newStudentUser("stayer");
+      const row = await newRow("شهد");
+      await q(`INSERT INTO roster_link_requests (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [row, id]);
+      const res = await call(on, "POST", "/auth/role", id, { role: "student" });
+      assert.equal(res.status, 200, on.logs().slice(-1500));
+      assert.deepEqual((await requests(row)).map(r => r.user_id), [id]);
+    });
+  });
 });

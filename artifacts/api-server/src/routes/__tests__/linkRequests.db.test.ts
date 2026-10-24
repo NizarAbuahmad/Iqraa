@@ -23,8 +23,8 @@ describeDb("a teacher approves or rejects a student's class-code claim, over HTT
   let rowStale = "";
 
   const q = async (sql: string, params: unknown[] = []) => (await db.pool.query(sql, params)).rows;
-  const newUser = async (first: string, role = "student") =>
-    (await q(`INSERT INTO users (first_name, last_name, role) VALUES ($1, 'T', $2) RETURNING id`, [first, role]))[0].id as string;
+  const newUser = async (first: string, role = "student", email: string | null = null) =>
+    (await q(`INSERT INTO users (first_name, last_name, role, email) VALUES ($1, 'T', $2, $3) RETURNING id`, [first, role, email]))[0].id as string;
   const newRow = async (name: string) => {
     const id = (await q(`INSERT INTO students (teacher_id, display_name) VALUES ($1, $2) RETURNING id`, [w.users.t1, name]))[0].id as string;
     await q(`INSERT INTO class_memberships (class_group_id, student_id) VALUES ($1, $2)`, [w.classes.c1, id]);
@@ -43,7 +43,7 @@ describeDb("a teacher approves or rejects a student's class-code claim, over HTT
     w = await seedFamilyWorld(db.pool);
     await q(`UPDATE users SET roster_consent_at = now() WHERE id = ANY($1::uuid[])`, [[w.users.t1, w.users.t2]]);
     u1 = w.users.studentUnlinked;
-    u2 = await newUser("Two");
+    u2 = await newUser("Two", "student", "two@example.test"); // signed up with an email; u1 has none (a code-only account)
     u3 = await newUser("Three");
     r1 = await ask(w.students.aA, u1);      // Adam: two accounts want him
     r2 = await ask(w.students.aA, u2);
@@ -66,6 +66,17 @@ describeDb("a teacher approves or rejects a student's class-code claim, over HTT
       assert.equal(rows[0]!.studentName, "آدم");
       assert.equal(rows[0]!.userId, u1);
       assert.equal(rows[1]!.firstName, "Two");
+    });
+
+    it("says which requests are code-only signups: no email on the account is true, an email is false", async () => {
+      const res = await call(on, "GET", `/classes/${w.classes.c1}/link-requests`, w.users.t1);
+      assert.equal(res.status, 200, on.logs().slice(-1500));
+      const rows = res.json.requests as { id: string; codeSignup: boolean }[];
+      assert.deepEqual(rows.map(r => [r.id, r.codeSignup]), [[r1, true], [r2, false]]);
+      assert.deepEqual(
+        Object.keys(res.json.requests[0]).sort(),
+        ["codeSignup", "firstName", "id", "lastName", "requestedAt", "studentId", "studentName", "userId"],
+      );
     });
 
     it("is another teacher's class: 404", async () => {

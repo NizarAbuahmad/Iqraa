@@ -36,7 +36,7 @@ import {
   users,
   type ParentContactChannel,
 } from "@workspace/db";
-import { and, asc, count, desc, eq, inArray, isNotNull, isNull, ne } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { getObjectiveById, resolveObjectiveIds } from "@workspace/curriculum";
 import { studentRecord } from "../modules/assessment/studentRecord.ts";
 import { aggregateClass, finishedAttempts } from "../modules/assessment/classInsights.ts";
@@ -50,7 +50,6 @@ import {
 } from "../middlewares/auth.js";
 import { logger } from "../lib/logger";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
-import { isUniqueViolation } from "../lib/pgErrors.js";
 import { generateShareCode } from "../modules/assessment/studentView.ts";
 import { generateLoginCode, hashLoginCode } from "../lib/loginCode.ts";
 import { canReissueLoginCode } from "../lib/loginCodeReissue.ts";
@@ -890,6 +889,10 @@ router.get("/classes/:id/link-requests", async (req: AuthenticatedRequest, res) 
         firstName: users.firstName,
         lastName: users.lastName,
         requestedAt: rosterLinkRequests.createdAt,
+        // A code-only signup (POST /auth/redeem) has no email, and its account is
+        // named after the roster row it picked (lib/redeemPolicy.ts), so firstName /
+        // lastName say nothing about who is asking. The banner needs to know that.
+        codeSignup: sql<boolean>`(${users.email} is null)`,
       })
       .from(rosterLinkRequests)
       .innerJoin(students, eq(students.id, rosterLinkRequests.studentId))
@@ -927,10 +930,9 @@ router.get("/classes/:id/link-requests", async (req: AuthenticatedRequest, res) 
 async function findOwnRequest(requestId: string, studentId: string, teacherId: string) {
   if (!isUuid(requestId) || !isUuid(studentId)) return null;
   const [row] = await db
-    .select({ id: rosterLinkRequests.id, userId: rosterLinkRequests.userId, role: users.role })
+    .select({ id: rosterLinkRequests.id, userId: rosterLinkRequests.userId })
     .from(rosterLinkRequests)
     .innerJoin(students, eq(students.id, rosterLinkRequests.studentId))
-    .innerJoin(users, eq(users.id, rosterLinkRequests.userId))
     // In one of this teacher's live classes, as the list requires: a request the
     // list hides must not be actionable by id either.
     .innerJoin(classMemberships, eq(classMemberships.studentId, students.id))
@@ -964,33 +966,61 @@ router.post("/students/:id/link-requests/:requestId/approve", async (req: Authen
       return;
     }
 
-    // An account that switched to another role while it waited is not a student;
-    // linking it as the child's own account would give a teacher account a child's
-    // exam answers. Drop the request instead.
-    if (request.role !== "student") {
-      await db.delete(rosterLinkRequests).where(eq(rosterLinkRequests.id, request.id));
+    // Consume the request FIRST, in the same transaction that decides what to do
+    // with it, so a withdrawal or a role switch that lands between a read and a
+    // write cannot be linked after the fact. Whatever the outcome below, the
+    // request is gone when this commits: a stale or already-answered request is
+    // not left behind for the list to hide.
+    //
+    // The transaction runs as the teacher (RLS on): the delete policy on
+    // roster_link_requests and roster_links_insert both use app_teaches_student.
+    const outcome = await db.transaction(async tx => {
+      const [consumed] = await tx
+        .delete(rosterLinkRequests)
+        .where(and(eq(rosterLinkRequests.id, request.id), eq(rosterLinkRequests.studentId, studentId)))
+        .returning({ userId: rosterLinkRequests.userId });
+      if (!consumed) return "gone" as const;
+
+      // The sender's role, locked: POST /auth/role updates this row, so a switch
+      // either commits before this read (and we see it) or waits for our commit.
+      // An account that became anything but a student while it waited must not be
+      // linked as the child's own: it would read a child's exam answers.
+      const [sender] = await tx
+        .select({ role: users.role })
+        .from(users)
+        .where(eq(users.id, consumed.userId))
+        .for("update");
+      if (sender?.role !== "student") return "stale" as const;
+
+      // ON CONFLICT DO NOTHING, not a caught unique violation: a violation would
+      // abort this transaction and take the delete above with it.
+      // roster_links_one_self_idx: one student account per name, enforced where a race cannot get past it.
+      const [linked] = await tx
+        .insert(rosterLinks)
+        .values({ studentId, userId: consumed.userId, relation: "self" })
+        .onConflictDoNothing()
+        .returning({ id: rosterLinks.id });
+      return linked ? ({ linked: consumed.userId } as const) : ("taken" as const);
+    });
+
+    if (outcome === "gone") {
+      res.status(404).json({ error: "Request not found" });
+      return;
+    }
+    if (outcome === "stale") {
       res.status(409).json({ error: "That request is no longer valid", code: "claim_request_stale" });
       return;
     }
-
-    try {
-      await db.insert(rosterLinks).values({ studentId, userId: request.userId, relation: "self" });
-    } catch (err) {
-      // roster_links_one_self_idx: one student account per name, enforced where a race cannot get past it.
-      if (isUniqueViolation(err)) {
-        // Nothing left to approve either way; do not leave a request the list hides.
-        await db.delete(rosterLinkRequests).where(eq(rosterLinkRequests.id, request.id));
-        res.status(409).json({ error: "This student is already linked to an account", code: "claim_already_linked" });
-        return;
-      }
-      throw err;
+    if (outcome === "taken") {
+      res.status(409).json({ error: "This student is already linked to an account", code: "claim_already_linked" });
+      return;
     }
 
     // Everyone else who was waiting on this name is answered by the link itself.
     await db.delete(rosterLinkRequests).where(eq(rosterLinkRequests.studentId, studentId));
     await syncThreadsAfterApproval(studentId);
 
-    res.json({ approved: request.id, studentId, userId: request.userId });
+    res.json({ approved: request.id, studentId, userId: outcome.linked });
   } catch (err) {
     failRoster(res, err, "approve link request", "Failed to approve the request");
   }

@@ -1154,10 +1154,23 @@ router.get("/claim", authMiddleware, async (req: AuthenticatedRequest, res) => {
       if (!seen) byStudent.set(r.studentId, { studentId: r.studentId, displayName: r.displayName, gradeId });
       else if (!seen.gradeId) seen.gradeId = gradeId;
     }
+    // Only a request the teacher could still answer: the same rule as the teacher's
+    // list (routes/roster.ts) — the student live, and in a live class of that
+    // student's own teacher. Otherwise the card waits on a request nobody can see.
+    // DISTINCT, since a student in two live classes would otherwise list twice.
     const pending = await db
-      .select({ studentId: students.id, displayName: students.displayName })
+      .selectDistinct({ studentId: students.id, displayName: students.displayName })
       .from(rosterLinkRequests)
       .innerJoin(students, eq(students.id, rosterLinkRequests.studentId))
+      .innerJoin(classMemberships, eq(classMemberships.studentId, students.id))
+      .innerJoin(
+        classGroups,
+        and(
+          eq(classGroups.id, classMemberships.classGroupId),
+          eq(classGroups.teacherId, students.teacherId),
+          isNull(classGroups.archivedAt),
+        ),
+      )
       .where(and(eq(rosterLinkRequests.userId, req.user!.id), isNull(students.archivedAt)));
     res.json({ links: [...byStudent.values()], pending });
   } catch (err) {
@@ -1181,7 +1194,9 @@ router.delete("/claim", authMiddleware, async (req: AuthenticatedRequest, res) =
     // uses it, because the teacher may have approved since the card last looked and an
     // unconditional unlink would delete that fresh link.
     if (req.query["pendingOnly"] === "1") {
-      res.json({ hasRosterLink: await hasAnyRosterLink(req.user!.id) });
+      // The live rule, as /auth/me and the routing gate read it: a link to an archived
+      // row is not access, so the card must not be told it has one.
+      res.json({ hasRosterLink: await hasLiveRosterLink(req.user!.id) });
       return;
     }
     const removed = await db
@@ -1235,15 +1250,22 @@ router.post("/role", authMiddleware, roleSwitchLimiter, async (req: Authenticate
     }
 
     if (decision.changed) {
-      await db
-        .update(users)
-        .set({
-          role: decision.role,
-          // Only a change into student carries the confirmation (the decision
-          // refused it otherwise), and it is recorded like a sign-up's.
-          ...(decision.role === "student" ? { guardianConfirmedAt: new Date() } : {}),
-        })
-        .where(eq(users.id, req.user!.id));
+      await db.transaction(async tx => {
+        await tx
+          .update(users)
+          .set({
+            role: decision.role,
+            // Only a change into student carries the confirmation (the decision
+            // refused it otherwise), and it is recorded like a sign-up's.
+            ...(decision.role === "student" ? { guardianConfirmedAt: new Date() } : {}),
+          })
+          .where(eq(users.id, req.user!.id));
+        // A name picked off a class code waits for a teacher to answer it as THIS
+        // student's account. An account that is now a parent (or a teacher) must not
+        // keep that request alive: it would sit in the teacher's list for a role the
+        // account no longer has, and a switch back would silently revive it.
+        await tx.delete(rosterLinkRequests).where(eq(rosterLinkRequests.userId, req.user!.id));
+      });
       logger.info({ userId: req.user!.id, from: req.user!.role, to: decision.role }, "role switched");
     }
 
