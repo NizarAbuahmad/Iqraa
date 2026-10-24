@@ -120,6 +120,32 @@ an invented «التقارير» screen. Both halves are the existing `howClassA
 verified), the book-source question and the ready-made-homework question (neither looked into),
 «أحفظ خطة الدرس بصيغة وورد» (already answered by the generic «PDF أو Word» export text).
 
+## Generator screens: the toast clears the docked bar — 2026-10-24
+
+A small follow-up to the five generator-screen ports. Mobile only. On a phone the generate button is docked at the
+bottom, and the toast (save, export, report…) sat at a fixed height that put it under the bar's summary line on the
+quiz, worksheet, lesson plan and activity; slides lifted its own. Now one pure helper, `toastLift({ isDesktop,
+barHidden, keyboardOpen })` in the new `services/dockedBar.ts`, returns the bar's height (`DOCKED_BAR_HEIGHT`, moved
+there and re-exported by `DockedAction`) only while the bar is really on screen: a phone, the screen's own bar-hiding
+condition not holding (an unsaved result's save bar on four screens, an unsaved deck on slides), and the soft keyboard
+closed (`useKeyboardVisible`; the bar hides while it is open, so the toast drops back, which also closes the limitation
+slides' entry listed). All five screens pass it as `Toast`'s `bottomOffset` (added with the slides port; default 0, so
+every other screen's toast is unchanged), and slides' inline expression is gone.
+
+**Pinned by** `dockedBar.test.ts` (exactly one of the eight input combinations lifts) and source pins in
+`generatorScreens.test.ts` (each screen imports the helper and the keyboard hook, computes `toastBottom` from the same
+condition it passes as `hidden` to `DockedAction`, passes it to `Toast`; no inline expression and no second height
+definition).
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,196 tests, 7,186 pass, 10 skipped, 0 fail.
+
+**Not verified:** the toast's actual position on a phone or in the browser (a demo session cannot easily raise a toast
+over the docked bar); any device.
+
+**Known limits.** Still open from the earlier entries: Retry after a failed three-levels run regenerates one paper
+(`onRetry={generate}` is passed bare), and `app/evaluations/new.tsx` keeps a translucent `ACCENT + '15'` selected row
+(likely 4.1 to 4.4:1 in dark), outside the five screens.
+
 ## Generator screens: Cancel then a refusal, and the banner contrast — 2026-10-23
 
 A follow-up to the five generator-screen ports (the two known limits their entries listed). Mobile only:
