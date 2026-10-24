@@ -106,6 +106,16 @@ describeDb("a teacher approves or rejects a student's class-code claim, over HTT
       assert.equal(res.status, 409);
       assert.equal(res.json.code, "claim_already_linked");
       assert.equal((await selfLinks(w.students.aA)).length, 1);
+      assert.deepEqual(await requestsOf(w.students.aA), [], "the request is cleared, not left hidden");
+    });
+
+    it("a request for a name that is no longer in any of the teacher's classes cannot be actioned by id: 404", async () => {
+      const row = await newRow("ريم");
+      const id = await ask(row, await newUser("Gone"));
+      await q(`DELETE FROM class_memberships WHERE student_id = $1`, [row]);
+      const res = await call(on, "POST", `/students/${row}/link-requests/${id}/approve`, w.users.t1);
+      assert.equal(res.status, 404);
+      assert.deepEqual(await selfLinks(row), []);
     });
 
     it("a request whose sender is no longer a student account is dropped, not linked: 409 claim_request_stale", async () => {

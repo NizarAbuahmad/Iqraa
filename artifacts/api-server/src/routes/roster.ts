@@ -865,15 +865,9 @@ router.delete("/classes/:id/students/:studentId", async (req: AuthenticatedReque
 // link and so no access to anything. See lib/claimDecision.ts.
 
 /** After a link is made: into this teacher's class chats for the child, as the claim route does. Never throws. */
-async function syncThreadsAfterApproval(studentId: string, teacherId: string): Promise<void> {
+async function syncThreadsAfterApproval(studentId: string): Promise<void> {
   try {
     await syncClassThreadsForStudent(studentId);
-    const classes = await db
-      .select({ classGroupId: classMemberships.classGroupId })
-      .from(classMemberships)
-      .innerJoin(classGroups, eq(classGroups.id, classMemberships.classGroupId))
-      .where(and(eq(classMemberships.studentId, studentId), eq(classGroups.teacherId, teacherId), isNull(classGroups.archivedAt)));
-    for (const c of classes) await resyncClassGroupThreadIfExists(c.classGroupId, teacherId);
   } catch (err) {
     logger.warn({ studentId, code: (err as { code?: unknown } | null)?.code }, "class thread sync after approval failed");
   }
@@ -937,6 +931,17 @@ async function findOwnRequest(requestId: string, studentId: string, teacherId: s
     .from(rosterLinkRequests)
     .innerJoin(students, eq(students.id, rosterLinkRequests.studentId))
     .innerJoin(users, eq(users.id, rosterLinkRequests.userId))
+    // In one of this teacher's live classes, as the list requires: a request the
+    // list hides must not be actionable by id either.
+    .innerJoin(classMemberships, eq(classMemberships.studentId, students.id))
+    .innerJoin(
+      classGroups,
+      and(
+        eq(classGroups.id, classMemberships.classGroupId),
+        eq(classGroups.teacherId, teacherId),
+        isNull(classGroups.archivedAt),
+      ),
+    )
     .where(
       and(
         eq(rosterLinkRequests.id, requestId),
@@ -973,6 +978,8 @@ router.post("/students/:id/link-requests/:requestId/approve", async (req: Authen
     } catch (err) {
       // roster_links_one_self_idx: one student account per name, enforced where a race cannot get past it.
       if (isUniqueViolation(err)) {
+        // Nothing left to approve either way; do not leave a request the list hides.
+        await db.delete(rosterLinkRequests).where(eq(rosterLinkRequests.id, request.id));
         res.status(409).json({ error: "This student is already linked to an account", code: "claim_already_linked" });
         return;
       }
@@ -981,7 +988,7 @@ router.post("/students/:id/link-requests/:requestId/approve", async (req: Authen
 
     // Everyone else who was waiting on this name is answered by the link itself.
     await db.delete(rosterLinkRequests).where(eq(rosterLinkRequests.studentId, studentId));
-    await syncThreadsAfterApproval(studentId, req.user!.id);
+    await syncThreadsAfterApproval(studentId);
 
     res.json({ approved: request.id, studentId, userId: request.userId });
   } catch (err) {
