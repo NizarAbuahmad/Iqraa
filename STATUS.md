@@ -58,6 +58,12 @@ Checked 2026-10-22:
 
 ## Open
 
+- **`GUARDIAN_APPROVAL` is built and off; do not set it** until PR B (the app's waiting screen)
+  is out and the parent-consent wording has been read by a person. With it on, every email
+  student with no teacher link is held (403 `guardian_approval_required`) until a parent
+  approves by email, and today's app has no screen for that. Also decide `routes/live.ts`
+  (a held student can still join a public live game) first. Entry: «Parent approval for email
+  students — server (PR A)» in the log.
 - **A student can sign up with an email and no teacher's code — the legal wording needs a person
   to read it before this merges.** The privacy policy §5 and terms §1 (`constants/legal.ts`,
   `LEGAL_VERSION` 2026-10-23) now say a student may join with an email after confirming they are
@@ -114,6 +120,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-24 — Parent approval for email students: the server (off)
 - 2026-10-24 — English corner: all ten grades, the official books, and free listening and reading sites
 - 2026-10-24 — English audio on phones: clips are saved on the device and a lesson's clips are fetched ahead
 - 2026-10-24 — Tests for the roster consent gate
@@ -143,11 +150,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-23 — Iqraa draws its own icons
 - 2026-10-23 — Grade 9 grammar pilot (Unit 4) in the English corner — built, shown to nobody yet
 - 2026-10-23 — Icons follow one system
-- 2026-10-22 — Today wears the lesson's subject
 
 ## Finding older detail, and recording new work
 
-- The log has 406 sections. Anything cited elsewhere as
+- The log has 408 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line

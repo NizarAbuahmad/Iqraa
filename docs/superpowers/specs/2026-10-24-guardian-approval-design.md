@@ -1,6 +1,6 @@
 # Parent approval for email students — design
 
-**Status:** proposed, awaiting review. **Scope:** a student who signs up with an email and no teacher's code
+**Status:** server implemented (PR A); app (PR B) not started. **Scope:** a student who signs up with an email and no teacher's code
 stays locked until a parent approves by email. Replaces the age tick-box added in «Students choose an email or a
 teacher's code» (2026-10-23). Not in this spec: any change to how teacher-code students or parents sign up, ID or
 document checks, a parent account or parent dashboard, deleting a declined account automatically.
