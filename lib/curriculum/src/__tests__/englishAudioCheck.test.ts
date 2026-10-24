@@ -73,6 +73,14 @@ describe('normalizeSpoken', () => {
     same('cancelled', 'canceled');
     same('jewellery', 'jewelry');
   });
+  it('folds practise to practice before the -ise rule can make it «practize»', () => {
+    same('practise', 'practice');
+    same('practised', 'practiced');
+    same('practising', 'practicing');
+    same('practises', 'practices');
+    assert.equal(normalizeSpoken('practise'), 'practice');
+    assert.equal(normalizeSpoken('practising'), 'practicing');
+  });
   it('leaves a short word that merely ends in -ise alone', () => {
     // The suffix rule is for words of 5 letters or more: "rise" must not become "rize"
     // on one side only. Both sides go through the same function, so what matters is
@@ -162,10 +170,43 @@ describe('compareSpoken', () => {
     assert.equal(c.distance, 1);
     assert.equal(compareSpoken('cap', 'cop').verdict, 'mismatch');
   });
-  it('the single-word boundary is 6 letters: 5 mismatches, 6 is close', () => {
+  it('the single-word boundary is 6 letters: 5 mismatches, 6 with an inflection is close', () => {
     assert.equal(compareSpoken('apple', 'apples').verdict, 'mismatch'); // 5 letters
     assert.equal(compareSpoken('banana', 'bananas').verdict, 'close'); // 6 letters
-    assert.equal(compareSpoken('banana', 'banano').verdict, 'close');
+  });
+  it('a single word is close only for an inflection suffix: s es d ed ing er ers, either way round', () => {
+    assert.equal(compareSpoken('firefighter', 'firefighters').verdict, 'close'); // s
+    assert.equal(compareSpoken('firefighters', 'firefighter').verdict, 'close'); // heard drops it
+    assert.equal(compareSpoken('church', 'churches').verdict, 'close'); // es
+    assert.equal(compareSpoken('bridge', 'bridged').verdict, 'close'); // d
+    assert.equal(compareSpoken('listen', 'listened').verdict, 'close'); // ed
+    assert.equal(compareSpoken('listen', 'listening').verdict, 'close'); // ing
+    assert.equal(compareSpoken('listen', 'listener').verdict, 'close'); // er
+    assert.equal(compareSpoken('listen', 'listeners').verdict, 'close'); // ers
+    assert.equal(compareSpoken('listens', 'listen').verdict, 'close'); // heard drops it
+  });
+  it('mismatch: one letter off in a long word that is not an inflection', () => {
+    for (const [a, b] of [
+      ['carrot', 'parrot'],
+      ['donkey', 'monkey'],
+      ['bridge', 'fridge'],
+      ['danger', 'hanger'],
+      ['leaned', 'learned'],
+      ['dessert', 'desert'],
+      ['brought', 'bought'],
+      ['through', 'though'],
+      ['banana', 'banano'],
+    ] as const) {
+      assert.equal(compareSpoken(a, b).verdict, 'mismatch', `${a}/${b}`);
+    }
+  });
+  it('mismatch: a derivational ending is not an inflection (loudly / loud)', () => {
+    assert.equal(compareSpoken('loudly', 'loud').verdict, 'mismatch');
+    assert.equal(compareSpoken('quickly', 'quick').verdict, 'mismatch');
+  });
+  it('mismatch: a short word never takes the inflection leniency', () => {
+    assert.equal(compareSpoken('apple', 'apples').verdict, 'mismatch');
+    assert.equal(compareSpoken('walk', 'walked').verdict, 'mismatch');
   });
   it('close: a long word one letter off (firefighter / firefighters)', () => {
     const c = compareSpoken('firefighter', 'firefighters');
@@ -189,25 +230,45 @@ describe('compareSpoken', () => {
     assert.equal(c.verdict, 'close');
     assert.equal(c.distance, 1);
   });
-  it('one substitution in four words is close (one edit is always allowed)', () => {
+  it('under ten words no word-level difference is close: one substitution in four words', () => {
     const c = compareSpoken('I like red apples', 'I like green apples');
-    assert.equal(c.verdict, 'close');
+    assert.equal(c.verdict, 'mismatch');
     assert.equal(c.distance, 1);
+  });
+  it('under ten words: a changed pronoun, a changed number, a changed noun are mismatches', () => {
+    assert.equal(compareSpoken('She has taught maths since 2010.', 'He has taught maths since 2010.').verdict, 'mismatch');
+    assert.equal(compareSpoken('I am ten.', 'I am two.').verdict, 'mismatch');
+    assert.equal(compareSpoken('pencil case', 'pencil cake').verdict, 'mismatch');
   });
   it('two substitutions in four words is a mismatch', () => {
     const c = compareSpoken('I like red apples', 'we like green apples');
     assert.equal(c.verdict, 'mismatch');
     assert.equal(c.distance, 2);
   });
-  it('a dropped word is one edit', () => {
+  it('a dropped word is one edit, and under ten words one edit is a mismatch', () => {
     const c = compareSpoken('I like red apples', 'I like apples');
     assert.equal(c.distance, 1);
-    assert.equal(c.verdict, 'close');
+    assert.equal(c.verdict, 'mismatch');
   });
-  it('an added word is one edit', () => {
+  it('an added word is one edit, and under ten words one edit is a mismatch', () => {
     const c = compareSpoken('I like apples', 'I really like apples');
     assert.equal(c.distance, 1);
-    assert.equal(c.verdict, 'close');
+    assert.equal(c.verdict, 'mismatch');
+  });
+  it('ten words allow one edit: a dropped word is close, two substitutions are a mismatch', () => {
+    const ten = 'we go to the park with our dog every day';
+    assert.equal(ten.split(' ').length, 10);
+    const dropped = compareSpoken(ten, 'we go to the park with our dog day');
+    assert.equal(dropped.distance, 1);
+    assert.equal(dropped.verdict, 'close');
+    const two = compareSpoken(ten, 'we go to the park with our cat every night');
+    assert.equal(two.distance, 2);
+    assert.equal(two.verdict, 'mismatch');
+  });
+  it('nine words allow none', () => {
+    const nine = 'we go to the park with our dog today';
+    assert.equal(nine.split(' ').length, 9);
+    assert.equal(compareSpoken(nine, 'we go to the park with our cat today').verdict, 'mismatch');
   });
   it('allows floor(10%) edits in a long sentence: 20 words allow 2', () => {
     const base = 'one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty'
@@ -217,6 +278,14 @@ describe('compareSpoken', () => {
     const e = base.join(' ');
     assert.equal(compareSpoken(e, swap(2)).verdict, 'close');
     assert.equal(compareSpoken(e, swap(3)).verdict, 'mismatch');
+  });
+  it('19 words allow one edit, not two', () => {
+    const base = 'one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen'
+      .split(' ');
+    assert.equal(base.length, 19);
+    const swap = (n: number) => base.map((w, i) => (i < n ? 'x' + w : w)).join(' ');
+    assert.equal(compareSpoken(base.join(' '), swap(1)).verdict, 'close');
+    assert.equal(compareSpoken(base.join(' '), swap(2)).verdict, 'mismatch');
   });
   it('mismatch: a completely different sentence', () => {
     const c = compareSpoken('I have got a red pen', 'The weather is nice today');
@@ -438,7 +507,7 @@ describe('checkClips', () => {
     const items = ['a', 'b', 'c', 'd', 'e'].map(s => mk(s));
     const fetched: string[] = [];
     let n = 0;
-    const { results, stopped } = await checkClips(
+    const { results, stopped, stopReason } = await checkClips(
       items,
       deps({
         fetchClip: async item => {
@@ -452,6 +521,7 @@ describe('checkClips', () => {
       }),
     );
     assert.equal(stopped, true);
+    assert.equal(stopReason, '401: bad key');
     assert.deepEqual(fetched, ['a', 'b', 'c']);
     assert.deepEqual(results.map(r => r.item.slug), ['a', 'b']);
     assert.deepEqual(results.map(r => r.verdict), ['match', 'match']);
@@ -567,6 +637,44 @@ describe('checkClips', () => {
       }),
     );
     assert.deepEqual(seen, [[1, 3], [2, 3], [3, 3]]);
+  });
+  it('a throwing onProgress neither rejects the run nor loses a result', async () => {
+    let calls = 0;
+    const { results, stopped } = await checkClips(
+      ['a', 'b', 'c', 'd'].map(s => mk(s)),
+      deps({
+        concurrency: 2,
+        onProgress: () => {
+          calls++;
+          throw new Error('progress bar broke');
+        },
+      }),
+    );
+    assert.equal(calls, 4);
+    assert.equal(stopped, false);
+    assert.deepEqual(results.map(x => x.verdict), ['match', 'match', 'match', 'match']);
+  });
+  it('a StopRun thrown by fetchClip stops the run too, with its reason', async () => {
+    const fetched: string[] = [];
+    const { results, stopped, stopReason } = await checkClips(
+      ['a', 'b', 'c', 'd'].map(s => mk(s)),
+      deps({
+        fetchClip: async item => {
+          fetched.push(item.slug);
+          if (item.slug === 'b') throw new StopRun('stop from fetch');
+          return clip();
+        },
+      }),
+    );
+    assert.equal(stopped, true);
+    assert.equal(stopReason, 'stop from fetch');
+    assert.deepEqual(fetched, ['a', 'b']);
+    assert.deepEqual(results.map(x => x.item.slug), ['a']);
+  });
+  it('a run that finishes has no stopReason', async () => {
+    const out = await checkClips([mk('a')], deps());
+    assert.equal(out.stopped, false);
+    assert.equal(out.stopReason, undefined);
   });
   it('an empty list is a quiet success', async () => {
     assert.deepEqual(await checkClips([], deps()), { results: [], stopped: false });
@@ -684,10 +792,30 @@ describe('renderReportMarkdown', () => {
     assert.ok(md.includes('i-am-ten'));
     assert.ok(md.includes('I am ten.'));
   });
-  it('does not list matches or closes as problems', () => {
-    const problems = md.split('\n').filter(l => /\|/.test(l) && l.includes('Share.'));
+  it('does not list matches as problems, and lists a close only in its own table', () => {
+    const lines = md.split('\n');
+    const problems = lines.filter(l => /\|/.test(l) && l.includes('Share.'));
     assert.equal(problems.length, 1);
-    assert.ok(!md.split('\n').some(l => l.startsWith('|') && l.includes('firefighters')));
+    assert.ok(!lines.some(l => l.startsWith('|') && l.includes('Cat.')));
+    const closeAt = lines.findIndex(l => l.startsWith('## Close: worth a glance'));
+    const listenAt = lines.findIndex(l => l.startsWith('## To listen to'));
+    assert.ok(listenAt >= 0 && closeAt > listenAt, 'the close table follows the mismatch table');
+    const withFirefighters = lines.map((l, i) => [l, i] as const).filter(([l]) => l.startsWith('|') && l.includes('firefighters'));
+    assert.equal(withFirefighters.length, 1);
+    assert.ok(withFirefighters[0]![1] > closeAt);
+    const row = withFirefighters[0]![0];
+    assert.ok(row.includes('firefighter'));
+    assert.ok(row.includes('| 1, 2 |'));
+    // the table has the same expected / heard / slug columns
+    assert.match(lines.slice(closeAt).join('\n'), /\|\s*Expected\s*\|\s*Heard\s*\|\s*Slug\s*\|/);
+  });
+  it('the --only line does not include a close', () => {
+    assert.ok(!md.includes('--only chair,firefighter'));
+    assert.ok(!md.includes('firefighter,'));
+  });
+  it('leaves the close table out when there is no close', () => {
+    const out = renderReportMarkdown([r(mk('a'), 'a', 'match'), r(mk('b'), 'x', 'mismatch')], { model: 'm', date: 'd' });
+    assert.ok(!out.includes('Close: worth a glance'));
   });
   it('includes the summary table and the --only line', () => {
     assert.ok(md.includes('| All'));

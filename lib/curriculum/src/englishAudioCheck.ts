@@ -8,6 +8,11 @@
  * A verdict says «a person should listen», never «wrong»: single words are hard to
  * transcribe (homophones, rare words), and a recogniser forgives accent and stress,
  * so a clip can pass here and still sound wrong. See the report's own caveat.
+ *
+ * Known limits, left as they are: «prise»/«prize» fold together (-ise rule); a
+ * difference only in spaces («fire fighter») is a mismatch; digit runs outside
+ * 0-20, the tens and 100 are compared as written; contractions are not expanded
+ * («I'm» / «I am» differ).
  */
 import type { AudioItem } from './englishAudioPlan.ts';
 
@@ -64,6 +69,11 @@ const SPELLING: Record<string, string> = {
   cosy: 'cozy',
   defence: 'defense',
   aluminium: 'aluminum',
+  // Looked up before the -ise rule, which would otherwise make «practize».
+  practise: 'practice',
+  practised: 'practiced',
+  practising: 'practicing',
+  practises: 'practices',
 };
 /** Stems whose British «-our» becomes «-or» (colour, colourful, colours, favourite, neighbour's …). */
 const OUR_STEMS = ['colour', 'favour', 'neighbour', 'honour', 'humour', 'behaviour', 'flavour', 'labour'];
@@ -177,16 +187,29 @@ function editDistance<T>(a: readonly T[], b: readonly T[]): number {
   return prev[b.length] as number;
 }
 
-/** A single expected word may be one letter off and still be `close` only from this length. */
+/** A single expected word can be `close` only from this length. */
 const CLOSE_MIN_LETTERS = 6;
+/** The endings that make one word the other's inflection (firefighter / firefighters). */
+const INFLECTION_SUFFIXES = ['s', 'es', 'd', 'ed', 'ing', 'er', 'ers'];
+
+/** One word is the other plus one inflection ending. «loud» / «loudly» is not one. */
+function isInflection(a: string, b: string): boolean {
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+  return long.startsWith(short) && INFLECTION_SUFFIXES.includes(long.slice(short.length));
+}
 
 /**
  * - `silent`   nothing heard;
  * - `match`    equal once both are normalised;
- * - `close`    a single expected word of 6+ letters that is one letter off; or a
- *              sentence within max(1, floor(10% of its words)) word edits;
- * - `mismatch` anything else. A short word one letter off («bit» / «bet») is a
- *              mismatch: that is the very confusion the check exists to find.
+ * - `close`    a single expected word of 6+ letters whose heard form is it plus or
+ *              minus one inflection ending (s es d ed ing er ers); or a multi-word
+ *              text within floor(10% of its words) word edits: none under 10 words,
+ *              one for 10-19, two for 20-29. The report lists these for a glance,
+ *              not for re-voicing;
+ * - `mismatch` anything else, which is the point: «carrot» / «parrot», «I am ten» /
+ *              «I am two» and «bit» / «bet» are exactly the confusions the check
+ *              exists to find, so a one-letter or one-word difference is never
+ *              close unless it is an inflection of a long word.
  */
 export function compareSpoken(expected: string, heard: string): Comparison {
   const e = normalizeSpoken(expected);
@@ -198,11 +221,11 @@ export function compareSpoken(expected: string, heard: string): Comparison {
   const hw = h.split(' ');
   if (ew.length === 1 && hw.length === 1) {
     const distance = editDistance([...e], [...h]);
-    const close = distance === 1 && [...e].length >= CLOSE_MIN_LETTERS;
+    const close = [...e].length >= CLOSE_MIN_LETTERS && isInflection(e, h);
     return { verdict: close ? 'close' : 'mismatch', distance, expected: e, heard: h };
   }
   const distance = editDistance(ew, hw);
-  const allowed = Math.max(1, Math.floor(0.1 * ew.length));
+  const allowed = Math.floor(0.1 * ew.length);
   return { verdict: distance <= allowed ? 'close' : 'mismatch', distance, expected: e, heard: h };
 }
 
@@ -312,19 +335,21 @@ function describeError(e: unknown): string {
  * `deps.concurrency` clips in flight. Results come back in the order of `items`.
  * A clip that fails is an `error` result and the run goes on. On `StopRun` no worker
  * takes a new clip; the clip that raised it gets no result, clips already finished
- * keep theirs, and `stopped` is true (so `results` may be shorter than `items`).
+ * keep theirs, and `stopped` is true (so `results` may be shorter than `items`) with
+ * `stopReason` the message of the first `StopRun` (key-shaped text removed).
  * A transcript with nothing in it is not cached, so a re-run tries that clip again.
  */
 export async function checkClips(
   items: AudioItem[],
   deps: CheckDeps,
-): Promise<{ results: CheckResult[]; stopped: boolean }> {
+): Promise<{ results: CheckResult[]; stopped: boolean; stopReason?: string }> {
   const slots: Array<CheckResult | undefined> = new Array(items.length).fill(undefined);
   let next = 0;
   let done = 0;
   let stopped = false;
+  let stopReason: string | undefined;
 
-  const one = async (item: AudioItem): Promise<CheckResult | 'stop'> => {
+  const one = async (item: AudioItem): Promise<CheckResult | StopRun> => {
     try {
       const clip = await deps.fetchClip(item);
       if (clip === 'missing') return { item, heard: '', verdict: 'missing' };
@@ -335,7 +360,7 @@ export async function checkClips(
       }
       return { item, heard, verdict: compareSpoken(item.text, heard).verdict };
     } catch (e) {
-      if (e instanceof StopRun) return 'stop';
+      if (e instanceof StopRun) return e;
       return { item, heard: '', verdict: 'error', detail: describeError(e) };
     }
   };
@@ -345,18 +370,24 @@ export async function checkClips(
       const i = next++;
       if (i >= items.length) return;
       const result = await one(items[i] as AudioItem);
-      if (result === 'stop') {
+      if (result instanceof StopRun) {
+        if (!stopped) stopReason = describeError(result);
         stopped = true;
         return;
       }
       slots[i] = result;
-      deps.onProgress?.(++done, items.length);
+      try {
+        deps.onProgress?.(++done, items.length);
+      } catch {
+        // A broken progress display must not lose results or leave workers running.
+      }
     }
   };
 
   const workers = Math.max(1, Math.min(Math.floor(deps.concurrency) || 1, items.length));
   await Promise.all(Array.from({ length: workers }, worker));
-  return { results: slots.filter((r): r is CheckResult => r !== undefined), stopped };
+  const results = slots.filter((r): r is CheckResult => r !== undefined);
+  return stopped ? { results, stopped, stopReason: stopReason ?? '' } : { results, stopped };
 }
 
 // ─── The report ────────────────────────────────────────────────────────────
@@ -461,6 +492,27 @@ export function renderReportMarkdown(results: CheckResult[], meta: { model: stri
       '```',
       onlyLine(results),
       '```',
+      '',
+    );
+  }
+
+  const close = results.filter(r => r.verdict === 'close');
+  if (close.length > 0) {
+    lines.push(
+      '## Close: worth a glance',
+      '',
+      'Within an inflection ending or a few words of a long text. Not re-voiced by the line above.',
+      '',
+      tableLine(['Expected', 'Heard', 'Slug', 'Grades']),
+      tableLine(['---', '---', '---', '---']),
+      ...close.map(r =>
+        tableLine([
+          cell(r.item.text),
+          cell(r.heard),
+          cell(r.item.slug),
+          r.item.grades.length > 0 ? r.item.grades.join(', ') : '-',
+        ]),
+      ),
       '',
     );
   }
