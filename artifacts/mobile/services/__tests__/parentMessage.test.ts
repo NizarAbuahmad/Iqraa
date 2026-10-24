@@ -340,14 +340,20 @@ describe('summarizeClassContacts', () => {
     { id: 'd', displayName: 'Dana' },
   ];
 
-  it('lists never-contacted students first, then the longest silence, and skips recent ones', () => {
+  it('keeps never-messaged apart from a month of silence, longest silence first, skipping recent ones', () => {
     const s = summarizeClassContacts(ROSTER, [
       { studentId: 'a', kind: 'praise', createdAt: daysAgo(3) },
       { studentId: 'b', kind: 'absence', createdAt: daysAgo(40) },
       { studentId: 'c', kind: 'absence', createdAt: daysAgo(90) },
     ], NOW);
-    assert.deepEqual(s.quiet.map(q => q.id), ['d', 'c', 'b']);
-    assert.equal(s.quiet[0].lastAt, null);
+    assert.deepEqual(s.never.map(q => q.id), ['d']);
+    assert.deepEqual(s.quiet.map(q => q.id), ['c', 'b']);
+  });
+
+  it('a brand-new class is all "never", nothing "quiet"', () => {
+    const s = summarizeClassContacts(ROSTER, [], NOW);
+    assert.deepEqual(s.never.map(q => q.id), ['a', 'b', 'c', 'd']);
+    assert.deepEqual(s.quiet, []);
   });
 
   it('flags students whose parents only ever got concerns, most concerns first', () => {
@@ -370,7 +376,7 @@ describe('summarizeClassContacts', () => {
       { studentId: 'gone', kind: 'absence', createdAt: daysAgo(1) },
     ], NOW);
     assert.deepEqual(s.concernOnly, []);
-    assert.deepEqual(s.quiet.map(q => q.id), ['a']);
+    assert.deepEqual(s.never.map(q => q.id), ['a']);
   });
 });
 
