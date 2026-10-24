@@ -11,3 +11,6 @@ export const CLASSES_QUERY_KEY = ['classes'] as const;
 
 /** Route-scoped: each class id gets its own cache entry. */
 export const classQueryKey = (id: string) => ['class', id] as const;
+
+/** Route-scoped: the students waiting on the teacher's yes in one class. */
+export const classLinkRequestsQueryKey = (id: string) => ['classLinkRequests', id] as const;
