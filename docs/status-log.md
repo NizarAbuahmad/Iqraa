@@ -10,6 +10,45 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## English corner: Dana's review (Grades 2, 4, 5) — three glosses, one picture, 201 recordings uploaded — 2026-10-24
+
+A teacher's review of the English corner (Grades 2–5), with three phone recordings (a Grade 2 «garage» card, a Grade 4
+«loudly» card, a Google lookup showing British ga·raazh against American gr·aazh). Checked against the data, not taken on trust.
+
+- **Glosses (JSON, the hub reads them from there):** G2 S2 U8 «hall» «ممرّ» → «قاعة / ممرّ»; G2 S2 U6 «orange» «برتقالي»
+  (the colour) → «برتقالة» (the fruit); G5 S1 U5 «purse» «كيس نقود» → «حقيبة يد» (the log of 2026-10-22 had already flagged it).
+- **Picture:** «orange» was 🟠 everywhere. `wordPicture(word, ar?)` now returns 🍊 when the gloss is «برتقالة», so the colour
+  lessons and the word's recording are untouched. Only callers that hold the Arabic pass it (flashcards, Speaking, Match the
+  picture, the Grade 2 reading review form); the reading games take English strings only and would still show 🟠 — Grade 2 has none.
+  `docs/english-reading-g2-review.html` was regenerated (one cell). Pinned in `englishHubGames.test.ts`.
+- **Grade 5 sounded broken because it was:** 205 of its 238 words had no MP3 (Grade 9: 8 more) — the gap the log of 2026-10-22
+  recorded as «recordings still to make». HEAD-checked 2026-10-24: Grades 1–4 and 10 complete.
+- **«loudly» too slow — measured:** 1.71 s of speech for two syllables, the worst of 750 single words (`quietly` 0.78 s).
+  `firefighter` (G3) is next (1.5 s). «A little slowly» is read too literally on some words; both now carry a pace hint in
+  `PRONUNCIATION` (`src/englishAudioPlan.ts`, where #1262 moved it). New takes: `loudly` 0.63 s, `firefighter` 0.90 s.
+- **«garage» not accurate — measured:** formants/energy of the old file: a stressed short «a», then the second vowel almost
+  absent (a tenth of the first vowel's energy) straight into «zh» — «GAR-zh». The hint now asks for British /ˈɡærɑːʒ/ with a full
+  long second vowel. The chosen take has a louder first syllable and a clear ~270 ms open second vowel. **Chosen by measurement,
+  not by ear — a teacher should listen.**
+- **Recordings:** 198 missing words voiced locally first (nothing uploaded), plus the three above. faster-whisper
+  `small.en` flagged 22 of the 198; 10 were real (silent «squid»; «bake a cake», «go swimming», «tell a story», «keyboard»,
+  «cheer» (→ «shear»), «comet», «appear», «metal», «explorer» mis-voiced) and were re-taken until Whisper agreed; the rest were
+  homophones (buy/sell/sun), numbers written as digits and spelling («moustache»). `a cold` still reads «are cold» in Whisper
+  and was left. **Uploaded 2026-10-24 on the owner's go-ahead** (201 files, 5.6 MB, none failed) with a temporary `--out`/`--from`
+  patch of the old script (write the takes to a folder, check them, upload exactly those files). That patch is **not** in the
+  merged script: #1262 replaced the script's pipeline, and the upload was already done. Afterwards a HEAD check of all 1,248 hub words found
+  every one present (Grades 1–5, 9, 10: 0 missing), and `garage`, `loudly`, `firefighter`, `squid`, `purse` came back
+  byte-identical to what was uploaded. Files carry `max-age=86400`, so a phone that cached the old `garage`/`loudly` keeps it up to a day.
+- **Not done:** Grade 3 units 1 and 6 (the teacher noticed the review units are absent; Grades 1 and 2 have theirs — a content
+  decision); Grade 5 is voiced in the teenage register as before; the «ردهة» wording for «hall» is the teacher's alternative.
+- **Checked:** `lib/curriculum` tests 677 of 678 (the one failure, `quranCorner`, cannot load `@quran.ws/text`, which this partial install lacks — nothing to do with English); the two
+  mobile English game suites 38 of 38. **Not checked:** the app typecheck and the screens in a browser (this worktree has no
+  full install; CI runs the typecheck).
+- **Not yet processed (do this next):** these 201 files went up as the model returned them — 128 kbps, untrimmed, not levelled,
+  with no `_manifest.json` entry and no process-version stamp — because they were uploaded before #1262's pipeline was
+  merged into this branch. `english-audio --reprocess` (no OpenAI key, backs each file up first) will pick them up and trim,
+  level and re-encode them like the other 1,050. Run it once, after this merges.
+
 ## Chat app-help, twenty-fourth live pass: 8 more wordings and a terms-of-service answer — 2026-10-24
 
 A 30-question pass (18 app, 12 curriculum) on app.iqrra.com found app questions answered by the
@@ -34,6 +73,7 @@ not a rule), the settings screen's contents, the geometry sketchpad and the func
 parabola (the model's usage tips are more useful than the Math Corner location answer), showing a
 lab experiment, and «أضيف شعبة جديدة بعد ما أنشأت حسابي» (card only; I did not find the rule
 that owns `howAddClass`).
+
 ## Grade 10 grammar (Semester 2) in the English corner — built, shown to nobody yet, 2026-10-24
 
 The ten Grade 10 Semester 2 lessons whose book statement is a grammar topic now have grammar activities: Choose the word,

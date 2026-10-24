@@ -87,6 +87,18 @@ export const PRONUNCIATION: Record<string, string> = {
   eraser:
     'Pronounce it the British way, ih-RAY-zuh (/ɪˈreɪzə/): a short "i" at the start, not "ee"; ' +
     'stress on "RAY"; a "z" sound in the middle, not "s"; no "r" sound at the end.',
+  // A Grade 2 teacher (2026-10-24): "not accurate". The recording was GA-rzh: a short
+  // "a" and then straight into the "zh" with the second vowel all but missing
+  // (measured: its energy is a tenth of the first vowel's).
+  garage:
+    'Pronounce it the British way, GA-rahzh (/ˈɡærɑːʒ/): stress on the first syllable, a short "a" as in "cat"; ' +
+    'then a clear, full, long "ah" as in "father" in the second syllable, ending in the "zh" of "measure". ' +
+    'Do not swallow the second vowel, and do not stress the end ("ga-RAHZH").',
+  // A Grade 4 teacher (2026-10-24): "loudly" is too slow. Measured across all 750 single
+  // words, it and "firefighter" are the two worst: 1.7 s of speech for two syllables, 2.5
+  // times "quietly" — "a little slowly" is read too literally on some words.
+  loudly: 'Say it at a quick, natural speaking pace, LOUD-lee: two short syllables as one smooth word, nothing stretched.',
+  firefighter: 'Say it at a quick, natural speaking pace, FIRE-fy-ter: one smooth word, no pause between the parts.',
 };
 
 /** The model instructions for one item: its register, plus its pronunciation hint if it has one. */
