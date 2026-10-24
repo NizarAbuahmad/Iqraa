@@ -1,6 +1,6 @@
 # English corner: Grade 10 Semester 2 grammar — design
 
-**Status:** proposed (awaiting review). **Scope:** grammar activities (Choose, Build, True or false) for the ten Grade 10
+**Status:** implemented (this PR). **Scope:** grammar activities (Choose, Build, True or false) for the ten Grade 10
 Semester 2 lessons whose book statement is a grammar topic, each as a **grammar-only hub lesson**. Builds on the Semester 1
 work (`2026-10-23-english-corner-grammar-g10-design.md`, PR #1235, merged), the authored-items engine
 (`lib/curriculum/src/englishGrammar.ts`), the grammar-only hub mechanism (`GRAMMAR_ONLY_LESSONS`, `hubLessonVisible`) and the
@@ -34,33 +34,36 @@ grammar.
    so reporting-verb and reported-question items turn on the verb pattern, the object, `if`/`whether` and word order.
 5. **Overlap with Grade 9** (conditionals, passive, reported speech) is accepted; the Grade 10 items are written separately and
    are harder.
-6. **Stacked on the branch of PR #1247** (the printed-forms and subtitle fixes), because the Semester 2 form pages benefit
-   from the print rule and the sign-off fix in the same renderer. If #1247 merges first, the work moves to a fresh branch
-   from `main`.
+6. **Built on `main` after PR #1247** (the printed-forms and subtitle fixes, merged first), so the Semester 2 form pages
+   get the print rule and the sign-off fix.
 7. **Every unit ships `reviewedBy: null`.**
 
 ## The sentences
 
 | Lesson (`kbl-eng-s2-nccd-…`) | Book statement (`objectives[0]`) | Sub-topics (count: kind) | Example: correct / distractor |
 | --- | --- | --- | --- |
-| `u6_l1` | use the first and second conditional to talk about possible and hypothetical situations | `first-conditional` 12 form · `second-conditional` 12 form · `imagine-vs-real` 16 meaning | «If it rains, we will stay home.» will stay / would stay |
-| `u6_l4` | use the zero conditional to talk about real situations that are always true | `if-present` 14 form · `when-general-truths` 14 form · `questions-negatives` 12 form | «If you heat ice, it melts.» melts / will melted |
+| `u6_l1` | use the first and second conditional to talk about possible and hypothetical situations | `first-conditional` 12 form · `second-conditional` 12 form · `imagine-vs-real` 16 meaning | «If it rains, we will stay home.» rains / will rain |
+| `u6_l4` | use the zero conditional to talk about real situations that are always true | `if-present` 14 form · `when-general-truths` 14 form · `questions-negatives` 12 form | «If you heat ice, it melts.» melts / melt |
 | `u7_l1` | use reporting verbs to report stories | `verb-patterns` 16 form · `admit-deny-suggest` 14 form · `tell-ask-warn` 10 form | «She suggested going by bus.» going / to go |
 | `u7_l5` | use reported questions to talk about what someone else said | `ask-wonder` 14 form · `if-whether` 12 form · `word-order` 14 form | «He asked where I lived.» where I lived / where did I live |
-| `u8_l1` | use the passive to talk about different actions | `present-past` 14 form · `with-modals` 12 form · `questions-negatives` 14 form | «The bridge was built in 1990.» was built / built |
-| `u8_l6` | use have/get something done to talk about services | `have-something-done` 12 form · `get-something-done` 12 form · `service-vs-self` 16 meaning | «I had my car repaired yesterday.» had my car repaired / had repaired my car |
-| `u9_l1` | use the third conditional to talk about unreal situations in the past | `third-conditional` 14 form · `past-unreal` 14 meaning · `would-have-forms` 12 form | «If I had known, I would have called.» had known / knew |
+| `u8_l1` | use the passive to talk about different actions | `present-past` 14 form · `with-modals` 12 form · `questions-negatives` 14 form | «The bridge was built long ago.» was built / was build |
+| `u8_l6` | use have/get something done to talk about services | `have-something-done` 12 form · `get-something-done` 12 form · `service-vs-self` 16 meaning | «I had my car repaired yesterday.» repaired / repairing |
+| `u9_l1` | use the third conditional to talk about unreal situations in the past | `third-conditional` 14 form · `past-unreal` 14 meaning · `would-have-forms` 12 form | «If I had known, I would have called.» had known / would have known |
 | `u9_l4` | use I wish and if only to express regrets | `wish-present` 14 form · `wish-past-regrets` 14 meaning · `if-only` 12 form | «I wish I had studied last year.» had studied / studied |
 | `u10_l1` | use modal verbs to speculate about the present | `must-cant` 14 meaning · `might-may` 12 form · `be-v-ing` 14 form | «He has the keys, so he must be inside.» must / can't |
-| `u10_l3` | use modal verbs to speculate about the past | `must-have` 14 meaning · `might-could-have` 12 form · `cant-have` 14 meaning | «The lights were off. They must have left.» must have / can't have |
+| `u10_l3` | use modal verbs to speculate about the past | `must-have` 14 meaning · `might-could-have` 12 form · `cant-have` 14 meaning | «Their car is gone. They must have left.» must have / can't have |
 
 Sizes sum to 40 a lesson (400 in all) and are pinned by a test; that makes 102 `meaning` items (16 + 16 + 14 + 14 + 14 + 14 + 14)
 and 298 `form` items. The `statement` column is the book's `objectives[0]` shortened; the data file carries it verbatim and a
 test reads it back. Examples are illustrative; the written items are the authority and are listed on the form. As in
 Semester 1 a `meaning` sub-topic may switch to `form` during the build when a distractor turns out to fit; the pinned
 sizes, the totals and the status log then say so. A `meaning` item is used only where a marker in the sentence rules the
-distractor out: «Imagine …» and «If I were …» against a real, likely condition, «yesterday»/«last year» against a present
-form, «by a mechanic»/«at the garage» for a service against a self-done action, «so» + a clue for must/can't. Rules for every
+distractor out: an unreal situation stated in its own sentence («Imagine …», «Suppose …» with a past verb) against a stand-alone
+`will` sentence (the build dropped the «likely» side: «Tomorrow, if it rains, we would …» and «If I were …, I will …» are mixed
+conditionals, so those twins were form errors or borderline-acceptable, not a meaning contrast), «yesterday»/«last year» against
+a present form, a sentence saying the speaker could not do it, did not do it, was away or who did it (or «myself» plus a second
+clue) for a service against a self-done action («by a mechanic» would make an active-verb twin a form error), «so» + a clue for
+must/can't. Rules for every
 item: nine words or fewer; one grammar point; what decides the answer is in the sentence; no real person's name (family
 words and Jordanian place names fine); nothing religious, political or sensitive; vocabulary from common school words, few
 words outside the function-word list (they print on the form for the teacher).

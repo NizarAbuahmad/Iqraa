@@ -1,5 +1,6 @@
 /**
- * Grade 10 Semester 1 grammar on the eleven authored lessons (spec: docs/superpowers/specs/2026-10-23-english-corner-grammar-g10-design.md):
+ * Grade 10 grammar on the authored lessons (Semester 1: docs/superpowers/specs/2026-10-23-english-corner-grammar-g10-design.md;
+ * Semester 2: docs/superpowers/specs/2026-10-24-english-corner-grammar-g10-s2-design.md):
  * the lessons, their book statements, the item rules and the audio list. The wrongness of a distractor and the force of a
  * marker are a teacher's call on the printed form; these tests only catch a malformed item.
  */
@@ -11,10 +12,14 @@ import { renderGrammarReviewHtml } from '../englishGrammarReview.ts';
 import { G10_ITEM_LESSONS } from '../englishGrammarG10Items.ts';
 import { GRAMMAR_ONLY_LESSONS, hubLesson } from '../englishHub.ts';
 
-const dataFile = () => JSON.parse(readFileSync(new URL('../data/iqra_curriculum_g10_english_sem1.json', import.meta.url), 'utf8'));
+const dataFile = (id: string) =>
+  JSON.parse(readFileSync(new URL(`../data/iqra_curriculum_g10_english_sem${id.includes('-s2-') ? 2 : 1}.json`, import.meta.url), 'utf8'));
 const L = (s: string) => `kbl-eng-s1-nccd-${s}`;
+const L2 = (s: string) => `kbl-eng-s2-nccd-${s}`;
 const FIRST = ['u1_l1', 'u1_l5', 'u2_l1', 'u2_l4', 'u3_l1'].map(L);
 const REST = ['u3_l4', 'u3_l5', 'u4_l1', 'u4_l4', 'u5_l1', 'u5_l3'].map(L);
+const S2A = ['u6_l1', 'u6_l4', 'u7_l1', 'u7_l5', 'u8_l1'].map(L2);
+const S2B = ['u8_l6', 'u9_l1', 'u9_l4', 'u10_l1', 'u10_l3'].map(L2);
 const sentencesOf = (id: string) => unitSentences(grammarUnit(id)!);
 const ids = () => G10_ITEM_LESSONS.map(l => l.lessonId);
 
@@ -31,11 +36,21 @@ const SIZES: Record<string, Record<string, [number, 'form' | 'meaning']>> = {
   [L('u4_l4')]: { defining: [12, 'form'], 'non-defining': [14, 'form'], 'whose-where': [14, 'form'] },
   [L('u5_l1')]: { 'will-decisions': [10, 'meaning'], 'going-to-evidence': [10, 'meaning'], 'arrangements-timetables': [12, 'form'], forms: [8, 'form'] },
   [L('u5_l3')]: { continuous: [14, 'meaning'], perfect: [14, 'meaning'], forms: [12, 'form'] },
+  [L2('u6_l1')]: { 'first-conditional': [12, 'form'], 'second-conditional': [12, 'form'], 'imagine-vs-real': [16, 'meaning'] },
+  [L2('u6_l4')]: { 'if-present': [14, 'form'], 'when-general-truths': [14, 'form'], 'questions-negatives': [12, 'form'] },
+  [L2('u7_l1')]: { 'verb-patterns': [16, 'form'], 'admit-deny-suggest': [14, 'form'], 'tell-ask-warn': [10, 'form'] },
+  [L2('u7_l5')]: { 'ask-wonder': [14, 'form'], 'if-whether': [12, 'form'], 'word-order': [14, 'form'] },
+  [L2('u8_l1')]: { 'present-past': [14, 'form'], 'with-modals': [12, 'form'], 'questions-negatives': [14, 'form'] },
+  [L2('u8_l6')]: { 'have-something-done': [12, 'form'], 'get-something-done': [12, 'form'], 'service-vs-self': [16, 'meaning'] },
+  [L2('u9_l1')]: { 'third-conditional': [14, 'form'], 'past-unreal': [14, 'meaning'], 'would-have-forms': [12, 'form'] },
+  [L2('u9_l4')]: { 'wish-present': [14, 'form'], 'wish-past-regrets': [14, 'meaning'], 'if-only': [12, 'form'] },
+  [L2('u10_l1')]: { 'must-cant': [14, 'meaning'], 'might-may': [12, 'form'], 'be-v-ing': [14, 'form'] },
+  [L2('u10_l3')]: { 'must-have': [14, 'meaning'], 'might-could-have': [12, 'form'], 'cant-have': [14, 'meaning'] },
 };
 
 describe('Grade 10 authored lessons', () => {
-  it('are the eleven hub lessons in order, unsigned and offered to nobody', () => {
-    assert.deepEqual(ids(), [...FIRST, ...REST]);
+  it('are the hub lessons in order, unsigned and offered to nobody', () => {
+    assert.deepEqual(ids(), [...FIRST, ...REST, ...S2A, ...S2B]);
     for (const id of ids()) {
       assert.ok(hubLesson(id), id);
       assert.equal(hubLesson(id)!.grade, 10, id);
@@ -44,26 +59,28 @@ describe('Grade 10 authored lessons', () => {
     }
   });
 
-  it('make Articles the one grammar-only lesson, under the word floor, and the rest lessons with words', () => {
-    assert.ok(GRAMMAR_ONLY_LESSONS.includes(L('u1_l5')));
-    assert.equal(hubLesson(L('u1_l5'))!.grammarOnly, true);
-    for (const id of ids().filter(i => i !== L('u1_l5'))) assert.equal(hubLesson(id)!.grammarOnly, undefined, id);
+  it('make Articles and every Semester 2 lesson grammar-only, under the word floor, and the rest lessons with words', () => {
+    const grammarOnly = (id: string) => id === L('u1_l5') || id.includes('-s2-');
+    for (const id of ids()) {
+      assert.equal(!!hubLesson(id)!.grammarOnly, grammarOnly(id), id);
+      assert.equal(GRAMMAR_ONLY_LESSONS.includes(id), grammarOnly(id), id);
+    }
   });
 
   it("carry the book's own statement for that lesson id", () => {
     for (const l of G10_ITEM_LESSONS) {
       const key = l.lessonId.replace(/^.*-nccd-/, '');
-      const lesson = dataFile().units.flatMap((u: any) => u.lessons).find((x: any) => x.id === key);
+      const lesson = dataFile(l.lessonId).units.flatMap((u: any) => u.lessons).find((x: any) => x.id === key);
       assert.equal(lesson?.objectives?.[0], l.statement, l.lessonId);
     }
   });
 
-  it('are eleven lessons and 440 items, 206 of them meaning-decided', () => {
-    assert.equal(G10_ITEM_LESSONS.length, 11);
-    assert.equal(G10_ITEM_LESSONS.reduce((n, l) => n + sentencesOf(l.lessonId).length, 0), 440);
-    assert.equal(grammarUnitsForGrade(10).length, 11);
+  it('are 21 lessons and 840 items, 308 of them meaning-decided', () => {
+    assert.equal(G10_ITEM_LESSONS.length, 21);
+    assert.equal(G10_ITEM_LESSONS.reduce((n, l) => n + sentencesOf(l.lessonId).length, 0), 840);
+    assert.equal(grammarUnitsForGrade(10).length, 21);
     const meaning = ids().flatMap(id => sentencesOf(id)).filter(x => x.kind === 'meaning').length;
-    assert.equal(meaning, 206);
+    assert.equal(meaning, 308);
     assert.equal(meaning, Object.values(SIZES).flatMap(s => Object.values(s)).filter(([, k]) => k === 'meaning').reduce((n, [size]) => n + size, 0));
   });
 
@@ -130,6 +147,18 @@ describe('Grade 10 authored lessons', () => {
     }
   });
 
+  it('never use will or would in a zero-conditional distractor, which would be a grammatical first or second conditional', () => {
+    for (const x of sentencesOf(L2('u6_l4'))) {
+      assert.ok(!/\b(will|would|won't|wouldn't)\b/i.test(x.choose!.wrong), `${x.text}: ${x.choose!.wrong}`);
+    }
+  });
+
+  it('never write must of or could of in a past-speculation sentence or its twin', () => {
+    for (const x of sentencesOf(L2('u10_l3'))) {
+      assert.ok(!/\b(must|might|could|can't) of\b/i.test(x.text + ' ' + x.claim!.falseText), x.text);
+    }
+  });
+
   it('send true sentences to the audio list and no twin', () => {
     const spoken = new Set(allGrammarSpoken());
     for (const id of ids()) for (const x of sentencesOf(id)) {
@@ -155,12 +184,18 @@ describe('the Grade 10 teacher form', () => {
     for (const l of G10_ITEM_LESSONS) assert.ok(html.includes(l.statement.replace(/'/g, '&#39;')) || html.includes(l.statement), l.lessonId);
     assert.ok(html.includes('تأكدوا أولًا'));
     assert.ok(html.includes('الكلمات خارج قوائم المفردات'));
-    assert.equal(html.split('class="unit"').length - 1, 11);
+    assert.equal(html.split('class="unit"').length - 1, 21);
     assert.ok(html.includes('الصف العاشر'));
     assert.ok(html.includes('>s1-nccd-u1_l5<'), 'the id shown without its kbl-eng- prefix');
+    assert.ok(html.includes('>s2-nccd-u6_l1<'));
+    assert.ok(html.includes('>s2-nccd-u10_l3<'));
     assert.ok(!html.includes('>kbl-eng-'), 'no un-stripped id');
-    assert.equal((html.match(/<span class="kind kind-meaning"/g) ?? []).length, 206);
-    assert.equal((html.match(/<span class="kind kind-form"/g) ?? []).length, 234);
+    assert.equal((html.match(/<span class="kind kind-meaning"/g) ?? []).length, 308);
+    assert.equal((html.match(/<span class="kind kind-form"/g) ?? []).length, 532);
+  });
+  it('names both semesters in its lead', () => {
+    assert.ok(html.includes('الفصلان الأول والثاني'));
+    assert.ok(!html.includes('الفصل الأول:'));
   });
   it('lists every sentence', () => {
     for (const id of ids()) for (const x of sentencesOf(id)) assert.ok(html.includes(x.text.replace(/'/g, '&#39;')) || html.includes(x.text), x.text);

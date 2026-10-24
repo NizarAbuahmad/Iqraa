@@ -1,6 +1,7 @@
 /**
- * Grade 10 grammar: the eleven authored Semester 1 lessons whose book statement is a grammar topic (spec:
- * docs/superpowers/specs/2026-10-23-english-corner-grammar-g10-design.md). Every item is a whole sentence with its
+ * Grade 10 grammar: the authored Semester 1 and Semester 2 lessons whose book statement is a grammar topic (specs:
+ * docs/superpowers/specs/2026-10-23-english-corner-grammar-g10-design.md for Semester 1,
+ * docs/superpowers/specs/2026-10-24-english-corner-grammar-g10-s2-design.md for Semester 2). Every item is a whole sentence with its
  * correct answer and a distractor, written by us and checked by a teacher on the printed form; nothing here is pictured.
  *
  * The rule for a distractor: it is `form` (ungrammatical in standard English: the bare verb or the wrong inflection,
@@ -9,7 +10,10 @@
  * marker in the sentence itself: a habit word, or Look!, Listen!, right now, at the moment, a count, a duration
  * on a finished task, an event that cuts an action short, «by the time», a time word that fixes remember or forget, a
  * past time word, a reason or a second sentence after mustn't or don't have to, a decision made on the spot, a warning
- * or a sign of what is about to happen, a time point with «still» or an activity with no end, «by» with a count).
+ * or a sign of what is about to happen, a time point with «still» or an activity with no end, «by» with a count, an
+ * unreal situation stated in its own sentence before the result (Imagine …, Suppose …), a self-done marker (myself,
+ * with her own hands) or a sentence saying the speaker could not or did not do it, or who did (a service), a past time
+ * word for an unreal past or a past regret, evidence in the sentence for must or can't).
  * Never a form that could fit, and `meaning` only in the sub-topics the test pins as `meaning`. Every sentence is nine
  * words or fewer, so Build always takes it whole. No names: a pronoun, a family word (`Mum`, `Dad`) or a Jordanian
  * place. `statement` is the book's own «I can» line for the lesson id (its `objectives[0]`, read back by a test).
@@ -23,6 +27,7 @@ const items = (topic: string, kind: GrammarItem['kind'], rows: Row[]): GrammarIt
   rows.map(([text, answer, distractor]) => ({ topic, kind, text, answer, distractor }));
 
 const L = (s: string) => `kbl-eng-s1-nccd-${s}`;
+const L2 = (s: string) => `kbl-eng-s2-nccd-${s}`;
 
 export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: GrammarItem[] }[] = [
   {
@@ -662,6 +667,596 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ["I won't be working overtime tomorrow.", 'working', 'work'],
         ['They will have saved enough money by then.', 'saved', 'save'],
         ['He will be commuting by train next year.', 'commuting', 'commute'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L2('u6_l1'),
+    statement: 'I can use the first and second conditional to talk about possible and hypothetical situations.',
+    items: [
+      // If + present, will + bare verb. The errors: will inside the if-clause (only with a subject that cannot be
+      // willing, so «if you will …» never reads as a polite request), a wrong form after will, the wrong agreement.
+      ...items('first-conditional', 'form', [
+        ['If it rains, we will stay home.', 'rains', 'will rain'],
+        ['If I see Dad, I will tell him.', 'will tell', 'will telling'],
+        ['If you study hard, you will pass the exam.', 'will pass', 'will to pass'],
+        ['If she misses the bus, she will be late.', 'misses', 'miss'],
+        ['If we leave now, we will catch the train.', 'will catch', 'will caught'],
+        ['If he eats too much, he will feel sick.', 'eats', 'eat'],
+        ['If you are hungry, I will make lunch.', 'will make', 'will makes'],
+        ['If it snows, the schools will close.', 'will close', 'will closing'],
+        ['If they win, they will celebrate tonight.', 'win', 'wins'],
+        ["If you don't hurry, you will miss the bus.", "don't", "doesn't"],
+        ["She won't come if she is ill.", 'is', 'are'],
+        ['Will you come if she invites you?', 'invites', 'invite'],
+      ]),
+      // If + past, would + bare verb. The errors: would inside the if-clause (once, with have, which cannot mean «be
+      // willing to»: «If you would ask him» is a polite form), would + to, -ing, a past or -s. was and were are never
+      // set against each other: both are accepted after I, he, she and it.
+      ...items('second-conditional', 'form', [
+        ['If I had a car, I would drive.', 'would drive', 'would to drive'],
+        ['If she lived in Aqaba, she would swim.', 'would swim', 'would swam'],
+        ['If I knew the answer, I would tell you.', 'would tell', 'would told'],
+        ['If we had more time, we would visit Petra.', 'had', 'would have'],
+        ['If he studied more, he would get better marks.', 'would get', 'would getting'],
+        ['If you asked him, he would help.', 'would help', 'would helped'],
+        ['If I found a wallet, I would return it.', 'would return', 'would to return'],
+        ['If Dad had a day off, he would cook.', 'would cook', 'would cooks'],
+        ['If we lived near the sea, we would fish.', 'would fish', 'would fishing'],
+        ['If she spoke French, she would teach it.', 'would teach', 'would taught'],
+        ['What would you do if you lost your phone?', 'do', 'to do'],
+        ["I wouldn't worry if I were you.", 'worry', 'worried'],
+      ]),
+      // An unreal situation stated in its own first sentence («Imagine …», «Just imagine …», «Suppose …», with a past
+      // verb) takes would in the second; will is ruled out by that opener. The twin's second sentence («You will fly.»)
+      // is sound English on its own, so the choice turns on meaning, not form. No if-clause with were or could + will
+      // (a form error), and no likely condition: after «If it rains, …» a tentative would is accepted too.
+      ...items('imagine-vs-real', 'meaning', [
+        ['Imagine you had wings. You would fly.', 'would fly', 'will fly'],
+        ['Imagine we had no phones. Life would be quiet.', 'would be', 'will be'],
+        ['Imagine you were invisible. Nobody would see you.', 'would see', 'will see'],
+        ['Imagine I could fly. I would never walk.', 'would never walk', 'will never walk'],
+        ['Imagine you lived on the moon. You would float.', 'would float', 'will float'],
+        ['Imagine there were no cars. Cities would be quieter.', 'would be', 'will be'],
+        ['Imagine you spoke every language. You would travel everywhere.', 'would travel', 'will travel'],
+        ['Suppose it snowed in Aqaba. We would build snowmen.', 'would build', 'will build'],
+        ['Suppose you met a dinosaur. You would run.', 'would run', 'will run'],
+        ["Just imagine we lived underwater. We'd need gills.", "We'd need", "We'll need"],
+        ['Suppose you were famous. Everyone would know you.', 'would know', 'will know'],
+        ['Imagine the sun never set. We would never sleep.', 'would never sleep', 'will never sleep'],
+        ['Suppose animals could talk. My cat would complain.', 'would complain', 'will complain'],
+        ['Imagine we had no school. We would get bored.', 'would get', 'will get'],
+        ['Suppose the internet stopped working. We would read more.', 'would read', 'will read'],
+        ['Imagine you were a giant. Houses would look tiny.', 'would look', 'will look'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L2('u6_l4'),
+    statement: 'I can use the zero conditional to talk about real situations that are always true.',
+    items: [
+      // If + present simple, present simple: a general truth. No distractor has will or would (a test pins it): «If you
+      // heat ice, it will melt» is a sound first conditional. The errors are agreement, -ing, a past participle or a
+      // doubled auxiliary. No bare verb that is also an adjective (clean, open, dry), which could fit.
+      ...items('if-present', 'form', [
+        ['If you heat ice, it melts.', 'melts', 'melt'],
+        ['If you eat late, you sleep badly.', 'sleep', 'sleeps'],
+        ['If you boil water, it turns into steam.', 'turns', 'turning'],
+        ['If it rains, the ground gets wet.', 'gets', 'get'],
+        ['If you press this button, the machine stops.', 'stops', 'stopping'],
+        ['If you drop glass, it breaks.', 'breaks', 'broken'],
+        ['If people eat too much sugar, they gain weight.', 'gain', 'gains'],
+        ['If you put oil in water, it floats.', 'floats', 'float'],
+        ['If you leave milk out, it goes bad.', 'goes', 'go'],
+        ['If babies are hungry, they cry.', 'cry', 'cries'],
+        ['If you exercise every day, you feel better.', 'feel', 'feels'],
+        ['If iron gets wet, it rusts.', 'gets', 'get'],
+        ['If the traffic light is red, cars stop.', 'stop', 'stops'],
+        ['If you heat butter, it becomes liquid.', 'becomes', 'is becomes'],
+      ]),
+      // The same with when, in either clause order.
+      ...items('when-general-truths', 'form', [
+        ['Plants die when they get no water.', 'get', 'gets'],
+        ['When you heat water, it boils.', 'boils', 'boil'],
+        ['When it gets dark, the street lights come on.', 'come', 'comes'],
+        ["When I drink coffee, I can't sleep.", 'drink', 'drinks'],
+        ['Metal expands when you heat it.', 'expands', 'expand'],
+        ['When you mix blue and yellow, you get green.', 'mix', 'mixes'],
+        ['My dog barks when someone knocks.', 'knocks', 'knock'],
+        ['When the bell rings, the students leave.', 'rings', 'ringing'],
+        ['Fish die when the water is dirty.', 'is', 'are'],
+        ['When people are tired, they make mistakes.', 'make', 'makes'],
+        ['When it snows, the roads become dangerous.', 'become', 'becomes'],
+        ['Milk turns sour when it gets warm.', 'turns', 'turn'],
+        ['When you press the switch, the light comes on.', 'comes', 'come'],
+        ['When water freezes, it becomes ice.', 'freezes', 'frozen'],
+      ]),
+      // Questions and negatives: do/does agrees with the subject and takes the bare verb.
+      ...items('questions-negatives', 'form', [
+        ['What happens if you freeze water?', 'freeze', 'freezes'],
+        ["If you don't water plants, they die.", 'die', 'dies'],
+        ['What happens when you drop an egg?', 'happens', 'happen'],
+        ['Do cats purr when they are happy?', 'purr', 'purrs'],
+        ["If you don't sleep, you feel tired.", "don't", "doesn't"],
+        ["Buses don't run if it snows.", "don't", "doesn't"],
+        ["What does your cat do when it's hungry?", 'does', 'do'],
+        ["Iron doesn't float if you put it in water.", 'float', 'floats'],
+        ['Why do leaves fall when it gets cold?', 'fall', 'falls'],
+        ["If it doesn't rain, the grass turns brown.", "doesn't", "don't"],
+        ["Do you get a headache if you don't eat?", 'get', 'gets'],
+        ["A car doesn't start if the battery is flat.", 'start', 'starts'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L2('u7_l1'),
+    statement: 'I can use reporting verbs to report stories.',
+    items: [
+      // promise, offer, refuse, agree, claim, threaten + to-infinitive: -ing or a bare verb is the error. No verb whose
+      // -ing or bare form could be a noun after it («offered help»). No tense shift is tested anywhere in this lesson.
+      ...items('verb-patterns', 'form', [
+        ['She promised to call me.', 'to call', 'calling'],
+        ['He offered to carry my bag.', 'to carry', 'carrying'],
+        ['They refused to pay for the damage.', 'to pay', 'paying'],
+        ['My brother agreed to help me.', 'to help', 'helping'],
+        ['The boy promised to return the book.', 'to return', 'returning'],
+        ['Dad offered to drive us to Amman.', 'to drive', 'driving'],
+        ['She refused to answer my question.', 'to answer', 'answering'],
+        ['We agreed to meet at the library.', 'to meet', 'meeting'],
+        ['He threatened to tell the teacher.', 'to tell', 'telling'],
+        ['The shop agreed to replace the phone.', 'to replace', 'replacing'],
+        ['She offered to lend me her notes.', 'to lend', 'lending'],
+        ['I promised not to be late.', 'not to be', 'not being'],
+        ['He claimed to know the answer.', 'to know', 'knowing'],
+        ['My sister refused to share her sweets.', 'to share', 'sharing'],
+        ['The teacher agreed to postpone the test.', 'to postpone', 'postponing'],
+        ['Mum promised to make a cake.', 'to make', 'make'],
+      ]),
+      // admit, deny, suggest, apologise for + -ing: the to-infinitive is the error. suggest also takes «that we go», so
+      // only the -ing pattern is tested; «admit to doing» is English, so «to» never stands alone as the distractor.
+      ...items('admit-deny-suggest', 'form', [
+        ['He denied breaking the vase.', 'breaking', 'to break'],
+        ['She admitted taking my pen.', 'taking', 'to take'],
+        ['She suggested going by bus.', 'going', 'to go'],
+        ['The boy admitted cheating in the test.', 'cheating', 'to cheat'],
+        ['They denied making the mess.', 'making', 'to make'],
+        ['He apologised for being late.', 'being', 'to be'],
+        ['Dad suggested eating out tonight.', 'eating', 'to eat'],
+        ['She denied eating the last biscuit.', 'eating', 'to eat'],
+        ['I admitted forgetting my homework.', 'forgetting', 'to forget'],
+        ['We apologised for making so much noise.', 'making', 'to make'],
+        ['The teacher suggested reading the story again.', 'reading', 'to read'],
+        ['He admitted losing the keys.', 'losing', 'to lose'],
+        ['She denied telling anyone the secret.', 'telling', 'to tell'],
+        ['Mum suggested visiting our grandparents.', 'visiting', 'to visit'],
+      ]),
+      // tell, warn, remind, advise, ask + object + to-infinitive. The errors: said for told, a missing object (after
+      // tell and remind), -ing or a bare verb after the object. Never asked with and without an object against each
+      // other (both are English), and never advise with -ing and no object («advised resting» is English).
+      ...items('tell-ask-warn', 'form', [
+        ['Mum told me to wait.', 'told me', 'said me'],
+        ['The teacher told us to sit down.', 'to sit', 'sitting'],
+        ['Dad warned me not to touch the oven.', 'not to touch', 'not touching'],
+        ['She reminded me to bring my book.', 'to bring', 'bringing'],
+        ['The coach told the players to rest.', 'told the players', 'said the players'],
+        ['She asked me to open the window.', 'to open', 'opening'],
+        ['The doctor advised me to drink water.', 'to drink', 'drink'],
+        ['Our teacher reminded us to switch off our phones.', 'reminded us', 'reminded'],
+        ['He told his sister to close the door.', 'told his sister', 'told to his sister'],
+        ['The guide warned us to stay together.', 'to stay', 'staying'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L2('u7_l5'),
+    statement: 'I can use reported questions to talk about what someone else said.',
+    items: [
+      // After asked, wondered or wanted to know, a wh-question takes statement order: no do and no inversion. Pronoun
+      // or do-support cases only: no «what» + be + a noun («what the problem was»), where many speakers accept both.
+      // The tense is never what differs (both «where I lived» and «where I live» are fine).
+      ...items('ask-wonder', 'form', [
+        ['He asked where I lived.', 'where I lived', 'where did I live'],
+        ['She asked what I wanted.', 'what I wanted', 'what did I want'],
+        ['They asked when the film started.', 'the film started', 'did the film start'],
+        ['I wondered why she was upset.', 'she was', 'was she'],
+        ['Mum asked where I had been.', 'I had been', 'had I been'],
+        ['He wondered how the machine worked.', 'the machine worked', 'did the machine work'],
+        ['The teacher asked why I was late.', 'I was', 'was I'],
+        ['She asked how much the ticket cost.', 'the ticket cost', 'did the ticket cost'],
+        ['I wondered what time it was.', 'it was', 'was it'],
+        ['They asked where we were going.', 'we were', 'were we'],
+        ['He wanted to know what I thought.', 'I thought', 'did I think'],
+        ['She wondered who I was talking to.', 'I was', 'was I'],
+        ['Dad asked how long the journey took.', 'the journey took', 'did the journey take'],
+        ['My friend asked why I had left early.', 'I had left', 'had I left'],
+      ]),
+      // A yes or no question becomes if or whether + statement order. «that» is never offered: «asked that …» is a
+      // request form.
+      ...items('if-whether', 'form', [
+        ['She asked if I was ready.', 'if I was', 'if was I'],
+        ['They wondered whether it was true.', 'whether it was', 'whether was it'],
+        ['He asked if I liked football.', 'if I liked', 'if did I like'],
+        ['Mum asked whether I had finished.', 'whether I had', 'whether had I'],
+        ['The teacher asked if we understood.', 'if we understood', 'if did we understand'],
+        ['I wondered if the shop was open.', 'if the shop was', 'if was the shop'],
+        ['She asked whether I could swim.', 'whether I could', 'whether could I'],
+        ['They asked if we needed help.', 'if we needed', 'if did we need'],
+        ['He wanted to know if I was coming.', 'if I was', 'if was I'],
+        ['Dad asked whether the bus had left.', 'whether the bus had', 'whether had the bus'],
+        ['She wondered if her friends were angry.', 'if her friends were', 'if were her friends'],
+        ['The doctor asked if I felt better.', 'if I felt', 'if did I feel'],
+      ]),
+      // The same order with an object after asked and a modal or an auxiliary in the question.
+      ...items('word-order', 'form', [
+        ['She asked me where I could park.', 'I could park', 'could I park'],
+        ['He asked us how many brothers we had.', 'we had', 'did we have'],
+        ['The officer asked me where I was from.', 'I was', 'was I'],
+        ['They asked me what I was doing.', 'I was doing', 'was I doing'],
+        ['She asked me how I had found it.', 'I had found', 'had I found'],
+        ['He asked me which bus I took.', 'I took', 'did I take'],
+        ['Mum asked us what we had eaten.', 'we had eaten', 'had we eaten'],
+        ['The man asked me where he could buy tickets.', 'he could buy', 'could he buy'],
+        ['She asked me how old I was.', 'I was', 'was I'],
+        ['They asked us when we would arrive.', 'we would arrive', 'would we arrive'],
+        ['He asked me what I meant.', 'I meant', 'did I mean'],
+        ["My teacher asked me why I hadn't come.", "I hadn't", "hadn't I"],
+        ['She asked me how long I had waited.', 'I had waited', 'had I waited'],
+        ['Dad asked me where I had put his keys.', 'I had put', 'had I put'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L2('u8_l1'),
+    statement: 'I can use the passive to talk about different actions.',
+    items: [
+      // be + past participle, agreeing with the subject. The errors: the bare verb or the past simple for the
+      // participle (irregular verbs, so the two differ), or the wrong be. No bare verb that is also an adjective
+      // («is clean», «is open»), and no missing be, which can leave a grammatical active («The bridge built»).
+      ...items('present-past', 'form', [
+        ['The bridge was built long ago.', 'was built', 'was build'],
+        ['English is spoken in many countries.', 'spoken', 'spoke'],
+        ['This letter was written by my grandfather.', 'written', 'wrote'],
+        ['The cakes were eaten in minutes.', 'were', 'was'],
+        ['Rice is grown in many hot countries.', 'grown', 'grew'],
+        ['My bike was stolen last night.', 'stolen', 'stole'],
+        ['The windows are cleaned every week.', 'are', 'is'],
+        ['The story was told by my grandmother.', 'told', 'tell'],
+        ['These photos were taken in Petra.', 'taken', 'took'],
+        ['The car is washed every Friday.', 'is washed', 'is wash'],
+        ['The winners were given medals.', 'given', 'gave'],
+        ['Our house was painted last year.', 'was painted', 'was paint'],
+        ['Arabic is taught at every school.', 'is taught', 'is teach'],
+        ['The song was sung by the whole class.', 'sung', 'sang'],
+      ]),
+      // modal + be + past participle. The errors: no be, to after the modal, been after the modal, a bare verb or a
+      // past simple after be.
+      ...items('with-modals', 'form', [
+        ['The door must be locked.', 'be locked', 'be lock'],
+        ['Phones must be switched off.', 'be switched', 'switched'],
+        ['This medicine should be kept cold.', 'be kept', 'be keep'],
+        ['The homework must be finished today.', 'must be', 'must to be'],
+        ['The tickets can be bought online.', 'be bought', 'be buy'],
+        ['Plastic bottles can be recycled.', 'can be', 'can'],
+        ['The rules must be followed by everyone.', 'be followed', 'be follow'],
+        ['The work will be done tomorrow.', 'will be done', 'will be did'],
+        ['Students must be told about the test.', 'must be told', 'must told'],
+        ['The letter might be sent tomorrow.', 'be sent', 'be send'],
+        ["This room can't be used today.", 'be used', 'been used'],
+        ['The plants should be watered every day.', 'should be', 'should'],
+      ]),
+      // A passive question inverts be (no do); a negative puts not after be.
+      ...items('questions-negatives', 'form', [
+        ['Were the letters sent yesterday?', 'Were', 'Did'],
+        ['Was the window broken by the wind?', 'Was', 'Did'],
+        ["The match wasn't cancelled.", "wasn't cancelled", "wasn't cancel"],
+        ['Are cars made in Jordan?', 'Are', 'Do'],
+        ['Where was this photo taken?', 'taken', 'took'],
+        ["The sandwiches weren't eaten at the party.", "weren't", "didn't"],
+        ['When was the school built?', 'was', 'did'],
+        ['Are the rooms cleaned every day?', 'Are', 'Do'],
+        ['The emails were not sent.', 'were not', 'not were'],
+        ["The homework isn't checked on Fridays.", "isn't checked", "isn't check"],
+        ['Why was the trip cancelled?', 'cancelled', 'cancel'],
+        ['Is this bread made locally?', 'made', 'make'],
+        ["The new rules weren't explained to us.", 'explained', 'explain'],
+        ['Who was the prize given to?', 'given', 'gave'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L2('u8_l6'),
+    statement: 'I can use have/get something done to talk about services.',
+    items: [
+      // have + object + past participle. The errors: the bare verb, -ing or a past simple for the participle, or the
+      // wrong have. Never «had repaired my car» (a sound past perfect). No bare verb that makes a noun with the object
+      // («the heater check», «car wash», «kitchen paint»), and -ing only where the object cannot do the action.
+      ...items('have-something-done', 'form', [
+        ['I had my car repaired yesterday.', 'repaired', 'repairing'],
+        ['Dad had his eyes tested.', 'tested', 'testing'],
+        ['They had a swimming pool dug.', 'dug', 'digged'],
+        ['She had her bedroom decorated.', 'decorated', 'decorate'],
+        ['He had his letter translated into English.', 'translated', 'translate'],
+        ["I'm having a new sink installed tomorrow.", 'installed', 'installing'],
+        ['They had the pizza delivered to school.', 'delivered', 'deliver'],
+        ['He has his suits made in Amman.', 'has', 'have'],
+        ['Did you have the old tree removed?', 'removed', 'remove'],
+        ['We are having the walls knocked down.', 'knocked', 'knock'],
+        ['I had the parcel sent to Irbid.', 'sent', 'send'],
+        ['We have the lift checked every month.', 'checked', 'checking'],
+      ]),
+      // get + object + past participle. The errors: the bare verb, a past simple, the wrong get, or the object after
+      // the participle («got repaired his watch»). No -ing: «get the engine running» is English.
+      ...items('get-something-done', 'form', [
+        ['She got her phone fixed.', 'her phone fixed', 'fixed her phone'],
+        ['Dad got his watch repaired.', 'his watch repaired', 'repaired his watch'],
+        ['Where did you get your glasses made?', 'made', 'make'],
+        ['You should get your passport renewed.', 'renewed', 'renew'],
+        ["I'll get my name written on the cake.", 'written', 'wrote'],
+        ['He got his tooth pulled out.', 'pulled', 'pull'],
+        ['We got the broken window replaced.', 'replaced', 'replace'],
+        ["Let's get the old sofa taken away.", 'taken', 'took'],
+        ['She gets her car serviced every spring.', 'gets', 'get'],
+        ['I got my school bag mended.', 'my school bag mended', 'mended my school bag'],
+        ['Did you get the tickets printed?', 'printed', 'print'],
+        ['They got their house painted white.', 'their house painted', 'painted their house'],
+      ]),
+      // Self-done or a service, decided in the sentence: myself, ourselves or «with her own hands» rules out the
+      // service; a sentence saying the speaker cannot do it, was away, did not do it, or who did it rules out the
+      // self-done action. Both sides are sound sentences. No «by experts» or «by a tailor» after the self-done twin:
+      // «We painted the house by experts» is a form error, not a meaning one.
+      ...items('service-vs-self', 'meaning', [
+        ['I cleaned the windows myself. Nobody helped.', 'cleaned the windows', 'had the windows cleaned'],
+        ["We painted our bedroom ourselves. We didn't pay anyone.", 'painted our bedroom', 'had our bedroom painted'],
+        ["Dad fixed the tap himself. He didn't call anyone.", 'fixed the tap', 'had the tap fixed'],
+        ['She knitted this scarf with her own hands.', 'knitted this scarf', 'had this scarf knitted'],
+        ["I repaired my bike myself with my dad's tools.", 'repaired my bike', 'had my bike repaired'],
+        ['My brother cuts his hair himself, without a barber.', 'cuts his hair', 'has his hair cut'],
+        ['We washed the car ourselves to save money.', 'washed the car', 'had the car washed'],
+        ["Mum baked the cake herself. She didn't order it.", 'baked the cake', 'had the cake baked'],
+        ["I can't cut hair, so I had mine cut.", 'had mine cut', 'cut mine'],
+        ["Dad can't repair cars, so he gets his fixed.", 'gets his fixed', 'fixes his'],
+        ["She can't sew, so she had the dress made.", 'had the dress made', 'made the dress'],
+        ["I didn't iron my shirts. I had them ironed.", 'had them ironed', 'ironed them'],
+        ['We were abroad, so we had the plants watered.', 'had the plants watered', 'watered the plants'],
+        ['I had my suit shortened. A tailor did it.', 'had my suit shortened', 'shortened my suit'],
+        ['We had our photo taken. A photographer took it.', 'had our photo taken', 'took our photo'],
+        ['We had our garden designed. An expert did it.', 'had our garden designed', 'designed our garden'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L2('u9_l1'),
+    statement: 'I can use the third conditional to talk about unreal situations in the past.',
+    items: [
+      // If + past perfect, would have + past participle. The errors: would have inside the if-clause, had + a past
+      // simple or a bare verb, would had, would have + a bare verb or a past simple. Never a past simple in the
+      // if-clause («If I knew, I would have called» is a sound mixed conditional), and never would + a bare verb in
+      // the result («If I had known, I would call you» is one too).
+      ...items('third-conditional', 'form', [
+        ['If I had known, I would have called.', 'had known', 'would have known'],
+        ["If we'd left earlier, we'd have seen the start.", 'have seen', 'have saw'],
+        ['If she had studied, she would have passed.', 'had studied', 'would have studied'],
+        ['If it had rained, we would have stayed in.', 'had rained', 'had rain'],
+        ['If you had phoned, I would have answered.', 'would have answered', 'would have answer'],
+        ['If he had seen me, he would have waved.', 'would have waved', 'would had waved'],
+        ['If they had trained harder, they would have won.', 'would have won', 'would have win'],
+        ['If you had told me, I would have come.', 'had told', 'had tell'],
+        ['Our friends would have helped if we had asked.', 'had asked', 'would have asked'],
+        ["If he hadn't fallen, he would have finished first.", "hadn't fallen", "hadn't fell"],
+        ["We wouldn't have been late if we had hurried.", 'had hurried', 'would have hurried'],
+        ["If the bus had come, we'd have taken it.", 'had come', 'had came'],
+        ['What would you have done if you had failed?', 'done', 'did'],
+        ["If she had driven, we'd have arrived sooner.", 'had driven', 'had drove'],
+      ]),
+      // A past time word in the result («yesterday», «last night», «two days ago», «last term») takes would have;
+      // would + a bare verb is ruled out by it («I'd call yesterday»), as a past time word rules out can in Semester 1.
+      // The time word sits in the result, never only in the if-clause: «If it hadn't rained yesterday, we'd play»
+      // can be about today. No «last summer» or «as a child», where would can be a past habit.
+      ...items('past-unreal', 'meaning', [
+        ["You'd have met her yesterday if you'd come.", 'have met', 'meet'],
+        ["I'd have called yesterday, but my phone died.", 'have called', 'call'],
+        ["Without the storm, we'd have sailed two days ago.", 'have sailed', 'sail'],
+        ['She would have won last week with more practice.', 'would have won', 'would win'],
+        ["If you'd asked, I'd have helped earlier today.", 'have helped', 'help'],
+        ["We'd have arrived an hour ago by taxi.", 'have arrived', 'arrive'],
+        ["I was ill. Otherwise, I'd have gone last Friday.", 'have gone', 'go'],
+        ["I'd have stayed longer yesterday, but I was tired.", 'have stayed', 'stay'],
+        ["With a car, we'd have visited Petra last weekend.", 'have visited', 'visit'],
+        ["Without your help, I'd have failed last term.", 'have failed', 'fail'],
+        ["If he'd played, he'd have scored last night.", 'have scored', 'score'],
+        ["With more money, I'd have flown there last month.", 'have flown', 'fly'],
+        ['Left outside, the ice would have melted yesterday.', 'would have melted', 'would melt'],
+        ["I'd have told you last night, but I forgot.", 'have told', 'tell'],
+      ]),
+      // would have + past participle, with or without an if-clause. The errors: would had, would have + a bare verb
+      // or a past simple.
+      ...items('would-have-forms', 'form', [
+        ['She would have helped if she had known.', 'would have helped', 'would had helped'],
+        ['I would have bought it, but it was expensive.', 'would have bought', 'would have buy'],
+        ['He would have come, but nobody asked him.', 'would have come', 'would have came'],
+        ['We would have swum if it had been sunny.', 'swum', 'swam'],
+        ['You would have loved the concert.', 'loved', 'love'],
+        ["They wouldn't have lost if they had tried.", "wouldn't have lost", "wouldn't have lose"],
+        ["I'd have walked, but it was raining.", 'have walked', 'have walk'],
+        ['Would you have gone without me?', 'gone', 'went'],
+        ['She would have been angry if you had lied.', 'been', 'be'],
+        ['The plants would have died without water.', 'died', 'die'],
+        ['We would have taken photos, but we forgot.', 'taken', 'took'],
+        ['He would have written, but he was busy.', 'written', 'wrote'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L2('u9_l4'),
+    statement: 'I can use I wish and if only to express regrets.',
+    items: [
+      // wish + past simple (or could) for the present. The errors: the present simple, can, or an -s after wish's
+      // subject. No would (a sound complaint: «I wish it would rain»), no past perfect (a sound regret), and were and
+      // was are never set against each other.
+      ...items('wish-present', 'form', [
+        ['I wish I had a bigger room.', 'had', 'have'],
+        ['I wish I knew the answer.', 'knew', 'know'],
+        ['I wish I lived near the sea.', 'lived', 'live'],
+        ['She wishes she had more free time.', 'had', 'has'],
+        ['I wish I could speak French.', 'could', 'can'],
+        ['I wish my friends were here.', 'were', 'are'],
+        ['We wish we owned a car.', 'owned', 'own'],
+        ["I wish I didn't have so much homework.", "didn't", "don't"],
+        ['He wishes he were taller.', 'were', 'is'],
+        ['Do you wish you lived in Amman?', 'lived', 'live'],
+        ['My sister wishes she spoke English well.', 'spoke', 'speaks'],
+        ['I wish I understood maths better.', 'understood', 'understand'],
+        ['I wish the shops opened earlier.', 'opened', 'open'],
+        ['I wish my phone worked.', 'worked', 'works'],
+      ]),
+      // A past time word («last year», «yesterday», «an hour ago») takes wish or if only + past perfect; the past
+      // simple, a sound present wish on its own («I wish I studied»), is ruled out by it.
+      ...items('wish-past-regrets', 'meaning', [
+        ['I wish I had studied last year.', 'had studied', 'studied'],
+        ['I wish I had slept more last night.', 'had slept', 'slept'],
+        ['She wishes she had come to the party yesterday.', 'had come', 'came'],
+        ["I wish I hadn't eaten so much yesterday.", "hadn't eaten", "didn't eat"],
+        ['We wish we had visited Petra last spring.', 'had visited', 'visited'],
+        ['If only I had saved money last year.', 'had saved', 'saved'],
+        ['I wish I had taken photos last summer.', 'had taken', 'took'],
+        ["He wishes he hadn't said that last night.", "hadn't said", "didn't say"],
+        ['I wish I had left an hour ago.', 'had left', 'left'],
+        ['If only we had booked the tickets last week.', 'had booked', 'booked'],
+        ['My brother wishes he had trained harder last season.', 'had trained', 'trained'],
+        ['I wish I had called my grandmother last weekend.', 'had called', 'called'],
+        ['If only I had checked my homework yesterday.', 'had checked', 'checked'],
+        ["She wishes she hadn't missed the bus yesterday.", "hadn't missed", "didn't miss"],
+      ]),
+      // If only + past perfect, could or would. The errors: had + a bare verb or a past simple, to or a past after
+      // could, an -s after would. Never a present after if only («If only I have time» is a sound hope).
+      ...items('if-only', 'form', [
+        ['If only I had listened to Mum!', 'had listened', 'had listen'],
+        ['If only I had known the truth!', 'had known', 'had knew'],
+        ['If only we had left earlier!', 'had left', 'had leave'],
+        ['If only I could swim!', 'could swim', 'could to swim'],
+        ['If only it would stop raining!', 'would stop', 'would stops'],
+        ["If only I hadn't lost my phone!", "hadn't lost", "hadn't lose"],
+        ['If only she had told me sooner!', 'had told', 'had tell'],
+        ["If only we hadn't eaten all the cake!", "hadn't eaten", "hadn't ate"],
+        ['If only I had brought an umbrella!', 'had brought', 'had bring'],
+        ['If only he could drive!', 'could drive', 'could drove'],
+        ["If only I hadn't forgotten her birthday!", "hadn't forgotten", "hadn't forget"],
+        ['If only the bus had come on time!', 'had come', 'had came'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L2('u10_l1'),
+    statement: 'I can use modal verbs to speculate about the present.',
+    items: [
+      // A clue in the sentence («so», or a first sentence of evidence) makes must a sure yes or can't a sure no; the
+      // other is a sound sentence the clue contradicts. might and could are never set against each other.
+      ...items('must-cant', 'meaning', [
+        ['The lights are on, so they must be home.', 'must', "can't"],
+        ["He has just eaten, so he can't be hungry.", "can't", 'must'],
+        ["You've walked for hours. You must be tired.", 'must', "can't"],
+        ["She's only ten, so she can't be a teacher.", "can't", 'must'],
+        ['Everyone is laughing. The film must be funny.', 'must', "can't"],
+        ["He's in Amman, so he can't be in Aqaba.", "can't", 'must'],
+        ["It's locked from inside, so they must be in.", 'must', "can't"],
+        ["It's very cheap, so it can't be real gold.", "can't", 'must'],
+        ['It has my name, so it must be mine.', 'must', "can't"],
+        ["The box is empty, so it can't be heavy.", "can't", 'must'],
+        ["You're shivering. You must be cold.", 'must', "can't"],
+        ["The shop is dark, so it can't be open.", "can't", 'must'],
+        ['He won the race, so he must be fast.', 'must', "can't"],
+        ["It's midnight, so he can't be at school.", "can't", 'must'],
+      ]),
+      // might or may + a bare verb. The errors: an -s or is after the modal, to after it, been for be.
+      ...items('might-may', 'form', [
+        ['She might be late today.', 'might be', 'might is'],
+        ['He may be at the library.', 'may be', 'may to be'],
+        ['They might not know the answer.', 'might not know', 'might not to know'],
+        ['It may rain later.', 'may rain', 'may rains'],
+        ['The test might be difficult.', 'be', 'been'],
+        ['Your keys may be in the car.', 'may be', 'may are'],
+        ['She might not be at home.', 'not be', 'not to be'],
+        ['He may have a cold.', 'may have', 'may has'],
+        ['We might need more chairs.', 'might need', 'might needs'],
+        ['That may not be true.', 'may not be', 'may not'],
+        ['The museum might close early today.', 'might close', 'might to close'],
+        ['My brother may know her number.', 'may know', 'may knows'],
+      ]),
+      // modal + be + -ing for what is happening now. The errors: no be, a bare verb after be, is for be. Never the
+      // modal + a bare verb («He must sleep» is a sound obligation), and no bare verb that makes a grammatical phrase after be.
+      ...items('be-v-ing', 'form', [
+        ['He must be sleeping now.', 'be sleeping', 'sleeping'],
+        ['They might be watching TV.', 'be watching', 'be watch'],
+        ["She can't be working today.", 'be working', 'working'],
+        ['Dad may be cooking dinner.', 'be cooking', 'is cooking'],
+        ['You must be joking!', 'be joking', 'be joke'],
+        ['It might be raining in Irbid.', 'be raining', 'raining'],
+        ["They can't be playing outside in this storm.", 'be playing', 'be play'],
+        ['She must be studying for her exam.', 'studying', 'study'],
+        ['He might be waiting at the bus stop.', 'waiting', 'wait'],
+        ['Mum may be resting, so be quiet.', 'resting', 'rest'],
+        ['The children must be having fun.', 'having', 'have'],
+        ['Someone might be using the computer.', 'using', 'use'],
+        ["His car is here. He can't be driving.", 'be driving', 'driving'],
+        ['They must be travelling by train.', 'travelling', 'travel'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L2('u10_l3'),
+    statement: 'I can use modal verbs to speculate about the past.',
+    items: [
+      // A first sentence of evidence makes must have a sure deduction; can't have, a sound sentence on its own, is
+      // contradicted by it.
+      ...items('must-have', 'meaning', [
+        ['The ground is wet. It must have rained.', 'must have', "can't have"],
+        ['Their car is gone. They must have left.', 'must have', "can't have"],
+        ["She's holding the trophy. She must have won.", 'must have', "can't have"],
+        ['He ate three burgers. He must have been hungry.', 'must have', "can't have"],
+        ["There's snow everywhere. It must have snowed.", 'must have', "can't have"],
+        ["You're soaking! You must have walked in the rain.", 'must have', "can't have"],
+        ['The cake is gone. Someone must have eaten it.', 'must have', "can't have"],
+        ['The kettle is hot. Someone must have boiled water.', 'must have', "can't have"],
+        ['The house smells of bread. Mum must have baked.', 'must have', "can't have"],
+        ['The TV is warm. Dad must have watched it.', 'must have', "can't have"],
+        ['My keys are gone. I must have lost them.', 'must have', "can't have"],
+        ['There are footprints. Someone must have walked here.', 'must have', "can't have"],
+        ['Everyone is clapping. She must have sung well.', 'must have', "can't have"],
+        ['A letter has arrived. The postman must have come.', 'must have', "can't have"],
+      ]),
+      // might have or could have + past participle. The errors: no have, had or has for have, a bare verb or a past
+      // simple for the participle. Never a bare verb after might («He might forget» is sound), and never must of.
+      ...items('might-could-have', 'form', [
+        ['He might have forgotten the key.', 'might have forgotten', 'might forgot'],
+        ['She could have missed the bus.', 'could have missed', 'could have miss'],
+        ['They might have gone home.', 'have gone', 'had gone'],
+        ['You could have left it at school.', 'left', 'leave'],
+        ['The letter might have got lost.', 'have got', 'has got'],
+        ['He might not have heard you.', 'not have heard', 'not have hear'],
+        ['Someone could have taken your pen.', 'taken', 'took'],
+        ['It might have been the wind.', 'been', 'be'],
+        ['She might have called while we were out.', 'have called', 'called'],
+        ['They could have stopped for lunch.', 'have stopped', 'had stopped'],
+        ['The dog might have eaten your homework.', 'eaten', 'ate'],
+        ['Could he have lost his way?', 'have lost', 'have lose'],
+      ]),
+      // A first sentence of evidence (where someone was, what they cannot do, what is left) makes can't have a sure
+      // no; must have, a sound sentence on its own, is contradicted by it.
+      ...items('cant-have', 'meaning', [
+        ["She was with me. She can't have taken it.", "can't have", 'must have'],
+        ["He was asleep. He can't have called.", "can't have", 'must have'],
+        ["The shop was closed. She can't have shopped there.", "can't have", 'must have'],
+        ["The food is untouched. They can't have been hungry.", "can't have", 'must have'],
+        ["The road is dry. It can't have rained.", "can't have", 'must have'],
+        ["He stayed home. He can't have gone shopping.", "can't have", 'must have'],
+        ["He started a minute ago. He can't have finished.", "can't have", 'must have'],
+        ["She's only six. She can't have written this.", "can't have", 'must have'],
+        ["I have the only key. He can't have entered.", "can't have", 'must have'],
+        ["My phone was off. You can't have reached me.", "can't have", 'must have'],
+        ["He was in hospital. He can't have played yesterday.", "can't have", 'must have'],
+        ["They were out. They can't have heard the bell.", "can't have", 'must have'],
+        ["She doesn't drive. She can't have driven here.", "can't have", 'must have'],
+        ["It was dark. You can't have seen his face.", "can't have", 'must have'],
       ]),
     ],
   },

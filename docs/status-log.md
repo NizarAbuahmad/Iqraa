@@ -25,18 +25,18 @@ A teacher's review of the English corner (Grades 2–5), with three phone record
   recorded as «recordings still to make». HEAD-checked 2026-10-24: Grades 1–4 and 10 complete.
 - **«loudly» too slow — measured:** 1.71 s of speech for two syllables, the worst of 750 single words (`quietly` 0.78 s).
   `firefighter` (G3) is next (1.5 s). «A little slowly» is read too literally on some words; both now carry a pace hint in
-  `PRONUNCIATION`. New takes: `loudly` 0.63 s, `firefighter` 0.90 s.
+  `PRONUNCIATION` (`src/englishAudioPlan.ts`, where #1262 moved it). New takes: `loudly` 0.63 s, `firefighter` 0.90 s.
 - **«garage» not accurate — measured:** formants/energy of the old file: a stressed short «a», then the second vowel almost
   absent (a tenth of the first vowel's energy) straight into «zh» — «GAR-zh». The hint now asks for British /ˈɡærɑːʒ/ with a full
   long second vowel. The chosen take has a louder first syllable and a clear ~270 ms open second vowel. **Chosen by measurement,
   not by ear — a teacher should listen.**
-- **Recordings:** 198 missing words voiced locally with `--out` (nothing uploaded), plus the three above. faster-whisper
+- **Recordings:** 198 missing words voiced locally first (nothing uploaded), plus the three above. faster-whisper
   `small.en` flagged 22 of the 198; 10 were real (silent «squid»; «bake a cake», «go swimming», «tell a story», «keyboard»,
   «cheer» (→ «shear»), «comet», «appear», «metal», «explorer» mis-voiced) and were re-taken until Whisper agreed; the rest were
   homophones (buy/sell/sun), numbers written as digits and spelling («moustache»). `a cold` still reads «are cold» in Whisper
-  and was left. **Uploaded 2026-10-24 on the owner's go-ahead** (201 files, 5.6 MB, none failed) with
-  `pnpm --filter @workspace/curriculum run english-audio -- --only <slugs> --from <dir>` (new `--from` uploads the checked files
-  instead of voicing again; `--out` writes locally and uploads nothing). Afterwards a HEAD check of all 1,248 hub words found
+  and was left. **Uploaded 2026-10-24 on the owner's go-ahead** (201 files, 5.6 MB, none failed) with a temporary `--out`/`--from`
+  patch of the old script (write the takes to a folder, check them, upload exactly those files). That patch is **not** in the
+  merged script: #1262 replaced the script's pipeline, and the upload was already done. Afterwards a HEAD check of all 1,248 hub words found
   every one present (Grades 1–5, 9, 10: 0 missing), and `garage`, `loudly`, `firefighter`, `squid`, `purse` came back
   byte-identical to what was uploaded. Files carry `max-age=86400`, so a phone that cached the old `garage`/`loudly` keeps it up to a day.
 - **Not done:** Grade 3 units 1 and 6 (the teacher noticed the review units are absent; Grades 1 and 2 have theirs — a content
@@ -44,6 +44,275 @@ A teacher's review of the English corner (Grades 2–5), with three phone record
 - **Checked:** `lib/curriculum` tests 677 of 678 (the one failure, `quranCorner`, cannot load `@quran.ws/text`, which this partial install lacks — nothing to do with English); the two
   mobile English game suites 38 of 38. **Not checked:** the app typecheck and the screens in a browser (this worktree has no
   full install; CI runs the typecheck).
+- **Not yet processed (do this next):** these 201 files went up as the model returned them — 128 kbps, untrimmed, not levelled,
+  with no `_manifest.json` entry and no process-version stamp — because they were uploaded before #1262's pipeline was
+  merged into this branch. `english-audio --reprocess` (no OpenAI key, backs each file up first) will pick them up and trim,
+  level and re-encode them like the other 1,050. Run it once, after this merges.
+
+## Grade 10 grammar (Semester 2) in the English corner — built, shown to nobody yet, 2026-10-24
+
+The ten Grade 10 Semester 2 lessons whose book statement is a grammar topic now have grammar activities: Choose the word,
+Build the sentence and True or false. Semester 2 has no vocabulary rows (`english_vocabulary.json` holds none for
+`kbl-eng-s2-…`), so the hub never listed it; **all ten are grammar-only hub lessons** (`GRAMMAR_ONLY_LESSONS` goes from 6 ids to
+16) and **the Grade 10 hub goes from 21 to 31 lessons**. **All 21 Grade 10 units are `reviewedBy: null`
+(`englishGrammarG10.ts`), so no teacher or student sees a card, no Semester 2 lesson is in the Grade 10 index, and a direct
+URL says «lesson not found».** Spec: `docs/superpowers/specs/2026-10-24-english-corner-grammar-g10-s2-design.md`; plan:
+`docs/superpowers/plans/2026-10-24-english-corner-grammar-g10-s2.md`. Same engine and rules as Semester 1, Grade 9 and Grade 5;
+**no app screen, server, schema or migration change** (the app's own test file only grew).
+
+- **400 hand-written items, 40 a lesson, 30 sub-topics** (`englishGrammarG10Items.ts`, `G10_ITEM_LESSONS` now 21 entries,
+  each `statement` equal to `objectives[0]` of its lesson, read back from the JSON by a test). **102 are `meaning` and 298 are
+  `form`; Grade 10 as a whole is 21 lessons, 840 items, 308 `meaning` and 532 `form`.** Lessons (sub-topic size and kind):
+  - `u6_l1` first and second conditional: `first-conditional` 12 and `second-conditional` 12 form, `imagine-vs-real` 16 meaning.
+  - `u6_l4` zero conditional: `if-present` 14, `when-general-truths` 14, `questions-negatives` 12, all form.
+  - `u7_l1` reporting verbs: `verb-patterns` 16, `admit-deny-suggest` 14, `tell-ask-warn` 10, all form.
+  - `u7_l5` reported questions: `ask-wonder` 14, `if-whether` 12, `word-order` 14, all form. Reported speech tests no tense
+    shift (both «said she was tired» and «said she is tired» pass): the items turn on the verb pattern, the object,
+    `if`/`whether` and word order.
+  - `u8_l1` the passive: `present-past` 14, `with-modals` 12, `questions-negatives` 14, all form.
+  - `u8_l6` have/get something done: `have-something-done` 12 and `get-something-done` 12 form, `service-vs-self` 16 meaning.
+  - `u9_l1` third conditional: `third-conditional` 14 form, `past-unreal` 14 meaning, `would-have-forms` 12 form.
+  - `u9_l4` I wish and if only: `wish-present` 14 form, `wish-past-regrets` 14 meaning, `if-only` 12 form.
+  - `u10_l1` speculating about the present: `must-cant` 14 meaning, `might-may` 12 form, `be-v-ing` 14 form.
+  - `u10_l3` speculating about the past: `must-have` 14 meaning, `might-could-have` 12 form, `cant-have` 14 meaning.
+  - Sentences are nine words or fewer (`buildCap(10)`), no real or book-character names (family words and Jordan, Amman, Aqaba,
+    Petra, Irbid only), nothing religious, political or sensitive. A distractor is `form` (ungrammatical in standard English) or `meaning`
+    (grammatical, excluded by something in the sentence itself), never a form that could fit; each sub-topic's comment in
+    the data file says what decides the answer and which distractors were left out on purpose.
+- **Deviation from the spec: «imagine-vs-real» no longer has a «likely» side.** The spec said «Imagine …» and «If I were …»
+  against a real, likely condition. The first draft wrote that with mixed-conditional twins («Tomorrow, if it rains, we
+  would play indoors», «If I were a bird, I will fly away»), and the review found 9 of the 16 rows were really form errors or
+  twins a teacher could accept. The topic stays 16 `meaning` rows (so 102 and 298 stand) but every row is now an unreal
+  situation stated in its own sentence («Imagine …», «Suppose …» with a past verb) followed by a `would` result, and the
+  twin is a sound, stand-alone `will` sentence the opening word rules out. No row relies on a time word or on were/could +
+  will. The cost: the topic tests only the unreal opener, not likely against unlikely. The spec's marker sentence, the
+  `u6_l1` note in `NOT_COVERED_G10` and the sub-topic comment say so.
+- **Other plan example rows changed, no kind switched.** `u8_l6`: «We had the house painted by experts» was not used (its twin
+  «We painted the house by experts» is a form error); the service side is decided by a sentence saying the speaker cannot do
+  it, was away, did not do it or who did it, and the self side by `myself`/`ourselves`… plus a second clue («Nobody
+  helped.», «without a barber»). `u9_l1`: «We lost. If we had trained, we would have won.» was 10 words and «We lost» does
+  not rule out the mixed conditional, so every `past-unreal` row carries a past time word in the result clause («You'd have met
+  her yesterday if you'd come.»). `u10_l3`: «The lights were off. They must have left.» became «Their car is gone. …», because
+  lights that are off do not rule out «can't have left». No sub-topic switched between `meaning` and `form`.
+- **Hub and teacher's form.** `GRAMMAR_ONLY_LESSONS` gains the ten ids (`englishHub.ts`; `hubLessonVisible` hides each until
+  its unit is signed). `GRADE_COPY[10]` (`englishGrammarReview.ts`): the lead now says «الفصلان الأول والثاني», its list of
+  two-form choices gains «الشرط الأول أو الثاني», and the check line about lessons that need a wider context now names the
+  conditionals and speculation (must and can't). Nothing else in the renderer changed: 21 sections, each labelled with its
+  semester and unit. `docs/english-grammar-g10-review.html` is now 21 units, 840 sentences and 840 form or meaning chips,
+  and `docs/english-grammar-g10-sheet.md` was regenerated; the other grades' forms and the reading forms are byte-identical
+  (tests pin them). Measured in Chromium after the last data change: at 390 px the page does not scroll sideways, and in
+  print media at 1032 px no table cell crosses the page edge and no sign-off box overlaps a row in any of the 21 units; it
+  prints at 99 A4 landscape pages.
+- **True or false is silent** and **Yes or No is not offered**, as in Semester 1; Choose and Build play the correct sentence
+  after the answer. Nothing is pictured.
+- **Tests:** `englishGrammarG10Items.test.ts` (21 lessons, 840 items, every sub-topic's size and kind pinned for all 21,
+  statements against the Semester 1 or 2 JSON, caps, uniqueness, banned names, 308 and 532, a `must of`/`could of` guard, a guard
+  that no `u6_l4` distractor has will or would, the glued-«و» check over the whole form), `englishGrammarG10.test.ts` (21 units in hub order, all unsigned, each note plain
+  text), `englishHub.test.ts` (sixteen grammar-only ids, 31 Grade 10 lessons) and, in the app,
+  `englishGrammarG10ItemGames.test.ts` (Choose, Build and True or false on all 21, Yes or No on none, no twin voiced).
+- **Verified (2026-10-24, on `ccr-d9db5f6c-mgwkuo`):** root `pnpm run typecheck` clean (api-server, mobile, scripts);
+  `@workspace/curriculum` `test` **691 tests, 691 passing** with `env -u R2_ACCESS_KEY_ID -u R2_BUCKET -u R2_ENDPOINT -u
+  R2_SECRET_ACCESS_KEY` (with the sandbox's `R2_*` variables set `r2.test.ts` fails by design, as in every earlier entry), its
+  `verify` 197 files, 3306 lessons, 0 errors; the **full mobile suite 7303 tests, 7293 passing, 10 skipped, 0 failing**
+  (360 s). The api-server suites were not run: nothing there changed. **In a browser** at 390 px in Arabic and English, web
+  build with `EXPO_PUBLIC_DEMO_MODE=true`: unsigned, the Grade 10 index has 20 rows (units 1-5), no «grammar activities» row
+  and none of the ten Semester 2 lessons, and each of their URLs says «lesson not found». Then, with
+  **a temporary sign-off on the ten Semester 2 units in the working tree** (`reviewedBy: { name: 'LOCAL CHECK', … }`, restored
+  straight after with `git checkout`; `grep -rc "LOCAL CHECK"` over `lib/curriculum/src` and `artifacts/mobile/services` shows no
+  non-zero count; `git status` shows only the docs), the index has 30 rows (units 1-10, the Semester 1 Articles lesson stays
+  unsigned) and ten «grammar activities» rows, each under its unit; every one of the ten lesson pages holds a «Grammar» section
+  of exactly Choose, Build and True or false, with no Yes or No and no flashcards. Over a round of eight in each activity on
+  `u6_l1`, `u8_l6` and `u10_l3` (two questions on the other seven), in both languages: Choose and Build play the correct
+  sentence after the answer (a recording URL and the browser voice as fallback; every question, 0 plays before answering),
+  True or false shows no speaker button before or after answering and plays nothing, nine-tile Build rounds wrap their nine
+  slots onto two rows and their tiles onto two or three, the longest Choose stem met was nine words, and there is no
+  horizontal scroll at any step. I read the screenshots (the Semester 2 index rows in both languages, a lesson page in each
+  language, nine-tile Build rounds, Choose after answering, True or false before and after answering).
+- **Not verified:** the 400 sentences by a teacher (a script cannot tell wrong English from right; the printed form is the
+  review) — **no teacher has read a sentence**; the match of each lesson id to the printed book page; on a device; audio, which
+  does not exist for these sentences (the browser check heard the fallback voice, because `english-audio` needs the OpenAI and
+  R2 keys and has not been run for them); the browser check used a temporary local sign-off, never a committed one; and the
+  `e2e/` smoke test was not run (nothing it drives changed).
+- **Where a teacher will push back (the risky lessons and rows):**
+  1. **The conditionals** (u6_l1, u6_l4, u9_l1): `imagine-vs-real` tests only that «Imagine/Suppose + past» makes `will`
+     wrong, and «Imagine you have wings. You will fly.» would be acceptable English (no row offers the opener's tense as the
+     choice). `u9_l1 third-conditional` has four rows whose twin is «If I would have known», which informal American English
+     uses; standard grammar rules it out and the plan allows it. «If she lived in Aqaba, she would swim» was changed to test
+     `would swim` / `would swam`, because «If she would live» can mean willing.
+  2. **Wish and unreal past, with one-sided answers.** `past-unreal` (u9_l1) and `wish-past-regrets` (u9_l4), 14 rows each,
+     all have the perfect side as the answer: a clean present marker (now, today) does not rule out `would have` or `had` +
+     participle, so there is no opposite side, and a student who always picks the perfect form scores full marks inside the
+     topic. The twin is ruled out by a past time word («yesterday»), which a teacher may call a form error rather than
+     meaning. «I wish I studied last year» is heard in informal speech. `wish-present` answers `were`, with no was/were
+     contrast.
+  3. **Speculation** (u10_l1, u10_l3): `must-cant` and `must-have` rest on evidence a teacher may find soft («Everyone is laughing.
+     The film must be funny.», «My keys are gone. I must have lost them.» — they could be stolen), `cant-have` is always
+     `can't have`, and «could have took» / «might have ate» are dialect forms used as `form` distractors.
+  4. **Have/get something done** (u8_l6): `service-vs-self` is decided logically (a sentence says the speaker could not,
+     did not or was away), not grammatically, and a bare `myself` could be read as emphatic; the rows carry a second clue.
+     Bare-verb distractors that make a noun with the object («car repair», «a phone fix») were replaced by -ing or
+     object-after-participle errors; «had a swimming pool dug» / «digged» may be less familiar than «built».
+  5. **Smaller:** a reported question with inverted order («He asked where did I live») is accepted in Irish and Indian
+     English (the rows follow the standard rule); «admitted cheating in the test» is British («on the test» in American
+     English); «it don't» in a zero-conditional twin is dialect, wrong in standard English; «I have the only key. He can't have entered.»
+     would read more naturally with «got in», but that makes 10 words.
+- **Known limits:** the choice between forms is tested only where something in the sentence decides it, so some topics
+  that English also allows both ways (the tense after a reporting verb, `would` in a first-conditional result) are
+  not tested at all; a wrong True or false answer shows «Correct answer: False», not the corrected sentence; nothing is
+  pictured. The reviews were one per task, a fix round for each of the first two (the Task 1 round rewrote
+  imagine-vs-real, the Task 2 round applied nine review minors) and a final whole-branch fix wave (real distractors in the
+  `u6_l4` note, the form's lead no longer says the Semester 2 lessons have no book vocabulary, softer evidence rows
+  strengthened, one near-duplicate replaced).
+- **To switch a lesson on:** a Grade 10 English teacher reads and signs that lesson's page of
+  `docs/english-grammar-g10-review.html`, printed, and checks the book-page line; audio is recorded for the correct
+  sentences; then the unit's `reviewedBy` is set in `englishGrammarG10.ts`. The lesson appears in the Grade 10 index only once
+  its unit is signed. Until audio exists the Semester 2 lessons would be spoken by the browser voice.
+
+## English audio: voice register fixed, clips trimmed and levelled, and an audit that needs no keys — 2026-10-24
+
+The English corner plays pre-voiced MP3s from the public bucket (`english-audio/<slug>.mp3`, made
+by `lib/curriculum/scripts/generate-english-audio.ts`). An audit of the 1,050 stored clips and of
+the plan found:
+
+- **Wrong register for Grade 5, 9 and 10 sentences.** The script put every grammar string in the
+  young set ("all are Grade 1–2"), so about 1,700 Grade 5/9/10 grammar strings (and more as Grade 10
+  Semester 2 lands) would have been read "to a six-year-old child … a little slowly". None of the
+  2,990 grammar strings is voiced yet, so
+  this cost nothing to fix.
+- **Dead air:** median 0.69 s of silence after the word (286 clips over 1 s, max 2.0 s), median
+  0.16 s before it (max 1.1 s); 17.6 of 32.3 minutes are outside the speech (14.0 of them after it).
+- **Size:** 128 kbps for one spoken word (29.6 MB, median 28 KB).
+- **Uneven loudness:** speech level p5 −33.2, median −29.0, p95 −25.4 dBFS, from −37.8 (`paint`)
+  to −21.6 (`duck`).
+- **One blank recording:** `tie.mp3` is 0.36 s of silence (peak −90 dBFS); nothing rejected it.
+- **No record of how a clip was made**, and **no way to check coverage without credentials.**
+
+**What changed (tooling only; the app is untouched):**
+
+- `lib/curriculum/src/englishAudioPlan.ts` (new, pure): `audioPlan()` — one item per slug with its
+  text, register, source and grades. Young = used by a Grade 1–4 lesson or grammar unit; everything
+  else teen (4,238 recordings on `main`: 1,707 young, 2,531 teen). The instructions, `PRONUNCIATION`,
+  model and voice moved here from the script, wording unchanged. `englishGrammar.ts` gained
+  `unitSpoken(unit)`; `allGrammarSpoken()` is now the union of it, same output, same order.
+- `lib/curriculum/src/englishAudioProcess.ts` (new, pure) and `scripts/audioFfmpeg.ts` (ffmpeg):
+  a verdict on the raw model output (blank: peak under −40 dBFS or no speech frame; under 0.15 s
+  or over 6 s of speech), then a gain to a −24 dBFS speech level (±12 dB, peak never over
+  −1.5 dBFS), a cut keeping 0.06 s before and 0.15 s after the speech, and a 40 kbps 24 kHz mono
+  MP3. `PROCESS_VERSION = 1`.
+- The generator rejects a bad take (listed, not uploaded), processes every kept one, and checks the
+  RESULT before uploading it (`processedVerdict`: it still passes the verdict, lost at most 0.1 s of
+  speech, kept at most 0.12 s / 0.25 s of silence, peaks within 0.5 dB of the ceiling — otherwise
+  rejected as `processing` and not stored, and the run stops if the first 10 all fail, so a broken
+  ffmpeg build damages nothing). It needs ffmpeg (exit 2) unless `--no-process` (uploaded not
+  checked or processed). It keeps `english-audio/_manifest.json` (text, register, model, voice,
+  process version, speech length, bytes per slug), merge-written every 50 uploads and at the end,
+  and stamps every upload with `x-amz-meta-process-version`. New `--reprocess`: no OpenAI key,
+  downloads each stored clip, processes it and puts it back under the same key and cache header;
+  skips clips whose metadata or manifest entry is at the current process version, leaves a failing
+  one untouched and lists it. A refused R2 credential stops the run once, like a refused TTS key.
+  Run one instance at a time.
+- **Backups:** before a stored clip is first replaced (`--reprocess`, `--force`, `--only`), it is
+  copied to `english-audio-original/<slug>.mp3` — a sibling prefix the clip listing never reads —
+  unless a backup is already there (never overwritten); a clip whose backup fails is not replaced.
+  To restore: copy `english-audio-original/<slug>.mp3` back over `english-audio/<slug>.mp3` and
+  delete the slug's entry in `_manifest.json`. A backup of one of the 1,050 pre-existing clips has
+  no process-version stamp; one made later by re-voicing a clip this script processed carries
+  `process-version=1` (CopyObject keeps metadata). Restoring with an S3 client copy keeps the
+  backup's stamp, so `--reprocess` correctly skips a stamped one; re-uploading through the
+  Cloudflare dashboard drops it, so the next `--reprocess` processes the clip. If the clip was
+  restored because processing damaged it, keep it out of the next `--reprocess` (name the others
+  with `--only`, or fix the cause first), or it is processed — and damaged — again.
+- `pnpm --filter @workspace/curriculum run english-audio-audit` (new): no credentials, `HEAD`s every
+  planned clip on the public URL (6 at a time, backoff on 429/5xx with `Retry-After`) and prints
+  coverage by grade and source; `--missing`, `--deep` (downloads and measures), `--fail-on-missing`.
+
+**Rulings, measured on the 1,050 clips.** The cut is `atrim` at sample positions computed from the
+same 10 ms frames the audit measures, not `silenceremove`: run after the gain, the latter's sliding
+window disagreed with the frames and left 0.13–0.28 s of leading or up to 0.43 s of trailing
+silence on 23 clips. The gain is computed on the speech span the result will have (a raised
+clip's soft edges join it), which moved 18 more clips inside ±1.5 dB. The cut is decided 1.5 dB
+above the −45 dBFS threshold at the output level: the encoder moves a faint frame by about a
+decibel, and many clips have a −44 to −49 dBFS click about 0.1 s before the word. The MP3 is
+written to a temp file outside the repo, not a pipe, because ffmpeg writes the gapless header only
+to a seekable output — through a pipe every clip gained 46 ms of encoder priming.
+
+**Measured (the pipeline run locally over all 1,050 downloaded clips; nothing uploaded):** `tie`
+rejected as blank; of the 1,049 kept, size median 28.1 → 5.3 KB (ratio 0.21, max 0.33), 32.3 →
+19.1 minutes, trailing silence max 0.17 s (was 2.0), leading max 0.06 s (was 1.1), speech level p5
+−24.5 / median −24.4 / p95 −24.2 dBFS with 1,046 within ±1.5 dB of −24 (the three outside —
+`paint`, `a-plate-of`, `project` — are at the +12 dB clamp), peak max −2.6 dBFS. No frame louder
+than −43.5 dBFS (output level) was cut from any clip. Speech spans are within 40 ms of the raw ones
+or longer (a raised clip's soft edges cross the threshold) except `doughnut`, 0.07 s shorter: the
+removed part is a −44 dBFS click 70 ms before the word, not the word. The upload check passes all
+1,049 processed clips, and rejects 1,042 of them when handed the untrimmed clip instead (what a
+build that ignored the cut would produce). 40 kbps keeps the spectrum
+up to 10 kHz within about 1 dB on `snake`, `safe`, `blue`, `giraffe`. The new audit, run against
+the live bucket, reproduces 1,050 voiced and 3,188 missing (190 Grade 5 and 8 Grade 9 words and
+all 2,990 grammar strings); `--deep` reproduces the figures above.
+
+**Not done:** no clip was re-voiced or reprocessed and nothing was uploaded — the generator was not
+run in any mode. Nobody listened to the processed clips. The first real run is `pnpm --filter
+@workspace/curriculum run english-audio -- --reprocess` (backs up each original it replaces
+to `english-audio-original/`, cleans the 1,049 good clips and writes the manifest;
+`tie` is listed, re-voice it with `--only tie`), then the plain run (voices the 3,188 missing,
+processed). `evening.mp3` has no trailing silence and may be cut off; listen before trusting it.
+
+**Next:** serve the clips from a custom domain instead of `r2.dev` (rate-limited), a native
+fallback and an offline cache in the app, and a speech-to-text round trip that checks each clip
+says its text.
+
+## Class-code claims wait for the teacher — 2026-10-24
+
+A student who picks their name off the **class** code used to become that child at once, so anyone who
+had the code could take any name in the class. Now the pick is held as a row in the new
+`roster_link_requests` table (migration 0017) and the teacher approves it from the class's Students tab.
+Nothing reads that table as access: an unapproved account has no `roster_links` row, so chat contacts,
+homework, exams and parent letters all see nothing. `roster_links` has no `status` column and must not get one.
+
+**What changed.** Server: `claimNeedsApproval` / `pendingLimitReached` (`lib/claimDecision.ts`), the held path in
+`linkRosterRowInTx` (`routes/auth.ts`, shared by `/claim` and `/redeem`), `GET /classes/:id/link-requests`,
+`POST /students/:id/link-requests/:requestId/approve|reject` (`routes/roster.ts`), `DELETE /auth/claim?pendingOnly=1`.
+App: `ClaimWaitingCard` + `useClaimWaiting` (shown by `claim-required`, `join-class`, and a note under the login
+code on code-only signup), `LinkRequestsBanner` on the Students tab, services `claimResult`, `claimWaiting`,
+`linkRequests`, and 16 strings (ar + en).
+
+**Rules.** Only a `self` claim made through the class code is held; per-student codes and parents link at once.
+Up to five accounts may wait on one name (409 `claim_pending_limit` for the sixth, which keeps its earlier pick);
+an account holds one waiting pick (choosing another replaces it; re-entering a held or already-linked name queues
+nothing). `POST /auth/claim` answers 202 `{pending, studentId, studentName}` for a held claim; `/redeem` answers 201
+as before with `hasRosterLink: false`, `pending`, `studentName`. Approval consumes the request, re-reads the
+sender's role (`claim_request_stale` if it is no longer a student), inserts the link (the partial unique index
+`roster_links_one_self_idx` answers `claim_already_linked`), clears the rest of that name's requests and syncs
+class threads. Switching role deletes the account's waiting requests. The student's `pending` list shows only
+requests a teacher could still answer (live student, live class of that teacher). The teacher's list says
+whether an account was just created from the class code (`codeSignup`) because such an account is named after the
+roster name it picked and so proves nothing; rows asking for the same name are flagged as competing.
+
+**Verified (final head, locally).** Root `pnpm run typecheck` clean. api-server `pnpm build` then `pnpm test`
+against a throwaway Postgres 16 with `REQUIRE_DB_TESTS=true`: 2524 tests, 2524 pass, 0 skipped — including
+`claimApproval.db.test.ts` and `linkRequests.db.test.ts`, and both again with `RLS_ENFORCE=on`. `lib/db`
+`pnpm test` (the row-level-security suites, `rlsCoverage`, `rlsMatrix`, `rlsDiff`) against the migrated throwaway
+database: 66 tests, 66 pass. Mobile `pnpm test`: 7245 tests, 7235 pass, 0 fail, 10 skipped. The math-verifier suite
+was not run here (no `sympy`); CI runs it and the branch does not touch it. CI on the pull request ran the same
+suites on each pushed head.
+
+**Not verified.** None of the screens (waiting card, join-class, signup note, banner) was run in a browser or on a
+device: layout, RTL, dark mode and the real approve/reject round trip are unchecked. Approve-versus-withdraw
+races have no interleaving test (outcomes are pinned; the `FOR UPDATE` on the sender's `users` row is what
+serialises approve against a role switch). `rlsDiff` has no step for the new teacher routes; their queries were
+read against the policies and run under `RLS_ENFORCE=on` in the HTTP tests only.
+
+**Known limits.** (1) The teacher gets no push or badge: a student waits until the teacher opens the class's
+Students tab, and the student has no push on approval either — they use "Check again". (2) A rejected student
+can ask again, and a squatter can repeat that up to the cap of five; the teacher rejects them one by one.
+(3) A held student with no class lands on the grade picker after signup — the routing gate (`needsRosterClaim`,
+parents only) was deliberately not widened. (4) `codeSignup` turns false once a code-only account adds an
+email, so such a request shows the name twice again. (5) Analytics: `class_joined` now fires only for a link made
+at once; a held join and an approval emit no event. (6) `failRoster` in `routes/roster.ts` logs the raw error
+object (existing behaviour, three more callers now). (7) **Rollout:** installed Android builds read any 2xx from
+`/auth/claim` as joined — on a 202 an old build shows the app empty (no data is exposed) and sends the student back
+to the code screen on the next `/auth/me`; teachers see the banner only on a build that has this change, and
+the `production` OTA is manual.
 
 ## Tests for the code-only account routes — 2026-10-24
 
