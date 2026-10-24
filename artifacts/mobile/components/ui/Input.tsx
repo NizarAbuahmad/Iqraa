@@ -17,7 +17,7 @@ interface InputProps extends TextInputProps {
 
 export function Input({
   label, error, leftIcon, rightIcon, onRightIconPress, rightIconLabel,
-  hint, style, isRTL = false, ...props
+  hint, style, isRTL = false, onBlur, ...props
 }: InputProps) {
   const colors = useColors();
   const [focused, setFocused] = useState(false);
@@ -64,7 +64,8 @@ export function Input({
           placeholderTextColor={colors.mutedForeground}
 
           onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          // A caller's onBlur runs after the field's own, which it must not replace (the focus ring).
+          onBlur={e => { setFocused(false); onBlur?.(e); }}
           // The visible label is a sibling Text, which a screen reader does not
           // tie to the field; name the field with it unless the caller did.
           accessibilityLabel={label}

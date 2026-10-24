@@ -240,7 +240,7 @@ export default function ClaimRequiredScreen() {
                   {t('guardianSwitchNote')}
                 </Text>
               ) : null}
-              <View style={[styles.roleActions,{ flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <View style={[styles.roleActions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <Button
                   label={t('claimRequiredSwitchSubmit')}
                   onPress={handleSwitchRole}

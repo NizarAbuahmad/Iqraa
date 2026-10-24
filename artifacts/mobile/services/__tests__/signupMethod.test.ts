@@ -11,7 +11,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { signupForm, needsAgeConfirmation, switchNeedsAgeConfirmation } from '../signupMethod.ts';
+import { signupForm, needsAgeConfirmation, switchNeedsAgeConfirmation, signupPlan, guardianConfigStale } from '../signupMethod.ts';
 
 describe('signupForm', () => {
   it('gives a teacher the email form and a parent the code form, whatever method was tapped', () => {
@@ -86,8 +86,6 @@ describe('switchNeedsAgeConfirmation with the parent-approval switch', () => {
     assert.equal(switchNeedsAgeConfirmation('student', 'student', false), false);
   });
 });
-
-import { signupPlan, guardianConfigStale } from '../signupMethod.ts';
 
 describe('signupPlan', () => {
   const roles = ['teacher', 'parent', 'student', null] as const;

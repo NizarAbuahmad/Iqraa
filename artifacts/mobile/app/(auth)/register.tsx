@@ -76,6 +76,7 @@ export default function RegisterScreen() {
   const { askAge, askParent, waitingForConfig } = signupPlan(chosenRole, studentMethod, guardian.enabled, guardian.loading);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [parentEmail, setParentEmail] = useState('');
+  const [parentTouched, setParentTouched] = useState(false);
   const parentOk = !askParent || looksLikeEmail(parentEmail);
   const readyToSignUp = termsAccepted && (!askAge || ageConfirmed) && parentOk && !waitingForConfig;
   // What the hints under the Google button ('Below') and the submit ('First')
@@ -460,11 +461,14 @@ export default function RegisterScreen() {
               hint={t('registerParentEmailHint')}
               value={parentEmail}
               onChangeText={setParentEmail}
-              error={parentEmail.trim().length > 0 && !parentOk ? t('errParentEmailInvalid') : undefined}
+              onBlur={() => setParentTouched(true)}
+              // Not from the first keystroke: after the field was left, or once it holds an «@».
+              error={(parentTouched || parentEmail.includes('@')) && parentEmail.trim().length > 0 && !parentOk ? t('errParentEmailInvalid') : undefined}
               keyboardType="email-address"
               autoCapitalize="none"
-              autoComplete="email"
-              textContentType="emailAddress"
+              // Not the student's own address: no autofill suggestion for this field.
+              autoComplete="off"
+              textContentType="none"
               isRTL={isRTL}
             />
           ) : null}

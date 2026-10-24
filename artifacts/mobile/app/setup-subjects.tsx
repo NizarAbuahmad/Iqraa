@@ -143,7 +143,13 @@ export default function SetupSubjectsScreen() {
     } catch (e) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       // The server's switch differs from the copy this screen read: ask again.
-      if (e instanceof ApiError && guardianConfigStale(e.code)) { resetGuardianConfigCache(); guardian.refresh(); }
+      if (e instanceof ApiError && guardianConfigStale(e.code)) {
+        resetGuardianConfigCache();
+        guardian.refresh();
+        // The app thought the switch was on and switched without a tick, but the server wants one: open the box
+        // (the refresh above brings the tick row in) rather than leave the pill on teacher with only an error.
+        if (role === 'student') { setStudentPending(true); setAgeOk(false); }
+      }
       setError(t(e instanceof ApiError && e.code === 'age_confirmation_required' ? 'errAgeConfirmRequired' : 'claimRequiredSwitchFailed'));
       setSwitchingRole(false);
     }
