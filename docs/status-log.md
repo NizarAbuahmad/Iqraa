@@ -103,14 +103,12 @@ recognisers forgive them. A mismatch means a person should listen, not that the 
 sound the same to the recogniser and are folded to one form. The `er` and `ing` suffix closes can land a different word in the
 Close table (number / numb). Contractions are not expanded («I'm» / «I am» differ), and «prise» / «prize» fold together. A
 transcription POST aborted by the 60 s timeout and retried could in theory be billed twice (OpenAI bills on completion; unlikely),
-and a body that stalls after the headers arrive is not retried (one `error` row). Left as
-they are: The first run may be
+and a body that stalls after the headers arrive is not retried (one `error` row). The first run may be
 noisy: the `close` and `mismatch` strictness is deliberate (a one-letter or one-word difference in a short text is the very
 confusion being looked for), and if a real run shows too many harmless rows it can be loosened by a flag later; no such flag
 exists now. A host that cannot be reached stops the run after 10 clips in a row fail to connect (exit 2, «the transcription API
 is unreachable»); a report written after a stop, or with error rows, never says «Nothing needs a listen». The output folders of
-`--cache` and `--out` are created before the first request. Left as
-they are: Ctrl+C exits with `process.exit` after saving the cache; `--out x.json` names its JSON `x.json.json`; the
+`--cache` and `--out` are created before the first request. Left as they are: Ctrl+C exits with `process.exit` after saving the cache; `--out x.json` names its JSON `x.json.json`; the
 `--cache`/`--out` collision check is case-sensitive.
 
 
