@@ -77,6 +77,11 @@ export const GRAMMAR_ONLY_LESSONS: readonly string[] = [
   'kbl-eng-s2-nccd-u7_l1',
   'kbl-eng-s2-nccd-u7_l5',
   'kbl-eng-s2-nccd-u8_l1',
+  'kbl-eng-s2-nccd-u8_l6',
+  'kbl-eng-s2-nccd-u9_l1',
+  'kbl-eng-s2-nccd-u9_l4',
+  'kbl-eng-s2-nccd-u10_l1',
+  'kbl-eng-s2-nccd-u10_l3',
 ];
 
 const BOOKS: [number, 1 | 2, NccdCurriculumFile, (id: string) => string][] = [

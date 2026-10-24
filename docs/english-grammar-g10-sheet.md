@@ -760,3 +760,238 @@ Not reviewed yet — shown to nobody.
 | Is this bread made locally? | — | **made** / make | _Is this bread make locally?_ |
 | The new rules weren't explained to us. | — | **explained** / explain | _The new rules weren't explain to us._ |
 | Who was the prize given to? | — | **given** / gave | _Who was the prize gave to?_ |
+
+## Semester 2 · Unit 8 — The evolution of advertising
+
+Not reviewed yet — shown to nobody.
+
+| Sentence | Picture | Choose | True or false: wrong picture |
+|---|---|---|---|
+| I had my car repaired yesterday. | — | **repaired** / repair | _I had my car repair yesterday._ |
+| Dad had his eyes tested. | — | **tested** / testing | _Dad had his eyes testing._ |
+| They had a swimming pool dug. | — | **dug** / digged | _They had a swimming pool digged._ |
+| She had her bedroom decorated. | — | **decorated** / decorate | _She had her bedroom decorate._ |
+| He had his letter translated into English. | — | **translated** / translate | _He had his letter translate into English._ |
+| I'm having a new sink installed tomorrow. | — | **installed** / install | _I'm having a new sink install tomorrow._ |
+| They had the pizza delivered to school. | — | **delivered** / deliver | _They had the pizza deliver to school._ |
+| He has his suits made in Amman. | — | **has** / have | _He have his suits made in Amman._ |
+| Did you have the old tree removed? | — | **removed** / remove | _Did you have the old tree remove?_ |
+| We are having the walls knocked down. | — | **knocked** / knock | _We are having the walls knock down._ |
+| I had the parcel sent to Irbid. | — | **sent** / send | _I had the parcel send to Irbid._ |
+| We have the lift checked every month. | — | **checked** / checking | _We have the lift checking every month._ |
+| She got her phone fixed. | — | **fixed** / fix | _She got her phone fix._ |
+| Dad got his watch repaired. | — | **his watch repaired** / repaired his watch | _Dad got repaired his watch._ |
+| Where did you get your glasses made? | — | **made** / make | _Where did you get your glasses make?_ |
+| You should get your passport renewed. | — | **renewed** / renew | _You should get your passport renew._ |
+| I'll get my name written on the cake. | — | **written** / wrote | _I'll get my name wrote on the cake._ |
+| He got his tooth pulled out. | — | **pulled** / pull | _He got his tooth pull out._ |
+| We got the broken window replaced. | — | **replaced** / replace | _We got the broken window replace._ |
+| Let's get the old sofa taken away. | — | **taken** / took | _Let's get the old sofa took away._ |
+| She gets her car serviced every spring. | — | **gets** / get | _She get her car serviced every spring._ |
+| I got my school bag mended. | — | **my school bag mended** / mended my school bag | _I got mended my school bag._ |
+| Did you get the tickets printed? | — | **printed** / print | _Did you get the tickets print?_ |
+| They got their house painted white. | — | **their house painted** / painted their house | _They got painted their house white._ |
+| I cleaned the windows myself. | — | **cleaned the windows** / had the windows cleaned | _I had the windows cleaned myself._ |
+| We painted our bedroom ourselves. | — | **painted our bedroom** / had our bedroom painted | _We had our bedroom painted ourselves._ |
+| Dad fixed the tap himself. He didn't call anyone. | — | **fixed the tap** / had the tap fixed | _Dad had the tap fixed himself. He didn't call anyone._ |
+| She knitted this scarf with her own hands. | — | **knitted this scarf** / had this scarf knitted | _She had this scarf knitted with her own hands._ |
+| I repaired my bike myself with my dad's tools. | — | **repaired my bike** / had my bike repaired | _I had my bike repaired myself with my dad's tools._ |
+| My brother cuts his hair himself. | — | **cuts his hair** / has his hair cut | _My brother has his hair cut himself._ |
+| We washed the car ourselves to save money. | — | **washed the car** / had the car washed | _We had the car washed ourselves to save money._ |
+| Mum baked the birthday cake herself. | — | **baked the birthday cake** / had the birthday cake baked | _Mum had the birthday cake baked herself._ |
+| I can't cut hair, so I had mine cut. | — | **had mine cut** / cut mine | _I can't cut hair, so I cut mine._ |
+| Dad can't repair cars, so he gets his fixed. | — | **gets his fixed** / fixes his | _Dad can't repair cars, so he fixes his._ |
+| She can't sew, so she had the dress made. | — | **had the dress made** / made the dress | _She can't sew, so she made the dress._ |
+| I didn't iron my shirts. I had them ironed. | — | **had them ironed** / ironed them | _I didn't iron my shirts. I ironed them._ |
+| We were travelling, so we had the plants watered. | — | **had the plants watered** / watered the plants | _We were travelling, so we watered the plants._ |
+| I had my suit shortened. A tailor did it. | — | **had my suit shortened** / shortened my suit | _I shortened my suit. A tailor did it._ |
+| We had our photo taken. A photographer took it. | — | **had our photo taken** / took our photo | _We took our photo. A photographer took it._ |
+| We had our garden designed. An expert did it. | — | **had our garden designed** / designed our garden | _We designed our garden. An expert did it._ |
+
+## Semester 2 · Unit 9 — The power of nature
+
+Not reviewed yet — shown to nobody.
+
+| Sentence | Picture | Choose | True or false: wrong picture |
+|---|---|---|---|
+| If I had known, I would have called. | — | **had known** / would have known | _If I would have known, I would have called._ |
+| If we'd left earlier, we'd have seen the start. | — | **have seen** / have saw | _If we'd left earlier, we'd have saw the start._ |
+| If she had studied, she would have passed. | — | **had studied** / would have studied | _If she would have studied, she would have passed._ |
+| If it had rained, we would have stayed in. | — | **had rained** / had rain | _If it had rain, we would have stayed in._ |
+| If you had phoned, I would have answered. | — | **would have answered** / would have answer | _If you had phoned, I would have answer._ |
+| If he had seen me, he would have waved. | — | **would have waved** / would had waved | _If he had seen me, he would had waved._ |
+| If they had trained harder, they would have won. | — | **would have won** / would have win | _If they had trained harder, they would have win._ |
+| If you had told me, I would have come. | — | **had told** / had tell | _If you had tell me, I would have come._ |
+| Our friends would have helped if we had asked. | — | **had asked** / would have asked | _Our friends would have helped if we would have asked._ |
+| If he hadn't fallen, he would have finished first. | — | **hadn't fallen** / hadn't fell | _If he hadn't fell, he would have finished first._ |
+| We wouldn't have been late if we had hurried. | — | **had hurried** / would have hurried | _We wouldn't have been late if we would have hurried._ |
+| If the bus had come, we'd have taken it. | — | **had come** / had came | _If the bus had came, we'd have taken it._ |
+| What would you have done if you had failed? | — | **done** / did | _What would you have did if you had failed?_ |
+| If she had driven, we'd have arrived sooner. | — | **had driven** / had drove | _If she had drove, we'd have arrived sooner._ |
+| You'd have met her yesterday if you'd come. | — | **have met** / meet | _You'd meet her yesterday if you'd come._ |
+| I'd have called yesterday, but my phone died. | — | **have called** / call | _I'd call yesterday, but my phone died._ |
+| Without the storm, we'd have sailed two days ago. | — | **have sailed** / sail | _Without the storm, we'd sail two days ago._ |
+| She would have won last week with more practice. | — | **would have won** / would win | _She would win last week with more practice._ |
+| If you'd asked, I'd have helped earlier today. | — | **have helped** / help | _If you'd asked, I'd help earlier today._ |
+| We'd have arrived an hour ago by taxi. | — | **have arrived** / arrive | _We'd arrive an hour ago by taxi._ |
+| I was ill. Otherwise, I'd have gone last Friday. | — | **have gone** / go | _I was ill. Otherwise, I'd go last Friday._ |
+| I'd have stayed longer at yesterday's party. | — | **have stayed** / stay | _I'd stay longer at yesterday's party._ |
+| With a car, we'd have visited Petra last weekend. | — | **have visited** / visit | _With a car, we'd visit Petra last weekend._ |
+| Without your help, I'd have failed last term. | — | **have failed** / fail | _Without your help, I'd fail last term._ |
+| If he'd played, he'd have scored last night. | — | **have scored** / score | _If he'd played, he'd score last night._ |
+| With more money, I'd have flown there last month. | — | **have flown** / fly | _With more money, I'd fly there last month._ |
+| Outside the freezer, the ice would have melted yesterday. | — | **would have melted** / would melt | _Outside the freezer, the ice would melt yesterday._ |
+| I'd have told you last night, but I forgot. | — | **have told** / tell | _I'd tell you last night, but I forgot._ |
+| She would have helped if she had known. | — | **would have helped** / would had helped | _She would had helped if she had known._ |
+| I would have bought it, but it was expensive. | — | **would have bought** / would have buy | _I would have buy it, but it was expensive._ |
+| He would have come, but nobody asked him. | — | **would have come** / would have came | _He would have came, but nobody asked him._ |
+| We would have swum if it had been sunny. | — | **swum** / swam | _We would have swam if it had been sunny._ |
+| You would have loved the concert. | — | **loved** / love | _You would have love the concert._ |
+| They wouldn't have lost if they had tried. | — | **wouldn't have lost** / wouldn't have lose | _They wouldn't have lose if they had tried._ |
+| I'd have walked, but it was raining. | — | **have walked** / have walk | _I'd have walk, but it was raining._ |
+| Would you have gone without me? | — | **gone** / went | _Would you have went without me?_ |
+| She would have been angry if you had lied. | — | **been** / be | _She would have be angry if you had lied._ |
+| The plants would have died without water. | — | **died** / die | _The plants would have die without water._ |
+| We would have taken photos, but we forgot. | — | **taken** / took | _We would have took photos, but we forgot._ |
+| He would have written, but he was busy. | — | **written** / wrote | _He would have wrote, but he was busy._ |
+
+## Semester 2 · Unit 9 — The power of nature
+
+Not reviewed yet — shown to nobody.
+
+| Sentence | Picture | Choose | True or false: wrong picture |
+|---|---|---|---|
+| I wish I had a bigger room. | — | **had** / have | _I wish I have a bigger room._ |
+| I wish I knew the answer. | — | **knew** / know | _I wish I know the answer._ |
+| I wish I lived near the sea. | — | **lived** / live | _I wish I live near the sea._ |
+| She wishes she had more free time. | — | **had** / has | _She wishes she has more free time._ |
+| I wish I could speak French. | — | **could** / can | _I wish I can speak French._ |
+| I wish my friends were here. | — | **were** / are | _I wish my friends are here._ |
+| We wish we owned a car. | — | **owned** / own | _We wish we own a car._ |
+| I wish I didn't have so much homework. | — | **didn't** / don't | _I wish I don't have so much homework._ |
+| He wishes he were taller. | — | **were** / is | _He wishes he is taller._ |
+| Do you wish you lived in Amman? | — | **lived** / live | _Do you wish you live in Amman?_ |
+| My sister wishes she spoke English well. | — | **spoke** / speaks | _My sister wishes she speaks English well._ |
+| I wish I understood maths better. | — | **understood** / understand | _I wish I understand maths better._ |
+| I wish the shops opened earlier. | — | **opened** / open | _I wish the shops open earlier._ |
+| I wish my phone worked. | — | **worked** / works | _I wish my phone works._ |
+| I wish I had studied last year. | — | **had studied** / studied | _I wish I studied last year._ |
+| I wish I had slept more last night. | — | **had slept** / slept | _I wish I slept more last night._ |
+| She wishes she had come to the party yesterday. | — | **had come** / came | _She wishes she came to the party yesterday._ |
+| I wish I hadn't eaten so much yesterday. | — | **hadn't eaten** / didn't eat | _I wish I didn't eat so much yesterday._ |
+| We wish we had visited Petra last spring. | — | **had visited** / visited | _We wish we visited Petra last spring._ |
+| If only I had saved money last year. | — | **had saved** / saved | _If only I saved money last year._ |
+| I wish I had taken photos last summer. | — | **had taken** / took | _I wish I took photos last summer._ |
+| He wishes he hadn't said that last night. | — | **hadn't said** / didn't say | _He wishes he didn't say that last night._ |
+| I wish I had left an hour ago. | — | **had left** / left | _I wish I left an hour ago._ |
+| If only we had booked the tickets last week. | — | **had booked** / booked | _If only we booked the tickets last week._ |
+| My brother wishes he had trained harder last season. | — | **had trained** / trained | _My brother wishes he trained harder last season._ |
+| I wish I had called my grandmother last weekend. | — | **had called** / called | _I wish I called my grandmother last weekend._ |
+| If only I had checked yesterday's homework. | — | **had checked** / checked | _If only I checked yesterday's homework._ |
+| She wishes she hadn't missed the bus yesterday. | — | **hadn't missed** / didn't miss | _She wishes she didn't miss the bus yesterday._ |
+| If only I had listened to Mum! | — | **had listened** / had listen | _If only I had listen to Mum!_ |
+| If only I had known the truth! | — | **had known** / had knew | _If only I had knew the truth!_ |
+| If only we had left earlier! | — | **had left** / had leave | _If only we had leave earlier!_ |
+| If only I could swim! | — | **could swim** / could to swim | _If only I could to swim!_ |
+| If only it would stop raining! | — | **would stop** / would stops | _If only it would stops raining!_ |
+| If only I hadn't lost my phone! | — | **hadn't lost** / hadn't lose | _If only I hadn't lose my phone!_ |
+| If only she had told me sooner! | — | **had told** / had tell | _If only she had tell me sooner!_ |
+| If only we hadn't eaten all the cake! | — | **hadn't eaten** / hadn't ate | _If only we hadn't ate all the cake!_ |
+| If only I had brought an umbrella! | — | **had brought** / had bring | _If only I had bring an umbrella!_ |
+| If only he could drive! | — | **could drive** / could drove | _If only he could drove!_ |
+| If only I hadn't forgotten her birthday! | — | **hadn't forgotten** / hadn't forget | _If only I hadn't forget her birthday!_ |
+| If only the bus had come on time! | — | **had come** / had came | _If only the bus had came on time!_ |
+
+## Semester 2 · Unit 10 — Food for thought
+
+Not reviewed yet — shown to nobody.
+
+| Sentence | Picture | Choose | True or false: wrong picture |
+|---|---|---|---|
+| The lights are on, so they must be home. | — | **must** / can't | _The lights are on, so they can't be home._ |
+| He has just eaten, so he can't be hungry. | — | **can't** / must | _He has just eaten, so he must be hungry._ |
+| You've walked for hours. You must be tired. | — | **must** / can't | _You've walked for hours. You can't be tired._ |
+| She's only ten, so she can't be a teacher. | — | **can't** / must | _She's only ten, so she must be a teacher._ |
+| Everyone is laughing. The film must be funny. | — | **must** / can't | _Everyone is laughing. The film can't be funny._ |
+| He's in Amman, so he can't be in Aqaba. | — | **can't** / must | _He's in Amman, so he must be in Aqaba._ |
+| It's locked from inside, so they must be in. | — | **must** / can't | _It's locked from inside, so they can't be in._ |
+| It's very cheap, so it can't be real gold. | — | **can't** / must | _It's very cheap, so it must be real gold._ |
+| It has my name, so it must be mine. | — | **must** / can't | _It has my name, so it can't be mine._ |
+| The box is empty, so it can't be heavy. | — | **can't** / must | _The box is empty, so it must be heavy._ |
+| You're shivering. You must be cold. | — | **must** / can't | _You're shivering. You can't be cold._ |
+| The shop is dark, so it can't be open. | — | **can't** / must | _The shop is dark, so it must be open._ |
+| He won the race, so he must be fast. | — | **must** / can't | _He won the race, so he can't be fast._ |
+| It's midnight, so he can't be at school. | — | **can't** / must | _It's midnight, so he must be at school._ |
+| She might be late today. | — | **might be** / might is | _She might is late today._ |
+| He may be at the library. | — | **may be** / may to be | _He may to be at the library._ |
+| They might not know the answer. | — | **might not know** / might not to know | _They might not to know the answer._ |
+| It may rain later. | — | **may rain** / may rains | _It may rains later._ |
+| The test might be difficult. | — | **be** / been | _The test might been difficult._ |
+| Your keys may be in the car. | — | **may be** / may are | _Your keys may are in the car._ |
+| She might not be at home. | — | **not be** / not to be | _She might not to be at home._ |
+| He may have a cold. | — | **may have** / may has | _He may has a cold._ |
+| We might need more chairs. | — | **might need** / might needs | _We might needs more chairs._ |
+| That may not be true. | — | **may not be** / may not | _That may not true._ |
+| The museum might close early today. | — | **might close** / might to close | _The museum might to close early today._ |
+| My brother may know her number. | — | **may know** / may knows | _My brother may knows her number._ |
+| He must be sleeping now. | — | **be sleeping** / sleeping | _He must sleeping now._ |
+| They might be watching TV. | — | **be watching** / be watch | _They might be watch TV._ |
+| She can't be working today. | — | **be working** / working | _She can't working today._ |
+| Dad may be cooking dinner. | — | **be cooking** / is cooking | _Dad may is cooking dinner._ |
+| You must be joking! | — | **be joking** / be joke | _You must be joke!_ |
+| It might be raining in Irbid. | — | **be raining** / raining | _It might raining in Irbid._ |
+| They can't be playing outside in this storm. | — | **be playing** / be play | _They can't be play outside in this storm._ |
+| She must be studying for her exam. | — | **studying** / study | _She must be study for her exam._ |
+| He might be waiting at the bus stop. | — | **waiting** / wait | _He might be wait at the bus stop._ |
+| Mum may be resting, so be quiet. | — | **resting** / rest | _Mum may be rest, so be quiet._ |
+| The children must be having fun. | — | **having** / have | _The children must be have fun._ |
+| Someone might be using the computer. | — | **using** / use | _Someone might be use the computer._ |
+| His car is here. He can't be driving. | — | **be driving** / driving | _His car is here. He can't driving._ |
+| They must be travelling by train. | — | **travelling** / travel | _They must be travel by train._ |
+
+## Semester 2 · Unit 10 — Food for thought
+
+Not reviewed yet — shown to nobody.
+
+| Sentence | Picture | Choose | True or false: wrong picture |
+|---|---|---|---|
+| The ground is wet. It must have rained. | — | **must have** / can't have | _The ground is wet. It can't have rained._ |
+| Their car is gone. They must have left. | — | **must have** / can't have | _Their car is gone. They can't have left._ |
+| She's holding the cup. She must have won. | — | **must have** / can't have | _She's holding the cup. She can't have won._ |
+| He ate three burgers. He must have been hungry. | — | **must have** / can't have | _He ate three burgers. He can't have been hungry._ |
+| There's snow everywhere. It must have snowed. | — | **must have** / can't have | _There's snow everywhere. It can't have snowed._ |
+| You're soaking! You must have walked in the rain. | — | **must have** / can't have | _You're soaking! You can't have walked in the rain._ |
+| The cake is gone. Someone must have eaten it. | — | **must have** / can't have | _The cake is gone. Someone can't have eaten it._ |
+| The grass is short. Someone must have cut it. | — | **must have** / can't have | _The grass is short. Someone can't have cut it._ |
+| The house smells of bread. Mum must have baked. | — | **must have** / can't have | _The house smells of bread. Mum can't have baked._ |
+| The glass is broken. It must have fallen. | — | **must have** / can't have | _The glass is broken. It can't have fallen._ |
+| My keys are gone. I must have lost them. | — | **must have** / can't have | _My keys are gone. I can't have lost them._ |
+| There are footprints. Someone must have walked here. | — | **must have** / can't have | _There are footprints. Someone can't have walked here._ |
+| Everyone is clapping. She must have sung well. | — | **must have** / can't have | _Everyone is clapping. She can't have sung well._ |
+| A letter has arrived. The postman must have come. | — | **must have** / can't have | _A letter has arrived. The postman can't have come._ |
+| He might have forgotten the key. | — | **might have forgotten** / might forgot | _He might forgot the key._ |
+| She could have missed the bus. | — | **could have missed** / could have miss | _She could have miss the bus._ |
+| They might have gone home. | — | **have gone** / had gone | _They might had gone home._ |
+| You could have left it at school. | — | **left** / leave | _You could have leave it at school._ |
+| The letter might have got lost. | — | **have got** / has got | _The letter might has got lost._ |
+| He might not have heard you. | — | **not have heard** / not have hear | _He might not have hear you._ |
+| Someone could have taken your pen. | — | **taken** / took | _Someone could have took your pen._ |
+| It might have been the wind. | — | **been** / be | _It might have be the wind._ |
+| She might have called while we were out. | — | **have called** / called | _She might called while we were out._ |
+| They could have stopped for lunch. | — | **have stopped** / had stopped | _They could had stopped for lunch._ |
+| The dog might have eaten your homework. | — | **eaten** / ate | _The dog might have ate your homework._ |
+| Could he have lost his way? | — | **have lost** / have lose | _Could he have lose his way?_ |
+| She was with me. She can't have taken it. | — | **can't have** / must have | _She was with me. She must have taken it._ |
+| He was asleep. He can't have called. | — | **can't have** / must have | _He was asleep. He must have called._ |
+| The shop was closed. She can't have shopped there. | — | **can't have** / must have | _The shop was closed. She must have shopped there._ |
+| The food is untouched. They can't have been hungry. | — | **can't have** / must have | _The food is untouched. They must have been hungry._ |
+| The road is dry. It can't have rained. | — | **can't have** / must have | _The road is dry. It must have rained._ |
+| He stayed home. He can't have gone shopping. | — | **can't have** / must have | _He stayed home. He must have gone shopping._ |
+| That's impossible! He can't have finished already. | — | **can't have** / must have | _That's impossible! He must have finished already._ |
+| She's only six. She can't have written this. | — | **can't have** / must have | _She's only six. She must have written this._ |
+| I have the only key. He can't have entered. | — | **can't have** / must have | _I have the only key. He must have entered._ |
+| My phone was off. You can't have reached me. | — | **can't have** / must have | _My phone was off. You must have reached me._ |
+| He was in hospital. He can't have played yesterday. | — | **can't have** / must have | _He was in hospital. He must have played yesterday._ |
+| They were out. They can't have heard the bell. | — | **can't have** / must have | _They were out. They must have heard the bell._ |
+| She doesn't drive. She can't have driven here. | — | **can't have** / must have | _She doesn't drive. She must have driven here._ |
+| It was dark. You can't have seen his face. | — | **can't have** / must have | _It was dark. You must have seen his face._ |

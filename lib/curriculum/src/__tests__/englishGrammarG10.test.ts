@@ -5,7 +5,7 @@ import { offeredGrammar } from '../englishGrammar.ts';
 
 const IDS = [
   ...['u1_l1', 'u1_l5', 'u2_l1', 'u2_l4', 'u3_l1', 'u3_l4', 'u3_l5', 'u4_l1', 'u4_l4', 'u5_l1', 'u5_l3'].map(s => `kbl-eng-s1-nccd-${s}`),
-  ...['u6_l1', 'u6_l4', 'u7_l1', 'u7_l5', 'u8_l1'].map(s => `kbl-eng-s2-nccd-${s}`),
+  ...['u6_l1', 'u6_l4', 'u7_l1', 'u7_l5', 'u8_l1', 'u8_l6', 'u9_l1', 'u9_l4', 'u10_l1', 'u10_l3'].map(s => `kbl-eng-s2-nccd-${s}`),
 ];
 
 describe('Grade 10 grammar units', () => {

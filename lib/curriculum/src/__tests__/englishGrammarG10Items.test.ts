@@ -19,6 +19,7 @@ const L2 = (s: string) => `kbl-eng-s2-nccd-${s}`;
 const FIRST = ['u1_l1', 'u1_l5', 'u2_l1', 'u2_l4', 'u3_l1'].map(L);
 const REST = ['u3_l4', 'u3_l5', 'u4_l1', 'u4_l4', 'u5_l1', 'u5_l3'].map(L);
 const S2A = ['u6_l1', 'u6_l4', 'u7_l1', 'u7_l5', 'u8_l1'].map(L2);
+const S2B = ['u8_l6', 'u9_l1', 'u9_l4', 'u10_l1', 'u10_l3'].map(L2);
 const sentencesOf = (id: string) => unitSentences(grammarUnit(id)!);
 const ids = () => G10_ITEM_LESSONS.map(l => l.lessonId);
 
@@ -40,11 +41,16 @@ const SIZES: Record<string, Record<string, [number, 'form' | 'meaning']>> = {
   [L2('u7_l1')]: { 'verb-patterns': [16, 'form'], 'admit-deny-suggest': [14, 'form'], 'tell-ask-warn': [10, 'form'] },
   [L2('u7_l5')]: { 'ask-wonder': [14, 'form'], 'if-whether': [12, 'form'], 'word-order': [14, 'form'] },
   [L2('u8_l1')]: { 'present-past': [14, 'form'], 'with-modals': [12, 'form'], 'questions-negatives': [14, 'form'] },
+  [L2('u8_l6')]: { 'have-something-done': [12, 'form'], 'get-something-done': [12, 'form'], 'service-vs-self': [16, 'meaning'] },
+  [L2('u9_l1')]: { 'third-conditional': [14, 'form'], 'past-unreal': [14, 'meaning'], 'would-have-forms': [12, 'form'] },
+  [L2('u9_l4')]: { 'wish-present': [14, 'form'], 'wish-past-regrets': [14, 'meaning'], 'if-only': [12, 'form'] },
+  [L2('u10_l1')]: { 'must-cant': [14, 'meaning'], 'might-may': [12, 'form'], 'be-v-ing': [14, 'form'] },
+  [L2('u10_l3')]: { 'must-have': [14, 'meaning'], 'might-could-have': [12, 'form'], 'cant-have': [14, 'meaning'] },
 };
 
 describe('Grade 10 authored lessons', () => {
   it('are the hub lessons in order, unsigned and offered to nobody', () => {
-    assert.deepEqual(ids(), [...FIRST, ...REST, ...S2A]);
+    assert.deepEqual(ids(), [...FIRST, ...REST, ...S2A, ...S2B]);
     for (const id of ids()) {
       assert.ok(hubLesson(id), id);
       assert.equal(hubLesson(id)!.grade, 10, id);
@@ -69,12 +75,12 @@ describe('Grade 10 authored lessons', () => {
     }
   });
 
-  it('are 16 lessons and 640 items, 222 of them meaning-decided', () => {
-    assert.equal(G10_ITEM_LESSONS.length, 16);
-    assert.equal(G10_ITEM_LESSONS.reduce((n, l) => n + sentencesOf(l.lessonId).length, 0), 640);
-    assert.equal(grammarUnitsForGrade(10).length, 16);
+  it('are 21 lessons and 840 items, 308 of them meaning-decided', () => {
+    assert.equal(G10_ITEM_LESSONS.length, 21);
+    assert.equal(G10_ITEM_LESSONS.reduce((n, l) => n + sentencesOf(l.lessonId).length, 0), 840);
+    assert.equal(grammarUnitsForGrade(10).length, 21);
     const meaning = ids().flatMap(id => sentencesOf(id)).filter(x => x.kind === 'meaning').length;
-    assert.equal(meaning, 222);
+    assert.equal(meaning, 308);
     assert.equal(meaning, Object.values(SIZES).flatMap(s => Object.values(s)).filter(([, k]) => k === 'meaning').reduce((n, [size]) => n + size, 0));
   });
 
@@ -147,6 +153,12 @@ describe('Grade 10 authored lessons', () => {
     }
   });
 
+  it('never write must of or could of in a past-speculation sentence or its twin', () => {
+    for (const x of sentencesOf(L2('u10_l3'))) {
+      assert.ok(!/\b(must|might|could|can't) of\b/i.test(x.text + ' ' + x.claim!.falseText), x.text);
+    }
+  });
+
   it('send true sentences to the audio list and no twin', () => {
     const spoken = new Set(allGrammarSpoken());
     for (const id of ids()) for (const x of sentencesOf(id)) {
@@ -172,13 +184,14 @@ describe('the Grade 10 teacher form', () => {
     for (const l of G10_ITEM_LESSONS) assert.ok(html.includes(l.statement.replace(/'/g, '&#39;')) || html.includes(l.statement), l.lessonId);
     assert.ok(html.includes('تأكدوا أولًا'));
     assert.ok(html.includes('الكلمات خارج قوائم المفردات'));
-    assert.equal(html.split('class="unit"').length - 1, 16);
+    assert.equal(html.split('class="unit"').length - 1, 21);
     assert.ok(html.includes('الصف العاشر'));
     assert.ok(html.includes('>s1-nccd-u1_l5<'), 'the id shown without its kbl-eng- prefix');
     assert.ok(html.includes('>s2-nccd-u6_l1<'));
+    assert.ok(html.includes('>s2-nccd-u10_l3<'));
     assert.ok(!html.includes('>kbl-eng-'), 'no un-stripped id');
-    assert.equal((html.match(/<span class="kind kind-meaning"/g) ?? []).length, 222);
-    assert.equal((html.match(/<span class="kind kind-form"/g) ?? []).length, 418);
+    assert.equal((html.match(/<span class="kind kind-meaning"/g) ?? []).length, 308);
+    assert.equal((html.match(/<span class="kind kind-form"/g) ?? []).length, 532);
   });
   it('names both semesters in its lead', () => {
     assert.ok(html.includes('الفصلان الأول والثاني'));
