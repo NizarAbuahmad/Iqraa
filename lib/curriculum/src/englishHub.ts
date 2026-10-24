@@ -59,11 +59,11 @@ export interface HubLesson {
 export const MIN_HUB_WORDS = 4;
 
 /**
- * Grade 9 lessons whose book statement is a grammar topic but whose book gives them fewer than `MIN_HUB_WORDS` words
- * (used to; the two present perfects; the first conditional; reported speech). They are in the hub for their
- * grammar only: the lesson screen hides the word activities, and `hubLessonVisible` keeps one out of sight until a
- * teacher signs its unit. A test pins that each id has fewer than four words and a grammar unit, so this list
- * cannot go stale. It lives here because englishGrammar.ts imports this file.
+ * Grammar-only lessons: Grade 9 lessons whose book statement is a grammar topic but with fewer than `MIN_HUB_WORDS`
+ * words (used to; the two present perfects; the first conditional; reported speech), and Grade 10's Articles (no
+ * vocabulary rows). They are in the hub for their grammar only: the lesson screen hides the word activities, and
+ * `hubLessonVisible` keeps one out of sight until a teacher signs its unit. A test pins that each id has fewer than
+ * four words and a grammar unit, so this list cannot go stale. It lives here because englishGrammar.ts imports this file.
  */
 export const GRAMMAR_ONLY_LESSONS: readonly string[] = [
   'kbl-g9-eng-s1-nccd-u2_l3',
@@ -71,6 +71,7 @@ export const GRAMMAR_ONLY_LESSONS: readonly string[] = [
   'kbl-g9-eng-s2-nccd-u7_l2',
   'kbl-g9-eng-s2-nccd-u8_l5',
   'kbl-g9-eng-s2-nccd-u9_l3',
+  'kbl-eng-s1-nccd-u1_l5',
 ];
 
 const BOOKS: [number, 1 | 2, NccdCurriculumFile, (id: string) => string][] = [

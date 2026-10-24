@@ -91,6 +91,27 @@ CASES: list[tuple[str, str, str, bool, str]] = [
 # parse must surface as 'indeterminate'/'error'/'unsupported_topic', because
 # the caller deletes a teacher's question on 'distinct' alone.
 KEY_CASES: list[tuple[str, str, str, str, str]] = [
+    # ── a list of one equation's solutions, written with a comma ──
+    # A model writes "x = 1, 3" far more often than "x = 1 or x = 3". It used to
+    # come back 'error: multi-variable answer' and the key was never verified.
+    ("equation_quadratic", "x^2 - 4x + 3 = 0", "x = 1, 3", "equivalent", "comma list, labelled"),
+    ("equation_quadratic", "x^2 - 4x + 3 = 0", "x = 3, 1", "equivalent", "comma list, order is free"),
+    ("equation_quadratic", "x^2 - 4x + 3 = 0", "1, 3", "equivalent", "comma list, bare values"),
+    # The Arabic comma is Arabic script, so the Arabic gate refuses the answer
+    # before it is parsed: «answer_not_latin» means "cannot judge", never "wrong".
+    ("equation_quadratic", "x^2 - 4x + 3 = 0", "x = 1 ، 3", "error", "Arabic comma is refused by the Arabic gate"),
+    ("equation_quadratic", "x^2 - 4x + 3 = 0", "x = 1, x = 3", "equivalent", "comma list, repeated label"),
+    ("equation_quadratic", "x^2 - 4x + 3 = 0", "x = 1, 3 or 3", "distinct", "comma list mixed with 'or' still compared"),
+    ("equation_quadratic", "x^2 - 4x + 3 = 0", "x = 1, 4", "distinct", "comma list with a wrong value"),
+    ("equation_quadratic", "x^2 - 4x + 3 = 0", "x = 1", "distinct", "comma list missing a root"),
+    ("equation_quadratic", "x^2 - 5x + 6 = 2x - 3", "x = (7 + sqrt(13))/2, (7 - sqrt(13))/2", "equivalent", "comma list of surds"),
+    # …and everything that is NOT clearly a list of one equation's solutions
+    # stays refused rather than guessed at.
+    ("equation_quadratic", "x^2 - 4x + 3 = 0", "x = 1, y = 3", "error", "two variables is a system"),
+    ("equation_quadratic", "x^2 - 4x + 3 = 0", "(1, 3)", "error", "a point is not a solution list"),
+    ("equation_quadratic", "x^2 - 4x + 3 = 0", "x = 1,3", "error", "no space after the comma is ambiguous"),
+    ("equation_linear", "x + 1 = 1001", "x = 1,000", "error", "a thousands separator is not a list"),
+    ("equation_linear", "2x = 5", "x = 2,5", "error", "a decimal comma is not a list"),
     # ── the key is right, in several spellings a model actually writes ──
     ("derivative_polynomial", "x**3 - 4x", "3x^2 - 4", "equivalent", "derivative key, caret form"),
     ("derivative_polynomial", "x**3 - 4x", "3*x**2 - 4", "equivalent", "derivative key, python form"),
