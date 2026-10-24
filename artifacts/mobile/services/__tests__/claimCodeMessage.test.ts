@@ -57,18 +57,23 @@ describe('composeClaimCodeMessage', () => {
   });
 
   it('describes where the code is actually asked for', () => {
-    // Registration stopped taking a code: it is asked only on /claim-required,
-    // after the email is verified. The message used to say "create an account,
-    // pick Parent, and enter the code" — a field that no longer exists — and
-    // was handed to students too, whom it told to sign up as a parent.
+    // Since 2026-10-10 a parent or student signs up from the code alone, and
+    // since 2026-10-23 a student chooses between the code and an email. The
+    // message used to say the code is asked "after verifying your email" — true
+    // of neither — and before that told students to sign up as a parent. It
+    // must name the choice the sign-up screen shows («برمز المعلم» /
+    // "Teacher's code", the `signupMethodCode` labels) and say there is no
+    // email step first.
     const ar = composeClaimCodeMessage({ ...BASE, origin: 'https://iqraa.example' }, true);
-    assert.match(ar, /بعد تأكيد/);
+    assert.match(ar, /برمز المعلم/);
     assert.match(ar, /طالب/);
+    assert.doesNotMatch(ar, /بعد تأكيد/);
     assert.doesNotMatch(ar, /«إنشاء حساب»، واختر «وليّ أمر»، وأدخل/);
 
     const en = composeClaimCodeMessage({ ...BASE, fieldLabel: 'Link code', origin: 'https://iqraa.example' }, false);
-    assert.match(en, /[Aa]fter verifying your email/);
+    assert.match(en, /Teacher's code/);
     assert.match(en, /Student/);
+    assert.doesNotMatch(en, /[Aa]fter verifying your email/);
     assert.doesNotMatch(en, /pick "Parent", and enter the code/);
   });
 

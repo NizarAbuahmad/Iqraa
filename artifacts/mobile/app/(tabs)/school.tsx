@@ -71,6 +71,7 @@ import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { NoClassPrompt } from '@/components/NoClassPrompt';
 import { Celebrate } from '@/components/ui/Celebrate';
 import { justCompleted } from '@/services/celebration';
 
@@ -235,6 +236,23 @@ export default function SchoolScreen() {
   const upcoming = upcomingExams(examChild?.exams ?? [], hwToday);
   const loading =
     (children === null && !error) || (homework === null && !hwError) || (exams === null && !examError);
+
+  // A student who signed up with an email has no class until they enter their
+  // teacher's code (since 2026-10-23), so homework, exams and the timetable
+  // are all empty for a reason the empty states below would get wrong
+  // ("your teachers haven't entered…"). Say the real one and offer the way in.
+  if (user?.role === 'student' && user.hasRosterLink === false) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <View style={[styles.header, { paddingTop: 16, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+          <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
+            {t('tabSchool')}
+          </Text>
+        </View>
+        <NoClassPrompt />
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
