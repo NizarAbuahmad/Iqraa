@@ -159,6 +159,9 @@ const SCREENS: AppPlace[] = [
   { id: 'rename-class', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howRenameClass' },
   { id: 'remove-student', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howRemoveStudent' },
   { id: 'edit-student', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howEditStudent' },
+  { id: 'media-link', route: '/ai-tools/slides', labelKey: 'toolSlidesTitle', pathKeys: ['tabTools', 'toolsBeforeClass'], isTool: false, keywords: [], howKey: 'howMediaLink' },
+  { id: 'exam-no-back', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howExamNoBack' },
+  { id: 'voice-note', route: '/notifications', labelKey: 'tabAlerts', pathKeys: [], isTool: false, keywords: [], howKey: 'howVoiceNote' },
   { id: 'move-student', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howMoveStudent' },
   { id: 'link-parent', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howLinkParent' },
   { id: 'reissue-login', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howReissueLoginCode' },
@@ -627,6 +630,15 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       ),
     ],
   },
+  // The twenty-seventh live pass. The grade a teacher teaches is a list in «المواد التي
+  // أُدرّسها»; the model said to type the new grade into the chat.
+  {
+    id: 'subjects',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:switch|change|swap|move\s+to)\s+(?:the\s+|my\s+)?(?:grade|class\s+level|year)\s+(?:that\s+)?i\s+teach` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:ابدل|تبديل|اغير|تغيير|انتقل\s+(?:الي|ل))\s+(?:ال)?صف\s+(?:الذي|اللي)\s+(?:ادرسه|اعلمه|ادرس\s+فيه|ادرسه\s+حاليا)` + AR_RULE_TAIL),
+    ],
+  },
   {
     id: 'password',
     res: [
@@ -634,7 +646,8 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       new RegExp(String.raw`^(?:i\s+)?forgot\s+(?:my\s+)?password(?:\s+what\s+(?:do|should)\s+i\s+do)?` + EN_RULE_TAIL),
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:اغير|تغيير|ابدل|تبديل|اعدل|تعديل|استرجع|استرجاع|استعيد|استعاده|اعيد\s+تعيين|اعاده\s+تعيين)\s+` + AR_PASSWORD +
-          String.raw`(?:\s+(?:تبعي|حقي|حسابي|لحسابي|الخاصه\s+بي))?` + AR_RULE_TAIL,
+          String.raw`(?:\s+(?:تبعي|حقي|حسابي|لحسابي|الخاصه\s+بي))?` +
+          String.raw`(?:\s+(?:اذا|لو|في\s+حال(?:ه)?)\s+(?:نسيتها|نسيتهاا|ضاعت|فقدتها))?` + AR_RULE_TAIL,
       ),
       new RegExp(String.raw`^(?:لقد\s+)?نسيت\s+` + AR_PASSWORD + String.raw`(?:\s+(?:شو|ايش|وش|ماذا|شنو)\s+(?:اعمل|افعل|اسوي))?` + AR_RULE_TAIL),
     ],
@@ -855,6 +868,13 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:اعرف|اشوف|اري|اتابع|اتاكد)\s+(?:مين|من|منو|اسماء\s+(?:ال)?(?:طلاب|طلبه)\s+(?:الذين|اللي|يلي))\s+(?:سلم|سلموا|قدم|قدموا|حل|حلوا|انهي|انهوا|لم\s+يسلم|ما\s+سلم|ما\s+سلموا)\s+(?:ال)?(?:امتحان|اختبار|تقييم)` + AR_RULE_TAIL,
       ),
+      // The twenty-seventh live pass: how MANY opened it (the dashboard lists every paper).
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:see|know|check|find\s+out|tell)\s+how\s+many\s+(?:of\s+my\s+)?students\s+(?:have\s+)?(?:opened|started|taken|submitted|handed\s+in|finished|done)\s+(?:the\s+|an?\s+|my\s+)?(?:exam|test|quiz|evaluation)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعرف|اشوف|اري|اتابع|اتاكد\s+من)\s+عدد\s+(?:ال)?(?:طلبه|طلاب)\s+(?:الذين|اللذين|اللي)\s+(?:فتحوا|دخلوا|بدءوا|بدوا|حلوا|سلموا|قدموا|انهوا)\s+(?:ال)?(?:امتحان|اختبار|تقييم)` + AR_RULE_TAIL,
+      ),
     ],
   },
   {
@@ -1073,6 +1093,9 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
     res: [
       new RegExp(EN_RULE_LEAD + String.raw`(?:hide|unpublish|take\s+down)\s+(?:the\s+)?(?:exam|test|quiz)\s+results\s+from\s+(?:the\s+)?students(?:\s+after\s+\w+(?:\s+\w+)?)?` + EN_RULE_TAIL),
       new RegExp(AR_RULE_LEAD + String.raw`(?:اخفي|اخفاء|اخفى)\s+(?:ال)?نتائج\s+(?:ال)?(?:امتحان|اختبار|تقييم)\s+عن\s+(?:ال)?(?:طلبه|طلاب)(?:\s+بعد\s+\S+(?:\s+\S+)?)?` + AR_RULE_TAIL),
+      // The twenty-seventh live pass: «العلامات» with no exam named.
+      new RegExp(EN_RULE_LEAD + String.raw`(?:hide|unpublish|conceal|take\s+down)\s+(?:the\s+|my\s+)?(?:marks|grades|scores|results)\s+from\s+(?:the\s+|my\s+)?students` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اخفي|اخفاء|اخفى|اخبي)\s+(?:ال)?(?:علامات|درجات|نتائج)(?:\s+(?:ال)?(?:امتحان|اختبار|تقييم))?\s+عن\s+(?:ال)?(?:طلبه|طلاب)` + AR_RULE_TAIL),
       new RegExp(
         EN_RULE_LEAD + String.raw`(?:release|publish|announce|send)\s+(?:the\s+)?(?:results|marks|grades|scores)(?:\s+(?:to|with)\s+(?:my\s+|the\s+)?(?:students|class|parents))?` + EN_RULE_TAIL,
       ),
@@ -1197,6 +1220,31 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:احذف|حذف|امسح|مسح|ازيل|ازاله|اشيل|اخرج|اخراج)\s+(?:ال)?(?:طالب|طالبه|طلاب|اسم\s+(?:ال)?طالب)(?:\s+(?:من\s+(?:ال)?(?:شعبه|شعبتي|صف|قائمه)))?` + AR_RULE_TAIL,
       ),
+    ],
+  },
+  // The twenty-seventh live pass. Three answers that say what the app does: a link
+  // goes on the slides (not the lesson plan), a student can always go back, and
+  // Messages has no voice notes. The nouns end each message, so «كيف أضيف رابط
+  // يوتيوب إلى الشريحة» and «كيف أمنع الطلبة من الغش» stay with the model.
+  {
+    id: 'media-link',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:add|attach|put|insert|paste)\s+(?:a\s+|the\s+|my\s+)?(?:youtube\s+)?(?:link|url|video)\s+(?:to|in|into|on)\s+(?:a\s+|the\s+|my\s+)?(?:lesson\s+plan|plan)` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اضيف|اضافه|اضع|الصق|ارفق|ارفاق)\s+(?:ال)?(?:رابط|فيديو|لينك)(?:\s+(?:يوتيوب|يوتوب|youtube))?\s+(?:الي|في|ل|علي)\s*(?:ال)?(?:خطه\s+(?:ال)?درس|خطتي)` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'exam-no-back',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:stop|prevent|block|forbid|disable)\s+(?:the\s+|my\s+)?students\s+(?:from\s+)?(?:going|go|returning|return)\s+back(?:\s+to\s+(?:a\s+|an\s+|the\s+)?(?:previous|earlier)\s+question)?` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:امنع|منع|اوقف|اغلق|اقفل)\s+(?:ال)?(?:طلبه|طلاب|طالب)\s+(?:من\s+)?(?:ال)?(?:عوده|رجوع)\s+(?:الي|ل)\s*(?:ال)?سؤال\s+(?:سابق|قبل|اخر)` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'voice-note',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:send|record|leave|add)\s+(?:a\s+)?(?:voice|audio)\s+(?:note|message|recording)(?:\s+(?:to|for)\s+(?:my\s+|the\s+)?(?:students|class|parents|a\s+student))?` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:ارسل|ابعث|ابعت|اسجل|سجل|اترك|اضيف)\s+(?:ال)?(?:ملاحظه|رساله|تسجيل)\s+(?:صوتيه|صوتي)(?:\s+(?:ل|لل)\s*(?:ال)?(?:طلبه|طلاب|طالب|اهل|اولياء\s+(?:ال)?امور))?` + AR_RULE_TAIL),
     ],
   },
   // The twenty-fifth live pass. The student's own sheet (pencil beside the name) edits
@@ -1365,6 +1413,13 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       ),
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:اشوف|اري|افتح|اطلع\s+علي|اتابع|متابعه)\s+(?:ال)?(?:سجل|ملف|تقدم)\s+(?:ال)?(?:طالب|طالبه|طلاب)` + AR_RULE_TAIL,
+      ),
+      // The twenty-seventh live pass: one student's marks across the exams.
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:see|view|check|track|find|follow)\s+(?:the\s+)?(?:performance|marks|grades|scores|results)\s+of\s+(?:a\s+|one\s+|the\s+)?(?:specific\s+|particular\s+)?student(?:\s+(?:across|over|through|in)\s+(?:the\s+|all\s+)?(?:exams|tests|evaluations))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:ارى|اري|اشوف|اتابع|اعرف|اطلع\s+علي)\s+(?:ال)?(?:اداء|مستوي|علامات|درجات|نتائج)\s+(?:ال)?(?:طالب|طالبه)(?:\s+(?:معين|معينه|محدد|محدده))?(?:\s+(?:عبر|خلال|في|علي)\s+(?:ال)?(?:امتحانات|اختبارات|تقييمات))?` + AR_RULE_TAIL,
       ),
     ],
   },
@@ -1592,7 +1647,7 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
         EN_RULE_LEAD + String.raw`(?:use|open|start|find|get)\s+(?:the\s+|a\s+|my\s+)?(?:interactive\s+)?(?:white\s*board|smart\s*board)` + EN_RULE_TAIL,
       ),
       new RegExp(
-        AR_RULE_LEAD + String.raw`(?:استخدم|افتح|فتح|ابدا|بدء|اشغل|شغل|استخدام)\s+(?:ال)?سبوره(?:\s+(?:ال)?(?:تفاعليه|ذكيه|الكترونيه))?` + AR_RULE_TAIL,
+        AR_RULE_LEAD + String.raw`(?:استخدم|افتح|فتح|ابدا|بدء|اشغل|شغل|استخدام)\s+(?:ال)?سبوره(?:\s+(?:ال)?(?:تفاعليه|ذكيه|الكترونيه|بيضا.?))?` + AR_RULE_TAIL,
       ),
     ],
   },
@@ -1801,6 +1856,10 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:اضبط|امدد|مدد|ازيد|زيد|اضع|اضيف|اغير)\s+(?:ال)?(?:وقت|مده|زمن|مؤقت|حد\s+زمني)\s*(?:ال)?(?:امتحان|اختبار|تقييم)` + AR_RULE_TAIL,
       ),
+      // The twenty-seventh live pass: «مدة زمنية» with the exam after «ل».
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اضبط|اضع|احدد|حدد|اضيف|اعين|اغير|امدد|مدد)\s+(?:ال)?(?:مده|وقت|زمن)(?:\s+(?:زمنيه|محدده|معينه))?\s+(?:ل|لل)\s*(?:ال)?(?:امتحان|اختبار|تقييم)` + AR_RULE_TAIL,
+      ),
     ],
   },
   {
@@ -1811,6 +1870,13 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       ),
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:اخلط|خلط|ابدل|تبديل|اعشوائي|رتب\s+عشوائي)\s+(?:ترتيب\s+)?(?:ال)?اسئله` + AR_RULE_TAIL,
+      ),
+      // The twenty-seventh live pass: the exam named, and «for each student».
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:shuffle|randomi[sz]e|mix\s+up|scramble)\s+(?:the\s+)?(?:order\s+of\s+)?(?:the\s+)?(?:exam\s+|test\s+|quiz\s+)?questions\s+(?:for|per)\s+(?:each|every)\s+student` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اخلط|خلط|ابدل|تبديل|اغير|تغيير)\s+(?:ال)?(?:ترتيب\s+)?(?:ال)?اسئله\s+(?:ال)?(?:امتحان|اختبار|تقييم)(?:\s+(?:ل|لكل|لدي|عند)\s*(?:كل\s+)?(?:ال)?طالب)?` + AR_RULE_TAIL,
       ),
     ],
   },
@@ -1939,7 +2005,7 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
         EN_RULE_LEAD + String.raw`(?:add|put|insert)\s+(?:a\s+|the\s+|my\s+)?(?:school\s+)?(?:logo|letterhead|header)(?:\s+with\s+(?:my\s+)?name(?:\s+and\s+date)?)?(?:\s+(?:on|to|in)\s+(?:a\s+|the\s+|my\s+)?(?:worksheets?|papers?|quizz?es|exams?|sheets?))?` + EN_RULE_TAIL,
       ),
       new RegExp(
-        AR_RULE_LEAD + String.raw`(?:اضيف|اضع|اكتب|ازود)\s+(?:ال)?(?:شعار(?:\s+(?:ال)?مدرسه)?|ترويسه|اسمي|اسم\s+(?:ال)?معلم)\s+(?:علي|في|ل|لل|الي)\s*(?:ال)?(?:اوراق|ورقه|ورق|اختبار|اختبارات)(?:\s+(?:ال)?عمل)?` + AR_RULE_TAIL,
+        AR_RULE_LEAD + String.raw`(?:اضيف|اضع|اكتب|ازود)\s+(?:ال)?(?:شعار(?:\s+(?:ال)?(?:مدرسه|مدرستي))?|ترويسه|اسمي|اسم\s+(?:ال)?معلم)\s+(?:علي|في|ل|لل|الي)\s*(?:ال)?(?:اوراق|ورقه|ورق|اختبار|اختبارات)(?:\s+(?:ال)?عمل)?` + AR_RULE_TAIL,
       ),
     ],
   },
@@ -2305,6 +2371,9 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:اعدل|تعديل|اغير|تغيير|احذف|حذف|الغي|الغاء|امسح|مسح)\s+(?:ال)?واجب(?:ا|ات)?(?:\s+(?:بعد|عند)\s+(?:نشره|نشر|ارساله|ارسال|ما\s+انشره))?` + AR_RULE_TAIL,
       ),
+      // The twenty-seventh live pass: the homework said to be already sent.
+      new RegExp(EN_RULE_LEAD + String.raw`(?:delete|remove|cancel|undo)\s+(?:a\s+|the\s+|my\s+)?(?:homework|assignment)\s+(?:that\s+)?(?:i\s+)?(?:already\s+)?(?:sent|posted|published|gave|assigned)(?:\s+(?:to\s+)?(?:the\s+|my\s+)?(?:students|class))?` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:احذف|حذف|الغي|الغاء|امسح|مسح)\s+(?:ال)?واجب(?:ا|ات)?\s+(?:الذي\s+|اللي\s+)?(?:ارسلته|نشرته|اعطيته|كلفت\s+به|ارسلتها|نشرتها)(?:\s+(?:ل|لل)\s*(?:ال)?(?:طلاب|طلبه|شعبه|صف))?` + AR_RULE_TAIL),
     ],
   },
   {

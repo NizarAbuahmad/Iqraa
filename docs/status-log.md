@@ -40,6 +40,242 @@ exercise screen sends every finished set to `PUT /student/math-practice` as well
 the homework.
 
 
+
+## English audio: a speech-to-text check of every recording — 2026-10-24
+
+A recording can be the wrong word (the first voicing of «chair» was «share»), and only an ear found it. `english-audio-check`
+listens instead: it downloads each clip in `audioPlan()` from the public bucket, transcribes it with a speech-to-text model
+and reports where what is said differs from what the app expects. **Read-only**: it writes nothing to the bucket and never
+re-voices; it writes only a report and a cache and their `.tmp` / `.bak` files, all git-ignored by default. No app, API, schema or dependency change.
+
+- **Pure logic, tested** (`lib/curriculum/src/englishAudioCheck.ts`, `__tests__/englishAudioCheck.test.ts`): normalising
+  (case, apostrophes, punctuation, hyphens, digits → words, British → American spelling, a homophone table), the verdicts,
+  the cost estimate, the cache and the checking loop with its dependencies injected, the report. The command
+  (`scripts/check-english-audio.ts`) only wires flags, the real fetch and the real API call.
+- **Verdicts.** `match` (equal once normalised), `close`, `mismatch`, `silent` (nothing heard), and `missing` / `error`.
+  **`close` is deliberately narrow:** a single word of 6+ letters whose heard form is the expected one plus or minus one
+  inflection ending (`s es d ed ing er ers`), or a text of several words within floor(10%) of its words in word edits (none
+  under 10 words). A one-letter or one-word difference in a short text is the very confusion the check exists to find
+  («I am ten» / «I am two», «carrot» / «parrot», «bit» / «bet»), so those are `mismatch`. `close` rows go to a «Close: worth a
+  glance» table; only `mismatch` and `silent` produce the `english-audio -- --only a,b,c` line.
+- **The model is never told the expected text** (it would agree with whatever it was told): `language=en`, `temperature=0`
+  and a generic prompt only, and the uploaded file is named `clip.mp3`, not the slug (the slug is the expected text).
+  Model `gpt-4o-transcribe` by default.
+- **Flags:** `--only a,b` (slugs or words), `--grade N`, `--source word|grammar`, `--limit N`, `--model`, `--cache <file>`,
+  `--refresh`, `--out <file>` (the same report as `.json` beside it), `--dry-run`, `--fail-on-mismatch` (exit 1 on a
+  mismatch, a silent clip **or a clip that could not be checked**); an unknown flag, or `--cache` and `--out` that would
+  write the same file, is refused (exit 2).
+- **Key.** `OPENAI_API_KEY` from the environment or the repo-root `.env` (as the generator does); empty or `sk-your…` is
+  refused (exit 2), and so is a key with a space, control, line-break or non-ASCII character (`isPlausibleApiKey`: `fetch`
+  would throw an error quoting the header value) with a message that says nothing about the key; never printed, logged or
+  written to the report or the cache. A 401/403, a 404 / `model_not_found` (a typo in `--model`) or a 429 with code
+  `insufficient_quota` stops the run once (`shouldStopRun`) and prints OpenAI's reason with the key (and anything shaped like
+  one) removed; an ordinary 429 is waited out, and any other 4xx is one `error` row. The quota 429 is retried (five attempts per
+  clip, a few seconds) before it stops. `OPENAI_BASE_URL` and `AUDIO_BASE_URL` override the two endpoints (that is how it was
+  smoke-tested); the banner names the transcription host. Each attempt has a timeout (60 s for the API, 30 s for a clip;
+  opt-in in `audioHttp.ts`, the audit passes none).
+- **A stopped run is PARTIAL.** `checkClips` can return fewer results than clips when the API refuses the key, so the
+  command decides from `stopped`, never from the length: the report is headed PARTIAL with how many of how many were checked
+  (also as one line on stdout), the cache is still saved (it is also saved every 100 clips and on Ctrl+C), exit code 2.
+- **The cache is written atomically** (`<cache>.tmp`, then renamed); a cache file that has content but no readable
+  transcripts is copied once to `<cache>.bak` before it is replaced; if a `.bak` already holds something different, the run
+  refuses (exit 2, nothing written) instead of losing either file. `--refresh` replaces the transcripts of the clips it
+  re-heard, and a clip that now comes back silent loses its old one (`mergeRefreshed`).
+- **The fetch helper moved.** `retryAfterMs`, `backoffMs`, the request-with-backoff and the worker pool left
+  `audit-english-audio.ts` for `scripts/audioHttp.ts`; both commands use it. `englishAudioLocation.test.ts` now also pins the
+  check's default bucket URL to the app's.
+
+**How to run it** (`pnpm --filter @workspace/curriculum run english-audio-check -- <flags>`; behind a proxy add
+`NODE_USE_ENV_PROXY=1`): `-- --dry-run --source word` first (HEAD only, no key: counts, bytes, minutes, a cost estimate), then
+`-- --source word --limit 50` and read the report, then `-- --source word`. **Today that is about 1,248 transcriptions and
+roughly 15-20 minutes** (3 in flight). The 3,383 grammar sentences are not voiced yet, so a run without `--source word` asks the
+bucket for each, is answered 404 and lists them under «Missing» (the Markdown lists the first 50 and says so; the JSON has all);
+once they are voiced the full run is about 4,600 transcriptions and roughly 30-50 minutes. A re-run pays only for clips whose
+size or ETag changed (and asks again about a silent one). The console also says how many rows were `close` or missing.
+
+**Verified.**
+- Offline end to end against a local fake server (OpenAI endpoint and bucket both faked; the real API was never called) with 6
+  real clips (`moon eraser chair apples pink friday`) and canned transcripts: 4 `match`, 1 `mismatch` («chair» heard as
+  «Share.»), 1 `silent`, the `--only chair,pink` line, Markdown and JSON written, the request carried
+  `language=en temperature=0 response_format=json` and the generic prompt and the `Authorization` header. A second run sent 1
+  clip to the transcriber (the silent one, which is not cached), 5 came from the cache; with the silent clip left out, 0. The
+  fake server saw the uploaded file named `clip.mp3` on every request (it told the clips apart by their bytes), so the request
+  carries neither the slug nor the expected text; the prompt is the generic one.
+  `--refresh` sent 6. A server answering 429 with `Retry-After: 1` was waited out (12 requests for 6 clips, run ok in 3 s). A
+  400 on one clip became one `error` row and the run went on. A server answering 401 stopped the run with exit 2, printed its
+  message with the key replaced by `[key]`, the key appearing in no output, report or cache; a server that accepts 2 clips and
+  then refuses gave a PARTIAL report «2 of 6», 2 cached transcripts, exit 2, and finishing against a good server then
+  re-used those 2. `--dry-run` made no transcription request and needed no key. `--fail-on-mismatch` exits 1 on a mismatch and
+  0 without; no key, the placeholder and bad flags exit 2.
+- Also offline, after review: keys with a line break, a tab, a space or a non-ASCII letter are refused (exit 2, no request
+  reached the server, nothing of the key printed); a 429 `insufficient_quota` and a 404 `model_not_found` each stop the run
+  with OpenAI's scrubbed message and a PARTIAL report; a `--refresh` where a clip now comes back silent drops its seeded
+  stale transcript; a cache file that is not a cache is copied to `.bak` and replaced, with no `.tmp` left; `--fail-on-mismatch`
+  exits 1 for a run whose only problem is an `error` row; an attempt that hangs is aborted at `timeoutMs` and retried.
+- The live bucket, read-only: `--dry-run --source word` found all 1,248 hub-word clips present (7.01 MB, **at most 24.5
+  minutes at an assumed 40 kbps; about $0.147 for the audio alone** at OpenAI's per-minute estimate; the gpt-4o models bill by
+  tokens, so the prompt and the transcript add text tokens and the real bill on 1-2 s clips could be up to about double, not a
+  ceiling). The first version assumed 128 kbps and printed 7.7
+  minutes and $0.046 as an «upper bound»; that was backwards: the same bytes hold MORE seconds at a lower bitrate, and the
+  processed clips are 40 kbps (apples.mp3: 4,437 bytes, 0.84 s by ffprobe). 40 is the lowest bitrate in the bucket, so the
+  estimate can only over-count. It is an estimate of seconds from bytes, not a measurement.
+- The keyless audit against the live bucket, before and after the helper move: **byte-identical output** (1,248 voiced, 3,383
+  missing, 0 errors, of 4,631).
+
+**Not done.** The real OpenAI transcription call has never been made: no key was used and nothing has been transcribed, so
+how `gpt-4o-transcribe` actually hears these clips (how many rows land in each table) is unknown. The prices in
+`PRICE_PER_MINUTE_USD` are OpenAI's per-minute estimates as of 2026-10 for the audio only (the gpt-4o models bill by tokens, so
+expect up to about double on very short clips): check the pricing page before a big run. The 3,383 grammar sentences are not voiced yet,
+so there is nothing to check for them. Not in CI.
+
+**Honest limits.** It hears the word, not how it is said: accent and stress errors («EE-ray-ser» for «eraser») pass, because
+recognisers forgive them. A mismatch means a person should listen, not that the clip is wrong (homophones, rare words such as
+«doughnut», «sitcom»). A **homophone group lets a wrong recording pass**: pair / pear / pare, flower / flour and plane / plain
+sound the same to the recogniser and are folded to one form. The `er` and `ing` suffix closes can land a different word in the
+Close table (number / numb). Contractions are not expanded («I'm» / «I am» differ), and «prise» / «prize» fold together. A
+transcription POST aborted by the 60 s timeout and retried could in theory be billed twice (OpenAI bills on completion; unlikely),
+and a body that stalls after the headers arrive is not retried (one `error` row). The first run may be
+noisy: the `close` and `mismatch` strictness is deliberate (a one-letter or one-word difference in a short text is the very
+confusion being looked for), and if a real run shows too many harmless rows it can be loosened by a flag later; no such flag
+exists now. A host that cannot be reached stops the run after 10 clips in a row fail to connect (exit 2, «the transcription API
+is unreachable»); a report written after a stop, or with error rows, never says «Nothing needs a listen». The output folders of
+`--cache` and `--out` are created before the first request. Left as they are: Ctrl+C exits with `process.exit` after saving the cache; `--out x.json` names its JSON `x.json.json`; the
+`--cache`/`--out` collision check is case-sensitive.
+
+
+## English corner: all ten grades, the official books, and free listening and reading sites, 2026-10-24
+
+The English corner had tabs for Grades 1–5, 9 and 10, so a student in Grade 6, 7 or 8 found no
+tab at all, and nothing in it led to the books' own reading or listening. Draft PR #1268.
+
+- **Built:** `ENGLISH_CORNER_GRADES` (`[1..10]`, `lib/curriculum/src/englishLinks.ts`) now drives the
+  grade tabs. `ENGLISH_HUB_GRADES` is unchanged and still means "grades with word lists to play";
+  `browse.tsx` and `resources.tsx` read it. A grade with no word lists (6–8) shows «ألعاب الكلمات
+  لهذا الصف قادمة» instead of an empty page; Grade 10 says Semester 2 word games are coming: its ten Semester 2 hub lessons are grammar-only and unsigned, so hidden, and there are no word lists for them. The note is read from the data (no visible Semester 2 lesson), so it goes away by itself when one appears. Under every grade's lessons: a **books shelf** (the grade's Ministry student book per
+  semester, plus the activity book where one exists, read from the catalog's `pdfUrl` /
+  `activityPdfUrl`) and a **free sites shelf** picked by grade band: British Council LearnEnglish
+  Kids and Teens, BBC Learning English, VOA Learning English, Starfall, Storyline Online, Oxford
+  Owl (free account) and National Geographic Kids. They open through `openExternal`; nothing is
+  fetched or copied, so none of it needs a licence record like `external_resources.json`.
+  `playEnglishDesc` now says Grades 1–5 and 9–10 (it omitted Grade 5).
+- **Tests:** `englishLinks.test.ts` (ten grades; https; both languages; every grade has a listening
+  and a reading site and both semesters' student book) and `services/__tests__/englishCornerShelves.test.ts`
+  (the tabs read `ENGLISH_CORNER_GRADES`, both shelves render, links go through `openExternal`, no
+  `palette`, every key exists in both languages).
+- **Checked:** `pnpm run typecheck` clean; mobile suite 7,338 tests, 0 failures; curriculum suite 693
+  of 694 (the one failure, `R2 helpers are inert, not broken, when unconfigured`, fails the same on a
+  clean checkout); curriculum `verify` 0 errors; the brand grep from `ci.yml` clean. In the web build
+  (Playwright, Chromium): all ten tabs; Grades 7 and 8 show the notice and 4 books + the right sites;
+  Grade 10 shows the Semester 2 note; light/English and dark/Arabic RTL screenshots read correctly;
+  a link opens a new tab and leaves the app tab where it was. URLs: BBC, VOA, Starfall, Storyline
+  Online, Oxford Owl and National Geographic Kids answered 200; the British Council Kids and Teens
+  paths were read from the sites' own sitemap and navigation.
+- **First push failed CI, and why:** `ci.yml` bans the bare spelling «اقرأ» anywhere in `i18n.ts`,
+  verb included, because that file names the product. The heading «استمع واقرأ مجانًا» tripped it;
+  it is now «استماع وقراءة مجانًا». A new Arabic string in a named file must avoid the substring.
+- **Not checked:** the Ministry PDFs on `nccd.gov.jo` and the British Council pages could not be
+  opened from the build container (timeout / 403); open one per grade by hand. A real phone.
+- **Not done, and a correction to an earlier claim:** the books' **own listening audio is not in the
+  app**. The only decoded listening QR codes are English Grades 9–10 (24 rows in
+  `knowledge-base/book-qr-links.json`) and none answered when last probed (2026-09-15). **No English
+  lesson has per-lesson book-page images** (`book-page-links.json` lists none; an earlier note that
+  Grades 7–10 had them read the wrong section of that file). Still open: rendering and uploading
+  English book pages, Grade 5 recordings (190 of 221 words), Grade 10 Semester 2 vocabulary, and
+  word lists for Grades 6–8.
+- **Still hidden from students, on purpose:** all Grade 1–4 reading units (36) and every grammar
+  unit are `reviewedBy: null`. Turning them on is a teacher signing the review sheets
+  (`docs/english-reading-g{1-4}-review.html`, `docs/english-grammar-g*-review.html`); this change
+  signs nothing.
+
+## Chat app-help, twenty-seventh live pass: three short answers and wordings for ten existing ones — 2026-10-24
+
+A 30-question pass (20 app, 10 curriculum — all ten answers correct) on app.iqrra.com found app
+questions answered by the model for which the app already had an answer, and three it did not:
+«أخفي العلامات عن الطلبة» (`howReleaseResults`, whose last sentence names «إخفاء النتائج عن
+الطلبة»), «عدد الطلبة الذين فتحوا الامتحان» (`howExamSubmissions`: the dashboard lists every
+paper), a forgotten password (`howChangePassword` already says «نسيت كلمة المرور؟»; the model
+called it outside its scope), «شعار مدرستي» on the papers (`howWorksheetHeader`; the model
+described an «add logo» option that does not exist), one student's results across the exams
+(`howStudentRecord`) and switching the grade I teach (`howAddGrade`; the model said to type it
+into the chat). Four more were left over from the 26th pass: deleting a homework already sent
+(`howHomeworkEdit`), a time limit on a quiz (`howExamTime`), shuffling the questions per student
+(`howExamShuffle`) and «السبورة البيضاء» (`howWhiteboard`).
+
+Three new short answers, each a negative or a pointer I checked in code: `howMediaLink` (the
+lesson plan has no link field; `components/ui/LessonResources.tsx` on the slides screen takes a
+YouTube or image link and makes it a slide, and `SlideEditModal` replaces a slide's video),
+`howExamNoBack` (`app/take/[code].tsx` always shows «السابق» and «التالي») and `howVoiceNote`
+(nothing in `app/messaging` records or sends audio). Pinned in `appHelp.test.ts` with near-misses
+that stay with the model.
+
+**Left to the model on purpose:** turning a quiz into a game, flashcards for a teacher, the
+in-class timer (all teaching advice; the app has no matching tool), the question most students
+got wrong, a note on a student's paper and restoring a deleted exam (I found no screen for any).
+## English audio on phones: clips are saved on the device and a lesson's clips are fetched ahead — 2026-10-24
+
+On a phone every tap streamed its clip from `pub-…r2.dev/english-audio/<slug>.mp3`, so a weak connection or the
+`r2.dev` rate limit (429) meant silence. Native only, and OTA-safe: `expo-file-system` (~19, already in the binary,
+the `File`/`Directory`/`Paths` API `exportPptx.ts` uses) — no new native module, no `app.json` change. The web is
+unchanged.
+
+- **Play from the phone first.** `playWord` on native plays the saved copy when there is one; otherwise the remote URL
+  exactly as before, and a copy is saved in the background (never waited for, never rejects). A first tap on a clip
+  therefore fetches it twice (the player streams it, the cache downloads it) — once per clip per phone.
+- **A lesson's clips ahead.** `prefetchLessonAudio(lessonId, { grammar })` (no-op on the web), from one effect on
+  `app/curriculum/english/[lessonId].tsx` when a visible lesson opens: its words, plus its grammar strings only once the
+  grammar is offered (signed). The effect's cleanup cancels it (leaving the lesson stops what has not started), and a
+  new prefetch takes over the previous one's unstarted items it also wants and drops the rest. **Two downloads in flight
+  for the whole cache** — every prefetch and every save after a tap share two slots, and a tap's save goes to the front
+  of the queue, including a clip a prefetch had already queued — so the
+  rate-limited link never sees more than two at once from one phone. The list is `lessonAudioTexts` in
+  `lib/curriculum/src/englishAudioPlan.ts` (new subpath `@workspace/curriculum/englishAudioPlan`): the lesson's words and
+  `unitSpoken`, so the silent True-or-false twins are never fetched. A test pins that every slug it returns is in
+  `audioPlan()` and that the lessons between them cover the whole plan.
+- **Tidy.** `<cache>/english-audio/v1/<slug>.mp3` (`AUDIO_CACHE_VERSION = 1`, `services/audioCachePolicy.ts`): on first use
+  every other entry under `english-audio/` (older or newer version folders, strays) is deleted, as are half-downloads and
+  files under 1 KB. Downloads land in `<slug>.mp3.part` and are renamed into place only when complete, ≥ 1 KB (the
+  smallest clip in the bucket's manifest is 2.7 KB) and starting like an MP3 (`looksLikeMp3`: an `ID3` tag or an MPEG
+  frame sync, read with `FileHandle.readBytes(3)`; 26 sampled clips from the bucket all start `ID3`). A 200 that is not
+  an MP3 (a block page) is dropped and remembered like a 404. The folder is re-created before each download, in case
+  the OS cleared it mid-session. Cap 40 MB (the manifest's 652 clips total 3.8 MB), least recently used first; "last used" is the file's
+  modification time, or a tap this session (kept in memory — neither platform's API sets a file's mtime).
+- **The rate-limited link.** In memory, for the session: a 404 is not fetched again in the background; a 429 pauses
+  **every** background fetch for 60 s (the limit is the link's, not the clip's). A tap with no saved copy always plays the
+  remote URL. The status is read out of `expo-file-system`'s download error message («response has status: 404» on
+  Android, «… status 429» on iOS).
+- **Where the logic is.** `services/audioCache.ts` (all decisions, over an injectable `FsLike`), `services/audioCacheStore.ts`
+  (the thin `expo-file-system` mapping, not loadable by `node --test`), `services/englishAudio.ts` (wiring).
+- **Checked:** new tests — `audioCachePolicy.test.ts` 16, `audioCache.test.ts` 34 (fake file system: hit/miss, a dropped
+  download leaves nothing playable, the 1 KB floor, an HTML 200 rejected and ID3 / frame-sync bodies kept, temp-then-rename,
+  LRU order and cap, version purge, the folder cleared mid-session, 404/429 memory with an injected clock, two prefetches
+  plus two taps never more than two in flight, a second prefetch dropping the first's unstarted items, cancel, cancel
+  then the same lesson in one tick, a newer prefetch taking over a queued clip, a tap jumping the queue (also for a clip
+  already queued) and staying wanted through a later prefetch's cancel, OS-cleared files, a file system that throws everywhere), `englishAudioPhone.test.ts` 8 (source pins:
+  the web branch still goes straight to `playRecordingOrSpeak(englishAudioUrl(word), word)`, prefetch is a no-op on web,
+  the URL and slug mapping are unchanged, the recorder's `playUri` is not routed through the cache, the screen calls
+  prefetch from one effect above its early return and returns its cancel), `lib/curriculum` `englishLessonAudio.test.ts` 7
+  (Grade 1, a Grade 9 grammar-only lesson, a Grade 10 Semester 2 lesson). Five mutations (floor removed; download straight
+  into the clip name; no global limit; no folder re-create; a prefetch overwriting a tap's claim) each failed the suite. `pnpm run typecheck` clean;
+  `lib/curriculum` tests 743/743 and `verify` 0 errors; the English and audio mobile tests 203/203; the full mobile suite
+  7,396 passed, 0 failed, 10 skipped (of 7,406; run before the review fixes, which touched only the cache files, the lesson
+  screen's effect and their tests). Web build at 390 px (Playwright, Chromium), also before the fixes: a Grade 1
+  lesson opens, makes **no** clip request on open, a Flashcards «Listen» requests `…/english-audio/bag.mp3` directly, and
+  with the clip answered 404 the browser voice says «bag» — as before; no `expo-file-system` warning on the web.
+- **Not checked:** no real Android or iOS device ran this — not the download, the rename, `Paths.cache`, the eviction or
+  the error-message parsing against the real module; all of it is exercised only against the fake. First-launch behaviour
+  on a phone (an empty cache: each tap streams and saves) is reasoned, not observed; so is the cost of the one folder
+  listing on first use (synchronous, on the JS thread) — to be measured on a device. A lesson opened on top of another
+  replaces its prefetch, and going back does not restart the first one (its clips then save as they are tapped). Prefetch does not look at the network
+  type: across the 118 hub lessons a lesson is 0–37 word clips (median 12), and 4–134 with its grammar once signed
+  (median 41), each a few KB.
+- **After a re-record:** bump `AUDIO_CACHE_VERSION` in `services/audioCachePolicy.ts` in the same PR, or phones keep the
+  old take (the slug does not change) until the OS clears their cache.
+- **Deliberately not done:** a phone speech fallback for a clip that does not exist needs `expo-speech` — a native module,
+  so an `app.json` `version` bump and a new build. The custom audio domain needs the owner to add it in Cloudflare R2; then it
+  is a one-line constant in `artifacts/mobile/services/englishAudio.ts` and `lib/curriculum/scripts/audit-english-audio.ts`
+  (`englishAudioLocation.test.ts` fails until both agree) — and an `AUDIO_CACHE_VERSION` bump is not needed for that, since
+  the cache is keyed by slug.
+
 ## Tests for the roster consent gate — 2026-10-24
 
 `lib/rosterConsent.ts` refuses a roster write (POST/PATCH/PUT/DELETE under `/classes` and `/students`) from a
@@ -83,9 +319,14 @@ type the Google address.
 - **The divider under the Google button reads «أو أنشئ حسابك ببريدك الإلكتروني»**
   (`orSignUpWithEmail`) instead of a bare «أو». `orDivider` stays for the sign-in screen.
 - The Google button's own text («Continue as <name>» with the address) is drawn by Google's
-  script in an iframe, so it cannot be restyled or relabelled from here.
+  script in an iframe, so it cannot be restyled or relabelled from here. It shows whichever
+  Google account the browser has active, not the last address used on Iqrra, so it must not be
+  captioned "last email used". A line under it says what it is (`googleAccountHint`: «حساب Google
+  المسجّل على هذا الجهاز. اضغط السهم لاختيار حساب آخر.»), **web only**: the phone app has no such
+  button and opens the account chooser every time.
 
-**Verified:** mobile `pnpm run typecheck`; mobile `pnpm test` (7,385 tests, 7,375 pass, 10 skipped, 0 fail).
+**Verified:** mobile `pnpm run typecheck`; mobile `pnpm test` (7,385 tests, 7,375 pass, 10 skipped,
+0 fail; 7,480 / 7,470 after the `googleAccountHint` line was added).
 **Not verified:** how it looks in a browser (phone, desktop, light, dark, RTL), and that the
 role pills, student method choice and the Google gate behave together on the screen. Nobody
 has loaded the deployed `/register` since the change.

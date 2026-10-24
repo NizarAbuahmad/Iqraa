@@ -22,6 +22,7 @@
  */
 import { audioPlan, type AudioItem } from '../src/englishAudioPlan.ts';
 import { clipVerdict, type ClipStats } from '../src/englishAudioProcess.ts';
+import { pool as poolOf, requestWithBackoff } from './audioHttp.ts';
 
 /**
  * Duplicated from `ENGLISH_AUDIO_BASE_URL` in `artifacts/mobile/services/englishAudio.ts`
@@ -31,65 +32,18 @@ export const DEFAULT_AUDIO_BASE_URL = 'https://pub-d9ddd8f74e734a21824518b812652
 
 const BASE = (process.env.AUDIO_BASE_URL || DEFAULT_AUDIO_BASE_URL).replace(/\/+$/, '');
 const CONCURRENCY = 6;
-const MAX_ATTEMPTS = 8;
 
 const listMissing = process.argv.includes('--missing');
 const deep = process.argv.includes('--deep');
 const failOnMissing = process.argv.includes('--fail-on-missing');
 
-const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+const request = requestWithBackoff;
 
-/** The longest `Retry-After` honoured: a server asking for an hour should not hang the audit for one. */
-const MAX_RETRY_AFTER_MS = 60_000;
-
-/** `Retry-After` as milliseconds (delta-seconds or an HTTP date), capped at `MAX_RETRY_AFTER_MS`. */
-function retryAfterMs(header: string | null): number {
-  if (!header) return 0;
-  const s = Number(header);
-  const t = Date.parse(header);
-  const ms = Number.isFinite(s) ? s * 1000 : Number.isFinite(t) ? t - Date.now() : 0;
-  return Math.min(MAX_RETRY_AFTER_MS, Math.max(0, ms));
-}
-
-/** 0.5 s, 1 s, 2 s … capped at 30 s, plus a little jitter so six workers do not retry in step. */
-function backoffMs(attempt: number): number {
-  return Math.min(30_000, 500 * 2 ** attempt) + Math.floor(Math.random() * 250);
-}
-
-async function request(url: string, method: 'HEAD' | 'GET'): Promise<Response> {
-  for (let attempt = 0; ; attempt += 1) {
-    let res: Response;
-    try {
-      res = await fetch(url, { method });
-    } catch (err) {
-      if (attempt >= MAX_ATTEMPTS - 1) throw err;
-      await sleep(backoffMs(attempt));
-      continue;
-    }
-    if ((res.status === 429 || res.status >= 500) && attempt < MAX_ATTEMPTS - 1) {
-      await res.body?.cancel();
-      await sleep(Math.max(retryAfterMs(res.headers.get('retry-after')), backoffMs(attempt)));
-      continue;
-    }
-    return res;
-  }
-}
-
-async function pool<T, R>(items: T[], fn: (item: T) => Promise<R>): Promise<R[]> {
-  const out = new Array<R>(items.length);
-  let next = 0;
-  let done = 0;
-  await Promise.all(
-    Array.from({ length: CONCURRENCY }, async () => {
-      while (next < items.length) {
-        const i = next++;
-        out[i] = await fn(items[i]);
-        if (++done % 500 === 0) console.error(`  ${done}/${items.length}`);
-      }
-    }),
-  );
-  return out;
-}
+/** The fetch-with-backoff pool, 6 at a time, with a progress line on stderr every 500. */
+const pool = <T, R>(items: T[], fn: (item: T) => Promise<R>): Promise<R[]> =>
+  poolOf(items, fn, CONCURRENCY, (done, total) => {
+    if (done % 500 === 0) console.error(`  ${done}/${total}`);
+  });
 
 type Presence = { item: AudioItem; state: 'voiced' | 'missing' | 'error'; bytes: number; status: number };
 
