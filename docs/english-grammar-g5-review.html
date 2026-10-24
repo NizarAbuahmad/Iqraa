@@ -106,6 +106,9 @@
     .sheet { gap: 0; max-width: none; }
     .intro { max-width: none; }
     .unit { break-before: page; }
+    /* A grid places the sign-off where the table would have ended without the page break, over its last rows. */
+    .unit { display: block; }
+    .unit > * + * { margin-top: 14px; }
     .table-wrap { overflow: visible; border-radius: 0; }
     table { min-width: 0; }
     tr, .signoff { break-inside: avoid; }
@@ -123,6 +126,13 @@
   .kind-meaning { background: var(--tint); color: var(--teal); }
   .topic-row th { text-align: start; background: var(--tint); font-family: var(--latin); font-weight: 600; }
   .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }
+  @media print {
+    td.sentence, .yn { white-space: normal; }
+    th.note, td.note { width: 12%; }
+    td.sentence { font-size: .9rem; }
+    th, td { padding: 4px 5px; }
+    .yn, .opt { font-size: .82rem; }
+  }
 </style>
 </head>
 <body>
@@ -179,7 +189,7 @@
       <ul class="patterns" dir="ltr"><li>third-person-s</li><li>before-after</li><li>when-clauses</li></ul>
       <p class="unit-note">النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.</p>
       <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">brings, comes, end, ends, finish, finishes, hungry, inside, makes, rain, rains, sing, sings, swims, tired</span></p>
-      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>جمل <span dir="ltr">before</span> و<span dir="ltr">after</span> و<span dir="ltr">when</span> تُحدِّد صيغة الفعل مع <span dir="ltr">he</span> و<span dir="ltr">she</span> و<span dir="ltr">it</span> (<span dir="ltr">washes</span>) وأن <span dir="ltr">will</span> لا تأتي بعد <span dir="ltr">when</span>، دون سؤال عن ترتيب الأحداث نفسه.</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>جمل <span dir="ltr">before</span> و <span dir="ltr">after</span> و <span dir="ltr">when</span> تُحدِّد صيغة الفعل مع <span dir="ltr">he</span> و <span dir="ltr">she</span> و <span dir="ltr">it</span> (<span dir="ltr">washes</span>) وأن <span dir="ltr">will</span> لا تأتي بعد <span dir="ltr">when</span>، دون سؤال عن ترتيب الأحداث نفسه.</li></ul>
     </header>
     <div class="table-wrap">
       <table>
@@ -582,7 +592,7 @@
       <ul class="patterns" dir="ltr"><li>taller-forms</li><li>more-forms</li><li>superlatives</li><li>irregular</li></ul>
       <p class="unit-note">النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.</p>
       <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">badder, better, bigger, biggest, confidentest, expensiver, expensivest, fastest, goodest, hotter, important, importanter, intelligentest, interestingest, kindest, know, oldest, person, popularest, responsibler, shortest, singer, strong, stronger, tall, taller, tallest, worse, worst, young, younger</span></p>
-      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>الصفات الشاذة (<span dir="ltr">good</span> و<span dir="ltr">bad</span>) في موضوع واحد صغير، ولا مقارنة بـ <span dir="ltr">as … as</span> في هذا الدرس.</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>الصفات الشاذة (<span dir="ltr">good</span> و <span dir="ltr">bad</span>) في موضوع واحد صغير، ولا مقارنة بـ <span dir="ltr">as … as</span> في هذا الدرس.</li></ul>
     </header>
     <div class="table-wrap">
       <table>
@@ -1389,7 +1399,7 @@
       <ul class="patterns" dir="ltr"><li>will</li><li>wont</li><li>will-questions</li></ul>
       <p class="unit-note">النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.</p>
       <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">bought, comes, flies, fly, lives, love, mars, rain, rains, rise, rises, saw, through</span></p>
-      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li><span dir="ltr">will</span> و<span dir="ltr">won't</span> فقط، دون <span dir="ltr">going to</span>، لأن الاختيار بينها وبين <span dir="ltr">will</span> كثيرًا ما يقبل الإجابتين.</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li><span dir="ltr">will</span> و <span dir="ltr">won't</span> فقط، دون <span dir="ltr">going to</span>، لأن الاختيار بينها وبين <span dir="ltr">will</span> كثيرًا ما يقبل الإجابتين.</li></ul>
     </header>
     <div class="table-wrap">
       <table>
@@ -1792,7 +1802,7 @@
       <ul class="patterns" dir="ltr"><li>who</li><li>where</li><li>which</li></ul>
       <p class="unit-note">النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.</p>
       <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">amman, bought, know, lost, loves, made, makes, man, medicine, own, person, phones, place, saves, screen, tall, want, wanted, went, woman</span></p>
-      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li><span dir="ltr">who</span> للأشخاص و<span dir="ltr">which</span> للأشياء و<span dir="ltr">where</span> للأماكن؛ و<span dir="ltr">who</span> دائمًا فاعلٌ في جملة الصلة، أما <span dir="ltr">who</span> بصفة مفعول (<span dir="ltr">the man who we saw</span>) فغير مختبَر.</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li><span dir="ltr">who</span> للأشخاص و <span dir="ltr">which</span> للأشياء و <span dir="ltr">where</span> للأماكن؛ و <span dir="ltr">who</span> دائمًا فاعلٌ في جملة الصلة، أما <span dir="ltr">who</span> بصفة مفعول (<span dir="ltr">the man who we saw</span>) فغير مختبَر.</li></ul>
     </header>
     <div class="table-wrap">
       <table>
@@ -2195,7 +2205,7 @@
       <ul class="patterns" dir="ltr"><li>irregular</li><li>did-negatives</li><li>questions</li></ul>
       <p class="unit-note">النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.</p>
       <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">ago, ate, bought, broke, cook, drawed, drew, found, gave, got, learnt, made, picture, sent, studied, taught, teached, threw, took, went, write, writed, wrote</span></p>
-      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>الماضي البسيط للأفعال الشاذة (<span dir="ltr">learnt</span> و<span dir="ltr">went</span>) و<span dir="ltr">did</span> في السؤال والنفي؛ والخيارات الخاطئة أخطاء في الصيغة (<span dir="ltr">didn't went</span>)، لا اختيار بين الماضي البسيط والمضارع التام.</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>الماضي البسيط للأفعال الشاذة (<span dir="ltr">learnt</span> و <span dir="ltr">went</span>) و <span dir="ltr">did</span> في السؤال والنفي؛ والخيارات الخاطئة أخطاء في الصيغة (<span dir="ltr">didn't went</span>)، لا اختيار بين الماضي البسيط والمضارع التام.</li></ul>
     </header>
     <div class="table-wrap">
       <table>
@@ -2598,7 +2608,7 @@
       <ul class="patterns" dir="ltr"><li>was-were-ing</li><li>when-while</li><li>questions</li></ul>
       <p class="unit-note">النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.</p>
       <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">escaped, flying, hide, hiding, rang, saw, sea, singing, swim, talking, took, tree, trees</span></p>
-      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>الماضي المستمر مع <span dir="ltr">while</span> و<span dir="ltr">when</span>؛ لا اختيار بينه وبين الماضي البسيط لأن للجملة أحيانًا أكثر من صيغة مقبولة.</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>الماضي المستمر مع <span dir="ltr">while</span> و <span dir="ltr">when</span>؛ لا اختيار بينه وبين الماضي البسيط لأن للجملة أحيانًا أكثر من صيغة مقبولة.</li></ul>
     </header>
     <div class="table-wrap">
       <table>
@@ -3001,7 +3011,7 @@
       <ul class="patterns" dir="ltr"><li>should</li><li>shouldnt</li><li>advice-questions</li></ul>
       <p class="unit-note">النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.</p>
       <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">ate, dentist, medicine, sees, swim, swims, took, went</span></p>
-      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li><span dir="ltr">should</span> و<span dir="ltr">shouldn't</span> للنصيحة فقط، دون <span dir="ltr">must</span> و<span dir="ltr">have to</span>، والخيارات الخاطئة أخطاء في الصيغة (<span dir="ltr">should to go</span>).</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li><span dir="ltr">should</span> و <span dir="ltr">shouldn't</span> للنصيحة فقط، دون <span dir="ltr">must</span> و <span dir="ltr">have to</span>، والخيارات الخاطئة أخطاء في الصيغة (<span dir="ltr">should to go</span>).</li></ul>
     </header>
     <div class="table-wrap">
       <table>
@@ -3404,7 +3414,7 @@
       <ul class="patterns" dir="ltr"><li>have-has</li><li>havent-hasnt</li><li>questions</li></ul>
       <p class="unit-note">النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.</p>
       <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">bought, film, finish, finished, found, listen, listened, made, practise, practised, seen, write, written</span></p>
-      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>المضارع التام بـ <span dir="ltr">have</span> و<span dir="ltr">has</span> والتصريف الثالث للفعل؛ لا اختيار بينه وبين الماضي البسيط، والخيارات الخاطئة أخطاء في الصيغة (<span dir="ltr">has read</span> مقابل <span dir="ltr">have read</span> مع <span dir="ltr">I</span>).</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>المضارع التام بـ <span dir="ltr">have</span> و <span dir="ltr">has</span> والتصريف الثالث للفعل؛ لا اختيار بينه وبين الماضي البسيط، والخيارات الخاطئة أخطاء في الصيغة (<span dir="ltr">has read</span> مقابل <span dir="ltr">have read</span> مع <span dir="ltr">I</span>).</li></ul>
     </header>
     <div class="table-wrap">
       <table>
@@ -3807,7 +3817,7 @@
       <ul class="patterns" dir="ltr"><li>ever-questions</li><li>never</li><li>short-answers</li></ul>
       <p class="unit-note">النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.</p>
       <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">bought, broken, chocolates, cooking, eaten, made, seen, worn</span></p>
-      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li><span dir="ltr">ever</span> في السؤال و<span dir="ltr">never</span> في الجملة الخبرية والإجابات القصيرة (<span dir="ltr">Yes, I have. / No, I haven't.</span>)؛ لا اختيار بين المضارع التام والماضي البسيط.</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li><span dir="ltr">ever</span> في السؤال و <span dir="ltr">never</span> في الجملة الخبرية والإجابات القصيرة (<span dir="ltr">Yes, I have. / No, I haven't.</span>)؛ لا اختيار بين المضارع التام والماضي البسيط.</li></ul>
     </header>
     <div class="table-wrap">
       <table>

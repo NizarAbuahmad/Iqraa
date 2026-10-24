@@ -106,6 +106,9 @@
     .sheet { gap: 0; max-width: none; }
     .intro { max-width: none; }
     .unit { break-before: page; }
+    /* A grid places the sign-off where the table would have ended without the page break, over its last rows. */
+    .unit { display: block; }
+    .unit > * + * { margin-top: 14px; }
     .table-wrap { overflow: visible; border-radius: 0; }
     table { min-width: 0; }
     tr, .signoff { break-inside: avoid; }
@@ -128,6 +131,13 @@
   .topic-row th { text-align: start; background: var(--tint); font-family: var(--latin); font-weight: 600; }
   .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }
   @media print { .data { break-before: page; } }
+  @media print {
+    td.sentence, .yn { white-space: normal; }
+    th.note, td.note { width: 12%; }
+    td.sentence { font-size: .9rem; }
+    th, td { padding: 4px 5px; }
+    .yn, .opt { font-size: .82rem; }
+  }
 </style>
 </head>
 <body>
@@ -198,7 +208,7 @@
       <ul class="patterns" dir="ltr"><li>now</li><li>stative</li><li>third</li></ul>
       <p class="unit-note">النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.</p>
       <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">answer, baby, believe, believing, belonging, belongs, bikes, children, comes, cooking, cooks, costing, costs, cries, crying, dinars, father, french, knowing, knows, laugh, laughing, leave, leaves, likes, listen, lives, loves, loving, mother, near, number, outside, rain, rains, remembering, remembers, snowing, snows, someone, speak, speaks, talk, talking, talks, wait, wanting, wants, weekdays, writes, writing</span></p>
-      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>الجمل المختارة لـ «<span dir="ltr">now</span>» تُحدِّد المضارع المستمر بكلمة في الجملة (<span dir="ltr">Listen!</span> و<span dir="ltr">Right now</span>)، ويُسمّى الخيار الآخر «معنى» لا «خطأ»؛ والعادة المؤقتة (<span dir="ltr">is playing every Saturday this month</span>) غير مشمولة لأنها تقبل الصيغتين.</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>الجمل المختارة لـ «<span dir="ltr">now</span>» تُحدِّد المضارع المستمر بكلمة في الجملة (<span dir="ltr">Listen!</span> و <span dir="ltr">Right now</span>)، ويُسمّى الخيار الآخر «معنى» لا «خطأ»؛ والعادة المؤقتة (<span dir="ltr">is playing every Saturday this month</span>) غير مشمولة لأنها تقبل الصيغتين.</li></ul>
     </header>
     <div class="table-wrap">
       <table>
@@ -3016,7 +3026,7 @@
       <div class="unit-meta"><span>الفصل الأول</span><span>الوحدة ٤</span><span>٤٢ جملة</span></div>
       <h2><span dir="ltr">A good buy</span> <span class="unit-ar">صفقةٌ رابحة</span></h2>
       <ul class="patterns" dir="ltr"><li>… are … than ….</li><li>… is … than ….</li><li>Are … … than …? Yes, they are.</li><li>Is … … than …? Yes, it is.</li><li>Are … … than …? No, they aren't.</li><li>Is … … than …? No, it isn't.</li><li>… is the … … ….</li><li>… … … than ….</li></ul>
-      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور في هذه الوحدة: صورة جزرة لا تقول إنها أصح من دونات. «صح أم خطأ» و«نعم أم لا» من أزواج المقارنات المكتوبة فقط، وكل زوج منها مطبوع في صفحة البيانات لتتأكدوا أنه صحيح دون جدال، وتوأمه الخاطئ هو الجملة نفسها بعد تبديل الطرفين.</li><li>جمل الرأي (<span dir="ltr">Pancakes are tastier than porridge.</span>) وجمل الصيغة العليا (<span dir="ltr">the most expensive dish</span>) في «اختر الكلمة» و«رتّب الجملة» فقط: لا تُسأل صحةً لأنها رأي لا معلومة.</li><li>خيارا «اختر الكلمة» دائمًا صيغتان حقيقيتان: <span dir="ltr">healthier</span> مقابل <span dir="ltr">healthy</span>، و<span dir="ltr">the cheapest</span> مقابل <span dir="ltr">the cheaper.</span></li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور في هذه الوحدة: صورة جزرة لا تقول إنها أصح من دونات. «صح أم خطأ» و«نعم أم لا» من أزواج المقارنات المكتوبة فقط، وكل زوج منها مطبوع في صفحة البيانات لتتأكدوا أنه صحيح دون جدال، وتوأمه الخاطئ هو الجملة نفسها بعد تبديل الطرفين.</li><li>جمل الرأي (<span dir="ltr">Pancakes are tastier than porridge.</span>) وجمل الصيغة العليا (<span dir="ltr">the most expensive dish</span>) في «اختر الكلمة» و«رتّب الجملة» فقط: لا تُسأل صحةً لأنها رأي لا معلومة.</li><li>خيارا «اختر الكلمة» دائمًا صيغتان حقيقيتان: <span dir="ltr">healthier</span> مقابل <span dir="ltr">healthy</span>، و <span dir="ltr">the cheapest</span> مقابل <span dir="ltr">the cheaper.</span></li></ul>
     </header>
     <div class="table-wrap">
       <table>
@@ -3474,7 +3484,7 @@
       <div class="unit-meta"><span>الفصل الأول</span><span>الوحدة ٤</span><span>٨٠ جملة</span></div>
       <h2><span dir="ltr">A good buy</span> <span class="unit-ar">صفقةٌ رابحة</span></h2>
       <ul class="patterns" dir="ltr"><li>How many … are there?</li><li>How much … is there?</li><li>There aren't many ….</li><li>There isn't much ….</li><li>There are too many ….</li><li>There's too much ….</li><li>Are there many …?</li><li>Is there much …?</li><li>I'd like a few …, please.</li><li>I'd like a little …, please.</li></ul>
-      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور في هذه الوحدة، والاسم هو الذي يحدد الاختيار: <span dir="ltr">many</span> مع المعدود بالجمع و<span dir="ltr">much</span> مع غير المعدود، و<span dir="ltr">a few</span> مع الأول و<span dir="ltr">a little</span> مع الثاني.</li><li>الأطعمة صُنِّفت يدويًا في صفحة البيانات: معدودة بالجمع (<span dir="ltr">grapes</span> و<span dir="ltr">olives</span> و<span dir="ltr">mushrooms</span> و<span dir="ltr">pancakes</span> و<span dir="ltr">doughnuts</span> و<span dir="ltr">croissants</span> و<span dir="ltr">muffins</span> و<span dir="ltr">carrots</span>) وغير معدودة (<span dir="ltr">cream</span> و<span dir="ltr">honey</span> و<span dir="ltr">jam</span> و<span dir="ltr">salt</span> و<span dir="ltr">sugar</span> و<span dir="ltr">porridge</span> و<span dir="ltr">milk</span> و<span dir="ltr">rice</span>).</li><li><span dir="ltr">some</span> و<span dir="ltr">any</span> و<span dir="ltr">enough</span> غير مشمولة: اقتصرنا على <span dir="ltr">many</span> و<span dir="ltr">much</span> و<span dir="ltr">a few</span> و<span dir="ltr">a little</span> مع <span dir="ltr">too many</span> و<span dir="ltr">too much.</span></li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور في هذه الوحدة، والاسم هو الذي يحدد الاختيار: <span dir="ltr">many</span> مع المعدود بالجمع و <span dir="ltr">much</span> مع غير المعدود، و <span dir="ltr">a few</span> مع الأول و <span dir="ltr">a little</span> مع الثاني.</li><li>الأطعمة صُنِّفت يدويًا في صفحة البيانات: معدودة بالجمع (<span dir="ltr">grapes</span> و <span dir="ltr">olives</span> و <span dir="ltr">mushrooms</span> و <span dir="ltr">pancakes</span> و <span dir="ltr">doughnuts</span> و <span dir="ltr">croissants</span> و <span dir="ltr">muffins</span> و <span dir="ltr">carrots</span>) وغير معدودة (<span dir="ltr">cream</span> و <span dir="ltr">honey</span> و <span dir="ltr">jam</span> و <span dir="ltr">salt</span> و <span dir="ltr">sugar</span> و <span dir="ltr">porridge</span> و <span dir="ltr">milk</span> و <span dir="ltr">rice</span>).</li><li><span dir="ltr">some</span> و <span dir="ltr">any</span> و <span dir="ltr">enough</span> غير مشمولة: اقتصرنا على <span dir="ltr">many</span> و <span dir="ltr">much</span> و <span dir="ltr">a few</span> و <span dir="ltr">a little</span> مع <span dir="ltr">too many</span> و <span dir="ltr">too much.</span></li></ul>
     </header>
     <div class="table-wrap">
       <table>
@@ -4234,7 +4244,7 @@
       <ul class="patterns" dir="ltr"><li>prohibition</li><li>should</li><li>have-to</li></ul>
       <p class="unit-note">النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.</p>
       <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">against, animals, ask, asks, bring, cook, corridor, exam, feed, finish, forbidden, hour, leave, leaving, optional, ought, parents, plenty, recycle, rest, sees, smoke, soup, students, swim, talk, talks, ticket, tries, try, wait, wake, wire, zone</span></p>
-      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>جمل <span dir="ltr">mustn't</span> و<span dir="ltr">don't have to</span> مختارة بجملة ثانية تستبعد الخيار الآخر، وتُسمّى «معنى» لا «خطأ»؛ أما <span dir="ltr">should</span> فخياراتها أخطاء في الصيغة فقط.</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>جمل <span dir="ltr">mustn't</span> و <span dir="ltr">don't have to</span> مختارة بجملة ثانية تستبعد الخيار الآخر، وتُسمّى «معنى» لا «خطأ»؛ أما <span dir="ltr">should</span> فخياراتها أخطاء في الصيغة فقط.</li></ul>
     </header>
     <div class="table-wrap">
       <table>
@@ -5040,7 +5050,7 @@
       <ul class="patterns" dir="ltr"><li>present-continuous</li><li>going-to</li></ul>
       <p class="unit-note">النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.</p>
       <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">aqaba, business, cook, cooking, dentist, exam, fly, flying, french, great, guitar, irbid, leave, leaving, london, medicine, meet, meeting, outside, parents, party, petra, plant, sing, team, tree</span></p>
-      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>هذا الدرس يختبر شكل الجملة فقط (<span dir="ltr">are meet</span>، <span dir="ltr">going study</span>)، لا الاختيار بين المضارع المستمر و<span dir="ltr">going to</span> و<span dir="ltr">will</span> لأن لكل منها أكثر من إجابة مقبولة.</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>هذا الدرس يختبر شكل الجملة فقط (<span dir="ltr">are meet</span>، <span dir="ltr">going study</span>)، لا الاختيار بين المضارع المستمر و <span dir="ltr">going to</span> و <span dir="ltr">will</span> لأن لكل منها أكثر من إجابة مقبولة.</li></ul>
     </header>
     <div class="table-wrap">
       <table>
@@ -5442,7 +5452,7 @@
       <ul class="patterns" dir="ltr"><li>going-to-predictions</li><li>will-predictions</li></ul>
       <p class="unit-note">النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.</p>
       <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">baby, battery, believe, cook, crowded, cry, die, easy, exam, expect, great, help, hope, love, mars, maybe, meals, perhaps, petrol, phones, praise, prices, rain, sky, smiling, snow, soon, studied, sure, team, think, tickets, tired, traffic, truth, wait, wave</span></p>
-      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>هذا الدرس يختبر شكل الجملة فقط (<span dir="ltr">going rain</span>، <span dir="ltr">will to be</span>)، لا الاختيار بين <span dir="ltr">going to</span> و<span dir="ltr">will</span> لأن لكل منهما أكثر من إجابة مقبولة.</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>هذا الدرس يختبر شكل الجملة فقط (<span dir="ltr">going rain</span>، <span dir="ltr">will to be</span>)، لا الاختيار بين <span dir="ltr">going to</span> و <span dir="ltr">will</span> لأن لكل منهما أكثر من إجابة مقبولة.</li></ul>
     </header>
     <div class="table-wrap">
       <table>
@@ -7455,7 +7465,7 @@
       <ul class="patterns" dir="ltr"><li>had-form</li><li>had-negatives-questions</li></ul>
       <p class="unit-note">النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.</p>
       <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">advance, anyone, aqaba, arm, broken, built, came, cook, cooked, eaten, enough, exam, far, film, finish, finished, forget, forgotten, gone, got, grow, guests, hear, heard, hour, irbid, leave, left, lose, lost, match, medicine, meet, met, noon, parents, party, petra, rain, rained, realise, realised, sat, seen, snow, studied, taken, told, wait, waited, write, written, yet</span></p>
-      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>الظروف مثل <span dir="ltr">before</span> و<span dir="ltr">by</span> (<span dir="ltr">before her parents arrived</span>) تُبيِّن ترتيب الحدثين لكنها لا تجعل الماضي البسيط خطأً، فخيارات هذا الدرس أخطاء في الصيغة (<span dir="ltr">had finish</span>) فقط.</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>الظروف مثل <span dir="ltr">before</span> و <span dir="ltr">by</span> (<span dir="ltr">before her parents arrived</span>) تُبيِّن ترتيب الحدثين لكنها لا تجعل الماضي البسيط خطأً، فخيارات هذا الدرس أخطاء في الصيغة (<span dir="ltr">had finish</span>) فقط.</li></ul>
     </header>
     <div class="table-wrap">
       <table>
@@ -7857,7 +7867,7 @@
       <ul class="patterns" dir="ltr"><li>say-tell</li><li>ask</li><li>reported-questions</li></ul>
       <p class="unit-note">النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.</p>
       <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">asked, close, closed, directions, easy, film, finished, got, help, hungry, leave, left, listen, mother, name, ready, said, tired, told, wait, want, wanted, whether</span></p>
-      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>هذا الدرس بلا أنشطة كلمات أو قراءة لأن كلماته قليلة؛ لن يظهر للطلاب إلا بعد توقيعكم.</li><li>لا جملة تعتمد على تغيّر زمن الفعل في الكلام المنقول (<span dir="ltr">said she was tired</span> و<span dir="ltr">said she is tired</span> مقبولتان)، فالخيارات الخاطئة نقص المفعول (<span dir="ltr">He told he was busy</span>) أو ترتيب الكلمات (<span dir="ltr">where did I live</span>).</li></ul>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>هذا الدرس بلا أنشطة كلمات أو قراءة لأن كلماته قليلة؛ لن يظهر للطلاب إلا بعد توقيعكم.</li><li>لا جملة تعتمد على تغيّر زمن الفعل في الكلام المنقول (<span dir="ltr">said she was tired</span> و <span dir="ltr">said she is tired</span> مقبولتان)، فالخيارات الخاطئة نقص المفعول (<span dir="ltr">He told he was busy</span>) أو ترتيب الكلمات (<span dir="ltr">where did I live</span>).</li></ul>
     </header>
     <div class="table-wrap">
       <table>
