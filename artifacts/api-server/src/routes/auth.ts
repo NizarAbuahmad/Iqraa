@@ -60,7 +60,14 @@ import { guardianLimitReached } from "../lib/guardianLimit.ts";
 import { hasLiveRosterLink } from "../lib/rosterLinkState.ts";
 import { guardianStatus } from "../lib/guardianGate.ts";
 import { GUARDIAN_LIMITS, limitReached, maskEmail, normalizeParentEmail } from "../lib/guardianConsent.ts";
-import { currentRequest, issueAndSend, queueRequest, recentCounts } from "../lib/guardianRequests.ts";
+import {
+  countForParent,
+  currentRequest,
+  issueAndSend,
+  queueRequest,
+  recentCounts,
+  sendQueuedGuardianRequest,
+} from "../lib/guardianRequests.ts";
 import { claimNeedsApproval, pendingLimitReached } from "../lib/claimDecision.ts";
 import { namesForNewAccount, redeemRoleCheck } from "../lib/redeemPolicy.ts";
 import { studentGradeIds } from "../lib/studentGrades.ts";
@@ -552,10 +559,26 @@ router.post("/register", shedWhenHashingBusy(), registerLimiter, registerEmailLi
       return;
     }
 
-    // A student with an email has no teacher's code vouching for them, so they
-    // confirm they are an adult or have a guardian's agreement. Not asked of
-    // anyone else; see lib/ageConfirmation.ts.
-    const age = ageConfirmation(req.body, role);
+    // A student with an email has no teacher's code vouching for them. With GUARDIAN_APPROVAL on, a parent
+    // approves by email (lib/guardianConsent.ts); with it off they tick that they are an adult or have a
+    // guardian's agreement (lib/ageConfirmation.ts). The live app still sends the tick until the flag is on.
+    const holdForParent = role === "student" && guardianApprovalEnabled();
+    let parentEmail = "";
+    if (holdForParent) {
+      const parent = normalizeParentEmail((req.body as { parentEmail?: unknown }).parentEmail, email);
+      if (!parent.ok) {
+        res.status(parent.status).json({ error: parent.error, code: parent.code });
+        return;
+      }
+      if (limitReached(await countForParent(parent.email), GUARDIAN_LIMITS.perParentPerDay)) {
+        res.status(429).json({ error: "Too many requests for that address. Try again tomorrow.", code: "guardian_rate_limited" });
+        return;
+      }
+      parentEmail = parent.email;
+    }
+    const age: ReturnType<typeof ageConfirmation> = holdForParent
+      ? { ok: true, guardianConfirmedAt: null }
+      : ageConfirmation(req.body, role);
     if (!age.ok) {
       res.status(age.status).json({ error: age.error, code: age.code });
       return;
@@ -591,6 +614,16 @@ router.post("/register", shedWhenHashingBusy(), registerLimiter, registerEmailLi
       .returning();
 
     if (!user) throw new Error("Failed to create user");
+
+    // Queued with no token: the parent is mailed only after the student has verified their own address.
+    if (holdForParent) {
+      try {
+        await queueRequest(user.id, parentEmail);
+      } catch (err) {
+        // The account exists and can ask again from the waiting screen; this must not turn a sign-up into a 500.
+        logger.error({ err, userId: user.id }, "could not queue the guardian request at sign-up");
+      }
+    }
 
     // No tokens issued here: a password account is unverified until it
     // proves the address at POST /auth/verify-email, which is what hands
@@ -679,6 +712,9 @@ router.post("/verify-email", verifyEmailLimiter, verifyEmailAddressLimiter, asyn
       .set({ emailVerified: true })
       .where(eq(users.id, user.id))
       .returning();
+
+    // The student's own address is now proved, so a parent's approval request queued at sign-up can be mailed.
+    if (verified.role === "student") await sendQueuedGuardianRequest(verified.id);
 
     const { accessToken, refreshTokenValue } = generateTokens(verified.id, verified.email, verified.role);
     await storeRefreshToken(verified.id, refreshTokenValue, req.headers.origin);
@@ -1229,6 +1265,8 @@ router.post("/role", authMiddleware, roleSwitchLimiter, async (req: Authenticate
       hasTeachingData: () => hasAnyTeachingData(req.user!.id),
       // A literal true, like /register: a string in a consent field is not one.
       ageConfirmed: (req.body ?? {}).ageConfirmed === true,
+      // A parent's approval replaces the tick when GUARDIAN_APPROVAL is on.
+      ageTickRequired: !guardianApprovalEnabled(),
     });
 
     if (!decision.ok) {
@@ -1246,7 +1284,7 @@ router.post("/role", authMiddleware, roleSwitchLimiter, async (req: Authenticate
             role: decision.role,
             // Only a change into student carries the confirmation (the decision
             // refused it otherwise), and it is recorded like a sign-up's.
-            ...(decision.role === "student" ? { guardianConfirmedAt: new Date() } : {}),
+            ...(decision.role === "student" && !guardianApprovalEnabled() ? { guardianConfirmedAt: new Date() } : {}),
           })
           .where(eq(users.id, req.user!.id));
         // A name picked off a class code waits for a teacher to answer it as THIS
@@ -1943,6 +1981,7 @@ router.post("/google", googleLimiter, async (req, res) => {
           hasTeachingData: () => hasAnyTeachingData(known!.id),
           // The register screen sends it for a student on the email/Google path.
           ageConfirmed: req.body?.ageConfirmed === true,
+          ageTickRequired: !guardianApprovalEnabled(),
         });
         if (!decision.ok) {
           // A missing tick is a bad request, not a clash between two accounts.
@@ -1962,7 +2001,7 @@ router.post("/google", googleLimiter, async (req, res) => {
           .update(users)
           .set({
             role: decision.role,
-            ...(decision.changed && decision.role === "student" ? { guardianConfirmedAt: new Date() } : {}),
+            ...(decision.changed && decision.role === "student" && !guardianApprovalEnabled() ? { guardianConfirmedAt: new Date() } : {}),
           })
           .where(eq(users.id, known!.id));
         logger.info({ userId: known!.id, from: known!.role, to: decision.role }, "role switched via google signup");
@@ -2040,8 +2079,24 @@ router.post("/google", googleLimiter, async (req, res) => {
           return;
         }
 
-        // Same as /register: a student with no teacher's code confirms their age.
-        const age = ageConfirmation(req.body, role);
+        // Same as /register: a parent's approval when GUARDIAN_APPROVAL is on, the age tick otherwise.
+        const holdForParent = role === "student" && guardianApprovalEnabled();
+        let parentEmail = "";
+        if (holdForParent) {
+          const parent = normalizeParentEmail((req.body as { parentEmail?: unknown }).parentEmail, email);
+          if (!parent.ok) {
+            res.status(parent.status).json({ error: parent.error, code: parent.code });
+            return;
+          }
+          if (limitReached(await countForParent(parent.email), GUARDIAN_LIMITS.perParentPerDay)) {
+            res.status(429).json({ error: "Too many requests for that address. Try again tomorrow.", code: "guardian_rate_limited" });
+            return;
+          }
+          parentEmail = parent.email;
+        }
+        const age: ReturnType<typeof ageConfirmation> = holdForParent
+          ? { ok: true, guardianConfirmedAt: null }
+          : ageConfirmation(req.body, role);
         if (!age.ok) {
           res.status(age.status).json({ error: age.error, code: age.code });
           return;
@@ -2064,6 +2119,16 @@ router.post("/google", googleLimiter, async (req, res) => {
             ...signupSource(req.headers),
           })
           .returning();
+
+        // Google has already proved the address, so the parent can be mailed at once.
+        if (holdForParent && user) {
+          try {
+            await queueRequest(user.id, parentEmail);
+            await sendQueuedGuardianRequest(user.id);
+          } catch (err) {
+            logger.error({ err, userId: user.id }, "could not queue the guardian request for a Google sign-up");
+          }
+        }
       }
     }
 

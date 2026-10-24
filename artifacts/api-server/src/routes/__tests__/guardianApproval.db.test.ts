@@ -369,4 +369,159 @@ describeDb("parent approval for email students", () => {
       assert.equal((await call(on, "GET", "/auth/me", approved)).json.guardianStatus, "approved");
     });
   });
+
+  describe("sign-up, verification and role switch", () => {
+    const PASSWORD = "Sufficiently1Strong!";
+    const TERMS = { acceptedTerms: true, termsVersion: "2026-10-23" };
+    /** Every parent link the `on` server has logged so far, oldest first. */
+    const links = () => [...on.logs().matchAll(/\/guardian\/([A-Za-z0-9_-]{43})/g)].map(m => m[1]);
+    const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+    /** The server's log reaches us through a pipe, at its own pace, so a line is polled for (bounded), never assumed. */
+    async function until(what: string, ready: () => boolean) {
+      const deadline = Date.now() + 10_000;
+      while (!ready() && Date.now() < deadline) await sleep(100);
+      assert.ok(ready(), `${what} never appeared in the server log`);
+    }
+    const configLines = (server: TestServer) => server.logs().split("/guardian-consent/config").length - 1;
+    /**
+     * Waits until the server has logged one more request than before. The request log line is written when a response
+     * finishes, after everything the earlier request logged, so once it is here any line an earlier request was going to
+     * write is here too. That is what makes an assertion that something was NOT logged mean something.
+     */
+    async function logsCaughtUp(server: TestServer) {
+      const seen = configLines(server);
+      assert.equal((await call(server, "GET", "/guardian-consent/config")).status, 200);
+      await until("the marker request", () => configLines(server) > seen);
+    }
+
+    const signUp = (server: TestServer, email: string, extra: Record<string, unknown>) =>
+      call(server, "POST", "/auth/register", undefined, {
+        firstName: "Kid", lastName: "Signup", email, password: PASSWORD, confirmPassword: PASSWORD, role: "student", ...TERMS, ...extra,
+      });
+
+    /**
+     * The 6-digit code the server logs when no RESEND_API_KEY is set. The log is pino-pretty with colour, so one entry is
+     * a header line (`[time] WARN (pid): … verification email not sent`) followed by indented `key: value` lines, the
+     * values wrapped in ANSI escapes. Reads the entry for this address, not a neighbour's.
+     */
+    async function verificationCode(server: TestServer, email: string): Promise<string> {
+      const plain = () => server.logs().replace(/\x1b\[[0-9;]*m/g, "");
+      const find = (): string | null => {
+        const entries = plain().split(/\n(?=\[)/);
+        for (let i = entries.length - 1; i >= 0; i -= 1) {
+          if (!entries[i].includes("verification email not sent")) continue;
+          if (!new RegExp(`\\bto:\\s*"${email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`).test(entries[i])) continue;
+          const m = entries[i].match(/\bcode:\s*"(\d{6})"/);
+          if (m) return m[1];
+        }
+        return null;
+      };
+      await until(`the verification code for ${email}`, () => find() !== null);
+      return find()!;
+    }
+
+    it("with the flag on, a student must give a parent's email (not the tick), and not their own", async () => {
+      const missing = await signUp(on, "need1@example.test", { ageConfirmed: true });
+      assert.equal(missing.status, 400);
+      assert.equal(missing.json.code, "parent_email_required");
+      const own = await signUp(on, "need2@example.test", { parentEmail: "NEED2@example.test" });
+      assert.equal(own.json.code, "parent_email_is_own");
+      assert.deepEqual(await q(`SELECT 1 FROM users WHERE email IN ('need1@example.test','need2@example.test')`), [], "nothing was created");
+    });
+
+    it("queues the request at sign-up, mails the parent only after the student verifies, then holds them", async () => {
+      const email = "flow1@example.test";
+      const before = links().length;
+      const reg = await signUp(on, email, { parentEmail: "Mum.Flow1@example.test" });
+      assert.equal(reg.status, 201, reg.text);
+      const [row] = await q<{ id: string; token_hash: string | null; expires_at: Date | null; parent_email: string }>(
+        `SELECT c.id, c.token_hash, c.expires_at, c.parent_email FROM guardian_consents c JOIN users u ON u.id = c.user_id WHERE u.email = $1`,
+        [email],
+      );
+      assert.equal(row.parent_email, "mum.flow1@example.test");
+      assert.equal(row.token_hash, null, "queued with no token");
+      assert.equal(row.expires_at, null);
+      // Sign-up queues the request BEFORE it issues the verification code, so a link mailed at sign-up would be logged
+      // ahead of the code's line. Waiting for the code first therefore makes "no link yet" a real check.
+      const code = await verificationCode(on, email);
+      assert.equal(links().length, before, "nothing is mailed to the parent before the student verifies");
+      const [u] = await q<{ guardian_confirmed_at: Date | null }>(`SELECT guardian_confirmed_at FROM users WHERE email = $1`, [email]);
+      assert.equal(u.guardian_confirmed_at, null, "the flag-on path does not record a tick");
+
+      const verified = await call(on, "POST", "/auth/verify-email", undefined, { email, code });
+      assert.equal(verified.status, 200, verified.text);
+      await until("the parent's link", () => links().length >= before + 1);
+      assert.equal(links().length, before + 1, "the parent is mailed once, after verification");
+      const [after] = await q<{ token_hash: string | null }>(`SELECT token_hash FROM guardian_consents WHERE id = $1`, [row.id]);
+      assert.equal(after.token_hash, sha(links().at(-1)!));
+
+      const token = verified.json.accessToken as string;
+      const held = await fetch(`${on.base}/student/exams`, { headers: { Authorization: `Bearer ${token}` } });
+      assert.equal(held.status, 403);
+      assert.equal(((await held.json()) as { code: string }).code, "guardian_approval_required");
+
+      assert.equal((await call(on, "POST", `/guardian-consent/${links().at(-1)}`, undefined, { decision: "approved", confirmGuardian: true })).status, 200);
+      const freed = await fetch(`${on.base}/student/exams`, { headers: { Authorization: `Bearer ${token}` } });
+      assert.equal(freed.status, 200);
+    });
+
+    it("a student who signed up with the tick (flag off) and verifies against the flag-on server is not mailed to", async () => {
+      const email = "ticked.verify@example.test";
+      const ticked = await signUp(off, email, { ageConfirmed: true });
+      assert.equal(ticked.status, 201, ticked.text);
+      const code = await verificationCode(off, email);
+      const before = links().length;
+      const verified = await call(on, "POST", "/auth/verify-email", undefined, { email, code });
+      assert.equal(verified.status, 200, verified.text);
+      await logsCaughtUp(on);
+      assert.equal(links().length, before, "no queued request, so nothing to mail");
+      assert.deepEqual(await q(`SELECT 1 FROM guardian_consents c JOIN users u ON u.id = c.user_id WHERE u.email = $1`, [email]), []);
+    });
+
+    it("the parent-address limit applies at sign-up: a sixth student on one address is refused (429) and not created", async () => {
+      for (let i = 0; i < 5; i += 1) {
+        const r = await signUp(on, `cap${i}@example.test`, { parentEmail: "cap.parent@example.test" });
+        assert.equal(r.status, 201, `${i}: ${r.text}`);
+      }
+      const sixth = await signUp(on, "cap5@example.test", { parentEmail: "cap.parent@example.test" });
+      assert.equal(sixth.status, 429);
+      assert.equal(sixth.json.code, "guardian_rate_limited");
+      assert.deepEqual(await q(`SELECT 1 FROM users WHERE email = 'cap5@example.test'`), []);
+    });
+
+    it("a teacher and a parent sign up exactly as before, with no parent email", async () => {
+      for (const role of ["teacher", "parent"]) {
+        const r = await signUp(on, `${role}.plain@example.test`, { role });
+        assert.equal(r.status, 201, `${role}: ${r.text}`);
+      }
+    });
+
+    it("with the flag off, sign-up is exactly as before: the tick is required, a parent email is ignored", async () => {
+      const noTick = await signUp(off, "off1@example.test", { parentEmail: "p@example.test" });
+      assert.equal(noTick.status, 400);
+      assert.equal(noTick.json.code, "age_confirmation_required");
+      const ticked = await signUp(off, "off2@example.test", { ageConfirmed: true, parentEmail: "p@example.test" });
+      assert.equal(ticked.status, 201, ticked.text);
+      assert.deepEqual(await q(`SELECT 1 FROM guardian_consents c JOIN users u ON u.id = c.user_id WHERE u.email = 'off2@example.test'`), []);
+      const [u] = await q<{ guardian_confirmed_at: Date | null }>(`SELECT guardian_confirmed_at FROM users WHERE email = 'off2@example.test'`);
+      assert.ok(u.guardian_confirmed_at);
+    });
+
+    it("role switch: with the flag on a teacher becomes a held student with no tick; with it off the tick is asked", async () => {
+      const t1 = await mkUser("teacher");
+      const switched = await call(on, "POST", "/auth/role", t1, { role: "student" });
+      assert.equal(switched.status, 200, switched.text);
+      const me = await call(on, "GET", "/auth/me", t1);
+      assert.equal(me.json.role, "student");
+      assert.equal(me.json.guardianStatus, "needed");
+      const [u] = await q<{ guardian_confirmed_at: Date | null }>(`SELECT guardian_confirmed_at FROM users WHERE id = $1`, [t1]);
+      assert.equal(u.guardian_confirmed_at, null);
+
+      const t2 = await mkUser("teacher");
+      const noTick = await call(off, "POST", "/auth/role", t2, { role: "student" });
+      assert.equal(noTick.status, 400);
+      assert.equal(noTick.json.code, "age_confirmation_required");
+      assert.equal((await call(off, "POST", "/auth/role", t2, { role: "student", ageConfirmed: true })).status, 200);
+    });
+  });
 });
