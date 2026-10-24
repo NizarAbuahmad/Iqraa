@@ -2,9 +2,22 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { LESSONS, type Lesson } from '@workspace/curriculum';
 import {
-  MIN_LESSON_TERMS, buildTermScramble, buildTermSpotRound, gameLessonsForScope, hasLessonGames, isTermUnscrambled,
-  lessonTerms, plainTerm,
+  MIN_LESSON_TERMS, buildTermScramble, buildTermSpotRound, gameLessonsForScope, hasLessonGames, homeworkGamesFor,
+  isTermUnscrambled, lessonTerms, plainTerm,
 } from '../lessonGames.ts';
+import { resolveExerciseLesson } from '../mathExercises.ts';
+
+test('homeworkGamesFor offers the Math Corner exercises on a covered maths lesson, and only there', () => {
+  const maths = LESSONS.find(l => l.id === 'kbl-g5-math-s1-nccd-u2_l3')!;
+  assert.ok(homeworkGamesFor(maths).includes('exercises'));
+  for (const l of LESSONS) {
+    assert.equal(homeworkGamesFor(l).includes('exercises'), resolveExerciseLesson(l.id) !== null, l.id);
+  }
+  // A Grade 5 maths class can set exercises on lessons that have no key-term games at all.
+  const g5 = gameLessonsForScope('grade-5', ['mathematics']).flatMap(g => g.lessons.map(l => l.id));
+  const exerciseOnly = g5.filter(id => !hasLessonGames(LESSONS.find(x => x.id === id)!));
+  assert.ok(exerciseOnly.length > 0, 'maths lessons without key terms are listed for their exercises');
+});
 
 const seeded = (seed = 7) => () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
 
@@ -65,7 +78,7 @@ test('gameLessonsForScope offers only lessons that can host a game, by unit, fro
     assert.ok(g.lessons.length > 0);
     for (const l of g.lessons) {
       const found = LESSONS.find(x => x.id === l.id);
-      assert.ok(found && hasLessonGames(found), l.id);
+      assert.ok(found && homeworkGamesFor(found).length > 0, l.id);
     }
   }
   // Another subject's lessons never appear for a maths-only class.

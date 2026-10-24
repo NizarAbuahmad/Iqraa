@@ -21,6 +21,14 @@
  * in `lib/rosterClaim.ts`, and the moderation queue that exists for exactly
  * the user-to-user content this gate currently prevents.
  *
+ * What "hold an account" covers when it is on (since 2026-10-23): a parent
+ * through a teacher's code, and a student through a teacher's code **or an
+ * email with no code**, having confirmed they are an adult or have a
+ * guardian's agreement (`lib/ageConfirmation.ts`). So not every student account
+ * is made inside a class; the store declaration and `constants/legal.ts` (§5 of
+ * the privacy policy, §1 of the terms) must say so, and a lawyer's read is
+ * still owed.
+ *
  * Note what switching it off also switches off: with no parent or student
  * accounts, no chat thread can be created at all — `createDirectThread`
  * requires a teacher on one side and a parent or student on the other, and a

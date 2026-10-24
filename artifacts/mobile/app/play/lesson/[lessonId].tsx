@@ -8,8 +8,8 @@
  * Anyone else (a parent, a signed-out visitor, another game of the lesson)
  * just plays.
  */
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getLessonById } from '@workspace/curriculum';
@@ -26,6 +26,7 @@ import { TriviaBoard } from '@/components/publicGames/TriviaGame';
 import type { TranslationKey } from '@/services/i18n';
 import { TYPE } from '@/constants/theme';
 import { postGameResult } from '@/services/homeworkApi';
+import { SendStatus } from '@/components/ui/SendStatus';
 import {
   availableLessonGames, buildTermSpotRound, lessonTerms, type LessonGame, type TermSpotQuestion,
 } from '@/services/lessonGames';
@@ -139,35 +140,6 @@ export default function LessonGamesScreen() {
         </View>
       )}
     </CornerFrame>
-  );
-}
-
-function SendStatus({ state, onRetry, onLeave }: { state: 'sending' | 'sent' | 'failed'; onRetry: () => void; onLeave: () => void }) {
-  const colors = useColors();
-  const { t } = useLanguage();
-  const leave = useRef(onLeave);
-  leave.current = onLeave;
-  useEffect(() => () => leave.current(), []);
-  return (
-    <View style={{ alignItems: 'center', gap: 6 }}>
-      <Text
-        style={{
-          color: state === 'failed' ? colors.destructive : colors.mutedForeground,
-          fontFamily: 'Almarai_400Regular',
-          fontSize: TYPE.label,
-          textAlign: 'center',
-        }}
-      >
-        {t(state === 'sent' ? 'lessonGameSent' : state === 'failed' ? 'lessonGameSendFailed' : 'lessonGameSending')}
-      </Text>
-      {state === 'failed' ? (
-        <Pressable accessibilityRole="button" hitSlop={8} onPress={onRetry}>
-          <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.label, textDecorationLine: 'underline' }}>
-            {t('retry')}
-          </Text>
-        </Pressable>
-      ) : null}
-    </View>
   );
 }
 

@@ -10,6 +10,1041 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Math Corner exercises as homework — 2026-10-24
+
+**What a teacher does.** In a homework form, «لعبة أو تمارين من الدرس» (was «لعبة
+من الدرس») now offers «تمارين الرياضيات» on every maths lesson the Math Corner covers,
+beside the lesson's term games. The picker lists those lessons even when they have no
+key terms, so a Grade 1–9 maths class, which had almost no games, now has something to
+set. The homework's «النتائج» sheet shows each student's best exercises score and
+attempts, like a game («تمارين الرياضيات · محاولة · ٢ من ١٠»).
+
+**What a student sees.** The homework line reads «تمارين الرياضيات: <lesson>» with a
+calculator icon. It opens `/curriculum/math/exercises/<lessonId>?hw=<id>`, which starts
+in «اختبر نفسك»; each finished set is posted to the homework and the end card says
+whether it was sent (the games' `SendStatus`, now in `components/ui/SendStatus.tsx`,
+with a retry). The set also still counts for the Math Corner's own best score and the
+teacher's «تمارين الرياضيات» class sheet.
+
+**How.** `exercises` is a fourth homework "game": `GAMES` in
+`modules/homework/game.ts`, `HomeworkGameResource.game` in the schema (jsonb, no
+migration), `HomeworkGameName` in the app. Same attachment, same `game_results` row
+(best ratio, attempts), same tick on the homework, same results route. The server
+refuses `exercises` on a lesson that is not a catalog maths lesson (`isMathsLesson`).
+The app offers it only where the exercise bank covers the lesson
+(`homeworkGamesFor` → `resolveExerciseLesson`). `openResource` routes it to the Math
+Corner instead of `/play/lesson`. Labels go through `HOMEWORK_GAME_TITLE_KEY`.
+
+**Verified.** DB tests: exercises attach to a maths lesson and are refused on a history
+lesson (400); a student's `exercises` result saves, ticks the homework, and is 404 on a
+homework that did not attach it. App tests: `homeworkGamesFor` offers exercises exactly
+where `resolveExerciseLesson` covers the lesson, and a Grade 5 maths class's picker
+lists exercise-only lessons. In a browser against a throwaway database: the teacher's
+picker showed «تمارين الرياضيات» on «ضَرْبُ الأَعْدادِ»; the student opened it from
+«الواجبات», got test mode, finished 2/10, saw «أُرسلت نتيجتك إلى المعلم»; the teacher's
+list read «أنجزه 1 من 1» and the results sheet «سارة — ٢ من ١٠».
+
+**Not covered.** A web tab opened before this deploy drops the unknown `exercises`
+attachment from its list, and if it then saves the homework with `gamesIncluded: true`
+the exercises are detached; a reload fixes it. Android gets none of this until the
+1.5.0 build ships. A parent sees the line and the child's score and can open the
+exercises, but in learn mode with nothing posted: as with games, only the student's
+own finished set reports.
+
+## Chat app-help, twenty-third live pass: 13 more wordings for answers that already existed — 2026-10-24
+
+A 30-question pass on app.iqrra.com found 13 questions answered by the model for which the app
+already had a written answer: clearing the chat history (the model refused; `howChatHistory`
+says there is no history), the teacher's own objectives in a lesson plan (`howPlanOptions`),
+old teaching plans (the model sent the teacher to a non-existent «أدوات الذكاء الاصطناعي» tab;
+`howTeachingPlan`, a new rule block for the `teaching-plans` place), downloading the teacher's
+book, opening a lesson from a book, finding a lab experiment, the Math Corner's formulas and unit
+converter (the model had read «القوانين والصيغ» as angles), opening the Quran corner, sending the
+link code to parents, entering paper-exam marks by hand (`howEditMark`), finding struggling
+students after an exam (`howSupportGroups`) and preparing a remedial worksheet for them
+(`howRemedial`, which the model had answered by asking which subject). No new answer strings;
+wordings added to existing rule ids in `appHelp.ts`, pinned in `appHelp.test.ts` with
+near-misses that stay with the model.
+
+**Left out on purpose:** «أتدرب على تمارين الدروس» (the exercises exist in the Math Corner only,
+so a bare ask about another subject would get the wrong place), «أعرف أن ولي الأمر ربط حسابه»,
+«أشاهد ما يراه الطالب في حسابه», «أنسخ رد إقرأ» and «أطبع خطة الدرس» (the generic
+copy-and-export text is accurate), and «أعدّل التهيئة في خطة الدرس» (only the tool card; the
+edit answer `faqA5` is a different wording and I did not widen it).
+
+## Printed grammar forms fit the page, the sign-off no longer covers rows, and True or false says right or wrong without pictures — 2026-10-24
+
+Four small fixes found while building Grade 10 grammar (#1235); none changes a sentence, and no `-sheet.md` changed.
+
+- **The printed forms clipped.** The forms are right-to-left and their tables are `nowrap`, so in A4 landscape the
+  widest row set the table width and the last columns were cut off the left edge of the page. Measured in
+  Chromium print media at 1032 px (cell edge off the page before → after): Grade 3 38 → 0 px (a third of the notes
+  column), Grade 4 726 → 0 (tick, notes and yes/no columns), Grade 5 403 → 0 (notes), Grade 9 799 → 0 (kind,
+  tick, notes); Grades 1 and 2 already fit; Grade 10 got the same fix in #1235. Pages: Grade 3 45 → 34, 4 57 → 54, 5
+  42 → 44, 9 93 → 96. Every rule is inside `@media print`: at 390 px the screen layout is byte-for-byte what it was.
+- **The sign-off box covered the last rows.** The unit was a grid in print, so when its table ran onto a second page
+  the verdict and signature box was drawn over the last one to three rows (their sentences and tick boxes) and
+  left blank pages. Measured over the 7 grammar and 4 reading forms: 86 overlapping sign-offs and 11 blank pages
+  before, 0 and 0 after; page counts unchanged except reading Grade 2 (33 → 32) and Grade 4 (41 → 39), where the
+  blank pages went. This existed in every form from Grade 1 on.
+- **Arabic «و» glued to an English word.** The notes wrote «وafter»; the English run is an LTR span and the «و»
+  rendered like a stray letter. `ltr()` now puts a space after a standalone «و» before a Latin letter (and four
+  hand-written strings and the Grade 4 reading form's three leftovers are spaced). The rendered text of every
+  grammar and reading form has 0 glued cases; a test scans all of them. The changed docs differ from the old only by
+  inserted spaces (and the print rules): grammar Grades 1–5, 9 and reading Grades 2–4.
+- **True or false and Yes or No subtitles assumed a picture.** On the lesson screen True or false said «Does the
+  sentence match the picture?» and Yes or No said «Pick the answer that fits the picture» on lessons with none. Now a
+  lesson whose right-or-wrong questions have no picture says «Is the sentence right or wrong?» (every Grade 5, 9 and
+  10 lesson, Grade 4 Semester 1 Unit 4 and the picture-free Grade 3 and 4 lessons), and Yes or No on Grade 4 S1 U4
+  and Grade 9 S1 U4 says «Pick the right answer to the question». The rule is a pure helper pinned by tests against
+  the real lesson data.
+
+**Verified:** curriculum 688 tests, focused mobile suites 130, root typecheck; the print measurements above in
+Chromium; page images read for one page of every grade (Grade 3 page 6 shows the sign-off under row 40 with rows
+36–40 legible). **Not verified:** other browsers' print engines and a real printer (only Chromium's PDF output was
+measured); the lesson-screen subtitles in a browser (tested as data, not as a screenshot). **Known limit:** the
+teacher sheets (`-sheet.md`) still describe True or false as «beside its own picture», which is wrong for Grades 5, 9
+and 10; changing it would rewrite those committed sheets, so it is left for a later change.
+
+## Chat app-help, twenty-second live pass: 10 more wordings for answers that already existed — 2026-10-24
+
+A 30-question pass on app.iqrra.com found 10 questions answered by the model or a bare tool card
+for which the app already had a written answer: what «جاهزية الدرس» means and preparing
+tomorrow's lesson (`howLessonPrep`), sending a homework to one class (`howAddHomework`, which is
+per class), which students have not handed in a homework (`howHomeworkDone`, which shows a count
+and not names), a class's performance on one objective (`howExamAnalysis`), asking students to
+retake an exam (`howExamRetake`: the teacher cannot open it, the student retakes), scanning a
+handwritten sheet (`howClassScan`), adding a question by hand to an exam draft
+(`howEditExamQuestions`), speaker notes (`howSlideNotes`, which says there is no field) and
+reviewing the English book's words (`howEnglishCorner`). No new answer strings; wordings added to
+existing rule ids in `appHelp.ts`, pinned in `appHelp.test.ts` with near-misses that stay with
+the model.
+
+**Left out on purpose** (an existing answer is close but not the one asked, or I did not verify
+the feature): «أرسل ملاحظة لولي أمر طالب معين» (a 17th-pass near-miss that must stay with the
+model), pinning a lesson to the top, reordering exam questions, saving an exam as a draft,
+renaming a saved file, putting a library picture on a slide, a timer for an activity,
+showing slides on a TV, a trial class in the timetable, switching between schools, listing the
+lessons not yet prepared, publishing an exam to a subset of students, and grading a student's
+homework (the model answers it as marking advice).
+
+## Chat app-help, twenty-first live pass: 19 more wordings for answers that already existed — 2026-10-24
+
+A 30-question pass on app.iqrra.com found 19 questions answered by the model, or by a bare
+tool card, for which the app already had a written answer: the student's link code
+(`howLinkParent`), a forgotten login code, hiding published results, the pass mark and renewing
+an expired exam link (the answers say the app has no pass-mark setting and what to press to
+renew), setting a homework due date, renaming and copying a class, blocking a user, read
+receipts, library videos, the lesson memory game, the function grapher, the weekly schedule on
+Today, the price, using the chat by voice, updating the app and reporting a problem in a
+generated question (`howReportProblem`; the model had sent the teacher to a non-existent
+«أدوات الذكاء الاصطناعي» tab). One was worse than a card: «أطبع نسخة الطالب من الامتحان» got the
+generic «PDF أو Word» export text although `howPrintExam` says the Evaluations exams are not
+printed from the app. No new answer strings; wordings added to existing rule ids in
+`appHelp.ts`, pinned in `appHelp.test.ts` with near-misses that stay with the model.
+
+**Not done:** «أضع تذكيرًا لحصة قادمة» (the app has an exam reminder answer, not one for a
+class, and I did not check for a class reminder), «أنضم إلى مدرستي», the book-source question
+and the ready-made-homework question, «أصدّر الواجب كملف PDF» (already answered by the generic
+export text, which is accurate for a homework result).
+
+## Roster: edit a student, and see which account holds each name — 2026-10-23
+
+The pencil on a roster row used to open only the note; a teacher could not fix a misspelt name
+(`PATCH /students/:id` and `updateStudent` already took `displayName`, no screen sent it). It now
+opens one sheet: name, register number, gender, note (`EditStudentSheet`), sending only what changed
+(`studentEdit.ts`). Each joined row also shows «الحساب:» with the account's name and join date (`ClaimedByLine`), from a new
+`links` array on `GET /classes/:id` (the old `linked` flag stays).
+
+**Rules.** A rename that matches another live student in any of that student's classes is a 409
+`student_name_taken` (same whitespace/case key as the add route, no Arabic folding; other classes
+and other teachers may reuse the name). After a rename, linked code-only accounts (a login
+code, no password and no Google id) are re-derived from the new roster name — only if they still carry what the
+old name would have produced, so a name a person chose is never overwritten. That write uses
+`systemDb` (`routes/roster.ts` was already pinned) in a second step after the roster update, not
+the same transaction; a failure is logged by id and the saved rename stands.
+
+**Verified (locally, on the final head 7d7c29a):** root `pnpm run typecheck` is clean (libs, api-server,
+mobile, scripts). api-server `pnpm build` then `pnpm test`: 2200 tests, 2200 pass, 0 fail — but 22 DB-backed
+suites print `# SKIP` (no Postgres here; the runner's summary line still says `skipped 0` because it
+does not count skipped suites), including `rosterEdit.db.test.ts` («editing a roster row over HTTP,
+against a real database»). mobile `pnpm test`: 7024 tests, 7014 pass, 0 fail, 10 skipped (all ten are
+chemistry knowledge-base search cases, nothing in this change); «no interface screen prints a date in
+Arabic-Indic digits» passes. In CI on head 1b87839 (which already held the API change and the DB test)
+Typecheck, Build api-server, Test api-server (`REQUIRE_DB_TESTS=true`, so `rosterEdit.db.test.ts` ran
+against a real Postgres and passed) and Test db were green; "Test mobile" failed with exactly one test,
+the Arabic-Indic date one above, because `formatLinkedOn` used a plain `ar-JO` locale. Commit 319d790
+switched it to the repo's `dateLocale()`, so an Arabic date prints Latin digits («23 تشرين الأول»).
+
+**Not verified.** CI on the final head had not been read when this was written; see the PR for it. No
+browser or device pass: RTL layout, dark mode, the keyboard lift, the sheet's scrolling on a short phone
+and the on-screen text of the duplicate-name message were not looked at (no database or API here).
+**Known limits.** The duplicate-name check and the update are separate queries, so two simultaneous
+renames to the same name can both pass (the add route behaves the same). Archived classes count toward
+the 409. The account-name sync is a second step after the roster update, not one transaction, and a
+failure is logged by ids only, never the name.
+
+**Not built (PR 2, next):** teacher approval of class-code joins — design in
+`docs/superpowers/specs/2026-10-23-roster-edit-and-claim-approval-design.md`. Until then a class code
+still lets anyone pick any free name; the claimed-by line and unlink are the check.
+
+## Grade 10 grammar (Semester 1) in the English corner — built, shown to nobody yet, 2026-10-24
+
+The eleven Grade 10 Semester 1 lessons whose book statement is a grammar topic now have grammar activities: Choose the
+word, Build the sentence and True or false. Ten were already in the hub; **Articles (`kbl-eng-s1-nccd-u1_l5`) is a
+grammar-only hub lesson** (no vocabulary rows), the sixth in `GRAMMAR_ONLY_LESSONS` and the first outside Grade 9.
+**All eleven units are `reviewedBy: null` (`englishGrammarG10.ts`), so no teacher or student sees a card, and the
+Articles lesson is absent from the Grade 10 index with a direct URL that says «lesson not found».** Spec:
+`docs/superpowers/specs/2026-10-23-english-corner-grammar-g10-design.md`; plan:
+`docs/superpowers/plans/2026-10-23-english-corner-grammar-g10.md`. Same engine and rules as the Grade 9 and Grade 5
+authored lessons; no app screen, server, schema or migration change. The Grade 10 hub goes from 20 to 21 lessons; no
+other grade changes.
+
+- **440 hand-written items, 40 a lesson, 36 sub-topics** (`englishGrammarG10Items.ts`, `G10_ITEM_LESSONS`, with a
+  `statement` equal to `objectives[0]` of each lesson, read back from the JSON by a test). **206 are `meaning`
+  (grammatical, but a marker in the sentence excludes the other form) and 234 are `form` (the distractor is
+  ungrammatical).** Lessons: u1_l1 present simple and continuous (`habit-markers` 12 and `temporary-markers` 12 meaning;
+  `stative` 8 and `questions` 8 form); u1_l5 Articles (`a-an` 8, `unique-things` 10, `no-article` 10 form;
+  `already-mentioned` 12 meaning); u2_l1 present perfect simple and continuous (`result-count` 14 and `duration` 14
+  meaning, `forms` 12); u2_l4 `-ing` or `to` (`ing` 14, `to` 14 form, `change-of-meaning` 12 meaning); u3_l1 past simple,
+  continuous and perfect (`interrupted` 14 and `earlier-event` 14 meaning, `forms` 12); u3_l4 used to and would
+  (`used-to-states` 14 and `would-habits` 12 meaning, `forms` 14); u3_l5 indirect questions (`could-you-tell` 14,
+  `do-you-know` 14, `if-whether` 12, all form); u4_l1 modals (`obligation` 14 and `ability-permission` 14 meaning,
+  `forms` 12); u4_l4 relative clauses (`defining` 12, `non-defining` 14, `whose-where` 14, all form); u5_l1 the future
+  (`will-decisions` 10 and `going-to-evidence` 10 meaning, `arrangements-timetables` 12 and `forms` 8 form); u5_l3 future
+  continuous and perfect (`continuous` 14 and `perfect` 14 meaning, `forms` 12). Sentences are nine words or fewer
+  (`buildCap(10)`), no real or book-character names, and a `meaning` sub-topic exists only where a word in the sentence
+  can be named as the one that excludes the distractor.
+- **Deviation from the spec's table: u5_l1 `arrangements-timetables` is `form`, not `meaning`.** Every future form fits a
+  fixed time («The train leaves at nine» and «will leave» both pass), so no honest `meaning` distractor exists; the spec
+  said 12 meaning there and the build has none, which is why the totals are 206 and 234 and not 218 and 222. The note on
+  the form says so. Spec decision 3 allows a form-only topic where two forms could both fit; the controller accepted it after the review.
+- **True or false is silent** and **Yes or No is not offered**, as in the Grade 9 and Grade 5 authored lessons; Choose and
+  Build play the correct sentence after the answer. Nothing is pictured.
+- **The teacher's form** (`englishGrammarReview.ts`): the lesson-id display regex is now `/^kbl-(g\d+-)?eng-/` (Grade 10
+  ids have no `g10`, so the form prints `s1-nccd-u1_l1`); the statement lookup reads `G10_ITEM_LESSONS` too;
+  `NOT_COVERED[10]` is two shared bullets and one a lesson; `GRADE_COPY[10]` has the Grade 10 title, lead and the
+  form/meaning legend. Its `extraCss` is the Grade 5 block plus a **Grade-10-only `@media print` block** (sentence and tick
+  columns wrap, notes column 12 %, smaller cell padding and type), because the lesson sentences are long enough that the
+  shared layout overflowed the page. `scripts/grammar-sheet.ts` now runs `[1, 2, 3, 4, 5, 9, 10]` and wrote
+  `docs/english-grammar-g10-review.html` (11 units, 440 sentences, 36 topic rows, 440 form or meaning chips) and
+  `docs/english-grammar-g10-sheet.md`. The Grade 1-5 and 9 forms and the reading forms stayed byte-identical (tests pin
+  them). The lead says «١١ درسًا» (singular after ten) and the Arabic «و» is spaced from English words in every note.
+- **Tests added:** `englishGrammarG10Items.test.ts` (sizes and kinds per sub-topic, statements, caps, uniqueness, banned
+  names, 206 and 234, the form, a has/have in every u2_l1 `forms` twin, no «و» glued to an English word anywhere in the
+  printed Grade 10 form), `englishGrammarG10.test.ts` (eleven unsigned units, all in the hub, nothing offered)
+  and, in the app, `englishGrammarG10ItemGames.test.ts` (Choose, Build and True or false on all eleven, Yes or No on none,
+  no twin voiced). `englishHub.test.ts` pins six grammar-only lessons and 21 Grade 10 hub lessons.
+- **Verified (2026-10-24, after `main` was merged in):** root `pnpm run typecheck` clean (api-server, mobile, scripts);
+  `@workspace/curriculum` `test` **655 tests, 654 passing, 1 failing** with the sandbox's `R2_*` variables set — the one is
+  `r2.test.ts`, which expects them unset — and **655 of 655** with `env -u R2_ACCESS_KEY_ID -u R2_BUCKET -u R2_ENDPOINT -u
+  R2_SECRET_ACCESS_KEY`; its `verify` 197 files, 3306 lessons, 0 errors; the **full mobile suite 7216 tests, 7206 passing,
+  10 skipped, 0 failing** (345 s). **In a browser** at 390 px in Arabic and English, web build with
+  `EXPO_PUBLIC_DEMO_MODE=true`, sign-offs in the working tree only (restored straight after with `git checkout`,
+  `grep -rc "LOCAL CHECK"` shows no non-zero count, `git status` clean): unsigned, `…u3_l1` shows the word activities and
+  no grammar cards, the Grade 10 index has 20 rows and no Articles row, and `…u1_l5` says «lesson not found»; signed, the
+  index has 21 rows and one «grammar activities» row (Articles), whose lesson page holds a «Grammar» section of exactly
+  Choose, Build and True or false and nothing else; `…u3_l1` keeps its six word activities and gains the same three; Yes or
+  No appears on neither. Over a round of eight in each activity, on both lessons and both languages: Choose and Build play
+  the correct sentence after the answer (a recording URL and the browser voice as fallback; 8 of 8 questions each, 0
+  plays before answering) and True or false shows no speaker button before or after answering and plays nothing (0 of 8);
+  a nine-tile Build round wraps its nine slots onto two rows and its tiles onto three, in both languages, and the
+  longest Choose stem met was nine words, with no horizontal scroll at any step of any round. I read the screenshots
+  (the 9-tile Build rounds, the Articles page, the True or false answers, the index, the «lesson not found» page). **Print:** the Grade 10 form measured in Chromium print
+  media has no `.table-wrap` overflow in any of the 11 units and prints at 53 A4 landscape pages with nothing off the
+  left edge.
+- **Not verified:** the 440 sentences by a teacher (a script cannot tell wrong English from right; the printed form is
+  the review) — **no teacher has read a sentence**; the match of each lesson id to the printed book page; on a device; audio,
+  which does not exist for these sentences (the browser check heard the fallback voice, because `english-audio` needs the
+  OpenAI and R2 keys and has not been run for them); and **Semester 2**: its ten grammar lessons are not covered and need
+  grammar-only hub entries first, as Articles did.
+- **Where a teacher will push back (the risky lessons and rows):** (1) **Articles** — `already-mentioned` (the second
+  mention takes «the») is the hardest `meaning` topic to mark by one word, and the note says a/the sometimes fits both in
+  a wider context; (2) **present perfect simple against continuous** (u2_l1) — `result-count` against `duration` is a
+  tendency, not a rule, and a teacher may accept either on some rows; `forms` rows are bare-verb or agreement errors only;
+  (3) **future continuous and future perfect** (u5_l3), where a row can read naturally either way; (4) **the two «didn't
+  use to» rows** (u3_l4), because «didn't used to» is common in informal writing and some teachers accept it (the note
+  says so); and the rows the reviews listed as weakly defensible: «sending fifty messages» and «the bus stopping six
+  times» (u5_l3 perfect rows), and «watering the plants twice». Smaller, not blocking:
+  `habit-markers` twins with «on Fridays» or «every day» can read as temporary (an adverb such as «usually» now sits
+  inside the answer, so its twin keeps standard order, «is usually walking»; the «never» rows were replaced by «five days
+  a week» and «once a month»); two rows («when he dropped it», «when she burnt her hand») have an odd clause order; «A man knocked.» uses knock
+  intransitively; the 14 «By the time» rows are repetitive; «this street used to be quiet» (`would be quiet` weak).
+- **Known limits:** the choice between forms is tested only where one word of the sentence decides it, which is why
+  «this week», «always» and «currently» are not used for the present tenses; a wrong True or false answer shows «Correct
+  answer: False», not the corrected sentence; the True or false card's subtitle still says «Does the sentence match the
+  picture?» (shared copy, as on Grades 5 and 9); nothing is pictured.
+- **Found on the way, not fixed here (new):** the **printed grammar review forms for Grades 3, 4, 5 and 9 clip their
+  left-hand (last) columns when printed in A4 landscape** (measured with Chromium `page.pdf` on each form: overhang 47,
+  690, 390 and 762 px). `td.sentence` and `.yn` are `white-space: nowrap`, so the table is wider than the page; the forms
+  are right to left, so the overflow is on the left: on Grades 4, 5 and 9 the tick box and notes column fall off the page
+  (Grade 4 and 9 also the kind column); on Grade 3 about a third of the notes column (its tick box stays); Grades 1, 2
+  and 10 fit. Grade 10 had the same problem (444 px at first) and was fixed with Grade-10-only CSS,
+  which now fits. The other four need their own change, because it alters their committed forms (their byte-identity is
+  pinned by tests, which would have to move with them). Listed in STATUS.md «Open».
+- **To switch a lesson on:** a Grade 10 English teacher reads and signs that lesson's page of
+  `docs/english-grammar-g10-review.html`, printed, and checks the book-page line; audio is recorded for the correct
+  sentences; then the unit's `reviewedBy` is set in `englishGrammarG10.ts`. Articles appears in the index only once its
+  unit is signed.
+
+## Students choose an email or a teacher's code — 2026-10-23
+
+A student could sign up only with a teacher's code (`POST /auth/redeem`, no email): the register
+screen hid the email and Google forms as soon as «طالب» was picked, and an email student made by
+the roundabout route (sign up as a teacher, switch role) was held on `/claim-required` until a
+teacher's code was entered. Not every student has an email, but some do and a code is not
+something every student has on day one.
+
+**What changed**
+- **Register screen:** a student picks «برمز المعلم» or «ببريد إلكتروني» (no default;
+  `services/signupMethod.ts`). The email form is the teacher's form (and Google) with
+  `role: 'student'`, plus a checkbox: an adult, or a guardian agrees. A parent is code-only as before.
+- **API:** `/auth/register` and `/auth/google` refuse a new student without `ageConfirmed: true`
+  (`age_confirmation_required`, `lib/ageConfirmation.ts`) and store `users.guardian_confirmed_at`
+  (migration 0016, one nullable column; renumbered from 0015 when main's `ai_generations.platform` took it).
+- **Claim gate:** `needsRosterClaim` no longer holds a student (a parent still is); `needsGradeSetup`
+  no longer waits behind it for a student. An email student uses the library, corners, games and
+  lesson explanations with no class; `/student/*` routes answer 200 with an empty list. The school tab
+  and `/my-exams` say "join a class" with a button to `/join-class`, which now calls
+  `markRosterClaimed(true)`. Settings offers the account-type switch to a student with no class
+  (the claim screen was their only exit).
+- **Lockout:** `canReissueLoginCode` (`lib/loginCodeReissue.ts`). A code-only student who added an
+  email (`/auth/add-email`) had a password hash, so the teacher's reissue answered
+  `not_a_code_account`, while password sign-in needs a *verified* email: a mistyped address plus a
+  lost code was a lockout. Reissue now works until the email is verified.
+- **Wording:** privacy §5, terms §1 and the header comment in `constants/legal.ts`, `LEGAL_VERSION`
+  2026-10-23 (everyone is asked to accept again). The teacher-shared claim message said the code is
+  asked "after verifying your email", false since 2026-10-10; it now says no email is needed.
+  The in-app help `howStudentSignIn` mentions the email option. `/join-class` told a student with no
+  class to "join another class… another child" (`joinClassCopyKeys`, `services/joinClassCopy.ts`): it
+  now says «الانضمام إلى شعبة» with a first-class sentence for a student with `hasRosterLink === false`,
+  and keeps the old wording for everyone else. The `lib/features.ts` comment on `STUDENT_ACCOUNTS`
+  names both student paths.
+- **One `CheckRow` on the register screen.** #1229 («Make the register terms checkbox visible»)
+  landed on `main` while this PR was open and restyled the terms row (a framed panel, a dark outline)
+  and gave `styles.termsRow` a border width. The age-confirmation row had been copied from the old
+  one: it reused `termsRow` without a border colour, which draws a black frame, and kept the old box.
+  Git merged the file with no conflict, so only looking at the screen showed it. Both rows now render
+  one `CheckRow` (`components/ui/CheckRow.tsx`), so they cannot drift apart again.
+- **Switching an existing account into «student» asks for the same confirmation.** The sign-up asked,
+  but `POST /auth/role` did not, so a teacher or an unlinked parent could become a student with no
+  tick — the same door by another way. `decideRoleSwitch` (`lib/roleSwitch.ts`) now refuses a change
+  *into* student without `ageConfirmed: true` (400 `age_confirmation_required`, checked after every
+  lock so a linked or teaching account is still told why it is locked), and the route stores
+  `guardian_confirmed_at` when it succeeds. `POST /auth/google` on an existing account of another
+  role goes through the same decision. The three screens that switch a role ask for it with the shared
+  `CheckRow`, and the confirm button stays off until it is ticked: Settings → account type,
+  `/claim-required`, and `/setup-subjects` (whose pills used to switch on the tap: tapping «طالب» now
+  opens the box and a confirm button instead). The rule the screens share is
+  `switchNeedsAgeConfirmation` (`services/signupMethod.ts`); leaving the role, or staying a student,
+  asks for nothing.
+
+**Verified.** `pnpm run typecheck`; api-server `pnpm build && pnpm test` (2238 pass on the last merge
+with `main`; 2202 when first written); mobile
+`pnpm test` (7157 tests, 7147 pass, 10 skipped, 0 fail on the last merge; the first run, 7019 tests, had
+3 failures that were mine:
+`i18nTerminology` refuses «class code» and «guardian» in English, and `emptyState.test.ts` counts
+exactly two `EmptyState` in `school.tsx`, so the no-class card is its own component,
+`components/NoClassPrompt.tsx`); the new unit tests (`ageConfirmation`, `loginCodeReissue`,
+`signupMethod`, the changed `routeGating` and `claimCodeMessage` cases). In Chromium (430px, English)
+against the built web bundle and the local API: «طالب» shows the method picker and nothing else until
+a choice is made; «برمز المعلم» shows one code input and no password; «ببريد إلكتروني» shows five inputs
+(two passwords), the note and the age box; submit goes nowhere with nothing ticked or with the terms
+only, and reaches `/verify-email` with both; after verifying, sign-in lands on `/setup-grade`, not
+`/claim-required`; Skip leads to the library, the School tab shows «لم تنضم إلى شعبة بعد» with a
+«Join a class» button, which opens `/join-class`. Against the built API on a throwaway local Postgres with
+`STUDENT_ACCOUNTS=true`, all 17 migrations applied from empty, and by `curl`: a student without
+`ageConfirmed` gets 400, with it 201 and `guardian_confirmed_at` set, a teacher needs none; a verified
+email student has `hasRosterLink:false` and `/student/exams|grades|homework|schedule` and
+`/messaging/contacts` all 200 empty; after `/auth/claim` with a class code `hasRosterLink:true` and
+`gradeIds` fill in; a code-only student who added a mistyped, unverified email gets a new login code
+from the teacher (old code dead, new one signs in), and once the email is verified the same call is
+refused (409).
+
+A second pass on a rebuilt bundle, in **English and in Arabic (RTL)**, with a fresh classless student
+each time: the register screen (both paths), sign-in → `/setup-grade` → Skip → library → School tab
+prompt → the first-class `/join-class` wording → typing a teacher's per-student link code → «تم الانضمام
+إلى الشعبة بنجاح» / "You have joined the class" → the School tab no longer shows the prompt and shows
+the ordinary homework and exams view. The Arabic screenshots read right to left (picker, note, both
+checkboxes, form).
+
+**Not verified.** Android and iOS devices; the Google button (no client id locally); joining with a
+*class* code and picking a name from the list in the browser (a per-student code was used; the
+class-code claim was checked by `curl`); a parent through the unchanged code path in the browser. The
+Arabic strings were reviewed once and aligned to «شعبة» / «رمز الربط», not by a second native reader.
+Not a lawyer's review (the legal text is drafted, not reviewed).
+
+**Known limits.** `/auth/redeem` and `/auth/code-login` still have no committed handler tests. The
+store declaration itself (outside the repo) still needs to say students can sign up with an email.
+The confirmation is a tick, not a check: nothing here verifies an age or contacts a guardian, and a
+minor can tick it.
+
+## Chat app-help, twentieth live pass: 14 more wordings, and one new answer (subject average) — 2026-10-23
+
+A 30-question pass on app.iqrra.com found 14 questions answered by the model for which the app
+already had a written answer (`howAttendance` — «لا يوجد تسجيل حضور», `howClassChat`,
+`howRegenerate`, `howEmailMaterial`, `howQuestionBank`, `howClassScan`, `howExamQr`,
+`howMathTools`, `howMasteryGate`, `howFilesToClass`, `howStudentRecord`, `howNotifications`,
+`howDeleteAccount`, `howCopyExam`). Two were an app card where the steps existed: «أفعّل
+الإشعارات على هاتفي» got only the «الرسائل» card and «أحذف حسابي نهائياً» only the «حسابي» card.
+Wordings added to the existing rule ids in `appHelp.ts`. One new answer, `howSubjectAverage`
+(ar + en): the app has the average per exam («لوحة النتائج») and each student's exam
+percentages («ملف الطالب»), and nothing for a whole subject, which the model had answered with
+an invented «التقارير» screen. Both halves are the existing `howClassAverage` and
+`howStudentRecord`, not new claims. Pinned in `appHelp.test.ts` with teaching near-misses.
+
+**Not done:** «أنضم إلى مدرستي» (the school-join flow for a teacher is not something I
+verified), the book-source question and the ready-made-homework question (neither looked into),
+«أحفظ خطة الدرس بصيغة وورد» (already answered by the generic «PDF أو Word» export text).
+
+## Generator screens: Retry repeats the run, and the evaluations picker row — 2026-10-24
+
+The last two open items of the generator-screens work. Mobile only.
+
+**Retry repeats what was asked.** `GenerationStatus` hands its Retry button's press event to `onRetry`, so a screen that
+wrote `onRetry={generate}` passed that event to `generate` as its options, and on the worksheet a failed «ثلاثة مستويات»
+was retried as a single paper. The worksheet now records the run's options at the top of `generate` (`lastRunRef`, set
+right after the attempt is counted, before any refusal can return) and Retry calls `generate(lastRunRef.current)`, so a
+failed three-levels run is retried as three levels (a regenerate is carried the same way). The new pure
+`services/runOptions.ts` reads options defensively: only a literal `true` counts as a mode, so a press event or anything
+else can never switch one on. The quiz and lesson plan (no levels mode) now pass `() => generate()`, as activity and
+slides already did; a grep of `onRetry=` across `app/` found no other bare `generate`. Pinned by `runOptions.test.ts` and
+source tests for each screen's Retry arrow and the worksheet's ref, recording order and `generate(lastRunRef.current)`.
+
+**The evaluations builder's picker row.** `app/evaluations/new.tsx`'s local `PickerField` was the last screen in `app/`
+passing `accent + '15'`, so its wrapper now uses `selectedRow(accent, card)` (an opaque fill with matching ink), like the
+five generator screens. **The earlier entries guessed this row was likely 4.1 to 4.4:1 in dark. It was not:** this
+screen's accent is `palette.primary`, which measures 5.51 in light and 7.55 in dark either way, so the change makes the
+screen consistent and fixes no failing contrast; a test pins that the row stays at 4.5:1 or more and no worse than before
+in both modes. `app/admin/library.tsx` and `app/evaluations/[id]/scan-class.tsx` pass no `selectedTint` (they use the
+default secondary fill with a `palette.primary` label, a documented palette pair) and were left alone. The doc comment in
+`PickerField.tsx` no longer says a screen still passes `accent + '15'`.
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,290 tests, 7,280 pass, 10 skipped, 0 fail.
+
+**Not verified:** a real failed three-levels press followed by Retry (demo generation does not fail) beyond the source
+pins; the evaluations screen in a browser; any device.
+
+**Known limits.** None left from the generator-screens work except the device-only checks its entries list.
+
+## Generator screens: the toast clears the docked bar — 2026-10-24
+
+A small follow-up to the five generator-screen ports. Mobile only. On a phone the generate button is docked at the
+bottom, and the toast (save, export, report…) sat at a fixed height that put it under the bar's summary line on the
+quiz, worksheet, lesson plan and activity; slides lifted its own. Now one pure helper, `toastLift({ isDesktop,
+barHidden, keyboardOpen })` in the new `services/dockedBar.ts`, returns the bar's height (`DOCKED_BAR_HEIGHT`, moved
+there and re-exported by `DockedAction`) only while the bar is really on screen: a phone, the screen's own bar-hiding
+condition not holding (an unsaved result's save bar on four screens, an unsaved deck on slides), and the soft keyboard
+closed (`useKeyboardVisible`; the bar hides while it is open, so the toast drops back, which also closes the limitation
+slides' entry listed). All five screens pass it as `Toast`'s `bottomOffset` (added with the slides port; default 0, so
+every other screen's toast is unchanged), and slides' inline expression is gone.
+
+**Pinned by** `dockedBar.test.ts` (exactly one of the eight input combinations lifts) and source pins in
+`generatorScreens.test.ts` (each screen imports the helper and the keyboard hook, computes `toastBottom` from the same
+condition it passes as `hidden` to `DockedAction`, passes it to `Toast`; no inline expression and no second height
+definition).
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,196 tests, 7,186 pass, 10 skipped, 0 fail.
+
+**Not verified:** the toast's actual position on a phone or in the browser (a demo session cannot easily raise a toast
+over the docked bar); any device.
+
+**Known limits.** Still open from the earlier entries: Retry after a failed three-levels run regenerates one paper
+(`onRetry={generate}` is passed bare), and `app/evaluations/new.tsx` keeps a translucent `ACCENT + '15'` selected row
+(likely 4.1 to 4.4:1 in dark), outside the five screens.
+
+## Generator screens: Cancel then a refusal, and the banner contrast — 2026-10-23
+
+A follow-up to the five generator-screen ports (the two known limits their entries listed). Mobile only:
+nothing here changes what is asked of the model, the API, or what is stored.
+
+**Cancel, then a refusal.** After a Cancel, `cancelled` stayed set until validation passed, and the phase
+expression put it before `error`, so a later refusal (`scopeNoCurriculum`, `subjectTopicMismatch`,
+`wideScopeUngrounded`) showed «أُلغي» instead of the refusal. Fixed at the root on all five screens (quiz,
+worksheet/homework, lesson plan, activity, slides): `generate` calls `setCancelled(false)` right after the attempt
+is counted, before any refusal can return, and changing the grade or the subject after a Cancel clears it as well
+(the reset effect cleared `error` but not `cancelled`). The five inline phase expressions are now one pure
+`generationPhase({ loading, cancelled, failed })` (`services/generationPhase.ts`; `GenerationStatus` imports its
+type). With `cancelled` cleared first, a refusal gives phase `idle`, so the lesson plan's `topicRefusal` early
+return and slides' `|| refusal` early return in the status-scroll effect (which existed only because of this bug)
+are gone. Every regenerate, retry, English-refresh and report-a-problem path goes through `generate`, so they clear
+it too. Pinned by `generationPhase.test.ts` (it documents the old bug and the fix) and per-screen source tests.
+
+**Banner and tint contrast.** The same flaw the activity banner had (ink judged against the card but drawn on a
+tint over the PAGE) was measured everywhere in the five screens, with the real card and page colours. Failing
+before: the worksheet/homework ready banner (light, homework 4.39), the quiz header pills (light 3.72 to 4.25,
+dark 4.10 to 4.54), the worksheet's attach-figure button (dark, worksheet 4.46, homework 4.11) and the selected row
+of every dropdown (dark 4.08 to 4.41). The lesson plan's banner (6.34 light, 4.98 dark) and the quiz and slides
+banners were already fine. Fixed with `tintOver` + `readableOn` (and a new pure `selectedRow(accent, card)` that
+gives a dropdown's selected row an opaque fill and the matching ink; the local `PickerField` wrapper on each screen
+uses it): ink starts from the old accent ink and only moves when the tint needs it, so it never lowers contrast
+(dark banners stay at 5.01 worksheet and 5.07 activity). After: the worst case over all six generator colours in
+both modes is 4.51 (banner 4.51, pill 4.58, figure button 4.51, selected row 4.55); examples: homework banner light
+4.77, quiz pills light 4.80, dark 4.74. The quiz header pills are now one opaque fill. The tests pin the numbers and
+also assert that the old way of judging still fails for the colour it failed for, so they are not vacuous.
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,157 tests, 7,147 pass, 10 skipped, 0 fail.
+Web-build screenshots before the last small ink changes: the quiz, worksheet and homework results in light and dark
+and the lesson plan. An independent review found no blocker; its should-fix items (a test measuring the wrong
+colour, stale comments, a duplicated type, the dark banner ink dipping, and the same stuck-«أُلغي» after a
+grade/subject change) are fixed.
+
+**Not verified:** any device; the contrast fixes are measured, and the final ink tweaks were not re-shot in the
+browser; Cancel then a refusal was reasoned and source-pinned, and not driven in a browser (demo generation does
+not refuse).
+
+**Known limits.** `onRetry={generate}` on the worksheet, quiz and lesson plan passes `generate` bare, so Retry
+after a failed three-levels run regenerates one paper. `app/evaluations/new.tsx` still uses a translucent
+`ACCENT + '15'` selected row (likely 4.1 to 4.4 in dark); it is outside the five screens. The toast and docked-bar
+overlap on the four screens other than slides is still open.
+
+## Generator screens: the slides — 2026-10-23
+
+PR 5 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`, the last of the five tools. The
+slides screen (`app/ai-tools/slides.tsx`) is built from the shared pieces of `components/generator/`. Mobile
+only: nothing here changes what is asked of the model, the API, or what is stored.
+
+**What changed**
+| Field | Control |
+|---|---|
+| Grade, subject, `TopicSelector`, every refusal | `LessonCard` body (unchanged pickers with `maxHeight={220}`, `StrandedSelectionNote`, `hasError`) |
+| `LessonResources` (not on a wide scope), `LessonAttachments`, `LessonLabItems` | still mounted, same props, conditions and order, right after the card (outside its body, so folding it never hides them) |
+| `includeExamples` / `includePractice` / `includeAttachments` | one multi-select `ChipGroup` with `min={0}`; examples is not offered on a wide scope, attachments only when there are some and the scope is not wide; a hidden option keeps its boolean exactly as the toggles did |
+| «من وصف حر» link | a 44-point link in the form (phone and desktop), not in the docked bar |
+| Generate | one `DockedAction`, not disabled (a press with no topic sets the refusal, as before) |
+
+- **Refusals** (no topic, no curriculum for the scope, a topic from another subject, an ungroundable scope) all
+  show inside the lesson card in one measured view and are scrolled into view on a phone and on desktop, again on
+  a repeated press (`attempt`). While one shows the card cannot be folded (`locked` includes `refusal`) and an
+  effect keeps its stored open state true, so clearing the message while typing does not fold the card mid-word.
+- **The docked bar yields to an unsaved deck.** This screen has no save bar (its save lives in `DeckActions`), so
+  the other screens' rule does not apply as is; but a docked «جهّز الشرائح» under an edited, unsaved deck is one
+  mis-tap from losing the edits. The bar is hidden while `deckUnsaved = !!deck && !loading && !workspace.saved`
+  (`workspace.saved` is true only when the stored copy is exactly the deck on screen, so a saved deck keeps the
+  bar), and while it is hidden on a phone the same action renders inline at the end of the form, so rebuilding is
+  still a scroll away. The reopened-saved-deck case rests on `reopenedDeckLink`'s comments and was not run.
+- `Toast` takes an optional `bottomOffset` (default 0, every other screen unchanged); slides lifts it by the bar's
+  height while the bar is shown, because the toast used to sit under the bar's summary line.
+- `ACCENT` is the concept colour (blue); text and icons on a card use `accentInk`; no `palette` import and no hex
+  are left in the screen; the two `palette.success` uses became `colors.success`. The same raw-accent test and the
+  test proving it bites apply. The result area itself needed no change.
+- **`ChipGroup`** wraps a long label inside its chip, and its lock rule is now the pure `chipLocked`
+  (`services/chipRules.ts`, unit-tested; `min: 0` locks nothing).
+- **Preview:** one skeleton row per section a deck is built from, in the order of `buildLessonDeck` (cover,
+  outcomes, warm-up, vocabulary, explanation, checks, worked examples if ticked, practice if ticked, summary, exit
+  ticket, homework when practice is on) or `buildRevisionDeck` on a wide scope (exit ticket titled «غلق الحصة», as
+  that builder titles it; a test reads `lessonSlides.ts` to keep both). Titles in the content language. The footer
+  is grade and subject, because a slide count is unknowable; the note says the count follows the content. Summary
+  «شرائح · أمثلة · تدريب» (`deckOptionsSummary`, «شرائح مراجعة» on a wide scope).
+- i18n: 20 new `gen*` keys in both languages; `slidesIncludeExamples`, `slidesIncludePractice` and
+  `slidesIncludeAttachments` are deleted (nothing else used them; a test says so).
+
+**With this PR all five generator tools are ported.** The remaining old-teal and dropdown generator forms are
+gone; what is left of the older look is outside the five (the evaluations builder, the homework tool's result,
+the parent message, the lesson-flow screens), which the spec lists as out of scope.
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,146 tests, 7,136 pass, 10 skipped, 0 fail.
+Web-build screenshots, Arabic: phone (390) and desktop (1366), light and dark, with a lesson and without (a
+refusal scrolled into view with its reason beside the field); English at 360; a generated deck in dark; the
+unsaved-deck state with the bar hidden and the inline button in the form. An independent review found no blocker;
+its should-fix items (the «تم» button during a refusal, the bar under an unsaved deck) and its wording, toast and
+dead-key nits are fixed.
+
+**Not verified:** any device (the `measureInWindow` scroll on native, the keyboard, the iOS safe area, touch
+feel, screen readers); the reopened-saved-deck case; a wide-scope deck; a live-AI deck.
+
+**Known limits.** The preview draws one row for the checks that a real deck splits into two, and a real deck
+leaves out any section with nothing to say (the note says so). A toast shown while the soft keyboard is open (which
+also hides the bar) sits a little high on slides. The other four generator screens have the same toast and docked
+bar overlap once a result is saved. After a book-only deck's quota message the status scroll and the screen's
+existing 200 ms scroll-to-end both fire. The earlier entries' known limits still stand: the banner contrast on
+the lesson plan, worksheet and quiz header, and the Cancel-then-refusal message on the quiz, worksheet and lesson
+plan.
+
+## Generator screens: the activity — 2026-10-23
+
+PR 4 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`. The activity screen
+(`app/ai-tools/activity.tsx`) is built from the shared pieces of `components/generator/`. Mobile only:
+nothing here changes what is asked of the model, the API, or what is stored.
+
+**What changed**
+| Field | Control |
+|---|---|
+| Grade, subject, `TopicSelector`, the inline error | `LessonCard` body (unchanged pickers, `StrandedSelectionNote`, `hasError`) |
+| Activity type (`activityTypeIdx`, 5 labels, default index 1) | `ChipGroup` in the new `single` mode over `ACTIVITY_TYPE_IDS`, moving the same index |
+| Duration (`durationIdx`, 20/30/45/60) | `SegmentedControl` over the same index and array |
+| Objective (`objective`) | the same multiline `TextInput`, in a labelled `useSurface()` card |
+| Generate | one `DockedAction`, disabled with `genNeedLessonHint` while there is no topic (as the quiz and worksheet) |
+
+- **A new shared mode.** Five long Arabic type labels do not fit a segmented control (at most four short ones),
+  so `ChipGroup` gained an opt-in `single` mode: the group is a `radiogroup`, each chip a `radio` with
+  `aria-checked`, pressing the chosen chip does nothing, and the at-least-one lock is not used. Multi mode
+  (the quiz's and the worksheet's types) is unchanged, and a test fails a `single` prop on either of those.
+  The spec's mapping line says so.
+- **A contrast fix in the shared chip, found by the review.** A selected chip's label was judged against the
+  plain card but drawn on its own 12% tint, which measured 4.35:1 for the activity orange in light mode (quiz
+  violet 4.19 and worksheet teal 4.36 in dark). A selected chip is now an opaque fill (`tintOver`, new in
+  `services/readableColor.ts`) and its label, tick and ring are `readableOn(accent, thatFill)`. A test checks
+  every generator concept colour (quiz, worksheet, homework, lesson plan, activity, slides) in light and dark
+  against the real card and page colours, at 4.5:1; it also pins that the old method fails for the activity
+  colour. `SegmentedControl` has no such flaw (its selected segment is the plain card), and a test pins that.
+  The selected chips on the quiz, worksheet and homework are therefore a touch more solid than before.
+- `ACCENT` is the concept colour (orange). The result view's private `#C2410C` copies are gone; text, icons
+  and outlines on a card use `accentInk`, the step-number circle is an `ACCENT` fill with `textOn(ACCENT)`, and
+  the ready banner's ink is judged against its tint over the page (`tintOver`). The file has no hex literal and
+  no `palette` import. Source tests: no raw `ACCENT` as ink, and a second that puts three back to prove it bites.
+- **Preview:** six skeleton rows in the order `ActivityResult` prints them (objective, materials, steps, tips,
+  differentiation, assessment), titles in the CONTENT language, a test that reads the result's own source to
+  keep the order in step. Summary: «30 دقيقة · جماعي». The result's «الهدف» heading and the preview's title
+  are the same i18n key, so they cannot drift. i18n: `genPreviewActivityNote`, `genSectionObjective`.
+- The docked bar renders on a phone and under the preview on desktop, with the `attempt` counter in the scroll
+  effect's dependencies; the shared tests for both now cover this screen too.
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,127 tests, 7,117 pass, 10 skipped, 0 fail.
+Web-build screenshots, Arabic: phone (390) and desktop (1366), light and dark, with a lesson and without (the
+disabled button and its reason); English at 360 (the five chips wrap to three rows); a generated activity in dark.
+An independent review found no blocker; its should-fix items (the chip contrast, the banner contrast, an unused
+import, a weak guard test, a duplicated heading) are fixed.
+
+**Not verified:** any device (the Android keyboard hiding the bar while the objective box is focused, the iOS
+safe area, touch feel, screen readers, whether Space activates a `role="radio"` chip on web); the chips' look
+after the contrast change on the quiz and the worksheet in the browser; a wide scope; a live-AI activity.
+
+**Known limits.** The same flaw as the activity banner is likely in three places this PR does not touch: the lesson
+plan's ready banner, the worksheet's success banner and the quiz header's pills (ink judged against the card but
+drawn on `ACCENT+'15'` over the page, about 4.2-4.4:1 in light mode; not measured). Found by the review and not
+fixed here, because it is on every generator screen: after Cancel, `cancelled` stays set and the phase expression
+puts it before `error`, so a later refusal (`scopeNoCurriculum`, `subjectTopicMismatch`, `wideScopeUngrounded`)
+shows «أُلغي» instead of the refusal; on this screen no press can reach a refusal with an empty topic, but the
+quiz, worksheet and lesson plan can. The slides screen was still on the old teal and dropdowns when this shipped (done in the entry above).
+
+## Generator screens: the lesson plan — 2026-10-23
+
+PR 3 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`. The lesson-plan screen
+(`app/ai-tools/lesson-plan.tsx`) is built from the shared pieces of `components/generator/`, as the quiz
+and the worksheet were. Mobile only: nothing here changes what is asked of the model, the API, or what is
+stored.
+
+**What changed**
+| Field | Control |
+|---|---|
+| Grade, subject, `TopicSelector`, the empty-topic error | `LessonCard` body (unchanged pickers, `StrandedSelectionNote`, `hasError`) |
+| Duration (`durationIdx`, 30/45/60/90) | `SegmentedControl` over the same index and array |
+| Teaching style (`styleIdx`) | `SegmentedControl` over the same index and array |
+| Prior-knowledge review | one labelled checkbox row (hidden on a wide scope, disabled with its note), after the fold |
+| «More options» (objectives, adaptations + «تبسيط الشرح», prior topics) | the same fold and the same `TextInput`s, restyled (`useSurface()` cards, 44-point toggle and chip, `aria-expanded`) |
+| Generate | one `DockedAction`, no `disabled` and no `hint` |
+
+- **Deliberate deviation from the spec:** duration is a segmented control, not a stepper. The spec says a
+  numeric list is a stepper, but this list is four short labels, which the same spec's rule 3 sends to a
+  segmented control; the quiz keeps a stepper because its duration list has six.
+- `ACCENT` is the concept colour (indigo) instead of `palette.primary`. Text, icons and outlines on a card
+  use `accentInk`, in the form and in the result (`LessonPlanResult` takes an `ink` prop; `GenerationStatus`,
+  `GeneratorResultActions` and `GeneratorSaveBar` get it). A source test fails any raw `ACCENT` used as text,
+  icon or outline colour, and a second test puts three raw uses back into the real source to prove it bites.
+- **Validation is unchanged: the button is not disabled.** A press with no topic sets `topicRequired`, and the
+  message shows beside the field. The button is docked away from the field, so the screen measures the header
+  and the error text (`measureInWindow`, both `collapsable={false}`) and scrolls the error into view, on a
+  phone and on desktop (the desktop button is in a sticky side column, so a teacher deep in the optional boxes
+  would otherwise see nothing happen). The `attempt` counter is in the effect's dependencies, so a second press
+  scrolls again; the status-scroll effect stands down while `topicRefusal` is set, so a press after Cancel does
+  not jump twice.
+- **Preview:** `PaperPreview` gained `nameLine?: boolean` (default true, so the quiz and worksheet are
+  unchanged); the lesson plan passes false (the «الاسم / التاريخ» line belongs on a student's paper). The
+  skeleton rows are the sections `LessonPlanView` prints, in its order: 10, or 11 with the prior-review row
+  (shown when the review was asked for and is available, or the prior-topics box has text, never on a wide scope).
+  Their titles come from the plan's CONTENT language (`getT(lang)`), not the interface language, because the plan
+  is written in the subject's language. Summary: «45 دقيقة · 10 أقسام · التعليم المباشر» (`sections` in
+  `generatorSummary.ts`, with Arabic agreement: قسم واحد / قسمان / 3–10 أقسام / 11 قسمًا).
+- i18n: `genPreviewLessonPlanNote`, both languages.
+- Found by the screenshots on the worksheet and fixed here in advance: the docked bar must be rendered
+  (`{isDesktop ? null : action(true)}` and `{action(false)}`); the test that pins it now covers this screen too.
+- The prior-review checkbox sits after the fold, as before: its shared note says «استخدم حقل الملاحظات أعلاه»,
+  and the field it points to is the folded one. A test pins the order.
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,107 tests, 7,097 pass, 10 skipped, 0 fail.
+Web-build screenshots, Arabic: phone (390) and desktop (1366), light and dark, with a lesson carried in and
+without; an empty-topic press on a phone (the error scrolled into view); a generated plan in dark. An
+independent review found no blocker; its six defects (the checkbox order, the desktop empty-topic scroll, the
+double scroll after Cancel, the preview language, a stale comment, an awkward English line) are fixed.
+
+**Not verified:** any device (the Android keyboard hiding the bar while a fold box is focused, the iOS safe
+area, touch feel, screen readers, `measureInWindow` on native); English at 360 wide; a wide scope; a live-AI
+plan (whether the model writes the prior-review section whenever it is asked); the unfolded boxes in the
+browser.
+
+**Known limits.** The skeleton rows show section titles, not content. The ticked checkbox's fill is about 1.9:1
+against the dark card (the tick itself carries the state). Most of the screen's new tests pin source text; they
+freeze the code but cannot show it scrolls correctly. The activity (done in the next entry up) and slides screens were
+still on the old teal and dropdowns when this shipped.
+
+## Generator screens: the worksheet and homework — 2026-10-23
+
+PR 2 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`. The worksheet screen
+(`app/ai-tools/worksheet.tsx`, which is also the homework tool through `isHomework`) is ported to the
+shared pieces of `components/generator/`, the same way the quiz was. Mobile only: nothing here changes
+what is asked of the model, the API, or what is stored. The homework tool is in the spec's "not in
+scope" list, but it is the same file and the same form, so it comes with the worksheet and wears its own
+concept colour (cyan) and button («جهّز الواجب البيتي»).
+
+**What changed**
+| Field | Control |
+|---|---|
+| Grade, subject, `TopicSelector` | `LessonCard` body (unchanged pickers, `StrandedSelectionNote`, `hasError`) |
+| Distribution (wide scope only) | `SegmentedControl`, same condition |
+| Difficulty (`diffIdx`) | `SegmentedControl`; the handler is still `levels ? showLevel(i) : setDiffIdx(i)` |
+| Question count (`numQIdx`) | `Stepper` over `numQLabels.slice(0, visibleCountOptions(wideScope.isWide))` |
+| Question types | `ChipGroup`, `min={1}`; a format the lesson's bank cannot build is a disabled chip |
+| Prior-knowledge review | one labelled checkbox row (hidden on a wide scope, disabled with its note) |
+| Both generate actions | one `DockedAction`: primary, plus the new `secondary` («ثلاثة مستويات دفعة واحدة») |
+
+- `ChipGroup` gained a per-chip `disabled` (dimmed, `aria-disabled`, not pressable, not counted
+  towards `min`). `DockedAction` gained an optional `secondary` action on the same row as the primary,
+  so the bar is no taller; the primary label may wrap to two lines (centred). Both are backward-compatible
+  with the quiz.
+- `ACCENT` is the concept colour (`conceptOf(isHomework ? 'homework' : 'worksheet').color`). Text, icons
+  and outlines on a card in the result area now use `accentInk` (`readableOn`): the first cut left about 19
+  uses of the raw colour, which measured 3.0:1 on the dark card (it was 8.9:1 with the old light teal).
+  The active level tab's label is `textOn(ACCENT)`.
+- `generatorSummary.ts`: the summary line can close with the level («20 سؤالًا · 3 أنواع · مرتفع»); the
+  line counts the types the REQUEST will carry (`sanitizeQuestionTypes`), not a greyed format's tick.
+- i18n: `genPreviewWorksheetNote`, `genPreviewHomeworkNote`, `genHomeworkBtn`, both languages
+  (the English homework button is «Prepare homework»; the English worksheet button keeps the name
+  `howMakeWorksheet` quotes).
+- Fixed in both ported screens (review): pressing generate again on the SAME refusal
+  (`subjectTopicMismatch`, `scopeNoCurriculum`, `wideScopeUngrounded`) did nothing visible, because the
+  scroll-to-status effect only fired when the phase changed. An `attempt` counter, bumped first thing in
+  `generate`, is now in its dependencies.
+- Found by the screenshots, not the tests: the first cut built `action` and never rendered
+  `action(true)`, so a phone had no generate button at all. `generatorScreens.test.ts` now pins
+  `{isDesktop ? null : action(true)}` and `{action(false)}` on both screens.
+
+**Pinned by tests** (`generatorScreens.test.ts`, `generatorSummary.test.ts`): the persisted state names,
+option arrays and `formState` of the worksheet; the lesson carried by id; `TopicSelector` once, inside
+`LessonCard`, never conditional; no `PickerField` left for a short list; the levels-mode difficulty
+handler; the at-least-one rule and the greyed-format chips; the prior-review conditions; both actions
+docked; no raw `ACCENT` as a colour in the file (a second test proves the checker flags the bad forms
+and lets fills and tints through); `attempt` in the scroll effect's dependencies on both screens.
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,077 tests, 7,067 pass, 10 skipped, 0 fail.
+Web-build screenshots, Arabic phone (390) and desktop (1366), light and dark, worksheet and homework,
+with and without a lesson; English at 360; a generated result in dark. An independent review found no
+blocker and the three defects above, all fixed.
+
+**Not verified:** any device (the Android keyboard hiding the bar, the iOS safe area, touch feel, screen
+readers); the English label at 320 dp; a wide scope (distribution control, hidden prior review); three-level
+mode switching papers; a lesson with a thin bank in the browser beyond the chemistry-free math lesson used.
+
+**Known limits.** The summary line does not name «three levels» while the teacher is about to press it; it
+names the selected level. The preview does not claim a worked example (that depends on the grounded
+lesson). The homework loading text still says «ورقة العمل» (`GenerationStatus` is out of scope). The
+result view's remaining raw-`ACCENT` fills and tints are unchanged.
+
+## Grade 5 grammar in the English corner — built, shown to nobody yet, 2026-10-23
+
+The ten Grade 5 grammar lessons that were already in the hub (`kbl-g5-eng-s1-nccd-u1_l1` … `s2-nccd-u10_l1`) now have
+grammar activities: Choose the word, Build the sentence and True or false. **All ten units are `reviewedBy: null`
+(`englishGrammarG5.ts`), so no teacher or student sees a card yet.** Spec:
+`docs/superpowers/specs/2026-10-23-english-corner-grammar-g5-design.md`; plan:
+`docs/superpowers/plans/2026-10-23-english-corner-grammar-g5.md`. Same engine and rules as the Grade 9 authored
+lessons; no app, server, schema or migration change, and no hub change (the ten lessons have 14-28 words each, so
+they were already visible).
+
+- **400 hand-written items, 40 a lesson, all `form`, none `meaning`** (`englishGrammarG5Items.ts`, `G5_ITEM_LESSONS`),
+  each with a `statement` equal to `objectives[0]` of its lesson (a test reads the JSON). 31 sub-topics in pinned
+  sizes. S1: U1 present simple with before/after/when (`third-person-s` 14, `before-after` 14, `when-clauses` 12); U2
+  comparatives and superlatives (`taller-forms` 10, `more-forms` 10, `superlatives` 12, `irregular` 8); U3 past simple
+  was/were and did (`was-were` 14, `did-questions` 14, `regular-irregular` 12); U4 will/won't (`will` 14, `wont` 12,
+  `will-questions` 14); U5 relative clauses (`who` 14, `where` 14, `which` 12). S2: U6 past simple, irregular verbs and
+  did; U7 past continuous; U8 should/shouldn't; U9 present perfect; U10 present perfect with ever/never (each three
+  sub-topics, 40 items). Sentences are nine words or fewer (`buildCap(5)`), with no real or book-character names, and
+  the distractor is ungrammatical in standard English, for example the bare verb for a participle, a doubled marker
+  («the most kindest», never «the most» before a short adjective, never «-fuller»), a misplaced negative, `Have he`,
+  or statement order in a wh-question (the full list is rule 4 of the plan,
+  `docs/superpowers/plans/2026-10-23-english-corner-grammar-g5.md`). No item turns on the past simple against the present perfect, and a distractor a teacher
+  might accept («the most kind», `-ful` adjectives with `-er`) was replaced rather than flagged.
+- **True or false is silent** (twins are never voiced) and **Yes or No is not offered**, exactly as the Grade 9
+  authored lessons; Choose and Build play the correct sentence after the answer. Nothing is pictured.
+- **The teacher's form takes a grade** (`englishGrammarReview.ts`): `renderAuthoredUnit` reads the statement from
+  `[...G5_ITEM_LESSONS, ...G9_ITEM_LESSONS]` and the not-covered notes by `unitGrade(u)` instead of assuming Grade 9;
+  `GRADE_COPY[5]` carries the title, lead, activity descriptions and checks, and says «topic» because the Grade 5 book
+  gives a topic line with an example, not an «I can» line. `scripts/grammar-sheet.ts` now runs `[1, 2, 3, 4, 5, 9]` and
+  wrote `docs/english-grammar-g5-review.html` (10 units, 400 sentences, 31 topic rows, 42 pages in an A4 landscape print
+  emulation) and `docs/english-grammar-g5-sheet.md`. `[5].extraCss` is `YESNO_CSS` plus five lines, which is a deviation
+  from the plan: without it the false-twin column wrapped one word a line and the not-covered list was unstyled
+  (78 pages). The Grade 1-4 and 9 forms and the reading forms stayed byte-identical (tests pin them).
+  `NOT_COVERED_G5` is two shared bullets plus one a lesson (silent True or false and no Yes or No; and what that lesson
+  leaves out).
+- **Tests added:** `englishGrammarG5Items.test.ts` (sizes, statements, caps, uniqueness, banned names, the form),
+  `englishGrammarG5.test.ts` (ten unsigned units, all hub lessons, nothing offered) and, in the app,
+  `englishGrammarG5ItemGames.test.ts` (Choose, Build and True or false on all ten, Yes or No on none, no twin voiced).
+  `englishGrammarEngine.test.ts` pinned «Grade 5 has no grammar units»; it now says every Grade 5 unit is grade 5 and
+  Grade 6 is the empty grade.
+- **Verified:** root `pnpm run typecheck` clean (api-server, mobile, scripts); `@workspace/curriculum` `test` 636
+  tests, 636 passing, 0 failing; its `verify` 197 files, 3306 lessons, 0 errors; the **full mobile suite 6975 tests,
+  6965 passing, 10 skipped, 0 failing** (394 s; the run before this change had 2 failing, both
+  the Grade 9 `englishHubGames.test.ts` narrowing, fixed since). **In a browser** at 390 px in Arabic and English, web
+  build with `EXPO_PUBLIC_DEMO_MODE=true`, sign-offs in the working tree only (restored straight after, `grep -c "LOCAL
+  CHECK"` is 0, `git status` clean): unsigned, the S1 U1 and S2 U8 lessons show the six word activities and no grammar
+  cards; signed, both open with a «Grammar» section of Choose, Build and True or false and no Yes or No. Over a whole
+  round of eight in each activity, in both lessons and both languages: Choose and Build play the correct sentence
+  after the answer (a recording URL and the browser voice as fallback; 8 of 8 questions each, 0 plays before) and True
+  or false has no speaker button before or after answering and plays nothing (0 of 8); a nine-word Build round wraps
+  its slots and tiles onto two and three rows and an eight-word Choose stem onto two lines, with no horizontal scroll at
+  any step. I read the screenshots.
+- **Not verified:** the 400 sentences by a teacher (a script cannot tell wrong English from right; the printed form is
+  the review); the match of each lesson id to the printed book page; on a device; audio, which does not exist for
+  these sentences (the browser check heard the fallback voice, because `english-audio` needs the OpenAI and R2 keys and
+  has not been run for them).
+- **Known limits:** the past simple, the past continuous and the present perfect test form, not the choice between
+  them; a wrong True or false answer shows «Correct answer: False», not the corrected sentence; the form's vocabulary
+  check is a printed list (irregular pasts and comparatives are listed because the stem rule cannot match them),
+  not a test; only six Grade 5 words have pictures, so none are used.
+- **Found on the way, not fixed here:** (1) in every grade's not-covered notes the Arabic «و» is glued to an English
+  word («وafter», «وshouldn't»), and on the printed form it renders as a stray letter beside the Latin run («wheng
+  afterg»): it is in the Grade 2, 3, 4 and 9 notes too (8-13 lines each), so it is old, and it is a separate task to
+  rewrite the notes with a space or a comma. (After the final review the three Arabic wording fixes were made: the U2 note no longer ends
+  in an English run followed by a full stop, the U6 note says «الماضي البسيط والمضارع التام», the U10 note says «never في
+  الجملة الخبرية»; the form's lead sentence now says the book gives «مثالًا أو مثالين» per lesson, not one sentence; and
+  the data test's past-simple guard now checks every word of the U9 and U10 distractors against a list of irregular
+  pasts, and a new test pins «ever» to questions.)
+  (2) The units have a few optional minor review notes for the teacher, none blocking: a handful of stilted
+  sentences (a broken microwave, «seen a dishwasher», «touch a rash»), «stay home» against «stay at home», the plural
+  «was» distractors («The dolphins was swimming») that some dialects use, the missing-auxiliary twins in U7, which are
+  fragments rather than wrong verb forms.
+- **To switch a lesson on:** a Grade 5 English teacher signs that lesson's page of
+  `docs/english-grammar-g5-review.html`, printed, and checks the book-page line; audio is recorded for the correct
+  sentences; then the unit's `reviewedBy` is set in `englishGrammarG5.ts`.
+
+## Grammar-only hub lessons, and the last five Grade 9 grammar lessons — built, shown to nobody yet, 2026-10-23
+
+The hub now carries lessons that have too few words for the word activities, for their grammar only, and the five
+Grade 9 lessons that unlocks have their grammar: used to (S1 U2 l3), the present perfect with already, ever, just,
+never and yet (S2 U7 l1), the present perfect with for and since (U7 l2), the first conditional (S2 U8 l5) and
+reported speech (S2 U9 l3). With these, **every Grade 9 lesson the book gives a grammar statement has grammar
+activities** (21 lessons). **All five units are `reviewedBy: null` (`englishGrammarG9.ts`).** Spec:
+`docs/superpowers/specs/2026-10-23-english-corner-grammar-g9-grammar-only-lessons-design.md`; plan:
+`docs/superpowers/plans/2026-10-23-english-corner-grammar-g9-grammar-only-lessons.md`.
+
+- **The hub model** (`lib/curriculum/src/englishHub.ts`): `GRAMMAR_ONLY_LESSONS` (the five ids) and
+  `HubLesson.grammarOnly`; a lesson is built when it has four or more words **or** is listed. A test pins that each
+  listed id has under four words and a grammar unit, and that no other lesson is flagged. Grade 9 goes from 36 to
+  41 hub lessons; no other grade changes. The list lives in the hub file because `englishGrammar.ts` imports it.
+- **Visibility** (`hubLessonVisible`, `englishGrammar.ts`): a lesson with words is always visible; a grammar-only one
+  only once its grammar unit is signed. The lesson index, the lesson screen and the curriculum page's «open in the
+  hub» link all use it, so an unsigned grammar-only lesson is absent from the index and its direct URL says «lesson
+  not found». A grammar-only lesson shows grammar cards only (no word or reading section); its index row says
+  «grammar activities» (new string, Arabic and English).
+- **200 hand-written items**, 40 a lesson, under the same rules as the other fourteen (`englishGrammarG9Items.ts`):
+  all `form`, no `meaning`. used to: `used-to-affirmative` 14, `didnt-use-to` 12, `did-use-to-questions` 14;
+  present perfect I: `already-just` 14, `ever-never` 14, `yet-negatives` 12; for and since: `for` 14, `since` 14,
+  `have-has` 12; first conditional: `will-clause` 14, `if-clause` 14, `negatives-questions` 12; reported speech:
+  `say-tell` 16, `ask` 12, `reported-questions` 12. No reported-speech item turns on the tense shift («said she was
+  tired» and «said she is tired» are both acceptable), so the distractor is a missing object, a wrong word order or
+  «said me»; the first-conditional distractors are the second-conditional form or a «will» inside the if-clause.
+  Nineteen authored lessons, 760 items in all.
+- **The teacher's form** has the five pages (with the book-statement check, the kinds and the word list), and the
+  «lessons the hub does not carry» card is gone because no topic is left without a lesson; a test pins that.
+  «didn't use to» against «didn't used to» (which some teachers accept both ways) is one flagged topic of 12 items.
+- **Tests that assumed every hub lesson has words** were narrowed on purpose: `englishHub.test.ts` («at least four
+  words» unless `grammarOnly`; «in the vocabulary list» unless `grammarOnly`) and `englishHubGames.test.ts` (the word
+  activities run on `WORD_LESSONS`, because the screen hides them on a grammar-only lesson).
+- **Verified:** curriculum 619 tests, root typecheck, and the mobile suite: its one full run had 6906 passing, 10
+  skipped and 2 failing, both in `englishHubGames.test.ts` (the narrowing above); that file then passed alone (31),
+  and the full suite was not re-run whole on this tree. **In a browser**
+  at 390 px in Arabic and English, with sign-offs in the working tree only (restored straight after; never
+  committed; `grep -c "LOCAL CHECK"` is 0): unsigned, the Grade 9 index has 36 lessons, none of the five, and each
+  direct URL says «lesson not found»; signed, it has 41 with five «grammar activities» rows, each of the five opens
+  with Choose, Build and True or false and no Yes or No, no flashcards, no word or reading section, True or false
+  has no speaker button before or after answering, and a lesson with words (S1 U1 l1) is unchanged; no horizontal
+  scroll.
+- **Not verified:** the 200 sentences by a teacher (a script cannot tell wrong English from right); the match of
+  each lesson id to the printed book page; on a device; the audio, which needs the pending `english-audio` run
+  (OpenAI and R2 keys) for the 200 correct sentences and the five lessons' few words.
+- **Known limits:** reported speech tests form, not the tense shift; the present perfects and the first conditional
+  test form, not the choice between near-synonyms; a lesson that appears only after a signature is new behaviour,
+  tested but not yet seen on a device; the vocabulary check is a printed list, not a test.
+
+**To switch a lesson on:** record the audio; a Grade 9 English teacher signs that lesson's page of
+`docs/english-grammar-g9-review.html`, printed, and checks the book-page line at its top; then set the unit's
+`reviewedBy` in `englishGrammarG9.ts` and merge. The lesson appears in the hub from that moment.
+
+## Grade 9 grammar: the passive added, and a wrong «no hub lesson» corrected — 2026-10-23
+
+The thirteen-lesson entry below, its spec, the teacher's form and PR #1204 all said the passive (S2 U10 l1) has
+no hub lesson, so it was left out. **That was wrong:** `kbl-g9-eng-s2-nccd-u10_l1` («Vocabulary and Grammar») is
+in the hub with 7 words. The hub listing showed it; it was read past. Re-checked against the hub for all 21
+Grade 9 grammar lessons: 15 had grammar (the pilot's two and the thirteen), this one is in the hub with none, and
+**five** are not in the hub (used to, the two present perfects, the first conditional, reported speech), each
+with fewer than four words (3, 1, 2, 0 and 2).
+
+- **Built:** the passive lesson, 40 hand-written items under the same rules (`englishGrammarG9Items.ts`):
+  `present-passive` 14 («is spoken» / «is speak»), `past-passive` 14 («was built» / «was build») and
+  `questions-negatives` 12 («Was the window broken» / «Was the window break»), all `form`. The distractor is
+  always the verb in its first form, never a participle that could fit. Fourteen lessons, 560 items, hidden like
+  the rest (`reviewedBy: null`).
+- **Corrected:** the form's «lessons the hub does not carry» block no longer lists the passive (a test pins it),
+  the spec, and the passage in the entry below. The form and sheet were regenerated; every other document is
+  byte-identical.
+- **Verified:** curriculum 612 tests, the two Grade 9 app test files, root typecheck. **Not verified:** the new
+  sentences by a teacher, as for the others; the audio (the 40 correct sentences join the pending
+  `english-audio` run).
+- **Still open:** the five lessons the hub does not carry need a change to how the hub builds lessons (its own
+  spec).
+
+## Claude writes the documents, 2026-10-23
+
+**Built, not switched on.** Lesson plans, worksheets, quizzes and slide decks (`prompt-slides`) can now be
+written by Claude Sonnet 5.5. Nothing changes in production until Nizar creates the `ANTHROPIC_API_KEY`
+secret and sets `AI_MODEL_DOCUMENTS=claude-sonnet-5-5` — the recipe, and the one-line rollback, are in
+`docs/deploying.md`, «Claude for documents».
+
+**Why.** Three blind comparisons on the shipped prompts and four lessons per task (maths and chemistry),
+independent AI reviewers who did not know the author, scores matched to models afterwards:
+
+| | accuracy | Arabic | teaching | wins | flagged for a wrong key or fact (by the reviewers) |
+|---|---|---|---|---|---|
+| Sonnet 5.5 (head to head, 16 groups) | 4.81 | 4.56 | 4.63 | **14** | 1 |
+| Gemini 3.8 Flash | 4.75 | 3.31 | 3.94 | 2 | 0 flagged |
+| `gpt-5.4-mini` (what the generators ran on) | 3.25 | 3.38 | 2.25 | 0 | 7 |
+
+`gpt-5.4-mini` came last in both earlier rounds too (20 and 18 groups). Across the three comparisons, seven of
+its flags were re-checked by hand or with SymPy and are real: a worksheet key `x = 0 or 2` where the roots are (4±√10)/3, `14.20 × 0.906` written as
+12.17, a quiz offering 3/5 and 6/10 (and 4/5 and 8/10) as different options, a slide answer of 2.5 cm that its own
+note works out as 5, an answer key that contradicts its own working. One reviewer flag (an "impossible challenge"
+slide) was not in the file and was discounted. Sonnet's one flagged error was also checked: its circle worksheet
+has 7 questions but 8 key entries, and question 6's key says «خارج الدائرة» for a point that lies on the circle.
+Gemini was as accurate but wrote `sin`/`cos`/`tan` and «الدالة» where the curriculum says جا/جتا/ظا and «الاقتران», and
+its plans and decks were thinner. The cost: a document takes 11-33 s (4-13 s), about $0.039 (about $0.0085).
+
+**What changed.**
+- `lib/claude.ts` (new): one Claude completion, lazily built client (never throws at import), adaptive thinking
+  at `medium` effort (what was measured; `AI_CLAUDE_EFFORT` overrides), `max_tokens` never below 16000 because
+  thinking tokens count against it, usage renamed to the pair `recordUsage` takes, a refusal throws
+  `ClaudeRefusalError` (answered 502 `model_declined`, category in the log).
+- `lib/aiBudget.ts`: `getDocumentModel(kind)` — `AI_MODEL_DOCUMENTS` for those four kinds only, ignored (one warning)
+  when it names a Claude model and `ANTHROPIC_API_KEY` is unset; `claude-sonnet-5-5` ($2/$10) and
+  `claude-haiku-5-5` ($0.10/$0.50) in the price table.
+- `routes/generate.ts`: `completeOnce` calls Claude when the model id starts with `claude-`, OpenAI otherwise.
+  Pooled artifacts are keyed by model, so the two never mix.
+- `RemoteAIService.ts`: the four document calls wait 90 s instead of 45 s, because a deck can take 30-40 s and a
+  top-up or retry makes a second call; `prompt-slides` has no offline fallback to hide a timeout behind.
+- Deliberately **not** on Claude: chat, evaluations (exam generation), grading, the verified-derivative path,
+  homework, activities, classroom activities, infographics, the lesson-teaching deck. They were not compared,
+  and several call the OpenAI client directly — which is why this is a new variable, not `AI_MODEL_GENERATE`.
+
+**Verified.** Typecheck of the whole monorepo clean. API: build, then **2206 of 2206 tests pass**, none skipped,
+including the suite that boots the built bundle. New tests: `claude.test.ts` runs the real SDK against a local
+HTTP server and asserts the request on the wire (path, key header, model, system/user mapping, adaptive thinking,
+effort, the 16000 floor), that thinking blocks never reach the artifact, the usage rename, the refusal error and the
+no-key error; `aiBudget.test.ts` covers which kinds move, that nothing changes while the variable is unset, that a
+Claude id without a key is never returned, and the prices; `documentTimeout.test.ts` pins the 90 s wait to exactly
+the four calls.
+
+**Not verified.**
+- **No live call to Claude from this API.** This checkout has no key; the wire test is against a local server. The
+  first real generation after the switch is the first real test — try a worksheet, a quiz, a lesson plan and a deck
+  before telling teachers.
+- `completeOnce`'s routing branch has no unit test of its own (`generate.ts` builds the OpenAI client at import,
+  so it cannot be loaded in a test); it is covered by typecheck and by the helper tests above.
+- The price table is the model table's $2/$10 and has not been checked against a bill. The older note on Sonnet 5
+  says $3/$15; the model table says $2/$10. Compare the first day's spend with the Anthropic console.
+- The server-side refusal fallback is **not** enabled (it could not be tried without a key). A refusal is a clean
+  502 and the teacher can retry; educational content can trip a safeguard now and then.
+- Production prompts carry book passages the comparison did not, so real latency will be somewhat higher.
+- The reviewers were Claude models, so the order among Claude tiers is softer than the gap to `gpt-5.4-mini`, which
+  rests on the hand-checked errors. A Jordanian teacher reading Sonnet and Gemini outputs side by side would settle
+  the Arabic-terminology question. Every provider, Sonnet included, sometimes writes Latin `f(x)` and `sin`/`cos`
+  where the curriculum has ق(س) and جا/جتا; that is a prompt fix, independent of the model.
+- Chat was not compared across all providers (a network drop erased two of four scenarios), so it stays on OpenAI.
+- `AI_USER_BUDGET_USD=1` is about 25 documents on Claude instead of about 115. Decide whether to raise it.
+
+## Lesson-page pilot, app side: export of practice for five Grade 10 maths lessons — 2026-10-23
+
+`scripts/export-site-practice.ts` writes the practice the bank holds for five lessons into the
+snapshot iqrra.com renders as lesson pages (Site_Iqra `data/practice-grade10-math.json`, its own
+PR). Stacked on the SEO review PR above; retarget to `main` once that merges.
+
+**Why only five.** The bank is organised by family, not lesson. 25 of the 36 Grade 10 maths lessons
+match a family with worked solutions, but that match is too coarse to publish: four derivative
+lessons share one family (22 items would print under four titles), the statistics family holds
+mean, median and a dice question under lessons about mutually exclusive and independent events, and
+the functions family contains an arithmetic-sequence item. The script therefore exports a lesson
+only when it is on an explicit list (by lesson id), `matchMathFamily` still maps it to the expected
+family, **no other** Grade 10 maths lesson maps to that family, and the family still has at least
+4 items with working. It throws, not skips, when any of those stops holding. The five:
+linear+quadratic systems (`linear_quad`), two quadratics (`quad_system`), simplifying exponentials
+(`simplify_exp`), exponential equations (`exp_eq`), sequences (`sequences`). Per-lesson `exclude`
+lists name items of a clean family that are still off-lesson, each with its reason: `qq-v1` (a
+linear+quadratic system) and, for sequences, the two geometric items and the sum item, none of which
+the lesson's outcomes cover. Sequences therefore has 1 worked + 3 practice, the rest 1 + 5.
+
+**Verified.** All 28 exported items (5 worked, 23 practice) were worked by hand against the
+lesson's official outcomes: every answer key is correct, and each item's last line of working states
+its key. Strict `tsc` on the script passes (checked by hand: this folder is under no project's
+`rootDir`, so nothing typechecks it automatically; it cannot live in `lib/curriculum/scripts`,
+whose `rootDir` rejects the cross-package import).
+
+**Not verified.** The items were **not** sent to the SymPy service, so nothing says "verified"; the
+site pages say only that the questions are the bank's own, not the textbook's. The other 31 lessons
+that match a family are not exported: lessons sharing a family need an item-by-item mapping reviewed
+by a person who teaches the course (roughly 8 more lessons could qualify; estimate, not measured).
+Chemistry is not exported. The site shows Latin `x` and digits in left-to-right isolates; the app
+converts to «س» and Arabic digits at display time and that converter was not ported.
+
+## SEO / GEO / AEO review: one spelling, preview cards for app links — 2026-10-23
+
+A review of the landing site (`NizarAbuahmad/Site_Iqra`, iqrra.com — its changes are in that repo's
+own draft PR) and of what this repo ships to the web. Done from source only: the review sandbox
+could not reach iqrra.com, app.iqrra.com or any social account, so **nothing was checked live**,
+and the Ahrefs / Similarweb / Supermetrics connectors would not connect, so no keyword volumes.
+
+**Changed here.**
+- `scripts/inject-pwa.mjs` now writes Open Graph and `twitter:card` tags into the web `index.html`.
+  WhatsApp and similar scrapers do not run the bundle, so a pasted `/take/CODE`, class code or
+  shared material rendered as a bare URL. The image is the marketing site's `img/og.jpg` by
+  absolute URL — if that file is renamed in the other repo, previews lose their image with no
+  error here. The app stays de-indexed: `_headers` still sends `noindex`, which a preview
+  scraper does not read. Verified by running the script on a synthetic `index.html` (tags land,
+  second run is a no-op); the real `expo export` was not run.
+- Play listing copy (`marketing/play-store/listing-{ar,en}.md`) uses «إقرأ» and "Iqrra", matching
+  the site, the app and CI's brand rule. Titles stay within Play's 30 characters (27 and 30). The
+  marketing plan's spelling-drift bullet is marked decided. **If a listing is already saved in
+  Play Console, its title and descriptions must be changed by hand to match.**
+
+**Not done, and why.**
+- Lesson-level landing pages (the plan's «تحضير درس X» queries have no page; 57 grade-by-subject
+  pages exist, 1,862 lessons do not). Real risk of scaled thin content — pilot on Grade 10
+  maths and chemistry with real outcomes and a sample worksheet before generating any more.
+- Keyword wording («تحضير الحصص» in titles vs «تحضير درس» in the target queries) is a hypothesis;
+  check Search Console before changing a title.
+- No named author on any blog post, no About page; Search Console / Bing verification not found in
+  the repo (may be DNS) — confirm the sitemap is submitted.
+- No English page or `hreflang`. Google Play is left out of `sameAs` and `llms.txt` until the
+  listing is live.
+- The English half of the site's privacy policy still names "the Iqra team" as data controller.
+  That is a legal party name; whoever owns the policy decides.
+
+## Schools tab: all of a school's teachers, and a bad filter is refused — 2026-10-23
+
+Two gaps in the admin Schools tab (#1136), found reading it.
+
+- **The members list stopped at 30.** `GET /admin/users` pages by 30, and the screen read one
+  page, so a school with 31 teachers showed 30 and the 31st looked like they were not in it.
+  `loadMembers` (`app/admin/schools.tsx`) now follows `offset` until it holds `total` rows.
+  The teacher *search* is still one page: a name or email narrows it, and 30 matches is more
+  than anyone scans.
+- **A malformed `?schoolId=` was ignored,** which turned "this school's teachers" into "every
+  teacher", each row with a Remove button. `parseSchoolIdFilter` (`lib/adminSchools.ts`) now
+  refuses it with a 400; absent or empty still means no filter.
+
+**Verified:** `adminSchools.test.ts` pins the new helper (valid id, absent/empty, malformed,
+array, number); api-server typecheck clean, 2,195/2,195 api tests pass on the second run (the
+first run tripped the event-loop timing test in `passwordHash.test.ts` under load; it passes
+alone); mobile typecheck clean.
+**Not verified:** the screen in a browser, and a school with more than 30 teachers (no such
+data exists). The paging loop is read, not run.
+
 ## Generator screens: the shared pieces and the quiz — 2026-10-23
 
 PR 1 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`: the band wears
@@ -282,6 +1317,36 @@ grid and the lesson chooser in light and dark mode, RTL, and the drill's play-ag
 button on the new green (it takes `fill`, so the label is chosen by `textOn`; the test
 pins 7.13:1 white, not the screen).
 
+## Register: the terms checkbox is visible (#1229) — 2026-10-23
+
+Reported from the live page: on `/register` the terms line did not read as something to tick.
+The unticked box was `colors.border` (near-white) on the white card, and the sentence beside
+it was 11px muted grey, so it looked like a caption with a gap in front of it.
+
+**What changed** (styling only; the toggle, the two links, the Google gate and the sign-up
+payload are untouched)
+- The row is a framed panel (`colors.input` fill, 1px `mutedForeground` outline, 48 minimum
+  height) that turns primary-tinted when ticked.
+- The box is 24px with a 2px `mutedForeground` outline on a `colors.card` fill; the tick is
+  `ICON.lg` in `colors.primaryForeground` (it was a hard-coded `#fff`, which is poor contrast on
+  the light primary dark mode uses).
+- The sentence is 13px in `colors.foreground`.
+- Where it lives now: #1229 wrote this inline in `app/(auth)/register.tsx`; a later change moved
+  it into the shared `CheckRow` (`components/ui/CheckRow.tsx`) with these values, so the age
+  confirmation row matches. Change the look there. See «Students choose an email or a teacher's
+  code» below for why.
+
+**Verified:** mobile `pnpm run typecheck`; the `iconSystem`, `designScale` and `statusBar` tests;
+CI green on the PR head; the merge commit's `deploy.yml` run succeeded.
+**Not verified:** how it looks in a browser (phone, desktop, light, dark, RTL). Nobody has
+looked at the deployed `/register` since the change.
+
+**Process note.** `main` merged a PR roughly every ten minutes while this one was open and
+`typecheck + tests` takes about nine, so the branch fell behind five times. Four of those were
+conflicts in this file, because every PR adds its entry under the same header line; the PR
+merged only after its entry was taken out, and this entry was added afterwards. If a PR keeps
+losing that race, put its entry in a follow-up the same way.
+
 ## Book figure crops: audited, re-cropped, fragments dropped — 2026-10-22
 
 **What changed.** Every book figure a lesson can reach (2,576 across 66 books;
@@ -377,6 +1442,26 @@ chips and a per-platform table (calls, cache hits, cost, p50, p95).
 - **Not** verified: a real model call end to end (the local API runs `AI_LIVE_MODE=false`, so rows were
   written through `recordGeneration` directly), Android / a device, and a re-screenshot after the last
   12 px of spacing above the chips.
+
+
+## The primary-grade and remaining books get their lesson pages too, 2026-10-24
+
+The 17 student books that had no PDF on disk (Grades 1-2 Arabic, Islamic and PE; Grades 3-5
+PE; Grade 6 digital; Grade 8 Arabic S2) were downloaded from the catalog's NCCD links
+(about 1.4 GB, kept in a scratch folder outside the repo) and put through the same page
+mapper as the other books (see «Arabic, Islamic, civic, digital and PE lessons get their
+book pages in decks»).
+
+- `map_lesson_pages.py --pdfs <json>` takes a `{kbBookId: pdf path}` map for books
+  `extract_book_figures.BOOKS` does not register.
+- 259 lessons mapped; a lesson found through the contents table had to agree with its
+  opener page's own heading (>= 0.6), so 180 are kept and 79 are left text-only (mostly
+  Grade 1-2 Islamic lessons, whose opener heading did not read as the lesson title; not
+  looked into further). Pages are in `iqraa-public/book-pages/`.
+- Still without pages: English (no source PDFs registered), the dropped 79 and the 52
+  maths/social/etc. lessons dropped in the earlier pass, Grade 4/5 digital literacy (no
+  student book exists), and lessons whose opener scored under 0.9.
+- Not verified on a device; phones need the build whose runtime matches the OTA.
 
 ## The tab bar is drawn — 2026-10-23
 
@@ -653,7 +1738,8 @@ it yet.** Spec: `docs/superpowers/specs/2026-10-23-english-corner-grammar-g9-les
   and the reading forms are byte-identical apart from the Grade 9 intro.
 - **Left out on purpose:** used to (U2), the two present perfects (U7), the first conditional (U8), reported
   speech (U9) and the passive (U10) have no hub lesson (the hub offers one only with four or more words; Unit 7
-  has none at all); personality adjectives (U1 l3) cannot be right or wrong.
+  has none at all); personality adjectives (U1 l3) cannot be right or wrong. **Corrected the same day (see the
+  entry above): the passive does have a hub lesson, S2 U10 l1 with 7 words, and was simply not built.**
 - **Verified:** curriculum 612 tests, mobile 6905 pass / 10 skipped / 0 fail on the tree before one pilot test
   was corrected to select Unit 4 by lesson id (that file re-run: pass), root typecheck. **In a browser** at
   390 px in Arabic and English, with sign-offs in the working tree only (restored straight after; never

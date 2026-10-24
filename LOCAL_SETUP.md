@@ -114,6 +114,9 @@ Without an OpenAI key, the API process will not start (AI client initializes at 
 | `AI_MODEL` | `gpt-4o-mini` | Model for the live-AI routes; cheap by default. Sets both workloads below unless one overrides it |
 | `AI_MODEL_GENERATE` | falls back to `AI_MODEL` | Lesson plans, worksheets, quizzes, activities — one long structured document per call |
 | `AI_MODEL_CHAT` | falls back to `AI_MODEL` | Chat turns — many short calls where latency and cost dominate |
+| `AI_MODEL_DOCUMENTS` | unset (documents use `AI_MODEL_GENERATE`) | Model for lesson plans, worksheets, quizzes and slide decks only. Set to `claude-sonnet-5-5` to have Claude write them; needs `ANTHROPIC_API_KEY`, otherwise it is ignored with one warning. Not `AI_MODEL_GENERATE`, which exam generation and grading send straight to OpenAI |
+| `ANTHROPIC_API_KEY` | unset (no Claude calls) | Key for the Claude models above. Read when a call is made, never at start-up. On Cloud Run it is a Secret Manager reference — recipe in `docs/deploying.md`, «Claude for documents» |
+| `AI_CLAUDE_EFFORT` | `medium` | `low`, `medium`, `high`, `xhigh` or `max` for Claude calls. `medium` is what the comparison measured; anything else is ignored |
 | `ADMIN_DEBUG_KEY` | unset (endpoint 404s) | Set to see recent server errors at `GET /api/healthz/errors` (header `x-admin-key`) |
 | `UNSPLASH_ACCESS_KEY` | unset (Slides Maker skips the image slide) | Free Unsplash "Demo" key — Slides Maker fetches one topic photo per deck when set |
 | `YOUTUBE_API_KEY` | unset (Slides Maker skips the video slide) | Free YouTube Data API key — Slides Maker searches for one real explainer video per lesson when set |
