@@ -321,13 +321,17 @@ function judgeable(s: GrammarSentence): boolean {
   return Boolean((s.picture && s.falsePicture) || s.claim);
 }
 
+/** True when `buildTrueFalseRound` shows this sentence with a picture: it needs both its own and a false one. */
+const shownWithPicture = (s: GrammarSentence): boolean => Boolean(s.picture && s.falsePicture);
+
 /**
  * Which subtitle the True or false card wears. «Does the sentence match the picture?» is only true for a lesson whose
- * sentences have pictures (Grades 1-4); the hand-written Grade 5, 9 and 10 items have none, and the card there asks
- * whether the sentence is right or wrong. Mirrors `buildTrueFalseRound`: a picture is shown only when the sentence has one.
+ * sentences are shown with pictures (Grades 1-4); the hand-written Grade 5, 9 and 10 items have none, and the card there
+ * asks whether the sentence is right or wrong. A sentence is shown with a picture exactly when it has both `picture` and
+ * `falsePicture` (see `buildTrueFalseRound`); no lesson mixes the two kinds, so one subtitle is true of every round.
  */
 export function trueFalseDescKey(sentences: readonly GrammarSentence[]): 'hubGTrueDesc' | 'hubGTrueDescPlain' {
-  return sentences.some(s => s.picture) ? 'hubGTrueDesc' : 'hubGTrueDescPlain';
+  return sentences.some(shownWithPicture) ? 'hubGTrueDesc' : 'hubGTrueDescPlain';
 }
 
 /** Half the round (rounded up) is true, the rest false, then the order is shuffled. */
@@ -337,8 +341,8 @@ export function buildTrueFalseRound(sentences: readonly GrammarSentence[], rng: 
   return shuffle(
     picked.map((sentence, i): TrueFalseQuestion => {
       const isTrue = i < trueCount;
-      if (sentence.picture && sentence.falsePicture) {
-        return { sentence, isTrue, pictureWord: isTrue ? sentence.picture.word : sentence.falsePicture, text: sentence.text };
+      if (shownWithPicture(sentence)) {
+        return { sentence, isTrue, pictureWord: isTrue ? sentence.picture!.word : sentence.falsePicture, text: sentence.text };
       }
       return { sentence, isTrue, pictureWord: null, text: isTrue ? sentence.text : sentence.claim!.falseText };
     }),
@@ -420,6 +424,16 @@ export function buildYesNoRound(sentences: readonly GrammarSentence[], rng: () =
   const used = new Set([...yes, ...no].map(itemKey));
   const extra = yes.length + no.length < n ? pickByWord([...yesItems, ...noItems], n - yes.length - no.length, used, rng) : [];
   return shuffle([...yes, ...no, ...extra], rng);
+}
+
+/**
+ * Which subtitle the Yes or No card wears. «Pick the answer that fits the picture» is only true for a lesson whose
+ * Yes/No questions are pictured (Grades 2-4); Grade 4 Semester 1 Unit 4 and Grade 9 Semester 1 Unit 4 ask plain
+ * questions, and the card there asks for the right answer to the question. Only a sentence that offers a question
+ * (`yesNoUsable`) counts, and no lesson mixes pictured and picture-free questions (`buildYesNoRound`).
+ */
+export function yesNoDescKey(sentences: readonly GrammarSentence[]): 'hubGYesNoDesc' | 'hubGYesNoDescPlain' {
+  return sentences.some(s => yesNoUsable(s) && s.picture) ? 'hubGYesNoDesc' : 'hubGYesNoDescPlain';
 }
 
 export function isYesNoRight(q: YesNoQuestion, saidYes: boolean): boolean {

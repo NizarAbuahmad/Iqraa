@@ -8,11 +8,23 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { grammarUnit, grammarUnitsForGrade, unitSentences } from '@workspace/curriculum/englishGrammar';
-import { trueFalseDescKey } from '../englishHub/games.ts';
+import { buildTrueFalseRound, grammarActivityAvailable, trueFalseDescKey } from '../englishHub/games.ts';
 import translations from '../i18n.ts';
 
 const sentences = (id: string) => unitSentences(grammarUnit(id)!);
-const hasPicture = (id: string) => sentences(id).some(s => s.picture);
+// The game shows a picture only for a sentence that has BOTH `picture` and `falsePicture`.
+const hasPicture = (id: string) => sentences(id).some(s => s.picture && s.falsePicture);
+
+/** A small deterministic generator, so a round is the same on every run. */
+function seeded(seed: number): () => number {
+  let a = seed;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 describe('True or false subtitle', () => {
   it('keeps the picture copy on a Grade 1 lesson, whose sentences have pictures', () => {
@@ -39,17 +51,37 @@ describe('True or false subtitle', () => {
     }
   });
 
-  it('follows the data on Grades 2, 3 and 4: a lesson with a pictured sentence keeps the picture copy', () => {
+  it('follows what the game actually shows: a round with a picture keeps the picture copy, one without says right or wrong', () => {
     let pictured = 0;
-    for (const g of [2, 3, 4]) {
+    let plain = 0;
+    for (const g of [1, 2, 3, 4, 5, 9, 10]) {
       for (const u of grammarUnitsForGrade(g)) {
         const s = unitSentences(u);
-        const expected = s.some(x => x.picture) ? 'hubGTrueDesc' : 'hubGTrueDescPlain';
-        assert.equal(trueFalseDescKey(s), expected, u.lessonId);
-        if (s.some(x => x.picture)) pictured++;
+        if (!grammarActivityAvailable('grammar-true', s)) continue;
+        const rng = seeded(g * 1000 + u.lessonId.length);
+        // Enough rounds that every judgeable sentence of the lesson has been asked at least once.
+        let shown = 0;
+        let withoutPicture = 0;
+        for (let r = 0; r < 60; r++) {
+          const round = buildTrueFalseRound(s, rng);
+          for (const q of round) (q.pictureWord !== null ? shown++ : withoutPicture++);
+          // One round never mixes the two kinds, so one subtitle is true of all of it.
+          assert.ok(round.every(q => q.pictureWord !== null) || round.every(q => q.pictureWord === null), `${u.lessonId} mixes pictured and picture-free questions in one round`);
+        }
+        assert.equal(shown > 0 && withoutPicture > 0, false, `${u.lessonId} mixes pictured and picture-free questions across rounds`);
+        assert.equal(trueFalseDescKey(s), shown > 0 ? 'hubGTrueDesc' : 'hubGTrueDescPlain', u.lessonId);
+        if (shown > 0) pictured++; else plain++;
       }
     }
-    assert.ok(pictured > 0);
+    assert.ok(pictured > 0 && plain > 0);
+  });
+
+  it('a sentence with a picture but no false picture is not shown with a picture, so it does not earn the picture copy', () => {
+    const real = sentences('kbl-g2-eng-s1-nccd-u1_l1').find(s => s.picture && s.falsePicture)!;
+    assert.ok(real, 'premise: a pictured sentence with a false picture');
+    assert.equal(trueFalseDescKey([real]), 'hubGTrueDesc');
+    assert.equal(trueFalseDescKey([{ ...real, falsePicture: null }]), 'hubGTrueDescPlain');
+    assert.equal(trueFalseDescKey([{ ...real, picture: null }]), 'hubGTrueDescPlain');
   });
 
   it('is the picture copy for no sentences at all only if none is pictured (empty list reads plain)', () => {
