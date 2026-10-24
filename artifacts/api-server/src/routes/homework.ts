@@ -47,7 +47,8 @@ import { logger } from "../lib/logger";
 import { pushWithin } from "../lib/pushWithin.ts";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { RESOURCES_MAX, dueAtToDueDate, isUuid, parseCreate, parsePatch } from "../modules/homework/rules.ts";
-import { GAME_TITLE_MAX, attachedGames, carryOverGames, gameResourceKey, isGame, type GameKind } from "../modules/homework/game.ts";
+import { GAME_TITLE_MAX, GAMES_TEXT, attachedGames, carryOverGames, gameResourceKey, isGame, type GameKind } from "../modules/homework/game.ts";
+import { isMathsLesson } from "../modules/mathPractice/practice.ts";
 import { getLessonById } from "@workspace/curriculum";
 
 const router = Router();
@@ -162,7 +163,7 @@ async function resolveResources(raw: unknown[], teacherId: string, attached: Hom
     if ((item as { kind?: unknown } | null)?.kind === "game") {
       const { lessonId, game, title } = item as { lessonId?: unknown; game?: unknown; title?: unknown };
       if (typeof lessonId !== "string" || lessonId === "") return { error: "lessonId must be a curriculum lesson id" };
-      if (!isGame(game)) return { error: "game must be memory, scramble or spot" };
+      if (!isGame(game)) return { error: `game must be ${GAMES_TEXT}` };
       const key = gameResourceKey(lessonId, game);
       if (seen.has(key)) continue;
       seen.add(key);
@@ -173,6 +174,7 @@ async function resolveResources(raw: unknown[], teacherId: string, attached: Hom
       }
       const lesson = getLessonById(lessonId);
       if (!lesson) return { error: "lessonId must be a curriculum lesson id" };
+      if (game === "exercises" && !isMathsLesson(lessonId)) return { error: "exercises are for a mathematics lesson" };
       const snapshot = typeof title === "string" ? title.trim().slice(0, GAME_TITLE_MAX) : "";
       out.push({ kind: "game", lessonId, game, title: snapshot || lesson.titleAr });
       continue;

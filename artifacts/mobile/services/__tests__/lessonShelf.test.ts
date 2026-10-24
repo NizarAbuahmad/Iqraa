@@ -207,8 +207,9 @@ describe('subject isolation', () => {
       // Same again — Grade 10 gained a book on 2026-09-10, so both the bare
       // and the g9- form appear.
       'civic-education': /^(civ-s[12]|g9-civ-s[12])$/,
-      // Grade 9 predates Grade 7 here (no Grade 8 PE book exists at all).
-      // Grade 7 joined 2026-09-12. Grade 10 joined 2026-10-06 — grade-10 is
+      // Grade 9 predates Grade 7 here. Grade 7 joined 2026-09-12; Grade 8
+      // (the `g8-pe-s1` form, matched by the `g\d+` branch) joined 2026-10-24.
+      // Grade 10 joined 2026-10-06 — grade-10 is
       // `IMPLICIT_GRADE_ID` in curriculumIds.ts, so it carries the bare
       // `pe-s1` form with no `g10-` prefix, same as arts-s1 below.
       'physical-education': /^(pe-s[12]|g\d+-pe-s[12])$/,

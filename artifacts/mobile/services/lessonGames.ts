@@ -15,6 +15,8 @@ import {
 import { sample, shuffle } from './publicGames/rng.ts';
 import type { TriviaOption } from './publicGames/countries.ts';
 import type { TranslationKey } from './i18n.ts';
+import type { HomeworkGameName } from './homework.ts';
+import { resolveExerciseLesson } from './mathExercises.ts';
 
 export const MIN_LESSON_TERMS = 4;
 export const LESSON_GAME_ROUND = 6;
@@ -25,6 +27,21 @@ export const LESSON_GAME_TITLE_KEY: Record<LessonGame, TranslationKey> = {
   scramble: 'lessonGameScrambleTitle',
   spot: 'lessonGameSpotTitle',
 };
+/** What a homework attachment is called: the three games, plus the Math Corner's exercises. */
+export const HOMEWORK_GAME_TITLE_KEY: Record<HomeworkGameName, TranslationKey> = {
+  ...LESSON_GAME_TITLE_KEY,
+  exercises: 'mathPracticeTitle',
+};
+
+/** A maths lesson the Math Corner has exercises for — set as homework like a game. */
+function hasExercises(lessonId: string): boolean {
+  return resolveExerciseLesson(lessonId) !== null;
+}
+
+/** What a teacher can attach for this lesson: its games, then its exercises if it is a covered maths lesson. */
+export function homeworkGamesFor(lesson: Lesson): HomeworkGameName[] {
+  return [...availableLessonGames(lesson), ...(hasExercises(lesson.id) ? (['exercises'] as const) : [])];
+}
 
 const HARAKAT = /[ً-ْٰـ]/g;
 const ARABIC = /[؀-ۿ]/;
@@ -147,8 +164,9 @@ export interface GameLessonGroup {
 /**
  * The lessons a teacher can set a game from, by unit: the books of the class's
  * grade and subjects (no subjects = every subject of the grade), keeping only
- * lessons with enough terms. Which games each offers is asked per lesson
- * (`availableLessonGames`) once one is opened — it builds a scramble round.
+ * lessons with enough terms or with Math Corner exercises. Which games each
+ * offers is asked per lesson (`homeworkGamesFor`) once one is opened — it builds
+ * a scramble round.
  */
 export function gameLessonsForScope(gradeId: string, subjectIds: readonly string[]): GameLessonGroup[] {
   if (!gradeId) return [];
@@ -158,7 +176,7 @@ export function gameLessonsForScope(gradeId: string, subjectIds: readonly string
     for (const book of getBooksForSubjectGrade(subjectId, gradeId, 'teacher')) {
       for (const unit of getUnitsForBook(book.id)) {
         const lessons = getLessonsForUnit(unit.id)
-          .filter(hasLessonGames)
+          .filter(l => hasLessonGames(l) || hasExercises(l.id))
           .map(l => ({ id: l.id, title: l.titleAr || l.title }));
         if (lessons.length > 0) out.push({ unitId: unit.id, unitTitle: unit.nameAr || unit.name, bookTitle: book.titleAr || book.title, lessons });
       }

@@ -496,6 +496,14 @@ describeDb("teacher homework over HTTP, against a real database", () => {
       assert.deepEqual(await stored(r.json.homework.id), res);
     });
 
+    it("takes the Math Corner exercises for a maths lesson only", async () => {
+      const ok = await post([game({ game: "exercises", title: "تمارين" })]);
+      assert.equal(ok.status, 201, server.logs().slice(-1500));
+      assert.deepEqual((ok.json.homework.resources as any[])[0], { kind: "game", lessonId: LESSON, game: "exercises", title: "تمارين" });
+      const history = await post([game({ lessonId: LESSON2, game: "exercises" })]);
+      assert.equal(history.status, 400, "a history lesson has no maths exercises");
+    });
+
     it("drops a repeat of the same lesson game, but keeps the same lesson's other games", async () => {
       const r = await post([game(), game({ title: "again" }), game({ game: "spot" })]);
       assert.equal(r.status, 201);

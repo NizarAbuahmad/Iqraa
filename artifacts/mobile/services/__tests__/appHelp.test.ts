@@ -1964,3 +1964,47 @@ describe('lesson readiness, homework, exam follow-ups and slide notes — wordin
     });
   }
 });
+
+describe('chat history, plan objectives, books, the Math Corner tools and follow-ups after an exam — wordings of answers that already existed (twenty-third live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['كيف أمسح سجل المحادثات؟', 'howChatHistory'],
+    ['how do i clear the chat history', 'howChatHistory'],
+    ['كيف أضيف أهدافاً تعليمية خاصة بي إلى الخطة؟', 'howPlanOptions'],
+    ['كيف أرى خطط التدريس القديمة؟', 'howTeachingPlan'],
+    ['كيف أحمّل كتاب المعلم للصف العاشر؟', 'howBookDownload'],
+    ['كيف أفتح درساً من كتاب الكيمياء؟', 'howSearchLesson'],
+    ['كيف أبحث عن تجربة مخبرية؟', 'howLabAbout'],
+    ['كيف أستخدم القوانين والصيغ في زاوية الرياضيات؟', 'howMathTools'],
+    ['كيف أستخدم محوّل الوحدات؟', 'howMathTools'],
+    ['كيف أفتح ركن القرآن لحفظ السورة؟', 'howQuranAbout'],
+    ['كيف أرسل رمز الانضمام لأولياء الأمور؟', 'howShareLinkCode'],
+    ['كيف أدخل علامات امتحان ورقي يدوياً؟', 'howEditMark'],
+    ['كيف أعرف الطلاب المتعثرين بعد الامتحان؟', 'howSupportGroups'],
+    ['كيف أجهز ورقة علاجية للمتعثرين؟', 'howRemedial'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  const stayWithModel = [
+    'كيف أستخدم القوانين في حل المسائل',
+    'كيف أمسح السبورة من الكتابة',
+    'كيف أحذف سجل الغياب',
+    'كيف أحمل الطلبة مسؤولية التعلم',
+    'كيف أحدد الطلاب المتعثرين بالملاحظة',
+    'كيف أجهز ورقة علاجية بسرعة',
+    'كيف أرسل رمز الشكر للطلبة',
+    'كيف أفتح باب النقاش في الحصة',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howChatHistory', 'howPlanOptions', 'howTeachingPlan', 'howBookDownload', 'howSearchLesson', 'howLabAbout', 'howMathTools', 'howQuranAbout', 'howShareLinkCode', 'howEditMark', 'howSupportGroups', 'howRemedial']);
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});

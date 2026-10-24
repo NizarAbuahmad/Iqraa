@@ -53,7 +53,8 @@ export interface HomeworkMaterialResource {
 export interface HomeworkGameResource {
   kind: "game";
   lessonId: string;
-  game: "memory" | "scramble" | "spot";
+  /** `exercises` is the Math Corner's «اختبر نفسك» set for a maths lesson, scored like a game. */
+  game: "memory" | "scramble" | "spot" | "exercises";
   title: string;
 }
 

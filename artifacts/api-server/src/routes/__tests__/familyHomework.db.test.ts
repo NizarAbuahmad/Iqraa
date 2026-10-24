@@ -603,6 +603,20 @@ describeDb("family homework over HTTP, against a real database", () => {
       assert.equal((await studentList(w.users.studentA)).homework.find(i => i.id === hwG)!.done, true);
     });
 
+    it("takes the Math Corner exercises like a game, only where the homework attached them", async () => {
+      const hwEx = await mk(w.users.t1, w.classes.c1, "hw-exercises", att([L1, "exercises"]));
+      try {
+        assert.equal((await play(hwG, result("exercises", 7, 10))).status, 404, "hwG has no exercises attached");
+        const r = await play(hwEx, result("exercises", 7, 10));
+        assert.equal(r.status, 200, on.logs().slice(-1500));
+        assert.deepEqual(r.json, { best: { score: 7, total: 10 }, attempts: 1 });
+        assert.deepEqual((await stored(hwEx)).map(x => [x.student_id, x.game, x.score, x.total]), [[w.students.sA1, "exercises", 7, 10]]);
+        assert.deepEqual(await doneRows(hwEx), [w.students.sA1], "finishing the exercises ticks the homework off");
+      } finally {
+        await db.pool.query(`DELETE FROM homework WHERE id = $1`, [hwEx]);
+      }
+    });
+
     it("keeps the best result and counts every attempt; a tie keeps the existing one", async () => {
       const best = async (score: number, total: number) => (await play(hwG, result("memory", score, total))).json;
       assert.deepEqual(await best(2, 5), { best: { score: 3, total: 5 }, attempts: 2 }, "worse is not kept");
