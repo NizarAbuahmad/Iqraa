@@ -44,10 +44,15 @@ A teacher's review of the English corner (Grades 2–5), with three phone record
 - **Checked:** `lib/curriculum` tests 677 of 678 (the one failure, `quranCorner`, cannot load `@quran.ws/text`, which this partial install lacks — nothing to do with English); the two
   mobile English game suites 38 of 38. **Not checked:** the app typecheck and the screens in a browser (this worktree has no
   full install; CI runs the typecheck).
-- **Not yet processed (do this next):** these 201 files went up as the model returned them — 128 kbps, untrimmed, not levelled,
-  with no `_manifest.json` entry and no process-version stamp — because they were uploaded before #1262's pipeline was
-  merged into this branch. `english-audio --reprocess` (no OpenAI key, backs each file up first) will pick them up and trim,
-  level and re-encode them like the other 1,050. Run it once, after this merges.
+- **Processed afterwards (2026-10-24):** the 201 files first went up as the model returned them (128 kbps, untrimmed, not
+  levelled) because they were uploaded before #1262's pipeline reached this branch. Then
+  `english-audio --reprocess --only <the 201 slugs>` (dry run first: «201 to check and reprocess») trimmed, levelled and
+  re-encoded them: 201 reprocessed, 0 rejected, 5.61 MB → 1.11 MB, the originals backed up under `english-audio-original/`, and
+  `_manifest.json` has 201 entries at process version 1. Checked live: `garage` 1.03 s (0.83 s of speech), `loudly` 0.82 s,
+  `firefighter` 1.12 s, mean level −25 to −26 dB on seven clips, and faster-whisper `small.en` agreed with the word on 20 of 20
+  sampled live clips. **The other 1,050 older clips are still unprocessed** — before this run the manifest listed none
+  of the 1,248 at process version 1 — so `--reprocess` without `--only` is still the step that trims and levels them
+  (#1262's measurements on them were local only).
 
 ## Chat app-help, twenty-fourth live pass: 8 more wordings and a terms-of-service answer — 2026-10-24
 
