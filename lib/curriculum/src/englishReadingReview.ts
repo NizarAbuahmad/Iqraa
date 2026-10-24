@@ -323,6 +323,9 @@ export function renderReadingReviewHtml(grade = 1): string {
     .sheet { gap: 0; max-width: none; }
     .intro { max-width: none; }
     .unit { break-before: page; }
+    /* A grid places the sign-off where the table would have ended without the page break, over its last rows. */
+    .unit { display: block; }
+    .unit > * + * { margin-top: 14px; }
     .table-wrap { overflow: visible; border-radius: 0; }
     table { min-width: 0; }
     tr, .signoff { break-inside: avoid; }
