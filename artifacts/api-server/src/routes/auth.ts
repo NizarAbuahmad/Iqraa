@@ -59,7 +59,7 @@ import { resolveClaimCode, type ClaimResolution, type ClaimRole } from "../lib/r
 import { generateLoginCode, hashLoginCode } from "../lib/loginCode.ts";
 import { guardianLimitReached } from "../lib/guardianLimit.ts";
 import { hasLiveRosterLink } from "../lib/rosterLinkState.ts";
-import { guardianStatus } from "../lib/guardianGate.ts";
+import { guardianStatus, needsLinkLookup } from "../lib/guardianGate.ts";
 import { GUARDIAN_LIMITS, limitReached, maskEmail, normalizeParentEmail } from "../lib/guardianConsent.ts";
 import {
   countForParent,
@@ -611,7 +611,9 @@ router.post("/register", shedWhenHashingBusy(), registerLimiter, registerEmailLi
     // Queued with no token: the parent is mailed only after the student has verified their own address.
     if (age.parentEmail) {
       try {
-        await queueRequest(user.id, age.parentEmail);
+        const queued = await queueRequest(user.id, age.parentEmail);
+        // Over a cap since the check above (a race): the account stays, and the student can ask again later.
+        if (!queued.ok) logger.warn({ userId: user.id, reason: queued.reason }, "guardian request not queued at sign-up");
       } catch (err) {
         // The account exists and can ask again from the waiting screen; this must not turn a sign-up into a 500.
         logger.error({ err, userId: user.id }, "could not queue the guardian request at sign-up");
@@ -1726,11 +1728,14 @@ router.post("/add-email", shedWhenHashingBusy(), authMiddleware, addEmailUserLim
   }
 });
 
-/** The current request reduced to what `guardianStatus` reads; null when the flag is off or none exists. */
+/** A request row reduced to what `guardianStatus` reads. */
+const requestView = (cur: Awaited<ReturnType<typeof currentRequest>>) =>
+  cur ? { decision: cur.decision, expiresAt: cur.expiresAt } : null;
+
+/** The current request as `guardianStatus` reads it; null when the flag is off or none exists. */
 async function currentRequestView(userId: string) {
   if (!guardianApprovalEnabled()) return null;
-  const cur = await currentRequest(userId);
-  return cur ? { decision: cur.decision, expiresAt: cur.expiresAt } : null;
+  return requestView(await currentRequest(userId));
 }
 
 /**
@@ -1779,8 +1784,14 @@ router.post("/guardian-request", authMiddleware, guardianRequestLimiter, async (
       res.status(429).json({ error: "Too many requests. Try again tomorrow.", code: "guardian_rate_limited" });
       return;
     }
-    await queueRequest(user.id, parent.email);
-    const issued = await issueAndSend(user.id);
+    // The pre-check above is for a clear message; this is the one that holds under concurrency.
+    const queued = await queueRequest(user.id, parent.email);
+    if (!queued.ok) {
+      res.status(429).json({ error: "Too many requests. Try again tomorrow.", code: "guardian_rate_limited" });
+      return;
+    }
+    // A request that a newer one from the same student superseded meanwhile is not mailed: `emailSent: false`.
+    const issued = await issueAndSend(queued.id);
     res.json({
       parentEmailMasked: maskEmail(parent.email),
       emailSent: issued.ok ? issued.emailSent : false,
@@ -2128,8 +2139,9 @@ router.post("/google", googleLimiter, async (req, res) => {
         // Google has already proved the address, so the parent can be mailed at once.
         if (age.parentEmail && user) {
           try {
-            await queueRequest(user.id, age.parentEmail);
-            await sendQueuedGuardianRequestWithin(user.id);
+            const queued = await queueRequest(user.id, age.parentEmail);
+            if (queued.ok) await sendQueuedGuardianRequestWithin(user.id);
+            else logger.warn({ userId: user.id, reason: queued.reason }, "guardian request not queued for a Google sign-up");
           } catch (err) {
             logger.error({ err, userId: user.id }, "could not queue the guardian request for a Google sign-up");
           }
@@ -2368,13 +2380,17 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
         ? await hasLiveRosterLink(user.id)
         : undefined;
 
+    // The request is read only when it can change the answer: an email student the flag holds, with no approval and
+    // no live link. Everyone else (and everyone, with the flag off) costs no guardian query at all.
+    const flagOn = guardianApprovalEnabled();
+    const guardianRequest =
+      needsLinkLookup(user, flagOn) && hasRosterLink === false ? await currentRequest(user.id) : null;
     const guardian = guardianStatus(user, {
-      flagOn: guardianApprovalEnabled(),
+      flagOn,
       hasLiveLink: hasRosterLink === true,
-      request: user.role === "student" ? await currentRequestView(user.id) : null,
+      request: requestView(guardianRequest),
       now: new Date(),
     });
-    const guardianRequest = guardian === "waiting" || guardian === "declined" ? await currentRequest(user.id) : null;
 
     res.json({
       id: user.id,
@@ -2409,7 +2425,8 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,
       // Whether a parent must approve this student's account, and where the request stands. The app reads it on
-      // every boot and again whenever a call answers guardian_approval_required.
+      // every boot and again whenever a call answers guardian_approval_required. The masked address goes with any
+      // request that exists and still counts (waiting, declined, or "needed" because its link expired).
       guardianStatus: guardian,
       ...(guardianRequest ? { guardianParentEmailMasked: maskEmail(guardianRequest.parentEmail) } : {}),
       ...(hasRosterLink === undefined ? {} : { hasRosterLink }),

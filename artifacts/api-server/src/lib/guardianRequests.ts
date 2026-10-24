@@ -8,15 +8,17 @@
  * verified), then *issued*: the token is generated, only its hash is stored, and the plaintext goes into the mail.
  */
 import { systemDb as db, guardianConsents, users } from "@workspace/db";
-import { and, count, desc, eq, gt, isNull } from "drizzle-orm";
+import { and, count, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import { logger } from "./logger.js";
 import { sendGuardianConsentEmail } from "./email.js";
 import { guardianApprovalEnabled } from "./features.js";
 import {
   CONSENT_TTL_MS,
   DAY_MS,
+  GUARDIAN_LIMITS,
   generateConsentToken,
   hashConsentToken,
+  limitReached,
   looksLikeConsentToken,
 } from "./guardianConsent.ts";
 
@@ -47,12 +49,36 @@ export async function recentCounts(
   return { forStudent: Number(s?.n ?? 0), forParent: await countForParent(parentEmail, now) };
 }
 
-/** Supersedes the student's open request and queues a new one with no token. Returns the new row's id. */
-export async function queueRequest(userId: string, parentEmail: string): Promise<string> {
+export type QueueResult = { ok: true; id: string } | { ok: false; reason: "student_limit" | "parent_limit" };
+
+/**
+ * Supersedes the student's open request and queues a new one with no token, unless a daily cap is already reached.
+ *
+ * One transaction that first takes a transaction-scoped advisory lock on the student and then on the parent address,
+ * always in that order, so two requests can never wait on each other. With both held it counts the rows of the last
+ * 24 hours again (same window as `recentCounts`), so concurrent requests cannot all pass a check made before any of
+ * them wrote: the table never exceeds `GUARDIAN_LIMITS`. A request over a cap writes nothing.
+ */
+export async function queueRequest(userId: string, parentEmail: string, now: Date = new Date()): Promise<QueueResult> {
   return db.transaction(async tx => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${"guardian-user:" + userId}))`);
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${"guardian-parent:" + parentEmail}))`);
+
+    const since = new Date(now.getTime() - DAY_MS);
+    const [s] = await tx
+      .select({ n: count() })
+      .from(guardianConsents)
+      .where(and(eq(guardianConsents.userId, userId), gt(guardianConsents.createdAt, since)));
+    if (limitReached(Number(s?.n ?? 0), GUARDIAN_LIMITS.perStudentPerDay)) return { ok: false, reason: "student_limit" } as const;
+    const [p] = await tx
+      .select({ n: count() })
+      .from(guardianConsents)
+      .where(and(eq(guardianConsents.parentEmail, parentEmail), gt(guardianConsents.createdAt, since)));
+    if (limitReached(Number(p?.n ?? 0), GUARDIAN_LIMITS.perParentPerDay)) return { ok: false, reason: "parent_limit" } as const;
+
     await tx
       .update(guardianConsents)
-      .set({ supersededAt: new Date() })
+      .set({ supersededAt: now })
       .where(
         and(
           eq(guardianConsents.userId, userId),
@@ -64,7 +90,7 @@ export async function queueRequest(userId: string, parentEmail: string): Promise
       .insert(guardianConsents)
       .values({ userId, parentEmail })
       .returning({ id: guardianConsents.id });
-    return row!.id;
+    return { ok: true, id: row!.id } as const;
   });
 }
 
@@ -84,25 +110,34 @@ export type IssueResult =
   | { ok: false; reason: "no_request" | "already_issued" };
 
 /**
- * Generates the token for the current queued request, stores its hash and seven-day expiry, and mails the link.
+ * Generates the token for one queued request (the id `queueRequest` returned), stores its hash and seven-day expiry,
+ * and mails the link. It issues that row and no other: a request superseded or decided since is `no_request`.
  * `sent_at` is stamped only when the provider accepted the mail, so a failed send can be resent.
  */
-export async function issueAndSend(userId: string): Promise<IssueResult> {
-  const cur = await currentRequest(userId);
-  if (!cur || cur.decidedAt) return { ok: false, reason: "no_request" };
+export async function issueAndSend(requestId: string): Promise<IssueResult> {
+  const [cur] = await db.select().from(guardianConsents).where(eq(guardianConsents.id, requestId)).limit(1);
+  if (!cur || cur.decidedAt || cur.supersededAt) return { ok: false, reason: "no_request" };
   if (cur.tokenHash) return { ok: false, reason: "already_issued" };
 
   const token = generateConsentToken();
   const expiresAt = new Date(Date.now() + CONSENT_TTL_MS);
-  // Conditional on the token still being null, so two concurrent issues cannot both mail a link.
+  // One conditional update: still tokenless, still current. Two concurrent issues cannot both mail a link, and a
+  // request superseded since the read above is not issued.
   const [claimed] = await db
     .update(guardianConsents)
     .set({ tokenHash: hashConsentToken(token), expiresAt })
-    .where(and(eq(guardianConsents.id, cur.id), isNull(guardianConsents.tokenHash)))
+    .where(
+      and(
+        eq(guardianConsents.id, cur.id),
+        isNull(guardianConsents.tokenHash),
+        isNull(guardianConsents.supersededAt),
+        isNull(guardianConsents.decidedAt),
+      ),
+    )
     .returning({ id: guardianConsents.id });
   if (!claimed) return { ok: false, reason: "already_issued" };
 
-  const [kid] = await db.select({ firstName: users.firstName }).from(users).where(eq(users.id, userId)).limit(1);
+  const [kid] = await db.select({ firstName: users.firstName }).from(users).where(eq(users.id, cur.userId)).limit(1);
   const emailSent = await sendGuardianConsentEmail(cur.parentEmail, kid?.firstName ?? "", `${linkBase()}/guardian/${token}`);
   if (emailSent) {
     await db.update(guardianConsents).set({ sentAt: new Date() }).where(eq(guardianConsents.id, cur.id));
@@ -118,7 +153,7 @@ export async function sendQueuedGuardianRequest(userId: string): Promise<void> {
   if (!guardianApprovalEnabled()) return;
   try {
     const cur = await currentRequest(userId);
-    if (cur && !cur.decidedAt && !cur.tokenHash) await issueAndSend(userId);
+    if (cur && !cur.decidedAt && !cur.tokenHash) await issueAndSend(cur.id);
   } catch (err) {
     logger.error({ err, userId }, "could not send the queued guardian request");
   }

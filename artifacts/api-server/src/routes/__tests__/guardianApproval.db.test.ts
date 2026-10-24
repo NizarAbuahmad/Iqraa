@@ -52,6 +52,13 @@ describeDb("parent approval for email students", () => {
     return token;
   }
 
+  /** Links the account to a roster row of a new teacher, as a teacher's per-student code does. */
+  async function linked(userId: string) {
+    const teacher = await mkUser("teacher");
+    const [stu] = await q<{ id: string }>(`INSERT INTO students (teacher_id, display_name) VALUES ($1, 'x') RETURNING id`, [teacher]);
+    await q(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [stu.id, userId]);
+  }
+
   before(async () => {
     db = await setupTestDb();
     // No mail key: the parent's link is then logged (outside production) instead of sent, which is how tests read it.
@@ -178,11 +185,6 @@ describeDb("parent approval for email students", () => {
   });
 
   describe("the gate", () => {
-    async function linked(userId: string) {
-      const teacher = await mkUser("teacher");
-      const [stu] = await q<{ id: string }>(`INSERT INTO students (teacher_id, display_name) VALUES ($1, 'x') RETURNING id`, [teacher]);
-      await q(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [stu.id, userId]);
-    }
     const blocked = (r: { status: number; json: any }) => {
       assert.equal(r.status, 403);
       assert.equal(r.json.code, "guardian_approval_required");
@@ -199,7 +201,7 @@ describeDb("parent approval for email students", () => {
       const me = await call(on, "GET", "/auth/me", kid);
       assert.equal(me.status, 200, me.text);
       const claim = await call(on, "GET", "/auth/claim", kid);
-      assert.notEqual(claim.status, 403, "joining a class with a teacher's code stays open");
+      assert.equal(claim.status, 200, "joining a class with a teacher's code stays open");
     });
 
     it("never holds a code-only student, a linked student, an approved student, a teacher or a parent", async () => {
@@ -213,8 +215,8 @@ describeDb("parent approval for email students", () => {
         const r = await call(on, "GET", "/student/exams", id);
         assert.equal(r.status, 200, `${id}: ${r.text}`);
       }
-      assert.notEqual((await call(on, "GET", "/classes", teacher)).status, 403);
-      assert.notEqual((await call(on, "GET", "/parent/exams", parent)).json?.code, "guardian_approval_required");
+      assert.equal((await call(on, "GET", "/classes", teacher)).status, 200);
+      assert.equal((await call(on, "GET", "/parent/exams", parent)).status, 200);
     });
 
     it("is inert with the flag off: the same pending student reaches everything", async () => {
@@ -326,7 +328,7 @@ describeDb("parent approval for email students", () => {
       assert.equal(r.json.code, "email_not_verified");
     });
 
-    it("is not for anyone who is not held: approved, linked, code-only, teacher (409 or 403, nothing queued)", async () => {
+    it("is not for anyone who is not held: approved, linked, code-only, teacher (409, nothing queued)", async () => {
       const approved = await mkUser("student", { approved: true });
       const r = await ask(approved, "p@example.test");
       assert.equal(r.status, 409);
@@ -335,7 +337,16 @@ describeDb("parent approval for email students", () => {
       const t = await ask(teacher, "p@example.test");
       assert.equal(t.status, 409);
       assert.equal(t.json.code, "guardian_not_required");
-      assert.deepEqual(await q(`SELECT 1 FROM guardian_consents WHERE user_id = ANY($1::uuid[])`, [[approved, teacher]]), []);
+      const linkedKid = await mkUser("student");
+      await linked(linkedKid);
+      const l = await ask(linkedKid, "p@example.test");
+      assert.equal(l.status, 409);
+      assert.equal(l.json.code, "guardian_not_required");
+      const codeOnly = await mkUser("student", { email: null });
+      const c = await ask(codeOnly, "p@example.test");
+      assert.equal(c.status, 409);
+      assert.equal(c.json.code, "guardian_not_required");
+      assert.deepEqual(await q(`SELECT 1 FROM guardian_consents WHERE user_id = ANY($1::uuid[])`, [[approved, teacher, linkedKid, codeOnly]]), []);
     });
 
     it("stops at 3 requests a day per student and 5 a day per parent address (429)", async () => {
@@ -365,9 +376,47 @@ describeDb("parent approval for email students", () => {
       const teacher = await mkUser("teacher");
       const codeOnly = await mkUser("student", { email: null });
       const approved = await mkUser("student", { approved: true });
+      const linkedKid = await mkUser("student");
+      await linked(linkedKid);
+      assert.equal((await call(on, "GET", "/auth/me", linkedKid)).json.guardianStatus, "not_required");
       assert.equal((await call(on, "GET", "/auth/me", teacher)).json.guardianStatus, "not_required");
       assert.equal((await call(on, "GET", "/auth/me", codeOnly)).json.guardianStatus, "not_required");
       assert.equal((await call(on, "GET", "/auth/me", approved)).json.guardianStatus, "approved");
+    });
+
+    it("/me names the parent's address for a declined request", async () => {
+      const kid = await mkUser("student");
+      await mkConsent(kid, { decided: "declined", parent: "nay@example.test" });
+      const me = await call(on, "GET", "/auth/me", kid);
+      assert.equal(me.json.guardianStatus, "declined");
+      assert.equal(me.json.guardianParentEmailMasked, "na***@example.test");
+    });
+
+    it("/me says waiting for a request queued but not yet mailed", async () => {
+      const kid = await mkUser("student");
+      await q(`INSERT INTO guardian_consents (user_id, parent_email) VALUES ($1, 'queued@example.test')`, [kid]);
+      const me = await call(on, "GET", "/auth/me", kid);
+      assert.equal(me.json.guardianStatus, "waiting");
+      assert.equal(me.json.guardianParentEmailMasked, "qu***@example.test");
+    });
+
+    it("/me says needed, and still names the address, once the link has expired; a fresh student gets no address", async () => {
+      const kid = await mkUser("student");
+      await mkConsent(kid, { expires: "-1 day", parent: "old@example.test" });
+      const me = await call(on, "GET", "/auth/me", kid);
+      assert.equal(me.json.guardianStatus, "needed");
+      assert.equal(me.json.guardianParentEmailMasked, "ol***@example.test");
+      const fresh = await call(on, "GET", "/auth/me", await mkUser("student"));
+      assert.equal(fresh.json.guardianStatus, "needed");
+      assert.equal(fresh.json.guardianParentEmailMasked, undefined);
+    });
+
+    it("with the flag off /me never names a parent address, even for a student who has a request", async () => {
+      const kid = await mkUser("student");
+      await mkConsent(kid, { parent: "ghost@example.test" });
+      const me = await call(off, "GET", "/auth/me", kid);
+      assert.equal(me.json.guardianStatus, "not_required");
+      assert.equal("guardianParentEmailMasked" in me.json, false);
     });
   });
 
@@ -575,6 +624,32 @@ describeDb("parent approval for email students", () => {
       assert.equal((await call(off, "POST", "/auth/role", t2, { role: "student", ageConfirmed: true })).status, 200);
       const [ticked] = await q<{ guardian_confirmed_at: Date | null }>(`SELECT guardian_confirmed_at FROM users WHERE id = $1`, [t2]);
       assert.ok(ticked.guardian_confirmed_at, "the flag-off switch still records the tick");
+    });
+  });
+
+  describe("requests that arrive together", () => {
+    // These use the raw call: of requests racing on one student only the newest is mailed, so there is no fixed
+    // number of links to wait for.
+    const askRaw = (userId: string, parentEmail: string) => call(on, "POST", "/auth/guardian-request", userId, { parentEmail });
+
+    it("six at once for one student: three are taken, three are refused, and one request is left current", async () => {
+      const kid = await mkUser("student");
+      const results = await Promise.all([0, 1, 2, 3, 4, 5].map(i => askRaw(kid, `race-student-${i}@example.test`)));
+      const statuses = results.map(r => r.status).sort();
+      assert.deepEqual(statuses, [200, 200, 200, 429, 429, 429], results.map(r => r.text).join(" | "));
+      for (const r of results.filter(r => r.status === 429)) assert.equal(r.json.code, "guardian_rate_limited");
+      const [all] = await q<{ n: string }>(`SELECT count(*) AS n FROM guardian_consents WHERE user_id = $1`, [kid]);
+      assert.equal(Number(all.n), 3);
+      const [open] = await q<{ n: string }>(`SELECT count(*) AS n FROM guardian_consents WHERE user_id = $1 AND superseded_at IS NULL`, [kid]);
+      assert.equal(Number(open.n), 1, "only the newest request may be live");
+    });
+
+    it("seven students at once for one parent address: five rows exist afterwards, never more", async () => {
+      const kids = await Promise.all([0, 1, 2, 3, 4, 5, 6].map(() => mkUser("student")));
+      const results = await Promise.all(kids.map(k => askRaw(k, "race-parent@example.test")));
+      assert.deepEqual(results.map(r => r.status).sort(), [200, 200, 200, 200, 200, 429, 429], results.map(r => r.text).join(" | "));
+      const [row] = await q<{ n: string }>(`SELECT count(*) AS n FROM guardian_consents WHERE parent_email = 'race-parent@example.test'`);
+      assert.equal(Number(row.n), 5);
     });
   });
 });
