@@ -10,6 +10,36 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Register: the terms checkbox is visible (#1229) — 2026-10-23
+
+Reported from the live page: on `/register` the terms line did not read as something to tick.
+The unticked box was `colors.border` (near-white) on the white card, and the sentence beside
+it was 11px muted grey, so it looked like a caption with a gap in front of it.
+
+**What changed** (styling only; the toggle, the two links, the Google gate and the sign-up
+payload are untouched)
+- The row is a framed panel (`colors.input` fill, 1px `mutedForeground` outline, 48 minimum
+  height) that turns primary-tinted when ticked.
+- The box is 24px with a 2px `mutedForeground` outline on a `colors.card` fill; the tick is
+  `ICON.lg` in `colors.primaryForeground` (it was a hard-coded `#fff`, which is poor contrast on
+  the light primary dark mode uses).
+- The sentence is 13px in `colors.foreground`.
+- Where it lives now: #1229 wrote this inline in `app/(auth)/register.tsx`; a later change moved
+  it into the shared `CheckRow` (`components/ui/CheckRow.tsx`) with these values, so the age
+  confirmation row matches. Change the look there. See «Students choose an email or a teacher's
+  code» below for why.
+
+**Verified:** mobile `pnpm run typecheck`; the `iconSystem`, `designScale` and `statusBar` tests;
+CI green on the PR head; the merge commit's `deploy.yml` run succeeded.
+**Not verified:** how it looks in a browser (phone, desktop, light, dark, RTL). Nobody has
+looked at the deployed `/register` since the change.
+
+**Process note.** `main` merged a PR roughly every ten minutes while this one was open and
+`typecheck + tests` takes about nine, so the branch fell behind five times. Four of those were
+conflicts in this file, because every PR adds its entry under the same header line; the PR
+merged only after its entry was taken out, and this entry was added afterwards. If a PR keeps
+losing that race, put its entry in a follow-up the same way.
+
 ## Students choose an email or a teacher's code — 2026-10-23
 
 A student could sign up only with a teacher's code (`POST /auth/redeem`, no email): the register
