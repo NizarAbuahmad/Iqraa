@@ -63,9 +63,9 @@ Checked 2026-10-22:
   `LEGAL_VERSION` 2026-10-23) now say a student may join with an email after confirming they are
   an adult or have a guardian's agreement; they were drafted, not reviewed by a lawyer, and the
   store declaration (`lib/features.ts` comment) still describes accounts made only through a
-  class. Merging deploys it, and every user is asked to accept the new version. Also the role
-  switch (teacher → student) does not ask for the age confirmation. Entry: «Students choose an
-  email or a teacher's code» in the log.
+  class. Merging deploys it, and every user is asked to accept the new version. Becoming a
+  student by switching role asks for the same confirmation as signing up as one. Entry:
+  «Students choose an email or a teacher's code» in the log.
 - **Neon is on Launch (applied 2026-10-23 by the owner); two checks remain.** Autoscaling 0.25-0.5
   CU, scale to zero on: about $10 a month expected, about $39 at most (estimates; read Neon's
   Usage page weekly for a month). Check `pooled` on `GET /api/healthz/pool` (admin key) once this

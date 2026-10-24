@@ -48,7 +48,19 @@ something every student has on day one.
   and gave `styles.termsRow` a border width. The age-confirmation row had been copied from the old
   one: it reused `termsRow` without a border colour, which draws a black frame, and kept the old box.
   Git merged the file with no conflict, so only looking at the screen showed it. Both rows now render
-  one `CheckRow` in `app/(auth)/register.tsx`, so they cannot drift apart again.
+  one `CheckRow` (`components/ui/CheckRow.tsx`), so they cannot drift apart again.
+- **Switching an existing account into «student» asks for the same confirmation.** The sign-up asked,
+  but `POST /auth/role` did not, so a teacher or an unlinked parent could become a student with no
+  tick — the same door by another way. `decideRoleSwitch` (`lib/roleSwitch.ts`) now refuses a change
+  *into* student without `ageConfirmed: true` (400 `age_confirmation_required`, checked after every
+  lock so a linked or teaching account is still told why it is locked), and the route stores
+  `guardian_confirmed_at` when it succeeds. `POST /auth/google` on an existing account of another
+  role goes through the same decision. The three screens that switch a role ask for it with the shared
+  `CheckRow`, and the confirm button stays off until it is ticked: Settings → account type,
+  `/claim-required`, and `/setup-subjects` (whose pills used to switch on the tap: tapping «طالب» now
+  opens the box and a confirm button instead). The rule the screens share is
+  `switchNeedsAgeConfirmation` (`services/signupMethod.ts`); leaving the role, or staying a student,
+  asks for nothing.
 
 **Verified.** `pnpm run typecheck`; api-server `pnpm build && pnpm test` (2238 pass on the last merge
 with `main`; 2202 when first written); mobile
@@ -85,9 +97,10 @@ class-code claim was checked by `curl`); a parent through the unchanged code pat
 Arabic strings were reviewed once and aligned to «شعبة» / «رمز الربط», not by a second native reader.
 Not a lawyer's review (the legal text is drafted, not reviewed).
 
-**Known limits.** The teacher → student role switch (`POST /auth/role`) does not ask for the age
-confirmation. `/auth/redeem` and `/auth/code-login` still have no committed handler tests. The store
-declaration itself (outside the repo) still needs to say students can sign up with an email.
+**Known limits.** `/auth/redeem` and `/auth/code-login` still have no committed handler tests. The
+store declaration itself (outside the repo) still needs to say students can sign up with an email.
+The confirmation is a tick, not a check: nothing here verifies an age or contacts a guardian, and a
+minor can tick it.
 
 ## Chat app-help, twentieth live pass: 14 more wordings, and one new answer (subject average) — 2026-10-23
 

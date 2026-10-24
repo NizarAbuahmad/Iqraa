@@ -244,8 +244,12 @@ interface AuthContextType {
    * only while this account has claimed no roster row — i.e. exactly while the
    * gate is holding it on `/claim-required`, which is the only screen that
    * offers it. Throws with the server's own `code` in `message` otherwise.
+   *
+   * A change **into** student also needs `{ ageConfirmed: true }` — the box the
+   * sign-up asks («أنا بالغ، أو وليّ أمري موافق») — or the server answers 400
+   * `age_confirmation_required`. See `switchNeedsAgeConfirmation`.
    */
-  switchRole: (role: 'teacher' | 'parent' | 'student') => Promise<void>;
+  switchRole: (role: 'teacher' | 'parent' | 'student', opts?: { ageConfirmed?: boolean }) => Promise<void>;
   /**
    * The other accounts signed in on this device, most recently used first.
    * Never includes the open one, and carries no credentials.
@@ -797,10 +801,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void markGradeSetupSkipped(skipUserId);
   }, [skipUserId]);
 
-  const switchRole = useCallback(async (role: 'teacher' | 'parent' | 'student') => {
+  const switchRole = useCallback(async (
+    role: 'teacher' | 'parent' | 'student',
+    opts?: { ageConfirmed?: boolean },
+  ) => {
     const updated = await apiJson<{ role: UserRole; hasRosterLink?: boolean }>('/auth/role', {
       method: 'POST',
-      body: JSON.stringify({ role }),
+      // Sent only for a student: the server reads it for no other role.
+      body: JSON.stringify({ role, ...(role === 'student' ? { ageConfirmed: opts?.ageConfirmed === true } : {}) }),
     });
     // No token refresh: the API re-reads users.role on every request, so the
     // role inside the access token decides nothing (middlewares/auth.ts).

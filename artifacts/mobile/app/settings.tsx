@@ -23,6 +23,8 @@ import { askForPushPermission, getPushPermissionState, pushAskCopy, type PushPer
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { BackButton } from '@/components/ui/BackButton';
 import { IconTile } from '@/components/ui/IconTile';
+import { CheckRow } from '@/components/ui/CheckRow';
+import { switchNeedsAgeConfirmation } from '@/services/signupMethod';
 import type { GlyphId } from '@/constants/glyphs';
 import { SPACE, TYPE } from '@/constants/theme';
 import { PUSH_PREF_ROWS, showsFamilyPushPrefs, withPref, type PushPrefCategory, type PushPrefs } from '@/services/pushPrefs';
@@ -55,6 +57,10 @@ export default function SettingsScreen() {
   );
   const [typeOpen, setTypeOpen] = useState(false);
   const [nextRole, setNextRole] = useState<'teacher' | 'parent' | 'student' | null>(null);
+  // Becoming a student asks what signing up as one asks: an adult, or a
+  // guardian's agreement. The server refuses the switch without it.
+  const [ageOk, setAgeOk] = useState(false);
+  const askAge = nextRole !== null && switchNeedsAgeConfirmation(user?.role, nextRole);
   const [switching, setSwitching] = useState(false);
   const [typeError, setTypeError] = useState('');
   const [sendingTest, setSendingTest] = useState(false);
@@ -205,15 +211,20 @@ export default function SettingsScreen() {
 
   const handleSwitchRole = async () => {
     if (!nextRole || switching) return;
+    if (askAge && !ageOk) { setTypeError(t('errAgeConfirmRequired')); return; }
     setSwitching(true);
     setTypeError('');
     try {
       // On success the routing gate moves the account on: a parent to
       // /claim-required, a teacher to /setup-subjects, a student into the app.
-      await switchRole(nextRole);
+      await switchRole(nextRole, { ageConfirmed: askAge && ageOk });
     } catch (e) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setTypeError(t(e instanceof ApiError && e.code === 'role_locked_teaching' ? 'accountTypeLockedTeaching' : 'claimRequiredSwitchFailed'));
+      setTypeError(t(
+        e instanceof ApiError && e.code === 'role_locked_teaching' ? 'accountTypeLockedTeaching'
+          : e instanceof ApiError && e.code === 'age_confirmation_required' ? 'errAgeConfirmRequired'
+          : 'claimRequiredSwitchFailed',
+      ));
       setSwitching(false);
     }
   };
@@ -508,7 +519,7 @@ export default function SettingsScreen() {
                 isRTL={isRTL}
                 colors={colors}
                 right={<Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{t(user?.role === 'student' ? 'roleStudent' : 'roleTeacher')}</Text>}
-                onPress={() => { setTypeOpen(o => !o); setNextRole(null); setTypeError(''); }}
+                onPress={() => { setTypeOpen(o => !o); setNextRole(null); setAgeOk(false); setTypeError(''); }}
               />
               {typeOpen && (
                 <View style={{ paddingHorizontal: 16, paddingBottom: 14 }}>
@@ -534,6 +545,13 @@ export default function SettingsScreen() {
                     haptics
                     containerStyle={{ marginBottom: 12 }}
                   />
+                  {askAge ? (
+                    <View style={{ marginBottom: 12 }}>
+                      <CheckRow checked={ageOk} onPress={() => setAgeOk(v => !v)} isRTL={isRTL} colors={colors}>
+                        {t('ageConfirmLabel')}
+                      </CheckRow>
+                    </View>
+                  ) : null}
                   {typeError ? (
                     <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }}>
                       {typeError}
@@ -543,7 +561,7 @@ export default function SettingsScreen() {
                     label={t('claimRequiredSwitchSubmit')}
                     onPress={handleSwitchRole}
                     loading={switching}
-                    disabled={!nextRole || switching}
+                    disabled={!nextRole || switching || (askAge && !ageOk)}
                     size="sm"
                   />
                 </View>

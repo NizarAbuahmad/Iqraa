@@ -29,3 +29,14 @@ export function signupForm(role: SignupRole | null, method: StudentSignupMethod 
 export function needsAgeConfirmation(role: SignupRole | null, method: StudentSignupMethod | null): boolean {
   return role === 'student' && method === 'email';
 }
+
+/**
+ * Whether changing an existing account to `to` asks for the same age /
+ * guardian confirmation a student's sign-up does. Only a change **into**
+ * student: the server (`api-server/src/lib/roleSwitch.ts`) refuses one without
+ * `ageConfirmed` with a 400, so a screen that skips the box gets an error it
+ * cannot explain. Staying a student, or leaving the role, asks for nothing.
+ */
+export function switchNeedsAgeConfirmation(from: string | null | undefined, to: string): boolean {
+  return to === 'student' && from !== 'student';
+}

@@ -11,7 +11,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { signupForm, needsAgeConfirmation } from '../signupMethod.ts';
+import { signupForm, needsAgeConfirmation, switchNeedsAgeConfirmation } from '../signupMethod.ts';
 
 describe('signupForm', () => {
   it('gives a teacher the email form and a parent the code form, whatever method was tapped', () => {
@@ -43,5 +43,31 @@ describe('needsAgeConfirmation', () => {
     assert.equal(needsAgeConfirmation('teacher', 'email'), false);
     assert.equal(needsAgeConfirmation('parent', 'email'), false);
     assert.equal(needsAgeConfirmation(null, null), false);
+  });
+});
+
+describe('switchNeedsAgeConfirmation', () => {
+  // The server asks for the same tick when an existing account becomes a
+  // student (api-server lib/roleSwitch.ts); a screen that did not would get a
+  // 400 it cannot explain.
+  it('asks for a change into student, from teacher or parent', () => {
+    assert.equal(switchNeedsAgeConfirmation('teacher', 'student'), true);
+    assert.equal(switchNeedsAgeConfirmation('parent', 'student'), true);
+  });
+
+  it('does not ask a student who stays a student', () => {
+    assert.equal(switchNeedsAgeConfirmation('student', 'student'), false);
+  });
+
+  it('does not ask for a change into teacher or parent', () => {
+    assert.equal(switchNeedsAgeConfirmation('student', 'teacher'), false);
+    assert.equal(switchNeedsAgeConfirmation('student', 'parent'), false);
+    assert.equal(switchNeedsAgeConfirmation('teacher', 'parent'), false);
+    assert.equal(switchNeedsAgeConfirmation('parent', 'teacher'), false);
+  });
+
+  it('treats an unknown current role as not yet a student', () => {
+    assert.equal(switchNeedsAgeConfirmation(null, 'student'), true);
+    assert.equal(switchNeedsAgeConfirmation(undefined, 'student'), true);
   });
 });
