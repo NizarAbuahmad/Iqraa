@@ -38,6 +38,9 @@ export async function seed(owner: pg.Pool): Promise<Fixture> {
     [ids.studentA, ids.teacherA, ids.studentB, ids.teacherB]);
   await q(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1,$2,'guardian'), ($1,$3,'self')`,
     [ids.studentA, ids.parentA, ids.studentUser]);
+  // A student account waiting for studentA's teacher to approve its claim.
+  await q(`INSERT INTO roster_link_requests (student_id, user_id, relation) VALUES ($1,$2,'self')`,
+    [ids.studentA, ids.studentUser2]);
   await q(`INSERT INTO class_groups (id, teacher_id, name) VALUES ($1,$2,'Class A')`, [ids.classA, ids.teacherA]);
   await q(`INSERT INTO class_memberships (class_group_id, student_id) VALUES ($1,$2)`, [ids.classA, ids.studentA]);
   await q(`INSERT INTO parent_contacts (teacher_id, student_id, kind, channel) VALUES ($1,$2,'note','copy')`,
