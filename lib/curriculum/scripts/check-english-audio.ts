@@ -1,0 +1,405 @@
+/**
+ * Listens to the English-corner recordings and says where what is spoken differs from
+ * what the app expects. Each clip in `audioPlan()` is downloaded from the PUBLIC bucket
+ * the app plays from, transcribed by a speech-to-text model, and the transcript is
+ * compared with the text (`src/englishAudioCheck.ts`: the normalising, the verdicts, the
+ * cache and the report are all there, pure and tested; this file only wires flags, the
+ * real fetch and the real API call). Read-only: nothing is written to the bucket, nothing
+ * is re-voiced; the only files written are the report and the cache, both git-ignored.
+ *
+ *   pnpm --filter @workspace/curriculum run english-audio-check [-- <flags>]
+ *
+ *   --dry-run          no key and no transcription: `HEAD` every selected clip, print how
+ *                      many exist, their bytes, an upper bound on the audio minutes and
+ *                      the estimated cost. Run this first.
+ *   --only a,b         just these (slugs, or the words themselves → `audioSlug`)
+ *   --grade N          just the recordings a grade N lesson or grammar unit uses
+ *   --source word|grammar   just hub words, or just grammar strings
+ *   --limit N          the first N after the filters above (try 20 before a full run)
+ *   --model <name>     default `gpt-4o-transcribe`; `gpt-4o-mini-transcribe` and `whisper-1`
+ *                      also have a known price
+ *   --cache <file>     transcripts already paid for, default ./english-audio-check.cache.json.
+ *                      Keyed by slug plus the clip's size and ETag, so a re-run pays only
+ *                      for clips that changed. Saved every 100 clips, on Ctrl+C and when
+ *                      the API stops the run.
+ *   --refresh          ignore the cache (transcribe everything again; the new transcripts
+ *                      replace the old ones, other cache entries are kept)
+ *   --out <file>       the report, default ./english-audio-check.report.md; the same
+ *                      report is written as JSON beside it (.json)
+ *   --fail-on-mismatch exit 1 when anything is a mismatch or silent (for a release check)
+ *
+ * Exit code: 0; 1 with --fail-on-mismatch and a mismatch/silent; 2 for a refusal (no key,
+ * a bad flag, or the API answering 401/403, which stops the run once and leaves a PARTIAL
+ * report and the cache).
+ *
+ * Key: `OPENAI_API_KEY`, from the environment or the repo-root `.env` (as the generator
+ * does). An empty one or the `sk-your…` placeholder is refused. The key is never printed,
+ * logged, or written to the report or the cache, which hold slugs, texts and transcripts
+ * only. `OPENAI_BASE_URL` overrides `https://api.openai.com/v1` and `AUDIO_BASE_URL` the
+ * place the clips are fetched from (a local fixture server, for example). Nothing is sent
+ * to the API when you pass --dry-run.
+ *
+ * The model is NEVER told the expected text: only `language: en`, `temperature: 0` and a
+ * generic prompt. Telling it would bias the transcript towards agreeing and prove nothing.
+ *
+ * A mismatch means «a person should listen», not «wrong». Honest limits:
+ *  - It hears the word, not how it is said. Accent and stress errors («EE-ray-ser» for
+ *    «eraser») pass: recognisers forgive them. Those still need an ear.
+ *  - A homophone or a rare word can be flagged although it is right, and a wrong clip
+ *    passes when the wrong word sounds the same as the right one (pair/pear/pare,
+ *    flower/flour, plane/plain): the recogniser hears one sound for both.
+ *  - `close` (an inflection ending on a long word, a word or two in a long text) is
+ *    listed for a glance and never re-voiced by the line this prints. The `er`/`ing`
+ *    endings can land a different word there (number/numb).
+ *  - The first full run is about 4,600 requests and costs money. `PRICE_PER_MINUTE_USD`
+ *    holds LIST prices as of 2026-10: check OpenAI's pricing page before a big run. The
+ *    dry-run estimate assumes 128 kbps, an upper bound for the 40 kbps clips.
+ *  - The public r2.dev link rate-limits; the fetch inherits the audit's backoff. Node's
+ *    `fetch` may ignore `HTTPS_PROXY`; behind a proxy run with `NODE_USE_ENV_PROXY=1`.
+ */
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { loadEnvFile } from '../../../scripts/load-env.mjs';
+import {
+  StopRun,
+  checkClips,
+  estimateCostUsd,
+  onlyLine,
+  parseSpeechCache,
+  renderReportMarkdown,
+  secondsFromBytes,
+  serializeSpeechCache,
+  summarizeResults,
+  type CheckResult,
+  type SpeechCache,
+} from '../src/englishAudioCheck.ts';
+import { audioPlan, type AudioItem } from '../src/englishAudioPlan.ts';
+import { audioSlug } from '../src/englishHub.ts';
+import { pool, requestWithBackoff } from './audioHttp.ts';
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+loadEnvFile(path.join(HERE, '..', '..', '..', '.env'));
+
+/**
+ * Duplicated from `ENGLISH_AUDIO_BASE_URL` in `artifacts/mobile/services/englishAudio.ts`
+ * (the app and this library do not share code); `englishAudioLocation.test.ts` pins it equal.
+ */
+const DEFAULT_AUDIO_BASE_URL = 'https://pub-d9ddd8f74e734a21824518b812652124.r2.dev/english-audio';
+const AUDIO_BASE = (process.env.AUDIO_BASE_URL || DEFAULT_AUDIO_BASE_URL).replace(/\/+$/, '');
+const OPENAI_BASE = (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, '');
+
+/** Generic on purpose: it must not name the expected text. */
+const GENERIC_PROMPT = 'An English vocabulary word or sentence, spoken with a British accent.';
+const DEFAULT_MODEL = 'gpt-4o-transcribe';
+const FETCH_CONCURRENCY = 6; // HEAD requests in --dry-run
+const CHECK_CONCURRENCY = 3; // downloads + transcriptions in flight
+const TRANSCRIBE_ATTEMPTS = 5;
+const SHOWN_PROBLEMS = 40;
+
+// ─── Flags ────────────────────────────────────────────────────────────────
+
+const VALUE_FLAGS = new Set(['--only', '--grade', '--source', '--limit', '--model', '--cache', '--out']);
+const BOOLEAN_FLAGS = new Set(['--refresh', '--dry-run', '--fail-on-mismatch']);
+
+function fail(message: string): never {
+  console.error(message);
+  process.exit(2);
+}
+
+const argv = process.argv.slice(2);
+const values = new Map<string, string>();
+const switches = new Set<string>();
+for (let i = 0; i < argv.length; i += 1) {
+  const arg = argv[i] as string;
+  if (arg === '--') continue;
+  if (BOOLEAN_FLAGS.has(arg)) {
+    switches.add(arg);
+  } else if (VALUE_FLAGS.has(arg)) {
+    const value = argv[i + 1];
+    if (value === undefined || value.startsWith('--')) fail(`${arg} needs a value.`);
+    values.set(arg, value);
+    i += 1;
+  } else {
+    fail(`unknown flag ${arg}. See the header of scripts/check-english-audio.ts.`);
+  }
+}
+
+const dryRun = switches.has('--dry-run');
+const refresh = switches.has('--refresh');
+const failOnMismatch = switches.has('--fail-on-mismatch');
+const model = values.get('--model') ?? DEFAULT_MODEL;
+const cachePath = path.resolve(values.get('--cache') ?? 'english-audio-check.cache.json');
+const outPath = path.resolve(values.get('--out') ?? 'english-audio-check.report.md');
+const jsonPath = outPath.replace(/\.md$/i, '') + '.json';
+if (cachePath === outPath || cachePath === jsonPath) {
+  fail('--cache and --out would write the same file (the JSON report sits beside --out, with .json). Give them different names.');
+}
+
+function positiveInt(flag: string): number | undefined {
+  const raw = values.get(flag);
+  if (raw === undefined) return undefined;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1) fail(`${flag} needs a whole number of 1 or more, not "${raw}".`);
+  return n;
+}
+
+const grade = positiveInt('--grade');
+const limit = positiveInt('--limit');
+const source = values.get('--source');
+if (source !== undefined && source !== 'word' && source !== 'grammar') fail('--source is word or grammar.');
+
+// ─── Which clips ──────────────────────────────────────────────────────────
+
+const plan = audioPlan();
+let selected: AudioItem[] = plan;
+
+const onlyArg = values.get('--only');
+if (onlyArg !== undefined) {
+  const wanted = onlyArg.split(',').map(s => s.trim()).filter(Boolean).map(audioSlug);
+  if (wanted.length === 0) fail('--only needs at least one slug or word.');
+  const bySlug = new Map(plan.map(i => [i.slug, i]));
+  const unknown = wanted.filter(s => !bySlug.has(s));
+  if (unknown.length) fail(`not in the audio plan (hub words and grammar strings): ${unknown.join(', ')}`);
+  selected = [...new Set(wanted)].map(s => bySlug.get(s) as AudioItem);
+}
+if (grade !== undefined) selected = selected.filter(i => i.grades.includes(grade));
+if (source !== undefined) selected = selected.filter(i => i.source === source);
+if (limit !== undefined) selected = selected.slice(0, limit);
+
+if (selected.length === 0) {
+  console.log('no recording in the audio plan matches those flags; nothing to do.');
+  process.exit(0);
+}
+
+const clipUrl = (item: AudioItem) => `${AUDIO_BASE}/${item.slug}.mp3`;
+
+// ─── Dry run: HEAD every clip, no key, no transcription ───────────────────
+
+if (dryRun) {
+  console.log(`dry run: ${selected.length} of ${plan.length} recordings selected — checking ${AUDIO_BASE}/ (HEAD only)`);
+  type Head = { state: 'present' | 'missing' | 'error'; bytes: number };
+  const heads = await pool(
+    selected,
+    async (item): Promise<Head> => {
+      try {
+        const res = await requestWithBackoff(clipUrl(item), 'HEAD');
+        if (res.ok) return { state: 'present', bytes: Number(res.headers.get('content-length') ?? 0) || 0 };
+        return { state: res.status === 404 ? 'missing' : 'error', bytes: 0 };
+      } catch {
+        return { state: 'error', bytes: 0 };
+      }
+    },
+    FETCH_CONCURRENCY,
+    (done, total) => {
+      if (done % 500 === 0) console.error(`  ${done}/${total}`);
+    },
+  );
+  const present = heads.filter(h => h.state === 'present');
+  const missing = heads.filter(h => h.state === 'missing').length;
+  const errors = heads.filter(h => h.state === 'error').length;
+  const bytes = present.reduce((sum, h) => sum + h.bytes, 0);
+  const seconds = secondsFromBytes(bytes);
+  const cost = estimateCostUsd(seconds, model);
+  console.log(`  would be sent: ${present.length} present, ${missing} missing from the bucket${errors ? `, ${errors} could not be checked (re-run)` : ''}`);
+  console.log(`  total ${(bytes / 1048576).toFixed(2)} MB, at most ${(seconds / 60).toFixed(1)} min of audio (assuming 128 kbps; the 40 kbps clips are shorter than this)`);
+  console.log(
+    cost === null
+      ? `  cost with ${model}: price unknown for this model`
+      : `  estimated cost with ${model}: at most $${cost.toFixed(cost < 1 ? 3 : 2)} (list price, check OpenAI's pricing page before a big run)`,
+  );
+  console.log('dry run: nothing was transcribed, no key was used, nothing was written.');
+  process.exit(0);
+}
+
+// ─── The key ──────────────────────────────────────────────────────────────
+
+const apiKey = (process.env.OPENAI_API_KEY ?? '').trim();
+// The committed .env.example value is `sk-your-…here`; checked-out .env files keep it.
+if (!apiKey || apiKey.startsWith('sk-your')) {
+  fail('OPENAI_API_KEY is not set (or is still the placeholder) in the environment or the repo-root .env. Use --dry-run to count without a key.');
+}
+
+/** Text from the API or the network for printing: the key and anything shaped like one removed. */
+function scrub(text: string): string {
+  return text.split(apiKey).join('[key]').replace(/sk-[A-Za-z0-9_*.-]{3,}/g, 'sk-…');
+}
+
+// ─── The real dependencies ────────────────────────────────────────────────
+
+async function fetchClip(item: AudioItem) {
+  const res = await requestWithBackoff(clipUrl(item), 'GET');
+  if (res.status === 404) {
+    await res.body?.cancel();
+    return 'missing' as const;
+  }
+  if (!res.ok) {
+    await res.body?.cancel();
+    throw new Error(`clip download: HTTP ${res.status}`);
+  }
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  // The cache key is the clip as it is now: size plus its ETag (its length when there is none).
+  const etag = res.headers.get('etag') ?? res.headers.get('content-length') ?? String(bytes.length);
+  return { bytes, size: bytes.length, etag };
+}
+
+let requestsSent = 0;
+
+async function transcribe(bytes: Uint8Array, item: AudioItem): Promise<string> {
+  const form = new FormData();
+  form.append('file', new Blob([new Uint8Array(bytes)], { type: 'audio/mpeg' }), `${item.slug}.mp3`);
+  form.append('model', model);
+  form.append('language', 'en');
+  form.append('response_format', 'json');
+  form.append('temperature', '0');
+  form.append('prompt', GENERIC_PROMPT);
+  requestsSent += 1;
+  const res = await requestWithBackoff(`${OPENAI_BASE}/audio/transcriptions`, 'POST', {
+    headers: { Authorization: `Bearer ${apiKey}` },
+    body: form,
+    maxAttempts: TRANSCRIBE_ATTEMPTS,
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    let reason = '';
+    try {
+      reason = (JSON.parse(body) as { error?: { message?: unknown } }).error?.message as string;
+    } catch {
+      // not JSON
+    }
+    if (typeof reason !== 'string') reason = '';
+    // A bad key, a missing scope or a project without the model fails every clip the same
+    // way: stop once, with OpenAI's reason, instead of thousands of errors.
+    if (res.status === 401 || res.status === 403) throw new StopRun(scrub(`transcription API ${res.status}: ${reason || 'refused'}`));
+    throw new Error(scrub(`transcription API ${res.status}: ${reason || body.slice(0, 200)}`));
+  }
+  const json = (await res.json().catch(() => null)) as { text?: unknown } | null;
+  if (!json || typeof json.text !== 'string') throw new Error('transcription API: reply had no text');
+  return json.text;
+}
+
+// ─── The cache ────────────────────────────────────────────────────────────
+
+let stored: SpeechCache = {};
+if (existsSync(cachePath)) {
+  try {
+    stored = parseSpeechCache(readFileSync(cachePath, 'utf8'));
+  } catch (err) {
+    console.error(`could not read ${cachePath} (${(err as Error).message}); starting without it.`);
+  }
+}
+/** What the run reads and updates in place: empty with --refresh, so nothing is reused. */
+const working: SpeechCache = refresh ? {} : stored;
+
+function saveCache(): void {
+  try {
+    // --refresh: the new transcripts replace the old ones; entries for other clips stay.
+    writeFileSync(cachePath, serializeSpeechCache(refresh ? { ...stored, ...working } : stored));
+  } catch (err) {
+    console.error(`could not write ${cachePath}: ${(err as Error).message}`);
+  }
+}
+
+process.on('SIGINT', () => {
+  saveCache();
+  console.error(`\ninterrupted — transcripts so far are kept in ${cachePath}`);
+  process.exit(130);
+});
+
+// ─── Run ──────────────────────────────────────────────────────────────────
+
+console.log(
+  `${selected.length} of ${plan.length} recordings selected — model ${model}, clips from ${AUDIO_BASE}/` +
+    (refresh ? ', cache ignored (--refresh)' : `, ${Object.keys(stored).length} transcripts cached`),
+);
+
+const run = await checkClips(selected, {
+  fetchClip,
+  transcribe,
+  cache: working,
+  concurrency: CHECK_CONCURRENCY,
+  onProgress: (done, total) => {
+    if (done % 100 === 0) {
+      console.error(`  ${done}/${total}`);
+      saveCache();
+    }
+  },
+});
+saveCache();
+
+const { results, stopped } = run;
+// `results` may be shorter than `selected` after a stop; `stopped` decides, never the length.
+const partial = stopped;
+/** Why it stopped, without a trailing full stop (the API's own message ends with one). */
+const stopText = (run.stopReason || 'the API refused the request (401/403)').replace(/[.\s]+$/, '');
+const date = new Date().toISOString().slice(0, 10);
+
+const markdown = renderReportMarkdown(results, { model, date }).split('\n');
+if (partial) {
+  // After the title and its blank line.
+  markdown.splice(
+    2,
+    0,
+    `> **PARTIAL REPORT.** The run was stopped: ${stopText}. ` +
+      `${results.length} of ${selected.length} selected recordings were checked; the rest were not attempted.`,
+    '',
+  );
+}
+writeFileSync(outPath, markdown.join('\n'));
+
+const only = onlyLine(results);
+const report = {
+  model,
+  date,
+  partial,
+  stopReason: partial ? stopText : null,
+  selected: selected.length,
+  checked: results.length,
+  transcriptionRequests: requestsSent,
+  results: results.map(r => ({
+    slug: r.item.slug,
+    text: r.item.text,
+    source: r.item.source,
+    register: r.item.register,
+    grades: r.item.grades,
+    verdict: r.verdict,
+    heard: r.heard,
+    ...(r.detail ? { detail: r.detail } : {}),
+  })),
+  only,
+};
+writeFileSync(jsonPath, JSON.stringify(report, null, 2) + '\n');
+
+// ─── Print ────────────────────────────────────────────────────────────────
+
+console.log('');
+for (const line of summarizeResults(results)) console.log(line);
+
+const problems = results.filter((r: CheckResult) => r.verdict === 'mismatch' || r.verdict === 'silent');
+if (problems.length) {
+  console.log(`\nto listen to (${problems.length}) — expected / heard / slug:`);
+  for (const r of problems.slice(0, SHOWN_PROBLEMS)) {
+    console.log(`  ${r.verdict === 'silent' ? '[silent]' : '        '} ${r.item.text}  /  ${r.heard || '(nothing)'}  /  ${r.item.slug}`);
+  }
+  if (problems.length > SHOWN_PROBLEMS) console.log(`  … and ${problems.length - SHOWN_PROBLEMS} more in the report`);
+  console.log(`\nre-voice them, after listening:\n  ${only}`);
+} else if (!partial) {
+  console.log('\nnothing needs a listen.');
+}
+const errored = results.filter(r => r.verdict === 'error');
+if (errored.length) {
+  console.log(`\n${errored.length} could not be checked (re-run to retry): ${errored.slice(0, 5).map(r => `${r.item.slug}: ${r.detail ?? ''}`).join('; ')}`);
+}
+
+console.log(`\nclips sent to the transcriber: ${requestsSent} (retries not counted); report: ${outPath} and ${jsonPath}; cache: ${cachePath}`);
+
+if (partial) {
+  console.error(
+    `\nSTOPPED: ${stopText}. Nothing more was sent. ` +
+      `The report above is PARTIAL (${results.length} of ${selected.length} checked); the cache keeps what was paid for.`,
+  );
+  process.exitCode = 2;
+} else if (failOnMismatch && problems.length > 0) {
+  process.exitCode = 1;
+}

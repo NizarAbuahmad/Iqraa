@@ -28,6 +28,8 @@
 
 The spec says `close` = «a one-letter difference for a single word». In short words a one-letter difference IS the confusion the check exists to find (`bit`/`bet`, `ship`/`sheep` is 2 but `cap`/`cop` is 1). So: **single-word `close` applies only when the expected word has 6 or more letters**; for shorter words any difference is a `mismatch`. Sentences keep «at most one word edit, or 10% of the words, whichever is larger». The spec is updated to say so in Task 2.
 
+**Superseded after Task 1's review (the code and the spec have the final rule):** a single word is `close` only when the expected word has 6+ letters AND the heard word is the expected one plus or minus an inflection ending (`s es d ed ing er ers`); a text of several words allows floor(10% of its words) word edits (none under 10 words). The sentence rule above («at most one word edit») let «I am ten» / «I am two» pass as `close`.
+
 ## File Structure
 
 - Create `lib/curriculum/src/englishAudioCheck.ts`: pure logic (below).

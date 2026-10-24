@@ -1,6 +1,7 @@
 # English audio: a speech-to-text check of every recording — design
 
-**Status:** approved in conversation (design), awaiting spec review. **Scope:** a new read-only command that listens to the
+**Status:** implemented (this PR) — `scripts/check-english-audio.ts` and `src/englishAudioCheck.ts`; the real transcription
+API has never been called (see the log entry «English audio: a speech-to-text check of every recording»). **Scope:** a new read-only command that listens to the
 recordings in the public bucket with a speech-to-text model and reports where what is said differs from what the app expects.
 Builds on `lib/curriculum/src/englishAudioPlan.ts` (`audioPlan()`, the list of what the app plays), the keyless audit
 (`scripts/audit-english-audio.ts`, its fetch-with-backoff) and the measurement in `englishAudioProcess.ts`. Not in this spec:
@@ -42,10 +43,19 @@ level but cannot tell what was said.
   (`colour/color`, `-ise/-ize`, `grey/gray`, `programme/program`…) from a short table; a short homophone table
   (`right/write`, `their/there`…). Verdict:
   - `match` — equal after normalising;
-  - `close` — a one-letter difference for a single word, or a word-level edit distance of at most one for a sentence
-    (or ≤ 10% of the words, whichever is larger);
+  - `close` — (final rule, narrower than first drafted) a **single** word is `close` only when the expected word has **6 or
+    more letters** and the heard word is the expected one plus or minus one inflection ending (`s`, `es`, `d`, `ed`,
+    `ing`, `er`, `ers`): «firefighter» heard as «firefighters». Shorter words must match exactly. A text of several
+    words is `close` within **floor(10% of its words)** word edits: none under 10 words, one for 10–19, two for 20–29;
   - `mismatch` — anything else;
   - `silent` — the transcript is empty.
+
+  Why `close` is so narrow: the first draft allowed «a one-letter difference for a single word» and «at most one word
+  edit» in a sentence. But a one-letter or one-word difference in a short text is the very confusion the check exists
+  to find: «I am ten» / «I am two» is one word edit in four, «carrot» / «parrot», «bit» / «bet» and «cap» / «cop» are
+  one letter each. Calling those `close` would hide wrong recordings in a table nobody re-voices from, so they are
+  `mismatch`. `close` is kept for what is probably the same word said fully («firefighters») or a slip in a long text,
+  and the report lists it in its own «Close: worth a glance» table, which the `--only` line does not include.
 - **Cache:** transcripts are kept in a local JSON (`--cache <file>`, default `./english-audio-check.cache.json`, git-ignored),
   keyed by slug and the clip's size and `ETag`/`Content-Length`, so a re-run only pays for clips that changed. `--refresh`
   ignores it.
@@ -74,7 +84,14 @@ No app, server, schema or migration change; nothing is uploaded; no new dependen
 
 - It cannot judge accent, stress or naturalness; it hears the word, not how it is said.
 - A homophone or a rare word can be flagged although it is right, and a wrong clip can pass if the wrong word is a
-  homophone of the right one.
+  homophone of the right one: in a group such as pair / pear / pare, flower / flour or plane / plain the recogniser hears
+  the same sound for each, and the comparison folds the group to one form, so a recording of the wrong member passes.
+- The `er` and `ing` inflection endings can make `close` land a different word (number / numb); the Close table is
+  for a glance, not a verdict.
+- `PRICE_PER_MINUTE_USD` holds list prices as of 2026-10; check OpenAI's page before a big run. The dry-run estimate
+  assumes 128 kbps, which is an upper bound for the 40 kbps clips.
+- A transcript with nothing in it is not cached, so a re-run asks about a silent clip again (it costs a fraction of a
+  cent and may be a transient failure).
 - The first full run costs money and time (about 4,600 requests); the cache and `--dry-run` exist for that.
 - The `r2.dev` link rate-limits; the check inherits the audit's backoff.
 

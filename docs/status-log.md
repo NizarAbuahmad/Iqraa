@@ -10,6 +10,71 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## English audio: a speech-to-text check of every recording — 2026-10-24
+
+A recording can be the wrong word (the first voicing of «chair» was «share»), and only an ear found it. `english-audio-check`
+listens instead: it downloads each clip in `audioPlan()` from the public bucket, transcribes it with a speech-to-text model
+and reports where what is said differs from what the app expects. **Read-only**: it writes nothing to the bucket and never
+re-voices; it writes only a report and a cache, both git-ignored. No app, API, schema or dependency change.
+
+- **Pure logic, tested** (`lib/curriculum/src/englishAudioCheck.ts`, `__tests__/englishAudioCheck.test.ts`): normalising
+  (case, apostrophes, punctuation, hyphens, digits → words, British → American spelling, a homophone table), the verdicts,
+  the cost estimate, the cache and the checking loop with its dependencies injected, the report. The command
+  (`scripts/check-english-audio.ts`) only wires flags, the real fetch and the real API call.
+- **Verdicts.** `match` (equal once normalised), `close`, `mismatch`, `silent` (nothing heard), and `missing` / `error`.
+  **`close` is deliberately narrow:** a single word of 6+ letters whose heard form is the expected one plus or minus one
+  inflection ending (`s es d ed ing er ers`), or a text of several words within floor(10%) of its words in word edits (none
+  under 10 words). A one-letter or one-word difference in a short text is the very confusion the check exists to find
+  («I am ten» / «I am two», «carrot» / «parrot», «bit» / «bet»), so those are `mismatch`. `close` rows go to a «Close: worth a
+  glance» table; only `mismatch` and `silent` produce the `english-audio -- --only a,b,c` line.
+- **The model is never told the expected text** (it would agree with whatever it was told): `language=en`, `temperature=0`
+  and a generic prompt only. Model `gpt-4o-transcribe` by default.
+- **Flags:** `--only a,b` (slugs or words), `--grade N`, `--source word|grammar`, `--limit N`, `--model`, `--cache <file>`,
+  `--refresh`, `--out <file>` (the same report as `.json` beside it), `--dry-run`, `--fail-on-mismatch`; an unknown flag, or
+  `--cache` and `--out` that would write the same file, is refused (exit 2).
+- **Key.** `OPENAI_API_KEY` from the environment or the repo-root `.env` (as the generator does); empty or `sk-your…` is
+  refused (exit 2); never printed, logged or written to the report or the cache. A 401/403 stops the run once and prints
+  OpenAI's reason with the key (and anything shaped like one) removed. `OPENAI_BASE_URL` and `AUDIO_BASE_URL` override the two
+  endpoints (that is how it was smoke-tested).
+- **A stopped run is PARTIAL.** `checkClips` can return fewer results than clips when the API refuses the key, so the
+  command decides from `stopped`, never from the length: the report is headed PARTIAL with how many of how many were checked,
+  the cache is still saved (it is also saved every 100 clips and on Ctrl+C), exit code 2.
+- **The fetch helper moved.** `retryAfterMs`, `backoffMs`, the request-with-backoff and the worker pool left
+  `audit-english-audio.ts` for `scripts/audioHttp.ts`; both commands use it. `englishAudioLocation.test.ts` now also pins the
+  check's default bucket URL to the app's.
+
+**How to run it** (`pnpm --filter @workspace/curriculum run english-audio-check -- <flags>`; behind a proxy add
+`NODE_USE_ENV_PROXY=1`): `-- --dry-run` first (HEAD only, no key: counts, bytes, minutes, cost), then `-- --limit 20` and read
+the report, then the full run. A re-run pays only for clips whose size or ETag changed (and asks again about a silent one).
+
+**Verified.**
+- Offline end to end against a local fake server (OpenAI endpoint and bucket both faked; the real API was never called) with 6
+  real clips (`moon eraser chair apples pink friday`) and canned transcripts: 4 `match`, 1 `mismatch` («chair» heard as
+  «Share.»), 1 `silent`, the `--only chair,pink` line, Markdown and JSON written, the request carried
+  `language=en temperature=0 response_format=json` and the generic prompt and the `Authorization` header. A second run sent 1
+  clip to the transcriber (the silent one, which is not cached), 5 came from the cache; with the silent clip left out, 0.
+  `--refresh` sent 6. A server answering 429 with `Retry-After: 1` was waited out (12 requests for 6 clips, run ok in 3 s). A
+  400 on one clip became one `error` row and the run went on. A server answering 401 stopped the run with exit 2, printed its
+  message with the key replaced by `[key]`, the key appearing in no output, report or cache; a server that accepts 2 clips and
+  then refuses gave a PARTIAL report «2 of 6», 2 cached transcripts, exit 2, and finishing against a good server then
+  re-used those 2. `--dry-run` made no transcription request and needed no key. `--fail-on-mismatch` exits 1 on a mismatch and
+  0 without; no key, the placeholder and bad flags exit 2.
+- The live bucket, read-only: `--dry-run --source word` found all 1,248 hub-word clips present (7.01 MB, at most 7.7 minutes
+  at an assumed 128 kbps, at most $0.046 at the list price).
+- The keyless audit against the live bucket, before and after the helper move: **byte-identical output** (1,248 voiced, 3,383
+  missing, 0 errors, of 4,631).
+
+**Not done.** The real OpenAI transcription call has never been made: no key was used and nothing has been transcribed, so
+how `gpt-4o-transcribe` actually hears these clips (how many rows land in each table) is unknown. The prices in
+`PRICE_PER_MINUTE_USD` are list prices as of 2026-10 to check before a big run. The 3,383 grammar sentences are not voiced yet,
+so there is nothing to check for them. Not in CI.
+
+**Honest limits.** It hears the word, not how it is said: accent and stress errors («EE-ray-ser» for «eraser») pass, because
+recognisers forgive them. A mismatch means a person should listen, not that the clip is wrong (homophones, rare words such as
+«doughnut», «sitcom»). A **homophone group lets a wrong recording pass**: pair / pear / pare, flower / flour and plane / plain
+sound the same to the recogniser and are folded to one form. The `er` and `ing` suffix closes can land a different word in the
+Close table (number / numb). Contractions are not expanded («I'm» / «I am» differ), and «prise» / «prize» fold together.
+
 ## English audio on phones: clips are saved on the device and a lesson's clips are fetched ahead — 2026-10-24
 
 On a phone every tap streamed its clip from `pub-…r2.dev/english-audio/<slug>.mp3`, so a weak connection or the

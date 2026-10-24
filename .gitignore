@@ -86,6 +86,12 @@ knowledge-base/**/figures/**/_dropped/
 # Provider-evaluation output (generated content + raw model responses)
 eval-out/
 
+# `english-audio-check`: the transcripts it paid for and its report (default names; it
+# writes them to the folder it is run from, which pnpm makes lib/curriculum)
+english-audio-check.cache.json
+english-audio-check.report.md
+english-audio-check.report.json
+
 # Claude Code — local state is ignored, checked-in shared config is not.
 # `.claude/skills/` holds the vendored Superpowers skills and
 # `.claude/hooks/` + `.claude/settings.json` wire them up; see
