@@ -10,6 +10,26 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat app-help, twenty-first live pass: 19 more wordings for answers that already existed — 2026-10-24
+
+A 30-question pass on app.iqrra.com found 19 questions answered by the model, or by a bare
+tool card, for which the app already had a written answer: the student's link code
+(`howLinkParent`), a forgotten login code, hiding published results, the pass mark and renewing
+an expired exam link (the answers say the app has no pass-mark setting and what to press to
+renew), setting a homework due date, renaming and copying a class, blocking a user, read
+receipts, library videos, the lesson memory game, the function grapher, the weekly schedule on
+Today, the price, using the chat by voice, updating the app and reporting a problem in a
+generated question (`howReportProblem`; the model had sent the teacher to a non-existent
+«أدوات الذكاء الاصطناعي» tab). One was worse than a card: «أطبع نسخة الطالب من الامتحان» got the
+generic «PDF أو Word» export text although `howPrintExam` says the Evaluations exams are not
+printed from the app. No new answer strings; wordings added to existing rule ids in
+`appHelp.ts`, pinned in `appHelp.test.ts` with near-misses that stay with the model.
+
+**Not done:** «أضع تذكيرًا لحصة قادمة» (the app has an exam reminder answer, not one for a
+class, and I did not check for a class reminder), «أنضم إلى مدرستي», the book-source question
+and the ready-made-homework question, «أصدّر الواجب كملف PDF» (already answered by the generic
+export text, which is accurate for a homework result).
+
 ## Roster: edit a student, and see which account holds each name — 2026-10-23
 
 The pencil on a roster row used to open only the note; a teacher could not fix a misspelt name
