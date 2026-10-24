@@ -40,6 +40,145 @@ conflicts in this file, because every PR adds its entry under the same header li
 merged only after its entry was taken out, and this entry was added afterwards. If a PR keeps
 losing that race, put its entry in a follow-up the same way.
 
+## Roster: edit a student, and see which account holds each name — 2026-10-23
+
+The pencil on a roster row used to open only the note; a teacher could not fix a misspelt name
+(`PATCH /students/:id` and `updateStudent` already took `displayName`, no screen sent it). It now
+opens one sheet: name, register number, gender, note (`EditStudentSheet`), sending only what changed
+(`studentEdit.ts`). Each joined row also shows «الحساب:» with the account's name and join date (`ClaimedByLine`), from a new
+`links` array on `GET /classes/:id` (the old `linked` flag stays).
+
+**Rules.** A rename that matches another live student in any of that student's classes is a 409
+`student_name_taken` (same whitespace/case key as the add route, no Arabic folding; other classes
+and other teachers may reuse the name). After a rename, linked code-only accounts (a login
+code, no password and no Google id) are re-derived from the new roster name — only if they still carry what the
+old name would have produced, so a name a person chose is never overwritten. That write uses
+`systemDb` (`routes/roster.ts` was already pinned) in a second step after the roster update, not
+the same transaction; a failure is logged by id and the saved rename stands.
+
+**Verified (locally, on the final head 7d7c29a):** root `pnpm run typecheck` is clean (libs, api-server,
+mobile, scripts). api-server `pnpm build` then `pnpm test`: 2200 tests, 2200 pass, 0 fail — but 22 DB-backed
+suites print `# SKIP` (no Postgres here; the runner's summary line still says `skipped 0` because it
+does not count skipped suites), including `rosterEdit.db.test.ts` («editing a roster row over HTTP,
+against a real database»). mobile `pnpm test`: 7024 tests, 7014 pass, 0 fail, 10 skipped (all ten are
+chemistry knowledge-base search cases, nothing in this change); «no interface screen prints a date in
+Arabic-Indic digits» passes. In CI on head 1b87839 (which already held the API change and the DB test)
+Typecheck, Build api-server, Test api-server (`REQUIRE_DB_TESTS=true`, so `rosterEdit.db.test.ts` ran
+against a real Postgres and passed) and Test db were green; "Test mobile" failed with exactly one test,
+the Arabic-Indic date one above, because `formatLinkedOn` used a plain `ar-JO` locale. Commit 319d790
+switched it to the repo's `dateLocale()`, so an Arabic date prints Latin digits («23 تشرين الأول»).
+
+**Not verified.** CI on the final head had not been read when this was written; see the PR for it. No
+browser or device pass: RTL layout, dark mode, the keyboard lift, the sheet's scrolling on a short phone
+and the on-screen text of the duplicate-name message were not looked at (no database or API here).
+**Known limits.** The duplicate-name check and the update are separate queries, so two simultaneous
+renames to the same name can both pass (the add route behaves the same). Archived classes count toward
+the 409. The account-name sync is a second step after the roster update, not one transaction, and a
+failure is logged by ids only, never the name.
+
+**Not built (PR 2, next):** teacher approval of class-code joins — design in
+`docs/superpowers/specs/2026-10-23-roster-edit-and-claim-approval-design.md`. Until then a class code
+still lets anyone pick any free name; the claimed-by line and unlink are the check.
+
+## Grade 10 grammar (Semester 1) in the English corner — built, shown to nobody yet, 2026-10-24
+
+The eleven Grade 10 Semester 1 lessons whose book statement is a grammar topic now have grammar activities: Choose the
+word, Build the sentence and True or false. Ten were already in the hub; **Articles (`kbl-eng-s1-nccd-u1_l5`) is a
+grammar-only hub lesson** (no vocabulary rows), the sixth in `GRAMMAR_ONLY_LESSONS` and the first outside Grade 9.
+**All eleven units are `reviewedBy: null` (`englishGrammarG10.ts`), so no teacher or student sees a card, and the
+Articles lesson is absent from the Grade 10 index with a direct URL that says «lesson not found».** Spec:
+`docs/superpowers/specs/2026-10-23-english-corner-grammar-g10-design.md`; plan:
+`docs/superpowers/plans/2026-10-23-english-corner-grammar-g10.md`. Same engine and rules as the Grade 9 and Grade 5
+authored lessons; no app screen, server, schema or migration change. The Grade 10 hub goes from 20 to 21 lessons; no
+other grade changes.
+
+- **440 hand-written items, 40 a lesson, 36 sub-topics** (`englishGrammarG10Items.ts`, `G10_ITEM_LESSONS`, with a
+  `statement` equal to `objectives[0]` of each lesson, read back from the JSON by a test). **206 are `meaning`
+  (grammatical, but a marker in the sentence excludes the other form) and 234 are `form` (the distractor is
+  ungrammatical).** Lessons: u1_l1 present simple and continuous (`habit-markers` 12 and `temporary-markers` 12 meaning;
+  `stative` 8 and `questions` 8 form); u1_l5 Articles (`a-an` 8, `unique-things` 10, `no-article` 10 form;
+  `already-mentioned` 12 meaning); u2_l1 present perfect simple and continuous (`result-count` 14 and `duration` 14
+  meaning, `forms` 12); u2_l4 `-ing` or `to` (`ing` 14, `to` 14 form, `change-of-meaning` 12 meaning); u3_l1 past simple,
+  continuous and perfect (`interrupted` 14 and `earlier-event` 14 meaning, `forms` 12); u3_l4 used to and would
+  (`used-to-states` 14 and `would-habits` 12 meaning, `forms` 14); u3_l5 indirect questions (`could-you-tell` 14,
+  `do-you-know` 14, `if-whether` 12, all form); u4_l1 modals (`obligation` 14 and `ability-permission` 14 meaning,
+  `forms` 12); u4_l4 relative clauses (`defining` 12, `non-defining` 14, `whose-where` 14, all form); u5_l1 the future
+  (`will-decisions` 10 and `going-to-evidence` 10 meaning, `arrangements-timetables` 12 and `forms` 8 form); u5_l3 future
+  continuous and perfect (`continuous` 14 and `perfect` 14 meaning, `forms` 12). Sentences are nine words or fewer
+  (`buildCap(10)`), no real or book-character names, and a `meaning` sub-topic exists only where a word in the sentence
+  can be named as the one that excludes the distractor.
+- **Deviation from the spec's table: u5_l1 `arrangements-timetables` is `form`, not `meaning`.** Every future form fits a
+  fixed time («The train leaves at nine» and «will leave» both pass), so no honest `meaning` distractor exists; the spec
+  said 12 meaning there and the build has none, which is why the totals are 206 and 234 and not 218 and 222. The note on
+  the form says so. Spec decision 3 allows a form-only topic where two forms could both fit; the controller accepted it after the review.
+- **True or false is silent** and **Yes or No is not offered**, as in the Grade 9 and Grade 5 authored lessons; Choose and
+  Build play the correct sentence after the answer. Nothing is pictured.
+- **The teacher's form** (`englishGrammarReview.ts`): the lesson-id display regex is now `/^kbl-(g\d+-)?eng-/` (Grade 10
+  ids have no `g10`, so the form prints `s1-nccd-u1_l1`); the statement lookup reads `G10_ITEM_LESSONS` too;
+  `NOT_COVERED[10]` is two shared bullets and one a lesson; `GRADE_COPY[10]` has the Grade 10 title, lead and the
+  form/meaning legend. Its `extraCss` is the Grade 5 block plus a **Grade-10-only `@media print` block** (sentence and tick
+  columns wrap, notes column 12 %, smaller cell padding and type), because the lesson sentences are long enough that the
+  shared layout overflowed the page. `scripts/grammar-sheet.ts` now runs `[1, 2, 3, 4, 5, 9, 10]` and wrote
+  `docs/english-grammar-g10-review.html` (11 units, 440 sentences, 36 topic rows, 440 form or meaning chips) and
+  `docs/english-grammar-g10-sheet.md`. The Grade 1-5 and 9 forms and the reading forms stayed byte-identical (tests pin
+  them). The lead says «١١ درسًا» (singular after ten) and the Arabic «و» is spaced from English words in every note.
+- **Tests added:** `englishGrammarG10Items.test.ts` (sizes and kinds per sub-topic, statements, caps, uniqueness, banned
+  names, 206 and 234, the form, a has/have in every u2_l1 `forms` twin, no «و» glued to an English word anywhere in the
+  printed Grade 10 form), `englishGrammarG10.test.ts` (eleven unsigned units, all in the hub, nothing offered)
+  and, in the app, `englishGrammarG10ItemGames.test.ts` (Choose, Build and True or false on all eleven, Yes or No on none,
+  no twin voiced). `englishHub.test.ts` pins six grammar-only lessons and 21 Grade 10 hub lessons.
+- **Verified (2026-10-24, after `main` was merged in):** root `pnpm run typecheck` clean (api-server, mobile, scripts);
+  `@workspace/curriculum` `test` **655 tests, 654 passing, 1 failing** with the sandbox's `R2_*` variables set — the one is
+  `r2.test.ts`, which expects them unset — and **655 of 655** with `env -u R2_ACCESS_KEY_ID -u R2_BUCKET -u R2_ENDPOINT -u
+  R2_SECRET_ACCESS_KEY`; its `verify` 197 files, 3306 lessons, 0 errors; the **full mobile suite 7216 tests, 7206 passing,
+  10 skipped, 0 failing** (345 s). **In a browser** at 390 px in Arabic and English, web build with
+  `EXPO_PUBLIC_DEMO_MODE=true`, sign-offs in the working tree only (restored straight after with `git checkout`,
+  `grep -rc "LOCAL CHECK"` shows no non-zero count, `git status` clean): unsigned, `…u3_l1` shows the word activities and
+  no grammar cards, the Grade 10 index has 20 rows and no Articles row, and `…u1_l5` says «lesson not found»; signed, the
+  index has 21 rows and one «grammar activities» row (Articles), whose lesson page holds a «Grammar» section of exactly
+  Choose, Build and True or false and nothing else; `…u3_l1` keeps its six word activities and gains the same three; Yes or
+  No appears on neither. Over a round of eight in each activity, on both lessons and both languages: Choose and Build play
+  the correct sentence after the answer (a recording URL and the browser voice as fallback; 8 of 8 questions each, 0
+  plays before answering) and True or false shows no speaker button before or after answering and plays nothing (0 of 8);
+  a nine-tile Build round wraps its nine slots onto two rows and its tiles onto three, in both languages, and the
+  longest Choose stem met was nine words, with no horizontal scroll at any step of any round. I read the screenshots
+  (the 9-tile Build rounds, the Articles page, the True or false answers, the index, the «lesson not found» page). **Print:** the Grade 10 form measured in Chromium print
+  media has no `.table-wrap` overflow in any of the 11 units and prints at 53 A4 landscape pages with nothing off the
+  left edge.
+- **Not verified:** the 440 sentences by a teacher (a script cannot tell wrong English from right; the printed form is
+  the review) — **no teacher has read a sentence**; the match of each lesson id to the printed book page; on a device; audio,
+  which does not exist for these sentences (the browser check heard the fallback voice, because `english-audio` needs the
+  OpenAI and R2 keys and has not been run for them); and **Semester 2**: its ten grammar lessons are not covered and need
+  grammar-only hub entries first, as Articles did.
+- **Where a teacher will push back (the risky lessons and rows):** (1) **Articles** — `already-mentioned` (the second
+  mention takes «the») is the hardest `meaning` topic to mark by one word, and the note says a/the sometimes fits both in
+  a wider context; (2) **present perfect simple against continuous** (u2_l1) — `result-count` against `duration` is a
+  tendency, not a rule, and a teacher may accept either on some rows; `forms` rows are bare-verb or agreement errors only;
+  (3) **future continuous and future perfect** (u5_l3), where a row can read naturally either way; (4) **the two «didn't
+  use to» rows** (u3_l4), because «didn't used to» is common in informal writing and some teachers accept it (the note
+  says so); and the rows the reviews listed as weakly defensible: «sending fifty messages» and «the bus stopping six
+  times» (u5_l3 perfect rows), and «watering the plants twice». Smaller, not blocking:
+  `habit-markers` twins with «on Fridays» or «every day» can read as temporary (an adverb such as «usually» now sits
+  inside the answer, so its twin keeps standard order, «is usually walking»; the «never» rows were replaced by «five days
+  a week» and «once a month»); two rows («when he dropped it», «when she burnt her hand») have an odd clause order; «A man knocked.» uses knock
+  intransitively; the 14 «By the time» rows are repetitive; «this street used to be quiet» (`would be quiet` weak).
+- **Known limits:** the choice between forms is tested only where one word of the sentence decides it, which is why
+  «this week», «always» and «currently» are not used for the present tenses; a wrong True or false answer shows «Correct
+  answer: False», not the corrected sentence; the True or false card's subtitle still says «Does the sentence match the
+  picture?» (shared copy, as on Grades 5 and 9); nothing is pictured.
+- **Found on the way, not fixed here (new):** the **printed grammar review forms for Grades 3, 4, 5 and 9 clip their
+  left-hand (last) columns when printed in A4 landscape** (measured with Chromium `page.pdf` on each form: overhang 47,
+  690, 390 and 762 px). `td.sentence` and `.yn` are `white-space: nowrap`, so the table is wider than the page; the forms
+  are right to left, so the overflow is on the left: on Grades 4, 5 and 9 the tick box and notes column fall off the page
+  (Grade 4 and 9 also the kind column); on Grade 3 about a third of the notes column (its tick box stays); Grades 1, 2
+  and 10 fit. Grade 10 had the same problem (444 px at first) and was fixed with Grade-10-only CSS,
+  which now fits. The other four need their own change, because it alters their committed forms (their byte-identity is
+  pinned by tests, which would have to move with them). Listed in STATUS.md «Open».
+- **To switch a lesson on:** a Grade 10 English teacher reads and signs that lesson's page of
+  `docs/english-grammar-g10-review.html`, printed, and checks the book-page line; audio is recorded for the correct
+  sentences; then the unit's `reviewedBy` is set in `englishGrammarG10.ts`. Articles appears in the index only once its
+  unit is signed.
+
 ## Students choose an email or a teacher's code — 2026-10-23
 
 A student could sign up only with a teacher's code (`POST /auth/redeem`, no email): the register
