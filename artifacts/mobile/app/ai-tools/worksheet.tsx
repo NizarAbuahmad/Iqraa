@@ -89,6 +89,8 @@ import { Stepper } from '@/components/generator/Stepper';
 import { ChipGroup } from '@/components/generator/ChipGroup';
 import { LessonCard } from '@/components/generator/LessonCard';
 import { DockedAction, DOCKED_BAR_HEIGHT } from '@/components/generator/DockedAction';
+import { toastLift } from '@/services/dockedBar';
+import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
 import { GeneratorLayout, useIsDesktopGenerator } from '@/components/generator/GeneratorLayout';
 import { PaperPreview } from '@/components/generator/PaperPreview';
 import { PressableScale } from '@/components/ui/PressableScale';
@@ -809,6 +811,9 @@ export default function WorksheetScreen() {
   }, [statusPhase, attempt]);
   // The result's own save bar takes the bottom of a phone while a fresh paper is unsaved.
   const saveBarVisible = !!result && !loading && !savedId && saveLabel === 'save';
+  // The toast sits above the docked bar while the bar is really on screen (a phone, not yielded to the screen's own bar, keyboard closed).
+  const keyboardOpen = useKeyboardVisible();
+  const toastBottom = toastLift({ isDesktop, barHidden: saveBarVisible, keyboardOpen });
   const surface = useSurface();
 
   // The question types as chips. A format the lesson's bank cannot build is offered DISABLED, drawn
@@ -1447,7 +1452,7 @@ export default function WorksheetScreen() {
       loadingSlides={loadingSlides}
       labels={exportLabels}
     />
-    <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
+    <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} bottomOffset={toastBottom} />
     </View>
   );
 }
