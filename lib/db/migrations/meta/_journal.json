@@ -113,6 +113,13 @@
       "when": 1792763036875,
       "tag": "0015_faulty_hellcat",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1792819738499,
+      "tag": "0016_flippant_magus",
+      "breakpoints": true
     }
   ]
 }

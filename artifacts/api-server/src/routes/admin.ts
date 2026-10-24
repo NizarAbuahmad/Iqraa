@@ -635,7 +635,18 @@ router.post("/admin/invites", authMiddleware, requireRole("system_admin"), invit
     return;
   }
   logger.info({ to: email }, "app invite sent");
-  res.json({ ok: true });
+  // Remember it on the address's signup rows so the list still says «أُرسلت الدعوة»
+  // after a reload. The mail has gone out already, so a failed stamp must not turn
+  // this into an error: the admin would resend to someone who has the link.
+  let invitedAt: string | null = null;
+  try {
+    const stamped = new Date();
+    await db.update(siteSignups).set({ invitedAt: stamped }).where(sql`lower(${siteSignups.email}) = ${email.toLowerCase()}`);
+    invitedAt = stamped.toISOString();
+  } catch (err) {
+    logger.error({ err, to: email }, "app invite sent but could not be recorded");
+  }
+  res.json({ ok: true, invitedAt });
 });
 
 /** `?platform=` on the AI pages: «mobile» is both app stores, «unknown» is rows with no marker. */

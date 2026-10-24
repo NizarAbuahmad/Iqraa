@@ -42,6 +42,8 @@ export const siteSignups = pgTable(
     message: text("message").notNull().default(""),
     context: text("context").notNull().default(""),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    /** When an admin last mailed this address the app download link (POST /admin/invites). */
+    invitedAt: timestamp("invited_at", { withTimezone: true }),
   },
   t => [index("site_signups_created_at_idx").on(t.createdAt)],
 );

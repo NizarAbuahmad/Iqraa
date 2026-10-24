@@ -26,7 +26,7 @@ import { BackButton } from '@/components/ui/BackButton';
 const ACCENT = '#4F46E5';
 const ADMIN_ROLES = ['school_admin', 'system_admin'];
 
-type Signup = { id: string; kind: 'waitlist' | 'contact' | 'idea'; email: string; name: string; message: string; context: string; createdAt: string };
+type Signup = { id: string; kind: 'waitlist' | 'contact' | 'idea'; email: string; name: string; message: string; context: string; createdAt: string; invitedAt: string | null };
 type Kind = 'all' | 'waitlist' | 'contact' | 'idea';
 
 export default function AdminSignupsScreen() {
@@ -66,8 +66,12 @@ export default function AdminSignupsScreen() {
       .finally(() => setLoading(false));
   }, [isAdmin, load]);
 
-  // Mails the Android download link. `invited` is this visit only — nothing is
-  // stored, so an address can be invited again after a reload.
+  // `invitedAt` comes from the server, so the row still says «أُرسلت الدعوة» after a
+  // reload; `invited` covers this visit (other rows of the same address, and
+  // addresses typed into the box that have no signup row).
+  const wasInvited = (s: Signup) => !!s.invitedAt || invited.includes(s.email.toLowerCase());
+
+  // Mails the Android download link and has the server record it.
   const sendInvite = async (raw: string) => {
     const email = raw.trim();
     if (!email || inviting) return;
@@ -214,9 +218,9 @@ export default function AdminSignupsScreen() {
                   disabled={!!inviting}
                   style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', paddingVertical: 4, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 4 }}
                 >
-                  {invited.includes(s.email.toLowerCase()) ? <Ionicons name="checkmark-circle" size={16} color={ACCENT} /> : null}
+                  {wasInvited(s) ? <Ionicons name="checkmark-circle" size={16} color={ACCENT} /> : null}
                   <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
-                    {invited.includes(s.email.toLowerCase())
+                    {wasInvited(s)
                       ? (ar ? 'أُرسلت الدعوة' : 'Invite sent')
                       : inviting === s.email ? '…' : (ar ? 'أرسل دعوة التطبيق' : 'Send app invite')}
                   </Text>
