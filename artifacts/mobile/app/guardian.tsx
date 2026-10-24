@@ -10,7 +10,7 @@
  *
  * Which view follows which result is `services/guardianConsentView.ts` (pinned by its test).
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
@@ -48,7 +48,10 @@ export default function GuardianConsentScreen() {
   const [token] = useState<string | null>(() => readToken());
   const [view, setView] = useState<ConsentView>(() => initialView(IS_WEB));
   const [confirmed, setConfirmed] = useState(false);
-  const [busy, setBusy] = useState(false);
+  // Which button was pressed while a request is in flight (only that one spins); the ref stops a second tap
+  // before React re-renders from sending a second request.
+  const [busyDecision, setBusyDecision] = useState<ConsentDecision | null>(null);
+  const busyRef = useRef(false);
   const [warn, setWarn] = useState('');
 
   async function load() {
@@ -64,9 +67,11 @@ export default function GuardianConsentScreen() {
   useEffect(() => { if (IS_WEB) void load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function decide(decision: ConsentDecision) {
+    if (busyRef.current) return;
     if (!token) return;
     if (needsConfirmFirst(decision, confirmed)) { setWarn(t('parentConsentConfirmFirst')); return; }
-    setBusy(true);
+    busyRef.current = true;
+    setBusyDecision(decision);
     setWarn('');
     try {
       const out = await guardianApi.decide(token, decision, confirmed);
@@ -76,7 +81,8 @@ export default function GuardianConsentScreen() {
       if (outcome.next === 'reload') await load(); // used, expired or switched off meanwhile
       else setWarn(outcome.warn === 'confirmFirst' ? t('parentConsentConfirmFirst') : t('parentConsentRetry'));
     } finally {
-      setBusy(false);
+      busyRef.current = false;
+      setBusyDecision(null);
     }
   }
 
@@ -85,7 +91,7 @@ export default function GuardianConsentScreen() {
 
   let content: React.ReactNode;
   if (view.kind === 'loading') {
-    content = <Text style={bodyStyle()}>…</Text>;
+    content = <Text accessibilityLiveRegion="polite" style={bodyStyle()}>{t('parentConsentLoading')}</Text>;
   } else if (view.kind === 'browser') {
     content = <Text style={bodyStyle()}>{t('parentConsentOpenInBrowser')}</Text>;
   } else if (view.kind === 'retry') {
@@ -107,13 +113,23 @@ export default function GuardianConsentScreen() {
         <Text style={bodyStyle()}>{t('parentConsentIntro', view.childFirstName)}</Text>
         <Text style={bodyStyle({ color: colors.mutedForeground, marginTop: SPACE.md })}>{t('parentConsentMeaning')}</Text>
         <View style={{ marginTop: SPACE.lg }}>
-          <CheckRow checked={confirmed} onPress={() => setConfirmed(c => !c)} isRTL={isRTL} colors={colors}>
+          {/* CheckRow has no `disabled`: while a request is out the tick is frozen with a no-op press. */}
+          <CheckRow
+            checked={confirmed}
+            onPress={() => {
+              if (busyDecision) return;
+              if (!confirmed) setWarn(''); // ticking answers the "confirm first" warning
+              setConfirmed(c => !c);
+            }}
+            isRTL={isRTL}
+            colors={colors}
+          >
             {t('parentConsentConfirm')}
           </CheckRow>
         </View>
         {warn ? <Text accessibilityLiveRegion="polite" style={bodyStyle({ color: colors.destructive, marginTop: SPACE.md })}>{warn}</Text> : null}
-        <Button label={t('parentConsentApprove')} onPress={() => decide('approved')} loading={busy} fullWidth style={{ marginTop: SPACE.lg }} />
-        <Button label={t('parentConsentDecline')} variant="secondary" onPress={() => decide('declined')} disabled={busy} fullWidth style={{ marginTop: SPACE.sm }} />
+        <Button label={t('parentConsentApprove')} onPress={() => decide('approved')} loading={busyDecision === 'approved'} disabled={busyDecision === 'declined'} fullWidth style={{ marginTop: SPACE.lg }} />
+        <Button label={t('parentConsentDecline')} variant="secondary" onPress={() => decide('declined')} loading={busyDecision === 'declined'} disabled={busyDecision === 'approved'} fullWidth style={{ marginTop: SPACE.sm }} />
       </>
     );
   } else {

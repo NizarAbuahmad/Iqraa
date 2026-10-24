@@ -180,6 +180,9 @@ function RootLayoutNav() {
 
   // One screen-view event per route change — covers every screen in the app
   // (not just AI tools) without instrumenting each one individually.
+  // Mind the parent's page (/guardian#token): expo-router also keeps the URL fragment in the route params
+  // (`params['#']`), so on web nothing may log or send global params / navigation state without excluding
+  // `/guardian` first, as shouldTrackScreen does here.
   useEffect(() => {
     if (pathname && shouldTrackScreen(pathname)) trackScreen(pathname);
   }, [pathname]);

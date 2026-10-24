@@ -13,6 +13,7 @@ const KEYS = [
   'parentConsentTitle', 'parentConsentMeaning', 'parentConsentConfirm', 'parentConsentConfirmFirst',
   'parentConsentApprove', 'parentConsentDecline', 'parentConsentApprovedDone', 'parentConsentDeclinedDone',
   'parentConsentExpired', 'parentConsentDecided', 'parentConsentInvalid', 'parentConsentRetry', 'parentConsentOpenInBrowser',
+  'parentConsentLoading',
 ] as const;
 
 describe('parent approval copy', () => {
