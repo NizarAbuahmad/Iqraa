@@ -4,7 +4,12 @@ import assert from "node:assert/strict";
 
 import { guardianMayReach, guardianStatus, needsLinkLookup, pendingGuardian } from "../guardianGate.ts";
 
-const student = { role: "student", email: "s@example.test", guardianApprovedAt: null as Date | null };
+const student = {
+  role: "student",
+  email: "s@example.test",
+  guardianApprovedAt: null as Date | null,
+  loginCodeHash: null as string | null,
+};
 const NOW = new Date("2026-10-24T12:00:00Z");
 const later = new Date("2026-10-31T12:00:00Z");
 const earlier = new Date("2026-10-20T12:00:00Z");
@@ -25,6 +30,9 @@ describe("pendingGuardian", () => {
   it("does not hold an approved student", () => {
     assert.equal(pendingGuardian({ ...student, guardianApprovedAt: earlier }, { flagOn: true, hasLiveLink: false }), false);
   });
+  it("does not hold an account made from a teacher's code, even once it has an email", () => {
+    assert.equal(pendingGuardian({ ...student, loginCodeHash: "hash" }, { flagOn: true, hasLiveLink: false }), false);
+  });
   it("does not hold a teacher, a parent or an admin", () => {
     for (const role of ["teacher", "parent", "school_admin", "system_admin"]) {
       assert.equal(pendingGuardian({ ...student, role }, { flagOn: true, hasLiveLink: false }), false, role);
@@ -36,21 +44,39 @@ describe("pendingGuardian, over every combination", () => {
   const roles = ["student", "teacher", "parent", "school_admin", "system_admin"];
   const emails: (string | null)[] = [null, "s@example.test"];
   const approvals: (Date | null)[] = [null, earlier];
+  const loginCodes: (string | null)[] = [null, "hash"];
   const bools = [false, true];
 
-  it("is true for exactly one combination: flag on, a student, with an email, not approved, no live link", () => {
+  it("is true for exactly one combination: flag on, a student, with an email and no login code, not approved, no live link", () => {
     const hits: string[] = [];
     for (const role of roles)
       for (const email of emails)
         for (const guardianApprovedAt of approvals)
-          for (const hasLiveLink of bools)
-            for (const flagOn of bools) {
-              if (pendingGuardian({ role, email, guardianApprovedAt }, { flagOn, hasLiveLink })) {
-                hits.push(JSON.stringify({ role, email, approved: guardianApprovedAt !== null, hasLiveLink, flagOn }));
+          for (const loginCodeHash of loginCodes)
+            for (const hasLiveLink of bools)
+              for (const flagOn of bools) {
+                if (pendingGuardian({ role, email, guardianApprovedAt, loginCodeHash }, { flagOn, hasLiveLink })) {
+                  hits.push(
+                    JSON.stringify({
+                      role,
+                      email,
+                      approved: guardianApprovedAt !== null,
+                      hasLoginCode: loginCodeHash !== null,
+                      hasLiveLink,
+                      flagOn,
+                    }),
+                  );
+                }
               }
-            }
     assert.deepEqual(hits, [
-      JSON.stringify({ role: "student", email: "s@example.test", approved: false, hasLiveLink: false, flagOn: true }),
+      JSON.stringify({
+        role: "student",
+        email: "s@example.test",
+        approved: false,
+        hasLoginCode: false,
+        hasLiveLink: false,
+        flagOn: true,
+      }),
     ]);
   });
 
@@ -58,9 +84,28 @@ describe("pendingGuardian, over every combination", () => {
     for (const role of roles.filter(r => r !== "student"))
       for (const email of emails)
         for (const guardianApprovedAt of approvals)
+          for (const loginCodeHash of loginCodes)
+            for (const hasLiveLink of bools)
+              for (const flagOn of bools)
+                assert.equal(
+                  pendingGuardian({ role, email, guardianApprovedAt, loginCodeHash }, { flagOn, hasLiveLink }),
+                  false,
+                  role,
+                );
+  });
+
+  it("never holds an account with a login code, and guardianStatus calls it not_required", () => {
+    for (const role of roles)
+      for (const email of emails)
+        for (const guardianApprovedAt of approvals)
           for (const hasLiveLink of bools)
             for (const flagOn of bools)
-              assert.equal(pendingGuardian({ role, email, guardianApprovedAt }, { flagOn, hasLiveLink }), false, role);
+              for (const request of [null, { decision: null, expiresAt: later }, { decision: "declined" as const, expiresAt: later }]) {
+                const s = { role, email, guardianApprovedAt, loginCodeHash: "hash" };
+                assert.equal(pendingGuardian(s, { flagOn, hasLiveLink }), false);
+                assert.equal(needsLinkLookup(s, flagOn), false);
+                assert.equal(guardianStatus(s, { flagOn, hasLiveLink, request, now: NOW }), "not_required", `${role} ${email} ${flagOn}`);
+              }
   });
 
   it("agrees with guardianStatus: held exactly when the status is needed, waiting or declined", () => {
@@ -74,14 +119,15 @@ describe("pendingGuardian, over every combination", () => {
     for (const role of roles)
       for (const email of emails)
         for (const guardianApprovedAt of approvals)
-          for (const hasLiveLink of bools)
-            for (const flagOn of bools)
-              for (const request of requests) {
-                const s = { role, email, guardianApprovedAt };
-                const status = guardianStatus(s, { flagOn, hasLiveLink, request, now: NOW });
-                const held = pendingGuardian(s, { flagOn, hasLiveLink });
-                assert.equal(held, ["needed", "waiting", "declined"].includes(status), `${role} ${email} ${status}`);
-              }
+          for (const loginCodeHash of loginCodes)
+            for (const hasLiveLink of bools)
+              for (const flagOn of bools)
+                for (const request of requests) {
+                  const s = { role, email, guardianApprovedAt, loginCodeHash };
+                  const status = guardianStatus(s, { flagOn, hasLiveLink, request, now: NOW });
+                  const held = pendingGuardian(s, { flagOn, hasLiveLink });
+                  assert.equal(held, ["needed", "waiting", "declined"].includes(status), `${role} ${email} ${status}`);
+                }
   });
 });
 
@@ -92,6 +138,7 @@ describe("needsLinkLookup", () => {
     assert.equal(needsLinkLookup({ ...student, role: "teacher" }, true), false);
     assert.equal(needsLinkLookup({ ...student, email: null }, true), false);
     assert.equal(needsLinkLookup({ ...student, guardianApprovedAt: earlier }, true), false);
+    assert.equal(needsLinkLookup({ ...student, loginCodeHash: "hash" }, true), false);
   });
 });
 
@@ -133,6 +180,7 @@ describe("guardianStatus", () => {
     assert.equal(guardianStatus({ ...student, role: "teacher" }, { ...base, request: null }), "not_required");
     assert.equal(guardianStatus({ ...student, email: null }, { ...base, request: null }), "not_required");
     assert.equal(guardianStatus(student, { ...base, hasLiveLink: true, request: null }), "not_required");
+    assert.equal(guardianStatus({ ...student, loginCodeHash: "hash" }, { ...base, request: null }), "not_required");
   });
   it("is approved once guardian_approved_at is set, even if later linked", () => {
     const s = { ...student, guardianApprovedAt: earlier };

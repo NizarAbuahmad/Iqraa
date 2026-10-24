@@ -36,6 +36,8 @@ An account is **pending** when all of these hold, and `guardianApprovalEnabled()
 - `role = 'student'`;
 - `email IS NOT NULL` (a code-only student has none: their teacher vouches for them);
 - `guardian_approved_at IS NULL`;
+- no login code (`login_code_hash IS NULL`): an account made from a teacher's code (`/auth/redeem`) is vouched
+  for by that teacher even if it adds an email later, while its class-code claim is still pending;
 - no live roster link (`hasLiveRosterLink` is false). A teacher's per-student code links at once; a class-code
   claim links when the teacher approves it. Either way a teacher has vouched, so the account is not pending.
 

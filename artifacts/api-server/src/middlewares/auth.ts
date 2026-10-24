@@ -68,6 +68,7 @@ export async function authMiddleware(
         suspendedAt: users.suspendedAt,
         suspendedReason: users.suspendedReason,
         guardianApprovedAt: users.guardianApprovedAt,
+        loginCodeHash: users.loginCodeHash,
       })
       .from(users)
       .where(eq(users.id, payload.sub))
@@ -110,6 +111,7 @@ export async function authMiddleware(
       suspendedAt: _suspendedAt,
       suspendedReason: _suspendedReason,
       guardianApprovedAt: _guardianApprovedAt,
+      loginCodeHash: _loginCodeHash,
       ...principal
     } = user;
     req.user = principal;

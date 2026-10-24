@@ -51,15 +51,21 @@ describeDb("parent approval for email students", () => {
   const q = async <T extends Record<string, unknown>>(text: string, params: unknown[] = []) =>
     (await db.pool.query<T>(text, params)).rows;
 
-  /** A user row. `email: null` is a code-only account; `approved` sets guardian_approved_at. */
-  async function mkUser(role: string, o: { email?: string | null; approved?: boolean; verified?: boolean } = {}) {
+  /**
+   * A user row. `email: null` is a code-only account; `approved` sets guardian_approved_at; `loginCode` sets a
+   * (dummy, unique) login_code_hash, as /auth/redeem does for an account made from a teacher's code.
+   */
+  async function mkUser(
+    role: string,
+    o: { email?: string | null; approved?: boolean; verified?: boolean; loginCode?: boolean } = {},
+  ) {
     n += 1;
     const email = o.email === undefined ? `u${n}@example.test` : o.email;
     return (
       await q<{ id: string }>(
-        `INSERT INTO users (first_name, last_name, role, email, email_verified, guardian_approved_at)
-         VALUES ($1, 'T', $2, $3, $4, CASE WHEN $5::boolean THEN now() END) RETURNING id`,
-        [`Kid${n}`, role, email, o.verified ?? email !== null, o.approved ?? false],
+        `INSERT INTO users (first_name, last_name, role, email, email_verified, guardian_approved_at, login_code_hash)
+         VALUES ($1, 'T', $2, $3, $4, CASE WHEN $5::boolean THEN now() END, $6) RETURNING id`,
+        [`Kid${n}`, role, email, o.verified ?? email !== null, o.approved ?? false, o.loginCode ? `dummy-login-code-${n}-${newToken()}` : null],
       )
     )[0].id;
   }
@@ -299,6 +305,15 @@ describeDb("parent approval for email students", () => {
       assert.equal((await call(on, "GET", "/parent/exams", parent)).status, 200);
     });
 
+    it("never holds an account made from a teacher's code, even after it adds an email while its claim is still pending", async () => {
+      const kid = await mkUser("student", { loginCode: true });
+      const r = await call(on, "GET", "/student/exams", kid);
+      assert.equal(r.status, 200, r.text);
+      assert.equal((await call(on, "GET", "/auth/me", kid)).json.guardianStatus, "not_required");
+      // The same account without the login code (it signed up with its own email) is still held.
+      blocked(await call(on, "GET", "/student/exams", await mkUser("student")));
+    });
+
     it("is inert with the flag off: the same pending student reaches everything", async () => {
       const kid = await mkUser("student");
       const r = await call(off, "GET", "/student/exams", kid);
@@ -446,6 +461,14 @@ describeDb("parent approval for email students", () => {
       assert.equal(c.status, 409);
       assert.equal(c.json.code, "guardian_not_required");
       assert.deepEqual(await q(`SELECT 1 FROM guardian_consents WHERE user_id = ANY($1::uuid[])`, [[approved, teacher, linkedKid, codeOnly]]), []);
+    });
+
+    it("is not for an account made from a teacher's code that has an email and no live link (409, nothing queued)", async () => {
+      const kid = await mkUser("student", { loginCode: true });
+      const r = await ask(kid, "p@example.test");
+      assert.equal(r.status, 409);
+      assert.equal(r.json.code, "guardian_not_required");
+      assert.deepEqual(await q(`SELECT 1 FROM guardian_consents WHERE user_id = $1`, [kid]), []);
     });
 
     it("stops at 3 requests a day per student and 5 a day per parent address (429)", async () => {
@@ -844,6 +867,11 @@ describeDb("parent approval for email students", () => {
       assert.equal(await joinedAs(on, codeOnly, "Code"), codeOnly);
       const heldButFlagOff = await mkUser("student");
       assert.equal(await joinedAs(off, heldButFlagOff, "Flagoff"), heldButFlagOff);
+    });
+
+    it("records a student made from a teacher's code who later added an email, with no live link", async () => {
+      const kid = await mkUser("student", { loginCode: true });
+      assert.equal(await joinedAs(on, kid, "Loginemail"), kid);
     });
 
     it("a student whose only teacher link is archived is held, so not recorded", async () => {

@@ -93,6 +93,7 @@ async function studentUserId(req: Request): Promise<string | null> {
         suspendedAt: users.suspendedAt,
         email: users.email,
         guardianApprovedAt: users.guardianApprovedAt,
+        loginCodeHash: users.loginCodeHash,
       })
       .from(users)
       .where(eq(users.id, payload.sub))

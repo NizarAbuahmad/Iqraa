@@ -11,14 +11,23 @@ export interface GuardianSubject {
   /** Null for an account made from a teacher's code alone: the teacher vouches for it. */
   email: string | null;
   guardianApprovedAt: Date | null;
+  /**
+   * `users.login_code_hash`. Set only for an account made from a teacher's code (`/auth/redeem`), so it marks one
+   * the teacher vouched for at sign-up. Required, not optional, so a caller that forgets it fails to compile.
+   */
+  loginCodeHash: string | null;
 }
 
-/** Whether the roster-link query is worth running. True for almost nobody, which keeps the gate off the hot path. */
+/**
+ * Whether the roster-link query is worth running. True for almost nobody, which keeps the gate off the hot path.
+ * An account made from a teacher's code (a login code) is never a candidate, with or without an email added later:
+ * the teacher's code vouched for it, and holding it would strand a student whose class-code claim is still pending.
+ */
 export function needsLinkLookup(s: GuardianSubject, flagOn: boolean): boolean {
-  return flagOn && s.role === "student" && s.email !== null && s.guardianApprovedAt === null;
+  return flagOn && s.role === "student" && s.email !== null && s.guardianApprovedAt === null && s.loginCodeHash === null;
 }
 
-/** A student with an email, no parent approval and no teacher link, while the flag is on. */
+/** A student with an email, no login code, no parent approval and no teacher link, while the flag is on. */
 export function pendingGuardian(s: GuardianSubject, o: { flagOn: boolean; hasLiveLink: boolean }): boolean {
   return needsLinkLookup(s, o.flagOn) && !o.hasLiveLink;
 }
@@ -58,7 +67,7 @@ export function guardianStatus(
   s: GuardianSubject,
   o: { flagOn: boolean; hasLiveLink: boolean; request: GuardianRequestView | null; now: Date },
 ): GuardianStatus {
-  if (!o.flagOn || s.role !== "student" || s.email === null) return "not_required";
+  if (!o.flagOn || s.role !== "student" || s.email === null || s.loginCodeHash !== null) return "not_required";
   if (s.guardianApprovedAt !== null) return "approved";
   if (o.hasLiveLink) return "not_required";
   const r = o.request;

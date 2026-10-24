@@ -149,6 +149,9 @@ account, run a request-supersede that touches no rows when none exists. Design:
   masked parent address. A held student may call `POST /auth/role` (ruling R11), so one who picked the wrong role
   is not stuck; and the public live-game join, which verifies the access token itself and so never met the
   middleware gate, now records no user id for a held student (ruling R12).
+  An account made from a teacher's code (it has a `login_code_hash`) is never held, even if it later adds an
+  email: otherwise a student whose class-code claim is still pending would be held the moment they added one and,
+  unable to verify it from the waiting screen, stranded; the teacher's code vouched for them at sign-up.
 - **Flag on vs off:** on, sign-up and Google sign-up ask for a parent's address instead of the age tick, and
   switching role into student just yields a held account. Off, the age tick works exactly as before.
 - **Mutation checks** (edit, build, run `guardianApproval.db.test.ts`, restore, rebuild, green; each caught):
