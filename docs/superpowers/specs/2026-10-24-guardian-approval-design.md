@@ -1,6 +1,6 @@
 # Parent approval for email students — design
 
-**Status:** server implemented (PR A); app (PR B) not started. **Scope:** a student who signs up with an email and no teacher's code
+**Status:** server (PR A) and app (PR B) implemented, flag off. **Scope:** a student who signs up with an email and no teacher's code
 stays locked until a parent approves by email. Replaces the age tick-box added in «Students choose an email or a
 teacher's code» (2026-10-23). Not in this spec: any change to how teacher-code students or parents sign up, ID or
 document checks, a parent account or parent dashboard, deleting a declined account automatically.
@@ -142,12 +142,19 @@ student may call `POST /auth/role` to leave the student role (to parent or teach
 ## Client (`artifacts/mobile`)
 
 - `register.tsx`: the age `CheckRow` becomes a parent's-email input on the student-email path (and the Google
-  path); the three role-switch screens drop their age box and `switchNeedsAgeConfirmation` is deleted.
+  path); the three role-switch screens drop their age box while the switch is on. **As built:**
+  `switchNeedsAgeConfirmation` was not deleted: it gained a third argument (`guardianEnabled`), because the server
+  still wants the tick for a switch into student while `GUARDIAN_APPROVAL` is off. With the switch on the screens
+  show a note instead of the tick ("your student account will need a parent's approval").
 - `services/routeGating.ts`: `needsGuardianApproval(user)` (pure, tested) sends a pending student to
   `/guardian-waiting`; `/guardian-waiting` joins the non-teacher allowlist; **`/guardian`** (the parent page, one
   route that reads the token from `location.hash` and never puts it in a path, a query or a screen name) joins
   `PUBLIC_ROUTES`, because the parent has no account. It must stay out of analytics screen tracking and crash
   breadcrumbs, or the fragment's reason for existing is lost.
+  **As built:** `guardianGate` (same file) also stops the later gates for a held student, and the screens a held
+  student may open are `/guardian-waiting`, `/join-class` and `/delete-account`. Changing role (parent, teacher) is
+  done from the waiting screen itself, not from a route of its own. The waiting screen has no plain "send the same
+  link again": the app holds only the masked address, so sending again means entering an address.
 - Copy in `services/i18n.ts`, Arabic first (`arabic-copy-reviewer` on every string).
 
 ## Rollout
