@@ -47,6 +47,7 @@ import type { TranslationKey } from '@/services/i18n';
 import { palette } from '@/constants/colors';
 import { SPACE } from '@/constants/theme';
 import { toLatinDigits } from '@/services/latinDigits';
+import { selectedRow } from '@/services/readableColor';
 import { QUICK_PAPER_MAX, measuredObjectiveId, quickPaperQuestions } from '@/services/paperMarks';
 import { confirm } from '@/services/confirm';
 import { pickMarkSheetPhotos } from '@/services/documents/pick';
@@ -891,11 +892,14 @@ function CheckboxRow({
  * the component already reads keeps that local and needs no new API.
  */
 function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
+  // The selected row is an opaque fill with an ink judged against it (`selectedRow`), as on the generator screens.
+  const row = selectedRow(props.accent, props.colors.card);
   return (
     <SharedPickerField
       {...props}
       colors={{ ...props.colors, radius: 10 }}
-      selectedTint={ACCENT + '15'}
+      selectedTint={row.fill}
+      accent={row.ink}
     />
   );
 }
