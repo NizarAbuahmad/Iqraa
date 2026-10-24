@@ -4,10 +4,10 @@ import assert from 'node:assert/strict';
 import { getT } from '../i18n.ts';
 
 const KEYS = [
-  'guardianNeededTitle', 'guardianNeededDesc', 'guardianWaitingTitle', 'guardianDeclinedTitle', 'guardianDeclinedDesc',
+  'guardianNeededTitle', 'guardianNeededDesc', 'guardianWaitingTitle', 'guardianDeclinedTitle', 'guardianDeclinedDesc', 'guardianExpiredDesc',
   'guardianParentEmailLabel', 'guardianParentEmailHint', 'guardianSend', 'guardianChangeEmail',
   'guardianSendFailed', 'guardianSavedNotSent', 'guardianCheckNow', 'guardianJoinWithCode', 'guardianWrongTypeTitle', 'guardianSwitchToParent',
-  'guardianSwitchToTeacher', 'guardianSwitchFailed', 'guardianSwitchNote', 'registerParentEmailLabel',
+  'guardianSwitchFailed', 'guardianSwitchNote', 'registerParentEmailLabel',
   'registerParentEmailHint', 'registerParentEmailFirst', 'studentEmailNoteParent', 'errParentEmailRequired', 'errParentEmailInvalid',
   'errParentEmailIsOwn', 'errEmailNotVerifiedYet', 'errGuardianRateLimited', 'errGuardianApprovalRequired',
   'parentConsentTitle', 'parentConsentMeaning', 'parentConsentConfirm', 'parentConsentConfirmFirst',
@@ -27,6 +27,7 @@ describe('parent approval copy', () => {
     });
     it(`${lang}: the interpolating strings carry their argument`, () => {
       assert.ok(t('guardianWaitingDesc', 'mu***@example.test').includes('mu***@example.test'));
+      assert.ok(t('guardianExpiredDesc', 'mu***@example.test').includes('mu***@example.test'));
       assert.ok(t('guardianSentTo', 'mu***@example.test').includes('mu***@example.test'));
       assert.ok(t('parentConsentIntro', 'Sami').includes('Sami'));
     });

@@ -4,6 +4,8 @@
  * action is to use a different email) and declined (say so, and ask again with another address). The screen
  * re-reads /auth/me every 20 seconds and when the app comes back to the foreground; the root layout moves the
  * student off it the moment the status stops being a held one, so nothing here navigates after an approval.
+ * What it says is `guardianWaitingView` (a `needed` status that carries an address means the link expired).
+ * The only way out besides a class link code is "I am a parent": there is deliberately no "I am a teacher" button.
  *
  * There is no plain "send the same link again": the app holds only the masked address, and
  * POST /auth/guardian-request needs a real one. Typing the same address again does the job, and the server
@@ -27,6 +29,7 @@ import { readableOn } from '@/services/readableColor';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { guardianApi } from '@/services/guardianApi';
 import { looksLikeEmail } from '@/services/guardianApproval';
+import { guardianWaitingView } from '@/services/guardianWaitingView';
 
 export default function GuardianWaitingScreen() {
   const { t, isRTL } = useLanguage();
@@ -50,9 +53,12 @@ export default function GuardianWaitingScreen() {
 
   const align = isRTL ? 'right' : 'left';
   const rowDir = isRTL ? 'row-reverse' : 'row';
-  const masked = user?.guardianParentEmailMasked ?? '';
-  const waitingView = status === 'waiting' && !editing;
-  const askForEmail = status === 'needed' || status === 'declined' || editing;
+  const view = guardianWaitingView({
+    status: status === 'needed' || status === 'waiting' || status === 'declined' ? status : undefined,
+    editing,
+    maskedEmail: user?.guardianParentEmailMasked,
+  });
+  const { askForEmail } = view;
   const canSend = looksLikeEmail(email) && !busy;
 
   async function send(address: string) {
@@ -82,7 +88,7 @@ export default function GuardianWaitingScreen() {
     setChecking(false);
   }
 
-  async function leaveAs(role: 'parent' | 'teacher') {
+  async function leaveAs(role: 'parent') {
     setSwitching(true);
     setSwitchError('');
     try {
@@ -95,11 +101,8 @@ export default function GuardianWaitingScreen() {
     }
   }
 
-  const title = status === 'declined' ? t('guardianDeclinedTitle') : waitingView ? t('guardianWaitingTitle') : t('guardianNeededTitle');
-  const desc =
-    status === 'declined' ? t('guardianDeclinedDesc')
-    : waitingView ? t('guardianWaitingDesc', masked)
-    : t('guardianNeededDesc');
+  const title = t(view.titleKey);
+  const desc = view.descArg !== undefined ? t(view.descKey, view.descArg) : t(view.descKey);
 
   return (
     <ScrollView
@@ -153,7 +156,6 @@ export default function GuardianWaitingScreen() {
         <Text style={[styles.desc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>{t('guardianWrongTypeTitle')}</Text>
         <View style={[styles.switchRow, { flexDirection: rowDir }]}>
           <Button label={t('guardianSwitchToParent')} variant="secondary" size="sm" onPress={() => leaveAs('parent')} disabled={switching} style={{ flex: 1 }} />
-          <Button label={t('guardianSwitchToTeacher')} variant="secondary" size="sm" onPress={() => leaveAs('teacher')} disabled={switching} style={{ flex: 1 }} />
         </View>
         {switchError ? <Text accessibilityLiveRegion="polite" style={[styles.desc, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>{switchError}</Text> : null}
       </Surface>
