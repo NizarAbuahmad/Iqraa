@@ -10,6 +10,35 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Math Corner practice by lesson, for the whole class — 2026-10-24
+
+**What a teacher sees.** The class's «تمارين الرياضيات» sheet opens on a new
+**«حسب الدرس»** view: every lesson of the class's grade that the Math Corner covers,
+by unit in book order, each with how many students practised it and their average
+best score («طالبان، المتوسط ٧٠٪»), or «لم يتدرّب أحد». A line on top counts the
+lessons practised («دروس تدرّب عليها الطلبة: ٢ من ٤٥»), and a switch shows only the
+lessons nobody has practised. **«حسب الطالب»** is the earlier per-student list. A class
+with no grade (or one with no exercises) shows only the per-student view.
+
+**How.** App only, no API or schema change: `practiceByLesson(rows, grade)` in
+`services/mathExercises.ts` folds the rows `GET /classes/:id/math-practice` already
+returns over `exerciseUnits(grade)`. The average is the mean of each student's best
+ratio, rounded to a whole percent; a row for a lesson outside the class's grade is
+left out of this view (the per-student view still shows it). The separator is the
+Arabic comma: next to Arabic-Indic digits a «·» read as a zero «٠» in the first
+browser check.
+
+**Verified.** `mathExercises.test.ts`: every covered Grade 5 lesson listed in book
+order, practised count and average (80% and 60% → 70%), other-grade rows left out,
+class grade parsing. In a browser against a throwaway database (Grade 5 class, two
+students, three results): «٢ من ٤٥», «طالبان، المتوسط ٧٠٪», «طالب واحد، المتوسط ٩٠٪»,
+43 lessons «لم يتدرّب أحد», the switch left only those 43, and «حسب الطالب» unchanged.
+
+**Not covered.** The average counts only students who practised the lesson, not the
+whole class, and there is no export. Exercises done as homework count here too: the
+exercise screen sends every finished set to `PUT /student/math-practice` as well as to
+the homework.
+
 ## Tests for the login-code reissue route — 2026-10-24
 
 `POST /students/:id/links/:userId/login-code` (a teacher gives a parent or student who lost their personal

@@ -1698,7 +1698,7 @@ export default function ClassDetailScreen() {
         }}
       />
 
-      <MathPracticeSheet classId={showPractice && id ? String(id) : null} onClose={() => setShowPractice(false)} />
+      <MathPracticeSheet classId={showPractice && id ? String(id) : null} gradeId={group?.gradeId} onClose={() => setShowPractice(false)} />
 
       <LabPickerSheet
         visible={showLab}
