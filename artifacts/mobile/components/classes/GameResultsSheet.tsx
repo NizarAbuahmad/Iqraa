@@ -11,7 +11,7 @@ import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 import { toArabicDigits } from '@/services/labFormat';
 import { gameScoreText, type HomeworkGameResource, type TeacherGameResult } from '@/services/homework';
 import { fetchGameResults } from '@/services/homeworkApi';
-import { LESSON_GAME_TITLE_KEY } from '@/services/lessonGames';
+import { HOMEWORK_GAME_TITLE_KEY } from '@/services/lessonGames';
 
 export function GameResultsSheet({
   homeworkId,
@@ -87,7 +87,7 @@ export function GameResultsSheet({
                         {r.displayName}
                       </Text>
                       <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
-                        {`${t(LESSON_GAME_TITLE_KEY[r.game])} · ${isRTL ? toArabicDigits(attempts) : attempts}`}
+                        {`${t(HOMEWORK_GAME_TITLE_KEY[r.game])} ·${isRTL ? toArabicDigits(attempts) : attempts}`}
                       </Text>
                       {lesson ? (
                         <Text numberOfLines={1} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
