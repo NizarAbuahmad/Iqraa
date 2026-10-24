@@ -1,6 +1,7 @@
 import { Router, type Request } from "express";
 import { signupSource } from "../lib/adminMetrics.js";
 import { termsAcceptance } from "../lib/termsAcceptance.ts";
+import { ageConfirmation } from "../lib/ageConfirmation.ts";
 import { comparePassword, hashPassword, shedWhenHashingBusy } from "../lib/passwordHash.js";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
@@ -521,6 +522,15 @@ router.post("/register", shedWhenHashingBusy(), registerLimiter, registerEmailLi
       return;
     }
 
+    // A student with an email has no teacher's code vouching for them, so they
+    // confirm they are an adult or have a guardian's agreement. Not asked of
+    // anyone else; see lib/ageConfirmation.ts.
+    const age = ageConfirmation(req.body, role);
+    if (!age.ok) {
+      res.status(age.status).json({ error: age.error, code: age.code });
+      return;
+    }
+
     // Check duplicate email
     const [existing] = await db
       .select({ id: users.id })
@@ -545,6 +555,7 @@ router.post("/register", shedWhenHashingBusy(), registerLimiter, registerEmailLi
         preferredLanguage: "en",
         termsAcceptedAt: terms.termsAcceptedAt,
         termsVersion: terms.termsVersion,
+        guardianConfirmedAt: age.guardianConfirmedAt,
         ...signupSource(req.headers),
       })
       .returning();
@@ -1147,6 +1158,8 @@ router.post("/role", authMiddleware, roleSwitchLimiter, async (req: Authenticate
       studentAccountsEnabled: studentAccountsEnabled(),
       hasRosterLink: () => hasAnyRosterLink(req.user!.id),
       hasTeachingData: () => hasAnyTeachingData(req.user!.id),
+      // A literal true, like /register: a string in a consent field is not one.
+      ageConfirmed: (req.body ?? {}).ageConfirmed === true,
     });
 
     if (!decision.ok) {
@@ -1157,7 +1170,15 @@ router.post("/role", authMiddleware, roleSwitchLimiter, async (req: Authenticate
     }
 
     if (decision.changed) {
-      await db.update(users).set({ role: decision.role }).where(eq(users.id, req.user!.id));
+      await db
+        .update(users)
+        .set({
+          role: decision.role,
+          // Only a change into student carries the confirmation (the decision
+          // refused it otherwise), and it is recorded like a sign-up's.
+          ...(decision.role === "student" ? { guardianConfirmedAt: new Date() } : {}),
+        })
+        .where(eq(users.id, req.user!.id));
       logger.info({ userId: req.user!.id, from: req.user!.role, to: decision.role }, "role switched");
     }
 
@@ -1772,8 +1793,15 @@ router.post("/google", googleLimiter, async (req, res) => {
           studentAccountsEnabled: studentAccountsEnabled(),
           hasRosterLink: () => hasAnyRosterLink(known!.id),
           hasTeachingData: () => hasAnyTeachingData(known!.id),
+          // The register screen sends it for a student on the email/Google path.
+          ageConfirmed: req.body?.ageConfirmed === true,
         });
         if (!decision.ok) {
+          // A missing tick is a bad request, not a clash between two accounts.
+          if (decision.code === "age_confirmation_required") {
+            res.status(decision.status).json({ error: decision.error, code: decision.code });
+            return;
+          }
           res.status(409).json({
             // The screen showing this is Arabic; it branches on `code`.
             code: decision.code,
@@ -1782,7 +1810,13 @@ router.post("/google", googleLimiter, async (req, res) => {
           });
           return;
         }
-        await db.update(users).set({ role: decision.role }).where(eq(users.id, known!.id));
+        await db
+          .update(users)
+          .set({
+            role: decision.role,
+            ...(decision.changed && decision.role === "student" ? { guardianConfirmedAt: new Date() } : {}),
+          })
+          .where(eq(users.id, known!.id));
         logger.info({ userId: known!.id, from: known!.role, to: decision.role }, "role switched via google signup");
         // `user` is this same row when matched by googleId; the email-linked
         // branch below re-reads it from the database after the update.
@@ -1858,6 +1892,13 @@ router.post("/google", googleLimiter, async (req, res) => {
           return;
         }
 
+        // Same as /register: a student with no teacher's code confirms their age.
+        const age = ageConfirmation(req.body, role);
+        if (!age.ok) {
+          res.status(age.status).json({ error: age.error, code: age.code });
+          return;
+        }
+
         isNewAccount = true;
         [user] = await db
           .insert(users)
@@ -1871,6 +1912,7 @@ router.post("/google", googleLimiter, async (req, res) => {
             emailVerified: true,
             termsAcceptedAt: terms.termsAcceptedAt,
             termsVersion: terms.termsVersion,
+            guardianConfirmedAt: age.guardianConfirmedAt,
             ...signupSource(req.headers),
           })
           .returning();

@@ -71,13 +71,16 @@ import { nextFrame } from '@/services/nextFrame';
 import { QUIZ_TYPE_ORDER, type QuizType } from '@workspace/exam-paper';
 import { conceptOf } from '@/constants/icons';
 import { SPACE } from '@/constants/theme';
-import { readableOn } from '@/services/readableColor';
+import { readableOn, selectedRow, tintOver } from '@/services/readableColor';
+import { generationPhase } from '@/services/generationPhase';
 import { moreRowsLabel, previewRows, summaryLine } from '@/services/generatorSummary';
 import { SegmentedControl } from '@/components/generator/SegmentedControl';
 import { Stepper } from '@/components/generator/Stepper';
 import { ChipGroup } from '@/components/generator/ChipGroup';
 import { LessonCard } from '@/components/generator/LessonCard';
 import { DockedAction, DOCKED_BAR_HEIGHT } from '@/components/generator/DockedAction';
+import { toastLift } from '@/services/dockedBar';
+import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
 import { GeneratorLayout, useIsDesktopGenerator } from '@/components/generator/GeneratorLayout';
 import { PaperPreview } from '@/components/generator/PaperPreview';
 
@@ -179,6 +182,8 @@ export default function QuizScreen() {
       // A «subject mismatch» refusal is about the old pairing; it used to
       // stay on screen in red under the now-empty topic field.
       setError('');
+      // …and a Cancel from the old pairing: «أُلغي» is about a run that no longer matters.
+      setCancelled(false);
       prevGradeRef.current = gradeIdx;
       prevSubjectRef.current = subjectIdx;
     }
@@ -194,12 +199,20 @@ export default function QuizScreen() {
   const effNumQIdx = clampCountIndex(numQIdx, wideScope.isWide);
   const isDesktop = useIsDesktopGenerator();
   const accentInk = readableOn(ACCENT, colors.card);
+  // The header is the accent at 8% over the page and each pill the accent at 9% over that: a pill's label is
+  // judged against its own fill (accentInk against the card was 4.1:1 on it in light mode).
+  const pillFill = tintOver(ACCENT, 0x18 / 255, tintOver(ACCENT, 0x15 / 255, colors.background));
+  const pillInk = readableOn(accentInk, pillFill);
   // The lesson card opens by itself while there is no lesson, and when the grade or
   // subject clears it; typing a title must not fold the field away mid-word, so only
   // the button (or an empty topic) changes it. Never unmounts the pickers below.
   const [lessonOpen, setLessonOpen] = useState(() => !topic.trim());
   useEffect(() => { if (!topic.trim()) setLessonOpen(true); }, [topic]);
   const [loading, setLoading] = useState(false);
+  // Counts presses of generate. The status scroll depends on it as well as on the phase: a refusal
+  // returns before `setError('')`, so pressing again with the same refusal leaves the phase at 'error'
+  // and, without this, would show the teacher nothing.
+  const [attempt, setAttempt] = useState(0);
   /**
    * Held across renders so Cancel can reach the in-flight request. A cancel
    * that only cleared the spinner would leave the call running and still
@@ -402,6 +415,10 @@ export default function QuizScreen() {
   const generate = async (opts?: { regenerate?: boolean }) => {
     // Read before any setState clears it — this is what the teacher is
     // looking at, and what a regeneration must not hand back.
+    setAttempt(n => n + 1);
+    // A Cancel leaves `cancelled` set, and it outranks an error in the status block: clear it before any
+    // refusal below can return, or «أُلغي» would be shown over the refusal's own message.
+    setCancelled(false);
     const previous = result;
     // Everything a failed or cancelled run must hand back: the paper, its
     // badges and edits, and the scope it was generated under. It used to be
@@ -615,7 +632,7 @@ export default function QuizScreen() {
   // What GenerationStatus shows. Under the form it is out of sight of a docked button, so a
   // phone scrolls it into view when this leaves 'idle' (a refusal such as scopeNoCurriculum or
   // subjectTopicMismatch, a network error, the spinner and its Cancel).
-  const statusPhase = loading ? 'loading' : cancelled ? 'cancelled' : (error && topic.trim()) ? 'error' : 'idle';
+  const statusPhase = generationPhase({ loading, cancelled, failed: !!(error && topic.trim()) });
   const statusY = useRef(0);
   const reduceMotion = useReduceMotion();
   // Layout effect, not effect: the jump is made before the frame is painted, so there is no flash
@@ -623,9 +640,12 @@ export default function QuizScreen() {
   useLayoutEffect(() => {
     if (isDesktop || statusPhase === 'idle') return;
     scrollRef.current?.scrollTo({ y: Math.max(0, statusY.current - SPACE.lg), animated: !reduceMotion });
-  }, [statusPhase]);
+  }, [statusPhase, attempt]);
   // The result's own save bar takes the bottom of a phone while a fresh paper is unsaved.
   const saveBarVisible = !!result && !loading && !savedId && saveLabel === 'save';
+  // The toast sits above the docked bar while the bar is really on screen (a phone, not yielded to the screen's own bar, keyboard closed).
+  const keyboardOpen = useKeyboardVisible();
+  const toastBottom = toastLift({ isDesktop, barHidden: saveBarVisible, keyboardOpen });
   const typeOptions = QUIZ_TYPE_ORDER.map(type => ({ id: type, label: TYPE_LABEL[type] }));
   const ticked = QUIZ_TYPE_ORDER.filter(type => selectedTypes.has(type));
   const preview = previewRows(ticked, NUM_Q_OPTIONS[effNumQIdx]!, 6);
@@ -799,9 +819,9 @@ export default function QuizScreen() {
           <View style={[styles.quizHeader, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '40', borderRadius: colors.radius }]}>
             <Text style={[styles.quizTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: outRTL ? 'right' : 'left' }]}>{result.title}</Text>
             <View style={[styles.quizMeta, { flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
-              <MetaPill icon="time-outline" text={`${result.duration} ${outT('min')}`} color={accentInk} />
-              <MetaPill icon="star-outline" text={`${result.totalPoints} ${outT('pts')}`} color={accentInk} />
-              <MetaPill icon="help-circle-outline" text={outT('questionCountPill', result.questions.length)} color={accentInk} />
+              <MetaPill icon="time-outline" text={`${result.duration} ${outT('min')}`} color={pillInk} fill={pillFill} />
+              <MetaPill icon="star-outline" text={`${result.totalPoints} ${outT('pts')}`} color={pillInk} fill={pillFill} />
+              <MetaPill icon="help-circle-outline" text={outT('questionCountPill', result.questions.length)} color={pillInk} fill={pillFill} />
             </View>
           </View>
 
@@ -1050,14 +1070,15 @@ export default function QuizScreen() {
       loadingSlides={loadingSlides}
       labels={exportLabels}
     />
-    <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
+    <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} bottomOffset={toastBottom} />
     </View>
   );
 }
 
-function MetaPill({ icon, text, color }: { icon: keyof typeof Ionicons.glyphMap; text: string; color: string }) {
+/** `fill` is the opaque colour the pill is drawn in, and `color` the label judged against it. */
+function MetaPill({ icon, text, color, fill }: { icon: keyof typeof Ionicons.glyphMap; text: string; color: string; fill: string }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: color + '18', borderRadius: 20 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: fill, borderRadius: 20 }}>
       <Ionicons name={icon} size={14} color={color} />
       <Text style={{ color, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{text}</Text>
     </View>
@@ -1073,7 +1094,8 @@ function MetaPill({ icon, text, color }: { icon: keyof typeof Ionicons.glyphMap;
  * replaces drifted away from components/ui/PickerField in the first place.
  */
 function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
-  return <SharedPickerField maxHeight={180} selectedTint={ACCENT + '15'} {...props} />;
+  const row = selectedRow(props.accent, props.colors.card);
+  return <SharedPickerField maxHeight={180} selectedTint={row.fill} {...props} accent={row.ink} />;
 }
 
 const styles = StyleSheet.create({

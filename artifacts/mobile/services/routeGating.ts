@@ -147,11 +147,18 @@ export function isEntryRoute(pathname: string | null | undefined): boolean {
 export const CLAIM_REQUIRED_ROUTE = '/claim-required';
 
 /**
- * A parent or student account with zero roster links has nothing to do in
- * the app yet — every data-serving endpoint scopes by rosterLinks.userId, so
- * an unlinked account sees empty everywhere. This is the client-side gate
- * that routes them to the mandatory claim screen before that empty app
- * renders, on first signup, on every login, and on every app boot.
+ * A parent account with zero roster links has nothing to do in the app yet —
+ * every data-serving endpoint scopes by rosterLinks.userId, so an unlinked
+ * parent sees empty everywhere. This is the client-side gate that routes them
+ * to the mandatory claim screen before that empty app renders, on first
+ * signup, on every login, and on every app boot.
+ *
+ * **Not a student (since 2026-10-23).** A student may sign up with an email
+ * and no teacher's code, and use what needs no class: the library, the
+ * corners, the games, lesson explanations. The code is only for joining a
+ * class, from `/join-class`. Every `/student/*` route answers empty for an
+ * account with no link, and nothing hard-errors. A code-only student always
+ * has a link at creation, so this changes nothing for them.
  */
 export function needsRosterClaim(
   user: { role: string; hasRosterLink?: boolean } | null | undefined,
@@ -160,7 +167,7 @@ export function needsRosterClaim(
   // `=== false`, not falsy: `undefined` means "not applicable" (a teacher) or
   // "not yet answered" (an older cached shape) — either must not trigger the
   // gate. Only an explicit false, from a server that has actually checked, does.
-  return (user.role === 'parent' || user.role === 'student') && user.hasRosterLink === false;
+  return user.role === 'parent' && user.hasRosterLink === false;
 }
 
 /** Where a parent or student picks their class — first sign-in, and from settings. */
@@ -170,10 +177,13 @@ export const GRADE_SETUP_ROUTE = '/setup-grade';
  * A parent or student who has not said which class they are in sees the whole
  * catalog, grades 1–10 — the screen the class picker exists to narrow.
  *
- * Waits behind `needsRosterClaim`: an unlinked account has to enter its claim
- * code first, and the boot effect checks that gate before this one. `=== false`
- * on the link for the same reason `needsRosterClaim` uses it — `undefined` is
- * "not answered yet", and must not strand the account on a second screen.
+ * A parent waits behind `needsRosterClaim`: an unlinked parent has to enter
+ * their claim code first, and the boot effect checks that gate before this
+ * one. A student does not wait — nothing stands in front of them, and a student
+ * with no class has `/student/grades` empty, so skipping the picker would
+ * leave them on the whole catalog. `=== false` on the link for the same reason
+ * `needsRosterClaim` uses it — `undefined` is "not answered yet", and must not
+ * strand the account on a second screen.
  * Teachers and admins are never gated; they pick on `/setup-subjects`.
  *
  * `skipped` is whether this account chose «تخطي» on the picker, kept on the
@@ -186,7 +196,7 @@ export function needsGradeSetup(
   skipped: boolean | null = false,
 ): boolean {
   if (!user || (user.role !== 'parent' && user.role !== 'student')) return false;
-  if (user.hasRosterLink === false) return false;
+  if (user.role === 'parent' && user.hasRosterLink === false) return false;
   if (skipped !== false) return false;
   return (user.gradeIds?.length ?? 0) === 0;
 }

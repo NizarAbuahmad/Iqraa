@@ -28,3 +28,33 @@ test('textOn picks the label that reads on a fill', () => {
   assert.equal(textOn('#006D65'), '#FFFFFF');
   assert.equal(textOn('#2DD4BF'), '#0B1B33');
 });
+
+import { tintOver } from '../readableColor.ts';
+
+test('tintOver is the opaque colour of a translucent colour over a surface', () => {
+  assert.equal(tintOver('#000000', 0, '#FFFFFF'), '#FFFFFF');
+  assert.equal(tintOver('#000000', 1, '#FFFFFF'), '#000000');
+  assert.equal(tintOver('#000000', 0.5, '#FFFFFF'), '#808080');
+  // The accent at 12% over white is a pale accent; over the dark card it is a deeper one.
+  assert.equal(tintOver('#C2410C', 0x1f / 255, '#FFFFFF'), '#F8E8E1');
+});
+
+test('text judged against the plain surface can fail on its own tint, which is why chips judge against the tint', () => {
+  const tint = tintOver('#C2410C', 0x1f / 255, '#FFFFFF');
+  assert.ok(contrast('#C2410C', '#FFFFFF') >= 4.5);
+  assert.ok(contrast('#C2410C', tint) < 4.5);
+  assert.ok(contrast(readableOn('#C2410C', tint), tint) >= 4.5);
+});
+
+import { selectedRow, SELECTED_ROW_ALPHA } from '../readableColor.ts';
+
+test('a selected dropdown row is an opaque fill with an ink that reads on it', () => {
+  assert.equal(SELECTED_ROW_ALPHA, 0x15 / 255);
+  for (const surface of ['#FFFFFF', '#111F36']) {
+    for (const accent of ['#C2410C', '#0369A1', '#7C3AED', '#0F766E', '#4338CA', '#0E7490']) {
+      const row = selectedRow(readableOn(accent, surface), surface);
+      assert.equal(row.fill, tintOver(readableOn(accent, surface), SELECTED_ROW_ALPHA, surface));
+      assert.ok(contrast(row.ink, row.fill) >= 4.5, `${accent} on ${surface}`);
+    }
+  }
+});

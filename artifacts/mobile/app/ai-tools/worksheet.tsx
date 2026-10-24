@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,7 +21,7 @@ import { ShortPaperNotice } from '@/components/ui/ShortPaperNotice';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
 import { workingProvenance } from '@/services/worksheetWorking';
-import { TYPE } from '@/constants/theme';
+import { SPACE, TYPE } from '@/constants/theme';
 import { VerificationSummaryRow } from '@/components/ui/VerificationSummaryRow';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
@@ -30,7 +30,6 @@ import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PickerField as SharedPickerField } from '@/components/ui/PickerField';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
-import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { useFavorite } from '@/hooks/useFavorite';
 import { useGeneratorExport } from '@/hooks/useGeneratorExport';
@@ -47,6 +46,7 @@ import {
   ALL_QUESTION_COUNTS, buildWideRequest, clampCountIndex, scopeFormState, visibleCountOptions,
 } from '@/services/wideScopeRequest';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope } from '@/services/generationScope';
 import { createVerificationTracker } from '@/services/verificationTracker';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
@@ -80,10 +80,27 @@ import { carriedLessonTopic } from '@/services/pickedLesson';
 import { nextFrame } from '@/services/nextFrame';
 import { buildWorksheetRequest } from '@/services/generatorRequests';
 import { readHomeworkParam, readIndexParam } from '@/services/materialParams';
+import { conceptOf, ICON } from '@/constants/icons';
+import { readableOn, textOn, selectedRow, tintOver } from '@/services/readableColor';
+import { generationPhase } from '@/services/generationPhase';
+import { moreRowsLabel, previewRows, summaryLine } from '@/services/generatorSummary';
+import { SegmentedControl } from '@/components/generator/SegmentedControl';
+import { Stepper } from '@/components/generator/Stepper';
+import { ChipGroup } from '@/components/generator/ChipGroup';
+import { LessonCard } from '@/components/generator/LessonCard';
+import { DockedAction, DOCKED_BAR_HEIGHT } from '@/components/generator/DockedAction';
+import { toastLift } from '@/services/dockedBar';
+import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
+import { GeneratorLayout, useIsDesktopGenerator } from '@/components/generator/GeneratorLayout';
+import { PaperPreview } from '@/components/generator/PaperPreview';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { useSurface } from '@/components/ui/Surface';
 
-const ACCENT = palette.primary;
-/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
-const ACCENT_FILL = palette.hero;
+// This screen serves the worksheet AND the homework tool (`isHomework`), and each
+// wears its own concept colour (`constants/icons.ts`), so `ACCENT` is read inside
+// the component. It carries white text at 4.5:1, so it is the fill for solid
+// buttons; as text or a ring on a card the form uses `accentInk` (`readableOn`),
+// which stays readable on the dark card.
 
 type DifficultyLevel = 'normal' | 'high' | 'difficult';
 type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed';
@@ -134,6 +151,13 @@ export default function WorksheetScreen() {
     lessonId?: string;
   }>();
   const scrollRef = useRef<ScrollView>(null);
+  const isHomework = readHomeworkParam(params.isHomework);
+  const ACCENT = conceptOf(isHomework ? 'homework' : 'worksheet').color;
+  const accentInk = readableOn(ACCENT, colors.card);
+  // Ink on a tint is judged against the tint, not the plain card: the ready banner is the accent at 8% over the
+  // page, and the «attach figure» button the accent at 10% over the card.
+  const bannerInk = readableOn(accentInk, tintOver(ACCENT, 0x15 / 255, colors.background));
+  const figureInk = readableOn(accentInk, tintOver(ACCENT, 0x1a / 255, colors.card));
 
   const grades = getPickerGrades();
   const subjects = getPickerSubjects();
@@ -191,6 +215,8 @@ export default function WorksheetScreen() {
       // A «subject mismatch» refusal is about the old pairing; it used to
       // stay on screen in red under the now-empty topic field.
       setError('');
+      // …and a Cancel from the old pairing: «أُلغي» is about a run that no longer matters.
+      setCancelled(false);
       prevGradeRef.current = gradeIdx;
       prevSubjectRef.current = subjectIdx;
     }
@@ -202,7 +228,17 @@ export default function WorksheetScreen() {
   const effNumQIdx = clampCountIndex(numQIdx, wideScope.isWide);
   const [selectedTypes, setSelectedTypes] = useState<Set<QType>>(parseTypes(params.selectedTypes));
   const [includePriorReview, setIncludePriorReview] = useState(false);
+  const isDesktop = useIsDesktopGenerator();
+  // The lesson card opens by itself while there is no lesson, and when the grade or
+  // subject clears it; typing a title must not fold the field away mid-word, so only
+  // the button (or an empty topic) changes it. Never unmounts the pickers below.
+  const [lessonOpen, setLessonOpen] = useState(() => !topic.trim());
+  useEffect(() => { if (!topic.trim()) setLessonOpen(true); }, [topic]);
   const [loading, setLoading] = useState(false);
+  // Counts presses of generate. The status scroll depends on it as well as on the phase: a refusal
+  // returns before `setError('')`, so pressing again with the same refusal leaves the phase at 'error'
+  // and, without this, would show the teacher nothing.
+  const [attempt, setAttempt] = useState(0);
   /**
    * Held across renders so Cancel can reach the in-flight request. A cancel
    * that only cleared the spinner would leave the call running and still
@@ -329,8 +365,6 @@ export default function WorksheetScreen() {
     });
   };
 
-  const isHomework = readHomeworkParam(params.isHomework);
-
   // The four formats come from the lesson's question bank, so a lesson with
   // too little of it cannot offer them. Judged only once a lesson is GROUNDED:
   // a half-typed title grounds to nothing, which says nothing about the bank.
@@ -423,6 +457,10 @@ export default function WorksheetScreen() {
   const generate = async (opts?: { regenerate?: boolean; levels?: boolean }) => {
     // Read before any setState clears it — this is what the teacher is
     // looking at, and what a regeneration must not hand back.
+    setAttempt(n => n + 1);
+    // A Cancel leaves `cancelled` set, and it outranks an error in the status block: clear it before any
+    // refusal below can return, or «أُلغي» would be shown over the refusal's own message.
+    setCancelled(false);
     const previous = result;
     // Everything a failed or cancelled run must hand back: the paper, its
     // badges, edits and levels, and the scope it was generated under. It
@@ -749,23 +787,78 @@ export default function WorksheetScreen() {
     cancel: t('cancel'),
   };
 
-  return (
-    <View style={{ flex: 1 }}>
-    <ScrollView
-      ref={scrollRef}
-      style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{ paddingBottom: 140, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
-      <ToolHeader topPad={topPad} isRTL={isRTL} title={isHomework ? t('createHomework') : t('createWorksheetTitle')} concept={isHomework ? 'homework' : 'worksheet'} subtitle={isHomework ? t('homeworkSubtitle') : t('worksheetSubtitle')} />
+  // What the button will make, said before it is pressed (docked bar on a phone, preview on desktop).
+  // Counted from the types the REQUEST will carry (`sanitizeQuestionTypes`), so a greyed format or a
+  // wide scope's hidden ones are not claimed, and the line is true to the paper.
+  const requestTypes = sanitizeQuestionTypes(selectedTypes, tickCtx);
+  const ticked = ALL_Q_TYPES.filter(type => requestTypes.has(type));
+  const summary = summaryLine({ questions: NUM_Q_OPTIONS[effNumQIdx], kinds: ticked.length, level: diffLabels[diffIdx] }, uiLang);
+  const preview = previewRows(ticked, NUM_Q_OPTIONS[effNumQIdx]!, 6);
+  // A grade/subject pair with no book: the note that says so lives in the lesson card's body,
+  // so the card stays open for as long as it applies (the same test `StrandedSelectionNote` makes).
+  const stranded = subjectHidden?.[subjectIdx] === true;
+  // What GenerationStatus shows. Under the form it is out of sight of a docked button, so a
+  // phone scrolls it into view when this leaves 'idle' (a refusal such as scopeNoCurriculum or
+  // subjectTopicMismatch, a network error, the spinner and its Cancel).
+  const statusPhase = generationPhase({ loading, cancelled, failed: !!(error && topic.trim()) });
+  const statusY = useRef(0);
+  const reduceMotion = useReduceMotion();
+  // Layout effect, not effect: the jump is made before the frame is painted, so there is no flash
+  // of the form first. No animated scroll under reduced motion.
+  useLayoutEffect(() => {
+    if (isDesktop || statusPhase === 'idle') return;
+    scrollRef.current?.scrollTo({ y: Math.max(0, statusY.current - SPACE.lg), animated: !reduceMotion });
+  }, [statusPhase, attempt]);
+  // The result's own save bar takes the bottom of a phone while a fresh paper is unsaved.
+  const saveBarVisible = !!result && !loading && !savedId && saveLabel === 'save';
+  // The toast sits above the docked bar while the bar is really on screen (a phone, not yielded to the screen's own bar, keyboard closed).
+  const keyboardOpen = useKeyboardVisible();
+  const toastBottom = toastLift({ isDesktop, barHidden: saveBarVisible, keyboardOpen });
+  const surface = useSurface();
 
-      {/* Form */}
-      <View style={{ padding: 20 }}>
-        <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} hidden={teacherScope.gradeHidden} colors={colors} isRTL={isRTL} accent={ACCENT} />
+  // The question types as chips. A format the lesson's bank cannot build is offered DISABLED, drawn
+  // unticked (`isTickChecked`) while its tick stays in the stored selection; on a wide scope and in
+  // homework the formats are not offered at all (`formatTicks`).
+  const typeOptions = ALL_Q_TYPES
+    .filter(type => !isFormatKind(type) || shownFormats.includes(type))
+    .map(type => ({ id: type, label: typeLabels[type], disabled: isFormatKind(type) && greyedFormats.includes(type) }));
+  const shownSelected = new Set(typeOptions.filter(o => isTickChecked(o.id, selectedTypes, tickCtx)).map(o => o.id));
+
+  const action = (docked: boolean) => (
+    <DockedAction
+      summary={summary}
+      label={loading ? t('generating') : t(isHomework ? 'genHomeworkBtn' : 'createWorksheetBtn')}
+      onPress={() => generate()}
+      loading={loading}
+      disabled={!topic.trim()}
+      // A greyed-out primary button with nothing next to it reads as a broken
+      // product rather than an unmet precondition. It says which one.
+      hint={t('genNeedLessonHint')}
+      // The same paper at every difficulty, for a class that is not one
+      // level. Costs three generations the first time a lesson is asked
+      // for; every teacher after that is served from the pools.
+      secondary={{ label: t('worksheetThreeLevelsBtn'), onPress: () => generate({ levels: true }), disabled: !topic.trim() }}
+      accent={ACCENT}
+      docked={docked}
+      hidden={docked && saveBarVisible}
+    />
+  );
+
+  const form = (
+    <>
+      <LessonCard
+        gradeLabel={gradeNames[gradeIdx]!}
+        subjectLabel={subjectNames[subjectIdx]!}
+        subjectId={subjects[subjectIdx].id}
+        topic={topic}
+        grounded={!!pickedLesson.lessonId || wideScope.isWide}
+        expanded={lessonOpen || stranded}
+        locked={!topic.trim() || stranded}
+        onToggle={() => setLessonOpen(open => !open)}
+      >
+        <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} hidden={teacherScope.gradeHidden} colors={colors} isRTL={isRTL} accent={accentInk} />
         <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t(teacherScope.strandedNoteKey(grades[gradeIdx].id, subjectIdx))} isRTL={isRTL} colors={colors} />
-        <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} hidden={subjectHidden} />
+        <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={accentInk} hidden={subjectHidden} />
 
         <TopicSelector
           subjectId={subjects[subjectIdx].id}
@@ -779,82 +872,10 @@ export default function WorksheetScreen() {
           lang={lang}
           isRTL={isRTL}
           colors={colors}
-          accent={ACCENT}
+          accent={accentInk}
           hasError={!!error && !topic}
           t={t}
         />
-
-        {wideScope.isWide && (
-          <PickerField
-            label={t('distributionLabel')}
-            value={t(wideScope.distribution === 'balanced' ? 'distributionBalanced' : 'distributionRandom')}
-            options={[t('distributionBalanced'), t('distributionRandom')]}
-            onChange={i => wideScope.setDistribution(DISTRIBUTIONS[i]!)}
-            colors={colors} isRTL={isRTL} accent={ACCENT}
-          />
-        )}
-
-        {/* In three-level mode the difficulty IS the active tab, so the picker
-            switches papers instead of relabelling the one on screen — which
-            filed it under the wrong level on the next tab tap. */}
-        <PickerField label={t('difficultyLabel')} value={diffLabels[diffIdx]} options={diffLabels} onChange={i => (levels ? showLevel(i) : setDiffIdx(i))} colors={colors} isRTL={isRTL} accent={ACCENT} />
-        <PickerField label={t('numQuestionsLabel')} value={numQLabels[effNumQIdx]} options={numQLabels.slice(0, visibleCountOptions(wideScope.isWide))} onChange={setNumQIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
-        {isHomework ? null : (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: -8, marginBottom: 14, textAlign: isRTL ? 'right' : 'left' }}>
-            {t('numQuestionsIncludesExample')}
-          </Text>
-        )}
-
-        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left', marginBottom: 10 }]}>{t('questionTypesLabel')}</Text>
-        <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-          {ALL_Q_TYPES.filter(type => !isFormatKind(type) || shownFormats.includes(type)).map(type => {
-            const greyed = isFormatKind(type) && greyedFormats.includes(type);
-            return (
-              <CheckboxRow
-                key={type}
-                label={typeLabels[type]}
-                checked={isTickChecked(type, selectedTypes, tickCtx)}
-                onToggle={() => toggleType(type)}
-                accent={ACCENT}
-                colors={colors}
-                isRTL={isRTL}
-                disabled={greyed}
-                disabledOpacity={0.5}
-              />
-            );
-          })}
-          {greyedFormats.length > 0 ? (
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
-              {t('formatUnavailable')}
-            </Text>
-          ) : null}
-        </View>
-
-        {/* A prior-knowledge review is built from one lesson's unit; a wide scope has none, so the option is not offered. */}
-        {wideScope.isWide ? null : (
-          <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: priorReviewAvailable ? 1 : 0.55 }]}>
-            <CheckboxRow
-              label={t('includePriorReviewLabel')}
-              checked={includePriorReview && priorReviewAvailable}
-              onToggle={() => { if (priorReviewAvailable) setIncludePriorReview(v => !v); }}
-              accent={ACCENT}
-              colors={colors}
-              isRTL={isRTL}
-              disabled={!priorReviewAvailable}
-            />
-            {!priorReviewAvailable ? (
-              <Text style={{
-                color: colors.mutedForeground,
-                fontFamily: 'Almarai_400Regular',
-                fontSize: 13, lineHeight: 21,
-                marginTop: 2,
-                textAlign: isRTL ? 'right' : 'left',
-              }}>
-                {t('priorReviewUnavailableNote')}
-              </Text>
-            ) : null}
-          </View>
-        )}
 
         {/*
           The validation error (an empty topic) stays here, next to the field
@@ -862,34 +883,105 @@ export default function WorksheetScreen() {
           beside the spinner they replace — they used to render above the form,
           out of sight of the button that had just been pressed.
         */}
-        {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontSize: 15, lineHeight: 24, fontFamily: 'Almarai_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
-        <Button label={loading ? t('generating') : t('createWorksheetBtn')} onPress={() => generate()} loading={loading} disabled={!topic.trim()} fullWidth />
-        {/* The same paper at every difficulty, for a class that is not one
-            level. Costs three generations the first time a lesson is asked
-            for; every teacher after that is served from the pools. */}
-        <Button
-          label={loading ? t('generating') : t('worksheetThreeLevelsBtn')}
-          onPress={() => generate({ levels: true })}
-          loading={loading}
-          disabled={!topic.trim()}
-          variant="secondary"
-          fullWidth
-          style={{ marginTop: 8 }}
-        />
-        {/*
-          A greyed-out primary button with nothing next to it reads as a broken
-          product rather than an unmet precondition. It says which one.
-        */}
-        {!topic.trim() ? (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
-            {t('needTopicHint')}
+        {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontSize: 15, lineHeight: 24, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
+      </LessonCard>
+
+      {/* In three-level mode the difficulty IS the active tab, so the control
+          switches papers instead of relabelling the one on screen — which
+          filed it under the wrong level on the next tab tap. */}
+      <SegmentedControl label={t('difficultyLabel')} options={diffLabels} index={diffIdx} onChange={i => (levels ? showLevel(i) : setDiffIdx(i))} accent={ACCENT} />
+
+      <View style={{ gap: SPACE.xs }}>
+        <Stepper label={t('numQuestionsLabel')} options={numQLabels.slice(0, visibleCountOptions(wideScope.isWide))} index={effNumQIdx} onChange={setNumQIdx} accent={ACCENT} />
+        {isHomework ? null : (
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('numQuestionsIncludesExample')}
+          </Text>
+        )}
+      </View>
+
+      <View style={{ gap: SPACE.sm }}>
+        <ChipGroup label={t('questionTypesLabel')} options={typeOptions} selected={shownSelected} onToggle={toggleType} min={1} accent={ACCENT} />
+        {greyedFormats.length > 0 ? (
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('formatUnavailable')}
           </Text>
         ) : null}
       </View>
 
-      {/* Loading */}
+      {/* A prior-knowledge review is built from one lesson's unit; a wide scope has none, so the option is not offered. */}
+      {wideScope.isWide ? null : (
+        <View style={[surface, styles.priorCard]}>
+          <CheckboxRow
+            label={t('includePriorReviewLabel')}
+            checked={includePriorReview && priorReviewAvailable}
+            onToggle={() => { if (priorReviewAvailable) setIncludePriorReview(v => !v); }}
+            accent={ACCENT}
+            colors={colors}
+            isRTL={isRTL}
+            disabled={!priorReviewAvailable}
+          />
+          {!priorReviewAvailable ? (
+            <Text style={{
+              color: colors.mutedForeground,
+              fontFamily: 'Almarai_400Regular',
+              fontSize: TYPE.caption, lineHeight: 21,
+              textAlign: isRTL ? 'right' : 'left',
+            }}>
+              {t('priorReviewUnavailableNote')}
+            </Text>
+          ) : null}
+        </View>
+      )}
+
+      {wideScope.isWide && (
+        <SegmentedControl
+          label={t('distributionLabel')}
+          options={[t('distributionBalanced'), t('distributionRandom')]}
+          index={Math.max(0, DISTRIBUTIONS.indexOf(wideScope.distribution))}
+          onChange={i => wideScope.setDistribution(DISTRIBUTIONS[i]!)}
+          accent={ACCENT}
+        />
+      )}
+    </>
+  );
+
+  const side = (
+    <>
+      <PaperPreview
+        title={isHomework ? t('createHomework') : t('createWorksheetTitle')}
+        subtitle={`${topic.trim() || t('selectLesson')} · ${gradeNames[gradeIdx]}`}
+        rows={preview.rows.map(r => ({ n: r.n, tag: r.type ? typeLabels[r.type] : null }))}
+        more={moreRowsLabel(preview.remainder, uiLang)}
+        footer={[summaryLine({ questions: NUM_Q_OPTIONS[effNumQIdx] }, uiLang), diffLabels[diffIdx]!]}
+        note={t(isHomework ? 'genPreviewHomeworkNote' : 'genPreviewWorksheetNote')}
+        accent={ACCENT}
+      />
+      {action(false)}
+    </>
+  );
+
+  return (
+    <View style={{ flex: 1 }}>
+    <ScrollView
+      ref={scrollRef}
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={{ paddingBottom: DOCKED_BAR_HEIGHT + SPACE.xxl + insets.bottom, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Header */}
+      <ToolHeader topPad={topPad} isRTL={isRTL} title={isHomework ? t('createHomework') : t('createWorksheetTitle')} concept={isHomework ? 'homework' : 'worksheet'} subtitle={isHomework ? t('homeworkSubtitle') : t('worksheetSubtitle')} />
+
+      {/* Form */}
+      <View style={{ padding: isDesktop ? SPACE.xxl : SPACE.xl }}>
+        <GeneratorLayout form={form} side={side} isDesktop={isDesktop} />
+      </View>
+
+      {/* Loading. The wrapper only records where this sits, for the scroll above. */}
+      <View onLayout={e => { statusY.current = e.nativeEvent.layout.y; }}>
       <GenerationStatus
-        phase={loading ? 'loading' : cancelled ? 'cancelled' : (error && topic.trim()) ? 'error' : 'idle'}
+        phase={statusPhase}
         loadingLabel={t('buildingWorksheet')}
         errorDetail={error}
         onCancel={cancelGenerate}
@@ -897,9 +989,10 @@ export default function WorksheetScreen() {
         colors={colors}
         isRTL={isRTL}
         lang={uiLang}
-        accent={ACCENT}
+        accent={accentInk}
         t={t}
       />
+      </View>
 
       {/* Grounding status — never present ungrounded output as curriculum-backed */}
       {/* What the material is anchored to. Shown both ways: a teacher needs
@@ -952,7 +1045,7 @@ export default function WorksheetScreen() {
       {result && (
         <View style={{ paddingHorizontal: 20 }}>
           {levels ? (
-            <View style={[styles.levelTabs, { borderColor: ACCENT + '40', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <View style={[styles.levelTabs, { borderColor: accentInk + '40', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               {diffLabels.map((label, i) => {
                 const active = i === diffIdx;
                 return (
@@ -963,15 +1056,15 @@ export default function WorksheetScreen() {
                     aria-selected={active}
                     style={[styles.levelTab, { backgroundColor: active ? ACCENT : 'transparent', borderRadius: colors.radius }]}
                   >
-                    <Text style={{ color: active ? palette.primaryForeground : ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{label}</Text>
+                    <Text style={{ color: active ? textOn(ACCENT) : accentInk, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{label}</Text>
                   </Pressable>
                 );
               })}
             </View>
           ) : null}
           <View style={[styles.successBanner, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '30', borderRadius: colors.radius, flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
-            <Ionicons name="document-text" size={20} color={ACCENT} />
-            <Text style={[{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, flex: 1, textAlign: outRTL ? 'right' : 'left' }]}>{result.title}</Text>
+            <Ionicons name="document-text" size={20} color={bannerInk} />
+            <Text style={[{ color: bannerInk, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, flex: 1, textAlign: outRTL ? 'right' : 'left' }]}>{result.title}</Text>
           </View>
 
           <ShortPaperNotice shortfall={result.shortfall} repeated={result.repeated} />
@@ -1023,7 +1116,7 @@ export default function WorksheetScreen() {
             style={({ pressed }) => [
               styles.presentBtn,
               {
-                backgroundColor: ACCENT_FILL,
+                backgroundColor: ACCENT,
                 borderRadius: colors.radius,
                 flexDirection: isRTL ? 'row-reverse' : 'row',
                 opacity: pressed ? 0.88 : 1,
@@ -1041,32 +1134,32 @@ export default function WorksheetScreen() {
               teacher reviews and publishes on the ordinary exam screen. */}
           <Pressable
             onPress={() => setShowSend(true)}
-            style={[styles.toggleBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: 'stretch', justifyContent: 'center' }]}
+            style={[styles.toggleBtn, { borderColor: accentInk, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: 'stretch', justifyContent: 'center' }]}
             accessibilityRole="button"
           >
-            <Ionicons name="phone-portrait-outline" size={16} color={ACCENT} />
-            <Text style={[{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }]}>{t('sendToClass')}</Text>
+            <Ionicons name="phone-portrait-outline" size={16} color={accentInk} />
+            <Text style={[{ color: accentInk, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }]}>{t('sendToClass')}</Text>
           </Pressable>
 
           <Pressable
             onPress={() => setShowAnswers(v => !v)}
-            style={[styles.toggleBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
+            style={[styles.toggleBtn, { borderColor: accentInk, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
           >
-            <Ionicons name={showAnswers ? 'eye-off-outline' : 'eye-outline'} size={16} color={ACCENT} />
-            <Text style={[{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>
+            <Ionicons name={showAnswers ? 'eye-off-outline' : 'eye-outline'} size={16} color={accentInk} />
+            <Text style={[{ color: accentInk, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>
               {showAnswers ? t('hideAnswers') : t('showAnswers')}
             </Text>
           </Pressable>
 
           {result.workedExample ? (
             <View
-              style={[styles.workedCard, { backgroundColor: ACCENT + '0F', borderColor: ACCENT + '40', borderRadius: colors.radius }]}
+              style={[styles.workedCard, { backgroundColor: ACCENT + '0F', borderColor: accentInk + '40', borderRadius: colors.radius }]}
               accessible
               accessibilityLabel={outT('workedExampleTitle')}
             >
               <View style={[styles.akHeader, { flexDirection: outRTL ? 'row-reverse' : 'row', marginTop: 0 }]}>
-                <Ionicons name="create-outline" size={16} color={ACCENT} />
-                <Text style={[styles.akTitle, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', textAlign: outRTL ? 'right' : 'left' }]}>{outT('workedExampleTitle')}</Text>
+                <Ionicons name="create-outline" size={16} color={accentInk} />
+                <Text style={[styles.akTitle, { color: accentInk, fontFamily: 'ReadexPro_600SemiBold', textAlign: outRTL ? 'right' : 'left' }]}>{outT('workedExampleTitle')}</Text>
               </View>
               <MathParagraph
                 text={result.workedExample.problem}
@@ -1076,7 +1169,7 @@ export default function WorksheetScreen() {
               />
               {result.workedExample.steps.map((step, i) => (
                 <View key={i} style={[styles.optionRow, { flexDirection: outRTL ? 'row-reverse' : 'row', alignItems: 'flex-start' }]}>
-                  <Text style={[styles.optLabel, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{i + 1}.</Text>
+                  <Text style={[styles.optLabel, { color: accentInk, fontFamily: 'ReadexPro_600SemiBold' }]}>{i + 1}.</Text>
                   <MathParagraph
                     text={step}
                     isRTL={outRTL}
@@ -1112,7 +1205,7 @@ export default function WorksheetScreen() {
                   {/* Numbered straight through, as the answer key and both
                       exports are — per-section numbering made «٣» in the key
                       point at a different question on screen. */}
-                  <Text style={[styles.qNum, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{flatIndex + 1}.</Text>
+                  <Text style={[styles.qNum, { color: accentInk, fontFamily: 'ReadexPro_600SemiBold' }]}>{flatIndex + 1}.</Text>
                   <View style={{ flex: 1 }}>
                     <EditableText
                       value={q.text}
@@ -1186,7 +1279,7 @@ export default function WorksheetScreen() {
                           placeholder={outT('pts')}
                         />
                       </View>
-                      <Text style={[styles.pts, { color: ACCENT, fontFamily: 'ReadexPro_500Medium' }]}>{outT('pts')}</Text>
+                      <Text style={[styles.pts, { color: accentInk, fontFamily: 'ReadexPro_500Medium' }]}>{outT('pts')}</Text>
                       {lessonFigures.length > 0 ? (() => {
                         // A question whose words point at a figure («انظر الشكل»)
                         // and has none yet is the one a teacher must not miss.
@@ -1196,10 +1289,10 @@ export default function WorksheetScreen() {
                             onPress={() => setFigurePickFor({ si, qi: i })}
                             hitSlop={8}
                             accessibilityRole="button"
-                            style={[styles.figureBtn, { flexDirection: outRTL ? 'row-reverse' : 'row', marginLeft: outRTL ? 0 : 'auto', marginRight: outRTL ? 'auto' : 0 }, wanted && { backgroundColor: ACCENT + '1A', borderColor: ACCENT }]}
+                            style={[styles.figureBtn, { flexDirection: outRTL ? 'row-reverse' : 'row', marginLeft: outRTL ? 0 : 'auto', marginRight: outRTL ? 'auto' : 0 }, wanted && { backgroundColor: ACCENT + '1A', borderColor: figureInk }]}
                           >
-                            <Ionicons name="image-outline" size={16} color={wanted ? ACCENT : colors.mutedForeground} />
-                            <Text style={[styles.figureBtnText, { color: wanted ? ACCENT : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
+                            <Ionicons name="image-outline" size={16} color={wanted ? figureInk : colors.mutedForeground} />
+                            <Text style={[styles.figureBtnText, { color: wanted ? figureInk : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
                               {t(q.figure ? 'changeFigure' : 'attachFigure')}
                             </Text>
                           </Pressable>
@@ -1225,7 +1318,7 @@ export default function WorksheetScreen() {
           {showAnswers && result.answerKey.length > 0 && (
             <View style={{ marginBottom: 8 }}>
               <View style={[styles.akHeader, { flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
-                <Ionicons name="key-outline" size={16} color={ACCENT} />
+                <Ionicons name="key-outline" size={16} color={accentInk} />
                 <Text style={[styles.akTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: outRTL ? 'right' : 'left' }]}>{outT('answerKeyTitle')}</Text>
               </View>
               <View style={[styles.akBody, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
@@ -1243,7 +1336,7 @@ export default function WorksheetScreen() {
                   const pos = flatPositions[item.num - 1];
                   return (
                   <View key={item.num} style={[styles.akRow, { flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
-                    <Text style={[styles.akNum, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{item.num}.</Text>
+                    <Text style={[styles.akNum, { color: accentInk, fontFamily: 'ReadexPro_600SemiBold' }]}>{item.num}.</Text>
                     <View style={{ flex: 1 }}>
                       <EditableText
                         value={item.answer}
@@ -1293,7 +1386,7 @@ export default function WorksheetScreen() {
 
       {result && !loading && (
         <GeneratorResultActions
-          accent={ACCENT}
+          accent={accentInk}
           savedId={savedId}
           onToast={showToast}
           saveState={saveLabel}
@@ -1311,8 +1404,9 @@ export default function WorksheetScreen() {
         />
       )}
     </ScrollView>
+    {isDesktop ? null : action(true)}
     {result && !loading && (
-      <GeneratorSaveBar accent={ACCENT} savedId={savedId} saveState={saveLabel} onSave={handleSave} onExport={() => setShowExport(true)} />
+      <GeneratorSaveBar accent={accentInk} savedId={savedId} saveState={saveLabel} onSave={handleSave} onExport={() => setShowExport(true)} />
     )}
 
     {result ? (
@@ -1321,7 +1415,7 @@ export default function WorksheetScreen() {
         worksheet={result}
         lessonId={scope.lesson?.id}
         language={outLang === 'en' ? 'en' : 'ar'}
-        accent={ACCENT}
+        accent={accentInk}
         colors={colors}
         onClose={() => setShowSend(false)}
         onSent={(id, auto, teacher) => {
@@ -1338,7 +1432,7 @@ export default function WorksheetScreen() {
       onPick={figure => { if (figurePickFor) setQuestionFigure(figurePickFor.si, figurePickFor.qi, figure); }}
       onClose={() => setFigurePickFor(null)}
       isRTL={isRTL}
-      accent={ACCENT}
+      accent={accentInk}
       colors={colors}
       labels={{ title: t('attachFigureTitle'), note: t('attachFigureNote'), none: t('removeFigure'), cancel: t('cancel') }}
     />
@@ -1358,11 +1452,16 @@ export default function WorksheetScreen() {
       loadingSlides={loadingSlides}
       labels={exportLabels}
     />
-    <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
+    <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} bottomOffset={toastBottom} />
     </View>
   );
 }
 
+/**
+ * The one boolean left on the form (a prior-knowledge review): a labelled
+ * checkbox, 44 points tall, announced as a checkbox (`aria-checked`). The fill is
+ * the tool's colour and the tick is `textOn` it. A disabled row dims itself.
+ */
 function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled, disabledOpacity = 0.6 }: {
   label: string; checked: boolean; onToggle: () => void;
   accent: string; colors: ReturnType<typeof useColors>; isRTL: boolean;
@@ -1370,23 +1469,27 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled
   disabledOpacity?: number;
 }) {
   return (
-    <Pressable
+    <PressableScale
+      accessibilityRole="checkbox"
+      aria-checked={checked}
+      aria-disabled={!!disabled}
       onPress={disabled ? undefined : onToggle}
       disabled={disabled}
       style={[styles.checkRow, { flexDirection: isRTL ? 'row-reverse' : 'row', opacity: disabled ? disabledOpacity : 1 }]}
     >
       <View style={[styles.checkbox, { borderColor: checked ? accent : colors.border, backgroundColor: checked ? accent : 'transparent' }]}>
-        {checked && <Ionicons name="checkmark" size={14} color="#fff" />}
+        {checked && <Ionicons name="checkmark" size={ICON.sm} color={textOn(accent)} />}
       </View>
-      <Text style={[{ color: disabled ? colors.mutedForeground : colors.foreground, fontFamily: checked ? 'ReadexPro_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
-    </Pressable>
+      <Text style={[{ color: disabled ? colors.mutedForeground : colors.foreground, fontFamily: checked ? 'ReadexPro_500Medium' : 'Almarai_400Regular', fontSize: TYPE.label, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
+    </PressableScale>
   );
 }
 
 /**
  * The shared dropdown wearing this screen's skin: a shorter list and a
- * violet-tinted selected row. Binding them here rather than at each of the
- * four call sites means a fifth picker cannot be added half-styled — which is
+ * selected row tinted with the `accent` it is given (the tool's ink, so the tint
+ * follows the worksheet's or the homework's colour). Binding them here rather
+ * than at each call site means a picker cannot be added half-styled — which is
  * how the 45-line copy this replaces drifted away from
  * components/ui/PickerField in the first place.
  *
@@ -1395,19 +1498,19 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled
  * component, because the answer was that every screen wanted it.
  */
 function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
-  return <SharedPickerField maxHeight={180} selectedTint={ACCENT + '15'} {...props} />;
+  const row = selectedRow(props.accent, props.colors.card);
+  return <SharedPickerField maxHeight={180} selectedTint={row.fill} {...props} accent={row.ink} />;
 }
 
 const styles = StyleSheet.create({
   toggleBtn: { alignItems: 'center', gap: 8, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 16 },
   verifyRow: { alignItems: 'center', gap: 6, marginTop: 8 },
   verifyText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 12, flex: 1 },
-  label: { fontSize: 13, marginBottom: 6 },
-  checkboxGroup: { borderWidth: 1, padding: 14, marginBottom: 16, gap: 4 },
-  checkRow: { alignItems: 'center', gap: 10, paddingVertical: 6 },
+  priorCard: { padding: SPACE.md, gap: SPACE.xs },
+  checkRow: { alignItems: 'center', gap: SPACE.md, minHeight: 44 },
   noticeBox: { alignItems: 'flex-start', gap: 12, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 12 },
   noticeText: { flex: 1, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20 },
-  checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  checkbox: { width: 22, height: 22, borderRadius: 4, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   successBanner: { alignItems: 'center', gap: 10, padding: 14, borderWidth: 1, marginBottom: 12 },
   levelTabs: { borderWidth: 1, padding: 4, gap: 4, marginBottom: 12 },
   levelTab: { flex: 1, alignItems: 'center', paddingVertical: 8 },

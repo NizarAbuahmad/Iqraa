@@ -226,6 +226,14 @@ export default function MyExamsScreen() {
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
               {t(isParent ? 'childResultsEmptyDesc' : 'myExamsEmptyDesc')}
             </Text>
+            {/* An email student has no class until they enter a teacher's code. */}
+            {user?.role === 'student' && user.hasRosterLink === false ? (
+              <Pressable onPress={() => router.push('/join-class')} accessibilityRole="button" hitSlop={8}>
+                <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textDecorationLine: 'underline' }}>
+                  {t('joinAClass')}
+                </Text>
+              </Pressable>
+            ) : null}
           </View>
         ) : null}
 

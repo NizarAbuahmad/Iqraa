@@ -1810,3 +1810,57 @@ describe('exams, marks, slides export and the library — wordings of answers th
     });
   }
 });
+
+describe('attendance, class messages, regenerating, the QR code, notifications and the subject average (twentieth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['كيف أسجل غياب الطلبة اليوم؟', 'howAttendance'],
+    ['how do i take attendance', 'howAttendance'],
+    ['كيف أرسل رسالة لشعبة كاملة؟', 'howClassChat'],
+    ['how do i send a message to the whole class', 'howClassChat'],
+    ['كيف أعيد توليد ورقة العمل بأسئلة مختلفة؟', 'howRegenerate'],
+    ['how do i regenerate the worksheet', 'howRegenerate'],
+    ['كيف أرسل ورقة العمل إلى بريدي؟', 'howEmailMaterial'],
+    ['how do i email the worksheet to my inbox', 'howEmailMaterial'],
+    ['كيف أبني امتحاناً من بنك الأسئلة؟', 'howQuestionBank'],
+    ['كيف أصحح أوراق الطلبة بكاميرا الهاتف؟', 'howClassScan'],
+    ['كيف أعرض رمز QR للامتحان على السبورة؟', 'howExamQr'],
+    ['كيف أستخدم الآلة الحاسبة العلمية في الحصة؟', 'howMathTools'],
+    ['كيف يتم قفل الدرس التالي قبل إتقان السابق؟', 'howMasteryGate'],
+    ['كيف أنقل مادة محفوظة إلى شعبة معينة؟', 'howFilesToClass'],
+    ['كيف أرى تقدم طالب عبر الامتحانات؟', 'howStudentRecord'],
+    ['كيف أفعل الإشعارات على هاتفي؟', 'howNotifications'],
+    ['how do i enable notifications on my phone', 'howNotifications'],
+    ['كيف أحذف حسابي نهائياً؟', 'howDeleteAccount'],
+    ['how do i delete my account permanently', 'howDeleteAccount'],
+    ['كيف أعيد استخدام امتحان سابق لشعبة جديدة؟', 'howCopyExam'],
+    ['كيف أرى متوسط علامات الصف في مادة الرياضيات كلها؟', 'howSubjectAverage'],
+    ['كيف أرى متوسط علامات الطلبة في مادة؟', 'howSubjectAverage'],
+    ['how do i see the average marks in a subject', 'howSubjectAverage'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  const stayWithModel = [
+    'كيف أرسل رسالة لأولياء الأمور',
+    'كيف أنقل المعلومة للطلبة',
+    'كيف أفعل دور الطالب في الحصة',
+    'كيف أعيد شرح الدرس',
+    'كيف أرى تقدم الطالب بالملاحظة',
+    'كيف أسجل ملاحظات الحصة',
+    'كيف أحسب متوسط درجات الطلاب بنفسي',
+    'كيف أبني امتحانا متوازنا',
+    'كيف أصحح أوراق الطلبة بسرعة',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howAttendance', 'howClassChat', 'howRegenerate', 'howEmailMaterial', 'howQuestionBank', 'howClassScan', 'howExamQr', 'howMathTools', 'howMasteryGate', 'howFilesToClass', 'howStudentRecord', 'howNotifications', 'howDeleteAccount', 'howCopyExam', 'howSubjectAverage']);
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});

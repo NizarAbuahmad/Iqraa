@@ -28,8 +28,11 @@ describe("decideRoleSwitch", () => {
     assert.deepEqual(await decide({}), { ok: true, role: "teacher", changed: true });
   });
 
-  it("lets an unlinked parent become a student", async () => {
-    assert.deepEqual(await decide({ requestedRole: "student" }), { ok: true, role: "student", changed: true });
+  it("lets an unlinked parent become a student, once they confirm their age", async () => {
+    assert.deepEqual(
+      await decide({ requestedRole: "student", ageConfirmed: true }),
+      { ok: true, role: "student", changed: true },
+    );
   });
 
   it("reports the same role as no change, so the route skips the write", async () => {
@@ -47,7 +50,7 @@ describe("decideRoleSwitch", () => {
   it("lets a teacher with no classes or students become a parent or student", async () => {
     for (const requestedRole of ["parent", "student"] as const) {
       assert.deepEqual(
-        await decide({ currentRole: "teacher", requestedRole }),
+        await decide({ currentRole: "teacher", requestedRole, ageConfirmed: true }),
         { ok: true, role: requestedRole, changed: true },
       );
     }
@@ -87,6 +90,50 @@ describe("decideRoleSwitch", () => {
     await decide({ requestedRole: "admin", hasRosterLink });
     await decide({ currentRole: "teacher", requestedRole: "parent", hasRosterLink });
     assert.equal(calls, 0);
+  });
+
+  describe("age confirmation when becoming a student", () => {
+    // A student who signs up with an email confirms they are an adult or have a
+    // guardian's agreement (lib/ageConfirmation.ts). Switching an existing
+    // account into the role is the same act by another door, so it asks too.
+    it("refuses a switch into student that did not confirm, with a code the screen can translate", async () => {
+      for (const currentRole of ["teacher", "parent"]) {
+        const d = await decide({ currentRole, requestedRole: "student" });
+        assert.equal(d.ok, false, currentRole);
+        assert.equal(d.ok === false && d.code, "age_confirmation_required");
+        assert.equal(d.ok === false && d.status, 400);
+      }
+    });
+
+    it("takes only a literal true", async () => {
+      for (const ageConfirmed of [undefined, false, "true", 1] as unknown as boolean[]) {
+        const d = await decide({ requestedRole: "student", ageConfirmed });
+        assert.equal(d.ok, false, String(ageConfirmed));
+      }
+    });
+
+    it("does not ask for a switch into teacher or parent", async () => {
+      assert.deepEqual(await decide({ currentRole: "student", requestedRole: "teacher" }), { ok: true, role: "teacher", changed: true });
+      assert.deepEqual(await decide({ currentRole: "student", requestedRole: "parent" }), { ok: true, role: "parent", changed: true });
+      assert.deepEqual(await decide({ currentRole: "teacher", requestedRole: "parent" }), { ok: true, role: "parent", changed: true });
+    });
+
+    it("does not ask a student to confirm again for staying a student", async () => {
+      assert.deepEqual(
+        await decide({ currentRole: "student", requestedRole: "student" }),
+        { ok: true, role: "student", changed: false },
+      );
+    });
+
+    it("reports the real blocker first, so the answer stays truthful", async () => {
+      // A linked account is refused for being linked, not for a missing tick.
+      const linked = await decide({ requestedRole: "student", hasRosterLink: async () => true });
+      assert.equal(linked.ok === false && linked.code, "role_locked_linked");
+      const teaching = await decide({ currentRole: "teacher", requestedRole: "student", hasTeachingData: async () => true });
+      assert.equal(teaching.ok === false && teaching.code, "role_locked_teaching");
+      const off = await decide({ requestedRole: "student", studentAccountsEnabled: false });
+      assert.equal(off.ok === false && off.code, "student_accounts_disabled");
+    });
   });
 
   it("closes parent and student, but not teacher, when student accounts are off", async () => {

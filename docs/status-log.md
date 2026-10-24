@@ -10,6 +10,429 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Students choose an email or a teacher's code — 2026-10-23
+
+A student could sign up only with a teacher's code (`POST /auth/redeem`, no email): the register
+screen hid the email and Google forms as soon as «طالب» was picked, and an email student made by
+the roundabout route (sign up as a teacher, switch role) was held on `/claim-required` until a
+teacher's code was entered. Not every student has an email, but some do and a code is not
+something every student has on day one.
+
+**What changed**
+- **Register screen:** a student picks «برمز المعلم» or «ببريد إلكتروني» (no default;
+  `services/signupMethod.ts`). The email form is the teacher's form (and Google) with
+  `role: 'student'`, plus a checkbox: an adult, or a guardian agrees. A parent is code-only as before.
+- **API:** `/auth/register` and `/auth/google` refuse a new student without `ageConfirmed: true`
+  (`age_confirmation_required`, `lib/ageConfirmation.ts`) and store `users.guardian_confirmed_at`
+  (migration 0016, one nullable column; renumbered from 0015 when main's `ai_generations.platform` took it).
+- **Claim gate:** `needsRosterClaim` no longer holds a student (a parent still is); `needsGradeSetup`
+  no longer waits behind it for a student. An email student uses the library, corners, games and
+  lesson explanations with no class; `/student/*` routes answer 200 with an empty list. The school tab
+  and `/my-exams` say "join a class" with a button to `/join-class`, which now calls
+  `markRosterClaimed(true)`. Settings offers the account-type switch to a student with no class
+  (the claim screen was their only exit).
+- **Lockout:** `canReissueLoginCode` (`lib/loginCodeReissue.ts`). A code-only student who added an
+  email (`/auth/add-email`) had a password hash, so the teacher's reissue answered
+  `not_a_code_account`, while password sign-in needs a *verified* email: a mistyped address plus a
+  lost code was a lockout. Reissue now works until the email is verified.
+- **Wording:** privacy §5, terms §1 and the header comment in `constants/legal.ts`, `LEGAL_VERSION`
+  2026-10-23 (everyone is asked to accept again). The teacher-shared claim message said the code is
+  asked "after verifying your email", false since 2026-10-10; it now says no email is needed.
+  The in-app help `howStudentSignIn` mentions the email option. `/join-class` told a student with no
+  class to "join another class… another child" (`joinClassCopyKeys`, `services/joinClassCopy.ts`): it
+  now says «الانضمام إلى شعبة» with a first-class sentence for a student with `hasRosterLink === false`,
+  and keeps the old wording for everyone else. The `lib/features.ts` comment on `STUDENT_ACCOUNTS`
+  names both student paths.
+- **One `CheckRow` on the register screen.** #1229 («Make the register terms checkbox visible»)
+  landed on `main` while this PR was open and restyled the terms row (a framed panel, a dark outline)
+  and gave `styles.termsRow` a border width. The age-confirmation row had been copied from the old
+  one: it reused `termsRow` without a border colour, which draws a black frame, and kept the old box.
+  Git merged the file with no conflict, so only looking at the screen showed it. Both rows now render
+  one `CheckRow` (`components/ui/CheckRow.tsx`), so they cannot drift apart again.
+- **Switching an existing account into «student» asks for the same confirmation.** The sign-up asked,
+  but `POST /auth/role` did not, so a teacher or an unlinked parent could become a student with no
+  tick — the same door by another way. `decideRoleSwitch` (`lib/roleSwitch.ts`) now refuses a change
+  *into* student without `ageConfirmed: true` (400 `age_confirmation_required`, checked after every
+  lock so a linked or teaching account is still told why it is locked), and the route stores
+  `guardian_confirmed_at` when it succeeds. `POST /auth/google` on an existing account of another
+  role goes through the same decision. The three screens that switch a role ask for it with the shared
+  `CheckRow`, and the confirm button stays off until it is ticked: Settings → account type,
+  `/claim-required`, and `/setup-subjects` (whose pills used to switch on the tap: tapping «طالب» now
+  opens the box and a confirm button instead). The rule the screens share is
+  `switchNeedsAgeConfirmation` (`services/signupMethod.ts`); leaving the role, or staying a student,
+  asks for nothing.
+
+**Verified.** `pnpm run typecheck`; api-server `pnpm build && pnpm test` (2238 pass on the last merge
+with `main`; 2202 when first written); mobile
+`pnpm test` (7157 tests, 7147 pass, 10 skipped, 0 fail on the last merge; the first run, 7019 tests, had
+3 failures that were mine:
+`i18nTerminology` refuses «class code» and «guardian» in English, and `emptyState.test.ts` counts
+exactly two `EmptyState` in `school.tsx`, so the no-class card is its own component,
+`components/NoClassPrompt.tsx`); the new unit tests (`ageConfirmation`, `loginCodeReissue`,
+`signupMethod`, the changed `routeGating` and `claimCodeMessage` cases). In Chromium (430px, English)
+against the built web bundle and the local API: «طالب» shows the method picker and nothing else until
+a choice is made; «برمز المعلم» shows one code input and no password; «ببريد إلكتروني» shows five inputs
+(two passwords), the note and the age box; submit goes nowhere with nothing ticked or with the terms
+only, and reaches `/verify-email` with both; after verifying, sign-in lands on `/setup-grade`, not
+`/claim-required`; Skip leads to the library, the School tab shows «لم تنضم إلى شعبة بعد» with a
+«Join a class» button, which opens `/join-class`. Against the built API on a throwaway local Postgres with
+`STUDENT_ACCOUNTS=true`, all 17 migrations applied from empty, and by `curl`: a student without
+`ageConfirmed` gets 400, with it 201 and `guardian_confirmed_at` set, a teacher needs none; a verified
+email student has `hasRosterLink:false` and `/student/exams|grades|homework|schedule` and
+`/messaging/contacts` all 200 empty; after `/auth/claim` with a class code `hasRosterLink:true` and
+`gradeIds` fill in; a code-only student who added a mistyped, unverified email gets a new login code
+from the teacher (old code dead, new one signs in), and once the email is verified the same call is
+refused (409).
+
+A second pass on a rebuilt bundle, in **English and in Arabic (RTL)**, with a fresh classless student
+each time: the register screen (both paths), sign-in → `/setup-grade` → Skip → library → School tab
+prompt → the first-class `/join-class` wording → typing a teacher's per-student link code → «تم الانضمام
+إلى الشعبة بنجاح» / "You have joined the class" → the School tab no longer shows the prompt and shows
+the ordinary homework and exams view. The Arabic screenshots read right to left (picker, note, both
+checkboxes, form).
+
+**Not verified.** Android and iOS devices; the Google button (no client id locally); joining with a
+*class* code and picking a name from the list in the browser (a per-student code was used; the
+class-code claim was checked by `curl`); a parent through the unchanged code path in the browser. The
+Arabic strings were reviewed once and aligned to «شعبة» / «رمز الربط», not by a second native reader.
+Not a lawyer's review (the legal text is drafted, not reviewed).
+
+**Known limits.** `/auth/redeem` and `/auth/code-login` still have no committed handler tests. The
+store declaration itself (outside the repo) still needs to say students can sign up with an email.
+The confirmation is a tick, not a check: nothing here verifies an age or contacts a guardian, and a
+minor can tick it.
+
+## Chat app-help, twentieth live pass: 14 more wordings, and one new answer (subject average) — 2026-10-23
+
+A 30-question pass on app.iqrra.com found 14 questions answered by the model for which the app
+already had a written answer (`howAttendance` — «لا يوجد تسجيل حضور», `howClassChat`,
+`howRegenerate`, `howEmailMaterial`, `howQuestionBank`, `howClassScan`, `howExamQr`,
+`howMathTools`, `howMasteryGate`, `howFilesToClass`, `howStudentRecord`, `howNotifications`,
+`howDeleteAccount`, `howCopyExam`). Two were an app card where the steps existed: «أفعّل
+الإشعارات على هاتفي» got only the «الرسائل» card and «أحذف حسابي نهائياً» only the «حسابي» card.
+Wordings added to the existing rule ids in `appHelp.ts`. One new answer, `howSubjectAverage`
+(ar + en): the app has the average per exam («لوحة النتائج») and each student's exam
+percentages («ملف الطالب»), and nothing for a whole subject, which the model had answered with
+an invented «التقارير» screen. Both halves are the existing `howClassAverage` and
+`howStudentRecord`, not new claims. Pinned in `appHelp.test.ts` with teaching near-misses.
+
+**Not done:** «أنضم إلى مدرستي» (the school-join flow for a teacher is not something I
+verified), the book-source question and the ready-made-homework question (neither looked into),
+«أحفظ خطة الدرس بصيغة وورد» (already answered by the generic «PDF أو Word» export text).
+
+## Generator screens: the toast clears the docked bar — 2026-10-24
+
+A small follow-up to the five generator-screen ports. Mobile only. On a phone the generate button is docked at the
+bottom, and the toast (save, export, report…) sat at a fixed height that put it under the bar's summary line on the
+quiz, worksheet, lesson plan and activity; slides lifted its own. Now one pure helper, `toastLift({ isDesktop,
+barHidden, keyboardOpen })` in the new `services/dockedBar.ts`, returns the bar's height (`DOCKED_BAR_HEIGHT`, moved
+there and re-exported by `DockedAction`) only while the bar is really on screen: a phone, the screen's own bar-hiding
+condition not holding (an unsaved result's save bar on four screens, an unsaved deck on slides), and the soft keyboard
+closed (`useKeyboardVisible`; the bar hides while it is open, so the toast drops back, which also closes the limitation
+slides' entry listed). All five screens pass it as `Toast`'s `bottomOffset` (added with the slides port; default 0, so
+every other screen's toast is unchanged), and slides' inline expression is gone.
+
+**Pinned by** `dockedBar.test.ts` (exactly one of the eight input combinations lifts) and source pins in
+`generatorScreens.test.ts` (each screen imports the helper and the keyboard hook, computes `toastBottom` from the same
+condition it passes as `hidden` to `DockedAction`, passes it to `Toast`; no inline expression and no second height
+definition).
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,196 tests, 7,186 pass, 10 skipped, 0 fail.
+
+**Not verified:** the toast's actual position on a phone or in the browser (a demo session cannot easily raise a toast
+over the docked bar); any device.
+
+**Known limits.** Still open from the earlier entries: Retry after a failed three-levels run regenerates one paper
+(`onRetry={generate}` is passed bare), and `app/evaluations/new.tsx` keeps a translucent `ACCENT + '15'` selected row
+(likely 4.1 to 4.4:1 in dark), outside the five screens.
+
+## Generator screens: Cancel then a refusal, and the banner contrast — 2026-10-23
+
+A follow-up to the five generator-screen ports (the two known limits their entries listed). Mobile only:
+nothing here changes what is asked of the model, the API, or what is stored.
+
+**Cancel, then a refusal.** After a Cancel, `cancelled` stayed set until validation passed, and the phase
+expression put it before `error`, so a later refusal (`scopeNoCurriculum`, `subjectTopicMismatch`,
+`wideScopeUngrounded`) showed «أُلغي» instead of the refusal. Fixed at the root on all five screens (quiz,
+worksheet/homework, lesson plan, activity, slides): `generate` calls `setCancelled(false)` right after the attempt
+is counted, before any refusal can return, and changing the grade or the subject after a Cancel clears it as well
+(the reset effect cleared `error` but not `cancelled`). The five inline phase expressions are now one pure
+`generationPhase({ loading, cancelled, failed })` (`services/generationPhase.ts`; `GenerationStatus` imports its
+type). With `cancelled` cleared first, a refusal gives phase `idle`, so the lesson plan's `topicRefusal` early
+return and slides' `|| refusal` early return in the status-scroll effect (which existed only because of this bug)
+are gone. Every regenerate, retry, English-refresh and report-a-problem path goes through `generate`, so they clear
+it too. Pinned by `generationPhase.test.ts` (it documents the old bug and the fix) and per-screen source tests.
+
+**Banner and tint contrast.** The same flaw the activity banner had (ink judged against the card but drawn on a
+tint over the PAGE) was measured everywhere in the five screens, with the real card and page colours. Failing
+before: the worksheet/homework ready banner (light, homework 4.39), the quiz header pills (light 3.72 to 4.25,
+dark 4.10 to 4.54), the worksheet's attach-figure button (dark, worksheet 4.46, homework 4.11) and the selected row
+of every dropdown (dark 4.08 to 4.41). The lesson plan's banner (6.34 light, 4.98 dark) and the quiz and slides
+banners were already fine. Fixed with `tintOver` + `readableOn` (and a new pure `selectedRow(accent, card)` that
+gives a dropdown's selected row an opaque fill and the matching ink; the local `PickerField` wrapper on each screen
+uses it): ink starts from the old accent ink and only moves when the tint needs it, so it never lowers contrast
+(dark banners stay at 5.01 worksheet and 5.07 activity). After: the worst case over all six generator colours in
+both modes is 4.51 (banner 4.51, pill 4.58, figure button 4.51, selected row 4.55); examples: homework banner light
+4.77, quiz pills light 4.80, dark 4.74. The quiz header pills are now one opaque fill. The tests pin the numbers and
+also assert that the old way of judging still fails for the colour it failed for, so they are not vacuous.
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,157 tests, 7,147 pass, 10 skipped, 0 fail.
+Web-build screenshots before the last small ink changes: the quiz, worksheet and homework results in light and dark
+and the lesson plan. An independent review found no blocker; its should-fix items (a test measuring the wrong
+colour, stale comments, a duplicated type, the dark banner ink dipping, and the same stuck-«أُلغي» after a
+grade/subject change) are fixed.
+
+**Not verified:** any device; the contrast fixes are measured, and the final ink tweaks were not re-shot in the
+browser; Cancel then a refusal was reasoned and source-pinned, and not driven in a browser (demo generation does
+not refuse).
+
+**Known limits.** `onRetry={generate}` on the worksheet, quiz and lesson plan passes `generate` bare, so Retry
+after a failed three-levels run regenerates one paper. `app/evaluations/new.tsx` still uses a translucent
+`ACCENT + '15'` selected row (likely 4.1 to 4.4 in dark); it is outside the five screens. The toast and docked-bar
+overlap on the four screens other than slides is still open.
+
+## Generator screens: the slides — 2026-10-23
+
+PR 5 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`, the last of the five tools. The
+slides screen (`app/ai-tools/slides.tsx`) is built from the shared pieces of `components/generator/`. Mobile
+only: nothing here changes what is asked of the model, the API, or what is stored.
+
+**What changed**
+| Field | Control |
+|---|---|
+| Grade, subject, `TopicSelector`, every refusal | `LessonCard` body (unchanged pickers with `maxHeight={220}`, `StrandedSelectionNote`, `hasError`) |
+| `LessonResources` (not on a wide scope), `LessonAttachments`, `LessonLabItems` | still mounted, same props, conditions and order, right after the card (outside its body, so folding it never hides them) |
+| `includeExamples` / `includePractice` / `includeAttachments` | one multi-select `ChipGroup` with `min={0}`; examples is not offered on a wide scope, attachments only when there are some and the scope is not wide; a hidden option keeps its boolean exactly as the toggles did |
+| «من وصف حر» link | a 44-point link in the form (phone and desktop), not in the docked bar |
+| Generate | one `DockedAction`, not disabled (a press with no topic sets the refusal, as before) |
+
+- **Refusals** (no topic, no curriculum for the scope, a topic from another subject, an ungroundable scope) all
+  show inside the lesson card in one measured view and are scrolled into view on a phone and on desktop, again on
+  a repeated press (`attempt`). While one shows the card cannot be folded (`locked` includes `refusal`) and an
+  effect keeps its stored open state true, so clearing the message while typing does not fold the card mid-word.
+- **The docked bar yields to an unsaved deck.** This screen has no save bar (its save lives in `DeckActions`), so
+  the other screens' rule does not apply as is; but a docked «جهّز الشرائح» under an edited, unsaved deck is one
+  mis-tap from losing the edits. The bar is hidden while `deckUnsaved = !!deck && !loading && !workspace.saved`
+  (`workspace.saved` is true only when the stored copy is exactly the deck on screen, so a saved deck keeps the
+  bar), and while it is hidden on a phone the same action renders inline at the end of the form, so rebuilding is
+  still a scroll away. The reopened-saved-deck case rests on `reopenedDeckLink`'s comments and was not run.
+- `Toast` takes an optional `bottomOffset` (default 0, every other screen unchanged); slides lifts it by the bar's
+  height while the bar is shown, because the toast used to sit under the bar's summary line.
+- `ACCENT` is the concept colour (blue); text and icons on a card use `accentInk`; no `palette` import and no hex
+  are left in the screen; the two `palette.success` uses became `colors.success`. The same raw-accent test and the
+  test proving it bites apply. The result area itself needed no change.
+- **`ChipGroup`** wraps a long label inside its chip, and its lock rule is now the pure `chipLocked`
+  (`services/chipRules.ts`, unit-tested; `min: 0` locks nothing).
+- **Preview:** one skeleton row per section a deck is built from, in the order of `buildLessonDeck` (cover,
+  outcomes, warm-up, vocabulary, explanation, checks, worked examples if ticked, practice if ticked, summary, exit
+  ticket, homework when practice is on) or `buildRevisionDeck` on a wide scope (exit ticket titled «غلق الحصة», as
+  that builder titles it; a test reads `lessonSlides.ts` to keep both). Titles in the content language. The footer
+  is grade and subject, because a slide count is unknowable; the note says the count follows the content. Summary
+  «شرائح · أمثلة · تدريب» (`deckOptionsSummary`, «شرائح مراجعة» on a wide scope).
+- i18n: 20 new `gen*` keys in both languages; `slidesIncludeExamples`, `slidesIncludePractice` and
+  `slidesIncludeAttachments` are deleted (nothing else used them; a test says so).
+
+**With this PR all five generator tools are ported.** The remaining old-teal and dropdown generator forms are
+gone; what is left of the older look is outside the five (the evaluations builder, the homework tool's result,
+the parent message, the lesson-flow screens), which the spec lists as out of scope.
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,146 tests, 7,136 pass, 10 skipped, 0 fail.
+Web-build screenshots, Arabic: phone (390) and desktop (1366), light and dark, with a lesson and without (a
+refusal scrolled into view with its reason beside the field); English at 360; a generated deck in dark; the
+unsaved-deck state with the bar hidden and the inline button in the form. An independent review found no blocker;
+its should-fix items (the «تم» button during a refusal, the bar under an unsaved deck) and its wording, toast and
+dead-key nits are fixed.
+
+**Not verified:** any device (the `measureInWindow` scroll on native, the keyboard, the iOS safe area, touch
+feel, screen readers); the reopened-saved-deck case; a wide-scope deck; a live-AI deck.
+
+**Known limits.** The preview draws one row for the checks that a real deck splits into two, and a real deck
+leaves out any section with nothing to say (the note says so). A toast shown while the soft keyboard is open (which
+also hides the bar) sits a little high on slides. The other four generator screens have the same toast and docked
+bar overlap once a result is saved. After a book-only deck's quota message the status scroll and the screen's
+existing 200 ms scroll-to-end both fire. The earlier entries' known limits still stand: the banner contrast on
+the lesson plan, worksheet and quiz header, and the Cancel-then-refusal message on the quiz, worksheet and lesson
+plan.
+
+## Generator screens: the activity — 2026-10-23
+
+PR 4 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`. The activity screen
+(`app/ai-tools/activity.tsx`) is built from the shared pieces of `components/generator/`. Mobile only:
+nothing here changes what is asked of the model, the API, or what is stored.
+
+**What changed**
+| Field | Control |
+|---|---|
+| Grade, subject, `TopicSelector`, the inline error | `LessonCard` body (unchanged pickers, `StrandedSelectionNote`, `hasError`) |
+| Activity type (`activityTypeIdx`, 5 labels, default index 1) | `ChipGroup` in the new `single` mode over `ACTIVITY_TYPE_IDS`, moving the same index |
+| Duration (`durationIdx`, 20/30/45/60) | `SegmentedControl` over the same index and array |
+| Objective (`objective`) | the same multiline `TextInput`, in a labelled `useSurface()` card |
+| Generate | one `DockedAction`, disabled with `genNeedLessonHint` while there is no topic (as the quiz and worksheet) |
+
+- **A new shared mode.** Five long Arabic type labels do not fit a segmented control (at most four short ones),
+  so `ChipGroup` gained an opt-in `single` mode: the group is a `radiogroup`, each chip a `radio` with
+  `aria-checked`, pressing the chosen chip does nothing, and the at-least-one lock is not used. Multi mode
+  (the quiz's and the worksheet's types) is unchanged, and a test fails a `single` prop on either of those.
+  The spec's mapping line says so.
+- **A contrast fix in the shared chip, found by the review.** A selected chip's label was judged against the
+  plain card but drawn on its own 12% tint, which measured 4.35:1 for the activity orange in light mode (quiz
+  violet 4.19 and worksheet teal 4.36 in dark). A selected chip is now an opaque fill (`tintOver`, new in
+  `services/readableColor.ts`) and its label, tick and ring are `readableOn(accent, thatFill)`. A test checks
+  every generator concept colour (quiz, worksheet, homework, lesson plan, activity, slides) in light and dark
+  against the real card and page colours, at 4.5:1; it also pins that the old method fails for the activity
+  colour. `SegmentedControl` has no such flaw (its selected segment is the plain card), and a test pins that.
+  The selected chips on the quiz, worksheet and homework are therefore a touch more solid than before.
+- `ACCENT` is the concept colour (orange). The result view's private `#C2410C` copies are gone; text, icons
+  and outlines on a card use `accentInk`, the step-number circle is an `ACCENT` fill with `textOn(ACCENT)`, and
+  the ready banner's ink is judged against its tint over the page (`tintOver`). The file has no hex literal and
+  no `palette` import. Source tests: no raw `ACCENT` as ink, and a second that puts three back to prove it bites.
+- **Preview:** six skeleton rows in the order `ActivityResult` prints them (objective, materials, steps, tips,
+  differentiation, assessment), titles in the CONTENT language, a test that reads the result's own source to
+  keep the order in step. Summary: «30 دقيقة · جماعي». The result's «الهدف» heading and the preview's title
+  are the same i18n key, so they cannot drift. i18n: `genPreviewActivityNote`, `genSectionObjective`.
+- The docked bar renders on a phone and under the preview on desktop, with the `attempt` counter in the scroll
+  effect's dependencies; the shared tests for both now cover this screen too.
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,127 tests, 7,117 pass, 10 skipped, 0 fail.
+Web-build screenshots, Arabic: phone (390) and desktop (1366), light and dark, with a lesson and without (the
+disabled button and its reason); English at 360 (the five chips wrap to three rows); a generated activity in dark.
+An independent review found no blocker; its should-fix items (the chip contrast, the banner contrast, an unused
+import, a weak guard test, a duplicated heading) are fixed.
+
+**Not verified:** any device (the Android keyboard hiding the bar while the objective box is focused, the iOS
+safe area, touch feel, screen readers, whether Space activates a `role="radio"` chip on web); the chips' look
+after the contrast change on the quiz and the worksheet in the browser; a wide scope; a live-AI activity.
+
+**Known limits.** The same flaw as the activity banner is likely in three places this PR does not touch: the lesson
+plan's ready banner, the worksheet's success banner and the quiz header's pills (ink judged against the card but
+drawn on `ACCENT+'15'` over the page, about 4.2-4.4:1 in light mode; not measured). Found by the review and not
+fixed here, because it is on every generator screen: after Cancel, `cancelled` stays set and the phase expression
+puts it before `error`, so a later refusal (`scopeNoCurriculum`, `subjectTopicMismatch`, `wideScopeUngrounded`)
+shows «أُلغي» instead of the refusal; on this screen no press can reach a refusal with an empty topic, but the
+quiz, worksheet and lesson plan can. The slides screen was still on the old teal and dropdowns when this shipped (done in the entry above).
+
+## Generator screens: the lesson plan — 2026-10-23
+
+PR 3 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`. The lesson-plan screen
+(`app/ai-tools/lesson-plan.tsx`) is built from the shared pieces of `components/generator/`, as the quiz
+and the worksheet were. Mobile only: nothing here changes what is asked of the model, the API, or what is
+stored.
+
+**What changed**
+| Field | Control |
+|---|---|
+| Grade, subject, `TopicSelector`, the empty-topic error | `LessonCard` body (unchanged pickers, `StrandedSelectionNote`, `hasError`) |
+| Duration (`durationIdx`, 30/45/60/90) | `SegmentedControl` over the same index and array |
+| Teaching style (`styleIdx`) | `SegmentedControl` over the same index and array |
+| Prior-knowledge review | one labelled checkbox row (hidden on a wide scope, disabled with its note), after the fold |
+| «More options» (objectives, adaptations + «تبسيط الشرح», prior topics) | the same fold and the same `TextInput`s, restyled (`useSurface()` cards, 44-point toggle and chip, `aria-expanded`) |
+| Generate | one `DockedAction`, no `disabled` and no `hint` |
+
+- **Deliberate deviation from the spec:** duration is a segmented control, not a stepper. The spec says a
+  numeric list is a stepper, but this list is four short labels, which the same spec's rule 3 sends to a
+  segmented control; the quiz keeps a stepper because its duration list has six.
+- `ACCENT` is the concept colour (indigo) instead of `palette.primary`. Text, icons and outlines on a card
+  use `accentInk`, in the form and in the result (`LessonPlanResult` takes an `ink` prop; `GenerationStatus`,
+  `GeneratorResultActions` and `GeneratorSaveBar` get it). A source test fails any raw `ACCENT` used as text,
+  icon or outline colour, and a second test puts three raw uses back into the real source to prove it bites.
+- **Validation is unchanged: the button is not disabled.** A press with no topic sets `topicRequired`, and the
+  message shows beside the field. The button is docked away from the field, so the screen measures the header
+  and the error text (`measureInWindow`, both `collapsable={false}`) and scrolls the error into view, on a
+  phone and on desktop (the desktop button is in a sticky side column, so a teacher deep in the optional boxes
+  would otherwise see nothing happen). The `attempt` counter is in the effect's dependencies, so a second press
+  scrolls again; the status-scroll effect stands down while `topicRefusal` is set, so a press after Cancel does
+  not jump twice.
+- **Preview:** `PaperPreview` gained `nameLine?: boolean` (default true, so the quiz and worksheet are
+  unchanged); the lesson plan passes false (the «الاسم / التاريخ» line belongs on a student's paper). The
+  skeleton rows are the sections `LessonPlanView` prints, in its order: 10, or 11 with the prior-review row
+  (shown when the review was asked for and is available, or the prior-topics box has text, never on a wide scope).
+  Their titles come from the plan's CONTENT language (`getT(lang)`), not the interface language, because the plan
+  is written in the subject's language. Summary: «45 دقيقة · 10 أقسام · التعليم المباشر» (`sections` in
+  `generatorSummary.ts`, with Arabic agreement: قسم واحد / قسمان / 3–10 أقسام / 11 قسمًا).
+- i18n: `genPreviewLessonPlanNote`, both languages.
+- Found by the screenshots on the worksheet and fixed here in advance: the docked bar must be rendered
+  (`{isDesktop ? null : action(true)}` and `{action(false)}`); the test that pins it now covers this screen too.
+- The prior-review checkbox sits after the fold, as before: its shared note says «استخدم حقل الملاحظات أعلاه»,
+  and the field it points to is the folded one. A test pins the order.
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,107 tests, 7,097 pass, 10 skipped, 0 fail.
+Web-build screenshots, Arabic: phone (390) and desktop (1366), light and dark, with a lesson carried in and
+without; an empty-topic press on a phone (the error scrolled into view); a generated plan in dark. An
+independent review found no blocker; its six defects (the checkbox order, the desktop empty-topic scroll, the
+double scroll after Cancel, the preview language, a stale comment, an awkward English line) are fixed.
+
+**Not verified:** any device (the Android keyboard hiding the bar while a fold box is focused, the iOS safe
+area, touch feel, screen readers, `measureInWindow` on native); English at 360 wide; a wide scope; a live-AI
+plan (whether the model writes the prior-review section whenever it is asked); the unfolded boxes in the
+browser.
+
+**Known limits.** The skeleton rows show section titles, not content. The ticked checkbox's fill is about 1.9:1
+against the dark card (the tick itself carries the state). Most of the screen's new tests pin source text; they
+freeze the code but cannot show it scrolls correctly. The activity (done in the next entry up) and slides screens were
+still on the old teal and dropdowns when this shipped.
+
+## Generator screens: the worksheet and homework — 2026-10-23
+
+PR 2 of 5 of `docs/superpowers/specs/2026-10-23-generator-screens-design.md`. The worksheet screen
+(`app/ai-tools/worksheet.tsx`, which is also the homework tool through `isHomework`) is ported to the
+shared pieces of `components/generator/`, the same way the quiz was. Mobile only: nothing here changes
+what is asked of the model, the API, or what is stored. The homework tool is in the spec's "not in
+scope" list, but it is the same file and the same form, so it comes with the worksheet and wears its own
+concept colour (cyan) and button («جهّز الواجب البيتي»).
+
+**What changed**
+| Field | Control |
+|---|---|
+| Grade, subject, `TopicSelector` | `LessonCard` body (unchanged pickers, `StrandedSelectionNote`, `hasError`) |
+| Distribution (wide scope only) | `SegmentedControl`, same condition |
+| Difficulty (`diffIdx`) | `SegmentedControl`; the handler is still `levels ? showLevel(i) : setDiffIdx(i)` |
+| Question count (`numQIdx`) | `Stepper` over `numQLabels.slice(0, visibleCountOptions(wideScope.isWide))` |
+| Question types | `ChipGroup`, `min={1}`; a format the lesson's bank cannot build is a disabled chip |
+| Prior-knowledge review | one labelled checkbox row (hidden on a wide scope, disabled with its note) |
+| Both generate actions | one `DockedAction`: primary, plus the new `secondary` («ثلاثة مستويات دفعة واحدة») |
+
+- `ChipGroup` gained a per-chip `disabled` (dimmed, `aria-disabled`, not pressable, not counted
+  towards `min`). `DockedAction` gained an optional `secondary` action on the same row as the primary,
+  so the bar is no taller; the primary label may wrap to two lines (centred). Both are backward-compatible
+  with the quiz.
+- `ACCENT` is the concept colour (`conceptOf(isHomework ? 'homework' : 'worksheet').color`). Text, icons
+  and outlines on a card in the result area now use `accentInk` (`readableOn`): the first cut left about 19
+  uses of the raw colour, which measured 3.0:1 on the dark card (it was 8.9:1 with the old light teal).
+  The active level tab's label is `textOn(ACCENT)`.
+- `generatorSummary.ts`: the summary line can close with the level («20 سؤالًا · 3 أنواع · مرتفع»); the
+  line counts the types the REQUEST will carry (`sanitizeQuestionTypes`), not a greyed format's tick.
+- i18n: `genPreviewWorksheetNote`, `genPreviewHomeworkNote`, `genHomeworkBtn`, both languages
+  (the English homework button is «Prepare homework»; the English worksheet button keeps the name
+  `howMakeWorksheet` quotes).
+- Fixed in both ported screens (review): pressing generate again on the SAME refusal
+  (`subjectTopicMismatch`, `scopeNoCurriculum`, `wideScopeUngrounded`) did nothing visible, because the
+  scroll-to-status effect only fired when the phase changed. An `attempt` counter, bumped first thing in
+  `generate`, is now in its dependencies.
+- Found by the screenshots, not the tests: the first cut built `action` and never rendered
+  `action(true)`, so a phone had no generate button at all. `generatorScreens.test.ts` now pins
+  `{isDesktop ? null : action(true)}` and `{action(false)}` on both screens.
+
+**Pinned by tests** (`generatorScreens.test.ts`, `generatorSummary.test.ts`): the persisted state names,
+option arrays and `formState` of the worksheet; the lesson carried by id; `TopicSelector` once, inside
+`LessonCard`, never conditional; no `PickerField` left for a short list; the levels-mode difficulty
+handler; the at-least-one rule and the greyed-format chips; the prior-review conditions; both actions
+docked; no raw `ACCENT` as a colour in the file (a second test proves the checker flags the bad forms
+and lets fills and tints through); `attempt` in the scroll effect's dependencies on both screens.
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,077 tests, 7,067 pass, 10 skipped, 0 fail.
+Web-build screenshots, Arabic phone (390) and desktop (1366), light and dark, worksheet and homework,
+with and without a lesson; English at 360; a generated result in dark. An independent review found no
+blocker and the three defects above, all fixed.
+
+**Not verified:** any device (the Android keyboard hiding the bar, the iOS safe area, touch feel, screen
+readers); the English label at 320 dp; a wide scope (distribution control, hidden prior review); three-level
+mode switching papers; a lesson with a thin bank in the browser beyond the chemistry-free math lesson used.
+
+**Known limits.** The summary line does not name «three levels» while the teacher is about to press it; it
+names the selected level. The preview does not claim a worked example (that depends on the grounded
+lesson). The homework loading text still says «ورقة العمل» (`GenerationStatus` is out of scope). The
+result view's remaining raw-`ACCENT` fills and tints are unchanged.
+
 ## Grade 5 grammar in the English corner — built, shown to nobody yet, 2026-10-23
 
 The ten Grade 5 grammar lessons that were already in the hub (`kbl-g5-eng-s1-nccd-u1_l1` … `s2-nccd-u10_l1`) now have
