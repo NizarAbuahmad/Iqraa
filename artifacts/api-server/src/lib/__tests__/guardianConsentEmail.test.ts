@@ -8,7 +8,7 @@ import { guardianConsentBodyHtml, guardianConsentSubject } from "../guardianCons
 // that CI's "Brand is «إقرأ»" check rejects under artifacts/*/src.
 const OLD_BRAND = String.fromCodePoint(0x00ab, 0x0627, 0x0642, 0x0631, 0x0623, 0x00bb);
 
-const LINK ="https://app.iqrra.com/guardian#AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-abcde";
+const LINK = "https://app.iqrra.com/guardian#AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-abcde";
 
 describe("guardianConsentBodyHtml", () => {
   const html = guardianConsentBodyHtml("سلمى", LINK);
@@ -27,7 +27,8 @@ describe("guardianConsentBodyHtml", () => {
     assert.ok(!html.includes(OLD_BRAND));
   });
   it("says what approving means and that the link lasts seven days", () => {
-    assert.ok(html.includes("7"));
+    assert.ok(html.includes("7 أيام"));
+    assert.ok(html.includes("7 days"));
     assert.match(html, /parent or legal guardian/i);
     assert.ok(html.includes("وليّ"));
   });
@@ -37,6 +38,19 @@ describe("guardianConsentBodyHtml", () => {
     assert.ok(evil.includes("&lt;img"));
     assert.ok(!evil.includes('href="https://x.test/?a="b"'));
     assert.ok(evil.includes("&quot;"));
+  });
+  it("puts the child's name in a <bdi> everywhere it appears, in both language blocks, escaped", () => {
+    const [arabic, english] = html.split('<hr style="border:none;border-top:1px solid #E2E8F0;" />');
+    assert.equal(arabic.split("<bdi>سلمى</bdi>").length - 1, 2);
+    assert.equal(english.split("<bdi>سلمى</bdi>").length - 1, 2);
+    // Every occurrence of the name is inside a <bdi>: removing the wrapped ones leaves none.
+    assert.ok(!html.split("<bdi>سلمى</bdi>").join("").includes("سلمى"));
+
+    const evil = guardianConsentBodyHtml("<b>&", LINK);
+    assert.equal(evil.split("<bdi>&lt;b&gt;&amp;</bdi>").length - 1, 4);
+    assert.ok(!evil.includes("<bdi><b>"));
+    // An empty name still renders as a dash, isolated the same way.
+    assert.equal(guardianConsentBodyHtml("  ", LINK).split("<bdi>—</bdi>").length - 1, 4);
   });
   it("has a bilingual subject that names Iqrra", () => {
     assert.ok(guardianConsentSubject.includes("Iqrra"));

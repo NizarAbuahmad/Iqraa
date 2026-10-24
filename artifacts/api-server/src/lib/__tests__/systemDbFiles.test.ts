@@ -29,7 +29,7 @@ const ALLOWED: Record<string, string> = {
   "lib/classThread.ts": "reconciles who is in a class thread: a student claiming cannot see the thread or the other members' links",
   "lib/rosterLinkState.ts": "the auth middleware asks whether a student has a teacher link before any identity is set, to decide if a parent must approve",
   "lib/guardianRequests.ts": "the parent's approval link has no user, and sign-up and verification queue and mail the request before one exists; the table has no app-role grant",
-  "lib/rosterClaim.ts":"resolves a claim code before any roster link for the claimer exists",
+  "lib/rosterClaim.ts": "resolves a claim code before any roster link for the claimer exists",
   "lib/resultsReleaseNotify.ts": "notifies every linked student and parent, none of whom is the teacher whose request triggered it",
   "lib/familyAccess.ts": "accountsLinkedTo / liveClassStudentIds find the accounts and children a teacher's action is about — other people's roster links and settings, which that teacher cannot see",
   "lib/familyPush.ts": "reads the recipients' device tokens (each belongs to the recipient) and prunes the dead ones; the caller is a teacher",

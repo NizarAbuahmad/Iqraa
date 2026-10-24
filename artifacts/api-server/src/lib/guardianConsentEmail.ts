@@ -16,7 +16,9 @@ const BUTTON =
   "padding:12px 24px;border-radius:8px;";
 
 export function guardianConsentBodyHtml(childFirstName: string, link: string): string {
-  const name = esc(childFirstName.trim() || "—");
+  // Isolated for bidi: an Arabic name inside the English sentence (and a Latin one inside the Arabic) must not
+  // reorder the words around it.
+  const name = `<bdi>${esc(childFirstName.trim() || "—")}</bdi>`;
   const href = esc(link);
   return `
     <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-bottom:24px;">

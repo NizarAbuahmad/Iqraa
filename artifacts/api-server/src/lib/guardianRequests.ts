@@ -115,7 +115,9 @@ export type IssueResult =
 /**
  * Generates the token for one queued request (the id `queueRequest` returned), stores its hash and seven-day expiry,
  * and mails the link. It issues that row and no other: a request superseded or decided since is `no_request`.
- * `sent_at` is stamped only when the provider accepted the mail, so a failed send can be resent.
+ * `sent_at` is stamped only when the provider accepted the mail. The token's hash is stored before the mail goes, so
+ * a failed send cannot be retried on the same row (a second call answers `already_issued`); recovery is a fresh
+ * request, which supersedes this one and mails a new link.
  */
 export async function issueAndSend(requestId: string): Promise<IssueResult> {
   const [cur] = await db.select().from(guardianConsents).where(eq(guardianConsents.id, requestId)).limit(1);

@@ -25,8 +25,8 @@ check, and chose the parent-confirms-by-email design below over a date-of-birth 
 4. **It applies to existing email students and to role switches into student.** Anyone already in that state is
    moved to the waiting screen at their next request. (Alternatives not chosen: new accounts only, and a 14-day
    grace period.)
-5. **Ships dark behind a flag.** `GUARDIAN_APPROVAL=true` turns enforcement on; unset, the merge changes nothing
-   for anyone. Not asked, added because enforcement locks existing users and must not deploy before the updated
+5. **Ships dark behind a flag.** `GUARDIAN_APPROVAL=true` turns enforcement on; unset, nobody sees a
+   change. Not asked, added because enforcement locks existing users and must not deploy before the updated
    app and the parent-consent wording are ready (§Rollout).
 
 ## The rule
@@ -153,7 +153,9 @@ student may call `POST /auth/role` to leave the student role (to parent or teach
 ## Rollout
 
 1. **PR A, server, flag off:** migration, `guardianGate.ts`, `authMiddleware` gate, endpoints, email, `/me` field,
-   register/Google/role changes, tests. Merging changes nothing for anyone while `GUARDIAN_APPROVAL` is unset.
+   register/Google/role changes, tests. While `GUARDIAN_APPROVAL` is unset nobody sees a change; the middleware does
+   read one more column on every request, so the migration must be applied before the new revision takes traffic
+   (`deploy.yml` migrates first).
 2. **PR B, app, flag off:** waiting screen, parent page, register field, routing, copy, web build checked in
    Chromium (English and Arabic).
 3. **Before the flag is turned on** (the owner's steps): the updated app has reached users (web deploys with the
@@ -196,6 +198,19 @@ the flag is on.
   version asks every user to accept again, as the 2026-10-23 bump did.
 - Parent email addresses become stored personal data. They are kept for the life of the student's account, deleted
   with it (cascade), and must be named in the privacy policy.
+- **A self-made teacher account can unlock a held student.** A teacher approving a class-code claim is an exemption
+  (a teacher has vouched), and nothing proves a teacher is real: a second mailbox signed up as a teacher with a
+  roster row does it, and it overrides a parent's decline. The parent's approval proves a mailbox; this proves a
+  sign-up.
+- **A decline does not bind.** The student may ask the same or another parent again, 3 requests a day.
+- **A parent address can be filled by strangers.** Five unverified sign-ups naming one address use up its 5-a-day cap
+  for 24 hours, so a real child of that parent is refused until it clears.
+- **`/me` says `waiting` even when the mail failed.** Only `emailSent: false` in the answer to the request itself
+  says so; the status does not remember it.
+- **Flag flapping.** A request queued with the flag on and verified after it was turned off is never mailed (the
+  send is skipped with the flag off), and turning the flag on locks every existing email student at once.
+- **The fragment is out of the server's reach, not out of the page's.** The app (PR B) must keep `/guardian` out of
+  analytics screen tracking and crash breadcrumbs.
 
 ## Open questions for the owner
 

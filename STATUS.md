@@ -61,8 +61,7 @@ Checked 2026-10-22:
 - **`GUARDIAN_APPROVAL` is built and off; do not set it** until PR B (the app's waiting screen)
   is out and the parent-consent wording has been read by a person. With it on, every email
   student with no teacher link is held (403 `guardian_approval_required`) until a parent
-  approves by email, and today's app has no screen for that. Also decide `routes/live.ts`
-  (a held student can still join a public live game) first. Entry: «Parent approval for email
+  approves by email, and today's app has no screen for that. Entry: «Parent approval for email
   students — server (PR A)» in the log.
 - **A student can sign up with an email and no teacher's code — the legal wording needs a person
   to read it before this merges.** The privacy policy §5 and terms §1 (`constants/legal.ts`,

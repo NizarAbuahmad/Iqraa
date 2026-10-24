@@ -32,6 +32,59 @@ describe("pendingGuardian", () => {
   });
 });
 
+describe("pendingGuardian, over every combination", () => {
+  const roles = ["student", "teacher", "parent", "school_admin", "system_admin"];
+  const emails: (string | null)[] = [null, "s@example.test"];
+  const approvals: (Date | null)[] = [null, earlier];
+  const bools = [false, true];
+
+  it("is true for exactly one combination: flag on, a student, with an email, not approved, no live link", () => {
+    const hits: string[] = [];
+    for (const role of roles)
+      for (const email of emails)
+        for (const guardianApprovedAt of approvals)
+          for (const hasLiveLink of bools)
+            for (const flagOn of bools) {
+              if (pendingGuardian({ role, email, guardianApprovedAt }, { flagOn, hasLiveLink })) {
+                hits.push(JSON.stringify({ role, email, approved: guardianApprovedAt !== null, hasLiveLink, flagOn }));
+              }
+            }
+    assert.deepEqual(hits, [
+      JSON.stringify({ role: "student", email: "s@example.test", approved: false, hasLiveLink: false, flagOn: true }),
+    ]);
+  });
+
+  it("is false for every other role, whatever else is true", () => {
+    for (const role of roles.filter(r => r !== "student"))
+      for (const email of emails)
+        for (const guardianApprovedAt of approvals)
+          for (const hasLiveLink of bools)
+            for (const flagOn of bools)
+              assert.equal(pendingGuardian({ role, email, guardianApprovedAt }, { flagOn, hasLiveLink }), false, role);
+  });
+
+  it("agrees with guardianStatus: held exactly when the status is needed, waiting or declined", () => {
+    const requests = [
+      null,
+      { decision: null, expiresAt: later },
+      { decision: null, expiresAt: null },
+      { decision: null, expiresAt: earlier },
+      { decision: "declined" as const, expiresAt: later },
+    ];
+    for (const role of roles)
+      for (const email of emails)
+        for (const guardianApprovedAt of approvals)
+          for (const hasLiveLink of bools)
+            for (const flagOn of bools)
+              for (const request of requests) {
+                const s = { role, email, guardianApprovedAt };
+                const status = guardianStatus(s, { flagOn, hasLiveLink, request, now: NOW });
+                const held = pendingGuardian(s, { flagOn, hasLiveLink });
+                assert.equal(held, ["needed", "waiting", "declined"].includes(status), `${role} ${email} ${status}`);
+              }
+  });
+});
+
 describe("needsLinkLookup", () => {
   it("is true only for the candidates, so the link query runs for almost nobody", () => {
     assert.equal(needsLinkLookup(student, true), true);
