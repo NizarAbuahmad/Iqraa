@@ -14,7 +14,7 @@ import { offeredReading, offeredReadingSentences } from '@workspace/curriculum/e
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import type { TranslationKey } from '@/services/i18n';
-import { GRAMMAR_ACTIVITIES, HUB_ACTIVITIES, READING_ACTIVITIES, dayOf, grammarActivityAvailable, lessonHasPictureMatch, newlyEarnedBadges, progressKey, readSentenceAvailable, readingActivityAvailable, recordResult, starsFor, type BadgeId, type HubActivity } from '@/services/englishHub/games';
+import { GRAMMAR_ACTIVITIES, HUB_ACTIVITIES, READING_ACTIVITIES, dayOf, grammarActivityAvailable, lessonHasPictureMatch, newlyEarnedBadges, progressKey, readSentenceAvailable, readingActivityAvailable, recordResult, starsFor, trueFalseDescKey, yesNoDescKey, type BadgeId, type HubActivity } from '@/services/englishHub/games';
 import { useHubProgress } from '@/services/englishHub/progressStore';
 import { goBack } from '@/services/navigation';
 import { trackEvent } from '@/services/analytics';
@@ -167,7 +167,7 @@ export default function EnglishHubLessonScreen() {
           </View>
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 16, textAlign: align }}>{t(META[a].title)}</Text>
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>{t(META[a].desc)}</Text>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>{t(grammar && a === 'grammar-true' ? trueFalseDescKey(grammar) : grammar && a === 'grammar-yesno' ? yesNoDescKey(grammar) : META[a].desc)}</Text>
           </View>
           {best > 0 ? <Text style={{ fontSize: 14 }}>{'⭐'.repeat(best)}</Text> : null}
         </Pressable>

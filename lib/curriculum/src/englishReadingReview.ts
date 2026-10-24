@@ -211,14 +211,14 @@ const GRADE_COPY: Record<number, GradeCopy> = {
   4: {
     title: 'مراجعة قراءة الصف الرابع',
     eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف الرابع',
-    lead: (words, units, sentences, sentenceUnits) => `أضفنا إلى ركن اللغة الإنجليزية في الصف الرابع أربعة أنشطة قراءة: ثلاثة على كلمات كل وحدة كما في الصفوف السابقة، ونشاط رابع لقراءة جملة كاملة. الجمل هي جمل القواعد نفسها، وتُسمع بعد الإجابة فقط، ولا يظهر هذا النشاط لوحدة قبل موافقتكم على قواعدها أيضًا. خمس وحدات من التسع بلا نشاط جمل، لأن جملها بلا صور (المقارنات والماضي) أو لأن كلماتها بلا صور، وسبب كل منها مكتوب في وحدتها. كلمتا <span dir="ltr">Qatar</span> و<span dir="ltr">Qatari</span> مستبعدتان من «الحرف الأول» لأن حرف Q فيهما يُلفظ k. لا يُسمع في التطبيق صوت الحرف وحده؛ يظهر الحرف مكتوبًا فقط. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل كلمة في ${AR_DIGITS(units)} وحدات، ${wordCountAr(words)}، وجمل النشاط الرابع في ${AR_DIGITS(sentenceUnits)} وحدات، ${AR_DIGITS(sentences)} جملة.`,
+    lead: (words, units, sentences, sentenceUnits) => `أضفنا إلى ركن اللغة الإنجليزية في الصف الرابع أربعة أنشطة قراءة: ثلاثة على كلمات كل وحدة كما في الصفوف السابقة، ونشاط رابع لقراءة جملة كاملة. الجمل هي جمل القواعد نفسها، وتُسمع بعد الإجابة فقط، ولا يظهر هذا النشاط لوحدة قبل موافقتكم على قواعدها أيضًا. خمس وحدات من التسع بلا نشاط جمل، لأن جملها بلا صور (المقارنات والماضي) أو لأن كلماتها بلا صور، وسبب كل منها مكتوب في وحدتها. كلمتا <span dir="ltr">Qatar</span> و <span dir="ltr">Qatari</span> مستبعدتان من «الحرف الأول» لأن حرف Q فيهما يُلفظ k. لا يُسمع في التطبيق صوت الحرف وحده؛ يظهر الحرف مكتوبًا فقط. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل كلمة في ${AR_DIGITS(units)} وحدات، ${wordCountAr(words)}، وجمل النشاط الرابع في ${AR_DIGITS(sentenceUnits)} وحدات، ${AR_DIGITS(sentences)} جملة.`,
     acts: ACTS_SENTENCE,
     checks: [
       ...CHECKS_WORD,
       'في «اقرَأ الجملة»: هل جملتا السؤال والجواب معًا، مثل «Where are you from? I\'m from Qatar.»، أطول مما يُحتمل في هذه المرحلة، أم يكفي عرض الجواب وحده؟',
       'هل تُقرأ صورة العلم وملامح ✅ و❌ و👦 و👧 والصورة المضاعفة بوضوح على أنها «I\'m from» و«There isn\'t» و«he / she» و«There were two»؟',
       'في وحدة «New Neighbours» ست كلمات مصورة فقط (الأعلام)، فالجولة ستة أسئلة: هل يكفي هذا أم تفضلون إخفاء النشاط هناك؟',
-      'هل توافقون على استبعاد Qatar وQatari من «الحرف الأول» (Q تُلفظ k)، وعلى استبعاد العبارات التي تبدأ بحرف علّة مثل «at the weekend» و«a bag of»؟',
+      'هل توافقون على استبعاد Qatar و Qatari من «الحرف الأول» (Q تُلفظ k)، وعلى استبعاد العبارات التي تبدأ بحرف علّة مثل «at the weekend» و«a bag of»؟',
     ],
     meta: META_SENTENCE,
     extraCss: CSS_SENTENCE,
@@ -323,6 +323,9 @@ export function renderReadingReviewHtml(grade = 1): string {
     .sheet { gap: 0; max-width: none; }
     .intro { max-width: none; }
     .unit { break-before: page; }
+    /* A grid places the sign-off where the table would have ended without the page break, over its last rows. */
+    .unit { display: block; }
+    .unit > * + * { margin-top: 14px; }
     .table-wrap { overflow: visible; border-radius: 0; }
     table { min-width: 0; }
     tr, .signoff { break-inside: avoid; }

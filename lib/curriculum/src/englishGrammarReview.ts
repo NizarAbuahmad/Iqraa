@@ -38,16 +38,20 @@ export function unitLabelAr(n: number): string {
 const MARKER: Record<string, string> = { yes: '✅', no: '❌', boy: '👦', girl: '👧' };
 
 const NOTES: Record<string, string> = {
-  'kbl-g1-eng-s1-nccd-u1_l1': 'لا يوجد نشاط «صح أم خطأ» في هذه الوحدة: لكلمتي mum وdad فقط صورة واضحة، وصورة brother قد تُقرأ boy.',
+  'kbl-g1-eng-s1-nccd-u1_l1': 'لا يوجد نشاط «صح أم خطأ» في هذه الوحدة: لكلمتي mum و dad فقط صورة واضحة، وصورة brother قد تُقرأ boy.',
   'kbl-g1-eng-s2-nccd-u0_l1': 'وحدة الترحيب لا تحتوي كلمات العائلة، لذلك تستخدم نمطي الوحدة الثانية (I\'ve got) والوحدة الرابعة (favourite toy).',
 };
 
 /** Per grade: lesson id → why part of it is not covered (Grade 1 uses `NOTES` instead). */
 const NOT_COVERED: Record<number, Record<string, string[]>> = { 2: NOT_COVERED_G2, 3: NOT_COVERED_G3, 4: NOT_COVERED_G4, 5: NOT_COVERED_G5, 9: NOT_COVERED_G9, 10: NOT_COVERED_G10 };
 
-/** Wraps each run of English in `dir="ltr"`, so a phrase with punctuation does not scramble inside an Arabic line. */
+/**
+ * Wraps each run of English in `dir="ltr"`, so a phrase with punctuation does not scramble inside an Arabic line.
+ * A conjunction «و» that is a word of its own and touches an English word («وafter») gets a space first: next to
+ * the left-to-right run it reads like a stray letter. A «و» inside a longer Arabic word is left alone.
+ */
 export const ltr = (s: string) =>
-  esc(s).replace(/[A-Za-z][A-Za-z0-9'’-]*(?:[ ,.?!/…]+[A-Za-z0-9'’][A-Za-z0-9'’-]*)*[.?!]?/g, m => `<span dir="ltr">${m}</span>`);
+  esc(s).replace(/(^|[\s(،؛:؟«])و(?=[A-Za-z])/g, '$1و ').replace(/[A-Za-z][A-Za-z0-9'’-]*(?:[ ,.?!/…]+[A-Za-z0-9'’][A-Za-z0-9'’-]*)*[.?!]?/g, m => `<span dir="ltr">${m}</span>`);
 
 function yesNoCell(s: GrammarSentence): string {
   const y = s.yesNo;
@@ -289,6 +293,27 @@ const YESNO_CSS = `
   .not-covered { margin: 0; padding-inline-start: 1.3em; display: grid; gap: 4px; font-size: .92rem; color: var(--muted); }
   .not-covered [dir="ltr"] { font-family: var(--latin); }`;
 
+/**
+ * The forms are right-to-left and the cells that hold English are `white-space: nowrap`, so in print the widest
+ * row sets the table's width and whatever does not fit is cut off the LEFT edge of the page (the kind chip, the
+ * tick box and the notes). On paper the sentence and the false twin wrap, and the type is a little smaller.
+ * Screen rendering is untouched: everything is inside `@media print`. Grades 5, 9 and 10 share this block.
+ */
+const PRINT_FIT_CSS = `
+  @media print {
+    td.sentence, .yn { white-space: normal; }
+    th.note, td.note { width: 12%; }
+    td.sentence { font-size: .9rem; }
+    th, td { padding: 4px 5px; }
+    .yn, .opt { font-size: .82rem; }
+  }`;
+
+/** Grades 3 and 4 also have the picture, «اختر الكلمة» and yes/no columns, so those wrap too on paper. */
+const PRINT_FIT_PICTURES_CSS = PRINT_FIT_CSS + `
+  @media print {
+    td.choose, td.yesno, .build-half { white-space: normal; }
+  }`;
+
 const GRADE_COPY: Record<number, GradeCopy> = {
   1: {
     title: 'مراجعة قواعد الصف الأول',
@@ -331,7 +356,7 @@ const GRADE_COPY: Record<number, GradeCopy> = {
   3: {
     title: 'مراجعة قواعد الصف الثالث',
     eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف الثالث',
-    lead: (total, units) => `أضفنا إلى ركن اللغة الإنجليزية في الصف الثالث أنشطة لتثبيت القواعد على ${AR_DIGITS(units)} وحدات. القواعد هنا في معظمها صيغ أفعال (<span dir="ltr">play / plays</span> و<span dir="ltr">have / has</span> و<span dir="ltr">Is / Are</span>)، ولذلك تجدون وحدات بلا صور لأن كلماتها أفعال وعبارات، وما استُبعد مذكور مع سببه في كل وحدة. الجمل مبنية من نمط القواعد في كل وحدة من الكتاب ومن كلمات الوحدة نفسها. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة.`,
+    lead: (total, units) => `أضفنا إلى ركن اللغة الإنجليزية في الصف الثالث أنشطة لتثبيت القواعد على ${AR_DIGITS(units)} وحدات. القواعد هنا في معظمها صيغ أفعال (<span dir="ltr">play / plays</span> و <span dir="ltr">have / has</span> و <span dir="ltr">Is / Are</span>)، ولذلك تجدون وحدات بلا صور لأن كلماتها أفعال وعبارات، وما استُبعد مذكور مع سببه في كل وحدة. الجمل مبنية من نمط القواعد في كل وحدة من الكتاب ومن كلمات الوحدة نفسها. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة.`,
     acts: `
       <div class="act"><b>اختر الكلمة</b>جملة فيها فراغ، وخياران: الصحيح ونقيضه في القاعدة، مثل <span dir="ltr">plays / play</span> أو <span dir="ltr">Does / Do</span> أو <span dir="ltr">There's / There isn't</span>. تظهر معها صورة حيث توجد صورة صادقة فقط.</div>
       <div class="act"><b>رتّب الجملة</b>كلمات الجملة مبعثرة، ويرتّبها الطالب بالنقر. حتى ٩ كلمات. إن زادت الجملة (سؤال وجواب) يُرتّب الجواب وحده ويظهر السؤال فوق الكلمات؛ ويُكتب ذلك تحت الجملة في القائمة.</div>
@@ -347,7 +372,7 @@ const GRADE_COPY: Record<number, GradeCopy> = {
       'هل الكلمات مناسبة لطالب الصف الثالث؟',
     ],
     extraCss: YESNO_CSS + `
-  .build-half { display: block; color: var(--muted); font-size: .78rem; font-weight: 400; white-space: nowrap; }`,
+  .build-half { display: block; color: var(--muted); font-size: .78rem; font-weight: 400; white-space: nowrap; }` + PRINT_FIT_PICTURES_CSS,
   },
   4: {
     title: 'مراجعة قواعد الصف الرابع',
@@ -364,7 +389,7 @@ const GRADE_COPY: Record<number, GradeCopy> = {
       'هل الصورة (إن وُجدت) تناسب الجملة؟',
       'في «اختر الكلمة»: هل الخيار الخاطئ صيغة حقيقية خاطئة بوضوح؟ وهل في الجملة ما يدل على الصحيح؟',
       'في «رتّب الجملة»: هل يكفي ترتيب الجواب وحده حين تطول الجملة؟',
-      'في صفحة البيانات: هل كل زوج في المقارنات صحيح دون جدال؟ وهل تصنيف الأطعمة وقواعد must وmustn\'t والأفعال الشاذة وظروف الحال سليمة؟',
+      'في صفحة البيانات: هل كل زوج في المقارنات صحيح دون جدال؟ وهل تصنيف الأطعمة وقواعد must و mustn\'t والأفعال الشاذة وظروف الحال سليمة؟',
       'هل تُقرأ ✅ و❌ بوضوح على أنها «كان موجودًا» و«لم يكن موجودًا» في الوحدة الثامنة؟',
       'هل الكلمات مناسبة لطالب الصف الرابع؟',
     ],
@@ -374,7 +399,7 @@ const GRADE_COPY: Record<number, GradeCopy> = {
   .data { display: grid; gap: 14px; }
   .data .table-wrap table { min-width: 0; }
   .data-table td { font-size: .95rem; }
-  @media print { .data { break-before: page; } }`,
+  @media print { .data { break-before: page; } }` + PRINT_FIT_PICTURES_CSS,
   },
   5: {
     title: 'مراجعة قواعد الصف الخامس',
@@ -399,7 +424,7 @@ const GRADE_COPY: Record<number, GradeCopy> = {
   .kind-form { background: var(--wrong-bg); color: var(--wrong); }
   .kind-meaning { background: var(--tint); color: var(--teal); }
   .topic-row th { text-align: start; background: var(--tint); font-family: var(--latin); font-weight: 600; }
-  .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }`,
+  .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }` + PRINT_FIT_CSS,
   },
   9: {
     title: 'مراجعة قواعد الصف التاسع',
@@ -430,7 +455,7 @@ const GRADE_COPY: Record<number, GradeCopy> = {
   .kind-meaning { background: var(--tint); color: var(--teal); }
   .topic-row th { text-align: start; background: var(--tint); font-family: var(--latin); font-weight: 600; }
   .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }
-  @media print { .data { break-before: page; } }`,
+  @media print { .data { break-before: page; } }` + PRINT_FIT_CSS,
   },
   10: {
     title: 'مراجعة قواعد الصف العاشر',
@@ -456,14 +481,7 @@ const GRADE_COPY: Record<number, GradeCopy> = {
   .kind-form { background: var(--wrong-bg); color: var(--wrong); }
   .kind-meaning { background: var(--tint); color: var(--teal); }
   .topic-row th { text-align: start; background: var(--tint); font-family: var(--latin); font-weight: 600; }
-  .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }
-  @media print {
-    td.sentence, .yn { white-space: normal; }
-    th.note, td.note { width: 12%; }
-    td.sentence { font-size: .9rem; }
-    th, td { padding: 4px 5px; }
-    .yn, .opt { font-size: .82rem; }
-  }`,
+  .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }` + PRINT_FIT_CSS,
   },
 };
 
@@ -506,7 +524,7 @@ function gradeFourDataPage(): string {
       ...T.foodUncountable.map(f => [f, 'غير معدود: There\'s a lot of …']),
       ['milkshake', 'مفرد معدود: خارج جمل المقدار'],
     ]),
-    dataTable('قواعد must وmustn\'t', ['القاعدة'], [...sentences(U5, 'must'), ...sentences(U5, 'mustnt')].map(s => [s.text])),
+    dataTable('قواعد must و mustn\'t', ['القاعدة'], [...sentences(U5, 'must'), ...sentences(U5, 'mustnt')].map(s => [s.text])),
     dataTable('البلدان والجنسيات', ['البلد', 'الجنسية'], T.countryRows.map(r => [r.country, r.nat])),
     dataTable('أفعال الماضي', ['الفعل', 'الماضي', 'النوع'], [...usedVerbs].sort().map(v => [v, pastTense(v), pastKind(v)])),
     dataTable('الجدول الدراسي (مخترَع: ليس معلومة)', ['المادة', 'اليوم', 'الساعة'], T.timetable.map(r => [r.subject, r.day, r.time])),
@@ -650,6 +668,9 @@ export function renderGrammarReviewHtml(grade = 1): string {
     .sheet { gap: 0; max-width: none; }
     .intro { max-width: none; }
     .unit { break-before: page; }
+    /* A grid places the sign-off where the table would have ended without the page break, over its last rows. */
+    .unit { display: block; }
+    .unit > * + * { margin-top: 14px; }
     .table-wrap { overflow: visible; border-radius: 0; }
     table { min-width: 0; }
     tr, .signoff { break-inside: avoid; }
