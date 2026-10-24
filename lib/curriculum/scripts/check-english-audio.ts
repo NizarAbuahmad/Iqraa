@@ -32,9 +32,9 @@
  *                      unchecked clip is not a pass
  *
  * Exit code: 0; 1 with --fail-on-mismatch and a mismatch, silent or error row; 2 for a
- * refusal (no key, a bad flag, or the API refusing every request: 401/403, an unknown
- * model or endpoint, an exhausted quota; the run stops once and leaves a PARTIAL report
- * and the cache).
+ * refusal (no key, a bad flag, a cache path that would lose a file, or the API refusing
+ * every request: 401/403, an unknown model or endpoint, an exhausted quota; the run stops
+ * once and leaves a PARTIAL report and the cache).
  *
  * Key: `OPENAI_API_KEY`, from the environment or the repo-root `.env` (as the generator
  * does). An empty one or the `sk-your…` placeholder is refused. The key is never printed,
@@ -316,11 +316,17 @@ if (existsSync(cachePath)) {
     // Something is in the file but none of it is a cache (an old format, a damaged file, the
     // wrong file): saving would replace it, so keep a copy once.
     if (Object.keys(stored).length === 0 && raw.trim() !== '' && raw.trim() !== '{}') {
+      const bak = `${cachePath}.bak`;
       try {
-        copyFileSync(cachePath, `${cachePath}.bak`, constants.COPYFILE_EXCL);
-        console.error(`${cachePath} holds no transcripts that could be read; a copy is kept as ${cachePath}.bak before it is replaced.`);
+        copyFileSync(cachePath, bak, constants.COPYFILE_EXCL);
+        console.error(`${cachePath} holds no transcripts that could be read; a copy is kept as ${bak} before it is replaced.`);
       } catch {
-        console.error(`${cachePath} holds no transcripts that could be read; it will be replaced (${cachePath}.bak already exists).`);
+        // A backup is already there. Replacing is safe only when it is a copy of this very file;
+        // otherwise this file would be lost for good, so stop before anything is written.
+        if (!existsSync(bak) || readFileSync(bak, 'utf8') !== raw) {
+          fail(`${cachePath} holds no transcripts that could be read, and ${bak} already holds something else. Nothing was written. Move one of them away, or pass another --cache.`);
+        }
+        console.error(`${cachePath} holds no transcripts that could be read; it will be replaced (${bak} is already a copy of it).`);
       }
     }
   } catch (err) {
@@ -385,7 +391,7 @@ saveCache(results);
 // `results` may be shorter than `selected` after a stop; `stopped` decides, never the length.
 const partial = stopped;
 /** Why it stopped, without a trailing full stop (the API's own message ends with one). */
-const stopText = (run.stopReason || 'the API refused the request (401/403)').replace(/[.\s]+$/, '');
+const stopText = (run.stopReason || 'the transcription API refused the request').replace(/[.\s]+$/, '');
 const date = new Date().toISOString().slice(0, 10);
 
 const markdown = renderReportMarkdown(results, { model, date }).split('\n');

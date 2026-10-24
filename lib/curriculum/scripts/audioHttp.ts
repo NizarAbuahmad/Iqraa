@@ -34,8 +34,11 @@ export interface RequestOptions {
   /** Sent on every attempt, so it must be re-sendable (a string, `FormData`, a `Blob`). */
   body?: NonNullable<Parameters<typeof fetch>[1]>['body'];
   /**
-   * Opt-in, per attempt (headers and body both): an attempt that takes longer is aborted
-   * and retried like any other transport failure. Off by default, so the audit is unchanged.
+   * Opt-in, per attempt: an attempt that has not produced its response headers in time is
+   * aborted and retried like any other transport failure. Off by default, so the audit is
+   * unchanged. The signal stays on the response, so a body that stalls afterwards is read by
+   * the caller, after this function has returned: it is NOT retried and surfaces as the
+   * caller's error (one `error` row in the check).
    */
   timeoutMs?: number;
 }

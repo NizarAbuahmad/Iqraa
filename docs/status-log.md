@@ -15,7 +15,7 @@ Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 A recording can be the wrong word (the first voicing of «chair» was «share»), and only an ear found it. `english-audio-check`
 listens instead: it downloads each clip in `audioPlan()` from the public bucket, transcribes it with a speech-to-text model
 and reports where what is said differs from what the app expects. **Read-only**: it writes nothing to the bucket and never
-re-voices; it writes only a report and a cache, both git-ignored. No app, API, schema or dependency change.
+re-voices; it writes only a report and a cache and their `.tmp` / `.bak` files, all git-ignored by default. No app, API, schema or dependency change.
 
 - **Pure logic, tested** (`lib/curriculum/src/englishAudioCheck.ts`, `__tests__/englishAudioCheck.test.ts`): normalising
   (case, apostrophes, punctuation, hyphens, digits → words, British → American spelling, a homophone table), the verdicts,
@@ -47,7 +47,8 @@ re-voices; it writes only a report and a cache, both git-ignored. No app, API, s
   command decides from `stopped`, never from the length: the report is headed PARTIAL with how many of how many were checked
   (also as one line on stdout), the cache is still saved (it is also saved every 100 clips and on Ctrl+C), exit code 2.
 - **The cache is written atomically** (`<cache>.tmp`, then renamed); a cache file that has content but no readable
-  transcripts is copied once to `<cache>.bak` before it is replaced. `--refresh` replaces the transcripts of the clips it
+  transcripts is copied once to `<cache>.bak` before it is replaced; if a `.bak` already holds something different, the run
+  refuses (exit 2, nothing written) instead of losing either file. `--refresh` replaces the transcripts of the clips it
   re-heard, and a clip that now comes back silent loses its old one (`mergeRefreshed`).
 - **The fetch helper moved.** `retryAfterMs`, `backoffMs`, the request-with-backoff and the worker pool left
   `audit-english-audio.ts` for `scripts/audioHttp.ts`; both commands use it. `englishAudioLocation.test.ts` now also pins the
@@ -93,7 +94,9 @@ so there is nothing to check for them. Not in CI.
 recognisers forgive them. A mismatch means a person should listen, not that the clip is wrong (homophones, rare words such as
 «doughnut», «sitcom»). A **homophone group lets a wrong recording pass**: pair / pear / pare, flower / flour and plane / plain
 sound the same to the recogniser and are folded to one form. The `er` and `ing` suffix closes can land a different word in the
-Close table (number / numb). Contractions are not expanded («I'm» / «I am» differ), and «prise» / «prize» fold together. Left as
+Close table (number / numb). Contractions are not expanded («I'm» / «I am» differ), and «prise» / «prize» fold together. A
+transcription POST aborted by the 60 s timeout and retried could in theory be billed twice (OpenAI bills on completion; unlikely),
+and a body that stalls after the headers arrive is not retried (one `error` row). Left as
 they are: Ctrl+C exits with `process.exit` after saving the cache; `--out x.json` names its JSON `x.json.json`; the
 `--cache`/`--out` collision check is case-sensitive.
 

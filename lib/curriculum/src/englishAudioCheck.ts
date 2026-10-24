@@ -353,7 +353,7 @@ export interface CheckResult {
 export interface CheckDeps {
   /** `'missing'` when the bucket has no such clip; throws on a transport failure. */
   fetchClip(item: AudioItem): Promise<{ bytes: Uint8Array; size: number; etag: string } | 'missing'>;
-  /** Throws `StopRun` on a 401/403; any other throw is that one clip's error. */
+  /** Throws `StopRun` for a refusal that would repeat for every clip (`shouldStopRun`: a refused key, an unknown model or endpoint, an exhausted quota); any other throw is that one clip's error. */
   transcribe(bytes: Uint8Array, item: AudioItem): Promise<string>;
   /** Read and updated in place. */
   cache: SpeechCache;
@@ -361,7 +361,7 @@ export interface CheckDeps {
   onProgress?(done: number, total: number): void;
 }
 
-/** Thrown by `transcribe` when the API refuses the key (401/403): every worker stops. */
+/** Thrown by `transcribe` when the API's refusal would be the same for every clip (a refused key, an unknown model, an exhausted quota; see `shouldStopRun`): every worker stops. */
 export class StopRun extends Error {
   constructor(message?: string) {
     super(message);
