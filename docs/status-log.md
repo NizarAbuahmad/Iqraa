@@ -10,6 +10,30 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat app-help, twenty-seventh live pass: three short answers and wordings for ten existing ones — 2026-10-24
+
+A 30-question pass (20 app, 10 curriculum — all ten answers correct) on app.iqrra.com found app
+questions answered by the model for which the app already had an answer, and three it did not:
+«أخفي العلامات عن الطلبة» (`howReleaseResults`, whose last sentence names «إخفاء النتائج عن
+الطلبة»), «عدد الطلبة الذين فتحوا الامتحان» (`howExamSubmissions`: the dashboard lists every
+paper), a forgotten password (`howChangePassword` already says «نسيت كلمة المرور؟»; the model
+called it outside its scope), «شعار مدرستي» on the papers (`howWorksheetHeader`; the model
+described an «add logo» option that does not exist), one student's results across the exams
+(`howStudentRecord`) and switching the grade I teach (`howAddGrade`; the model said to type it
+into the chat). Four more were left over from the 26th pass: deleting a homework already sent
+(`howHomeworkEdit`), a time limit on a quiz (`howExamTime`), shuffling the questions per student
+(`howExamShuffle`) and «السبورة البيضاء» (`howWhiteboard`).
+
+Three new short answers, each a negative or a pointer I checked in code: `howMediaLink` (the
+lesson plan has no link field; `components/ui/LessonResources.tsx` on the slides screen takes a
+YouTube or image link and makes it a slide, and `SlideEditModal` replaces a slide's video),
+`howExamNoBack` (`app/take/[code].tsx` always shows «السابق» and «التالي») and `howVoiceNote`
+(nothing in `app/messaging` records or sends audio). Pinned in `appHelp.test.ts` with near-misses
+that stay with the model.
+
+**Left to the model on purpose:** turning a quiz into a game, flashcards for a teacher, the
+in-class timer (all teaching advice; the app has no matching tool), the question most students
+got wrong, a note on a student's paper and restoring a deleted exam (I found no screen for any).
 ## English audio on phones: clips are saved on the device and a lesson's clips are fetched ahead — 2026-10-24
 
 On a phone every tap streamed its clip from `pub-…r2.dev/english-audio/<slug>.mp3`, so a weak connection or the
