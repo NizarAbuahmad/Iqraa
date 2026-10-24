@@ -20,6 +20,8 @@ import { NOT_COVERED_G5 } from './englishGrammarG5.ts';
 import { G5_ITEM_LESSONS } from './englishGrammarG5Items.ts';
 import { G9_TABLES, NOT_COVERED_G9 } from './englishGrammarG9.ts';
 import { G9_ITEM_LESSONS } from './englishGrammarG9Items.ts';
+import { NOT_COVERED_G10 } from './englishGrammarG10.ts';
+import { G10_ITEM_LESSONS } from './englishGrammarG10Items.ts';
 import { allHubWords, hubLesson, hubLessonsForGrade } from './englishHub.ts';
 import { wordPicture } from './englishPictures.ts';
 
@@ -41,7 +43,7 @@ const NOTES: Record<string, string> = {
 };
 
 /** Per grade: lesson id → why part of it is not covered (Grade 1 uses `NOTES` instead). */
-const NOT_COVERED: Record<number, Record<string, string[]>> = { 2: NOT_COVERED_G2, 3: NOT_COVERED_G3, 4: NOT_COVERED_G4, 5: NOT_COVERED_G5, 9: NOT_COVERED_G9 };
+const NOT_COVERED: Record<number, Record<string, string[]>> = { 2: NOT_COVERED_G2, 3: NOT_COVERED_G3, 4: NOT_COVERED_G4, 5: NOT_COVERED_G5, 9: NOT_COVERED_G9, 10: NOT_COVERED_G10 };
 
 /** Wraps each run of English in `dir="ltr"`, so a phrase with punctuation does not scramble inside an Arabic line. */
 export const ltr = (s: string) =>
@@ -192,7 +194,7 @@ const KIND_AR = 'النوع: <b dir="ltr">form</b> = المموِّه غير س�
 function renderAuthoredUnit(u: GrammarUnit, idx: number): string {
   const lesson = hubLesson(u.lessonId)!;
   const sentences = unitSentences(u);
-  const statement = [...G5_ITEM_LESSONS, ...G9_ITEM_LESSONS].find(l => l.lessonId === u.lessonId)!.statement;
+  const statement = [...G5_ITEM_LESSONS, ...G9_ITEM_LESSONS, ...G10_ITEM_LESSONS].find(l => l.lessonId === u.lessonId)!.statement;
   const topics = [...new Set(sentences.map(s => s.patternId))];
   let n = 0;
   const rows = topics.map(topic => {
@@ -216,7 +218,7 @@ function renderAuthoredUnit(u: GrammarUnit, idx: number): string {
   <section class="unit" id="unit-${idx + 1}">
     <header class="unit-head">
       <div class="unit-meta"><span>${sem}</span><span>${unitLabelAr(lesson.unitNumber)}</span><span>${sentenceCountAr(sentences.length)}</span></div>
-      <h2><span dir="ltr">${esc(lesson.unitTitle)}</span> <span class="unit-ar">${esc(lesson.unitTitleAr)}</span> <span class="lesson-id" dir="ltr">${esc(lesson.id.replace(/^kbl-g\d+-eng-/, ''))}</span></h2>
+      <h2><span dir="ltr">${esc(lesson.unitTitle)}</span> <span class="unit-ar">${esc(lesson.unitTitleAr)}</span> <span class="lesson-id" dir="ltr">${esc(lesson.id.replace(/^kbl-(g\d+-)?eng-/, ''))}</span></h2>
       <p class="unit-note"><b>تأكدوا أولًا:</b> هل يطابق هذا الدرس صفحة الكتاب؟ يقول الكتاب: <span dir="ltr">«${esc(statement)}»</span></p>
       <ul class="patterns" dir="ltr">${topics.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
       <p class="unit-note">${KIND_AR}</p>
@@ -429,6 +431,32 @@ const GRADE_COPY: Record<number, GradeCopy> = {
   .topic-row th { text-align: start; background: var(--tint); font-family: var(--latin); font-weight: 600; }
   .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }
   @media print { .data { break-before: page; } }`,
+  },
+  10: {
+    title: 'مراجعة قواعد الصف العاشر',
+    eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف العاشر',
+    lead: (total, units) => `هذه مراجعة قواعد الصف العاشر، الفصل الأول: ${AR_DIGITS(units)} دروس كُتبت جملها واحدةً واحدة، لكل جملة إجابتها الصحيحة وخيار مموِّه. الكتاب يعطي هدفًا لكل درس دون جمل نموذجية، فكل جملة هنا كتبناها نحن، وتُراجَع هنا قبل أي ظهور لها. كثير من الجمل يختبر الاختيار بين صيغتين (المضارع البسيط والمستمر، a أو the، will أو going to)، فنوع المموِّه مطبوع لكل جملة: <b>form</b> غير سليم لغويًا، و <b>meaning</b> سليم لكن كلمة في الجملة نفسها تستبعده. لا صور في أي درس. <b>لن يرى الطلاب أي درس قبل أن توافقوا عليه</b>، ودرس أدوات التعريف لا يظهر في الركن إلا بعد توقيعكم. هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة.`,
+    acts: `
+      <div class="act"><b>اختر الكلمة</b>جملة فيها فراغ، وخياران: الإجابة الصحيحة أمام المموِّه، مثل <span dir="ltr">had started / started</span> أو <span dir="ltr">where it is / where is it</span>.</div>
+      <div class="act"><b>رتّب الجملة</b>كلمات الجملة مبعثرة، ويرتّبها الطالب بالنقر. حتى ٩ كلمات.</div>
+      <div class="act"><b>صح أم خطأ</b>تُعرض الجملة نفسها، أو توأمها الخاطئ باستبدال الإجابة بالمموِّه. <b>هذا النشاط صامت:</b> لا يُسمَع فيه أي جملة، صحيحة أو خاطئة، حتى لا يسمع الطالب إنجليزية خاطئة ولا يدل الصمت على الجواب.</div>
+    `,
+    checks: [
+      'هل الجملة صحيحة لغويًا، وبالصيغة التي يدرّسها الكتاب؟',
+      'هل رقم الدرس يطابق صفحة الكتاب؟ (يقول الكتاب بالإنجليزية في أعلى كل صفحة.)',
+      'في الجمل من نوع meaning: هل الكلمة المحدِّدة في الجملة تستبعد المموِّه فعلًا؟ وهل يمكن أن يقبل طالب جيد المموِّه؟',
+      'هل أي مموِّه من نوع form مقبول أحيانًا في صفك؟',
+      'في درس أدوات التعريف والمضارع التام البسيط والمستمر: هل الجمل واضحة دون سياق أوسع؟',
+      'في «الكلمات خارج قوائم المفردات»: وافقوا على الكلمات المناسبة للصف العاشر واشطبوا الباقي.',
+      'هل طول الجمل مناسب لـ «رتّب الجملة»؟',
+    ],
+    // YESNO_CSS is what styles the false twin (`.yn`) and the not-covered list; without it the twin wraps one word per line.
+    extraCss: YESNO_CSS + `
+  .kind { font-family: var(--latin); font-size: .82rem; border-radius: 6px; padding: 1px 8px; border: 1px solid var(--rule); }
+  .kind-form { background: var(--wrong-bg); color: var(--wrong); }
+  .kind-meaning { background: var(--tint); color: var(--teal); }
+  .topic-row th { text-align: start; background: var(--tint); font-family: var(--latin); font-weight: 600; }
+  .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }`,
   },
 };
 

@@ -6,7 +6,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { GRAMMAR_UNITS, allGrammarSpoken, grammarUnit, grammarUnitsForGrade, offeredGrammar, unitSentences } from '../englishGrammar.ts';
+import { GRAMMAR_UNITS, allGrammarSpoken, grammarUnit, grammarUnitsForGrade, offeredGrammar, renderGrammarSheet, unitSentences } from '../englishGrammar.ts';
+import { renderGrammarReviewHtml } from '../englishGrammarReview.ts';
 import { G10_ITEM_LESSONS } from '../englishGrammarG10Items.ts';
 import { GRAMMAR_ONLY_LESSONS, hubLesson } from '../englishHub.ts';
 
@@ -133,5 +134,31 @@ describe('Grade 10 authored lessons', () => {
   it('are in GRAMMAR_UNITS under Grade 10', () => {
     for (const id of ids()) assert.ok(GRAMMAR_UNITS.some(u => u.lessonId === id), id);
     assert.equal(grammarUnitsForGrade(10).length, ids().length);
+  });
+});
+
+describe('the Grade 10 teacher form', () => {
+  const html = renderGrammarReviewHtml(10);
+  const docs = (name: string) => readFileSync(new URL(`../../../../docs/${name}`, import.meta.url), 'utf8');
+  it('equals the committed form and sheet', () => {
+    assert.equal(docs('english-grammar-g10-review.html'), html);
+    assert.equal(docs('english-grammar-g10-sheet.md'), renderGrammarSheet(10));
+  });
+  it("prints each lesson's book statement and the first check, the lesson id without a grade prefix, and a kind for every item", () => {
+    for (const l of G10_ITEM_LESSONS) assert.ok(html.includes(l.statement.replace(/'/g, '&#39;')) || html.includes(l.statement), l.lessonId);
+    assert.ok(html.includes('تأكدوا أولًا'));
+    assert.ok(html.includes('الكلمات خارج قوائم المفردات'));
+    assert.equal(html.split('class="unit"').length - 1, 11);
+    assert.ok(html.includes('الصف العاشر'));
+    assert.ok(html.includes('>s1-nccd-u1_l5<'), 'the id shown without its kbl-eng- prefix');
+    assert.ok(!html.includes('>kbl-eng-'), 'no un-stripped id');
+    assert.equal((html.match(/<span class="kind kind-meaning"/g) ?? []).length, 206);
+    assert.equal((html.match(/<span class="kind kind-form"/g) ?? []).length, 234);
+  });
+  it('lists every sentence', () => {
+    for (const id of ids()) for (const x of sentencesOf(id)) assert.ok(html.includes(x.text.replace(/'/g, '&#39;')) || html.includes(x.text), x.text);
+  });
+  it('leaves the other grades alone', () => {
+    for (const g of [1, 2, 3, 4, 5, 9]) assert.equal(docs(`english-grammar-g${g}-review.html`), renderGrammarReviewHtml(g), `grade ${g}`);
   });
 });
