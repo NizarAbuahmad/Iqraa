@@ -2031,7 +2031,7 @@ function ParentContactSection({
       {text}
     </Text>
   );
-  const allGood = summary.quiet.length === 0 && summary.concernOnly.length === 0 && summary.unread.length === 0;
+  const allGood = summary.never.length === 0 && summary.quiet.length === 0 && summary.concernOnly.length === 0 && summary.unread.length === 0;
 
   return (
     <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, gap: 10, flexDirection: 'column', alignItems: 'stretch' }]}>
@@ -2056,6 +2056,12 @@ function ParentContactSection({
             <View style={{ gap: 6 }}>
               {label(t('parentContactsConcernOnly', String(summary.concernOnly.length)))}
               {names(summary.concernOnly, 'praise')}
+            </View>
+          )}
+          {summary.never.length > 0 && (
+            <View style={{ gap: 6 }}>
+              {label(t('parentContactsNever', String(summary.never.length)))}
+              {names(summary.never)}
             </View>
           )}
           {summary.quiet.length > 0 && (
