@@ -362,8 +362,8 @@ describe('the Grade 10 teacher form', () => {
     assert.ok(html.includes('الصف العاشر'));
     assert.ok(html.includes('>s1-nccd-u1_l5<'), 'the id shown without its kbl-eng- prefix');
     assert.ok(!html.includes('>kbl-eng-'), 'no un-stripped id');
-    assert.equal((html.match(/class="kind kind-meaning"/g) ?? []).length, 218);
-    assert.equal((html.match(/class="kind kind-form"/g) ?? []).length, 222);
+    assert.equal((html.match(/class="kind kind-meaning"/g) ?? []).length, 206);
+    assert.equal((html.match(/class="kind kind-form"/g) ?? []).length, 234);
   });
   it('lists every sentence', () => {
     for (const id of ids()) for (const x of sentencesOf(id)) assert.ok(html.includes(x.text.replace(/'/g, '&#39;')) || html.includes(x.text), x.text);
@@ -374,7 +374,7 @@ describe('the Grade 10 teacher form', () => {
 });
 ```
 
-(The class attribute on the kind chip is `class="kind kind-${s.kind}"` in `renderAuthoredUnit`; if the generated HTML spells it differently, match the real markup. The 218/222 counts come from the pinned sizes: 218 meaning + 222 form = 440.)
+(The chip counts below follow the pinned sizes in `SIZES` as Task 2 finally set them (206 meaning + 234 form = 440; Task 2 switched u5_l1 `arrangements-timetables` to form because every future form fits a fixed time); read the real totals from the test file and use those if they differ. The class attribute on the kind chip is `class="kind kind-${s.kind}"` in `renderAuthoredUnit`; if the generated HTML spells it differently, match the real markup. The 218/222 counts come from the pinned sizes: 218 meaning + 222 form = 440.)
 
 - [ ] **Step 2: Run to verify it fails** (`GRADE_COPY[10]` is undefined, so `renderGrammarReviewHtml(10)` throws).
 
@@ -465,7 +465,7 @@ git commit -m "Grade 10 grammar: the app plays the eleven lessons (tests)"
 
 - [ ] **Step 2: Browser check at 390 px, Arabic and English** (after the suite finishes). Build web (`cd artifacts/mobile && EXPO_PUBLIC_API_BASE_URL=http://localhost:8099/api EXPO_PUBLIC_DEMO_MODE=true pnpm run build:web`), serve with `WEB_PORT=8098 node e2e/serve.mjs` (note its pid; kill it afterwards). Unsigned: a Grade 10 lesson with words (`/curriculum/english/kbl-eng-s1-nccd-u3_l1`) shows no grammar cards; the Grade 10 index lacks Articles and its direct URL (`…/kbl-eng-s1-nccd-u1_l5`) says «lesson not found». Then temporarily set `reviewedBy: { name: 'LOCAL CHECK', date: '2026-10-23' }` on the eleven units in `englishGrammarG10.ts` (the `UNITS_G10` map) with the Edit tool, rebuild, and with a Playwright script in the scratchpad (model: `g9items-browser.mjs` and `hubonly-browser.mjs` there) check: Articles appears with the «grammar activities» row and only Choose, Build and True or false; a lesson with words keeps its word activities and gains the three grammar cards; no Yes or No; Choose/Build play the sentence after answering; True or false has no speaker button and plays nothing; a nine-word sentence wraps with no horizontal scroll; both languages render. Read the screenshots. Restore: `git checkout lib/curriculum/src/englishGrammarG10.ts`, kill the server, confirm `grep -rc "LOCAL CHECK"` finds no non-zero count and `git status --short` is clean.
 
-- [ ] **Step 3: Docs.** Add the entry «Grade 10 grammar (Semester 1) in the English corner — built, shown to nobody yet» at the top of `docs/status-log.md` (what was built: eleven lessons, 440 items, sub-topics, 218 meaning-decided and 222 form items, Articles grammar-only, the form's id regex, `GRADE_COPY[10]`; what was verified with the real counts; what was not: no teacher has read a sentence, no audio, no device, Semester 2 not covered; the teacher's open points, and the risky lessons) and the title as the first line of «Recent changes» in `STATUS.md` (drop the oldest line so it stays at 30; update «The log has N sections» by the same rule as the neighbouring lines). Change the spec's status line to «implemented (this PR)».
+- [ ] **Step 3: Docs.** Add the entry «Grade 10 grammar (Semester 1) in the English corner — built, shown to nobody yet» at the top of `docs/status-log.md` (what was built: eleven lessons, 440 items, sub-topics, 206 meaning-decided and 234 form items, Articles grammar-only, the form's id regex, `GRADE_COPY[10]`; what was verified with the real counts; what was not: no teacher has read a sentence, no audio, no device, Semester 2 not covered; the teacher's open points, and the risky lessons) and the title as the first line of «Recent changes» in `STATUS.md` (drop the oldest line so it stays at 30; update «The log has N sections» by the same rule as the neighbouring lines). Change the spec's status line to «implemented (this PR)».
 
 - [ ] **Step 4: Commit.**
 
