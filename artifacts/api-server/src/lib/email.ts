@@ -1,4 +1,5 @@
 import { logger } from "./logger.ts";
+import { guardianConsentBodyHtml, guardianConsentSubject } from "./guardianConsentEmail.ts";
 
 /**
  * Shared chrome for every outgoing mail: logo + bilingual wordmark/tagline up
@@ -350,4 +351,39 @@ export function renderAppInviteEmailHtml(link: string): string {
       <p>Questions or feedback? Write to <a href="mailto:info@iqrra.com" style="color:#006D65;">info@iqrra.com</a>.</p>
     </div>
   `);
+}
+
+/**
+ * The parent's approval mail. Same transport and failure posture as `sendVerificationEmail`: no key means no mail
+ * and `false`, and the link is logged outside production so local dev and the DB tests can follow it. In production
+ * only the address is logged, because the link is the credential.
+ */
+export async function sendGuardianConsentEmail(to: string, childFirstName: string, link: string): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    const loggable = process.env.NODE_ENV === "production" ? { to } : { to, link };
+    logger.warn(loggable, "RESEND_API_KEY not set — guardian consent email not sent");
+    return false;
+  }
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: process.env.RESEND_FROM_EMAIL ?? "Iqrra <onboarding@resend.dev>",
+        to,
+        subject: guardianConsentSubject,
+        html: renderEmailShell(guardianConsentBodyHtml(childFirstName, link)),
+      }),
+    });
+    if (!res.ok) {
+      logger.error({ to, status: res.status, body: await res.text() }, "resend send failed (guardian consent)");
+      return false;
+    }
+    return true;
+  } catch (err) {
+    logger.error({ err, to }, "resend send threw (guardian consent)");
+    return false;
+  }
 }
