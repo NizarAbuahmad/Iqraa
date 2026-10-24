@@ -10,6 +10,71 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## English audio on phones: clips are saved on the device and a lesson's clips are fetched ahead — 2026-10-24
+
+On a phone every tap streamed its clip from `pub-…r2.dev/english-audio/<slug>.mp3`, so a weak connection or the
+`r2.dev` rate limit (429) meant silence. Native only, and OTA-safe: `expo-file-system` (~19, already in the binary,
+the `File`/`Directory`/`Paths` API `exportPptx.ts` uses) — no new native module, no `app.json` change. The web is
+unchanged.
+
+- **Play from the phone first.** `playWord` on native plays the saved copy when there is one; otherwise the remote URL
+  exactly as before, and a copy is saved in the background (never waited for, never rejects). A first tap on a clip
+  therefore fetches it twice (the player streams it, the cache downloads it) — once per clip per phone.
+- **A lesson's clips ahead.** `prefetchLessonAudio(lessonId, { grammar })` (no-op on the web), from one effect on
+  `app/curriculum/english/[lessonId].tsx` when a visible lesson opens: its words, plus its grammar strings only once the
+  grammar is offered (signed). The effect's cleanup cancels it (leaving the lesson stops what has not started), and a
+  new prefetch takes over the previous one's unstarted items it also wants and drops the rest. **Two downloads in flight
+  for the whole cache** — every prefetch and every save after a tap share two slots, and a tap's save goes to the front
+  of the queue, including a clip a prefetch had already queued — so the
+  rate-limited link never sees more than two at once from one phone. The list is `lessonAudioTexts` in
+  `lib/curriculum/src/englishAudioPlan.ts` (new subpath `@workspace/curriculum/englishAudioPlan`): the lesson's words and
+  `unitSpoken`, so the silent True-or-false twins are never fetched. A test pins that every slug it returns is in
+  `audioPlan()` and that the lessons between them cover the whole plan.
+- **Tidy.** `<cache>/english-audio/v1/<slug>.mp3` (`AUDIO_CACHE_VERSION = 1`, `services/audioCachePolicy.ts`): on first use
+  every other entry under `english-audio/` (older or newer version folders, strays) is deleted, as are half-downloads and
+  files under 1 KB. Downloads land in `<slug>.mp3.part` and are renamed into place only when complete, ≥ 1 KB (the
+  smallest clip in the bucket's manifest is 2.7 KB) and starting like an MP3 (`looksLikeMp3`: an `ID3` tag or an MPEG
+  frame sync, read with `FileHandle.readBytes(3)`; 26 sampled clips from the bucket all start `ID3`). A 200 that is not
+  an MP3 (a block page) is dropped and remembered like a 404. The folder is re-created before each download, in case
+  the OS cleared it mid-session. Cap 40 MB (the manifest's 652 clips total 3.8 MB), least recently used first; "last used" is the file's
+  modification time, or a tap this session (kept in memory — neither platform's API sets a file's mtime).
+- **The rate-limited link.** In memory, for the session: a 404 is not fetched again in the background; a 429 pauses
+  **every** background fetch for 60 s (the limit is the link's, not the clip's). A tap with no saved copy always plays the
+  remote URL. The status is read out of `expo-file-system`'s download error message («response has status: 404» on
+  Android, «… status 429» on iOS).
+- **Where the logic is.** `services/audioCache.ts` (all decisions, over an injectable `FsLike`), `services/audioCacheStore.ts`
+  (the thin `expo-file-system` mapping, not loadable by `node --test`), `services/englishAudio.ts` (wiring).
+- **Checked:** new tests — `audioCachePolicy.test.ts` 16, `audioCache.test.ts` 34 (fake file system: hit/miss, a dropped
+  download leaves nothing playable, the 1 KB floor, an HTML 200 rejected and ID3 / frame-sync bodies kept, temp-then-rename,
+  LRU order and cap, version purge, the folder cleared mid-session, 404/429 memory with an injected clock, two prefetches
+  plus two taps never more than two in flight, a second prefetch dropping the first's unstarted items, cancel, cancel
+  then the same lesson in one tick, a newer prefetch taking over a queued clip, a tap jumping the queue (also for a clip
+  already queued) and staying wanted through a later prefetch's cancel, OS-cleared files, a file system that throws everywhere), `englishAudioPhone.test.ts` 8 (source pins:
+  the web branch still goes straight to `playRecordingOrSpeak(englishAudioUrl(word), word)`, prefetch is a no-op on web,
+  the URL and slug mapping are unchanged, the recorder's `playUri` is not routed through the cache, the screen calls
+  prefetch from one effect above its early return and returns its cancel), `lib/curriculum` `englishLessonAudio.test.ts` 7
+  (Grade 1, a Grade 9 grammar-only lesson, a Grade 10 Semester 2 lesson). Five mutations (floor removed; download straight
+  into the clip name; no global limit; no folder re-create; a prefetch overwriting a tap's claim) each failed the suite. `pnpm run typecheck` clean;
+  `lib/curriculum` tests 743/743 and `verify` 0 errors; the English and audio mobile tests 203/203; the full mobile suite
+  7,396 passed, 0 failed, 10 skipped (of 7,406; run before the review fixes, which touched only the cache files, the lesson
+  screen's effect and their tests). Web build at 390 px (Playwright, Chromium), also before the fixes: a Grade 1
+  lesson opens, makes **no** clip request on open, a Flashcards «Listen» requests `…/english-audio/bag.mp3` directly, and
+  with the clip answered 404 the browser voice says «bag» — as before; no `expo-file-system` warning on the web.
+- **Not checked:** no real Android or iOS device ran this — not the download, the rename, `Paths.cache`, the eviction or
+  the error-message parsing against the real module; all of it is exercised only against the fake. First-launch behaviour
+  on a phone (an empty cache: each tap streams and saves) is reasoned, not observed; so is the cost of the one folder
+  listing on first use (synchronous, on the JS thread) — to be measured on a device. A lesson opened on top of another
+  replaces its prefetch, and going back does not restart the first one (its clips then save as they are tapped). Prefetch does not look at the network
+  type: across the 118 hub lessons a lesson is 0–37 word clips (median 12), and 4–134 with its grammar once signed
+  (median 41), each a few KB.
+- **After a re-record:** bump `AUDIO_CACHE_VERSION` in `services/audioCachePolicy.ts` in the same PR, or phones keep the
+  old take (the slug does not change) until the OS clears their cache.
+- **Deliberately not done:** a phone speech fallback for a clip that does not exist needs `expo-speech` — a native module,
+  so an `app.json` `version` bump and a new build. The custom audio domain needs the owner to add it in Cloudflare R2; then it
+  is a one-line constant in `artifacts/mobile/services/englishAudio.ts` and `lib/curriculum/scripts/audit-english-audio.ts`
+  (`englishAudioLocation.test.ts` fails until both agree) — and an `AUDIO_CACHE_VERSION` bump is not needed for that, since
+  the cache is keyed by slug.
+
 ## Tests for the roster consent gate — 2026-10-24
 
 `lib/rosterConsent.ts` refuses a roster write (POST/PATCH/PUT/DELETE under `/classes` and `/students`) from a
