@@ -22,7 +22,7 @@ import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/ui/Button';
 import { RosterCodeClaimForm } from '@/components/RosterCodeClaimForm';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth, type RedeemResult } from '@/context/AuthContext';
 import { useJoinCodeLookup } from '@/hooks/useJoinCodeLookup';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { canSubmitSignup, claimErrorKey, parentNeedsOwnCode } from '@/services/claimCodeGate';
@@ -44,7 +44,7 @@ export function CodeSignupForm({ role, termsAccepted, lang, colors, isRTL, t }: 
   const lookup = useJoinCodeLookup();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [issued, setIssued] = useState<{ loginCode: string; finish: () => Promise<void> } | null>(null);
+  const [issued, setIssued] = useState<RedeemResult | null>(null);
   const [copied, setCopied] = useState(false);
   const [finishing, setFinishing] = useState(false);
 
@@ -115,6 +115,14 @@ export function CodeSignupForm({ role, termsAccepted, lang, colors, isRTL, t }: 
         <Text style={[styles.note, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
           {t('loginCodeSaveNote')}
         </Text>
+
+        {/* A class-code pick is held for the teacher: the account exists and the
+            code works, but no class is linked until they approve. */}
+        {issued.pending ? (
+          <Text style={[styles.note, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+            {t('claimWaitingSignupNote', issued.studentName ?? '')}
+          </Text>
+        ) : null}
 
         {error ? <ErrorBanner text={error} colors={colors} isRTL={isRTL} /> : null}
 
