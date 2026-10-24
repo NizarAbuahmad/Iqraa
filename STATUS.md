@@ -115,6 +115,7 @@ From session notes **(notes)**:
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
 - 2026-10-24 — Grade 10 grammar (Semester 2) in the English corner — built, shown to nobody yet
+- 2026-10-24 — Tests for the code-only account routes
 - 2026-10-24 — Printed grammar forms fit the page, sign-off no longer covers rows, and True or false says right or wrong without pictures
 - 2026-10-24 — Grade 10 grammar (Semester 1) in the English corner — built, shown to nobody yet
 - 2026-10-24 — Generator screens: Retry repeats the run, and the evaluations picker row
@@ -143,11 +144,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-22 — Live games: students answer from any device
 - 2026-10-22 — Status-bar icons read on the corner bands
 - 2026-10-22 — Grade 4 reading in the English corner — built, shown to nobody yet
-- 2026-10-22 — Game buttons read in dark mode
 
 ## Finding older detail, and recording new work
 
-- The log has 391 sections. Anything cited elsewhere as
+- The log has 396 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line

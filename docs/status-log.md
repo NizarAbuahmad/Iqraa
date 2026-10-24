@@ -128,6 +128,101 @@ URL says «lesson not found».** Spec: `docs/superpowers/specs/2026-10-24-englis
   sentences; then the unit's `reviewedBy` is set in `englishGrammarG10.ts`. The lesson appears in the Grade 10 index only once
   its unit is signed. Until audio exists the Semester 2 lessons would be spoken by the browser voice.
 
+## Tests for the code-only account routes — 2026-10-24
+
+`POST /auth/redeem`, `POST /auth/code-login` and `POST /auth/add-email` had no committed test: they were
+driven by hand when they shipped (see «Students choose an email or a teacher's code»). New
+`routes/__tests__/codeAccounts.db.test.ts` runs them against a real database through the built bundle,
+18 tests. Tests only; no production code changed.
+
+**What it pins:** a student's own code makes a code-only student linked `self`, named after the roster row,
+with `email`, `password_hash` and `guardian_confirmed_at` null; the login code is returned once and only its
+sha256 is stored; a taken student's code is a 409 and the refused sign-up leaves no user behind (the
+transaction rolls back); a parent gets a `guardian` link, named «ولي أمر» + the child, and a second parent may
+use the same per-student code; a class code needs a name picked (`claim_needs_name`), refuses a name not on that
+class (`claim_name_not_in_class`) and refuses a parent (`claim_parent_needs_student_code`); an unknown, expired,
+blank or whitespace code is one `claim_code_invalid`, and a missing role or missing terms is refused before any
+lookup; all three routes are closed with `student_accounts_disabled` when `STUDENT_ACCOUNTS` is off.
+`code-login` signs in with the code in any spelling (case, spaces, dashes), answers one 401 for wrong,
+malformed, missing or teacher-length codes, never accepts a teacher's code, reports a suspension only after the
+right code, and stamps `last_login`. `add-email` needs a session, a valid address and a strong password; stores
+the address trimmed and lower-cased, unverified, with a bcrypt hash and a verification token, leaves the login
+code working, keeps email-and-password sign-in refused until verified, leaves an account that already has an
+email untouched (`email_already_set`) and refuses an address another account holds (`email_taken`).
+
+**Verified:** the file passes 18/18 against a local Postgres 16; the whole api-server suite passes 2508/2508
+with `REQUIRE_DB_TESTS=true`. A mutation check: dropping `isNull(users.email)` from `add-email`'s update made
+exactly the `email_already_set` test fail; restored, the file passes again.
+
+**Not covered:** the rate limiters (`redeem`, `redeem-code`, `code-login`, `add-email-*` ceilings are not
+exercised), the two-students-redeem-at-once race on the row lock (needs concurrent requests; the `taken`
+refusal is covered, the interleaving is not), the class-thread sync after a redeem (it only logs on failure),
+and `POST /students/:id/links/:userId/login-code` (the reissue route, whose rule has its own unit test in
+`loginCodeReissue.test.ts`).
+
+## Math Corner exercises as homework — 2026-10-24
+
+**What a teacher does.** In a homework form, «لعبة أو تمارين من الدرس» (was «لعبة
+من الدرس») now offers «تمارين الرياضيات» on every maths lesson the Math Corner covers,
+beside the lesson's term games. The picker lists those lessons even when they have no
+key terms, so a Grade 1–9 maths class, which had almost no games, now has something to
+set. The homework's «النتائج» sheet shows each student's best exercises score and
+attempts, like a game («تمارين الرياضيات · محاولة · ٢ من ١٠»).
+
+**What a student sees.** The homework line reads «تمارين الرياضيات: <lesson>» with a
+calculator icon. It opens `/curriculum/math/exercises/<lessonId>?hw=<id>`, which starts
+in «اختبر نفسك»; each finished set is posted to the homework and the end card says
+whether it was sent (the games' `SendStatus`, now in `components/ui/SendStatus.tsx`,
+with a retry). The set also still counts for the Math Corner's own best score and the
+teacher's «تمارين الرياضيات» class sheet.
+
+**How.** `exercises` is a fourth homework "game": `GAMES` in
+`modules/homework/game.ts`, `HomeworkGameResource.game` in the schema (jsonb, no
+migration), `HomeworkGameName` in the app. Same attachment, same `game_results` row
+(best ratio, attempts), same tick on the homework, same results route. The server
+refuses `exercises` on a lesson that is not a catalog maths lesson (`isMathsLesson`).
+The app offers it only where the exercise bank covers the lesson
+(`homeworkGamesFor` → `resolveExerciseLesson`). `openResource` routes it to the Math
+Corner instead of `/play/lesson`. Labels go through `HOMEWORK_GAME_TITLE_KEY`.
+
+**Verified.** DB tests: exercises attach to a maths lesson and are refused on a history
+lesson (400); a student's `exercises` result saves, ticks the homework, and is 404 on a
+homework that did not attach it. App tests: `homeworkGamesFor` offers exercises exactly
+where `resolveExerciseLesson` covers the lesson, and a Grade 5 maths class's picker
+lists exercise-only lessons. In a browser against a throwaway database: the teacher's
+picker showed «تمارين الرياضيات» on «ضَرْبُ الأَعْدادِ»; the student opened it from
+«الواجبات», got test mode, finished 2/10, saw «أُرسلت نتيجتك إلى المعلم»; the teacher's
+list read «أنجزه 1 من 1» and the results sheet «سارة — ٢ من ١٠».
+
+**Not covered.** A web tab opened before this deploy drops the unknown `exercises`
+attachment from its list, and if it then saves the homework with `gamesIncluded: true`
+the exercises are detached; a reload fixes it. Android gets none of this until the
+1.5.0 build ships. A parent sees the line and the child's score and can open the
+exercises, but in learn mode with nothing posted: as with games, only the student's
+own finished set reports.
+
+
+## Chat app-help, twenty-third live pass: 13 more wordings for answers that already existed — 2026-10-24
+
+A 30-question pass on app.iqrra.com found 13 questions answered by the model for which the app
+already had a written answer: clearing the chat history (the model refused; `howChatHistory`
+says there is no history), the teacher's own objectives in a lesson plan (`howPlanOptions`),
+old teaching plans (the model sent the teacher to a non-existent «أدوات الذكاء الاصطناعي» tab;
+`howTeachingPlan`, a new rule block for the `teaching-plans` place), downloading the teacher's
+book, opening a lesson from a book, finding a lab experiment, the Math Corner's formulas and unit
+converter (the model had read «القوانين والصيغ» as angles), opening the Quran corner, sending the
+link code to parents, entering paper-exam marks by hand (`howEditMark`), finding struggling
+students after an exam (`howSupportGroups`) and preparing a remedial worksheet for them
+(`howRemedial`, which the model had answered by asking which subject). No new answer strings;
+wordings added to existing rule ids in `appHelp.ts`, pinned in `appHelp.test.ts` with
+near-misses that stay with the model.
+
+**Left out on purpose:** «أتدرب على تمارين الدروس» (the exercises exist in the Math Corner only,
+so a bare ask about another subject would get the wrong place), «أعرف أن ولي الأمر ربط حسابه»,
+«أشاهد ما يراه الطالب في حسابه», «أنسخ رد إقرأ» and «أطبع خطة الدرس» (the generic
+copy-and-export text is accurate), and «أعدّل التهيئة في خطة الدرس» (only the tool card; the
+edit answer `faqA5` is a different wording and I did not widen it).
+
 ## Printed grammar forms fit the page, the sign-off no longer covers rows, and True or false says right or wrong without pictures — 2026-10-24
 
 Four small fixes found while building Grade 10 grammar (#1235); none changes a sentence, and no `-sheet.md` changed.

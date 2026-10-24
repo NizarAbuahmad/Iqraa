@@ -34,7 +34,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getChildSchedules, getMySchedule } from '@/services/familyScheduleApi';
 import { getChildHomework, getMyHomework, setHomeworkDone } from '@/services/homeworkApi';
 import { openResource } from '@/services/openResource';
-import { LESSON_GAME_TITLE_KEY } from '@/services/lessonGames';
+import { HOMEWORK_GAME_TITLE_KEY } from '@/services/lessonGames';
 import {
   ammanToday,
   allTrackedDone,
@@ -721,12 +721,12 @@ function HomeworkRow({
                 style={{ flexDirection: rowDir, alignItems: 'center', gap: SPACE.xs, paddingVertical: SPACE.xs }}
               >
                 {isGame ? (
-                  <Ionicons name="game-controller-outline" size={16} color={ACCENT} />
+                  <Ionicons name={r.game === 'exercises' ? 'calculator-outline' : 'game-controller-outline'} size={16} color={ACCENT} />
                 ) : (
                   <Ionicons name="attach-outline" size={16} color={ACCENT} />
                 )}
                 <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textAlign: align }}>
-                  {isGame ? `${t(LESSON_GAME_TITLE_KEY[r.game])}: ${r.title}` : r.title}
+                  {isGame ? `${t(HOMEWORK_GAME_TITLE_KEY[r.game])}: ${r.title}` : r.title}
                 </Text>
               </Pressable>
               {result ? (
