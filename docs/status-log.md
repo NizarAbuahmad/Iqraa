@@ -16,8 +16,8 @@ A student who signs up with an email and no teacher's code is, today, held by on
 the server half of a real gate: with `GUARDIAN_APPROVAL=true` such a student is held (403
 `guardian_approval_required`) until a parent approves by email. **The flag is off by default, and with it
 unset nobody sees a change:** no sign-up, sign-in or route behaves differently. Three things do happen on
-merge, flag or no flag: (1) the auth middleware reads one extra column, `users.guardian_approved_at`, on
-every authenticated request, so **migration 0018 must be applied before the new revision takes traffic**
+merge, flag or no flag: (1) the auth middleware (and the live-game join in `routes/live.ts`) reads one extra column,
+`users.guardian_approved_at`, on every authenticated request, so **migration 0018 must be applied before the new revision takes traffic**
 (`deploy.yml` migrates first); (2) `GET /auth/me` gains `guardianStatus`, which is `"not_required"` while the
 flag is off; (3) two paths, a password reset for an unverified account and a Google link of an unverified
 account, run a request-supersede that touches no rows when none exists. Design:

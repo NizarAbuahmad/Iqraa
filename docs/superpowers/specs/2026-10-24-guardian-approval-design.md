@@ -100,8 +100,8 @@ landed in all of those.
 
 **Parent page (public, no account).** `POST /guardian-consent/lookup` takes `{token}` and returns
 `{childFirstName, status}` where status is `open`, `expired`, `decided` or `invalid` (unknown, malformed and missing
-tokens, and superseded ones, all answer `invalid`; expired ones are told apart only as far as "this link does not
-work"); `POST /guardian-consent/decide` takes `{token, decision, confirmGuardian}`. There is no `GET` with a token:
+tokens, and superseded ones, all answer `invalid`; `expired` and `decided` are told apart from `invalid`, which is
+safe because seeing either takes the 256-bit token); `POST /guardian-consent/decide` takes `{token, decision, confirmGuardian}`. There is no `GET` with a token:
 `GET /guardian-consent/<token>` is a 404, so no state can change by GET and no token sits in a URL. Approving requires
 `confirmGuardian: true` («I am this child's parent or legal guardian»). The write is one conditional update
 (`… WHERE decided_at IS NULL AND superseded_at IS NULL AND expires_at > now() RETURNING`), so a token works once and

@@ -161,7 +161,7 @@ describeDb("parent approval for email students", () => {
       const token = await mkConsent(kid);
       const res = await decide(on, token, { decision: "declined" });
       assert.equal(res.status, 200, res.text);
-      const [u] =await q<{ guardian_approved_at: Date | null }>(`SELECT guardian_approved_at FROM users WHERE id = $1`, [kid]);
+      const [u] = await q<{ guardian_approved_at: Date | null }>(`SELECT guardian_approved_at FROM users WHERE id = $1`, [kid]);
       assert.equal(u.guardian_approved_at, null);
       const [c] = await q<{ decision: string; decided_at: Date }>(`SELECT decision, decided_at FROM guardian_consents WHERE token_hash = $1`, [sha(token)]);
       assert.equal(c.decision, "declined");
