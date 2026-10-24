@@ -6,6 +6,7 @@ import * as storage from './secureStorage';
 import { fetchWithTimeout } from './fetchWithTimeout';
 import { originHeaders } from './clientPlatform';
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, isSessionLost } from './sessionLoss';
+import { isGuardianRequiredBody } from './guardianApproval';
 
 const LOCAL_DEV_API = 'http://localhost:8080/api';
 
@@ -112,6 +113,14 @@ let _refreshInFlight: Promise<string | null> | null = null;
 
 export function setOnRefreshFailed(cb: () => void) {
   _onRefreshFailed = cb;
+}
+
+let _onGuardianRequired: (() => void) | null = null;
+
+/** Called when an authenticated call is answered 403 `guardian_approval_required`: the server is holding this
+ *  student for a parent's approval, so the app should re-read /auth/me and let the gate move them. */
+export function setOnGuardianRequired(cb: (() => void) | null) {
+  _onGuardianRequired = cb;
 }
 
 /**
@@ -227,6 +236,13 @@ export async function apiFetch(
     // failure and the screen would keep a signed-in user that every request
     // refuses. A failed refresh already reported itself.
     if (isSessionLost(path, hadRefreshToken)) _onRefreshFailed?.();
+  }
+
+  if (res.status === 403 && _onGuardianRequired) {
+    // A clone, so the caller can still read the body. Fire and forget: nothing waits on this.
+    void res.clone().text().then(text => {
+      if (isGuardianRequiredBody(text)) _onGuardianRequired?.();
+    }).catch(() => {});
   }
 
   return res;
