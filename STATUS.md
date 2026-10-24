@@ -29,7 +29,7 @@ Checked 2026-10-22:
 - **Database:** Neon Postgres, **Launch plan since 2026-10-23** (was Free: 100 compute-hours a
   month, 30.92 used, after which Neon suspends the compute), autoscaling 0.25-0.5 CU, scale to
   zero on, $10 spend alert — see «Neon leaves the Free plan before launch» in the log and the
-  first item under *Open*. The schema deploys as migrations (11 files in
+  first item under *Open*. The schema deploys as migrations (17 files in
   `lib/db/migrations`); `verify-schema` runs before every API deploy.
 - **Live config** (plain env on the service): `AI_LIVE_MODE=true`; models `gpt-5.4-mini`
   for generation and for chat (`AI_MODEL_DOCUMENTS`, which would move lesson plans,
@@ -58,12 +58,26 @@ Checked 2026-10-22:
 
 ## Open
 
+- **A student can sign up with an email and no teacher's code — the legal wording needs a person
+  to read it before this merges.** The privacy policy §5 and terms §1 (`constants/legal.ts`,
+  `LEGAL_VERSION` 2026-10-23) now say a student may join with an email after confirming they are
+  an adult or have a guardian's agreement; they were drafted, not reviewed by a lawyer, and the
+  store declaration (`lib/features.ts` comment) still describes accounts made only through a
+  class. Merging deploys it, and every user is asked to accept the new version. Becoming a
+  student by switching role asks for the same confirmation as signing up as one. Entry:
+  «Students choose an email or a teacher's code» in the log.
 - **Neon is on Launch (applied 2026-10-23 by the owner); two checks remain.** Autoscaling 0.25-0.5
   CU, scale to zero on: about $10 a month expected, about $39 at most (estimates; read Neon's
   Usage page weekly for a month). Check `pooled` on `GET /api/healthz/pool` (admin key) once this
   deploys: if `false`, production's `DATABASE_URL` is a direct connection (218 direct
   connections at the 0.5 CU maximum, fewer when scaled down); switch the secret to the pooled
   string. Details and what is unverified: the log entry named above.
+- **The printed grammar review forms for Grades 3, 4, 5 and 9 clip their left-hand (last) columns
+  when printed in A4 landscape** (measured 2026-10-24: overhang 47, 690, 390 and 762 px): on Grades 4,
+  5 and 9 the tick box and notes column fall off the page (Grade 4 and 9 also the kind column); on
+  Grade 3 about a third of the notes column (its tick box stays); Grades 1, 2 and 10 fit (Grade 10
+  with its own print CSS). Fixing them alters their committed forms, so it is its own change. Entry: «Grade 10 grammar
+  (Semester 1) in the English corner» in the log.
 
 Checked 2026-10-22:
 
@@ -106,6 +120,9 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-24 — Grade 10 grammar (Semester 1) in the English corner — built, shown to nobody yet
+- 2026-10-24 — Generator screens: the toast clears the docked bar
+- 2026-10-23 — Students choose an email or a teacher's code
 - 2026-10-23 — Generator screens: Cancel then a refusal, and the banner contrast
 - 2026-10-23 — Generator screens: the slides
 - 2026-10-23 — Generator screens: the activity
@@ -133,13 +150,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-22 — A lesson game can be homework, and the teacher sees the scores
 - 2026-10-22 — Any deck plays as Class Challenge, with sound
 - 2026-10-22 — Progress is celebrated
-- 2026-10-22 — Math Corner exercises: learn or test yourself on a lesson from the book
-- 2026-10-22 — Grade 4 grammar in the English corner — built, shown to nobody yet
-- 2026-10-22 — Lesson games from a lesson's key terms
 
 ## Finding older detail, and recording new work
 
-- The log has 380 sections. Anything cited elsewhere as
+- The log has 383 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line

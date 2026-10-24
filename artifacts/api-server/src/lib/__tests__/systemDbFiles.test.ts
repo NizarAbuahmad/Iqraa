@@ -23,7 +23,7 @@ const ALLOWED: Record<string, string> = {
   "routes/moderation.ts": "admin-only: reads the reported thread's messages, which the admin is not a participant of",
   "routes/studentAttempt.ts": "a student takes an exam from a share link with no login, so no identity",
   "routes/messaging.ts": "a recipient's blocks and push tokens belong to the recipient, and a phone handed to another account re-registers a token that still belongs to the last one",
-  "routes/roster.ts": "reissuing a login code revokes that account's refresh tokens, which the app role cannot touch",
+  "routes/roster.ts": "reissuing a login code revokes that account's refresh tokens, and a rename re-derives a linked account's name — both write another user's row, which the app role cannot",
   "lib/evaluationAudience.ts": "read for link-based exams (no identity); an empty read means 'everyone', so it must not be filtered",
   "lib/inboxSummary.ts": "unreadTotals counts each recipient's whole inbox and honours their blocks for the push badge, run under the sender's identity, who cannot see either",
   "lib/classThread.ts": "reconciles who is in a class thread: a student claiming cannot see the thread or the other members' links",

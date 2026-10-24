@@ -34,6 +34,8 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/Button';
 import { PillSelector } from '@/components/ui/PillSelector';
+import { CheckRow } from '@/components/ui/CheckRow';
+import { switchNeedsAgeConfirmation } from '@/services/signupMethod';
 import { useAuth } from '@/context/AuthContext';
 import { useJoinCodeLookup } from '@/hooks/useJoinCodeLookup';
 import { RosterCodeClaimForm } from '@/components/RosterCodeClaimForm';
@@ -67,6 +69,10 @@ export default function ClaimRequiredScreen() {
   // at once instead of only after the separate "change type" button is pressed.
   const pendingRole: SwitchableRole = pickerOpen ? nextRole : role;
   const roleChanging = pendingRole !== role;
+  // Becoming a student asks what signing up as one asks: an adult, or a
+  // guardian's agreement. The server refuses the switch without it.
+  const [ageOk, setAgeOk] = useState(false);
+  const askAge = pickerOpen && switchNeedsAgeConfirmation(role, nextRole);
   // A teacher has no class code to enter, so there is nothing to show for one.
   const toTeacher = pendingRole === 'teacher';
   const roleLabel = (r: SwitchableRole) =>
@@ -100,10 +106,11 @@ export default function ClaimRequiredScreen() {
   const handleSwitchRole = async (): Promise<boolean> => {
     if (switching) return false;
     if (nextRole === role) { setPickerOpen(false); return true; }
+    if (askAge && !ageOk) { setError(t('errAgeConfirmRequired')); return false; }
     setSwitching(true);
     setError('');
     try {
-      await switchRole(nextRole);
+      await switchRole(nextRole, { ageConfirmed: askAge && ageOk });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setPickerOpen(false);
       // A teacher is not held by this gate at all, and nothing pushes them off
@@ -111,9 +118,9 @@ export default function ClaimRequiredScreen() {
       // A parent/student stays put: still unlinked, now reading its own wording.
       if (nextRole === 'teacher') router.replace('/(tabs)');
       return true;
-    } catch {
+    } catch (e) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(t('claimRequiredSwitchFailed'));
+      setError(t(e instanceof ApiError && e.code === 'age_confirmation_required' ? 'errAgeConfirmRequired' : 'claimRequiredSwitchFailed'));
       return false;
     } finally {
       setSwitching(false);
@@ -196,12 +203,19 @@ export default function ClaimRequiredScreen() {
                 haptics
                 containerStyle={{ marginBottom: 12 }}
               />
+              {askAge ? (
+                <View style={{ marginBottom: 12 }}>
+                  <CheckRow checked={ageOk} onPress={() => setAgeOk(v => !v)} isRTL={isRTL} colors={colors}>
+                    {t('ageConfirmLabel')}
+                  </CheckRow>
+                </View>
+              ) : null}
               <View style={[styles.roleActions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <Button
                   label={t('claimRequiredSwitchSubmit')}
                   onPress={handleSwitchRole}
                   loading={switching}
-                  disabled={nextRole === role || switching}
+                  disabled={nextRole === role || switching || (askAge && !ageOk)}
                   size="sm"
                 />
                 <Button
@@ -209,7 +223,7 @@ export default function ClaimRequiredScreen() {
                   variant="ghost"
                   size="sm"
                   disabled={switching}
-                  onPress={() => { setNextRole(role); setPickerOpen(false); }}
+                  onPress={() => { setNextRole(role); setAgeOk(false); setPickerOpen(false); }}
                 />
               </View>
             </View>
@@ -219,7 +233,7 @@ export default function ClaimRequiredScreen() {
                  may arrive a render later, and a picker left holding the
                  mount-time default would offer to change an account to the
                  role it already has. */
-              onPress={() => { setNextRole(role); setPickerOpen(true); }}
+              onPress={() => { setNextRole(role); setAgeOk(false); setPickerOpen(true); }}
               accessibilityRole="button"
               /* A button, not a link. This was a 13px line of text under the
                  e-mail address, and the request log showed testers who had
@@ -301,7 +315,7 @@ export default function ClaimRequiredScreen() {
           label={confirmed && !toTeacher ? t('joinConfirmYes') : t('claimRequiredSubmit')}
           onPress={handleSubmit}
           loading={submitting || switching}
-          disabled={toTeacher ? switching : !canSubmit || switching}
+          disabled={toTeacher ? switching : !canSubmit || switching || (askAge && !ageOk)}
           fullWidth
           style={{ marginTop: 24 }}
         />

@@ -27,6 +27,11 @@
  * under-describing is not. **Turning the flag back off, or changing what a
  * student account can reach, means editing this file in the same change.**
  *
+ * **A student may sign up with an email and no teacher's code (since
+ * 2026-10-23)**, confirming they are an adult or have a guardian's agreement
+ * (`users.guardian_confirmed_at`). §5 and terms §1 say so; if that path closes,
+ * they are wrong until rewritten. A parent still needs a teacher's code.
+ *
  * What the student surface actually is, and what §5 below relies on: messaging
  * and the curriculum tab. iQra and the AI tools are hidden from these roles and
  * refused server-side. A direct thread always has exactly one teacher and one
@@ -42,7 +47,7 @@
 export const LEGAL_CONTACT_EMAIL = 'info@iqrra.com';
 
 /** Shown on both documents. Bump when the text below changes materially. */
-export const LEGAL_LAST_UPDATED = { ar: '6 أيلول 2026', en: '6 September 2026' };
+export const LEGAL_LAST_UPDATED = { ar: '23 تشرين الأول 2026', en: '23 October 2026' };
 
 /**
  * The same date, as the version a new account records it accepted
@@ -51,7 +56,7 @@ export const LEGAL_LAST_UPDATED = { ar: '6 أيلول 2026', en: '6 September 20
  * an acceptance record naming a version the documents never carried is a
  * record of nothing.
  */
-export const LEGAL_VERSION = '2026-09-06';
+export const LEGAL_VERSION = '2026-10-23';
 
 export type LegalSection = { heading: string; body: string[] };
 export type LegalDoc = { title: string; intro: string; sections: LegalSection[] };
@@ -102,8 +107,8 @@ const PRIVACY_AR: LegalDoc = {
     {
       heading: '5) الطلبة والقاصرون',
       body: [
-        'يستطيع الطالب ووليّ الأمر إنشاء حساب في هذا الإصدار، ولا يتمّ ذلك إلّا برمز يمنحه المعلّم من قائمة صفّه — فلا يُنشأ حساب من خارج الصفّ. وهذا يعني أنّ قاصرين يحملون حسابات هنا ويسجّلون الدخول إليها.',
-        'ما يصل إليه حساب الطالب محصور في أمرين: مراسلة معلّمه، وتصفّح المنهاج. ولا يصل إلى أدوات المعلّم ولا إلى التوليد بالذكاء الاصطناعيّ.',
+        'يستطيع الطالب ووليّ الأمر إنشاء حساب في هذا الإصدار. فوليّ الأمر لا ينشئ حسابه إلّا برمز يمنحه المعلّم من قائمة صفّه، أمّا الطالب فينشئ حسابه بإحدى طريقتين: برمز المعلّم، أو ببريد إلكتروني دون رمز — وفي هذه الحالة الثانية يُقرّ بأنّه بالغ أو بأنّ وليّ أمره موافق على الحساب، ونحفظ وقت هذا الإقرار. وهذا يعني أنّ قاصرين يحملون حسابات هنا ويسجّلون الدخول إليها، وأنّ بعض الحسابات يُنشأ دون أن يعلم معلّم بوجوده.',
+        'ما يصل إليه حساب الطالب محصور في أمرين: مراسلة معلّمه، وتصفّح المنهاج. ولا يصل إلى أدوات المعلّم ولا إلى التوليد بالذكاء الاصطناعيّ. والحساب الذي أُنشئ ببريد إلكتروني لا يرى واجبات ولا اختبارات ولا رسائل حتى يدخل رمز صفّ معلّمه.',
         'كلّ محادثة فرديّة تضمّ معلّمًا واحدًا وطرفًا واحدًا غير معلّم، ومحادثة المجموعة للإعلانات فقط ما لم يسمح معلّمها بالكتابة. فلا توجد قناة بين طالب وطالب.',
         'ومع ذلك يُدخل المعلّم بيانات عن طلبته: أسماءهم، ورقم القيد إن أضافه، وملاحظته عن الطالب. هذه بيانات شخصية تخصّ قاصرين وإن لم يكن لهم حساب.',
         'قبل أن يُدخل المعلّم أيّ اسم، يُقرّ داخل التطبيق بأنّ مدرسته حصلت على موافقة وليّ الأمر اللازمة. نحفظ وقت الإقرار ونصّه، ونمنع إدخال بيانات الطلبة قبله.',
@@ -192,8 +197,8 @@ const PRIVACY_EN: LegalDoc = {
     {
       heading: '5) Students and minors',
       body: [
-        'Students and parents can hold an account in this release. One is created only with a code the teacher issues from their own class list, so no account is created from outside a class. This does mean minors hold accounts here and sign in to them.',
-        'A student account reaches two things and no more: messaging their teacher, and browsing the curriculum. It does not reach the teacher tools or any AI generation.',
+        'Students and parents can hold an account in this release. A parent creates one only with a code the teacher issues from their own class list. A student creates one either with that code, or with an email and no code — in which case they confirm that they are an adult or that a parent or guardian agrees to the account, and we record when. This does mean minors hold accounts here and sign in to them, and that some accounts are created without any teacher knowing.',
+        'A student account reaches two things and no more: messaging their teacher, and browsing the curriculum. It does not reach the teacher tools or any AI generation. An account created with an email sees no homework, exams or messages until it enters its teacher\'s class code.',
         'Every direct conversation has exactly one teacher and one non-teacher, and a group is announcement-only unless its owning teacher allows students to post. There is no student-to-student channel.',
         'Teachers do, however, enter data about their students: names, a register number if they add one, and the teacher\'s note. That is personal data about a minor whether or not the child has an account.',
         'Before a teacher can enter any name, they confirm in the app that their school has obtained the parental consent required. We record when they confirmed and the wording they were shown, and we block student data from being entered until they do.',
@@ -245,8 +250,8 @@ const TERMS_AR: LegalDoc = {
     {
       heading: '1) من يستطيع استخدام التطبيق',
       body: [
-        'التطبيق لمعلّمي المنهاج الوطني الأردني، ولطلبتهم وأولياء أمورهم ممّن انضمّوا برمز من المعلّم. حساب الطالب ووليّ الأمر للمراسلة وتصفّح المنهاج فقط.',
-        'يجب أن تكون بالغًا سنّ الرشد في بلدك لإنشاء حساب.',
+        'التطبيق لمعلّمي المنهاج الوطني الأردني، ولطلبتهم وأولياء أمورهم. ينضمّ وليّ الأمر برمز من المعلّم، وينضمّ الطالب برمز من المعلّم أو ببريد إلكتروني. حساب الطالب ووليّ الأمر للمراسلة وتصفّح المنهاج فقط.',
+        'يجب أن تكون بالغًا سنّ الرشد في بلدك لإنشاء حساب. وللطالب القاصر أن يستخدم حسابًا أُنشئ برمز من معلّمه، أو أنشأه بموافقة وليّ أمره.',
         'أنت مسؤول عن سرّية كلمة مرورك وعن كلّ ما يجري عبر حسابك.',
       ],
     },
@@ -320,8 +325,8 @@ const TERMS_EN: LegalDoc = {
     {
       heading: '1) Who may use the app',
       body: [
-        'The app is for teachers of the Jordanian national curriculum, and for their students and parents who joined with a code from their teacher. A student or parent account is for messaging and browsing the curriculum only.',
-        'You must be of the age of majority where you live to create an account.',
+        'The app is for teachers of the Jordanian national curriculum, and for their students and parents. A parent joins with a code from their teacher; a student joins with a code from their teacher or with an email. A student or parent account is for messaging and browsing the curriculum only.',
+        'You must be of the age of majority where you live to create an account. A student who is a minor may use an account created with a code from their teacher, or created with the agreement of their parent or guardian.',
         'You are responsible for keeping your password confidential and for everything done through your account.',
       ],
     },
