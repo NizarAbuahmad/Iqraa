@@ -52,12 +52,19 @@ export default function JoinClassScreen() {
   // earlier sees the waiting card instead of the form (hooks/useClaimWaiting.ts).
   const waiting = useClaimWaiting({
     adoptLinksOnMount: false,
-    onLinked: () => { markRosterClaimed(true); router.replace('/(tabs)'); },
+    onLinked: () => {
+      // The teacher approved while this card was up: same as a claim that linked at once.
+      markRosterClaimed(true);
+      void askForPushPermission({ explicit: false, copy: pushAskCopy(t) });
+      router.replace('/(tabs)');
+    },
   });
 
   const align = isRTL ? 'right' : 'left';
 
-  const canSubmit = canSubmitCode && !submitting;
+  // Not before the first read of the account's claims has settled: a held claim
+  // replaces the form with the waiting card, and the form must not be usable in between.
+  const canSubmit = canSubmitCode && !submitting && waiting.loaded;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -68,13 +75,22 @@ export default function JoinClassScreen() {
     try {
       const result = await claimRosterCode(code.trim(), roster ? studentId : undefined);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setJoined(true);
       if (result.status === 'pending') {
         // Held for the teacher: the class is not this account's yet, so the app
         // is not told it has a link (that would hide the school tab's "join a
         // class" prompt for an account that has none) and push is not asked.
-        setHeldForTeacher(true);
+        if (user?.hasRosterLink) {
+          // Adding a second class to an account that already has one: it is not
+          // stuck, and the waiting card could not tell its old link from an
+          // approval (a check would read the link as «approved»). Say it was sent.
+          setJoined(true);
+          setHeldForTeacher(true);
+        } else {
+          // Nothing linked yet: the student lands on the waiting card.
+          waiting.hold({ studentId: result.studentId, displayName: result.studentName });
+        }
       } else {
+        setJoined(true);
         // A student who signed up with an email arrives here with no link, so the
         // flag the app holds (and the school tab's "join a class" prompt) is
         // still false until told; see AuthContext.markRosterClaimed.

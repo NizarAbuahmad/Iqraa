@@ -481,6 +481,19 @@ export async function unclaimRoster(): Promise<void> {
   await readJson(res, 'Unlinking account');
 }
 
+/**
+ * Withdraws only this account's waiting request, never a link — the waiting card's
+ * "pick a different name". The teacher may have approved since the card last
+ * looked, and `unclaimRoster` would delete that fresh link. Answers whether the
+ * account has a link afterwards (true = it was approved meanwhile).
+ * `DELETE /auth/claim?pendingOnly=1`.
+ */
+export async function withdrawPendingClaim(): Promise<{ hasRosterLink: boolean }> {
+  const res = await apiFetch('/auth/claim?pendingOnly=1', { method: 'DELETE' });
+  const data = await readJson<{ hasRosterLink?: boolean }>(res, 'Withdrawing request');
+  return { hasRosterLink: data.hasRosterLink === true };
+}
+
 export interface ParentContact {
   kind: string;
   channel: 'in_app' | 'share' | 'copy';

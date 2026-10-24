@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { Surface } from '@/components/ui/Surface';
 import type { TranslationKey } from '@/services/i18n';
 import { ICON } from '@/constants/icons';
+import { readableOn } from '@/services/readableColor';
 import { SPACE, TYPE } from '@/constants/theme';
 
 interface Props {
@@ -31,7 +32,7 @@ export function ClaimWaitingCard({ studentName, checking, error, onCheck, onChan
   return (
     <Surface style={styles.card}>
       <View style={[styles.head, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <Ionicons name="time-outline" size={ICON.xl} color={colors.primary} />
+        <Ionicons name="time-outline" size={ICON.xl} color={readableOn(colors.primary, colors.card, 3)} />
         <Text
           accessibilityRole="header"
           style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}

@@ -72,7 +72,9 @@ export default function ClaimRequiredScreen() {
   const [switching, setSwitching] = useState(false);
 
   const align = isRTL ? 'right' : 'left';
-  const canSubmit = canSubmitCode && !submitting;
+  // Not before the first read of the account's claims has settled: a held claim
+  // replaces the form with the waiting card, and the form must not be usable in between.
+  const canSubmit = canSubmitCode && !submitting && waiting.loaded;
   // What the picker currently points at, applied or not. Everything below the
   // card reads this rather than `role`, so choosing a type reshapes the screen
   // at once instead of only after the separate "change type" button is pressed.
@@ -301,16 +303,27 @@ export default function ClaimRequiredScreen() {
         )}
 
         {screen.mode === 'waiting' && !toTeacher ? (
-          <ClaimWaitingCard
-            studentName={screen.studentName}
-            checking={waiting.checking}
-            error={waiting.error}
-            onCheck={() => void waiting.check()}
-            onChange={() => void waiting.change()}
-            colors={colors}
-            isRTL={isRTL}
-            t={t}
-          />
+          <>
+            {/* The screen-level error (a saved-account switch that failed) is shown here too. */}
+            {error ? (
+              <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', marginBottom: 16 }]}>
+                <Ionicons name="alert-circle" size={16} color={colors.destructive} />
+                <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                  {error}
+                </Text>
+              </View>
+            ) : null}
+            <ClaimWaitingCard
+              studentName={screen.studentName}
+              checking={waiting.checking}
+              error={waiting.error}
+              onCheck={() => void waiting.check()}
+              onChange={() => void waiting.change()}
+              colors={colors}
+              isRTL={isRTL}
+              t={t}
+            />
+          </>
         ) : (
           <>
             {screen.declined && !toTeacher ? (
