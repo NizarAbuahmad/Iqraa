@@ -10,6 +10,40 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Printed grammar forms fit the page, the sign-off no longer covers rows, and True or false says right or wrong without pictures — 2026-10-24
+
+Four small fixes found while building Grade 10 grammar (#1235); none changes a sentence, and no `-sheet.md` changed.
+
+- **The printed forms clipped.** The forms are right-to-left and their tables are `nowrap`, so in A4 landscape the
+  widest row set the table width and the last columns were cut off the left edge of the page. Measured in
+  Chromium print media at 1032 px (cell edge off the page before → after): Grade 3 38 → 0 px (a third of the notes
+  column), Grade 4 726 → 0 (tick, notes and yes/no columns), Grade 5 403 → 0 (notes), Grade 9 799 → 0 (kind,
+  tick, notes); Grades 1 and 2 already fit; Grade 10 got the same fix in #1235. Pages: Grade 3 45 → 34, 4 57 → 54, 5
+  42 → 44, 9 93 → 96. Every rule is inside `@media print`: at 390 px the screen layout is byte-for-byte what it was.
+- **The sign-off box covered the last rows.** The unit was a grid in print, so when its table ran onto a second page
+  the verdict and signature box was drawn over the last one to three rows (their sentences and tick boxes) and
+  left blank pages. Measured over the 7 grammar and 4 reading forms: 86 overlapping sign-offs and 11 blank pages
+  before, 0 and 0 after; page counts unchanged except reading Grade 2 (33 → 32) and Grade 4 (41 → 39), where the
+  blank pages went. This existed in every form from Grade 1 on.
+- **Arabic «و» glued to an English word.** The notes wrote «وafter»; the English run is an LTR span and the «و»
+  rendered like a stray letter. `ltr()` now puts a space after a standalone «و» before a Latin letter (and four
+  hand-written strings and the Grade 4 reading form's three leftovers are spaced). The rendered text of every
+  grammar and reading form has 0 glued cases; a test scans all of them. The changed docs differ from the old only by
+  inserted spaces (and the print rules): grammar Grades 1–5, 9 and reading Grades 2–4.
+- **True or false and Yes or No subtitles assumed a picture.** On the lesson screen True or false said «Does the
+  sentence match the picture?» and Yes or No said «Pick the answer that fits the picture» on lessons with none. Now a
+  lesson whose right-or-wrong questions have no picture says «Is the sentence right or wrong?» (every Grade 5, 9 and
+  10 lesson, Grade 4 Semester 1 Unit 4 and the picture-free Grade 3 and 4 lessons), and Yes or No on Grade 4 S1 U4
+  and Grade 9 S1 U4 says «Pick the right answer to the question». The rule is a pure helper pinned by tests against
+  the real lesson data.
+
+**Verified:** curriculum 688 tests, focused mobile suites 130, root typecheck; the print measurements above in
+Chromium; page images read for one page of every grade (Grade 3 page 6 shows the sign-off under row 40 with rows
+36–40 legible). **Not verified:** other browsers' print engines and a real printer (only Chromium's PDF output was
+measured); the lesson-screen subtitles in a browser (tested as data, not as a screenshot). **Known limit:** the
+teacher sheets (`-sheet.md`) still describe True or false as «beside its own picture», which is wrong for Grades 5, 9
+and 10; changing it would rewrite those committed sheets, so it is left for a later change.
+
 ## Roster: edit a student, and see which account holds each name — 2026-10-23
 
 The pencil on a roster row used to open only the note; a teacher could not fix a misspelt name
