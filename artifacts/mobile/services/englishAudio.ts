@@ -13,17 +13,64 @@
  *
  * Never rejects. A word that will not play is still on screen to be read, and
  * an error banner over a flashcard helps nobody.
+ *
+ * On a phone a clip is played from a copy saved on the device when there is one
+ * (`audioCache.ts`), and a lesson's clips are fetched ahead when it opens
+ * (`prefetchLessonAudio`), so a weak connection or the `r2.dev` rate limit no
+ * longer means silence on every tap. The web is untouched: the browser caches
+ * the files itself, and its path below must stay exactly as it was
+ * (`englishAudioPhone.test.ts`).
  */
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 import { Platform } from 'react-native';
 import { audioSlug } from '@workspace/curriculum/englishHub';
+import { lessonAudioTexts } from '@workspace/curriculum/englishAudioPlan';
 import { playRecordingOrSpeak } from './wordSpeech';
 import { claimAudio, registerAudioStop } from './audioExclusive';
+import { englishAudioCache } from './audioCacheStore';
 
 export const ENGLISH_AUDIO_BASE_URL = 'https://pub-d9ddd8f74e734a21824518b812652124.r2.dev/english-audio';
 
 export function englishAudioUrl(word: string): string {
   return `${ENGLISH_AUDIO_BASE_URL}/${audioSlug(word)}.mp3`;
+}
+
+/** The phone's saved clips, keyed by slug; the remote object for a slug has the same name. */
+const cache = () => englishAudioCache(slug => `${ENGLISH_AUDIO_BASE_URL}/${slug}.mp3`);
+
+/**
+ * What a phone plays for `word`: the saved copy if there is one; otherwise the
+ * remote file, exactly as before, while a copy is saved in the background for
+ * next time. Never waits for that download and never throws.
+ */
+function nativeSource(word: string): { uri: string } {
+  const remote = englishAudioUrl(word);
+  try {
+    const slug = audioSlug(word);
+    const local = cache().localUri(slug);
+    if (local) return { uri: local };
+    void cache().save(slug);
+  } catch {
+    // No cache this session: the network, as before.
+  }
+  return { uri: remote };
+}
+
+/**
+ * Fetches a hub lesson's clips onto the phone in the background, two at a time,
+ * so its activities play without the network. Called once when the lesson
+ * screen opens; fire-and-forget. `grammar: false` while the lesson's grammar is
+ * not offered (no teacher has signed it), so only the words are fetched.
+ * Nothing on the web — the browser has its own cache.
+ */
+export function prefetchLessonAudio(lessonId: string, opts: { grammar?: boolean } = {}): void {
+  if (Platform.OS === 'web') return;
+  try {
+    const slugs = lessonAudioTexts(lessonId, opts).map(audioSlug);
+    void cache().prefetch(slugs).catch(() => {});
+  } catch {
+    // A lesson that cannot be fetched ahead still plays from the network.
+  }
 }
 
 let player: AudioPlayer | null = null;
@@ -55,7 +102,9 @@ registerAudioStop('word', () => {
  * instead of staying silent (`wordSpeech.ts` — `expo-audio`'s web player cannot
  * report a failed load, so the web path drives its own element). Native has no
  * such fallback: a word whose file is missing is still silent there until the
- * recording script is re-run.
+ * recording script is re-run. Native does play a saved copy first
+ * (`nativeSource`); a tap with no copy always tries the network, even for a
+ * clip the background fetchers have been told to leave alone.
  */
 export async function playWord(word: string): Promise<void> {
   try {
@@ -72,7 +121,7 @@ export async function playWord(word: string): Promise<void> {
       // "listen" with the switch on would hear nothing and learn nothing.
       await setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
     }
-    const source = { uri: englishAudioUrl(word) };
+    const source = nativeSource(word);
     if (player) player.replace(source);
     else player = createAudioPlayer(source);
     await player.seekTo(0);
