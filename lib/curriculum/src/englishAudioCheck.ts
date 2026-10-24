@@ -231,14 +231,19 @@ export function compareSpoken(expected: string, heard: string): Comparison {
 
 // ─── Cost ──────────────────────────────────────────────────────────────────
 
-/** List prices per audio minute as of 2026-10; check OpenAI's page before a big run. */
+/**
+ * OpenAI's own per-audio-minute ESTIMATES as of 2026-10, for the audio only. The gpt-4o
+ * models bill by tokens (the audio, plus the prompt as text in and the transcript as text
+ * out), so on 1-2 second clips the real bill can be up to about double this. Nothing
+ * derived from it is a ceiling; check OpenAI's pricing page before a big run.
+ */
 export const PRICE_PER_MINUTE_USD: Record<string, number> = {
   'gpt-4o-transcribe': 0.006,
   'gpt-4o-mini-transcribe': 0.003,
   'whisper-1': 0.006,
 };
 
-/** The cost of transcribing this many seconds, or `null` when the model's price is not known. */
+/** The audio-only estimate for this many seconds (see `PRICE_PER_MINUTE_USD`), or `null` when the model's price is not known. */
 export function estimateCostUsd(totalSeconds: number, model: string): number | null {
   if (!Object.hasOwn(PRICE_PER_MINUTE_USD, model)) return null;
   const seconds = Number.isFinite(totalSeconds) && totalSeconds > 0 ? totalSeconds : 0;
@@ -248,7 +253,7 @@ export function estimateCostUsd(totalSeconds: number, model: string): number | n
 /**
  * The clips in the bucket are 40 kbps (processed) or 128 kbps (the first 201, as the model
  * returned them). The lower the bitrate, the MORE seconds the same bytes hold, so 40 is the
- * assumption that can only over-count: an upper bound on seconds and on cost. (128 would
+ * assumption that can only over-count the seconds (not the bill: see above). (128 would
  * under-count the processed clips by a factor of 3: apples.mp3, 4,437 bytes, is 0.84 s.)
  */
 export const ASSUMED_KBPS = 40;
@@ -369,6 +374,21 @@ export class StopRun extends Error {
   }
 }
 
+/**
+ * Thrown by `transcribe` when the request itself could not be made (no connection, a
+ * timeout) after its retries, as opposed to the API answering with an error. A run of
+ * `MAX_CONSECUTIVE_TRANSPORT_FAILURES` of them in a row means the host is unreachable.
+ */
+export class TransportError extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = 'TransportError';
+  }
+}
+
+/** Ten clips in a row that could not reach the API: stop, instead of spending five attempts on every clip. */
+export const MAX_CONSECUTIVE_TRANSPORT_FAILURES = 10;
+
 /** An error's text for a report, with anything shaped like an API key removed. */
 function describeError(e: unknown): string {
   const text = e instanceof Error ? e.message : String(e);
@@ -382,6 +402,9 @@ function describeError(e: unknown): string {
  * takes a new clip; the clip that raised it gets no result, clips already finished
  * keep theirs, and `stopped` is true (so `results` may be shorter than `items`) with
  * `stopReason` the message of the first `StopRun` (key-shaped text removed).
+ * `MAX_CONSECUTIVE_TRANSPORT_FAILURES` `TransportError`s from `transcribe` in a row stop the
+ * run the same way («the transcription API is unreachable»); any other outcome of a
+ * transcription, a good transcript or an answer from the server, resets that count.
  * A transcript with nothing in it is not cached, so a re-run tries that clip again.
  */
 export async function checkClips(
@@ -393,6 +416,7 @@ export async function checkClips(
   let done = 0;
   let stopped = false;
   let stopReason: string | undefined;
+  let transportFailures = 0;
 
   const one = async (item: AudioItem): Promise<CheckResult | StopRun> => {
     try {
@@ -400,7 +424,19 @@ export async function checkClips(
       if (clip === 'missing') return { item, heard: '', verdict: 'missing' };
       let heard = cacheHit(deps.cache, item.slug, clip.size, clip.etag);
       if (heard === null) {
-        heard = await deps.transcribe(clip.bytes, item);
+        try {
+          heard = await deps.transcribe(clip.bytes, item);
+          transportFailures = 0;
+        } catch (e) {
+          if (e instanceof TransportError) {
+            if (++transportFailures >= MAX_CONSECUTIVE_TRANSPORT_FAILURES) {
+              return new StopRun('the transcription API is unreachable');
+            }
+          } else {
+            transportFailures = 0;
+          }
+          throw e;
+        }
         if (normalizeSpoken(heard) !== '') deps.cache[item.slug] = { size: clip.size, etag: clip.etag, heard };
       }
       return { item, heard, verdict: compareSpoken(item.text, heard).verdict };
@@ -494,7 +530,18 @@ export function summarizeResults(results: CheckResult[]): string[] {
 /** One table cell: a pipe or a line break in a transcript must not break the row. */
 const cell = (text: string) => text.replace(/\r?\n|\r/g, ' ').replace(/\|/g, '\\|').trim();
 
-export function renderReportMarkdown(results: CheckResult[], meta: { model: string; date: string }): string {
+/** The Missing section lists this many slugs; the JSON report holds the rest. */
+export const MISSING_SHOWN = 50;
+
+/**
+ * `stopped` and `selected` say that the run ended early and how many clips it was meant to
+ * check, so the report never claims an all-clear it cannot back (a stopped run, or error
+ * rows, are not «nothing needs a listen»).
+ */
+export function renderReportMarkdown(
+  results: CheckResult[],
+  meta: { model: string; date: string; stopped?: boolean; selected?: number },
+): string {
   const problems = results.filter(r => r.verdict === 'mismatch' || r.verdict === 'silent');
   const missing = results.filter(r => r.verdict === 'missing');
   const errors = results.filter(r => r.verdict === 'error');
@@ -517,7 +564,19 @@ export function renderReportMarkdown(results: CheckResult[], meta: { model: stri
 
   lines.push('## To listen to (mismatch and silent)', '');
   if (problems.length === 0) {
-    lines.push('Nothing needs a listen.', '');
+    const checked = results.length - missing.length - errors.length;
+    const unchecked = errors.length > 0 ? ` ${errors.length} could not be checked (see below).` : '';
+    if (meta.stopped) {
+      const rest =
+        meta.selected !== undefined
+          ? `${Math.max(0, meta.selected - results.length)} of the ${meta.selected} selected were not checked.`
+          : 'the rest were not checked.';
+      lines.push(`No mismatch or silent among the ${checked} clips checked. The run was stopped; ${rest}${unchecked}`, '');
+    } else if (errors.length > 0) {
+      lines.push(`No mismatch or silent among the ${checked} clips checked, but${unchecked}`, '');
+    } else {
+      lines.push(`Nothing needs a listen (${checked} clips checked).`, '');
+    }
   } else {
     lines.push(
       tableLine(['Verdict', 'Expected', 'Heard', 'Slug', 'Grades']),
@@ -563,7 +622,17 @@ export function renderReportMarkdown(results: CheckResult[], meta: { model: stri
   }
 
   if (missing.length > 0) {
-    lines.push('## Missing from the bucket', '', ...missing.map(r => `- ${cell(r.item.slug)}`), '');
+    const shown = missing.slice(0, MISSING_SHOWN);
+    lines.push(
+      '## Missing from the bucket',
+      '',
+      `${missing.length} missing from the bucket` +
+        (missing.length > shown.length ? ` (first ${MISSING_SHOWN} shown; full list in the JSON)` : '') +
+        '.',
+      '',
+      ...shown.map(r => `- ${cell(r.item.slug)}`),
+      '',
+    );
   }
   if (errors.length > 0) {
     lines.push(

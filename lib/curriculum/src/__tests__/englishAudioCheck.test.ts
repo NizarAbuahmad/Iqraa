@@ -6,6 +6,7 @@ import {
   ASSUMED_KBPS,
   PRICE_PER_MINUTE_USD,
   StopRun,
+  TransportError,
   cacheHit,
   checkClips,
   compareSpoken,
@@ -916,5 +917,99 @@ describe('mergeRefreshed', () => {
     const stored = { a: entry('Old') };
     mergeRefreshed(stored, {}, [res('a', 'silent')]);
     assert.equal(stored.a.heard, 'Old');
+  });
+});
+
+describe('renderReportMarkdown: never an all-clear it cannot claim', () => {
+  const meta = { model: 'm', date: 'd' };
+  const ok = [r(mk('a'), 'a', 'match'), r(mk('b'), 'b', 'match')];
+  it('says nothing needs a listen only when the run finished, with no error', () => {
+    const out = renderReportMarkdown(ok, meta);
+    assert.ok(out.includes('Nothing needs a listen'));
+    assert.ok(out.includes('2 clips checked') || out.includes('of the 2 clips'));
+  });
+  it('a stopped run does not claim all-clear and says the rest were not checked', () => {
+    const out = renderReportMarkdown(ok, { ...meta, stopped: true, selected: 5 });
+    assert.ok(!out.includes('Nothing needs a listen'));
+    assert.match(out, /No mismatch or silent among the 2 clips checked/);
+    assert.match(out, /3 of the 5 selected were not checked/);
+  });
+  it('error rows do not make an all-clear either', () => {
+    const out = renderReportMarkdown([...ok, r(mk('c'), '', 'error')], meta);
+    assert.ok(!out.includes('Nothing needs a listen'));
+    assert.match(out, /1 could not be checked/);
+  });
+  it('mismatches still list as before when stopped', () => {
+    const out = renderReportMarkdown([r(mk('chair'), 'Share.', 'mismatch')], { ...meta, stopped: true, selected: 2 });
+    assert.ok(out.includes('Share.'));
+    assert.ok(!out.includes('Nothing needs a listen'));
+  });
+});
+
+describe('renderReportMarkdown: the Missing section is capped', () => {
+  const missing = (n: number) => Array.from({ length: n }, (_, i) => r(mk(`m${i}`), '', 'missing'));
+  it('lists up to 50 and points at the JSON for the rest', () => {
+    const out = renderReportMarkdown(missing(60), { model: 'm', date: 'd' });
+    assert.match(out, /60 missing from the bucket/);
+    assert.match(out, /first 50 shown; full list in the JSON/);
+    assert.equal(out.split('\n').filter(l => /^- m[0-9]+$/.test(l)).length, 50);
+    assert.ok(!out.includes('- m59'));
+  });
+  it('lists all when there are 50 or fewer, with a count line and no cap note', () => {
+    const out = renderReportMarkdown(missing(3), { model: 'm', date: 'd' });
+    assert.match(out, /3 missing from the bucket/);
+    assert.ok(!out.includes('first 50 shown'));
+    assert.ok(out.includes('- m2'));
+  });
+});
+
+describe('checkClips: an unreachable host stops the run', () => {
+  const items = Array.from({ length: 30 }, (_, i) => mk(`c${i}`));
+  it('stops after 10 consecutive transport failures with its own reason', async () => {
+    let calls = 0;
+    const out = await checkClips(items, deps({ transcribe: async () => { calls++; throw new TransportError('fetch failed'); } }));
+    assert.equal(out.stopped, true);
+    assert.equal(out.stopReason, 'the transcription API is unreachable');
+    assert.equal(calls, 10);
+    assert.equal(out.results.length, 9);
+    assert.ok(out.results.every(x => x.verdict === 'error'));
+  });
+  it('a success in between resets the count', async () => {
+    let calls = 0;
+    const out = await checkClips(items.slice(0, 25), deps({
+      transcribe: async (_b, item) => {
+        calls++;
+        if (calls % 10 === 0) return item.text;
+        throw new TransportError('fetch failed');
+      },
+    }));
+    assert.equal(out.stopped, false);
+    assert.equal(out.results.length, 25);
+  });
+  it('an answer from the server, even an error, resets the count', async () => {
+    let calls = 0;
+    const out = await checkClips(items.slice(0, 25), deps({
+      transcribe: async () => {
+        calls++;
+        if (calls % 10 === 0) throw new Error('transcription API 400: bad audio');
+        throw new TransportError('fetch failed');
+      },
+    }));
+    assert.equal(out.stopped, false);
+    assert.equal(out.results.length, 25);
+  });
+  it('cache hits and missing clips do not count either way', async () => {
+    const cache: SpeechCache = {};
+    for (const it of items.slice(0, 5)) cache[it.slug] = { size: 100, etag: '"e"', heard: it.text };
+    let calls = 0;
+    const out = await checkClips(items.slice(0, 14), deps({ cache, transcribe: async () => { calls++; throw new TransportError('x'); } }));
+    // 5 cached, 9 failures: not yet 10 in a row
+    assert.equal(out.stopped, false);
+    assert.equal(calls, 9);
+  });
+  it('an ordinary StopRun keeps its own reason', async () => {
+    const out = await checkClips(items.slice(0, 3), deps({ transcribe: async () => { throw new StopRun('401: bad key'); } }));
+    assert.equal(out.stopped, true);
+    assert.match(out.stopReason ?? '', /401: bad key/);
   });
 });

@@ -9,9 +9,16 @@
  *
  *   pnpm --filter @workspace/curriculum run english-audio-check [-- <flags>]
  *
- *   --dry-run          no key and no transcription: `HEAD` every selected clip, print how
+ * First run, in this order: `-- --dry-run --source word`, then `-- --source word --limit 50`
+ * (read the report), then `-- --source word`. Today that is about 1,248 transcriptions
+ * (the hub words) and roughly 15-20 minutes. The 3,383 grammar sentences are not voiced
+ * yet: a run without `--source word` asks the bucket for each, is answered 404 and lists
+ * them under «Missing». Once they are voiced the full run is about 4,600 transcriptions
+ * and roughly 30-50 minutes. The first report may be noisy (see the limits below).
+ *
+ *   --dry-run         no key and no transcription: `HEAD` every selected clip, print how
  *                      many exist, their bytes, an upper bound on the audio minutes and
- *                      the estimated cost. Run this first.
+ *                      an estimate of the cost (audio only; see Cost below). Run this first.
  *   --only a,b         just these (slugs, or the words themselves → `audioSlug`)
  *   --grade N          just the recordings a grade N lesson or grammar unit uses
  *   --source word|grammar   just hub words, or just grammar strings
@@ -55,21 +62,27 @@
  *  - `close` (an inflection ending on a long word, a word or two in a long text) is
  *    listed for a glance and never re-voiced by the line this prints. The `er`/`ing`
  *    endings can land a different word there (number/numb).
- *  - The first full run is about 4,600 requests and costs money. `PRICE_PER_MINUTE_USD`
- *    holds LIST prices as of 2026-10: check OpenAI's pricing page before a big run. The
- *    dry-run estimate assumes 40 kbps, the lowest bitrate in the bucket: a lower bitrate
+ *  - Cost. `PRICE_PER_MINUTE_USD` holds OpenAI's per-minute ESTIMATES as of 2026-10, for the
+ *    audio only. The gpt-4o models bill by tokens: the audio, plus the prompt as text in
+ *    and the transcript as text out, so on 1-2 second clips expect up to about double.
+ *    Check OpenAI's pricing page before a big run; no figure printed here is a ceiling.
+ *    The dry-run minutes assume 40 kbps, the lowest bitrate in the bucket: a lower bitrate
  *    holds MORE seconds in the same bytes, so for any clip (the first 201 are 128 kbps and
- *    shorter than their bytes suggest at 40) it can only over-count.
+ *    shorter than their bytes suggest at 40) it can only over-count the minutes.
+ *  - A host that cannot be reached at all stops the run after 10 clips in a row fail to
+ *    connect (exit 2, «the transcription API is unreachable»), not after every clip has
+ *    burned its five attempts.
  *  - The public r2.dev link rate-limits; the fetch inherits the audit's backoff. Node's
  *    `fetch` may ignore `HTTPS_PROXY`; behind a proxy run with `NODE_USE_ENV_PROXY=1`.
  */
-import { constants, copyFileSync, existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { constants, copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { loadEnvFile } from '../../../scripts/load-env.mjs';
 import {
   StopRun,
+  TransportError,
   checkClips,
   estimateCostUsd,
   isPlausibleApiKey,
@@ -218,7 +231,7 @@ if (dryRun) {
   console.log(
     cost === null
       ? `  cost with ${model}: price unknown for this model`
-      : `  estimated cost with ${model}: at most $${cost.toFixed(cost < 1 ? 3 : 2)} (list price, check OpenAI's pricing page before a big run)`,
+      : `  estimated cost with ${model}: about $${cost.toFixed(cost < 1 ? 3 : 2)} (audio only; the gpt-4o models also bill the prompt and the transcript as text tokens, so expect up to about double on very short clips — check OpenAI's pricing page before a big run)`,
   );
   console.log('dry run: nothing was transcribed, no key was used, nothing was written.');
   process.exit(0);
@@ -280,8 +293,9 @@ async function transcribe(bytes: Uint8Array, item: AudioItem): Promise<string> {
       timeoutMs: TRANSCRIBE_TIMEOUT_MS,
     });
   } catch (e) {
-    // A transport error can quote what it was given (a header value); nothing of it gets out unscrubbed.
-    throw new Error(scrub(String((e as { message?: unknown } | null)?.message ?? e)));
+    // A transport error can quote what it was given (a header value); nothing of it gets out
+    // unscrubbed. It is a TransportError so ten in a row mean the host is unreachable.
+    throw new TransportError(scrub(String((e as { message?: unknown } | null)?.message ?? e)));
   }
   if (!res.ok) {
     const body = await res.text().catch(() => '');
@@ -307,6 +321,16 @@ async function transcribe(bytes: Uint8Array, item: AudioItem): Promise<string> {
 }
 
 // ─── The cache ────────────────────────────────────────────────────────────
+
+// A folder that does not exist would fail every cache save and then the report write, after
+// the money is spent: make them now, or stop now.
+for (const file of [cachePath, outPath]) {
+  try {
+    mkdirSync(path.dirname(file), { recursive: true });
+  } catch (err) {
+    fail(`cannot create the folder for ${file} (${(err as Error).message}). Nothing was sent.`);
+  }
+}
 
 let stored: SpeechCache = {};
 if (existsSync(cachePath)) {
@@ -394,7 +418,7 @@ const partial = stopped;
 const stopText = (run.stopReason || 'the transcription API refused the request').replace(/[.\s]+$/, '');
 const date = new Date().toISOString().slice(0, 10);
 
-const markdown = renderReportMarkdown(results, { model, date }).split('\n');
+const markdown = renderReportMarkdown(results, { model, date, stopped: partial, selected: selected.length }).split('\n');
 if (partial) {
   // After the title and its blank line.
   markdown.splice(
@@ -446,6 +470,12 @@ if (problems.length) {
   console.log(`\nre-voice them, after listening:\n  ${only}`);
 }
 const errored = results.filter(r => r.verdict === 'error');
+const closeRows = results.filter(r => r.verdict === 'close');
+const missingRows = results.filter(r => r.verdict === 'missing');
+if (closeRows.length) console.log(`\n${closeRows.length} close — see «Close: worth a glance» in ${outPath}`);
+if (missingRows.length) {
+  console.log(`\n${missingRows.length} missing from the bucket — voice them first (english-audio) or ignore; the report lists the first 50, the JSON all.`);
+}
 if (problems.length === 0 && errored.length === 0 && !partial) console.log('\nnothing needs a listen.');
 if (errored.length) {
   console.log(`\n${errored.length} could not be checked (re-run to retry): ${errored.slice(0, 5).map(r => `${r.item.slug}: ${r.detail ?? ''}`).join('; ')}`);

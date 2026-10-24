@@ -21,8 +21,10 @@ level but cannot tell what was said.
    `english-audio -- --only a,b,c` line for the mismatches.
 3. **The model is not told the expected text.** Passing it would bias the transcript towards agreeing and make the check
    prove nothing. Only a generic prompt («an English vocabulary word or sentence, British accent») and `language: en`.
-4. **Model `gpt-4o-transcribe` by default**, `--model` to change. Cost is small (clips average about 2 s; a full pass should be
-   under a dollar — the price is checked against OpenAI's current page before the first large run, not assumed).
+4. **Model `gpt-4o-transcribe` by default**, `--model` to change. Cost is small (clips average about 2 s; the 1,248
+   hub words come to roughly $0.15 of audio at OpenAI's per-minute estimate). The gpt-4o models bill by tokens, so the prompt and
+   the transcript add text tokens and on very short clips the bill can be up to about double that; the price is checked against
+   OpenAI's current page before the first large run, not assumed, and no printed figure is a ceiling.
 5. **A mismatch means «a person should listen», not «wrong».** Isolated single words are hard to transcribe (homophones, rare
    words such as «doughnut», «sitcom»). The report says so.
 6. **Honest limit.** It catches a wrong word, a dropped or added word, garbled or blank speech. It does **not** catch stress or
@@ -33,7 +35,8 @@ level but cannot tell what was said.
 `pnpm --filter @workspace/curriculum run english-audio-check [-- flags]`
 
 - **Input:** `audioPlan()` filtered by `--only a,b` (slugs or words), `--grade N`, `--source word|grammar`, `--limit N`; each
-  clip is downloaded from the public base URL with the audit's backoff (`Retry-After` honoured and capped, concurrency 6).
+  clip is downloaded from the public base URL with the audit's backoff (`Retry-After` honoured and capped). Clips are fetched and transcribed 3 at a time; only the dry run's `HEAD`
+  requests go 6 at a time.
   A clip that is missing from the bucket is reported as `missing`, not checked.
 - **Transcription:** `POST /v1/audio/transcriptions` (multipart, the MP3 as is, uploaded under the neutral name `clip.mp3`
   because the slug is the expected text), concurrency 3, retry on 429/5xx with backoff, stop at the first 401/403, unknown
@@ -62,7 +65,10 @@ level but cannot tell what was said.
   ignores it.
 - **Output:** a summary table (grade × source × verdict), then the mismatches and silents (expected / heard / slug), written
   also to `--out <file>` as Markdown and JSON (default `./english-audio-check.report.{md,json}`, git-ignored), and the
-  `--only` line. Exit code 0 always, unless `--fail-on-mismatch` (1) or a refusal from the API (2).
+  `--only` line. Exit code 0 always, unless `--fail-on-mismatch` (1: a mismatch, a silent clip **or an error row**, since an
+  unchecked clip is not a pass) or a refusal (2). A report written after a stop is headed PARTIAL, and no report claims an
+  all-clear when the run stopped or any clip errored. Ten clips in a row that cannot reach the API stop the run (2) as an
+  unreachable host.
 - **`--dry-run`:** counts the clips that would be sent and prints an estimated cost from the total audio seconds
   (read from the clip sizes), calls nothing, needs no key.
 - **Key:** `OPENAI_API_KEY` read from the repo-root `.env` through `loadEnvFile` (as the generator does) and never printed.
@@ -89,12 +95,18 @@ No app, server, schema or migration change; nothing is uploaded; no new dependen
   the same sound for each, and the comparison folds the group to one form, so a recording of the wrong member passes.
 - The `er` and `ing` inflection endings can make `close` land a different word (number / numb); the Close table is
   for a glance, not a verdict.
-- `PRICE_PER_MINUTE_USD` holds list prices as of 2026-10; check OpenAI's page before a big run. The dry-run estimate
-  assumes 40 kbps, the lowest bitrate in the bucket (a lower bitrate holds more seconds in the same bytes), so it can only
-  over-count; the live 1,248 hub words come to at most 24.5 minutes and $0.147.
+- `PRICE_PER_MINUTE_USD` holds OpenAI's per-minute estimates as of 2026-10, for the audio only; the gpt-4o models bill by
+  tokens, so expect up to about double on very short clips, and check OpenAI's page before a big run. The dry-run minutes
+  assume 40 kbps, the lowest bitrate in the bucket (a lower bitrate holds more seconds in the same bytes), so they can only
+  over-count; the live 1,248 hub words come to at most 24.5 minutes and about $0.147 for the audio alone.
+- The first report may be noisy. `close`/`mismatch` are strict on purpose; if a real run shows too many harmless rows the
+  strictness can be loosened by a flag later (none exists now).
 - A transcript with nothing in it is not cached, so a re-run asks about a silent clip again (it costs a fraction of a
   cent and may be a transient failure).
-- The first full run costs money and time (about 4,600 requests); the cache and `--dry-run` exist for that.
+- The first full run costs money and time. Today only the 1,248 hub words are voiced (the 3,383 grammar sentences are
+  not, and are answered 404 and listed under Missing): run `--dry-run --source word`, then `--source word --limit 50`, then
+  `--source word` (about 1,248 transcriptions, roughly 15-20 minutes). Once the sentences are voiced the full run is about
+  4,600 transcriptions and roughly 30-50 minutes. The cache and `--dry-run` exist for that.
 - The `r2.dev` link rate-limits; the check inherits the audit's backoff.
 
 ## Not done here

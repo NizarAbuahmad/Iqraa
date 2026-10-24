@@ -55,8 +55,12 @@ re-voices; it writes only a report and a cache and their `.tmp` / `.bak` files, 
   check's default bucket URL to the app's.
 
 **How to run it** (`pnpm --filter @workspace/curriculum run english-audio-check -- <flags>`; behind a proxy add
-`NODE_USE_ENV_PROXY=1`): `-- --dry-run` first (HEAD only, no key: counts, bytes, minutes, cost), then `-- --limit 20` and read
-the report, then the full run. A re-run pays only for clips whose size or ETag changed (and asks again about a silent one).
+`NODE_USE_ENV_PROXY=1`): `-- --dry-run --source word` first (HEAD only, no key: counts, bytes, minutes, a cost estimate), then
+`-- --source word --limit 50` and read the report, then `-- --source word`. **Today that is about 1,248 transcriptions and
+roughly 15-20 minutes** (3 in flight). The 3,383 grammar sentences are not voiced yet, so a run without `--source word` asks the
+bucket for each, is answered 404 and lists them under «Missing» (the Markdown lists the first 50 and says so; the JSON has all);
+once they are voiced the full run is about 4,600 transcriptions and roughly 30-50 minutes. A re-run pays only for clips whose
+size or ETag changed (and asks again about a silent one). The console also says how many rows were `close` or missing.
 
 **Verified.**
 - Offline end to end against a local fake server (OpenAI endpoint and bucket both faked; the real API was never called) with 6
@@ -78,7 +82,9 @@ the report, then the full run. A re-run pays only for clips whose size or ETag c
   stale transcript; a cache file that is not a cache is copied to `.bak` and replaced, with no `.tmp` left; `--fail-on-mismatch`
   exits 1 for a run whose only problem is an `error` row; an attempt that hangs is aborted at `timeoutMs` and retried.
 - The live bucket, read-only: `--dry-run --source word` found all 1,248 hub-word clips present (7.01 MB, **at most 24.5
-  minutes at an assumed 40 kbps, at most $0.147** at the list price). The first version assumed 128 kbps and printed 7.7
+  minutes at an assumed 40 kbps; about $0.147 for the audio alone** at OpenAI's per-minute estimate; the gpt-4o models bill by
+  tokens, so the prompt and the transcript add text tokens and the real bill on 1-2 s clips could be up to about double, not a
+  ceiling). The first version assumed 128 kbps and printed 7.7
   minutes and $0.046 as an «upper bound»; that was backwards: the same bytes hold MORE seconds at a lower bitrate, and the
   processed clips are 40 kbps (apples.mp3: 4,437 bytes, 0.84 s by ffprobe). 40 is the lowest bitrate in the bucket, so the
   estimate can only over-count. It is an estimate of seconds from bytes, not a measurement.
@@ -87,7 +93,8 @@ the report, then the full run. A re-run pays only for clips whose size or ETag c
 
 **Not done.** The real OpenAI transcription call has never been made: no key was used and nothing has been transcribed, so
 how `gpt-4o-transcribe` actually hears these clips (how many rows land in each table) is unknown. The prices in
-`PRICE_PER_MINUTE_USD` are list prices as of 2026-10 to check before a big run. The 3,383 grammar sentences are not voiced yet,
+`PRICE_PER_MINUTE_USD` are OpenAI's per-minute estimates as of 2026-10 for the audio only (the gpt-4o models bill by tokens, so
+expect up to about double on very short clips): check the pricing page before a big run. The 3,383 grammar sentences are not voiced yet,
 so there is nothing to check for them. Not in CI.
 
 **Honest limits.** It hears the word, not how it is said: accent and stress errors («EE-ray-ser» for «eraser») pass, because
@@ -97,6 +104,12 @@ sound the same to the recogniser and are folded to one form. The `er` and `ing` 
 Close table (number / numb). Contractions are not expanded («I'm» / «I am» differ), and «prise» / «prize» fold together. A
 transcription POST aborted by the 60 s timeout and retried could in theory be billed twice (OpenAI bills on completion; unlikely),
 and a body that stalls after the headers arrive is not retried (one `error` row). Left as
+they are: The first run may be
+noisy: the `close` and `mismatch` strictness is deliberate (a one-letter or one-word difference in a short text is the very
+confusion being looked for), and if a real run shows too many harmless rows it can be loosened by a flag later; no such flag
+exists now. A host that cannot be reached stops the run after 10 clips in a row fail to connect (exit 2, «the transcription API
+is unreachable»); a report written after a stop, or with error rows, never says «Nothing needs a listen». The output folders of
+`--cache` and `--out` are created before the first request. Left as
 they are: Ctrl+C exits with `process.exit` after saving the cache; `--out x.json` names its JSON `x.json.json`; the
 `--cache`/`--out` collision check is case-sensitive.
 
