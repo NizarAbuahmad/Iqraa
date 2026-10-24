@@ -20,7 +20,7 @@ const PROTECTED = [
 ] as const;
 
 /** RLS on, no policy, and no grant: only the owner connection (systemDb) can read them. */
-const LOCKED = ["email_verification_tokens", "password_reset_tokens", "refresh_tokens"] as const;
+const LOCKED = ["email_verification_tokens", "guardian_consents", "password_reset_tokens", "refresh_tokens"] as const;
 
 const DEFERRED = [
   "ai_artifact_reports", "ai_artifacts", "ai_generations", "class_resources", "competency_definitions",

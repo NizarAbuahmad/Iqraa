@@ -97,6 +97,12 @@ export const users = pgTable("users", {
    */
   guardianConfirmedAt: timestamp("guardian_confirmed_at", { withTimezone: true }),
   /**
+   * When a parent approved this student's account by email (`guardian_consents`). Null until then. Read by
+   * `api-server/src/lib/guardianGate.ts`; `guardianConfirmedAt` above is the older tick and is no longer written
+   * once `GUARDIAN_APPROVAL` is on.
+   */
+  guardianApprovedAt: timestamp("guardian_approved_at", { withTimezone: true }),
+  /**
    * Grade and subject catalog ids (`@workspace/curriculum`'s GRADES/SUBJECTS)
    * this teacher picked at signup. Empty on every non-teacher account, and on
    * a teacher who hasn't completed setup yet — that emptiness is the signal
@@ -211,6 +217,34 @@ export const emailVerificationTokens = pgTable("email_verification_tokens", {
   used: boolean("used").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+/**
+ * A parent's approval of a student's account. Owner-only like the other token tables: the parent has no account,
+ * so the public route reads it on `systemDb`, and no role the app uses has any grant on it.
+ *
+ * `tokenHash` and `expiresAt` stay null until the mail is issued: sign-up queues a request before the student has
+ * verified their own email, and the plaintext token must exist only when it is mailed (it is never stored).
+ * A student has one current request: a newer one sets `supersededAt` on the older.
+ */
+export const guardianConsents = pgTable(
+  "guardian_consents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    parentEmail: text("parent_email").notNull(),
+    tokenHash: text("token_hash").unique(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    decision: text("decision").$type<"approved" | "declined">(),
+    supersededAt: timestamp("superseded_at", { withTimezone: true }),
+  },
+  t => [
+    index("guardian_consents_user_idx").on(t.userId),
+    index("guardian_consents_parent_idx").on(t.parentEmail, t.createdAt),
+  ],
+);
 
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
