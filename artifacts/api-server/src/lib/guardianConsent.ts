@@ -51,7 +51,7 @@ export function hashConsentToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
-/** Shape check only, so a junk path segment never becomes a query. */
+/** Shape check only, so a junk value never becomes a query. */
 export function looksLikeConsentToken(t: unknown): t is string {
   return typeof t === "string" && /^[A-Za-z0-9_-]{43}$/.test(t);
 }

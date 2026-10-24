@@ -22,7 +22,10 @@ import {
   looksLikeConsentToken,
 } from "./guardianConsent.ts";
 
-/** The app's web origin: the mail links to `{base}/guardian/{token}`. */
+/**
+ * The app's web origin: the mail links to `{base}/guardian#{token}`. The token is in the URL fragment, which a browser
+ * never sends to a server, so it reaches no request log; the parent's page posts it in a body.
+ */
 function linkBase(): string {
   return (process.env.GUARDIAN_LINK_BASE ?? "https://app.iqrra.com").replace(/\/+$/, "");
 }
@@ -138,7 +141,7 @@ export async function issueAndSend(requestId: string): Promise<IssueResult> {
   if (!claimed) return { ok: false, reason: "already_issued" };
 
   const [kid] = await db.select({ firstName: users.firstName }).from(users).where(eq(users.id, cur.userId)).limit(1);
-  const emailSent = await sendGuardianConsentEmail(cur.parentEmail, kid?.firstName ?? "", `${linkBase()}/guardian/${token}`);
+  const emailSent = await sendGuardianConsentEmail(cur.parentEmail, kid?.firstName ?? "", `${linkBase()}/guardian#${token}`);
   if (emailSent) {
     await db.update(guardianConsents).set({ sentAt: new Date() }).where(eq(guardianConsents.id, cur.id));
   }

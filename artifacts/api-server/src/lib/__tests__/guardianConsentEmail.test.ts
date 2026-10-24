@@ -8,7 +8,7 @@ import { guardianConsentBodyHtml, guardianConsentSubject } from "../guardianCons
 // that CI's "Brand is «إقرأ»" check rejects under artifacts/*/src.
 const OLD_BRAND = String.fromCodePoint(0x00ab, 0x0627, 0x0642, 0x0631, 0x0623, 0x00bb);
 
-const LINK ="https://app.iqrra.com/guardian/AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-abcde";
+const LINK ="https://app.iqrra.com/guardian#AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-abcde";
 
 describe("guardianConsentBodyHtml", () => {
   const html = guardianConsentBodyHtml("سلمى", LINK);

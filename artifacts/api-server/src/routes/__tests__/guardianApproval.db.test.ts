@@ -14,6 +14,32 @@ import { hashResetCode } from "../../lib/passwordReset.ts";
 
 const sha = (s: string) => crypto.createHash("sha256").update(s).digest("hex");
 const newToken = () => crypto.randomBytes(32).toString("base64url");
+/**
+ * The public routes allow 30 requests a minute per IP, counted in the shared database, so one test process would
+ * spend the budget for everyone. Each call therefore arrives "from" its own address (the API trusts one proxy hop and
+ * reads the last X-Forwarded-For entry), except where a test passes `ip` to exercise the limiter itself.
+ */
+let nextIp = 0;
+const freshIp = () => `10.${(nextIp >> 16) & 255}.${(nextIp >> 8) & 255}.${nextIp++ & 255}`;
+async function postJson(server: TestServer, path: string, body?: unknown, ip: string = freshIp()) {
+  const res = await fetch(`${server.base}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Forwarded-For": ip },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const text = await res.text();
+  let json: any = null;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = null;
+  }
+  return { status: res.status, text, json };
+}
+/** The parent's page asks about a link, and answers it, with the token in a body: never in a path or a query. */
+const lookup = (server: TestServer, token: unknown, ip?: string) => postJson(server, "/guardian-consent/lookup", { token }, ip);
+const decide = (server: TestServer, token: unknown, body: Record<string, unknown>, ip?: string) =>
+  postJson(server, "/guardian-consent/decide", { token, ...body }, ip);
 
 describeDb("parent approval for email students", () => {
   let db: TestDb;
@@ -80,7 +106,7 @@ describeDb("parent approval for email students", () => {
     it("an open link shows the child's first name and nothing else", async () => {
       const kid = await mkUser("student");
       const token = await mkConsent(kid);
-      const res = await call(on, "GET", `/guardian-consent/${token}`);
+      const res = await lookup(on, token);
       assert.equal(res.status, 200, res.text);
       assert.deepEqual(res.json, { status: "open", childFirstName: res.json.childFirstName });
       assert.match(res.json.childFirstName, /^Kid\d+$/);
@@ -89,9 +115,17 @@ describeDb("parent approval for email students", () => {
 
     it("an unknown, malformed, expired, decided or superseded link says so", async () => {
       const kid = await mkUser("student");
-      const status = async (t: string) => (await call(on, "GET", `/guardian-consent/${t}`)).json.status;
+      const status = async (t: unknown) => (await lookup(on, t)).json.status;
       assert.equal(await status(newToken()), "invalid");
       assert.equal(await status("not-a-token"), "invalid");
+      // A missing or non-string token is an unknown token, never a 500.
+      assert.equal(await status(undefined), "invalid");
+      assert.equal(await status(null), "invalid");
+      assert.equal(await status({ $ne: "" }), "invalid");
+      assert.equal(await status(["a"]), "invalid");
+      const bare = await postJson(on, "/guardian-consent/lookup");
+      assert.equal(bare.status, 200);
+      assert.equal(bare.json.status, "invalid");
       assert.equal(await status(await mkConsent(kid, { expires: "-1 day" })), "expired");
       assert.equal(await status(await mkConsent(kid, { decided: "declined" })), "decided");
       assert.equal(await status(await mkConsent(kid, { superseded: true })), "invalid");
@@ -100,33 +134,33 @@ describeDb("parent approval for email students", () => {
     it("approving needs the parent's confirmation, a valid decision, and then unlocks the student once", async () => {
       const kid = await mkUser("student");
       const token = await mkConsent(kid);
-      const bad = await call(on, "POST", `/guardian-consent/${token}`, undefined, { decision: "maybe" });
+      const bad = await decide(on, token, { decision: "maybe" });
       assert.equal(bad.status, 400);
       assert.equal(bad.json.code, "decision_invalid");
-      const unticked = await call(on, "POST", `/guardian-consent/${token}`, undefined, { decision: "approved" });
+      const unticked = await decide(on, token, { decision: "approved" });
       assert.equal(unticked.status, 400);
       assert.equal(unticked.json.code, "guardian_confirmation_required");
       const [before] = await q<{ guardian_approved_at: Date | null }>(`SELECT guardian_approved_at FROM users WHERE id = $1`, [kid]);
       assert.equal(before.guardian_approved_at, null, "a refused approval changes nothing");
 
-      const ok = await call(on, "POST", `/guardian-consent/${token}`, undefined, { decision: "approved", confirmGuardian: true });
+      const ok = await decide(on, token, { decision: "approved", confirmGuardian: true });
       assert.equal(ok.status, 200, ok.text);
       assert.deepEqual(ok.json, { decision: "approved" });
       const [after] = await q<{ guardian_approved_at: Date | null }>(`SELECT guardian_approved_at FROM users WHERE id = $1`, [kid]);
       assert.ok(after.guardian_approved_at);
 
-      const again = await call(on, "POST", `/guardian-consent/${token}`, undefined, { decision: "approved", confirmGuardian: true });
+      const again = await decide(on, token, { decision: "approved", confirmGuardian: true });
       assert.equal(again.status, 410);
       assert.equal(again.json.code, "consent_link_unusable");
-      assert.equal((await call(on, "GET", `/guardian-consent/${token}`)).json.status, "decided");
+      assert.equal((await lookup(on, token)).json.status, "decided");
     });
 
     it("declining records the decision and leaves the account locked; it needs no confirmation tick", async () => {
       const kid = await mkUser("student");
       const token = await mkConsent(kid);
-      const res = await call(on, "POST", `/guardian-consent/${token}`, undefined, { decision: "declined" });
+      const res = await decide(on, token, { decision: "declined" });
       assert.equal(res.status, 200, res.text);
-      const [u] = await q<{ guardian_approved_at: Date | null }>(`SELECT guardian_approved_at FROM users WHERE id = $1`, [kid]);
+      const [u] =await q<{ guardian_approved_at: Date | null }>(`SELECT guardian_approved_at FROM users WHERE id = $1`, [kid]);
       assert.equal(u.guardian_approved_at, null);
       const [c] = await q<{ decision: string; decided_at: Date }>(`SELECT decision, decided_at FROM guardian_consents WHERE token_hash = $1`, [sha(token)]);
       assert.equal(c.decision, "declined");
@@ -136,8 +170,14 @@ describeDb("parent approval for email students", () => {
     it("an expired, superseded or unknown link cannot be decided (410) and changes nothing", async () => {
       const kid = await mkUser("student");
       for (const token of [await mkConsent(kid, { expires: "-1 day" }), await mkConsent(kid, { superseded: true }), newToken()]) {
-        const res = await call(on, "POST", `/guardian-consent/${token}`, undefined, { decision: "approved", confirmGuardian: true });
+        const res = await decide(on, token, { decision: "approved", confirmGuardian: true });
         assert.equal(res.status, 410, token);
+      }
+      // A missing or malformed token is refused like an unknown one.
+      for (const bad of [undefined, null, "short", 42, { a: 1 }]) {
+        const res = await decide(on, bad, { decision: "approved", confirmGuardian: true });
+        assert.equal(res.status, 410, String(bad));
+        assert.equal(res.json.code, "consent_link_unusable");
       }
       const [u] = await q<{ guardian_approved_at: Date | null }>(`SELECT guardian_approved_at FROM users WHERE id = $1`, [kid]);
       assert.equal(u.guardian_approved_at, null);
@@ -147,40 +187,60 @@ describeDb("parent approval for email students", () => {
       const kid = await mkUser("student");
       const token = await mkConsent(kid);
       const body = { decision: "approved", confirmGuardian: true };
-      const results = await Promise.all([1, 2, 3].map(() => call(on, "POST", `/guardian-consent/${token}`, undefined, body)));
+      const results = await Promise.all([1, 2, 3].map(() => decide(on, token, body)));
       assert.deepEqual(results.map(r => r.status).sort(), [200, 410, 410]);
     });
 
-    it("never writes the link's token to the request log, but still logs the request", async () => {
+    it("never writes the token to the server log: it travels in a body, so the request lines hold no secret", async () => {
       const kid = await mkUser("student");
       const token = await mkConsent(kid);
-      await call(on, "GET", `/guardian-consent/${token}`);
-      await call(on, "POST", `/guardian-consent/${token}`, undefined, { decision: "declined" });
-      // Express routes paths case-insensitively, so this spelling reaches the same handler.
-      await call(on, "GET", `/Guardian-Consent/${token}`);
-      await call(on, "GET", "/guardian-consent/config");
+      assert.equal((await lookup(on, token)).status, 200);
+      assert.equal((await decide(on, token, { decision: "declined" })).status, 200);
       // The server's log reaches us through a pipe, at its own pace. Lines are written in request order, so once the
-      // last request's line (config) is here the earlier ones are too.
-      const wanted = ["/guardian-consent/:token", "/Guardian-Consent/:token", "/guardian-consent/config"];
+      // marker request's line (config, counted before and after) is here the earlier ones are too.
+      const configLines = () => on.logs().split("/guardian-consent/config").length - 1;
+      const seen = configLines();
+      assert.equal((await call(on, "GET", "/guardian-consent/config")).status, 200);
       const deadline = Date.now() + 10_000;
-      while (!wanted.every(w => on.logs().includes(w)) && Date.now() < deadline) {
-        await new Promise(r => setTimeout(r, 100));
-      }
+      while (configLines() <= seen && Date.now() < deadline) await new Promise(r => setTimeout(r, 100));
       const logs = on.logs();
-      for (const w of wanted) {
-        assert.ok(logs.includes(w), `${w} never appeared in the server log, so the check proves nothing`);
-      }
+      assert.ok(configLines() > seen, "the marker request never appeared in the server log, so the check proves nothing");
+      assert.ok(logs.includes("/guardian-consent/lookup") && logs.includes("/guardian-consent/decide"), "the requests themselves are logged");
       assert.ok(!logs.includes(token), "the bearer token reached the server log");
+      assert.ok(!/guardian-consent\/[A-Za-z0-9_-]{43}/i.test(logs), "a token-shaped path segment reached the server log");
+    });
+
+    it("a GET with the token in the path answers 404: no state can change by GET, and the path form is gone", async () => {
+      const kid = await mkUser("student");
+      const token = await mkConsent(kid);
+      for (const path of [`/guardian-consent/${token}`, `/Guardian-Consent/${token}`]) {
+        const res = await call(on, "GET", path);
+        assert.equal(res.status, 404, path);
+      }
+      // Nor does a POST to the old path shape decide anything.
+      const post = await call(on, "POST", `/guardian-consent/${token}`, undefined, { decision: "approved", confirmGuardian: true });
+      assert.equal(post.status, 404);
+      const [c] = await q<{ decided_at: Date | null }>(`SELECT decided_at FROM guardian_consents WHERE token_hash = $1`, [sha(token)]);
+      assert.equal(c.decided_at, null, "nothing was decided");
     });
 
     it("with the flag off the page and the decision are closed (404), only config answers", async () => {
       const kid = await mkUser("student");
       const token = await mkConsent(kid);
-      const get = await call(off, "GET", `/guardian-consent/${token}`);
-      assert.equal(get.status, 404);
-      assert.equal(get.json.code, "guardian_approval_disabled");
-      const post = await call(off, "POST", `/guardian-consent/${token}`, undefined, { decision: "approved", confirmGuardian: true });
-      assert.equal(post.status, 404);
+      const looked = await lookup(off, token);
+      assert.equal(looked.status, 404);
+      assert.equal(looked.json.code, "guardian_approval_disabled");
+      const decided = await decide(off, token, { decision: "approved", confirmGuardian: true });
+      assert.equal(decided.status, 404);
+      assert.equal(decided.json.code, "guardian_approval_disabled");
+    });
+
+    it("lookup and decide share one per-IP limit of 30 a minute, and another address is unaffected", async () => {
+      const ip = "192.0.2.77";
+      for (let i = 0; i < 30; i += 1) assert.equal((await lookup(on, newToken(), ip)).status, 200, `call ${i + 1}`);
+      assert.equal((await lookup(on, newToken(), ip)).status, 429);
+      assert.equal((await decide(on, newToken(), { decision: "declined" }, ip)).status, 429);
+      assert.equal((await lookup(on, newToken())).status, 200);
     });
   });
 
@@ -229,7 +289,7 @@ describeDb("parent approval for email students", () => {
       const kid = await mkUser("student");
       blocked(await call(on, "GET", "/student/exams", kid));
       const token = await mkConsent(kid);
-      assert.equal((await call(on, "POST", `/guardian-consent/${token}`, undefined, { decision: "approved", confirmGuardian: true })).status, 200);
+      assert.equal((await decide(on, token, { decision: "approved", confirmGuardian: true })).status, 200);
       assert.equal((await call(on, "GET", "/student/exams", kid)).status, 200);
     });
 
@@ -243,7 +303,7 @@ describeDb("parent approval for email students", () => {
 
   describe("asking for approval and reading the status", () => {
     /** Every parent link the `on` server has logged so far, oldest first. */
-    const links = () => [...on.logs().matchAll(/\/guardian\/([A-Za-z0-9_-]{43})/g)].map(m => m[1]);
+    const links = () => [...on.logs().matchAll(/\/guardian#([A-Za-z0-9_-]{43})/g)].map(m => m[1]);
     /** The server's log reaches us through a pipe, at its own pace, so a link is polled for rather than assumed. */
     async function linkCountReaches(count: number) {
       const deadline = Date.now() + 10_000;
@@ -286,7 +346,7 @@ describeDb("parent approval for email students", () => {
       const me = await call(on, "GET", "/auth/me", kid);
       assert.equal(me.json.guardianStatus, "waiting");
       assert.equal(me.json.guardianParentEmailMasked, "mu***@example.test");
-      assert.equal((await call(on, "GET", `/guardian-consent/${token}`)).json.status, "open");
+      assert.equal((await lookup(on, token)).json.status, "open");
     });
 
     it("asking again supersedes the old link: only the newest one works", async () => {
@@ -296,14 +356,14 @@ describeDb("parent approval for email students", () => {
       assert.equal((await ask(kid, "b@example.test")).status, 200);
       const second = links().at(-1)!;
       assert.notEqual(first, second);
-      assert.equal((await call(on, "GET", `/guardian-consent/${first}`)).json.status, "invalid");
-      assert.equal((await call(on, "GET", `/guardian-consent/${second}`)).json.status, "open");
+      assert.equal((await lookup(on, first)).json.status, "invalid");
+      assert.equal((await lookup(on, second)).json.status, "open");
     });
 
     it("a declined student can ask again with another address and is then waiting again", async () => {
       const kid = await mkUser("student");
       assert.equal((await ask(kid, "a@example.test")).status, 200);
-      await call(on, "POST", `/guardian-consent/${links().at(-1)}`, undefined, { decision: "declined" });
+      await decide(on, links().at(-1), { decision: "declined" });
       assert.equal((await call(on, "GET", "/auth/me", kid)).json.guardianStatus, "declined");
       assert.equal((await ask(kid, "b@example.test")).status, 200);
       assert.equal((await call(on, "GET", "/auth/me", kid)).json.guardianStatus, "waiting");
@@ -424,7 +484,7 @@ describeDb("parent approval for email students", () => {
     const PASSWORD = "Sufficiently1Strong!";
     const TERMS = { acceptedTerms: true, termsVersion: "2026-10-23" };
     /** Every parent link the `on` server has logged so far, oldest first. */
-    const links = () => [...on.logs().matchAll(/\/guardian\/([A-Za-z0-9_-]{43})/g)].map(m => m[1]);
+    const links = () => [...on.logs().matchAll(/\/guardian#([A-Za-z0-9_-]{43})/g)].map(m => m[1]);
     const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
     /** The server's log reaches us through a pipe, at its own pace, so a line is polled for (bounded), never assumed. */
     async function until(what: string, ready: () => boolean) {
@@ -512,7 +572,7 @@ describeDb("parent approval for email students", () => {
       assert.equal(held.status, 403);
       assert.equal(((await held.json()) as { code: string }).code, "guardian_approval_required");
 
-      assert.equal((await call(on, "POST", `/guardian-consent/${links().at(-1)}`, undefined, { decision: "approved", confirmGuardian: true })).status, 200);
+      assert.equal((await decide(on, links().at(-1), { decision: "approved", confirmGuardian: true })).status, 200);
       const freed = await fetch(`${on.base}/student/exams`, { headers: { Authorization: `Bearer ${token}` } });
       assert.equal(freed.status, 200);
     });

@@ -726,6 +726,8 @@ git commit -m "Guardian approval: guardian_approved_at and the guardian_consents
 
 ### Task 5: The service and the parent's public page
 
+> **Changed after this plan was written (ruling R10, final fix wave):** the token no longer travels in a path. The mail links to `{origin}/guardian#{token}`, and the public API is `POST /guardian-consent/lookup` `{token}` and `POST /guardian-consent/decide` `{token, decision, confirmGuardian}`; `GET /guardian-consent/:token`, `POST /guardian-consent/:token` and the path redaction (`lib/logUrl.ts`) below no longer exist. The code snippets in this section show the original shapes. The spec is current.
+
 **Files:**
 - Create: `artifacts/api-server/src/lib/rosterLinkState.ts`, `artifacts/api-server/src/lib/guardianRequests.ts`, `artifacts/api-server/src/routes/guardianConsent.ts`
 - Modify: `artifacts/api-server/src/routes/auth.ts` (replace the private `hasLiveRosterLink` with an import), `artifacts/api-server/src/routes/index.ts` (mount), `artifacts/api-server/src/lib/__tests__/systemDbFiles.test.ts` (pin), `artifacts/api-server/src/routes/__tests__/mountOrder.test.ts`

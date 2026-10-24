@@ -76,7 +76,7 @@ server behaves exactly as today: the tick is required and any `parentEmail` is i
 the tick, so the server must keep asking for it until the flag is on.)
 
 **`GET /guardian-consent/config`** (public) returns `{enabled}`, so the app knows which of the two sign-up forms to
-show. Unlike the other two public routes it works with the flag off.
+show. Unlike `lookup` and `decide` it works with the flag off.
 
 **After the student's own email is verified** (`POST /auth/verify-email`; at once for Google, whose address is
 already verified), the server sends the parent mail and sets `sent_at`. Waiting until then means the sign-up form
@@ -84,12 +84,19 @@ cannot be used to send mail to a stranger from an address nobody has proved they
 
 **Parent mail.** Bilingual (Arabic first), same transport and failure posture as the verification mail
 (`sendGuardianConsentEmail` in `lib/email.ts`): the child's **first name only**, one sentence on what Iqrra is, the
-consent statement, a button to `{GUARDIAN_LINK_BASE}/guardian/{token}` (`GUARDIAN_LINK_BASE` defaults to
+consent statement, a button to `{GUARDIAN_LINK_BASE}/guardian#{token}` (`GUARDIAN_LINK_BASE` defaults to
 `https://app.iqrra.com`), and the expiry. With no `RESEND_API_KEY` it logs as the verification mail does in dev.
 
-**Parent page (public, no account).** `GET /guardian-consent/:token` returns `{childFirstName, status}` where status
-is `open`, `expired`, `decided` or `invalid` (unknown tokens and expired ones are told apart only as far as "this
-link does not work"); `POST /guardian-consent/:token` takes `{decision, confirmGuardian}`. Approving requires
+**The token is in the URL fragment, never in a path or a query** (ruling R10). A browser never sends the fragment
+to a server, so the token cannot reach Cloud Run's request log, this app's own log, a proxy or an analytics screen
+name; the parent's page reads it from `location.hash` and posts it in a request body. A path segment would have
+landed in all of those.
+
+**Parent page (public, no account).** `POST /guardian-consent/lookup` takes `{token}` and returns
+`{childFirstName, status}` where status is `open`, `expired`, `decided` or `invalid` (unknown, malformed and missing
+tokens, and superseded ones, all answer `invalid`; expired ones are told apart only as far as "this link does not
+work"); `POST /guardian-consent/decide` takes `{token, decision, confirmGuardian}`. There is no `GET` with a token:
+`GET /guardian-consent/<token>` is a 404, so no state can change by GET and no token sits in a URL. Approving requires
 `confirmGuardian: true` («I am this child's parent or legal guardian»). The write is one conditional update
 (`… WHERE decided_at IS NULL AND superseded_at IS NULL AND expires_at > now() RETURNING`), so a token works once and
 two clicks cannot both win. On `approved` it sets `users.guardian_approved_at` in the same transaction. Declining
@@ -129,8 +136,10 @@ today. The tick boxes leave the three role-switch screens in PR B, once the app 
 - `register.tsx`: the age `CheckRow` becomes a parent's-email input on the student-email path (and the Google
   path); the three role-switch screens drop their age box and `switchNeedsAgeConfirmation` is deleted.
 - `services/routeGating.ts`: `needsGuardianApproval(user)` (pure, tested) sends a pending student to
-  `/guardian-waiting`; `/guardian-waiting` joins the non-teacher allowlist; **`/guardian`** (the parent page, a
-  `[token].tsx` route like `/take/[code]`) joins `PUBLIC_ROUTES`, because the parent has no account.
+  `/guardian-waiting`; `/guardian-waiting` joins the non-teacher allowlist; **`/guardian`** (the parent page, one
+  route that reads the token from `location.hash` and never puts it in a path, a query or a screen name) joins
+  `PUBLIC_ROUTES`, because the parent has no account. It must stay out of analytics screen tracking and crash
+  breadcrumbs, or the fragment's reason for existing is lost.
 - Copy in `services/i18n.ts`, Arabic first (`arabic-copy-reviewer` on every string).
 
 ## Rollout

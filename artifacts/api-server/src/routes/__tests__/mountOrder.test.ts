@@ -893,9 +893,18 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     const config = await fetch(`${base}/guardian-consent/config`);
     assert.equal(config.status, 200);
     assert.deepEqual(await config.json(), { enabled: false });
-    const page = await fetch(`${base}/guardian-consent/${"a".repeat(43)}`);
-    assert.equal(page.status, 404);
-    assert.equal(((await page.json()) as { code: string }).code, "guardian_approval_disabled");
+    const post = (path: string, body: unknown) =>
+      fetch(`${base}/guardian-consent/${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    const lookup = await post("lookup", { token: "a".repeat(43) });
+    assert.equal(lookup.status, 404);
+    assert.equal(((await lookup.json()) as { code: string }).code, "guardian_approval_disabled");
+    const decide = await post("decide", { token: "a".repeat(43), decision: "declined" });
+    assert.equal(decide.status, 404);
+    assert.equal(((await decide.json()) as { code: string }).code, "guardian_approval_disabled");
   });
 
   it("does not let the guardian-consent router shadow an unowned path", async () => {
