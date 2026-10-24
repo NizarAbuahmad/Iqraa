@@ -239,10 +239,16 @@ export async function apiFetch(
   }
 
   if (res.status === 403 && _onGuardianRequired) {
-    // A clone, so the caller can still read the body. Fire and forget: nothing waits on this.
-    void res.clone().text().then(text => {
-      if (isGuardianRequiredBody(text)) _onGuardianRequired?.();
-    }).catch(() => {});
+    // A clone, so the caller can still read the body. Fire and forget: nothing waits on this. `clone()` throws
+    // on a transport that cannot (Expo's native fetch, used for the chat stream, answers "Not implemented"),
+    // and that must never turn a 403 into a rejected call: the caller still reads the real answer.
+    try {
+      void res.clone().text().then(text => {
+        if (isGuardianRequiredBody(text)) _onGuardianRequired?.();
+      }).catch(() => {});
+    } catch {
+      // The next call over a transport that can clone will report it.
+    }
   }
 
   return res;

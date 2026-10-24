@@ -572,7 +572,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (apiUser.role === 'student') void refreshUser();
   }, [refreshUser]);
 
-  const login =useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     if (!email || !password) throw new ApiError('Email and password are required', 'missing_fields');
     if (!email.includes('@')) throw new ApiError('Invalid email address', 'invalid_email');
 
@@ -860,7 +860,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const markRosterClaimed = useCallback((linked = true) => {
     setUser(u => (u ? { ...u, hasRosterLink: linked } : u));
-  }, []);
+    // A teacher having vouched lifts a parent-approval hold on the server; re-read /auth/me so the waiting
+    // screen lets go now rather than at the next 403.
+    if (linked) void refreshUser();
+  }, [refreshUser]);
 
   // Keyed by user id, so a stale answer from the previous account is never
   // read as the new one's during the render before the effect below runs.
