@@ -10,6 +10,27 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat app-help, twenty-third live pass: 13 more wordings for answers that already existed — 2026-10-24
+
+A 30-question pass on app.iqrra.com found 13 questions answered by the model for which the app
+already had a written answer: clearing the chat history (the model refused; `howChatHistory`
+says there is no history), the teacher's own objectives in a lesson plan (`howPlanOptions`),
+old teaching plans (the model sent the teacher to a non-existent «أدوات الذكاء الاصطناعي» tab;
+`howTeachingPlan`, a new rule block for the `teaching-plans` place), downloading the teacher's
+book, opening a lesson from a book, finding a lab experiment, the Math Corner's formulas and unit
+converter (the model had read «القوانين والصيغ» as angles), opening the Quran corner, sending the
+link code to parents, entering paper-exam marks by hand (`howEditMark`), finding struggling
+students after an exam (`howSupportGroups`) and preparing a remedial worksheet for them
+(`howRemedial`, which the model had answered by asking which subject). No new answer strings;
+wordings added to existing rule ids in `appHelp.ts`, pinned in `appHelp.test.ts` with
+near-misses that stay with the model.
+
+**Left out on purpose:** «أتدرب على تمارين الدروس» (the exercises exist in the Math Corner only,
+so a bare ask about another subject would get the wrong place), «أعرف أن ولي الأمر ربط حسابه»,
+«أشاهد ما يراه الطالب في حسابه», «أنسخ رد إقرأ» and «أطبع خطة الدرس» (the generic
+copy-and-export text is accurate), and «أعدّل التهيئة في خطة الدرس» (only the tool card; the
+edit answer `faqA5` is a different wording and I did not widen it).
+
 ## Printed grammar forms fit the page, the sign-off no longer covers rows, and True or false says right or wrong without pictures — 2026-10-24
 
 Four small fixes found while building Grade 10 grammar (#1235); none changes a sentence, and no `-sheet.md` changed.
