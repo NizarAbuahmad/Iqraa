@@ -32,7 +32,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { hasSeenAppIntro } from '@/services/appIntro';
-import { CLAIM_REQUIRED_ROUTE, isEntryRoute, isNonTeacherRoute, isPublicRoute, GRADE_SETUP_ROUTE, needsGradeSetup, needsRosterClaim, needsTeacherSetup, TEACHER_SETUP_ROUTE } from '@/services/routeGating';
+import { shouldTrackScreen } from '@/services/screenTracking';
+import { CLAIM_REQUIRED_ROUTE, guardianRedirect, isEntryRoute, isNonTeacherRoute, isPublicRoute, GRADE_SETUP_ROUTE, needsGradeSetup, needsRosterClaim, needsTeacherSetup, TEACHER_SETUP_ROUTE } from '@/services/routeGating';
 import { identifyUser, initAnalytics, resetAnalyticsIdentity, trackEvent, trackScreen } from '@/services/analytics';
 import { subscribeToGenerations } from '@/services/ai/aiProvenance';
 import { clearCrashContext, initCrashReporting, setCrashContext } from '@/services/crashReporting';
@@ -71,6 +72,17 @@ function RootLayoutNav() {
     // signed-out one would send them to a login screen they can never pass,
     // and the signed-in one would yank a teacher testing the link to the tabs.
     if (isPublicRoute(pathname)) {
+      wasLoading.current = false;
+      wasSignedIn.current = signedIn;
+      return;
+    }
+
+    // A student the server is holding for a parent's approval goes to the waiting screen from anywhere else,
+    // and a student who is no longer held is moved off it. Before the other gates, which would send a held
+    // student to screens the server refuses (grade setup saves through a route that is not open to them).
+    const guardianTarget = signedIn && user ? guardianRedirect(user, pathname) : null;
+    if (guardianTarget) {
+      router.replace(guardianTarget as any);
       wasLoading.current = false;
       wasSignedIn.current = signedIn;
       return;
@@ -166,7 +178,7 @@ function RootLayoutNav() {
   // One screen-view event per route change — covers every screen in the app
   // (not just AI tools) without instrumenting each one individually.
   useEffect(() => {
-    if (pathname) trackScreen(pathname);
+    if (pathname && shouldTrackScreen(pathname)) trackScreen(pathname);
   }, [pathname]);
 
   /**
@@ -233,7 +245,8 @@ function RootLayoutNav() {
       <Stack.Screen name="join-class" options={{ headerShown: false }} />
       <Stack.Screen name="add-email" options={{ headerShown: false }} />
       <Stack.Screen name="claim-required" options={{ headerShown: false, gestureEnabled: false }} />
-      <Stack.Screen name="setup-subjects" options={{ headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="guardian-waiting" options={{ headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="setup-subjects"options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="setup-grade" options={{ headerShown: false }} />
     </Stack>
     <AppSplash visible={isLoading} onLayout={() => SplashScreen.hideAsync().catch(() => {})} />
