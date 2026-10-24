@@ -33,6 +33,7 @@ import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { lessonPickerParams, resolveLessonPrepContext, scopePickerParams } from '@/services/lessonPrep';
 import { defaultLessonIdFor } from '@/services/lessonCopilot';
 import { buildClassDeck } from '@/services/startClass';
+import { startClassFailure } from '@/services/ai/aiProvenance';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { WORKFLOW, type ToolDef } from '@/services/toolCatalog';
 import { trackEvent } from '@/services/analytics';
@@ -66,6 +67,8 @@ export type TodayLesson = {
   suggestions: string[];
   startingClass: boolean;
   startClassError: string;
+  /** The message is a state to read (allowance spent, AI off), not a fault: show it as a notice. */
+  startClassNote: boolean;
   startClass: () => Promise<void>;
   openLessonPicker: () => void;
   /** Opens the chat with `text` already sent. Does nothing for blank text. */
@@ -86,6 +89,7 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
   const [classes, setClasses] = useState<ClassGroup[]>([]);
   const [startingClass, setStartingClass] = useState(false);
   const [startClassError, setStartClassError] = useState('');
+  const [startClassNote, setStartClassNote] = useState(false);
   // The last judged state of the prep checklist; null until an authoritative
   // read has been judged, and dropped again by a degraded one.
   const prevPrep = useRef<Progress | null>(null);
@@ -282,6 +286,7 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
     if (startingClass || !topic) return;
     setStartingClass(true);
     setStartClassError('');
+    setStartClassNote(false);
     try {
       // A «عرض الحصة» the teacher already made for this lesson is the deck
       // they meant to teach from — present it instead of building a new one.
@@ -307,8 +312,10 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
       setPendingClassroomActivity(activity);
       trackEvent('class_started', { source, deck: 'built' });
       router.push('/ai-tools/classroom/presentation' as never);
-    } catch {
-      setStartClassError(t('startClassFailed'));
+    } catch (e) {
+      const failure = startClassFailure(e);
+      setStartClassError(t(failure.key));
+      setStartClassNote(failure.note);
     } finally {
       setStartingClass(false);
     }
@@ -371,6 +378,7 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
     suggestions,
     startingClass,
     startClassError,
+    startClassNote,
     startClass: handleStartClass,
     openLessonPicker,
     ask,

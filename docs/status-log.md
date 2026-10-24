@@ -10,6 +10,30 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## «ابدأ الحصة الآن» says the allowance is spent, as a note — 2026-10-24
+
+A teacher whose monthly AI allowance (`AI_USER_BUDGET_USD`, `1` in production) was used up pressed
+«ابدأ الحصة الآن» and got the red «تعذّر تجهيز العرض. اضغط … للمحاولة مرة أخرى.», with the amber
+«تعذّر الاتصال · محتوى تجريبي» badge above it. Cause: `buildClassDeck` asks `/generate/classroom-activity`
+for the quick-check, and `generateWithProvenance` re-throws a cap error on purpose (it will not hide a spent
+allowance behind made-up content); the two `catch {}` blocks (`useTodayLesson.ts`, `app/(tabs)/iqra.tsx`) threw
+the real error away and always printed the generic retry text. «Try again» cannot help in that state.
+
+**Now.** `startClassFailure(e)` (`services/ai/aiProvenance.ts`) maps `user_quota_exceeded` / `budget_exceeded` to
+`aiQuotaSpent` and `live_mode_off` to `aiUnavailable`, both with `note: true`; every other failure
+(including `generation_in_flight`, where retrying is right) keeps `startClassFailed`. A note is drawn as a
+neutral `information-circle` on `colors.muted` in `PhoneToday`, the desktop workspace and `CurrentLessonCard`
+(was red / amber alert), and the chat card skips the error haptic. Tests: `aiProvenance.test.ts`.
+
+**Verified.** Mobile suite 7221 pass / 0 fail, `pnpm run typecheck` clean. Before the change I ran the offline
+path for the failing lesson (`kbl-chem-s1-nccd-u1_lab`, Grade 10 chemistry lab, no objectives): it builds a
+deck, so the lesson itself is not the problem. **Not verified:** the screens in a browser or on a device, and the
+live cap response itself (confirmed by the teacher: their allowance was spent, not read from the server).
+
+**Known limit.** Start class still needs the AI call, so a teacher with no allowance cannot start a *new* deck;
+a saved «عرض الحصة» still opens. Falling back to the offline book-based quick-check on a cap was not done: it
+is a product decision (the same rule that keeps a worksheet from being faked), left open.
+
 ## Roster: edit a student, and see which account holds each name — 2026-10-23
 
 The pencil on a roster row used to open only the note; a teacher could not fix a misspelt name

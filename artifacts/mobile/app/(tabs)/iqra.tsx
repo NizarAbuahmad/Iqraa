@@ -60,7 +60,7 @@ import { KB_SUGGEST_SCORE, shouldAskWhichLesson } from '@/services/kbSuggestion'
 import { Toast } from '@/components/ui/Toast';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
 import { DEMO_MODE } from '@/services/ai/demoMode';
-import { aiErrorText, isCapError } from '@/services/ai/aiProvenance';
+import { aiErrorText, isCapError, startClassFailure } from '@/services/ai/aiProvenance';
 import { shouldSendOnEnter } from '@/services/composerKeys';
 import type { ArtifactScope } from '@/services/ai/artifactScope';
 import {
@@ -1488,6 +1488,7 @@ export default function IqraScreen() {
   const [lessonCardCollapsed, setLessonCardCollapsed] = useState(true);
   const [startingClass, setStartingClass] = useState(false);
   const [startClassError, setStartClassError] = useState('');
+  const [startClassNote, setStartClassNote] = useState(false);
   const [changeLessonOpen, setChangeLessonOpen] = useState(false);
   /** Set only while a picker opened by the `openLessonPicker` param is up; an in-chat open leaves it null. */
   const pickerReturnTo = useRef<string | null>(null);
@@ -3396,6 +3397,7 @@ export default function IqraScreen() {
     if (!topic) return;
     setStartingClass(true);
     setStartClassError('');
+    setStartClassNote(false);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       // A «عرض الحصة» already saved for this lesson is the deck the teacher
@@ -3425,14 +3427,17 @@ export default function IqraScreen() {
       setPendingClassroomActivity(activity);
       trackEvent('class_started', { source: 'chat', deck: 'built' });
       router.push('/ai-tools/classroom/presentation' as any);
-    } catch {
+    } catch (e) {
       // Surfacing this as a chat message would still be wrong — the teacher
       // pressed a button on a card, they did not ask a question. But saying
       // nothing at all was worse: `Haptics` is a no-op on web, so the whole
       // failure signal was a buzz that platform never plays, and the press
       // vanished. The card says what happened instead, and stays the retry.
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setStartClassError(t('startClassFailed'));
+      const failure = startClassFailure(e);
+      // A spent allowance is a state to read, not a failed press: no error buzz.
+      if (!failure.note) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setStartClassError(t(failure.key));
+      setStartClassNote(failure.note);
     } finally {
       setStartingClass(false);
     }
@@ -3778,6 +3783,7 @@ export default function IqraScreen() {
           startClassLabel={t('startClass')}
           startClassBusy={startingClass}
           startClassError={startClassError}
+          startClassNote={startClassNote}
           onStartClass={handleStartClass}
           changeLabel={t('changeLesson')}
           clearLabel={t('unpinLesson')}
