@@ -545,7 +545,7 @@ Not reviewed yet — shown to nobody.
 | She won't come if she is ill. | — | **is** / are | _She won't come if she are ill._ |
 | Will you come if she invites you? | — | **invites** / invite | _Will you come if she invite you?_ |
 | If I had a car, I would drive. | — | **would drive** / would to drive | _If I had a car, I would to drive._ |
-| If she lived in Aqaba, she would swim. | — | **lived** / would live | _If she would live in Aqaba, she would swim._ |
+| If she lived in Aqaba, she would swim. | — | **would swim** / would swam | _If she lived in Aqaba, she would swam._ |
 | If I knew the answer, I would tell you. | — | **would tell** / would told | _If I knew the answer, I would told you._ |
 | If we had more time, we would visit Petra. | — | **had** / would have | _If we would have more time, we would visit Petra._ |
 | If he studied more, he would get better marks. | — | **would get** / would getting | _If he studied more, he would getting better marks._ |
@@ -563,15 +563,15 @@ Not reviewed yet — shown to nobody.
 | Imagine you lived on the moon. You would float. | — | **would float** / will float | _Imagine you lived on the moon. You will float._ |
 | Imagine there were no cars. Cities would be quieter. | — | **would be** / will be | _Imagine there were no cars. Cities will be quieter._ |
 | Imagine you spoke every language. You would travel everywhere. | — | **would travel** / will travel | _Imagine you spoke every language. You will travel everywhere._ |
-| If I were a bird, I would fly away. | — | **would fly** / will fly | _If I were a bird, I will fly away._ |
-| If I were you, I would apologise. | — | **would apologise** / will apologise | _If I were you, I will apologise._ |
-| If I were a teacher, I'd give no homework. | — | **I'd give** / I'll give | _If I were a teacher, I'll give no homework._ |
-| If I were taller, I would play basketball. | — | **would play** / will play | _If I were taller, I will play basketball._ |
-| If dogs could talk, they would tell stories. | — | **would tell** / will tell | _If dogs could talk, they will tell stories._ |
-| Tomorrow, if it rains, we will play indoors. | — | **will play** / would play | _Tomorrow, if it rains, we would play indoors._ |
-| This weekend, if it's sunny, we will go swimming. | — | **will go** / would go | _This weekend, if it's sunny, we would go swimming._ |
-| If the bus is late tonight, we will walk. | — | **will walk** / would walk | _If the bus is late tonight, we would walk._ |
-| If our team wins tomorrow, the school will celebrate. | — | **will celebrate** / would celebrate | _If our team wins tomorrow, the school would celebrate._ |
+| Suppose it snowed in Aqaba. We would build snowmen. | — | **would build** / will build | _Suppose it snowed in Aqaba. We will build snowmen._ |
+| Suppose you met a dinosaur. You would run. | — | **would run** / will run | _Suppose you met a dinosaur. You will run._ |
+| Just imagine we lived underwater. We'd need gills. | — | **We'd need** / We'll need | _Just imagine we lived underwater. We'll need gills._ |
+| Suppose you were famous. Everyone would know you. | — | **would know** / will know | _Suppose you were famous. Everyone will know you._ |
+| Imagine the sun never set. We would never sleep. | — | **would never sleep** / will never sleep | _Imagine the sun never set. We will never sleep._ |
+| Suppose animals could talk. My cat would complain. | — | **would complain** / will complain | _Suppose animals could talk. My cat will complain._ |
+| Imagine we had no school. We would get bored. | — | **would get** / will get | _Imagine we had no school. We will get bored._ |
+| Suppose the internet stopped working. We would read more. | — | **would read** / will read | _Suppose the internet stopped working. We will read more._ |
+| Imagine you were a giant. Houses would look tiny. | — | **would look** / will look | _Imagine you were a giant. Houses will look tiny._ |
 
 ## Semester 2 · Unit 6 — Do the right thing
 
@@ -580,7 +580,7 @@ Not reviewed yet — shown to nobody.
 | Sentence | Picture | Choose | True or false: wrong picture |
 |---|---|---|---|
 | If you heat ice, it melts. | — | **melts** / melt | _If you heat ice, it melt._ |
-| If you mix red and white, you get pink. | — | **get** / gets | _If you mix red and white, you gets pink._ |
+| If you eat late, you sleep badly. | — | **sleep** / sleeps | _If you eat late, you sleeps badly._ |
 | If you boil water, it turns into steam. | — | **turns** / turning | _If you boil water, it turning into steam._ |
 | If it rains, the ground gets wet. | — | **gets** / get | _If it rains, the ground get wet._ |
 | If you press this button, the machine stops. | — | **stops** / stopping | _If you press this button, the machine stopping._ |
@@ -610,9 +610,9 @@ Not reviewed yet — shown to nobody.
 | What happens if you freeze water? | — | **freeze** / freezes | _What happens if you freezes water?_ |
 | If you don't water plants, they die. | — | **die** / dies | _If you don't water plants, they dies._ |
 | What happens when you heat metal? | — | **happens** / happen | _What happen when you heat metal?_ |
-| Does ice melt if you heat it? | — | **melt** / melts | _Does ice melts if you heat it?_ |
+| Do cats purr when they are happy? | — | **purr** / purrs | _Do cats purrs when they are happy?_ |
 | If you don't sleep, you feel tired. | — | **don't** / doesn't | _If you doesn't sleep, you feel tired._ |
-| Plants don't grow if they get no light. | — | **don't** / doesn't | _Plants doesn't grow if they get no light._ |
+| Buses don't run if it snows. | — | **don't** / doesn't | _Buses doesn't run if it snows._ |
 | What does your cat do when it's hungry? | — | **does** / do | _What do your cat do when it's hungry?_ |
 | Iron doesn't float if you put it in water. | — | **float** / floats | _Iron doesn't floats if you put it in water._ |
 | Why do leaves fall when it gets cold? | — | **fall** / falls | _Why do leaves falls when it gets cold?_ |
@@ -749,7 +749,7 @@ Not reviewed yet — shown to nobody.
 | Were the letters sent yesterday? | — | **Were** / Did | _Did the letters sent yesterday?_ |
 | Was the window broken by the wind? | — | **Was** / Did | _Did the window broken by the wind?_ |
 | The match wasn't cancelled. | — | **wasn't cancelled** / wasn't cancel | _The match wasn't cancel._ |
-| Is English spoken in your home? | — | **Is** / Does | _Does English spoken in your home?_ |
+| Are cars made in Jordan? | — | **Are** / Do | _Do cars made in Jordan?_ |
 | Where was this photo taken? | — | **taken** / took | _Where was this photo took?_ |
 | The sandwiches weren't eaten at the party. | — | **weren't** / didn't | _The sandwiches didn't eaten at the party._ |
 | When was the school built? | — | **was** / did | _When did the school built?_ |

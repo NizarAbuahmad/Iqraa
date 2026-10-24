@@ -11,7 +11,7 @@
  * on a finished task, an event that cuts an action short, «by the time», a time word that fixes remember or forget, a
  * past time word, a reason or a second sentence after mustn't or don't have to, a decision made on the spot, a warning
  * or a sign of what is about to happen, a time point with «still» or an activity with no end, «by» with a count, a
- * condition the sentence marks as impossible (Imagine …, If I were …) or likely (Tomorrow …), a self-done marker
+ * an unreal situation stated in its own sentence before the result (Imagine …, Suppose …), a self-done marker
  * (myself) or a service marker (by experts, a mechanic), a past fact or past time word for an unreal past, evidence in
  * the sentence for must or can't).
  * Never a form that could fit, and `meaning` only in the sub-topics the test pins as `meaning`. Every sentence is nine
@@ -690,12 +690,12 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ["She won't come if she is ill.", 'is', 'are'],
         ['Will you come if she invites you?', 'invites', 'invite'],
       ]),
-      // If + past, would + bare verb. The errors: would inside the if-clause (only with have or live, never an action
-      // someone could be willing to do: «If you would ask him» is a polite form), would + to, -ing, a past or -s. was
-      // and were are never set against each other: both are accepted after I, he, she and it.
+      // If + past, would + bare verb. The errors: would inside the if-clause (once, with have, which cannot mean «be
+      // willing to»: «If you would ask him» is a polite form), would + to, -ing, a past or -s. was and were are never
+      // set against each other: both are accepted after I, he, she and it.
       ...items('second-conditional', 'form', [
         ['If I had a car, I would drive.', 'would drive', 'would to drive'],
-        ['If she lived in Aqaba, she would swim.', 'lived', 'would live'],
+        ['If she lived in Aqaba, she would swim.', 'would swim', 'would swam'],
         ['If I knew the answer, I would tell you.', 'would tell', 'would told'],
         ['If we had more time, we would visit Petra.', 'had', 'would have'],
         ['If he studied more, he would get better marks.', 'would get', 'would getting'],
@@ -707,10 +707,10 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['What would you do if you lost your phone?', 'do', 'to do'],
         ["I wouldn't worry if I were you.", 'worry', 'worried'],
       ]),
-      // A condition the sentence marks as impossible or unreal («Imagine you had …», «If I were a bird», «If dogs could
-      // talk») takes would; will is ruled out by that marker. A likely condition in the present tense with a near time
-      // («Tomorrow», «This weekend», «tonight») takes will; would is ruled out by the present-tense if-clause. No «I
-      // would» on the likely side: «If it rains, I would stay home» can be advice («if I were you»).
+      // An unreal situation stated in its own first sentence («Imagine …», «Just imagine …», «Suppose …», with a past
+      // verb) takes would in the second; will is ruled out by that opener. The twin's second sentence («You will fly.»)
+      // is sound English on its own, so the choice turns on meaning, not form. No if-clause with were or could + will
+      // (a form error), and no likely condition: after «If it rains, …» a tentative would is accepted too.
       ...items('imagine-vs-real', 'meaning', [
         ['Imagine you had wings. You would fly.', 'would fly', 'will fly'],
         ['Imagine we had no phones. Life would be quiet.', 'would be', 'will be'],
@@ -719,15 +719,15 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['Imagine you lived on the moon. You would float.', 'would float', 'will float'],
         ['Imagine there were no cars. Cities would be quieter.', 'would be', 'will be'],
         ['Imagine you spoke every language. You would travel everywhere.', 'would travel', 'will travel'],
-        ['If I were a bird, I would fly away.', 'would fly', 'will fly'],
-        ['If I were you, I would apologise.', 'would apologise', 'will apologise'],
-        ["If I were a teacher, I'd give no homework.", "I'd give", "I'll give"],
-        ['If I were taller, I would play basketball.', 'would play', 'will play'],
-        ['If dogs could talk, they would tell stories.', 'would tell', 'will tell'],
-        ['Tomorrow, if it rains, we will play indoors.', 'will play', 'would play'],
-        ["This weekend, if it's sunny, we will go swimming.", 'will go', 'would go'],
-        ['If the bus is late tonight, we will walk.', 'will walk', 'would walk'],
-        ['If our team wins tomorrow, the school will celebrate.', 'will celebrate', 'would celebrate'],
+        ['Suppose it snowed in Aqaba. We would build snowmen.', 'would build', 'will build'],
+        ['Suppose you met a dinosaur. You would run.', 'would run', 'will run'],
+        ["Just imagine we lived underwater. We'd need gills.", "We'd need", "We'll need"],
+        ['Suppose you were famous. Everyone would know you.', 'would know', 'will know'],
+        ['Imagine the sun never set. We would never sleep.', 'would never sleep', 'will never sleep'],
+        ['Suppose animals could talk. My cat would complain.', 'would complain', 'will complain'],
+        ['Imagine we had no school. We would get bored.', 'would get', 'will get'],
+        ['Suppose the internet stopped working. We would read more.', 'would read', 'will read'],
+        ['Imagine you were a giant. Houses would look tiny.', 'would look', 'will look'],
       ]),
     ],
   },
@@ -740,7 +740,7 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
       // doubled auxiliary. No bare verb that is also an adjective (clean, open, dry), which could fit.
       ...items('if-present', 'form', [
         ['If you heat ice, it melts.', 'melts', 'melt'],
-        ['If you mix red and white, you get pink.', 'get', 'gets'],
+        ['If you eat late, you sleep badly.', 'sleep', 'sleeps'],
         ['If you boil water, it turns into steam.', 'turns', 'turning'],
         ['If it rains, the ground gets wet.', 'gets', 'get'],
         ['If you press this button, the machine stops.', 'stops', 'stopping'],
@@ -776,9 +776,9 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['What happens if you freeze water?', 'freeze', 'freezes'],
         ["If you don't water plants, they die.", 'die', 'dies'],
         ['What happens when you heat metal?', 'happens', 'happen'],
-        ['Does ice melt if you heat it?', 'melt', 'melts'],
+        ['Do cats purr when they are happy?', 'purr', 'purrs'],
         ["If you don't sleep, you feel tired.", "don't", "doesn't"],
-        ["Plants don't grow if they get no light.", "don't", "doesn't"],
+        ["Buses don't run if it snows.", "don't", "doesn't"],
         ["What does your cat do when it's hungry?", 'does', 'do'],
         ["Iron doesn't float if you put it in water.", 'float', 'floats'],
         ['Why do leaves fall when it gets cold?', 'fall', 'falls'],
@@ -949,7 +949,7 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['Were the letters sent yesterday?', 'Were', 'Did'],
         ['Was the window broken by the wind?', 'Was', 'Did'],
         ["The match wasn't cancelled.", "wasn't cancelled", "wasn't cancel"],
-        ['Is English spoken in your home?', 'Is', 'Does'],
+        ['Are cars made in Jordan?', 'Are', 'Do'],
         ['Where was this photo taken?', 'taken', 'took'],
         ["The sandwiches weren't eaten at the party.", "weren't", "didn't"],
         ['When was the school built?', 'was', 'did'],
