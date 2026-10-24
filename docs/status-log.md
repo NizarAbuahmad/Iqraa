@@ -10,23 +10,6 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## API errors reach Cloud Error Reporting (PR #1238) — 2026-10-24
-
-In production the logger wrote pino's default JSON (`level: 50`, `msg`, no stack field), which
-Cloud Run reads as an unleveled entry, so Error Reporting never saw anything the API logged.
-`lib/cloudLogging.ts` + `lib/logger.ts` now write `severity` (`error` → ERROR, `fatal` →
-CRITICAL), `message`, `stack_trace` (copied from `err.stack`; 155 of the ~190 error call sites
-log `{ err }`), `serviceContext` (`iqraa-api`, `K_REVISION`) and an ISO `time`. Production only;
-`/healthz/errors` and the dev transport are unchanged.
-
-**Verified:** four unit tests (`cloudLogging.test.ts`); real pino with the same options prints an
-`error` line with `severity: "ERROR"` and `stack_trace`. **Not verified:** that Error Reporting
-groups these (needs a deploy and a real error); typecheck (CI is the first). **Needs a person:**
-`clouderrorreporting.googleapis.com` is not enabled on `iqraa-auth-507315` (checked 2026-10-24,
-only logging is) — `gcloud services enable clouderrorreporting.googleapis.com --project
-iqraa-auth-507315`. The Open line in `STATUS.md` ("the API has no error-reporting service")
-changes once this is merged and an error shows up there.
-
 ## Chat app-help, twenty-third live pass: 13 more wordings for answers that already existed — 2026-10-24
 
 A 30-question pass on app.iqrra.com found 13 questions answered by the model for which the app
