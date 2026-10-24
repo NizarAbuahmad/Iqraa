@@ -42,11 +42,17 @@ An account is **pending** when all of these hold, and `guardianApprovalEnabled()
 `pendingGuardian(user, hasLink, flagOn)` is a pure function in `lib/guardianGate.ts` (no database import, so
 `node --test` can load it, as `suspension.ts` and `claimDecision.ts` are). Everything else in this spec calls it.
 
-A pending account may reach only: `GET /auth/me`, `POST /auth/guardian-request`, `POST /auth/logout`,
-`DELETE /auth/users/me` (erasure does not pause, as for a suspended account), and `GET|POST|DELETE /auth/claim`
-(joining a class with a teacher's code is the other legitimate way in; once the teacher has vouched the account is
-no longer pending). The unauthenticated routes (`/auth/login`, `/auth/refresh`, `/auth/verify-email` and so on) do
+A pending account may reach only: `GET /auth/me`, `POST /auth/guardian-request`, `POST /auth/role` (leaving the
+student role grants nothing the gate protects, and without it a student who picked the wrong role at sign-up has
+no way out of the waiting screen; ruling R11), `POST /auth/logout`, `DELETE /auth/users/me` (erasure does not
+pause, as for a suspended account), and `GET|POST|DELETE /auth/claim` (joining a class with a teacher's code is the
+other legitimate way in; once the teacher has vouched the account is no longer pending). The unauthenticated routes (`/auth/login`, `/auth/refresh`, `/auth/verify-email` and so on) do
 not pass through `authMiddleware` and are unchanged. Anything else answers **403 `guardian_approval_required`**.
+
+One route verifies the access token itself and so never passes through `authMiddleware`: the public live-game join
+(`POST /live/:code/join`, which records the signed-in student's id on the player row). It applies the same rule
+through `pendingGuardian` and records no user id for a held student, who still plays, anonymously, like anyone with
+the game code (ruling R12).
 
 ## Data
 
@@ -120,7 +126,9 @@ app reads it on every boot and also re-reads it whenever any call returns `guard
 for an age tick**: switching into student simply produces a pending account, which lands on the waiting screen and
 asks for the parent's email there. `decideRoleSwitch` takes an `ageTickRequired` input (default true, so today's
 behaviour is unchanged) that the routes set to `!guardianApprovalEnabled()`. With the flag off the tick is asked as
-today. The tick boxes leave the three role-switch screens in PR B, once the app reads `config.enabled`.
+today. The tick boxes leave the three role-switch screens in PR B, once the app reads `config.enabled`. A held
+student may call `POST /auth/role` to leave the student role (to parent or teacher; they are then not held, and
+`/me` says `not_required`); asking for `student` again changes nothing.
 
 ## Abuse limits
 

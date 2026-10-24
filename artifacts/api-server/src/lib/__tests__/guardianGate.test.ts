@@ -46,6 +46,7 @@ describe("guardianMayReach", () => {
   const may: [string, string][] = [
     ["GET", "/api/auth/me"],
     ["POST", "/api/auth/guardian-request"],
+    ["POST", "/api/auth/role"],
     ["POST", "/api/auth/logout"],
     ["DELETE", "/api/auth/users/me"],
     ["GET", "/api/auth/claim"],
@@ -59,7 +60,8 @@ describe("guardianMayReach", () => {
   }
   const may_not: [string, string][] = [
     ["GET", "/api/student/exams"],
-    ["POST", "/api/auth/role"],
+    ["GET", "/api/auth/role"],
+    ["PUT", "/api/auth/role"],
     ["PATCH", "/api/auth/me"],
     ["GET", "/api/auth/me/ai-usage"],
     ["POST", "/api/auth/add-email"],

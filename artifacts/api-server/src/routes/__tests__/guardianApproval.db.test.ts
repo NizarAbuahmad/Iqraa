@@ -10,6 +10,7 @@ import { describeDb } from "../../test-support/gate.ts";
 import { setupTestDb, type TestDb } from "../../test-support/testDb.ts";
 import { startServer, type TestServer } from "../../test-support/startServer.ts";
 import { call } from "../../test-support/http.ts";
+import { accessToken } from "../../test-support/tokens.ts";
 import { hashResetCode } from "../../lib/passwordReset.ts";
 
 const sha = (s: string) => crypto.createHash("sha256").update(s).digest("hex");
@@ -254,7 +255,6 @@ describeDb("parent approval for email students", () => {
       const kid = await mkUser("student");
       blocked(await call(on, "GET", "/student/exams", kid));
       blocked(await call(on, "GET", "/messaging/contacts", kid));
-      blocked(await call(on, "POST", "/auth/role", kid, { role: "parent" }));
       blocked(await call(on, "POST", "/auth/add-email", kid, { email: "x@example.test", password: "Sufficiently1Strong!" }));
       blocked(await call(on, "GET", "/auth/me/ai-usage", kid));
 
@@ -262,6 +262,27 @@ describeDb("parent approval for email students", () => {
       assert.equal(me.status, 200, me.text);
       const claim = await call(on, "GET", "/auth/claim", kid);
       assert.equal(claim.status, 200, "joining a class with a teacher's code stays open");
+    });
+
+    it("lets a held student change role: to parent or teacher they are no longer held; into student it changes nothing", async () => {
+      for (const role of ["parent", "teacher"]) {
+        const kid = await mkUser("student");
+        blocked(await call(on, "GET", "/student/exams", kid));
+        const switched = await call(on, "POST", "/auth/role", kid, { role });
+        assert.equal(switched.status, 200, `${role}: ${switched.text}`);
+        assert.equal(switched.json.role, role);
+        const me = await call(on, "GET", "/auth/me", kid);
+        assert.equal(me.json.role, role);
+        assert.equal(me.json.guardianStatus, "not_required", role);
+        // And the gate no longer applies to the new role.
+        assert.notEqual((await call(on, "GET", role === "teacher" ? "/classes" : "/parent/exams", kid)).status, 403, role);
+      }
+      // Asking for the role they already have is a no-op: still a student, still held.
+      const stay = await mkUser("student");
+      const same = await call(on, "POST", "/auth/role", stay, { role: "student" });
+      assert.equal(same.status, 200, same.text);
+      assert.equal((await call(on, "GET", "/auth/me", stay)).json.guardianStatus, "needed");
+      blocked(await call(on, "GET", "/student/exams", stay));
     });
 
     it("never holds a code-only student, a linked student, an approved student, a teacher or a parent", async () => {
@@ -684,6 +705,47 @@ describeDb("parent approval for email students", () => {
       assert.equal((await call(off, "POST", "/auth/role", t2, { role: "student", ageConfirmed: true })).status, 200);
       const [ticked] = await q<{ guardian_confirmed_at: Date | null }>(`SELECT guardian_confirmed_at FROM users WHERE id = $1`, [t2]);
       assert.ok(ticked.guardian_confirmed_at, "the flag-off switch still records the tick");
+    });
+  });
+
+  describe("a live game's player list", () => {
+    /** A game by a new teacher, and a join as `userId` (or anonymously). Returns the player row's user_id. */
+    async function joinedAs(server: TestServer, userId: string | null, name: string): Promise<string | null> {
+      const teacher = await mkUser("teacher");
+      const questions = [1, 2, 3].map(i => ({ content: `Q${i}`, options: ["a", "b", "c"], correctIndex: 1 }));
+      const game = await call(server, "POST", "/live-host/games", teacher, { title: "g", lang: "en", seconds: 20, questions });
+      assert.equal(game.status, 201, game.text);
+      const headers: Record<string, string> = { "Content-Type": "application/json", "X-Forwarded-For": freshIp() };
+      if (userId) headers["Authorization"] = `Bearer ${accessToken(userId)}`;
+      const res = await fetch(`${server.base}/live/${game.json.code}/join`, { method: "POST", headers, body: JSON.stringify({ name }) });
+      assert.equal(res.status, 201, await res.text());
+      const rows = await q<{ user_id: string | null }>(`SELECT user_id FROM live_players WHERE game_id = $1`, [game.json.id]);
+      assert.equal(rows.length, 1);
+      return rows[0].user_id;
+    }
+
+    it("does not record a student who is held for a parent's approval; they still play, anonymously", async () => {
+      const held = await mkUser("student");
+      assert.equal(await joinedAs(on, held, "Held"), null);
+    });
+
+    it("records an approved, a linked and a code-only student, and a held one when the flag is off", async () => {
+      const approved = await mkUser("student", { approved: true });
+      assert.equal(await joinedAs(on, approved, "Approved"), approved);
+      const linkedKid = await mkUser("student");
+      await linked(linkedKid);
+      assert.equal(await joinedAs(on, linkedKid, "Linked"), linkedKid);
+      const codeOnly = await mkUser("student", { email: null });
+      assert.equal(await joinedAs(on, codeOnly, "Code"), codeOnly);
+      const heldButFlagOff = await mkUser("student");
+      assert.equal(await joinedAs(off, heldButFlagOff, "Flagoff"), heldButFlagOff);
+    });
+
+    it("a student whose only teacher link is archived is held, so not recorded", async () => {
+      const kid = await mkUser("student");
+      await linked(kid);
+      await q(`UPDATE students SET archived_at = now() WHERE id IN (SELECT student_id FROM roster_links WHERE user_id = $1)`, [kid]);
+      assert.equal(await joinedAs(on, kid, "Archived"), null);
     });
   });
 

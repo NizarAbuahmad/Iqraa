@@ -25,12 +25,15 @@ export function pendingGuardian(s: GuardianSubject, o: { flagOn: boolean; hasLiv
 
 /**
  * What a pending account may still do: read itself, ask for approval, sign out, erase itself (erasure does not
- * pause, as for a suspended account) and join a class with a teacher's code, the other way in. Matched on
- * `originalUrl` through `routeKey`, which strips the query, the `/api` prefix and a trailing slash.
+ * pause, as for a suspended account), join a class with a teacher's code, the other way in, and change role.
+ * Leaving the student role grants nothing the gate protects, and without it a student who picked the wrong role
+ * at sign-up would have no way out of the waiting screen. Matched on `originalUrl` through `routeKey`, which strips
+ * the query, the `/api` prefix and a trailing slash.
  */
 const MAY_REACH = new Set([
   "GET /auth/me",
   "POST /auth/guardian-request",
+  "POST /auth/role",
   "POST /auth/logout",
   "DELETE /auth/users/me",
   "GET /auth/claim",
