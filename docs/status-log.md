@@ -10,39 +10,23 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## Parent approval for email students — merged and deployed, flag still off — 2026-10-25
 
-PR #1274 («server and app, flag off») was marked ready and squash-merged to `main` as `2277f57` on
-2026-10-25, by the owner's instruction, after CI was green on its head. This entry records what the
-deploy did; what was built and its limits are in the two entries below it, «… the app (PR B)» and
-«… server (PR A)», dated 2026-10-24.
+## Grade 8 English gets its book pages; Grades 1-7 do not, 2026-10-25
 
-**What the deploy did** (workflow run 801, from its job and step results; not re-read from production):
+The 16 English student books for Grades 1-8 (about 1.9 GB) were downloaded from the catalog's NCCD
+links into a scratch folder outside the repo.
 
-- *production migrations* succeeded, so migration `0018` (nullable `users.guardian_approved_at`, new
-  owner-only table `guardian_consents`) was applied before the new API revision took traffic.
-- *production schema / production tables present* succeeded.
-- `iqraa-api`: the Cloud Run deploy succeeded (about 3.5 minutes) and its «Verify the deployed commit»
-  step passed, so the serving revision reports `2277f57`.
-- `iqraa-web`: the web build and the Cloudflare Pages publish succeeded and «Verify the deployed
-  bundle» passed.
-- `iqraa-verifier` was skipped (not changed).
-
-**Still off.** No workflow in `.github/workflows/` sets `GUARDIAN_APPROVAL` (a `grep` found nothing), and
-the deploy only updates the env vars it names, so unless someone set it by hand on the service it is
-unset: the server holds nobody, `GET /guardian-consent/config` answers `{enabled:false}`, and the web
-register screen and the role-switch screens behave as before this merge.
-
-**Not checked.** This session cannot reach production (its egress proxy refuses
-`iqraa-api-…run.app` and `app.iqrra.com`), so none of these was read by command: the serving revision's
-name and traffic split, `/api/healthz/version`, the `config` answer on production, the live web bundle
-in a browser, and the service's actual env (reading Cloud Run env is on the denied list; the claim above
-rests on the workflows). `STATUS.md` was updated from the deploy run, and those lines say so.
-
-**Next, all the owner's** (the numbered list is in the PR B entry): the consent wording read by a native
-speaker and a lawyer and `constants/legal.ts` + `LEGAL_VERSION` updated; Resend click tracking off for the
-parent mail and Cloudflare Web Analytics not recording URL fragments; the share of users on the new bundle
-checked; then `GUARDIAN_APPROVAL=true`, which locks every existing email student until a parent approves.
+- **Grade 8 (2 books):** same «High Note» layout as Grades 9-10, so `map_english_pages.py` took
+  them as they are: 70 lessons (35 × 2), 142 pages, every opener checked on a contact sheet of
+  16. `book-page-links.json` lists 2,022 lessons / 12,889 pages. Pages are in R2.
+- **Grades 1-7 (14 books) are not mapped.** They are the «Team Together» series, whose pages carry
+  a small «Lesson N» tab, not a «LESSON nA» header, and the tabs do not line up with the
+  curriculum's lessons: Grade 7 has 4 units of 9 lessons in the catalog, but the book numbers its
+  lessons up to 11 and skips some tabs (1, 2, 3, 5, 6, 8, 9, 10, 11), so a position-based match
+  would be a guess. Grades 1-5 are coarser still: the catalog has two lessons per unit
+  («Vocabulary & Grammar», «Listening & Speaking») against about nine book pages. A
+  unit-level page set was considered and not done, because a lesson's pages would not be that
+  lesson's. The PDFs are still in the scratch folder if someone wants to hand-map them.
 
 ## Chat app-help, twenty-ninth live pass: three short answers and wordings for fourteen existing ones — 2026-10-25
 
@@ -69,6 +53,7 @@ with near-misses that stay with the model.
 rating the app, showing the lesson on a TV, one student's answers on an exam (the answers screen
 is built for typing in a paper's answers, so I did not claim it shows an online sitting) and
 «أرى الشعب التي أدرّسها» (the place card is enough).
+
 
 ## Timetable: a period saves with a labelled button, and an empty slot cannot be saved — 2026-10-24
 
@@ -306,6 +291,40 @@ that stay with the model.
 are right this time; the app questions that fell to the model after the allowance ran out. The
 cap is the account's monthly generation allowance — a pass of 30 questions spends it, and this
 account has now had many passes.
+
+## Parent approval for email students — merged and deployed, flag still off — 2026-10-25
+
+PR #1274 («server and app, flag off») was marked ready and squash-merged to `main` as `2277f57` on
+2026-10-25, by the owner's instruction, after CI was green on its head. This entry records what the
+deploy did; what was built and its limits are in the two entries below it, «… the app (PR B)» and
+«… server (PR A)», dated 2026-10-24.
+
+**What the deploy did** (workflow run 801, from its job and step results; not re-read from production):
+
+- *production migrations* succeeded, so migration `0018` (nullable `users.guardian_approved_at`, new
+  owner-only table `guardian_consents`) was applied before the new API revision took traffic.
+- *production schema / production tables present* succeeded.
+- `iqraa-api`: the Cloud Run deploy succeeded (about 3.5 minutes) and its «Verify the deployed commit»
+  step passed, so the serving revision reports `2277f57`.
+- `iqraa-web`: the web build and the Cloudflare Pages publish succeeded and «Verify the deployed
+  bundle» passed.
+- `iqraa-verifier` was skipped (not changed).
+
+**Still off.** No workflow in `.github/workflows/` sets `GUARDIAN_APPROVAL` (a `grep` found nothing), and
+the deploy only updates the env vars it names, so unless someone set it by hand on the service it is
+unset: the server holds nobody, `GET /guardian-consent/config` answers `{enabled:false}`, and the web
+register screen and the role-switch screens behave as before this merge.
+
+**Not checked.** This session cannot reach production (its egress proxy refuses
+`iqraa-api-…run.app` and `app.iqrra.com`), so none of these was read by command: the serving revision's
+name and traffic split, `/api/healthz/version`, the `config` answer on production, the live web bundle
+in a browser, and the service's actual env (reading Cloud Run env is on the denied list; the claim above
+rests on the workflows). `STATUS.md` was updated from the deploy run, and those lines say so.
+
+**Next, all the owner's** (the numbered list is in the PR B entry): the consent wording read by a native
+speaker and a lawyer and `constants/legal.ts` + `LEGAL_VERSION` updated; Resend click tracking off for the
+parent mail and Cloudflare Web Analytics not recording URL fragments; the share of users on the new bundle
+checked; then `GUARDIAN_APPROVAL=true`, which locks every existing email student until a parent approves.
 
 ## Parent approval for email students — the app (PR B) — 2026-10-24
 
