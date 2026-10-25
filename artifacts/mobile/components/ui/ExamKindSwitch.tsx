@@ -6,6 +6,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { EXAM_KINDS, examKindDef, type ExamKind } from '@/services/examKind';
 import { SPACE, TYPE } from '@/constants/theme';
+import { textOn } from '@/services/readableColor';
 
 /**
  * Printed paper or marked evaluation — the two halves of the Tools tab's one
@@ -16,8 +17,12 @@ import { SPACE, TYPE } from '@/constants/theme';
  * The hint under the active segment is the point of the control: the old
  * «أداة تقييم» label was mistaken for «التقييمات» because nothing said what
  * each one gives you.
+ *
+ * `accent` is the screen's own tool colour (the quiz passes its concept colour,
+ * so the tab row matches the band above it). Without it the selected segment is
+ * the primary teal, as on the evaluations screen.
  */
-export function ExamKindSwitch({ active }: { active: ExamKind }) {
+export function ExamKindSwitch({ active, accent }: { active: ExamKind; accent?: string }) {
   const colors = useColors();
   const { t, isRTL } = useLanguage();
   const align = isRTL ? 'right' : 'left';
@@ -50,14 +55,14 @@ export function ExamKindSwitch({ active }: { active: ExamKind }) {
               }}
               style={[
                 styles.segment,
-                { borderRadius: colors.radius - 2, backgroundColor: on ? colors.primary : 'transparent' },
+                { borderRadius: colors.radius - 2, backgroundColor: on ? (accent ?? colors.primary) : 'transparent' },
               ]}
             >
               <Text
                 style={[
                   styles.label,
                   {
-                    color: on ? colors.primaryForeground : colors.mutedForeground,
+                    color: on ? (accent ? textOn(accent) : colors.primaryForeground) : colors.mutedForeground,
                     fontFamily: on ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
                   },
                 ]}

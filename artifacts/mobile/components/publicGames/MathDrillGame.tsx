@@ -26,8 +26,10 @@ import {
   type DrillProblem,
 } from '@/services/publicGames/mathDrill';
 
-// Solid fills carrying white text — each ≥ 4.5:1 against #fff.
-const ACCENTS: Record<DrillOp, string> = { mul: '#B45309', div: '#7C3AED', add: '#4338CA', sub: '#BE123C' };
+// Solid fills carrying white text — each ≥ 4.5:1 against #fff. None is amber:
+// palette.live (#B45309) means "now" and nothing else (gameAccents.test.ts).
+// `mul` is the hub tile's colour too (app/play/index.tsx).
+const ACCENTS: Record<DrillOp, string> = { mul: '#166534', div: '#7C3AED', add: '#4338CA', sub: '#BE123C' };
 const RIGHT = '#16A34A';
 const WRONG = '#DC2626';
 const ALL_TABLES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];

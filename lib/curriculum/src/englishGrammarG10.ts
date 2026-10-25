@@ -1,0 +1,54 @@
+/**
+ * Grade 10 grammar for the English corner: the authored Semester 1 lessons (spec:
+ * docs/superpowers/specs/2026-10-23-english-corner-grammar-g10-design.md) and Semester 2 lessons (spec:
+ * docs/superpowers/specs/2026-10-24-english-corner-grammar-g10-s2-design.md), each a unit of hand-written items from
+ * `englishGrammarG10Items.ts`. Nothing is pictured. Articles (u1_l5) has no vocabulary rows, and no vocabulary rows are
+ * extracted for Semester 2, so Articles and all ten Semester 2 lessons are grammar-only hub lessons
+ * (`GRAMMAR_ONLY_LESSONS`). Every unit ships `reviewedBy: null`: offered to nobody until a teacher signs the
+ * printed form (`docs/english-grammar-g10-review.html`). `NOT_COVERED_G10` is what the form says is left out.
+ *
+ * Imports only types from the engine, and the hub (which does not import the engine): `englishGrammar.ts` imports this file.
+ */
+import type { GrammarUnit } from './englishGrammar.ts';
+import { G10_ITEM_LESSONS } from './englishGrammarG10Items.ts';
+import { hubLessonsForGrade } from './englishHub.ts';
+
+const HUB_ORDER = new Map(hubLessonsForGrade(10).map((l, i) => [l.id, i]));
+
+const UNITS_G10: GrammarUnit[] = G10_ITEM_LESSONS.map(l => ({ lessonId: l.lessonId, reviewedBy: null, patterns: [], slots: {}, items: l.items }) satisfies GrammarUnit);
+
+/** In the book's order, so the sheet reads unit by unit. */
+export const GRAMMAR_UNITS_G10: GrammarUnit[] = [...UNITS_G10].sort((a, b) => HUB_ORDER.get(a.lessonId)! - HUB_ORDER.get(b.lessonId)!);
+
+const SHARED = [
+  'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
+  '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+];
+
+const L = (s: string) => `kbl-eng-s1-nccd-${s}`;
+const L2 = (s: string) => `kbl-eng-s2-nccd-${s}`;
+
+/** What a Grade 10 lesson does not cover, and why — printed on the teacher's form. One bullet per item, no `"`, `&`, `<` or `>`. */
+export const NOT_COVERED_G10: Record<string, string[]> = {
+  [L('u1_l1')]: [...SHARED, 'جمل المضارع البسيط والمستمر تُحدِّد الصيغة بكلمة في الجملة، مثل usually أو Look!، والخيار الآخر يُسمّى «معنى» لا «خطأ». كلمات مثل this week أو always غير مشمولة لأنها تقبل الصيغتين.'],
+  [L('u1_l5')]: [...SHARED, 'هذا الدرس بلا أنشطة كلمات أو قراءة لأنه بلا مفردات؛ لن يظهر للطلاب إلا بعد توقيعكم. واختيار a أو the يقبل أحيانًا الصيغتين في سياق أوسع، فراجعوا كل جملة.'],
+  [L('u2_l1')]: [...SHARED, 'الحاضر التام البسيط (have written) مقابل المستمر (have been writing): تُحدِّده كلمة العدد أو المدة في الجملة؛ وجمل الصيغة (has been work) أخطاء في الشكل فقط.'],
+  [L('u2_l4')]: [...SHARED, 'الفعل وما يتبعه: -ing أو to، وفي تغيّر المعنى (stop doing / stop to do) تُحدِّد بقية الجملة المعنى.'],
+  [L('u3_l1')]: [...SHARED, 'الماضي البسيط والمستمر والتام: الحدث القصير الذي يقطع فعلًا أطول (when he fell) يُحدِّد المستمر، والفعل اللحظي بعد While … was skiing يبقى ماضيًا بسيطًا؛ ولا تُحدِّد while وحدها الصيغة لأن While we ate جملة سليمة. و by the time تُحدِّد التام، والخيارات الخاطئة في الشكل (had train) أخطاء صيغة.'],
+  [L('u3_l4')]: [...SHARED, 'used to للحالات (have, be, live) و would للتكرار مع كلمة وقت، وفي صفوف would الخيار الخاطئ هو will لأن used to تصلح أيضًا. didn\'t use to هي صيغة الكتاب، و didn\'t used to شائعة في الكتابة غير الرسمية ويقبلها بعض المعلمين، فراجعوا الجملة.'],
+  [L('u3_l5')]: [...SHARED, 'ترتيب الكلمات في السؤال غير المباشر (where it is لا where is it)، واستعمال if أو whether لسؤال نعم أو لا؛ الخيارات الخاطئة كلها في ترتيب الكلمات.'],
+  [L('u4_l1')]: [...SHARED, 'mustn\'t مقابل don\'t have to تُحدِّدها جملة سبب أو جملة ثانية، وكذلك could أو was able to مقابل can مع كلمة ماضٍ محدَّد، و will be able to مع كلمة مستقبل، ولا مقابلة بين could و was able to لأن كلتيهما تصلح غالبًا؛ أما should أو ought to فغير مشمولتين لأن لكل منهما أكثر من إجابة مقبولة.'],
+  [L('u4_l4')]: [...SHARED, 'الجملة الموصولة غير المحدِّدة (بين فاصلتين) لا تقبل that، والجملة المحدِّدة تقبل who أو that للأشخاص؛ لا جملة تعتمد على حذف الضمير الموصول.'],
+  [L('u5_l1')]: [...SHARED, 'will للقرار اللحظي، و going to لدليل ظاهر؛ والخيار الخاطئ في هذين الموضوعين هو المضارع البسيط (I answer it) لا الصيغة الأخرى، لأن الخطة العامة تقبل will و going to كلتيهما. وموضوع الموعد والجدول يختبر شكل الجملة فقط لأن كل صيغة مستقبل تصلح مع وقت محدد.'],
+  [L('u5_l3')]: [...SHARED, 'المستقبل المستمر (will be flying) مع وقت محدد والتام (will have finished) مع by؛ والخيارات الخاطئة الأخرى في الشكل.'],
+  [L2('u6_l1')]: [...SHARED, 'الشرط الأول (If it rains, we will stay) والثاني (If I had a car, I would drive): الصيغة تُحدِّدها جملة الشرط. وفي صفوف التخيّل تُحدِّد الجملة الأولى (Imagine أو Suppose مع الماضي) أن الحال غير واقعي، فلا تصلح will في الجملة الثانية؛ فإن بدت لكم جملة تقبل الصيغتين فاشطبوها. ولا يُختبر الشرط المحتمل (If it rains …) في هذه الصفوف لأن would المتردِّدة تُقبل فيه أيضًا. لا مقابلة بين were و was لأن كلتيهما تُقبل.'],
+  [L2('u6_l4')]: [...SHARED, 'الشرط الصفري للحقائق العامة: if أو when مع المضارع البسيط في الجملتين. لا يدخل فيه will لأن If you heat ice, it will melt جملة سليمة (شرط أول)، فالخيارات الخاطئة هنا كلها في الشكل (it melt، it turning، they dies).'],
+  [L2('u7_l1')]: [...SHARED, 'أفعال النقل وما يليها: promise و offer مع to، و admit و deny مع -ing، و tell و warn بعد المفعول مع to. أما suggest فتقبل that we go أيضًا، لذلك لا يُختبر إلا النمط -ing؛ ولا جملة تعتمد على تغيّر الأزمنة في الكلام المنقول.'],
+  [L2('u7_l5')]: [...SHARED, 'الأسئلة المنقولة: ترتيب الكلمات كالجملة الخبرية (He asked where I lived لا where did I live)، و if أو whether لأسئلة نعم أو لا. لا يُختبر تغيّر الأزمنة لأن He asked where I live مقبولة أيضًا.'],
+  [L2('u8_l1')]: [...SHARED, 'المبني للمجهول في المضارع والماضي ومع الأفعال الناقصة (must be locked)، والأسئلة والنفي؛ الخيارات الخاطئة كلها في الشكل (was build، must locked). لا اختيار بين المبني للمعلوم والمبني للمجهول لأن كليهما مقبول غالبًا.'],
+  [L2('u8_l6')]: [...SHARED, 'have something done للخدمات (I had my car repaired) و get something done في الكلام غير الرسمي. وجملة مثل I had repaired my car سليمة بمعنى آخر، فلا تُستعمل مموِّهًا. وفي صفوف الخدمة مقابل الفعل بنفسك تُحدِّد الجملةُ نفسها الصيغة: كلمة myself أو جملة تقول إن المتكلم لم يقم بالعمل أو من قام به؛ راجعوا كل جملة.'],
+  [L2('u9_l1')]: [...SHARED, 'الشرط الثالث للماضي غير الواقع (If I had known, I would have called). الشرط المختلط (If I knew, I would have called) جملة سليمة، فلا يُستعمل مموِّهًا في صفوف الشكل. وفي صفوف المعنى تستبعد كلمةُ ماضٍ في جملة الجواب الصيغة would مع الفعل المجرد. و would have يُختبر بصيغ خاطئة (would had، would have call).'],
+  [L2('u9_l4')]: [...SHARED, 'I wish و if only للأمنيات والندم: wish مع الماضي البسيط للحاضر ومع الماضي التام للماضي. If only I listened جملة سليمة لأمنية حاضرة، فلا تُستعمل مموِّهًا إلا حيث تستبعدها كلمة ماضٍ مثل last year. لا اختيار بين were و was.'],
+  [L2('u10_l1')]: [...SHARED, 'التخمين عن الحاضر: must للاستنتاج الإيجابي و can\'t للنفي القاطع، و might أو may لاحتمال أضعف. صفوف must و can\'t يُحدِّدها دليل في الجملة (so they must be home)، ولا مقابلة بين might و could لأن كلتيهما تصلح غالبًا.'],
+  [L2('u10_l3')]: [...SHARED, 'التخمين عن الماضي: must have و can\'t have و might have مع التصريف الثالث للفعل. يُحدِّد النوع دليل في الجملة؛ ولا يُستعمل شكل must of غير الرسمي لا صحيحًا ولا مموِّهًا.'],
+};

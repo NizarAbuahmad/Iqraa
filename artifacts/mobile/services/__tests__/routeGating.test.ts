@@ -6,7 +6,19 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isEntryRoute, isNonTeacherRoute, isPublicRoute, gradeSetupSkipKey, needsGradeSetup, needsRosterClaim, needsTeacherSetup } from '../routeGating.ts';
+import {
+  GUARDIAN_WAITING_ROUTE,
+  guardianGate,
+  guardianRedirect,
+  gradeSetupSkipKey,
+  isEntryRoute,
+  isNonTeacherRoute,
+  isPublicRoute,
+  needsGradeSetup,
+  needsGuardianApproval,
+  needsRosterClaim,
+  needsTeacherSetup,
+} from '../routeGating.ts';
 
 describe('isEntryRoute', () => {
   it('treats the auth and onboarding routes as entries', () => {
@@ -239,9 +251,15 @@ describe('needsRosterClaim', () => {
     assert.equal(needsRosterClaim({ role: 'teacher' }), false);
   });
 
-  it('gates a parent or student with zero roster links', () => {
+  it('gates a parent with zero roster links', () => {
     assert.equal(needsRosterClaim({ role: 'parent', hasRosterLink: false }), true);
-    assert.equal(needsRosterClaim({ role: 'student', hasRosterLink: false }), true);
+  });
+
+  it('does not gate a student with zero roster links — an email student uses the app without a class', () => {
+    // Since 2026-10-23 a student may sign up with an email and no teacher's
+    // code. The code is only for joining a class (/join-class), and every
+    // /student/* route answers empty for an account with no link.
+    assert.equal(needsRosterClaim({ role: 'student', hasRosterLink: false }), false);
   });
 
   it('clears once a roster link exists', () => {
@@ -317,9 +335,15 @@ describe('needsGradeSetup', () => {
     assert.equal(needsGradeSetup({ role: 'parent', hasRosterLink: true, gradeIds: ['grade-4', 'grade-9'] }), false);
   });
 
-  it('waits behind the claim gate — an unlinked account claims first', () => {
-    assert.equal(needsGradeSetup({ role: 'student', hasRosterLink: false }), false);
+  it('waits behind the claim gate for a parent — an unlinked parent claims first', () => {
     assert.equal(needsGradeSetup({ role: 'parent', hasRosterLink: false, gradeIds: [] }), false);
+  });
+
+  it('does not wait for a student with no link — there is no claim gate in front of them', () => {
+    // Otherwise a student who signed up with an email would keep the whole
+    // grades 1-10 catalog, because /student/grades is empty without a class.
+    assert.equal(needsGradeSetup({ role: 'student', hasRosterLink: false }), true);
+    assert.equal(needsGradeSetup({ role: 'student', hasRosterLink: false, gradeIds: ['grade-10'] }), false);
   });
 
   it('never gates a teacher or admin', () => {
@@ -375,5 +399,110 @@ describe('skipping the class picker', () => {
 describe('the student lesson explanation screen', () => {
   it('is reachable by a student, because /curriculum is on the non-teacher allowlist', () => {
     assert.equal(isNonTeacherRoute('/curriculum/lesson-explanation'), true);
+  });
+});
+
+describe('/guardian is a public route', () => {
+  it('is public, and a route that merely starts with the same letters is not', () => {
+    assert.equal(isPublicRoute('/guardian'), true);
+    assert.equal(isPublicRoute('/guardian/anything'), true);
+    assert.equal(isPublicRoute('/guardian-waiting'), false);
+    assert.equal(isPublicRoute('/guardians'), false);
+  });
+});
+
+describe('/guardian-waiting is a non-teacher route', () => {
+  it('lets a held student stay on the waiting screen', () => {
+    assert.equal(isNonTeacherRoute('/guardian-waiting'), true);
+  });
+});
+
+describe('needsGuardianApproval', () => {
+  it('holds a student whose status is needed, waiting or declined, and no one else', () => {
+    for (const s of ['needed', 'waiting', 'declined']) {
+      assert.equal(needsGuardianApproval({ role: 'student', guardianStatus: s as any }), true, s);
+    }
+    for (const s of ['not_required', 'approved', undefined]) {
+      assert.equal(needsGuardianApproval({ role: 'student', guardianStatus: s as any }), false, String(s));
+    }
+    for (const role of ['teacher', 'parent', 'school_admin', 'system_admin']) {
+      assert.equal(needsGuardianApproval({ role, guardianStatus: 'needed' }), false, role);
+    }
+    assert.equal(needsGuardianApproval(null), false);
+  });
+});
+
+describe('guardianRedirect', () => {
+  const held = { role: 'student', guardianStatus: 'waiting' as const };
+  it('sends a held student anywhere outside the three open screens to the waiting screen', () => {
+    assert.equal(guardianRedirect(held, '/(tabs)'), GUARDIAN_WAITING_ROUTE);
+    assert.equal(guardianRedirect(held, '/notifications'), GUARDIAN_WAITING_ROUTE);
+    assert.equal(guardianRedirect(held, '/setup-grade'), GUARDIAN_WAITING_ROUTE);
+    assert.equal(guardianRedirect(held, '/'), GUARDIAN_WAITING_ROUTE);
+  });
+  it('leaves the waiting screen, joining a class with a teacher code, and deleting the account alone', () => {
+    for (const p of [GUARDIAN_WAITING_ROUTE, '/join-class', '/delete-account']) {
+      assert.equal(guardianRedirect(held, p), null, p);
+    }
+  });
+  it('treats a sub-path of an open screen as open', () => {
+    assert.equal(guardianRedirect(held, '/join-class/x'), null);
+    assert.equal(guardianRedirect(held, '/delete-account/'), null);
+    assert.equal(guardianRedirect(held, '/guardian-waiting/x'), null);
+  });
+  it('does not treat a lookalike path as open', () => {
+    assert.equal(guardianRedirect(held, '/join-classes'), GUARDIAN_WAITING_ROUTE);
+    assert.equal(guardianRedirect(held, '/delete-account-now'), GUARDIAN_WAITING_ROUTE);
+  });
+  it('moves a student who is no longer held off the waiting screen', () => {
+    assert.equal(guardianRedirect({ role: 'student', guardianStatus: 'approved' }, GUARDIAN_WAITING_ROUTE), '/(tabs)');
+    assert.equal(guardianRedirect({ role: 'student', guardianStatus: 'not_required' }, GUARDIAN_WAITING_ROUTE), '/(tabs)');
+    assert.equal(guardianRedirect({ role: 'teacher' }, GUARDIAN_WAITING_ROUTE), '/(tabs)');
+  });
+  it('does nothing for anyone not held, elsewhere', () => {
+    assert.equal(guardianRedirect({ role: 'student', guardianStatus: 'approved' }, '/notifications'), null);
+    assert.equal(guardianRedirect({ role: 'teacher' }, '/(tabs)'), null);
+    assert.equal(guardianRedirect(null, '/(tabs)'), null);
+  });
+});
+
+describe('guardianGate', () => {
+  const held = { role: 'student', guardianStatus: 'waiting' as const };
+  const OPEN = [GUARDIAN_WAITING_ROUTE, '/join-class', '/delete-account'];
+  it('stops a held student on an open screen without redirecting', () => {
+    for (const p of OPEN) assert.deepEqual(guardianGate(held, p), { redirect: null, stop: true }, p);
+  });
+  it('redirects a held student elsewhere to the waiting screen and stops', () => {
+    for (const p of ['/(tabs)', '/setup-grade']) {
+      assert.deepEqual(guardianGate(held, p), { redirect: GUARDIAN_WAITING_ROUTE, stop: true }, p);
+    }
+  });
+  it('moves a signed-in user who is not held off the waiting screen, and does nothing for nobody', () => {
+    assert.deepEqual(guardianGate({ role: 'student', guardianStatus: 'approved' }, GUARDIAN_WAITING_ROUTE), { redirect: '/(tabs)', stop: true });
+    assert.deepEqual(guardianGate({ role: 'teacher' }, GUARDIAN_WAITING_ROUTE), { redirect: '/(tabs)', stop: true });
+    assert.deepEqual(guardianGate(null, GUARDIAN_WAITING_ROUTE), { redirect: null, stop: false });
+  });
+  it('leaves a user who is not held alone elsewhere, so the later gates run', () => {
+    assert.deepEqual(guardianGate({ role: 'student', guardianStatus: 'approved' }, '/notifications'), { redirect: null, stop: false });
+    assert.deepEqual(guardianGate({ role: 'teacher' }, '/(tabs)'), { redirect: null, stop: false });
+    assert.deepEqual(guardianGate(null, '/(tabs)'), { redirect: null, stop: false });
+  });
+  it('a held student with no grades settles on an open screen instead of looping through grade setup', () => {
+    const user = { role: 'student', guardianStatus: 'needed' as const, gradeIds: [] as string[], hasRosterLink: false };
+    for (const start of ['/(tabs)', GUARDIAN_WAITING_ROUTE, '/join-class', '/delete-account', '/setup-grade']) {
+      let path = start;
+      let settled = false;
+      // The layout's order: the guardian gate first; the grade-setup gate only when it did not stop.
+      for (let step = 0; step < 3; step++) {
+        const g = guardianGate(user, path);
+        let next = path;
+        if (g.redirect) next = g.redirect;
+        else if (!g.stop && needsGradeSetup(user, false)) next = '/setup-grade';
+        if (next === path) { settled = true; break; }
+        path = next;
+      }
+      assert.ok(settled, `${start} did not settle`);
+      assert.ok(OPEN.includes(path), `${start} ended on ${path}`);
+    }
   });
 });

@@ -8,6 +8,8 @@ import { goBack } from '@/services/navigation';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { IconTile } from '@/components/ui/IconTile';
 import { ICON, conceptOf, type ConceptId } from '@/constants/icons';
+import { Band } from '@/components/ui/Band';
+import { useLightStatusBar } from '@/hooks/useLightStatusBar';
 
 interface Props {
   title: string;
@@ -20,6 +22,9 @@ interface Props {
    * The tool's teaching concept (`constants/icons.ts`): its icon, in its colour,
    * on a white tile. Wins over `leading`. Every generator screen passes one, so
    * the quiz wears the same glyph here as on the Tools tab and the prep board.
+   * The band takes the concept's colour too, as a `Band` gradient that only
+   * deepens (`generatorScreens.test.ts` measures white text on both stops for
+   * every concept). Without a concept the band is the brand teal, as before.
    */
   concept?: ConceptId;
   /** The demo/live pill. Off only for screens that never generate. */
@@ -33,15 +38,21 @@ interface Props {
 /**
  * The header every generator screen shares. Eleven screens each hand-built
  * this band with their own colour, title size and badge order, so the tools
- * read as separate products; the band is now always the primary teal.
+ * read as separate products. It is the brand teal, or the colour of the tool's
+ * concept when one is passed, so the quiz looks like the quiz and not like
+ * every other screen.
+ *
+ * The band sits under the status bar, so it asks for light status-bar icons
+ * while the screen is focused (`statusBar.test.ts`).
  */
 export function ToolHeader({ title, subtitle, eyebrow, leading, concept, sourceBadge = true, topPad, isRTL, children }: Props) {
   const colors = useColors();
   const { t, lang, toggleLang } = useLanguage();
+  useLightStatusBar();
   const row = { flexDirection: isRTL ? 'row-reverse' : 'row' } as const;
   const align = { textAlign: isRTL ? 'right' : 'left' } as const;
-  return (
-    <View style={[styles.band, { backgroundColor: colors.hero, paddingTop: topPad + 12 }]}>
+  const body = (
+    <>
       <View style={styles.nav}>
         <Pressable
           onPress={goBack}
@@ -82,7 +93,13 @@ export function ToolHeader({ title, subtitle, eyebrow, leading, concept, sourceB
       </View>
       {subtitle ? <Text style={[styles.subtitle, align]}>{subtitle}</Text> : null}
       {children}
-    </View>
+    </>
+  );
+  const bandStyle = [styles.band, { paddingTop: topPad + 12 }];
+  return concept ? (
+    <Band color={conceptOf(concept).color} style={bandStyle}>{body}</Band>
+  ) : (
+    <View style={[bandStyle, { backgroundColor: colors.hero }]}>{body}</View>
   );
 }
 

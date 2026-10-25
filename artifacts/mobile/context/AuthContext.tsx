@@ -9,9 +9,11 @@ import {
   ApiError,
   isNetworkError,
   setOnRefreshFailed,
+  setOnGuardianRequired,
   getApiBaseUrl,
   awaitPendingRefresh,
 } from '@/services/apiClient';
+import { guardianFromApi, type GuardianStatus } from '@/services/guardianApproval';
 import { LEGAL_VERSION } from '@/constants/legal';
 import { trackEvent } from '@/services/analytics';
 import { fetchWithTimeout } from '@/services/fetchWithTimeout';
@@ -97,6 +99,15 @@ export interface User {
   /** This account signs back in with a personal login code (`loginWithCode`) — the delete screen asks for it. */
   hasLoginCode?: boolean;
   /**
+   * Where a student with an email stands with a parent's approval. Only `/auth/me`
+   * reports it (the sign-in answers do not), so it is absent until `refreshUser()`
+   * has read it; absent means "not held" — the server enforces, see
+   * services/guardianApproval.ts.
+   */
+  guardianStatus?: GuardianStatus;
+  /** The parent's address with the middle hidden (j***@mail.com), for the waiting screen. */
+  guardianParentEmailMasked?: string;
+  /**
    * Grade/subject catalog ids (`@workspace/curriculum`'s GRADES/SUBJECTS)
    * this teacher picked at signup, editable later from the profile screen.
    * Both empty is what `needsTeacherSetup` (routeGating.ts) reads to send a
@@ -135,6 +146,17 @@ export interface RegisterData {
    * (`LEGAL_VERSION`) — see `api-server/src/lib/termsAcceptance.ts`.
    */
   acceptedTerms?: boolean;
+  /**
+   * A student signing up with an email (no teacher's code) ticked «أنا بالغ أو
+   * وافق وليّ أمري». The server refuses a new student account without it — see
+   * `api-server/src/lib/ageConfirmation.ts`. Sent for no other role.
+   */
+  ageConfirmed?: boolean;
+  /**
+   * A student signing up with an email names a parent's address, which the server
+   * asks to approve the account. Sent only when non-empty, for no other role.
+   */
+  parentEmail?: string;
 }
 
 /** What a parent or student sends to create an account from a teacher's code alone. */
@@ -148,6 +170,18 @@ export interface RedeemData {
   acceptedTerms: boolean;
 }
 
+/**
+ * What `redeemCode` hands back. `pending` is true when the picked name on a
+ * class code is held for the teacher (the account exists, has no roster link,
+ * and `studentName` is the name it asked for); absent reads as not held.
+ */
+export interface RedeemResult {
+  loginCode: string;
+  finish: () => Promise<void>;
+  pending?: boolean;
+  studentName?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
@@ -158,7 +192,7 @@ interface AuthContextType {
    * "Continue with Google" button, which used to ignore the role pill
    * entirely and silently create a teacher.
    */
-  loginWithGoogle: (credential: string, signup?: Pick<RegisterData, 'role' | 'acceptedTerms'>) => Promise<void>;
+  loginWithGoogle: (credential: string, signup?: Pick<RegisterData, 'role' | 'acceptedTerms' | 'ageConfirmed' | 'parentEmail'>) => Promise<void>;
   /**
    * Creates the account but does NOT sign in — a password account starts
    * unverified and the server refuses login until `verifyEmail` succeeds.
@@ -173,7 +207,7 @@ interface AuthContextType {
    * by the server) and calls `finish()` once the person has saved it. Opening it
    * sooner would route them straight past the one screen that tells them.
    */
-  redeemCode: (data: RedeemData) => Promise<{ loginCode: string; finish: () => Promise<void> }>;
+  redeemCode: (data: RedeemData) => Promise<RedeemResult>;
   /** Signs back in with the personal login code. Signs the user in on success, same as login. */
   loginWithCode: (code: string) => Promise<void>;
   /**
@@ -238,8 +272,18 @@ interface AuthContextType {
    * only while this account has claimed no roster row — i.e. exactly while the
    * gate is holding it on `/claim-required`, which is the only screen that
    * offers it. Throws with the server's own `code` in `message` otherwise.
+   *
+   * A change **into** student also needs `{ ageConfirmed: true }` — the box the
+   * sign-up asks («أنا بالغ، أو وليّ أمري موافق») — or the server answers 400
+   * `age_confirmation_required`. See `switchNeedsAgeConfirmation`.
    */
-  switchRole: (role: 'teacher' | 'parent' | 'student') => Promise<void>;
+  switchRole: (role: 'teacher' | 'parent' | 'student', opts?: { ageConfirmed?: boolean }) => Promise<void>;
+  /**
+   * Re-reads the signed-in account from `/auth/me` — the only answer that carries
+   * `guardianStatus`. Never throws (offline or signed out keeps the last known
+   * user) and never replaces a different account that signed in meanwhile.
+   */
+  refreshUser: () => Promise<void>;
   /**
    * The other accounts signed in on this device, most recently used first.
    * Never includes the open one, and carries no credentials.
@@ -275,6 +319,8 @@ type ApiUser = {
   lastLogin?: string;
   hasRosterLink?: boolean;
   hasLoginCode?: boolean;
+  guardianStatus?: string;
+  guardianParentEmailMasked?: string;
   gradeIds?: string[];
   subjectIds?: string[];
   teachingAssignments?: TeachingAssignment[];
@@ -297,6 +343,7 @@ function toUser(apiUser: ApiUser): User {
     gradeIds: apiUser.gradeIds ?? [],
     subjectIds: apiUser.subjectIds ?? [],
     teachingAssignments: apiUser.teachingAssignments ?? [],
+    ...guardianFromApi(apiUser),
   };
 }
 
@@ -354,12 +401,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     redirectToLogin.current = fn;
   }, []);
 
+  // Re-reads /auth/me, the only answer that carries `guardianStatus`. The persist
+  // effect below already writes whatever `user` becomes to the snapshot, so this
+  // only sets state. Defined above `adoptSession`, which calls it.
+  const refreshUser = useCallback(async () => {
+    try {
+      const apiUser = await apiJson<ApiUser>('/auth/me');
+      // Keep `prev` when nobody is signed in (a logout landed while this was in
+      // flight must not be undone) or when a different account is open now (a
+      // switch or sign-in landed meanwhile: this answer belongs to the old one).
+      setUser(prev => (!prev || prev.id !== apiUser.id ? prev : toUser(apiUser)));
+    } catch {
+      // Offline or signed out: the next call will say so. Keeping the last known user is the safe answer.
+    }
+  }, []);
+
   useEffect(() => {
     setOnRefreshFailed(() => {
       setUser(null);
       redirectToLogin.current?.();
     });
   }, []);
+
+  // A 403 `guardian_approval_required` means the server is holding this student
+  // for a parent's approval: re-read /me so the gate can move them. A held
+  // student's tabs fire several calls at once, so one read per 5 s.
+  useEffect(() => {
+    let lastGuardianRead = 0;
+    setOnGuardianRequired(() => {
+      const now = Date.now();
+      if (now - lastGuardianRead < 5000) return;
+      lastGuardianRead = now;
+      void refreshUser();
+    });
+    return () => setOnGuardianRequired(null);
+  }, [refreshUser]);
 
   // Web only: tokens live in localStorage, which every tab on the origin
   // shares. Signing out (or adding an account) in one tab clears them under
@@ -490,7 +566,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await storeTokens(accessToken, refreshToken);
     queryClient.clear();
     setUser(toUser(apiUser));
-  }, []);
+    // The sign-in answers do not carry `guardianStatus` (only /auth/me does).
+    // Tokens are stored above, so this read is made as the account just adopted;
+    // `refreshUser` never calls back into here.
+    if (apiUser.role === 'student') void refreshUser();
+  }, [refreshUser]);
 
   const login = useCallback(async (email: string, password: string) => {
     if (!email || !password) throw new ApiError('Email and password are required', 'missing_fields');
@@ -509,7 +589,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = useCallback(async (
     credential: string,
-    signup?: Pick<RegisterData, 'role' | 'acceptedTerms'>,
+    signup?: Pick<RegisterData, 'role' | 'acceptedTerms' | 'ageConfirmed' | 'parentEmail'>,
   ) => {
     // `isNewAccount` is optional on purpose: an app build can outlive the API
     // revision that answers it (and predates it during a rollout). Absent is
@@ -530,6 +610,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Read only when this credential creates an account; someone
           // signing back in is not asked again.
           acceptedTerms: signup?.acceptedTerms === true,
+          ageConfirmed: signup?.ageConfirmed === true,
+          ...(signup?.parentEmail?.trim() ? { parentEmail: signup.parentEmail.trim() } : {}),
           termsVersion: LEGAL_VERSION,
         }),
       },
@@ -564,6 +646,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           confirmPassword: payload.confirmPassword,
           role: payload.role,
           acceptedTerms: payload.acceptedTerms === true,
+          ageConfirmed: payload.ageConfirmed === true,
+          ...(payload.parentEmail?.trim() ? { parentEmail: payload.parentEmail.trim() } : {}),
           termsVersion: LEGAL_VERSION,
         }),
       },
@@ -596,8 +680,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const redeemCode = useCallback(async (data: RedeemData) => {
-    const res = await apiJson<{ accessToken: string; refreshToken: string; loginCode: string; user: ApiUser }>(
+  const redeemCode = useCallback(async (data: RedeemData): Promise<RedeemResult> => {
+    const res = await apiJson<{ accessToken: string; refreshToken: string; loginCode: string; user: ApiUser; pending?: boolean; studentName?: string }>(
       '/auth/redeem',
       {
         method: 'POST',
@@ -617,6 +701,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     trackEvent('signup_started', { method: 'code', role: data.role });
     return {
       loginCode: res.loginCode,
+      pending: res.pending === true,
+      studentName: typeof res.studentName === 'string' ? res.studentName : undefined,
       finish: async () => {
         await adoptSession(res.accessToken, res.refreshToken, res.user);
         await clearPendingLoginCode();
@@ -722,7 +808,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     // PATCH /users/profile does not echo hasRosterLink; dropping it would turn
     // a linked student's `true` into "not answered" until the next /auth/me.
-    setUser(prev => ({ ...toUser(updated), hasRosterLink: updated.hasRosterLink ?? prev?.hasRosterLink }));
+    // The same goes for the parent-approval fields, which only /auth/me reports.
+    const next = toUser(updated);
+    setUser(prev => ({
+      ...next,
+      hasRosterLink: updated.hasRosterLink ?? prev?.hasRosterLink,
+      guardianStatus: next.guardianStatus ?? prev?.guardianStatus,
+      guardianParentEmailMasked: next.guardianParentEmailMasked ?? prev?.guardianParentEmailMasked,
+    }));
   }, []);
 
   const uploadAvatar = useCallback(async (dataUrl: string) => {
@@ -767,7 +860,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const markRosterClaimed = useCallback((linked = true) => {
     setUser(u => (u ? { ...u, hasRosterLink: linked } : u));
-  }, []);
+    // A teacher having vouched lifts a parent-approval hold on the server; re-read /auth/me so the waiting
+    // screen lets go now rather than at the next 403.
+    if (linked) void refreshUser();
+  }, [refreshUser]);
 
   // Keyed by user id, so a stale answer from the previous account is never
   // read as the new one's during the render before the effect below runs.
@@ -789,10 +885,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void markGradeSetupSkipped(skipUserId);
   }, [skipUserId]);
 
-  const switchRole = useCallback(async (role: 'teacher' | 'parent' | 'student') => {
+  const switchRole = useCallback(async (
+    role: 'teacher' | 'parent' | 'student',
+    opts?: { ageConfirmed?: boolean },
+  ) => {
     const updated = await apiJson<{ role: UserRole; hasRosterLink?: boolean }>('/auth/role', {
       method: 'POST',
-      body: JSON.stringify({ role }),
+      // Sent only for a student: the server reads it for no other role.
+      body: JSON.stringify({ role, ...(role === 'student' ? { ageConfirmed: opts?.ageConfirmed === true } : {}) }),
     });
     // No token refresh: the API re-reads users.role on every request, so the
     // role inside the access token decides nothing (middlewares/auth.ts).
@@ -805,7 +905,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ? { ...rest, role: updated.role }
         : { ...rest, role: updated.role, hasRosterLink: updated.hasRosterLink };
     });
-  }, []);
+    // A change into student may land the account on a parent's approval, and
+    // /auth/role does not say; /auth/me does.
+    if (updated.role === 'student') void refreshUser();
+  }, [refreshUser]);
 
   // A switch or an add runs one at a time: two taps would each read the open
   // session's refresh token and each try to set it aside.
@@ -965,6 +1068,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         gradeSetupSkipped,
         skipGradeSetup,
         switchRole,
+        refreshUser,
         savedAccounts,
         switchAccount,
         addAccount,

@@ -63,8 +63,8 @@ export function HearButton({ word, big }: { word: string; big?: boolean }) {
 const PICTURE_SIZE = 72;
 
 /** The book prints each word under its picture; a word with none shows text alone. */
-function WordPicture({ word }: { word: string }) {
-  const pic = wordPicture(word);
+function WordPicture({ word, ar }: { word: string; ar?: string }) {
+  const pic = wordPicture(word, ar);
   if (!pic) return null;
   return (
     <Text style={styles.picture} accessible={false}>
@@ -101,7 +101,7 @@ export function Flashcards({ words }: { words: HubWord[] }) {
         accessibilityHint={t('hubTapToFlip')}
         style={[styles.flash, { backgroundColor: colors.card, borderColor: colors.border }]}
       >
-        <WordPicture word={w.en} />
+        <WordPicture word={w.en} ar={w.ar} />
         {flipped ? (
           <Text style={[styles.flashAr, { color: colors.foreground }]}>{w.ar}</Text>
         ) : (
@@ -554,7 +554,7 @@ export function Speaking({ words }: { words: HubWord[] }) {
   return (
     <View style={{ gap: 16, alignItems: 'center' }}>
       <Progress i={i} n={words.length} />
-      <WordPicture word={w.en} />
+      <WordPicture word={w.en} ar={w.ar} />
       <Text style={[styles.flashEn, { color: colors.foreground }]}>{w.en}</Text>
       <View style={{ flexDirection: row, alignItems: 'center', gap: 20 }}>
         <HearButton word={w.en} />

@@ -20,7 +20,9 @@ import { wordPicture } from './englishPictures.ts';
 import { GRAMMAR_UNITS_G2 } from './englishGrammarG2.ts';
 import { GRAMMAR_UNITS_G3 } from './englishGrammarG3.ts';
 import { GRAMMAR_UNITS_G4 } from './englishGrammarG4.ts';
+import { GRAMMAR_UNITS_G5 } from './englishGrammarG5.ts';
 import { GRAMMAR_UNITS_G9 } from './englishGrammarG9.ts';
+import { GRAMMAR_UNITS_G10 } from './englishGrammarG10.ts';
 
 export type GrammarMarker = 'yes' | 'no' | 'boy' | 'girl' | 'many';
 
@@ -77,7 +79,7 @@ export interface GrammarPattern {
   };
 }
 
-/** A hand-written Grade 9 item: the whole sentence, the words a child must choose, and the distractor it is offered against. */
+/** A hand-written Grade 5 or 9 item: the whole sentence, the words a child must choose, and the distractor it is offered against. */
 export interface GrammarItem {
   /** The sub-topic it belongs to (printed on the teacher's form; the sentence's `patternId`). */
   topic: string;
@@ -94,7 +96,7 @@ export interface GrammarUnit {
   lessonId: string;
   /** A teacher's sign-off. `null` → the unit is offered to nobody. */
   reviewedBy: { name: string; date: string } | null;
-  /** Empty on a unit of authored `items` (Grade 9, S1 U1–U10 except U4's two). */
+  /** Empty on a unit of authored `items` (Grade 5 or 9; Grade 9: S1 U1–U10 except U4's two). */
   patterns: GrammarPattern[];
   /** Hand-written sentences, each with its answer and distractor; expanded after the patterns. */
   items?: GrammarItem[];
@@ -374,7 +376,7 @@ const GRAMMAR_UNITS_G1: GrammarUnit[] = [
 ];
 
 /** Grade 1 first, then 2, then 3: the order the lessons come in. */
-export const GRAMMAR_UNITS: GrammarUnit[] = [...GRAMMAR_UNITS_G1, ...GRAMMAR_UNITS_G2, ...GRAMMAR_UNITS_G3, ...GRAMMAR_UNITS_G4, ...GRAMMAR_UNITS_G9];
+export const GRAMMAR_UNITS: GrammarUnit[] = [...GRAMMAR_UNITS_G1, ...GRAMMAR_UNITS_G2, ...GRAMMAR_UNITS_G3, ...GRAMMAR_UNITS_G4, ...GRAMMAR_UNITS_G5, ...GRAMMAR_UNITS_G9, ...GRAMMAR_UNITS_G10];
 
 export function grammarUnit(lessonId: string): GrammarUnit | undefined {
   return GRAMMAR_UNITS.find(u => u.lessonId === lessonId);
@@ -406,6 +408,17 @@ function buildOf(tokens: string[], cap: number): GrammarSentence['build'] {
 export function offeredGrammar(lessonId: string): GrammarSentence[] | null {
   const unit = grammarUnit(lessonId);
   return unit?.reviewedBy ? unitSentences(unit) : null;
+}
+
+/**
+ * Is this hub lesson shown to students? A lesson with words always is. A grammar-only lesson (too few words for the
+ * word activities) is only once a teacher has signed its grammar unit: otherwise it would be an empty page in the
+ * public index. `offered` is `offeredGrammar` unless a test passes a stand-in.
+ */
+export function hubLessonVisible(lessonId: string, offered: (id: string) => unknown = offeredGrammar): boolean {
+  const lesson = hubLesson(lessonId);
+  if (!lesson) return false;
+  return !lesson.grammarOnly || Boolean(offered(lessonId));
 }
 
 // ─── Realising a pattern ──────────────────────────────────────────────────
@@ -623,27 +636,34 @@ export function allGrammarSentences(): string[] {
 }
 
 /**
- * Every string the grammar activities speak: each sentence, and for Yes or No the
- * question alone and the No exchange («Is it a plane? No, it isn't.»). Voiced before
- * a unit is signed off, like the sentences.
+ * Every string one unit's activities speak, in first-seen order without repeats:
+ * each sentence, the voiced false claim, the build prompt, and for Yes or No the
+ * question alone and the No exchange («Is it a plane? No, it isn't.»). Per unit so
+ * the audio plan can voice each string in its grade's register.
  */
-export function allGrammarSpoken(): string[] {
+export function unitSpoken(unit: GrammarUnit): string[] {
   const out = new Set<string>();
-  for (const u of GRAMMAR_UNITS) {
-    for (const s of unitSentences(u)) {
-      out.add(s.text);
-      if (s.claim && s.claim.voiced !== false) out.add(s.claim.falseText);
-      if (s.build?.prompt) out.add(s.build.prompt);
-      const y = s.yesNo;
-      if (!y) continue;
-      out.add(y.question);
-      if (y.otherQuestion) {
-        out.add(y.otherQuestion);
-        out.add(`${y.otherQuestion} ${y.no}`);
-      }
+  for (const s of unitSentences(unit)) {
+    out.add(s.text);
+    if (s.claim && s.claim.voiced !== false) out.add(s.claim.falseText);
+    if (s.build?.prompt) out.add(s.build.prompt);
+    const y = s.yesNo;
+    if (!y) continue;
+    out.add(y.question);
+    if (y.otherQuestion) {
+      out.add(y.otherQuestion);
+      out.add(`${y.otherQuestion} ${y.no}`);
     }
   }
   return [...out];
+}
+
+/**
+ * Every string the grammar activities speak, across every unit (`unitSpoken`).
+ * Voiced before a unit is signed off, like the sentences.
+ */
+export function allGrammarSpoken(): string[] {
+  return [...new Set(GRAMMAR_UNITS.flatMap(unitSpoken))];
 }
 
 // ─── The teacher's sheet ──────────────────────────────────────────────────

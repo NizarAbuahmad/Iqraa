@@ -4,19 +4,20 @@
  * Grade 1 reading activities likewise (`offeredReading`), and the end-of-round
  * card.
  */
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { hubLesson } from '@workspace/curriculum/englishHub';
-import { offeredGrammar } from '@workspace/curriculum/englishGrammar';
+import { hubLessonVisible, offeredGrammar } from '@workspace/curriculum/englishGrammar';
 import { offeredReading, offeredReadingSentences } from '@workspace/curriculum/englishReading';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import type { TranslationKey } from '@/services/i18n';
-import { GRAMMAR_ACTIVITIES, HUB_ACTIVITIES, READING_ACTIVITIES, dayOf, grammarActivityAvailable, lessonHasPictureMatch, newlyEarnedBadges, progressKey, readSentenceAvailable, readingActivityAvailable, recordResult, starsFor, type BadgeId, type HubActivity } from '@/services/englishHub/games';
+import { GRAMMAR_ACTIVITIES, HUB_ACTIVITIES, READING_ACTIVITIES, dayOf, grammarActivityAvailable, lessonHasPictureMatch, newlyEarnedBadges, progressKey, readSentenceAvailable, readingActivityAvailable, recordResult, starsFor, trueFalseDescKey, yesNoDescKey, type BadgeId, type HubActivity } from '@/services/englishHub/games';
 import { useHubProgress } from '@/services/englishHub/progressStore';
 import { goBack } from '@/services/navigation';
+import { prefetchLessonAudio } from '@/services/englishAudio';
 import { trackEvent } from '@/services/analytics';
 import { unitNames } from '@/services/contentLanguage';
 import { Flashcards, ListenChoose, MatchMeaning, PictureMatch, Scramble, Speaking, SpellIt } from '@/components/englishHub/Activities';
@@ -54,7 +55,8 @@ export default function EnglishHubLessonScreen() {
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
   const { lessonId } = useLocalSearchParams<{ lessonId: string }>();
-  const lesson = hubLesson(lessonId ?? '');
+  // A grammar-only lesson is not reachable, even by its URL, until a teacher has signed its grammar.
+  const lesson = lessonId && hubLessonVisible(lessonId) ? hubLesson(lessonId) : undefined;
   const { progress, record } = useHubProgress();
   const [activity, setActivity] = useState<HubActivity | null>(null);
   // Bumped to remount an activity for "play again" with a fresh shuffle.
@@ -66,6 +68,15 @@ export default function EnglishHubLessonScreen() {
   const grammar = useMemo(() => offeredGrammar(lessonId ?? ''), [lessonId]);
   const reading = useMemo(() => offeredReading(lessonId ?? ''), [lessonId]);
   const readingSentences = useMemo(() => offeredReadingSentences(lessonId ?? ''), [lessonId]);
+  // On a phone, fetch this lesson's clips ahead so its activities play without the network
+  // (a no-op on the web). Grammar strings only once the grammar is offered: they are not shown before.
+  // Leaving the lesson cancels what has not started.
+  const lessonShown = Boolean(lesson);
+  const grammarShown = grammar !== null;
+  useEffect(() => {
+    if (!lessonId || !lessonShown) return undefined;
+    return prefetchLessonAudio(lessonId, { grammar: grammarShown });
+  }, [lessonId, lessonShown, grammarShown]);
   const row = isRTL ? 'row-reverse' : 'row';
   const align = isRTL ? 'right' : 'left';
 
@@ -166,7 +177,7 @@ export default function EnglishHubLessonScreen() {
           </View>
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 16, textAlign: align }}>{t(META[a].title)}</Text>
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>{t(META[a].desc)}</Text>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>{t(grammar && a === 'grammar-true' ? trueFalseDescKey(grammar) : grammar && a === 'grammar-yesno' ? yesNoDescKey(grammar) : META[a].desc)}</Text>
           </View>
           {best > 0 ? <Text style={{ fontSize: 14 }}>{'⭐'.repeat(best)}</Text> : null}
         </Pressable>
@@ -180,8 +191,9 @@ export default function EnglishHubLessonScreen() {
 
     return (
       <View style={{ gap: 10 }}>
-        {HUB_ACTIVITIES.filter(a => a !== 'picture' || lessonHasPictureMatch(lesson.words)).map(card)}
-        {readingCards.length > 0 ? (
+        {/* A grammar-only lesson has too few words for the word and reading activities: grammar cards only. */}
+        {lesson.grammarOnly ? null : HUB_ACTIVITIES.filter(a => a !== 'picture' || lessonHasPictureMatch(lesson.words)).map(card)}
+        {!lesson.grammarOnly && readingCards.length > 0 ? (
           <>
             <Text style={[styles.section, { color: colors.foreground, textAlign: align }]}>{t('hubReading')}</Text>
             {readingCards.map(card)}

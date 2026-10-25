@@ -9,7 +9,7 @@
  * that are plainly true; opinion rows are never judged. Both units ship `reviewedBy: null`: they are offered to
  * nobody until a teacher signs the printed form. `NOT_COVERED_G9` is what the form says is left out.
  *
- * The thirteen authored lessons (spec 2026-10-23-english-corner-grammar-g9-lessons-design.md) come from `englishGrammarG9Items.ts`.
+ * The nineteen authored lessons (specs 2026-10-23-english-corner-grammar-g9-lessons-design.md and ...-grammar-only-lessons-design.md) come from `englishGrammarG9Items.ts`.
  *
  * Imports only types from the engine, and the hub (which does not import the engine): `englishGrammar.ts` imports this file.
  */
@@ -100,7 +100,8 @@ const UNITS_G9: GrammarUnit[] = [
     ],
     slots: { pl: FOOD_COUNT, mass: FOOD_MASS },
   },
-  // The thirteen authored lessons (hand-written items; see `englishGrammarG9Items.ts`). Unsigned like the pilot.
+  // The nineteen authored lessons (hand-written items; see `englishGrammarG9Items.ts`), five of them grammar-only hub
+  // lessons (`GRAMMAR_ONLY_LESSONS`, englishHub.ts). Unsigned like the pilot.
   ...G9_ITEM_LESSONS.map(l => ({ lessonId: l.lessonId, reviewedBy: null, patterns: [], slots: {}, items: l.items }) satisfies GrammarUnit),
 ];
 
@@ -116,19 +117,6 @@ export const G9_TABLES = {
   foodCount: FOOD_COUNT,
   foodMass: FOOD_MASS,
 };
-
-/**
- * Book grammar topics with no hub lesson, so no activity: the hub offers a lesson only with at least four hub words.
- * Printed once on the Grade 9 form. No `"`, `&`, `<` or `>`.
- */
-export const G9_HUB_GAPS: string[] = [
-  'used to (الوحدة الثانية): درسها بلا كلمات كافية في المركز.',
-  'المضارع التام، present perfect، مع already, ever, just, never, yet ومع for, since (الوحدة السابعة): لا يوجد درس قواعد في المركز لهذه الوحدة أصلًا.',
-  'الجملة الشرطية الأولى، first conditional (الوحدة الثامنة): درسها بلا كلمات كافية في المركز.',
-  'الكلام المنقول، reported speech، مع say, tell, ask (الوحدة التاسعة): درسه بلا كلمات كافية في المركز.',
-  'المبني للمجهول، the passive (الوحدة العاشرة): درسه بلا كلمات كافية في المركز.',
-  'إضافة هذه الدروس تتطلب تغييرًا في طريقة بناء دروس المركز، وهو عمل منفصل.',
-];
 
 /**
  * What a Grade 9 lesson does not cover, and why — printed on the teacher's form. One bullet per item,
@@ -198,6 +186,41 @@ export const NOT_COVERED_G9: Record<string, string[]> = {
     'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
     '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
     'الظروف مثل before وby (before her parents arrived) تُبيِّن ترتيب الحدثين لكنها لا تجعل الماضي البسيط خطأً، فخيارات هذا الدرس أخطاء في الصيغة (had finish) فقط.',
+  ],
+  [L2('s2-nccd-u10_l1')]: [
+    'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
+    '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+    'المبني للمجهول (the passive) في المضارع والماضي والسؤال والنفي: الخيار الخاطئ دائمًا الفعل بصيغته الأولى (is speak، was build). ذِكر الفاعل بعد by غير مختبَر.',
+  ],
+  [L2('s1-nccd-u2_l3')]: [
+    'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
+    '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+    'هذا الدرس بلا أنشطة كلمات أو قراءة لأن كلماته قليلة؛ لن يظهر للطلاب إلا بعد توقيعكم.',
+    'didn\'t use to مقابل didn\'t used to يقبلهما بعض المعلمين معًا، فهما في موضوع واحد من ١٢ جملة للمراجعة (didnt-use-to).',
+  ],
+  [L2('s2-nccd-u7_l1')]: [
+    'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
+    '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+    'هذا الدرس بلا أنشطة كلمات أو قراءة لأن كلماته قليلة؛ لن يظهر للطلاب إلا بعد توقيعكم.',
+    'الخيارات الخاطئة أخطاء في الصيغة فقط (have finish، has never eat)، لا اختيار بين الماضي البسيط والمضارع التام.',
+  ],
+  [L2('s2-nccd-u7_l2')]: [
+    'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
+    '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+    'هذا الدرس بلا أنشطة كلمات أو قراءة لأن كلماته قليلة؛ لن يظهر للطلاب إلا بعد توقيعكم.',
+    'المدة أو التاريخ في الجملة هو الذي يحدد for أو since (for five years، since 2019)، والخيار الآخر غير سليم معها.',
+  ],
+  [L2('s2-nccd-u8_l5')]: [
+    'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
+    '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+    'هذا الدرس بلا أنشطة كلمات أو قراءة لأن كلماته قليلة؛ لن يظهر للطلاب إلا بعد توقيعكم.',
+    'الخيارات الخاطئة هي صيغة الشرط الثاني (would stay) أو will داخل جملة if (If it will rain)، لا اختيار في المعنى.',
+  ],
+  [L2('s2-nccd-u9_l3')]: [
+    'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
+    '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+    'هذا الدرس بلا أنشطة كلمات أو قراءة لأن كلماته قليلة؛ لن يظهر للطلاب إلا بعد توقيعكم.',
+    'لا جملة تعتمد على تغيّر زمن الفعل في الكلام المنقول (said she was tired وsaid she is tired مقبولتان)، فالخيارات الخاطئة نقص المفعول (He told he was busy) أو ترتيب الكلمات (where did I live).',
   ],
   [L2('s2-nccd-u10_l4')]: [
     'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',

@@ -11,7 +11,9 @@ import {
   exerciseGradeOf,
   exerciseLessonPath,
   exerciseUnits,
+  exerciseGradeOfClass,
   normalizeClassPractice,
+  practiceByLesson,
   parseBests,
   practiceByStudent,
   recordBest,
@@ -81,6 +83,30 @@ describe('best scores', () => {
       parseBests(JSON.stringify({ a: { correct: 11, total: 10 }, b: { correct: 1.5, total: 3 }, c: { correct: 0, total: 0 }, d: null, e: { correct: 2, total: 4 } })),
       { e: { correct: 2, total: 4 } },
     );
+  });
+});
+
+describe('class practice by lesson', () => {
+  const lessons = exerciseUnits(5).flatMap(u => u.lessons);
+  const [a, b] = [lessons[0]!.id, lessons[1]!.id];
+  const row = (studentId: string, lessonId: string, correct: number, total: number) =>
+    ({ studentId, displayName: studentId, lessonId, correct, total, attempts: 1, practicedAt: '' });
+
+  it('lists every covered lesson of the grade in book order, practised or not, with counts and the average', () => {
+    const s = practiceByLesson([row('s1', a, 8, 10), row('s2', a, 3, 5), row('s1', b, 1, 4), row('s1', 'not-this-grade', 5, 5)], 5);
+    assert.equal(s.totalLessons, lessons.length);
+    assert.equal(s.practisedLessons, 2, 'the other-grade row is left out');
+    assert.deepEqual(s.units.flatMap(u => u.lessons.map(l => l.lesson.id)), lessons.map(l => l.id));
+    const flat = s.units.flatMap(u => u.lessons);
+    assert.deepEqual([flat[0]!.practised, flat[0]!.averagePct], [2, 70], 'mean of 80% and 60%');
+    assert.deepEqual([flat[1]!.practised, flat[1]!.averagePct], [1, 25]);
+    assert.ok(flat.slice(2).every(l => l.practised === 0 && l.averagePct === null));
+  });
+
+  it('reads the class grade, and refuses one with no exercises', () => {
+    assert.equal(exerciseGradeOfClass('grade-5'), 5);
+    assert.equal(exerciseGradeOfClass('grade-10'), 10);
+    for (const g of ['grade-11', '', null, undefined, 'kg']) assert.equal(exerciseGradeOfClass(g), null, String(g));
   });
 });
 

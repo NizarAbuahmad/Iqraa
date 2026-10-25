@@ -5,7 +5,12 @@
  */
 import type { HomeworkResource } from "@workspace/db";
 
-export const GAMES =["memory", "scramble", "spot"] as const;
+/**
+ * `exercises` is the Math Corner's «اختبر نفسك» set for a maths lesson: not a game,
+ * but it attaches, scores and reports exactly like one, so it shares the rows.
+ */
+export const GAMES =["memory", "scramble", "spot", "meaning", "exercises"] as const;
+export const GAMES_TEXT = "memory, scramble, spot, meaning or exercises";
 export type GameKind = (typeof GAMES)[number];
 
 export const GAME_TITLE_MAX = 200;
@@ -35,7 +40,7 @@ export function parseGameResult(body: unknown): ParsedGameResult {
   if (typeof lessonId !== "string" || lessonId === "" || lessonId.length > GAME_LESSON_ID_MAX) {
     return fail(`lessonId must be a lesson id of at most ${GAME_LESSON_ID_MAX} characters`);
   }
-  if (!isGame(game)) return fail("game must be memory, scramble or spot");
+  if (!isGame(game)) return fail(`game must be ${GAMES_TEXT}`);
   if (!Number.isInteger(total) || (total as number) < 1 || (total as number) > GAME_TOTAL_MAX) {
     return fail(`total must be a whole number from 1 to ${GAME_TOTAL_MAX}`);
   }
@@ -56,16 +61,31 @@ export function attachedGames(resources: readonly HomeworkResource[]): Array<{ l
  * client says it knows about games (`gamesIncluded: true`), the games the
  * homework already has and the body left out are appended after the body's own
  * items — as many as fit under `max`, the body's items first.
+ *
+ * The same trap recurs with every game added later: an app that knows games but
+ * not the newest one drops that attachment too. So a client that does send
+ * `gamesIncluded: true` also says which games it knows (`knownGames`, absent =
+ * the four that existed before `meaning`), and only an attachment of a game it
+ * does NOT know is carried over (`known`): for a game it knows, leaving it out
+ * is a real removal.
  */
+export const LEGACY_GAMES: readonly string[] = ["memory", "scramble", "spot", "exercises"];
+
+export function knownGamesOf(v: unknown): readonly string[] {
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : LEGACY_GAMES;
+}
+
 export function carryOverGames(
   resolved: HomeworkResource[],
   existing: readonly HomeworkResource[],
   max: number,
+  known?: readonly string[],
 ): HomeworkResource[] {
   const out = [...resolved];
   const have = new Set(out.flatMap(r => (r.kind === "game" ? [gameResourceKey(r.lessonId, r.game)] : [])));
   for (const r of existing) {
     if (r.kind !== "game" || out.length >= max) continue;
+    if (known?.includes(r.game)) continue;
     const key = gameResourceKey(r.lessonId, r.game);
     if (have.has(key)) continue;
     have.add(key);

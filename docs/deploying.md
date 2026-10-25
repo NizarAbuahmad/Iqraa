@@ -605,6 +605,61 @@ claimed and repeats none. The run is sequential, so a very large school could
 outlast the job's 300 s attempt deadline; do not rely on the handler carrying on
 after its request ends (Cloud Run throttles CPU then) — rely on the retry.
 
+### Claude for documents (`ANTHROPIC_API_KEY`) — manual, once
+
+Lesson plans, worksheets, quizzes and slide decks can be written by Claude Sonnet 5.5
+instead of the OpenAI model. The code ships **dormant**: nothing changes until
+`AI_MODEL_DOCUMENTS` is set, and a Claude id with no `ANTHROPIC_API_KEY` is ignored
+(the OpenAI model keeps running, one warning in the log). As with the cron key,
+`deploy.yml` does not mention the secret: a `--update-secrets` ref to a secret that
+does not exist yet fails every deploy. Attach it by hand.
+
+Chat, evaluations (exam generation), grading, the verified-derivative path,
+homework, activities, infographics and the lesson-teaching deck stay on OpenAI:
+they were not part of the comparison, and several of them call the OpenAI client
+directly. That is why this is `AI_MODEL_DOCUMENTS` and not `AI_MODEL_GENERATE`.
+
+**The key value must never be echoed or pasted into a transcript.** Use a *new*
+key from console.anthropic.com (never one that has appeared in a log, a chat or a
+terminal). `read -rs` takes it without showing it:
+
+```bash
+P=--project=iqraa-auth-507315
+# 1. Paste the key (nothing is shown), then Enter.
+read -rs KEY
+printf %s "$KEY" | gcloud secrets create ANTHROPIC_API_KEY --data-file=- $P
+unset KEY
+# 2. Let the API's runtime account read it.
+gcloud secrets add-iam-policy-binding ANTHROPIC_API_KEY $P \
+  --member=serviceAccount:613126375862-compute@developer.gserviceaccount.com \
+  --role=roles/secretmanager.secretAccessor
+# 3. Put it on the service (rolls a revision; still no change in behaviour).
+gcloud run services update iqraa-api --region europe-west1 $P \
+  --update-secrets=ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest
+# 4. Switch it on. Plain env, so it deploys and rolls back without a secret.
+gcloud run services update iqraa-api --region europe-west1 $P \
+  --update-env-vars=AI_MODEL_DOCUMENTS=claude-sonnet-5-5
+```
+
+**Order matters: ship the app's 90 s wait before step 4.** A merge deploys the web build
+at once, but phones keep the old 45 s limit until the production OTA
+(`gh workflow run mobile-update.yml -f branch=production`). A deck takes 30-40 s on
+Claude, so switching first would time it out on a phone that has not updated yet.
+
+**Roll back** with `--remove-env-vars=AI_MODEL_DOCUMENTS`: instant, no deploy. Pooled
+artifacts are keyed by model, so what OpenAI wrote and what Claude writes never mix.
+
+What to expect, from the 2026-10-23 comparison: a document takes **15–30 s** (7 s on
+the OpenAI model) and costs about **$0.04** (about $0.009), so the per-user cap
+`AI_USER_BUDGET_USD=1` is roughly 25 documents instead of 115 — decide whether to
+raise it. Check the first day's spend in the Anthropic console against the figure the
+API logs ("ai spend updated"): the price table in `aiBudget.ts` is the model table's
+$2 / $10 per million tokens and has not been checked against a bill. `AI_CLAUDE_EFFORT`
+(`low`/`medium`/`high`, default `medium`, what was measured) trades speed and cost for
+depth. A refusal by the model answers 502 `model_declined` with the category in the log;
+the server-side refusal fallback is **not** enabled (it could not be tried without a live
+key), so a teacher who hits one sees the usual generation error and can try again.
+
 ## The Android app (Google Play)
 
 **Nothing publishes the Android app automatically, on any path.** Both build
