@@ -21,18 +21,26 @@ name: Destructive migrations
 on:
   pull_request:
     types: [opened, synchronize, reopened, edited]
+  # The merge queue needs every required check to report on its temporary
+  # branch. There is no PR body there to read, so the job below is skipped for
+  # it (GitHub counts a skipped required check as passing); the body was already
+  # checked on the PR, and a queue entry carries the same migration files.
+  merge_group:
 
 permissions:
   contents: read
 
-# A body edit and a push can land together; the newest event decides.
+# A body edit and a push can land together; the newest event decides. A queue
+# entry has no PR number, so it falls back to its own ref and never cancels
+# another entry's run.
 concurrency:
-  group: destructive-migration-ack-${{ github.event.pull_request.number }}
+  group: destructive-migration-ack-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   acknowledged:
     name: destructive migrations acknowledged
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
