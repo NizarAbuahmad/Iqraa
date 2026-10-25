@@ -121,6 +121,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-25 — A parent signs up with an email or a teacher's code
 - 2026-10-24 — Parent approval for email students: the app (off)
 - 2026-10-24 — Parent approval for email students: the server (off)
 - 2026-10-24 — English audio: a speech-to-text check of every recording
@@ -150,7 +151,6 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-23 — Neon leaves the Free plan before launch
 - 2026-10-23 — Leftover icon colours follow CONCEPTS
 - 2026-10-23 — Grade 9 grammar, thirteen lessons in the English corner — built, shown to nobody yet
-- 2026-10-23 — Iqraa draws its own icons
 
 ## Finding older detail, and recording new work
 

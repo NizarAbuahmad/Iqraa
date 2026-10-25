@@ -61,10 +61,10 @@ export default function RegisterScreen() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
-  // A parent signs up from the teacher's code alone (no email, no password, no
-  // Google): the code already says who they are, and email can be added later
-  // from the profile. A teacher signs up with an email. A student chooses —
-  // no default, see services/signupMethod.ts.
+  // A teacher signs up with an email. A parent or student chooses: with a
+  // teacher's code (no email, no password — the code already says who they are,
+  // and an email can be added later from the profile) or with an email. No
+  // default, see services/signupMethod.ts.
   const [studentMethod, setStudentMethod] = useState<StudentSignupMethod | null>(null);
   const form = signupForm(chosenRole, studentMethod);
   const codeSignup = form === 'code';
@@ -153,7 +153,8 @@ export default function RegisterScreen() {
         // Never trust the local selection: the flag can flip while this
         // screen is open, and the server would refuse it anyway. No roster
         // code is collected here: a student joins a class later from
-        // /join-class, and a parent never gets this form.
+        // /join-class, and a parent links to a child on the claim screen the
+        // routing gate sends an unlinked account to.
         role: chosenRole,
         acceptedTerms: termsAccepted,
         ageConfirmed: askAge && ageConfirmed,
@@ -294,9 +295,10 @@ export default function RegisterScreen() {
             />
           ) : null}
 
-          {/* A student chooses how to sign up. Not a default: with a teacher's
-              code they need no email; with an email they need no class. */}
-          {chosenRole === 'student' ? (
+          {/* A student or parent chooses how to sign up. Not a default: with a
+              teacher's code they need no email; with an email they need no
+              code yet (a parent links to a child afterwards). */}
+          {chosenRole === 'student' || chosenRole === 'parent' ? (
             <>
               <PillSelector
                 label={t('signupMethodLabel')}
@@ -314,7 +316,7 @@ export default function RegisterScreen() {
               />
               {studentMethod === 'email' ? (
                 <Text style={[styles.terms, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-                  {askParent ? t('studentEmailNoteParent') : t('studentEmailNote')}
+                  {chosenRole === 'parent' ? t('parentEmailNote') : askParent ? t('studentEmailNoteParent') : t('studentEmailNote')}
                 </Text>
               ) : null}
             </>
