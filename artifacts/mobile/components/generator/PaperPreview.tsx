@@ -40,9 +40,11 @@ export interface PaperPreviewProps {
   footer: readonly [string, string];
   note?: string;
   accent: string;
+  /** The «الاسم / التاريخ» line of a student's paper. A lesson plan is the teacher's: it passes false. */
+  nameLine?: boolean;
 }
 
-export function PaperPreview({ title, subtitle, rows, more, footer, note, accent }: PaperPreviewProps) {
+export function PaperPreview({ title, subtitle, rows, more, footer, note, accent, nameLine = true }: PaperPreviewProps) {
   const colors = useColors();
   const surface = useSurface();
   const { t, isRTL } = useLanguage();
@@ -62,10 +64,12 @@ export function PaperPreview({ title, subtitle, rows, more, footer, note, accent
           <Text style={[styles.sheetTitle, { textAlign: align }]} numberOfLines={1}>{title}</Text>
           <Text style={[styles.sheetSub, { textAlign: align }]} numberOfLines={1}>{subtitle}</Text>
         </View>
-        <View style={[styles.nameLine, row]}>
-          <Text style={styles.sheetSub}>{t('genPreviewName')}: ................</Text>
-          <Text style={styles.sheetSub}>{t('genPreviewDate')}: ........</Text>
-        </View>
+        {nameLine ? (
+          <View style={[styles.nameLine, row]}>
+            <Text style={styles.sheetSub}>{t('genPreviewName')}: ................</Text>
+            <Text style={styles.sheetSub}>{t('genPreviewDate')}: ........</Text>
+          </View>
+        ) : null}
         {rows.map(r => (
           <View key={r.n} style={[styles.qRow, row]}>
             <Text style={styles.qNum}>{r.n}</Text>

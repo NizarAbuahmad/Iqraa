@@ -1,5 +1,14 @@
 # English corner: Grade 9 grammar, the thirteen hub lessons — design
 
+> **Correction (2026-10-23, later the same day).** The passive (`kbl-g9-eng-s2-nccd-u10_l1`, 7 hub words) **is** in
+> the hub; this spec wrongly listed it as having no hub lesson, and it was left out. It is built now (40 items, topics
+> `present-passive` 14, `past-passive` 14, `questions-negatives` 12, all `form`), so the work covers **fourteen**
+> lessons and **560** items. Wherever the text below says thirteen, 520 or six topics, read fourteen, 560 and **five**
+> (used to, the two present perfects, the first conditional, reported speech). See the status-log entry «Grade 9
+> grammar: the passive added». **Update:** the five topics the hub lacked are built too, as grammar-only hub lessons
+> (`2026-10-23-english-corner-grammar-g9-grammar-only-lessons-design.md`); no Grade 9 grammar topic of the book is left
+> without a lesson.
+
 **Status:** implemented (PR #1204; where the build differs from what was first written, the text says how). **Scope:** Grade 9 English **grammar** on the thirteen hub lessons, outside
 Unit 4, that carry a grammar topic of the book (table below). Builds on the Unit 4 pilot
 (`2026-10-23-english-corner-grammar-g9-pilot-design.md`, PR #1171, merged) and the engine in
@@ -36,10 +45,11 @@ checked against the book's data file (`iqra_curriculum_g9_eng_sem{1,2}.json`): t
 | `…s2-nccd-u6_l3` | use going to and will to talk about future predictions | form only |
 | `…s2-nccd-u8_l1` | use verb patterns with the infinitive and the -ing form | infinitive or -ing |
 | `…s2-nccd-u9_l1` | use the Past Perfect to tell stories from my life | past perfect, form |
+| `…s2-nccd-u10_l1` | use the passive | present and past passive, questions and negatives (added; see the correction) |
 | `…s2-nccd-u10_l4` | use the second conditional to talk about hypothetical situations | second conditional |
 
-**Six book topics have no hub lesson and are out:** used to (U2 l3), the two present perfects (U7 l1, l2), the first
-conditional (U8 l5), reported speech (U9 l3) and the passive (U10 l1). Unit 7 has no grammar lesson in the hub at
+**Five book topics have no hub lesson and are out:** used to (U2 l3), the two present perfects (U7 l1, l2), the first
+conditional (U8 l5) and reported speech (U9 l3). Unit 7 has no grammar lesson in the hub at
 all. Fixing that means changing how the hub builds lessons, which is its own spec; the form says so.
 
 ## Decisions taken (and why)
@@ -161,8 +171,8 @@ or false on a Grade 9 lesson, no horizontal scroll, an unsigned lesson shows not
 - The sentences are written by us. A teacher checks each correct answer and distractor on the printed form; the
   mechanical tests only catch malformed items, not wrong English.
 - The vocabulary check is a printed list, not a test.
-- Six book topics are out because the hub has no lesson for them (used to, the present perfects, first
-  conditional, reported speech, the passive).
+- Five book topics are out because the hub has no lesson for them (used to, the present perfects, first
+  conditional, reported speech).
 - u6 tests form, not the choice between future forms.
 - No audio is recorded (`english-audio` needs the OpenAI and R2 keys), and True or false on these lessons is
   silent by design.
@@ -176,6 +186,6 @@ recorded for the correct sentences; then the unit's `reviewedBy` is set in `engl
 
 ## Not done here
 
-- The six topics with no hub lesson, and the hub change that would give them one.
+- The five topics with no hub lesson, and the hub change that would give them one.
 - Grade 10 grammar; Grade 9 reading comprehension.
 - Signing off any unit: that is the teacher's, from the printed form.

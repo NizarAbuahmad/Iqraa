@@ -529,8 +529,10 @@ export interface ClassContactSummary {
   /** Letters counted across the class, all time. `meeting` is neither. */
   positive: number;
   concern: number;
-  /** No letter in the last 30 days, never-contacted first, then longest silence first. */
-  quiet: { id: string; displayName: string; lastAt: string | null }[];
+  /** Never sent a letter — a new class starts here, which is not the same as a month of silence. */
+  never: { id: string; displayName: string }[];
+  /** Last letter more than 30 days ago, longest silence first. */
+  quiet: { id: string; displayName: string; lastAt: string }[];
   /** Parents have only ever heard concerns about this child — no praise or progress letter. */
   concernOnly: { id: string; displayName: string; concerns: number }[];
   /** Latest in-app letter still unopened by every guardian after UNREAD_AFTER_MS, oldest first. */
@@ -566,10 +568,18 @@ export function summarizeClassContacts(
     }
   }
 
+  const never = students
+    .filter(st => !per.has(st.id))
+    .map(st => ({ id: st.id, displayName: st.displayName }));
+
   const quiet = students
-    .filter(st => { const s = per.get(st.id); return !s || now.getTime() - s.last > HISTORY_WINDOW_MS; })
-    .map(st => { const s = per.get(st.id); return { id: st.id, displayName: st.displayName, lastAt: s ? new Date(s.last).toISOString() : null }; })
-    .sort((a, b) => (a.lastAt ?? '').localeCompare(b.lastAt ?? ''));
+    .flatMap(st => {
+      const s = per.get(st.id);
+      return s && now.getTime() - s.last > HISTORY_WINDOW_MS
+        ? [{ id: st.id, displayName: st.displayName, lastAt: new Date(s.last).toISOString() }]
+        : [];
+    })
+    .sort((a, b) => a.lastAt.localeCompare(b.lastAt));
 
   const concernOnly = students
     .map(st => ({ st, s: per.get(st.id) }))
@@ -583,7 +593,7 @@ export function summarizeClassContacts(
     .map(({ st, l }) => ({ id: st.id, displayName: st.displayName, sentAt: new Date(l!.at).toISOString() }))
     .sort((a, b) => a.sentAt.localeCompare(b.sentAt));
 
-  return { positive, concern, quiet, concernOnly, unread };
+  return { positive, concern, never, quiet, concernOnly, unread };
 }
 
 /** True when this would be at least the 3rd missing-homework/absence letter in 30 days. */

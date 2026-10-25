@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Pressable, ScrollView,
+  Platform, Pressable, ScrollView,
   StyleSheet, Text, View,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -20,10 +20,16 @@ import { CodeSignupForm } from '@/components/CodeSignupForm';
 import { useStudentAccountsStatus } from '@/services/features';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { emailNotSent } from '@/services/emailDelivery';
+import {
+  guardianConfigStale, signupForm, signupPlan,
+  type SignupRole, type StudentSignupMethod,
+} from '@/services/signupMethod';
+import { resetGuardianConfigCache, useGuardianConfig } from '@/services/guardianConfig';
+import { looksLikeEmail } from '@/services/guardianApproval';
+import { ApiError } from '@/services/apiClient';
 import { Ionicons } from '@expo/vector-icons';
+import { CheckRow } from '@/components/ui/CheckRow';
 import { BackButton } from '@/components/ui/BackButton';
-
-type SignupRole = 'teacher' | 'parent' | 'student';
 
 export default function RegisterScreen() {
   const colors = useColors();
@@ -55,10 +61,40 @@ export default function RegisterScreen() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
-  // A parent or student signs up from the teacher's code alone (no email, no
-  // password, no Google): the code already says who they are, and email can be
-  // added later from the profile. Teachers keep the form below.
-  const codeSignup = chosenRole === 'parent' || chosenRole === 'student';
+  // A teacher signs up with an email. A parent or student chooses: with a
+  // teacher's code (no email, no password — the code already says who they are,
+  // and an email can be added later from the profile) or with an email. No
+  // default, see services/signupMethod.ts.
+  const [studentMethod, setStudentMethod] = useState<StudentSignupMethod | null>(null);
+  const form = signupForm(chosenRole, studentMethod);
+  const codeSignup = form === 'code';
+  // A student with an email has no teacher's code vouching for them. When the
+  // server asks a parent to approve such accounts (guardian.enabled) they give a
+  // parent's email; otherwise they confirm they are an adult or have a guardian's
+  // agreement. Fails off: an unreachable config leaves today's tick in place.
+  const guardian = useGuardianConfig();
+  const { askAge, askParent, waitingForConfig } = signupPlan(chosenRole, studentMethod, guardian.enabled, guardian.loading);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [parentEmail, setParentEmail] = useState('');
+  const [parentTouched, setParentTouched] = useState(false);
+  const parentOk = !askParent || looksLikeEmail(parentEmail);
+  const readyToSignUp = termsAccepted && (!askAge || ageConfirmed) && parentOk && !waitingForConfig;
+  // What the hints under the Google button ('Below') and the submit ('First')
+  // say is missing, in the order the form asks for it. Null when nothing the
+  // person can do is missing, e.g. while the config is still being read.
+  const missing: 'terms' | 'parent' | 'age' | null =
+    !termsAccepted ? 'terms' : askParent && !parentOk ? 'parent' : askAge && !ageConfirmed ? 'age' : null;
+  const hintBelow = missing === 'terms' ? 'registerAcceptTermsBelow' : missing === 'parent' ? 'registerParentEmailFirst' : missing === 'age' ? 'ageConfirmBelow' : null;
+  const hintFirst = missing === 'terms' ? 'registerAcceptTermsFirst' : missing === 'parent' ? 'registerParentEmailFirst' : missing === 'age' ? 'ageConfirmFirst' : null;
+
+  // The server's switch can differ from the copy the screen read; when it says
+  // so, forget the copy and read it again so the next try asks the right thing.
+  const forgetStaleGuardianConfig = (e: unknown) => {
+    if (e instanceof ApiError && guardianConfigStale(e.code)) {
+      resetGuardianConfigCache();
+      guardian.refresh();
+    }
+  };
 
   const handleGoogleCredential = async (credential: string) => {
     setError('');
@@ -66,6 +102,14 @@ export default function RegisterScreen() {
     // a credential that arrives anyway. The server refuses it too.
     if (!termsAccepted) {
       setError(t('errTermsRequired'));
+      return;
+    }
+    if (askAge && !ageConfirmed) {
+      setError(t('errAgeConfirmRequired'));
+      return;
+    }
+    if (askParent && !parentOk) {
+      setError(t('registerParentEmailFirst'));
       return;
     }
     setGoogleLoading(true);
@@ -76,9 +120,15 @@ export default function RegisterScreen() {
       // from the login screen already takes. No roster code here either: a
       // parent/student claims one afterwards, on the mandatory screen the
       // routing gate sends them to.
-      await loginWithGoogle(credential, { role: chosenRole ?? undefined, acceptedTerms: true });
+      await loginWithGoogle(credential, {
+        role: chosenRole ?? undefined,
+        acceptedTerms: true,
+        ageConfirmed: askAge && ageConfirmed,
+        parentEmail: askParent ? parentEmail.trim() : undefined,
+      });
       router.replace('/(tabs)');
     } catch (e: any) {
+      forgetStaleGuardianConfig(e);
       // The server only refuses the pill's role when the existing account can
       // no longer change it (lib/roleSwitch.ts); otherwise it applies it.
       // The role-locked refusals (lib/roleSwitch.ts) are among the codes
@@ -102,11 +152,13 @@ export default function RegisterScreen() {
         confirmPassword,
         // Never trust the local selection: the flag can flip while this
         // screen is open, and the server would refuse it anyway. No roster
-        // code is collected here — a parent/student claims one afterwards,
-        // on the mandatory screen the routing gate sends them to (see
-        // needsRosterClaim in services/routeGating.ts).
+        // code is collected here: a student joins a class later from
+        // /join-class, and a parent links to a child on the claim screen the
+        // routing gate sends an unlinked account to.
         role: chosenRole,
         acceptedTerms: termsAccepted,
+        ageConfirmed: askAge && ageConfirmed,
+        parentEmail: askParent ? parentEmail.trim() : undefined,
       });
       // No session yet — a password account is unverified until it proves
       // the address it just typed. Google's "Continue with" button above
@@ -119,6 +171,7 @@ export default function RegisterScreen() {
       });
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      forgetStaleGuardianConfig(e);
       setError(apiErrorMessage(e, 'errRegisterFailed', t));
     } finally {
       setLoading(false);
@@ -136,7 +189,37 @@ export default function RegisterScreen() {
     // so an empty confirm field was accepted here and refused there with an
     // English "Passwords do not match".
     confirmPassword === password &&
-    termsAccepted;
+    readyToSignUp;
+
+  // The agreement boxes close the form, just above the button that creates the
+  // account, so they are the last thing read before the tap. They govern every
+  // way to sign up here, Google included: «متابعة عبر Google» stays gated on
+  // them (`readyToSignUp`) and its hint says where they are. It used to sit under
+  // «إنشاء حساب» and gate only the password form, so Google created accounts
+  // nobody had asked to accept anything.
+  const agreements = (
+    <>
+      <CheckRow checked={termsAccepted} onPress={() => setTermsAccepted(v => !v)} isRTL={isRTL} colors={colors}>
+        {lang === 'ar' ? 'أوافق على ' : 'I agree to the '}
+        {/* Underlined: the two links fill most of the sentence, and
+            tapping one opened the policy when the tap was meant to tick
+            the box. Only «أوافق على» and the box itself toggle. */}
+        <Text style={{ color: colors.primary, textDecorationLine: 'underline' }} accessibilityRole="link" onPress={() => router.push('/legal/terms')}>
+          {t('termsOfService')}
+        </Text>
+        {lang === 'ar' ? ' و' : ' and '}
+        <Text style={{ color: colors.primary, textDecorationLine: 'underline' }} accessibilityRole="link" onPress={() => router.push('/legal/privacy')}>
+          {t('privacyPolicy')}
+        </Text>
+      </CheckRow>
+
+      {askAge ? (
+        <CheckRow checked={ageConfirmed} onPress={() => setAgeConfirmed(v => !v)} isRTL={isRTL} colors={colors}>
+          {t('ageConfirmLabel')}
+        </CheckRow>
+      ) : null}
+    </>
+  );
 
   const formPanel = (
     <View
@@ -212,51 +295,42 @@ export default function RegisterScreen() {
             />
           ) : null}
 
-          {/* Shown whether or not a role pill is picked — hiding it until then
-              read as "no Google signup here". /setup-subjects re-asks the role
-              for any Google-created account anyway. */}
-          {/* Above both ways to sign up, because it governs both. It used to sit
-              under «إنشاء حساب» and gate the password form only, so «متابعة
-              عبر Google» created accounts nobody had asked to accept anything. */}
-          <Pressable
-            onPress={() => setTermsAccepted(v => !v)}
-            style={[styles.termsRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-            accessibilityRole="checkbox"
-            // react-native-web 0.21 drops `accessibilityState`; only `aria-*`
-            // reaches the DOM, so a screen reader heard an unticked box.
-            aria-checked={termsAccepted}
-          >
-            <View style={[
-              styles.checkbox,
-              {
-                borderColor: termsAccepted ? colors.primary : colors.border,
-                backgroundColor: termsAccepted ? colors.primary : 'transparent',
-              },
-            ]}>
-              {termsAccepted && <Ionicons name="checkmark" size={14} color="#fff" />}
-            </View>
-            <Text style={[styles.terms, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', flex: 1 }]}>
-              {lang === 'ar' ? 'أوافق على ' : 'I agree to the '}
-              {/* Underlined: the two links fill most of the sentence, and
-                  tapping one opened the policy when the tap was meant to tick
-                  the box. Only «أوافق على» and the box itself toggle. */}
-              <Text style={{ color: colors.primary, textDecorationLine: 'underline' }} accessibilityRole="link" onPress={() => router.push('/legal/terms')}>
-                {t('termsOfService')}
-              </Text>
-              {lang === 'ar' ? ' و' : ' and '}
-              <Text style={{ color: colors.primary, textDecorationLine: 'underline' }} accessibilityRole="link" onPress={() => router.push('/legal/privacy')}>
-                {t('privacyPolicy')}
-              </Text>
-            </Text>
-          </Pressable>
+          {/* A student or parent chooses how to sign up. Not a default: with a
+              teacher's code they need no email; with an email they need no
+              code yet (a parent links to a child afterwards). */}
+          {chosenRole === 'student' || chosenRole === 'parent' ? (
+            <>
+              <PillSelector
+                label={t('signupMethodLabel')}
+                options={[
+                  { value: 'code', label: t('signupMethodCode') },
+                  { value: 'email', label: t('signupMethodEmail') },
+                ]}
+                value={studentMethod}
+                onChange={setStudentMethod}
+                hint={studentMethod ? undefined : t('signupMethodHint')}
+                colors={colors}
+                isRTL={isRTL}
+                accent={colors.primary}
+                haptics
+              />
+              {studentMethod === 'email' ? (
+                <Text style={[styles.terms, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+                  {chosenRole === 'parent' ? t('parentEmailNote') : askParent ? t('studentEmailNoteParent') : t('studentEmailNote')}
+                </Text>
+              ) : null}
+            </>
+          ) : null}
 
-          {codeSignup ? (
+          {form === 'choose' ? null : codeSignup ? (
             <CodeSignupForm
               // Remounted per role: the name picker and the typed code belong to
               // the role that was chosen when they were entered.
               key={chosenRole}
-              role={chosenRole}
+              // `signupForm` returns 'code' for a parent or a student only.
+              role={chosenRole as 'parent' | 'student'}
               termsAccepted={termsAccepted}
+              agreements={agreements}
               lang={lang}
               colors={colors}
               isRTL={isRTL}
@@ -269,15 +343,25 @@ export default function RegisterScreen() {
               {/* Google draws its own button on web, which has no disabled
                   state; a non-interactive wrapper is the closest thing. */}
               <View
-                pointerEvents={termsAccepted ? 'auto' : 'none'}
-                style={{ opacity: termsAccepted ? 1 : 0.45 }}
-                aria-disabled={!termsAccepted}
+                pointerEvents={readyToSignUp ? 'auto' : 'none'}
+                style={{ opacity: readyToSignUp ? 1 : 0.45 }}
+                aria-disabled={!readyToSignUp}
               >
                 <GoogleSignInButton onCredential={handleGoogleCredential} locale={lang} />
               </View>
-              {!termsAccepted ? (
+              {/* Google's own button reads «Continue as <name>» with whichever
+                  Google account the browser has active — not the last address
+                  used on Iqrra — and offers another through its arrow. Web
+                  only: the phone app opens the account chooser every time and
+                  has no such button. */}
+              {Platform.OS === 'web' ? (
                 <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-                  {t('registerAcceptTermsFirst')}
+                  {t('googleAccountHint')}
+                </Text>
+              ) : null}
+              {!readyToSignUp && hintBelow ? (
+                <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
+                  {t(hintBelow)}
                 </Text>
               ) : null}
               {googleLoading ? (
@@ -288,8 +372,11 @@ export default function RegisterScreen() {
 
               <View style={[styles.dividerRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+                {/* Says what the fields below are. A bare «أو» left the email
+                    field looking like a second place to type the Google
+                    address. */}
                 <Text style={[styles.dividerText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-                  {t('orDivider')}
+                  {t('orSignUpWithEmail')}
                 </Text>
                 <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
               </View>
@@ -369,6 +456,27 @@ export default function RegisterScreen() {
             isRTL={isRTL}
           />
 
+          {/* Above the terms row: it is asked before the agreements close the form. */}
+          {askParent ? (
+            <Input
+              label={t('registerParentEmailLabel')}
+              hint={t('registerParentEmailHint')}
+              value={parentEmail}
+              onChangeText={setParentEmail}
+              onBlur={() => setParentTouched(true)}
+              // Not from the first keystroke: after the field was left, or once it holds an «@».
+              error={(parentTouched || parentEmail.includes('@')) && parentEmail.trim().length > 0 && !parentOk ? t('errParentEmailInvalid') : undefined}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              // Not the student's own address: no autofill suggestion for this field.
+              autoComplete="off"
+              textContentType="none"
+              isRTL={isRTL}
+            />
+          ) : null}
+
+          {agreements}
+
           <Button
             label={t('createAccount')}
             onPress={handleRegister}
@@ -376,9 +484,9 @@ export default function RegisterScreen() {
             disabled={!canSubmit}
             fullWidth
           />
-          {!termsAccepted ? (
+          {!readyToSignUp && hintFirst ? (
             <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-              {t('registerAcceptTermsFirst')}
+              {t(hintFirst)}
             </Text>
           ) : null}
             </>
@@ -418,7 +526,5 @@ const styles = StyleSheet.create({
   googleLoadingText: { fontSize: 13, lineHeight: 21, textAlign: 'center', marginTop: -6 },
   nameRow: { flexDirection: 'row', gap: 12 },
   nameField: { flex: 1 },
-  termsRow: { alignItems: 'flex-start', gap: 10 },
-  checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
-  terms: { fontSize: 11, lineHeight: 17 },
+  terms: { fontSize: 13, lineHeight: 20 },
 });

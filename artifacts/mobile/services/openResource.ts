@@ -23,6 +23,14 @@ export function openResource(
 ): void {
   // A lesson game: straight into the attached game. `/play` is public, and `hw`
   // is what makes a student's finished round post back to the teacher.
+  if ('game' in resource && resource.game === 'exercises') {
+    // The Math Corner's exercises: the lesson's «اختبر نفسك», which posts back with `hw` like a game.
+    router.push({
+      pathname: '/curriculum/math/exercises/[lessonId]',
+      params: { lessonId: resource.lessonId, ...(opts.homeworkId ? { hw: opts.homeworkId } : {}) },
+    } as never);
+    return;
+  }
   if ('game' in resource) {
     router.push({
       pathname: '/play/lesson/[lessonId]',

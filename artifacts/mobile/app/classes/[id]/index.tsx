@@ -60,6 +60,7 @@ import {
   type ClassMastery,
   type ClassParentContact,
   type RosterStudent,
+  type StudentChanges,
 } from '@/services/roster';
 import { SUBJECTS, getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { narrowSubjectsForGrade } from '@/services/teacherCatalogFilter';
@@ -85,6 +86,9 @@ import { LabPickerSheet } from '@/components/classes/LabPickerSheet';
 import { SupportGroupsSection } from '@/components/classes/SupportGroupsSection';
 import { HomeworkTab } from '@/components/classes/HomeworkTab';
 import { MathPracticeSheet } from '@/components/classes/MathPracticeSheet';
+import { EditStudentSheet } from '@/components/classes/EditStudentSheet';
+import { ClaimedByLine } from '@/components/classes/ClaimedByLine';
+import { LinkRequestsBanner } from '@/components/classes/LinkRequestsBanner';
 import { SPACE } from '@/constants/theme';
 import type { SupportGroup } from '@/services/supportGroups';
 import {
@@ -164,9 +168,8 @@ export default function ClassDetailScreen() {
   const [supportGroups, setSupportGroups] = useState<SupportGroup[] | null>(null);
   /** Null until loaded, or when the log can't be read — the card then hides. */
   const [parentContacts, setParentContacts] = useState<ClassParentContact[] | null>(null);
-  const [noteStudent, setNoteStudent] = useState<RosterStudent | null>(null);
-  const [noteText, setNoteText] = useState('');
-  const [savingNote, setSavingNote] = useState(false);
+  const [editStudent, setEditStudent] = useState<RosterStudent | null>(null);
+  const [savingStudent, setSavingStudent] = useState(false);
   const [showJoinCode, setShowJoinCode] = useState(false);
   const [showPractice, setShowPractice] = useState(false);
   const [mintingCode, setMintingCode] = useState(false);
@@ -233,6 +236,7 @@ export default function ClassDetailScreen() {
     (err: unknown): string => {
       if (err instanceof RosterError) {
         if (err.isStorageUnavailable) return t('rosterStorageUnavailable');
+        if (err.code === 'student_name_taken') return t('studentNameTaken');
         if (err.status === 0 || err.status >= 500) return t('rosterLoadFailed');
         return err.message;
       }
@@ -481,29 +485,51 @@ export default function ClassDetailScreen() {
     }
   };
 
-  const openNote = (student: RosterStudent) => {
-    setNoteStudent(student);
-    setNoteText(student.teacherNote);
+  const openEdit = (student: RosterStudent) => {
+    setError('');
+    setEditStudent(student);
   };
 
-  const onSaveNote = async () => {
-    if (!noteStudent || savingNote) return;
-    setSavingNote(true);
+  const closeEdit = () => {
+    setEditStudent(null);
+    setError('');
+  };
+
+  const onSaveStudent = async (changes: StudentChanges) => {
+    if (!editStudent || savingStudent) return;
+    if (Object.keys(changes).length === 0) {
+      closeEdit();
+      return;
+    }
+    setSavingStudent(true);
     setError('');
     try {
-      const updated = await updateStudent(noteStudent.id, { teacherNote: noteText });
-      // Take the server's row rather than `noteText`: it trimmed the value, and
-      // showing something the database does not hold is how a note that looks
-      // saved turns out not to be.
+      const updated = await updateStudent(editStudent.id, changes);
+      // Take the server's row rather than the draft: it trimmed the values, and
+      // showing something the database does not hold is how an edit that looks
+      // saved turns out not to be. The server's PATCH row carries no `links`,
+      // so keep the ones the list already has.
       queryClient.setQueryData<ClassQueryData>(CLASS_QUERY_KEY(id), prev =>
-        prev ? { ...prev, students: prev.students.map(s => (s.id === updated.id ? updated : s)) } : prev,
+        prev
+          ? {
+              ...prev,
+              students: prev.students.map(s =>
+                s.id === updated.id ? { ...s, ...updated, links: s.links, linked: s.linked } : s,
+              ),
+            }
+          : prev,
       );
+      // A rename also renames linked code-only accounts on the server and can
+      // move the row in the alphabetical list, so refetch the links too.
+      if (changes.displayName !== undefined) {
+        void queryClient.invalidateQueries({ queryKey: CLASS_QUERY_KEY(id) });
+      }
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setNoteStudent(null);
+      setEditStudent(null);
     } catch (err) {
       setError(describe(err));
     } finally {
-      setSavingNote(false);
+      setSavingStudent(false);
     }
   };
 
@@ -883,6 +909,7 @@ export default function ClassDetailScreen() {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <View style={{ gap: 10 }}>
+              {studentAccounts && id ? <LinkRequestsBanner key={id} classId={id} /> : null}
               {errorBanner}
               {studentAccounts && students.length > 0 && (
                 <JoinStatusSection
@@ -1005,12 +1032,13 @@ export default function ClassDetailScreen() {
                     {item.externalRef}
                   </Text>
                 ) : null}
+                <ClaimedByLine links={item.links} />
               </View>
               <Pressable
-                onPress={() => openNote(item)}
+                onPress={() => openEdit(item)}
                 hitSlop={10}
                 accessibilityRole="button"
-                accessibilityLabel={t('studentRecordNote')}
+                accessibilityLabel={t('editStudent')}
               >
                 <Ionicons
                   name={item.teacherNote ? 'create' : 'create-outline'}
@@ -1474,78 +1502,16 @@ export default function ClassDetailScreen() {
         </KeyboardSafeView>
       </Modal>
 
-      <Modal
-        visible={noteStudent !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setNoteStudent(null)}
-      >
-        <KeyboardSafeView>
-        <View style={styles.modalBackdrop}>
-          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
-            <Text
-              style={[
-                styles.modalTitle,
-                { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align },
-              ]}
-            >
-              {noteStudent?.displayName}
-            </Text>
-            <Text
-              style={[
-                styles.modalHint,
-                { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align },
-              ]}
-            >
-              {t('studentNoteHint')}
-            </Text>
-            <TextInput
-              value={noteText}
-              onChangeText={setNoteText}
-              placeholder={t('studentNotePlaceholder')}
-              placeholderTextColor={colors.mutedForeground}
-              multiline
-              autoFocus
-              style={[
-                styles.textarea,
-                {
-                  color: colors.foreground,
-                  borderColor: colors.border,
-                  fontFamily: 'Almarai_400Regular',
-                  textAlign: align,
-                  minHeight: 120,
-                },
-              ]}
-            />
-            {modalError}
-            <View style={styles.modalActions}>
-              <Pressable onPress={() => setNoteStudent(null)} style={styles.modalBtn}>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>
-                  {t('cancel')}
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={() => { void onSaveNote(); }}
-                disabled={savingNote}
-                style={[
-                  styles.modalBtn,
-                  styles.modalPrimary,
-                  { backgroundColor: ACCENT_FILL, opacity: savingNote ? 0.5 : 1 },
-                ]}
-              >
-                {savingNote ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold' }}>
-                    {t('saveNote')}
-                  </Text>
-                )}
-              </Pressable>
-            </View>
-          </View>
-        </View>
-        </KeyboardSafeView>
-      </Modal>
+      {editStudent ? (
+        <EditStudentSheet
+          key={editStudent.id}
+          student={editStudent}
+          saving={savingStudent}
+          error={error}
+          onSave={changes => { void onSaveStudent(changes); }}
+          onClose={closeEdit}
+        />
+      ) : null}
 
       <Modal
         visible={showAttach}
@@ -1732,7 +1698,7 @@ export default function ClassDetailScreen() {
         }}
       />
 
-      <MathPracticeSheet classId={showPractice && id ? String(id) : null} onClose={() => setShowPractice(false)} />
+      <MathPracticeSheet classId={showPractice && id ? String(id) : null} gradeId={group?.gradeId} onClose={() => setShowPractice(false)} />
 
       <LabPickerSheet
         visible={showLab}
@@ -2067,7 +2033,7 @@ function ParentContactSection({
       {text}
     </Text>
   );
-  const allGood = summary.quiet.length === 0 && summary.concernOnly.length === 0 && summary.unread.length === 0;
+  const allGood = summary.never.length === 0 && summary.quiet.length === 0 && summary.concernOnly.length === 0 && summary.unread.length === 0;
 
   return (
     <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, gap: 10, flexDirection: 'column', alignItems: 'stretch' }]}>
@@ -2092,6 +2058,12 @@ function ParentContactSection({
             <View style={{ gap: 6 }}>
               {label(t('parentContactsConcernOnly', String(summary.concernOnly.length)))}
               {names(summary.concernOnly, 'praise')}
+            </View>
+          )}
+          {summary.never.length > 0 && (
+            <View style={{ gap: 6 }}>
+              {label(t('parentContactsNever', String(summary.never.length)))}
+              {names(summary.never)}
             </View>
           )}
           {summary.quiet.length > 0 && (

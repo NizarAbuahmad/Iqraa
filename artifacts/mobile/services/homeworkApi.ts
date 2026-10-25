@@ -13,6 +13,7 @@
  */
 import { apiFetch, apiJson } from './apiClient.ts';
 import {
+  HOMEWORK_GAMES,
   normalizeChildHomework,
   normalizeFamilyHomework,
   normalizeGameResults,
@@ -152,8 +153,9 @@ export async function listClassHomework(classId: string): Promise<TeacherHomewor
 }
 
 export async function createHomework(input: NewHomework): Promise<TeacherHomework | null> {
-  // `gamesIncluded`: the resource list sent is authoritative about game attachments (the server keeps them on a PATCH without it).
-  const res = await apiFetch('/homework', { method: 'POST', body: JSON.stringify({ ...input, gamesIncluded: true }) });
+  // `gamesIncluded`: the resource list sent is authoritative about game attachments (the server keeps them on a PATCH without it),
+  // for the games in `knownGames` — a game this build does not list stays attached even if the build dropped it.
+  const res = await apiFetch('/homework', { method: 'POST', body: JSON.stringify({ ...input, gamesIncluded: true, knownGames: HOMEWORK_GAMES }) });
   const data = await readJson<{ homework?: unknown }>(res, 'Creating homework');
   return normalizeTeacherHomework([data.homework])[0] ?? null;
 }
@@ -161,7 +163,7 @@ export async function createHomework(input: NewHomework): Promise<TeacherHomewor
 export async function updateHomework(id: string, patch: HomeworkPatch): Promise<TeacherHomework | null> {
   const res = await apiFetch(`/homework/${encodeURIComponent(id)}`, {
     method: 'PATCH',
-    body: JSON.stringify({ ...patch, gamesIncluded: true }),
+    body: JSON.stringify({ ...patch, gamesIncluded: true, knownGames: HOMEWORK_GAMES }),
   });
   const data = await readJson<{ homework?: unknown }>(res, 'Saving homework');
   return normalizeTeacherHomework([data.homework])[0] ?? null;

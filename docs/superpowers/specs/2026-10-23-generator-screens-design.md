@@ -59,7 +59,7 @@ source is in this design's history; the Arabic strings in it are the app's own.
   `subjectHiddenFor`, `StrandedSelectionNote`, `visibleCountOptions(wideScope.isWide)`
   and the wide-scope-only distribution control keep their conditions.
 - **Validation and the disabled state are unchanged.** An empty topic still blocks
-  the button and still shows `needTopicHint` and the inline error beside the field.
+  the button and still shows the inline error beside the field (and the docked button's `genNeedLessonHint` where the button is disabled).
 - **Generation, saving, regeneration, results and exports are not touched.**
   Everything below the form (`GenerationStatus`, results, `GeneratorResultActions`)
   is out of scope.
@@ -78,7 +78,7 @@ state uses `aria-checked` / `aria-pressed` / `aria-selected`, never
 |---|---|---|
 | `SegmentedControl` | `label, options, index, onChange, accent` | radiogroup; 4 options max; equal widths |
 | `Stepper` | `label, options (labels), index, onChange, accent` | disabled at either end; value is the label; one row layout (label one side, controls the other) at every width: the controls need about 176 points, so three never sit side by side |
-| `ChipGroup` | `label, options, selected, onToggle, min, accent` | multi-select; the last selected chip cannot be cleared when `min` is 1 (the screen's existing rule) |
+| `ChipGroup` | `label, options, selected, onToggle, min, accent, single?` (`min={0}` for a set of independent includes, as slides' three) | multi-select; the last selected chip cannot be cleared when `min` is 1 (the screen's existing rule). `single`: a radiogroup for one choice out of more than four labels (the activity's five types); a selected chip is an opaque tint with a label judged against it |
 | `LessonCard` | `gradeLabel, subjectLabel, subjectId, topic, grounded, expanded, onToggle, locked?` | subject drawing from `subjectTile` (`services/subjectTheme.ts`); the expanded body is passed as children; `locked` (no lesson yet) keeps it open and hides the button |
 | `DockedAction` | `summary, label, onPress, loading, disabled, hint, accent, docked, hidden?` | phone: docked; desktop: inline under the preview; `hint` replaces the summary while disabled; `hidden` yields the spot to the result's save bar |
 | `GeneratorLayout` | `form, side, isDesktop` | desktop two columns, phone single column |
@@ -96,7 +96,9 @@ summary with the Arabic count agreement `arCountPhrase` already implements, and
   over `QUIZ_TYPE_ORDER`; distribution → segmented, only on a wide scope;
   `ExamKindSwitch` stays as the tab row.
 - **Worksheet, lesson plan, activity, slides** — mapped when each is ported, by the
-  same rules; a field whose real options are not a short list stays a dropdown.
+  same rules (a numeric list of at most four short labels, such as the lesson plan's
+  four durations, is a segmented control, not a stepper; one choice out of five or more long labels, such as the
+  activity's types, is a single-select `ChipGroup`); a field whose real options are not a short list stays a dropdown.
   Each port lists its mapping table in its PR.
 
 ## Verification

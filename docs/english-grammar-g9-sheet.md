@@ -200,6 +200,53 @@ Not reviewed yet — shown to nobody.
 | We watched a film yesterday. | — | **watched** / watch | _We watch a film yesterday._ |
 | He broke his phone last week. | — | **broke** / break | _He break his phone last week._ |
 
+## Semester 1 · Unit 2 — Learn to play
+
+Not reviewed yet — shown to nobody.
+
+| Sentence | Picture | Choose | True or false: wrong picture |
+|---|---|---|---|
+| I used to play football every day. | — | **used to play** / use to play | _I use to play football every day._ |
+| She used to live in Irbid. | — | **used to live** / use to live | _She use to live in Irbid._ |
+| We used to visit our grandparents. | — | **used to visit** / use to visit | _We use to visit our grandparents._ |
+| He used to be very shy. | — | **used to be** / use to be | _He use to be very shy._ |
+| They used to walk to school. | — | **used to walk** / use to walk | _They use to walk to school._ |
+| My father used to work abroad. | — | **used to work** / use to work | _My father use to work abroad._ |
+| I used to hate carrots. | — | **used to hate** / use to hate | _I use to hate carrots._ |
+| There used to be a cinema here. | — | **used to be** / use to be | _There use to be a cinema here._ |
+| She used to have long hair. | — | **used to have** / use to have | _She use to have long hair._ |
+| We used to eat out on Fridays. | — | **used to eat** / use to eat | _We use to eat out on Fridays._ |
+| He used to collect old coins. | — | **used to collect** / use to collect | _He use to collect old coins._ |
+| Our teacher used to be a pilot. | — | **used to be** / use to be | _Our teacher use to be a pilot._ |
+| I used to sleep with the light on. | — | **used to sleep** / use to sleep | _I use to sleep with the light on._ |
+| They used to play chess every evening. | — | **used to play** / use to play | _They use to play chess every evening._ |
+| I didn't use to like fish. | — | **didn't use to** / didn't used to | _I didn't used to like fish._ |
+| She didn't use to wear glasses. | — | **didn't use to** / didn't used to | _She didn't used to wear glasses._ |
+| We didn't use to have a car. | — | **didn't use to** / didn't used to | _We didn't used to have a car._ |
+| He didn't use to be tall. | — | **didn't use to** / didn't used to | _He didn't used to be tall._ |
+| They didn't use to live here. | — | **didn't use to** / didn't used to | _They didn't used to live here._ |
+| I didn't use to drink tea. | — | **didn't use to** / didn't used to | _I didn't used to drink tea._ |
+| My brother didn't use to read much. | — | **didn't use to** / didn't used to | _My brother didn't used to read much._ |
+| We didn't use to eat out. | — | **didn't use to** / didn't used to | _We didn't used to eat out._ |
+| She didn't use to be shy. | — | **didn't use to** / didn't used to | _She didn't used to be shy._ |
+| There didn't use to be a mall. | — | **didn't use to** / didn't used to | _There didn't used to be a mall._ |
+| He didn't use to play the guitar. | — | **didn't use to** / didn't used to | _He didn't used to play the guitar._ |
+| They didn't use to watch TV. | — | **didn't use to** / didn't used to | _They didn't used to watch TV._ |
+| Did you use to play football? | — | **use to** / used to | _Did you used to play football?_ |
+| Did she use to live here? | — | **use to** / used to | _Did she used to live here?_ |
+| Where did you use to live? | — | **use to** / used to | _Where did you used to live?_ |
+| Did they use to walk to school? | — | **use to** / used to | _Did they used to walk to school?_ |
+| What did you use to eat? | — | **use to** / used to | _What did you used to eat?_ |
+| Did he use to be shy? | — | **use to** / used to | _Did he used to be shy?_ |
+| Did your father use to travel? | — | **use to** / used to | _Did your father used to travel?_ |
+| Did you use to like carrots? | — | **use to** / used to | _Did you used to like carrots?_ |
+| Did we use to meet every week? | — | **use to** / used to | _Did we used to meet every week?_ |
+| How did they use to get here? | — | **use to** / used to | _How did they used to get here?_ |
+| Did she use to have a pet? | — | **use to** / used to | _Did she used to have a pet?_ |
+| Who did you use to sit next to? | — | **use to** / used to | _Who did you used to sit next to?_ |
+| Did your school use to have uniforms? | — | **use to** / used to | _Did your school used to have uniforms?_ |
+| What games did you use to play? | — | **use to** / used to | _What games did you used to play?_ |
+
 ## Semester 1 · Unit 3 — Far from home
 
 Not reviewed yet — shown to nobody.
@@ -618,6 +665,100 @@ Not reviewed yet — shown to nobody.
 | The test will be easy, I hope. | — | **will be** / will to be | _The test will to be easy, I hope._ |
 | I think the team will score soon. | — | **will score** / will to score | _I think the team will to score soon._ |
 
+## Semester 2 · Unit 7 — A job for life?
+
+Not reviewed yet — shown to nobody.
+
+| Sentence | Picture | Choose | True or false: wrong picture |
+|---|---|---|---|
+| I have already finished my homework. | — | **have already finished** / have already finish | _I have already finish my homework._ |
+| She has just arrived at school. | — | **has just arrived** / has just arrive | _She has just arrive at school._ |
+| We have already eaten lunch. | — | **have already eaten** / have already eat | _We have already eat lunch._ |
+| He has just called me. | — | **has just called** / has just call | _He has just call me._ |
+| They have already left. | — | **have already left** / have already leave | _They have already leave._ |
+| My sister has just woken up. | — | **has just woken** / has just wake | _My sister has just wake up._ |
+| I have just seen the film. | — | **have just seen** / have just see | _I have just see the film._ |
+| The bus has already gone. | — | **has already gone** / has already go | _The bus has already go._ |
+| We have just heard the news. | — | **have just heard** / have just hear | _We have just hear the news._ |
+| She has already read the book. | — | **has already read** / has already reads | _She has already reads the book._ |
+| I have already paid the bill. | — | **have already paid** / have already pay | _I have already pay the bill._ |
+| He has just finished work. | — | **has just finished** / has just finish | _He has just finish work._ |
+| They have just won the cup. | — | **have just won** / have just win | _They have just win the cup._ |
+| My phone has just rung. | — | **has just rung** / has just ring | _My phone has just ring._ |
+| Have you ever visited Petra? | — | **Have you ever visited** / Have you ever visit | _Have you ever visit Petra?_ |
+| I have never seen snow. | — | **have never seen** / have never see | _I have never see snow._ |
+| She has never eaten sushi. | — | **has never eaten** / has never eat | _She has never eat sushi._ |
+| Have they ever been to Aqaba? | — | **Have they ever been** / Have they ever be | _Have they ever be to Aqaba?_ |
+| He has never ridden a horse. | — | **has never ridden** / has never ride | _He has never ride a horse._ |
+| Has she ever met a pilot? | — | **Has she ever met** / Has she ever meet | _Has she ever meet a pilot?_ |
+| We have never missed a lesson. | — | **have never missed** / have never miss | _We have never miss a lesson._ |
+| Have you ever tried Japanese food? | — | **Have you ever tried** / Have you ever try | _Have you ever try Japanese food?_ |
+| I have never lost my keys. | — | **have never lost** / have never lose | _I have never lose my keys._ |
+| Has he ever won a prize? | — | **Has he ever won** / Has he ever win | _Has he ever win a prize?_ |
+| They have never been late. | — | **have never been** / have never be | _They have never be late._ |
+| Have you ever flown in a plane? | — | **Have you ever flown** / Have you ever fly | _Have you ever fly in a plane?_ |
+| She has never broken a bone. | — | **has never broken** / has never break | _She has never break a bone._ |
+| My dad has never driven abroad. | — | **has never driven** / has never drive | _My dad has never drive abroad._ |
+| I haven't finished yet. | — | **haven't finished** / haven't finish | _I haven't finish yet._ |
+| She hasn't called me yet. | — | **hasn't called** / hasn't call | _She hasn't call me yet._ |
+| Have you eaten yet? | — | **Have you eaten** / Have you eat | _Have you eat yet?_ |
+| They haven't arrived yet. | — | **haven't arrived** / haven't arrive | _They haven't arrive yet._ |
+| He hasn't done his homework yet. | — | **hasn't done** / hasn't do | _He hasn't do his homework yet._ |
+| Has the film started yet? | — | **Has the film started** / Has the film start | _Has the film start yet?_ |
+| We haven't seen the results yet. | — | **haven't seen** / haven't see | _We haven't see the results yet._ |
+| I haven't read the email yet. | — | **haven't read** / haven't reads | _I haven't reads the email yet._ |
+| Have they left yet? | — | **Have they left** / Have they leave | _Have they leave yet?_ |
+| She hasn't paid yet. | — | **hasn't paid** / hasn't pay | _She hasn't pay yet._ |
+| Has he finished work yet? | — | **Has he finished** / Has he finish | _Has he finish work yet?_ |
+| The bus hasn't come yet. | — | **hasn't come** / hasn't came | _The bus hasn't came yet._ |
+
+## Semester 2 · Unit 7 — A job for life?
+
+Not reviewed yet — shown to nobody.
+
+| Sentence | Picture | Choose | True or false: wrong picture |
+|---|---|---|---|
+| I have lived here for five years. | — | **for** / since | _I have lived here since five years._ |
+| She has worked here for ten years. | — | **for** / since | _She has worked here since ten years._ |
+| We have known them for a long time. | — | **for** / since | _We have known them since a long time._ |
+| He has played chess for two hours. | — | **for** / since | _He has played chess since two hours._ |
+| They have been married for twenty years. | — | **for** / since | _They have been married since twenty years._ |
+| I have studied English for six years. | — | **for** / since | _I have studied English since six years._ |
+| She has had this phone for a month. | — | **for** / since | _She has had this phone since a month._ |
+| We have waited for an hour. | — | **for** / since | _We have waited since an hour._ |
+| He has lived in Amman for years. | — | **for** / since | _He has lived in Amman since years._ |
+| They have had the dog for three weeks. | — | **for** / since | _They have had the dog since three weeks._ |
+| My father has worked there for a year. | — | **for** / since | _My father has worked there since a year._ |
+| I have been tired for three days. | — | **for** / since | _I have been tired since three days._ |
+| She has taught maths for fifteen years. | — | **for** / since | _She has taught maths since fifteen years._ |
+| We have had a garden for ages. | — | **for** / since | _We have had a garden since ages._ |
+| I have lived here since 2019. | — | **since** / for | _I have lived here for 2019._ |
+| She has worked here since January. | — | **since** / for | _She has worked here for January._ |
+| We have known them since 2015. | — | **since** / for | _We have known them for 2015._ |
+| He has played chess since he was six. | — | **since** / for | _He has played chess for he was six._ |
+| They have been married since 2005. | — | **since** / for | _They have been married for 2005._ |
+| I have studied English since primary school. | — | **since** / for | _I have studied English for primary school._ |
+| She has had this phone since Monday. | — | **since** / for | _She has had this phone for Monday._ |
+| We have waited since nine o'clock. | — | **since** / for | _We have waited for nine o'clock._ |
+| He has lived in Amman since last year. | — | **since** / for | _He has lived in Amman for last year._ |
+| They have had the dog since June. | — | **since** / for | _They have had the dog for June._ |
+| My father has worked there since 1998. | — | **since** / for | _My father has worked there for 1998._ |
+| I have been tired since yesterday. | — | **since** / for | _I have been tired for yesterday._ |
+| She has taught maths since 2010. | — | **since** / for | _She has taught maths for 2010._ |
+| We have had a garden since we moved. | — | **since** / for | _We have had a garden for we moved._ |
+| My sister has lived here since 2018. | — | **has lived** / have lived | _My sister have lived here since 2018._ |
+| The children have played outside all day. | — | **have played** / has played | _The children has played outside all day._ |
+| He has known her since school. | — | **has known** / have known | _He have known her since school._ |
+| We have worked here for years. | — | **have worked** / has worked | _We has worked here for years._ |
+| My parents have lived here for decades. | — | **have lived** / has lived | _My parents has lived here for decades._ |
+| She has studied French since 2020. | — | **has studied** / have studied | _She have studied French since 2020._ |
+| The shop has been open since eight. | — | **has been** / have been | _The shop have been open since eight._ |
+| They have been friends since childhood. | — | **have been** / has been | _They has been friends since childhood._ |
+| My brother has had a cold for days. | — | **has had** / have had | _My brother have had a cold for days._ |
+| The students have waited since morning. | — | **have waited** / has waited | _The students has waited since morning._ |
+| Our teacher has taught here for years. | — | **has taught** / have taught | _Our teacher have taught here for years._ |
+| I have owned this bike since 2021. | — | **have owned** / has owned | _I has owned this bike since 2021._ |
+
 ## Semester 2 · Unit 8 — Switch on
 
 Not reviewed yet — shown to nobody.
@@ -665,6 +806,53 @@ Not reviewed yet — shown to nobody.
 | They agreed to share the cost. | — | **to share** / sharing | _They agreed sharing the cost._ |
 | She hopes to pass the test. | — | **to pass** / passing | _She hopes passing the test._ |
 
+## Semester 2 · Unit 8 — Switch on
+
+Not reviewed yet — shown to nobody.
+
+| Sentence | Picture | Choose | True or false: wrong picture |
+|---|---|---|---|
+| If it rains, we will stay home. | — | **will stay** / would stay | _If it rains, we would stay home._ |
+| If you study, you will pass the test. | — | **will pass** / would pass | _If you study, you would pass the test._ |
+| If she calls, I will answer. | — | **will answer** / would answer | _If she calls, I would answer._ |
+| If we hurry, we will catch the bus. | — | **will catch** / would catch | _If we hurry, we would catch the bus._ |
+| If he comes, we will start. | — | **will start** / would start | _If he comes, we would start._ |
+| If it snows, the school will close. | — | **will close** / would close | _If it snows, the school would close._ |
+| If you eat that, you will feel sick. | — | **will feel** / would feel | _If you eat that, you would feel sick._ |
+| If they win, they will celebrate. | — | **will celebrate** / would celebrate | _If they win, they would celebrate._ |
+| If I see him, I will tell him. | — | **will tell** / would tell | _If I see him, I would tell him._ |
+| If the shop is open, I will buy milk. | — | **will buy** / would buy | _If the shop is open, I would buy milk._ |
+| If you push it, it will fall. | — | **will fall** / would fall | _If you push it, it would fall._ |
+| If we leave now, we will arrive early. | — | **will arrive** / would arrive | _If we leave now, we would arrive early._ |
+| If she studies hard, she will succeed. | — | **will succeed** / would succeed | _If she studies hard, she would succeed._ |
+| If it is sunny, we will go swimming. | — | **will go** / would go | _If it is sunny, we would go swimming._ |
+| If it rains tomorrow, we'll stay home. | — | **rains** / will rain | _If it will rain tomorrow, we'll stay home._ |
+| If you eat well, you will grow. | — | **eat** / will eat | _If you will eat well, you will grow._ |
+| If she studies, she will do well. | — | **studies** / will study | _If she will study, she will do well._ |
+| If they come early, we will eat. | — | **come** / will come | _If they will come early, we will eat._ |
+| If the weather is nice, we will swim. | — | **is** / will be | _If the weather will be nice, we will swim._ |
+| If my brother calls, I will tell him. | — | **calls** / will call | _If my brother will call, I will tell him._ |
+| If you wait, I will help you. | — | **wait** / will wait | _If you will wait, I will help you._ |
+| If we miss the bus, we will walk. | — | **miss** / will miss | _If we will miss the bus, we will walk._ |
+| If Dad agrees, we will go camping. | — | **agrees** / will agree | _If Dad will agree, we will go camping._ |
+| If it gets cold, I will wear a coat. | — | **gets** / will get | _If it will get cold, I will wear a coat._ |
+| If you lose it, you will be sad. | — | **lose** / will lose | _If you will lose it, you will be sad._ |
+| If the film is good, we will stay. | — | **is** / will be | _If the film will be good, we will stay._ |
+| If she forgets, I will remind her. | — | **forgets** / will forget | _If she will forget, I will remind her._ |
+| If they win today, they will qualify. | — | **win** / will win | _If they will win today, they will qualify._ |
+| What will you do if it rains? | — | **will you do** / would you do | _What would you do if it rains?_ |
+| If you don't hurry, you will miss it. | — | **don't hurry** / won't hurry | _If you won't hurry, you will miss it._ |
+| If she doesn't study, she will fail. | — | **doesn't study** / won't study | _If she won't study, she will fail._ |
+| If we don't leave now, we'll be late. | — | **don't leave** / won't leave | _If we won't leave now, we'll be late._ |
+| What will happen if I press this? | — | **will happen** / would happen | _What would happen if I press this?_ |
+| If they don't come, we will start. | — | **don't come** / won't come | _If they won't come, we will start._ |
+| If it doesn't rain, we will play. | — | **doesn't rain** / won't rain | _If it won't rain, we will play._ |
+| Where will you go if you win? | — | **will you go** / would you go | _Where would you go if you win?_ |
+| If he doesn't call, I will worry. | — | **doesn't call** / won't call | _If he won't call, I will worry._ |
+| If you don't ask, you won't know. | — | **don't ask** / won't ask | _If you won't ask, you won't know._ |
+| How will you get there if it snows? | — | **will you get** / would you get | _How would you get there if it snows?_ |
+| If I don't see you, I will call. | — | **don't see** / won't see | _If I won't see you, I will call._ |
+
 ## Semester 2 · Unit 9 — Art lovers
 
 Not reviewed yet — shown to nobody.
@@ -711,6 +899,100 @@ Not reviewed yet — shown to nobody.
 | Had you met her before the party? | — | **Had you met** / Had you meet | _Had you meet her before the party?_ |
 | We hadn't gone far when it rained. | — | **hadn't gone** / hadn't go | _We hadn't go far when it rained._ |
 | He hadn't touched his food. | — | **hadn't touched** / hadn't touch | _He hadn't touch his food._ |
+
+## Semester 2 · Unit 9 — Art lovers
+
+Not reviewed yet — shown to nobody.
+
+| Sentence | Picture | Choose | True or false: wrong picture |
+|---|---|---|---|
+| She told me she was tired. | — | **told me** / said me | _She said me she was tired._ |
+| He told us the news. | — | **told us** / said us | _He said us the news._ |
+| My mother told me to wait. | — | **told me** / said me | _My mother said me to wait._ |
+| The teacher told the class to sit. | — | **told the class** / said the class | _The teacher said the class to sit._ |
+| Dad told them a story. | — | **told them** / said them | _Dad said them a story._ |
+| I told her I was busy. | — | **told her** / said her | _I said her I was busy._ |
+| They told us they were late. | — | **told us** / said us | _They said us they were late._ |
+| He told me his name. | — | **told me** / said me | _He said me his name._ |
+| He said he was busy. | — | **said** / told | _He told he was busy._ |
+| She said she liked the film. | — | **said** / told | _She told she liked the film._ |
+| They said they were hungry. | — | **said** / told | _They told they were hungry._ |
+| My brother said he was tired. | — | **said** / told | _My brother told he was tired._ |
+| The teacher said we could go. | — | **said** / told | _The teacher told we could go._ |
+| I said I would help. | — | **said** / told | _I told I would help._ |
+| She said she had finished. | — | **said** / told | _She told she had finished._ |
+| He said it was easy. | — | **said** / told | _He told it was easy._ |
+| She asked me to help her. | — | **asked me** / said me | _She said me to help her._ |
+| He asked us to wait. | — | **asked us** / said us | _He said us to wait._ |
+| I asked him his name. | — | **asked him** / said him | _I said him his name._ |
+| Mum asked me where I was. | — | **asked me** / said me | _Mum said me where I was._ |
+| The teacher asked the class to listen. | — | **asked the class** / said the class | _The teacher said the class to listen._ |
+| They asked us for directions. | — | **asked us** / said us | _They said us for directions._ |
+| He asked if I was ready. | — | **asked** / said | _He said if I was ready._ |
+| She asked whether we were hungry. | — | **asked** / said | _She said whether we were hungry._ |
+| I asked if it was open. | — | **asked** / said | _I said if it was open._ |
+| He asked me to be quiet. | — | **asked me** / said me | _He said me to be quiet._ |
+| She asked how I was. | — | **asked** / said | _She said how I was._ |
+| We asked if we could leave. | — | **asked** / said | _We said if we could leave._ |
+| She asked where I lived. | — | **where I lived** / where did I live | _She asked where did I live._ |
+| He asked what time it was. | — | **what time it was** / what time was it | _He asked what time was it._ |
+| I asked how old she was. | — | **how old she was** / how old was she | _I asked how old was she._ |
+| They asked where we were going. | — | **where we were going** / where were we going | _They asked where were we going._ |
+| She asked why I was late. | — | **why I was late** / why was I late | _She asked why was I late._ |
+| He asked what I wanted. | — | **what I wanted** / what did I want | _He asked what did I want._ |
+| I asked who he was. | — | **who he was** / who was he | _I asked who was he._ |
+| She asked when the bus left. | — | **when the bus left** / when did the bus leave | _She asked when did the bus leave._ |
+| He asked how I got there. | — | **how I got there** / how did I get there | _He asked how did I get there._ |
+| They asked what we were doing. | — | **what we were doing** / what were we doing | _They asked what were we doing._ |
+| I asked where she was. | — | **where she was** / where was she | _I asked where was she._ |
+| She asked why the shop closed. | — | **why the shop closed** / why did the shop close | _She asked why did the shop close._ |
+
+## Semester 2 · Unit 10 — Helping others
+
+Not reviewed yet — shown to nobody.
+
+| Sentence | Picture | Choose | True or false: wrong picture |
+|---|---|---|---|
+| English is spoken in many countries. | — | **is spoken** / is speak | _English is speak in many countries._ |
+| These cars are made in Jordan. | — | **are made** / are make | _These cars are make in Jordan._ |
+| Olive oil is sold in this shop. | — | **is sold** / is sell | _Olive oil is sell in this shop._ |
+| Bread is baked every morning. | — | **is baked** / is bake | _Bread is bake every morning._ |
+| Homework is checked by the teacher. | — | **is checked** / is check | _Homework is check by the teacher._ |
+| Coffee is grown in warm countries. | — | **is grown** / is grow | _Coffee is grow in warm countries._ |
+| Letters are delivered every morning. | — | **are delivered** / are deliver | _Letters are deliver every morning._ |
+| Rice is eaten in many countries. | — | **is eaten** / is eat | _Rice is eat in many countries._ |
+| The film is shown at eight. | — | **is shown** / is show | _The film is show at eight._ |
+| Dinner is served at seven. | — | **is served** / is serve | _Dinner is serve at seven._ |
+| Paper is made from wood. | — | **is made** / is make | _Paper is make from wood._ |
+| These apples are picked by hand. | — | **are picked** / are pick | _These apples are pick by hand._ |
+| The tickets are sold online. | — | **are sold** / are sell | _The tickets are sell online._ |
+| Tea is drunk all day here. | — | **is drunk** / is drink | _Tea is drink all day here._ |
+| The bridge was built in 1990. | — | **was built** / was build | _The bridge was build in 1990._ |
+| The window was broken yesterday. | — | **was broken** / was break | _The window was break yesterday._ |
+| My phone was stolen last week. | — | **was stolen** / was steal | _My phone was steal last week._ |
+| These pictures were painted by children. | — | **were painted** / were paint | _These pictures were paint by children._ |
+| The book was written in 1950. | — | **was written** / was write | _The book was write in 1950._ |
+| The cakes were baked this morning. | — | **were baked** / were bake | _The cakes were bake this morning._ |
+| The match was cancelled because of rain. | — | **was cancelled** / was cancel | _The match was cancel because of rain._ |
+| Two houses were sold last year. | — | **were sold** / were sell | _Two houses were sell last year._ |
+| The castle was destroyed long ago. | — | **was destroyed** / was destroy | _The castle was destroy long ago._ |
+| My bag was found under the bed. | — | **was found** / was find | _My bag was find under the bed._ |
+| The letters were sent yesterday. | — | **were sent** / were send | _The letters were send yesterday._ |
+| The prize was won by a student. | — | **was won** / was win | _The prize was win by a student._ |
+| All the tickets were sold quickly. | — | **were sold** / were sell | _All the tickets were sell quickly._ |
+| The song was written by my uncle. | — | **was written** / was write | _The song was write by my uncle._ |
+| Was the window broken by the storm? | — | **Was the window broken** / Was the window break | _Was the window break by the storm?_ |
+| Were the letters sent yesterday? | — | **Were the letters sent** / Were the letters send | _Were the letters send yesterday?_ |
+| The letter wasn't sent. | — | **wasn't sent** / wasn't send | _The letter wasn't send._ |
+| The cars weren't made here. | — | **weren't made** / weren't make | _The cars weren't make here._ |
+| Is English spoken in Brazil? | — | **Is English spoken** / Is English speak | _Is English speak in Brazil?_ |
+| Are these shoes made of leather? | — | **Are these shoes made** / Are these shoes make | _Are these shoes make of leather?_ |
+| The bag isn't sold here. | — | **isn't sold** / isn't sell | _The bag isn't sell here._ |
+| Was the door locked last night? | — | **Was the door locked** / Was the door lock | _Was the door lock last night?_ |
+| The food wasn't cooked well. | — | **wasn't cooked** / wasn't cook | _The food wasn't cook well._ |
+| Where was the film made? | — | **was the film made** / was the film make | _Where was the film make?_ |
+| Those rooms aren't used often. | — | **aren't used** / aren't use | _Those rooms aren't use often._ |
+| When were the pyramids built? | — | **were the pyramids built** / were the pyramids build | _When were the pyramids build?_ |
 
 ## Semester 2 · Unit 10 — Helping others
 

@@ -47,6 +47,11 @@ anyone's keys.** Ask for the access, then sign in with your own account.
    checkout (`git worktree add ../wt-<task> -b <branch> origin/main`), run
    `pnpm install`, `tsc --build`, and `pnpm run typecheck`, and ask Claude to read
    `CLAUDE.md` and `STATUS.md` before it edits anything.
+6. **Trust the folder.** Run `claude` interactively once in the checkout (and in each
+   new worktree) and accept the trust prompt. Until you do, Claude Code prints
+   "Ignoring ... permissions.allow entries from .claude/settings.json: this workspace
+   has not been trusted" and the shared allow list does not apply, which is also true
+   of headless `claude -p` runs in a folder you have never trusted.
 
 ## Left for the project owner
 

@@ -783,6 +783,10 @@ import {
   G4_PE_S1_BOOK_ID,
   buildG4PhysicalEducationSem1Catalog,
 } from './curriculumG4PhysicalEducationSem1.ts';
+import {
+  G8_PE_S1_BOOK_ID,
+  buildG8PeSem1Catalog,
+} from './curriculumG8PeSem1.ts';
 
 export interface KBBook {
   id: string;
@@ -1603,6 +1607,15 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Physical Education – Grade 4 – Semester 1',
     semester: 1,
     source: 'iqra_curriculum_g4_physical_education_sem1.json (NCCD)',
+  },
+  {
+    id: G8_PE_S1_BOOK_ID,
+    gradeId: 'grade-8',
+    subjectId: 'physical-education',
+    titleAr: 'التربية الرياضية – الصف الثامن – الفصل الأول',
+    titleEn: 'Physical Education – Grade 8 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g8_physical_education_sem1.json (NCCD online flipbook, read on screen)',
   },
   {
     id: G5_CREATIVE_ARTS_BOOK_ID,
@@ -3773,6 +3786,7 @@ const _g5PhysicalEducationSem1 = buildG5PhysicalEducationSem1Catalog();
 const _g5PhysicalEducationSem2 = buildG5PhysicalEducationSem2Catalog();
 const _g10PeSem1 = buildG10PeSem1Catalog();
 const _g4PhysicalEducationSem1 = buildG4PhysicalEducationSem1Catalog();
+const _g8PeSem1 = buildG8PeSem1Catalog();
 const _legacyS1UnitIds = new Set(
   HARDCODED_KB_UNITS.filter(u => u.bookId === NCCD_S1_BOOK_ID).map(u => u.id),
 );
@@ -4097,6 +4111,7 @@ export const KB_UNITS: KBUnit[] = [
   ..._g5PhysicalEducationSem2.units,
   ..._g10PeSem1.units,
   ..._g4PhysicalEducationSem1.units,
+  ..._g8PeSem1.units,
 ];
 
 /** Active lessons: NCCD Chem S1/S2 + NCCD Math S1/S2 (G10 + G9) + NCCD FinLit S1 + English vocational tracks. */
@@ -4307,6 +4322,7 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g5PhysicalEducationSem2.lessons,
   ..._g10PeSem1.lessons,
   ..._g4PhysicalEducationSem1.lessons,
+  ..._g8PeSem1.lessons,
 ];
 
 // ─────────────────────────────────────────────────────

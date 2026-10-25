@@ -139,3 +139,28 @@ export async function decideClaim(input: ClaimInput): Promise<ClaimResolution> {
 
   return { ok: true, studentId: target, relation, viaClassCode };
 }
+
+/**
+ * Whether a resolved claim waits for the teacher instead of linking at once.
+ *
+ * Only a student who picked a name off a CLASS code: it is one string shared with
+ * a whole room, so nothing proves the person holding it is the child whose name
+ * they tapped, and a classmate could take another child's name. A per-student
+ * code was given to that child by the teacher, and a parent can only ever use
+ * the per-student code (lib/redeemPolicy.ts), so neither is held.
+ */
+export function claimNeedsApproval(resolved: Extract<ClaimResolution, { ok: true }>): boolean {
+  return resolved.relation === "self" && resolved.viaClassCode;
+}
+
+/**
+ * How many accounts may wait on one name. Several are allowed on purpose — one
+ * squatter must not lock the real child out — but not without limit, or a
+ * teacher's list becomes a place to spam.
+ */
+export const MAX_PENDING_CLAIMS_PER_STUDENT = 5;
+
+/** `othersPending` counts the other accounts already waiting on this name, not the caller. */
+export function pendingLimitReached(othersPending: number): boolean {
+  return othersPending >= MAX_PENDING_CLAIMS_PER_STUDENT;
+}
