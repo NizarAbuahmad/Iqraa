@@ -61,8 +61,12 @@ answer about Iqraa in the language they wrote in, at a cost we cap.
      would allow 20 times the cap. Column names are confirmed against
      `lib/db/src/schema/aiGenerations.ts` in the plan. The gate also adds each
      answer's estimated cost to its cached total in-process, so a burst closes the
-     gate within the cache window, and the gate refuses when `getPersistenceFailure()`
-     says the ledger insert is failing.
+     gate within the cache window, and the gate refuses while `getPersistenceFailure()`
+     says the ledger insert is failing. That flag is not a durable latch: the next
+     successful sum read clears it (the route triggers one about every minute through
+     `assertBudgetAvailable()`), so under a persistently failing insert the gate closes
+     and reopens within about a minute instead of staying shut. A dedicated latch in
+     `aiUsageLog.ts` is the proper fix and is left as a follow-up.
    - The route also calls `assertBudgetAvailable()` and tests `isAiLiveModeOn()`,
      so the global budget still stops it.
    - **The bot's spend counts toward the shared monthly total.** `recordUsage` adds

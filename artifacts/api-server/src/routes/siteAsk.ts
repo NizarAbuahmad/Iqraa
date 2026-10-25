@@ -65,7 +65,9 @@ const spendGate = createSiteAskSpendGate({
   read: () => readSiteAskSpendLast24hUsd(),
   capUsd: () => getSiteAskDailyCapUsd(process.env.SITE_BOT_BUDGET_USD_DAILY),
   // recordUsage's ledger write fails soft; a ledger that cannot be written
-  // cannot enforce a cap, so the gate closes while inserts are failing.
+  // cannot enforce a cap, so the gate closes while inserts are failing. The flag
+  // is not a latch (the next successful sum read clears it), so this is
+  // intermittent; see siteAskBudget.ts.
   ledgerHealthy: () => getPersistenceFailure() !== "insert",
 });
 

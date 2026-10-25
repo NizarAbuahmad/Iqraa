@@ -16,14 +16,16 @@ answers a visitor's question about Iqraa from the site's own `llms.txt` (fetched
 Public with no key, so the limits are the defence: 20 requests an hour per IP and 100 an hour in
 total, a 300-character question and four earlier turns. It has its own spend ceiling,
 `SITE_BOT_BUDGET_USD_DAILY` (default 1, 0 = off), summed from `ai_generations` rows of kind
-`site-ask` over 24 hours and cached for a minute; an unreadable total refuses, and so does a
-ledger whose inserts are failing (`getPersistenceFailure()`). Each answer's estimated cost is also
+`site-ask` over 24 hours and cached for a minute; an unreadable total refuses. A ledger whose
+inserts are failing (`getPersistenceFailure()`) also closes the gate, but only intermittently: that
+flag is cleared by the next successful sum read, which this route triggers about once a minute, so
+the gate closes and reopens instead of staying shut. A dedicated insert-failure latch in
+`aiUsageLog.ts` would fix that; it changes the teachers' budget code and is left as a follow-up. Each answer's estimated cost is also
 added to the gate's cached total in-process, so a burst closes this instance's gate inside the cache
 window instead of after it. Estimates, from gpt-5.4-mini rates and to be replaced by the measured
 `cost_usd` after the first live answers: about $0.01 an answer today, so a deliberate burst is
 bounded by the 100 an hour limit and by that increment, and the bot's spend counts toward the shared
-`AI_BUDGET_USD` (production: 50), so a sustained abuse of about $2 a day would take roughly 25 days
-to exhaust it. **It bounds the
+`AI_BUDGET_USD` (production: 50). **It bounds the
 bot's spend but does not separate it from the teachers' budget:** `recordUsage` adds every answer to
 the shared month-to-date total that `AI_BUDGET_USD` caps (production: 50), so at the default the bot
 can use up to about $30 of a month. Size `AI_BUDGET_USD` above teachers' use plus that, or lower the

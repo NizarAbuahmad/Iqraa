@@ -25,6 +25,10 @@
  * soft, so if inserts fail while the sum query still works the total would read
  * as nothing forever. `ledgerHealthy` lets the route say so
  * (getPersistenceFailure() === "insert"); the gate then refuses without reading.
+ * Known limit: that flag is not a latch. The next successful sum read clears it
+ * (assertBudgetAvailable() triggers one about once a minute), so under a
+ * persistently failing insert the gate closes and reopens within about a minute
+ * instead of staying shut. A dedicated latch in aiUsageLog.ts would fix that.
  *
  * Unknown is closed. If the total cannot be read the gate refuses, because the
  * bot is the least important thing the API does and "I could not check" must
