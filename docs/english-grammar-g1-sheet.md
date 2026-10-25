@@ -150,13 +150,13 @@ Not reviewed yet — shown to nobody.
 
 | Sentence | Picture | Choose | True or false: wrong picture |
 |---|---|---|---|
-| I'm wearing boots. | boots | **boots** / a | dress |
+| I'm wearing boots. | boots | **boots** / a dress | dress |
 | I'm wearing a dress. | dress | **a dress** / jeans | jeans |
 | I'm wearing a jacket. | — | — | — |
 | I'm wearing jeans. | jeans | **jeans** / socks | socks |
 | I'm wearing a jumper. | — | — | — |
 | I'm wearing a skirt. | — | — | — |
-| I'm wearing socks. | socks | **socks** / a | T-shirt |
+| I'm wearing socks. | socks | **socks** / a T-shirt | T-shirt |
 | I'm wearing a T-shirt. | T-shirt | **a T-shirt** / boots | boots |
 | Where's my dress? It's on the chair. | dress | **dress** / T-shirt | T-shirt |
 | Where's my dress? It's on the desk. | dress | **dress** / T-shirt | T-shirt |
