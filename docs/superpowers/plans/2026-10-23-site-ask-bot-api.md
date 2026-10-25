@@ -1063,6 +1063,7 @@ describe("answerSiteQuestion", () => {
     assert.deepEqual(result, { answered: true, content: "نعم، مجاني في النسخة التجريبية." });
     assert.equal(s.calls.complete, 1);
     assert.equal(s.calls.recorded, 1);
+    assert.deepEqual(s.seen.messages, buildSiteAskMessages(ask, "FACT: free in beta"));
   });
 
   it("refuses when live mode is off, without fetching facts or calling the model", async () => {
@@ -1509,7 +1510,7 @@ EOF
 
 In `LOCAL_SETUP.md`, directly after the line beginning ``| `AI_BUDGET_USD` | `2` |``, add:
 ```
-| `SITE_BOT_BUDGET_USD_DAILY` | `1` | Daily USD ceiling for the public iqrra.com bot (`POST /api/site/ask`), counted from `ai_generations` rows of kind `site-ask` over the last 24 hours. Separate from `AI_BUDGET_USD`, so visitors cannot use up the teachers' budget. `0` switches the bot off; an unreadable total also refuses. Needs `AI_LIVE_MODE=true` to answer |
+| `SITE_BOT_BUDGET_USD_DAILY` | `1` | Daily USD ceiling for the public iqrra.com bot (`POST /api/site/ask`), counted from `ai_generations` rows of kind `site-ask` over the last 24 hours. Bounds what visitors can add per day, but the spend still counts toward the shared month-to-date total that `AI_BUDGET_USD` caps (about $30 a month at the default), so size `AI_BUDGET_USD` with it in mind. `0` switches the bot off; an unreadable total also refuses. Needs `AI_LIVE_MODE=true` to answer |
 ```
 
 - [ ] **Step 2: Write the log entry**
@@ -1522,8 +1523,12 @@ answers a visitor's question about Iqraa from the site's own `llms.txt` (fetched
 Public with no key, so the limits are the defence: 20 requests an hour per IP and 600 an hour in
 total, a 300-character question and four earlier turns. It has its own spend ceiling,
 `SITE_BOT_BUDGET_USD_DAILY` (default 1, 0 = off), summed from `ai_generations` rows of kind
-`site-ask` over 24 hours and cached for a minute, so visitors cannot draw on the teachers'
-`AI_BUDGET_USD`; an unreadable total refuses. Every refusal (live mode off, either budget, a model
+`site-ask` over 24 hours and cached for a minute; an unreadable total refuses. **It bounds the
+bot's spend but does not separate it from the teachers' budget:** `recordUsage` adds every answer to
+the shared month-to-date total that `AI_BUDGET_USD` caps (production: 50), so at the default the bot
+can use up to about $30 of a month. Size `AI_BUDGET_USD` above teachers' use plus that, or lower the
+cap; excluding the bot from the shared total would mean changing the teachers' budget code and was
+not done. Every refusal (live mode off, either budget, a model
 error, an empty reply) is a 200 with `answered: false`, a reason, and a fixed Arabic and English
 message pointing to info@iqrra.com — never a mock answer. The reply ceiling is 800
 `max_completion_tokens`, not 300, because the production chat model counts hidden reasoning against

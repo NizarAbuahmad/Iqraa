@@ -45,7 +45,9 @@ answer about Iqraa in the language they wrote in, at a cost we cap.
      client. Anything over is a 400, not a truncation.
    - Numbers are a starting point, tuned after the first week from the admin
      dashboard's limits table.
-3. **Its own spend ceiling**, separate from the teachers' `AI_BUDGET_USD`.
+3. **Its own daily spend ceiling.** It bounds what anonymous traffic can add per day;
+   it does **not** keep the bot's spend out of the teachers' `AI_BUDGET_USD` (see the
+   last bullet).
    - Env `SITE_BOT_BUDGET_USD_DAILY`, default `1`.
    - Each answer is recorded with `recordUsage(..., { kind: "site-ask", ... })`, so it
      lands in `ai_generations` with `userId` null. No migration: `kind` is free
@@ -57,6 +59,14 @@ answer about Iqraa in the language they wrote in, at a cost we cap.
      `lib/db/src/schema/aiGenerations.ts` in the plan.
    - The route also calls `assertBudgetAvailable()` and `assertLiveModeEnabled()`,
      so the global budget still stops it.
+   - **The bot's spend counts toward the shared monthly total.** `recordUsage` adds
+     every answer to the process-wide month-to-date total that `AI_BUDGET_USD` caps,
+     and that total is rehydrated from every `ai_generations` row. So at the default
+     of $1 a day the bot can use up to about $30 of a month, and production's
+     `AI_BUDGET_USD` is 50 (STATUS.md). Keeping the bot out of the shared total would
+     mean changing the teachers' budget code, which this change does not do. The
+     operator sizes `AI_BUDGET_USD` above the teachers' own use plus the bot's cap, or
+     lowers `SITE_BOT_BUDGET_USD_DAILY`.
 4. **Fails closed and says so.** If live mode is off, either budget is spent, the
    limiter trips or the model call errors, the response is a fixed message
    (Arabic and English) pointing to `info@iqrra.com` and the contact form. It is
