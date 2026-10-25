@@ -10,6 +10,25 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat app-help, thirty-first live pass: greetings, «الطريقة لـ», «أقدر / بقدر», «أرى / أشوف» — 2026-10-25
+
+Thirty known questions asked in other written styles (app-only: the demo account's allowance is
+still spent). 19 got a correct in-app answer — missing hamzas, plurals, «؟؟؟», Egyptian and Gulf
+phrasing, English and «اريد …» all work. The rest:
+
+- **A greeting or run-up in front of the question gave a wrong answer.** «لو سمحت كيف أضيف
+  واجب», «ممكن تشرح كيف أرسل واجب» and «عندي مشكلة كيف أغلق الامتحان» each got «أيّ مادة تقصد؟»
+  (the generator), «مرحبا كيف أحذف شعبة» only a place card. `foldColloquial` now drops the run-up
+  (a fixed list), and only when a question word follows.
+- **«شو / وش / ما هي (ال)طريقة (ل)…»** (`وش طريقة تغيير كلمة المرور`, `شو الطريقة لحفظ الشرائح`)
+  is read as «طريقة …», a form the rules already know; the «ل / ب» is dropped only before a fixed
+  list of verbal nouns, so «طريقة لعبة» keeps its «ل».
+- **«كيف اقدر / بقدر X» and «هل بقدر X»** are read as «كيف X».
+- **«كيف أرى / أشوف جدول الحصص»** was not an app question at all, formal Arabic included: the
+  how-pattern had «أفتح» and «أجد» but no view verb. «أرى» and «أشوف» are added; a place or an
+  app noun must still follow, so «كيف أرى المعادلة» stays teaching.
+- **«وين لاقي سجل الطالب»** reaches the student record.
+
 ## Chat app-help, thirtieth live pass: colloquial «ب» verbs, five short answers, nine more wordings — 2026-10-25
 
 Two passes. The allowance was still spent, so both were app-only and a question the matcher missed

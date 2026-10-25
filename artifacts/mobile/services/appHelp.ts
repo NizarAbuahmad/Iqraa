@@ -436,6 +436,18 @@ function matchForm(s: string): string {
  * «شو يعني X» is «ما هو X».
  */
 const COLLOQUIAL_ASK = '(كيف|كيفيه|شلون|ازاي|وين|اين|فين)';
+/**
+ * Greetings and run-ups in front of the question: «لو سمحت كيف أضيف واجب», «ممكن تشرح
+ * كيف أرسل واجب», «عندي مشكلة كيف أغلق الامتحان». Left in, the anchored rules saw no
+ * question and the chat asked «أيّ مادة تقصد؟» (found on app.iqrra.com, 2026-10-25).
+ * Only dropped when a question word follows.
+ */
+const COLLOQUIAL_OPENER_RE = new RegExp(
+  '^(?:(?:مرحبا|اهلا|اهلين|هلا|سلام|السلام عليكم|صباح الخير|مساء الخير|لو سمحت|اذا سمحت|من فضلك|عفوا|تحيه طيبه|يعطيك العافيه|الله يعطيك العافيه|ممكن تشرح(?: لي)?|ممكن توضح(?: لي)?|ممكن تساعدني|عندي مشكله|عندي سوال|عندي سؤال|عندي استفسار|بدي اسال|اريد ان اسال)\\s+)+(?=(?:كيف|شلون|ازاي|وين|اين|فين|هل|ما|شو|ايش|وش|بدي|اريد|ممكن)\\s)',
+);
+/** «شو الطريقة لحفظ الشرائح» / «وش طريقة تغيير كلمة المرور» / «ما هي طريقة نشر النتائج». */
+const COLLOQUIAL_WAY_RE = /^(?:شو|وش|ايش|ما هي|ما هو|ما)\s+(?:هي\s+)?(?:ال)?(?:طريقه|خطوات)\s+/;
+const COLLOQUIAL_WAY_NOUN_RE = /^طريقه\s+[لب](?=(حفظ|حذف|نشر|تغيير|ارسال|اضافه|تصدير|طباعه|انشاء|تسجيل|اغلاق|فتح|استعاده|تعديل|ربط|تحميل|تنزيل|رفع)\s)/;
 const COLLOQUIAL_STEMS =
   'ضيف|حذف|نزل|سجل|عمل|صحح|سكر|لغي|نشر|عرف|فتح|غير|قترح|شوف|لاقي|لقي|طبع|حفظ|صدر|جهز|حضر|رتب|وزع|مسح|بدل|عدل|فرز|خلط|كتم|شغل|خلي|عين|حدد|حمل|رفع|دور|وصل|جيب|ضبط|ظبط|فعل|وقف|نسخ|اضغط';
 const COLLOQUIAL_ALIF_STEMS =
@@ -444,6 +456,11 @@ const COLLOQUIAL_RE = new RegExp(`(^|\\s)${COLLOQUIAL_ASK}\\s+ب(${COLLOQUIAL_ST
 const COLLOQUIAL_ALIF_RE = new RegExp(`(^|\\s)${COLLOQUIAL_ASK}\\s+ب(${COLLOQUIAL_ALIF_STEMS})(?=\\s|$)`, 'g');
 function foldColloquial(s: string): string {
   return s
+    .replace(COLLOQUIAL_OPENER_RE, '')
+    .replace(COLLOQUIAL_WAY_RE, 'طريقه ')
+    .replace(COLLOQUIAL_WAY_NOUN_RE, 'طريقه ')
+    .replace(/(^|\s)(كيف|شلون|ازاي)\s+(?:اقدر|بقدر|استطيع|يمكنني|ممكن)\s+/g, '$1$2 ')
+    .replace(/^(?:هل\s+)?(?:بقدر|اقدر|استطيع|يمكنني)\s+/, 'كيف ')
     .replace(/^(.{6,}?)\s+(شلون|كيف|ازاي)$/, '$2 $1')
     .replace(/(^|\s)(كيف|شلون|ازاي)\s+بدي\s+/g, '$1$2 ')
     .replace(COLLOQUIAL_RE, '$1$2 ا$3')
@@ -485,7 +502,7 @@ const WHERE_PATTERN =
  * «ممكن انشئ اختبار» ask the assistant to make one).
  */
 const HOW_ACCOUNT =
-  /(كيفيه|كيف|اشلون|شلون|ازاي|طريقه|خطوات)\s*(يمكنني\s*|ممكن\s*)?((ا|ن)?(ضيف|ضف|ضافه|نشي|نشئ|نشاء|عمل|غير|عدل|حذف|صدر|طبع|حفظ|بدا|شارك|ربط|دعو|ستخدم|فعل|شغل)|تغيير|تعديل|تصدير|طباعه|تفعيل|تشغيل|بدء)|\bhow\s+(?:(?:do|can|should)\s+(?:i|we)\s+)?(?:to\s+)?(?:add|create|make|change|edit|delete|remove|export|print|save|share|start|use|link|invite|enable|turn\s+on|switch\s+to)\b|\bcan\s+i\s+(?:add|change|edit|delete|remove|export|print|save|share|link|invite)\b|\b(?:is\s+there\s+(?:a|any|some)\s+way|is\s+it\s+possible|any\s+way)\s+to\s+(?:add|change|edit|delete|remove|export|save|share|link|invite)\b|(?:^|\s)(?:هل\s+)?(?:يمكنني|يمكن|اقدر|استطيع|ممكن)\s+(?:ان\s+)?(?:اضيف|اضافه|اغير|اعدل|احذف|اصدر|احفظ|اشارك|اربط|ادعو)(?:\s|$)/i;
+  /(كيفيه|كيف|اشلون|شلون|ازاي|طريقه|خطوات)\s*(يمكنني\s*|ممكن\s*)?((ا|ن)?(ضيف|ضف|ضافه|نشي|نشئ|نشاء|عمل|غير|عدل|حذف|صدر|طبع|حفظ|بدا|شارك|ربط|دعو|ستخدم|فعل|شغل|ري(?=\s)|شوف(?=\s))|تغيير|تعديل|تصدير|طباعه|تفعيل|تشغيل|بدء)|\bhow\s+(?:(?:do|can|should)\s+(?:i|we)\s+)?(?:to\s+)?(?:add|create|make|change|edit|delete|remove|export|print|save|share|start|use|link|invite|enable|turn\s+on|switch\s+to)\b|\bcan\s+i\s+(?:add|change|edit|delete|remove|export|print|save|share|link|invite)\b|\b(?:is\s+there\s+(?:a|any|some)\s+way|is\s+it\s+possible|any\s+way)\s+to\s+(?:add|change|edit|delete|remove|export|save|share|link|invite)\b|(?:^|\s)(?:هل\s+)?(?:يمكنني|يمكن|اقدر|استطيع|ممكن)\s+(?:ان\s+)?(?:اضيف|اضافه|اغير|اعدل|احذف|اصدر|احفظ|اشارك|اربط|ادعو)(?:\s|$)/i;
 
 /**
  * «how to generate worksheet», «كيف أجهّز ورقة عمل» — how a material is made.
@@ -1570,6 +1587,8 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:ارى|اري|اشوف|اتابع|اعرف|اطلع\s+علي)\s+(?:ال)?(?:اداء|مستوي|علامات|درجات|نتائج)\s+(?:ال)?(?:طالب|طالبه)(?:\s+(?:معين|معينه|محدد|محدده))?(?:\s+(?:عبر|خلال|في|علي)\s+(?:ال)?(?:امتحانات|اختبارات|تقييمات))?` + AR_RULE_TAIL,
       ),
+      // The thirty-first live pass: «وين لاقي سجل الطالب».
+      new RegExp(AR_RULE_LEAD + String.raw`(?:(?:ا|ن)?(?:لاقي|لقي)\s+)?(?:ال)?(?:سجل|ملف)\s+(?:ال)?طالب` + AR_RULE_TAIL),
     ],
   },
   {

@@ -2306,3 +2306,49 @@ describe('colloquial «ب» verbs, and messages, the timetable, the live game an
     });
   }
 });
+
+describe('greetings, «الطريقة لـ», «أقدر / بقدر» and «أرى / أشوف» — the same questions in other written styles (thirty-first live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    // A greeting or a run-up in front of the question.
+    ['لو سمحت كيف أضيف واجب', 'howAddHomework'],
+    ['ممكن تشرح كيف أرسل واجب', 'howAddHomework'],
+    ['عندي مشكلة كيف أغلق الامتحان', 'howCloseExam'],
+    ['مرحبا كيف أحذف شعبة', 'howArchiveClass'],
+    // «ما هي / شو / وش … الطريقة (ل)…».
+    ['وش طريقة تغيير كلمة المرور', 'howChangePassword'],
+    ['شو الطريقة لحفظ الشرائح', 'howSaveSlides'],
+    ['ما هي طريقة نشر النتائج؟', 'howReleaseResults'],
+    // «أقدر / بقدر» after the question word, or leading a yes/no.
+    ['كيف اقدر احذف طالب', 'howRemoveStudent'],
+    ['هل بقدر اغير اسم الشعبة', 'howRenameClass'],
+    // «أرى / أشوف» + a place.
+    ['كيف أرى جدول الحصص', 'howTimetable'],
+    ['كيف اشوف جدول الحصص', 'howTimetable'],
+    ['وين لاقي سجل الطالب', 'howStudentRecord'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  // A greeting is dropped only in front of a question word, and «أرى» alone claims nothing.
+  const stayWithModel = [
+    'كيف أرى الفرق بين الحمض والقاعدة',
+    'كيف أرى المعادلة',
+    'كيف اشوف الاقترانات',
+    'مرحبا بكم في الصف',
+    'ما هي طريقة حل المعادلة التربيعية',
+    'شو الطريقة لحساب مساحة الدائرة',
+    'كيف اقدر احسب المساحة',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howAddHomework', 'howCloseExam', 'howArchiveClass', 'howChangePassword', 'howSaveSlides', 'howReleaseResults', 'howRemoveStudent', 'howRenameClass', 'howTimetable', 'howStudentRecord']);
+      const a = answerAppHelp(q, 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});
