@@ -57,7 +57,7 @@ export function PhoneToday() {
   const hero = theme === BRAND_BAND ? colors.ink : theme.hero;
   const {
     topic, periodLine, next, setup, nudgeDismissed, classes, board, summary, toggleSkip,
-    gradeLabel, subjectLabel, toolParams, quickTools, suggestions, startingClass, startClassError,
+    gradeLabel, subjectLabel, toolParams, quickTools, suggestions, startingClass, startClassError, startClassNote,
     openLessonPicker, prepJustReady, clearPrepJustReady,
   } = today;
 
@@ -209,9 +209,13 @@ export function PhoneToday() {
 
           {startClassError ? (
             <Entrance index={section++}>
-              <View style={[s.errorRow, { backgroundColor: colors.destructive + '14', flexDirection: rowDir }]}>
-                <Ionicons name="alert-circle" size={14} color={colors.destructive} />
-                <Text style={[s.errorText, { color: colors.destructive, textAlign: align }]}>{startClassError}</Text>
+              <View style={[s.errorRow, { backgroundColor: startClassNote ? colors.muted : colors.destructive + '14', flexDirection: rowDir }]}>
+                <Ionicons
+                  name={startClassNote ? 'information-circle' : 'alert-circle'}
+                  size={14}
+                  color={startClassNote ? colors.mutedForeground : colors.destructive}
+                />
+                <Text style={[s.errorText, { color: startClassNote ? colors.mutedForeground : colors.destructive, textAlign: align }]}>{startClassError}</Text>
               </View>
             </Entrance>
           ) : null}
