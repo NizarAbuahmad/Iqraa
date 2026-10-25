@@ -47,6 +47,7 @@ describe("answerSiteQuestion", () => {
     assert.deepEqual(result, { answered: true, content: "نعم، مجاني في النسخة التجريبية." });
     assert.equal(s.calls.complete, 1);
     assert.equal(s.calls.recorded, 1);
+    assert.deepEqual(s.seen.messages, buildSiteAskMessages(ask, "FACT: free in beta"));
   });
 
   it("refuses when live mode is off, without fetching facts or calling the model", async () => {
