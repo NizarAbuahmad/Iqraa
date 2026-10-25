@@ -10,6 +10,139 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## CI listens for the merge queue, 2026-10-25
+
+**Why.** `main` requires an up-to-date branch and a green `typecheck + tests`, and takes a merge about every
+ten minutes while that job takes about nine. On 2026-10-25 one PR lost that race four times running: every
+head was green, and each merge was refused (405, «Required status check "typecheck + tests" is expected»)
+because another PR had landed first. A merge queue removes the race: GitHub tests each entry on top of the
+ones ahead of it and merges it, with no hand-run «update branch».
+
+**Built.** `merge_group:` added to the triggers of `ci.yml`, `e2e.yml` and `destructive-migration-ack.yml`.
+Without it a queue entry never gets the four `ci.yml` checks or the smoke test, and waits forever on checks
+that never report. The destructive-migration job reads the PR body, which a queue entry does not have, so it
+is skipped there (a skipped required check counts as passing; the body was already checked on the PR) and its
+concurrency group falls back to the ref, so two entries never cancel each other.
+
+**Not done, and not doable from a PR.** The queue itself is a repository setting: *Settings → Rules →
+Rulesets* (or branch protection for `main`) → «Require merge queue». Merge this PR first, then turn it on;
+the other order leaves every entry stuck. `merge_group` runs cannot be exercised before the queue exists, so
+this is **unverified in practice**: the first queued PR is the test. Check that every check the ruleset
+requires reports on it. If one does not, the queue entry times out and the PR drops out; turning the queue off again
+restores the old behaviour, and reverting this PR changes nothing for a repository with the queue off.
+`deploy.yml` is untouched: the queue merges into `main`, which is still a push to `main`.
+
+## Grade 8 semester 1 word lists in the English corner, 2026-10-25
+
+Grades 6–8 had a tab and a «word games coming» notice (PR #1268) but no words. Grade 8's
+two books are *Jordan High Note*, the series Grade 9 uses, with the same Word List at the back,
+so Grade 8 follows the Grade 9 pipeline. **Semester 1 is built; semester 2 is not.** Grades 6
+and 7 are untouched (*Jordan Team Together*, Pearson third-party text, whose vocabulary the
+catalog leaves empty on purpose — see `g6EnglishSem1.ts`).
+
+- **How the text got here.** The Ministry site is unreachable from the build container, so the
+  owner downloaded both PDFs, ran `extract-text` on their own machine and committed
+  `data/extracted/g8-english-s1-student-book.json` (80 pages, 143,910 characters). The PDFs are
+  gitignored and stay on that machine; `LOCAL_FILES` in `scripts/localSources.ts` names them
+  `g8-english-s{1,2}-student-book.pdf` (PR #1283).
+- **Registered in `g10_sources.json`** as `third-party`, like Grade 9 (Pearson/York Press ©, so
+  not quotable); `extraction.test.ts` requires a manifest row for every extracted file.
+- **A parsing bug found on the way, and fixed.** The Word List reader took a `WL<unit>.<lesson>`
+  marker only at the start of a line. In this book a wrapped three-line heading ends in the
+  marker (`GRAMMAR <tab>WL1.1`), so the first run lost lesson 1 of every unit and filed the next
+  unit's words under the previous marker — the Writing lessons held 26 words each. It now also
+  takes a marker that ends a line with no `/` in it. The Grade 9 and 10 rows are byte-identical
+  to before (compared row by row). `englishHub.test.ts` pins it: lesson 1 of every unit has
+  ≥ 10 words, a Writing lesson ≤ 10; with the fix removed it fails.
+- **390 words in 35 lessons; 27 lessons are offered.** A lesson needs `MIN_HUB_WORDS` (4)
+  words, and 8 short Speaking / Writing lessons have 2–3. Slash entries (`before/after school`)
+  are dropped by the hub's own `isDrillableWord`, as for Grades 9–10. Two words are lost to the
+  parser and not fixed here: `shelf (pl. shelves)` and `shower` in lesson 2.2 (a wrapped IPA row).
+  The extracted list was read in full and the first three Word List pages (file pp. 64–66) were
+  compared with the raw text; pp. 67, 68 and 74 were not compared line by line.
+- **338 new Arabic glosses, drafted by Claude; no teacher has reviewed them** (same status as
+  Grades 5, 9 and 10). One sense each, chosen against the book's own sentence, no two words in a
+  lesson alike. Judgement calls worth a teacher's eye: «ice cream» آيس كريم and «tomato» طماطم
+  (Jordanian «بندورة»), «Drama» التمثيل المسرحي, «assembly» التجمع المدرسي, «cooker» موقد الطهي,
+  «can» / «tin» علبة مشروبات / علبة معلبات, «hall» صالة المدخل, «slim» رشيق against «thin» نحيف.
+  **`suit` and `light` already had a gloss from Grades 9–10 with the other sense** (the noun,
+  «not heavy»), and a printed word has one gloss, so both senses are now in it
+  («بدلة، يليق بـ», «خفيف، فاتح»); `englishHub.test.ts` pins both halves.
+- **The Grade 5, 9 and 10 teacher forms were regenerated** (`grammar-sheet`): only each unit's
+  «words outside the vocabulary lists» note changed, because Grade 8 teaches a few words
+  (`cook`, `tall`, `closed`, `different`…) that were outside the lists. No question text moved
+  and no unit has a sign-off, so none is invalidated.
+- **`ENGLISH_HUB_GRADES` is `[1, 2, 3, 4, 5, 8, 9, 10]`.** The Grade 8 tab, the browse banner and
+  the library read it; the «Semester 2 word games are coming» note on the Grade 8 tab is
+  data-driven and shows because no Semester 2 lesson exists. A Grade 8 lesson offers the six word
+  activities (no «Match the picture»: none of these words has a picture set).
+- **Checked:** `pnpm run typecheck` clean; mobile suite 0 failures; `lib/curriculum` suite all
+  green except `R2 helpers are inert, not broken, when unconfigured`, which fails on `main` too;
+  the CI brand grep. In the web build (Playwright, Chromium): the Grade 8 tab in English, light,
+  and in Arabic, dark, on a phone; a Grade 8 lesson in Arabic.
+- **Not done: recordings.** 348 distinct Grade 8 words; **107 have an MP3 and 241 do not**
+  (HEAD request on 2026-10-25). Until `pnpm --filter @workspace/curriculum run english-audio` is
+  run with the OpenAI and R2 keys, web speaks the word in the browser's voice and native is
+  silent, which makes «استمع واختر» unplayable on a phone. Run it before the merge deploys, or
+  accept that for now.
+- **Not done: semester 2.** `extract-text` rejects `g8-english-s2-student-book` (Arabic in
+  reversed presentation-form glyphs; the OCR fallback was rejected too: 10,916 Arabic words, fewer
+  than 100 recognisable). The book is English, so its Word List may be perfectly readable; the
+  way forward is an opt-in that skips the Arabic gates for an English book, or pasting the Word
+  List text. Also not done: Grades 6 and 7, Grade 10 semester 2, a real phone.
+
+## Chat app-help, thirty-first live pass: greetings, «الطريقة لـ», «أقدر / بقدر», «أرى / أشوف» — 2026-10-25
+
+Thirty known questions asked in other written styles (app-only: the demo account's allowance is
+still spent). 19 got a correct in-app answer — missing hamzas, plurals, «؟؟؟», Egyptian and Gulf
+phrasing, English and «اريد …» all work. The rest:
+
+- **A greeting or run-up in front of the question gave a wrong answer.** «لو سمحت كيف أضيف
+  واجب», «ممكن تشرح كيف أرسل واجب» and «عندي مشكلة كيف أغلق الامتحان» each got «أيّ مادة تقصد؟»
+  (the generator), «مرحبا كيف أحذف شعبة» only a place card. `foldColloquial` now drops the run-up
+  (a fixed list), and only when a question word follows.
+- **«شو / وش / ما هي (ال)طريقة (ل)…»** (`وش طريقة تغيير كلمة المرور`, `شو الطريقة لحفظ الشرائح`)
+  is read as «طريقة …», a form the rules already know; the «ل / ب» is dropped only before a fixed
+  list of verbal nouns, so «طريقة لعبة» keeps its «ل».
+- **«كيف اقدر / بقدر X» and «هل بقدر X»** are read as «كيف X».
+- **«كيف أرى / أشوف جدول الحصص»** was not an app question at all, formal Arabic included: the
+  how-pattern had «أفتح» and «أجد» but no view verb. «أرى» and «أشوف» are added; a place or an
+  app noun must still follow, so «كيف أرى المعادلة» stays teaching.
+- **«وين لاقي سجل الطالب»** reaches the student record.
+- **Three English wordings** from a 30-question English pass (24 answered in-app, 3 cards, 3 missed):
+  «Is there a way to download the textbook?» (`howBookDownload`), «how do i add a due date to
+  homework» (`howAddHomework`) and «how do i post results to students» (`howReleaseResults`).
+  English questions asked in an Arabic-language app are answered in Arabic: the answer follows the
+  app's language, not the question's.
+- **Checked on the running app:** the Settings «الإصدار» row (`1.5.0 · embedded` on the web), the
+  Profile rows, the timetable's «إعداد الحصص» icon, Messages' «رسالة جديدة / رسالة جماعية»,
+  Evaluations' «تقييم جديد» and the Calendar's «عرض امتحانات المدرسة». Settings has no
+  «التنبيهات» on the web (a phone section). Not checked: the class page — the demo teacher has no
+  class.
+## «ابدأ الحصة الآن» says the allowance is spent, as a note — 2026-10-24
+
+A teacher whose monthly AI allowance (`AI_USER_BUDGET_USD`, `1` in production) was used up pressed
+«ابدأ الحصة الآن» and got the red «تعذّر تجهيز العرض. اضغط … للمحاولة مرة أخرى.», with the amber
+«تعذّر الاتصال · محتوى تجريبي» badge above it. Cause: `buildClassDeck` asks `/generate/classroom-activity`
+for the quick-check, and `generateWithProvenance` re-throws a cap error on purpose (it will not hide a spent
+allowance behind made-up content); the two `catch {}` blocks (`useTodayLesson.ts`, `app/(tabs)/iqra.tsx`) threw
+the real error away and always printed the generic retry text. «Try again» cannot help in that state.
+
+**Now.** `startClassFailure(e)` (`services/ai/aiProvenance.ts`) maps `user_quota_exceeded` / `budget_exceeded` to
+`aiQuotaSpent` and `live_mode_off` to `aiUnavailable`, both with `note: true`; every other failure
+(including `generation_in_flight`, where retrying is right) keeps `startClassFailed`. A note is drawn as a
+neutral `information-circle` on `colors.muted` in `PhoneToday`, the desktop workspace and `CurrentLessonCard`
+(was red / amber alert), and the chat card skips the error haptic. Tests: `aiProvenance.test.ts`.
+
+**Verified.** Mobile suite 7221 pass / 0 fail, `pnpm run typecheck` clean. Before the change I ran the offline
+path for the failing lesson (`kbl-chem-s1-nccd-u1_lab`, Grade 10 chemistry lab, no objectives): it builds a
+deck, so the lesson itself is not the problem. **Not verified:** the screens in a browser or on a device, and the
+live cap response itself (confirmed by the teacher: their allowance was spent, not read from the server).
+
+**Known limit.** Start class still needs the AI call, so a teacher with no allowance cannot start a *new* deck;
+a saved «عرض الحصة» still opens. Falling back to the offline book-based quick-check on a cap was not done: it
+is a product decision (the same rule that keeps a worksheet from being faked), left open.
+
 ## Chat app-help, thirtieth live pass: colloquial «ب» verbs, five short answers, nine more wordings — 2026-10-25
 
 Two passes. The allowance was still spent, so both were app-only and a question the matcher missed
@@ -91,6 +224,25 @@ links into a scratch folder outside the repo.
   («Vocabulary & Grammar», «Listening & Speaking») against about nine book pages. A
   unit-level page set was considered and not done, because a lesson's pages would not be that
   lesson's. The PDFs are still in the scratch folder if someone wants to hand-map them.
+
+## Today shows the next period as soon as a timetable is saved — 2026-10-25
+
+After «Timetable: a period saves with a labelled button…» a teacher saved their timetable and
+reported that nothing showed on Today. It was the limit that entry named: the next-period line
+(«الحصة القادمة · العاشر ب · 10:15») appeared only when the class had a lesson in a pacing plan, so
+a class with no plan changed only the banner («… ليس لها خطة وتيرة») and the card looked
+untouched. `showsPeriodLine` (`services/lessonContext.ts`) now also shows the line when the next
+period's class has no lesson yet; it stays hidden when a lesson picked today replaced the period's
+lesson, which would read as the period's own. The phone Today and the desktop workspace both read
+it through `useTodayLesson`.
+
+Verified: the rule is pinned in `lessonContext.test.ts`; `pnpm run typecheck`; the whole flow in
+the browser on a rebuilt bundle (period → class → Today shows «In class now · 10B · 08:00» above the
+unchanged lesson, banner asks for a plan). **Not verified:** Arabic/RTL on a device, the desktop
+layout (same hook, not looked at), and that this is what the reporting teacher meant by "nothing
+shows". **Known limit:** beside a lesson that is not that class's (no plan), the line reads as the
+next period, not as the lesson's period; the banner under it is what says the lesson is not linked.
+The chat screen keeps its own rule and still shows the line only for a timetable lesson.
 
 ## Chat app-help, twenty-ninth live pass: three short answers and wordings for fourteen existing ones — 2026-10-25
 
@@ -355,6 +507,40 @@ that stay with the model.
 are right this time; the app questions that fell to the model after the allowance ran out. The
 cap is the account's monthly generation allowance — a pass of 30 questions spends it, and this
 account has now had many passes.
+
+## Parent approval for email students — merged and deployed, flag still off — 2026-10-25
+
+PR #1274 («server and app, flag off») was marked ready and squash-merged to `main` as `2277f57` on
+2026-10-25, by the owner's instruction, after CI was green on its head. This entry records what the
+deploy did; what was built and its limits are in the two entries below it, «… the app (PR B)» and
+«… server (PR A)», dated 2026-10-24.
+
+**What the deploy did** (workflow run 801, from its job and step results; not re-read from production):
+
+- *production migrations* succeeded, so migration `0018` (nullable `users.guardian_approved_at`, new
+  owner-only table `guardian_consents`) was applied before the new API revision took traffic.
+- *production schema / production tables present* succeeded.
+- `iqraa-api`: the Cloud Run deploy succeeded (about 3.5 minutes) and its «Verify the deployed commit»
+  step passed, so the serving revision reports `2277f57`.
+- `iqraa-web`: the web build and the Cloudflare Pages publish succeeded and «Verify the deployed
+  bundle» passed.
+- `iqraa-verifier` was skipped (not changed).
+
+**Still off.** No workflow in `.github/workflows/` sets `GUARDIAN_APPROVAL` (a `grep` found nothing), and
+the deploy only updates the env vars it names, so unless someone set it by hand on the service it is
+unset: the server holds nobody, `GET /guardian-consent/config` answers `{enabled:false}`, and the web
+register screen and the role-switch screens behave as before this merge.
+
+**Not checked.** This session cannot reach production (its egress proxy refuses
+`iqraa-api-…run.app` and `app.iqrra.com`), so none of these was read by command: the serving revision's
+name and traffic split, `/api/healthz/version`, the `config` answer on production, the live web bundle
+in a browser, and the service's actual env (reading Cloud Run env is on the denied list; the claim above
+rests on the workflows). `STATUS.md` was updated from the deploy run, and those lines say so.
+
+**Next, all the owner's** (the numbered list is in the PR B entry): the consent wording read by a native
+speaker and a lawyer and `constants/legal.ts` + `LEGAL_VERSION` updated; Resend click tracking off for the
+parent mail and Cloudflare Web Analytics not recording URL fragments; the share of users on the new bundle
+checked; then `GUARDIAN_APPROVAL=true`, which locks every existing email student until a parent approves.
 
 ## Parent approval for email students — the app (PR B) — 2026-10-24
 

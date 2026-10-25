@@ -354,6 +354,11 @@ export const LOCAL_FILES: Record<string, string> = {
   'g6-eng-s2-activity-book': 'knowledge-base/grade-6-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف السادس الفصل الثاني.pdf',
   'g6-eng-s1-teacher-guide': 'knowledge-base/grade-6-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية الصف السادس الفصل الأول.pdf',
   'g6-eng-s2-teacher-guide': 'knowledge-base/grade-6-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية الصف السادس الفصل الثاني.pdf',
+  // grade-8 English student books (Jordan High Note, the series Grade 9 uses). The file names are the source
+  // ids, which is also the R2 key `ensureLocal` fetches (`<sourceId>.pdf`). Not in the sources manifest yet:
+  // `extract-text` only needs this map, and registering them means a rights decision (see g6-eng-*).
+  'g8-english-s1-student-book': 'knowledge-base/grade-8-english/support-pdfs/g8-english-s1-student-book.pdf',
+  'g8-english-s2-student-book': 'knowledge-base/grade-8-english/support-pdfs/g8-english-s2-student-book.pdf',
   'g6-digital-s1-activity-book': 'knowledge-base/grade-6-digital-literacy/support-pdfs/كتاب الأنشطة لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf',
   'g6-digital-s1-teacher-guide': 'knowledge-base/grade-6-digital-literacy/support-pdfs/دليل المعلم لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf',
   'g6-math-s1-exercise-book': 'knowledge-base/grade-6-math/support-pdfs/كتاب التمارين لمادة الرياضيات الصف السادس الفصل الأول.pdf',
