@@ -20,6 +20,7 @@
 | 16 | `out/Iqrra_16_Avatar_Host.mp4` (`…_PREVIEW.mp4` until a recording exists) | **virtual teacher host** (illustrated «معلّمة اقرأ»), 9:16, voice-over from a recording you supply | ~55 s |
 | 17 | `out/Iqrra_17_Avatar_Host_YouTube.mp4` (`…_PREVIEW.mp4` until a recording exists) | **virtual teacher host, 16:9 YouTube**: the full tour presented by «معلّمة اقرأ», voice-over from a recording you supply | ~1:30–2:00 |
 | 18 | `out/Iqrra_18_Worksheet_Presenter_DRAFT.mp4` (`…Presenter.mp4` once rebuilt from a watermark-free clip) | **worksheet reel with a photoreal D-ID presenter** (the user's own script, voice «Sana», Arabic (Jordan)), 9:16 | 55 s |
+| 18b | `out/Iqrra_18b_Worksheet_App_Hero_DRAFT.mp4` | same script and clip, **app-as-hero layout**: big phone, the presenter a small round bubble in the corner (`--style hero`) | 55 s |
 
 Reels 1–4 share one layout (headline in the top safe zone, the app in a rounded card, branded end card),
 the same Chromium-rendered Arabic (Cairo / Almarai, never ffmpeg `drawtext`) and the same music bed.
@@ -182,6 +183,7 @@ The script is the user's own (`avatar_real_script.py`, ten sentences: hook, who 
 - **Layout:** chip + lockup on top, the presenter bleeding off both sides on a teal disc, a light bottom sheet with ink captions, the app phone on the sheet's right, the demo pill on generated screens, the lockup and the address at the bottom (in the Reels overlay zone: an organic viewer sees it, Meta's buttons cover it). The worksheet footage stops at 17 s of the library take and its bottom 28% is faded, so the sheet's second exercise («و» that reads as a 9) never shows.
 - **Honesty:** the on-screen «شخصية افتراضية» tag was removed at the owner's request; she still says «أنا مُضيفتكم الافتراضية» (the owner's script), never claims to use the app, and the platforms' own AI / altered-content disclosure must be ticked on upload; «تطبيق أردني · بأيدٍ أردنية» is on every frame; «مجانًا» only in the closing button (true while the product has no price).
 - **Draft vs final:** `capture/avatar/sana_test.mp4` is the free-trial clip, so the D-ID watermark is faintly visible across her. After subscribing, generate the same text with the same settings and run `python3 build_avatar_real.py --clip capture/avatar/sana_final.mp4 --final`.
+- **Two layouts from one clip:** `--style sheet` (the presenter on top, captions on a light sheet) and `--style hero` (the app recording is the hero, the presenter a 360 px round bubble lower-left, captions across the top, the demo pill above the bubble). Both name their file `…_DRAFT` until `--final`.
 - Not checked: how Sana pronounces «بدّك» / «لسّه» — nobody here has listened with a native ear; the user must.
 
 ## Reels 6–9 — cut from the full-app tour
