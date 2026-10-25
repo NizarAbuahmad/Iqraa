@@ -56,7 +56,7 @@ phrasings know falls through to the AI. The veto exists because review found sho
 questions getting a confident wrong answer ("how much does chatgpt cost" returned the price answer).
 The success response now carries `source: "curated" | "ai"`. The answers are a copy of the site's
 FAQ wording and can drift from it; cross-topic questions ("is the Android app free") go to the
-nearest status answer. The owner approved the wording of the 17 answers in chat on 2026-10-25. A leading greeting or thanks is set aside when a question follows it.
+nearest status answer. The owner approved the wording of the 17 answers in chat on 2026-10-25. Greeting and thanks words are set aside, wherever they sit, when a real question comes with them (anything beside the salutation counts, so «hi, what is Iqraa» asks what it is); a thank-you that names a thing («شكرا على التطبيق», "thanks for the app") is answered with thanks or by the AI, never with that thing's answer. The English copy of the answers and the prompts say "Iqrra", the Latin product name.
 
 **Not checked:** the real spend query against Postgres (it is a one-statement sum, exercised only
 in production); the real per-answer cost and the `/healthz/ai-budget` `persisted` flag after the

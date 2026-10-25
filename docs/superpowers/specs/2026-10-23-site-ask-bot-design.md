@@ -126,16 +126,24 @@ cost; only what that list does not cover goes to the AI.
      needed, Android, iPhone, students, privacy, contact, "not a general chatbot",
      teacher review, other countries. Drafted from the site's own FAQ, `llms.txt`,
      privacy page and curriculum page, and STATUS.md for the Android status; no digits, no dates, no prices beyond "free during the beta".
-     The product owner approves the wording before this ships.
+     The product owner approved the wording of the 17 answers in chat on 2026-10-25.
    - Matching uses no AI (`lib/siteAskMatch.ts`). The question is normalised
      (diacritics, alef/ya/ta-marbuta spellings, digits, punctuation, apostrophes),
      stopwords are dropped, common Arabic prefixes and English plurals are
      stripped, and each entry's example phrasings are scored by Dice overlap on
      token sets. It answers only when the best entry scores at least 0.5 and leads
-     the runner-up by at least 0.15. A leading greeting or thanks is set aside
-     when something else follows it («السلام عليكم كم السعر» is answered with the
-     price); a bare greeting, or a greeting plus only the product name, still
-     answers itself.
+     the runner-up by at least 0.15. Greeting and thanks words are set aside,
+     wherever they sit in the message, when a real question comes with them
+     («السلام عليكم كم السعر» is answered with the price). A word that another
+     answer's phrasings also use («much», as in "thank you so much" and "how
+     much") is never set aside. Anything beside the salutation counts as a
+     question, a stopword such as «what is» included, so «hi, what is Iqraa» is
+     answered with what Iqraa is; a bare greeting, or a greeting plus only the
+     product name, still answers itself. A thank-you that names a thing
+     («شكرا على التطبيق», "thanks for the Android app") is not a question about
+     it: only thanks, or the AI, answers it. A set-aside remainder of a single
+     word must score at least 0.8, or the whole message is matched instead
+     («hello jordan» is a greeting).
    - **Unknown-word veto.** If the question contains any content word that appears
      in no entry's phrasings, it is not a question the fixed answers were written
      for and it falls through to the AI. This was added after review showed that
