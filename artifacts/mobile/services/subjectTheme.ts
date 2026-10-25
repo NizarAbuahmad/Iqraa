@@ -13,6 +13,8 @@
 import { SUBJECTS } from '@workspace/curriculum';
 import { CORNERS, type CornerId, type MotifId } from '../constants/corners.ts';
 import { readableOn } from './readableColor.ts';
+import type { GlyphId } from '../constants/glyphs.ts';
+import type { IconName } from '../constants/icons.ts';
 
 export type SubjectTheme = { hero: string; motif: MotifId; motifOpacity: number };
 
@@ -49,4 +51,22 @@ export function subjectTheme(subjectId: string | null | undefined): SubjectTheme
 export function subjectChipColor(subjectId: string | null | undefined, card: string): string {
   const color = (subjectId && catalogColor(subjectId)) || '#006D65';
   return readableOn(color, card);
+}
+
+const BRAND_TEAL = '#006D65';
+
+/**
+ * What leads a lesson card (`components/generator/LessonCard`): the subject's own
+ * drawing and colour. A corner subject uses its corner's drawing and hero; any
+ * other uses the library drawing in its catalog colour. `icon` is the stock
+ * fallback `ConceptIcon` needs beside a drawing. The caller makes the colour
+ * readable on its surface (`readableOn`), as `IconTile` does.
+ */
+export function subjectTile(subjectId: string | null | undefined): { glyph: GlyphId; icon: IconName; color: string } {
+  const cornerId = subjectId ? SUBJECT_CORNER[subjectId] : undefined;
+  if (cornerId) {
+    const corner = CORNERS[cornerId];
+    return { glyph: corner.drawing, icon: corner.icon as IconName, color: corner.light.hero };
+  }
+  return { glyph: 'library', icon: 'library-outline', color: (subjectId && catalogColor(subjectId)) || BRAND_TEAL };
 }

@@ -123,6 +123,91 @@ export function recordBest(bests: ExerciseBests, lessonId: string, score: Exerci
   return { ...bests, [lessonId]: score };
 }
 
+/** One student's best score on one lesson, as `GET /classes/:id/math-practice` sends it. */
+export interface ClassPracticeRow extends ExerciseScore {
+  studentId: string;
+  displayName: string;
+  lessonId: string;
+  attempts: number;
+  practicedAt: string;
+}
+
+/** The server's rows, with anything malformed dropped; an absent list is none. */
+export function normalizeClassPractice(raw: unknown): ClassPracticeRow[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((r): ClassPracticeRow[] => {
+    const o = (r ?? {}) as Record<string, unknown>;
+    const { studentId, displayName, lessonId, correct, total, attempts, practicedAt } = o;
+    if (typeof studentId !== 'string' || typeof lessonId !== 'string' || !studentId || !lessonId) return [];
+    if (!Number.isInteger(correct) || !Number.isInteger(total) || (total as number) <= 0) return [];
+    return [{
+      studentId,
+      displayName: typeof displayName === 'string' ? displayName : '',
+      lessonId,
+      correct: correct as number,
+      total: total as number,
+      attempts: Number.isInteger(attempts) ? (attempts as number) : 1,
+      practicedAt: typeof practicedAt === 'string' ? practicedAt : '',
+    }];
+  });
+}
+
+/** Rows grouped per student, in the order the server sent them (by name). */
+export function practiceByStudent(rows: readonly ClassPracticeRow[]): Array<{ studentId: string; displayName: string; lessons: ClassPracticeRow[] }> {
+  const out = new Map<string, { studentId: string; displayName: string; lessons: ClassPracticeRow[] }>();
+  for (const r of rows) {
+    const g = out.get(r.studentId) ?? { studentId: r.studentId, displayName: r.displayName, lessons: [] };
+    g.lessons.push(r);
+    out.set(r.studentId, g);
+  }
+  return [...out.values()];
+}
+
+/** One lesson across a class: how many students practised it and their average best, 0–100. */
+export interface LessonPracticeSummary {
+  lesson: KBLesson;
+  practised: number;
+  /** Mean of each student's best ratio, as a whole percent; null when nobody practised. */
+  averagePct: number | null;
+}
+
+export interface ClassPracticeByLesson {
+  units: Array<{ unit: KBUnit; lessons: LessonPracticeSummary[] }>;
+  practisedLessons: number;
+  totalLessons: number;
+}
+
+/**
+ * The class's grade, lesson by lesson in book order (every lesson the Math
+ * Corner covers, practised or not), so a teacher sees what nobody has touched.
+ * A row for a lesson outside the grade is left out here; the per-student view
+ * still shows it. `grade` comes from the class (`grade-5` → 5).
+ */
+export function practiceByLesson(rows: readonly ClassPracticeRow[], grade: number): ClassPracticeByLesson {
+  const byLesson = new Map<string, ClassPracticeRow[]>();
+  for (const r of rows) byLesson.set(r.lessonId, [...(byLesson.get(r.lessonId) ?? []), r]);
+  let practisedLessons = 0;
+  let totalLessons = 0;
+  const units = exerciseUnits(grade).map(({ unit, lessons }) => ({
+    unit,
+    lessons: lessons.map((lesson): LessonPracticeSummary => {
+      const got = byLesson.get(lesson.id) ?? [];
+      totalLessons++;
+      if (got.length === 0) return { lesson, practised: 0, averagePct: null };
+      practisedLessons++;
+      const mean = got.reduce((s, r) => s + r.correct / r.total, 0) / got.length;
+      return { lesson, practised: new Set(got.map(r => r.studentId)).size, averagePct: Math.round(mean * 100) };
+    }),
+  }));
+  return { units, practisedLessons, totalLessons };
+}
+
+/** `grade-5` → 5, or null for a class with no exercise grade. */
+export function exerciseGradeOfClass(gradeId: string | null | undefined): number | null {
+  const n = Number(gradeId?.match(/^grade-(\d+)$/)?.[1]);
+  return (EXERCISE_GRADES as readonly number[]).includes(n) ? n : null;
+}
+
 export function exerciseLessonPath(lessonId: string): string {
   return `${EXERCISES_ROUTE}/${encodeURIComponent(lessonId)}`;
 }

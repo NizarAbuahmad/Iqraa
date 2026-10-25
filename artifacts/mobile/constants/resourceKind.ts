@@ -4,7 +4,7 @@
  * both. Lived inline in `app/curriculum/resources.tsx`; a second screen needing
  * it is the point at which a copy would start to drift.
  */
-import type { Ionicons } from '@expo/vector-icons';
+import { CONCEPTS, type IconName } from './icons.ts';
 import type { ResourceKind } from '@/services/resourceCatalog';
 import type { TranslationKey } from '@/services/i18n';
 
@@ -22,14 +22,15 @@ export const RESOURCE_KIND_LABEL: Record<ResourceKind, TranslationKey> = {
   lab: 'resourceKindLab',
 };
 
-export const RESOURCE_KIND_ICON: Record<ResourceKind, keyof typeof Ionicons.glyphMap> = {
+/** A kind that is a teaching concept (worksheet, game, presentation = slides) takes its icon from `CONCEPTS`. */
+export const RESOURCE_KIND_ICON: Record<ResourceKind, IconName> = {
   infographic: 'bar-chart-outline',
   video: 'play-circle-outline',
   audio: 'musical-notes-outline',
-  game: 'game-controller-outline',
-  worksheet: 'document-text-outline',
+  game: CONCEPTS.games.icon,
+  worksheet: CONCEPTS.worksheet.icon,
   template: 'copy-outline',
-  presentation: 'easel-outline',
+  presentation: CONCEPTS.slides.icon,
   document: 'document-outline',
   image: 'image-outline',
   page: 'globe-outline',

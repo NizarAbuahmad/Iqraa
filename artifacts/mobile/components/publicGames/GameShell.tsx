@@ -86,7 +86,7 @@ export function GameShell({
               dev server regenerates it — same reason other new routes in this
               app are cast (see app/_layout.tsx). */}
           <Pressable onPress={onBack ?? (() => router.replace('/play' as any))} style={styles.backBtn} hitSlop={10}>
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
+            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color="#fff" />
           </Pressable>
           <Text style={[styles.title, { textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
             {t(titleKey)}

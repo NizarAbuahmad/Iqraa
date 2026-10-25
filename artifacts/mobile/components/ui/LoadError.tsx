@@ -28,7 +28,7 @@ export function LoadError({
   const row = { flexDirection: isRTL ? 'row-reverse' : 'row' } as const;
   return (
     <View style={[styles.box, row, { borderColor: colors.destructive }]} accessibilityRole="alert">
-      <Ionicons name="cloud-offline-outline" size={18} color={colors.destructive} />
+      <Ionicons name="cloud-offline-outline" size={20} color={colors.destructive} />
       <Text style={[styles.text, { color: colors.destructive, textAlign: isRTL ? 'right' : 'left' }]}>{message}</Text>
       <Pressable
         onPress={onRetry}

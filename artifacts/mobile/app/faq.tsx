@@ -144,7 +144,7 @@ export default function FaqScreen() {
           >
             <Ionicons
               name={ICON_BY_CATEGORY[entry.category]}
-              size={17}
+              size={20}
               color={expanded ? colors.primaryForeground : colors.secondaryForeground}
             />
           </View>
@@ -153,7 +153,7 @@ export default function FaqScreen() {
           </Text>
           <Ionicons
             name={expanded ? 'chevron-up' : 'chevron-down'}
-            size={18}
+            size={20}
             color={expanded ? colors.primary : colors.mutedForeground}
           />
         </Pressable>
@@ -207,7 +207,7 @@ export default function FaqScreen() {
             >
               <Ionicons
                 name={isRTL ? 'arrow-forward' : 'arrow-back'}
-                size={22}
+                size={24}
                 color={colors.foreground}
               />
             </Pressable>
@@ -243,7 +243,7 @@ export default function FaqScreen() {
               },
             ]}
           >
-            <Ionicons name="search-outline" size={19} color={colors.mutedForeground} />
+            <Ionicons name="search-outline" size={20} color={colors.mutedForeground} />
             <TextInput
               value={query}
               onChangeText={text => {
@@ -333,7 +333,7 @@ export default function FaqScreen() {
                 >
                   <Ionicons
                     name={c.icon as Glyph}
-                    size={15}
+                    size={16}
                     color={selected ? colors.primaryForeground : colors.mutedForeground}
                   />
                   <Text
@@ -352,7 +352,7 @@ export default function FaqScreen() {
           <View style={styles.list}>
             {results.length === 0 ? (
               <View style={[styles.empty, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Ionicons name="search-outline" size={26} color={colors.mutedForeground} />
+                <Ionicons name="search-outline" size={24} color={colors.mutedForeground} />
                 <Text style={[styles.emptyTitle, { color: colors.foreground }]}>{t('faqNoResults')}</Text>
                 <Text style={[styles.emptyHint, { color: colors.mutedForeground }]}>
                   {t('faqNoResultsHint')}
@@ -392,7 +392,7 @@ export default function FaqScreen() {
                   { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1, flexDirection: rowDir },
                 ]}
               >
-                <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.primaryForeground} />
+                <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.primaryForeground} />
                 <Text style={[styles.ctaText, { color: colors.primaryForeground }]}>{t('faqAskIqra')}</Text>
               </Pressable>
               <Pressable
@@ -409,7 +409,7 @@ export default function FaqScreen() {
                   },
                 ]}
               >
-                <Ionicons name="bulb-outline" size={18} color={colors.foreground} />
+                <Ionicons name="bulb-outline" size={20} color={colors.foreground} />
                 <Text style={[styles.ctaText, { color: colors.foreground }]}>{t('suggestFeature')}</Text>
               </Pressable>
             </View>

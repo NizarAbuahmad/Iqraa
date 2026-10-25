@@ -22,6 +22,7 @@ import {
   buildTrueFalseRound,
   buildYesNoRound,
   isSentenceBuilt,
+  isSilentTrueFalse,
   isYesNoRight,
   type BuildTile,
   wordPicture,
@@ -86,7 +87,7 @@ export function Feedback({ ok, answer, onNext, sentence }: { ok: boolean; answer
         {/* LRI…PDI: inside the Arabic line, an English sentence's full stop would otherwise jump to its left end. */}
         {ok ? t('hubCorrect') : t('hubWrong', `⁦${answer}⁩`)}
       </Text>
-      <HearButton word={sentence} />
+      {sentence ? <HearButton word={sentence} /> : null}
       <Pressable onPress={onNext} style={[styles.primary, { backgroundColor: colors.primary }]}>
         <Text style={[styles.primaryText, { color: colors.primaryForeground }]}>{t('hubNext')}</Text>
       </Pressable>
@@ -196,6 +197,13 @@ export function BuildSentence({ sentences, onFinish }: { sentences: readonly Gra
     <View style={{ gap: 16, alignItems: 'center' }}>
       <Progress i={i} n={round.length} />
       <SentencePicture s={q.sentence} />
+      {/* Over the cap, only the answer is built: the question is the prompt, read before the words are ordered. */}
+      {q.prompt ? (
+        <>
+          <EnglishLine text={q.prompt} />
+          <HearButton word={q.prompt} />
+        </>
+      ) : null}
 
       <View style={styles.tileRow}>
         {slots.map((tile, idx) => (
@@ -228,7 +236,7 @@ export function BuildSentence({ sentences, onFinish }: { sentences: readonly Gra
         ))}
       </View>
 
-      {result !== null ? <Feedback ok={result} answer={q.sentence.text} onNext={next} sentence={q.sentence.text} /> : null}
+      {result !== null ? <Feedback ok={result} answer={q.sentence.build!.text} onNext={next} sentence={q.sentence.text} /> : null}
     </View>
   );
 }
@@ -243,6 +251,8 @@ export function TrueFalse({ sentences, onFinish }: { sentences: readonly Grammar
   const [picked, setPicked] = useState<boolean | null>(null);
   const [correct, setCorrect] = useState(0);
   const q = round[i];
+  // A hand-written Grade 9 item is silent, true or false: its twin is ungrammatical and silence on one would give the answer away.
+  const silent = isSilentTrueFalse(q.sentence);
 
   const pick = (said: boolean) => {
     if (picked !== null) return;
@@ -257,7 +267,7 @@ export function TrueFalse({ sentences, onFinish }: { sentences: readonly Grammar
     setI(i + 1);
     setPicked(null);
     // A Grade 1 child reads with the sound: unlike Choose, hearing it gives nothing away.
-    void playWord(round[i + 1].sentence.text);
+    if (!isSilentTrueFalse(round[i + 1].sentence)) void playWord(round[i + 1].text);
   };
 
   const choice = (value: boolean) => {
@@ -280,16 +290,16 @@ export function TrueFalse({ sentences, onFinish }: { sentences: readonly Grammar
   return (
     <View style={{ gap: 16, alignItems: 'center' }}>
       <Progress i={i} n={round.length} />
-      <GrammarPicture word={q.pictureWord} count={q.sentence.picture!.count} marker={q.sentence.marker} />
-      <EnglishLine text={q.sentence.text} />
-      {picked === null ? <HearButton word={q.sentence.text} /> : null}
+      {q.pictureWord ? <GrammarPicture word={q.pictureWord} count={q.sentence.picture!.count} marker={q.sentence.marker} /> : null}
+      <EnglishLine text={q.text} />
+      {picked === null && !silent ? <HearButton word={q.text} /> : null}
       {/* ✓ on the left in both languages: the pair is read with the English sentence. */}
       <View style={{ flexDirection: 'row', gap: 16 }}>
         {choice(true)}
         {choice(false)}
       </View>
       {picked !== null ? (
-        <Feedback ok={picked === q.isTrue} answer={t(q.isTrue ? 'hubGIsTrue' : 'hubGIsFalse')} onNext={next} sentence={q.sentence.text} />
+        <Feedback ok={picked === q.isTrue} answer={t(q.isTrue ? 'hubGIsTrue' : 'hubGIsFalse')} onNext={next} sentence={silent ? '' : q.text} />
       ) : null}
     </View>
   );
@@ -343,9 +353,9 @@ export function YesNo({ sentences, onFinish }: { sentences: readonly GrammarSent
   return (
     <View style={{ gap: 16, alignItems: 'center' }}>
       <Progress i={i} n={round.length} />
-      <GrammarPicture word={q.picture.word} count={q.picture.count} marker={q.marker} />
-      {q.kind === 'marker' ? (
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: 'center' }}>{t('hubGYesNoLikes')}</Text>
+      {q.picture ? <GrammarPicture word={q.picture.word} count={q.picture.count} marker={q.marker} /> : null}
+      {q.hint ? (
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: 'center' }}>{t(q.hint === 'was' ? 'hubGYesNoWas' : q.hint === 'there' ? 'hubGYesNoThere' : 'hubGYesNoLikes')}</Text>
       ) : null}
       <EnglishLine text={q.question} />
       {picked === null ? <HearButton word={q.question} /> : null}

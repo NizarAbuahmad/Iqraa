@@ -42,3 +42,15 @@ test('a class chip colour reads as text on the light and the dark card', () => {
     }
   }
 });
+
+// The generator screens' lesson card leads with the subject's own drawing.
+test('a lesson card tile: a corner subject wears its corner drawing, any other the library', async () => {
+  const { subjectTile } = await import('../subjectTheme.ts');
+  assert.equal(subjectTile('mathematics').glyph, CORNERS.math.drawing);
+  assert.equal(subjectTile('mathematics').color, CORNERS.math.light.hero);
+  assert.equal(subjectTile('chemistry').glyph, CORNERS.lab.drawing);
+  assert.equal(subjectTile('islamic').glyph, CORNERS.quran.drawing);
+  assert.equal(subjectTile('arabic').glyph, 'library');
+  assert.equal(subjectTile(null).glyph, 'library');
+  assert.match(subjectTile('no-such-subject').color, /^#[0-9A-F]{6}$/i);
+});

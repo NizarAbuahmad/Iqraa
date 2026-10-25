@@ -3,7 +3,8 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "./schema";
 import { ScopedPool } from "./scopedPool";
-import { poolOptions } from "./poolConfig";
+import type { Identity } from "./identity";
+import { isPooledConnectionString, poolOptions } from "./poolConfig";
 
 const { Pool } = pg;
 
@@ -60,9 +61,25 @@ export function poolStats() {
     idle: p.idleCount,
     waiting: p.waitingCount,
   });
-  return { app: one(pool), system: systemPool === pool ? null : one(systemPool) };
+  return {
+    app: one(pool),
+    system: systemPool === pool ? null : one(systemPool),
+    // Whether DATABASE_URL goes through Neon's pooler. A yes/no only: the host
+    // and the string stay out of this response.
+    pooled: isPooledConnectionString(process.env.DATABASE_URL),
+  };
 }
 
 export { asUser, currentIdentity, type Identity } from "./identity";
 
 export * from "./schema";
+
+export { runInScope, type RequestScope } from "./requestScope";
+
+/**
+ * A held scope for the request in flight (see requestScope.ts), or undefined while
+ * enforcement is off. Only routes allow-listed in the API's lib/heldReads.ts may use it.
+ */
+export function openRequestScope(identity: Identity, holdTimeoutMs?: number) {
+  return pool.openScope(identity, holdTimeoutMs);
+}

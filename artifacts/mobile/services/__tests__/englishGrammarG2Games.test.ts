@@ -81,7 +81,7 @@ describe('Yes or No', () => {
         const round = buildYesNoRound(sentences, makeRng(seed));
         assert.equal(round.length, ROUND_LENGTH, id);
         assert.equal(round.filter(q => q.answer).length, ROUND_LENGTH / 2, id);
-        const pictures = round.map(q => q.picture.word);
+        const pictures = round.map(q => q.picture!.word);
         assert.equal(new Set(pictures).size, pictures.length, `${id}: a picture twice`);
         for (const q of round) {
           assert.ok(spoken.has(q.question), q.question);
@@ -97,7 +97,7 @@ describe('Yes or No', () => {
       for (const q of buildYesNoRound(toys, makeRng(seed))) {
         assert.equal(q.kind, 'match');
         const named = /^Is it an? (.+)\?$/.exec(q.question)![1];
-        assert.equal(named === q.picture.word, q.answer, q.question);
+        assert.equal(named === q.picture!.word, q.answer, q.question);
         assert.equal(isYesNoRight(q, q.answer), true);
         assert.equal(isYesNoRight(q, !q.answer), false);
         assert.equal(yesNoExchange(q), `${q.question} ${q.answer ? "Yes, it is." : "No, it isn't."}`);

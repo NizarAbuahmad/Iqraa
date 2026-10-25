@@ -18,12 +18,14 @@ import scheduleRouter from "./schedule";
 import examCalendarRouter from "./examCalendar";
 import evaluationsRouter from "./evaluations";
 import attemptsRouter from "./attempts";
+import guardianConsentRouter from "./guardianConsent";
 import studentAttemptRouter from "./studentAttempt";
 import studentExamsRouter from "./studentExams";
 import liveRouter from "./live";
 import liveHostRouter from "./liveHost";
 import familyScheduleRouter from "./familySchedule";
 import familyHomeworkRouter from "./familyHomework";
+import mathPracticeRouter from "./mathPractice";
 import studentLessonExplanationRouter from "./studentLessonExplanation";
 import mediaRouter from "./media";
 import practiceRouter from "./practice";
@@ -110,6 +112,8 @@ router.use(attemptsRouter);
 // token check, both path-scoped inside the router. Mounted *after* the
 // teacher routers so it cannot shadow them, and asserted in mountOrder.test.ts
 // both ways: reachable without a token, and not having made anything else so.
+// The parent's approval page: public (the parent has no account), every path under /guardian-consent, rate limited.
+router.use(guardianConsentRouter);
 router.use(studentAttemptRouter);
 // Live (Kahoot-style) games. /live/* is the players' side — public like /take,
 // token-authenticated and rate-limited inside the router, with every limiter
@@ -127,6 +131,9 @@ router.use(familyScheduleRouter);
 // «الواجبات» for students and parents — path-scoped to /student/homework and
 // /parent/homework; students may tick off, parents only read.
 router.use(familyHomeworkRouter);
+// Math Corner practice — path-scoped to /student/math-practice (students save
+// their best score) and /classes/:id/math-practice (the teacher reads it).
+router.use(mathPracticeRouter);
 // «اشرح لي الدرس» — authenticated, student-only, path-scoped to
 // /student/lesson-explanation. Read-only over the pool; makes no model call.
 router.use(studentLessonExplanationRouter);

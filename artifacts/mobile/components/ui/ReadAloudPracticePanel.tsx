@@ -116,7 +116,7 @@ function PassageQuestions({ questions }: { questions: readonly PracticeQuestion[
                     {done && (isAnswer || isPicked) ? (
                       <Ionicons
                         name={isAnswer ? 'checkmark-circle' : 'close-circle'}
-                        size={15}
+                        size={16}
                         color={isAnswer ? RIGHT : WRONG}
                       />
                     ) : (

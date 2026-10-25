@@ -1,5 +1,6 @@
 import pino from "pino";
 import { recordError } from "./errorLog.ts";
+import { severityOf, withStackTrace } from "./cloudLogging.ts";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -26,7 +27,14 @@ export const logger = pino({
     },
   },
   ...(isProduction
-    ? {}
+    ? {
+        // Cloud Run's log shape (see cloudLogging.ts). Production only: the
+        // dev transport below formats its own output.
+        messageKey: "message",
+        base: { serviceContext: { service: "iqraa-api", version: process.env.K_REVISION } },
+        formatters: { level: severityOf, log: withStackTrace },
+        timestamp: pino.stdTimeFunctions.isoTime,
+      }
     : {
         transport: {
           target: "pino-pretty",

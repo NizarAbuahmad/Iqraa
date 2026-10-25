@@ -104,7 +104,7 @@ function Chip({ label, active, onPress, icon, colors }: {
         backgroundColor: active ? palette.selected : colors.card,
       }}
     >
-      {icon ? <Ionicons name={icon} size={15} color={active ? ACCENT : colors.mutedForeground} /> : null}
+      {icon ? <Ionicons name={icon} size={16} color={active ? ACCENT : colors.mutedForeground} /> : null}
       <Text style={{ color: active ? ACCENT : colors.mutedForeground, fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular', fontSize: 13 }}>
         {label}
       </Text>
@@ -203,9 +203,20 @@ function PeriodRow({ period, isNew, onSave, onDelete, isRTL, colors, t }: {
         <Pressable
           onPress={() => onSave(period.periodNumber, { startTime: time, durationMinutes: durationNum })}
           disabled={!canSave}
-          style={{ opacity: canSave ? 1 : 0.35, padding: 8, borderRadius: 8, backgroundColor: ACCENT_FILL }}
+          accessibilityRole="button"
+          accessibilityLabel={isNew ? t('scheduleAddPeriod') : t('save')}
+          style={{
+            opacity: canSave ? 1 : 0.35, padding: 8, borderRadius: 8, backgroundColor: ACCENT_FILL,
+            flexDirection: 'row', alignItems: 'center', gap: 6,
+          }}
         >
           <Ionicons name="checkmark" size={16} color="#fff" />
+          {/* A bare tick is the only thing that saves a period, and the modal's one
+              labelled button used to be «Cancel»: a typed time was thrown away.
+              The row that adds a period says so. */}
+          {isNew ? (
+            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{t('scheduleAddPeriod')}</Text>
+          ) : null}
         </Pressable>
         {!isNew ? (
           <Pressable onPress={() => onDelete(period.periodNumber)} hitSlop={8}>
@@ -264,8 +275,9 @@ function PeriodsEditorModal({ visible, schoolName, schoolLabel, periods, onClose
             />
           </ScrollView>
           <View style={styles.modalActions}>
-            <Pressable onPress={onClose} style={styles.modalBtn}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>{t('cancel')}</Text>
+            {/* Every change here saves on its own tick, so there is nothing to cancel. */}
+            <Pressable onPress={onClose} style={[styles.modalBtn, styles.modalPrimary, { backgroundColor: ACCENT_FILL }]}>
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold' }}>{t('schedulePeriodsDone')}</Text>
             </Pressable>
           </View>
         </View>
@@ -363,6 +375,14 @@ function SlotEditorModal({ title, classes, current, period, onClose, onSave, onS
   };
   const [notes, setNotes] = useState(current?.notes ?? '');
   const align = isRTL ? 'right' : 'left';
+  // «No class» is highlighted when the period is empty, so a teacher who presses
+  // Save without tapping a class used to store an empty slot and see nothing
+  // change (Today's timetable prompt only clears once a slot holds a class).
+  const effectiveSubject = subjectChoices.length > 1 ? subjectId : '';
+  const dirty =
+    selected !== (current?.classGroupId ?? null) ||
+    effectiveSubject !== (current?.subjectId ?? '') ||
+    notes !== (current?.notes ?? '');
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
@@ -389,7 +409,7 @@ function SlotEditorModal({ title, classes, current, period, onClose, onSave, onS
                   hitSlop={8}
                   accessibilityLabel={t('scheduleEditClassName')}
                 >
-                  <Ionicons name="create-outline" size={18} color={colors.mutedForeground} />
+                  <Ionicons name="create-outline" size={20} color={colors.mutedForeground} />
                 </Pressable>
               ) : null}
             </View>
@@ -432,8 +452,9 @@ function SlotEditorModal({ title, classes, current, period, onClose, onSave, onS
             <Pressable
               // A one-subject class sends '' — there is nothing for the
               // period to choose between, and a stale value must not linger.
-              onPress={() => onSave({ classGroupId: selected, subjectId: subjectChoices.length > 1 ? subjectId : '', notes })}
-              style={[styles.modalBtn, styles.modalPrimary, { backgroundColor: ACCENT_FILL }]}
+              onPress={() => onSave({ classGroupId: selected, subjectId: effectiveSubject, notes })}
+              disabled={!dirty}
+              style={[styles.modalBtn, styles.modalPrimary, { backgroundColor: ACCENT_FILL, opacity: dirty ? 1 : 0.4 }]}
             >
               <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold' }}>{t('save')}</Text>
             </Pressable>
@@ -473,7 +494,7 @@ function SlotContent({ className, notes, compact, colors }: {
   colors: Colors;
 }) {
   if (!className) {
-    return <Ionicons name="add-circle-outline" size={compact ? 18 : 22} color={colors.mutedForeground} style={{ opacity: 0.45 }} />;
+    return <Ionicons name="add-circle-outline" size={compact ? 20 : 24} color={colors.mutedForeground} style={{ opacity: 0.45 }} />;
   }
   return (
     <View style={{ alignItems: 'center', gap: 2 }}>
@@ -631,7 +652,7 @@ function DayView({ day, setDay, weekdays, today, periods, slots, labelFor, multi
                 </Text>
                 {r.notes ? (
                   <View style={{ flexDirection: row, alignItems: 'center', gap: 5 }}>
-                    <Ionicons name="document-text-outline" size={13} color={colors.mutedForeground} />
+                    <Ionicons name="document-text-outline" size={14} color={colors.mutedForeground} />
                     <Text numberOfLines={2} style={{ flex: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
                       {r.notes}
                     </Text>
@@ -919,10 +940,10 @@ export default function ScheduleScreen() {
           <BackButton color="#fff" />
           <View style={{ flexDirection: row, gap: 18 }}>
             <Pressable onPress={() => router.push('/calendar')} hitSlop={12} accessibilityLabel={t('scheduleOpenCalendar')}>
-              <Ionicons name="calendar-outline" size={22} color="#fff" />
+              <Ionicons name="calendar-outline" size={24} color="#fff" />
             </Pressable>
             <Pressable onPress={() => setShowPeriodsEditor(true)} hitSlop={12} accessibilityLabel={t('schedulePeriodsTitle')}>
-              <Ionicons name="settings-outline" size={22} color="#fff" />
+              <Ionicons name="settings-outline" size={24} color="#fff" />
             </Pressable>
           </View>
         </View>

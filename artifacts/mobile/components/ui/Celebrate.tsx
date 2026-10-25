@@ -149,7 +149,7 @@ export function Celebrate({
         <View style={[styles.center, { paddingTop: 0.22 * height }]} pointerEvents="none">
           <Animated.View style={{ opacity: burst.badgeOpacity, transform: [{ scale: burst.badgeScale }] }}>
             <Surface style={styles.badge}>
-              <Ionicons name="checkmark-circle" size={44} color={colors.primary} />
+              <Ionicons name="checkmark-circle" size={48} color={colors.primary} />
               <Text style={[styles.message, { color: colors.foreground }]}>{message}</Text>
             </Surface>
           </Animated.View>

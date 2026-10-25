@@ -94,7 +94,7 @@ export default function MathExercisesScreen() {
                       </Text>
                     ) : null}
                   </View>
-                  <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
+                  <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedForeground} />
                 </PressableScale>
               ))}
             </CornerGrid>

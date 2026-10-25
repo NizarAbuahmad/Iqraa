@@ -16,16 +16,16 @@ const PROTECTED = [
   "chat_blocks", "chat_message_reactions", "chat_message_reads", "chat_messages", "chat_participants",
   "chat_reports", "chat_threads", "class_groups", "class_memberships", "device_push_tokens",
   "evaluation_assignments", "evaluation_questions", "evaluations", "grade_overrides", "grading_jobs",
-  "mastery_overrides", "parent_contacts", "recommendations", "roster_links", "students",
+  "mastery_overrides", "parent_contacts", "recommendations", "roster_links", "roster_link_requests", "students",
 ] as const;
 
 /** RLS on, no policy, and no grant: only the owner connection (systemDb) can read them. */
-const LOCKED = ["email_verification_tokens", "password_reset_tokens", "refresh_tokens"] as const;
+const LOCKED = ["email_verification_tokens", "guardian_consents", "password_reset_tokens", "refresh_tokens"] as const;
 
 const DEFERRED = [
   "ai_artifact_reports", "ai_artifacts", "ai_generations", "class_resources", "competency_definitions",
   "conversations", "feedback", "game_results", "homework", "homework_completions", "homework_reminders", "lesson_media", "level_bands", "level_scales", "library_resources",
-  "live_answers", "live_games", "live_players", "manual_metrics", "messages", "rate_limit_buckets", "rubric_templates", "saved_materials",
+  "live_answers", "live_games", "live_players", "manual_metrics", "math_practice_results", "messages", "rate_limit_buckets", "rubric_templates", "saved_materials",
   "schedule_periods", "schedule_slots", "schools", "site_signups", "teaching_plans", "users",
 ] as const;
 

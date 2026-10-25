@@ -57,7 +57,7 @@ export function AiSourceBadge({ onDark = false, isRTL }: Props) {
         { flexDirection: rtl ? 'row-reverse' : 'row', alignSelf: rtl ? 'flex-end' : 'flex-start' },
       ]}
     >
-      <Ionicons name={state.icon} size={11} color={tint} />
+      <Ionicons name={state.icon} size={14} color={tint} />
       <Text
         style={[
           styles.text,

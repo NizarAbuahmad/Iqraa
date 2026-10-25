@@ -325,7 +325,7 @@ export default function ClassGameScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <ToolHeader topPad={topPad} isRTL={isRTL} title={t('gameTitle')} subtitle={t('gameSubtitle')} leading="🏆" />
+        <ToolHeader topPad={topPad} isRTL={isRTL} title={t('gameTitle')} subtitle={t('gameSubtitle')} concept="challenge" />
 
         {/* How it works — the format is unfamiliar, and a teacher will not risk
             a class period on a mode they have to guess at. */}
@@ -541,7 +541,7 @@ export default function ClassGameScreen() {
               onPress={start}
               style={({ pressed }) => [styles.ctaBtn, { backgroundColor: ACCENT_FILL, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.88 : 1 }]}
             >
-              <Ionicons name="play-circle" size={22} color="#fff" />
+              <Ionicons name="play-circle" size={24} color="#fff" />
               <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 16 }}>{t('gameStart')}</Text>
             </Pressable>
 
@@ -562,7 +562,7 @@ export default function ClassGameScreen() {
 function Stat({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; label: string }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-      <Ionicons name={icon} size={13} color={ACCENT} />
+      <Ionicons name={icon} size={14} color={ACCENT} />
       <Text style={{ fontSize: 12, color: ACCENT, fontFamily: 'ReadexPro_500Medium' }}>{label}</Text>
     </View>
   );

@@ -32,12 +32,14 @@ Known brand hazards:
 
 - **Name collision.** "Iqraa" on Google Play is an existing Qur'an app and
   `iqraa-web.pages.dev` belongs to that company. Our listing title is
-  «اقرأ — رفيقك في تحضير الحصص» precisely to be distinct. All SEO and ad copy
-  must carry the qualifier («اقرأ للمعلمين» / "Iqraa for teachers"), never the
+  «إقرأ — رفيقك في تحضير الحصص» precisely to be distinct. All SEO and ad copy
+  must carry the qualifier («إقرأ للمعلمين» / "Iqrra for teachers"), never the
   bare word.
-- **Spelling drift.** The domain is `iqrra.com` (double r), the product writes
-  "Iqraa". Pick one Latin spelling for every public surface before launch. The
-  domain we own wins unless `iqraa.*` can be acquired cheaply.
+- **Spelling drift — decided 2026-10-23.** The domain is `iqrra.com` (double
+  r), and the Latin name on every public surface is **Iqrra**; the Arabic is
+  «إقرأ» (hamzat qatʿ). The landing site's `llms.txt` and schema, and the Play
+  listing copy, were brought in line. Other mentions of "Iqraa" further down
+  this plan are the old spelling, left as written.
 - **The wedge is also the risk.** Curriculum grounding is the only thing
   ChatGPT and MagicSchool structurally cannot copy for Jordan. If marketing
   ever claims grounding the product does not have, the differentiator dies

@@ -366,4 +366,38 @@ describe("row-level security matrix", { skip: !TEST_URL && "RLS_TEST_DATABASE_UR
       await assert.rejects(scoped.query(`INSERT INTO students (teacher_id) VALUES ($1)`, [ids.teacherA])); // display_name is NOT NULL
       assert.equal((await col(`SELECT 1 AS one`)).length, 1);
     }));
+
+  test("a pending claim is visible to the student's teacher and to its sender, and to nobody else", async () => {
+    await as("teacherA", "teacher", async () => {
+      assert.equal((await col(`SELECT id FROM roster_link_requests WHERE student_id = $1`, [ids.studentA])).length, 1);
+    });
+    await as("studentUser2", "student", async () => {
+      assert.equal((await col(`SELECT id FROM roster_link_requests WHERE student_id = $1`, [ids.studentA])).length, 1);
+    });
+    for (const [key, role] of [["teacherB", "teacher"], ["parentA", "parent"], ["studentUser", "student"]] as const) {
+      await as(key, role, async () => {
+        assert.deepEqual(await col(`SELECT id FROM roster_link_requests WHERE student_id = $1`, [ids.studentA]), []);
+      });
+    }
+  });
+
+  test("the app role can never create a pending claim — only the owner connection does", () =>
+    as("teacherA", "teacher", async () => {
+      await assert.rejects(
+        scoped.query(`INSERT INTO roster_link_requests (student_id, user_id, relation) VALUES ($1,$2,'self')`, [ids.studentA, ids.studentUser]),
+        /row-level security/,
+      );
+    }));
+
+  test("only the student's teacher or the sender may delete a pending claim", async () => {
+    await as("teacherB", "teacher", async () => {
+      assert.equal((await scoped.query(`DELETE FROM roster_link_requests WHERE student_id = $1`, [ids.studentA])).rowCount, 0);
+    });
+    await as("parentA", "parent", async () => {
+      assert.equal((await scoped.query(`DELETE FROM roster_link_requests WHERE student_id = $1`, [ids.studentA])).rowCount, 0);
+    });
+    await as("teacherA", "teacher", async () => {
+      assert.equal((await scoped.query(`DELETE FROM roster_link_requests WHERE student_id = $1`, [ids.studentA])).rowCount, 1);
+    });
+  });
 });

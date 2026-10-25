@@ -4,6 +4,7 @@
  */
 import type { SavedMaterial } from '@/services/workspace';
 import { AR_LATIN } from './dateLabels.ts';
+import { CONCEPTS } from '../constants/icons.ts';
 
 export type ContinueMaterialKind =
   | 'lesson'
@@ -152,18 +153,14 @@ export function buildDemoContinueCard(lang: 'ar' | 'en', t: Translate): Continue
   };
 }
 
+/** The kind's concept colour (constants/icons.ts), as everywhere else; the old table coloured the quiz amber. */
 export function typeColor(kind: ContinueMaterialKind): string {
   switch (kind) {
-    case 'worksheet':
-    case 'homework':
-      return '#0E8F86';
-    case 'quiz':
-      return '#C9860A';
-    case 'activity':
-      return '#1B6B62';
-    case 'flow':
-      return '#081B3A';
-    default:
-      return '#00A99D';
+    case 'worksheet': return CONCEPTS.worksheet.color;
+    case 'homework': return CONCEPTS.homework.color;
+    case 'quiz': return CONCEPTS.quiz.color;
+    case 'activity': return CONCEPTS.activity.color;
+    case 'flow': return CONCEPTS['lesson-flow'].color;
+    default: return CONCEPTS['lesson-plan'].color;
   }
 }

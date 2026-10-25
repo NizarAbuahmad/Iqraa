@@ -47,7 +47,7 @@ export default function LegalScreen() {
             accessibilityRole="button"
             style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
           >
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
+            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.foreground} />
           </Pressable>
         ) : null}
         <Text

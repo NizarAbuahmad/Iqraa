@@ -34,7 +34,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getChildSchedules, getMySchedule } from '@/services/familyScheduleApi';
 import { getChildHomework, getMyHomework, setHomeworkDone } from '@/services/homeworkApi';
 import { openResource } from '@/services/openResource';
-import { LESSON_GAME_TITLE_KEY } from '@/services/lessonGames';
+import { HOMEWORK_GAME_TITLE_KEY } from '@/services/lessonGames';
 import {
   ammanToday,
   allTrackedDone,
@@ -71,6 +71,7 @@ import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { NoClassPrompt } from '@/components/NoClassPrompt';
 import { Celebrate } from '@/components/ui/Celebrate';
 import { justCompleted } from '@/services/celebration';
 
@@ -236,6 +237,23 @@ export default function SchoolScreen() {
   const loading =
     (children === null && !error) || (homework === null && !hwError) || (exams === null && !examError);
 
+  // A student who signed up with an email has no class until they enter their
+  // teacher's code (since 2026-10-23), so homework, exams and the timetable
+  // are all empty for a reason the empty states below would get wrong
+  // ("your teachers haven't entered…"). Say the real one and offer the way in.
+  if (user?.role === 'student' && user.hasRosterLink === false) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <View style={[styles.header, { paddingTop: 16, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+          <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
+            {t('tabSchool')}
+          </Text>
+        </View>
+        <NoClassPrompt />
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Not insets.top: the tab layout's bar above already pays for the status bar. */}
@@ -311,7 +329,7 @@ export default function SchoolScreen() {
                 { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: rowDir },
               ]}
             >
-              <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+              <Ionicons name="alert-circle" size={16} color={colors.destructive} />
               <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
                 {hwError}
               </Text>
@@ -374,7 +392,7 @@ export default function SchoolScreen() {
                 { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: rowDir },
               ]}
             >
-              <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+              <Ionicons name="alert-circle" size={16} color={colors.destructive} />
               <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
                 {examError}
               </Text>
@@ -414,7 +432,7 @@ export default function SchoolScreen() {
                 { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: rowDir },
               ]}
             >
-              <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+              <Ionicons name="alert-circle" size={16} color={colors.destructive} />
               <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
                 {error}
               </Text>
@@ -476,7 +494,7 @@ export default function SchoolScreen() {
           <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: align }}>
             {t(isParent ? 'childResultsTitle' : 'myExamsTitle')}
           </Text>
-          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
+          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedForeground} />
         </Pressable>
       </ScrollView>
       <Celebrate visible={celebrateHw} size="small" message={t('celebrateHomeworkAll')} onDone={() => setCelebrateHw(false)} />
@@ -612,7 +630,7 @@ function HomeworkRow({
         >
           <Ionicons
             name={item.done ? 'checkmark-circle' : 'ellipse-outline'}
-            size={26}
+            size={24}
             color={item.done ? ACCENT : colors.mutedForeground}
           />
         </View>
@@ -629,7 +647,7 @@ function HomeworkRow({
         >
           <Ionicons
             name={item.done ? 'checkbox' : 'square-outline'}
-            size={26}
+            size={24}
             color={item.done ? ACCENT : colors.mutedForeground}
           />
         </Pressable>
@@ -703,12 +721,12 @@ function HomeworkRow({
                 style={{ flexDirection: rowDir, alignItems: 'center', gap: SPACE.xs, paddingVertical: SPACE.xs }}
               >
                 {isGame ? (
-                  <Text style={{ fontSize: TYPE.caption }}>🎮</Text>
+                  <Ionicons name={r.game === 'exercises' ? 'calculator-outline' : 'game-controller-outline'} size={16} color={ACCENT} />
                 ) : (
                   <Ionicons name="attach-outline" size={16} color={ACCENT} />
                 )}
                 <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textAlign: align }}>
-                  {isGame ? `${t(LESSON_GAME_TITLE_KEY[r.game])}: ${r.title}` : r.title}
+                  {isGame ? `${t(HOMEWORK_GAME_TITLE_KEY[r.game])}: ${r.title}` : r.title}
                 </Text>
               </Pressable>
               {result ? (

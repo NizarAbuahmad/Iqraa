@@ -148,7 +148,7 @@ export function StudentPickerSheet({
                     { borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' },
                   ]}
                 >
-                  <Ionicons name="people-outline" size={18} color={ACCENT} />
+                  <Ionicons name="people-outline" size={20} color={ACCENT} />
                   <View style={{ flex: 1 }}>
                     <Text
                       style={{
@@ -189,7 +189,7 @@ export function StudentPickerSheet({
                     { borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' },
                   ]}
                 >
-                  <Ionicons name="person-outline" size={18} color={ACCENT} />
+                  <Ionicons name="person-outline" size={20} color={ACCENT} />
                   <View style={{ flex: 1 }}>
                     <Text
                       style={{

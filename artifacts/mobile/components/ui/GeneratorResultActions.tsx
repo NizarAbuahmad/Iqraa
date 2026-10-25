@@ -312,7 +312,7 @@ export function GeneratorSaveBar({
           { borderColor: accent, borderRadius: colors.radius, opacity: pressed ? 0.85 : 1 },
         ]}
       >
-        <Ionicons name="share-outline" size={18} color={accent} />
+        <Ionicons name="share-outline" size={20} color={accent} />
       </Pressable>
     </View>
   );

@@ -22,6 +22,11 @@ import { dateLocale } from '@/services/dateLabels';
 import { askForPushPermission, getPushPermissionState, pushAskCopy, type PushPermissionState } from '@/services/pushTokens';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { BackButton } from '@/components/ui/BackButton';
+import { IconTile } from '@/components/ui/IconTile';
+import { CheckRow } from '@/components/ui/CheckRow';
+import { guardianConfigStale, switchNeedsAgeConfirmation } from '@/services/signupMethod';
+import { resetGuardianConfigCache, useGuardianConfig } from '@/services/guardianConfig';
+import type { GlyphId } from '@/constants/glyphs';
 import { SPACE, TYPE } from '@/constants/theme';
 import { PUSH_PREF_ROWS, showsFamilyPushPrefs, withPref, type PushPrefCategory, type PushPrefs } from '@/services/pushPrefs';
 import { fetchPushPrefs, savePushPref } from '@/services/pushPrefsApi';
@@ -31,6 +36,8 @@ const PREF_ICON: Record<PushPrefCategory, keyof typeof Ionicons.glyphMap> = {
   exams: 'calendar-outline',
   results: 'ribbon-outline',
 };
+/** A category with an Iqraa drawing (`constants/glyphs.ts`) draws it in place of its stock icon. */
+const PREF_GLYPH: Partial<Record<PushPrefCategory, GlyphId>> = { homework: 'homework' };
 
 type AiUsage = { spentUsd: number | null; limitUsd: number; resetsAt: string };
 
@@ -44,9 +51,21 @@ export default function SettingsScreen() {
   // A teacher account made by mistake (the old pre-selected signup pill, or
   // Google on the login screen) can still become a parent/student while it
   // owns no class or student — the server decides (lib/roleSwitch.ts).
-  const canChangeType = studentAccounts && user?.role === 'teacher';
+  // A student with no class can too (since 2026-10-23): the claim screen used
+  // to be their way out, and an email student is no longer sent there.
+  const canChangeType = studentAccounts && (
+    user?.role === 'teacher' || (user?.role === 'student' && user.hasRosterLink === false)
+  );
   const [typeOpen, setTypeOpen] = useState(false);
-  const [nextRole, setNextRole] = useState<'parent' | 'student' | null>(null);
+  const [nextRole, setNextRole] = useState<'teacher' | 'parent' | 'student' | null>(null);
+  // Becoming a student asks what signing up as one asks: an adult, or a
+  // guardian's agreement. The server refuses the switch without it.
+  // When the server has a parent approve email students (guardian.enabled) the
+  // tick goes and a one-line note says the account will wait for a parent.
+  const guardian = useGuardianConfig();
+  const [ageOk, setAgeOk] = useState(false);
+  const askAge = nextRole !== null && switchNeedsAgeConfirmation(user?.role, nextRole, guardian.enabled);
+  const noteParent = guardian.enabled && nextRole === 'student' && user?.role !== 'student';
   const [switching, setSwitching] = useState(false);
   const [typeError, setTypeError] = useState('');
   const [sendingTest, setSendingTest] = useState(false);
@@ -197,14 +216,22 @@ export default function SettingsScreen() {
 
   const handleSwitchRole = async () => {
     if (!nextRole || switching) return;
+    if (askAge && !ageOk) { setTypeError(t('errAgeConfirmRequired')); return; }
     setSwitching(true);
     setTypeError('');
     try {
-      // On success the routing gate moves the account to /claim-required.
-      await switchRole(nextRole);
+      // On success the routing gate moves the account on: a parent to
+      // /claim-required, a teacher to /setup-subjects, a student into the app.
+      await switchRole(nextRole, { ageConfirmed: askAge && ageOk });
     } catch (e) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setTypeError(t(e instanceof ApiError && e.code === 'role_locked_teaching' ? 'accountTypeLockedTeaching' : 'claimRequiredSwitchFailed'));
+      // The server's switch differs from the copy this screen read: ask again.
+      if (e instanceof ApiError && guardianConfigStale(e.code)) { resetGuardianConfigCache(); guardian.refresh(); }
+      setTypeError(t(
+        e instanceof ApiError && e.code === 'role_locked_teaching' ? 'accountTypeLockedTeaching'
+          : e instanceof ApiError && e.code === 'age_confirmation_required' ? 'errAgeConfirmRequired'
+          : 'claimRequiredSwitchFailed',
+      ));
       setSwitching(false);
     }
   };
@@ -404,7 +431,7 @@ export default function SettingsScreen() {
                   <React.Fragment key={row.category}>
                     {i > 0 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
                     <View style={[styles.settingRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                      <Ionicons name={PREF_ICON[row.category]} size={20} color={colors.primary} />
+                      <IconTile icon={PREF_ICON[row.category]} glyph={PREF_GLYPH[row.category]} color={colors.primary} size={36} />
                       <View style={{ flex: 1, gap: SPACE.xxs }}>
                         <Text style={[styles.settingLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
                           {t(row.labelKey)}
@@ -498,18 +525,25 @@ export default function SettingsScreen() {
                 label={t('accountType')}
                 isRTL={isRTL}
                 colors={colors}
-                right={<Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{t('roleTeacher')}</Text>}
-                onPress={() => { setTypeOpen(o => !o); setNextRole(null); setTypeError(''); }}
+                right={<Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{t(user?.role === 'student' ? 'roleStudent' : 'roleTeacher')}</Text>}
+                onPress={() => { setTypeOpen(o => !o); setNextRole(null); setAgeOk(false); setTypeError(''); }}
               />
               {typeOpen && (
                 <View style={{ paddingHorizontal: 16, paddingBottom: 14 }}>
                   <PillSelector
                     label={t('claimRequiredPickRole')}
                     hint={t('accountTypeSwitchNote')}
-                    options={[
-                      { value: 'parent', label: t('roleParent') },
-                      { value: 'student', label: t('roleStudent') },
-                    ]}
+                    options={
+                      user?.role === 'student'
+                        ? [
+                            { value: 'teacher', label: t('roleTeacher') },
+                            { value: 'parent', label: t('roleParent') },
+                          ]
+                        : [
+                            { value: 'parent', label: t('roleParent') },
+                            { value: 'student', label: t('roleStudent') },
+                          ]
+                    }
                     value={nextRole}
                     onChange={setNextRole}
                     colors={colors}
@@ -518,6 +552,18 @@ export default function SettingsScreen() {
                     haptics
                     containerStyle={{ marginBottom: 12 }}
                   />
+                  {askAge ? (
+                    <View style={{ marginBottom: 12 }}>
+                      <CheckRow checked={ageOk} onPress={() => setAgeOk(v => !v)} isRTL={isRTL} colors={colors}>
+                        {t('ageConfirmLabel')}
+                      </CheckRow>
+                    </View>
+                  ) : null}
+                  {noteParent ? (
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 22, marginBottom: SPACE.md, textAlign: isRTL ? 'right' : 'left' }}>
+                      {t('guardianSwitchNote')}
+                    </Text>
+                  ) : null}
                   {typeError ? (
                     <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }}>
                       {typeError}
@@ -527,7 +573,7 @@ export default function SettingsScreen() {
                     label={t('claimRequiredSwitchSubmit')}
                     onPress={handleSwitchRole}
                     loading={switching}
-                    disabled={!nextRole || switching}
+                    disabled={!nextRole || switching || (askAge && !ageOk)}
                     size="sm"
                   />
                 </View>
@@ -575,7 +621,7 @@ function SettingRow({ icon, label, colors, isRTL, right, onPress, destructive }:
   const tint = destructive ? colors.destructive : colors.primary;
   const inner = (
     <View style={[styles.settingRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-      <Ionicons name={icon} size={20} color={tint} />
+      <IconTile icon={icon} color={tint} size={36} />
       <Text style={[styles.settingLabel, { color: destructive ? colors.destructive : colors.foreground, fontFamily: 'ReadexPro_500Medium', flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
         {label}
       </Text>
@@ -594,7 +640,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 28 },
   sectionLabel: { fontSize: 11, marginBottom: 8 },
   card: { borderWidth: 1, overflow: 'hidden', marginBottom: 4 },
-  settingRow: { alignItems: 'center', padding: 16, gap: 12 },
+  settingRow: { alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, gap: 12 },
   settingLabel: { fontSize: 15 },
   divider: { height: 1, marginHorizontal: 16 },
   langToggle: { paddingHorizontal: 14, paddingVertical: 7 },

@@ -169,7 +169,7 @@ export default function LoginScreen() {
             ]}
             accessibilityLiveRegion="polite"
           >
-            <Ionicons name="checkmark-circle-outline" size={16} color={colors.success} />
+            <Ionicons name="checkmark-circle" size={16} color={colors.success} />
             <Text style={[styles.errorText, { color: colors.success, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
               {t('passwordResetDone')}
             </Text>
@@ -187,7 +187,7 @@ export default function LoginScreen() {
               },
             ]}
           >
-            <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+            <Ionicons name="alert-circle" size={16} color={colors.destructive} />
             <Text
               style={[
                 styles.errorText,
@@ -250,22 +250,22 @@ export default function LoginScreen() {
                 {lang === 'ar' ? 'جارٍ تسجيل الدخول…' : 'Signing in…'}
               </Text>
             ) : null}
+            {/* Information, not a control: no pill, no badge. It used to be a
+                green chip with «آخر استخدام» that looked tappable and was not,
+                repeated Google's own «Continue as <name>» when the two matched,
+                and carried a second «last used» next to the saved account's.
+                It stays because the two can differ — Google's button shows the
+                browser's active account, this one is what was last used here.
+                The label and the address are separate Texts in one row, so the
+                row's direction orders them and the Latin address is never mixed
+                into the Arabic run. */}
             {showLastGoogle ? (
-              <View style={{ gap: 6, alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
+              <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 6 }}>
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
                   {t('loginGoogleLast')}
                 </Text>
-                <View style={[styles.lastGoogle, { backgroundColor: colors.primary + '14', borderColor: colors.primary + '33', flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                  <Ionicons name="logo-google" size={14} color={colors.primary} />
-                  <Text numberOfLines={1} style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, flexShrink: 1 }}>
-                    {lastGoogleEmail}
-                  </Text>
-                  <View style={[styles.lastGoogleBadge, { backgroundColor: colors.primary + '1F' }]}>
-                    <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 11 }}>{t('accountsLastUsed')}</Text>
-                  </View>
-                </View>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
-                  {t('loginGoogleChoose')}
+                <Text selectable numberOfLines={1} style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, lineHeight: 21, flexShrink: 1 }}>
+                  {lastGoogleEmail}
                 </Text>
               </View>
             ) : null}
@@ -387,8 +387,6 @@ const styles = StyleSheet.create({
   savedTitle: { fontSize: 14, marginBottom: 8 },
   savedCard: { borderWidth: 1, overflow: 'hidden' },
   savedHint: { fontSize: 13, lineHeight: 21, marginTop: 6 },
-  lastGoogle: { alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1, maxWidth: '100%' },
-  lastGoogleBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
   googleLoadingText: { fontSize: 13, lineHeight: 21, textAlign: 'center', marginTop: -6 },
   signInBtn: { marginTop: 12 },
 });

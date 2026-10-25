@@ -7,7 +7,7 @@ person-with-Neon-and-Cloud-Run-access checklist; the reasoning is in
 (`docs/superpowers/plans/2026-10-13-row-level-security.md`).
 
 Tick a box only when you have seen the result. Do not skip ahead: A is about production as
-it is today, B–C gate the switch, D–E are the switch. A2 and A3 were done on 2026-10-16; the
+it is today, B–C gate the switch, D–E are the switch. A2 and A3 were done on 2026-10-16 and B and C2 on 2026-10-23; the
 rest is open. When a step has a **Gate**, a failed
 gate means stop and do not flip.
 
@@ -52,11 +52,13 @@ was not created by the workflow itself, so a production string pasted by mistake
 first step. A green run is B3 and B4 passed; B2 can be skipped. (It does not measure latency —
 GitHub's runners are not in your Cloud Run region — so C1 is still separate.)
 
-- [ ] **B1. Create the project.** In the Neon console create `iqraa-rls-rehearsal` in the
+- [x] **B1. Create the project — done 2026-10-23** (`iqraa-rls-rehearsal`, Frankfurt, as production).
+  Original instruction: In the Neon console create `iqraa-rls-rehearsal` in the
   **same region as the production Neon database** (latency in C1 is only meaningful there).
   Copy the **direct** and the **pooled** connection strings into a private note — never into
   chat or the repo.
-- [ ] **B2. Get the code** (Cloud Shell or any machine with Node 22+ — the tests use
+- [x] **B2. Get the code** — skipped; the workflow does it on GitHub's runner.
+  Original instruction: (Cloud Shell or any machine with Node 22+ — the tests use
   `--experimental-strip-types`):
 
   ```bash
@@ -65,7 +67,9 @@ GitHub's runners are not in your Cloud Run region — so C1 is still separate.)
   corepack enable && pnpm install
   pnpm --filter @workspace/api-server run build
   ```
-- [ ] **B3. Apply the migrations to the empty project:**
+- [x] **B3. Apply the migrations to the empty project — passed 2026-10-23** (workflow run 39931238295,
+  "Migrations up to date: 14 applied").
+  Original instruction:
 
   ```bash
   export DIRECT_URL='<direct string>'  POOLED_URL='<pooled string>'
@@ -74,14 +78,16 @@ GitHub's runners are not in your Cloud Run region — so C1 is still separate.)
 
   **Gate:** all migrations apply, including `0008`, with no error. This proves the Neon owner
   role can `CREATE ROLE` and `GRANT iqraa_app TO CURRENT_USER`.
-- [ ] **B4. Run the database tests on both endpoints:**
+- [x] **B4. Run the database tests on both endpoints — passed 2026-10-23:** 46 of 46 on the direct
+  endpoint and 46 of 46 on the pooled one (host `…-pooler…`), 0 failed, 0 skipped, same run.
+  Original instruction:
 
   ```bash
   RLS_TEST_DATABASE_URL="$DIRECT_URL"  pnpm --filter @workspace/db run test
   RLS_TEST_DATABASE_URL="$POOLED_URL"  pnpm --filter @workspace/db run test
   ```
 
-  **Gate:** every test passes on **both** (42 at the time of writing). The pooled run proves
+  **Gate:** every test passes on **both** (46 on 2026-10-23). The pooled run proves
   `SET LOCAL ROLE` and `set_config(…, true)` survive the pooler. The suite includes
   `rlsDiff.test.ts`, which boots the built API with enforcement off and on and replays the main
   teacher, parent and student flows — pushes, blocks, retakes, inbox order — so it replaces a
@@ -89,16 +95,47 @@ GitHub's runners are not in your Cloud Run region — so C1 is still separate.)
 
 ## C. Measure and check limits
 
-- [ ] **C1. Measure the added latency** against the rehearsal project's **pooled** string, from
+- [ ] **C1. Measure the added latency — FAILED the gate on 2026-10-23, do not flip.** `bench:rls`
+  from Cloud Shell against the rehearsal project's pooled endpoint: 15 statements cost 167.6 ms off
+  and 496.6 ms on (median), p95 174.4 vs 510.9 ms — **+336.5 ms** against a budget of +100 ms; +21.9 ms
+  per statement. Cause: with enforcement on each statement is three round trips (BEGIN + scope, the
+  statement, COMMIT) instead of one, and one round trip is about 11 ms here (the API is in
+  europe-west1, the database in Frankfurt). Tick this only after a mitigation below brings the same
+  benchmark under the budget, run from Cloud Shell the same way as the failed run so the numbers compare.
+  **Mitigation built (2026-10-23, spec `docs/superpowers/specs/2026-10-23-rls-latency-request-scoped-connection-design.md`):**
+  the inbox (`GET /messaging/threads`) holds one scoped, read-only connection per request, so it pays about
+  three round trips instead of three per statement. The held read ends when the response finishes, so a slow
+  client keeps the connection until then (bounded by the 5 s hold timeout, which frees a handler stuck outside
+  the database; a long-running statement still holds its slot until it finishes). Re-run `bench:rls` **from
+  Cloud Shell**, the same way as the failed run, so the numbers are comparable, and read the `held` column;
+  **the gate is the `held` p95 added ≤ +100 ms** (the full gate is on the **Gate** line below). Cloud Shell's
+  distance to Neon is probably close to Cloud Run's, but it is not the same place; after the flip,
+  `LOG_LEVEL=debug` logs `held scope ended` with the statements and milliseconds each held request used, which
+  are the real hold times. Every route not on `artifacts/api-server/src/lib/heldReads.ts` still pays the `on`
+  column (about 22 ms per statement), so decide whether that is acceptable or which route to add next.
+  **Note on comparing runs:** the script now runs three modes (off, on, held) and defaults to 8 statements per
+  request (`BENCH_STATEMENTS` overrides); the recorded +336.5 ms was measured at 15 statements, so the next run's
+  `on` column is not like-for-like with it — compare per-statement figures (about 22 ms per statement then).
+  Original instruction (as first written, for the record; it describes the two-mode, 15-statement script, and its
+  "from the API's region if you can" is superseded: the re-run is from Cloud Shell, as above): against the rehearsal project's **pooled** string, from
   the API's region if you can (a Cloud Run job, or a VM there; numbers from a laptop overstate
-  the cost). Use the benchmark in the plan, Task 7 Step 3: it prints ms per statement with
-  enforcement off and on. Multiply the difference by the statements in a typical request (the
+  the cost). Run the benchmark: `BENCH_DATABASE_URL='<pooled string of the rehearsal
+  project>' pnpm --filter @workspace/db run bench:rls` (`lib/db/scripts/bench-rls.ts`; read-only; it
+  alternates enforcement off and on and prints the added ms per statement and per 15-statement
+  request, and says whether the inbox gate holds). On a laptop-free loopback Postgres it added about
+  0.3 ms a statement, which is a floor, not a forecast. Multiply the difference by the statements in a typical request (the
   teacher inbox is the heaviest read, roughly fifteen).
 
-  **Gate:** p95 within budget — suggested ≤ +100 ms on the inbox, ≤ +25 % elsewhere. If it
-  fails, do not flip. Mitigations, in order: co-locate Cloud Run with Neon; a request-scoped
+  **Gate:** the `held` p95 added ≤ +100 ms on the inbox-shaped request, no listed route over +100 ms, and every
+  unlisted route's cost known (about 22 ms per statement) and either accepted or added to the list. This replaces
+  the original "≤ +25 % elsewhere", which would fail every unlisted route. If it fails, do not flip. Mitigations, in order: co-locate Cloud Run with Neon; a request-scoped
   transaction for routes that never call a model; fewer statements per request.
-- [ ] **C2. Check the connection ceiling.** With enforcement on an instance holds **two** pools
+- [x] **C2. Connection ceiling — passed 2026-10-23.** Cloud Run `maxScale` 20, `minScale` 1; the API's
+  `DATABASE_URL` points at the Neon **pooled** host (`…-pooler…`); the database's `max_connections` is
+  225. The worst case with enforcement on is 20 × 20 = 400 client connections, above 225, but they go
+  through Neon's pooler, which shares a smaller set of server connections (a burst queues at the
+  pooler instead of being refused), and the pooled endpoint is the one the rehearsal passed on.
+  Original instruction: With enforcement on an instance holds **two** pools
   (default 10 connections each). **Gate:** the production Neon database's `max_connections` (or
   the pooler's limit) is at least `20 × <Cloud Run --max-instances>`. Read `maxScale` with:
 
@@ -152,7 +189,7 @@ Outside school hours, and only with A, B and C ticked.
 | Step | Done by | Date | Notes (numbers, endpoint used, anything odd) |
 | --- | --- | --- | --- |
 | A | | | |
-| B | | | |
-| C | | | |
+| B | owner, via the GitHub workflow | 2026-10-23 | run 39931238295: migrations applied; 46/46 direct, 46/46 pooled. Direct tests ≈ 3.4 min, pooled ≈ 3.3 min (CI runner → Neon, not a latency measurement). Run 4 before it failed only because the pooled secret held a malformed string. |
+| C | owner | 2026-10-23 | C2: maxScale 20, pooled host, max_connections 225 — pass via the pooler. C1: **failed** — +336.5 ms p95 per 15-statement request (budget +100 ms); +21.9 ms per statement; RTT ≈ 11 ms. |
 | D | | | |
 | E | | | |

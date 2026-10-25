@@ -140,8 +140,8 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
                 <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: 'center' }}>
                   {o.label}
                 </Text>
-                {revealed && isCorrect && <Ionicons name="checkmark-circle" size={18} color="#16A34A" style={styles.optionIcon} />}
-                {revealed && isPicked && !isCorrect && <Ionicons name="close-circle" size={18} color="#DC2626" style={styles.optionIcon} />}
+                {revealed && isCorrect && <Ionicons name="checkmark-circle" size={20} color="#16A34A" style={styles.optionIcon} />}
+                {revealed && isPicked && !isCorrect && <Ionicons name="close-circle" size={20} color="#DC2626" style={styles.optionIcon} />}
               </Pressable>
             );
           })}

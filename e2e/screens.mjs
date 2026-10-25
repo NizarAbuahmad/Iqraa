@@ -14,8 +14,15 @@ mkdirSync(OUT, { recursive: true });
 const teacher = {
   id: 'u-teacher', firstName: 'سارة', lastName: 'الخطيب', name: 'سارة الخطيب', email: 't@example.com',
   role: 'teacher', preferredLanguage: 'ar', avatarUrl: null, createdAt: '2026-01-01T00:00:00Z',
-  gradeIds: ['grade-10'], subjectIds: ['mathematics'],
+  gradeIds: ['grade-10'], subjectIds: ['mathematics'], rosterConsentAt: '2026-01-01T00:00:00Z',
 };
+
+// Two classes of different subjects, so the classes list shows its subject-coloured tiles.
+const CLASSES = [
+  { id: 'c1', name: 'Grade 10 A', nameAr: 'العاشر أ', gradeId: 'grade-10', subjectId: 'mathematics', subjectIds: ['mathematics'], academicYear: '2026', createdAt: '2026-01-01T00:00:00Z', studentCount: 24 },
+  { id: 'c2', name: 'Grade 10 B', nameAr: 'العاشر ب', gradeId: 'grade-10', subjectId: 'chemistry', subjectIds: ['chemistry'], academicYear: '2026', createdAt: '2026-01-01T00:00:00Z', studentCount: 18 },
+  { id: 'c3', name: 'Grade 9 A', nameAr: 'التاسع أ', gradeId: 'grade-9', subjectId: 'english', subjectIds: ['english'], academicYear: '2026', createdAt: '2026-01-01T00:00:00Z', studentCount: 21 },
+];
 
 const ROUTES = [
   ['library', '/curriculum/resources'],
@@ -34,6 +41,10 @@ const ROUTES = [
   ['tools', '/ai-tools'],
   ['plans', '/teaching-plans'],
   ['evaluations', '/evaluations'],
+  ['settings', '/settings'],
+  ['classes', '/classes'],
+  ['quiz-tool', '/ai-tools/quiz'],
+  ['slides-tool', '/ai-tools/slides'],
 ];
 // ONLY=library,profile shoots a subset. REDUCED=1 emulates prefers-reduced-motion
 // and shoots as soon as the splash is gone: with reduced motion nothing may still
@@ -71,7 +82,7 @@ for (const colorScheme of ['light', 'dark']) {
         const p = new URL(route.request().url()).pathname.replace(/^\/api/, '');
         // /library is a list too (resources.tsx maps it) though its path does not end in s
         // A few endpoints wrap their list; the rest are bare lists (/…s, /library) or objects.
-        const SHAPED = { '/auth/me': teacher, '/schedule': { periods: [], slots: [] }, '/classes': { classes: [] }, '/evaluations': { evaluations: [] }, '/teaching-plans': { plans: [] } };
+        const SHAPED = { '/auth/me': teacher, '/schedule': { periods: [], slots: [] }, '/classes': { classes: CLASSES }, '/evaluations': { evaluations: [] }, '/teaching-plans': { plans: [] } };
         const body = p in SHAPED ? SHAPED[p] : (/s$/.test(p) || p === '/library') ? [] : {};
         return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
       });

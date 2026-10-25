@@ -41,7 +41,7 @@ const GAMES: Array<{
   { id: 'capitals', route: '/play/capitals', icon: 'location-outline', color: '#0B7F77', titleKey: 'playCapitalsTitle', descKey: 'playCapitalsDesc' },
   { id: 'memory', route: '/play/memory', icon: 'apps-outline', color: '#0369A1', titleKey: 'playMemoryTitle', descKey: 'playMemoryDesc' },
   { id: 'colors', route: '/play/colors', icon: 'color-palette-outline', color: '#DB2777', titleKey: 'playColorsTitle', descKey: 'playColorsDesc' },
-  { id: 'multiply', route: '/play/multiply', icon: 'calculator-outline', color: '#B45309', titleKey: 'playMultiplyTitle', descKey: 'playMultiplyDesc' },
+  { id: 'multiply', route: '/play/multiply', icon: 'calculator-outline', color: '#166534', titleKey: 'playMultiplyTitle', descKey: 'playMultiplyDesc' },
   { id: 'divide', route: '/play/divide', icon: 'pie-chart-outline', color: '#7C3AED', titleKey: 'playDivideTitle', descKey: 'playDivideDesc' },
   { id: 'add', route: '/play/add', icon: 'add-circle-outline', color: '#4338CA', titleKey: 'playAddTitle', descKey: 'playAddDesc' },
   { id: 'subtract', route: '/play/subtract', icon: 'remove-circle-outline', color: '#BE123C', titleKey: 'playSubtractTitle', descKey: 'playSubtractDesc' },
@@ -63,7 +63,7 @@ export default function PlayHubScreen() {
               style={[styles.card, surface]}
             >
               <View style={[styles.iconWrap, { backgroundColor: `${g.color}1a` }]}>
-                <Ionicons name={g.icon} size={26} color={g.color} />
+                <Ionicons name={g.icon} size={24} color={g.color} />
               </View>
               <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16, textAlign: 'center' }}>
                 {t(g.titleKey)}
@@ -72,7 +72,7 @@ export default function PlayHubScreen() {
                 {t(g.descKey)}
               </Text>
               <View style={[styles.gradeChip, { backgroundColor: `${g.color}14` }]}>
-                <Ionicons name="school-outline" size={13} color={readableOn(g.color, colors.card)} />
+                <Ionicons name="school-outline" size={14} color={readableOn(g.color, colors.card)} />
                 <Text style={{ color: readableOn(g.color, colors.card), fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
                   {gradeBandLabel(PLAY_GAME_GRADES[g.id], lang)}
                 </Text>

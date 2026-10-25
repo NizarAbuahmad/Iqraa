@@ -108,7 +108,7 @@ export default function LivePlayScreen() {
     const gone = err.status === 404;
     return (
       <View style={[pageStyle, styles.center, { padding: SPACE.xl }]}>
-        <Ionicons name={kicked ? 'hand-left-outline' : 'alert-circle-outline'} size={56} color={colors.mutedForeground} />
+        <Ionicons name={kicked ? 'hand-left-outline' : 'alert-circle-outline'} size={64} color={colors.mutedForeground} />
         <Text style={[styles.message, { color: colors.foreground }]}>
           {t(kicked ? 'liveKicked' : gone ? 'liveGameGone' : 'liveTokenInvalid')}
         </Text>
@@ -188,7 +188,7 @@ export default function LivePlayScreen() {
           ))}
           {answered && (
             <View style={[surface, styles.noteCard]}>
-              <Ionicons name="checkmark-circle" size={28} color={colors.success} />
+              <Ionicons name="checkmark-circle" size={32} color={colors.success} />
               <View style={styles.noteText}>
                 <Text style={[styles.noteTitle, { color: colors.foreground }]}>{t('liveAnswerReceived')}</Text>
                 <Text style={[styles.sub, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left' }]}>{t('liveWaitOthers')}</Text>
@@ -218,7 +218,7 @@ export default function LivePlayScreen() {
           <View style={[surface, styles.resultCard]}>
             <Ionicons
               name={outcome === 'right' ? 'checkmark-circle' : outcome === 'wrong' ? 'close-circle' : 'remove-circle'}
-              size={72}
+              size={64}
               color={tone}
             />
             <Text style={[styles.title, { color: tone }]}>

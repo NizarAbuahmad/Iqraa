@@ -39,6 +39,7 @@ import { Image } from 'expo-image';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import type { GlyphId } from '@/constants/glyphs';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLightStatusBar } from '@/hooks/useLightStatusBar';
@@ -71,6 +72,8 @@ import { palette, scheme } from '@/constants/colors';
 import { CORNERS, type CornerId, type MotifId } from '@/constants/corners';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { RESOURCE_KIND_ICON as KIND_ICON, RESOURCE_KIND_LABEL as KIND_LABEL } from '@/constants/resourceKind';
+import { SHELF_COLOR, SHELF_ICON } from '@/constants/shelfLook';
+import { readableOn, textOn } from '@/services/readableColor';
 import { BackButton } from '@/components/ui/BackButton';
 import { Band, BRAND_MOTIF_OPACITY } from '@/components/ui/Band';
 import { LibraryTile, type TileLook } from '@/components/library/LibraryTile';
@@ -90,36 +93,11 @@ const SHELF_LABEL: Record<Shelf, TranslationKey> = {
   document: 'librarySecDocument',
 };
 
-const SHELF_ICON: Record<Shelf, React.ComponentProps<typeof Ionicons>['name']> = {
-  infographic: 'bar-chart',
-  image: 'images',
-  video: 'play-circle',
-  audio: 'headset',
-  game: 'game-controller',
-  worksheet: 'document-text',
-  template: 'copy',
-  presentation: 'easel',
-  document: 'folder-open',
-};
-
-/** Icon colours, each dark enough to read on its own 12% tint. */
-const SHELF_COLOR: Record<Shelf, string> = {
-  infographic: '#7C3AED',
-  image: '#0E7490',
-  video: '#DC2626',
-  audio: '#B45309',
-  game: '#15803D',
-  worksheet: '#0E8F86',
-  template: '#4F46E5',
-  presentation: '#C2410C',
-  document: '#475569',
-};
-
 const ACCENT = palette.primary;
 /** A corner tile's icon colours — the corner's own, so its hue is learned before it is entered. */
 const cornerLook = (id: CornerId) => CORNERS[id][scheme];
 /** A front-row tile in its corner's look and pattern. */
-const cornerTile = (id: CornerId) => ({ look: cornerLook(id), motif: CORNERS[id].motif, motifOpacity: CORNERS[id].motifOpacity });
+const cornerTile = (id: CornerId) => ({ look: cornerLook(id), glyph: CORNERS[id].drawing, motif: CORNERS[id].motif, motifOpacity: CORNERS[id].motifOpacity });
 /** The curriculum and «my exams» tiles are the library's own: brand teal and the leaf. */
 const BRAND_TILE = {
   look: { hero: palette.hero, primary: palette.primary, primaryForeground: palette.primaryForeground } as TileLook,
@@ -313,7 +291,7 @@ function ResourceRow({
           onError={() => setThumbFailed(true)}
         />
       ) : !isVideo ? (
-        <Ionicons name={KIND_ICON[item.kind]} size={large ? 36 : 24} color={accent} />
+        <Ionicons name={KIND_ICON[item.kind]} size={large ? 40 : 24} color={readableOn(accent, colors.muted, 3)} />
       ) : null}
       {isVideo ? (
         <View style={[styles.playBadge, large ? styles.playBadgeLarge : styles.playBadgeSmall, { backgroundColor: ACCENT_FILL }]}>
@@ -362,8 +340,8 @@ function ResourceRow({
             )}
             {printable ? (
               <View style={[styles.actionPill, { backgroundColor: accent, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                <Ionicons name={opensSheet ? 'eye-outline' : 'print-outline'} size={14} color={palette.primaryForeground} />
-                <Text style={[styles.actionText, { color: palette.primaryForeground, fontFamily: 'ReadexPro_600SemiBold' }]}>
+                <Ionicons name={opensSheet ? 'eye-outline' : 'print-outline'} size={14} color={textOn(accent)} />
+                <Text style={[styles.actionText, { color: textOn(accent), fontFamily: 'ReadexPro_600SemiBold' }]}>
                   {t(opensSheet ? 'resourceActionOpen' : 'resourceActionPrint')}
                 </Text>
               </View>
@@ -389,7 +367,7 @@ function ResourceRow({
             />
           ) : isBook ? null : (
             <View style={[styles.thumb, styles.thumbFallback, { backgroundColor: colors.muted }]}>
-              <Ionicons name={KIND_ICON[item.kind]} size={22} color={accent} />
+              <Ionicons name={KIND_ICON[item.kind]} size={24} color={readableOn(accent, colors.muted, 3)} />
             </View>
           )}
           <View style={{ flex: 1 }}>
@@ -403,15 +381,15 @@ function ResourceRow({
           </View>
           {printable ? (
             <View style={[styles.actionPill, { backgroundColor: accent, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <Ionicons name={opensSheet ? 'eye-outline' : 'print-outline'} size={14} color={palette.primaryForeground} />
-              <Text style={[styles.actionText, { color: palette.primaryForeground, fontFamily: 'ReadexPro_600SemiBold' }]}>
+              <Ionicons name={opensSheet ? 'eye-outline' : 'print-outline'} size={14} color={textOn(accent)} />
+              <Text style={[styles.actionText, { color: textOn(accent), fontFamily: 'ReadexPro_600SemiBold' }]}>
                 {t(opensSheet ? 'resourceActionOpen' : 'resourceActionPrint')}
               </Text>
             </View>
           ) : item.url ? (
             <Ionicons
               name={isVideo ? forwardIcon : 'open-outline'}
-              size={18}
+              size={20}
               color={isVideo ? ACCENT : colors.mutedForeground}
               accessibilityElementsHidden
               importantForAccessibility="no"
@@ -621,6 +599,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
   type FrontTile = {
     key: string;
     icon: React.ComponentProps<typeof Ionicons>['name'];
+    glyph?: GlyphId;
     title: string;
     desc: string;
     descStrong?: boolean;
@@ -637,6 +616,12 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
     {
       key: 'curriculum', icon: 'book', title: t('curriculumTitle'), desc: t('libraryCurriculumDesc'), ...BRAND_TILE,
       go: () => router.push({ pathname: '/curriculum/browse' as never, params: { gradeId: grade } }),
+    },
+    // The books' figures, filed grade → subject → lesson. Opens at the grade
+    // folders, not at this grade, so the whole tree is one tap away.
+    {
+      key: 'book-images', icon: 'images', title: t('bookImagesTitle'), desc: t('bookImagesDesc'), ...BRAND_TILE,
+      go: () => router.push('/curriculum/book-images' as never),
     },
     ...(englishLevel !== null
       ? [{
@@ -695,7 +680,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
               accessibilityRole="button"
               style={[styles.addBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
-              <Ionicons name="add-circle-outline" size={18} color={ACCENT_FILL} />
+              <Ionicons name="add-circle-outline" size={20} color={ACCENT_FILL} />
               <Text style={[styles.addBtnText, { color: ACCENT_FILL, fontFamily: 'ReadexPro_600SemiBold' }]}>
                 {t('libraryAddResource')}
               </Text>
@@ -729,7 +714,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
             },
           ]}
         >
-          <Ionicons name="search" size={18} color={colors.mutedForeground} />
+          <Ionicons name="search" size={20} color={colors.mutedForeground} />
           <TextInput
             value={query}
             onChangeText={setQuery}
@@ -840,6 +825,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                 key={tile.key}
                 index={i}
                 icon={tile.icon}
+                glyph={tile.glyph}
                 title={tile.title}
                 desc={tile.desc}
                 descStrong={tile.descStrong}
@@ -862,7 +848,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
               <View key={id} style={styles.section}>
                 <View style={[styles.shelfHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   <View style={[styles.shelfTitleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    <Ionicons name={SHELF_ICON[id]} size={20} color={SHELF_COLOR[id]} />
+                    <Ionicons name={SHELF_ICON[id]} size={20} color={readableOn(SHELF_COLOR[id], colors.card, 3)} />
                     <Text style={[styles.sectionTitle, { paddingHorizontal: 0, color: colors.foreground, fontFamily: 'ReadexPro_700Bold' }]}>
                       {t(SHELF_LABEL[id])} · {rows.length}
                     </Text>
@@ -894,7 +880,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
           })}
           {shelves.length === 0 ? (
             <View style={styles.empty}>
-              <Ionicons name="library-outline" size={36} color={colors.mutedForeground} />
+              <Ionicons name="library-outline" size={40} color={colors.mutedForeground} />
               <Text
                 style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}
               >
@@ -1021,7 +1007,7 @@ function ShelfTabs({
           interactionStyle(state as PressState, on ? ACCENT : colors.border),
         ]}
       >
-        {icon ? <Ionicons name={icon} size={18} color={on ? palette.primaryForeground : iconColor} /> : null}
+        {icon ? <Ionicons name={icon} size={20} color={on ? palette.primaryForeground : iconColor} /> : null}
         <Text
           style={[
             styles.tabText,
@@ -1044,7 +1030,7 @@ function ShelfTabs({
       style={[styles.chipRow, styles.chipRowWrap, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
     >
       {tab(null, t('libraryTabAll'), total)}
-      {shelves.map(({ shelf: id, items }) => tab(id, t(SHELF_LABEL[id]), items.length, SHELF_ICON[id], SHELF_COLOR[id]))}
+      {shelves.map(({ shelf: id, items }) => tab(id, t(SHELF_LABEL[id]), items.length, SHELF_ICON[id], readableOn(SHELF_COLOR[id], colors.card, 3)))}
     </View>
   );
 }

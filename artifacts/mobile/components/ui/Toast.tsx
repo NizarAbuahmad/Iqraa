@@ -10,6 +10,8 @@ interface ToastProps {
   /** Duration before auto-hide, ms. Default: 3000 — two seconds was too short to read a full Arabic sentence. */
   duration?: number;
   onHide?: () => void;
+  /** Lift it above something docked to the bottom of the screen (a generator's action bar). */
+  bottomOffset?: number;
 }
 
 /*
@@ -21,7 +23,7 @@ interface ToastProps {
   confirmation. Restarting the sequence for a new message is what makes the
   second tap say «أزلتها من المفضلة».
 */
-export function Toast({ visible, message, duration = 3000, onHide }: ToastProps) {
+export function Toast({ visible, message, duration = 3000, onHide, bottomOffset = 0 }: ToastProps) {
   const colors = useColors();
   const opacity = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
@@ -51,7 +53,7 @@ export function Toast({ visible, message, duration = 3000, onHide }: ToastProps)
         styles.toast,
         {
           opacity,
-          bottom: 100 + insets.bottom,
+          bottom: 100 + insets.bottom + bottomOffset,
           // The inverse of the screen — navy on light, pale on dark — so it
           // reads as a layer above the page in both themes.
           backgroundColor: colors.foreground,

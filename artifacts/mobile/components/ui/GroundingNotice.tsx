@@ -71,7 +71,7 @@ export function GroundingNotice({ grounded, lessonTitle, sources, isRTL, colors,
       accessibilityRole="text"
     >
       <Ionicons
-        name={grounded ? 'school' : 'information-circle-outline'}
+        name={grounded ? 'school' : 'information-circle'}
         size={16}
         color={grounded ? colors.primary : colors.mutedForeground}
         style={{ marginTop: 2 }}

@@ -23,6 +23,8 @@ import { nccdG3EnglishSem1, g3EnglishSem1LessonKbId } from './catalogs/g3English
 import { nccdG3EnglishSem2, g3EnglishSem2LessonKbId } from './catalogs/g3EnglishSem2.ts';
 import { nccdG4EnglishSem1, g4EnglishSem1LessonKbId } from './catalogs/g4EnglishSem1.ts';
 import { nccdG4EnglishSem2, g4EnglishSem2LessonKbId } from './catalogs/g4EnglishSem2.ts';
+import { nccdG5EnglishSem1, g5EnglishSem1LessonKbId } from './catalogs/g5EnglishSem1.ts';
+import { nccdG5EnglishSem2, g5EnglishSem2LessonKbId } from './catalogs/g5EnglishSem2.ts';
 import { buildG9EngSem1BrowserCatalog } from './catalogs/g9EngSem1.ts';
 import { buildG9EngSem2BrowserCatalog } from './catalogs/g9EngSem2.ts';
 import { buildEngSem1BrowserCatalog } from './catalogs/g10EnglishSem1.ts';
@@ -46,10 +48,41 @@ export interface HubLesson {
   title: string;
   titleAr: string;
   words: HubWord[];
+  /**
+   * True on a grammar-only lesson: listed in `GRAMMAR_ONLY_LESSONS` and under `MIN_HUB_WORDS` words. The app hides its
+   * word activities and shows it only once its grammar is signed (`hubLessonVisible`, englishGrammar.ts).
+   */
+  grammarOnly?: boolean;
 }
 
 /** Below this there is nothing to choose between — same floor as the 9–10 drill. */
 export const MIN_HUB_WORDS = 4;
+
+/**
+ * Grammar-only lessons: Grade 9 lessons whose book statement is a grammar topic but with fewer than `MIN_HUB_WORDS`
+ * words (used to; the two present perfects; the first conditional; reported speech), and Grade 10's Articles and its
+ * Semester 2 grammar lessons (no vocabulary rows are extracted for Semester 2). They are in the hub for their grammar only: the lesson screen hides the word activities, and
+ * `hubLessonVisible` keeps one out of sight until a teacher signs its unit. A test pins that each id has fewer than
+ * four words and a grammar unit, so this list cannot go stale. It lives here because englishGrammar.ts imports this file.
+ */
+export const GRAMMAR_ONLY_LESSONS: readonly string[] = [
+  'kbl-g9-eng-s1-nccd-u2_l3',
+  'kbl-g9-eng-s2-nccd-u7_l1',
+  'kbl-g9-eng-s2-nccd-u7_l2',
+  'kbl-g9-eng-s2-nccd-u8_l5',
+  'kbl-g9-eng-s2-nccd-u9_l3',
+  'kbl-eng-s1-nccd-u1_l5',
+  'kbl-eng-s2-nccd-u6_l1',
+  'kbl-eng-s2-nccd-u6_l4',
+  'kbl-eng-s2-nccd-u7_l1',
+  'kbl-eng-s2-nccd-u7_l5',
+  'kbl-eng-s2-nccd-u8_l1',
+  'kbl-eng-s2-nccd-u8_l6',
+  'kbl-eng-s2-nccd-u9_l1',
+  'kbl-eng-s2-nccd-u9_l4',
+  'kbl-eng-s2-nccd-u10_l1',
+  'kbl-eng-s2-nccd-u10_l3',
+];
 
 const BOOKS: [number, 1 | 2, NccdCurriculumFile, (id: string) => string][] = [
   [1, 1, nccdG1EnglishSem1, g1EnglishSem1LessonKbId],
@@ -60,6 +93,8 @@ const BOOKS: [number, 1 | 2, NccdCurriculumFile, (id: string) => string][] = [
   [3, 2, nccdG3EnglishSem2, g3EnglishSem2LessonKbId],
   [4, 1, nccdG4EnglishSem1, g4EnglishSem1LessonKbId],
   [4, 2, nccdG4EnglishSem2, g4EnglishSem2LessonKbId],
+  [5, 1, nccdG5EnglishSem1, g5EnglishSem1LessonKbId],
+  [5, 2, nccdG5EnglishSem2, g5EnglishSem2LessonKbId],
 ];
 
 /** A topic label, not a word: digits, ranges, slashes, "ordinal numbers: …". */
@@ -116,7 +151,8 @@ function buildFromVocabulary(): HubLesson[] {
         seen.add(key);
         words.push({ en, ar });
       }
-      if (words.length < MIN_HUB_WORDS) continue;
+      const grammarOnly = words.length < MIN_HUB_WORDS;
+      if (grammarOnly && !GRAMMAR_ONLY_LESSONS.includes(l.id)) continue;
       out.push({
         id: l.id,
         grade,
@@ -127,6 +163,7 @@ function buildFromVocabulary(): HubLesson[] {
         title: l.title,
         titleAr: l.titleAr,
         words,
+        ...(grammarOnly ? { grammarOnly: true } : {}),
       });
     }
   }
@@ -166,8 +203,12 @@ function build(): HubLesson[] {
 
 export const ENGLISH_HUB_LESSONS: HubLesson[] = [...build(), ...buildFromVocabulary()];
 
-/** Tab order. Append only — the picked grade is carried as a value in the URL, but keep the habit. */
-export const ENGLISH_HUB_GRADES = [1, 2, 3, 4, 9, 10] as const;
+/**
+ * Tab order: grade order. The picked grade travels as its number in the URL, never as a
+ * position, so a grade can be slotted in (5 went between 4 and 9). Grades 6–8 are not
+ * here yet: their books carry no vocabulary to drill.
+ */
+export const ENGLISH_HUB_GRADES = [1, 2, 3, 4, 5, 9, 10] as const;
 
 export function hubLessonsForGrade(grade: number): HubLesson[] {
   return ENGLISH_HUB_LESSONS.filter(l => l.grade === grade);

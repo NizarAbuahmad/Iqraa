@@ -123,7 +123,7 @@ export default function AdminSignupsScreen() {
   }
 
   const align = isRTL ? 'right' : 'left';
-  const chips: [Kind, string, string][] = [['all', 'الكل', 'All'], ['waitlist', 'قائمة الانتظار', 'Waitlist'], ['contact', 'رسائل التواصل', 'Contact'], ['idea', '💡 اقتراحات', '💡 Ideas']];
+  const chips: [Kind, string, string][] = [['all', 'الكل', 'All'], ['waitlist', 'قائمة الانتظار', 'Waitlist'], ['contact', 'رسائل التواصل', 'Contact'], ['idea', 'اقتراحات', 'Ideas']];
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -181,7 +181,7 @@ export default function AdminSignupsScreen() {
             <View style={{ flex: 1 }} />
             {Platform.OS === 'web' && (
               <Pressable onPress={exportCsv} style={[styles.chip, { borderRadius: colors.radius, borderColor: ACCENT, flexDirection: 'row', gap: 6, alignItems: 'center' }]}>
-                <Ionicons name="download-outline" size={15} color={ACCENT} />
+                <Ionicons name="download-outline" size={16} color={ACCENT} />
                 <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{ar ? 'تصدير CSV' : 'Export CSV'}</Text>
               </Pressable>
             )}
@@ -199,7 +199,7 @@ export default function AdminSignupsScreen() {
           ) : items.map(s => (
             <View key={s.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
               <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
-                <Ionicons name={s.kind === 'waitlist' ? 'mail-outline' : s.kind === 'idea' ? 'bulb-outline' : 'chatbubble-outline'} size={15} color={ACCENT} />
+                <Ionicons name={s.kind === 'waitlist' ? 'mail-outline' : s.kind === 'idea' ? 'bulb-outline' : 'chatbubble-outline'} size={16} color={ACCENT} />
                 <Text selectable style={{ flex: 1, color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
                   {s.email || s.name || '—'}
                 </Text>
@@ -212,11 +212,12 @@ export default function AdminSignupsScreen() {
                 <Pressable
                   onPress={() => { void sendInvite(s.email); }}
                   disabled={!!inviting}
-                  style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', paddingVertical: 4 }}
+                  style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', paddingVertical: 4, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 4 }}
                 >
+                  {invited.includes(s.email.toLowerCase()) ? <Ionicons name="checkmark-circle" size={16} color={ACCENT} /> : null}
                   <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
                     {invited.includes(s.email.toLowerCase())
-                      ? (ar ? '✓ أُرسلت الدعوة' : '✓ Invite sent')
+                      ? (ar ? 'أُرسلت الدعوة' : 'Invite sent')
                       : inviting === s.email ? '…' : (ar ? 'أرسل دعوة التطبيق' : 'Send app invite')}
                   </Text>
                 </Pressable>

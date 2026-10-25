@@ -76,6 +76,12 @@ const PRICING_PER_MILLION_USD: Record<string, { input: number; output: number }>
   "claude-sonnet-5": { input: 3, output: 15 },
   "claude-haiku-4-5": { input: 1, output: 5 },
   "claude-fable-5": { input: 10, output: 50 },
+  // Claude API model table, checked 2026-10-23: Sonnet 5.5 $2/$10, Haiku 5.5
+  // $0.10/$0.50 (the latter for prompts up to 100K tokens; ours are far below).
+  // Compare the first day's spend with the Anthropic console before trusting
+  // the cap — the older Sonnet 5 note above says $3/$15 and the table disagrees.
+  "claude-sonnet-5-5": { input: 2, output: 10 },
+  "claude-haiku-5-5": { input: 0.1, output: 0.5 },
 };
 // The most expensive model above, so an unrecognised id can only ever
 // over-estimate spend and trip the cap early.
@@ -317,7 +323,58 @@ export function getChatModel(): string {
  * leaving this unset changes nothing.
  */
 export function getPromptSlidesModel(): string {
-  return process.env.AI_MODEL_PROMPT_SLIDES || getGenerationModel();
+  return usableModel(process.env.AI_MODEL_PROMPT_SLIDES) ?? getDocumentModel("prompt-slides");
+}
+
+/** Anthropic model ids start with `claude-`; everything else is an OpenAI id. */
+export function isClaudeModel(model: string): boolean {
+  return model.startsWith("claude-");
+}
+
+/**
+ * The generators whose output a teacher prints or projects as it stands — the
+ * four a blind comparison (2026-10-23) measured: lesson plans, worksheets,
+ * quizzes and slide decks. Anything not listed keeps `getGenerationModel()`.
+ */
+const DOCUMENT_KINDS: ReadonlySet<string> = new Set(["lesson-plan", "worksheet", "quiz", "prompt-slides"]);
+
+const warnedNoClaudeKey = new Set<string>();
+
+/**
+ * A configured model, or null when it cannot run.
+ *
+ * A Claude model with no `ANTHROPIC_API_KEY` would answer every request with an
+ * error, so it is skipped and the caller keeps the model that works. Said once
+ * per model: a mis-set variable must not look like a working switch.
+ */
+function usableModel(model: string | undefined): string | null {
+  if (!model) return null;
+  if (isClaudeModel(model) && !process.env.ANTHROPIC_API_KEY) {
+    if (!warnedNoClaudeKey.has(model)) {
+      warnedNoClaudeKey.add(model);
+      logger.warn(
+        { model },
+        "a Claude model is configured but ANTHROPIC_API_KEY is not set — keeping the OpenAI model",
+      );
+    }
+    return null;
+  }
+  return model;
+}
+
+/**
+ * The model for lesson plans, worksheets, quizzes and slide decks.
+ *
+ * `AI_MODEL_DOCUMENTS` is its own variable, not `AI_MODEL_GENERATE`, because
+ * that one is also read by call sites that talk to the OpenAI client directly
+ * (exam generation, grading, the verified-derivative path). Pointing it at a
+ * Claude id would send an OpenAI request with a model OpenAI has never heard
+ * of. Unset, or set to something unusable, this is `getGenerationModel()`, so
+ * deploying the code changes nothing until the variable is set.
+ */
+export function getDocumentModel(kind: string): string {
+  if (!DOCUMENT_KINDS.has(kind)) return getGenerationModel();
+  return usableModel(process.env.AI_MODEL_DOCUMENTS) ?? getGenerationModel();
 }
 
 export function isAiLiveModeOn(): boolean {

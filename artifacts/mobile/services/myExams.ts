@@ -33,6 +33,8 @@ export interface MyExam {
   examTime?: string | null;
   /** Sat on paper; never has a link. Absent from an older server. */
   paper?: boolean;
+  /** «راجع إجاباتك» may open (`GET /student/exams/:id/review`). Absent from an older server. */
+  review?: boolean;
 }
 
 /** One child's list, as `GET /parent/exams` returns it — no row carries a link. */

@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import type { GlyphId } from '@/constants/glyphs';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -13,6 +14,7 @@ import { Toast } from '@/components/ui/Toast';
 import { Band, BRAND_MOTIF_OPACITY } from '@/components/ui/Band';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { useSurface } from '@/components/ui/Surface';
+import { IconTile } from '@/components/ui/IconTile';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { AR_LATIN } from '@/services/dateLabels';
 
@@ -31,8 +33,8 @@ function InfoRow({ icon, label, value, color, isRTL }: { icon: keyof typeof Ioni
   );
 }
 
-function SettingRow({ icon, label, onPress, destructive, isRTL, colors }: {
-  icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void;
+function SettingRow({ icon, glyph, label, onPress, destructive, isRTL, colors }: {
+  icon: keyof typeof Ionicons.glyphMap; glyph?: GlyphId; label: string; onPress: () => void;
   destructive?: boolean; isRTL: boolean; colors: ReturnType<typeof useColors>;
 }) {
   const surface = useSurface();
@@ -42,7 +44,7 @@ function SettingRow({ icon, label, onPress, destructive, isRTL, colors }: {
       accessibilityRole="button"
       style={[styles.settingRow, surface, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
     >
-      <Ionicons name={icon} size={20} color={destructive ? colors.destructive : colors.primary} />
+      <IconTile icon={icon} glyph={glyph} color={destructive ? colors.destructive : colors.primary} size={36} />
       <Text style={[styles.settingLabel, { color: destructive ? colors.destructive : colors.foreground, fontFamily: 'ReadexPro_500Medium', flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
         {label}
       </Text>
@@ -204,7 +206,7 @@ export default function ProfileScreen() {
                 onPress={handleRemovePhoto}
                 style={[styles.avatarRemoveBadge, { backgroundColor: colors.destructive }]}
               >
-                <Ionicons name="close" size={12} color={'#FFFFFF'} />
+                <Ionicons name="close" size={14} color={'#FFFFFF'} />
               </Pressable>
             ) : null}
           </View>
@@ -348,7 +350,7 @@ export default function ProfileScreen() {
                 actually calendar-shaped — it was sitting on خطط التدريس,
                 which is a list of plans, not a calendar. */}
             <View style={{ marginTop: 8, gap: 8 }}>
-              <SettingRow icon="people-outline" label={t('myClasses')} onPress={() => router.push('/classes')} isRTL={isRTL} colors={colors} />
+              <SettingRow icon="people-outline" glyph="classes" label={t('myClasses')} onPress={() => router.push('/classes')} isRTL={isRTL} colors={colors} />
               <SettingRow icon="clipboard-outline" label={t('myTeachingPlans')} onPress={() => router.push('/teaching-plans' as any)} isRTL={isRTL} colors={colors} />
               <SettingRow icon="time-outline" label={t('myWeeklySchedule')} onPress={() => router.push('/schedule' as any)} isRTL={isRTL} colors={colors} />
               <SettingRow icon="calendar-outline" label={t('myCalendar')} onPress={() => router.push('/calendar' as any)} isRTL={isRTL} colors={colors} />
@@ -474,6 +476,6 @@ const styles = StyleSheet.create({
   tags: { flexWrap: 'wrap', gap: 6 },
   tag: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   tagText: { fontSize: 12 },
-  settingRow: { alignItems: 'center', padding: 16, gap: 12 },
+  settingRow: { alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, gap: 12 },
   settingLabel: { fontSize: 15 },
 });

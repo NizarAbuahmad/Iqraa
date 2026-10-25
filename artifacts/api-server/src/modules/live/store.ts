@@ -7,16 +7,6 @@ import { db, liveAnswers, livePlayers } from "@workspace/db";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { Scored } from "./rules.ts";
 
-/**
- * Postgres unique violation (23505). drizzle-orm 0.45 wraps driver errors in a
- * DrizzleQueryError whose `.cause` is the pg error, so `err.code` alone is
- * undefined there; check both.
- */
-export function isUniqueViolation(err: unknown): boolean {
-  const e = err as { code?: string; cause?: { code?: string } } | null;
-  return e?.code === "23505" || e?.cause?.code === "23505";
-}
-
 /** Every player still in the game with their running total. */
 export async function loadScoreboard(gameId: string): Promise<Scored[]> {
   const rows = await db

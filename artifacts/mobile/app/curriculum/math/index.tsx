@@ -43,7 +43,7 @@ export default function MathCornerScreen() {
           style={[styles.row, surface, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
         >
           <View style={[styles.icon, { backgroundColor: colors.primary }]}>
-            <Ionicons name="school-outline" size={22} color={colors.primaryForeground} />
+            <Ionicons name="school-outline" size={24} color={colors.primaryForeground} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.title, { color: colors.foreground, textAlign: align, fontFamily: 'ReadexPro_600SemiBold' }]}>
@@ -53,7 +53,7 @@ export default function MathCornerScreen() {
               {t('mathExHint')}
             </Text>
           </View>
-          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
+          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedForeground} />
         </PressableScale>
         {MATH_TOOL_IDS.map(id => {
           const meta = MATH_TOOLS[id];
@@ -69,7 +69,7 @@ export default function MathCornerScreen() {
               style={[styles.row, surface, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
               <View style={[styles.icon, { backgroundColor: colors.secondary }]}>
-                <Ionicons name={meta.icon as React.ComponentProps<typeof Ionicons>['name']} size={22} color={colors.primary} />
+                <Ionicons name={meta.icon as React.ComponentProps<typeof Ionicons>['name']} size={24} color={colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.title, { color: colors.foreground, textAlign: align, fontFamily: 'ReadexPro_600SemiBold' }]}>
@@ -79,7 +79,7 @@ export default function MathCornerScreen() {
                   {t(meta.hintKey)}
                 </Text>
               </View>
-              <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
+              <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedForeground} />
             </PressableScale>
           );
         })}

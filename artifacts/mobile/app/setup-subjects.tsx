@@ -42,6 +42,11 @@ import { useLanguage } from '@/context/LanguageContext';
 import { TeachingAssignment, useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { PillSelector } from '@/components/ui/PillSelector';
+import { CheckRow } from '@/components/ui/CheckRow';
+import { ApiError } from '@/services/apiClient';
+import { guardianConfigStale, switchNeedsAgeConfirmation } from '@/services/signupMethod';
+import { resetGuardianConfigCache, useGuardianConfig } from '@/services/guardianConfig';
+import { TYPE } from '@/constants/theme';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { getPickerGrades, getSubjectsForGrade } from '@/services/curriculumData';
 import { goBack } from '@/services/navigation';
@@ -120,17 +125,45 @@ export default function SetupSubjectsScreen() {
   // own way back to teacher.
   const studentAccounts = useStudentAccountsEnabled();
   const [switchingRole, setSwitchingRole] = useState(false);
-  const handleRole = async (role: 'teacher' | 'parent' | 'student') => {
-    if (role === 'teacher' || switchingRole) return;
+  // Becoming a student asks what signing up as one asks — an adult, or a
+  // guardian's agreement — so that pill does not switch on the tap: it opens the
+  // box and a confirm button, and the server refuses the switch without the tick.
+  const [studentPending, setStudentPending] = useState(false);
+  const [ageOk, setAgeOk] = useState(false);
+  // When the server has a parent approve email students (guardian.enabled) there is no box: the student pill
+  // switches straight away, as parent does, and a note says the account will wait for a parent.
+  const guardian = useGuardianConfig();
+  const askAge = switchNeedsAgeConfirmation(user?.role, 'student', guardian.enabled);
+  const doSwitch = async (role: 'parent' | 'student') => {
+    if (switchingRole) return;
     setSwitchingRole(true);
     setError('');
     try {
-      await switchRole(role);
-    } catch {
+      await switchRole(role, { ageConfirmed: role === 'student' && askAge && ageOk });
+    } catch (e) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(t('claimRequiredSwitchFailed'));
+      // The server's switch differs from the copy this screen read: ask again.
+      if (e instanceof ApiError && guardianConfigStale(e.code)) {
+        resetGuardianConfigCache();
+        guardian.refresh();
+        // The app thought the switch was on and switched without a tick, but the server wants one: open the box
+        // (the refresh above brings the tick row in) rather than leave the pill on teacher with only an error.
+        if (role === 'student') { setStudentPending(true); setAgeOk(false); }
+      }
+      setError(t(e instanceof ApiError && e.code === 'age_confirmation_required' ? 'errAgeConfirmRequired' : 'claimRequiredSwitchFailed'));
       setSwitchingRole(false);
     }
+  };
+  const handleRole = async (role: 'teacher' | 'parent' | 'student') => {
+    if (switchingRole) return;
+    if (role === 'teacher') { setStudentPending(false); setAgeOk(false); return; }
+    if (role === 'student') {
+      if (guardian.enabled) { setStudentPending(false); await doSwitch('student'); return; }
+      setStudentPending(true);
+      return;
+    }
+    setStudentPending(false);
+    await doSwitch('parent');
   };
 
   const [assignments, setAssignments] = useState<TeachingAssignment[]>(() => initialAssignments(user));
@@ -210,14 +243,36 @@ export default function SetupSubjectsScreen() {
               { value: 'parent', label: t('roleParent') },
               { value: 'student', label: t('roleStudent') },
             ]}
-            value="teacher"
+            value={studentPending ? 'student' : 'teacher'}
             onChange={handleRole}
             colors={colors}
             isRTL={isRTL}
             accent={colors.primary}
             haptics
-            containerStyle={{ marginBottom: 20 }}
+            containerStyle={{ marginBottom: studentPending ? 12 : 20 }}
           />
+        ) : null}
+
+        {!editMode && studentAccounts && studentPending ? (
+          <View style={{ marginBottom: 20, gap: 12 }}>
+            {askAge ? (
+              <CheckRow checked={ageOk} onPress={() => setAgeOk(v => !v)} isRTL={isRTL} colors={colors}>
+                {t('ageConfirmLabel')}
+              </CheckRow>
+            ) : (
+              // The switch came on after the box opened (the config answers late): no tick, the note instead.
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 22, textAlign: align }}>
+                {t('guardianSwitchNote')}
+              </Text>
+            )}
+            <Button
+              label={t('claimRequiredSwitchSubmit')}
+              onPress={() => void doSwitch('student')}
+              loading={switchingRole}
+              disabled={(askAge && !ageOk) || switchingRole}
+              size="sm"
+            />
+          </View>
         ) : null}
 
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
@@ -251,7 +306,7 @@ export default function SetupSubjectsScreen() {
                   hitSlop={8}
                   accessibilityLabel={t('teacherSetupRemoveGrade', gradeName)}
                 >
-                  <Ionicons name="trash-outline" size={18} color={colors.mutedForeground} />
+                  <Ionicons name="trash-outline" size={20} color={colors.mutedForeground} />
                 </Pressable>
               </View>
               <View style={[styles.chips, isRTL && { flexDirection: 'row-reverse' }]}>
@@ -298,7 +353,7 @@ export default function SetupSubjectsScreen() {
 
         {error ? (
           <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+            <Ionicons name="alert-circle" size={16} color={colors.destructive} />
             <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
               {error}
             </Text>

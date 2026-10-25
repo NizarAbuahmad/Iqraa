@@ -12,6 +12,8 @@
  * — or a fresh sign-in — should hand them over to the tabs.
  */
 
+import type { GuardianUserLike } from './guardianApproval.ts';
+
 /**
  * Routes that belong to someone who is not a teacher and never will be.
  *
@@ -46,7 +48,8 @@
  * name — no account, like `/take`. Only the player screens live under it; the
  * teacher's host screen is `/ai-tools/classroom/live-host`, which stays private.
  */
-const PUBLIC_ROUTES = ['/take', '/legal', '/play', '/curriculum/english', '/suggest-feature', '/live'];
+// `/guardian`: a parent opens the approval link from an email on a device where nobody is signed in.
+const PUBLIC_ROUTES = ['/take', '/legal', '/play', '/curriculum/english', '/suggest-feature', '/live', '/guardian'];
 
 export function isPublicRoute(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
@@ -90,12 +93,16 @@ const NON_TEACHER_ROUTES = [
   // «اقترح ميزة» is linked from the profile tab for every role, like /faq.
   '/suggest-feature',
   '/delete-account',
+  // A student held for a parent's approval waits here (see `guardianRedirect`).
+  '/guardian-waiting',
   // Adding an email to an account made from a teacher's code — only a parent or
   // student can be one, so it belongs here and nowhere on the teacher side.
   '/add-email',
   // «اختباراتي» for a student, «نتائج أبنائي» for a parent — one screen,
   // reading /student/exams or /parent/exams by role.
   '/my-exams',
+  // «راجع إجاباتك», opened from a row of «اختباراتي» — the student's own paper.
+  '/exam-review',
   // «المدرسة» — the parent/student tab: the weekly timetable (and, later,
   // homework). One screen, reading /student/schedule or /parent/schedule by role.
   '/school',
@@ -145,11 +152,20 @@ export function isEntryRoute(pathname: string | null | undefined): boolean {
 export const CLAIM_REQUIRED_ROUTE = '/claim-required';
 
 /**
- * A parent or student account with zero roster links has nothing to do in
- * the app yet — every data-serving endpoint scopes by rosterLinks.userId, so
- * an unlinked account sees empty everywhere. This is the client-side gate
- * that routes them to the mandatory claim screen before that empty app
- * renders, on first signup, on every login, and on every app boot.
+ * A parent account with zero roster links has nothing to do in the app yet —
+ * every data-serving endpoint scopes by rosterLinks.userId, so an unlinked
+ * parent sees empty everywhere. This is the client-side gate that routes them
+ * to the mandatory claim screen before that empty app renders, on first
+ * signup, on every login, and on every app boot.
+ *
+ * **Not a student (since 2026-10-23).** A student may sign up with an email
+ * and no teacher's code, and use what needs no class: the library, the
+ * corners, the games, lesson explanations. The code is only for joining a
+ * class, from `/join-class`. Every `/student/*` route answers empty for an
+ * account with no link, and nothing hard-errors. A code-only student's link
+ * can be held until the teacher approves it, so they may have none either: they
+ * go to the grade picker, then the tabs, and meet the waiting card from
+ * `/join-class`. This gate is for parents only and changes nothing for them.
  */
 export function needsRosterClaim(
   user: { role: string; hasRosterLink?: boolean } | null | undefined,
@@ -158,7 +174,7 @@ export function needsRosterClaim(
   // `=== false`, not falsy: `undefined` means "not applicable" (a teacher) or
   // "not yet answered" (an older cached shape) — either must not trigger the
   // gate. Only an explicit false, from a server that has actually checked, does.
-  return (user.role === 'parent' || user.role === 'student') && user.hasRosterLink === false;
+  return user.role === 'parent' && user.hasRosterLink === false;
 }
 
 /** Where a parent or student picks their class — first sign-in, and from settings. */
@@ -168,10 +184,13 @@ export const GRADE_SETUP_ROUTE = '/setup-grade';
  * A parent or student who has not said which class they are in sees the whole
  * catalog, grades 1–10 — the screen the class picker exists to narrow.
  *
- * Waits behind `needsRosterClaim`: an unlinked account has to enter its claim
- * code first, and the boot effect checks that gate before this one. `=== false`
- * on the link for the same reason `needsRosterClaim` uses it — `undefined` is
- * "not answered yet", and must not strand the account on a second screen.
+ * A parent waits behind `needsRosterClaim`: an unlinked parent has to enter
+ * their claim code first, and the boot effect checks that gate before this
+ * one. A student does not wait — nothing stands in front of them, and a student
+ * with no class has `/student/grades` empty, so skipping the picker would
+ * leave them on the whole catalog. `=== false` on the link for the same reason
+ * `needsRosterClaim` uses it — `undefined` is "not answered yet", and must not
+ * strand the account on a second screen.
  * Teachers and admins are never gated; they pick on `/setup-subjects`.
  *
  * `skipped` is whether this account chose «تخطي» on the picker, kept on the
@@ -184,7 +203,7 @@ export function needsGradeSetup(
   skipped: boolean | null = false,
 ): boolean {
   if (!user || (user.role !== 'parent' && user.role !== 'student')) return false;
-  if (user.hasRosterLink === false) return false;
+  if (user.role === 'parent' && user.hasRosterLink === false) return false;
   if (skipped !== false) return false;
   return (user.gradeIds?.length ?? 0) === 0;
 }
@@ -221,4 +240,47 @@ export function needsTeacherSetup(
 ): boolean {
   if (!user || user.role !== 'teacher') return false;
   return (user.gradeIds?.length ?? 0) === 0 && (user.subjectIds?.length ?? 0) === 0;
+}
+
+// ─── Held for a parent's approval ────────────────────────────────────────────
+
+export const GUARDIAN_WAITING_ROUTE = '/guardian-waiting';
+
+/** A student the server is holding until a parent approves (status needed, waiting or declined). */
+export function needsGuardianApproval(user: GuardianUserLike | null | undefined): boolean {
+  if (!user || user.role !== 'student') return false;
+  return user.guardianStatus === 'needed' || user.guardianStatus === 'waiting' || user.guardianStatus === 'declined';
+}
+
+/** The only places a held student may be: the waiting screen, joining a class with a teacher's code (which lifts
+ *  the hold), and deleting the account. Everything else answers 403 from the server anyway. */
+const HELD_MAY_OPEN = [GUARDIAN_WAITING_ROUTE, '/join-class', '/delete-account'];
+
+function isHeldMayOpen(pathname: string): boolean {
+  return HELD_MAY_OPEN.some(p => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+/**
+ * Where the root layout should send a signed-in user for the parent-approval rule, or null to leave them be:
+ * a held student goes to the waiting screen from anywhere else; a user who is not (or no longer) held is moved
+ * off the waiting screen to the tabs.
+ */
+export function guardianRedirect(user: GuardianUserLike | null | undefined, pathname: string): string | null {
+  if (needsGuardianApproval(user)) return isHeldMayOpen(pathname) ? null : GUARDIAN_WAITING_ROUTE;
+  if (user && pathname === GUARDIAN_WAITING_ROUTE) return '/(tabs)';
+  return null;
+}
+
+/**
+ * What the root layout does with the parent-approval rule: where to send the user (`redirect`) and whether the
+ * later gates (roster claim, teacher setup, grade setup, non-teacher bounce, entry-route handling) must be skipped
+ * on this pass (`stop`). A held student on one of the open screens is not redirected but IS stopped: left to the
+ * grade-setup gate, an email student with no grades would be sent to /setup-grade and straight back, forever.
+ */
+export function guardianGate(
+  user: GuardianUserLike | null | undefined,
+  pathname: string,
+): { redirect: string | null; stop: boolean } {
+  const redirect = guardianRedirect(user, pathname);
+  return { redirect, stop: redirect !== null || needsGuardianApproval(user) };
 }

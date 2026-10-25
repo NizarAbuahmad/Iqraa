@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+// Ionicons has no eraser glyph (its nearest, `backspace`, reads as "delete a character"), so this one icon stays MaterialCommunityIcons.
 import { DECK_ACCENT, DECK_BORDER, DECK_CARD_BG, DECK_MUTED } from '@/services/deckTheme';
 import { PEN_COLORS } from '@/components/classroom/PenLayer';
 import { BOARD_BACKGROUNDS, STROKE_WIDTHS, type BoardBackground } from '@/services/whiteboardModel';
@@ -94,7 +95,7 @@ export function BoardToolbar({
     <>
       <View pointerEvents="box-none" style={[styles.top, { top: topInset + 8, flexDirection: rowDir }]}>
         <Pressable onPress={onClose} hitSlop={10} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel={labels.close}>
-          <Ionicons name="close" size={22} color={DECK_MUTED} />
+          <Ionicons name="close" size={24} color={DECK_MUTED} />
         </Pressable>
         <View style={[styles.chips, { flexDirection: rowDir }]}>
           {BOARD_BACKGROUNDS.map(b => (
@@ -150,7 +151,7 @@ export function BoardToolbar({
             <Ionicons name={erase ? 'brush-outline' : 'brush'} size={20} color={erase ? DECK_MUTED : DECK_ACCENT} />
           </Pressable>
           <Pressable onPress={() => onErase(true)} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.eraser} aria-selected={erase}>
-            <MaterialCommunityIcons name="eraser" size={22} color={erase ? DECK_ACCENT : DECK_MUTED} />
+            <MaterialCommunityIcons name="eraser" size={20} color={erase ? DECK_ACCENT : DECK_MUTED} />
           </Pressable>
         </View>
         <View style={styles.group}>
@@ -170,10 +171,10 @@ export function BoardToolbar({
             <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={DECK_MUTED} />
           </Pressable>
           <Pressable onPress={onAddPage} disabled={!canAddPage} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.addPage} style={{ opacity: canAddPage ? 1 : 0.35 }}>
-            <Ionicons name="add-circle-outline" size={22} color={DECK_MUTED} />
+            <Ionicons name="add-circle-outline" size={24} color={DECK_MUTED} />
           </Pressable>
           <Pressable onPress={onDeletePage} disabled={!canDeletePage} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.deletePage} style={{ opacity: canDeletePage ? 1 : 0.35 }}>
-            <Ionicons name="remove-circle-outline" size={22} color={DECK_MUTED} />
+            <Ionicons name="remove-circle-outline" size={24} color={DECK_MUTED} />
           </Pressable>
         </View>
         {solution ? (
@@ -186,7 +187,7 @@ export function BoardToolbar({
               accessibilityLabel={labels.solveNext}
               style={{ opacity: solution.shown >= solution.total ? 0.35 : 1 }}
             >
-              <Ionicons name="chevron-down-circle-outline" size={22} color={DECK_ACCENT} />
+              <Ionicons name="chevron-down-circle-outline" size={24} color={DECK_ACCENT} />
             </Pressable>
             <Text style={[styles.pageLabel, { fontFamily: 'Almarai_400Regular', minWidth: 28 }]}>
               {solution.counter}

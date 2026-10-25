@@ -10,9 +10,19 @@
  * docs/english-grammar-g1-review.html beside the markdown sheet, and a test
  * fails when the committed copy is stale.
  */
-import { grammarUnitsForGrade, unitSentences, type GrammarSentence, type GrammarUnit } from './englishGrammar.ts';
+import {
+  ADJECTIVE_FORMS, PAST_OVERRIDES, grammarUnit, grammarUnitsForGrade, pastTense, pluralOf, unitGrade, unitSentences, type GrammarSentence, type GrammarUnit,
+} from './englishGrammar.ts';
 import { NOT_COVERED_G2 } from './englishGrammarG2.ts';
-import { hubLesson, hubLessonsForGrade } from './englishHub.ts';
+import { NOT_COVERED_G3 } from './englishGrammarG3.ts';
+import { G4_TABLES, NOT_COVERED_G4 } from './englishGrammarG4.ts';
+import { NOT_COVERED_G5 } from './englishGrammarG5.ts';
+import { G5_ITEM_LESSONS } from './englishGrammarG5Items.ts';
+import { G9_TABLES, NOT_COVERED_G9 } from './englishGrammarG9.ts';
+import { G9_ITEM_LESSONS } from './englishGrammarG9Items.ts';
+import { NOT_COVERED_G10 } from './englishGrammarG10.ts';
+import { G10_ITEM_LESSONS } from './englishGrammarG10Items.ts';
+import { allHubWords, hubLesson, hubLessonsForGrade } from './englishHub.ts';
 import { wordPicture } from './englishPictures.ts';
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -28,22 +38,26 @@ export function unitLabelAr(n: number): string {
 const MARKER: Record<string, string> = { yes: '✅', no: '❌', boy: '👦', girl: '👧' };
 
 const NOTES: Record<string, string> = {
-  'kbl-g1-eng-s1-nccd-u1_l1': 'لا يوجد نشاط «صح أم خطأ» في هذه الوحدة: لكلمتي mum وdad فقط صورة واضحة، وصورة brother قد تُقرأ boy.',
+  'kbl-g1-eng-s1-nccd-u1_l1': 'لا يوجد نشاط «صح أم خطأ» في هذه الوحدة: لكلمتي mum و dad فقط صورة واضحة، وصورة brother قد تُقرأ boy.',
   'kbl-g1-eng-s2-nccd-u0_l1': 'وحدة الترحيب لا تحتوي كلمات العائلة، لذلك تستخدم نمطي الوحدة الثانية (I\'ve got) والوحدة الرابعة (favourite toy).',
 };
 
 /** Per grade: lesson id → why part of it is not covered (Grade 1 uses `NOTES` instead). */
-const NOT_COVERED: Record<number, Record<string, string[]>> = { 2: NOT_COVERED_G2 };
+const NOT_COVERED: Record<number, Record<string, string[]>> = { 2: NOT_COVERED_G2, 3: NOT_COVERED_G3, 4: NOT_COVERED_G4, 5: NOT_COVERED_G5, 9: NOT_COVERED_G9, 10: NOT_COVERED_G10 };
 
-/** Wraps each run of English in `dir="ltr"`, so a phrase with punctuation does not scramble inside an Arabic line. */
+/**
+ * Wraps each run of English in `dir="ltr"`, so a phrase with punctuation does not scramble inside an Arabic line.
+ * A conjunction «و» that is a word of its own and touches an English word («وafter») gets a space first: next to
+ * the left-to-right run it reads like a stray letter. A «و» inside a longer Arabic word is left alone.
+ */
 export const ltr = (s: string) =>
-  esc(s).replace(/[A-Za-z][A-Za-z0-9'’-]*(?:[ ,.?!/…]+[A-Za-z0-9'’][A-Za-z0-9'’-]*)*[.?!]?/g, m => `<span dir="ltr">${m}</span>`);
+  esc(s).replace(/(^|[\s(،؛:؟«])و(?=[A-Za-z])/g, '$1و ').replace(/[A-Za-z][A-Za-z0-9'’-]*(?:[ ,.?!/…]+[A-Za-z0-9'’][A-Za-z0-9'’-]*)*[.?!]?/g, m => `<span dir="ltr">${m}</span>`);
 
 function yesNoCell(s: GrammarSentence): string {
   const y = s.yesNo;
   if (!y) return '<span class="none">لا يظهر</span>';
   const line = (q: string, a: string, cls: string) => `<span class="yn ${cls}" dir="ltr">${esc(q)} → ${esc(a)}</span>`;
-  if (y.kind === 'marker') return line(y.question, y.answer ? y.yes : y.no, y.answer ? 'yn-yes' : 'yn-no');
+  if (y.kind !== 'match') return line(y.question, y.answer ? y.yes : y.no, y.answer ? 'yn-yes' : 'yn-no');
   return line(y.question, y.yes, 'yn-yes') + (y.otherQuestion ? line(y.otherQuestion, y.no, 'yn-no') : '');
 }
 
@@ -61,26 +75,35 @@ export function picture(word: string | null, count: 1 | 2, marker: string | null
   return `<span class="pic"><span class="pic-art">${glyph}${art}</span>${label}</span>`;
 }
 
+/** When Build the sentence builds only the answer, the form says so: a teacher signs what the child orders. */
+function buildHalf(s: GrammarSentence): string {
+  return s.build?.prompt ? `<small class="build-half" dir="ltr">Build: ${esc(s.build.text)}</small>` : '';
+}
+
 function chooseCell(s: GrammarSentence): string {
   if (!s.choose) return '<span class="none">لا يظهر</span>';
   return `<span class="opt opt-right" dir="ltr">${esc(s.choose.right)}</span><span class="opt opt-wrong" dir="ltr">${esc(s.choose.wrong)}</span>`;
 }
 
 function falseCell(s: GrammarSentence): string {
+  // A picture-free comparison (Grade 4, S1 U4): the false twin is the sentence a child is told is false.
+  if (s.claim) return `<span class="yn yn-no" dir="ltr">${esc(s.claim.falseText)}</span>`;
   if (!s.picture || !s.falsePicture) return '<span class="none">لا يظهر</span>';
   return picture(s.falsePicture, s.picture.count, s.marker);
 }
 
-const patternText = (t: string) => t.replace(/\{(?:a:|s:)?\w+\}/g, '…');
+/** The pattern with its slots as «…». Grades 1–3 keep the older cleaner, which leaves `{v:act}` as written, so their printed forms do not change. */
+const patternText = (t: string, grade: number) => t.replace(grade >= 4 ? /\{(?:a:|s:|v:|3:|ing:|cmp:|sup:|ed:)?\w+\}/g : /\{(?:a:|s:)?\w+\}/g, '…');
 
 function renderUnit(u: GrammarUnit, idx: number): string {
+  if (u.items?.length) return renderAuthoredUnit(u, idx);
   const lesson = hubLesson(u.lessonId)!;
   const sentences = unitSentences(u);
   const withYesNo = sentences.some(s => s.yesNo);
   const rows = sentences.map((s, i) => `
         <tr>
           <td class="num">${AR_DIGITS(i + 1)}</td>
-          <td class="sentence" dir="ltr">${esc(s.text)}</td>
+          <td class="sentence" dir="ltr">${esc(s.text)}${buildHalf(s)}</td>
           <td>${s.picture ? picture(s.picture.word, s.picture.count, s.marker) : picture(null, 1, s.marker)}</td>
           <td class="choose">${chooseCell(s)}</td>
           <td>${falseCell(s)}</td>${withYesNo ? `\n          <td class="yesno">${yesNoCell(s)}</td>` : ''}
@@ -94,7 +117,7 @@ function renderUnit(u: GrammarUnit, idx: number): string {
     <header class="unit-head">
       <div class="unit-meta"><span>${sem}</span><span>${unitLabelAr(lesson.unitNumber)}</span><span>${sentenceCountAr(sentences.length)}</span></div>
       <h2><span dir="ltr">${esc(lesson.unitTitle)}</span> <span class="unit-ar">${esc(lesson.unitTitleAr)}</span></h2>
-      <ul class="patterns" dir="ltr">${u.patterns.map(p => `<li>${esc(patternText(p.text))}</li>`).join('')}</ul>
+      <ul class="patterns" dir="ltr">${u.patterns.map(p => `<li>${esc(patternText(p.text, lesson.grade))}</li>`).join('')}</ul>
       ${note}${notCoveredList(NOT_COVERED[hubLesson(u.lessonId)!.grade]?.[u.lessonId])}
     </header>
     <div class="table-wrap">
@@ -106,6 +129,115 @@ function renderUnit(u: GrammarUnit, idx: number): string {
             <th>الصورة</th>
             <th>«اختر الكلمة»<small>الصحيح ثم الخاطئ</small></th>
             <th>«صح أم خطأ»<small>الصورة الخاطئة</small></th>${withYesNo ? `\n            <th>«نعم أم لا»<small>السؤال والجواب، ثم سؤال «لا»</small></th>` : ''}
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>${rows}
+        </tbody>
+      </table>
+    </div>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>`;
+}
+
+/** Common words a Grade 9 sentence may use without a hub list naming them: the form does not ask a teacher about these. */
+const FUNCTION_WORDS = new Set((
+  'a an the this that these those i you he she it we they me him her us them my your his its our their mine yours ' +
+  'is am are was were be been being do does did done doing have has had having will would shall should can could may might must ' +
+  'not no yes and or but so because if when while where who whose which what how why to of in on at by for with from about into over under ' +
+  'after before during until up down out off as than then there here very too also just already ever never always usually often sometimes ' +
+  'today tomorrow yesterday now tonight morning night week month year weekend every some any many much more most few little lot lots ' +
+  'one two three four five six seven eight nine ten first last next all both each other another same ' +
+  "don't doesn't didn't isn't aren't wasn't weren't hasn't haven't hadn't won't wouldn't shouldn't couldn't can't mustn't " +
+  "i'm i'd i'll i've you're he's she's it's we're they're that's there's what's let's oclock o'clock"
+).split(' '));
+
+const HUB_VOCABULARY = (() => {
+  const s = new Set<string>();
+  for (const w of allHubWords()) for (const p of w.toLowerCase().split(/[^a-z']+/)) if (p) s.add(p);
+  return s;
+})();
+
+/** A word is known when it, or a plain inflection of it (-s, -es, -ed, -ing, -ies), is a hub word or a function word. */
+function knownWord(word: string): boolean {
+  const known = (w: string) => FUNCTION_WORDS.has(w) || HUB_VOCABULARY.has(w);
+  if (known(word)) return true;
+  const stems = [
+    word.replace(/ies$/, 'y'), word.replace(/(es|s|d)$/, ''), word.replace(/ed$/, ''), word.replace(/ed$/, 'e'),
+    word.replace(/ing$/, ''), word.replace(/ing$/, 'e'), word.replace(/(.)\1ing$/, '$1'), word.replace(/(.)\1ed$/, '$1'),
+    word.replace(/'s$/, ''), word.replace(/er$/, ''), word.replace(/ly$/, ''),
+  ];
+  return stems.some(s => s !== word && s.length > 1 && known(s));
+}
+
+/** The words of a unit's sentences (and twins) found in no hub list, sorted: for the teacher to approve or strike. */
+function wordsOutsideLists(sentences: GrammarSentence[]): string[] {
+  const out = new Set<string>();
+  for (const s of sentences) for (const tok of [...s.tokens, ...(s.claim?.falseText.split(' ') ?? [])]) {
+    const w = tok.toLowerCase().replace(/[.,?!]+$/, '');
+    if (/^[a-z']+$/.test(w) && !knownWord(w)) out.add(w);
+  }
+  return [...out].sort();
+}
+
+const KIND_AR = 'النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.';
+
+/** A lesson of hand-written items (Grade 5 or 9): sentence, correct answer and distractor, the silent twin, and the kind, grouped by topic. */
+function renderAuthoredUnit(u: GrammarUnit, idx: number): string {
+  const lesson = hubLesson(u.lessonId)!;
+  const sentences = unitSentences(u);
+  const statement = [...G5_ITEM_LESSONS, ...G9_ITEM_LESSONS, ...G10_ITEM_LESSONS].find(l => l.lessonId === u.lessonId)!.statement;
+  const topics = [...new Set(sentences.map(s => s.patternId))];
+  let n = 0;
+  const rows = topics.map(topic => {
+    const own = sentences.filter(s => s.patternId === topic);
+    const head = `
+        <tr class="topic-row"><th colspan="7"><span dir="ltr">${esc(topic)}</span> · ${AR_DIGITS(own.length)}</th></tr>`;
+    return head + own.map(s => `
+        <tr>
+          <td class="num">${AR_DIGITS(++n)}</td>
+          <td class="sentence" dir="ltr">${esc(s.text)}</td>
+          <td class="choose">${chooseCell(s)}</td>
+          <td>${falseCell(s)}</td>
+          <td><span class="kind kind-${s.kind}" dir="ltr">${s.kind}</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>`).join('');
+  }).join('');
+  const sem = lesson.semester === 1 ? 'الفصل الأول' : 'الفصل الثاني';
+  const outside = wordsOutsideLists(sentences);
+  return `
+  <section class="unit" id="unit-${idx + 1}">
+    <header class="unit-head">
+      <div class="unit-meta"><span>${sem}</span><span>${unitLabelAr(lesson.unitNumber)}</span><span>${sentenceCountAr(sentences.length)}</span></div>
+      <h2><span dir="ltr">${esc(lesson.unitTitle)}</span> <span class="unit-ar">${esc(lesson.unitTitleAr)}</span> <span class="lesson-id" dir="ltr">${esc(lesson.id.replace(/^kbl-(g\d+-)?eng-/, ''))}</span></h2>
+      <p class="unit-note"><b>تأكدوا أولًا:</b> هل يطابق هذا الدرس صفحة الكتاب؟ يقول الكتاب: <span dir="ltr">«${esc(statement)}»</span></p>
+      <ul class="patterns" dir="ltr">${topics.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+      <p class="unit-note">${KIND_AR}</p>
+      <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">${outside.length ? esc(outside.join(', ')) : '—'}</span></p>
+      ${notCoveredList(NOT_COVERED[unitGrade(u)]?.[u.lessonId])}
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>«اختر الكلمة»<small>الإجابة الصحيحة ثم المموِّه</small></th>
+            <th>«صح أم خطأ»<small>الجملة الخاطئة (بلا صوت)</small></th>
+            <th>النوع</th>
             <th class="tick">✓</th>
             <th class="note">ملاحظات</th>
           </tr>
@@ -149,7 +281,38 @@ interface GradeCopy {
   acts: string;
   checks: string[];
   extraCss: string;
+  /** Extra intro HTML after the legend line (Grade 4: the revision unit that is not a hub lesson). */
+  extra?: string;
 }
+
+const YESNO_CSS = `
+  .yn { display: block; font-family: var(--latin); font-size: .88rem; white-space: nowrap; }
+  .yn-yes { color: var(--right); }
+  .yn-no { color: var(--wrong); }
+  td.yesno { white-space: nowrap; }
+  .not-covered { margin: 0; padding-inline-start: 1.3em; display: grid; gap: 4px; font-size: .92rem; color: var(--muted); }
+  .not-covered [dir="ltr"] { font-family: var(--latin); }`;
+
+/**
+ * The forms are right-to-left and the cells that hold English are `white-space: nowrap`, so in print the widest
+ * row sets the table's width and whatever does not fit is cut off the LEFT edge of the page (the kind chip, the
+ * tick box and the notes). On paper the sentence and the false twin wrap, and the type is a little smaller.
+ * Screen rendering is untouched: everything is inside `@media print`. Grades 5, 9 and 10 share this block.
+ */
+const PRINT_FIT_CSS = `
+  @media print {
+    td.sentence, .yn { white-space: normal; }
+    th.note, td.note { width: 12%; }
+    td.sentence { font-size: .9rem; }
+    th, td { padding: 4px 5px; }
+    .yn, .opt { font-size: .82rem; }
+  }`;
+
+/** Grades 3 and 4 also have the picture, «اختر الكلمة» and yes/no columns, so those wrap too on paper. */
+const PRINT_FIT_PICTURES_CSS = PRINT_FIT_CSS + `
+  @media print {
+    td.choose, td.yesno, .build-half { white-space: normal; }
+  }`;
 
 const GRADE_COPY: Record<number, GradeCopy> = {
   1: {
@@ -188,15 +351,205 @@ const GRADE_COPY: Record<number, GradeCopy> = {
       'في «نعم أم لا»: هل الجواب القصير هو الصحيح للسؤال وللصورة؟',
       'هل الكلمات مناسبة لطالب الصف الثاني؟',
     ],
-    extraCss: `
-  .yn { display: block; font-family: var(--latin); font-size: .88rem; white-space: nowrap; }
-  .yn-yes { color: var(--right); }
-  .yn-no { color: var(--wrong); }
-  td.yesno { white-space: nowrap; }
-  .not-covered { margin: 0; padding-inline-start: 1.3em; display: grid; gap: 4px; font-size: .92rem; color: var(--muted); }
-  .not-covered [dir="ltr"] { font-family: var(--latin); }`,
+    extraCss: YESNO_CSS,
+  },
+  3: {
+    title: 'مراجعة قواعد الصف الثالث',
+    eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف الثالث',
+    lead: (total, units) => `أضفنا إلى ركن اللغة الإنجليزية في الصف الثالث أنشطة لتثبيت القواعد على ${AR_DIGITS(units)} وحدات. القواعد هنا في معظمها صيغ أفعال (<span dir="ltr">play / plays</span> و <span dir="ltr">have / has</span> و <span dir="ltr">Is / Are</span>)، ولذلك تجدون وحدات بلا صور لأن كلماتها أفعال وعبارات، وما استُبعد مذكور مع سببه في كل وحدة. الجمل مبنية من نمط القواعد في كل وحدة من الكتاب ومن كلمات الوحدة نفسها. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة.`,
+    acts: `
+      <div class="act"><b>اختر الكلمة</b>جملة فيها فراغ، وخياران: الصحيح ونقيضه في القاعدة، مثل <span dir="ltr">plays / play</span> أو <span dir="ltr">Does / Do</span> أو <span dir="ltr">There's / There isn't</span>. تظهر معها صورة حيث توجد صورة صادقة فقط.</div>
+      <div class="act"><b>رتّب الجملة</b>كلمات الجملة مبعثرة، ويرتّبها الطالب بالنقر. حتى ٩ كلمات. إن زادت الجملة (سؤال وجواب) يُرتّب الجواب وحده ويظهر السؤال فوق الكلمات؛ ويُكتب ذلك تحت الجملة في القائمة.</div>
+      <div class="act"><b>صح أم خطأ</b>جملة بجانب صورة: نصف الأسئلة بصورتها الصحيحة ونصفها بصورة كلمة أخرى من الوحدة. في الوحدات المصوّرة فقط.</div>
+      <div class="act"><b>نعم أم لا</b>صورة وسؤال، ويختار الطالب الجواب القصير. في أسئلة <span dir="ltr">Can penguins swim?</span> يجيب الطالب مما يعرفه عن الحيوان، وفي <span dir="ltr">Is there a sofa?</span> تدل ✅ أو ❌ على الجواب.</div>
+    `,
+    checks: [
+      'هل الجملة صحيحة لغويًا، وبالصيغة التي يدرّسها الكتاب؟',
+      'هل الصورة (إن وُجدت) تناسب الجملة؟',
+      'في «اختر الكلمة»: هل الخيار الخاطئ خاطئ بوضوح؟ وهل في الجملة أو الصورة ما يدل على الصحيح؟',
+      'في «رتّب الجملة»: هل يكفي ترتيب الجواب وحده حين تطول الجملة؟',
+      'في «نعم أم لا»: هل الجواب القصير هو الصحيح للسؤال وللصورة؟ وهل معلومات الحيوانات صحيحة؟',
+      'هل الكلمات مناسبة لطالب الصف الثالث؟',
+    ],
+    extraCss: YESNO_CSS + `
+  .build-half { display: block; color: var(--muted); font-size: .78rem; font-weight: 400; white-space: nowrap; }` + PRINT_FIT_PICTURES_CSS,
+  },
+  4: {
+    title: 'مراجعة قواعد الصف الرابع',
+    eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف الرابع',
+    lead: (total, units) => `أضفنا إلى ركن اللغة الإنجليزية في الصف الرابع أنشطة لتثبيت القواعد على ${AR_DIGITS(units)} وحدات. قواعد هذا الصف مقارنات (<span dir="ltr">higher / the deepest / more exciting</span>) وأفعال مساعدة (<span dir="ltr">must / can</span>) وماضٍ بسيط، ولا تدل صورة على زمن أو مقارنة، لذلك تجدون وحدات بلا صور، وما استُبعد مذكور مع سببه في كل وحدة. المقارنات والقواعد والأفعال الشاذة وتصنيف الأطعمة وغيرها مكتوب في <b>صفحة البيانات</b> بعد هذه المقدمة لتتأكدوا منه قبل أي جملة. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة.`,
+    acts: `
+      <div class="act"><b>اختر الكلمة</b>جملة فيها فراغ، وخياران صيغتان حقيقيتان: <span dir="ltr">higher / high</span> أو <span dir="ltr">the deepest / the deeper</span> أو <span dir="ltr">used / use</span> أو <span dir="ltr">must / mustn't</span>. تظهر معها صورة حيث توجد صورة صادقة فقط.</div>
+      <div class="act"><b>رتّب الجملة</b>كلمات الجملة مبعثرة، ويرتّبها الطالب بالنقر. حتى ٩ كلمات. إن زادت الجملة (سؤال وجواب) يُرتّب الجواب وحده ويظهر السؤال فوق الكلمات؛ ويُكتب ذلك تحت الجملة في القائمة.</div>
+      <div class="act"><b>صح أم خطأ</b>جملة بجانب صورة، أو بلا صورة في المقارنات: تُعرض الجملة نفسها، أو توأمها الخاطئ بعد تبديل الطرفين (<span dir="ltr">The hill is higher than the mountain.</span>).</div>
+      <div class="act"><b>نعم أم لا</b>سؤال بصورة أو بلا صورة. في المقارنات (<span dir="ltr">Is the mountain higher than the hill?</span>) يجيب الطالب مما يعرفه، وفي <span dir="ltr">Was there a market?</span> تدل ✅ أو ❌ على أنه كان موجودًا.</div>
+    `,
+    checks: [
+      'هل الجملة صحيحة لغويًا، وبالصيغة التي يدرّسها الكتاب؟',
+      'هل الصورة (إن وُجدت) تناسب الجملة؟',
+      'في «اختر الكلمة»: هل الخيار الخاطئ صيغة حقيقية خاطئة بوضوح؟ وهل في الجملة ما يدل على الصحيح؟',
+      'في «رتّب الجملة»: هل يكفي ترتيب الجواب وحده حين تطول الجملة؟',
+      'في صفحة البيانات: هل كل زوج في المقارنات صحيح دون جدال؟ وهل تصنيف الأطعمة وقواعد must و mustn\'t والأفعال الشاذة وظروف الحال سليمة؟',
+      'هل تُقرأ ✅ و❌ بوضوح على أنها «كان موجودًا» و«لم يكن موجودًا» في الوحدة الثامنة؟',
+      'هل الكلمات مناسبة لطالب الصف الرابع؟',
+    ],
+    extra: '<p class="meta-line">الوحدة السادسة <span dir="ltr">Hello from Hamed!</span> مراجعة لقواعد الفصل الأول ولا قائمة كلمات لها، فليست درسًا في الركن ولا قواعد لها هنا. الأعداد الترتيبية (من <span dir="ltr">first</span> إلى <span dir="ltr">thirty-first</span>) غير مشمولة: لا يعطي الكتاب لها جملة نموذجية.</p>',
+    extraCss: YESNO_CSS + `
+  .build-half { display: block; color: var(--muted); font-size: .78rem; font-weight: 400; white-space: nowrap; }
+  .data { display: grid; gap: 14px; }
+  .data .table-wrap table { min-width: 0; }
+  .data-table td { font-size: .95rem; }
+  @media print { .data { break-before: page; } }` + PRINT_FIT_PICTURES_CSS,
+  },
+  5: {
+    title: 'مراجعة قواعد الصف الخامس',
+    eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف الخامس',
+    lead: (total, units) => `هذه مراجعة قواعد الصف الخامس: ${AR_DIGITS(units)} دروس كُتبت جملها واحدةً واحدة، لكل جملة إجابتها الصحيحة وخيار مموِّه غير سليم لغويًا. الكتاب يعطي موضوع كل درس ومثالًا أو مثالين فقط، فكل جملة هنا كتبناها نحن، وتُراجَع هنا قبل أي ظهور لها. لا صور في أي درس. <b>لن يرى الطلاب أي درس قبل أن توافقوا عليه.</b> هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة.`,
+    acts: `
+      <div class="act"><b>اختر الكلمة</b>جملة فيها فراغ، وخياران: الصحيح أمام المموِّه، مثل <span dir="ltr">washes / wash</span> أو <span dir="ltr">was looking / was look</span>.</div>
+      <div class="act"><b>رتّب الجملة</b>كلمات الجملة مبعثرة، ويرتّبها الطالب بالنقر. حتى ٩ كلمات.</div>
+      <div class="act"><b>صح أم خطأ</b>تُعرض الجملة نفسها، أو توأمها الخاطئ باستبدال الإجابة بالمموِّه. <b>هذا النشاط صامت:</b> لا يُسمَع فيه أي جملة، صحيحة أو خاطئة، حتى لا يسمع الطالب إنجليزية خاطئة ولا تدل الصامتة على الجواب.</div>
+    `,
+    checks: [
+      'هل الجملة صحيحة لغويًا، وبالصيغة التي يدرّسها الكتاب؟',
+      'هل رقم الدرس يطابق صفحة الكتاب؟ (يقول الكتاب بالإنجليزية في أعلى كل صفحة.)',
+      'هل أي مموِّه مقبول أحيانًا في صفك؟',
+      'في «الكلمات خارج قوائم المفردات»: وافقوا على الكلمات المناسبة للصف الخامس واشطبوا الباقي.',
+      'هل جمل المضارع التام واضحة دون مقارنة بالماضي البسيط؟',
+      'هل طول الجمل مناسب لـ «رتّب الجملة»؟',
+    ],
+    // YESNO_CSS is what styles the false twin (`.yn`) and the not-covered list; without it the twin wraps one word per line.
+    extraCss: YESNO_CSS + `
+  .kind { font-family: var(--latin); font-size: .82rem; border-radius: 6px; padding: 1px 8px; border: 1px solid var(--rule); }
+  .kind-form { background: var(--wrong-bg); color: var(--wrong); }
+  .kind-meaning { background: var(--tint); color: var(--teal); }
+  .topic-row th { text-align: start; background: var(--tint); font-family: var(--latin); font-weight: 600; }
+  .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }` + PRINT_FIT_CSS,
+  },
+  9: {
+    title: 'مراجعة قواعد الصف التاسع',
+    eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف التاسع',
+    lead: (total, units) => `هذه مراجعة قواعد الصف التاسع: درسان من الوحدة الرابعة «A good buy» (المقارنات والمقدّرات) بصفحة بياناتهما، ثم ${AR_DIGITS(units - 2)} درسًا آخر كُتبت جمله واحدةً واحدة، لكل جملة إجابتها الصحيحة وخيار مموِّه. الكتاب يعطي أهدافًا فقط دون جمل نموذجية، فكل جملة هنا كتبناها نحن، وتُراجَع هنا قبل أي ظهور لها. لا صور في أي درس. <b>لن يرى الطلاب أي درس قبل أن توافقوا عليه.</b> هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة.`,
+    acts: `
+      <div class="act"><b>اختر الكلمة</b>جملة فيها فراغ، وخياران: <span dir="ltr">healthier / healthy</span> أو <span dir="ltr">many / much</span> في الوحدة الرابعة، والإجابة الصحيحة أمام المموِّه في الدروس المكتوبة (<span dir="ltr">is crying / cries</span>).</div>
+      <div class="act"><b>رتّب الجملة</b>كلمات الجملة مبعثرة، ويرتّبها الطالب بالنقر. حتى ٩ كلمات.</div>
+      <div class="act"><b>صح أم خطأ</b>تُعرض الجملة نفسها، أو توأمها الخاطئ: في المقارنات بتبديل الطرفين (<span dir="ltr">Doughnuts are healthier than carrots.</span>)، وفي الدروس المكتوبة باستبدال الإجابة بالمموِّه. <b>في الدروس المكتوبة هذا النشاط صامت:</b> لا يُسمَع فيه أي جملة، صحيحة أو خاطئة، حتى لا يسمع الطالب إنجليزية خاطئة ولا تدل الصامتة على الجواب.</div>
+      <div class="act"><b>نعم أم لا</b>في مقارنات الوحدة الرابعة فقط: <span dir="ltr">Are carrots healthier than doughnuts?</span> ويجيب الطالب مما يعرفه. لا «نعم أم لا» في الدروس المكتوبة.</div>
+    `,
+    checks: [
+      'هل الجملة صحيحة لغويًا، وبالصيغة التي يدرّسها الكتاب؟',
+      'للدروس المكتوبة: هل رقم الدرس يطابق صفحة الكتاب؟ (يقول الكتاب بالإنجليزية في أعلى كل صفحة.)',
+      'هل أي مموِّه مقبول أحيانًا في صفك؟ وهل النوع (form أو meaning) صحيح لكل جملة؟',
+      'في «الكلمات خارج قوائم المفردات»: وافقوا على الكلمات المناسبة للصف التاسع واشطبوا الباقي.',
+      'في صفحة البيانات (الوحدة الرابعة): هل كل زوج في المقارنات صحيح دون جدال؟ وهل تصنيف الأطعمة (معدود أم غير معدود) سليم؟',
+      'هل جمل بلا سياق، مثل «How many grapes are there?»، مقبولة في الصف التاسع، أم تفضلون أن تأتي كل جملة داخل مشهد قصير؟',
+      'هل طول الجمل مناسب لـ «رتّب الجملة»؟',
+    ],
+    extraCss: YESNO_CSS + `
+  .build-half { display: block; color: var(--muted); font-size: .78rem; font-weight: 400; white-space: nowrap; }
+  .data { display: grid; gap: 14px; }
+  .data .table-wrap table { min-width: 0; }
+  .data-table td { font-size: .95rem; }
+  .kind { font-family: var(--latin); font-size: .82rem; border-radius: 6px; padding: 1px 8px; border: 1px solid var(--rule); }
+  .kind-form { background: var(--wrong-bg); color: var(--wrong); }
+  .kind-meaning { background: var(--tint); color: var(--teal); }
+  .topic-row th { text-align: start; background: var(--tint); font-family: var(--latin); font-weight: 600; }
+  .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }
+  @media print { .data { break-before: page; } }` + PRINT_FIT_CSS,
+  },
+  10: {
+    title: 'مراجعة قواعد الصف العاشر',
+    eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف العاشر',
+    lead: (total, units) => `هذه مراجعة قواعد الصف العاشر، الفصلان الأول والثاني: ${AR_DIGITS(units)} ${units > 10 ? 'درسًا' : 'دروس'} كُتبت جملها واحدةً واحدة، لكل جملة إجابتها الصحيحة وخيار مموِّه. الكتاب يعطي هدفًا لكل درس دون جمل نموذجية، فكل جملة هنا كتبناها نحن، وتُراجَع هنا قبل أي ظهور لها. كثير من الجمل يختبر الاختيار بين صيغتين (المضارع البسيط والمستمر، a أو the، mustn't أو don't have to، الشرط الأول أو الثاني)، فنوع المموِّه مطبوع لكل جملة: <b>form</b> غير سليم لغويًا، و <b>meaning</b> سليم لكن كلمة في الجملة نفسها تستبعده. لا صور في أي درس. <b>لن يرى الطلاب أي درس قبل أن توافقوا عليه</b>، ودرس أدوات التعريف ودروس الفصل الثاني العشرة لم تُستخرج مفرداتها بعد، فلا تظهر في الركن إلا بعد توقيعكم. هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة.`,
+    acts: `
+      <div class="act"><b>اختر الكلمة</b>جملة فيها فراغ، وخياران: الإجابة الصحيحة أمام المموِّه، مثل <span dir="ltr">had started / started</span> أو <span dir="ltr">where it is / where is it</span>.</div>
+      <div class="act"><b>رتّب الجملة</b>كلمات الجملة مبعثرة، ويرتّبها الطالب بالنقر. حتى ٩ كلمات.</div>
+      <div class="act"><b>صح أم خطأ</b>تُعرض الجملة نفسها، أو توأمها الخاطئ باستبدال الإجابة بالمموِّه. <b>هذا النشاط صامت:</b> لا يُسمَع فيه أي جملة، صحيحة أو خاطئة، حتى لا يسمع الطالب إنجليزية خاطئة ولا يدل الصمت على الجواب.</div>
+    `,
+    checks: [
+      'هل الجملة صحيحة لغويًا، وبالصيغة التي يدرّسها الكتاب؟',
+      'هل رقم الدرس يطابق صفحة الكتاب؟ (يقول الكتاب بالإنجليزية في أعلى كل صفحة.)',
+      'في الجمل من نوع meaning: هل الكلمة المحدِّدة في الجملة تستبعد المموِّه فعلًا؟ وهل يمكن أن يقبل طالب جيد المموِّه؟',
+      'هل أي مموِّه من نوع form مقبول أحيانًا في صفك؟',
+      'في درس أدوات التعريف والمضارع التام البسيط والمستمر والجمل الشرطية وجمل التخمين (must و can\'t): هل الجمل واضحة دون سياق أوسع؟',
+      'في «الكلمات خارج قوائم المفردات»: وافقوا على الكلمات المناسبة للصف العاشر واشطبوا الباقي.',
+      'هل طول الجمل مناسب لـ «رتّب الجملة»؟',
+    ],
+    // YESNO_CSS is what styles the false twin (`.yn`) and the not-covered list; without it the twin wraps one word per line.
+    extraCss: YESNO_CSS + `
+  .kind { font-family: var(--latin); font-size: .82rem; border-radius: 6px; padding: 1px 8px; border: 1px solid var(--rule); }
+  .kind-form { background: var(--wrong-bg); color: var(--wrong); }
+  .kind-meaning { background: var(--tint); color: var(--teal); }
+  .topic-row th { text-align: start; background: var(--tint); font-family: var(--latin); font-weight: 600; }
+  .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }` + PRINT_FIT_CSS,
   },
 };
+
+/** One checkable table of the data page. Cells are English or Arabic; English runs are set left-to-right. */
+function dataTable(title: string, headers: string[], rows: string[][]): string {
+  const head = headers.map(h => `<th>${esc(h)}</th>`).join('');
+  const body = rows.map(r => `<tr>${r.map(c => `<td>${ltr(c)}</td>`).join('')}</tr>`).join('');
+  return `
+    <h3 class="sub-h">${esc(title)} <span class="meta-line">(${AR_DIGITS(rows.length)})</span></h3>
+    <div class="table-wrap"><table class="data-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+
+/** The adjectives of Grade 4's S1 U4: the shared table has grown (Grade 9), but Grade 4's printed page lists only its own. */
+const GRADE_FOUR_ADJECTIVES = ['high', 'deep', 'wide', 'beautiful', 'boring', 'colourful', 'dangerous', 'delicious', 'difficult', 'exciting', 'interesting'];
+
+/** The data page's frame: a heading, one line of why, then the tables. */
+function dataSection(tables: string[]): string {
+  return `
+  <section class="data">
+    <h2>صفحة البيانات: ما يجب أن تتأكدوا منه</h2>
+    <p class="meta-line">هذه القوائم هي المعلومات التي تُبنى منها الجمل. إن كان فيها خطأ فكل الجمل المبنية عليه خاطئة.</p>${tables.join('')}
+  </section>`;
+}
+
+/** Everything in Grade 4 that is a claim rather than a sentence, built from the same rows and tables the units use. */
+function gradeFourDataPage(): string {
+  const sentences = (lesson: string, pattern: string) => unitSentences(grammarUnit(lesson)!).filter(s => s.patternId === pattern);
+  const U4 = 'kbl-g4-eng-s1-nccd-u4_l1';
+  const U5 = 'kbl-g4-eng-s1-nccd-u5_l1';
+  const T = G4_TABLES;
+  const usedVerbs = new Set<string>();
+  const verbs = [...T.pastRows.map(r => r.verb), ...T.irregularRows.map(r => r.verb), ...T.didRows.map(r => r.verb)];
+  for (const v of verbs) usedVerbs.add(v);
+  const pastKind = (v: string) => (v === 'stop' ? 'تضعيف الحرف الأخير' : PAST_OVERRIDES[v] ? 'شاذ (من الجدول)' : 'منتظم (قاعدة -ed)');
+  const tables = [
+    dataTable('المقارنات: الجملة الصحيحة وتوأمها الخاطئ', ['الجملة الصحيحة', 'توأمها الخاطئ في «صح أم خطأ»'], sentences(U4, 'cmp').map(s => [s.text, s.claim!.falseText])),
+    dataTable('صيغ الصفات', ['الصفة', 'المقارنة', 'التفضيل'], Object.entries(ADJECTIVE_FORMS).filter(([a]) => GRADE_FOUR_ADJECTIVES.includes(a)).map(([a, [c, sup]]) => [a, c, sup])),
+    dataTable('الأطعمة: معدودة أم غير معدودة', ['الطعام', 'التصنيف'], [
+      ...T.foodPlural.map(f => [f, 'معدود بالجمع: There are a lot of …']),
+      ...T.foodUncountable.map(f => [f, 'غير معدود: There\'s a lot of …']),
+      ['milkshake', 'مفرد معدود: خارج جمل المقدار'],
+    ]),
+    dataTable('قواعد must و mustn\'t', ['القاعدة'], [...sentences(U5, 'must'), ...sentences(U5, 'mustnt')].map(s => [s.text])),
+    dataTable('البلدان والجنسيات', ['البلد', 'الجنسية'], T.countryRows.map(r => [r.country, r.nat])),
+    dataTable('أفعال الماضي', ['الفعل', 'الماضي', 'النوع'], [...usedVerbs].sort().map(v => [v, pastTense(v), pastKind(v)])),
+    dataTable('الجدول الدراسي (مخترَع: ليس معلومة)', ['المادة', 'اليوم', 'الساعة'], T.timetable.map(r => [r.subject, r.day, r.time])),
+    dataTable('ظروف الحال مع الأفعال', ['الفعل', 'الظرف'], [...T.manner.map(r => [r.act, r.adv]), ...T.well.map(r => [r.act, 'well'])]),
+  ];
+  return dataSection(tables);
+}
+
+/** The Grade 9 adjectives (S1 U4): the shared table also holds Grade 4's. */
+const GRADE_NINE_ADJECTIVES = ['cheap', 'healthy', 'tasty', 'expensive', 'fattening', 'filling', 'nutritious', 'popular'];
+
+/** What a Grade 9 teacher checks: every claim the sentences are built from, from the same rows the units use. */
+function gradeNineDataPage(): string {
+  const sentences = (pattern: string) => unitSentences(grammarUnit('kbl-g9-eng-s1-nccd-u4_l1')!).filter(s => s.patternId === pattern);
+  const T = G9_TABLES;
+  return dataSection([
+    dataTable('المقارنات: الجملة الصحيحة وتوأمها الخاطئ', ['الجملة الصحيحة', 'توأمها الخاطئ في «صح أم خطأ»'], [...sentences('cmppl'), ...sentences('cmpmass')].map(s => [s.text, s.claim!.falseText])),
+    dataTable('صيغ الصفات', ['الصفة', 'المقارنة', 'التفضيل'], Object.entries(ADJECTIVE_FORMS).filter(([a]) => GRADE_NINE_ADJECTIVES.includes(a)).map(([a, [c, sup]]) => [a, c, sup])),
+    dataTable('الأطعمة: معدودة أم غير معدودة', ['الطعام', 'التصنيف'], [
+      ...T.foodCount.map(f => [pluralOf(f), 'معدود بالجمع: many / a few']),
+      ...T.foodMass.map(f => [f, 'غير معدود: much / a little']),
+    ]),
+    dataTable('جمل الرأي (لا تُسأل صحةً)', ['الجملة'], sentences('opinion').map(s => [s.text])),
+  ]);
+}
 
 export function renderGrammarReviewHtml(grade = 1): string {
   const copy = GRADE_COPY[grade]!;
@@ -315,6 +668,9 @@ export function renderGrammarReviewHtml(grade = 1): string {
     .sheet { gap: 0; max-width: none; }
     .intro { max-width: none; }
     .unit { break-before: page; }
+    /* A grid places the sign-off where the table would have ended without the page break, over its last rows. */
+    .unit { display: block; }
+    .unit > * + * { margin-top: 14px; }
     .table-wrap { overflow: visible; border-radius: 0; }
     table { min-width: 0; }
     tr, .signoff { break-inside: avoid; }
@@ -356,8 +712,8 @@ export function renderGrammarReviewHtml(grade = 1): string {
       <span><span class="opt opt-right" dir="ltr">right</span> الخيار الصحيح</span>
       <span><span class="opt opt-wrong" dir="ltr">wrong</span> الخيار الخاطئ</span>
     </div>
-    <p class="meta-line">«لا يظهر» تعني أن الجملة لا تُستخدم في هذا النشاط (لا توجد صورة واضحة لها). الصور هي الرموز التي تظهر في التطبيق نفسه.</p>
-  </section>
+    <p class="meta-line">«لا يظهر» تعني أن الجملة لا تُستخدم في هذا النشاط (لا توجد صورة واضحة لها). الصور هي الرموز التي تظهر في التطبيق نفسه.</p>${copy.extra ?? ''}
+  </section>${grade === 4 ? gradeFourDataPage() : grade === 9 ? gradeNineDataPage() : ''}
 ${sections}
 </main>
 `;

@@ -26,10 +26,15 @@ Checked 2026-10-22:
 - **Math verifier** `iqraa-verifier`: `/api/healthz/verifier` answers `ok`, self-test `pass`.
 - **Web app** `app.iqrra.com` (Cloudflare Pages): 200. **Landing** `iqrra.com` (separate repo
   `Site_Iqra`, Vercel) answers 308 to `www.iqrra.com`, which is 200.
-- **Database:** Neon Postgres. The schema deploys as migrations (11 files in
+- **Database:** Neon Postgres, **Launch plan since 2026-10-23** (was Free: 100 compute-hours a
+  month, 30.92 used, after which Neon suspends the compute), autoscaling 0.25-0.5 CU, scale to
+  zero on, $10 spend alert — see «Neon leaves the Free plan before launch» in the log and the
+  first item under *Open*. The schema deploys as migrations (17 files in
   `lib/db/migrations`); `verify-schema` runs before every API deploy.
 - **Live config** (plain env on the service): `AI_LIVE_MODE=true`; models `gpt-5.4-mini`
-  for generation and for chat; budgets `AI_BUDGET_USD=50`, per user `1`, per
+  for generation and for chat (`AI_MODEL_DOCUMENTS`, which would move lesson plans,
+  worksheets, quizzes and slide decks to Claude Sonnet 5.5, is **unset**: the code is in,
+  the secret and the switch are Nizar's — «Claude writes the documents» in the log); budgets `AI_BUDGET_USD=50`, per user `1`, per
   student `0.20`; `STUDENT_ACCOUNTS=true`; `MASTERY_GATE=true`.
 - **Credentials:** 11 are Secret Manager references, 18 are plain config. Rotation:
   [`docs/deploying.md`](./docs/deploying.md), «Rotating a secret».
@@ -53,13 +58,49 @@ Checked 2026-10-22:
 
 ## Open
 
+- **`GUARDIAN_APPROVAL` is built (server and app) and off; do not set it** until the app has
+  reached users, the parent-consent wording has been read by a native speaker and a lawyer, and
+  `constants/legal.ts` and `LEGAL_VERSION` are updated. With it on, every email student with no
+  teacher link is held (403 `guardian_approval_required`) until a parent approves by email, and
+  existing email students are locked out until a parent acts. The owner's steps are numbered in
+  the entry «Parent approval for email students — the app (PR B)» in the log; the server side is
+  «Parent approval for email students — server (PR A)».
+- **A student can sign up with an email and no teacher's code — the legal wording needs a person
+  to read it before this merges.** The privacy policy §5 and terms §1 (`constants/legal.ts`,
+  `LEGAL_VERSION` 2026-10-23) now say a student may join with an email after confirming they are
+  an adult or have a guardian's agreement; they were drafted, not reviewed by a lawyer, and the
+  store declaration (`lib/features.ts` comment) still describes accounts made only through a
+  class. Merging deploys it, and every user is asked to accept the new version. Becoming a
+  student by switching role asks for the same confirmation as signing up as one. Entry:
+  «Students choose an email or a teacher's code» in the log.
+- **Neon is on Launch (applied 2026-10-23 by the owner); two checks remain.** Autoscaling 0.25-0.5
+  CU, scale to zero on: about $10 a month expected, about $39 at most (estimates; read Neon's
+  Usage page weekly for a month). Check `pooled` on `GET /api/healthz/pool` (admin key) once this
+  deploys: if `false`, production's `DATABASE_URL` is a direct connection (218 direct
+  connections at the 0.5 CU maximum, fewer when scaled down); switch the secret to the pooled
+  string. Details and what is unverified: the log entry named above.
+
 Checked 2026-10-22:
 
-- **Crash reporting in the app is merged but not yet in anyone's hands:** Firebase Crashlytics
-  (PR #1115, 2026-10-19, `app.json` 1.5.0) only works in a native build, so it reports nothing until
-  a 1.5.0 build is installed and Crashlytics is enabled in the Firebase console (project
-  `iqraa-95dd1`) **(notes)** — neither was checked. The API has no error-reporting service; it
-  keeps its own log (`/healthz/errors`, admin key) and Cloud Run logs.
+- **Crash reporting in the app:** Firebase Crashlytics (PR #1115, 2026-10-19, `app.json` 1.5.0) is
+  merged, a 1.5.0 production build ran on 2026-10-22 (the Mobile Android build workflow, success)
+  and Crashlytics is enabled in the Firebase console (project `iqraa-95dd1`) **(notes — the owner
+  said so; not checked)**. Not verified: which build is installed on a phone, that a crash
+  actually appears in the console, and that the OTAs published since #1115 (all runtime 1.5.0)
+  reach a device. The API has no error-reporting service; it keeps its own log
+  (`/healthz/errors`, admin key) and Cloud Run logs.
+- **Row-level security is deployed and switched off** (`RLS_ENFORCE` unset; PR #1048, migration
+  `0008`). Rehearsed on 2026-10-23 on a separate empty Neon project: all migrations apply and the
+  database suite passes 46/46 on both the direct and the pooled endpoint (workflow run
+  39931238295). The connection ceiling checks out (20 instances, pooled endpoint, `max_connections` 225).
+  **The latency gate failed (C1, 2026-10-23): +336 ms p95 on a 15-statement request,
+  budget +100 ms** — each statement becomes three round trips and one costs about 11 ms from
+  europe-west1 to Frankfurt; a mitigation (one held read-only connection per request, inbox first; spec
+  2026-10-23) is built, and it must not be switched on until `bench:rls`'s `held` column passes the gate
+  (`held` p95 added ≤ +100 ms on the inbox-shaped request, no listed route over +100 ms, every unlisted route's
+  cost, about 22 ms per statement, known and accepted or listed). Nothing says it has passed.
+  Not done: the `held` measurement (from Cloud Shell, the way the failed run was measured), enabling it in production, and making the `row-level security` check required — the steps and
+  the switch are in `docs/rls-rollout-checklist.md`.
 - **Draft PR #730** (teacher visibility into English Corner practice) changes the schema,
   conflicts with `main`, and needs `pnpm --filter @workspace/db run generate` after it is updated.
 - **The E2E smoke test is not a required check** yet; make it one after about a week
@@ -80,40 +121,40 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
-- 2026-10-22 — Today wears the lesson's subject
-- 2026-10-22 — The desktop Tools grid reads right to left in Arabic
-- 2026-10-22 — Live games: students answer from any device
-- 2026-10-22 — Status-bar icons read on the corner bands
-- 2026-10-22 — Game buttons read in dark mode
-- 2026-10-22 — A lesson game can be homework, and the teacher sees the scores
-- 2026-10-22 — Any deck plays as Class Challenge, with sound
-- 2026-10-22 — Progress is celebrated
-- 2026-10-22 — Math Corner exercises: learn or test yourself on a lesson from the book
-- 2026-10-22 — Lesson games from a lesson's key terms
-- 2026-10-22 — Teachers' phones open on Today
-- 2026-10-22 — Book-picture slides no longer share one title
-- 2026-10-21 — Each corner has its own colour and band
-- 2026-10-21 — Cards lift, presses give, screens arrive — 2026-10-21
-- 2026-10-20 — Grade 2 reading in the English corner — built, shown to nobody yet
-- 2026-10-19 — Grade 2 grammar in the English corner — built, shown to nobody yet
-- 2026-10-19 — Arabic, Islamic, civic, digital and PE lessons get their book pages in decks
-- 2026-10-19 — Load test: the exam path holds, the sign-up rush does not
-- 2026-10-18 — One question-type order, one set of repeat-rule inputs
-- 2026-10-18 — One card for quizzes and evaluations
-- 2026-10-18 — Revision decks carry the book's own pictures and all its key terms
-- 2026-10-18 — Slides Maker decks stop looking like bare lists
-- 2026-10-18 — Four new slide layouts: timeline, stats, table, flow
-- 2026-10-17 — The parent letter stops saying things the teacher never typed
-- 2026-10-17 — The parent letter: a typed name can be linked, and guardians can be chosen
-- 2026-10-17 — Grade 1 reading in the English corner — built, shown to nobody yet
-- 2026-10-17 — Two more slide layouts: quote and photo
-- 2026-10-17 — The model chooses a deck's icons and charts
-- 2026-10-16 — Typed chemistry topics measured and 18 of 44 misroutes fixed
-- 2026-10-16 — The electron-configuration lesson was answered with periodic-trends questions; fixed
+- 2026-10-25 — English audio check: the first real run, and three kinds of false alarm removed
+- 2026-10-25 — Lesson games: «ما معنى المصطلح؟» from the books' printed glossary, and a draft route that stays hidden
+- 2026-10-25 — A parent signs up with an email or a teacher's code
+- 2026-10-24 — Parent approval for email students: the app (off)
+- 2026-10-24 — Parent approval for email students: the server (off)
+- 2026-10-24 — English audio: a speech-to-text check of every recording
+- 2026-10-24 — English corner: all ten grades, the official books, and free listening and reading sites
+- 2026-10-24 — English audio on phones: clips are saved on the device and a lesson's clips are fetched ahead
+- 2026-10-24 — Tests for the roster consent gate
+- 2026-10-24 — Tests for the login-code reissue route
+- 2026-10-24 — Grade 10 grammar (Semester 2) in the English corner — built, shown to nobody yet
+- 2026-10-24 — English audio: voice register fixed, clips trimmed and levelled, and an audit that needs no keys
+- 2026-10-24 — Tests for the code-only account routes
+- 2026-10-24 — Printed grammar forms fit the page, sign-off no longer covers rows, and True or false says right or wrong without pictures
+- 2026-10-24 — Grade 10 grammar (Semester 1) in the English corner — built, shown to nobody yet
+- 2026-10-24 — Generator screens: Retry repeats the run, and the evaluations picker row
+- 2026-10-24 — Generator screens: the toast clears the docked bar
+- 2026-10-23 — Students choose an email or a teacher's code
+- 2026-10-23 — Generator screens: Cancel then a refusal, and the banner contrast
+- 2026-10-23 — Generator screens: the slides
+- 2026-10-23 — Generator screens: the activity
+- 2026-10-23 — Generator screens: the lesson plan
+- 2026-10-23 — Generator screens: the worksheet and homework
+- 2026-10-23 — Grade 5 grammar in the English corner — built, shown to nobody yet
+- 2026-10-23 — Generator screens: the shared pieces and the quiz
+- 2026-10-23 — The "now" amber is only for now
+- 2026-10-23 — Grammar-only hub lessons, and the last five Grade 9 grammar lessons — built, shown to nobody yet
+- 2026-10-23 — Grade 9 grammar: the passive added, and a wrong «no hub lesson» corrected
+- 2026-10-23 — The tab bar is drawn
+- 2026-10-23 — Neon leaves the Free plan before launch
 
 ## Finding older detail, and recording new work
 
-- The log has 342 sections. Anything cited elsewhere as
+- The log has 414 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line

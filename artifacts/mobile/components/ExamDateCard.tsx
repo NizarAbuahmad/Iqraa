@@ -132,7 +132,7 @@ export function ExamDateCard({
   return (
     <View style={[styles.card, { borderColor: colors.border, backgroundColor: colors.card }]}>
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
-        <Ionicons name="calendar-outline" size={18} color={ACCENT} />
+        <Ionicons name="calendar-outline" size={20} color={ACCENT} />
         <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
           {t('examDateLabel')}
         </Text>
@@ -179,7 +179,7 @@ export function ExamDateCard({
 
       {conflicts.length > 0 ? (
         <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: SPACE.sm }}>
-          <Ionicons name="warning-outline" size={16} color={colors.warning} />
+          <Ionicons name="warning" size={16} color={colors.warning} />
           <Text style={{ flex: 1, color: colors.warning, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align }}>
             {t('examDateConflict', gradeLabel(evaluation.gradeId, lang), conflicts.length)}
           </Text>

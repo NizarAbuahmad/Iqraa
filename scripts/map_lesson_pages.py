@@ -428,7 +428,15 @@ def main() -> None:
 
     books = json.load(open(sys.argv[1], encoding="utf-8"))
     out_path = sys.argv[2]
-    only = set(sys.argv[3:])
+    args = sys.argv[3:]
+    # --pdfs <json>: {kbBookId: path to a student-book PDF} for books `extract_book_figures.BOOKS`
+    # does not register (the primary-grade books, downloaded from NCCD and kept off the repo).
+    pdf_map: dict[str, str] = {}
+    if "--pdfs" in args:
+        at = args.index("--pdfs")
+        pdf_map = json.load(open(args[at + 1], encoding="utf-8"))
+        args = args[:at] + args[at + 2:]
+    only = set(args)
     # Resumable: a book already in the output file is kept as it is.
     result: dict[str, dict] = json.load(open(out_path, encoding="utf-8")) if os.path.exists(out_path) else {}
     for b in books:
@@ -436,6 +444,8 @@ def main() -> None:
         pdf_rel = E.BOOKS[sid][1] if sid else None
         if sid is None and b["id"] in EXTRA_BOOKS:
             sid, pdf_rel = EXTRA_BOOKS[b["id"]]
+        if b["id"] in pdf_map:
+            sid, pdf_rel = b["id"].replace("kb-", "", 1) + "-student-book", pdf_map[b["id"]]
         if sid is None:
             continue
         if only and sid not in only:
