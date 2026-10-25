@@ -10,6 +10,7 @@ import workspaceRouter from "./workspace";
 import verifiedMathRouter from "./verifiedMath";
 import curriculumRouter from "./curriculum";
 import bankRouter from "./bank";
+import siteAskRouter from "./siteAsk";
 import rosterRouter from "./roster";
 import homeworkRouter from "./homework";
 import teachingPlansRouter from "./teachingPlans";
@@ -94,6 +95,9 @@ router.use(curriculumRouter);
 // A catalog of document titles and provenance, on the same reasoning. It does
 // not serve the documents; there is nothing here to serve.
 router.use(bankRouter);
+// The visitor-facing bot on iqrra.com: public, rate-limited and spend-capped
+// inside the router. Path-prefixed, never bare — it is a public router.
+router.use("/site/ask", siteAskRouter);
 router.use(rosterRouter);
 // Teacher homework: /homework is guarded inside the router (path-scoped); the class read
 // carries its own guards on the route.

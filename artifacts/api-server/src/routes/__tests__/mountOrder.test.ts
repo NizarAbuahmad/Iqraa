@@ -85,6 +85,75 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(body.status, "ok");
   });
 
+  it("keeps /site/ask public, POST-only and open to the site's own origin, and shadows nothing", async () => {
+    // No token and a dead database. The rate-limit store fails open (and logs),
+    // so the body check is what answers: a 400 proves the route is mounted and
+    // public. A 401 would mean a guard mounted elsewhere is swallowing it.
+    const bad = await fetch(`${base}/site/ask`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    assert.equal(bad.status, 400);
+
+    // Only POST is answered; anything else falls through to the 404.
+    const get = await fetch(`${base}/site/ask`);
+    assert.equal(get.status, 404);
+
+    // A browser on the site sends a preflight before it posts JSON.
+    const preflight = await fetch(`${base}/site/ask`, {
+      method: "OPTIONS",
+      headers: {
+        Origin: "https://www.iqrra.com",
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "content-type",
+      },
+    });
+    assert.equal(preflight.status, 204);
+    assert.equal(preflight.headers.get("access-control-allow-origin"), "https://www.iqrra.com");
+
+    // CORS only constrains browsers, but it must not be open to every page.
+    const foreign = await fetch(`${base}/site/ask`, {
+      method: "OPTIONS",
+      headers: {
+        Origin: "https://evil.example",
+        "Access-Control-Request-Method": "POST",
+      },
+    });
+    assert.equal(foreign.headers.get("access-control-allow-origin"), null);
+
+    // Mounting it made nothing underneath it public.
+    const below = await fetch(`${base}/site/ask/extra`, { method: "POST" });
+    assert.equal(below.status, 404);
+  });
+
+  it("answers a greeting to /site/ask from the fixed answers, with no database, no live mode and no model", async () => {
+    // The fixed answers are decided first, so this holds with a dead database,
+    // regardless of AI_LIVE_MODE (the harness inherits process.env; a fixed
+    // answer is decided before any env read) and with only a placeholder OpenAI
+    // key: a model call here could not succeed anyway.
+    for (const message of ["مرحبا", "hello"]) {
+      const res = await fetch(`${base}/site/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
+      assert.equal(res.status, 200);
+      const body = (await res.json()) as Record<string, unknown>;
+      assert.equal(body.answered, true);
+      assert.equal(body.source, "curated");
+      assert.equal(typeof body.content, "string");
+      assert.ok((body.content as string).length > 0);
+      // The route answers in the language of the question.
+      assert.equal(
+        /\p{Script=Arabic}/u.test(body.content as string),
+        message === "مرحبا",
+        `${message}: wrong language in ${JSON.stringify(body.content)}`,
+      );
+      assert.ok(!("reason" in body), "a fixed answer carries no refusal reason");
+    }
+  });
+
   it("keeps published curriculum data public", async () => {
     const res = await fetch(`${base}/curriculum/grades`);
     assert.equal(res.status, 200);

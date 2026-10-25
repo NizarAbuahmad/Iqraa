@@ -70,6 +70,26 @@ requires reports on it. If one does not, the queue entry times out and the PR dr
 restores the old behaviour, and reverting this PR changes nothing for a repository with the queue off.
 `deploy.yml` is untouched: the queue merges into `main`, which is still a push to `main`.
 
+## Teaching plan: the lesson date boxes follow «توزيع تلقائي» — 2026-10-25
+
+A teacher pressed «توزيع تلقائي» in a teaching plan and every lesson's date box stayed empty, so the
+plan looked unscheduled and the home card kept asking for it. Reproduced in the browser (API,
+timetable and a Grade 10 plan on a local database): the button did work — it set 36 dates (the
+rows' borders turned green) and «حفظ» stored all 36, after which Today showed the Monday period's
+lesson — but each `LessonDateRow` keeps its own typed text, set once from the date when the row
+first rendered, so dates arriving from outside were never shown. A teacher who sees empty boxes
+presses «إلغاء», and nothing is saved. The row now takes the date again whenever the date changes
+(`useEffect` on `date`, `app/teaching-plans/index.tsx`); a half-typed date does not propagate, so
+typing is not overwritten.
+
+Verified in the browser on a rebuilt bundle: after «توزيع تلقائي» the boxes read 2026-10-25,
+2026-10-26, 2026-11-01…; a typed date, a half-deleted one and a retyped one behave; Save stores 36
+entries. `pnpm run typecheck`. **Not verified:** Arabic/RTL and a phone, the full mobile suite
+locally (CI runs it), and that this is the reporting teacher's exact case (a teacher who did press
+«حفظ» would not have hit it). **Not tested:** no test pins the row — it needs React Native, which
+the bare `node --test` runner cannot load. **Not changed:** «توزيع تلقائي» still does nothing, silently,
+when no school day is selected or the start date is invalid; the button is dimmed but says nothing.
+
 ## Grade 8 semester 1 word lists in the English corner, 2026-10-25
 
 Grades 6–8 had a tab and a «word games coming» notice (PR #1268) but no words. Grade 8's
@@ -245,6 +265,59 @@ of the answers' text found them. Check the text, not the key.)
   identically without this change.
 - **Not verified.** No one has re-read the four changed rows against a signed
   form; anyone mid-review of Grade 1 or 2 should be told.
+
+## A public «اسأل إقرأ» bot for iqrra.com — the API half, 2026-10-23
+
+`POST /api/site/ask` answers a visitor's question about Iqraa from the site's own `llms.txt` (fetched from
+`https://www.iqrra.com/llms.txt`, cached an hour, with a built-in fallback that states no numbers).
+Public with no key, so the limits are the defence: 20 requests an hour per IP and 100 an hour in
+total, a 300-character question and four earlier turns. It has its own spend ceiling,
+`SITE_BOT_BUDGET_USD_DAILY` (default 1, 0 = off), summed from `ai_generations` rows of kind
+`site-ask` over 24 hours and cached for a minute; an unreadable total refuses. A ledger whose
+inserts are failing (`getPersistenceFailure()`) also closes the gate, but only intermittently: that
+flag is cleared by the next successful sum read, which this route triggers about once a minute, so
+the gate closes and reopens instead of staying shut. A dedicated insert-failure latch in
+`aiUsageLog.ts` would fix that; it changes the teachers' budget code and is left as a follow-up. Each answer's estimated cost is also
+added to the gate's cached total in-process, so a burst closes this instance's gate inside the cache
+window instead of after it. Estimates, from gpt-5.4-mini rates and to be replaced by the measured
+`cost_usd` after the first live answers: about $0.01 an answer today, so a deliberate burst is
+bounded by the 100 an hour limit and by that increment, and the bot's spend counts toward the shared
+`AI_BUDGET_USD` (production: 50). **It bounds the
+bot's spend but does not separate it from the teachers' budget:** `recordUsage` adds every answer to
+the shared month-to-date total that `AI_BUDGET_USD` caps (production: 50), so at the default the bot
+can use up to about $30 of a month. Size `AI_BUDGET_USD` above teachers' use plus that, or lower the
+cap; excluding the bot from the shared total would mean changing the teachers' budget code and was
+not done. Every refusal (live mode off, either budget, a model
+error, an empty reply) is a 200 with `answered: false`, a reason, and a fixed Arabic and English
+message pointing to info@iqrra.com — never a mock answer. The reply ceiling is 800
+`max_completion_tokens`, not 300, because the production chat model counts hidden reasoning against
+it. No message text is logged or stored. No migration and no `deploy.yml` change. Spec:
+`docs/superpowers/specs/2026-10-23-site-ask-bot-design.md`; plan:
+`docs/superpowers/plans/2026-10-23-site-ask-bot-api.md`.
+Checked: unit tests for the parser, the prompt rules, the facts loader (success, cache, retry
+window, error, empty, oversize, single flight), the spend gate, and the decision order (the model
+and the facts fetch never run once a cap has tripped); the built bundle answers `/site/ask`
+without a token, POST only, with CORS for `www.iqrra.com` and not for other origins.
+
+**Fixed answers first, AI second (2026-10-25).** A reviewed list of 17 fixed answers (Arabic and
+English: greeting, thanks, what it is, price, curriculum, coverage, what it makes, maths checking,
+app needed, Android, iPhone, students, privacy, contact, not a general chatbot, teacher review,
+other countries) is matched without AI before anything else (`lib/siteAskMatch.ts`,
+`lib/siteAskAnswers.ts`). A hit costs nothing, makes no model call and works with live mode off or
+`SITE_BOT_BUDGET_USD_DAILY=0`; anything the list does not cover goes through the AI path as
+described above. Matching is Dice overlap on token sets (answer at 0.5 or more, ahead of the
+runner-up by 0.15 or more) plus an unknown-word veto: a question containing a word that no answer's
+phrasings know falls through to the AI. The veto exists because review found short same-frame
+questions getting a confident wrong answer ("how much does chatgpt cost" returned the price answer).
+The success response now carries `source: "curated" | "ai"`. The answers are a copy of the site's
+FAQ wording and can drift from it; cross-topic questions ("is the Android app free") go to the
+nearest status answer. The owner approved the wording of the 17 answers in chat on 2026-10-25. Greeting and thanks words are set aside, wherever they sit, when a real question comes with them (anything beside the salutation counts, so «hi, what is Iqraa» asks what it is); a thank-you that names a thing («شكرا على التطبيق», "thanks for the app") is answered with thanks or by the AI, never with that thing's answer. The English copy of the answers and the prompts say "Iqrra", the Latin product name.
+
+**Not checked:** the real spend query against Postgres (it is a one-statement sum, exercised only
+in production); the real per-answer cost and the `/healthz/ai-budget` `persisted` flag after the
+first answers; answer quality on real visitor questions, including off-topic and injection tries
+(to be run against the deployed route before the widget ships, and recorded here); the widget,
+which is a separate change in the `Site_Iqra` repo and has not been written; how the matcher behaves on real visitor questions (only the questions in the tests have been tried).
 
 ## Grade 8 English gets its book pages; Grades 1-7 do not, 2026-10-25
 
