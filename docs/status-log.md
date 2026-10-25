@@ -34,6 +34,35 @@ live cap response itself (confirmed by the teacher: their allowance was spent, n
 a saved «عرض الحصة» still opens. Falling back to the offline book-based quick-check on a cap was not done: it
 is a product decision (the same rule that keeps a worksheet from being faked), left open.
 
+## Chat app-help, thirtieth live pass: colloquial «ب» verbs, five short answers, nine more wordings — 2026-10-25
+
+Two passes. The allowance was still spent, so both were app-only and a question the matcher missed
+came back as «انتهت حصة التوليد الجديد لهذا الشهر».
+
+**Colloquial Arabic (30 questions in the Jordanian dialect) got a correct in-app answer to 8, and
+a wrong one to 4**: «كيف بسكر الامتحان؟» was answered with how to *build* an exam, «كيف بحفظ
+الشرائح؟» opened the slides tool on a lesson nobody named and «شلون بضيف سؤال للامتحان؟» asked
+which English lesson was meant. Every rule is written for the written «أضيف / أسكّر / أقترح»; speech
+puts «ب» in front of the present tense. `foldColloquial` (in `matchForm` and `plain`) drops that «ب»
+from a fixed list of verb stems, and only straight after a question word, so «كيف بنى» and «كيف
+بعد» keep theirs; it also reads «كيف بدي X» as «كيف X», moves a trailing «شلون» to the front
+(«بدي أطبع ورقة العمل شلون») and «شو يعني X» as «ما هو X». Run again, 17 of the 22 that failed
+resolve to the right answer. «سكّر» joins the words for closing an exam, «أصحح الامتحان» gets
+`howOpenGrading`, and «وين زر حذف الواجب / الامتحان» get their answers.
+
+**Formal wording (30 questions, 13 missed):** five short answers, each checked in code —
+`howMessageDelete` (no per-message delete; a conversation is deleted from ⋮, for you only),
+`howTimetableWeek` (the timetable is one weekly pattern, there is no "next week"),
+`howLiveGameEnd` (back → «إنهاء اللعبة؟» → «إنهاء»), `howClassCount` (the count is on the class
+card) and `howClassOrder` (no sorting of classes) — and wordings for answers that existed:
+muting a conversation (`howMuteChat`), searching Messages (`howSearchMessages`), a picture in
+Messages (`howSendFileMessage`), resending the verification code, a student's register number, a
+private note on a student, late homework (a count of who ticked), and opening a subject's book.
+(I first wrote new answers for the first three, having looked for them by key name only; a search
+of the answers' text found them. Check the text, not the key.)
+
+**Left alone:** «شو يعني تحدي الصف» (the tool card is the answer), «شلون أرسل رسالة لأهل الطالب»
+(stays with the model by design). The teaching-plan export is already answered by `howTeachingPlan`.
 ## The screenshot script can shoot the English UI — 2026-10-25
 
 - **What changed.** `e2e/screens.mjs` shot the Arabic UI only (`@iqra_language`
