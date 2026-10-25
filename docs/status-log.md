@@ -10,6 +10,25 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## A parent signs up with an email or a teacher's code — 2026-10-25
+
+Since 2026-10-10 a parent could only sign up with a teacher's code (no email, no password), so a parent who did not have
+a code in hand had no way to make an account. The register screen now gives a parent the same choice a student has had since
+2026-10-23: «برمز المعلم» or «ببريد إلكتروني», no default, and nothing shows until one is picked.
+
+- **`signupForm('parent', method)`** now returns `method ?? 'choose'`, as for a student (`services/signupMethod.ts`, tested).
+  A teacher is unchanged: email.
+- **A parent with an email is asked nothing extra.** `needsAgeConfirmation` and `signupPlan` stay student-only: a parent is
+  an adult and there is no guardian to approve them. The server already accepted `role: "parent"` on `POST /auth/register`
+  (it refuses only when `STUDENT_ACCOUNTS` is off), so **no server change**.
+- **What the email path does after sign-up:** the usual verify-email step, then the claim screen (`needsRosterClaim`), where
+  the parent enters the **per-student** code a teacher gives them. A new note under the choice says so
+  (`parentEmailNote`, ar/en), because an email alone does not link a parent to a child.
+- **Unchanged:** the code path (`POST /auth/redeem`), the rule that a parent may not sign up from a **class** code, the
+  personal login code, and the class picker after linking.
+- **Verified:** unit tests (`signupMethod.test.ts` fails without the change), typecheck, mobile and api-server tests. **Not
+  verified:** the screen in a browser or on a device; an email parent end to end (sign up, verify, claim, pick a class).
+
 ## Sign-in: the last Google account is a line, not a chip — 2026-10-25
 
 A UX-copy review of the sign-in screen (saved account, Google's button, a green «آخر حساب Google
@@ -58,6 +77,7 @@ that stay with the model.
 are right this time; the app questions that fell to the model after the allowance ran out. The
 cap is the account's monthly generation allowance — a pass of 30 questions spends it, and this
 account has now had many passes.
+
 ## Parent approval for email students — the app (PR B) — 2026-10-24
 
 The app half of the gate in the entry below. **Nothing changes for anyone while `GUARDIAN_APPROVAL` is unset**, and
