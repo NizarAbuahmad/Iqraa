@@ -1,0 +1,188 @@
+{
+ "chem-s1-student-book": {
+  "head": [
+   75
+  ],
+  "withEn": [
+   75,
+   76
+  ],
+  "pdf": false,
+  "localPath": "attached_assets/10th_grade,_alchamy1st_semester_1785071530814.pdf"
+ },
+ "chem-s2-student-book": {
+  "head": [
+   81
+  ],
+  "withEn": [
+   29,
+   81,
+   82
+  ],
+  "pdf": true,
+  "localPath": "knowledge-base/grade-10-chemistry/support-pdfs/10th grade, alchamy.2nd semester.pdf"
+ },
+ "bio-s1-student-book": {
+  "head": [
+   79
+  ],
+  "withEn": [
+   58,
+   80,
+   81
+  ],
+  "pdf": true,
+  "localPath": "knowledge-base/grade-10-biology/support-pdfs/كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf"
+ },
+ "bio-s2-student-book": {
+  "head": [
+   77
+  ],
+  "withEn": [
+   68,
+   77,
+   78
+  ],
+  "pdf": true,
+  "localPath": "knowledge-base/grade-10-biology/support-pdfs/كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf"
+ },
+ "earth-s1-student-book": {
+  "head": [
+   59
+  ],
+  "withEn": [
+   61,
+   62,
+   63
+  ],
+  "pdf": true,
+  "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf"
+ },
+ "earth-s2-student-book": {
+  "head": [
+   86
+  ],
+  "withEn": [
+   86,
+   87,
+   88,
+   89,
+   92
+  ],
+  "pdf": true,
+  "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf"
+ },
+ "phys-s1-student-book": {
+  "head": [
+   87
+  ],
+  "withEn": [],
+  "pdf": true,
+  "localPath": "knowledge-base/grade-10-physics/support-pdfs/كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الأول.pdf"
+ },
+ "phys-s2-student-book": {
+  "head": [
+   128
+  ],
+  "withEn": [
+   63,
+   64,
+   65
+  ],
+  "pdf": true,
+  "localPath": "knowledge-base/grade-10-physics/support-pdfs/كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الثاني.pdf"
+ },
+ "g9-chemistry-s1-student-book": {
+  "head": [
+   62
+  ],
+  "withEn": [
+   62,
+   63,
+   64
+  ],
+  "pdf": true,
+  "localPath": "knowledge-base/grade-9-chemistry/support-pdfs/كتاب الطالب لمادة الكيمياء الصف التاسع الفصل الأول.pdf"
+ },
+ "g9-chemistry-s2-student-book": {
+  "head": [
+   74
+  ],
+  "withEn": [
+   42,
+   45,
+   50,
+   69,
+   71,
+   74,
+   75
+  ],
+  "pdf": true,
+  "localPath": "knowledge-base/grade-9-chemistry/support-pdfs/كتاب الطالب لمادة الكيمياء الصف التاسع الفصل الثاني.pdf"
+ },
+ "g9-biology-s1-student-book": {
+  "head": [
+   69
+  ],
+  "withEn": [
+   69,
+   70,
+   71,
+   72
+  ],
+  "pdf": true,
+  "localPath": "knowledge-base/grade-9-biology/support-pdfs/كتاب الطالب لمادة العلوم الحياتية للصف التاسع الفصل الأول.pdf"
+ },
+ "g9-biology-s2-student-book": {
+  "head": [
+   80
+  ],
+  "withEn": [
+   19,
+   25,
+   80,
+   81,
+   82,
+   83,
+   84
+  ],
+  "pdf": true,
+  "localPath": "knowledge-base/grade-9-biology/support-pdfs/كتاب الطالب لمادة العلوم الحياتية للصف التاسع الفصل الثاني.pdf"
+ },
+ "g9-earth-science-s1-student-book": {
+  "head": [
+   61
+  ],
+  "withEn": [],
+  "pdf": true,
+  "localPath": "knowledge-base/grade-9-earth-science/support-pdfs/كتاب الطالب لمادة علوم الأرض للصف التاسع الفصل الأول.pdf"
+ },
+ "g9-earth-science-s2-student-book": {
+  "head": [
+   73
+  ],
+  "withEn": [
+   79
+  ],
+  "pdf": true,
+  "localPath": "knowledge-base/grade-9-earth-science/support-pdfs/كتاب الطالب لمادة علوم الأرض للصف التاسع الفصل الثاني.pdf"
+ },
+ "g9-physics-s1-student-book": {
+  "head": [
+   90
+  ],
+  "withEn": [],
+  "pdf": true,
+  "localPath": "knowledge-base/grade-9-physics/support-pdfs/كتاب الطالب لمادة الفيزياء الصف التاسع الفصل الأول.pdf"
+ },
+ "g9-physics-s2-student-book": {
+  "head": [
+   76
+  ],
+  "withEn": [
+   78
+  ],
+  "pdf": true,
+  "localPath": "knowledge-base/grade-9-physics/support-pdfs/كتاب الطالب لمادة الفيزياء الصف التاسع الفصل الثاني.pdf"
+ }
+}

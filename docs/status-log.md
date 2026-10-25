@@ -10,6 +10,202 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat app-help, twenty-ninth live pass: three short answers and wordings for fourteen existing ones — 2026-10-25
+
+The demo account's monthly generation allowance was still spent, so every question the matcher did
+not catch came back as «انتهت حصة التوليد الجديد لهذا الشهر» — which made the pass a clean test of
+the matcher (30 app-only questions, no curriculum controls, nothing about the model's answers).
+Twelve fell through to the model, six got only a place card and two got «لم أعرف أي قسم تقصد».
+
+Wordings added to existing answers: the slide background colour (`howSlideTheme`), deleting a slide
+(`howSlideEdit`), «احذف الشعبة نهائيًا» (`howArchiveClass`: there is only archiving), the class's
+subject (`howRenameClass`), sharing the app with a colleague (`howInviteTeacher`), using the app
+without internet (`howOffline`), a class's average mark on an exam (`howClassAverage`), one exam for
+several classes (`howCopyExam`: each exam has one class), closing an exam automatically
+(`howExamTime`: no timed close), a partial mark (`howOpenGrading`: the mark box takes any value
+between 0 and the question's marks) and restoring a deleted account (`howDeleteAccount`: permanent).
+
+Three new short answers, each checked in code: `howRenameFile` (the ⋯ menu in `app/workspace/index.tsx`
+has open, edit, class, duplicate and delete — no rename), `howDeleteExam` (the «احذف الاختبار»
+button in `app/evaluations/[id]/index.tsx` shows for a draft or a closed exam only, and archives
+it) and `howAppVersion` (the «الإصدار» row under «حول إقرأ» in Settings). Pinned in `appHelp.test.ts`
+with near-misses that stay with the model.
+
+**Left alone:** a daily lesson reminder (the only scheduled notification is the English corner's),
+rating the app, showing the lesson on a TV, one student's answers on an exam (the answers screen
+is built for typing in a paper's answers, so I did not claim it shows an online sitting) and
+«أرى الشعب التي أدرّسها» (the place card is enough).
+
+
+## Timetable: a period saves with a labelled button, and an empty slot cannot be saved — 2026-10-24
+
+A teacher on app.iqrra.com added their timetable and Today kept saying «أضف جدولك الأسبوعي».
+Reproduced in the real app (throwaway Postgres, built API and web bundle, Chromium at phone
+width): the API and `timetableSetupStep` are right — once a slot holds a class the prompt turns
+into «… ليس لها خطة وتيرة» (plan step), so a prompt still on the timetable step means no slot
+had a class. Two things on «جدول الحصص» led there. (1) The period editor's only labelled
+button was «إلغاء»; a period saved only on its bare ✓ icon, so typing a time and pressing the
+labelled button threw it away, and with no period no slot can be saved. (2) The slot editor opens
+with «بدون شعبة» highlighted and a live «احفظ»: saving without tapping a class stored an empty
+slot, which the prompt ignores. Now: the new-period row's button reads «إضافة حصة»
+(`scheduleAddPeriod`, which existed unused), the modal's closing button is «تم»
+(`schedulePeriodsDone`), and «احفظ» in the slot editor is disabled until class, subject or note
+changed.
+
+Verified: `pnpm run typecheck`; mobile `pnpm test` (7,186 pass, 10 skipped); the whole flow
+re-run in the browser on the rebuilt bundle (add period → assign class → Today shows the plan
+prompt). **Not verified:** that this is what the reporting teacher did (they were asked and did
+not answer), Arabic/RTL on a device, and no test pins these two screens (they import
+`react-native`, which the bare `node --test` runner cannot load). Not changed: after a
+correct setup Today's lesson card still shows no «الحصة القادمة» line until the class has a
+pacing plan — the prompt now says so, but the card itself gives no sign the timetable saved.
+
+## A revision unit with no picture shows its outcomes and terms side by side, 2026-10-25
+
+A whole-book revision deck for Grade 1 maths (66 lessons, 12 units, no book pictures) was 36
+slides, three per unit: a title, «نتاجات الوحدة» as a few short lines on a mostly empty slide,
+then «المفاهيم والمصطلحات» as cards. Each unit looked the same and two of its three slides were
+about a third full.
+
+- A unit with no figure to sit beside (`first` is empty), at most four outcomes and at most six
+  terms now gets ONE slide: the outcomes left, the terms right (the existing `compare` layout,
+  so the presenter, the PDF and the PowerPoint all already draw it). The slide is only used if
+  `resolveSlideLayout` accepts it; otherwise the unit keeps its two slides.
+- A unit with a book figure keeps its two slides (the figure sits beside the outcomes), and so
+  does a unit with more than four outcomes.
+- Grade 1 maths: 36 slides -> 27. `revisionDeck.test.ts` pins both shapes.
+- **Not verified:** how the side-by-side slide looks on a screen and in the exports (the layout is
+  an existing one, the content here is new), and whether teachers prefer it.
+
+## English audio check: the first real run, and three kinds of false alarm removed — 2026-10-25
+
+The speech check had never called the real API. On 2026-10-25, once `gpt-4o-transcribe` was allowed on the OpenAI project
+(its **Allowed models** list on the project's Limits page had only the chat and text-to-speech models, which is why every
+earlier attempt stopped with a 403 `model_not_found`), it ran for the first time: a 50-clip trial, then all **1,248 word
+recordings** — 1,207 `match`, 41 `mismatch`, none silent, missing or errored; a few cents; the key never printed. The request
+and response shape worked as written. **Nothing was re-voiced and no recording changed.** The sentences (3,383) are not
+voiced yet and were not checked.
+
+This change only makes the comparison fairer; it touches no recording. 17 of the 41 flags were the checker's, not the
+clip's, and `compareSpoken` now treats them as a `match`:
+
+- **Spacing in a short item** (up to three words): `yoyo` / «Yo-yo», `roller skate` / «Rollerskate», `photo blog`, `crime
+  fighter`, `ear plugs`, `power bank`, `a stomach ache`. The letters are compared with the spaces ignored. A sentence is not
+  given this: «I like ice cream» / «I like I scream» stays a `mismatch`. Different letters are never joined (`go swimming` /
+  «goat swimming», `a cold` / «are cold»). The old rule «a single word heard as two words is a mismatch» was kept only for
+  different letters («firefighter» / «fire fighters»).
+- **`'s` heard as a plural**: `butcher's` / «Butchers» and the other four shop names. They sound the same.
+- **Four pairs added to the homophone table**: `pea` / «P», `hanger` / «Hangar», `sew` / «So», `high` / «Hi»; and «C» joins
+  `see` / `sea` (`see double` / «C double»). A recogniser writes either member; the check cannot tell them apart.
+
+Re-grading the saved transcripts with the new rules (no API calls): 1,224 `match`, 24 `mismatch`, no clip that matched
+before stopped matching. The 24 are still to be **listened to by a person**: first sounds that may be wrong or may be an
+over-trimmed onset (`ball` / «Bald», `shell` / «Show», `boat` / «Vote», `fancy` / «Sansie», `cheap` / «Sheep», `fit` /
+«Sit», `vain` / «Zane», `chill` / «Shill», `ring` / «Green», `burned` / «Don't», `fix the gate` / «Six, the gate», `go
+swimming` / «Goat swimming»), accent or weak-form cases (`been` / «bin», `tummy` / «Tommy», `aunt` / «Odd», `house`,
+`hand`, `narrow`, `honour`, `honest`, `fattening`, `a cold`, `look good in front of sb`), and **`a cough`, heard as profanity
+(«Fuck off.»), which a person should hear first** — in a children's app, even if it is the recogniser mishearing a clipped clip.
+
+**Not verified:** whether the 24 are wrong recordings (no one has listened); whether the trim cuts the start of a quiet
+first sound (a hypothesis from the pattern of first-sound mismatches, not checked against the untrimmed originals).
+`been` / «bin» and the other accent cases stay flagged on purpose. The `r2.test.ts` case «R2 helpers are inert, not broken,
+when unconfigured» fails in this environment with and without this change (it is not part of it).
+## Lesson games: «ما معنى المصطلح؟» from the books' printed glossary, and a draft route that stays hidden — 2026-10-25
+
+A fourth lesson game: the app shows the **book's own definition** and the student picks the term. The
+definitions are not written by a model — they are the printed «مسرد المصطلحات» of the Grade 9–10 science
+student books, read from each PDF.
+
+- **Extraction** (`lib/curriculum/scripts/glossary/`, PyMuPDF `rawdict`): an entry is a row with a coloured Latin
+  term; Arabic term to its right, definition to its left. The PDFs' text layer drops or swaps the lam-alef ligature
+  («لا» → «ال»: «اللازمة» reads «الازمة»), so it is repaired from glyph widths — a zero-width alef then a wide lam
+  (swap), or one wide alef (lam lost). The reference list after the glossary is cut off by its heading.
+- **What is served** (`lib/curriculum/src/data/glossary/science-g9-10.json`, **436 entries from 15 books**): of 558
+  entries read, 122 are held back in `science-g9-10.held.json` with a reason — a formula fragment in the definition
+  (47: «H⁺», «8e⁻», «1A» come out of the PDF in the wrong order), brackets or symbols in the term, a lost «لا» still
+  showing, an alef missing after a tanween («قليلً»), a lone letter or a Greek symbol, a word nobody else prints, an
+  English term with an abbreviation, too long, and 9 held by hand. A held entry is never shown. Every served entry
+  is Arabic-only prose with balanced brackets and no word that appears nowhere else in the 146k-word corpus of the
+  extracted books; tatweel (letter-stretching in some printed titles) and doubled diacritics are stripped, and four
+  two-word terms the PDF reverses («نسيجٌ فقاعي» came out «فقاعي نسيجٌ») are corrected.
+- **Reviewed by a second pass, then fixed.** The first version (459) was read by an independent reviewer: of a 65-entry
+  sample, 12 (about 18%) had damage a student would see — the tatweel, three entries still reading «اللّبة» for
+  «اللابة», reversed terms, missing alefs, orphan letters, a Greek symbol, an English typo. Those classes are now
+  filters (and `glossary.test.ts` pins them over all 436). A second, fresh 73-entry sample of that corrected file had
+  4 damaged (5.5%), all **reversed terms**, and whole-file scans found 6 more reversed terms and 2 broken definitions
+  (one scrambled dash clause, one stranded letter in «خلال») — 12 entries in 440 (2.7%), none of the classes the first
+  pass had found. Those are now corrected (10 terms, each put in its right order) or held, and a rule holds a term
+  whose last word is voweled with a damma while its first has no vowel. That reviewer's verdict was that nobody can
+  yet call the definitions clean: it read 73 of 440 in full and a scan only finds damage someone thought to look for.
+  **So this is a ~2–3% residual in the terms and an unmeasured one in the definitions, not zero.**
+- **Gaps, not smoothed over:** Grade 10 chemistry S1's PDF was not on this machine (no entries); physics S1 has 23
+  of its terms (the symbols in brackets after each term had to be stripped from the term).
+- **Draft route, hidden until signed off** (`chem-g10-s1.draft.json`, 29 terms of Grade 10 chemistry S1):
+  definitions a model wrote, flagged `source: 'draft'`. `servedGlossary()` returns a draft only with **both**
+  `reviewedBy` and a `reviewedAt` date (the English grammar units' rule); today **none is signed off, so no student
+  sees any** (`glossary.test.ts` and `lessonMeaning.test.ts` pin both). An independent reviewer found no scientific
+  error in the 29 and 18 wording problems; 15 of them are applied (the three covalent-bond terms now carry the pair
+  count and an example, so «ثنائية» is not read as two electrons; the atomic and line spectra no longer both fit).
+  `pnpm --filter @workspace/curriculum run glossary-sheet` prints the teacher's review table, plus a skim table of
+  the served printed terms. Sign-off is an edit of the JSON by whoever holds the teacher's answer — there is no
+  in-app screen for it. When a draft is signed off the game labels it «تعريف راجعه معلّم», not «من كتاب الطالب».
+  The drafts' text does ship inside the app bundle (the loader imports the file), unsigned; students cannot reach it
+  through the app, but it is extractable.
+- **The game** (`lessonGames.ts`: `lessonMeanings`, `hasMeaningGame`, `buildMeaningRound`): a printed glossary does
+  not say which lesson a term is from, so a lesson is tied to a definition through its own key terms (harakat-,
+  hamza- and «ال»-insensitive, exact spelling tried first). A round asks the lesson's own terms first, then the other
+  lessons' of the unit (**including later ones — not yet taught**; the in-app help says so); the three wrong terms
+  come from the same book. A definition that contains its own term is never a question. Offered only when the lesson
+  has ≥1 defined term of its own and ≥4 in the pool. It also works as a homework attachment (`meaning` added to the
+  mobile union, the API's `GAMES`, and the db type — the column is text, no migration).
+- **An older app build used to remove a `meaning` attachment on any edit** (found in review): a build that does not
+  know a game drops that attachment when it re-sends the list, and `gamesIncluded: true` made the server believe the
+  list. The client now sends `knownGames`, and the server keeps an existing attachment of any game not in it (a
+  client that sends none is read as the four games that existed before; `carryOverGames(…, known)`,
+  `game.test.ts`). This protects the next new game too. Not exercised against a database.
+
+**Reach, measured on the real catalog — read this before promising anything:** the meaning game exists on **65 of
+3,332 lessons**. Only **10 of them are new lessons** (lessons with any lesson game: 495 → 505); the other 55 already
+had the other three games and now have a fourth. The printed glossary adds depth, not breadth, because it exists
+only for the books whose lessons already carry key terms. Where the breadth is: 1,464 lessons have ≥1 key term, 969
+of them fewer than 4 (no game), and **5,158 of the 5,400 key-term mentions have no definition** — English (Grades
+2–5 and 10), Islamic education (7–8), digital literacy and social studies are the largest. Giving those a definition
+is the only way to widen, and each needs a person's review (the draft route above is that pilot, 29 terms).
+
+**Verified:** `pnpm run typecheck`; the new `glossary.test.ts` (12) and `lessonMeaning.test.ts` (7) plus the existing
+`lessonGames`, `homework`, `gameAmber` (a fourth accent, ≥8 ΔE from the others, white text ≥4.5:1), `i18n*` and
+`appHelp` suites; the API's `game.test.ts`. In the browser (Expo web): a Grade 9 chemistry lesson opens the game with
+the book's definition and four terms, the right answer turns green and the score reads «1 من 6»; its chooser shows
+four tiles; a lesson with two key terms shows only this tile; no console errors.
+**Not verified:** a homework with a `meaning` attachment end to end against a database (the enum change is covered by
+unit tests only); the game on a phone; dark mode of the new screen; that every served entry is right against the
+printed page (the filters and two independent samples are not a page-by-page read — a teacher skimming the term
+column of the skim table in `glossary-sheet` would be). The full
+mobile and curriculum suites fail on this Windows checkout for line-ending reasons unrelated to this change
+(`scopeSelection`, the committed-sheet comparisons, `quran_corner.json`).
+
+
+## English lessons (grades 9-10) get their book pages, 2026-10-25
+
+English was the one subject the page mapper could not touch: the catalog names every lesson by
+its skill («القراءة والمفردات», «المحادثة»), repeated in every unit, and the book is in English,
+so there is no title to match.
+
+- `scripts/map_english_pages.py` finds the lessons by position instead. «High Note» prints a
+  running header, «LESSON 1A …», numbered 1-7 inside each unit; the headers in page order, cut
+  into units wherever the number drops, must come out in exactly the shape the curriculum has
+  (5 units × 7 lessons), or the book is left alone. All four student books on disk fit: 140
+  lessons (Grade 9 S1/S2, Grade 10 S1/S2), 288 pages, rendered with `render_lesson_pages.py`
+  and uploaded to `iqraa-public/book-pages/`. `book-page-links.json` lists 1,952 lessons /
+  12,747 pages.
+- Checked on a contact sheet of 18 sampled openers: each starts at its «LESSON nA» header (a
+  unit's first lesson shares its page with the unit's banner).
+- **Not covered:** Grades 1-8 English. Their PDFs are not on disk (the figure folders for
+  grades 7-8 hold only pictures), and the catalog's NCCD links come to about 1.9 GB for the
+  16 books. Those books are laid out differently (the primary ones are picture-led), so the
+  header method would need checking on each. The four Grade 10 vocational English books have
+  no student-book link.
+
 ## A parent signs up with an email or a teacher's code — 2026-10-25
 
 Since 2026-10-10 a parent could only sign up with a teacher's code (no email, no password), so a parent who did not have
