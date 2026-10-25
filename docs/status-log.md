@@ -69,6 +69,20 @@ catalog leaves empty on purpose — see `g6EnglishSem1.ts`).
   way forward is an opt-in that skips the Arabic gates for an English book, or pasting the Word
   List text. Also not done: Grades 6 and 7, Grade 10 semester 2, a real phone.
 
+## The screenshot script can shoot the English UI — 2026-10-25
+
+- **What changed.** `e2e/screens.mjs` shot the Arabic UI only (`@iqra_language`
+  was hard-coded to `ar`). `UI_LANG=en` now shoots English, with locale
+  `en-US`, and its file names end in `-en`. `e2e/README-screens.md` says so.
+  Direction is set per component, not by the document, so a row layout needs
+  checking in both languages.
+- **Why.** It was written to check «The desktop Tools grid reads right to left
+  in Arabic» in both languages. That fix landed separately, so only the script
+  change is left here.
+- **Verified.** On this branch's web build, `ONLY=tools` ran with and without
+  `UI_LANG=en`. Desktop English starts at "Lesson slides" top left; Arabic
+  starts at «شرائح الدرس» top right. **Not checked:** routes other than `tools`
+  in English.
 
 ## Grade 8 English gets its book pages; Grades 1-7 do not, 2026-10-25
 
