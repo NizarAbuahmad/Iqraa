@@ -28,6 +28,7 @@ function useSafeTabBarHeight(): number {
   }
 }
 import { Ionicons } from '@expo/vector-icons';
+import { ICON } from '@/constants/icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -540,7 +541,7 @@ function ContextBanner({
               flex: 1,
             }]}
           >
-            <Ionicons name="location-outline" size={13} color={topic ? colors.primary : colors.mutedForeground} />
+            <Ionicons name="location-outline" size={14} color={topic ? colors.primary : colors.mutedForeground} />
             <Text
               numberOfLines={1}
               style={[ctxStyles.pillText, {
@@ -552,7 +553,7 @@ function ContextBanner({
             >
               {topic ? `${t('currentlyTeaching')}: ${topic}` : t('setTeachingContext')}
             </Text>
-            <Ionicons name="chevron-down" size={13} color={colors.mutedForeground} style={{ marginStart: 4 }} />
+            <Ionicons name="chevron-down" size={14} color={colors.mutedForeground} style={{ marginStart: 4 }} />
           </Pressable>
           {topic ? (
             <Pressable onPress={handleClear} hitSlop={8} style={ctxStyles.clearBtn}>
@@ -712,7 +713,7 @@ function ContextBanner({
                 },
               ]}
             >
-              <Ionicons name="chatbubble-ellipses-outline" size={18} color={draftTopic.trim() ? colors.primaryForeground : colors.mutedForeground} />
+              <Ionicons name="chatbubble-ellipses-outline" size={20} color={draftTopic.trim() ? colors.primaryForeground : colors.mutedForeground} />
               <Text style={[ctxStyles.askBtnText, {
                 color: draftTopic.trim() ? colors.primaryForeground : colors.mutedForeground,
                 fontFamily: 'ReadexPro_700Bold',
@@ -793,15 +794,17 @@ function LessonPrepProgressCard({
         {isRTL ? 'ما أنجزناه:' : 'Completed:'}
       </Text>
       {progress.done.map(item => (
-        <Text
-          key={item.id}
-          style={[
-            prepStyles.line,
-            { color: colors.foreground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' },
-          ]}
-        >
-          ✅ {item.label}
-        </Text>
+        <View key={item.id} style={[prepStyles.lineRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Ionicons name="checkmark-circle" size={ICON.md} color={colors.success} />
+          <Text
+            style={[
+              prepStyles.line,
+              { flex: 1, color: colors.foreground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' },
+            ]}
+          >
+            {item.label}
+          </Text>
+        </View>
       ))}
       {progress.remaining.length > 0 ? (
         <>
@@ -819,15 +822,17 @@ function LessonPrepProgressCard({
             {isRTL ? 'ما تبقّى للدرس:' : 'Still needed for the lesson:'}
           </Text>
           {progress.remaining.map(item => (
-            <Text
-              key={item.id}
-              style={[
-                prepStyles.line,
-                { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' },
-              ]}
-            >
-              ⬜ {item.label}
-            </Text>
+            <View key={item.id} style={[prepStyles.lineRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <Ionicons name="ellipse-outline" size={ICON.md} color={colors.mutedForeground} />
+              <Text
+                style={[
+                  prepStyles.line,
+                  { flex: 1, color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' },
+                ]}
+              >
+                {item.label}
+              </Text>
+            </View>
           ))}
         </>
       ) : null}
@@ -859,6 +864,7 @@ const prepStyles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 2,
   },
+  lineRow: { alignItems: 'center', gap: 6 },
   line: {
     fontFamily: 'Almarai_400Regular',
     fontSize: 13,
@@ -1280,7 +1286,7 @@ function MessageBubble({
                 accessibilityRole="button"
                 accessibilityLabel={action.label}
               >
-                <Ionicons name={action.icon} size={13} color={action.color} />
+                <Ionicons name={action.icon} size={14} color={action.color} />
                 <Text style={[styles.msgActionText, { color: action.color }]}>{action.label}</Text>
               </Pressable>
             ))}
@@ -3569,7 +3575,7 @@ export default function IqraScreen() {
               backgroundColor: colors.secondary,
             }}
           >
-            <Ionicons name={setupNeed === 'class' ? 'people-outline' : 'calendar-outline'} size={18} color={colors.primary} />
+            <Ionicons name={setupNeed === 'class' ? 'people-outline' : 'calendar-outline'} size={20} color={colors.primary} />
             <Text style={{ flex: 1, fontSize: 14, lineHeight: 22, fontFamily: 'Almarai_400Regular', color: colors.foreground, textAlign: isRTL ? 'right' : 'left' }}>
               {t('chatSetupTitle')}
             </Text>
@@ -3597,7 +3603,7 @@ export default function IqraScreen() {
               backgroundColor: colors.secondary,
             }}
           >
-            <Ionicons name="time-outline" size={13} color={colors.primary} />
+            <Ionicons name="time-outline" size={14} color={colors.primary} />
             <Text style={{ fontSize: 13, fontFamily: 'ReadexPro_600SemiBold', color: colors.primary }}>{periodLine}</Text>
           </View>
         ) : null}
@@ -4189,7 +4195,7 @@ export default function IqraScreen() {
             >
               <Ionicons
                 name={isRTL ? 'arrow-back' : 'arrow-forward'}
-                size={18}
+                size={20}
                 color={input.trim() ? colors.primaryForeground : colors.mutedForeground}
               />
             </Pressable>

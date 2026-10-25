@@ -10,13 +10,14 @@
  * Completions are fetched for the family's own roster rows only, so one
  * family's ticks are never in memory while another's list is being built.
  */
-import { db, classGroups, classMemberships, evaluations, homework, homeworkCompletions, users } from "@workspace/db";
+import { db, classGroups, classMemberships, evaluations, gameResults, homework, homeworkCompletions, users } from "@workspace/db";
 import { and, asc, gte, inArray, isNull, eq } from "drizzle-orm";
 import {
   buildFamilyHomework,
   type CompletionRow,
   type ExamRow,
   type FamilyHomeworkItem,
+  type GameResultRow,
   type HomeworkRow,
   type MembershipRow,
   type TeacherRow,
@@ -74,7 +75,8 @@ export async function loadFamilyHomework(
   const accounts = withAccount ?? (await studentIdsWithSelfAccount(studentIds));
   const teacherIds = [...new Set(memberships.map(m => m.teacherId))];
   const examIds = [...new Set(homeworkRows.flatMap(h => (h.evaluationId ? [h.evaluationId] : [])))];
-  const [completions, teachers, exams] = await Promise.all([
+  const hwIds = homeworkRows.map(h => h.id);
+  const [completions, gameRows, teachers, exams] = await Promise.all([
     db
       .select({
         homeworkId: homeworkCompletions.homeworkId,
@@ -88,6 +90,19 @@ export async function loadFamilyHomework(
           inArray(homeworkCompletions.studentId, studentIds),
         ),
       ) as Promise<CompletionRow[]>,
+    // Like completions: the family's own roster rows only.
+    db
+      .select({
+        homeworkId: gameResults.homeworkId,
+        studentId: gameResults.studentId,
+        lessonId: gameResults.lessonId,
+        game: gameResults.game,
+        score: gameResults.score,
+        total: gameResults.total,
+        attempts: gameResults.attempts,
+      })
+      .from(gameResults)
+      .where(and(inArray(gameResults.homeworkId, hwIds), inArray(gameResults.studentId, studentIds))) as Promise<GameResultRow[]>,
     db
       .select({ id: users.id, firstName: users.firstName, lastName: users.lastName })
       .from(users)
@@ -107,5 +122,5 @@ export async function loadFamilyHomework(
           .where(inArray(evaluations.id, examIds)) as Promise<ExamRow[]>),
   ]);
 
-  return buildFamilyHomework({ homework: homeworkRows, memberships, completions, teachers, exams, now, withAccount: accounts });
+  return buildFamilyHomework({ homework: homeworkRows, memberships, completions, gameResults: gameRows, teachers, exams, now, withAccount: accounts });
 }

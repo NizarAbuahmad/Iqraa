@@ -19,6 +19,8 @@ export * from "./teachingPlans";
 export * from "./schedule";
 // Homework a teacher sets for a class, and who has ticked it off — see homework.ts
 export * from "./homework";
+// A student's best Math Corner exercise score per lesson — see mathPractice.ts
+export * from "./mathPractice";
 export * from "./assessmentConfig";
 export * from "./evaluations";
 export * from "./attempts";
@@ -47,6 +49,9 @@ export * from "./parentContacts";
 
 // Rate-limit counters, shared across instances — see lib/rateLimit.ts
 export * from "./rateLimits";
+
+// Kahoot-style live games — host on a projector, players join by code — see liveGames.ts
+export * from "./liveGames";
 
 // Admin dashboard: hand-entered growth numbers + iqrra.com signups — see adminMetrics.ts
 export * from "./adminMetrics";

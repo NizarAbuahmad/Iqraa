@@ -31,7 +31,7 @@ export function GeogebraLink() {
       style={[styles.card, surface, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
     >
       <View style={[styles.icon, { backgroundColor: colors.secondary }]}>
-        <Ionicons name="open-outline" size={22} color={colors.primary} />
+        <Ionicons name="open-outline" size={24} color={colors.primary} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[styles.title, { color: colors.foreground, textAlign: align, fontFamily: 'ReadexPro_600SemiBold' }]}>

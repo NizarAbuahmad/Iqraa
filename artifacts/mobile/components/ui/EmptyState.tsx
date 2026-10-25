@@ -40,7 +40,7 @@ export function EmptyState({
     <View style={[styles.wrap, style]}>
       <View style={[styles.card, surface]}>
         <View style={[styles.iconCircle, { backgroundColor: colors.secondary }]}>
-          <Ionicons name={icon} size={30} color={colors.primary} />
+          <Ionicons name={icon} size={32} color={colors.primary} />
         </View>
         <Text style={[styles.title, { color: colors.foreground }]}>{title}</Text>
         {body ? <Text style={[styles.body, { color: colors.mutedForeground }]}>{body}</Text> : null}

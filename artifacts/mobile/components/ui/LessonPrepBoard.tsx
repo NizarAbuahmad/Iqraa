@@ -16,7 +16,9 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { ConceptIcon } from './Glyph';
 import { missingPrepView, prepSummary, savedAgo, type PrepRow } from '@/services/lessonBoard';
+import { readableOn, textOn } from '@/services/readableColor';
 
 type Colors = {
   card: string;
@@ -245,24 +247,26 @@ export function LessonPrepBoard({
                 style={[
                   styles.tile,
                   compact && styles.tileCompact,
-                  { backgroundColor: row.done ? colors.primary : colors.secondary },
+                  // The row's own hue: tinted while still to make, solid once made.
+                  { backgroundColor: row.done ? row.color : row.color + '1F' },
                   row.skipped && styles.dim,
                 ]}
               >
-                <Ionicons
-                  name={row.icon as keyof typeof Ionicons.glyphMap}
-                  size={compact ? 16 : 18}
-                  color={row.done ? colors.primaryForeground : colors.primary}
+                <ConceptIcon
+                  icon={row.icon as keyof typeof Ionicons.glyphMap}
+                  glyph={row.glyph}
+                  size={compact ? 16 : 20}
+                  color={row.done ? textOn(row.color) : readableOn(row.color, colors.card)}
                 />
                 {row.done ? (
                   <View
                     style={[
                       styles.badge,
-                      isRTL ? { left: -5 } : { right: -5 },
-                      { backgroundColor: colors.card, borderColor: colors.primary },
+                      isRTL ? { left: -7 } : { right: -7 },
+                      { backgroundColor: colors.card, borderColor: readableOn(row.color, colors.card) },
                     ]}
                   >
-                    <Ionicons name="checkmark" size={10} color={colors.primary} />
+                    <Ionicons name="checkmark" size={14} color={readableOn(row.color, colors.card)} />
                   </View>
                 ) : null}
               </View>
@@ -286,12 +290,12 @@ export function LessonPrepBoard({
                 </View>
               ) : row.type === nextType ? (
                 <View style={[styles.cta, styles.ctaMake, { flexDirection: rowDir, backgroundColor: colors.primary }]}>
-                  <Ionicons name="add" size={15} color={colors.primaryForeground} />
+                  <Ionicons name="add" size={16} color={colors.primaryForeground} />
                   <Text style={[styles.ctaText, { color: colors.primaryForeground }]}>{createLabel}</Text>
                 </View>
               ) : (
                 <View style={[styles.cta, { flexDirection: rowDir }]}>
-                  <Ionicons name="add" size={15} color={disabled ? colors.mutedForeground : colors.primary} />
+                  <Ionicons name="add" size={16} color={disabled ? colors.mutedForeground : colors.primary} />
                   <Text style={[styles.ctaText, { color: disabled ? colors.mutedForeground : colors.primary }]}>{createLabel}</Text>
                 </View>
               )}
@@ -349,7 +353,7 @@ export function LessonPrepBoard({
                     { flexDirection: rowDir, borderColor: colors.border, backgroundColor: pressed || hovered ? colors.secondary : 'transparent' },
                   ]}
                 >
-                  <Ionicons name="refresh" size={12} color={colors.mutedForeground} />
+                  <Ionicons name="refresh" size={14} color={colors.mutedForeground} />
                   <Text style={[styles.skipText, { color: colors.mutedForeground }]}>{label}</Text>
                 </Pressable>
               );
@@ -392,10 +396,10 @@ const styles = StyleSheet.create({
   tileCompact: { width: 34, height: 34, borderRadius: 9 },
   badge: {
     position: 'absolute',
-    top: -5,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    top: -7,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',

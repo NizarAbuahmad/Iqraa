@@ -34,14 +34,14 @@
       "lessonStartPage": 18
     },
     {
-      "file": "p020.png",
+      "file": "p020-v2.png",
       "sourceId": "g7-social-s2-student-book",
       "pdfPage": 20,
       "rect": [
-        226.9,
-        82.8,
-        562.5,
-        270.7
+        99.5,
+        92.6,
+        564.0,
+        266.7
       ],
       "unit": 1,
       "lesson": 3,
@@ -194,14 +194,14 @@
       "lessonStartPage": 68
     },
     {
-      "file": "p076.png",
+      "file": "p076-v2.png",
       "sourceId": "g7-social-s2-student-book",
       "pdfPage": 76,
       "rect": [
-        62.2,
-        550.8,
-        561.2,
-        670.1
+        0.0,
+        493.4,
+        595.3,
+        793.7
       ],
       "unit": 4,
       "lesson": 2,
@@ -306,14 +306,14 @@
       "lessonStartPage": 98
     },
     {
-      "file": "p101.png",
+      "file": "p101-v2.png",
       "sourceId": "g7-social-s2-student-book",
       "pdfPage": 101,
       "rect": [
-        41.2,
-        239.5,
-        506.2,
-        512.0
+        34.0,
+        197.2,
+        535.0,
+        550.8
       ],
       "unit": 5,
       "lesson": 2,
@@ -338,14 +338,14 @@
       "lessonStartPage": 98
     },
     {
-      "file": "p104.png",
+      "file": "p104-v2.png",
       "sourceId": "g7-social-s2-student-book",
       "pdfPage": 104,
       "rect": [
-        61.7,
-        458.4,
-        302.6,
-        612.5
+        71.3,
+        467.0,
+        299.0,
+        594.0
       ],
       "unit": 5,
       "lesson": 3,
@@ -514,30 +514,14 @@
       "lessonStartPage": 113
     },
     {
-      "file": "p131.png",
+      "file": "p131-v2.png",
       "sourceId": "g7-social-s2-student-book",
       "pdfPage": 131,
       "rect": [
-        37.0,
-        136.1,
-        273.7,
-        440.9
-      ],
-      "unit": 6,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 130
-    },
-    {
-      "file": "p131b.png",
-      "sourceId": "g7-social-s2-student-book",
-      "pdfPage": 131,
-      "rect": [
-        279.5,
-        139.3,
-        528.8,
-        433.7
+        43.0,
+        118.1,
+        530.3,
+        465.5
       ],
       "unit": 6,
       "lesson": 2,

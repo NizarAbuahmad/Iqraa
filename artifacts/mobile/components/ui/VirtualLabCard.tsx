@@ -127,7 +127,7 @@ export function VirtualLabCard({ lessonId, accent }: Props) {
   return (
     <View style={styles.section}>
       <View style={[styles.sectionHeader, { flexDirection: rowDir }]}>
-        <Text style={styles.emoji}>🔬</Text>
+        <Ionicons name="flask-outline" size={20} color={accent} />
         <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
           {t('virtualLabTitle')}
         </Text>
@@ -215,7 +215,6 @@ export function VirtualLabCard({ lessonId, accent }: Props) {
 const styles = StyleSheet.create({
   section: { marginBottom: 20 },
   sectionHeader: { alignItems: 'center', gap: 6, marginBottom: 10 },
-  emoji: { fontSize: 15 },
   sectionTitle: { fontSize: 15 },
   sectionBody: { padding: 16, borderWidth: 1, borderRadius: 12, gap: 8 },
   simName: { fontSize: 15, lineHeight: 21 },

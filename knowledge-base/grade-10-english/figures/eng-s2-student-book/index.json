@@ -178,14 +178,14 @@
       "lessonStartPage": null
     },
     {
-      "file": "p038.png",
+      "file": "p038-v2.png",
       "sourceId": "eng-s2-student-book",
       "pdfPage": 38,
       "rect": [
-        -16.9,
-        31.4,
-        344.4,
-        371.9
+        0.0,
+        0.0,
+        351.0,
+        367.3
       ],
       "unit": 3,
       "lesson": 7,

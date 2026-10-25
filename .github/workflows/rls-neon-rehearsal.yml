@@ -90,13 +90,16 @@ jobs:
         run: pnpm --filter @workspace/db run migrate -- --from-env
 
       - name: Row-level security suites — direct endpoint
+        id: direct
         env:
           RLS_TEST_DATABASE_URL: ${{ secrets.NEON_REHEARSAL_DIRECT_URL }}
         run: pnpm --filter @workspace/db run test
 
-      # Runs even if the direct run failed, so one run reports on both endpoints.
+      # Runs even if the direct TESTS failed, so one run reports on both endpoints — but never when
+      # an earlier step (the confirmation, the rehearsal-database guard, install, build, migrate)
+      # failed: then the direct step is skipped, and so is this one.
       - name: Row-level security suites — pooled endpoint
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.direct.conclusion != 'skipped' }}
         env:
           RLS_TEST_DATABASE_URL: ${{ secrets.NEON_REHEARSAL_POOLED_URL }}
         run: pnpm --filter @workspace/db run test

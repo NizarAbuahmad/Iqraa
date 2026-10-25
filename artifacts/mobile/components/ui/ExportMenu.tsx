@@ -231,7 +231,7 @@ export function ExportMenu({
               ]}
             >
               <View style={[styles.iconWrap, { backgroundColor: opt.color + '18' }]}>
-                <Ionicons name={opt.icon} size={22} color={opt.color} />
+                <Ionicons name={opt.icon} size={24} color={opt.color} />
               </View>
               <View style={{ flex: 1, gap: 2 }}>
                 <Text style={[styles.rowLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>

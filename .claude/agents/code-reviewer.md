@@ -1,5 +1,5 @@
 ---
-name: iqraa-reviewer
+name: code-reviewer
 description: Read-only reviewer for Iqraa diffs before a PR. Checks correctness, the repo's known pitfalls, schema/migration safety, Arabic UI copy and leaked secrets. Use after any code change.
 tools: Read, Grep, Glob, Bash
 model: opus

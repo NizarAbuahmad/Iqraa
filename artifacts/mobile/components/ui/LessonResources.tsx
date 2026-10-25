@@ -109,7 +109,7 @@ export function LessonResources({ topic, onChange }: Props) {
         >
           <Ionicons
             name={m.kind === 'video' ? 'logo-youtube' : 'image-outline'}
-            size={18}
+            size={20}
             color={m.kind === 'video' ? palette.destructive : TEAL}
           />
           <Text
@@ -119,7 +119,7 @@ export function LessonResources({ topic, onChange }: Props) {
             {m.caption || m.url}
           </Text>
           <Pressable onPress={() => { void drop(m.url); }} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('remove')}>
-            <Ionicons name="close-circle" size={18} color={colors.mutedForeground} />
+            <Ionicons name="close-circle" size={20} color={colors.mutedForeground} />
           </Pressable>
         </View>
       ))}

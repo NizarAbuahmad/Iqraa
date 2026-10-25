@@ -21,6 +21,14 @@
  * in `lib/rosterClaim.ts`, and the moderation queue that exists for exactly
  * the user-to-user content this gate currently prevents.
  *
+ * What "hold an account" covers when it is on (since 2026-10-23): a parent
+ * through a teacher's code, and a student through a teacher's code **or an
+ * email with no code**, having confirmed they are an adult or have a
+ * guardian's agreement (`lib/ageConfirmation.ts`). So not every student account
+ * is made inside a class; the store declaration and `constants/legal.ts` (§5 of
+ * the privacy policy, §1 of the terms) must say so, and a lawyer's read is
+ * still owed.
+ *
  * Note what switching it off also switches off: with no parent or student
  * accounts, no chat thread can be created at all — `createDirectThread`
  * requires a teacher on one side and a parent or student on the other, and a
@@ -42,4 +50,17 @@ export function studentAccountsEnabled(): boolean {
  */
 export function masteryGateEnabled(): boolean {
   return process.env.MASTERY_GATE === "true";
+}
+
+/**
+ * Whether an email student is held until a parent approves by email.
+ *
+ * Off unless `GUARDIAN_APPROVAL=true`, and that default is the point: turning it on locks every existing
+ * email student until a parent acts, so it is switched on only once the app that shows the waiting screen has
+ * reached users and the parent-consent wording has been read by a lawyer. Off, sign-up and role switches keep
+ * asking for the age tick (`lib/ageConfirmation.ts`) and nothing else changes. Spec:
+ * `docs/superpowers/specs/2026-10-24-guardian-approval-design.md`.
+ */
+export function guardianApprovalEnabled(): boolean {
+  return process.env.GUARDIAN_APPROVAL === "true";
 }

@@ -36,7 +36,7 @@ export default function NotFoundScreen() {
       <Stack.Screen options={{ title: t('notFoundTitle') }} />
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.iconWrap, { backgroundColor: colors.muted }]}>
-          <Ionicons name="compass-outline" size={30} color={colors.mutedForeground} />
+          <Ionicons name="compass-outline" size={32} color={colors.mutedForeground} />
         </View>
 
         <Text style={[styles.title, { color: colors.foreground, textAlign: 'center' }]}>
@@ -65,7 +65,7 @@ export default function NotFoundScreen() {
             >
               <Ionicons
                 name={d.icon}
-                size={17}
+                size={20}
                 color={d.primary ? colors.primaryForeground || '#fff' : colors.foreground}
               />
               <Text

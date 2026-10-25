@@ -201,7 +201,7 @@ const TOPIC_ICONS: readonly (readonly [RegExp, DeckIconName, string?])[] = [
   [/الأرض|أرض|فضاء|كوكب|مجرة|جغراف|قارة|مناخ|طقس|صخور|earth|space|planet|geograph|climate|weather|\brocks?\b/i, 'globe'],
   [/صحة|جسم|غذاء|تغذية|health|\bbody|nutrition|blood|heart/i, 'heart'],
   [/إحصاء|بيانات|احتمال|data|statistic|probabilit/i, 'bars'],
-  [/أعداد|عدد|كسر|كسور|جبر|معادل|حساب|ضرب|قسمة|هندس|زاوية|مثلث|دائرة|مساحة|number|fraction|algebra|equation|arithmetic|geometr|\bangle|\barea\b|triangle/i, 'calculator'],
+  [/أعداد|عدد|جمع|طرح|منزلة|منزلت|كسر|كسور|جبر|معادل|حساب|ضرب|قسمة|هندس|زاوية|مثلث|دائرة|مساحة|number|fraction|algebra|equation|arithmetic|geometr|\bangle|\barea\b|triangle/i, 'calculator'],
   [/قياس|measure/i, 'ruler'],
   [/تاريخ|زمن|وقت|عصر|حضارة|histor|\btime\b|\bera\b|civiliz/i, 'clock'],
   [/حاسوب|تقنية|برمج|إنترنت|رقمي|computer|technolog|program|internet|digital/i, 'laptop'],
@@ -210,8 +210,13 @@ const TOPIC_ICONS: readonly (readonly [RegExp, DeckIconName, string?])[] = [
   [/قراءة|لغة|قواعد|إملاء|كتابة|أدب|شعر|قصة|reading|\btext|language|grammar|spelling|writing|literature|poem|story/i, 'book'],
 ];
 
+// The primary books set their unit titles with every vowel mark («الْأَعْدادُ ضِمْنَ
+// مَنْزِلَتَيْنِ»), and a mark between two letters stops «أعداد» matching: a whole
+// Grade 1 maths book got the default books icon on every unit. Match on the bare letters.
+const MARKS = /[\u064B-\u065F\u0670\u0640]/g;
+
 function topicRule(text: string): readonly [RegExp, DeckIconName, string?] | null {
-  const t = typeof text === 'string' ? text : '';
+  const t = typeof text === 'string' ? text.replace(MARKS, '') : '';
   return TOPIC_ICONS.find(([re]) => re.test(t)) ?? null;
 }
 

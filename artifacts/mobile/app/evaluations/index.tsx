@@ -102,7 +102,7 @@ export default function EvaluationsScreen() {
         onPress={() => router.push('/evaluations/new')}
         style={[styles.deskNewBtn, { backgroundColor: ACCENT_FILL }]}
       >
-        <Ionicons name="add" size={18} color="#fff" />
+        <Ionicons name="add" size={20} color="#fff" />
         <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>{t('newEvaluation')}</Text>
       </Pressable>
     </View>
@@ -225,7 +225,7 @@ export default function EvaluationsScreen() {
           onPress={() => router.push('/evaluations/new')}
           style={[styles.fab, { backgroundColor: ACCENT_FILL, bottom: insets.bottom + 24 }]}
         >
-          <Ionicons name="add" size={26} color="#fff" />
+          <Ionicons name="add" size={24} color="#fff" />
         </Pressable>
       )}
     </View>

@@ -26,6 +26,7 @@ import { confirm } from '@/services/confirm';
 import { ACCENT, Bar, FilterChip, KeyValue, SectionTitle, StatCard, Table } from '@/components/admin/widgets';
 import { DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
 import { palette } from '@/constants/colors';
+import { TYPE } from '@/constants/theme';
 import { BackButton } from '@/components/ui/BackButton';
 
 const ADMIN_ROLES = ['school_admin', 'system_admin'];
@@ -60,6 +61,15 @@ type UsageSummary = {
 };
 
 type MetricRow = { key: string; value: number; date: string };
+
+/** GET /admin/ai-costs, the parts this screen reads. `byPlatform` ignores the filter. */
+type AiCosts = {
+  byKind: { kind: string; calls: number; hits: number; costUsd: number; p50Ms: number | null; p95Ms: number | null }[];
+  byUser: { userId: string; email: string; role: string; calls: number; costUsd: number }[];
+  byPlatform: { platform: string; calls: number; hits: number; costUsd: number; p50Ms: number | null; p95Ms: number | null }[];
+};
+
+type AiPlatform = 'all' | 'mobile' | 'web' | 'unknown';
 
 /** Must match METRIC_KEYS in api-server lib/adminMetrics.ts. */
 const METRICS: { key: string; ar: string; en: string; icon: keyof typeof Ionicons.glyphMap }[] = [
@@ -106,6 +116,9 @@ export default function AdminDashboardScreen() {
   const [total, setTotal] = useState(0);
   const [filter, setFilter] = useState<RatingFilter>('all');
   const [range, setRange] = useState<Range>(EMPTY_RANGE);
+  const [aiPlatform, setAiPlatform] = useState<AiPlatform>('all');
+  const [aiCosts, setAiCosts] = useState<AiCosts | null>(null);
+  const [aiError, setAiError] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
@@ -140,6 +153,17 @@ export default function AdminDashboardScreen() {
       ))
       .finally(() => setLoading(false));
   }, [isAdmin, filter, range, load, lang]);
+
+  // The AI section's tables follow the platform chips, so they come from the
+  // same endpoint as the AI costs page (current month by default) rather than
+  // from the summary, which would re-run every query on the screen per tap.
+  useEffect(() => {
+    if (!isAdmin) return;
+    setAiError('');
+    apiJson<AiCosts>(`/admin/ai-costs${aiPlatform === 'all' ? '' : `?platform=${aiPlatform}`}`)
+      .then(setAiCosts)
+      .catch((e: unknown) => setAiError(e instanceof Error ? e.message : String(e)));
+  }, [isAdmin, aiPlatform]);
 
   const removeFeedback = async (item: FeedbackItem) => {
     const ok = await confirm({
@@ -313,30 +337,55 @@ export default function AdminDashboardScreen() {
                     colors={colors}
                   />
                 </View>
-                <Table
-                  head={lang === 'ar' ? ['النوع', 'العدد', 'من المخزن', 'التكلفة', 'p50', 'p95'] : ['Kind', 'Calls', 'Cache hits', 'Cost', 'p50', 'p95']}
-                  rows={summary.ai.byKind.map(k => [k.kind, String(k.count), String(k.hits), usd(k.costUsd), secs(k.p50Ms), secs(k.p95Ms)])}
-                  empty={lang === 'ar' ? 'لا توليد هذا الشهر' : 'No generations this month'}
-                  isRTL={isRTL}
-                  colors={colors}
-                />
-                {summary.ai.topSpenders.length > 0 && (
-                  <Table
-                    head={lang === 'ar' ? ['الأعلى إنفاقًا', 'الدور', 'الطلبات', 'التكلفة'] : ['Top spenders', 'Role', 'Calls', 'Cost']}
-                    rows={summary.ai.topSpenders.map(s => [s.email, s.role, String(s.count), usd(s.costUsd)])}
-                    isRTL={isRTL}
-                    colors={colors}
-                  />
+                {aiCosts && (
+                  <>
+                    <Table
+                      head={lang === 'ar' ? ['المنصة', 'العدد', 'من المخزن', 'التكلفة', 'p50', 'p95'] : ['Platform', 'Calls', 'Cache hits', 'Cost', 'p50', 'p95']}
+                      rows={aiCosts.byPlatform.map(p => [
+                        p.platform === 'unknown' ? (lang === 'ar' ? 'غير معروف' : 'unknown') : p.platform,
+                        String(p.calls), String(p.hits), usd(p.costUsd), secs(p.p50Ms), secs(p.p95Ms),
+                      ])}
+                      empty={lang === 'ar' ? 'لا توليد هذا الشهر' : 'No generations this month'}
+                      isRTL={isRTL}
+                      colors={colors}
+                    />
+                    <View style={[styles.filterRow, { flexDirection: isRTL ? 'row-reverse' : 'row', marginTop: 12 }]}>
+                      {([
+                        ['all', 'الكل', 'All'],
+                        ['mobile', 'التطبيق', 'Mobile'],
+                        ['web', 'الويب', 'Web'],
+                        ['unknown', 'غير معروف', 'Unknown'],
+                      ] as const).map(([key, ar, en]) => (
+                        <FilterChip key={key} label={lang === 'ar' ? ar : en} active={aiPlatform === key} onPress={() => setAiPlatform(key)} colors={colors} />
+                      ))}
+                    </View>
+                    <Table
+                      head={lang === 'ar' ? ['النوع', 'العدد', 'من المخزن', 'التكلفة', 'p50', 'p95'] : ['Kind', 'Calls', 'Cache hits', 'Cost', 'p50', 'p95']}
+                      rows={aiCosts.byKind.map(k => [k.kind, String(k.calls), String(k.hits), usd(k.costUsd), secs(k.p50Ms), secs(k.p95Ms)])}
+                      empty={lang === 'ar' ? 'لا توليد هذا الشهر' : 'No generations this month'}
+                      isRTL={isRTL}
+                      colors={colors}
+                    />
+                    {aiCosts.byUser.length > 0 && (
+                      <Table
+                        head={lang === 'ar' ? ['الأعلى إنفاقًا', 'الدور', 'الطلبات', 'التكلفة'] : ['Top spenders', 'Role', 'Calls', 'Cost']}
+                        rows={aiCosts.byUser.slice(0, 10).map(s => [s.email, s.role, String(s.calls), usd(s.costUsd)])}
+                        isRTL={isRTL}
+                        colors={colors}
+                      />
+                    )}
+                  </>
                 )}
+                {!!aiError && <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, marginTop: 8 }}>{aiError}</Text>}
                 <Pressable
                   onPress={() => { void openExternal('https://console.cloud.google.com/run?project=iqraa-auth-507315'); }}
                   style={[styles.posthogLink, { borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                 >
-                  <Ionicons name="speedometer-outline" size={15} color={colors.mutedForeground} />
+                  <Ionicons name="speedometer-outline" size={16} color={colors.mutedForeground} />
                   <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
                     {lang === 'ar' ? 'زمن استجابة الخادم ونسبة الأخطاء في Cloud Run' : 'Server latency & error rate in Cloud Run'}
                   </Text>
-                  <Ionicons name="open-outline" size={13} color={colors.mutedForeground} />
+                  <Ionicons name="open-outline" size={14} color={colors.mutedForeground} />
                 </Pressable>
               </View>
             )}
@@ -450,11 +499,11 @@ export default function AdminDashboardScreen() {
                   onPress={() => { void openExternal('https://us.posthog.com'); }}
                   style={[styles.posthogLink, { borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                 >
-                  <Ionicons name="analytics-outline" size={15} color={colors.mutedForeground} />
+                  <Ionicons name="analytics-outline" size={16} color={colors.mutedForeground} />
                   <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
                     {lang === 'ar' ? 'افتح PostHog لبيانات الاستخدام التفصيلية (الشاشات، الأدوات)' : 'Open PostHog for detailed usage/trace data (screens, tools)'}
                   </Text>
-                  <Ionicons name={isRTL ? 'open-outline' : 'open-outline'} size={13} color={colors.mutedForeground} />
+                  <Ionicons name={isRTL ? 'open-outline' : 'open-outline'} size={14} color={colors.mutedForeground} />
                 </Pressable>
               </View>
             )}
@@ -468,7 +517,7 @@ export default function AdminDashboardScreen() {
                 <FilterChip label={lang === 'ar' ? 'الكل' : 'All'} active={filter === 'all'} onPress={() => setFilter('all')} colors={colors} />
                 <FilterChip label="👍" active={filter === 'up'} onPress={() => setFilter('up')} colors={colors} />
                 <FilterChip label="👎" active={filter === 'down'} onPress={() => setFilter('down')} colors={colors} />
-                <FilterChip label={lang === 'ar' ? '💡 اقتراحات' : '💡 Ideas'} active={filter === 'idea'} onPress={() => setFilter('idea')} colors={colors} />
+                <FilterChip label={lang === 'ar' ? 'اقتراحات' : 'Ideas'} active={filter === 'idea'} onPress={() => setFilter('idea')} colors={colors} />
               </View>
               <DateRange value={range} onChange={setRange} ar={lang === 'ar'} isRTL={isRTL} colors={colors} />
 
@@ -579,7 +628,7 @@ function GrowthSection({ metrics, onSaved, isRTL, ar, colors }: {
           return (
             <View key={m.key} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexGrow: 1, flexBasis: 150 }]}>
               <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
-                <Ionicons name={m.icon} size={15} color={ACCENT} />
+                <Ionicons name={m.icon} size={16} color={ACCENT} />
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{ar ? m.ar : m.en}</Text>
               </View>
               <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
@@ -646,7 +695,7 @@ function FeedbackRow({ item, isRTL, colors, onDelete }: { item: FeedbackItem; is
         <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 }}>{date}</Text>
         {/* "Read it": the note goes away. The list is a to-do, not an archive. */}
         <Pressable onPress={onDelete} hitSlop={8} accessibilityLabel="delete">
-          <Ionicons name="trash-outline" size={15} color={colors.mutedForeground} />
+          <Ionicons name="trash-outline" size={16} color={colors.mutedForeground} />
         </Pressable>
       </View>
       {!!item.comment && (

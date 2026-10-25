@@ -25,7 +25,7 @@ import { askAboutLessonHandoff } from '@/services/lessonShelf';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { bookPagesForLesson } from '@/services/bookFigures';
 import { VocabularyPracticePanel } from '@/components/ui/VocabularyPracticePanel';
-import { hubLesson } from '@workspace/curriculum/englishHub';
+import { hubLessonVisible } from '@workspace/curriculum/englishGrammar';
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { goBack } from '@/services/navigation';
 import { readableOn } from '@/services/readableColor';
@@ -140,13 +140,13 @@ export default function LessonDetailScreen() {
             </View>
           ) : null}
           <View style={[styles.heroPill, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-            <Ionicons name="time-outline" size={12} color="#fff" />
+            <Ionicons name="time-outline" size={14} color="#fff" />
             <Text style={[styles.heroPillText, { color: '#fff', fontFamily: 'Almarai_400Regular' }]}>
               {lesson.estimatedDuration} {t('min')}
             </Text>
           </View>
           <View style={[styles.heroPill, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-            <Ionicons name="school-outline" size={12} color="#fff" />
+            <Ionicons name="school-outline" size={14} color="#fff" />
             <Text style={[styles.heroPillText, { color: '#fff', fontFamily: 'Almarai_400Regular' }]}>
               {lesson.outcomes.length} {t('outcomes')}
             </Text>
@@ -186,7 +186,7 @@ export default function LessonDetailScreen() {
             }}
             style={[styles.aiBtn, { backgroundColor: colorFill, borderRadius: colors.radius, flex: 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
-            <Ionicons name={prepOpen ? 'chevron-up' : 'sparkles'} size={18} color="#fff" />
+            <Ionicons name={prepOpen ? 'chevron-up' : 'sparkles'} size={20} color="#fff" />
             <Text style={[styles.aiBtnText, { color: '#fff', fontFamily: 'ReadexPro_600SemiBold' }]}>
               {prepOpen ? t('prepInlineHide') : t('generateAILesson')}
             </Text>
@@ -284,7 +284,7 @@ export default function LessonDetailScreen() {
         <VocabularyPracticePanel lessonId={lesson.id} accent={color} />
 
         {/* Grades 1–4 and 9–10 English: the same words, voiced and played with. */}
-        {hubLesson(lesson.id) ? (
+        {hubLessonVisible(lesson.id) ? (
           <Pressable
             onPress={() => router.push({ pathname: '/curriculum/english/[lessonId]', params: { lessonId: lesson.id } } as never)}
             style={({ pressed }) => [
@@ -292,11 +292,11 @@ export default function LessonDetailScreen() {
               { backgroundColor: colorFill, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.9 : 1 },
             ]}
           >
-            <Text style={{ fontSize: 24 }}>🎧</Text>
+            <Ionicons name="headset-outline" size={24} color="#fff" />
             <Text style={{ flex: 1, color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }}>
               {t('hubOpenFromLesson')}
             </Text>
-            <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color="#fff" />
+            <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color="#fff" />
           </Pressable>
         ) : null}
 
@@ -309,11 +309,11 @@ export default function LessonDetailScreen() {
               { backgroundColor: colorFill, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.9 : 1 },
             ]}
           >
-            <Text style={{ fontSize: 24 }}>🎮</Text>
+            <Ionicons name="game-controller-outline" size={24} color="#fff" />
             <Text style={{ flex: 1, color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }}>
               {t('lessonGamesOpen')}
             </Text>
-            <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color="#fff" />
+            <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color="#fff" />
           </Pressable>
         ) : null}
 

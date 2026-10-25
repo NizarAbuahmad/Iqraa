@@ -5,6 +5,7 @@
  * having filtered correctly.
  */
 import type { HomeworkResource } from "@workspace/db";
+import { attachedGames, isBetterResult } from "./game.ts";
 import { dueAtToDueDate, homeworkState, type HomeworkState } from "./rules.ts";
 
 export interface HomeworkRow {
@@ -14,6 +15,9 @@ export interface HomeworkRow {
 /** One roster row of the family sitting in one live class. */
 export interface MembershipRow { classGroupId: string; studentId: string; className: string; teacherId: string }
 export interface CompletionRow { homeworkId: string; studentId: string; doneAt: Date }
+export interface GameResultRow {
+  homeworkId: string; studentId: string; lessonId: string; game: string; score: number; total: number; attempts: number;
+}
 export interface TeacherRow { id: string; firstName: string; lastName: string }
 export interface ExamRow {
   id: string; title: string; titleAr: string; status: string;
@@ -39,10 +43,33 @@ export interface FamilyHomeworkItem {
    * must not show class-2 work as "late" for want of a tick nobody can make.
    */
   canTrack: boolean;
+  /** Best result per currently attached (lesson, game), for this family's own roster rows in the item's class; `[]` when none. No ids. */
+  gameResults: Array<{ lessonId: string; game: string; score: number; total: number; attempts: number }>;
+}
+
+/**
+ * One result per (lesson, game) CURRENTLY attached to the homework, in
+ * attachment order — a game the teacher has since detached shows nothing (its
+ * rows stay in the table). Among the family's rows the best ratio wins, a tie
+ * keeps the higher attempt count (a student's write puts the same result on
+ * each of their rows in the class, so duplicates are normal).
+ */
+function bestPerGame(rows: GameResultRow[], resources: readonly HomeworkResource[]): FamilyHomeworkItem["gameResults"] {
+  const out: FamilyHomeworkItem["gameResults"] = [];
+  for (const { lessonId, game } of attachedGames(resources)) {
+    let best: GameResultRow | undefined;
+    for (const r of rows) {
+      if (r.lessonId !== lessonId || r.game !== game) continue;
+      if (!best || isBetterResult(r, best) || (!isBetterResult(best, r) && r.attempts > best.attempts)) best = r;
+    }
+    if (best) out.push({ lessonId, game, score: best.score, total: best.total, attempts: best.attempts });
+  }
+  return out;
 }
 
 export function buildFamilyHomework(input: {
   homework: HomeworkRow[]; memberships: MembershipRow[]; completions: CompletionRow[];
+  gameResults?: GameResultRow[];
   teachers: TeacherRow[]; exams: ExamRow[]; now: Date;
   /** Roster-row ids that have a student account (a `self` link to any user). */
   withAccount: ReadonlySet<string>;
@@ -91,6 +118,10 @@ export function buildFamilyHomework(input: {
           ? { title: exam.titleAr || exam.title }
           : null,
       resources: h.resources ?? [],
+      gameResults: bestPerGame(
+        (input.gameResults ?? []).filter((g) => g.homeworkId === h.id && rosterIds.has(g.studentId)),
+        h.resources ?? [],
+      ),
     });
   }
 

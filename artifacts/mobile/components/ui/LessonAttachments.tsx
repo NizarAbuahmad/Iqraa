@@ -124,7 +124,7 @@ export function LessonAttachments({ lessonId, onChange }: Props) {
               ) : (
                 <Ionicons
                   name={m.kind === 'audio' ? 'musical-notes-outline' : 'document-text-outline'}
-                  size={18}
+                  size={20}
                   color={TEAL}
                 />
               )}
@@ -135,7 +135,7 @@ export function LessonAttachments({ lessonId, onChange }: Props) {
                 {m.caption || m.mimeType}
               </Text>
               <Pressable onPress={() => { void drop(m.id); }} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('remove')}>
-                <Ionicons name="close-circle" size={18} color={colors.mutedForeground} />
+                <Ionicons name="close-circle" size={20} color={colors.mutedForeground} />
               </Pressable>
             </View>
           ))}

@@ -90,7 +90,7 @@ export function MaterialPickerSheet({
                   </View>
                   {isAdded ? (
                     <View style={{ alignItems: 'center', flexDirection: 'row', gap: SPACE.xs }}>
-                      <Ionicons name="checkmark-circle" size={18} color={colors.mutedForeground} />
+                      <Ionicons name="checkmark-circle" size={20} color={colors.mutedForeground} />
                       <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: TYPE.caption }}>{t('resourceAdded')}</Text>
                     </View>
                   ) : (

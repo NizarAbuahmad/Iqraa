@@ -158,7 +158,7 @@ export default function NewGroupScreen() {
             onPress={() => setPickerOpen(true)}
             style={[styles.addMembersBtn, { borderColor: colors.primary, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
-            <Ionicons name="person-add-outline" size={18} color={colors.primary} />
+            <Ionicons name="person-add-outline" size={20} color={colors.primary} />
             <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium' }}>{t('messagingPickMembers')}</Text>
           </Pressable>
         </View>

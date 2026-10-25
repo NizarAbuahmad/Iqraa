@@ -2,30 +2,14 @@
  "sourceId": "g9-math-s2-student-book",
  "figures": [
   {
-   "file": "p008b.png",
+   "file": "p008b-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 8,
    "rect": [
-    68.7,
-    176.5,
-    206.9,
-    310.6
-   ],
-   "unit": 5,
-   "lesson": 1,
-   "lessonTitleEn": "Proportional Parts in Triangles",
-   "lessonTitleAr": null,
-   "lessonStartPage": 8
-  },
-  {
-   "file": "p010.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 10,
-   "rect": [
-    437.9,
-    597.0,
-    571.2,
-    694.0
+    62.7,
+    193.0,
+    202.0,
+    292.9
    ],
    "unit": 5,
    "lesson": 1,
@@ -66,30 +50,14 @@
    "lessonStartPage": 19
   },
   {
-   "file": "p023.png",
+   "file": "p023-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 23,
    "rect": [
-    177.7,
-    400.3,
-    291.0,
-    508.3
-   ],
-   "unit": 5,
-   "lesson": 2,
-   "lessonTitleEn": "Bisectors in Triangle",
-   "lessonTitleAr": null,
-   "lessonStartPage": 19
-  },
-  {
-   "file": "p023b.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 23,
-   "rect": [
-    316.5,
+    180.2,
     405.0,
-    412.9,
-    501.5
+    289.3,
+    557.2
    ],
    "unit": 5,
    "lesson": 2,
@@ -98,14 +66,14 @@
    "lessonStartPage": 19
   },
   {
-   "file": "p023c.png",
+   "file": "p023b-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 23,
    "rect": [
-    56.1,
-    408.9,
-    148.8,
-    501.6
+    304.0,
+    403.0,
+    420.9,
+    557.2
    ],
    "unit": 5,
    "lesson": 2,
@@ -114,14 +82,14 @@
    "lessonStartPage": 19
   },
   {
-   "file": "p024.png",
+   "file": "p023c-v2.png",
    "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 24,
+   "pdfPage": 23,
    "rect": [
-    437.9,
-    78.8,
-    571.2,
-    210.7
+    48.6,
+    403.0,
+    154.6,
+    557.2
    ],
    "unit": 5,
    "lesson": 2,
@@ -130,30 +98,14 @@
    "lessonStartPage": 19
   },
   {
-   "file": "p026.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 26,
-   "rect": [
-    76.0,
-    320.1,
-    151.1,
-    395.3
-   ],
-   "unit": 5,
-   "lesson": 2,
-   "lessonTitleEn": "Bisectors in Triangle",
-   "lessonTitleAr": null,
-   "lessonStartPage": 19
-  },
-  {
-   "file": "p026b.png",
+   "file": "p026-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 26,
    "rect": [
-    437.9,
-    563.8,
-    571.2,
-    669.7
+    66.0,
+    308.0,
+    212.0,
+    392.0
    ],
    "unit": 5,
    "lesson": 2,
@@ -162,14 +114,14 @@
    "lessonStartPage": 19
   },
   {
-   "file": "p029.png",
+   "file": "p029-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 29,
    "rect": [
-    204.4,
-    270.8,
-    379.8,
-    415.4
+    205.0,
+    275.0,
+    370.0,
+    398.0
    ],
    "unit": 5,
    "lesson": 2,
@@ -192,22 +144,6 @@
    "lessonTitleEn": "Bisectors in Triangle",
    "lessonTitleAr": null,
    "lessonStartPage": 19
-  },
-  {
-   "file": "p032.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 32,
-   "rect": [
-    437.9,
-    362.0,
-    571.2,
-    450.1
-   ],
-   "unit": 5,
-   "lesson": 3,
-   "lessonTitleEn": "Medians and Altitudes in Triangle",
-   "lessonTitleAr": null,
-   "lessonStartPage": 31
   },
   {
    "file": "p033.png",
@@ -274,14 +210,14 @@
    "lessonStartPage": 31
   },
   {
-   "file": "p037.png",
+   "file": "p037-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 37,
    "rect": [
-    73.1,
-    359.7,
-    205.3,
-    483.9
+    47.0,
+    363.7,
+    201.0,
+    480.0
    ],
    "unit": 5,
    "lesson": 3,
@@ -322,22 +258,6 @@
    "lessonStartPage": 31
   },
   {
-   "file": "p039.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 39,
-   "rect": [
-    451.0,
-    0.0,
-    573.7,
-    137.8
-   ],
-   "unit": 5,
-   "lesson": 3,
-   "lessonTitleEn": "Medians and Altitudes in Triangle",
-   "lessonTitleAr": null,
-   "lessonStartPage": 31
-  },
-  {
    "file": "p039b.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 39,
@@ -354,46 +274,14 @@
    "lessonStartPage": 31
   },
   {
-   "file": "p044.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 44,
-   "rect": [
-    437.9,
-    619.5,
-    571.2,
-    722.5
-   ],
-   "unit": 5,
-   "lesson": 4,
-   "lessonTitleEn": "Trigonometric Ratios",
-   "lessonTitleAr": null,
-   "lessonStartPage": 40
-  },
-  {
-   "file": "p046.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 46,
-   "rect": [
-    437.9,
-    174.3,
-    571.2,
-    298.5
-   ],
-   "unit": 5,
-   "lesson": 4,
-   "lessonTitleEn": "Trigonometric Ratios",
-   "lessonTitleAr": null,
-   "lessonStartPage": 40
-  },
-  {
-   "file": "p049b.png",
+   "file": "p049b-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 49,
    "rect": [
-    72.2,
-    214.5,
-    176.7,
-    329.4
+    46.0,
+    218.0,
+    180.0,
+    346.0
    ],
    "unit": 5,
    "lesson": 5,
@@ -402,14 +290,14 @@
    "lessonStartPage": 49
   },
   {
-   "file": "p049c.png",
+   "file": "p049c-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 49,
    "rect": [
-    41.1,
-    490.7,
-    200.6,
-    624.0
+    49.0,
+    495.0,
+    239.5,
+    620.0
    ],
    "unit": 5,
    "lesson": 5,
@@ -466,78 +354,14 @@
    "lessonStartPage": 69
   },
   {
-   "file": "p070.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 70,
-   "rect": [
-    437.9,
-    619.2,
-    589.7,
-    783.4
-   ],
-   "unit": 6,
-   "lesson": 2,
-   "lessonTitleEn": "Operations with Radical Expressions",
-   "lessonTitleAr": null,
-   "lessonStartPage": 69
-  },
-  {
-   "file": "p076.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 76,
-   "rect": [
-    437.9,
-    69.4,
-    571.2,
-    168.9
-   ],
-   "unit": 6,
-   "lesson": 2,
-   "lessonTitleEn": "Operations with Radical Expressions",
-   "lessonTitleAr": null,
-   "lessonStartPage": 69
-  },
-  {
-   "file": "p078.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 78,
-   "rect": [
-    141.4,
-    284.9,
-    273.3,
-    360.7
-   ],
-   "unit": 6,
-   "lesson": 2,
-   "lessonTitleEn": "Operations with Radical Expressions",
-   "lessonTitleAr": null,
-   "lessonStartPage": 69
-  },
-  {
-   "file": "p078b.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 78,
-   "rect": [
-    141.4,
-    349.7,
-    273.3,
-    425.5
-   ],
-   "unit": 6,
-   "lesson": 2,
-   "lessonTitleEn": "Operations with Radical Expressions",
-   "lessonTitleAr": null,
-   "lessonStartPage": 69
-  },
-  {
-   "file": "p080.png",
+   "file": "p080-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 80,
    "rect": [
-    1.4,
-    352.6,
-    456.4,
-    599.0
+    59.0,
+    410.8,
+    439.0,
+    614.9
    ],
    "unit": 6,
    "lesson": 3,
@@ -546,14 +370,14 @@
    "lessonStartPage": 79
   },
   {
-   "file": "p081.png",
+   "file": "p081-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 81,
    "rect": [
-    0.0,
-    169.4,
-    330.2,
-    431.8
+    45.0,
+    242.0,
+    322.0,
+    437.8
    ],
    "unit": 6,
    "lesson": 3,
@@ -562,14 +386,14 @@
    "lessonStartPage": 79
   },
   {
-   "file": "p082.png",
+   "file": "p082-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 82,
    "rect": [
     0.0,
-    21.7,
-    202.9,
-    268.2
+    29.0,
+    179.0,
+    209.0
    ],
    "unit": 6,
    "lesson": 3,
@@ -578,30 +402,14 @@
    "lessonStartPage": 79
   },
   {
-   "file": "p082b.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 82,
-   "rect": [
-    437.9,
-    593.7,
-    571.2,
-    683.9
-   ],
-   "unit": 6,
-   "lesson": 3,
-   "lessonTitleEn": "Solving Radical Equations",
-   "lessonTitleAr": null,
-   "lessonStartPage": 79
-  },
-  {
-   "file": "p083.png",
+   "file": "p083-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 83,
    "rect": [
-    0.0,
-    341.4,
-    160.1,
-    587.8
+    48.0,
+    416.0,
+    165.0,
+    529.0
    ],
    "unit": 6,
    "lesson": 3,
@@ -610,13 +418,13 @@
    "lessonStartPage": 79
   },
   {
-   "file": "p084.png",
+   "file": "p084-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 84,
    "rect": [
     0.0,
-    577.5,
-    295.2,
+    628.3,
+    439.7,
     810.7
    ],
    "unit": 6,
@@ -634,22 +442,6 @@
     496.4,
     206.8,
     623.0
-   ],
-   "unit": 6,
-   "lesson": 3,
-   "lessonTitleEn": "Solving Radical Equations",
-   "lessonTitleAr": null,
-   "lessonStartPage": 79
-  },
-  {
-   "file": "p087.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 87,
-   "rect": [
-    49.7,
-    321.0,
-    186.1,
-    396.8
    ],
    "unit": 6,
    "lesson": 3,
@@ -690,30 +482,14 @@
    "lessonStartPage": 79
   },
   {
-   "file": "p087d.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 87,
-   "rect": [
-    392.1,
-    321.0,
-    528.6,
-    396.8
-   ],
-   "unit": 6,
-   "lesson": 3,
-   "lessonTitleEn": "Solving Radical Equations",
-   "lessonTitleAr": null,
-   "lessonStartPage": 79
-  },
-  {
-   "file": "p088.png",
+   "file": "p088-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 88,
    "rect": [
-    83.9,
-    513.1,
-    202.1,
-    586.7
+    63.0,
+    506.8,
+    211.8,
+    583.0
    ],
    "unit": 6,
    "lesson": 3,
@@ -722,30 +498,14 @@
    "lessonStartPage": 79
   },
   {
-   "file": "p090.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 90,
-   "rect": [
-    300.3,
-    522.5,
-    561.5,
-    720.8
-   ],
-   "unit": 6,
-   "lesson": 3,
-   "lessonTitleEn": "Solving Radical Equations",
-   "lessonTitleAr": null,
-   "lessonStartPage": 79
-  },
-  {
-   "file": "p096.png",
+   "file": "p096-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 96,
    "rect": [
-    49.6,
-    74.6,
-    195.1,
-    229.3
+    66.0,
+    78.6,
+    201.1,
+    212.0
    ],
    "unit": 7,
    "lesson": 1,
@@ -754,30 +514,14 @@
    "lessonStartPage": 92
   },
   {
-   "file": "p096b.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 96,
-   "rect": [
-    437.9,
-    385.4,
-    571.2,
-    489.8
-   ],
-   "unit": 7,
-   "lesson": 1,
-   "lessonTitleEn": "Multiplying and Dividing Rational Algebraic Expressions",
-   "lessonTitleAr": null,
-   "lessonStartPage": 92
-  },
-  {
-   "file": "p100.png",
+   "file": "p100-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 100,
    "rect": [
-    161.1,
-    193.7,
-    255.4,
-    272.1
+    133.6,
+    172.9,
+    252.7,
+    278.1
    ],
    "unit": 7,
    "lesson": 1,
@@ -786,14 +530,14 @@
    "lessonStartPage": 92
   },
   {
-   "file": "p104.png",
+   "file": "p104-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 104,
    "rect": [
-    51.8,
-    323.7,
-    251.2,
-    452.4
+    61.0,
+    334.0,
+    235.4,
+    458.4
    ],
    "unit": 7,
    "lesson": 2,
@@ -802,30 +546,14 @@
    "lessonStartPage": 101
   },
   {
-   "file": "p104b.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 104,
-   "rect": [
-    437.9,
-    622.4,
-    571.2,
-    724.7
-   ],
-   "unit": 7,
-   "lesson": 2,
-   "lessonTitleEn": "Adding and Subtracting Rational Algebraic Expressions",
-   "lessonTitleAr": null,
-   "lessonStartPage": 101
-  },
-  {
-   "file": "p105.png",
+   "file": "p105-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 105,
    "rect": [
-    52.2,
-    126.9,
-    182.6,
-    197.7
+    46.0,
+    106.0,
+    243.1,
+    239.7
    ],
    "unit": 7,
    "lesson": 2,
@@ -946,14 +674,14 @@
    "lessonStartPage": 108
   },
   {
-   "file": "p117.png",
+   "file": "p117-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 117,
    "rect": [
-    300.7,
-    345.6,
-    377.2,
-    433.3
+    304.0,
+    325.0,
+    374.0,
+    430.0
    ],
    "unit": 7,
    "lesson": 3,
@@ -994,14 +722,14 @@
    "lessonStartPage": 120
   },
   {
-   "file": "p123.png",
+   "file": "p123-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 123,
    "rect": [
-    43.1,
-    78.3,
-    173.9,
-    199.1
+    58.0,
+    98.0,
+    159.0,
+    185.0
    ],
    "unit": 8,
    "lesson": 1,
@@ -1010,30 +738,14 @@
    "lessonStartPage": 120
   },
   {
-   "file": "p124.png",
+   "file": "p124-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 124,
    "rect": [
-    56.6,
-    560.4,
-    159.3,
-    695.3
-   ],
-   "unit": 8,
-   "lesson": 1,
-   "lessonTitleEn": null,
-   "lessonTitleAr": null,
-   "lessonStartPage": 120
-  },
-  {
-   "file": "p131.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 131,
-   "rect": [
-    423.7,
-    445.0,
-    557.0,
-    542.9
+    61.0,
+    563.0,
+    439.7,
+    727.2
    ],
    "unit": 8,
    "lesson": 1,
@@ -1058,14 +770,14 @@
    "lessonStartPage": 135
   },
   {
-   "file": "p144b.png",
+   "file": "p144b-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 144,
    "rect": [
-    274.3,
-    428.4,
-    443.2,
-    552.0
+    273.8,
+    433.0,
+    439.0,
+    584.7
    ],
    "unit": 8,
    "lesson": 3,
@@ -1090,14 +802,14 @@
    "lessonStartPage": 144
   },
   {
-   "file": "p147.png",
+   "file": "p147-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 147,
    "rect": [
-    60.1,
-    392.6,
-    211.8,
-    533.6
+    64.1,
+    414.0,
+    208.0,
+    539.6
    ],
    "unit": 8,
    "lesson": 3,
@@ -1122,14 +834,14 @@
    "lessonStartPage": 144
   },
   {
-   "file": "p150.png",
+   "file": "p150-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 150,
    "rect": [
-    83.3,
-    453.1,
-    254.6,
-    642.3
+    77.3,
+    457.0,
+    250.0,
+    675.7
    ],
    "unit": 8,
    "lesson": 3,
@@ -1138,14 +850,14 @@
    "lessonStartPage": 144
   },
   {
-   "file": "p151.png",
+   "file": "p151-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 151,
    "rect": [
-    97.1,
-    281.0,
-    368.6,
-    425.2
+    97.2,
+    285.0,
+    364.0,
+    452.4
    ],
    "unit": 8,
    "lesson": 3,
@@ -1154,14 +866,14 @@
    "lessonStartPage": 144
   },
   {
-   "file": "p152.png",
+   "file": "p152-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 152,
    "rect": [
-    123.6,
-    479.5,
-    247.3,
-    611.3
+    122.9,
+    484.0,
+    243.0,
+    644.4
    ],
    "unit": 8,
    "lesson": 3,
@@ -1170,14 +882,14 @@
    "lessonStartPage": 144
   },
   {
-   "file": "p153b.png",
+   "file": "p153b-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 153,
    "rect": [
-    165.4,
-    430.6,
-    309.5,
-    533.6
+    140.0,
+    434.0,
+    425.5,
+    619.2
    ],
    "unit": 8,
    "lesson": 4,
@@ -1186,14 +898,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p153c.png",
+   "file": "p153c-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 153,
    "rect": [
-    47.9,
-    609.7,
-    181.0,
-    681.3
+    45.0,
+    587.3,
+    185.0,
+    692.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1202,14 +914,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p154.png",
+   "file": "p154-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 154,
    "rect": [
-    65.6,
-    85.8,
-    196.5,
-    166.7
+    61.0,
+    81.0,
+    212.8,
+    173.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1218,14 +930,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p154b.png",
+   "file": "p154b-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 154,
    "rect": [
-    65.6,
-    197.7,
-    196.5,
-    278.6
+    61.0,
+    193.0,
+    212.8,
+    285.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1234,14 +946,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p154c.png",
+   "file": "p154c-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 154,
    "rect": [
-    65.6,
-    322.7,
-    196.5,
-    403.6
+    61.0,
+    318.0,
+    212.8,
+    410.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1250,14 +962,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p154d.png",
+   "file": "p154e-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 154,
    "rect": [
-    437.9,
-    433.7,
-    571.3,
-    552.9
+    61.0,
+    443.0,
+    212.8,
+    535.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1266,14 +978,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p154e.png",
+   "file": "p154f-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 154,
    "rect": [
-    65.6,
-    447.8,
-    196.5,
-    528.7
+    64.0,
+    624.7,
+    229.0,
+    716.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1282,30 +994,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p154f.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 154,
-   "rect": [
-    85.8,
-    631.3,
-    211.9,
-    710.4
-   ],
-   "unit": 8,
-   "lesson": 4,
-   "lessonTitleEn": "Probabilities and Venn Diagrams",
-   "lessonTitleAr": null,
-   "lessonStartPage": 153
-  },
-  {
-   "file": "p155.png",
+   "file": "p155-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 155,
    "rect": [
-    74.1,
-    90.8,
-    200.2,
-    169.9
+    49.8,
+    78.1,
+    217.4,
+    176.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1314,14 +1010,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p155b.png",
+   "file": "p155b-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 155,
    "rect": [
-    71.6,
-    212.6,
-    197.7,
-    291.7
+    49.8,
+    202.5,
+    214.9,
+    298.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1330,14 +1026,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p155c.png",
+   "file": "p155c-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 155,
    "rect": [
-    67.5,
-    404.8,
-    193.6,
-    483.9
+    45.0,
+    394.9,
+    213.4,
+    490.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1346,14 +1042,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p155d.png",
+   "file": "p155d-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 155,
    "rect": [
-    259.2,
-    404.8,
-    385.3,
-    483.9
+    236.7,
+    394.9,
+    402.4,
+    490.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1362,46 +1058,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p156.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 156,
-   "rect": [
-    437.9,
-    487.5,
-    571.3,
-    585.4
-   ],
-   "unit": 8,
-   "lesson": 4,
-   "lessonTitleEn": "Probabilities and Venn Diagrams",
-   "lessonTitleAr": null,
-   "lessonStartPage": 153
-  },
-  {
-   "file": "p157.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 157,
-   "rect": [
-    423.7,
-    170.7,
-    557.0,
-    268.7
-   ],
-   "unit": 8,
-   "lesson": 4,
-   "lessonTitleEn": "Probabilities and Venn Diagrams",
-   "lessonTitleAr": null,
-   "lessonStartPage": 153
-  },
-  {
-   "file": "p158.png",
+   "file": "p158-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 158,
    "rect": [
-    86.8,
-    177.0,
-    180.7,
-    287.6
+    59.0,
+    186.0,
+    188.0,
+    284.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1410,14 +1074,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p159.png",
+   "file": "p159-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 159,
    "rect": [
-    152.2,
-    109.4,
-    308.0,
-    212.4
+    145.0,
+    100.1,
+    325.8,
+    214.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1426,14 +1090,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p159b.png",
+   "file": "p159b-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 159,
    "rect": [
-    52.4,
-    266.8,
-    208.3,
-    369.8
+    45.0,
+    256.4,
+    226.0,
+    371.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1442,14 +1106,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p159c.png",
+   "file": "p159c-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 159,
    "rect": [
-    52.4,
-    436.5,
-    208.3,
-    539.5
+    45.0,
+    426.2,
+    226.0,
+    541.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1458,14 +1122,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p160.png",
+   "file": "p160-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 160,
    "rect": [
-    64.8,
-    300.5,
-    149.4,
-    391.9
+    59.0,
+    296.0,
+    212.1,
+    393.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1474,14 +1138,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p160b.png",
+   "file": "p160c-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 160,
    "rect": [
-    124.1,
-    300.5,
-    211.3,
-    391.9
+    59.0,
+    558.8,
+    227.4,
+    658.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1490,46 +1154,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p160c.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 160,
-   "rect": [
-    64.3,
-    565.1,
-    148.9,
-    656.5
-   ],
-   "unit": 8,
-   "lesson": 4,
-   "lessonTitleEn": "Probabilities and Venn Diagrams",
-   "lessonTitleAr": null,
-   "lessonStartPage": 153
-  },
-  {
-   "file": "p160d.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 160,
-   "rect": [
-    123.6,
-    565.1,
-    210.8,
-    656.5
-   ],
-   "unit": 8,
-   "lesson": 4,
-   "lessonTitleEn": "Probabilities and Venn Diagrams",
-   "lessonTitleAr": null,
-   "lessonStartPage": 153
-  },
-  {
-   "file": "p161.png",
+   "file": "p161-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 161,
    "rect": [
-    50.6,
-    105.6,
-    135.2,
-    197.0
+    45.0,
+    99.3,
+    213.8,
+    198.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1538,14 +1170,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p161b.png",
+   "file": "p161c-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 161,
    "rect": [
-    109.9,
-    105.6,
-    197.1,
-    197.0
+    45.0,
+    264.6,
+    214.0,
+    364.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1554,46 +1186,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p161c.png",
+   "file": "p161e-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 161,
    "rect": [
-    48.4,
-    270.9,
-    137.4,
-    362.3
-   ],
-   "unit": 8,
-   "lesson": 4,
-   "lessonTitleEn": "Probabilities and Venn Diagrams",
-   "lessonTitleAr": null,
-   "lessonStartPage": 153
-  },
-  {
-   "file": "p161d.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 161,
-   "rect": [
-    100.6,
-    270.6,
-    208.0,
-    362.3
-   ],
-   "unit": 8,
-   "lesson": 4,
-   "lessonTitleEn": "Probabilities and Venn Diagrams",
-   "lessonTitleAr": null,
-   "lessonStartPage": 153
-  },
-  {
-   "file": "p161e.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 161,
-   "rect": [
-    305.4,
-    604.2,
-    427.7,
-    692.4
+    309.0,
+    612.6,
+    445.6,
+    685.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1634,14 +1234,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p162b.png",
+   "file": "p162b-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 162,
    "rect": [
-    89.2,
-    648.5,
-    225.6,
-    737.2
+    65.6,
+    642.2,
+    253.8,
+    741.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1650,14 +1250,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p162c.png",
+   "file": "p162c-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 162,
    "rect": [
-    341.2,
-    648.5,
-    477.6,
-    737.2
+    317.6,
+    642.2,
+    494.8,
+    729.6
    ],
    "unit": 8,
    "lesson": 4,
@@ -1666,14 +1266,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p163.png",
+   "file": "p163-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 163,
    "rect": [
-    72.0,
-    81.9,
-    181.5,
-    180.8
+    51.4,
+    77.7,
+    211.3,
+    187.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1682,14 +1282,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p163b.png",
+   "file": "p163b-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 163,
    "rect": [
-    329.9,
-    81.9,
-    439.3,
-    180.8
+    303.4,
+    77.7,
+    466.5,
+    187.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1698,14 +1298,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p163c.png",
+   "file": "p163c-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 163,
    "rect": [
-    52.4,
-    204.5,
-    204.8,
-    307.4
+    45.0,
+    194.0,
+    226.0,
+    309.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1714,30 +1314,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p164.png",
+   "file": "p164-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 164,
    "rect": [
-    136.0,
-    76.2,
-    234.2,
-    173.5
-   ],
-   "unit": 8,
-   "lesson": 4,
-   "lessonTitleEn": "Probabilities and Venn Diagrams",
-   "lessonTitleAr": null,
-   "lessonStartPage": 153
-  },
-  {
-   "file": "p164b.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 164,
-   "rect": [
-    60.2,
-    81.3,
-    149.6,
-    170.7
+    59.0,
+    70.2,
+    240.2,
+    185.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1762,14 +1346,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p164d.png",
+   "file": "p164d-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 164,
    "rect": [
-    67.8,
-    608.7,
-    167.1,
-    690.1
+    59.0,
+    604.7,
+    189.3,
+    695.0
    ],
    "unit": 8,
    "lesson": 4,
@@ -1778,14 +1362,14 @@
    "lessonStartPage": 153
   },
   {
-   "file": "p167.png",
+   "file": "p167-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 167,
    "rect": [
-    62.9,
-    350.4,
-    139.4,
-    425.3
+    46.0,
+    338.0,
+    178.0,
+    451.6
    ],
    "unit": 8,
    "lesson": 5,
@@ -1890,14 +1474,14 @@
    "lessonStartPage": 165
   },
   {
-   "file": "p170d.png",
+   "file": "p170d-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 170,
    "rect": [
-    342.1,
-    462.3,
-    507.7,
-    557.0
+    314.9,
+    453.4,
+    504.0,
+    554.0
    ],
    "unit": 8,
    "lesson": 5,
@@ -1954,14 +1538,14 @@
    "lessonStartPage": 165
   },
   {
-   "file": "p172b.png",
+   "file": "p172b-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 172,
    "rect": [
-    355.2,
-    509.4,
-    515.1,
-    596.3
+    351.0,
+    503.3,
+    533.9,
+    600.0
    ],
    "unit": 8,
    "lesson": 5,
@@ -1970,14 +1554,14 @@
    "lessonStartPage": 165
   },
   {
-   "file": "p173.png",
+   "file": "p173-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 173,
    "rect": [
-    91.8,
-    616.4,
-    186.0,
-    721.9
+    48.8,
+    610.4,
+    188.0,
+    729.0
    ],
    "unit": 8,
    "lesson": 5,
@@ -2002,14 +1586,14 @@
    "lessonStartPage": 165
   },
   {
-   "file": "p174b.png",
+   "file": "p174b-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 174,
    "rect": [
-    368.7,
-    555.3,
-    500.0,
-    649.8
+    364.5,
+    522.9,
+    567.2,
+    651.0
    ],
    "unit": 8,
    "lesson": 5,

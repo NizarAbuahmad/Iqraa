@@ -20,6 +20,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MathParagraph } from './MathParagraph';
+import { useLanguage } from '@/context/LanguageContext';
 
 type Colors = {
   foreground: string;
@@ -102,7 +103,7 @@ export function EditableText({
             a multiline input has no return-to-submit and tapping blank space
             doesn't blur it. This button is that exit. */}
         <Pressable onPress={commit} hitSlop={8} accessibilityRole="button" accessibilityLabel={placeholder}>
-          <Ionicons name="checkmark-circle" size={26} color={colors.primary} />
+          <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
         </Pressable>
       </View>
     );
@@ -145,6 +146,7 @@ export function EditableList({
   addLabel: string;
   editedIndexes?: ReadonlySet<number>;
 }) {
+  const { t } = useLanguage();
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState('');
   const rowDir = isRTL ? 'row-reverse' : 'row';
@@ -183,9 +185,9 @@ export function EditableList({
             onPress={() => removeAt(i)}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel={`${item} — ✕`}
+            accessibilityLabel={`${item} — ${t('remove')}`}
           >
-            <Ionicons name="close" size={15} color={colors.mutedForeground} />
+            <Ionicons name="close" size={16} color={colors.mutedForeground} />
           </Pressable>
         </View>
       ))}
@@ -216,7 +218,7 @@ export function EditableList({
           accessibilityRole="button"
           style={[styles.addRow, { flexDirection: rowDir }]}
         >
-          <Ionicons name="add" size={15} color={colors.mutedForeground} />
+          <Ionicons name="add" size={16} color={colors.mutedForeground} />
           <Text
             style={{
               color: colors.mutedForeground,
@@ -237,7 +239,7 @@ function EditAffordance({ colors, edited }: { colors: Colors; edited?: boolean }
   return (
     <View style={styles.affordance}>
       {edited ? <View style={[styles.editedDot, { backgroundColor: colors.primary }]} /> : null}
-      <Ionicons name="pencil" size={12} color={colors.mutedForeground} style={{ opacity: 0.5 }} />
+      <Ionicons name="pencil" size={14} color={colors.mutedForeground} style={{ opacity: 0.5 }} />
     </View>
   );
 }

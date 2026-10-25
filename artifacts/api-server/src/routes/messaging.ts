@@ -62,6 +62,7 @@ import {
   TEACHER_ROLES,
   type AuthenticatedRequest,
 } from "../middlewares/auth.js";
+import { holdScopedConnection } from "../middlewares/holdScopedConnection.js";
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
 import { isAllowedReaction, reactionAccess, summarizeReactions, type ReactionSummary } from "../lib/messageReactions.ts";
@@ -406,7 +407,7 @@ router.get("/messaging/contacts", async (req: AuthenticatedRequest, res) => {
 
 // ─── Threads ─────────────────────────────────────────────────────────────────
 
-router.get("/messaging/threads", async (req: AuthenticatedRequest, res) => {
+router.get("/messaging/threads", holdScopedConnection, async (req: AuthenticatedRequest, res) => {
   try {
     const mine = await db
       .select({ threadId: chatParticipants.threadId, hiddenAt: chatParticipants.hiddenAt })

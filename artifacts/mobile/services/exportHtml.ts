@@ -24,6 +24,7 @@
 import { labelAnswerParts, labelOption, labelOptionLine } from './optionLabels.ts';
 import { keyWorkingNote, workingProvenance } from './worksheetWorking.ts';
 import { arCountPhrase } from './arCount.ts';
+import { CONCEPTS } from '../constants/icons.ts';
 import { dateLocale } from './dateLabels.ts';
 import { quizBlockPoints, quizBlocks, quizInstructions, quizMarkRows, quizMarksTotal, quizStudentFields, quizTypeLabel } from './quizPaper.ts';
 import { isolateForeignRuns, normalizeExponents } from './mathRender.ts';
@@ -56,15 +57,17 @@ import type {
  * The same four colours the projector slides use (`buildWorksheetSlidesHTML`
  * et al read them from here) and the app shows for each material
  * (`MATERIAL_FILL` in constants/materialKind.ts, which this file can't import:
- * it pulls in react-native), so a worksheet printed, projected and opened in
- * موادي is one colour. Each is ≥ 5.2:1 under white and ≥ 4.8:1 as text on
- * white; the old quiz amber was 2.15:1, and it numbered projected questions.
+ * it pulls in react-native). Both read `CONCEPTS` (constants/icons.ts, pure
+ * data), so a worksheet printed, projected, opened in موادي and offered on the
+ * Tools tab is one colour. Each carries white at 4.5:1 and is that ratio as
+ * text on white. The old worksheet brown (`#8A5A00`) sat in the amber family
+ * that means "now" and nothing else.
  */
 export const DOC_ACCENT = {
-  lesson: '#006D65',
-  worksheet: '#8A5A00',
-  quiz: '#B0284F',
-  activity: '#3F7A1E',
+  lesson: CONCEPTS['lesson-plan'].color,
+  worksheet: CONCEPTS.worksheet.color,
+  quiz: CONCEPTS.quiz.color,
+  activity: CONCEPTS.activity.color,
 } as const;
 
 /** Where the name-and-date block gets its rule, and every section its tint. */

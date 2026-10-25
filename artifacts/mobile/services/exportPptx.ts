@@ -24,6 +24,7 @@ import { visualForExport, visualForSlide, type VisualBlock } from './deckVisuals
 import { isBulletLine, looksLikeEquation, stripBullet, workingSteps } from './deckText.ts';
 import { asPhotoHero, resolveSlideLayout } from './slideLayout.ts';
 import { slideTeacherNotesText } from './deckNotes.ts';
+import { saveBlob } from './webSave.ts';
 import { creditSegments, type PhotoCredit } from './photoCredit.ts';
 import type { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { mathLineToUnicode, prettifySymPy } from '@/services/mathRender';
@@ -984,14 +985,7 @@ export async function exportDeckAsPptx(
   if (Platform.OS === 'web') {
     // Same pattern as exportAsWord: generate a Blob and trigger a browser
     // download — expo-file-system/expo-sharing are unavailable on web.
-    const blob = (await pptx.write({ outputType: 'blob' })) as Blob;
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = outFilename;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+    await saveBlob((await pptx.write({ outputType: 'blob' })) as Blob, outFilename);
     return;
   }
 

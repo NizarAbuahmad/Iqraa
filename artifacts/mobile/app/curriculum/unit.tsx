@@ -142,7 +142,7 @@ export default function UnitLessonsScreen() {
                   ) : null}
                 </View>
                 <View style={[styles.lessonMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                  <Ionicons name="time-outline" size={12} color={colors.mutedForeground} />
+                  <Ionicons name="time-outline" size={14} color={colors.mutedForeground} />
                   <Text style={[styles.lessonTime, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
                     {lesson.estimatedDuration} {t('min')}
                   </Text>

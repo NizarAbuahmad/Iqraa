@@ -18,22 +18,6 @@
       "lessonStartPage": 13
     },
     {
-      "file": "p015.png",
-      "sourceId": "g7-social-s1-student-book",
-      "pdfPage": 15,
-      "rect": [
-        305.0,
-        389.4,
-        535.6,
-        732.4
-      ],
-      "unit": 1,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 13
-    },
-    {
       "file": "p016.png",
       "sourceId": "g7-social-s1-student-book",
       "pdfPage": 16,
@@ -50,14 +34,14 @@
       "lessonStartPage": 13
     },
     {
-      "file": "p027.png",
+      "file": "p027-v2.png",
       "sourceId": "g7-social-s1-student-book",
       "pdfPage": 27,
       "rect": [
-        35.5,
-        370.0,
-        270.5,
-        605.1
+        40.0,
+        374.0,
+        388.3,
+        656.2
       ],
       "unit": 2,
       "lesson": 1,
@@ -66,14 +50,14 @@
       "lessonStartPage": 26
     },
     {
-      "file": "p043.png",
+      "file": "p043-v2.png",
       "sourceId": "g7-social-s1-student-book",
       "pdfPage": 43,
       "rect": [
-        121.8,
-        269.0,
-        447.4,
-        431.3
+        125.0,
+        254.5,
+        503.6,
+        428.0
       ],
       "unit": 2,
       "lesson": 3,
@@ -162,14 +146,14 @@
       "lessonStartPage": 46
     },
     {
-      "file": "p058.png",
+      "file": "p058-v2.png",
       "sourceId": "g7-social-s1-student-book",
       "pdfPage": 58,
       "rect": [
-        62.0,
-        385.8,
-        380.8,
-        730.5
+        66.0,
+        440.0,
+        352.0,
+        714.3
       ],
       "unit": 3,
       "lesson": 3,
@@ -194,14 +178,14 @@
       "lessonStartPage": 57
     },
     {
-      "file": "p073.png",
+      "file": "p073-v2.png",
       "sourceId": "g7-social-s1-student-book",
       "pdfPage": 73,
       "rect": [
-        33.1,
-        185.4,
-        260.6,
-        379.0
+        49.0,
+        202.0,
+        249.0,
+        362.0
       ],
       "unit": 3,
       "lesson": 5,
@@ -242,14 +226,14 @@
       "lessonStartPage": 74
     },
     {
-      "file": "p079b.png",
+      "file": "p079b-v2.png",
       "sourceId": "g7-social-s1-student-book",
       "pdfPage": 79,
       "rect": [
-        33.0,
-        602.8,
-        341.6,
-        729.8
+        36.0,
+        583.4,
+        431.4,
+        727.0
       ],
       "unit": 4,
       "lesson": 2,
@@ -338,14 +322,14 @@
       "lessonStartPage": 91
     },
     {
-      "file": "p098b.png",
+      "file": "p098b-v2.png",
       "sourceId": "g7-social-s1-student-book",
       "pdfPage": 98,
       "rect": [
-        60.7,
-        107.0,
-        561.6,
-        532.0
+        55.0,
+        0.0,
+        595.3,
+        536.0
       ],
       "unit": 4,
       "lesson": 4,
@@ -370,14 +354,14 @@
       "lessonStartPage": 91
     },
     {
-      "file": "p102.png",
+      "file": "p102-v2.png",
       "sourceId": "g7-social-s1-student-book",
       "pdfPage": 102,
       "rect": [
-        50.1,
-        133.9,
-        592.7,
-        647.1
+        63.0,
+        97.2,
+        558.8,
+        637.0
       ],
       "unit": 5,
       "lesson": 1,
@@ -386,30 +370,14 @@
       "lessonStartPage": 100
     },
     {
-      "file": "p103.png",
+      "file": "p103-v2.png",
       "sourceId": "g7-social-s1-student-book",
       "pdfPage": 103,
       "rect": [
-        57.8,
-        160.1,
-        513.2,
-        399.9
-      ],
-      "unit": 5,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 100
-    },
-    {
-      "file": "p103b.png",
-      "sourceId": "g7-social-s1-student-book",
-      "pdfPage": 103,
-      "rect": [
-        58.3,
-        402.1,
-        513.3,
-        654.6
+        48.0,
+        121.2,
+        528.0,
+        734.0
       ],
       "unit": 5,
       "lesson": 1,
@@ -450,14 +418,14 @@
       "lessonStartPage": 107
     },
     {
-      "file": "p123.png",
+      "file": "p123-v2.png",
       "sourceId": "g7-social-s1-student-book",
       "pdfPage": 123,
       "rect": [
-        79.1,
-        355.8,
-        279.1,
-        495.8
+        82.0,
+        359.0,
+        276.1,
+        522.6
       ],
       "unit": 6,
       "lesson": 2,
@@ -466,14 +434,14 @@
       "lessonStartPage": 120
     },
     {
-      "file": "p123b.png",
+      "file": "p123b-v2.png",
       "sourceId": "g7-social-s1-student-book",
       "pdfPage": 123,
       "rect": [
-        283.2,
-        355.8,
-        483.2,
-        495.8
+        286.0,
+        338.1,
+        491.2,
+        522.6
       ],
       "unit": 6,
       "lesson": 2,
@@ -482,14 +450,14 @@
       "lessonStartPage": 120
     },
     {
-      "file": "p123c.png",
+      "file": "p123c-v2.png",
       "sourceId": "g7-social-s1-student-book",
       "pdfPage": 123,
       "rect": [
-        79.1,
-        526.7,
-        279.1,
-        666.7
+        83.0,
+        530.0,
+        276.0,
+        693.5
       ],
       "unit": 6,
       "lesson": 2,
@@ -498,14 +466,14 @@
       "lessonStartPage": 120
     },
     {
-      "file": "p123d.png",
+      "file": "p123d-v2.png",
       "sourceId": "g7-social-s1-student-book",
       "pdfPage": 123,
       "rect": [
-        283.2,
-        526.7,
-        483.2,
-        666.7
+        287.0,
+        530.0,
+        480.0,
+        693.5
       ],
       "unit": 6,
       "lesson": 2,

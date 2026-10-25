@@ -33,7 +33,7 @@ export function ShortPaperNotice({ shortfall, repeated, repeatedUnit = 'question
       style={[styles.box, row, { borderColor: colors.border, backgroundColor: colors.card, borderRadius: colors.radius }]}
       accessibilityRole="alert"
     >
-      <Ionicons name="information-circle-outline" size={18} color={colors.mutedForeground} style={{ marginTop: 1 }} />
+      <Ionicons name="information-circle" size={20} color={colors.mutedForeground} style={{ marginTop: 1 }} />
       <Text style={[styles.text, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left' }]}>
         {[
           short ? t('shortPaperNotice', shortfall!.produced, shortfall!.requested) : '',

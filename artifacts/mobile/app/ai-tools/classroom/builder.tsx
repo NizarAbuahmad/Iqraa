@@ -239,7 +239,7 @@ export default function ClassroomBuilderScreen() {
       keyboardShouldPersistTaps="handled"
     >
       {/* Header */}
-      <ToolHeader topPad={topPad} isRTL={isRTL} title={selectedCard ? t(selectedCard.titleKey as any) : t('classroomBuilderSubtitle')} subtitle={t('classroomBuilderTitle')} leading={selectedCard?.emoji ?? '🔐'} sourceBadge={false} />
+      <ToolHeader topPad={topPad} isRTL={isRTL} title={selectedCard ? t(selectedCard.titleKey as any) : t('classroomBuilderSubtitle')} subtitle={t('classroomBuilderTitle')} leading={selectedCard?.emoji} concept={selectedCard ? undefined : 'classroom'} sourceBadge={false} />
 
       {/* Form */}
       <View style={styles.form}>
@@ -413,7 +413,7 @@ export default function ClassroomBuilderScreen() {
             onPress={handleStartPresentation}
             style={({ pressed }) => [styles.ctaBtn, { backgroundColor: ACCENT_FILL, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.88 : 1 }]}
           >
-            <Ionicons name="play-circle" size={22} color="#fff" />
+            <Ionicons name="play-circle" size={24} color="#fff" />
             <Text style={[styles.ctaText, { fontFamily: 'ReadexPro_700Bold' }]}>{t('startPresentation')}</Text>
           </Pressable>
 
@@ -434,7 +434,7 @@ export default function ClassroomBuilderScreen() {
 function StatItem({ icon, label, accent }: { icon: keyof typeof Ionicons.glyphMap; label: string; accent: string }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-      <Ionicons name={icon} size={13} color={accent} />
+      <Ionicons name={icon} size={14} color={accent} />
       <Text style={{ fontSize: 12, color: accent, fontFamily: 'ReadexPro_500Medium' }}>{label}</Text>
     </View>
   );

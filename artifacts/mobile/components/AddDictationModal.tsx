@@ -222,7 +222,7 @@ export function AddDictationModal({
               {t('dictationAddTitle')}
             </Text>
             <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={t('close')}>
-              <Ionicons name="close" size={22} color={colors.mutedForeground} />
+              <Ionicons name="close" size={24} color={colors.mutedForeground} />
             </Pressable>
           </View>
 
@@ -247,7 +247,7 @@ export function AddDictationModal({
                 >
                   <Ionicons
                     name={source === s ? 'radio-button-on' : 'radio-button-off'}
-                    size={18}
+                    size={20}
                     color={source === s ? ACCENT : colors.mutedForeground}
                   />
                   <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, flex: 1 }}>
@@ -279,7 +279,7 @@ export function AddDictationModal({
                       >
                         <Ionicons
                           name={ruleId === r.id ? 'radio-button-on' : 'radio-button-off'}
-                          size={18}
+                          size={20}
                           color={ruleId === r.id ? ACCENT : colors.mutedForeground}
                         />
                         <View style={{ flex: 1 }}>
@@ -408,7 +408,7 @@ export function AddDictationModal({
                     >
                       <Ionicons
                         name={objectiveId === id ? 'radio-button-on' : 'radio-button-off'}
-                        size={18}
+                        size={20}
                         color={objectiveId === id ? ACCENT : colors.mutedForeground}
                       />
                       <Text numberOfLines={2} style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
@@ -440,7 +440,7 @@ export function AddDictationModal({
                   >
                     <Ionicons
                       name={competency === c.key ? 'radio-button-on' : 'radio-button-off'}
-                      size={18}
+                      size={20}
                       color={competency === c.key ? ACCENT : colors.mutedForeground}
                     />
                     <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }}>

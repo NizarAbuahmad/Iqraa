@@ -173,7 +173,7 @@ export default function SetupGradeScreen() {
 
         {error ? (
           <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+            <Ionicons name="alert-circle" size={16} color={colors.destructive} />
             <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>{error}</Text>
           </View>
         ) : null}

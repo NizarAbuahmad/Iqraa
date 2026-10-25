@@ -148,7 +148,7 @@ export function CommandPalette({
           onPress={() => {}}
         >
           <View style={[styles.inputRow, { borderBottomColor: colors.border, flexDirection: rowDir }]}>
-            <Ionicons name="search" size={18} color={colors.mutedForeground} />
+            <Ionicons name="search" size={20} color={colors.mutedForeground} />
             <TextInput
               ref={inputRef}
               autoFocus
@@ -192,7 +192,7 @@ export function CommandPalette({
                     >
                       <Ionicons
                         name={cmd.icon as never}
-                        size={18}
+                        size={20}
                         color={on ? colors.primary : colors.mutedForeground}
                       />
                       <View style={{ flex: 1 }}>
@@ -211,7 +211,7 @@ export function CommandPalette({
                           </Text>
                         ) : null}
                       </View>
-                      {on ? <Ionicons name="return-down-back" size={15} color={colors.primary} /> : null}
+                      {on ? <Ionicons name="return-down-back" size={16} color={colors.primary} /> : null}
                     </Pressable>
                   </View>
                 );
