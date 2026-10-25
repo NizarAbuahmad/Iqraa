@@ -68,13 +68,15 @@ Checked 2026-10-22:
   existing email students are locked out until a parent acts. The owner's steps are numbered in
   the entry «Parent approval for email students — the app (PR B)» in the log; the server side is
   «Parent approval for email students — server (PR A)».
-- **A student can sign up with an email and no teacher's code — the legal wording needs a person
-  to read it before this merges.** The privacy policy §5 and terms §1 (`constants/legal.ts`,
-  `LEGAL_VERSION` 2026-10-23) now say a student may join with an email after confirming they are
-  an adult or have a guardian's agreement; they were drafted, not reviewed by a lawyer, and the
-  store declaration (`lib/features.ts` comment) still describes accounts made only through a
-  class. Merging deploys it, and every user is asked to accept the new version. Becoming a
-  student by switching role asks for the same confirmation as signing up as one. Entry:
+- **A student can sign up with an email and no teacher's code (PR #1226, merged 2026-10-24) — the
+  legal wording still needs a person to read it.** The privacy policy §5 and terms §1
+  (`constants/legal.ts`, `LEGAL_VERSION` 2026-10-23) say a student may join with an email after
+  confirming they are an adult or have a guardian's agreement. They were drafted, not reviewed by
+  a lawyer, and nothing in the repo records a review since. Merging deploys, so every user is
+  asked to accept that version. The code comment on the store declaration
+  (`artifacts/api-server/src/lib/features.ts`) now describes both ways in; **the store declaration
+  itself (Play Console) was not checked** and may still say accounts are made only through a class.
+  Becoming a student by switching role asks for the same confirmation as signing up as one. Entry:
   «Students choose an email or a teacher's code» in the log.
 - **Neon is on Launch (applied 2026-10-23 by the owner); two checks remain.** Autoscaling 0.25-0.5
   CU, scale to zero on: about $10 a month expected, about $39 at most (estimates; read Neon's
