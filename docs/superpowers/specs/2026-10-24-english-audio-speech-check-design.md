@@ -1,7 +1,9 @@
 # English audio: a speech-to-text check of every recording — design
 
 **Status:** implemented (this PR) — `scripts/check-english-audio.ts` and `src/englishAudioCheck.ts`; the real transcription
-API has never been called (see the log entry «English audio: a speech-to-text check of every recording»). **Scope:** a new read-only command that listens to the
+API was first called on 2026-10-25 (see the log entries «English audio: a speech-to-text check of every recording» and
+«English audio check: the first real run, and three kinds of false alarm removed», which also added a spacing, a
+possessive and a few homophone folds to the comparison below). **Scope:** a new read-only command that listens to the
 recordings in the public bucket with a speech-to-text model and reports where what is said differs from what the app expects.
 Builds on `lib/curriculum/src/englishAudioPlan.ts` (`audioPlan()`, the list of what the app plays), the keyless audit
 (`scripts/audit-english-audio.ts`, its fetch-with-backoff) and the measurement in `englishAudioProcess.ts`. Not in this spec:
