@@ -1137,14 +1137,26 @@ export default function WorksheetScreen() {
 
           {/* A digital copy for the class — the server builds a draft exam the
               teacher reviews and publishes on the ordinary exam screen. */}
-          <Pressable
-            onPress={() => setShowSend(true)}
-            style={[styles.toggleBtn, { borderColor: accentInk, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: 'stretch', justifyContent: 'center' }]}
-            accessibilityRole="button"
-          >
-            <Ionicons name="phone-portrait-outline" size={16} color={accentInk} />
-            <Text style={[{ color: accentInk, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }]}>{t('sendToClass')}</Text>
-          </Pressable>
+          {/* Sending files the paper under one lesson's objective, so a paper with
+              no single lesson (a whole semester or unit) says so instead of
+              offering a sheet whose «أرسل» can never be tapped. */}
+          {scope.lesson?.id ? (
+            <Pressable
+              onPress={() => setShowSend(true)}
+              style={[styles.toggleBtn, { borderColor: accentInk, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: 'stretch', justifyContent: 'center' }]}
+              accessibilityRole="button"
+            >
+              <Ionicons name="phone-portrait-outline" size={16} color={accentInk} />
+              <Text style={[{ color: accentInk, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }]}>{t('sendToClass')}</Text>
+            </Pressable>
+          ) : (
+            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: 8 }}>
+              <Ionicons name="information-circle" size={ICON.md} color={colors.mutedForeground} />
+              <Text style={{ flex: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>
+                {t('sendToClassNeedsLesson')}
+              </Text>
+            </View>
+          )}
 
           <Pressable
             onPress={() => setShowAnswers(v => !v)}

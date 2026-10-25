@@ -10,6 +10,25 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Worksheet: no dead «أرسل للصف» button on a whole-semester paper, 2026-10-25
+
+**Why.** A teacher generated a worksheet for «الفصل الأول كاملاً» and tapped «أرسل للصف كواجب رقمي». The sheet opened
+with only «اختر درسًا من المنهاج…» and a dimmed «أرسل» that could never be enabled. Sending files the paper under one
+objective (`POST /evaluations/from-worksheet`), objectives belong to one lesson, and a wide scope has no
+`scope.lesson`, so `lessonId` was `undefined` and neither the class nor the objective list ever rendered.
+
+**Built.** `app/ai-tools/worksheet.tsx` shows the button only when `scope.lesson?.id` exists; otherwise it shows a
+note (`sendToClassNeedsLesson`, ar + en) saying a single lesson is needed and where to pick it. The sheet's own
+`sendToClassNoLesson` guard stays as the backstop.
+
+**Verified.** `tsc` clean in `artifacts/mobile`; `pnpm test` there: 7772 pass, 0 fail, 10 skipped. **Not verified:**
+the screen itself in a browser or on a device (light/dark, RTL), so the note's look is unchecked.
+
+**Not done.** `app/workspace/view.tsx` has the same button on a saved worksheet and was left alone: it takes its lesson
+from `sendLessonId`, and I did not check which saved papers reach it with none. Letting a teacher pick a lesson inside
+the sheet for a wide paper was not built — it would file every lesson's questions under one objective, which changes
+the per-objective marks, so it needs a product decision.
+
 ## Thirty-third live pass: questions about the app itself, 2026-10-25
 
 **Why.** A 30-question pass on app.iqrra.com of the questions a teacher asks before using the app
