@@ -26,7 +26,7 @@ import { loadTimetable } from '@/services/schedule';
 import { formatNextPeriod, type NextPeriodLesson, type TimetableSetupStep } from '@/services/scheduleCalendar';
 import { todayISO } from '@/services/planEntries';
 import {
-  HomeLessonPick, dismissSetupNudge, loadLessonPick, loadPrepSkips, setPrepSkip, subscribeLessonPick, timetableWins,
+  HomeLessonPick, dismissSetupNudge, loadLessonPick, loadPrepSkips, setPrepSkip, showsPeriodLine, subscribeLessonPick, timetableWins,
   wasSetupNudgeDismissed,
 } from '@/services/lessonContext';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
@@ -44,7 +44,7 @@ export type TodayLesson = {
   topic: string;
   /** The resolved lesson: today's pick, else the timetable's, else an older pick, else the chat's default. */
   active: { topic: string; lessonId: string | null; gradeId?: string | null; subjectId?: string | null } | null;
-  /** «الحصة القادمة · العاشر ب · 10:15», or '' when the card is not showing that period's lesson. */
+  /** «الحصة القادمة · العاشر ب · 10:15», or '' when there is no next period or a lesson picked today replaced its lesson. */
   periodLine: string;
   next: NextPeriodLesson | null;
   setup: TimetableSetupStep | null;
@@ -185,8 +185,9 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
       : fallback
         ? { topic: fallback.topic, lessonId: fallback.lessonId, gradeId: fallback.gradeId, subjectId: fallback.subjectId }
         : null;
-  // «الحصة القادمة · العاشر ب · 10:15» — only when the card is showing that period's lesson.
-  const periodLine = fromSchedule && next
+  // «الحصة القادمة · العاشر ب · 10:15» — when the card shows that period's lesson, or the class has
+  // no lesson yet (`showsPeriodLine`); never beside a lesson picked today that replaced it.
+  const periodLine = next && showsPeriodLine(true, !!scheduled, fromSchedule)
     ? formatNextPeriod(next, {
         classLabel: periodClassLabel(classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'), next.subjectId, lang),
         today: todayISO(),
