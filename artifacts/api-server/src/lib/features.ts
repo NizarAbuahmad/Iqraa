@@ -51,3 +51,16 @@ export function studentAccountsEnabled(): boolean {
 export function masteryGateEnabled(): boolean {
   return process.env.MASTERY_GATE === "true";
 }
+
+/**
+ * Whether an email student is held until a parent approves by email.
+ *
+ * Off unless `GUARDIAN_APPROVAL=true`, and that default is the point: turning it on locks every existing
+ * email student until a parent acts, so it is switched on only once the app that shows the waiting screen has
+ * reached users and the parent-consent wording has been read by a lawyer. Off, sign-up and role switches keep
+ * asking for the age tick (`lib/ageConfirmation.ts`) and nothing else changes. Spec:
+ * `docs/superpowers/specs/2026-10-24-guardian-approval-design.md`.
+ */
+export function guardianApprovalEnabled(): boolean {
+  return process.env.GUARDIAN_APPROVAL === "true";
+}

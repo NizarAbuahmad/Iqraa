@@ -10,6 +10,236 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Parent approval for email students — the app (PR B) — 2026-10-24
+
+The app half of the gate in the entry below. **Nothing changes for anyone while `GUARDIAN_APPROVAL` is unset**, and
+the app commits touch no server file (the one server change made after the final review, a12d41d, is in the entry
+below). With the server's flag on,
+a student who signed up with an email and no teacher's code now lands on a waiting screen instead of a wall of 403s,
+and a parent can approve or decline from a page that needs no account. Design:
+`docs/superpowers/specs/2026-10-24-guardian-approval-design.md` (amended: see its *Client* section).
+
+- **Pure services, each tested:** `guardianApproval.ts` (the status from `/auth/me`, the 403 body test),
+  `routeGating.ts` (`needsGuardianApproval`, `guardianRedirect`, **`guardianGate`**, `/guardian` in `PUBLIC_ROUTES`,
+  `/guardian-waiting` in the non-teacher list), `guardianConsentLink.ts` (reads the token from `location.hash`, accepts
+  exactly 43 base64url characters, nothing else), `guardianConsentView.ts` (the parent page's state machine),
+  `guardianApi.ts` / `guardianConfig.ts` (config, lookup, decide; the token only ever in a POST body),
+  `signupMethod.ts` (`signupPlan`: tick, parent field, or neither), `screenTracking.ts` (never report `/guardian`).
+- **The gate and why it stops the later gates.** `guardianGate(user, pathname)` returns `{ redirect, stop }` and runs in
+  the root layout after the public-route return and before every other gate. A held student on one of their three open
+  screens is not redirected, but IS stopped. The review found why: without `stop`, an email student with no grades fell
+  through to the grade-setup gate, was sent to `/setup-grade`, bounced back to the waiting screen, and looped for ever.
+  `routeGating.test.ts` walks five start paths to a fixed point.
+- **Waiting screen** (`app/guardian-waiting.tsx`): "needed" and "declined" show an address field, "waiting" shows the
+  masked address and polls `/auth/me` every 20 s, plus "Check again". Exits: a teacher's link code (`/join-class`, which
+  lifts the hold), "I am a parent" (role switch), sign out, delete account. It no longer offers "I am a teacher": the final
+  review found it a one-tap way round the hold, advertised to the child being held (see the limit below). The screens a
+  held student may open are exactly `/guardian-waiting`, `/join-class`, `/delete-account`. The public routes (`/play`,
+  `/live`, `/take`, `/curriculum/english`, `/legal`, `/suggest-feature`) are outside the gate by design, as on the
+  server, which holds only authenticated student routes. A `needed` status that still carries a masked address means
+  the sent link expired; the waiting screen says so and asks for an email (`guardianWaitingView`, tested).
+- **Parent page** (`app/guardian.tsx`, `/guardian#{token}`, public): reads the token once from `location.hash` into state;
+  "I approve" needs the confirm tick (no request without it); closed states for an unusable, expired or decided link.
+  `guardianPageSource.test.ts` scans the source: no `console`, storage, `Linking`, `router`, analytics, `testID` or
+  printed token.
+- **Sign-up and role switches:** with the flag on, the register screen asks for a parent's email on the student-email path
+  instead of the age tick (Google sign-up too); the three role-switch screens (`setup-subjects`, `settings`,
+  `claim-required`) show a note instead of the tick. `switchNeedsAgeConfirmation` gained a third argument rather than
+  being deleted, because the tick is still asked while the switch is off. A refusal that means the cached switch is stale
+  (`parent_email_required`, `age_confirmation_required`) clears the cache and re-reads it.
+- **403 hook and `refreshUser`:** `apiClient` calls a registered callback on a 403 whose body is
+  `guardian_approval_required` (clone in a try/catch: a transport that cannot clone must not reject the call; 5 s debounce);
+  `AuthContext.refreshUser` re-reads `/auth/me`; the status lives on the session user and survives `updateProfile`.
+  The hook's body is now `services/guardianForbidden.ts` (`noteGuardianForbidden`, tested with real `Response` objects
+  and a throwing `clone`), and `layoutGateOrder.test.ts` pins in the layout's source that `isPublicRoute(` comes before
+  `guardianGate(`, which comes before the roster-claim, teacher-setup, grade-setup and non-teacher gates, and that the
+  guardian block returns before the next gate.
+- **The token never reaches a third party:** `shouldTrackScreen` drops `/guardian` from screen analytics, and the crash-report
+  scrub (`crashReportingCore.ts`) removes `#fragment` and any bare 43-character token. Those two rules run right after the
+  JWT and Bearer rules and before the number and code rules, so a token holding a digit run is not half-rewritten; the
+  JWT rule must stay first because a JWT signature is also 43 base64url characters.
+- **Flag off:** `GET /guardian-consent/config` says whether it is on and fails off. One deliberate difference: while the
+  config loads on the student-email path, neither the tick nor the parent field shows and submit is disabled — about one
+  request. The honest worst case is a request that hangs: 3 attempts x 15 s timeout plus 4 s of back-off, about 49 s,
+  and failures are not cached, so each mount repeats it. It is rarely visible, because the fetch starts when the
+  register screen opens. A parent opening a link while the flag is off sees "This link does
+  not work", with no retry loop.
+- **Mutation checks** (edit with the Edit tool, run 9 test files / 150 tests, restore, green again, `git diff --stat`
+  clean after each; all thirteen caught, the last three from the final-review fixes):
+  1. `needsGuardianApproval` also holds `approved`: 5 failures ("holds a student whose status is needed, waiting or
+     declined, and no one else", plus the `guardianRedirect` and `guardianGate` not-held cases).
+  2. `/guardian` removed from `PUBLIC_ROUTES`: "is public, and a route that merely starts with the same letters is not".
+  3. `/notifications` added to the held-may-open list: "sends a held student anywhere outside the three open screens to
+     the waiting screen".
+  4. `guardianGate` with `stop = redirect !== null`: "stops a held student on an open screen without redirecting" and
+     "a held student with no grades settles on an open screen instead of looping through grade setup".
+  5. Token pattern 43 changed to 42: "reads the token from a location.hash…" and "refuses anything that is not exactly a
+     43-character token".
+  6. `shouldTrackScreen` always true: "never reports the parent consent page".
+  7. `lookup` with the token in the URL as well: "lookup: POSTs the token in the body, never in the URL".
+  8. `signupPlan` ignoring the switch for `askAge`: "asks a student with an email for a parent when approval is on, and
+     not the tick" and "never asks both at once".
+  9. The two token rules moved to the END of `RULES`: "removes the whole token even when an earlier rule would match a
+     piece of it". The JWT test did not fail for this move (the JWT rule still runs first); it fails for the opposite one,
+     checked as well: the token rule placed above the JWT rule fails "still redacts a whole JWT, whose signature is also 43
+     base64url characters".
+  10. `console.log(token)` in `app/guardian.tsx`: "rule: never console.*" and "every line that mentions the token is the
+     state read, a guard, or one of the two guardianApi calls".
+  11. `guardianWaitingView` ignoring the masked address on `needed`: 1 failure ("needed with a masked address: the link
+     expired, says so with the address, and asks for an email").
+  12. The try/catch removed from `noteGuardianForbidden`: 1 failure (the throwing-`clone` test, "swallows a clone() that
+     throws…").
+  13. The `guardianGate` block moved below the grade-setup gate in `app/_layout.tsx`: 4 failures (before the roster-claim,
+     teacher-setup and grade-setup gates, and "the block after guardianGate( returns…").
+- **Browser run** (Chromium via Playwright against the real web build and the real API on a throwaway Postgres; flag on
+  and off; 390 and 1280 wide; light and dark; English and Arabic; RTL checked by eye and by measuring the masked address):
+  register with the parent field (disabled until a valid-looking address; "own address" refused with a translated text);
+  waiting screen and the gate (typed URLs `/notifications`, `/(tabs)`, `/`, `/classes`, `/settings` all end on the waiting
+  screen); every exit button driven except a real class join and a real deletion; the parent page (approve without the tick
+  sends nothing, approve, decline, "already decided" in a fresh context; the network log shows the token only in the body of
+  the lookup and decide POSTs, never in a URL, and not in the page's resource entries); the student leaving the waiting
+  screen 12 s after approval (inside the 20 s poll) and by "Check again" within 3 s; decline and re-send, a superseded link,
+  an expired link, six malformed links (zero API calls); flag off (age tick, no parent field, `/guardian` says "does not
+  work" with no retry loop, a student enters the app); the console shows nothing non-benign. Bugs it found: the line under
+  the student-email pills still said "right away" (fixed, `studentEmailNoteParent`), the waiting screen ran full width on
+  desktop (fixed, 560 max); two are listed below.
+  **Not driven:** Android and iOS; Google sign-up and Google link; a real class join with a teacher's code; actually deleting
+  an account; the 20 s poll timed in Arabic; the settings role switch with the flag off; any real mail (no key set); the
+  `/claim-required` role switch, in either flag state; and the two browser bugs fixed in 2a44b4e (the register note and
+  the waiting-screen width), which were fixed after the browser run and not re-driven.
+- **Counts (after the final-review fixes):** `pnpm run typecheck` at the root clean; `cd artifacts/mobile && pnpm test`:
+  7,601 tests in 1,310 suites, 7,591 passed, 0 failed, 10 skipped (the same 10 as before this work); the brand grep
+  from `ci.yml` clean. The app commits touch no server file; the api-server suite was rerun once for the server fix
+  a12d41d (2,679 passing, see the entry below).
+- **Not verified / known limits:**
+  - Android and iOS have never run this; the web build is the only thing driven. The keyboard and safe-area behaviour on
+    the waiting screen is by the repo's convention, not by eye on a phone.
+  - Google sign-up and Google link with a parent's address were not driven (no Google credential).
+  - A real class join with a teacher's code from the waiting screen, and real account deletion, were not driven.
+  - No real mail was sent (no `RESEND_API_KEY`); the link was read from the API log.
+  - **The Arabic was drafted and polished by the implementer with no independent reviewer** (the copy-review skill returned
+    a method, not a review). A native read of the consent screens is an owner step.
+  - No plain "send the same link again": the app holds only the masked address, so sending again means typing an address.
+  - The register screen's server error text (for example "A parent's email cannot be your own.") is drawn at the top of the
+    form and can sit above the fold after pressing "Create account". Every register error behaves this way today.
+  - About 150 ms of the Library tab shows right after verification for a new held student, then the waiting screen: the
+    status is read by a second `/auth/me` after the session starts. The same moment fires one burst of 403s from
+    background calls; they do not repeat.
+  - A held student can switch role to teacher at will: the waiting screen no longer offers "I am a teacher", but the
+    server still allows the switch, so the hold is advisory for any child who signs up as a teacher. A known limit.
+  - A student made from a teacher's code who later adds an email is never held (server commit a12d41d). The teacher's code
+    vouched for them at sign-up, and without the exemption a student whose class-code claim was still pending would be
+    held the moment they added an email and could not verify it from the waiting screen.
+  - That closes the unverified-email dead end for teacher-code students. An email student with an unverified email
+    cannot be in that state, because sign-up verifies the address before the account is held.
+  - An approved student who opens the app offline stays on the waiting screen until the device is back online.
+  - A held student whose class-code claim is pending sees only the parent-approval text.
+  - The parent page links no privacy policy and states no data processing beyond one sentence. Put it in front of the
+    lawyer.
+  - `constants/legal.ts` still describes the age tick; `LEGAL_VERSION` is unchanged.
+  - No e2e spec was added: the e2e job runs with `STUDENT_ACCOUNTS=false`, so a student never reaches this flow there.
+- **Owner steps before the flag is turned on:**
+  1. Have the parent-consent wording read by a native speaker and a lawyer (the `guardian*` and `parentConsent*` keys in
+     `services/i18n.ts`).
+  2. Update `constants/legal.ts` to describe parent approval and bump `LEGAL_VERSION` in the same change (it asks every
+     user to accept again).
+  3. Update the store declaration to say a parent confirms a student's sign-up.
+  4. Deploy the app: the web bundle ships with the merge; Android by an OTA (`mobile-update.yml`, then the `production`
+     channel by hand). No native change was made and `app.json` `version` is untouched, so an OTA reaches the installed
+     binaries.
+  5. Confirm Resend click tracking is OFF for this mail. A tracked link, or a mail scanner such as Outlook Safe Links,
+     puts the `#fragment` (the approval token) into third-party logs.
+  6. Confirm Cloudflare Pages Web Analytics auto-injection is off for the app domain, or that it does not record URL
+     fragments.
+  7. Check the share of users on the new bundle (PostHog) before the flag: an older bundle gets blanket 403s with no
+     waiting screen, and fails sign-up with `parent_email_required`.
+  8. Then set `GUARDIAN_APPROVAL=true` on the API service. Existing email students are locked until a parent approves.
+
+## Parent approval for email students — server (PR A) — 2026-10-24
+
+A student who signs up with an email and no teacher's code is, today, held by one unverified tick. This is
+the server half of a real gate: with `GUARDIAN_APPROVAL=true` such a student is held (403
+`guardian_approval_required`) until a parent approves by email. **The flag is off by default, and with it
+unset nobody sees a change:** no sign-up, sign-in or route behaves differently. Three things do happen on
+merge, flag or no flag: (1) the auth middleware (and the live-game join in `routes/live.ts`) reads one extra column,
+`users.guardian_approved_at`, on every authenticated request, so **migration 0018 must be applied before the new revision takes traffic**
+(`deploy.yml` migrates first); (2) `GET /auth/me` gains `guardianStatus`, which is `"not_required"` while the
+flag is off; (3) two paths, a password reset for an unverified account and a Google link of an unverified
+account, run a request-supersede that touches no rows when none exists. Design:
+`docs/superpowers/specs/2026-10-24-guardian-approval-design.md`.
+
+- **Built:** the gate is in `authMiddleware` with an allowlist (`lib/guardianGate.ts`: me, guardian-request,
+  role switch, logout, erase self, the class-claim routes), so a route added tomorrow is closed by default;
+  the roster-link query runs only for a student who could be held. `guardian_consents` is an owner-only table
+  and `users.guardian_approved_at` a new column (migration 0018). `lib/guardianRequests.ts` queues a
+  request at sign-up and mails it only after the student verifies their own address; at most 3 a day per
+  student and 5 a day per parent address, serialised by two transaction advisory locks. The token is 32
+  random bytes, only its SHA-256 is stored, it lasts 7 days and is single use through one conditional UPDATE
+  (`decideByToken`). **The token never travels in a URL path or query (ruling R10):** the mail links to
+  `{origin}/guardian#{token}`, a fragment a browser never sends to a server, and the parent's page posts it in a
+  body to `POST /guardian-consent/lookup` and `POST /guardian-consent/decide` (`GET /guardian-consent/config`
+  stays; `GET /guardian-consent/<token>` is a 404). That replaced a path-redaction helper (`lib/logUrl.ts`),
+  which is gone: a path segment would also have reached Cloud Run's request log, which the app cannot redact.
+  `POST /auth/guardian-request` asks again (supersedes the old link); `/me` returns `guardianStatus` and a
+  masked parent address. A held student may call `POST /auth/role` (ruling R11), so one who picked the wrong role
+  is not stuck; and the public live-game join, which verifies the access token itself and so never met the
+  middleware gate, now records no user id for a held student (ruling R12).
+  An account made from a teacher's code (it has a `login_code_hash`) is never held, even if it later adds an
+  email: otherwise a student whose class-code claim is still pending would be held the moment they added one and,
+  unable to verify it from the waiting screen, stranded; the teacher's code vouched for them at sign-up.
+- **Flag on vs off:** on, sign-up and Google sign-up ask for a parent's address instead of the age tick, and
+  switching role into student just yields a held account. Off, the age tick works exactly as before.
+- **Mutation checks** (edit, build, run `guardianApproval.db.test.ts`, restore, rebuild, green; each caught):
+  1. `hasLiveLink: true` in the middleware: 4 failures (the gate, "lifts the moment a parent approves",
+     "lifts when a teacher's per-student code links the account", the sign-up flow).
+  2. `GET /student/exams` added to the allowlist: the unit test `stops GET /api/student/exams` plus the same
+     four DB failures.
+  3. `isNull(decidedAt)` removed from `decideByToken`: "approving needs the parent's confirmation…" and
+     "two parents clicking at once: exactly one wins".
+  4. the superseding UPDATE removed from `queueRequest`: "asking again supersedes the old link" and
+     "six at once for one student…".
+  5. the mail call removed from `/verify-email`: "queues the request at sign-up, mails the parent only
+     after the student verifies, then holds them".
+  6. both advisory locks removed: the race reproduced in 4 of 5 runs ("six at once for one student" and
+     "seven students at once for one parent address", one or both); run 1 passed, so the two concurrency
+     tests are strong but not deterministic.
+- **Checked (final fix wave, after the token moved out of the URL; figures updated after the login-code exemption,
+  a12d41d):** `pnpm run typecheck` clean in
+  `artifacts/api-server` and at the repo root; api-server `pnpm build` then `pnpm test` with the database and
+  `REQUIRE_DB_TESTS=true`: 2,679 tests, 0 failed, 0 skipped; `guardianApproval.db.test.ts` 52 tests (49 before the
+  exemption, run 3 times alone then, all green); `guardianGate` unit file 35, `guardianConsentEmail` 6. The earlier `@workspace/db test` run (66 tests) had 1 failure in
+  `rlsDiff.test.ts` ("every read answers the same…": the order of `participants` in
+  `GET /messaging/threads/class/:id`, a read with no ORDER BY, in a file this branch does not touch). That file
+  alone failed 2 of 5 reruns and three further full runs passed 66 of 66, so it looks like an ordering flake; it
+  was not run on a clean `main`, and `lib/db` has not changed since, so it was not rerun. No file under
+  `artifacts/mobile` is touched. The brand grep from `ci.yml` is clean. Mutation: with the live-join gate
+  neutralised, 2 of the 3 live-join tests fail.
+  One more mutation, for the login-code exemption (a12d41d): dropping it was caught by 8 tests.
+- **Not verified / known limits:**
+  - The Google sign-up path was reviewed, not exercised (no Google credential); the supersede call on the
+    Google-link path and the new-account branch have no route-level test.
+  - The mail was never sent through Resend (no key locally).
+  - The app (PR B) does not exist, so turning the flag on today would lock existing email students out with
+    no waiting screen. Do not set it.
+  - The parent-consent wording is a draft and needs a legal and native-Arabic review.
+  - Email consent proves access to a mailbox, not that the person is the parent.
+  - A self-made teacher account that holds a roster row can unlock a held student: the teacher approving a
+    class-code claim is the exemption, and nothing proves a teacher is real (a second mailbox does it), so it
+    also overrides a parent's decline. The parent's approval proves a mailbox, this proves a sign-up.
+  - A decline does not bind: the student may ask the same or another parent again (3 a day).
+  - Five unverified sign-ups naming one parent address fill that address's 5-a-day cap for 24 hours, so a
+    real parent's own child can be refused for a day.
+  - `/me` says `waiting` even when the mail failed to send; only `emailSent: false` in the answer to the
+    request itself says so.
+  - A request queued with the flag on and verified after it was turned off is never mailed.
+  - PR B must keep `/guardian` out of analytics screen tracking and crash breadcrumbs: the fragment is
+    out of the server's reach, not out of the page's.
+  - A student who resets their password or links Google on an unverified address loses the queued request
+    and must re-enter the parent's address.
+  - `change-unverified-email` can repoint to the parent's address after the own-address check.
+  - Queued rows never mailed still count toward the 5-a-day parent cap.
+  - A request superseded between queue and issue answers 200 `emailSent: false`.
+
 ## Math Corner practice by lesson, for the whole class — 2026-10-24
 
 **What a teacher sees.** The class's «تمارين الرياضيات» sheet opens on a new
@@ -141,7 +371,6 @@ exists now. A host that cannot be reached stops the run after 10 clips in a row 
 is unreachable»); a report written after a stop, or with error rows, never says «Nothing needs a listen». The output folders of
 `--cache` and `--out` are created before the first request. Left as they are: Ctrl+C exits with `process.exit` after saving the cache; `--out x.json` names its JSON `x.json.json`; the
 `--cache`/`--out` collision check is case-sensitive.
-
 
 ## English corner: all ten grades, the official books, and free listening and reading sites, 2026-10-24
 
