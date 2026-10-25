@@ -10,6 +10,28 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## CI listens for the merge queue, 2026-10-25
+
+**Why.** `main` requires an up-to-date branch and a green `typecheck + tests`, and takes a merge about every
+ten minutes while that job takes about nine. On 2026-10-25 one PR lost that race four times running: every
+head was green, and each merge was refused (405, «Required status check "typecheck + tests" is expected»)
+because another PR had landed first. A merge queue removes the race: GitHub tests each entry on top of the
+ones ahead of it and merges it, with no hand-run «update branch».
+
+**Built.** `merge_group:` added to the triggers of `ci.yml`, `e2e.yml` and `destructive-migration-ack.yml`.
+Without it a queue entry never gets the four `ci.yml` checks or the smoke test, and waits forever on checks
+that never report. The destructive-migration job reads the PR body, which a queue entry does not have, so it
+is skipped there (a skipped required check counts as passing; the body was already checked on the PR) and its
+concurrency group falls back to the ref, so two entries never cancel each other.
+
+**Not done, and not doable from a PR.** The queue itself is a repository setting: *Settings → Rules →
+Rulesets* (or branch protection for `main`) → «Require merge queue». Merge this PR first, then turn it on;
+the other order leaves every entry stuck. `merge_group` runs cannot be exercised before the queue exists, so
+this is **unverified in practice**: the first queued PR is the test. Check that every check the ruleset
+requires reports on it. If one does not, the queue entry times out and the PR drops out; turning the queue off again
+restores the old behaviour, and reverting this PR changes nothing for a repository with the queue off.
+`deploy.yml` is untouched: the queue merges into `main`, which is still a push to `main`.
+
 ## Grade 8 semester 1 word lists in the English corner, 2026-10-25
 
 Grades 6–8 had a tab and a «word games coming» notice (PR #1268) but no words. Grade 8's

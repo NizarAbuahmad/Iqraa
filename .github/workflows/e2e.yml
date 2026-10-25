@@ -13,6 +13,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  # The merge queue's temporary branch: see the note in ci.yml.
+  merge_group:
   workflow_dispatch:
 
 permissions:
