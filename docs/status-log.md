@@ -56,13 +56,13 @@ phrasings know falls through to the AI. The veto exists because review found sho
 questions getting a confident wrong answer ("how much does chatgpt cost" returned the price answer).
 The success response now carries `source: "curated" | "ai"`. The answers are a copy of the site's
 FAQ wording and can drift from it; cross-topic questions ("is the Android app free") go to the
-nearest status answer.
+nearest status answer. The owner approved the wording of the 17 answers in chat on 2026-10-25. A leading greeting or thanks is set aside when a question follows it.
 
 **Not checked:** the real spend query against Postgres (it is a one-statement sum, exercised only
 in production); the real per-answer cost and the `/healthz/ai-budget` `persisted` flag after the
 first answers; answer quality on real visitor questions, including off-topic and injection tries
 (to be run against the deployed route before the widget ships, and recorded here); the widget,
-which is a separate change in the `Site_Iqra` repo and has not been written; the product owner's approval of the wording of the 17 fixed answers; how the matcher behaves on real visitor questions (only the questions in the tests have been tried).
+which is a separate change in the `Site_Iqra` repo and has not been written; how the matcher behaves on real visitor questions (only the questions in the tests have been tried).
 
 ## Grade 8 English gets its book pages; Grades 1-7 do not, 2026-10-25
 

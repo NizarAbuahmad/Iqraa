@@ -124,15 +124,18 @@ cost; only what that list does not cover goes to the AI.
      `lib/siteAskAnswers.ts`: greeting, thanks, what Iqraa is, price, curriculum,
      coverage, what it makes, how maths answers are checked, whether an app is
      needed, Android, iPhone, students, privacy, contact, "not a general chatbot",
-     teacher review, other countries. Drafted from the site's own FAQ, `llms.txt`
-     and privacy page; no digits, no dates, no prices beyond "free during the beta".
+     teacher review, other countries. Drafted from the site's own FAQ, `llms.txt`,
+     privacy page and curriculum page, and STATUS.md for the Android status; no digits, no dates, no prices beyond "free during the beta".
      The product owner approves the wording before this ships.
    - Matching uses no AI (`lib/siteAskMatch.ts`). The question is normalised
      (diacritics, alef/ya/ta-marbuta spellings, digits, punctuation, apostrophes),
      stopwords are dropped, common Arabic prefixes and English plurals are
      stripped, and each entry's example phrasings are scored by Dice overlap on
      token sets. It answers only when the best entry scores at least 0.5 and leads
-     the runner-up by at least 0.15.
+     the runner-up by at least 0.15. A leading greeting or thanks is set aside
+     when something else follows it («السلام عليكم كم السعر» is answered with the
+     price); a bare greeting, or a greeting plus only the product name, still
+     answers itself.
    - **Unknown-word veto.** If the question contains any content word that appears
      in no entry's phrasings, it is not a question the fixed answers were written
      for and it falls through to the AI. This was added after review showed that
@@ -153,7 +156,8 @@ cost; only what that list does not cover goes to the AI.
      from it (moving them to a file the site owns is a possible later step);
      cross-topic questions such as "is the Android app free" go to the nearest
      status answer; the Android, iPhone and free-beta wording has to be edited when
-     that status changes.
+     that status changes, and so does the coverage answer's «from the first grade
+     to the tenth» ("من الصف الأول إلى الصف العاشر"), which is a number in words.
 
 ## The widget (Site_Iqra)
 
@@ -232,4 +236,4 @@ a greeting is answered with no database and no AI.
 
 - Rate limits and the $1 default are guesses until there is traffic.
 - Whether to add the include to the other site pages is a later, one-line change.
-- The product owner has not yet approved the wording of the 17 fixed answers.
+- The product owner approved the wording of the 17 fixed answers in chat on 2026-10-25. One proposed edit is waiting on a yes: the `android` answer does not say the browser works on a phone in the meantime, as the `iphone` answer does.
