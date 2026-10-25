@@ -29,6 +29,31 @@ a code in hand had no way to make an account. The register screen now gives a pa
 - **Verified:** unit tests (`signupMethod.test.ts` fails without the change), typecheck, mobile and api-server tests. **Not
   verified:** the screen in a browser or on a device; an email parent end to end (sign up, verify, claim, pick a class).
 
+## Sign-in: the last Google account is a line, not a chip — 2026-10-25
+
+A UX-copy review of the sign-in screen (saved account, Google's button, a green «آخر حساب Google
+استخدمته» chip, a terms line, a hint) found it said "which account" four ways at once.
+
+**What changed** (`app/(auth)/login.tsx`, `services/i18n.ts`; sign-in only, the register screen is untouched)
+- **The green chip is now one plain line**, «آخر حساب Google استخدمته هنا: <address>» (`loginGoogleLast`).
+  The chip looked tappable and was a plain `View`, repeated Google's own «Continue as <name>» when the
+  two matched, and put a second «آخر استخدام» next to the saved account's. The label and the address
+  are separate `Text`s in one row so the row's direction orders them and the Latin address is not mixed
+  into the Arabic run. It stays because the two can differ: Google's button shows the browser's active
+  Google account, this is what was last used on this device. (It was already hidden when the address
+  equals a saved Iqrra account's, `showLastGoogle`.)
+- **Removed «ستظهر لك قائمة حسابات Google لتختار البريد الذي تريده»** (`loginGoogleChoose`, both
+  languages). Google's personalised button normally continues as the account it names, so a list
+  may never appear. **Not checked on the deployed page**; if a tap on «Continue as …» is confirmed to
+  show a chooser, the hint can come back.
+- **Shorter wording:** the saved-account hint is «اضغط حسابك للدخول دون كلمة مرور.»; the Google terms
+  notice is «إن أنشأت حسابًا جديدًا عبر Google فأنت توافق على …» / "If you create a new account with
+  Google, you agree to the …". `accountsLastUsed` is unchanged and still badges the saved account.
+
+**Verified:** mobile `pnpm run typecheck`; mobile `pnpm test` (7,624 tests, 7,614 pass, 10 skipped, 0 fail).
+**Not verified:** how the line wraps and sits in a browser (phone, desktop, RTL, dark), or what a tap on
+Google's button does.
+
 ## Chat app-help, twenty-eighth live pass: three short answers and wordings for five existing ones — 2026-10-24
 
 The pass was only half usable: from its seventh question the demo account answered «انتهت حصة
