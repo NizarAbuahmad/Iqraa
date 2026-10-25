@@ -43,11 +43,26 @@ Checked: unit tests for the parser, the prompt rules, the facts loader (success,
 window, error, empty, oversize, single flight), the spend gate, and the decision order (the model
 and the facts fetch never run once a cap has tripped); the built bundle answers `/site/ask`
 without a token, POST only, with CORS for `www.iqrra.com` and not for other origins.
+
+**Fixed answers first, AI second (2026-10-25).** A reviewed list of 17 fixed answers (Arabic and
+English: greeting, thanks, what it is, price, curriculum, coverage, what it makes, maths checking,
+app needed, Android, iPhone, students, privacy, contact, not a general chatbot, teacher review,
+other countries) is matched without AI before anything else (`lib/siteAskMatch.ts`,
+`lib/siteAskAnswers.ts`). A hit costs nothing, makes no model call and works with live mode off or
+`SITE_BOT_BUDGET_USD_DAILY=0`; anything the list does not cover goes through the AI path as
+described above. Matching is Dice overlap on token sets (answer at 0.5 or more, ahead of the
+runner-up by 0.15 or more) plus an unknown-word veto: a question containing a word that no answer's
+phrasings know falls through to the AI. The veto exists because review found short same-frame
+questions getting a confident wrong answer ("how much does chatgpt cost" returned the price answer).
+The success response now carries `source: "curated" | "ai"`. The answers are a copy of the site's
+FAQ wording and can drift from it; cross-topic questions ("is the Android app free") go to the
+nearest status answer.
+
 **Not checked:** the real spend query against Postgres (it is a one-statement sum, exercised only
 in production); the real per-answer cost and the `/healthz/ai-budget` `persisted` flag after the
 first answers; answer quality on real visitor questions, including off-topic and injection tries
 (to be run against the deployed route before the widget ships, and recorded here); the widget,
-which is a separate change in the `Site_Iqra` repo and has not been written.
+which is a separate change in the `Site_Iqra` repo and has not been written; the product owner's approval of the wording of the 17 fixed answers; how the matcher behaves on real visitor questions (only the questions in the tests have been tried).
 
 ## Grade 8 English gets its book pages; Grades 1-7 do not, 2026-10-25
 

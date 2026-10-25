@@ -14,7 +14,9 @@ for signed-in users and cannot be exposed as it stands.
 ## Goals and non-goals
 
 **Goal:** a visitor asks a question on the home page and gets a short, correct
-answer about Iqraa in the language they wrote in, at a cost we cap.
+answer about Iqraa in the language they wrote in, at a cost we cap. Common
+questions are answered from a reviewed list of fixed answers, with no AI and no
+cost; only what that list does not cover goes to the AI.
 
 **Non-goals (decided):**
 
@@ -117,6 +119,42 @@ answer about Iqraa in the language they wrote in, at a cost we cap.
    model, the token counts and the cost. The recorded `ai_generations` row has no
    text column.
 
+8. **Fixed answers first, AI second (added 2026-10-25, approved in chat).**
+   - A reviewed list of 17 fixed answers, Arabic and English, in
+     `lib/siteAskAnswers.ts`: greeting, thanks, what Iqraa is, price, curriculum,
+     coverage, what it makes, how maths answers are checked, whether an app is
+     needed, Android, iPhone, students, privacy, contact, "not a general chatbot",
+     teacher review, other countries. Drafted from the site's own FAQ, `llms.txt`
+     and privacy page; no digits, no dates, no prices beyond "free during the beta".
+     The product owner approves the wording before this ships.
+   - Matching uses no AI (`lib/siteAskMatch.ts`). The question is normalised
+     (diacritics, alef/ya/ta-marbuta spellings, digits, punctuation, apostrophes),
+     stopwords are dropped, common Arabic prefixes and English plurals are
+     stripped, and each entry's example phrasings are scored by Dice overlap on
+     token sets. It answers only when the best entry scores at least 0.5 and leads
+     the runner-up by at least 0.15.
+   - **Unknown-word veto.** If the question contains any content word that appears
+     in no entry's phrasings, it is not a question the fixed answers were written
+     for and it falls through to the AI. This was added after review showed that
+     short same-frame questions about something else got a confident wrong answer
+     ("how much does chatgpt cost" returned the price answer; "is iqraa not free"
+     too, because negation is invisible to the score). Negations are deliberately
+     unknown words.
+   - **Order.** The fixed answer is decided first, before live mode, the budgets
+     and the daily cap. A hit makes no model call, no facts fetch and no spend, and
+     it works with live mode off and with `SITE_BOT_BUDGET_USD_DAILY=0`, so the
+     route can go live as a fixed-answers-only bot and have the AI switched on
+     later. A miss goes through decisions 4 to 6 unchanged. The success response
+     gains `source: "curated" | "ai"`. Fixed answers still pass the same input
+     checks and the same two rate limits.
+   - The answer language is Arabic when the message contains an Arabic letter,
+     otherwise English.
+   - Known limits: the answers are a copy of the site's FAQ wording and can drift
+     from it (moving them to a file the site owns is a possible later step);
+     cross-topic questions such as "is the Android app free" go to the nearest
+     status answer; the Android, iPhone and free-beta wording has to be edited when
+     that status changes.
+
 ## The widget (Site_Iqra)
 
 - Two new plain files, `ask.js` and `ask.css`, in the repo root like `blog.js` and
@@ -182,7 +220,16 @@ and the live region cannot be asserted in a unit test.
 Before the site PR, ask the live route 15 to 20 real questions, including
 off-topic and injection attempts, and record the answers in the log.
 
+Fixed answers: matcher unit tests (normalising, tokenising, the 0.5 and 0.15
+boundaries, ambiguity, the unknown-word veto); answer tests (the 17 ids, text rules,
+fixed golden questions per entry, questions that must fall through, regression
+probes, anchors that are unique per entry so a swapped answer cannot pass, required
+links); orchestrator tests (a fixed answer never touches the gates, the facts or
+the model, and a throwing matcher falls through to the AI); a mount-order test that
+a greeting is answered with no database and no AI.
+
 ## Open points
 
 - Rate limits and the $1 default are guesses until there is traffic.
 - Whether to add the include to the other site pages is a later, one-line change.
+- The product owner has not yet approved the wording of the 17 fixed answers.
