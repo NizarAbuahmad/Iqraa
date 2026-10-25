@@ -81,12 +81,18 @@ describe("normalizeText", () => {
     assert.equal(normalizeText(""), "");
   });
 
+  it("deletes apostrophes instead of splitting the word", () => {
+    assert.equal(normalizeText("what's"), "whats");
+    assert.equal(normalizeText("it\u2019s"), "its");
+    assert.equal(normalizeText("rock 'n' roll"), "rock n roll");
+  });
+
   it("lowercases", () => {
     assert.equal(normalizeText("HeLLo IQRAA"), "hello iqraa");
   });
 
   it("is idempotent", () => {
-    for (const x of ["مُحَمَّدٌ؟", "إقـــرأ ١٢٣ !", "Is Iqraa FREE?", "على مدرسة مسؤول", "", "؟؟"]) {
+    for (const x of ["مُحَمَّدٌ؟", "إقـــرأ ١٢٣ !", "Is Iqraa FREE?", "what\u2019s it's", "على مدرسة مسؤول", "", "؟؟"]) {
       assert.equal(normalizeText(normalizeText(x)), normalizeText(x));
     }
   });
@@ -104,6 +110,13 @@ describe("tokenize", () => {
     assert.deepEqual(tokenize("للمعلمين"), ["معلمين"]);
     assert.deepEqual(tokenize("والمواد"), ["مواد"]);
     assert.deepEqual(tokenize("بالتطبيق"), ["تطبيق"]);
+  });
+
+  it("drops a token that is a stopword once its prefix is stripped", () => {
+    assert.deepEqual(tokenize("اللي"), []);
+    assert.deepEqual(tokenize("الان"), []);
+    assert.deepEqual(tokenize("اللي سعر"), ["سعر"]);
+    assert.deepEqual(tokenize("للمعلمين"), ["معلمين"]);
   });
 
   it("keeps a token whose remainder after the prefix would be under 2 letters", () => {
@@ -196,6 +209,19 @@ describe("matchCurated — hits", () => {
     assert.equal(hit.entry.id, "price");
   });
 
+  it("still matches with an apostrophe in the question", () => {
+    assert.equal(idOf("what's iqraa?"), "what");
+    assert.equal(idOf("What\u2019s Iqraa"), "what");
+  });
+
+  it("drops «اللي» as filler and matches for the right reason", () => {
+    assert.deepEqual(tokenize("اللي هو إقرأ"), ["اقرا"]);
+    const hit = matchCurated("اللي هو إقرأ", FIX);
+    assert.ok(hit);
+    assert.equal(hit.entry.id, "what");
+    assert.equal(hit.score, 1);
+  });
+
   it("accepts a score of exactly 0.5: «مجاني؟» is one of four tokens in the price phrase", () => {
     const hit = matchCurated("مجاني؟", FIX);
     assert.ok(hit);
@@ -205,22 +231,34 @@ describe("matchCurated — hits", () => {
 
   it("treats exactly MATCH_MIN_SCORE as a hit and a hair below it as a miss", () => {
     // Made-up words, so nothing else in a list can share a token with them.
+    // Every query word is also in the entry's vocabulary (in a low-scoring
+    // second phrase), so the unknown-word veto stays out of the way and only
+    // the score decides.
+    //
     // At: Q = {alpha beta}, P = {alpha gamma}; shared 1, sizes 2+2 → 2*1/4 = 0.5 exactly.
-    const at: CuratedEntry[] = [{ id: "e", phrases: ["alpha gamma"], ar: "a", en: "e" }];
+    // The other phrase {beta delta epsilon zeta} scores 2*1/6 ≈ 0.333 against Q.
+    const at: CuratedEntry[] = [{ id: "e", phrases: ["alpha gamma", "beta delta epsilon zeta"], ar: "a", en: "e" }];
     assert.equal(dice("alpha beta", "alpha gamma"), 0.5);
+    assert.ok(dice("alpha beta", "beta delta epsilon zeta") < 0.5);
     const hit = matchCurated("alpha beta", at);
     assert.ok(hit);
     assert.equal(hit.score, 0.5);
     assert.equal(hit.score, MATCH_MIN_SCORE);
 
-    // Below: Q has 6 tokens, P has 7, shared 3 → 2*3/13 ≈ 0.4615.
+    // Below: Q has 6 tokens, P has 7, shared 3 → 2*3/13 ≈ 0.4615. Q's other
+    // three words live in a second phrase (8 tokens, shared 3 → 6/14 ≈ 0.4286).
     const q = "alpha beta gamma delta epsilon zeta";
     const p = "alpha beta gamma eta theta iota kappa";
+    const other = "delta epsilon zeta lambda mu nu xi omicron";
     assert.equal(tokenize(q).length, 6);
     assert.equal(tokenize(p).length, 7);
+    assert.equal(tokenize(other).length, 8);
     assert.ok(Math.abs(dice(q, p) - 6 / 13) < 1e-12);
-    assert.ok(dice(q, p) < MATCH_MIN_SCORE);
-    const below: CuratedEntry[] = [{ id: "e", phrases: [p], ar: "a", en: "e" }];
+    assert.ok(Math.abs(dice(q, other) - 6 / 14) < 1e-12);
+    assert.ok(Math.max(dice(q, p), dice(q, other)) < MATCH_MIN_SCORE);
+    const vocabulary = new Set([...tokenize(p), ...tokenize(other)]);
+    for (const t of tokenize(q)) assert.ok(vocabulary.has(t), `${t} must be known, so the score decides`);
+    const below: CuratedEntry[] = [{ id: "e", phrases: [p, other], ar: "a", en: "e" }];
     assert.equal(matchCurated(q, below), null);
   });
 });
@@ -247,6 +285,22 @@ describe("matchCurated — misses", () => {
     assert.equal(matchCurated("؟!؟", FIX), null);
     assert.equal(matchCurated("... ,,, ???", FIX), null);
     assert.equal(matchCurated("هل ما هو", FIX), null);
+  });
+
+  it("returns null for a known question frame about something no answer was written for", () => {
+    // Each of these scored 0.5-0.8 on Dice alone and got a wrong fixed answer.
+    for (const m of [
+      "how much does chatgpt cost",
+      "is chatgpt free",
+      "what is the price of chatgpt",
+      "is iqraa not free",
+      "هل إقرأ آمن",
+      "is iqraa safe",
+      "هل يوجد تطبيق ايفون",
+      "هل إقرأ آمن للأطفال",
+    ]) {
+      assert.equal(matchCurated(m, FIX), null, m);
+    }
   });
 
   it("returns null for an empty entries list", () => {
@@ -305,6 +359,31 @@ describe("matchCurated — ambiguity", () => {
       { id: "two", phrases: ["theta iota kappa"], ar: "a", en: "e" },
     ];
     assert.equal(matchCurated(Q, entries)?.entry.id, "one");
+  });
+});
+
+describe("matchCurated — vocabulary veto", () => {
+  it("matches a message made only of known words in a new order", () => {
+    assert.equal(idOf("free iqraa"), "price");
+    assert.equal(idOf("مجاني استخدام إقرأ"), "price");
+    assert.equal(idOf("store play"), "android");
+  });
+
+  it("refuses the same message once one unknown word is added", () => {
+    assert.equal(idOf("free iqraa tomorrow"), null);
+    assert.equal(idOf("مجاني استخدام إقرأ جديد"), null);
+    assert.equal(idOf("store play offline"), null);
+  });
+
+  it("builds the vocabulary from every phrase of every entry", () => {
+    const entries: CuratedEntry[] = [
+      { id: "one", phrases: ["refund policy", "money back"], ar: "a", en: "e" },
+      { id: "two", phrases: ["contact support"], ar: "a", en: "e" },
+    ];
+    assert.equal(idOf("money back", entries), "one");
+    // "support" is only in entry two's phrases, yet it is known, so it does not veto entry one's win.
+    assert.equal(idOf("refund policy support", entries), "one");
+    assert.equal(idOf("refund policy shipping", entries), null);
   });
 });
 

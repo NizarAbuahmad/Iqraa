@@ -25,6 +25,15 @@
  *    entries both fit about equally is ambiguous, and picking one of them is a
  *    coin toss presented as an answer.
  *
+ *  - A VOCABULARY VETO. Dice alone accepts a short question that has the shape
+ *    of an entry but is about something else: «how much does chatgpt cost»
+ *    shares "much" and "cost" with the price phrase and scores 0.8, «is iqraa
+ *    not free» 0.8, «هل يوجد تطبيق ايفون» 0.667 against the Android entry. The
+ *    margin cannot help, because it only guards a close SECOND entry. So the
+ *    vocabulary is every token of every phrase of every entry, and a message
+ *    containing any token outside it is refused outright: it mentions
+ *    something no answer was written for, and that is the AI path's job.
+ *
  * Spelling variants (hamza forms, ى/ي, ة/ه, diacritics, tatweel, Arabic-Indic
  * digits) are folded away in `normalizeText`, so a visitor's spelling does not
  * decide whether the review applies.
@@ -46,6 +55,8 @@ export function normalizeText(input: string): string {
     .replace(/ة/g, "ه")
     .replace(/ؤ/g, "و")
     .replace(/ئ/g, "ي")
+    // "what's" is one word, not "what" and "s"; deleted before the non-letter step.
+    .replace(/['\u2019]/g, "")
     .replace(/[^ء-يa-z0-9]+/g, " ")
     .trim();
 }
@@ -87,7 +98,10 @@ export function tokenize(input: string): string[] {
   const seen = new Set<string>();
   for (const raw of normalizeText(input).split(" ")) {
     if (raw === "" || STOPWORDS.has(raw)) continue;
-    seen.add(stripPlural(stripPrefix(raw)));
+    const stripped = stripPrefix(raw);
+    // «اللي» → «لي», «الان» → «ان»: a stopword behind a prefix is still a stopword.
+    if (stripped !== raw && STOPWORDS.has(stripped)) continue;
+    seen.add(stripPlural(stripped));
   }
   return Array.from(seen);
 }
@@ -119,8 +133,20 @@ export function matchCurated(
   message: string,
   entries: readonly CuratedEntry[],
 ): { entry: CuratedEntry; score: number } | null {
-  const query = new Set(tokenize(message));
+  const tokens = tokenize(message);
+  const query = new Set(tokens);
   if (query.size === 0 || entries.length === 0) return null;
+
+  // Computed per call: the lists are tiny and a cache would be state.
+  const vocabulary = new Set<string>();
+  for (const entry of entries) {
+    for (const phrase of entry.phrases) {
+      for (const token of tokenize(phrase)) vocabulary.add(token);
+    }
+  }
+  for (const token of tokens) {
+    if (!vocabulary.has(token)) return null;
+  }
 
   // Array.prototype.sort is stable, so equal scores keep entry order.
   const ranked = entries
