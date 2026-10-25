@@ -2184,3 +2184,59 @@ describe('exam titles, typed questions, who joined, uploads, attachments, copy a
     });
   }
 });
+
+describe('files, slides, exams, classes, the account and the app — wordings of answers (twenty-ninth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['كيف أغيّر اسم ملف في ملفاتي؟', 'howRenameFile'],
+    ['how do i rename a file in my files', 'howRenameFile'],
+    ['كيف أحذف امتحاناً؟', 'howDeleteExam'],
+    ['كيف أؤرشف امتحاناً قديماً؟', 'howDeleteExam'],
+    ['how do i delete an exam', 'howDeleteExam'],
+    ['كيف أعرف إصدار التطبيق؟', 'howAppVersion'],
+    ['how do i see the app version', 'howAppVersion'],
+    ['كيف أحذف شريحة من العرض؟', 'howSlideEdit'],
+    ['how do i delete the slide from the deck', 'howSlideEdit'],
+    ['كيف أغيّر لون خلفية الشرائح؟', 'howSlideTheme'],
+    ['كيف أحذف الشعبة نهائياً؟', 'howArchiveClass'],
+    ['how do i delete a class permanently', 'howArchiveClass'],
+    ['كيف أغيّر مادة الشعبة؟', 'howRenameClass'],
+    ['كيف أشارك التطبيق مع زميل؟', 'howInviteTeacher'],
+    ['how do i share the app with a colleague', 'howInviteTeacher'],
+    ['كيف أستخدم التطبيق بدون إنترنت؟', 'howOffline'],
+    ['how do i use the app without internet', 'howOffline'],
+    ['كيف أعرف متوسط علامات الشعبة في امتحان؟', 'howClassAverage'],
+    ['كيف أنشر الامتحان لأكثر من شعبة؟', 'howCopyExam'],
+    ['كيف أغلق الامتحان تلقائياً في وقت معين؟', 'howExamTime'],
+    ['how do i close the exam automatically', 'howExamTime'],
+    ['كيف أعطي علامة جزئية على سؤال؟', 'howOpenGrading'],
+    ['how do i give partial credit for a question', 'howOpenGrading'],
+    ['كيف أستعيد حسابي المحذوف؟', 'howDeleteAccount'],
+    ['how do i restore my deleted account', 'howDeleteAccount'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  const stayWithModel = [
+    'كيف أحذف الاختبار القصير',
+    'كيف أحذف سؤالا من الاختبار',
+    'كيف أغير اسم الملف في ويندوز',
+    'كيف أحذف شريحة من الدرس في بوربوينت',
+    'كيف أغير مادة الغلاف الجوي',
+    'كيف أشارك الدرس مع زميل',
+    'كيف أستخدم الآلة الحاسبة بدون إنترنت',
+    'كيف أعرف إصدار المعادلة',
+    'كيف أستعيد الماء المقطر',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howRenameFile', 'howDeleteExam', 'howAppVersion', 'howSlideEdit', 'howSlideTheme', 'howArchiveClass', 'howRenameClass', 'howInviteTeacher', 'howOffline', 'howClassAverage', 'howCopyExam', 'howExamTime', 'howOpenGrading', 'howDeleteAccount']);
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});
