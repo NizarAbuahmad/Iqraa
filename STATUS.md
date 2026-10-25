@@ -22,15 +22,17 @@ math answer keys (`artifacts/math-verifier`), RTL/Arabic-first UX.
 Checked 2026-10-22:
 
 - **API** `iqraa-api` (Cloud Run, europe-west1, project `iqraa-auth-507315`): commit
-  `9346b5f`, revision `iqraa-api-00390-d4p`, 100% of traffic (`/api/healthz/version`).
+  `2277f57` **(2026-10-25, from deploy run 801 — its «Verify the deployed commit» step passed; the
+  revision name and traffic split were not re-read)**. Last read by command, 2026-10-22: `9346b5f`,
+  revision `iqraa-api-00390-d4p`, 100% of traffic (`/api/healthz/version`).
 - **Math verifier** `iqraa-verifier`: `/api/healthz/verifier` answers `ok`, self-test `pass`.
 - **Web app** `app.iqrra.com` (Cloudflare Pages): 200. **Landing** `iqrra.com` (separate repo
   `Site_Iqra`, Vercel) answers 308 to `www.iqrra.com`, which is 200.
 - **Database:** Neon Postgres, **Launch plan since 2026-10-23** (was Free: 100 compute-hours a
   month, 30.92 used, after which Neon suspends the compute), autoscaling 0.25-0.5 CU, scale to
   zero on, $10 spend alert — see «Neon leaves the Free plan before launch» in the log and the
-  first item under *Open*. The schema deploys as migrations (17 files in
-  `lib/db/migrations`); `verify-schema` runs before every API deploy.
+  first item under *Open*. The schema deploys as migrations (19 files in
+  `lib/db/migrations`, `0018` applied by deploy run 801 on 2026-10-25); `verify-schema` runs before every API deploy.
 - **Live config** (plain env on the service): `AI_LIVE_MODE=true`; models `gpt-5.4-mini`
   for generation and for chat (`AI_MODEL_DOCUMENTS`, which would move lesson plans,
   worksheets, quizzes and slide decks to Claude Sonnet 5.5, is **unset**: the code is in,
@@ -58,7 +60,8 @@ Checked 2026-10-22:
 
 ## Open
 
-- **`GUARDIAN_APPROVAL` is built (server and app) and off; do not set it** until the app has
+- **`GUARDIAN_APPROVAL` is built (server and app), merged and deployed (PR #1274, 2026-10-25), and
+  off; do not set it** until the app has
   reached users, the parent-consent wording has been read by a native speaker and a lawyer, and
   `constants/legal.ts` and `LEGAL_VERSION` are updated. With it on, every email student with no
   teacher link is held (403 `guardian_approval_required`) until a parent approves by email, and
@@ -125,6 +128,7 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-25 — English audio check: the first real run, and three kinds of false alarm removed
 - 2026-10-25 — Lesson games: «ما معنى المصطلح؟» from the books' printed glossary, and a draft route that stays hidden
 - 2026-10-25 — A parent signs up with an email or a teacher's code
+- 2026-10-25 — Parent approval for email students: merged and deployed, flag still off
 - 2026-10-24 — Parent approval for email students: the app (off)
 - 2026-10-24 — Parent approval for email students: the server (off)
 - 2026-10-24 — English audio: a speech-to-text check of every recording
