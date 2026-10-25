@@ -71,6 +71,8 @@ const CLAIM_ERROR_KEYS: Record<string, TranslationKey> = {
   claim_parent_needs_student_code: 'claimParentNeedsOwnCode',
   // A child already has the most parent accounts allowed (api-server lib/guardianLimit.ts).
   claim_guardian_limit: 'claimGuardianLimit',
+  // Five accounts already wait on that name (api-server lib/claimDecision.ts).
+  claim_pending_limit: 'claimPendingLimit',
 };
 
 /**

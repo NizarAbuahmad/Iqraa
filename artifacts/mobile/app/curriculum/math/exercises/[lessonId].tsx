@@ -10,16 +10,23 @@
  * A teacher gets a copy-link button to send the lesson's exercises to a class.
  * A finished test-yourself set saves the lesson's best score on this device
  * (`services/mathExerciseProgress.ts`); the set itself lives in this screen only.
+ * Opened from a homework (`?hw=<id>`, see `openResource`), a signed-in student
+ * starts in test mode and each finished set is also posted to that homework as
+ * its `exercises` result, exactly as a lesson game reports.
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { isTeacherRole, useAuth } from '@/context/AuthContext';
-import { buildExerciseSet, exerciseGradeOf, exerciseLessonPath, resolveExerciseLesson, EXERCISES_ROUTE, type Exercise } from '@/services/mathExercises';
+import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
+import {
+  buildExerciseSet, exerciseGradeOf, exerciseLessonPath, resolveExerciseLesson, EXERCISES_ROUTE, type Exercise, type ExerciseScore,
+} from '@/services/mathExercises';
+import { postGameResult } from '@/services/homeworkApi';
+import { SendStatus, type SendState } from '@/components/ui/SendStatus';
 import { useExerciseBests } from '@/services/mathExerciseProgress';
 import { PROD_ORIGIN } from '@/services/siteOrigin';
 import { copyToClipboard } from '@/services/share';
@@ -32,15 +39,22 @@ import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 type Mode = 'learn' | 'test';
 
 export default function MathExerciseLessonScreen() {
-  const { lessonId } = useLocalSearchParams<{ lessonId: string }>();
+  const { lessonId, hw } = useLocalSearchParams<{ lessonId: string; hw?: string }>();
   const colors = useColors();
   const surface = useSurface();
   const { t, isRTL, lang } = useLanguage();
   const { user } = useAuth();
   const isTeacher = isTeacherRole(user?.role);
   const lesson = resolveExerciseLesson(lessonId);
+  // Opened from a homework that attached these exercises: a student goes straight
+  // to «اختبر نفسك», and each finished set is posted back to the homework.
+  const reporting = !!hw && isStudentRole(user?.role);
 
-  const [mode, setMode] = useState<Mode>('learn');
+  const [mode, setMode] = useState<Mode>(reporting ? 'test' : 'learn');
+  const [sent, setSent] = useState<SendState>('sending');
+  const lastSet = useRef<ExerciseScore | null>(null);
+  // A reply for an earlier set must not set the status of a later one.
+  const seq = useRef(0);
   const [round, setRound] = useState(0);
   const [picks, setPicks] = useState<Record<number, string>>({});
   const [shown, setShown] = useState<Set<number>>(new Set());
@@ -56,9 +70,21 @@ export default function MathExerciseLessonScreen() {
   const answeredAll = mode === 'test' && set.length > 0 && Object.keys(picks).length === set.length;
   // Once per finished set: `picks` only changes again on retry or a new set,
   // which clears it, so this does not fire twice for one finish.
+  const sendToHomework = (score: ExerciseScore) => {
+    if (!reporting || !hw || !lesson) return;
+    lastSet.current = score;
+    const mine = ++seq.current;
+    setSent('sending');
+    postGameResult(hw, { lessonId: lesson.id, game: 'exercises', score: score.correct, total: score.total }).then(
+      () => mine === seq.current && setSent('sent'),
+      () => mine === seq.current && setSent('failed'),
+    );
+  };
   useEffect(() => {
     if (!answeredAll || !lesson) return;
-    void record(lesson.id, { correct: set.filter((e, i) => picks[i] === e.answer).length, total: set.length });
+    const score = { correct: set.filter((e, i) => picks[i] === e.answer).length, total: set.length };
+    void record(lesson.id, score);
+    sendToHomework(score);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [answeredAll]);
 
@@ -217,6 +243,7 @@ export default function MathExerciseLessonScreen() {
         <View style={[styles.card, surface, styles.done]}>
           <Text style={[styles.doneTitle, { color: colors.foreground }]}>{t('mathExDone')}</Text>
           <Text style={[styles.score, { color: colors.foreground, textAlign: 'center' }]}>{t('mathExScore', correct, set.length)}</Text>
+          {reporting ? <SendStatus state={sent} onRetry={() => lastSet.current && sendToHomework(lastSet.current)} /> : null}
           <View style={[styles.bar, { flexDirection: row, justifyContent: 'center' }]}>
             <Pressable onPress={() => reset(false)} accessibilityRole="button" style={[styles.chip, { borderColor: colors.primary, backgroundColor: colors.card }]}>
               <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{t('mathExRetry')}</Text>

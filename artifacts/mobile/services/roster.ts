@@ -9,6 +9,8 @@
  */
 import { apiFetch } from './apiClient.ts';
 import { trackEvent } from './analytics.ts';
+import { parseClaimResponse, type ClaimResult } from './claimResult.ts';
+import type { PendingClaim } from './claimWaiting.ts';
 import type { AddLabResourceBody, AddResourceBody, ClassResource } from './classResources.ts';
 import type { RosterLink } from './rosterLinks.ts';
 import type { StudentRecord } from './studentRecord.ts';
@@ -408,25 +410,21 @@ export async function lookupJoinCode(
  * only way a parent/student account ever claims a roster row: registration no
  * longer accepts a code at all, so the mandatory first claim right after
  * signup (`app/claim-required.tsx`) calls this exact function too. See
- * `POST /auth/claim` in auth.ts.
+ * `POST /auth/claim` in auth.ts. A class-code pick by a student answers 202:
+ * the teacher has to approve it, and nothing is linked yet.
  */
-export async function claimRosterCode(
-  code: string,
-  studentId?: string,
-): Promise<{ studentId: string; relation: 'self' | 'guardian' }> {
+export async function claimRosterCode(code: string, studentId?: string): Promise<ClaimResult> {
   const res = await apiFetch('/auth/claim', {
     method: 'POST',
     body: JSON.stringify({ claimCode: code, studentId }),
   });
-  const claimed = await readJson<{ studentId: string; relation: 'self' | 'guardian' }>(
-    res,
-    'Joining class',
-  );
+  const result = parseClaimResponse(await readJson<unknown>(res, 'Joining class'));
   // Tracked here rather than on the two screens that call this: join-class.tsx
   // and the mandatory first claim in claim-required.tsx are the same action,
-  // and instrumenting one of them is how half a funnel goes missing.
-  trackEvent('class_joined', { relation: claimed.relation });
-  return claimed;
+  // and instrumenting one of them is how half a funnel goes missing. Only a
+  // claim that linked is a class joined; a held one is not one yet.
+  if (result.status === 'linked') trackEvent('class_joined', { relation: result.relation });
+  return result;
 }
 
 /** Who this account is linked to, with the grade the teacher's roster gives each. `GET /auth/claim`. */
@@ -436,10 +434,72 @@ export async function listMyRosterLinks(): Promise<{ studentId: string; displayN
   return data.links;
 }
 
+/** Links and any still-waiting claims, for the mandatory claim screen. `GET /auth/claim`. */
+export async function getMyRosterClaims(): Promise<{
+  links: { studentId: string; displayName: string; gradeId: string | null }[];
+  pending: PendingClaim[];
+}> {
+  const res = await apiFetch('/auth/claim');
+  const data = await readJson<{
+    links: { studentId: string; displayName: string; gradeId: string | null }[];
+    pending?: PendingClaim[];
+  }>(res, 'Loading your links');
+  return { links: data.links, pending: data.pending ?? [] };
+}
+
+/** A student account waiting on a class-code claim, as its teacher sees it. `GET /classes/:id/link-requests`. */
+export interface LinkRequest {
+  id: string;
+  studentId: string;
+  studentName: string;
+  userId: string;
+  firstName: string;
+  lastName: string;
+  requestedAt: string;
+  /**
+   * The account has no email: it was just created from the class code and its
+   * name was copied from the roster, so «name — claimed by name» proves nothing.
+   */
+  codeSignup: boolean;
+}
+
+export async function listLinkRequests(classId: string): Promise<LinkRequest[]> {
+  const res = await apiFetch(`/classes/${classId}/link-requests`);
+  const data = await readJson<{ requests: (Omit<LinkRequest, 'codeSignup'> & { codeSignup?: boolean })[] }>(
+    res,
+    'Loading join requests',
+  );
+  return data.requests.map(r => ({ ...r, codeSignup: r.codeSignup === true }));
+}
+
+/** Link the waiting account as the student's own. 409 `claim_already_linked` when the name already has one. */
+export async function approveLinkRequest(studentId: string, requestId: string): Promise<void> {
+  const res = await apiFetch(`/students/${studentId}/link-requests/${requestId}/approve`, { method: 'POST' });
+  await readJson(res, 'Approving join request');
+}
+
+export async function rejectLinkRequest(studentId: string, requestId: string): Promise<void> {
+  const res = await apiFetch(`/students/${studentId}/link-requests/${requestId}/reject`, { method: 'POST' });
+  await readJson(res, 'Rejecting join request');
+}
+
 /** Undoes this account's own claims, for a wrong name picked off a class list. `DELETE /auth/claim`. */
 export async function unclaimRoster(): Promise<void> {
   const res = await apiFetch('/auth/claim', { method: 'DELETE' });
   await readJson(res, 'Unlinking account');
+}
+
+/**
+ * Withdraws only this account's waiting request, never a link — the waiting card's
+ * "pick a different name". The teacher may have approved since the card last
+ * looked, and `unclaimRoster` would delete that fresh link. Answers whether the
+ * account has a link afterwards (true = it was approved meanwhile).
+ * `DELETE /auth/claim?pendingOnly=1`.
+ */
+export async function withdrawPendingClaim(): Promise<{ hasRosterLink: boolean }> {
+  const res = await apiFetch('/auth/claim?pendingOnly=1', { method: 'DELETE' });
+  const data = await readJson<{ hasRosterLink?: boolean }>(res, 'Withdrawing request');
+  return { hasRosterLink: data.hasRosterLink === true };
 }
 
 export interface ParentContact {

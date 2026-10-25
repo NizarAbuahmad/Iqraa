@@ -47,7 +47,8 @@ import { logger } from "../lib/logger";
 import { pushWithin } from "../lib/pushWithin.ts";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { RESOURCES_MAX, dueAtToDueDate, isUuid, parseCreate, parsePatch } from "../modules/homework/rules.ts";
-import { GAME_TITLE_MAX, attachedGames, carryOverGames, gameResourceKey, isGame, type GameKind } from "../modules/homework/game.ts";
+import { GAME_TITLE_MAX, GAMES_TEXT, attachedGames, carryOverGames, gameResourceKey, isGame, knownGamesOf, type GameKind } from "../modules/homework/game.ts";
+import { isMathsLesson } from "../modules/mathPractice/practice.ts";
 import { getLessonById } from "@workspace/curriculum";
 
 const router = Router();
@@ -162,7 +163,7 @@ async function resolveResources(raw: unknown[], teacherId: string, attached: Hom
     if ((item as { kind?: unknown } | null)?.kind === "game") {
       const { lessonId, game, title } = item as { lessonId?: unknown; game?: unknown; title?: unknown };
       if (typeof lessonId !== "string" || lessonId === "") return { error: "lessonId must be a curriculum lesson id" };
-      if (!isGame(game)) return { error: "game must be memory, scramble or spot" };
+      if (!isGame(game)) return { error: `game must be ${GAMES_TEXT}` };
       const key = gameResourceKey(lessonId, game);
       if (seen.has(key)) continue;
       seen.add(key);
@@ -173,6 +174,7 @@ async function resolveResources(raw: unknown[], teacherId: string, attached: Hom
       }
       const lesson = getLessonById(lessonId);
       if (!lesson) return { error: "lessonId must be a curriculum lesson id" };
+      if (game === "exercises" && !isMathsLesson(lessonId)) return { error: "exercises are for a mathematics lesson" };
       const snapshot = typeof title === "string" ? title.trim().slice(0, GAME_TITLE_MAX) : "";
       out.push({ kind: "game", lessonId, game, title: snapshot || lesson.titleAr });
       continue;
@@ -423,8 +425,13 @@ router.patch("/homework/:id", async (req: AuthenticatedRequest, res) => {
         return;
       }
       // An app from before games drops the game items it cannot read and sends
-      // the rest back; without `gamesIncluded: true` the games it omitted stay.
-      resources = req.body?.gamesIncluded === true ? r : carryOverGames(r, existing.resources, RESOURCES_MAX);
+      // the rest back; without `gamesIncluded: true` the games it omitted stay. With
+      // it, only the games the client does not list in `knownGames` stay (a build from
+      // before the newest game would otherwise detach it on any edit).
+      resources = carryOverGames(
+        r, existing.resources, RESOURCES_MAX,
+        req.body?.gamesIncluded === true ? knownGamesOf(req.body?.knownGames) : undefined,
+      );
     }
     // Only fields parsePatch produced, never `...req.body`: the class and the
     // teacher are not editable, whatever the client sends.

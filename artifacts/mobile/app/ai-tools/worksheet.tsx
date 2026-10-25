@@ -47,6 +47,7 @@ import {
 } from '@/services/wideScopeRequest';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { runOptions, type RunOptions } from '@/services/runOptions';
 import { captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope } from '@/services/generationScope';
 import { createVerificationTracker } from '@/services/verificationTracker';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
@@ -239,6 +240,7 @@ export default function WorksheetScreen() {
   // returns before `setError('')`, so pressing again with the same refusal leaves the phase at 'error'
   // and, without this, would show the teacher nothing.
   const [attempt, setAttempt] = useState(0);
+  const lastRunRef = useRef<RunOptions>({ regenerate: false, levels: false });
   /**
    * Held across renders so Cancel can reach the in-flight request. A cancel
    * that only cleared the spinner would leave the call running and still
@@ -458,6 +460,8 @@ export default function WorksheetScreen() {
     // Read before any setState clears it — this is what the teacher is
     // looking at, and what a regeneration must not hand back.
     setAttempt(n => n + 1);
+    // What this run was asked for, so Retry after a failure repeats it (a failed «ثلاثة مستويات» retried as one paper).
+    lastRunRef.current = runOptions(opts);
     // A Cancel leaves `cancelled` set, and it outranks an error in the status block: clear it before any
     // refusal below can return, or «أُلغي» would be shown over the refusal's own message.
     setCancelled(false);
@@ -985,7 +989,8 @@ export default function WorksheetScreen() {
         loadingLabel={t('buildingWorksheet')}
         errorDetail={error}
         onCancel={cancelGenerate}
-        onRetry={generate}
+        // Repeats what was last asked (three levels included); never the press event Retry hands in.
+        onRetry={() => generate(lastRunRef.current)}
         colors={colors}
         isRTL={isRTL}
         lang={uiLang}

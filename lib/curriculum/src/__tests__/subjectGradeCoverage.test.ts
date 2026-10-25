@@ -51,7 +51,11 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // subjects, neither of which is in MVP_SUBJECT_IDS yet — so chemistry,
   // physics, biology, earth-science, geography, history, civic-education
   // are permanently bookless at grade-8, not gaps to be closed later.
-  // physical-education has no grade-8 book at all on disk.
+  // physical-education:grade-8 closed 2026-10-24 — the last official NCCD
+  // student book the catalog was missing. NCCD publishes it only as a
+  // view-only online flipbook (no PDF), so it was transcribed from the
+  // rendered pages; SUBJECTS.grades extended for grade-8 (Semester 1 only;
+  // Semester 2 not attached yet) — see g8PeSem1.ts.
   // digital-literacy:grade-8 closed 2026-09-09, the same day as
   // financial-literacy. mathematics:grade-8 closed the same week once its
   // Semester 2 book arrived (Semester 1 still unattached, but one semester
@@ -68,7 +72,6 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'geography:grade-8',
   'history:grade-8',
   'civic-education:grade-8',
-  'physical-education:grade-8',
   // creative-arts joined MVP_SUBJECT_IDS the same day as its only book
   // (Grade 8).
   // creative-arts:grade-10 closed 2026-09-20 — SUBJECTS.grades extended for
