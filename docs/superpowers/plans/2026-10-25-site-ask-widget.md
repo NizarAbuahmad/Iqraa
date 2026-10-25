@@ -46,7 +46,7 @@ Tasks 1–5 can be done at any time. **Task 6 (the pull request and the live che
 
 | File (all in the `Site_Iqra` repo) | Responsibility |
 | --- | --- |
-| `ask.js` (create) | `core` (pure: constants, `hasArabic`, `langOf`, `normalizeMessage`, `buildRequest`, `interpret`, `CHIPS`), exported for Node and exposed as `window.IqraaAsk`; then the DOM layer (`init`). |
+| `ask.js` (create) | `core` (pure: constants, `hasArabic`, `langOf`, `normalizeMessage`, `buildRequest`, `interpret`, `CHIPS`), exported for Node and exposed as `window.IqrraAsk`; then the DOM layer (`init`). |
 | `ask.css` (create) | All styles, every class prefixed `iqchat-` (the page already uses `.ask` for the suggestion card, so the prefix avoids a clash). |
 | `index.html` (modify) | One `<link rel="stylesheet" href="/ask.css">` and one `<script src="/ask.js" defer></script>`. |
 | `tests/ask.test.mjs` (create) | `node --test` for `core`. |
@@ -259,7 +259,7 @@ Create `ask.js`:
 /**
  * «اسأل إقرأ» — the question assistant on the home page.
  *
- * One call: POST /api/site/ask on the Iqraa API (a reviewed list of fixed
+ * One call: POST /api/site/ask on the Iqrra API (a reviewed list of fixed
  * answers first, an AI only for what that list does not cover; the page does not
  * need to know which). Everything the visitor sees is put into the page with
  * textContent, never as markup, so nothing the server sends can become HTML.
@@ -368,7 +368,7 @@ Create `ask.js`:
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = core;
-  else root.IqraaAsk = core;
+  else root.IqrraAsk = core;
 
   // DOM layer: added below. Nothing above this line touches the page.
 })(typeof window !== "undefined" ? window : this);
@@ -785,7 +785,7 @@ The DOM half cannot be unit-tested without a dependency, so it is checked once i
 - Modify (only if a check fails): `ask.js`, `ask.css`
 
 **Interfaces:**
-- Consumes: the selectors listed under Task 2's Produces; `window.IqraaAsk` (Task 1).
+- Consumes: the selectors listed under Task 2's Produces; `window.IqrraAsk` (Task 1).
 - Produces: a pass/fail table, and screenshots at `<scratchpad>/shots/*.png` for the pull request.
 
 - [ ] **Step 1: Write the smoke script**
@@ -1083,7 +1083,7 @@ In the English section, directly before `<h2>Why we process this data</h2>` (occ
 ```html
 <h3>6. Site assistant questions</h3>
 <p>
-  If you type a question into the site assistant ("Ask Iqraa"), we answer it first from ready-made
+  If you type a question into the site assistant ("Ask Iqrra"), we answer it first from ready-made
   answers written by our team, and in that case your question does not reach any AI provider. If those
   answers do not cover it, the text of your question, with the last four questions and answers of the
   conversation, is sent to OpenAI (listed in the table below) to write a short reply. We do not store
@@ -1162,7 +1162,7 @@ Append to the end of `README.md`:
 
 A launcher in the bottom-left corner of the home page opens a small chat panel.
 It has two files, `ask.js` and `ask.css`, loaded by `index.html`, and no build
-step. It makes one call, `POST /api/site/ask` on the Iqraa API (the address is
+step. It makes one call, `POST /api/site/ask` on the Iqrra API (the address is
 the `ENDPOINT` constant at the top of `ask.js`, the same API `api/_store.mjs`
 reports to). The API answers from a reviewed list of fixed answers first and
 uses an AI only for what that list does not cover; the page does not need to
