@@ -3,14 +3,17 @@ import {
   AiBudgetExceededError,
   assertBudgetAvailable,
   getChatModel,
+  getPricing,
   isAiLiveModeOn,
   recordUsage,
 } from "../lib/aiBudget.ts";
+import { getPersistenceFailure } from "../lib/aiUsageLog.ts";
 import { createRateLimiter } from "../lib/rateLimit.ts";
 import { answerSiteQuestion, SITE_ASK_MAX_TOKENS, SITE_ASK_TIMEOUT_MS, type SiteAskDeps } from "../lib/siteAsk.ts";
 import { parseSiteAsk } from "../lib/siteAskInput.ts";
 import {
   createSiteAskSpendGate,
+  estimateCostUsd,
   getSiteAskDailyCapUsd,
   readSiteAskSpendLast24hUsd,
   SITE_ASK_KIND,
@@ -46,10 +49,14 @@ const siteAskRouter = Router();
  * mind, or lower SITE_BOT_BUDGET_USD_DAILY. The OpenAI client is imported
  * lazily, inside `complete`, because it throws at module scope without a key.
  */
+// The global limit is a spend control and a lever: 100 an hour is roughly what a
+// $1/day cap can pay for (about $0.01 an answer), and anyone can use up a global
+// ceiling to turn every other visitor away, so it is kept near what the money
+// allows, not far above it. The per-IP limit stays 20 an hour.
 const siteAskIpLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 20, name: "site-ask-ip" });
 const siteAskGlobalLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000,
-  max: 600,
+  max: 100,
   name: "site-ask-all",
   key: () => "all",
 });
@@ -57,6 +64,9 @@ const siteAskGlobalLimiter = createRateLimiter({
 const spendGate = createSiteAskSpendGate({
   read: () => readSiteAskSpendLast24hUsd(),
   capUsd: () => getSiteAskDailyCapUsd(process.env.SITE_BOT_BUDGET_USD_DAILY),
+  // recordUsage's ledger write fails soft; a ledger that cannot be written
+  // cannot enforce a cap, so the gate closes while inserts are failing.
+  ledgerHealthy: () => getPersistenceFailure() !== "insert",
 });
 
 function realDeps(model: string): SiteAskDeps {
@@ -83,8 +93,11 @@ function realDeps(model: string): SiteAskDeps {
       );
       return { content: completion.choices[0]?.message?.content, usage: completion.usage };
     },
-    recordUsage: (usage, durationMs) =>
-      recordUsage(usage, model, { kind: SITE_ASK_KIND, promptVersion: SITE_ASK_PROMPT_VERSION, durationMs }),
+    recordUsage: (usage, durationMs) => {
+      recordUsage(usage, model, { kind: SITE_ASK_KIND, promptVersion: SITE_ASK_PROMPT_VERSION, durationMs });
+      // The gate's database total is cached for a minute; count this answer now.
+      spendGate.add(estimateCostUsd(usage, getPricing(model)));
+    },
   };
 }
 

@@ -110,4 +110,36 @@ describe("loadSiteFacts", () => {
     assert.equal(b.text, "shared");
     assert.equal(d.text, "shared");
   });
+
+  it("falls back on an HTML page served with status 200", async () => {
+    const f = fakeFetch(
+      () => new Response("<html><body>Not found</body></html>", { headers: { "content-type": "text/html; charset=utf-8" } }),
+    );
+    const facts = await loadSiteFacts({ fetchImpl: f.impl, now: clock().now });
+    assert.deepEqual(facts, { text: SITE_ASK_FALLBACK_FACTS, source: "fallback" });
+  });
+
+  it("accepts text/markdown, whatever its case", async () => {
+    const f = fakeFetch(
+      () => new Response("# Iqraa", { headers: { "content-type": "Text/Markdown; charset=utf-8" } }),
+    );
+    const facts = await loadSiteFacts({ fetchImpl: f.impl, now: clock().now });
+    assert.deepEqual(facts, { text: "# Iqraa", source: "site" });
+  });
+
+  it("accepts text/plain", async () => {
+    const f = fakeFetch(() => new Response("plain facts", { headers: { "content-type": "text/plain" } }));
+    const facts = await loadSiteFacts({ fetchImpl: f.impl, now: clock().now });
+    assert.deepEqual(facts, { text: "plain facts", source: "site" });
+  });
+
+  it("accepts a response with no content-type at all", async () => {
+    const f = fakeFetch(() => {
+      const r = new Response("no type");
+      r.headers.delete("content-type");
+      return r;
+    });
+    const facts = await loadSiteFacts({ fetchImpl: f.impl, now: clock().now });
+    assert.deepEqual(facts, { text: "no type", source: "site" });
+  });
 });

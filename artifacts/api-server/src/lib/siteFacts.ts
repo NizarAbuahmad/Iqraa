@@ -48,6 +48,13 @@ async function fetchSiteText(fetchImpl: typeof fetch): Promise<string | null> {
       logger.warn({ status: res.status }, "site facts: llms.txt not available");
       return null;
     }
+    // A 200 that is a web page (an error page, a login wall) must not become the
+    // facts for an hour. No header at all is accepted, as before.
+    const type = res.headers.get("content-type");
+    if (type !== null && !/^\s*text\/(plain|markdown)/i.test(type)) {
+      logger.warn({ type }, "site facts: llms.txt is not a text file");
+      return null;
+    }
     const declared = Number(res.headers.get("content-length"));
     if (Number.isFinite(declared) && declared > SITE_FACTS_MAX_DECLARED_BYTES) {
       logger.warn({ declared }, "site facts: llms.txt declares an implausible size");
