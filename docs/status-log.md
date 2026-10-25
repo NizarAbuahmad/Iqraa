@@ -70,6 +70,30 @@ requires reports on it. If one does not, the queue entry times out and the PR dr
 restores the old behaviour, and reverting this PR changes nothing for a repository with the queue off.
 `deploy.yml` is untouched: the queue merges into `main`, which is still a push to `main`.
 
+## Timetable: a period in an archived class is a free period — 2026-10-25
+
+A teacher who had saved a timetable and a plan (with dates) still saw «الحصة القادمة · الاثنين 09:00»
+with no class name on Today, and «لا توجد خطة زمنية لهذه الشعبة» with no name either, whatever plan
+they added. Reproduced locally: the timetable's periods pointed at a class that had since been
+archived, and a plan existed on a different, live class. Archiving a class (`DELETE /classes/:id`,
+which sets `archived_at`) does not touch `schedule_slots`, so `GET /schedule` kept returning the
+archived class; the weekly grid drew those cells as empty (it cannot name the class), while Today
+took them for real periods of a class with no name and no plan, and a plan on any live class never
+matches. `GET /schedule` now returns `classGroupId: null` for a period whose class is archived
+(`routes/schedule.ts`; a left join on `class_groups`). The stored row is not edited and its note
+stays. Every screen reads the timetable from that one call, so Today falls back to «أضف جدولك
+الأسبوعي» and agrees with the grid.
+
+Verified: `scheduleArchivedClass.db.test.ts` (the seed's period on an archived class returns no class,
+live and free periods are unchanged, the stored row is untouched, another teacher is unaffected);
+it failed before the change. API `pnpm test` 2607 pass; `pnpm run typecheck`; in the browser, the
+reproduced account went from «Next period · Monday 09:00» + «This class has no pacing plan» to «Add
+your weekly timetable» + «Add timetable». **Not verified:** that this is the reporting teacher's
+account (their data cannot be read from here; the symptoms match, the cause is inferred), the full
+mobile suite (nothing in the app changed), Arabic/RTL on a device. **Not changed:** archiving a class
+still leaves its periods stored; nothing tells the teacher that a class they archived was in their
+timetable. A period whose class list fails to load still shows without a class name.
+
 ## Teaching plan: the lesson date boxes follow «توزيع تلقائي» — 2026-10-25
 
 A teacher pressed «توزيع تلقائي» in a teaching plan and every lesson's date box stayed empty, so the
