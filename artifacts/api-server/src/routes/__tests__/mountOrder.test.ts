@@ -129,8 +129,9 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
 
   it("answers a greeting to /site/ask from the fixed answers, with no database, no live mode and no model", async () => {
     // The fixed answers are decided first, so this holds with a dead database,
-    // AI_LIVE_MODE unset and only a placeholder OpenAI key. It does not read the
-    // environment: a model call here could not succeed anyway.
+    // regardless of AI_LIVE_MODE (the harness inherits process.env; a fixed
+    // answer is decided before any env read) and with only a placeholder OpenAI
+    // key: a model call here could not succeed anyway.
     for (const message of ["مرحبا", "hello"]) {
       const res = await fetch(`${base}/site/ask`, {
         method: "POST",

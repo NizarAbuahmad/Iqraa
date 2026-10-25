@@ -34,8 +34,9 @@ const siteAskRouter = Router();
  * Public with no key — a browser posts here directly and cannot hold a secret —
  * so the limits are the defence, as for /site/ideas (admin.ts): a person asks a
  * handful of questions an hour, and the global ceiling bounds how fast many
- * addresses together can spend. CORS (app.ts) only constrains browsers; curl
- * ignores it, which is why it is not relied on.
+ * addresses together can spend (the limiters also count fixed-answer hits, which
+ * cost nothing: they bound spend for the AI path only). CORS (app.ts) only
+ * constrains browsers; curl ignores it, which is why it is not relied on.
  *
  * Every outcome the visitor can cause is a 200. `answered: false` carries a
  * reason (for the logs and tests) and the fixed bilingual message (for the
@@ -62,7 +63,8 @@ const siteAskRouter = Router();
 // The global limit is a spend control and a lever: 100 an hour is roughly what a
 // $1/day cap can pay for (about $0.01 an answer), and anyone can use up a global
 // ceiling to turn every other visitor away, so it is kept near what the money
-// allows, not far above it. The per-IP limit stays 20 an hour.
+// allows, not far above it. The per-IP limit stays 20 an hour. Both also count
+// fixed-answer hits, which cost nothing, so they bound spend for the AI path only.
 const siteAskIpLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 20, name: "site-ask-ip" });
 const siteAskGlobalLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000,

@@ -18,7 +18,9 @@
  * route turns into the fixed "write to us" message; a mock that looked like a
  * real answer is exactly what CLAUDE.md warns against.
  *
- * No message text reaches the logger: outcome, facts source and duration only.
+ * No message text reaches the logger: outcome, facts source, duration and the
+ * matched fixed-answer id only (and, if the matcher throws, the error object,
+ * which carries no message text).
  */
 import { logger } from "./logger.ts";
 import type { SiteAskInput } from "./siteAskInput.ts";

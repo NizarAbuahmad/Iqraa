@@ -3,7 +3,7 @@
  *
  * A visitor costs real money and has no account, so a flood of them needs a
  * ceiling of its own: SITE_BOT_BUDGET_USD_DAILY, default 1, and 0 switches the
- * bot off. This bounds what visitors can add per day; it does not exclude the
+ * AI path off (fixed answers keep working). This bounds what visitors can add per day; it does not exclude the
  * bot's spend from AI_BUDGET_USD. recordUsage adds every answer to the same
  * month-to-date total the teachers' budget check reads, so at the default the
  * bot can use up to about $30 of a month. Size AI_BUDGET_USD above the teachers'
