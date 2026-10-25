@@ -10,6 +10,33 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+**A public «اسأل إقرأ» bot for iqrra.com — the API half (2026-10-23).** `POST /api/site/ask`
+answers a visitor's question about Iqraa from the site's own `llms.txt` (fetched from
+`https://www.iqrra.com/llms.txt`, cached an hour, with a built-in fallback that states no numbers).
+Public with no key, so the limits are the defence: 20 requests an hour per IP and 600 an hour in
+total, a 300-character question and four earlier turns. It has its own spend ceiling,
+`SITE_BOT_BUDGET_USD_DAILY` (default 1, 0 = off), summed from `ai_generations` rows of kind
+`site-ask` over 24 hours and cached for a minute; an unreadable total refuses. **It bounds the
+bot's spend but does not separate it from the teachers' budget:** `recordUsage` adds every answer to
+the shared month-to-date total that `AI_BUDGET_USD` caps (production: 50), so at the default the bot
+can use up to about $30 of a month. Size `AI_BUDGET_USD` above teachers' use plus that, or lower the
+cap; excluding the bot from the shared total would mean changing the teachers' budget code and was
+not done. Every refusal (live mode off, either budget, a model
+error, an empty reply) is a 200 with `answered: false`, a reason, and a fixed Arabic and English
+message pointing to info@iqrra.com — never a mock answer. The reply ceiling is 800
+`max_completion_tokens`, not 300, because the production chat model counts hidden reasoning against
+it. No message text is logged or stored. No migration and no `deploy.yml` change. Spec:
+`docs/superpowers/specs/2026-10-23-site-ask-bot-design.md`; plan:
+`docs/superpowers/plans/2026-10-23-site-ask-bot-api.md`.
+Checked: unit tests for the parser, the prompt rules, the facts loader (success, cache, retry
+window, error, empty, oversize, single flight), the spend gate, and the decision order (the model
+and the facts fetch never run once a cap has tripped); the built bundle answers `/site/ask`
+without a token, POST only, with CORS for `www.iqrra.com` and not for other origins.
+**Not checked:** the real spend query against Postgres (it is a one-statement sum, exercised only
+in production); answer quality on real visitor questions, including off-topic and injection tries
+(to be run against the deployed route before the widget ships, and recorded here); the widget,
+which is a separate change in the `Site_Iqra` repo and has not been written.
+
 **Accounts, messages, evaluation setup and the corners (2026-10-22, seventeenth live pass).**
 Of 30 questions, 9 were right and 21 went to the model; the recheck of the sixteenth pass was
 24/24. Checked in code: «الإعدادات» ← «الحسابات على هذا الجهاز» switches, adds and removes saved
