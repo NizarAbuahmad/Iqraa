@@ -10,6 +10,24 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+
+## A revision unit with no picture shows its outcomes and terms side by side, 2026-10-25
+
+A whole-book revision deck for Grade 1 maths (66 lessons, 12 units, no book pictures) was 36
+slides, three per unit: a title, «نتاجات الوحدة» as a few short lines on a mostly empty slide,
+then «المفاهيم والمصطلحات» as cards. Each unit looked the same and two of its three slides were
+about a third full.
+
+- A unit with no figure to sit beside (`first` is empty), at most four outcomes and at most six
+  terms now gets ONE slide: the outcomes left, the terms right (the existing `compare` layout,
+  so the presenter, the PDF and the PowerPoint all already draw it). The slide is only used if
+  `resolveSlideLayout` accepts it; otherwise the unit keeps its two slides.
+- A unit with a book figure keeps its two slides (the figure sits beside the outcomes), and so
+  does a unit with more than four outcomes.
+- Grade 1 maths: 36 slides -> 27. `revisionDeck.test.ts` pins both shapes.
+- **Not verified:** how the side-by-side slide looks on a screen and in the exports (the layout is
+  an existing one, the content here is new), and whether teachers prefer it.
+
 ## English audio check: the first real run, and three kinds of false alarm removed — 2026-10-25
 
 The speech check had never called the real API. On 2026-10-25, once `gpt-4o-transcribe` was allowed on the OpenAI project

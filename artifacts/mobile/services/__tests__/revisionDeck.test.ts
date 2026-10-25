@@ -136,7 +136,7 @@ describe('buildRevisionDeck — a round per unit', () => {
     assert.ok(isSectionIconName(plain.slides.find(s => s.type === 'divider' && s.title === 'وحدة عامة')!.icon));
   });
 
-  it('the unit\'s outcomes and its key terms are two slides, and the terms are all of them, not three', () => {
+  it('a unit with no picture puts its outcomes and its key terms side by side on one slide', () => {
     const lessons = [{ id: 'l1', title: 'الدرس الأول', thin: false }];
     const unit = {
       unitId: 'u1', title: 'نظرية التطور', lessons,
@@ -147,16 +147,32 @@ describe('buildRevisionDeck — a round per unit', () => {
     };
     const deck = buildRevisionDeck(true, { units: [unit], phrase: 'x', plan: null });
     const at = deck.slides.findIndex(s => s.type === 'divider' && s.title === 'نظرية التطور');
+    const both = deck.slides[at + 1]!;
+    assert.equal(both.layout, 'compare');
+    assert.equal(both.compare?.leftTitle, 'نتاجات الوحدة');
+    assert.equal(both.compare?.rightTitle, 'المفاهيم والمصطلحات');
+    assert.ok(both.compare?.left.some(s => s.includes('أناقش الآراء')));
+    // the book's box lists five; the deck used to show three
+    assert.deepEqual(both.compare?.right, unit.allConcepts);
+    assert.equal(resolveSlideLayout(both)?.kind, 'compare');
+    assert.notEqual(deck.slides[at + 2]!.title, 'المفاهيم والمصطلحات', 'the terms are not repeated on a slide of their own');
+  });
+
+  it('a unit with many outcomes keeps two slides: the outcomes as a list, the terms as cards', () => {
+    const lessons = [{ id: 'l1', title: 'الدرس الأول', thin: false }];
+    const unit = {
+      unitId: 'u1', title: 'نظرية التطور', lessons,
+      outcomes: ['أناقش الآراء الأولى.', 'أناقش الآراء الثانية.', 'أناقش الآراء الثالثة.', 'أناقش الآراء الرابعة.', 'أناقش الآراء الخامسة.'],
+      concepts: ['التطور', 'نظرية الانتخاب الطبيعي'], terms: [],
+    };
+    const deck = buildRevisionDeck(true, { units: [unit], phrase: 'x', plan: null });
+    const at = deck.slides.findIndex(s => s.type === 'divider' && s.title === 'نظرية التطور');
     const goals = deck.slides[at + 1]!;
     const terms = deck.slides[at + 2]!;
     assert.equal(goals.title, 'نتاجات الوحدة');
     assert.equal(goals.layout, undefined, 'sentences stay a list');
-    assert.ok(goals.content.includes('أناقش الآراء'));
-    assert.ok(!goals.content.includes('نظرية الانتخاب الطبيعي'), 'the terms moved to their own slide');
     assert.equal(terms.title, 'المفاهيم والمصطلحات');
     assert.equal(terms.layout, 'concepts');
-    // the book's box lists five; the deck used to show three
-    assert.deepEqual(terms.concepts, unit.allConcepts);
     assert.equal(resolveSlideLayout(terms)?.kind, 'concepts');
   });
 

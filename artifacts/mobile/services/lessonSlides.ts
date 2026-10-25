@@ -1432,7 +1432,38 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
     // copy; its divider and its own book page still mark the round.
     const repeat = shownBefore.has(shown.join('\n'));
     shownBefore.add(shown.join('\n'));
-    if (!repeat) push(withShape({
+    // A unit with no picture to sit beside used to show its outcomes and then its
+    // terms on two slides that each filled a third of the screen (a whole Grade 1
+    // maths book was 36 slides of that). Side by side they are one full slide.
+    const sideBySide: Omit<ActivitySlide, 'slideNumber'> | null = termsOwnSlide && !repeat && !first
+      && outcomes.length <= 4 && concepts.length <= 6
+      ? {
+        type: 'intro',
+        title: L('نتاجات الوحدة ومصطلحاتها', 'Unit outcomes and terms'),
+        icon: unitIcon ?? 'bulb',
+        content: outcomes.map(s => `• ${s}`).join('\n'),
+        durationSeconds: 0,
+        layout: 'compare',
+        compare: {
+          leftTitle: L('نتاجات الوحدة', 'Unit outcomes'),
+          left: outcomes,
+          rightTitle: L('المفاهيم والمصطلحات', 'Key concepts and terms'),
+          right: concepts,
+        },
+        teacher: {
+          expectedAnswer: lessonTitles.length > 0
+            ? L(`دروس الوحدة في هذه المراجعة: ${lessonTitles.join('، ')}`,
+              `This unit's lessons in the revision: ${lessonTitles.join(', ')}`)
+            : unitTitle,
+          ...(terms.length > 0
+            ? { teachingTips: L(`مصطلحات تستحق السؤال عنها: ${terms.join('، ')}`, `Terms worth asking about: ${terms.join(', ')}`) }
+            : {}),
+        },
+      }
+      : null;
+    const oneSlide = sideBySide !== null && resolveSlideLayout({ ...sideBySide, slideNumber: 0 }) !== null;
+    if (oneSlide && sideBySide) push(sideBySide);
+    if (!repeat && !oneSlide) push(withShape({
       type: 'intro',
       // No leading emoji: with one, the heading draws the bulb and the unit's
       // own icon never shows. Not the unit's name either: the divider just
@@ -1454,7 +1485,7 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
           : {}),
       },
     }, first || outcomes.length > 0 ? {} : { layout: 'concepts', concepts: shown }));
-    if (termsOwnSlide && !repeat) {
+    if (termsOwnSlide && !repeat && !oneSlide) {
       // The unit's second figure sits beside its terms, as the first does beside
       // its outcomes — the cards layout fills the slide, so a figure costs it the
       // cards and the terms stay a list.
