@@ -42,9 +42,9 @@ const EXPECTED_IDS = [
 ] as const;
 
 const GOLDEN: Record<(typeof EXPECTED_IDS)[number], readonly string[]> = {
-  greeting: ["مرحبا", "السلام عليكم", "اهلا", "hello", "hi"],
+  greeting: ["مرحبا", "السلام عليكم", "اهلا", "hello", "hi", "hello iqraa", "مرحبا إقرأ"],
   thanks: ["شكرا", "شكراً جزيلاً", "thanks", "thank you"],
-  "what-is": ["شو هو إقرأ؟", "ما هو تطبيق إقرأ", "what is iqraa?", "tell me about iqraa"],
+  "what-is": ["شو هو إقرأ؟", "ما هو تطبيق إقرأ", "what is iqraa?", "tell me about iqraa", "hi, what is iqraa", "hello what is iqraa", "مرحبا ما هو إقرأ", "السلام عليكم ما هو إقرأ", "what is iqrra", "what is iqra"],
   free: [
     "هل إقرأ مجاني؟",
     "كم السعر",
@@ -154,6 +154,46 @@ describe("CURATED_ANSWERS — golden questions that must fall through to the AI 
   });
 });
 
+describe("CURATED_ANSWERS — a greeting or thanks beside a question", () => {
+  // The routes a salutation must NOT take. Each of these was answered with another entry's answer
+  // when every salutation word, «much» and the thing a thank-you names included, was set aside.
+  const idIn = (message: string, allowed: readonly (string | null)[]) => {
+    const got = idOf(message);
+    assert.ok(allowed.includes(got), `${JSON.stringify(message)} -> ${got}, allowed ${JSON.stringify(allowed)}`);
+  };
+
+  it("keeps the price words out of the salutation words", () => {
+    for (const q of [
+      "how much is a worksheet",
+      "how much for students",
+      "how much privacy",
+      "how much iphone",
+      "how much is jordan",
+      "how much does the android app cost",
+    ]) {
+      idIn(q, [null, "free"]);
+    }
+    assert.equal(idOf("thank you so much how much does it cost"), "free");
+  });
+
+  it("does not answer the thing a thank-you names", () => {
+    for (const q of [
+      "شكرا على التطبيق",
+      "يعطيك العافية على التطبيق",
+      "thank you so much for the worksheet",
+      "thanks for the android app",
+      "thanks for the curriculum",
+      "شكرا على الخصوصية",
+    ]) {
+      idIn(q, [null, "thanks"]);
+    }
+  });
+
+  it("does not let one weak word beat the greeting", () => {
+    for (const q of ["hello jordan", "hello only", "hi only"]) idIn(q, [null, "greeting"]);
+  });
+});
+
 describe("CURATED_ANSWERS — regression probes that must fall through to the AI path", () => {
   // Questions that sound close to an entry but ask for something no fixed answer states.
   // A new phrase that turns one of these into a match is the bug, not the probe.
@@ -222,6 +262,12 @@ describe("CURATED_ANSWERS — the reviewed text", () => {
     }
   });
 
+  it("never spells the English brand Iqraa or Iqra (CLAUDE.md: the Latin name is Iqrra)", () => {
+    for (const e of CURATED_ANSWERS) {
+      assert.doesNotMatch(e.en, /\bIqraa\b|\bIqra\b/i, `${e.id}.en`);
+    }
+  });
+
   it("has no digits, markup characters or emoji", () => {
     for (const t of texts) {
       assert.doesNotMatch(t.text, /[0-9٠-٩۰-۹]/, `${t.where}: digit`);
@@ -256,14 +302,14 @@ describe("CURATED_ANSWERS — the reviewed text", () => {
     }
   });
 
-  it("spells the brand «إقرأ» in Arabic and Iqraa in English", () => {
+  it("spells the brand «إقرأ» in Arabic and Iqrra in English", () => {
     for (const t of texts) {
       const prose = withoutLinks(t.text);
       if (t.lang === "ar") {
         for (const m of prose.match(/[اإأ]قر[اأ]/g) ?? []) assert.equal(m, "إقرأ", `${t.where}: ${m}`);
         assert.doesNotMatch(prose, /iqra/i, `${t.where}: latin brand in Arabic text`);
       } else {
-        for (const m of prose.match(/iqr+a+/gi) ?? []) assert.equal(m, "Iqraa", `${t.where}: ${m}`);
+        for (const m of prose.match(/iqr+a+/gi) ?? []) assert.equal(m, "Iqrra", `${t.where}: ${m}`);
       }
     }
   });

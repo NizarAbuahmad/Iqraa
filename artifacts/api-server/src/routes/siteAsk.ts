@@ -50,7 +50,7 @@ const siteAskRouter = Router();
  * response says which one it was in `source` ("curated" or "ai"). Fixed answers
  * still pass both rate limiters and the same input validation.
  *
- * The AI answers about Iqraa only, from the site's own llms.txt
+ * The AI answers about Iqrra only, from the site's own llms.txt
  * (lib/siteFacts.ts). Only the AI path spends. It has its own daily spend
  * ceiling (lib/siteAskBudget.ts). That ceiling bounds what anonymous traffic
  * can add per day; it does not set the bot apart from the teachers' budget:

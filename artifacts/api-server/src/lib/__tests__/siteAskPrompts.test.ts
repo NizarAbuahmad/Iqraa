@@ -79,3 +79,21 @@ describe("the fixed message", () => {
     assert.ok(SITE_ASK_FALLBACK_MESSAGE.en.includes(SITE_ASK_CONTACT_EMAIL));
   });
 });
+
+describe("the English brand spelling (CLAUDE.md: the Latin name is Iqrra)", () => {
+  const texts: Record<string, string> = {
+    "system prompt": buildSiteAskSystemPrompt("FACTS-PLACEHOLDER"),
+    "fallback facts": SITE_ASK_FALLBACK_FACTS,
+    "fallback message (en)": SITE_ASK_FALLBACK_MESSAGE.en,
+    reminder: SITE_ASK_REMINDER,
+  };
+  for (const [where, text] of Object.entries(texts)) {
+    it(`never spells it Iqraa or Iqra in the ${where}`, () => {
+      assert.doesNotMatch(text, /\bIqraa\b|\bIqra\b/i);
+    });
+  }
+  it("does name the product Iqrra in the system prompt and the fallback facts", () => {
+    assert.match(texts["system prompt"]!, /\bIqrra\b/);
+    assert.match(texts["fallback facts"]!, /\bIqrra\b/);
+  });
+});

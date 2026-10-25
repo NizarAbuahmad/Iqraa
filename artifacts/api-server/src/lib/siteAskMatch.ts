@@ -15,7 +15,7 @@
  *  - Dice on TOKEN SETS, not "contains". With a containment test, a long
  *    off-topic question that merely mentions the product («هل إقرأ أفضل من شات
  *    جي بي تي في كتابة الشعر») would hit the one-word phrase «إقرأ» and get the
- *    "what is Iqraa" answer. Dice divides by both sizes, so the same question
+ *    "what is Iqrra" answer. Dice divides by both sizes, so the same question
  *    scores about 0.2 against that phrase and falls through.
  *  - EXACT tokens after normalisation, no fuzzy matching and no stemming beyond
  *    the Arabic definite-article/preposition prefixes and the English plural.
@@ -45,9 +45,9 @@ export type CuratedEntry = {
   ar: string;
   en: string;
   /**
-   * A greeting or thanks. Its words carry no question, so when a message holds
-   * something else besides them («السلام عليكم كم السعر»), they are set aside and
-   * the rest is matched. Absent means an ordinary entry.
+   * A greeting or thanks. Its words carry no question, so when a real question
+   * comes with them, anywhere in the message («السلام عليكم كم السعر»), they are
+   * set aside and the rest is matched. Absent means an ordinary entry.
    */
   salutation?: true;
 };
@@ -109,14 +109,24 @@ function stripPlural(token: string): string {
   return token;
 }
 
+/** The token a normalised word becomes, or null when it is empty or a stopword. */
+function wordToken(raw: string): string | null {
+  if (raw === "" || STOPWORDS.has(raw)) return null;
+  const stripped = stripPrefix(raw);
+  // «اللي» → «لي», «الان» → «ان»: a stopword behind a prefix is still a stopword.
+  if (stripped !== raw && STOPWORDS.has(stripped)) return null;
+  return stripPlural(stripped);
+}
+
+function normalizedWords(input: string): string[] {
+  return normalizeText(input).split(" ").filter(word => word !== "");
+}
+
 export function tokenize(input: string): string[] {
   const seen = new Set<string>();
-  for (const raw of normalizeText(input).split(" ")) {
-    if (raw === "" || STOPWORDS.has(raw)) continue;
-    const stripped = stripPrefix(raw);
-    // «اللي» → «لي», «الان» → «ان»: a stopword behind a prefix is still a stopword.
-    if (stripped !== raw && STOPWORDS.has(stripped)) continue;
-    seen.add(stripPlural(stripped));
+  for (const raw of normalizedWords(input)) {
+    const token = wordToken(raw);
+    if (token !== null) seen.add(token);
   }
   return Array.from(seen);
 }
@@ -148,41 +158,24 @@ function scoreEntry(query: ReadonlySet<string>, entry: CuratedEntry): number {
 // salutation word even when a greeting phrase contains it («مرحبا إقرأ»).
 const BRAND_TOKENS: ReadonlySet<string> = new Set(["iqraa", "iqra", "iqrra", "اقرا"]);
 
-export function matchCurated(
-  message: string,
+// «شكرا على التطبيق», "thanks for the app": a thank-you that names a thing, not a question about it.
+const THANKS_CONNECTIVES: ReadonlySet<string> = new Set(["علي", "ع", "for"]);
+
+// A remainder of one word is a weak question («hello jordan» → {jordan}); it must be a near-exact
+// phrase, or the whole message is matched instead.
+const SINGLE_WORD_REMAINDER_MIN_SCORE = 0.8;
+
+/** Rank the entries for a token list; the veto, the threshold and the margin live here. */
+function rank(
+  tokens: readonly string[],
   entries: readonly CuratedEntry[],
+  vocabulary: ReadonlySet<string>,
 ): { entry: CuratedEntry; score: number } | null {
-  let tokens = tokenize(message);
-  if (tokens.length === 0 || entries.length === 0) return null;
-
-  // Set a leading greeting or thanks aside when a question follows it: «السلام عليكم كم السعر»
-  // is a question about the price, not a greeting. Only a NON-brand leftover counts as a
-  // question, so «hello», «hello iqraa» and «thanks» still answer themselves.
-  const salutationTokens = new Set<string>();
-  for (const entry of entries) {
-    if (entry.salutation !== true) continue;
-    for (const phrase of entry.phrases) {
-      for (const token of tokenize(phrase)) {
-        if (!BRAND_TOKENS.has(token)) salutationTokens.add(token);
-      }
-    }
-  }
-  if (salutationTokens.size > 0) {
-    const remainder = tokens.filter(token => !salutationTokens.has(token));
-    if (remainder.some(token => !BRAND_TOKENS.has(token))) tokens = remainder;
-  }
-  const query = new Set(tokens);
-
-  // Computed per call: the lists are tiny and a cache would be state.
-  const vocabulary = new Set<string>();
-  for (const entry of entries) {
-    for (const phrase of entry.phrases) {
-      for (const token of tokenize(phrase)) vocabulary.add(token);
-    }
-  }
+  if (tokens.length === 0) return null;
   for (const token of tokens) {
     if (!vocabulary.has(token)) return null;
   }
+  const query = new Set(tokens);
 
   // Array.prototype.sort is stable, so equal scores keep entry order.
   const ranked = entries
@@ -194,6 +187,69 @@ export function matchCurated(
   const second = ranked[1];
   if (second && best.score - second.score < MATCH_MIN_MARGIN) return null;
   return best;
+}
+
+export function matchCurated(
+  message: string,
+  entries: readonly CuratedEntry[],
+): { entry: CuratedEntry; score: number } | null {
+  const words = normalizedWords(message);
+  const wordTokens = words.map(wordToken);
+  const tokens = Array.from(new Set(wordTokens.filter((t): t is string => t !== null)));
+  if (tokens.length === 0 || entries.length === 0) return null;
+
+  // Computed per call: the lists are tiny and a cache would be state.
+  const vocabulary = new Set<string>();
+  const ordinaryTokens = new Set<string>();
+  const salutationTokens = new Set<string>();
+  const salutationWords = new Set<string>();
+  for (const entry of entries) {
+    for (const phrase of entry.phrases) {
+      for (const token of tokenize(phrase)) {
+        vocabulary.add(token);
+        if (entry.salutation === true) salutationTokens.add(token);
+        else ordinaryTokens.add(token);
+      }
+      if (entry.salutation === true) for (const word of normalizedWords(phrase)) salutationWords.add(word);
+    }
+  }
+  // A word another entry also uses («much» in «thank you so much» and in «how much») is a question
+  // word there, so it is never set aside; nor is the product name.
+  for (const token of Array.from(salutationTokens)) {
+    if (ordinaryTokens.has(token) || BRAND_TOKENS.has(token)) salutationTokens.delete(token);
+  }
+
+  // Greeting or thanks beside a question: «السلام عليكم كم السعر» asks the price, it is not a greeting.
+  if (tokens.some(token => salutationTokens.has(token))) {
+    // A word that is part of the salutation, whether it is a token (thank), a stopword the salutation
+    // phrases spell out (you, a) or the product name. Anything else is a question word, a stopword
+    // such as «what is» included: «hi, what is iqraa» is a question, «hello iqraa» is not.
+    const isSalutationWord = (index: number): boolean => {
+      const token = wordTokens[index] ?? null;
+      return (
+        (token !== null && (salutationTokens.has(token) || BRAND_TOKENS.has(token))) ||
+        salutationWords.has(words[index]!)
+      );
+    };
+
+    // A thank-you that names a thing: only a salutation may answer it, never the thing's own entry.
+    for (let i = 1; i < words.length; i++) {
+      if (THANKS_CONNECTIVES.has(words[i]!) && isSalutationWord(i - 1)) {
+        const whole = rank(tokens, entries, vocabulary);
+        return whole !== null && whole.entry.salutation === true ? whole : null;
+      }
+    }
+
+    const remainder = tokens.filter(token => !salutationTokens.has(token));
+    const hasQuestion = words.some((_, index) => !isSalutationWord(index));
+    if (hasQuestion && remainder.length > 0) {
+      const hit = rank(remainder, entries, vocabulary);
+      if (hit === null) return null;
+      if (remainder.length >= 2 || hit.score >= SINGLE_WORD_REMAINDER_MIN_SCORE) return hit;
+    }
+  }
+
+  return rank(tokens, entries, vocabulary);
 }
 
 export function pickAnswer(entry: CuratedEntry, message: string): string {

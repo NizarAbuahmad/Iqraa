@@ -13,7 +13,8 @@
  *    the live figure instead.
  *  - An answer is at most three sentences and 320 characters, plain text.
  *  - Links: only the three addresses on the site's own domains, and info@iqrra.com.
- *  - Brand: «إقرأ» in Arabic, "Iqraa" in English.
+ *  - Brand: «إقرأ» in Arabic, "Iqrra" in English (CLAUDE.md, Product wording). Visitors may type
+ *    Iqraa, Iqra or Iqrra in a question; the matcher treats all three as the brand.
  *  - Phrases are what a visitor might type, in formal and dialect Arabic and in
  *    English, including one- and two-word forms. Every word of every phrase is
  *    part of the matcher's vocabulary: a question containing any other content
@@ -49,7 +50,7 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
       "hey",
     ],
     ar: "أهلًا بك في إقرأ! اسألني عن إقرأ: ما هو، وهل هو مجاني، وما الصفوف والمواد المتاحة، وهل أحتاج إلى تنزيل تطبيق.",
-    en: "Hello and welcome to Iqraa! Ask me what it is, whether it is free, which grades and subjects are available, and whether you need to install an app.",
+    en: "Hello and welcome to Iqrra! Ask me what it is, whether it is free, which grades and subjects are available, and whether you need to install an app.",
   },
   {
     id: "thanks",
@@ -67,7 +68,7 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
       "thank you so much",
     ],
     ar: "عفوًا! وإن كان لديك أي سؤال آخر عن إقرأ فاسأل متى شئت.",
-    en: "You're welcome! If you have any other question about Iqraa, just ask.",
+    en: "You're welcome! If you have any other question about Iqrra, just ask.",
   },
   {
     id: "what-is",
@@ -90,7 +91,7 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
       "iqraa",
     ],
     ar: "إقرأ مساعد تعليمي عربي للمعلمين في الأردن. يساعدك على إعداد خطط الدروس، وأوراق العمل، والاختبارات، والأنشطة، وشرائح العرض، انطلاقًا من الدرس ونتاجات التعلّم التي تختارها.",
-    en: "Iqraa is an Arabic teaching assistant for teachers in Jordan. It helps you prepare lesson plans, worksheets, quizzes, activities and slide decks, starting from the lesson and the learning outcomes you choose.",
+    en: "Iqrra is an Arabic teaching assistant for teachers in Jordan. It helps you prepare lesson plans, worksheets, quizzes, activities and slide decks, starting from the lesson and the learning outcomes you choose.",
   },
   {
     id: "free",
@@ -120,7 +121,7 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
       "cost",
     ],
     ar: "استخدام إقرأ مجاني بالكامل خلال النسخة التجريبية. نواصل تطوير المنصّة وإضافة التحسينات بناءً على تجارب المعلمين وملاحظاتهم.",
-    en: "Using Iqraa is completely free during the beta. We keep developing the platform and adding improvements based on teachers' experience and feedback.",
+    en: "Using Iqrra is completely free during the beta. We keep developing the platform and adding improvements based on teachers' experience and feedback.",
   },
   {
     id: "curriculum",
@@ -136,7 +137,7 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
       "learning outcomes",
     ],
     ar: "المحتوى مرتبط بالمنهاج الأردني: يعتمد إقرأ على نتاجات التعلّم الواردة في مناهج المركز الوطني لتطوير المناهج للدرس الذي تختاره ضمن المناهج المتاحة في المنصّة. ويمكنك تصفّح الصفوف والمواد والوحدات والدروس قبل إنشاء حساب.",
-    en: "The content is tied to the Jordanian curriculum: Iqraa builds on the learning outcomes in the National Center for Curriculum Development's curricula, for any lesson you choose that is available on the platform. You can browse the grades, subjects, units and lessons before creating an account.",
+    en: "The content is tied to the Jordanian curriculum: Iqrra builds on the learning outcomes in the National Center for Curriculum Development's curricula, for any lesson you choose that is available on the platform. You can browse the grades, subjects, units and lessons before creating an account.",
   },
   {
     id: "coverage",
@@ -190,7 +191,7 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
       "answer key",
     ],
     ar: "يستخدم إقرأ أداة تحقق رياضية لمراجعة الإجابات الرياضية قبل عرضها. وإذا تعذّر التحقق من إجابة، يوضّح لك أنها تحتاج إلى مراجعة. تساعد هذه الخطوة على تقليل الأخطاء، وتبقى مراجعتك للمحتوى ضرورية قبل استخدامه مع طلبتك.",
-    en: "Iqraa uses a mathematical verification tool to check math answers before showing them. If an answer cannot be verified, it tells you the answer needs review. This step helps reduce mistakes, and your own review of the content is still necessary before you use it with your students.",
+    en: "Iqrra uses a mathematical verification tool to check math answers before showing them. If an answer cannot be verified, it tells you the answer needs review. This step helps reduce mistakes, and your own review of the content is still necessary before you use it with your students.",
   },
   {
     id: "app-needed",
@@ -208,7 +209,7 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
       "install",
     ],
     ar: "لا حاجة إلى تنزيل تطبيق: يمكنك استخدام إقرأ مباشرة من المتصفح على الحاسوب أو الهاتف أو الجهاز اللوحي عبر https://app.iqrra.com. وتطبيق أندرويد في مرحلة الاختبار المغلق على Google Play، ويمكنك الانضمام إلى قائمة الدعوات من الصفحة الرئيسية.",
-    en: "There is no need to install anything: you can use Iqraa directly in the browser on a computer, phone or tablet at https://app.iqrra.com. The Android app is in closed testing on Google Play, and you can join the early-access list on the home page.",
+    en: "There is no need to install anything: you can use Iqrra directly in the browser on a computer, phone or tablet at https://app.iqrra.com. The Android app is in closed testing on Google Play, and you can join the early-access list on the home page.",
   },
   {
     id: "android",
@@ -245,7 +246,7 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
       "apple",
     ],
     ar: "تطبيق آيفون قيد التطوير. وفي الوقت الحالي يمكنك استخدام إقرأ من المتصفح على هاتفك عبر https://app.iqrra.com.",
-    en: "The iPhone app is in development. In the meantime you can use Iqraa in the browser on your phone at https://app.iqrra.com.",
+    en: "The iPhone app is in development. In the meantime you can use Iqrra in the browser on your phone at https://app.iqrra.com.",
   },
   {
     id: "students",
@@ -261,7 +262,7 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
       "student link",
     ],
     ar: "إقرأ موجّه للمعلم، ويصل الطلبة إلى التقييمات عبر رابط يشاركه المعلم معهم. وتُصحَّح إجاباتهم داخل المنصّة.",
-    en: "Iqraa is made for the teacher, and students reach assessments through a link the teacher shares with them. Their answers are marked inside the platform.",
+    en: "Iqrra is made for the teacher, and students reach assessments through a link the teacher shares with them. Their answers are marked inside the platform.",
   },
   {
     id: "privacy",
@@ -278,7 +279,7 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
       "data protection",
     ],
     ar: "تشرح سياسة الخصوصية ما الذي يجمعه إقرأ، وأين يُخزَّن، ومع من يُشارَك، وكيف تطلب حذف بياناتك: https://www.iqrra.com/privacy. ولأي سؤال عن خصوصيتك أو بياناتك راسلنا على info@iqrra.com.",
-    en: "The privacy policy explains what Iqraa collects, where it is stored, who it is shared with and how to ask for your data to be deleted: https://www.iqrra.com/privacy. For any question about your privacy or data, write to us at info@iqrra.com.",
+    en: "The privacy policy explains what Iqrra collects, where it is stored, who it is shared with and how to ask for your data to be deleted: https://www.iqrra.com/privacy. For any question about your privacy or data, write to us at info@iqrra.com.",
   },
   {
     id: "contact",
@@ -309,7 +310,7 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
       "is it a general chatbot",
     ],
     ar: "إقرأ ليس روبوت محادثة عامًا: كل ما يُعدّه مرتبط بدرس من المنهاج. تختار الصف والمادة والوحدة والدرس، ثم يبني إقرأ المحتوى على نتاجات التعلّم الخاصة به.",
-    en: "Iqraa is not a general chatbot: everything it prepares is tied to a lesson in the curriculum. You choose the grade, subject, unit and lesson, and Iqraa builds the content on that lesson's learning outcomes.",
+    en: "Iqrra is not a general chatbot: everything it prepares is tied to a lesson in the curriculum. You choose the grade, subject, unit and lesson, and Iqrra builds the content on that lesson's learning outcomes.",
   },
   {
     id: "teacher-review",
@@ -325,7 +326,7 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
       "editable",
     ],
     ar: "كل ما ينتجه إقرأ قابل للتعديل: تراجعه وتعدّله قبل أن تطبعه أو تعرضه في الصف.",
-    en: "Everything Iqraa produces is editable: you review and adjust it before you print or project it in class.",
+    en: "Everything Iqrra produces is editable: you review and adjust it before you print or project it in class.",
   },
   {
     id: "other-countries",
@@ -340,6 +341,6 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
       "outside jordan",
     ],
     ar: "إقرأ مبني على المنهاج الأردني (المركز الوطني لتطوير المناهج)، ولا يغطي مناهج خارج الأردن.",
-    en: "Iqraa is built on Jordan's national curriculum (the National Center for Curriculum Development) and does not cover curricula outside Jordan.",
+    en: "Iqrra is built on Jordan's national curriculum (the National Center for Curriculum Development) and does not cover curricula outside Jordan.",
   },
 ];

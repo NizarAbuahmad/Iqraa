@@ -418,24 +418,37 @@ describe("matchCurated — vocabulary veto", () => {
   });
 });
 
-describe("matchCurated — a leading salutation is set aside", () => {
-  // Entries flagged `salutation` (a greeting, thanks) own words that carry no question. When something
-  // else follows them, the question is matched on its own; a bare greeting still answers itself.
+describe("matchCurated — a salutation is set aside when a question comes with it", () => {
+  // Entries flagged `salutation` (a greeting, thanks) own words that carry no question. When a real
+  // question comes with them, anywhere in the message, those words are set aside and the rest is
+  // matched; a bare greeting still answers itself.
   const SAL: CuratedEntry[] = [
     { id: "greet", salutation: true, phrases: ["hello", "hi", "hello iqraa", "good morning", "مرحبا", "مرحبا إقرأ", "السلام عليكم"], ar: "A-greet", en: "E-greet" },
-    { id: "thank", salutation: true, phrases: ["thanks", "thank you", "thanks a lot", "شكرا", "شكرا جزيلا"], ar: "A-thank", en: "E-thank" },
-    { id: "price", phrases: ["is iqraa free", "free", "how much does it cost", "كم السعر", "ببلاش"], ar: "A-price", en: "E-price" },
+    {
+      id: "thank",
+      salutation: true,
+      phrases: ["thanks", "thank you", "thanks a lot", "thank you so much", "thank you iqraa", "شكرا", "شكرا جزيلا", "يعطيك العافية"],
+      ar: "A-thank",
+      en: "E-thank",
+    },
+    { id: "what", phrases: ["what is iqraa", "iqraa", "ما هو إقرأ"], ar: "A-what", en: "E-what" },
+    { id: "price", phrases: ["is iqraa free", "free", "how much does it cost", "how much", "كم السعر", "ببلاش", "ببلاش إقرأ"], ar: "A-price", en: "E-price" },
     { id: "android", phrases: ["android app", "play store", "هل يوجد تطبيق اندرويد"], ar: "A-android", en: "E-android" },
+    { id: "outputs", phrases: ["worksheet", "lesson plan"], ar: "A-outputs", en: "E-outputs" },
+    { id: "students", phrases: ["students"], ar: "A-students", en: "E-students" },
+    { id: "jordan", phrases: ["only jordan"], ar: "A-jordan", en: "E-jordan" },
   ];
   const sal = (message: string) => idOf(message, SAL);
 
-  it("answers the question after a greeting or thanks, not the greeting", () => {
+  it("answers the question that comes with a greeting or thanks, not the greeting", () => {
     assert.equal(sal("hello is it free"), "price");
     assert.equal(sal("good morning how much does it cost"), "price");
     assert.equal(sal("thanks a lot is it free"), "price");
     assert.equal(sal("السلام عليكم كم السعر"), "price");
     assert.equal(sal("شكرا جزيلا كم السعر"), "price");
     assert.equal(sal("hi play store"), "android");
+    // Not only a leading one.
+    assert.equal(sal("is it free thanks"), "price");
   });
 
   it("scores the remainder as a token set of its own", () => {
@@ -443,10 +456,28 @@ describe("matchCurated — a leading salutation is set aside", () => {
     assert.equal(matchCurated("السلام عليكم ببلاش", SAL)?.score, 1);
   });
 
+  it("does not treat a word another entry's phrase uses as a salutation word", () => {
+    // «much» is in «thank you so much» and also in the price phrases «how much»: it is a price word.
+    assert.equal(sal("thank you so much how much does it cost"), "price");
+    // Before this rule «much» was set aside, leaving only «worksheet» (outputs) / «students».
+    assert.equal(sal("how much is a worksheet"), null);
+    assert.equal(sal("how much for students"), null);
+    assert.equal(sal("how much"), "price");
+    assert.equal(sal("thank you so much"), "thank");
+  });
+
   it("keeps the brand in the remainder", () => {
-    // «iqraa» is not a salutation word even though «hello iqraa» is a greeting phrase.
-    assert.equal(matchCurated("hello iqraa free", SAL)?.entry.id, "price");
-    assert.equal(matchCurated("hello iqraa free", SAL)?.score, 1);
+    // Here «iqraa» appears only in the greeting's phrases. Were it set aside with the greeting, the
+    // remainder {free} would win outright for price; kept, it ties price with the greeting phrase «iqraa».
+    const brandOnlyInGreeting: CuratedEntry[] = [
+      { id: "greet", salutation: true, phrases: ["hello", "hi iqraa", "iqraa"], ar: "a", en: "e" },
+      { id: "price", phrases: ["free"], ar: "a", en: "e" },
+    ];
+    assert.equal(idOf("hello iqraa free", brandOnlyInGreeting), null);
+    assert.equal(idOf("hello free", brandOnlyInGreeting), "price");
+    assert.equal(matchCurated("hello free", brandOnlyInGreeting)?.score, 1);
+    // And with the brand in an ordinary entry's phrase too.
+    assert.equal(matchCurated("hello iqraa", SAL)?.entry.id, "greet");
     assert.equal(matchCurated("مرحبا إقرأ ببلاش", SAL)?.entry.id, "price");
   });
 
@@ -462,9 +493,29 @@ describe("matchCurated — a leading salutation is set aside", () => {
   it("leaves a salutation plus only the brand a salutation", () => {
     assert.equal(sal("hello iqraa"), "greet");
     assert.equal(sal("مرحبا إقرأ"), "greet");
+    assert.equal(sal("thank you iqraa"), "thank");
     assert.equal(sal("thanks iqraa"), "thank");
-    // Nothing is set aside: the brand-only remainder is not a question.
-    assert.equal(matchCurated("thanks iqraa", SAL)?.entry.id, "thank");
+  });
+
+  it("counts a question word beside the brand as a question", () => {
+    assert.equal(sal("hi, what is iqraa"), "what");
+    assert.equal(sal("hello what is iqraa"), "what");
+    assert.equal(sal("مرحبا ما هو إقرأ"), "what");
+    assert.equal(sal("السلام عليكم ما هو إقرأ"), "what");
+    assert.equal(sal("hi"), "greet");
+  });
+
+  it("does not answer the thing a thank-you names", () => {
+    // «thanks for the android app» is thanks, not a question about the Android app.
+    assert.equal(sal("thanks for the android app"), null);
+    assert.equal(sal("thank you so much for the worksheet"), "thank");
+    assert.equal(sal("thanks for the worksheet"), null);
+    assert.equal(sal("شكرا على ببلاش"), null);
+    assert.equal(sal("يعطيك العافية على ببلاش"), "thank");
+    assert.equal(sal("شكرا ع ببلاش"), null);
+    // The same words without the connective are a question.
+    assert.equal(sal("thanks android app"), "android");
+    assert.equal(sal("شكرا ببلاش"), "price");
   });
 
   it("still refuses a remainder that holds a word no phrase knows", () => {
@@ -484,6 +535,14 @@ describe("matchCurated — a leading salutation is set aside", () => {
     assert.equal(idOf("hello alpha", tied), "alpha");
   });
 
+  it("does not let a single weak word beat the greeting", () => {
+    // «hello jordan»: the remainder {jordan} only reaches 0.667 against «only jordan», so it is not
+    // a question this entry answers; the whole message is matched and the greeting wins.
+    assert.equal(sal("hello jordan"), "greet");
+    assert.equal(sal("hello only"), "greet");
+    assert.equal(sal("hello only jordan"), "jordan");
+  });
+
   it("matches exactly as before when no entry carries the flag", () => {
     const flagless: CuratedEntry[] = SAL.map(({ salutation: _unused, ...rest }) => rest);
     // With the flag the greeting is set aside; without it «hello» is an ordinary word and ties with «free».
@@ -492,6 +551,7 @@ describe("matchCurated — a leading salutation is set aside", () => {
     assert.equal(idOf("hello", flagless), "greet");
     assert.equal(idOf("free", flagless), "price");
     assert.equal(idOf("thanks a lot", flagless), "thank");
+    assert.equal(idOf("thanks for the android app", flagless), "android");
   });
 
   it("does not mutate the entries", () => {
