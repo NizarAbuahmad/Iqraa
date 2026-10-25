@@ -144,6 +144,12 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       assert.equal(body.source, "curated");
       assert.equal(typeof body.content, "string");
       assert.ok((body.content as string).length > 0);
+      // The route answers in the language of the question.
+      assert.equal(
+        /\p{Script=Arabic}/u.test(body.content as string),
+        message === "مرحبا",
+        `${message}: wrong language in ${JSON.stringify(body.content)}`,
+      );
       assert.ok(!("reason" in body), "a fixed answer carries no refusal reason");
     }
   });

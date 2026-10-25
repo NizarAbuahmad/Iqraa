@@ -18,7 +18,13 @@
  *    English, including one- and two-word forms. Every word of every phrase is
  *    part of the matcher's vocabulary: a question containing any other content
  *    word is sent to the AI path. So do NOT add a word just to widen the net,
- *    and never add a negation (not, isn't, don't) or a competitor's name.
+ *    and never add a negation (not, isn't, don't, غير, لا) or a competitor's name.
+ *    The one deliberate exception is the conjunction «ولا» in «ببلاش ولا بفلوس»
+ *    ("free or paid"): it is a known word on purpose, because it joins two
+ *    options and does not negate the question around it.
+ *  - Only `greeting` and `thanks` are flagged `salutation`: when a message holds
+ *    something else besides their words, the matcher sets them aside and
+ *    matches the rest («السلام عليكم كم السعر» is answered with the price).
  *  - No phrase may be shared by two entries.
  */
 import type { CuratedEntry } from "./siteAskMatch.ts";
@@ -26,6 +32,7 @@ import type { CuratedEntry } from "./siteAskMatch.ts";
 export const CURATED_ANSWERS: readonly CuratedEntry[] = [
   {
     id: "greeting",
+    salutation: true,
     phrases: [
       "مرحبا",
       "مرحبا إقرأ",
@@ -46,6 +53,7 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
   },
   {
     id: "thanks",
+    salutation: true,
     phrases: [
       "شكرا",
       "شكرا جزيلا",
@@ -57,7 +65,6 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
       "thanks a lot",
       "thank you iqraa",
       "thank you so much",
-      "شكرا لك على المساعدة",
     ],
     ar: "عفوًا! وإن كان لديك أي سؤال آخر عن إقرأ فاسأل متى شئت.",
     en: "You're welcome! If you have any other question about Iqraa, just ask.",
@@ -96,6 +103,7 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
       "ببلاش ولا بفلوس",
       "ببلاش",
       "كم بكلف",
+      "كم بكلف إقرأ",
       "كم يكلف",
       "تكلفة",
       "هل يوجد اشتراك",
@@ -143,6 +151,7 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
       "which grades",
       "which subjects",
       "is my grade available",
+      "other subjects",
     ],
     ar: "تضم المنصّة مواد من الصف الأول إلى الصف العاشر، ومنها الرياضيات والعلوم والفيزياء والكيمياء والأحياء واللغتان العربية والإنجليزية والتربية الإسلامية والمهارات الرقمية. تختلف التغطية بحسب الصف والمادة؛ تصفّح صفحة المناهج للاطلاع على المتاح: https://www.iqrra.com/manhaj",
     en: "The platform has subjects from the first grade to the tenth, including mathematics, science, physics, chemistry, biology, Arabic and English language, Islamic education and digital skills. Coverage differs by grade and subject; browse the curriculum page to see what is available: https://www.iqrra.com/manhaj",
@@ -159,6 +168,7 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
       "شرائح عرض",
       "what can i prepare with iqraa",
       "what does iqraa produce",
+      "what does it generate",
       "lesson plan",
       "worksheet",
       "slides",
@@ -207,6 +217,9 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
       "تطبيق اندرويد",
       "اندرويد",
       "كيف احمل التطبيق من بلاي ستور",
+      "كيف احمل تطبيق إقرأ",
+      "جوجل بلاي",
+      "متجر بلاي",
       "بلاي ستور",
       "is there an android app",
       "android",
@@ -257,6 +270,7 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
       "سياسة الخصوصية",
       "الخصوصية",
       "حماية البيانات",
+      "بيانات الطلاب",
       "what is your privacy policy",
       "privacy policy",
       "privacy",
@@ -318,7 +332,7 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
     phrases: [
       "هل يدعم منهاج السعودية",
       "منهاج دولة اخرى",
-      "هل يغطي مناهج غير الاردن",
+      "هل يغطي مناهج خارج الاردن",
       "does it cover other countries",
       "other countries",
       "is it only for jordan",

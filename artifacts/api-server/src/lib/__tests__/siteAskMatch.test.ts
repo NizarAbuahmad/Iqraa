@@ -418,6 +418,89 @@ describe("matchCurated — vocabulary veto", () => {
   });
 });
 
+describe("matchCurated — a leading salutation is set aside", () => {
+  // Entries flagged `salutation` (a greeting, thanks) own words that carry no question. When something
+  // else follows them, the question is matched on its own; a bare greeting still answers itself.
+  const SAL: CuratedEntry[] = [
+    { id: "greet", salutation: true, phrases: ["hello", "hi", "hello iqraa", "good morning", "مرحبا", "مرحبا إقرأ", "السلام عليكم"], ar: "A-greet", en: "E-greet" },
+    { id: "thank", salutation: true, phrases: ["thanks", "thank you", "thanks a lot", "شكرا", "شكرا جزيلا"], ar: "A-thank", en: "E-thank" },
+    { id: "price", phrases: ["is iqraa free", "free", "how much does it cost", "كم السعر", "ببلاش"], ar: "A-price", en: "E-price" },
+    { id: "android", phrases: ["android app", "play store", "هل يوجد تطبيق اندرويد"], ar: "A-android", en: "E-android" },
+  ];
+  const sal = (message: string) => idOf(message, SAL);
+
+  it("answers the question after a greeting or thanks, not the greeting", () => {
+    assert.equal(sal("hello is it free"), "price");
+    assert.equal(sal("good morning how much does it cost"), "price");
+    assert.equal(sal("thanks a lot is it free"), "price");
+    assert.equal(sal("السلام عليكم كم السعر"), "price");
+    assert.equal(sal("شكرا جزيلا كم السعر"), "price");
+    assert.equal(sal("hi play store"), "android");
+  });
+
+  it("scores the remainder as a token set of its own", () => {
+    assert.equal(matchCurated("hello is it free", SAL)?.score, 1);
+    assert.equal(matchCurated("السلام عليكم ببلاش", SAL)?.score, 1);
+  });
+
+  it("keeps the brand in the remainder", () => {
+    // «iqraa» is not a salutation word even though «hello iqraa» is a greeting phrase.
+    assert.equal(matchCurated("hello iqraa free", SAL)?.entry.id, "price");
+    assert.equal(matchCurated("hello iqraa free", SAL)?.score, 1);
+    assert.equal(matchCurated("مرحبا إقرأ ببلاش", SAL)?.entry.id, "price");
+  });
+
+  it("leaves a bare salutation a salutation", () => {
+    assert.equal(sal("hello"), "greet");
+    assert.equal(sal("hello hi"), "greet");
+    assert.equal(sal("good morning"), "greet");
+    assert.equal(sal("السلام عليكم"), "greet");
+    assert.equal(sal("thank you"), "thank");
+    assert.equal(sal("شكرا جزيلا"), "thank");
+  });
+
+  it("leaves a salutation plus only the brand a salutation", () => {
+    assert.equal(sal("hello iqraa"), "greet");
+    assert.equal(sal("مرحبا إقرأ"), "greet");
+    assert.equal(sal("thanks iqraa"), "thank");
+    // Nothing is set aside: the brand-only remainder is not a question.
+    assert.equal(matchCurated("thanks iqraa", SAL)?.entry.id, "thank");
+  });
+
+  it("still refuses a remainder that holds a word no phrase knows", () => {
+    assert.equal(sal("hello is it free tomorrow"), null);
+    assert.equal(sal("السلام عليكم كم السعر غدا"), null);
+    assert.equal(sal("thanks a lot play offline"), null);
+  });
+
+  it("still applies the margin to the remainder", () => {
+    const tied: CuratedEntry[] = [
+      { id: "greet", salutation: true, phrases: ["hello"], ar: "a", en: "e" },
+      { id: "alpha", phrases: ["alpha"], ar: "a", en: "e" },
+      { id: "beta", phrases: ["beta"], ar: "a", en: "e" },
+    ];
+    // The remainder {alpha, beta} scores 0.667 against both, so neither wins.
+    assert.equal(idOf("hello alpha beta", tied), null);
+    assert.equal(idOf("hello alpha", tied), "alpha");
+  });
+
+  it("matches exactly as before when no entry carries the flag", () => {
+    const flagless: CuratedEntry[] = SAL.map(({ salutation: _unused, ...rest }) => rest);
+    // With the flag the greeting is set aside; without it «hello» is an ordinary word and ties with «free».
+    assert.equal(sal("hello is it free"), "price");
+    assert.equal(idOf("hello is it free", flagless), null);
+    assert.equal(idOf("hello", flagless), "greet");
+    assert.equal(idOf("free", flagless), "price");
+    assert.equal(idOf("thanks a lot", flagless), "thank");
+  });
+
+  it("does not mutate the entries", () => {
+    const copy = JSON.parse(JSON.stringify(SAL));
+    matchCurated("hello is it free", SAL);
+    assert.deepEqual(SAL, copy);
+  });
+});
+
 describe("matchCurated — determinism", () => {
   const messages = ["is iqraa free", "ببلاش؟", "هل يوجد تطبيق أندرويد", "what is iqraa", "which subjects", "اي صفوف", "nonsense words here"];
 

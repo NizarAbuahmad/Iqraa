@@ -39,7 +39,18 @@
  * decide whether the review applies.
  */
 
-export type CuratedEntry = { id: string; phrases: readonly string[]; ar: string; en: string };
+export type CuratedEntry = {
+  id: string;
+  phrases: readonly string[];
+  ar: string;
+  en: string;
+  /**
+   * A greeting or thanks. Its words carry no question, so when a message holds
+   * something else besides them («السلام عليكم كم السعر»), they are set aside and
+   * the rest is matched. Absent means an ordinary entry.
+   */
+  salutation?: true;
+};
 
 export const MATCH_MIN_SCORE = 0.5;
 export const MATCH_MIN_MARGIN = 0.15;
@@ -133,13 +144,34 @@ function scoreEntry(query: ReadonlySet<string>, entry: CuratedEntry): number {
   return best;
 }
 
+// The product name in its normalised spellings. It carries the question, so it is never a
+// salutation word even when a greeting phrase contains it («مرحبا إقرأ»).
+const BRAND_TOKENS: ReadonlySet<string> = new Set(["iqraa", "iqra", "iqrra", "اقرا"]);
+
 export function matchCurated(
   message: string,
   entries: readonly CuratedEntry[],
 ): { entry: CuratedEntry; score: number } | null {
-  const tokens = tokenize(message);
+  let tokens = tokenize(message);
+  if (tokens.length === 0 || entries.length === 0) return null;
+
+  // Set a leading greeting or thanks aside when a question follows it: «السلام عليكم كم السعر»
+  // is a question about the price, not a greeting. Only a NON-brand leftover counts as a
+  // question, so «hello», «hello iqraa» and «thanks» still answer themselves.
+  const salutationTokens = new Set<string>();
+  for (const entry of entries) {
+    if (entry.salutation !== true) continue;
+    for (const phrase of entry.phrases) {
+      for (const token of tokenize(phrase)) {
+        if (!BRAND_TOKENS.has(token)) salutationTokens.add(token);
+      }
+    }
+  }
+  if (salutationTokens.size > 0) {
+    const remainder = tokens.filter(token => !salutationTokens.has(token));
+    if (remainder.some(token => !BRAND_TOKENS.has(token))) tokens = remainder;
+  }
   const query = new Set(tokens);
-  if (query.size === 0 || entries.length === 0) return null;
 
   // Computed per call: the lists are tiny and a cache would be state.
   const vocabulary = new Set<string>();

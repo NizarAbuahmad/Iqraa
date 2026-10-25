@@ -56,16 +56,25 @@ const GOLDEN: Record<(typeof EXPECTED_IDS)[number], readonly string[]> = {
     "iqraa price",
     "سعر إقرأ",
     "هل يوجد اشتراك",
+    // A leading greeting or thanks is set aside when a question follows it.
+    "السلام عليكم كم السعر",
+    "السلام عليكم ببلاش",
+    "صباح الخير كم السعر",
+    "اهلا وسهلا كم السعر",
+    "مرحبا إقرأ كم بكلف",
+    "يعطيك العافية كم السعر",
+    "شكرا جزيلا كم السعر",
+    "thanks a lot is it free",
   ],
   curriculum: ["هل المحتوى حسب المنهاج الأردني؟", "does it follow the jordanian curriculum", "مرتبط بمنهاج وزارة التربية؟"],
   coverage: ["هل صف العاشر متوفر؟", "which grades and subjects are available", "ما المواد المتاحة"],
-  outputs: ["ماذا يمكنني أن أعد باستخدام إقرأ؟", "what can i prepare with iqraa", "هل يعمل ورقة عمل واختبار؟"],
+  outputs: ["ماذا يمكنني أن أعد باستخدام إقرأ؟", "what can i prepare with iqraa", "هل يعمل ورقة عمل واختبار؟", "what does it generate"],
   "math-check": ["كيف يتحقق من الإجابات الرياضية؟", "how are the math answers verified", "هل مفتاح الإجابة للرياضيات صحيح؟"],
-  "app-needed": ["هل أحتاج تنزيل تطبيق؟", "do i need to install an app", "هل يعمل على المتصفح؟"],
-  android: ["هل يوجد تطبيق اندرويد؟", "is there an android app", "كيف احمل التطبيق من بلاي ستور"],
+  "app-needed": ["هل أحتاج تنزيل تطبيق؟", "do i need to install an app", "هل يعمل على المتصفح؟", "السلام عليكم في تطبيق"],
+  android: ["هل يوجد تطبيق اندرويد؟", "is there an android app", "كيف احمل التطبيق من بلاي ستور", "كيف احمل تطبيق إقرأ", "جوجل بلاي", "متجر بلاي"],
   iphone: ["هل في نسخة للايفون؟", "is there an iphone app", "تطبيق آيفون"],
   students: ["كيف يدخل الطلاب الاختبار؟", "how do students take the quiz", "كيف يدخل الطالب على الاختبار"],
-  privacy: ["هل بياناتي آمنة؟", "what is your privacy policy", "سياسة الخصوصية"],
+  privacy: ["هل بياناتي آمنة؟", "what is your privacy policy", "سياسة الخصوصية", "بيانات الطلاب"],
   contact: ["كيف اتواصل معكم؟", "how can i contact you", "ايميل التواصل"],
   "not-a-chatbot": ["هل هو شات بوت عام؟", "can i ask it anything", "هل هذا مثل شات جي بي تي"],
   "teacher-review": ["هل أستطيع تعديل المخرجات؟", "can i edit what it generates", "هل المحتوى جاهز للطباعة؟"],
@@ -91,6 +100,10 @@ const MUST_BE_NULL: readonly string[] = [
   "what is the weather today",
   "can iqraa write my homework for me",
   "هل إقرأ أفضل من منصة أخرى",
+  "مساعدة",
+  "غير مجاني",
+  "غير متوفر على الايفون",
+  "does it cover other subjects",
 ];
 
 const idOf = (message: string): string | null => matchCurated(message, CURATED_ANSWERS)?.entry.id ?? null;
@@ -127,8 +140,11 @@ describe("CURATED_ANSWERS — golden questions that must fall through to the AI 
     // vetoed as "about something no answer was written for".
     const vocabulary = new Set<string>();
     for (const e of CURATED_ANSWERS) for (const p of e.phrases) for (const t of tokenize(p)) vocabulary.add(t);
+    // «ولا» is deliberately NOT in this list: the golden «ببلاش ولا بفلوس؟» ("free or paid") needs it
+    // as a known word, and as a conjunction it does not negate the question around it. «غير» and
+    // «لا» do, so they stay out of every phrase.
     for (const w of [
-      "not", "isnt", "dont", "doesnt", "cant", "no",
+      "not", "isnt", "dont", "doesnt", "cant", "no", "غير", "لا",
       "safe", "chatgpt", "gpt", "weather", "today", "referral", "founded", "joke", "capital", "france",
       "write", "homework", "better", "best", "worse", "versus", "vs",
       "افضل", "اسوا", "عاصمه", "شعر", "تفاضل", "هاتفكم", "رقم", "عدد", "مسجلين", "منصه",
