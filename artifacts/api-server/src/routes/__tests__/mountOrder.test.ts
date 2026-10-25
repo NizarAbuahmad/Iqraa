@@ -127,6 +127,26 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(below.status, 404);
   });
 
+  it("answers a greeting to /site/ask from the fixed answers, with no database, no live mode and no model", async () => {
+    // The fixed answers are decided first, so this holds with a dead database,
+    // AI_LIVE_MODE unset and only a placeholder OpenAI key. It does not read the
+    // environment: a model call here could not succeed anyway.
+    for (const message of ["مرحبا", "hello"]) {
+      const res = await fetch(`${base}/site/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
+      assert.equal(res.status, 200);
+      const body = (await res.json()) as Record<string, unknown>;
+      assert.equal(body.answered, true);
+      assert.equal(body.source, "curated");
+      assert.equal(typeof body.content, "string");
+      assert.ok((body.content as string).length > 0);
+      assert.ok(!("reason" in body), "a fixed answer carries no refusal reason");
+    }
+  });
+
   it("keeps published curriculum data public", async () => {
     const res = await fetch(`${base}/curriculum/grades`);
     assert.equal(res.status, 200);

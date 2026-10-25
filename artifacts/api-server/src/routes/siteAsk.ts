@@ -10,7 +10,9 @@ import {
 import { getPersistenceFailure } from "../lib/aiUsageLog.ts";
 import { createRateLimiter } from "../lib/rateLimit.ts";
 import { answerSiteQuestion, SITE_ASK_MAX_TOKENS, SITE_ASK_TIMEOUT_MS, type SiteAskDeps } from "../lib/siteAsk.ts";
+import { CURATED_ANSWERS } from "../lib/siteAskAnswers.ts";
 import { parseSiteAsk } from "../lib/siteAskInput.ts";
+import { matchCurated, pickAnswer } from "../lib/siteAskMatch.ts";
 import {
   createSiteAskSpendGate,
   estimateCostUsd,
@@ -40,14 +42,22 @@ const siteAskRouter = Router();
  * widget), so a cap tripping or the model failing never shows as an error page.
  * The limiter's own 429 and a malformed body's 400 are the only non-200s.
  *
- * It answers about Iqraa only, from the site's own llms.txt (lib/siteFacts.ts).
- * It has its own daily spend ceiling (lib/siteAskBudget.ts). That ceiling
- * bounds what anonymous traffic can add per day; it does not set the bot apart
- * from the teachers' budget: recordUsage still adds each answer to the shared
- * month-to-date total that AI_BUDGET_USD caps, so at the default of $1 a day
- * the bot can use up to about $30 of a month. Size AI_BUDGET_USD with that in
- * mind, or lower SITE_BOT_BUDGET_USD_DAILY. The OpenAI client is imported
- * lazily, inside `complete`, because it throws at module scope without a key.
+ * Reviewed fixed answers go first (lib/siteAskAnswers.ts, matched by
+ * lib/siteAskMatch.ts): a confident match is answered at once, before live mode,
+ * the budget and the daily cap are looked at, so it works with all of them off
+ * and costs nothing. The AI only answers what they do not cover; the success
+ * response says which one it was in `source` ("curated" or "ai"). Fixed answers
+ * still pass both rate limiters and the same input validation.
+ *
+ * The AI answers about Iqraa only, from the site's own llms.txt
+ * (lib/siteFacts.ts). Only the AI path spends. It has its own daily spend
+ * ceiling (lib/siteAskBudget.ts). That ceiling bounds what anonymous traffic
+ * can add per day; it does not set the bot apart from the teachers' budget:
+ * recordUsage still adds each answer to the shared month-to-date total that
+ * AI_BUDGET_USD caps, so at the default of $1 a day the bot can use up to about
+ * $30 of a month. Size AI_BUDGET_USD with that in mind, or lower
+ * SITE_BOT_BUDGET_USD_DAILY. The OpenAI client is imported lazily, inside
+ * `complete`, because it throws at module scope without a key.
  */
 // The global limit is a spend control and a lever: 100 an hour is roughly what a
 // $1/day cap can pay for (about $0.01 an answer), and anyone can use up a global
@@ -73,6 +83,10 @@ const spendGate = createSiteAskSpendGate({
 
 function realDeps(model: string): SiteAskDeps {
   return {
+    curatedAnswer: (message) => {
+      const hit = matchCurated(message, CURATED_ANSWERS);
+      return hit ? { id: hit.entry.id, content: pickAnswer(hit.entry, message) } : null;
+    },
     liveModeOn: isAiLiveModeOn,
     budgetAvailable: () => {
       try {
@@ -113,7 +127,7 @@ siteAskRouter.post("/", siteAskIpLimiter, siteAskGlobalLimiter, async (req, res)
   res.setHeader("Cache-Control", "no-store");
   const result = await answerSiteQuestion(parsed.value, realDeps(getChatModel()));
   if (result.answered) {
-    res.json({ answered: true, content: result.content });
+    res.json({ answered: true, content: result.content, source: result.source });
     return;
   }
   res.json({ answered: false, reason: result.reason, fallback: SITE_ASK_FALLBACK_MESSAGE });
