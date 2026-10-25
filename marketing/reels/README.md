@@ -19,6 +19,7 @@
 | 15 | `out/Iqrra_15_YouTube_Full_Tour.mp4` | **YouTube, 16:9 1920×1080**: 21 chapters, every feature, burned-in captions, no voice-over | ~4:13 |
 | 16 | `out/Iqrra_16_Avatar_Host.mp4` (`…_PREVIEW.mp4` until a recording exists) | **virtual teacher host** (illustrated «معلّمة اقرأ»), 9:16, voice-over from a recording you supply | ~55 s |
 | 17 | `out/Iqrra_17_Avatar_Host_YouTube.mp4` (`…_PREVIEW.mp4` until a recording exists) | **virtual teacher host, 16:9 YouTube**: the full tour presented by «معلّمة اقرأ», voice-over from a recording you supply | ~1:30–2:00 |
+| 18 | `out/Iqrra_18_Worksheet_Presenter_DRAFT.mp4` (`…Presenter.mp4` once rebuilt from a watermark-free clip) | **worksheet reel with a photoreal D-ID presenter** (the user's own script, voice «Sana», Arabic (Jordan)), 9:16 | 55 s |
 
 Reels 1–4 share one layout (headline in the top safe zone, the app in a rounded card, branded end card),
 the same Chromium-rendered Arabic (Cairo / Almarai, never ffmpeg `drawtext`) and the same music bed.
@@ -170,6 +171,18 @@ column, the Jordanian-app chip + «شخصية افتراضية» tag + a progres
 - **Chapters:** `out/avatar_yt_chapters.txt` is written on every build, grouped by section and merged so each chapter is ≥10 s (YouTube's minimum).
 - **The voice is yours** (no Jordanian Arabic TTS here; Higgsfield has 0 credits). One take, ~1 s pause between the 12 paragraphs; without `--audio` a `_PREVIEW` with placeholder mouth timing and music only is made.
 - Says it is a Jordanian app made by Jordanians in beats 2 and 12 and on a chip on every frame; never gives a personal testimonial; demo-mode screens carry their label; «مجانًا» holds only while the product has no price.
+
+## Reel 18 — worksheet reel with a photoreal presenter (D-ID, 9:16)
+
+The script is the user's own (`avatar_real_script.py`, ten sentences: hook, who the host is, the worksheet — worked example, graded exercises, answer key — review and edit it, close). The presenter is a **D-ID Studio** clip
+(stock avatar «Mia», voice «Sana», Arabic (Jordan), 9:16, flat sage background); everything else is built here by `build_avatar_real.py --clip <clip>`:
+- **Key:** a green-dominance key (G minus max(R,B)) separates the sage background (+15…+26, even under the watermark) from skin (−4…−39), the pink sweater and hair, with a despill on the edges. A distance key was tried first and ate her skin.
+- **Sentences:** D-ID's voice leaves ~1 s of silence at each sentence end and 0.3–0.4 s between phrases; the clip is split into the ten sentences at the long ones (it warns and falls back to lengths if it does not find ten).
+- **Pauses:** silences over 0.7 s are cut to 0.45 s (jump cuts on a neutral face): 61.3 s -> 55.4 s. Audio is trimmed the same way with 25 ms fades.
+- **Layout:** chip + lockup on top, the presenter bleeding off both sides on a teal disc, an ink bottom sheet with the captions, the app phone on the sheet's right, the «مُضيفة اقرأ · شخصية افتراضية» tag, the demo pill on generated screens. The bottom third is the Reels overlay zone and is deliberately left plain.
+- **Honesty:** she says «أنا مُضيفتكم الافتراضية», is tagged virtual, never claims to use the app; «تطبيق أردني · بأيدٍ أردنية» is on every frame; «مجانًا» only in the closing button (true while the product has no price).
+- **Draft vs final:** `capture/avatar/sana_test.mp4` is the free-trial clip, so the D-ID watermark is faintly visible across her. After subscribing, generate the same text with the same settings and run `python3 build_avatar_real.py --clip capture/avatar/sana_final.mp4 --final`.
+- Not checked: how Sana pronounces «بدّك» / «لسّه» — nobody here has listened with a native ear; the user must.
 
 ## Reels 6–9 — cut from the full-app tour
 
