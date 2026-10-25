@@ -10,6 +10,65 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 8 semester 1 word lists in the English corner, 2026-10-25
+
+Grades 6–8 had a tab and a «word games coming» notice (PR #1268) but no words. Grade 8's
+two books are *Jordan High Note*, the series Grade 9 uses, with the same Word List at the back,
+so Grade 8 follows the Grade 9 pipeline. **Semester 1 is built; semester 2 is not.** Grades 6
+and 7 are untouched (*Jordan Team Together*, Pearson third-party text, whose vocabulary the
+catalog leaves empty on purpose — see `g6EnglishSem1.ts`).
+
+- **How the text got here.** The Ministry site is unreachable from the build container, so the
+  owner downloaded both PDFs, ran `extract-text` on their own machine and committed
+  `data/extracted/g8-english-s1-student-book.json` (80 pages, 143,910 characters). The PDFs are
+  gitignored and stay on that machine; `LOCAL_FILES` in `scripts/localSources.ts` names them
+  `g8-english-s{1,2}-student-book.pdf` (PR #1283).
+- **Registered in `g10_sources.json`** as `third-party`, like Grade 9 (Pearson/York Press ©, so
+  not quotable); `extraction.test.ts` requires a manifest row for every extracted file.
+- **A parsing bug found on the way, and fixed.** The Word List reader took a `WL<unit>.<lesson>`
+  marker only at the start of a line. In this book a wrapped three-line heading ends in the
+  marker (`GRAMMAR <tab>WL1.1`), so the first run lost lesson 1 of every unit and filed the next
+  unit's words under the previous marker — the Writing lessons held 26 words each. It now also
+  takes a marker that ends a line with no `/` in it. The Grade 9 and 10 rows are byte-identical
+  to before (compared row by row). `englishHub.test.ts` pins it: lesson 1 of every unit has
+  ≥ 10 words, a Writing lesson ≤ 10; with the fix removed it fails.
+- **390 words in 35 lessons; 27 lessons are offered.** A lesson needs `MIN_HUB_WORDS` (4)
+  words, and 8 short Speaking / Writing lessons have 2–3. Slash entries (`before/after school`)
+  are dropped by the hub's own `isDrillableWord`, as for Grades 9–10. Two words are lost to the
+  parser and not fixed here: `shelf (pl. shelves)` and `shower` in lesson 2.2 (a wrapped IPA row).
+  The extracted list was read in full and the first three Word List pages (file pp. 64–66) were
+  compared with the raw text; pp. 67, 68 and 74 were not compared line by line.
+- **338 new Arabic glosses, drafted by Claude; no teacher has reviewed them** (same status as
+  Grades 5, 9 and 10). One sense each, chosen against the book's own sentence, no two words in a
+  lesson alike. Judgement calls worth a teacher's eye: «ice cream» آيس كريم and «tomato» طماطم
+  (Jordanian «بندورة»), «Drama» التمثيل المسرحي, «assembly» التجمع المدرسي, «cooker» موقد الطهي,
+  «can» / «tin» علبة مشروبات / علبة معلبات, «hall» صالة المدخل, «slim» رشيق against «thin» نحيف.
+  **`suit` and `light` already had a gloss from Grades 9–10 with the other sense** (the noun,
+  «not heavy»), and a printed word has one gloss, so both senses are now in it
+  («بدلة، يليق بـ», «خفيف، فاتح»); `englishHub.test.ts` pins both halves.
+- **The Grade 5, 9 and 10 teacher forms were regenerated** (`grammar-sheet`): only each unit's
+  «words outside the vocabulary lists» note changed, because Grade 8 teaches a few words
+  (`cook`, `tall`, `closed`, `different`…) that were outside the lists. No question text moved
+  and no unit has a sign-off, so none is invalidated.
+- **`ENGLISH_HUB_GRADES` is `[1, 2, 3, 4, 5, 8, 9, 10]`.** The Grade 8 tab, the browse banner and
+  the library read it; the «Semester 2 word games are coming» note on the Grade 8 tab is
+  data-driven and shows because no Semester 2 lesson exists. A Grade 8 lesson offers the six word
+  activities (no «Match the picture»: none of these words has a picture set).
+- **Checked:** `pnpm run typecheck` clean; mobile suite 0 failures; `lib/curriculum` suite all
+  green except `R2 helpers are inert, not broken, when unconfigured`, which fails on `main` too;
+  the CI brand grep. In the web build (Playwright, Chromium): the Grade 8 tab in English, light,
+  and in Arabic, dark, on a phone; a Grade 8 lesson in Arabic.
+- **Not done: recordings.** 348 distinct Grade 8 words; **107 have an MP3 and 241 do not**
+  (HEAD request on 2026-10-25). Until `pnpm --filter @workspace/curriculum run english-audio` is
+  run with the OpenAI and R2 keys, web speaks the word in the browser's voice and native is
+  silent, which makes «استمع واختر» unplayable on a phone. Run it before the merge deploys, or
+  accept that for now.
+- **Not done: semester 2.** `extract-text` rejects `g8-english-s2-student-book` (Arabic in
+  reversed presentation-form glyphs; the OCR fallback was rejected too: 10,916 Arabic words, fewer
+  than 100 recognisable). The book is English, so its Word List may be perfectly readable; the
+  way forward is an opt-in that skips the Arabic gates for an English book, or pasting the Word
+  List text. Also not done: Grades 6 and 7, Grade 10 semester 2, a real phone.
+
 ## Chat app-help, thirty-first live pass: greetings, «الطريقة لـ», «أقدر / بقدر», «أرى / أشوف» — 2026-10-25
 
 Thirty known questions asked in other written styles (app-only: the demo account's allowance is

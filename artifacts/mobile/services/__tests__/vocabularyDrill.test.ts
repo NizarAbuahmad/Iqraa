@@ -30,10 +30,11 @@ describe('the extracted corpus', () => {
     assert.deepEqual(validateEnglishVocabulary(), []);
   });
 
-  it('holds what the three usable books yielded', () => {
-    assert.equal(ENGLISH_VOCABULARY.length, 730);
-    assert.equal(new Set(ENGLISH_VOCABULARY.map(w => w.lessonId)).size, 72);
-    assert.equal(ENGLISH_VOCABULARY.filter(w => w.sentence).length, 237);
+  it('holds what the four usable books yielded', () => {
+    // Grade 10 S1, Grade 9 S1 and S2, and (since 2026-10-25) Grade 8 S1: 730 + 390 words, 72 + 35 lessons, 237 + 147 sentences.
+    assert.equal(ENGLISH_VOCABULARY.length, 1120);
+    assert.equal(new Set(ENGLISH_VOCABULARY.map(w => w.lessonId)).size, 107);
+    assert.equal(ENGLISH_VOCABULARY.filter(w => w.sentence).length, 384);
   });
 
   it('never carries a phonetic mark into a headword', () => {
