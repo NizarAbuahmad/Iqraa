@@ -25,6 +25,23 @@ Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
   starts at «شرائح الدرس» top right. **Not checked:** routes other than `tools`
   in English.
 
+## Grade 8 English gets its book pages; Grades 1-7 do not, 2026-10-25
+
+The 16 English student books for Grades 1-8 (about 1.9 GB) were downloaded from the catalog's NCCD
+links into a scratch folder outside the repo.
+
+- **Grade 8 (2 books):** same «High Note» layout as Grades 9-10, so `map_english_pages.py` took
+  them as they are: 70 lessons (35 × 2), 142 pages, every opener checked on a contact sheet of
+  16. `book-page-links.json` lists 2,022 lessons / 12,889 pages. Pages are in R2.
+- **Grades 1-7 (14 books) are not mapped.** They are the «Team Together» series, whose pages carry
+  a small «Lesson N» tab, not a «LESSON nA» header, and the tabs do not line up with the
+  curriculum's lessons: Grade 7 has 4 units of 9 lessons in the catalog, but the book numbers its
+  lessons up to 11 and skips some tabs (1, 2, 3, 5, 6, 8, 9, 10, 11), so a position-based match
+  would be a guess. Grades 1-5 are coarser still: the catalog has two lessons per unit
+  («Vocabulary & Grammar», «Listening & Speaking») against about nine book pages. A
+  unit-level page set was considered and not done, because a lesson's pages would not be that
+  lesson's. The PDFs are still in the scratch folder if someone wants to hand-map them.
+
 ## Chat app-help, twenty-ninth live pass: three short answers and wordings for fourteen existing ones — 2026-10-25
 
 The demo account's monthly generation allowance was still spent, so every question the matcher did
