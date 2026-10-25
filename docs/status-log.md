@@ -10,6 +10,40 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## English review forms: a note's closing full stop is no longer inside the English run — 2026-10-25
+
+**What changed.** `ltr()` (`lib/curriculum/src/englishGrammarReview.ts`) wrapped the note's closing full stop into
+the last English span, so it stood against the Arabic word before it instead of ending the sentence: «…بين were و
+was.» drew as «was. و were», with the full stop before the «و». When the full stop is the last character of a note
+that has Arabic in it, it is now left outside the span, which draws it at the left end of the line («.was و were»).
+A full stop inside a note («She can sew well. عن well…», «…in the afternoon.»), in an all-English note, and any `?` or
+`!` stay inside the English run.
+
+**This PR first fixed the «و» too, and that half is not here.** The glued «و» («وafter» drawn like a stray letter) was
+fixed on `main` the day before by #1247 (a real space in `ltr()`, hand-spaced intro strings, the reading forms'
+notes), with `englishGrammarReviewGlued.test.ts`. This branch had a different fix for it (a `.waw` span with a margin,
+so a line could not break between «و» and its word). On finding #1247 the branch was reduced to the full stop alone
+and `main`'s «و» handling was kept, rather than regenerate every form a second time for a smaller gain. If a
+dangling «و» at the end of a printed line is ever seen, that margin approach is the fix.
+
+**Regenerated, bytes change on purpose (13 lines):** `docs/english-grammar-g{2,3,4,9,10}-review.html` (5, 2, 3, 2 and 1
+notes). Grades 1 and 5, the reading forms and every `-sheet.md` are byte-identical to `main`. Nothing a teacher reads
+changed except where that one full stop is drawn, so a sheet printed before this is wrong in no word or mark.
+
+**Verified.** `englishGrammarReviewStop.test.ts` (new): the cases above; for every not-covered note of Grades 2–5, 9
+and 10 the tags stripped give back the note's text and no closing full stop is inside a span; and no grammar form
+has one. The tests that pin each committed doc to its generator pass (890 curriculum tests with the sandbox's R2
+variables unset; `r2.test.ts` asserts «unconfigured» and fails wherever `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY` are
+set, which is not this change), `verify` 0 errors, typecheck clean. In Chromium at 390 px and in print emulation the
+13 notes that end on an English word were read back in visual order: the full stop is the left-most piece of the last
+line in every one, none is still inside a span, no horizontal overflow at 390 px, and the A4-landscape PDF has the
+same page count before and after for every changed form (g2 35, g3 32, g4 54, g9 95, g10 98). Fonts were the
+sandbox's, not Readex Pro / Almarai (Google Fonts is unreachable there).
+
+**Not done.** Plain-text Latin that never goes through `ltr()` is unchanged (Grade 1's notes, whose full stop already
+stands at the left end; the Grade 4 checklist line). The new place of the full stop (left end, so a note can read
+«.as … as») is the Arabic convention for a sentence's end, but a teacher may read it differently.
+
 ## Chat app-help, twenty-ninth live pass: three short answers and wordings for fourteen existing ones — 2026-10-25
 
 The demo account's monthly generation allowance was still spent, so every question the matcher did
@@ -35,7 +69,6 @@ with near-misses that stay with the model.
 rating the app, showing the lesson on a TV, one student's answers on an exam (the answers screen
 is built for typing in a paper's answers, so I did not claim it shows an online sitting) and
 «أرى الشعب التي أدرّسها» (the place card is enough).
-
 
 ## A revision unit with no picture shows its outcomes and terms side by side, 2026-10-25
 

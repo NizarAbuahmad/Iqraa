@@ -49,9 +49,19 @@ const NOT_COVERED: Record<number, Record<string, string[]>> = { 2: NOT_COVERED_G
  * Wraps each run of English in `dir="ltr"`, so a phrase with punctuation does not scramble inside an Arabic line.
  * A conjunction «و» that is a word of its own and touches an English word («وafter») gets a space first: next to
  * the left-to-right run it reads like a stray letter. A «و» inside a longer Arabic word is left alone.
+ * The closing full stop of an Arabic note is the Arabic sentence's, not the English phrase's: inside the span it
+ * stood against the Arabic word before it («have got. نمط» mid-line), so it is left outside when it is the last
+ * character of a note that has Arabic in it, which draws it at the left end of the line. A full stop inside the
+ * note, or in a note that is all English, belongs to the English and stays inside; `?` and `!` always do.
  */
 export const ltr = (s: string) =>
-  esc(s).replace(/(^|[\s(،؛:؟«])و(?=[A-Za-z])/g, '$1و ').replace(/[A-Za-z][A-Za-z0-9'’-]*(?:[ ,.?!/…]+[A-Za-z0-9'’][A-Za-z0-9'’-]*)*[.?!]?/g, m => `<span dir="ltr">${m}</span>`);
+  esc(s).replace(/(^|[\s(،؛:؟«])و(?=[A-Za-z])/g, '$1و ').replace(
+    /[A-Za-z][A-Za-z0-9'’-]*(?:[ ,.?!/…]+[A-Za-z0-9'’][A-Za-z0-9'’-]*)*[.?!]?/g,
+    (m, at: number, all: string) => {
+      const endsNote = at + m.length === all.length && m.endsWith('.') && /[؀-ۿ]/.test(all.slice(0, at));
+      return endsNote ? `<span dir="ltr">${m.slice(0, -1)}</span>.` : `<span dir="ltr">${m}</span>`;
+    },
+  );
 
 function yesNoCell(s: GrammarSentence): string {
   const y = s.yesNo;
