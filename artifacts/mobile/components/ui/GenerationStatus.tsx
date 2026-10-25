@@ -16,11 +16,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { countSeconds } from '@/services/i18n';
+import type { GenerationPhase } from '@/services/generationPhase';
 
 /** How long before we admit this is slower than usual. */
 const SLOW_AFTER_SECONDS = 15;
 
-export type GenerationPhase = 'idle' | 'loading' | 'error' | 'cancelled';
+export type { GenerationPhase };
 
 type Colors = {
   card: string;
@@ -131,7 +132,7 @@ export function GenerationStatus({
     return (
       <View style={shell(colors.border, colors.card)} accessibilityRole="alert">
         <View style={[styles.row, { flexDirection: rowDir }]}>
-          <Ionicons name="stop-circle-outline" size={18} color={colors.mutedForeground} />
+          <Ionicons name="stop-circle-outline" size={20} color={colors.mutedForeground} />
           <Text style={[styles.title, { color: colors.mutedForeground, textAlign: align, flex: 1 }]}>
             {t('genCancelled')}
           </Text>
@@ -148,7 +149,7 @@ export function GenerationStatus({
   return (
     <View style={shell(colors.destructive, colors.destructive + '10')} accessibilityRole="alert">
       <View style={[styles.row, { flexDirection: rowDir }]}>
-        <Ionicons name="alert-circle-outline" size={18} color={colors.destructive} />
+        <Ionicons name="alert-circle" size={20} color={colors.destructive} />
         <View style={{ flex: 1, gap: 2 }}>
           <Text style={[styles.title, { color: colors.destructive, textAlign: align }]}>
             {t('genFailedTitle')}
@@ -170,7 +171,7 @@ export function GenerationStatus({
           accessibilityRole="button"
           accessibilityLabel={t('genRetry')}
         >
-          <Ionicons name="refresh-outline" size={15} color={colors.destructive} />
+          <Ionicons name="refresh-outline" size={16} color={colors.destructive} />
           <Text style={[styles.retryText, { color: colors.destructive }]}>{t('genRetry')}</Text>
         </Pressable>
       ) : null}

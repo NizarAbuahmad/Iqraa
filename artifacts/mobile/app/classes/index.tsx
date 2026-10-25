@@ -42,6 +42,8 @@ import { CLASSES_QUERY_KEY } from '@/services/rosterQueryKeys';
 import { Button } from '@/components/ui/Button';
 import { BackButton } from '@/components/ui/BackButton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { IconTile } from '@/components/ui/IconTile';
+import { subjectChipColor } from '@/services/subjectTheme';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -322,8 +324,11 @@ function ClassesList() {
           renderItem={({ item }) => (
             <Pressable
               onPress={() => router.push({ pathname: '/classes/[id]', params: { id: item.id } })}
-              style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }, numColumns > 1 && { flex: 1 }]}
+              // LanguageContext pins I18nManager to LTR, so a plain 'row' never mirrors (web or native): without this the Arabic card read tile, name, bin, chevron from the left.
+              style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }, numColumns > 1 && { flex: 1 }]}
             >
+              {/* The tile wears the class's first subject, so a list of classes sorts by colour before it is read. */}
+              <IconTile icon="people-outline" glyph="classes" color={subjectChipColor(classSubjectIds(item)[0], colors.card)} size={44} />
               <View style={{ flex: 1 }}>
                 <Text
                   style={[
@@ -364,7 +369,7 @@ function ClassesList() {
                 {deletingId === item.id ? (
                   <ActivityIndicator size="small" color={colors.mutedForeground} />
                 ) : (
-                  <Ionicons name="trash-outline" size={18} color={colors.mutedForeground} />
+                  <Ionicons name="trash-outline" size={20} color={colors.mutedForeground} />
                 )}
               </Pressable>
               <Ionicons
@@ -385,7 +390,7 @@ function ClassesList() {
         accessibilityRole="button"
         style={[styles.fab, { backgroundColor: ACCENT_FILL, bottom: insets.bottom + 24, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
       >
-        <Ionicons name="add" size={22} color="#fff" />
+        <Ionicons name="add" size={24} color="#fff" />
         <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 14 }}>{t('newClass')}</Text>
       </Pressable>
       )}
@@ -443,7 +448,7 @@ function ClassesList() {
                 create looked like nothing happened. Say it here too. */}
             {error ? (
               <View style={[styles.modalError, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+                <Ionicons name="alert-circle" size={16} color={colors.destructive} />
                 <Text
                   style={{
                     color: colors.destructive,

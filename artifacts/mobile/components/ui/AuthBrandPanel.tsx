@@ -63,7 +63,7 @@ export function AuthBrandPanel({ isWide }: { isWide: boolean }) {
         accessibilityRole="button"
         accessibilityLabel={lang === 'ar' ? 'التبديل إلى الإنجليزية' : 'Switch to Arabic'}
       >
-        <Ionicons name="language-outline" size={15} color="rgba(255,255,255,0.9)" />
+        <Ionicons name="language-outline" size={16} color="rgba(255,255,255,0.9)" />
         <Text style={[styles.langBtnText, { fontFamily: 'ReadexPro_500Medium' }]}>
           {lang === 'ar' ? 'English' : 'عربي'}
         </Text>

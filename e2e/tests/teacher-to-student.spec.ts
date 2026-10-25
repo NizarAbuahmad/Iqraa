@@ -171,7 +171,7 @@ test("teacher publishes an exam and a student hands it in", async ({ browser }) 
 
   await test.step("student hands it in", async () => {
     await student.getByText("Hand in", { exact: true }).click();
-    await expect(student.getByText("Handed in")).toBeVisible({ timeout: 60_000 });
+    await expect(student.getByText("Handed in", { exact: true })).toBeVisible({ timeout: 60_000 });
   });
 
   await test.step("teacher sees the attempt", async () => {

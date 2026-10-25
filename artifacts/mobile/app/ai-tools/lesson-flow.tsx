@@ -43,6 +43,10 @@ import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { Button } from '@/components/ui/Button';
+import { IconTile } from '@/components/ui/IconTile';
+import { conceptOf } from '@/constants/icons';
+import { FLOW_STEP, flowStepColor } from '@/constants/lessonFlowSteps';
+import { readableOn } from '@/services/readableColor';
 import { saveItem, updateItem } from '@/services/workspace';
 import { MaterialClassField } from '@/components/ui/MaterialClassField';
 import { Toast } from '@/components/ui/Toast';
@@ -425,13 +429,14 @@ export default function LessonFlowScreen() {
 
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
+  // Icon and colour per step come from constants/lessonFlowSteps.ts (the viewer in workspace/view.tsx reads the same table).
   const STEPS: Array<{ key: StepKey; labelKey: string; icon: keyof typeof Ionicons.glyphMap; color: string }> = [
-    { key: 'objectives', labelKey: 'lessonFlowStepObjectives', icon: 'flag-outline', color: palette.foreground },
-    { key: 'warmup',     labelKey: 'lessonFlowStepWarmup',     icon: 'flame-outline', color: '#C2410C' },
-    { key: 'activity',   labelKey: 'lessonFlowStepActivity',   icon: 'flash-outline', color: '#4F46E5' },
-    { key: 'guided',     labelKey: 'lessonFlowStepGuided',     icon: 'pencil-outline', color: ACCENT },
-    { key: 'worksheet',  labelKey: 'lessonFlowStepWorksheet',  icon: 'document-text-outline', color: '#6D28D9' },
-    { key: 'exitTicket', labelKey: 'lessonFlowStepExitTicket', icon: 'ticket-outline', color: palette.warning },
+    { key: 'objectives', labelKey: 'lessonFlowStepObjectives', icon: FLOW_STEP.objectives.icon, color: flowStepColor('objectives', palette.foreground) },
+    { key: 'warmup',     labelKey: 'lessonFlowStepWarmup',     icon: FLOW_STEP.warmup.icon,     color: flowStepColor('warmup', palette.foreground) },
+    { key: 'activity',   labelKey: 'lessonFlowStepActivity',   icon: FLOW_STEP.activity.icon,   color: flowStepColor('activity', palette.foreground) },
+    { key: 'guided',     labelKey: 'lessonFlowStepGuided',     icon: FLOW_STEP.guided.icon,     color: flowStepColor('guided', palette.foreground) },
+    { key: 'worksheet',  labelKey: 'lessonFlowStepWorksheet',  icon: FLOW_STEP.worksheet.icon,  color: flowStepColor('worksheet', palette.foreground) },
+    { key: 'exitTicket', labelKey: 'lessonFlowStepExitTicket', icon: FLOW_STEP.exitTicket.icon, color: flowStepColor('exitTicket', palette.foreground) },
   ];
 
   const isDone = phase === 'done';
@@ -458,8 +463,9 @@ export default function LessonFlowScreen() {
               style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
               hitSlop={12}
             >
-              <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={22} color="#fff" />
+              <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={24} color="#fff" />
             </Pressable>
+            <IconTile icon={conceptOf('lesson-flow').icon} glyph={conceptOf('lesson-flow').glyph} color={conceptOf('lesson-flow').color} size={36} tone="onBand" />
             <View style={{ flex: 1 }}>
               <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }]}>
                 <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -485,11 +491,14 @@ export default function LessonFlowScreen() {
                   backgroundColor: ACCENT_FILL,
                 }]} />
               </View>
-              <Text style={{ color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
-                {isDone
-                  ? (uiLang === 'ar' ? '✓ جاهز' : '✓ Ready')
-                  : `${uiLang === 'ar' ? 'خطوة' : 'Step'} ${completedCount + 1} ${uiLang === 'ar' ? 'من' : 'of'} 6`}
-              </Text>
+              <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 4, marginTop: 6 }}>
+                {isDone ? <Ionicons name="checkmark-circle" size={14} color="rgba(255,255,255,0.8)" /> : null}
+                <Text style={{ color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>
+                  {isDone
+                    ? (uiLang === 'ar' ? 'جاهز' : 'Ready')
+                    : `${uiLang === 'ar' ? 'خطوة' : 'Step'} ${completedCount + 1} ${uiLang === 'ar' ? 'من' : 'of'} 6`}
+                </Text>
+              </View>
             </View>
           )}
         </View>
@@ -633,7 +642,7 @@ export default function LessonFlowScreen() {
         {/* ── Error banner with Retry ── */}
         {isBuilding && error && failedStep && (
           <View style={[styles.errorBanner, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Ionicons name="alert-circle-outline" size={16} color="#D92D20" style={{ marginTop: 1 }} />
+            <Ionicons name="alert-circle" size={16} color="#D92D20" style={{ marginTop: 1 }} />
             <Text style={{ flex: 1, color: palette.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
@@ -689,7 +698,7 @@ export default function LessonFlowScreen() {
             >
               <Ionicons
                 name={saveLabel === 'save' ? 'bookmark-outline' : 'bookmark'}
-                size={18}
+                size={20}
                 color={ACCENT}
               />
             </Pressable>
@@ -753,11 +762,11 @@ function StepCard({ stepNum, label, icon, color, status, isRTL, lang, colors, co
       >
         <View style={[styles.stepBadge, { backgroundColor: badgeBg }]}>
           {status === 'loading' ? (
-            <ActivityIndicator size="small" color={color} />
+            <ActivityIndicator size="small" color={readableOn(color, colors.card, 3)} />
           ) : status === 'done' ? (
-            <Ionicons name={icon} size={18} color={color} />
+            <Ionicons name={icon} size={20} color={readableOn(color, colors.card, 3)} />
           ) : status === 'error' ? (
-            <Ionicons name="warning-outline" size={18} color="#D92D20" />
+            <Ionicons name="warning" size={20} color="#D92D20" />
           ) : (
             <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{stepNum}</Text>
           )}
@@ -771,7 +780,7 @@ function StepCard({ stepNum, label, icon, color, status, isRTL, lang, colors, co
             {label}
           </Text>
           {status === 'loading' && (
-            <Text style={{ color: color, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: readableOn(color, colors.card), fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
               Generating…
             </Text>
           )}
@@ -836,7 +845,7 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
           <Text style={[{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>{isolateForeignRuns(act.title)}</Text>
           {act.steps.map((step, i) => (
             <View key={i} style={[styles.activityStep, { backgroundColor: colors.muted }]}>
-              <View style={[styles.stepNum, { backgroundColor: stepKey === 'warmup' ? '#C2410C' : '#4F46E5' }]}>
+              <View style={[styles.stepNum, { backgroundColor: stepKey === 'warmup' ? flowStepColor('warmup', palette.foreground) : flowStepColor('activity', palette.foreground) }]}>
                 <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
               <View style={{ flex: 1 }}>
@@ -852,7 +861,7 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
     case 'guided':
       return (
         <View style={{ paddingHorizontal: 14, paddingBottom: 8 }}>
-          <View style={[styles.guidedBox, { backgroundColor: ACCENT + '10', borderColor: ACCENT + '30' }]}>
+          <View style={[styles.guidedBox, { backgroundColor: flowStepColor('guided', palette.foreground) + '10', borderColor: flowStepColor('guided', palette.foreground) + '30' }]}>
             <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>
               {guidedPractice}
             </Text>
@@ -867,7 +876,7 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
         <View style={{ paddingHorizontal: 14, paddingBottom: 8, gap: 6 }}>
           {allQs.slice(0, 5).map((q, i) => (
             <View key={i} style={[styles.qBlock, { backgroundColor: colors.muted }]}>
-              <View style={[styles.qNum, { backgroundColor: '#6D28D9' }]}>
+              <View style={[styles.qNum, { backgroundColor: flowStepColor('worksheet', palette.foreground) }]}>
                 <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
               <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(q.text)}</Text>
@@ -885,7 +894,7 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
         <View style={{ paddingHorizontal: 14, paddingBottom: 8, gap: 6 }}>
           {allQs.slice(0, 3).map((q, i) => (
             <View key={i} style={[styles.qBlock, { backgroundColor: colors.muted }]}>
-              <View style={[styles.qNum, { backgroundColor: '#B54708' }]}>
+              <View style={[styles.qNum, { backgroundColor: flowStepColor('exitTicket', palette.foreground) }]}>
                 <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
               <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(q.text)}</Text>

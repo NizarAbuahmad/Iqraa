@@ -58,6 +58,7 @@ import { apiErrorMessage } from '@/services/apiErrorKey';
 import { StudentResultCard, LEVEL_LABEL_KEY } from '@/components/StudentResultCard';
 import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
+import { ICON } from '@/constants/icons';
 import { SPACE, TYPE } from '@/constants/theme';
 import { BackButton } from '@/components/ui/BackButton';
 
@@ -198,7 +199,7 @@ export default function MyExamsScreen() {
       >
         {error ? (
           <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+            <Ionicons name="alert-circle" size={16} color={colors.destructive} />
             <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
               {error}
             </Text>
@@ -217,7 +218,7 @@ export default function MyExamsScreen() {
         {groups !== null && groups.every(g => g.exams.length === 0) ? (
           <View style={styles.empty}>
             <View style={[styles.emptyIcon, { backgroundColor: ACCENT + '1F' }]}>
-              <Ionicons name="document-text-outline" size={30} color={ACCENT} />
+              <Ionicons name="document-text-outline" size={32} color={ACCENT} />
             </View>
             <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 17, textAlign: 'center' }}>
               {t('myExamsEmptyTitle')}
@@ -225,6 +226,14 @@ export default function MyExamsScreen() {
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
               {t(isParent ? 'childResultsEmptyDesc' : 'myExamsEmptyDesc')}
             </Text>
+            {/* An email student has no class until they enter a teacher's code. */}
+            {user?.role === 'student' && user.hasRosterLink === false ? (
+              <Pressable onPress={() => router.push('/join-class')} accessibilityRole="button" hitSlop={8}>
+                <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textDecorationLine: 'underline' }}>
+                  {t('joinAClass')}
+                </Text>
+              </Pressable>
+            ) : null}
           </View>
         ) : null}
 
@@ -461,7 +470,7 @@ function ExamRow({
             </Text>
           </View>
         ) : action === 'toggle_result' ? (
-          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedForeground} />
+          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={colors.mutedForeground} />
         ) : null}
       </View>
 
@@ -471,6 +480,22 @@ function ExamRow({
         </View>
       ) : null}
     </Pressable>
+    {exam.review ? (
+      <Pressable
+        onPress={() => router.push({ pathname: '/exam-review/[id]', params: { id: exam.evaluationId } } as never)}
+        accessibilityRole="button"
+        style={[
+          styles.retakeBar,
+          { flexDirection: isRTL ? 'row-reverse' : 'row', backgroundColor: colors.card, borderColor: ACCENT + '55', borderRadius: colors.radius },
+        ]}
+      >
+        <Ionicons name="school-outline" size={ICON.lg} color={ACCENT} />
+        <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
+          {t('reviewOpenBtn')}
+        </Text>
+        <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={ACCENT} />
+      </Pressable>
+    ) : null}
     {canRetake ? (
       <View
         style={[

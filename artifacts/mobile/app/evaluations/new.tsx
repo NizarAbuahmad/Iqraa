@@ -47,6 +47,7 @@ import type { TranslationKey } from '@/services/i18n';
 import { palette } from '@/constants/colors';
 import { SPACE } from '@/constants/theme';
 import { toLatinDigits } from '@/services/latinDigits';
+import { selectedRow } from '@/services/readableColor';
 import { QUICK_PAPER_MAX, measuredObjectiveId, quickPaperQuestions } from '@/services/paperMarks';
 import { confirm } from '@/services/confirm';
 import { pickMarkSheetPhotos } from '@/services/documents/pick';
@@ -700,7 +701,7 @@ export default function NewEvaluationScreen() {
               {scanning ? (
                 <ActivityIndicator size="small" color={ACCENT} />
               ) : (
-                <Ionicons name="scan-outline" size={18} color={ACCENT} />
+                <Ionicons name="scan-outline" size={20} color={ACCENT} />
               )}
               <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, flexShrink: 1, textAlign: 'center' }}>
                 {scanning ? t('paperScanReading') : t('paperScanBtn')}
@@ -865,7 +866,7 @@ function CheckboxRow({
   return (
     <Pressable onPress={onToggle} style={[styles.checkRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
       <View style={[styles.checkbox, { borderColor: checked ? accent : colors.border, backgroundColor: checked ? accent : 'transparent' }]}>
-        {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
+        {checked && <Ionicons name="checkmark" size={14} color="#fff" />}
       </View>
       <Text
         style={{ color: colors.foreground, fontFamily: checked ? 'ReadexPro_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }}
@@ -891,11 +892,14 @@ function CheckboxRow({
  * the component already reads keeps that local and needs no new API.
  */
 function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
+  // The selected row is an opaque fill with an ink judged against it (`selectedRow`), as on the generator screens.
+  const row = selectedRow(props.accent, props.colors.card);
   return (
     <SharedPickerField
       {...props}
       colors={{ ...props.colors, radius: 10 }}
-      selectedTint={ACCENT + '15'}
+      selectedTint={row.fill}
+      accent={row.ink}
     />
   );
 }

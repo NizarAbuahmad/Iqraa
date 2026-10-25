@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
+import { textOn } from '@/services/readableColor';
 
 interface ButtonProps {
   label: string;
@@ -12,9 +13,13 @@ interface ButtonProps {
   loading?: boolean;
   style?: ViewStyle;
   fullWidth?: boolean;
+  /** A colour of its own (a game's accent) in place of the variant's fill; the
+   *  label follows it (`textOn`). Setting the fill through `style` instead left
+   *  the variant's label on it — navy on every game accent in dark mode. */
+  fill?: string;
 }
 
-export function Button({ label, onPress, variant = 'primary', size = 'md', disabled, loading, style, fullWidth }: ButtonProps) {
+export function Button({ label, onPress, variant = 'primary', size = 'md', disabled, loading, style, fullWidth, fill }: ButtonProps) {
   const colors = useColors();
   const [hovered, setHovered] = useState(false);
 
@@ -30,7 +35,7 @@ export function Button({ label, onPress, variant = 'primary', size = 'md', disab
 
   const bgColor = inactive
     ? (variant === 'ghost' ? 'transparent' : variant === 'primary' ? colors.secondary : colors.muted)
-    : {
+    : fill ?? {
       primary: colors.primary,
       secondary: colors.secondary,
       ghost: 'transparent',
@@ -39,7 +44,7 @@ export function Button({ label, onPress, variant = 'primary', size = 'md', disab
 
   const textColor = inactive
     ? (variant === 'primary' ? colors.secondaryForeground : colors.mutedForeground)
-    : {
+    : fill ? textOn(fill) : {
       primary: colors.primaryForeground,
       secondary: colors.secondaryForeground,
       ghost: colors.foreground,

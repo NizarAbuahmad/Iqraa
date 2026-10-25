@@ -113,7 +113,7 @@ export function ImageViewerModal({ url, onClose, caption, whiteGround }: ViewerP
       <GestureHandlerRootView style={styles.backdrop}>
         <View style={[styles.bar, { paddingTop: insets.top + 8 }]}>
           <Pressable onPress={close} hitSlop={12} style={styles.btn} accessibilityRole="button" accessibilityLabel={t('closeImage')}>
-            <Ionicons name="close" size={26} color="#fff" />
+            <Ionicons name="close" size={24} color="#fff" />
           </Pressable>
           <Pressable onPress={() => { void save(); }} disabled={saving} hitSlop={12} style={styles.btn} accessibilityRole="button" accessibilityLabel={t('saveImage')}>
             {saving ? <ActivityIndicator color="#fff" size="small" /> : <Ionicons name="download-outline" size={24} color="#fff" />}

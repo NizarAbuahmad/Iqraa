@@ -347,6 +347,21 @@ export async function getAllItems(): Promise<SavedMaterial[]> {
   return getItems({});
 }
 
+/**
+ * `getAllItems` plus whether the list can be trusted as the whole truth.
+ * `getItems` never rejects: a failed, timed-out or non-OK server read quietly
+ * becomes the device-only list, which looks like any other list. A caller that
+ * judges the list's content (a progress board deciding "everything is ready")
+ * must not treat that fallback as a measurement.
+ *
+ * `fromServer` is true when the server answered, and also when nobody is signed
+ * in: with no server to ask, the device list IS the workspace. It is false only
+ * for a signed-in user whose read failed.
+ */
+export async function getAllItemsChecked(): Promise<{ items: SavedMaterial[]; fromServer: boolean }> {
+  return readItems({});
+}
+
 /** Return the N most recently saved items across all types. */
 export async function getRecentItems(n: number): Promise<SavedMaterial[]> {
   const all = await getAllItems();
@@ -362,7 +377,17 @@ export async function getItems(opts: {
   /** Only materials attached to this class. */
   classId?: string;
 }): Promise<SavedMaterial[]> {
-  if (await isAuthenticated()) {
+  return (await readItems(opts)).items;
+}
+
+async function readItems(opts: {
+  type?: MaterialType;
+  query?: string;
+  favoritesFirst?: boolean;
+  classId?: string;
+}): Promise<{ items: SavedMaterial[]; fromServer: boolean }> {
+  const signedIn = await isAuthenticated();
+  if (signedIn) {
     const params = new URLSearchParams();
     if (opts.type) params.set('type', opts.type);
     if (opts.query?.trim()) params.set('query', opts.query.trim());
@@ -379,7 +404,7 @@ export async function getItems(opts: {
         && (!opts.classId || i.classGroupId === opts.classId)
         && (!opts.query?.trim() || matchesQuery(i, opts.query)),
       );
-      return [...data.map(apiToLocal), ...local];
+      return { items: [...data.map(apiToLocal), ...local], fromServer: true };
     }
     // Network failed — fall through to local
   }
@@ -396,7 +421,8 @@ export async function getItems(opts: {
       ...items.filter((i) => !i.isFavorite),
     ];
   }
-  return items;
+  // Signed out: the device list is all there is, so it is authoritative.
+  return { items, fromServer: !signedIn };
 }
 
 /** Seed the workspace with demo content for onboarding / investor demos. */

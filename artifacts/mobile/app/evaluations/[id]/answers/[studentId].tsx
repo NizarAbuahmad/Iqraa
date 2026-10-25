@@ -407,7 +407,7 @@ export default function AnswerEntryScreen() {
         <View style={{ width: '100%', maxWidth: CHAT_MAX_WIDTH, alignSelf: 'center' }}>
         {error ? (
           <View style={[styles.errorBox, { borderColor: colors.destructive, margin: 20, marginBottom: 0 }]}>
-            <Ionicons name="alert-circle-outline" size={18} color={colors.destructive} />
+            <Ionicons name="alert-circle" size={20} color={colors.destructive} />
             <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', flex: 1, textAlign: align }}>
               {error}
             </Text>
@@ -447,7 +447,7 @@ export default function AnswerEntryScreen() {
             {scanning ? (
               <ActivityIndicator size="small" color={ACCENT} />
             ) : (
-              <Ionicons name="camera-outline" size={18} color={ACCENT} />
+              <Ionicons name="camera-outline" size={20} color={ACCENT} />
             )}
             <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
               {scanning ? t('scanReading') : t('scanMarksBtn')}
@@ -689,7 +689,7 @@ function NextStepsCard({
             return (
               <View key={rec.id} style={{ gap: 6 }}>
                 <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
-                  <Ionicons name={KIND_ICON[rec.kind]} size={15} color={ACCENT} />
+                  <Ionicons name={KIND_ICON[rec.kind]} size={16} color={ACCENT} />
                   <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
                     {t(KIND_LABEL[rec.kind])}
                   </Text>
@@ -904,7 +904,7 @@ function MultipleChoiceInput({
               onPress={() => toggle(o.id)}
               style={[styles.optRow, { borderColor: selected ? ACCENT : colors.border, backgroundColor: selected ? palette.selected : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
-              <Ionicons name={selected ? (multi ? 'checkbox' : 'radio-button-on') : (multi ? 'square-outline' : 'radio-button-off')} size={18} color={selected ? ACCENT : colors.mutedForeground} />
+              <Ionicons name={selected ? (multi ? 'checkbox' : 'radio-button-on') : (multi ? 'square-outline' : 'radio-button-off')} size={20} color={selected ? ACCENT : colors.mutedForeground} />
               <Text
                 style={{
                   color: colors.foreground,
@@ -997,7 +997,7 @@ function ReadAloudReview({
               accessibilityRole="button"
               style={[styles.scanBtn, { paddingHorizontal: 16, borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
             >
-              <Ionicons name="play-circle-outline" size={18} color={ACCENT} />
+              <Ionicons name="play-circle-outline" size={20} color={ACCENT} />
               <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>{t('readAloudListen')}</Text>
             </Pressable>
           ) : (

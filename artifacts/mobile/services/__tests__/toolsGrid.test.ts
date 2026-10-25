@@ -21,3 +21,11 @@ test('phones get the grid card too, not the old row', () => {
 test('no section headings came back', () => {
   assert.doesNotMatch(src, /toolsBeforeClass|toolsDuringClass|toolsAfterClass/, 'the before/during/after headings were dropped on purpose');
 });
+
+test('the grid runs right to left in Arabic on every size, not just phones', () => {
+  // The desktop grid was `flexDirection: 'row'` whatever the language, so the
+  // first tool sat top-left in Arabic while the phone grid started top-right.
+  assert.doesNotMatch(src, /listGrid:\s*\{[^}]*flexDirection/, 'listGrid fixes its own direction; it must follow isRTL');
+  assert.match(src, /styles\.list,\s*isDesktop \? styles\.listGrid : styles\.listGridPhone,\s*\{ flexDirection: isRTL \? 'row-reverse' : 'row' \}/,
+    'the grid takes its direction from isRTL on both sizes');
+});

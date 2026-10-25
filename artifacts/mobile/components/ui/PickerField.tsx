@@ -45,10 +45,12 @@ interface Props {
   maxHeight?: number;
   /**
    * Background of the selected row. Defaults to `colors.secondary`, a fixed
-   * teal. quiz, worksheet and the evaluations paper builder pass
-   * `accent + '15'` instead, because their accents are amber, violet and teal
-   * and a fixed teal row on the first two looks like a bug — that tint is
-   * keyed to the screen, not to the theme.
+   * teal. The generator screens and the evaluations paper builder pass an
+   * opaque fill in their own colour (`selectedRow` in
+   * `services/readableColor.ts`, with the matching `accent` ink), because a
+   * fixed teal row on an amber or violet screen looks like a bug — that tint is
+   * keyed to the screen, not to the theme — and a translucent `accent + '15'`
+   * leaves the label on a background nobody measured.
    */
   selectedTint?: string;
 }

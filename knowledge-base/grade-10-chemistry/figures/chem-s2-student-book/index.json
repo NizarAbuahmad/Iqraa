@@ -34,14 +34,14 @@
    "lessonStartPage": 10
   },
   {
-   "file": "p011.png",
+   "file": "p011-v2.png",
    "sourceId": "chem-s2-student-book",
    "pdfPage": 11,
    "rect": [
-    91.0,
-    0.0,
-    623.6,
-    221.9
+    66.0,
+    50.0,
+    562.0,
+    201.5
    ],
    "unit": 4,
    "lesson": 1,
@@ -66,14 +66,14 @@
    "lessonStartPage": 10
   },
   {
-   "file": "p013.png",
+   "file": "p013b-v2.png",
    "sourceId": "chem-s2-student-book",
    "pdfPage": 13,
    "rect": [
-    305.5,
-    556.0,
-    391.7,
-    636.3
+    309.0,
+    648.0,
+    384.0,
+    739.8
    ],
    "unit": 4,
    "lesson": 1,
@@ -82,30 +82,14 @@
    "lessonStartPage": 10
   },
   {
-   "file": "p013b.png",
-   "sourceId": "chem-s2-student-book",
-   "pdfPage": 13,
-   "rect": [
-    305.5,
-    644.7,
-    376.4,
-    739.5
-   ],
-   "unit": 4,
-   "lesson": 1,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "ُالتفاعاتُ الكيميائية",
-   "lessonStartPage": 10
-  },
-  {
-   "file": "p018.png",
+   "file": "p018-v2.png",
    "sourceId": "chem-s2-student-book",
    "pdfPage": 18,
    "rect": [
-    473.0,
-    55.2,
-    557.6,
-    195.7
+    411.6,
+    55.0,
+    556.0,
+    253.1
    ],
    "unit": 4,
    "lesson": 1,
@@ -114,30 +98,14 @@
    "lessonStartPage": 10
   },
   {
-   "file": "p038.png",
-   "sourceId": "chem-s2-student-book",
-   "pdfPage": 38,
-   "rect": [
-    107.4,
-    655.7,
-    556.6,
-    809.3
-   ],
-   "unit": 4,
-   "lesson": 3,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "ُاحلساباتُ الكيميائية",
-   "lessonStartPage": 28
-  },
-  {
-   "file": "p045.png",
+   "file": "p045-v2.png",
    "sourceId": "chem-s2-student-book",
    "pdfPage": 45,
    "rect": [
-    91.0,
-    0.0,
+    76.6,
+    52.0,
     623.6,
-    218.3
+    207.0
    ],
    "unit": 5,
    "lesson": 1,
@@ -146,30 +114,14 @@
    "lessonStartPage": 44
   },
   {
-   "file": "p045b.png",
-   "sourceId": "chem-s2-student-book",
-   "pdfPage": 45,
-   "rect": [
-    61.4,
-    382.7,
-    222.1,
-    480.1
-   ],
-   "unit": 5,
-   "lesson": 1,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "ِتغراتُ الطاقةِ يف التفاعاتِ الكيميائية",
-   "lessonStartPage": 44
-  },
-  {
-   "file": "p046.png",
+   "file": "p046-v2.png",
    "sourceId": "chem-s2-student-book",
    "pdfPage": 46,
    "rect": [
-    223.6,
-    32.5,
-    332.5,
-    213.5
+    149.4,
+    36.0,
+    329.0,
+    210.0
    ],
    "unit": 5,
    "lesson": 1,
@@ -194,14 +146,14 @@
    "lessonStartPage": 44
   },
   {
-   "file": "p047.png",
+   "file": "p047-v2.png",
    "sourceId": "chem-s2-student-book",
    "pdfPage": 47,
    "rect": [
-    303.5,
-    53.5,
-    439.1,
-    282.8
+    219.9,
+    57.0,
+    526.0,
+    279.0
    ],
    "unit": 5,
    "lesson": 1,
@@ -210,14 +162,14 @@
    "lessonStartPage": 44
   },
   {
-   "file": "p048.png",
+   "file": "p048-v2.png",
    "sourceId": "chem-s2-student-book",
    "pdfPage": 48,
    "rect": [
-    66.5,
-    106.5,
-    238.8,
-    257.2
+    70.5,
+    115.8,
+    342.3,
+    283.8
    ],
    "unit": 5,
    "lesson": 1,
@@ -226,30 +178,14 @@
    "lessonStartPage": 44
   },
   {
-   "file": "p048b.png",
-   "sourceId": "chem-s2-student-book",
-   "pdfPage": 48,
-   "rect": [
-    225.5,
-    121.3,
-    309.5,
-    257.2
-   ],
-   "unit": 5,
-   "lesson": 1,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "ِتغراتُ الطاقةِ يف التفاعاتِ الكيميائية",
-   "lessonStartPage": 44
-  },
-  {
-   "file": "p051.png",
+   "file": "p051-v2.png",
    "sourceId": "chem-s2-student-book",
    "pdfPage": 51,
    "rect": [
-    61.4,
-    108.6,
-    222.1,
-    428.9
+    75.0,
+    123.0,
+    209.0,
+    419.6
    ],
    "unit": 5,
    "lesson": 1,
@@ -274,14 +210,14 @@
    "lessonStartPage": 44
   },
   {
-   "file": "p067.png",
+   "file": "p067-v2.png",
    "sourceId": "chem-s2-student-book",
    "pdfPage": 67,
    "rect": [
-    60.9,
-    73.9,
-    223.6,
-    280.0
+    64.0,
+    51.0,
+    227.0,
+    322.0
    ],
    "unit": 5,
    "lesson": 3,

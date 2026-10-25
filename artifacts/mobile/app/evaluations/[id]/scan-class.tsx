@@ -251,7 +251,7 @@ export default function ScanClassScreen() {
               disabled={reading || saving}
               style={[styles.pickBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: reading || saving ? 0.6 : 1 }]}
             >
-              {reading ? <ActivityIndicator size="small" color={ACCENT} /> : <Ionicons name="images-outline" size={18} color={ACCENT} />}
+              {reading ? <ActivityIndicator size="small" color={ACCENT} /> : <Ionicons name="images-outline" size={20} color={ACCENT} />}
               <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
                 {reading ? t('classScanProgress', String(readCount), String(counted.length)) : t('classScanPickBtn')}
               </Text>

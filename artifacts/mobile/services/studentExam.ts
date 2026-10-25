@@ -225,6 +225,32 @@ export async function getMyExams(): Promise<import('./myExams.ts').MyExam[]> {
   return data.exams ?? [];
 }
 
+/** One question of «راجع إجاباتك», as `GET /student/exams/:id/review` builds it. */
+export interface ExamReviewItem {
+  questionId: string;
+  number: number;
+  type: string;
+  body: Record<string, unknown>;
+  yourAnswer: string | null;
+  correctAnswer: string | null;
+  awardedMarks: number | null;
+  maxMarks: number;
+  verdict: 'correct' | 'partial' | 'incorrect' | 'unanswered' | null;
+  steps: string[] | null;
+}
+
+export interface ExamReview {
+  evaluationId: string;
+  title: string;
+  titleAr: string;
+  subjectId: string;
+  items: ExamReviewItem[];
+}
+
+export async function getExamReview(evaluationId: string): Promise<ExamReview> {
+  return apiJson<ExamReview>(`/student/exams/${encodeURIComponent(evaluationId)}/review`);
+}
+
 /** A parent's «نتائج أبنائي»: each guardian-linked child's exams. */
 export async function getChildExams(): Promise<import('./myExams.ts').ChildExams[]> {
   const data = await apiJson<{ children: import('./myExams.ts').ChildExams[] }>('/parent/exams');

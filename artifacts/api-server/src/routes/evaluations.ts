@@ -124,9 +124,19 @@ import { findOrStartTeacherEntry } from "../lib/teacherEntry.ts";
 import { savePaperTotals } from "../lib/paperTotals.ts";
 import { parsePaperTotals, PAPER_TOTALS_REFUSAL } from "../modules/assessment/paperTotals.ts";
 import { resultsReleaseDecision } from "../lib/resultsRelease.ts";
+import {
+  WORKED_STEPS_TOKENS,
+  needsWorkedSteps,
+  parseWorkedSteps,
+  stepsProblemText,
+  workedStepsPrompt,
+  workedStepsSystemPrompt,
+} from "../modules/assessment/workedSteps.ts";
+import { correctAnswerText, solutionsDecision } from "../modules/assessment/answerReview.ts";
 import { announceResultsRelease } from "../lib/resultsReleaseNotify.ts";
 import { pushWithin } from "../lib/pushWithin.ts";
 import { announceExamDate, announcePaperResults } from "../lib/familyPushEvents.ts";
+import { isUniqueViolation } from "../lib/pgErrors.ts";
 import { examDateNotice, publishNotice } from "../modules/notifications/examDateNotice.ts";
 const router = Router();
 // Path-scoped — see the note in roster.ts. Unscoped, this swallowed every
@@ -1681,6 +1691,9 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
             publishedAt: new Date(),
             // Re-publishing reopens a closed exam; it is no longer closed.
             closedAt: null,
+            // And it is being sat again, so its answers go back out of view
+            // (`modules/assessment/answerReview.ts`).
+            showSolutionsToStudent: false,
             updatedAt: new Date(),
             totalMarks: total.toFixed(2),
             shareCode: evaluation.shareCode ?? generateShareCode(),
@@ -1695,8 +1708,7 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
           .where(eq(evaluations.id, evaluation.id))
           .returning();
       } catch (err) {
-        const code = (err as { code?: string })?.code;
-        if (code !== "23505" || evaluation.shareCode) throw err;
+        if (!isUniqueViolation(err) || evaluation.shareCode) throw err;
         logger.warn({ evaluationId: evaluation.id }, "share code collision, retrying");
       }
     }
@@ -1825,6 +1837,108 @@ router.post("/evaluations/:id/results-release", async (req: AuthenticatedRequest
   } catch (err) {
     logger.error({ err }, "results release failed");
     res.status(500).json({ error: "Failed to update result release" });
+  }
+});
+
+/**
+ * Let students review this exam's answers (or stop) — see
+ * modules/assessment/answerReview.ts. A closed exam only.
+ */
+router.post("/evaluations/:id/solutions", async (req: AuthenticatedRequest, res) => {
+  try {
+    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!evaluation) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+    const decision = solutionsDecision(evaluation, req.body);
+    if (!decision.ok) {
+      res.status(decision.status).json({ error: decision.error, code: decision.code });
+      return;
+    }
+    const [updated] = await db
+      .update(evaluations)
+      .set({ showSolutionsToStudent: decision.shown, updatedAt: new Date() })
+      .where(eq(evaluations.id, evaluation.id))
+      .returning();
+    res.json({ evaluation: updated });
+  } catch (err) {
+    logger.error({ err }, "solutions visibility failed");
+    res.status(500).json({ error: "Failed to update answer review" });
+  }
+});
+
+/**
+ * Write the worked steps a maths exam's review shows — see
+ * modules/assessment/workedSteps.ts. Fills only questions that have none, so
+ * pressing again after a failure costs only the ones still missing. Each call
+ * asks both spend caps first; a question the model could not explain is left
+ * without steps and counted, never failed for the whole paper.
+ */
+router.post("/evaluations/:id/worked-steps", aiLimiter, async (req: AuthenticatedRequest, res) => {
+  try {
+    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!evaluation) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+    if (evaluation.subjectId !== "mathematics") {
+      res.status(409).json({ error: "Worked steps are for maths exams", code: "not_math" });
+      return;
+    }
+    const isAr = evaluation.language !== "en";
+    const todo = (await liveQuestions(evaluation.id)).filter(q => needsWorkedSteps(q, isAr));
+    if (todo.length > 0) assertLiveModeEnabled();
+
+    const model = getGenerationModel();
+    let missed = 0;
+    // ponytail: five at a time keeps a 20-question paper near one model call's
+    // latency per batch; a background job if papers grow past the request timeout.
+    for (let i = 0; i < todo.length; i += 5) {
+      await Promise.all(
+        todo.slice(i, i + 5).map(async q => {
+          assertBudgetAvailable();
+          await assertUserQuotaAvailable(req.user!.id);
+          try {
+            const completion = await openai.chat.completions.create({
+              model,
+              max_completion_tokens: WORKED_STEPS_TOKENS,
+              messages: [
+                { role: "system", content: workedStepsSystemPrompt(isAr) },
+                { role: "user", content: workedStepsPrompt(stepsProblemText(q)!, correctAnswerText(q, isAr)!, isAr) },
+              ],
+            });
+            recordUsage(completion.usage, model, {
+              kind: "solve",
+              promptVersion: "worked-steps-1",
+              userId: req.user!.id,
+            });
+            const steps = parseWorkedSteps(extractJSON(completion.choices[0]?.message?.content ?? "{}"));
+            if (!steps) {
+              missed++;
+              return;
+            }
+            await db
+              .update(evaluationQuestions)
+              .set({ workedSteps: steps, updatedAt: new Date() })
+              .where(eq(evaluationQuestions.id, q.id));
+          } catch (err) {
+            logger.warn({ err, questionId: q.id }, "worked steps for one question failed");
+            missed++;
+          }
+        }),
+      );
+    }
+    res.json({ questions: await liveQuestions(evaluation.id), missed });
+  } catch (err) {
+    // A model failure is caught per question above; what reaches here is a
+    // spend cap, live mode being off, or the database.
+    if (err instanceof AiUserQuotaExceededError || err instanceof AiBudgetExceededError || err instanceof AiLiveModeOffError) {
+      respondScanError(res, err, "worked steps refused");
+      return;
+    }
+    logger.error({ err }, "worked steps failed");
+    res.status(500).json({ error: "Failed to prepare worked steps" });
   }
 });
 

@@ -182,7 +182,7 @@ export default function StudentRecordScreen() {
 
               <Pressable onPress={() => setShowAll(v => !v)} accessibilityRole="button" aria-expanded={showAll} style={[styles.toggle, { flexDirection: row }]}>
                 <Text style={sectionStyle}>{t('studentRecordAllObjectives')} ({data.objectives.length})</Text>
-                <Ionicons name={showAll ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedForeground} />
+                <Ionicons name={showAll ? 'chevron-up' : 'chevron-down'} size={20} color={colors.mutedForeground} />
               </Pressable>
               {showAll ? data.objectives.map(o => (
                 <View key={o.objectiveId} style={[styles.listRow, { flexDirection: row, borderColor: colors.border }]}>

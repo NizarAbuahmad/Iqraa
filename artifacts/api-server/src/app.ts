@@ -11,6 +11,7 @@ import helmet from "helmet";
 import { pinoHttp } from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { platformContext } from "./lib/requestPlatform";
 import { isPoolExhausted, sendDbBusy } from "./lib/dbBusy";
 
 const app: Express = express();
@@ -165,7 +166,7 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
   next();
 });
 
-app.use("/api", router);
+app.use("/api", platformContext, router);
 
 // Safety net for anything a route didn't catch itself (a sync throw before
 // its try block, middleware errors, a promise rejection passed to next()).

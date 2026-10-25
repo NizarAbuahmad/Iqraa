@@ -333,7 +333,8 @@ export function TopicSelector({
           <ScrollView nestedScrollEnabled style={{ maxHeight: 280 }}>
             {kinds.includes('book') && (
               <DropdownItem
-                label={`📚  ${t('entireBook')}`}
+                label={t('entireBook')}
+                icon="library-outline"
                 selected={selectedUnitId === ENTIRE_BOOK}
                 onPress={() => handleUnitSelect(ENTIRE_BOOK)}
                 accent={accent} colors={colors} isRTL={isRTL}
@@ -342,7 +343,8 @@ export function TopicSelector({
             {semesters.map(semester => (
               <DropdownItem
                 key={`entire-sem-${semester}`}
-                label={`🗓️  ${scopeLabel({ kind: 'semester', gradeId, subjectId, semester }, lang)}`}
+                label={scopeLabel({ kind: 'semester', gradeId, subjectId, semester }, lang)}
+                icon="calendar-outline"
                 selected={selectedUnitId === entireSemesterId(semester)}
                 onPress={() => handleUnitSelect(entireSemesterId(semester))}
                 accent={accent} colors={colors} isRTL={isRTL}
@@ -400,7 +402,8 @@ export function TopicSelector({
               <ScrollView nestedScrollEnabled style={{ maxHeight: 230 }}>
                 {kinds.includes('unit') && (
                   <DropdownItem
-                    label={`📖  ${t('entireUnit')}`}
+                    label={t('entireUnit')}
+                    icon="book-outline"
                     selected={selectedLessonId === ENTIRE_UNIT}
                     onPress={() => { setSelectedLessonId(ENTIRE_UNIT); setLessonOpen(false); }}
                     accent={accent} colors={colors} isRTL={isRTL}
@@ -453,8 +456,8 @@ function SemesterSectionHeader({ label, colors, isRTL }: {
   );
 }
 
-function DropdownItem({ label, selected, onPress, accent, colors, isRTL }: {
-  label: string; selected: boolean; onPress: () => void;
+function DropdownItem({ label, icon, selected, onPress, accent, colors, isRTL }: {
+  label: string; icon?: keyof typeof Ionicons.glyphMap; selected: boolean; onPress: () => void;
   accent: string; colors: any; isRTL: boolean;
 }) {
   return (
@@ -468,6 +471,7 @@ function DropdownItem({ label, selected, onPress, accent, colors, isRTL }: {
         alignItems: 'center', justifyContent: 'space-between',
       }]}
     >
+      {icon ? <Ionicons name={icon} size={16} color={selected ? accent : colors.mutedForeground} style={{ marginHorizontal: 8 }} /> : null}
       <Text style={[{
         flex: 1,
         color: selected ? accent : colors.foreground,

@@ -126,7 +126,7 @@ export function AwardRow({
               >
                 {team.name}
               </Text>
-              {on && <Ionicons name="checkmark-circle" size={18} color={team.color} />}
+              {on && <Ionicons name="checkmark-circle" size={20} color={team.color} />}
             </Pressable>
           );
         })}
@@ -269,7 +269,7 @@ export function PodiumView({
       }}
       style={[podium.againBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
     >
-      <Ionicons name="refresh" size={18} color={TEXT_MUTED} />
+      <Ionicons name="refresh" size={20} color={TEXT_MUTED} />
       <Text style={[podium.againText, { fontFamily: 'ReadexPro_600SemiBold' }]}>{labels.playAgain}</Text>
     </Pressable>
   );

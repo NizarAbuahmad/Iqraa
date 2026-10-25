@@ -23,6 +23,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
+import { useLightStatusBar } from '@/hooks/useLightStatusBar';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCorner } from '@/context/CornerTheme';
 import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
@@ -62,6 +63,8 @@ export function CornerFrame({ title, subtitle, eyebrow, onBack, hideBack, keyboa
   const [locked, setLocked] = useState(false);
   const align = isRTL ? 'right' : 'left';
   const isDesktop = viewportW >= DESKTOP_BREAKPOINT;
+  // The band sits under the status bar.
+  useLightStatusBar();
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>

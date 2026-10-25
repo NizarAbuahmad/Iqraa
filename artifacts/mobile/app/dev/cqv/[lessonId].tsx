@@ -259,7 +259,7 @@ export default function CqvLessonScreen() {
     >
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.headerBack}>
-          <Ionicons name="arrow-back" size={22} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerEyebrow}>
           S{lesson.semester} · {lesson.unitNameAr} · INTERNAL CQV
@@ -384,7 +384,7 @@ export default function CqvLessonScreen() {
 
         <View style={styles.actionRow}>
           <Pressable onPress={openTool} style={[styles.primaryBtn, { flex: 1 }]}>
-            <Ionicons name="sparkles-outline" size={18} color="#fff" />
+            <Ionicons name="sparkles-outline" size={20} color="#fff" />
             <Text style={styles.primaryBtnText}>Open {artifactDef.label}</Text>
           </Pressable>
           <Pressable onPress={onViewGenerated} style={styles.secondaryBtn}>

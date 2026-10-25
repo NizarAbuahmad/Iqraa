@@ -170,10 +170,10 @@ describe('buildRevisionDeck — a round per unit', () => {
     const deck = buildRevisionDeck(true, { units: [unit], phrase: 'x', plan: null, figureUri });
     const at = deck.slides.findIndex(s => s.type === 'divider' && s.title === 'نظرية التطور');
     const goals = deck.slides[at + 1]!;
-    assert.equal(goals.sideImageUrl, 'https://figs.example/p011.png', 'the first figure sits beside the key ideas');
+    assert.equal(goals.sideImageUrl, 'https://figs.example/p009.png', 'the first figure (the opening experiment, p9) sits beside the key ideas');
     assert.match(goals.sideImageCaption ?? '', /صفحة/);
     const terms = deck.slides[at + 2]!;
-    assert.equal(terms.sideImageUrl, 'https://figs.example/p012.png', 'the second figure sits beside the terms');
+    assert.equal(terms.sideImageUrl, 'https://figs.example/p010.png', 'the second figure sits beside the terms');
     assert.equal(terms.layout, undefined, 'a figure costs the cards: the terms stay a list beside it');
     // Mutation caught: the old standalone «من كتاب الطالب» slides, two back to back per unit.
     assert.equal(deck.slides.filter(s => s.type === 'media').length, 0);

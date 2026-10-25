@@ -80,6 +80,8 @@ export interface Evaluation {
   status: EvaluationStatus;
   /** Whether students may see their own marked results — the teacher's «أعلن النتائج» switch. */
   releaseResultsToStudent?: boolean;
+  /** Students may open «راجع إجاباتك» (closed exams only). Absent from an older server. */
+  showSolutionsToStudent?: boolean;
   totalMarks: string;
   createdAt: string;
 }
@@ -118,6 +120,8 @@ export interface EvaluationQuestion {
     reason?: string;
     checkedAt?: string;
   } | null;
+  /** How to reach the key, for the students' review; written on request, read by the teacher first. */
+  workedSteps?: string[] | null;
 }
 
 export { countBlanks, showBlanks } from './evaluationBlanks.ts';
@@ -385,6 +389,22 @@ export async function setResultsReleased(id: string, released: boolean): Promise
   });
   const data = await readJson<{ evaluation: Evaluation }>(res, 'Releasing results');
   return data.evaluation;
+}
+
+/** Let students review this exam's answers (true), or stop (false). Closed exams only. */
+export async function setSolutionsShown(id: string, shown: boolean): Promise<Evaluation> {
+  const res = await apiFetch(`/evaluations/${id}/solutions`, {
+    method: 'POST',
+    body: JSON.stringify({ shown }),
+  });
+  const data = await readJson<{ evaluation: Evaluation }>(res, 'Showing answers');
+  return data.evaluation;
+}
+
+/** Write worked steps for the maths questions that have none. `missed`: questions left without. */
+export async function prepareWorkedSteps(id: string): Promise<{ questions: EvaluationQuestion[]; missed: number }> {
+  const res = await apiFetch(`/evaluations/${id}/worked-steps`, { method: 'POST' });
+  return readJson<{ questions: EvaluationQuestion[]; missed: number }>(res, 'Preparing worked steps');
 }
 
 // ─── Attempts (teacher answer entry) ────────────────────────────────────────

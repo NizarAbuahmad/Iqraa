@@ -3,6 +3,7 @@ import { Pressable, type StyleProp, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '@/context/LanguageContext';
 import { goBack } from '@/services/navigation';
+import { ICON } from '@/constants/icons';
 
 /**
  * The back arrow every stack screen draws in its header.
@@ -20,7 +21,7 @@ export function BackButton({
   onPress,
   style,
   disabled,
-  size = 22,
+  size = ICON.xl,
 }: {
   /** White on a hero band, `colors.foreground` on a plain header. */
   color: string;

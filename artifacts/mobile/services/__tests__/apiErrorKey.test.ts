@@ -92,3 +92,19 @@ describe('apiErrorMessage', () => {
     );
   });
 });
+
+describe('parent-approval codes', () => {
+  it('maps each new server code to its own translation key', () => {
+    const expected: Record<string, string> = {
+      parent_email_required: 'errParentEmailRequired',
+      parent_email_invalid: 'errParentEmailInvalid',
+      parent_email_is_own: 'errParentEmailIsOwn',
+      email_not_verified: 'errEmailNotVerifiedYet',
+      guardian_rate_limited: 'errGuardianRateLimited',
+      guardian_approval_required: 'errGuardianApprovalRequired',
+    };
+    for (const [code, key] of Object.entries(expected)) {
+      assert.equal(apiErrorKey(err(code, 400), 'fallback'), key, code);
+    }
+  });
+});

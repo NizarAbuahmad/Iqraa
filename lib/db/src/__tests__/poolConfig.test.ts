@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { poolOptions } from "../poolConfig.ts";
+import { isPooledConnectionString, poolOptions } from "../poolConfig.ts";
 
 describe("poolOptions", () => {
   test("defaults keep pg's pool size but stop waiting forever for a connection", () => {
@@ -31,3 +31,24 @@ describe("poolOptions", () => {
     }
   });
 });
+
+describe("isPooledConnectionString", () => {
+  test("recognises Neon's pooled host, which has -pooler after the endpoint id", () => {
+    assert.equal(isPooledConnectionString("postgresql://u:p@ep-cool-darkness-123456-pooler.eu-central-1.aws.neon.tech/db?sslmode=require"), true);
+  });
+
+  test("a direct Neon host is not pooled", () => {
+    assert.equal(isPooledConnectionString("postgresql://u:p@ep-cool-darkness-123456.eu-central-1.aws.neon.tech/db?sslmode=require"), false);
+  });
+
+  test("looks only at the host, not a password, database name or path that happens to say -pooler", () => {
+    assert.equal(isPooledConnectionString("postgresql://u:my-pooler-pass@ep-cool-123456.eu-central-1.aws.neon.tech/x-pooler"), false);
+  });
+
+  test("unset, empty or unparseable values are not pooled and never throw", () => {
+    assert.equal(isPooledConnectionString(undefined), false);
+    assert.equal(isPooledConnectionString(""), false);
+    assert.equal(isPooledConnectionString("not a url"), false);
+  });
+});
+

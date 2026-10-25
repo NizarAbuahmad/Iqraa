@@ -63,11 +63,12 @@ export function composeClaimCodeMessage(input: ClaimCodeMessageInput, isAr: bool
       // WhatsApp selects it and nothing else.
       `${fieldLabel}:\n${code}`,
       `ينتهي في: ${expiresOn}`,
-      // The code is asked for on the mandatory claim screen that follows email
-      // verification — not at sign-up, which stopped taking one. The same code
-      // is handed to students, so the role is theirs to pick, not prescribed.
+      // A parent or student signs up from this code alone (no email), and a
+      // student may instead choose an email. The same code is handed to
+      // students, so the role is theirs to pick. «برمز المعلم» is the label on
+      // the sign-up screen's method choice (`signupMethodCode`).
       origin
-        ? `افتح ${origin} وأنشئ حسابًا (وليّ أمر أو طالب)، وبعد تأكيد بريدك الإلكتروني ستُطلب منك إدخال الرمز أعلاه.`
+        ? `افتح ${origin} وأنشئ حسابًا (وليّ أمر أو طالب) بالرمز أعلاه، دون حاجة إلى بريد إلكتروني. وإن كنت طالبًا فاختر التسجيل «برمز المعلم».`
         : null,
       teacherName ? `وتفضّلوا بقبول فائق الاحترام،\n${teacherName}` : 'وتفضّلوا بقبول فائق الاحترام،',
     ]);
@@ -79,7 +80,7 @@ export function composeClaimCodeMessage(input: ClaimCodeMessageInput, isAr: bool
     `${fieldLabel}:\n${code}`,
     `Expires: ${expiresOn}`,
     origin
-      ? `Open ${origin} and create an account (Parent or Student). After verifying your email you will be asked for the code above.`
+      ? `Open ${origin} and create an account (Parent or Student) with the code above — no email needed. Students: choose to sign up with a "Teacher's code".`
       : null,
     teacherName ? `Kind regards,\n${teacherName}` : 'Kind regards,',
   ]);

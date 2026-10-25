@@ -129,7 +129,7 @@ export function RosterConsentGate({ children }: { children: React.ReactNode }) {
       contentContainerStyle={styles.wrap}
       keyboardShouldPersistTaps="handled"
     >
-      <Ionicons name="shield-checkmark-outline" size={34} color={colors.primary} />
+      <Ionicons name="shield-checkmark-outline" size={32} color={colors.primary} />
 
       <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
         {copy.title}

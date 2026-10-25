@@ -75,6 +75,19 @@ html = html.replace(/\s*<meta name="theme-color" content="[^"]*">/g, '');
 // correctly.
 const buildCommit = process.env.BUILD_COMMIT ?? process.env.RENDER_GIT_COMMIT ?? 'dev';
 
+// The card WhatsApp draws when a teacher pastes an app link — an exam link for
+// students (/take/CODE), a class code, a shared material. Those scrapers fetch
+// the page without running the bundle, so the Open Graph tags have to be in
+// this file; before they were, every link rendered as a bare URL with the
+// shell's title. It does not make the app indexable — `_headers` still sends
+// `noindex`, and a preview scraper does not read it.
+//
+// The image is the marketing site's share card, by absolute URL, so there is
+// one card to keep current rather than two. It lives in the iqrra.com repo
+// (img/og.jpg, 1200×630): if that file is renamed, previews lose their image
+// without any error here.
+const SHARE_IMAGE = 'https://www.iqrra.com/img/og.jpg';
+
 const TAGS = `
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="build-commit" content="${buildCommit}" />
@@ -83,6 +96,16 @@ const TAGS = `
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="إقرأ" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="إقرأ" />
+    <meta property="og:locale" content="ar_JO" />
+    <meta property="og:title" content="إقرأ — مساعد تحضير الحصص وفق المنهاج الأردني" />
+    <meta property="og:description" content="مساعد عربي للمعلمين: خطط دروس وأوراق عمل واختبارات وفق المنهاج الأردني." />
+    <meta property="og:image" content="${SHARE_IMAGE}" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="وقت أقل للتحضير. وقت أكثر للتعليم. إقرأ، مساعد المعلّم العربي." />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="apple-touch-icon" href="/icons/icon-maskable.png" />
     <style id="iqraa-preboot">
       /* Painted before the JS bundle boots, so the first frame is the app's own

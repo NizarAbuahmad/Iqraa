@@ -50,7 +50,7 @@ export function HearButton({ word, big }: { word: string; big?: boolean }) {
       accessibilityLabel={t('hubHear')}
       style={[styles.hear, { backgroundColor: colors.primary, width: big ? 88 : 48, height: big ? 88 : 48 }]}
     >
-      <Ionicons name="volume-high" size={big ? 40 : 22} color={colors.primaryForeground} />
+      <Ionicons name="volume-high" size={big ? 40 : 24} color={colors.primaryForeground} />
     </Pressable>
   );
 }
@@ -63,8 +63,8 @@ export function HearButton({ word, big }: { word: string; big?: boolean }) {
 const PICTURE_SIZE = 72;
 
 /** The book prints each word under its picture; a word with none shows text alone. */
-function WordPicture({ word }: { word: string }) {
-  const pic = wordPicture(word);
+function WordPicture({ word, ar }: { word: string; ar?: string }) {
+  const pic = wordPicture(word, ar);
   if (!pic) return null;
   return (
     <Text style={styles.picture} accessible={false}>
@@ -101,7 +101,7 @@ export function Flashcards({ words }: { words: HubWord[] }) {
         accessibilityHint={t('hubTapToFlip')}
         style={[styles.flash, { backgroundColor: colors.card, borderColor: colors.border }]}
       >
-        <WordPicture word={w.en} />
+        <WordPicture word={w.en} ar={w.ar} />
         {flipped ? (
           <Text style={[styles.flashAr, { color: colors.foreground }]}>{w.ar}</Text>
         ) : (
@@ -554,7 +554,7 @@ export function Speaking({ words }: { words: HubWord[] }) {
   return (
     <View style={{ gap: 16, alignItems: 'center' }}>
       <Progress i={i} n={words.length} />
-      <WordPicture word={w.en} />
+      <WordPicture word={w.en} ar={w.ar} />
       <Text style={[styles.flashEn, { color: colors.foreground }]}>{w.en}</Text>
       <View style={{ flexDirection: row, alignItems: 'center', gap: 20 }}>
         <HearButton word={w.en} />
@@ -567,11 +567,11 @@ export function Speaking({ words }: { words: HubWord[] }) {
             { backgroundColor: rec.phase === 'recording' ? WRONG : colors.card, borderColor: rec.phase === 'recording' ? WRONG : colors.border },
           ]}
         >
-          <Ionicons name={rec.phase === 'recording' ? 'stop' : 'mic'} size={30} color={rec.phase === 'recording' ? '#fff' : colors.primary} />
+          <Ionicons name={rec.phase === 'recording' ? 'stop' : 'mic'} size={32} color={rec.phase === 'recording' ? '#fff' : colors.primary} />
         </Pressable>
         {rec.uri ? (
           <Pressable onPress={() => void playLocalUri(rec.uri!)} style={[styles.navBtn, { borderColor: colors.border }]}>
-            <Ionicons name="play" size={18} color={colors.foreground} />
+            <Ionicons name="play" size={20} color={colors.foreground} />
           </Pressable>
         ) : null}
       </View>

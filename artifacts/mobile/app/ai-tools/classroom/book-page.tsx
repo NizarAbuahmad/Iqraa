@@ -46,7 +46,7 @@ export default function BookPageScreen() {
     <View style={styles.container}>
       <View style={[styles.topBar, { paddingTop: insets.top + 8, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Pressable onPress={() => goBack()} style={styles.iconBtn} hitSlop={12} accessibilityRole="button" accessibilityLabel={t('close')}>
-          <Ionicons name="close" size={22} color={TEXT_MUTED} />
+          <Ionicons name="close" size={24} color={TEXT_MUTED} />
         </Pressable>
         {canFullscreen && (
           <Pressable onPress={toggleFullscreen} style={styles.iconBtn} hitSlop={12} accessibilityRole="button">

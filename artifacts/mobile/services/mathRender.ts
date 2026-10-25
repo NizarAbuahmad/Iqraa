@@ -447,7 +447,14 @@ export function hasRenderableMath(line: string): boolean {
 // between the equation and the Arabic before it. An interior `.` («3.5»,
 // «CO₂. (C») is unaffected.
 const FOREIGN_GREEK = 'α-ωΑ-Ωϑϕϵ';
-const FOREIGN_CHAR = `A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞°${FOREIGN_GREEK}`;
+// The maths bank writes a missing number as «؟» («7 + ؟ = 15»). Next to an
+// operator it is a blank in the equation, not the sentence's question mark,
+// so it is swapped for a private-use stand-in that the run class accepts, and
+// swapped back before the line is returned. A «؟» after a digit («ما ناتج 3 + 4؟») ends the
+// sentence and stays in the Arabic flow.
+const BLANK = '\uE000';
+const BLANK_RE = /؟(?=[ ]*[=+\-−×÷])|(?<=[=+\-−×÷][ ]*)؟/g;
+const FOREIGN_CHAR = `A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞°${FOREIGN_GREEK}${BLANK}`;
 const FOREIGN_END = FOREIGN_CHAR.replace('.', '');
 
 // Reaction and implication arrows. They may sit INSIDE a run but never at its
@@ -486,7 +493,13 @@ function worthIsolating(run: string): boolean {
 }
 
 export function isolateForeignRuns(line: string): string {
-  return (line ?? '').replace(FOREIGN_RUN_RE, m => {
+  return (line ?? '').replace(BLANK_RE, BLANK).replace(FOREIGN_RUN_RE, m => {
+    // A run with the bank's blank in it is overridden left-to-right, not just
+    // isolated: «؟» is an Arabic letter to the bidi algorithm, and inside a bare
+    // isolate it turned the digits after it Arabic too (rule W2), so
+    // «88 × ؟ = 1056» still printed «1056 = ؟ × 88». The override is safe
+    // because the run holds no Arabic word to reverse, only the one-glyph blank.
+    if (m.includes(BLANK)) return `⁦\u202D${m.replaceAll(BLANK, '؟')}\u202C⁩`;
     // A sentence's closing full stop is not part of an equation before it:
     // inside the isolate it printed on the wrong side, «3x − 3.» read
     // «.3x − 3». So when the run ENDS in dots and holds an operator, those
@@ -499,7 +512,7 @@ export function isolateForeignRuns(line: string): string {
     const [, body, dots] = /^(.*?)(\s*\.*)$/su.exec(m)!;
     if (dots && HAS_OPERATOR.test(body!)) return worthIsolating(body!) ? isolateRun(body!) + dots : m;
     return worthIsolating(m) ? isolateRun(m) : m;
-  });
+  }).replaceAll(BLANK, '؟');
 }
 
 /**
