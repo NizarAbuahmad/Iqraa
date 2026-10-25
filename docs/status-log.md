@@ -10,6 +10,50 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat app-help, twenty-ninth live pass: three short answers and wordings for fourteen existing ones — 2026-10-25
+
+The demo account's monthly generation allowance was still spent, so every question the matcher did
+not catch came back as «انتهت حصة التوليد الجديد لهذا الشهر» — which made the pass a clean test of
+the matcher (30 app-only questions, no curriculum controls, nothing about the model's answers).
+Twelve fell through to the model, six got only a place card and two got «لم أعرف أي قسم تقصد».
+
+Wordings added to existing answers: the slide background colour (`howSlideTheme`), deleting a slide
+(`howSlideEdit`), «احذف الشعبة نهائيًا» (`howArchiveClass`: there is only archiving), the class's
+subject (`howRenameClass`), sharing the app with a colleague (`howInviteTeacher`), using the app
+without internet (`howOffline`), a class's average mark on an exam (`howClassAverage`), one exam for
+several classes (`howCopyExam`: each exam has one class), closing an exam automatically
+(`howExamTime`: no timed close), a partial mark (`howOpenGrading`: the mark box takes any value
+between 0 and the question's marks) and restoring a deleted account (`howDeleteAccount`: permanent).
+
+Three new short answers, each checked in code: `howRenameFile` (the ⋯ menu in `app/workspace/index.tsx`
+has open, edit, class, duplicate and delete — no rename), `howDeleteExam` (the «احذف الاختبار»
+button in `app/evaluations/[id]/index.tsx` shows for a draft or a closed exam only, and archives
+it) and `howAppVersion` (the «الإصدار» row under «حول إقرأ» in Settings). Pinned in `appHelp.test.ts`
+with near-misses that stay with the model.
+
+**Left alone:** a daily lesson reminder (the only scheduled notification is the English corner's),
+rating the app, showing the lesson on a TV, one student's answers on an exam (the answers screen
+is built for typing in a paper's answers, so I did not claim it shows an online sitting) and
+«أرى الشعب التي أدرّسها» (the place card is enough).
+
+
+## A revision unit with no picture shows its outcomes and terms side by side, 2026-10-25
+
+A whole-book revision deck for Grade 1 maths (66 lessons, 12 units, no book pictures) was 36
+slides, three per unit: a title, «نتاجات الوحدة» as a few short lines on a mostly empty slide,
+then «المفاهيم والمصطلحات» as cards. Each unit looked the same and two of its three slides were
+about a third full.
+
+- A unit with no figure to sit beside (`first` is empty), at most four outcomes and at most six
+  terms now gets ONE slide: the outcomes left, the terms right (the existing `compare` layout,
+  so the presenter, the PDF and the PowerPoint all already draw it). The slide is only used if
+  `resolveSlideLayout` accepts it; otherwise the unit keeps its two slides.
+- A unit with a book figure keeps its two slides (the figure sits beside the outcomes), and so
+  does a unit with more than four outcomes.
+- Grade 1 maths: 36 slides -> 27. `revisionDeck.test.ts` pins both shapes.
+- **Not verified:** how the side-by-side slide looks on a screen and in the exports (the layout is
+  an existing one, the content here is new), and whether teachers prefer it.
+
 ## English audio check: the first real run, and three kinds of false alarm removed — 2026-10-25
 
 The speech check had never called the real API. On 2026-10-25, once `gpt-4o-transcribe` was allowed on the OpenAI project
