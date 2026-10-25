@@ -20,6 +20,7 @@ import type {
 } from './ai/AIService.ts';
 import type { AttemptResult, CompetencyKey, LevelKey } from './evaluations.ts';
 import { displayObjective } from './objectiveDisplay.ts';
+import { formatMarks } from './studentAnswers.ts';
 
 export function formatLessonPlanText(
   plan: LessonPlanOutput,
@@ -219,8 +220,8 @@ export function formatAttemptResultText(
     );
   } else {
     const level = result.levelKey ? LEVEL_LABEL[result.levelKey][isAr ? 'ar' : 'en'] : '—';
-    lines.push(`${isAr ? 'المستوى' : 'Level'}: ${level} (${result.percent}%)`);
-    lines.push(`${isAr ? 'العلامة' : 'Marks'}: ${result.earnedMarks} / ${result.totalMarks}`);
+    lines.push(`${isAr ? 'المستوى' : 'Level'}: ${level} (${formatMarks(result.percent)}%)`);
+    lines.push(`${isAr ? 'العلامة' : 'Marks'}: ${formatMarks(result.earnedMarks)} / ${formatMarks(result.totalMarks)}`);
     if (result.isProvisional) {
       lines.push(
         isAr
@@ -234,7 +235,7 @@ export function formatAttemptResultText(
       const c = result.competencyScores[key];
       const label = COMPETENCY_LABEL[key][isAr ? 'ar' : 'en'];
       const value = c?.sufficient
-        ? `${c.percent}%`
+        ? `${formatMarks(c.percent)}%`
         : isAr ? 'بيانات غير كافية' : 'Not enough evidence';
       lines.push(`${label}: ${value}`);
     }
