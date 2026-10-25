@@ -72,7 +72,54 @@ test('grades 9 and 10 have hub lessons, built from the vocabulary list', () => {
 });
 
 test('grade tabs are in grade order — the selected grade is a URL param carried by value, not position', () => {
-  assert.deepEqual([...ENGLISH_HUB_GRADES], [1, 2, 3, 4, 5, 9, 10]);
+  assert.deepEqual([...ENGLISH_HUB_GRADES], [1, 2, 3, 4, 5, 8, 9, 10]);
+});
+
+// Grade 8 comes from the same Word List pass as Grade 9 (`extract-english-vocabulary.ts`), semester 1 only: the
+// semester 2 PDF's text layer is rejected by `extract-text`, so it has no extraction to read.
+test('grade 8 offers semester 1 only, units 1–5', () => {
+  const lessons = hubLessonsForGrade(8);
+  // A lesson is offered when it reaches MIN_HUB_WORDS words; the book's short Speaking / Writing lessons do not.
+  const distinct = new Map<string, Set<string>>();
+  for (const w of ENGLISH_VOCABULARY) {
+    const en = w.lessonId.startsWith('kbl-g8-eng-') ? hubWordFromBook(w.word) : null;
+    if (en && GLOSSES[w.word.trim()]) distinct.set(w.lessonId, (distinct.get(w.lessonId) ?? new Set()).add(en.toLowerCase()));
+  }
+  const expected = [...distinct].filter(([, s]) => s.size >= MIN_HUB_WORDS).map(([id]) => id).sort();
+  assert.ok(expected.length >= 25, `only ${expected.length} lessons reach ${MIN_HUB_WORDS} words`);
+  assert.deepEqual(lessons.map(l => l.id).sort(), expected);
+  assert.deepEqual([...new Set(lessons.map(l => l.semester))], [1]);
+  assert.deepEqual([...new Set(lessons.map(l => l.unitNumber))].sort((a, b) => a - b), [1, 2, 3, 4, 5]);
+  for (const l of lessons) assert.ok(l.id.startsWith('kbl-g8-eng-s1-nccd-u') && l.unitTitle && l.unitTitleAr, l.id);
+});
+
+// The book sets a lesson's `WL<unit>.<lesson>` marker at the end of the last heading line when the heading wraps
+// onto three lines ("GRAMMAR \tWL1.1"). The reader once took only a marker that started a line: lesson 1 of every
+// unit lost its words and the next unit's words were filed under the previous marker, so the Writing lessons
+// held 26 words each. Lesson 1 is a vocabulary lesson everywhere; a Writing lesson has a handful at most.
+test('grade 8: lesson 1 of every unit has its words, and a Writing lesson does not hold a unit\'s worth', () => {
+  const count = (id: string) => ENGLISH_VOCABULARY.filter(w => w.lessonId === id).length;
+  for (let u = 1; u <= 5; u++) {
+    assert.ok(count(`kbl-g8-eng-s1-nccd-u${u}_l1`) >= 10, `unit ${u} lesson 1`);
+    assert.ok(count(`kbl-g8-eng-s1-nccd-u${u}_l7`) <= 10, `unit ${u} lesson 7 (Writing)`);
+  }
+});
+
+// The hub drops a word with no Arabic without a word of complaint (see Grade 5 above), so say it here.
+test('every drillable Grade 8 word has a gloss', () => {
+  const bare = ENGLISH_VOCABULARY
+    .filter(w => w.lessonId.startsWith('kbl-g8-eng-') && hubWordFromBook(w.word) && !GLOSSES[w.word.trim()]?.trim())
+    .map(w => `${w.lessonId}: ${w.word}`);
+  assert.deepEqual(bare, []);
+});
+
+// One printed word has one gloss, so `suit` and `light` carry both senses: the noun / "not heavy" of Grade 9–10
+// and the verb / "pale" of Grade 8 ("it suits you", "light blue", a light room).
+test('a word Grade 8 uses in a second sense carries both', () => {
+  assert.match(GLOSSES.suit!, /بدلة/);
+  assert.match(GLOSSES.suit!, /يليق/);
+  assert.match(GLOSSES.light!, /خفيف/);
+  assert.match(GLOSSES.light!, /فاتح/);
 });
 
 test('every drillable 9–10 word has a gloss, and every gloss names a real word', () => {
