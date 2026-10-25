@@ -10,29 +10,6 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## Timetable: a period saves with a labelled button, and an empty slot cannot be saved — 2026-10-24
-
-A teacher on app.iqrra.com added their timetable and Today kept saying «أضف جدولك الأسبوعي».
-Reproduced in the real app (throwaway Postgres, built API and web bundle, Chromium at phone
-width): the API and `timetableSetupStep` are right — once a slot holds a class the prompt turns
-into «… ليس لها خطة وتيرة» (plan step), so a prompt still on the timetable step means no slot
-had a class. Two things on «جدول الحصص» led there. (1) The period editor's only labelled
-button was «إلغاء»; a period saved only on its bare ✓ icon, so typing a time and pressing the
-labelled button threw it away, and with no period no slot can be saved. (2) The slot editor opens
-with «بدون شعبة» highlighted and a live «احفظ»: saving without tapping a class stored an empty
-slot, which the prompt ignores. Now: the new-period row's button reads «إضافة حصة»
-(`scheduleAddPeriod`, which existed unused), the modal's closing button is «تم»
-(`schedulePeriodsDone`), and «احفظ» in the slot editor is disabled until class, subject or note
-changed.
-
-Verified: `pnpm run typecheck`; mobile `pnpm test` (7,186 pass, 10 skipped); the whole flow
-re-run in the browser on the rebuilt bundle (add period → assign class → Today shows the plan
-prompt). **Not verified:** that this is what the reporting teacher did (they were asked and did
-not answer), Arabic/RTL on a device, and no test pins these two screens (they import
-`react-native`, which the bare `node --test` runner cannot load). Not changed: after a
-correct setup Today's lesson card still shows no «الحصة القادمة» line until the class has a
-pacing plan — the prompt now says so, but the card itself gives no sign the timetable saved.
-
 ## Chat app-help, twenty-ninth live pass: three short answers and wordings for fourteen existing ones — 2026-10-25
 
 The demo account's monthly generation allowance was still spent, so every question the matcher did
@@ -58,6 +35,47 @@ with near-misses that stay with the model.
 rating the app, showing the lesson on a TV, one student's answers on an exam (the answers screen
 is built for typing in a paper's answers, so I did not claim it shows an online sitting) and
 «أرى الشعب التي أدرّسها» (the place card is enough).
+
+
+## Timetable: a period saves with a labelled button, and an empty slot cannot be saved — 2026-10-24
+
+A teacher on app.iqrra.com added their timetable and Today kept saying «أضف جدولك الأسبوعي».
+Reproduced in the real app (throwaway Postgres, built API and web bundle, Chromium at phone
+width): the API and `timetableSetupStep` are right — once a slot holds a class the prompt turns
+into «… ليس لها خطة وتيرة» (plan step), so a prompt still on the timetable step means no slot
+had a class. Two things on «جدول الحصص» led there. (1) The period editor's only labelled
+button was «إلغاء»; a period saved only on its bare ✓ icon, so typing a time and pressing the
+labelled button threw it away, and with no period no slot can be saved. (2) The slot editor opens
+with «بدون شعبة» highlighted and a live «احفظ»: saving without tapping a class stored an empty
+slot, which the prompt ignores. Now: the new-period row's button reads «إضافة حصة»
+(`scheduleAddPeriod`, which existed unused), the modal's closing button is «تم»
+(`schedulePeriodsDone`), and «احفظ» in the slot editor is disabled until class, subject or note
+changed.
+
+Verified: `pnpm run typecheck`; mobile `pnpm test` (7,186 pass, 10 skipped); the whole flow
+re-run in the browser on the rebuilt bundle (add period → assign class → Today shows the plan
+prompt). **Not verified:** that this is what the reporting teacher did (they were asked and did
+not answer), Arabic/RTL on a device, and no test pins these two screens (they import
+`react-native`, which the bare `node --test` runner cannot load). Not changed: after a
+correct setup Today's lesson card still shows no «الحصة القادمة» line until the class has a
+pacing plan — the prompt now says so, but the card itself gives no sign the timetable saved.
+
+## A revision unit with no picture shows its outcomes and terms side by side, 2026-10-25
+
+A whole-book revision deck for Grade 1 maths (66 lessons, 12 units, no book pictures) was 36
+slides, three per unit: a title, «نتاجات الوحدة» as a few short lines on a mostly empty slide,
+then «المفاهيم والمصطلحات» as cards. Each unit looked the same and two of its three slides were
+about a third full.
+
+- A unit with no figure to sit beside (`first` is empty), at most four outcomes and at most six
+  terms now gets ONE slide: the outcomes left, the terms right (the existing `compare` layout,
+  so the presenter, the PDF and the PowerPoint all already draw it). The slide is only used if
+  `resolveSlideLayout` accepts it; otherwise the unit keeps its two slides.
+- A unit with a book figure keeps its two slides (the figure sits beside the outcomes), and so
+  does a unit with more than four outcomes.
+- Grade 1 maths: 36 slides -> 27. `revisionDeck.test.ts` pins both shapes.
+- **Not verified:** how the side-by-side slide looks on a screen and in the exports (the layout is
+  an existing one, the content here is new), and whether teachers prefer it.
 
 ## English audio check: the first real run, and three kinds of false alarm removed — 2026-10-25
 
