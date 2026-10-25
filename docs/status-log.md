@@ -10,6 +10,31 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat app-help, twenty-ninth live pass: three short answers and wordings for fourteen existing ones — 2026-10-25
+
+The demo account's monthly generation allowance was still spent, so every question the matcher did
+not catch came back as «انتهت حصة التوليد الجديد لهذا الشهر» — which made the pass a clean test of
+the matcher (30 app-only questions, no curriculum controls, nothing about the model's answers).
+Twelve fell through to the model, six got only a place card and two got «لم أعرف أي قسم تقصد».
+
+Wordings added to existing answers: the slide background colour (`howSlideTheme`), deleting a slide
+(`howSlideEdit`), «احذف الشعبة نهائيًا» (`howArchiveClass`: there is only archiving), the class's
+subject (`howRenameClass`), sharing the app with a colleague (`howInviteTeacher`), using the app
+without internet (`howOffline`), a class's average mark on an exam (`howClassAverage`), one exam for
+several classes (`howCopyExam`: each exam has one class), closing an exam automatically
+(`howExamTime`: no timed close), a partial mark (`howOpenGrading`: the mark box takes any value
+between 0 and the question's marks) and restoring a deleted account (`howDeleteAccount`: permanent).
+
+Three new short answers, each checked in code: `howRenameFile` (the ⋯ menu in `app/workspace/index.tsx`
+has open, edit, class, duplicate and delete — no rename), `howDeleteExam` (the «احذف الاختبار»
+button in `app/evaluations/[id]/index.tsx` shows for a draft or a closed exam only, and archives
+it) and `howAppVersion` (the «الإصدار» row under «حول إقرأ» in Settings). Pinned in `appHelp.test.ts`
+with near-misses that stay with the model.
+
+**Left alone:** a daily lesson reminder (the only scheduled notification is the English corner's),
+rating the app, showing the lesson on a TV, one student's answers on an exam (the answers screen
+is built for typing in a paper's answers, so I did not claim it shows an online sitting) and
+«أرى الشعب التي أدرّسها» (the place card is enough).
 ## English audio check: the first real run, and three kinds of false alarm removed — 2026-10-25
 
 The speech check had never called the real API. On 2026-10-25, once `gpt-4o-transcribe` was allowed on the OpenAI project
