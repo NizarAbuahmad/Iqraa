@@ -236,7 +236,7 @@ export default function NotificationsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: colors.card, borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'flex-end' }]}>
+      <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: colors.card, borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', rowGap: 8 }]}>
         <View style={{ alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
           <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
             {t('notificationsTitle')}
@@ -252,7 +252,7 @@ export default function NotificationsScreen() {
           )}
         </View>
         {selectMode ? (
-          <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 12, paddingBottom: 6, alignItems: 'center' }]}>
+          <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 12, rowGap: 8, paddingBottom: 6, alignItems: 'center', flexWrap: 'wrap', flexShrink: 1 }]}>
             <Pressable onPress={exitSelectMode} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('cancel')}>
               <Text style={[styles.headerActionText, { color: colors.mutedForeground }]}>{t('cancel')}</Text>
             </Pressable>
@@ -283,7 +283,7 @@ export default function NotificationsScreen() {
             </Pressable>
           </View>
         ) : (
-        <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 12, paddingBottom: 6, alignItems: 'center' }]}>
+        <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 12, rowGap: 8, paddingBottom: 6, alignItems: 'center', flexWrap: 'wrap', flexShrink: 1 }]}>
           {threads.length > 0 && (
             <Pressable onPress={() => setSelectMode(true)} hitSlop={10} accessibilityRole="button" style={[styles.headerAction, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <Ionicons name="checkmark-circle-outline" size={20} color={colors.mutedForeground} />

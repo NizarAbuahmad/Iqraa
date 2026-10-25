@@ -10,6 +10,20 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Messages header: «رسالة جديدة» no longer runs off the screen — 2026-10-25
+
+**What a teacher saw.** On a phone, the Messages tab header put the title and three
+actions («تحديد», «رسالة جماعية», «رسالة جديدة») on one non-wrapping row, so the row
+was wider than the screen and the «رسالة جديدة» button was cut off at the edge.
+
+**Fix.** `app/(tabs)/notifications.tsx` only: the header and its action row (both the
+normal and the select-mode one) now `flexWrap` with a `rowGap`, so the buttons drop
+under the title when they do not fit and stay beside it when they do.
+
+**Not verified.** Style-only change, not run on a device or in a browser from this
+checkout (no `node_modules` installed here); typecheck and the suites were not run.
+Check it on a narrow phone, in RTL, in both the normal and the select mode.
+
 ## Math Corner practice by lesson, for the whole class — 2026-10-24
 
 **What a teacher sees.** The class's «تمارين الرياضيات» sheet opens on a new
