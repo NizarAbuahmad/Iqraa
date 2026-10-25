@@ -28,6 +28,16 @@ phrasing, English and «اريد …» all work. The rest:
   how-pattern had «أفتح» and «أجد» but no view verb. «أرى» and «أشوف» are added; a place or an
   app noun must still follow, so «كيف أرى المعادلة» stays teaching.
 - **«وين لاقي سجل الطالب»** reaches the student record.
+- **Three English wordings** from a 30-question English pass (24 answered in-app, 3 cards, 3 missed):
+  «Is there a way to download the textbook?» (`howBookDownload`), «how do i add a due date to
+  homework» (`howAddHomework`) and «how do i post results to students» (`howReleaseResults`).
+  English questions asked in an Arabic-language app are answered in Arabic: the answer follows the
+  app's language, not the question's.
+- **Checked on the running app:** the Settings «الإصدار» row (`1.5.0 · embedded` on the web), the
+  Profile rows, the timetable's «إعداد الحصص» icon, Messages' «رسالة جديدة / رسالة جماعية»,
+  Evaluations' «تقييم جديد» and the Calendar's «عرض امتحانات المدرسة». Settings has no
+  «التنبيهات» on the web (a phone section). Not checked: the class page — the demo teacher has no
+  class.
 
 ## Chat app-help, thirtieth live pass: colloquial «ب» verbs, five short answers, nine more wordings — 2026-10-25
 

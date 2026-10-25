@@ -2352,3 +2352,25 @@ describe('greetings, «الطريقة لـ», «أقدر / بقدر» and «أر
     });
   }
 });
+
+describe('three English wordings of answers that existed (thirty-first live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['Is there a way to download the textbook?', 'howBookDownload'],
+    ['how do i add a due date to homework', 'howAddHomework'],
+    ['how do i post results to students', 'howReleaseResults'],
+    ['how do i show the results to students', 'howReleaseResults'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, 'en', t).text, `<${key}>`);
+    });
+  }
+  for (const q of ['Is there a way to download a video from youtube', 'how do i post a comment on a blog', 'how do i add a due date to a library book']) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howBookDownload', 'howAddHomework', 'howReleaseResults']);
+      assert.equal(ids.has(answerAppHelp(q, 'en', t).text.replace(/[<>]/g, '')), false);
+    });
+  }
+});

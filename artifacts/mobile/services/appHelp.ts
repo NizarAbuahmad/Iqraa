@@ -751,6 +751,8 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:انشر|انشره|ارسل|ابعث|ابعت|اضع|انشر)\s+(?:ال)?واجبا?\s+(?:علي|في|الي|ب)\s*(?:ال)?(?:محادثه|دردشه|شات)\s+(?:ال)?(?:شعبه|صف)` + AR_RULE_TAIL,
       ),
+      // The thirty-first live pass: «add a due date to homework».
+      new RegExp(EN_RULE_LEAD + String.raw`(?:add|set|put|give|choose)\s+(?:a\s+|the\s+)?(?:due\s+date|deadline)\s+(?:to|on|for)\s+(?:the\s+|a\s+|my\s+)?(?:homework|assignment)` + EN_RULE_TAIL),
     ],
   },
   {
@@ -1175,6 +1177,8 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
         AR_RULE_LEAD + String.raw`(?:اعلن|اعلان|انشر|نشر|ارسل|اظهر|اظهار)\s+(?:ال)?(?:نتائج|علامات|درجات)(?:\s+(?:ال)?(?:امتحان|اختبار))?` +
           String.raw`(?:\s+(?:ل|الي|لل)\s*(?:ال)?(?:طلاب|طلابي|طلبه|طلبتي|اهالي|اولياء\s+(?:ال)?امور))?` + AR_RULE_TAIL,
       ),
+      // The thirty-first live pass: «post results to students».
+      new RegExp(EN_RULE_LEAD + String.raw`(?:post|show|share|put\s+up)\s+(?:the\s+)?(?:exam\s+|test\s+|quiz\s+)?(?:results|marks|grades|scores)\s+(?:to|for|with)\s+(?:the\s+|my\s+)?students` + EN_RULE_TAIL),
     ],
   },
   {
@@ -2274,6 +2278,8 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
         AR_RULE_LEAD + String.raw`(?:احمل|حمل|تحميل|انزل|نزل|اجيب|احصل\s+علي|اشوف|افتح)\s+(?:ال)?(?:كتاب\s+(?:ال)?مدرسي|دليل\s+(?:ال)?معلم|كتاب\s+(?:ال)?انشطه)` + AR_RULE_TAIL,
       ),
       new RegExp(String.raw`^(?:وين|اين|فين)\s+(?:يوجد\s+)?(?:ال)?(?:دليل\s+(?:ال)?معلم|كتاب\s+(?:ال)?مدرسي|كتاب\s+(?:ال)?انشطه)` + AR_RULE_TAIL),
+      // The thirty-first live pass: «is there a way to download the textbook».
+      new RegExp(String.raw`^is\s+there\s+(?:a\s+way|any\s+way)\s+to\s+(?:download|get|find|open)\s+(?:the\s+)?(?:school\s+)?(?:textbook|text\s+book|book|teacher['’]?s?\s+guide|teacher\s+guide|activity\s+book)` + EN_RULE_TAIL),
     ],
   },
   {
