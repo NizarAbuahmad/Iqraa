@@ -10,6 +10,34 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat app-help, thirty-first live pass: greetings, «الطريقة لـ», «أقدر / بقدر», «أرى / أشوف» — 2026-10-25
+
+Thirty known questions asked in other written styles (app-only: the demo account's allowance is
+still spent). 19 got a correct in-app answer — missing hamzas, plurals, «؟؟؟», Egyptian and Gulf
+phrasing, English and «اريد …» all work. The rest:
+
+- **A greeting or run-up in front of the question gave a wrong answer.** «لو سمحت كيف أضيف
+  واجب», «ممكن تشرح كيف أرسل واجب» and «عندي مشكلة كيف أغلق الامتحان» each got «أيّ مادة تقصد؟»
+  (the generator), «مرحبا كيف أحذف شعبة» only a place card. `foldColloquial` now drops the run-up
+  (a fixed list), and only when a question word follows.
+- **«شو / وش / ما هي (ال)طريقة (ل)…»** (`وش طريقة تغيير كلمة المرور`, `شو الطريقة لحفظ الشرائح`)
+  is read as «طريقة …», a form the rules already know; the «ل / ب» is dropped only before a fixed
+  list of verbal nouns, so «طريقة لعبة» keeps its «ل».
+- **«كيف اقدر / بقدر X» and «هل بقدر X»** are read as «كيف X».
+- **«كيف أرى / أشوف جدول الحصص»** was not an app question at all, formal Arabic included: the
+  how-pattern had «أفتح» and «أجد» but no view verb. «أرى» and «أشوف» are added; a place or an
+  app noun must still follow, so «كيف أرى المعادلة» stays teaching.
+- **«وين لاقي سجل الطالب»** reaches the student record.
+- **Three English wordings** from a 30-question English pass (24 answered in-app, 3 cards, 3 missed):
+  «Is there a way to download the textbook?» (`howBookDownload`), «how do i add a due date to
+  homework» (`howAddHomework`) and «how do i post results to students» (`howReleaseResults`).
+  English questions asked in an Arabic-language app are answered in Arabic: the answer follows the
+  app's language, not the question's.
+- **Checked on the running app:** the Settings «الإصدار» row (`1.5.0 · embedded` on the web), the
+  Profile rows, the timetable's «إعداد الحصص» icon, Messages' «رسالة جديدة / رسالة جماعية»,
+  Evaluations' «تقييم جديد» and the Calendar's «عرض امتحانات المدرسة». Settings has no
+  «التنبيهات» on the web (a phone section). Not checked: the class page — the demo teacher has no
+  class.
 ## «ابدأ الحصة الآن» says the allowance is spent, as a note — 2026-10-24
 
 A teacher whose monthly AI allowance (`AI_USER_BUDGET_USD`, `1` in production) was used up pressed
