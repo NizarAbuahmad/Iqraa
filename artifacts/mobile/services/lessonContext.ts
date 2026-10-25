@@ -90,6 +90,18 @@ export function timetableWins(pick: HomeLessonPick | null, hasScheduledLesson: b
   return !(pick?.topic?.trim() && pick.pickedOn === today);
 }
 
+/**
+ * Whether Today shows «الحصة القادمة · العاشر ب · 10:15». It is shown when the
+ * card follows the timetable, and also when the class has no lesson in a pacing
+ * plan yet: without that a teacher who has just saved their whole timetable
+ * sees no change at all on Today, only a banner. It stays hidden when a lesson
+ * picked today is on the card in place of that period's lesson, which would
+ * otherwise read as the period's own.
+ */
+export function showsPeriodLine(hasNext: boolean, hasScheduledLesson: boolean, timetableWon: boolean): boolean {
+  return hasNext && (timetableWon || !hasScheduledLesson);
+}
+
 export async function saveLessonPick(input: HomeLessonPick): Promise<void> {
   const pick = { ...input, pickedOn: input.pickedOn ?? todayISO() };
   try {
