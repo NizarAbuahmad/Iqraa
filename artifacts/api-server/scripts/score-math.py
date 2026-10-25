@@ -46,7 +46,10 @@ def classify(items: list[dict]) -> list[dict]:
     script = f"""
 import {{ classifyVerifiableTopic }} from {json.dumps(GUARDS.as_uri())};
 import {{ toVerifiablePair, stripOptionLabel, isTrueFalseAnswer }} from {json.dumps(PAIR.as_uri())};
-const items = JSON.parse(process.argv[2]);
+import {{ readFileSync }} from "node:fs";
+// Items arrive on stdin: as an argv they overflow Windows' ~32k command line
+// as soon as a run has more than two providers.
+const items = JSON.parse(readFileSync(0, "utf8"));
 console.log(JSON.stringify(items.map(i => {{
   // `quizPromptAr` asks for «أ) الخيار الصحيح», so the key and every option
   // arrive carrying an option label. Unstripped, SymPy cannot parse either —
@@ -67,7 +70,7 @@ console.log(JSON.stringify(items.map(i => {{
     tmp.write_text(script, encoding="utf-8")
     try:
         out = subprocess.run(
-            ["node", "--experimental-strip-types", str(tmp), json.dumps(items)],
+            ["node", "--experimental-strip-types", str(tmp)], input=json.dumps(items),
             capture_output=True, text=True, encoding="utf-8", check=True, cwd=REPO,
         )
         return json.loads(out.stdout)

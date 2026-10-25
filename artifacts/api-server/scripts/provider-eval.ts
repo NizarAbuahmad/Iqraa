@@ -186,8 +186,20 @@ type Provider = {
 type Turn = { role: "user" | "assistant"; content: string };
 type Completion = { text: string; inputTokens: number; outputTokens: number };
 
-const openaiModel = process.env.OPENAI_EVAL_MODEL || "gpt-4o-mini";
-const anthropicModel = process.env.ANTHROPIC_EVAL_MODEL || "claude-opus-5";
+/**
+ * OpenAI and Anthropic take a comma list (`OPENAI_EVAL_MODELS=gpt-5.4-mini,gpt-5.4`)
+ * so one run can compare price tiers of the same vendor under identical
+ * conditions. With one model the provider id stays the bare vendor name; with
+ * several it is `vendor/model`, so every table and the blind key tell them apart.
+ */
+const modelList = (plural: string | undefined, single: string | undefined, fallback: string) =>
+  (plural || single || fallback).split(",").map((s) => s.trim()).filter(Boolean);
+const openaiModels = modelList(process.env.OPENAI_EVAL_MODELS, process.env.OPENAI_EVAL_MODEL, "gpt-4o-mini");
+const anthropicModels = modelList(process.env.ANTHROPIC_EVAL_MODELS, process.env.ANTHROPIC_EVAL_MODEL, "claude-opus-5");
+const providerId = (vendor: string, models: string[], model: string) =>
+  models.length > 1 ? `${vendor}/${model}` : vendor;
+/** What the By-task table's "vs" column divides by. Default: the first OpenAI model. */
+const baselineId = process.env.EVAL_BASELINE || providerId("openai", openaiModels, openaiModels[0]!);
 const deepseekModel = process.env.DEEPSEEK_EVAL_MODEL || "deepseek-chat";
 const geminiModel = process.env.GEMINI_EVAL_MODEL || "gemini-3.8-flash";
 const kimiModel = process.env.KIMI_EVAL_MODEL || "kimi-k3";
@@ -212,6 +224,10 @@ const ANTHROPIC_PRICING: Record<string, Pricing> = {
   "claude-opus-5": { input: 5, output: 25 },
   "claude-sonnet-5": { input: 3, output: 15 },
   "claude-haiku-4-5": { input: 1, output: 5 },
+  // Claude API model table, checked 2026-10-20. Haiku 5.5's rate is for prompts
+  // up to 100K tokens; every prompt in this eval is far below that.
+  "claude-sonnet-5-5": { input: 2, output: 10 },
+  "claude-haiku-5-5": { input: 0.1, output: 0.5 },
 };
 
 function openaiCompatible(
@@ -239,10 +255,10 @@ function openaiCompatible(
   };
 }
 
-function anthropicProvider(apiKey: string): Provider {
+function anthropicProvider(apiKey: string, anthropicModel: string, id: string): Provider {
   const client = new Anthropic({ apiKey });
   return {
-    id: "anthropic",
+    id,
     model: anthropicModel,
     pricing: ANTHROPIC_PRICING[anthropicModel] ?? null,
     enabled: true,
@@ -275,10 +291,16 @@ function anthropicProvider(apiKey: string): Provider {
 function buildProviders(): Provider[] {
   const out: Provider[] = [];
   if (process.env.OPENAI_API_KEY) {
-    out.push(openaiCompatible("openai", openaiModel, process.env.OPENAI_API_KEY, undefined,
-      OPENAI_PRICING[openaiModel] ?? null));
+    for (const m of openaiModels) {
+      out.push(openaiCompatible(providerId("openai", openaiModels, m), m, process.env.OPENAI_API_KEY,
+        undefined, OPENAI_PRICING[m] ?? null));
+    }
   }
-  if (process.env.ANTHROPIC_API_KEY) out.push(anthropicProvider(process.env.ANTHROPIC_API_KEY));
+  if (process.env.ANTHROPIC_API_KEY) {
+    for (const m of anthropicModels) {
+      out.push(anthropicProvider(process.env.ANTHROPIC_API_KEY, m, providerId("anthropic", anthropicModels, m)));
+    }
+  }
   if (process.env.DEEPSEEK_API_KEY) {
     // DeepSeek serves an OpenAI-compatible API. Pricing intentionally null —
     // it is not quoted here rather than quoted from memory and be wrong.
@@ -559,10 +581,10 @@ for (const [id, rs] of byProvider) {
 // baseline because the decision rule is written that way.
 const median = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)] ?? 0;
 lines.push("\n## By task\n");
-lines.push("| task | provider | complete | deck errors | median ms | vs openai | est. cost |");
+lines.push(`| task | provider | complete | deck errors | median ms | vs ${baselineId} | est. cost |`);
 lines.push("|---|---|---|---|---|---|---|");
 for (const task of TASKS) {
-  const baseline = median(rows.filter((r) => r.task === task.id && r.provider === "openai" && !r.error).map((r) => r.ms));
+  const baseline = median(rows.filter((r) => r.task === task.id && r.provider === baselineId && !r.error).map((r) => r.ms));
   for (const [id, all] of byProvider) {
     const rs = all.filter((r) => r.task === task.id);
     const complete = rs.filter((r) => r.parsed && r.missing.length === 0).length;
