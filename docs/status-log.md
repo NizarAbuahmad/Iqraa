@@ -39,6 +39,12 @@ invite at a time, but it remembered nothing (who was invited), had no unsubscrib
   signing up again does not resubscribe, and the single-invite endpoint refuses an unsubscribed
   address (409). The link's origin is `API_PUBLIC_URL`, default the Cloud Run URL.
 - **Test copy.** «أرسل نسخة تجريبية لي» mails the admin's own address and records nothing.
+- **Sent and joined, per person.** Each waitlist row shows «أُرسلت الدعوة · date» once the invite went
+  out and «انضم · date» once an account with that email exists (`JOINED_AT` in `admin.ts`: the earliest
+  `users.created_at` for the address, matched ignoring case; also a `joined_at` CSV column and an
+  «انضموا» filter). The invite mail skips people who already joined; the launch notice and news do
+  not. It is a match on the address typed into the site, so someone who registers with a different
+  email is not recognised as joined.
 
 **Verified.** `pnpm run typecheck`; api-server `pnpm build && pnpm test` (2347 pass), including new
 `siteMail.test.ts` (recipient rules, token forgery, body escaping) and `broadcast.test.ts` (batching,
@@ -47,7 +53,10 @@ without a token; `/site/unsubscribe` reachable without a session and 400 on a fo
 to end locally against a scratch Postgres with Resend stubbed in-process: the screen's dry-run count,
 test copy, confirm dialog and send; a refused send stamped nothing; duplicates collapsed to one mail;
 the hold-back blocked a repeat; the unsubscribe GET changed nothing and the POST did; `update` stayed
-closed; the rendered Arabic body kept its paragraphs and linked its URL.
+closed; the rendered Arabic body kept its paragraphs and linked its URL. The «joined» match was
+re-run on a fresh scratch database with registered accounts: a mixed-case signup matched its account,
+a contact row with no email matched nothing, the `joined` filter returned exactly those, and the
+invite audience dropped them.
 
 **Not verified.** Nothing was sent through real Resend — the stub answered, so Resend's *real*
 acceptance of the batch payload (`/emails/batch`, the `headers` field) and the unsubscribe link in a

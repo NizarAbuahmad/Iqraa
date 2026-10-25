@@ -39,15 +39,18 @@ export type SignupRow = {
   invitedAt: Date | null;
   lastMessagedAt: Date | null;
   unsubscribedAt: Date | null;
+  /** When an account with this email registered in the app — see JOINED_AT_SQL in routes/admin.ts. */
+  joinedAt: Date | null;
 };
 export type Recipient = { id: string; email: string };
 
 /**
  * Waitlist rows → one recipient per address. Several rows can share an address
- * (people sign up twice), so the decision is made per address: unsubscribed or
- * invited on *any* row counts for all of them, and a later signup is what
- * carries consent for `update`. `id` is the newest row, the one the
- * unsubscribe link points at.
+ * (people sign up twice), so the decision is made per address: unsubscribed,
+ * invited or joined on *any* row counts for all of them, and a later signup is
+ * what carries consent for `update`. `id` is the newest row, the one the
+ * unsubscribe link points at. Someone who already has an account is not sent
+ * the invite — they are in — but still gets the launch notice and news.
  */
 export function pickRecipients(
   rows: readonly SignupRow[],
@@ -58,19 +61,20 @@ export function pickRecipients(
   if (purpose === "update" && !consentFrom) return [];
   const recent = (opts.now ?? new Date()).getTime() - RECENTLY_MESSAGED_MS;
 
-  type Group = Recipient & { newest: Date; invited: boolean; unsub: boolean; consented: boolean; recent: boolean };
+  type Group = Recipient & { newest: Date; invited: boolean; joined: boolean; unsub: boolean; consented: boolean; recent: boolean };
   const groups = new Map<string, Group>();
   for (const r of rows) {
     if (r.kind !== "waitlist") continue;
     const email = r.email.trim();
     if (!isValidEmailAddress(email)) continue;
     const key = email.toLowerCase();
-    const g = groups.get(key) ?? { id: r.id, email, newest: r.createdAt, invited: false, unsub: false, consented: false, recent: false };
+    const g = groups.get(key) ?? { id: r.id, email, newest: r.createdAt, invited: false, joined: false, unsub: false, consented: false, recent: false };
     if (r.createdAt > g.newest) {
       g.id = r.id;
       g.newest = r.createdAt;
     }
     g.invited ||= !!r.invitedAt;
+    g.joined ||= !!r.joinedAt;
     g.unsub ||= !!r.unsubscribedAt;
     g.consented ||= !!consentFrom && r.createdAt >= consentFrom;
     g.recent ||= !!r.lastMessagedAt && r.lastMessagedAt.getTime() > recent;
@@ -79,7 +83,7 @@ export function pickRecipients(
 
   return [...groups.values()]
     .filter(g => !g.unsub)
-    .filter(g => (purpose === "invite" ? !g.invited : true))
+    .filter(g => (purpose === "invite" ? !g.invited && !g.joined : true))
     .filter(g => (purpose === "update" ? g.consented : true))
     .filter(g => opts.ignoreRecent || !g.recent)
     .map(({ id, email }) => ({ id, email }));

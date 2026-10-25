@@ -29,14 +29,17 @@ import { DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/adm
 import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = '#4F46E5';
+const SUCCESS = '#15803D';
 const ADMIN_ROLES = ['school_admin', 'system_admin'];
 
 type Signup = {
   id: string; kind: 'waitlist' | 'contact' | 'idea'; email: string; name: string; message: string; context: string; createdAt: string;
   invitedAt: string | null; lastMessagedAt: string | null; unsubscribedAt: string | null;
+  /** When an account with this email registered in the app; null if none. */
+  joinedAt: string | null;
 };
 type Kind = 'all' | 'waitlist' | 'contact' | 'idea';
-type Status = 'all' | 'uninvited' | 'invited' | 'unsubscribed';
+type Status = 'all' | 'uninvited' | 'invited' | 'joined' | 'unsubscribed';
 // What a message to the waitlist is for — the server decides who each one may reach (lib/siteMail.ts).
 type Purpose = 'invite' | 'launch' | 'update';
 type Audience = { count: number; heldBack: number; updatesOpen: boolean };
@@ -225,7 +228,7 @@ export default function AdminSignupsScreen() {
 
   const align = isRTL ? 'right' : 'left';
   const chips: [Kind, string, string][] = [['all', 'الكل', 'All'], ['waitlist', 'قائمة الانتظار', 'Waitlist'], ['contact', 'رسائل التواصل', 'Contact'], ['idea', 'اقتراحات', 'Ideas']];
-  const statusChips: [Status, string, string][] = [['all', 'كل الحالات', 'Any status'], ['uninvited', 'لم تُرسَل دعوة', 'Not invited'], ['invited', 'تمت دعوتهم', 'Invited'], ['unsubscribed', 'ألغوا الاشتراك', 'Unsubscribed']];
+  const statusChips: [Status, string, string][] = [['all', 'كل الحالات', 'Any status'], ['uninvited', 'لم تُرسَل دعوة', 'Not invited'], ['invited', 'أُرسلت إليهم دعوة', 'Invite sent'], ['joined', 'انضموا', 'Joined'], ['unsubscribed', 'ألغوا الاشتراك', 'Unsubscribed']];
   const purposes: [Purpose, string, string][] = [['invite', 'دعوة التطبيق', 'App invite'], ['launch', 'إشعار الإطلاق', 'Launch notice'], ['update', 'أخبار وتحديثات', 'News & updates']];
 
   return (
@@ -292,7 +295,7 @@ export default function AdminSignupsScreen() {
               </View>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, textAlign: align }}>
                 {purpose === 'invite'
-                  ? (ar ? 'يُرسَل نص الدعوة الثابت مع رابط التحميل إلى من لم تُرسَل إليهم دعوة بعد.' : 'Sends the standard invite with the download link to everyone not yet invited.')
+                  ? (ar ? 'يُرسَل نص الدعوة الثابت مع رابط التحميل إلى من لم تُرسَل إليهم دعوة بعد ولم ينضموا إلى التطبيق.' : 'Sends the standard invite with the download link to everyone not yet invited and not already joined.')
                   : purpose === 'launch'
                     ? (ar ? 'يصل إلى كل من سجّل في القائمة ولم يُلغِ اشتراكه — للدعوة وإشعار الإطلاق فقط، وهذا ما وُعدوا به.' : 'Reaches everyone on the list who has not unsubscribed — invites and the launch notice only, which is what they were promised.')
                     : audience?.updatesOpen === false
@@ -404,23 +407,44 @@ export default function AdminSignupsScreen() {
               {!!s.name && !!s.email && <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>{s.name}</Text>}
               {!!s.message && <Text selectable style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align }}>{s.message}</Text>}
               {!!s.context && <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: align }}>{s.context}</Text>}
-              {!!s.unsubscribedAt && (
-                <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
-                  {ar ? `ألغى الاشتراك · ${fmtDay(s.unsubscribedAt)}` : `Unsubscribed · ${fmtDay(s.unsubscribedAt)}`}
-                </Text>
+              {s.kind === 'waitlist' && (!!s.invitedAt || !!s.joinedAt || !!s.unsubscribedAt) && (
+                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 6 }}>
+                  {!!s.invitedAt && (
+                    <View style={[styles.badge, { borderColor: ACCENT }]}>
+                      <Ionicons name="paper-plane-outline" size={13} color={ACCENT} />
+                      <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
+                        {ar ? `أُرسلت الدعوة · ${fmtDay(s.invitedAt)}` : `Invite sent · ${fmtDay(s.invitedAt)}`}
+                      </Text>
+                    </View>
+                  )}
+                  {!!s.joinedAt && (
+                    <View style={[styles.badge, { borderColor: SUCCESS }]}>
+                      <Ionicons name="checkmark-circle" size={13} color={SUCCESS} />
+                      <Text style={{ color: SUCCESS, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
+                        {ar ? `انضم · ${fmtDay(s.joinedAt)}` : `Joined · ${fmtDay(s.joinedAt)}`}
+                      </Text>
+                    </View>
+                  )}
+                  {!!s.unsubscribedAt && (
+                    <View style={[styles.badge, { borderColor: colors.destructive }]}>
+                      <Text style={{ color: colors.destructive, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
+                        {ar ? `ألغى الاشتراك · ${fmtDay(s.unsubscribedAt)}` : `Unsubscribed · ${fmtDay(s.unsubscribedAt)}`}
+                      </Text>
+                    </View>
+                  )}
+                </View>
               )}
-              {canInvite && s.kind === 'waitlist' && !!s.email && !s.unsubscribedAt && (
+              {canInvite && s.kind === 'waitlist' && !!s.email && !s.unsubscribedAt && !s.joinedAt && (
                 <Pressable
                   onPress={() => { void sendInvite(s.email); }}
                   disabled={!!inviting}
-                  style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', paddingVertical: 4, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 4 }}
+                  style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', paddingVertical: 4 }}
                 >
-                  {s.invitedAt ? <Ionicons name="checkmark-circle" size={16} color={ACCENT} /> : null}
                   <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
                     {inviting === s.email
                       ? '…'
                       : s.invitedAt
-                        ? (ar ? `تمت الدعوة · ${fmtDay(s.invitedAt)} — أعد الإرسال` : `Invited ${fmtDay(s.invitedAt)} — send again`)
+                        ? (ar ? 'أعد إرسال الدعوة' : 'Send the invite again')
                         : (ar ? 'أرسل دعوة التطبيق' : 'Send app invite')}
                   </Text>
                 </Pressable>
@@ -444,4 +468,5 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 20 },
   card: { padding: 12, borderWidth: 1, gap: 6 },
   chip: { paddingHorizontal: 14, paddingVertical: 7, borderWidth: 1.5 },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderRadius: 999 },
 });

@@ -29,6 +29,7 @@ const row = (over: Partial<SignupRow> = {}): SignupRow => ({
   invitedAt: null,
   lastMessagedAt: null,
   unsubscribedAt: null,
+  joinedAt: null,
   ...over,
 });
 const emails = (r: { email: string }[]) => r.map(x => x.email);
@@ -66,6 +67,16 @@ describe("pickRecipients", () => {
 
   it("invite skips people already invited; launch does not", () => {
     const rows = [row({ email: "a@school.jo", invitedAt: day("2026-10-05") }), row({ email: "b@school.jo" })];
+    assert.deepEqual(emails(pickRecipients(rows, "invite", { now: NOW })), ["b@school.jo"]);
+    assert.deepEqual(emails(pickRecipients(rows, "launch", { now: NOW })), ["a@school.jo", "b@school.jo"]);
+  });
+
+  it("invite skips people who already joined; launch and news still reach them", () => {
+    const rows = [
+      row({ email: "a@school.jo", joinedAt: day("2026-10-12") }),
+      row({ email: "a@school.jo" }), // a second signup row for the same address, no join stamp of its own
+      row({ email: "b@school.jo" }),
+    ];
     assert.deepEqual(emails(pickRecipients(rows, "invite", { now: NOW })), ["b@school.jo"]);
     assert.deepEqual(emails(pickRecipients(rows, "launch", { now: NOW })), ["a@school.jo", "b@school.jo"]);
   });

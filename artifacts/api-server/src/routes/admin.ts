@@ -22,7 +22,7 @@ import {
   students,
   users,
 } from "@workspace/db";
-import { and, asc, desc, eq, gte, ilike, inArray, isNotNull, isNull, lt, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, gte, ilike, inArray, isNotNull, isNull, lt, or, sql, type SQL } from "drizzle-orm";
 import { getBudgetStatus, getUserBudgetLimitUsd } from "../lib/aiBudget.js";
 import { currentPeriodStart } from "../lib/aiUsageLog.js";
 import { RATE_LIMITS } from "../lib/rateLimit.js";
@@ -588,14 +588,30 @@ router.post("/admin/metrics", authMiddleware, requireRole(...ADMIN_ROLES), async
   }
 });
 
+/**
+ * When an account with this signup's email registered in the app — the earliest
+ * `users.created_at` for that address, null if there is none ("joined"). Matched
+ * ignoring case, and only for a signup that has an email. It is a match on the
+ * address typed into the site, so a teacher who registers with a different email
+ * is not recognised.
+ *
+ * Raw SQL on purpose: drizzle renders a column inside a `sql` fragment of a
+ * single-table select without its table name, which would make `email` here
+ * resolve to `users.email` and match every row against itself.
+ */
+const JOINED_AT = sql<Date | null>`(select min(u.created_at) from users u where u.email is not null and site_signups.email <> '' and lower(u.email) = lower(site_signups.email))`.mapWith(
+  (v) => (v == null ? null : new Date(v as string)),
+);
+
 /** `?status=` on the signups list: the waitlist-mail state, see siteSignups.invitedAt / unsubscribedAt. */
 const SIGNUP_STATUS: Record<string, () => SQL> = {
   uninvited: () => isNull(siteSignups.invitedAt),
   invited: () => isNotNull(siteSignups.invitedAt),
+  joined: () => sql`${JOINED_AT} is not null`,
   unsubscribed: () => isNotNull(siteSignups.unsubscribedAt),
 };
 
-/** GET /admin/signups?kind=waitlist|contact&status=uninvited|invited|unsubscribed&offset= — or &format=csv for all of them. */
+/** GET /admin/signups?kind=waitlist|contact&status=uninvited|invited|joined|unsubscribed&offset= — or &format=csv for all of them. */
 router.get("/admin/signups", authMiddleware, requireRole(...ADMIN_ROLES), async (req, res) => {
   try {
     const kind = req.query["kind"];
@@ -606,7 +622,7 @@ router.get("/admin/signups", authMiddleware, requireRole(...ADMIN_ROLES), async 
       return;
     }
     if (status !== undefined && status !== "" && !(typeof status === "string" && Object.hasOwn(SIGNUP_STATUS, status))) {
-      res.status(400).json({ error: "status must be uninvited, invited or unsubscribed" });
+      res.status(400).json({ error: "status must be uninvited, invited, joined or unsubscribed" });
       return;
     }
     const where = and(
@@ -615,15 +631,15 @@ router.get("/admin/signups", authMiddleware, requireRole(...ADMIN_ROLES), async 
       range.from ? gte(siteSignups.createdAt, range.from) : undefined,
       range.to ? lt(siteSignups.createdAt, range.to) : undefined,
     );
-    const base = db.select().from(siteSignups).where(where).orderBy(desc(siteSignups.createdAt));
+    const base = db.select({ ...getTableColumns(siteSignups), joinedAt: JOINED_AT.as("joined_at") }).from(siteSignups).where(where).orderBy(desc(siteSignups.createdAt));
     if (req.query["format"] === "csv") {
       const rows = await base;
       res.setHeader("Content-Type", "text/csv; charset=utf-8");
       res.setHeader("Content-Disposition", `attachment; filename="iqraa-signups.csv"`);
       // BOM so Excel reads the Arabic as UTF-8.
       res.send("﻿" + toCsv(
-        ["date", "kind", "email", "name", "message", "context", "invited_at", "last_messaged_at", "unsubscribed_at"],
-        rows.map((r) => [r.createdAt, r.kind, r.email, r.name, r.message, r.context, r.invitedAt, r.lastMessagedAt, r.unsubscribedAt]),
+        ["date", "kind", "email", "name", "message", "context", "invited_at", "last_messaged_at", "unsubscribed_at", "joined_at"],
+        rows.map((r) => [r.createdAt, r.kind, r.email, r.name, r.message, r.context, r.invitedAt, r.lastMessagedAt, r.unsubscribedAt, r.joinedAt]),
       ));
       return;
     }
@@ -757,6 +773,7 @@ router.post("/admin/broadcasts", authMiddleware, requireRole("system_admin"), br
         invitedAt: siteSignups.invitedAt,
         lastMessagedAt: siteSignups.lastMessagedAt,
         unsubscribedAt: siteSignups.unsubscribedAt,
+        joinedAt: JOINED_AT.as("joined_at"),
       })
       .from(siteSignups)
       .where(eq(siteSignups.kind, "waitlist"));
