@@ -38,9 +38,13 @@ const siteAskRouter = Router();
  * The limiter's own 429 and a malformed body's 400 are the only non-200s.
  *
  * It answers about Iqraa only, from the site's own llms.txt (lib/siteFacts.ts).
- * It has its own daily spend ceiling (lib/siteAskBudget.ts) so visitors cannot
- * use up the teachers' AI_BUDGET_USD. The OpenAI client is imported lazily,
- * inside `complete`, because it throws at module scope without a key.
+ * It has its own daily spend ceiling (lib/siteAskBudget.ts). That ceiling
+ * bounds what anonymous traffic can add per day; it does not set the bot apart
+ * from the teachers' budget: recordUsage still adds each answer to the shared
+ * month-to-date total that AI_BUDGET_USD caps, so at the default of $1 a day
+ * the bot can use up to about $30 of a month. Size AI_BUDGET_USD with that in
+ * mind, or lower SITE_BOT_BUDGET_USD_DAILY. The OpenAI client is imported
+ * lazily, inside `complete`, because it throws at module scope without a key.
  */
 const siteAskIpLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 20, name: "site-ask-ip" });
 const siteAskGlobalLimiter = createRateLimiter({

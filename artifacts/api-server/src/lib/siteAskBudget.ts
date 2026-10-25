@@ -1,9 +1,13 @@
 /**
  * The public bot's own daily spend ceiling, separate from the teachers' budget.
  *
- * A visitor costs real money and has no account, so a flood of them must not be
- * able to use up AI_BUDGET_USD, which teachers draw on. The bot has its own
- * ceiling: SITE_BOT_BUDGET_USD_DAILY, default 1, and 0 switches the bot off.
+ * A visitor costs real money and has no account, so a flood of them needs a
+ * ceiling of its own: SITE_BOT_BUDGET_USD_DAILY, default 1, and 0 switches the
+ * bot off. This bounds what visitors can add per day; it does not exclude the
+ * bot's spend from AI_BUDGET_USD. recordUsage adds every answer to the same
+ * month-to-date total the teachers' budget check reads, so at the default the
+ * bot can use up to about $30 of a month. Size AI_BUDGET_USD above the teachers'
+ * own use plus that, or lower the cap.
  *
  * The total is a sum over ai_generations for kind = 'site-ask' in the last 24
  * hours, read from the database, not an in-process counter: the API runs up to
