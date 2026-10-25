@@ -1,6 +1,6 @@
 /**
- * The English hub's word lists — Grades 1–4 straight from the lesson JSON,
- * Grades 9–10 from `vocabulary.ts`.
+ * The English hub's word lists — Grades 1–5 straight from the lesson JSON,
+ * Grades 8–10 from `vocabulary.ts`.
  *
  * Separate subpath, like `vocabulary.ts`: the answers are public on purpose
  * (practice records nothing), so this must never become the source of an exam.
@@ -25,6 +25,7 @@ import { nccdG4EnglishSem1, g4EnglishSem1LessonKbId } from './catalogs/g4English
 import { nccdG4EnglishSem2, g4EnglishSem2LessonKbId } from './catalogs/g4EnglishSem2.ts';
 import { nccdG5EnglishSem1, g5EnglishSem1LessonKbId } from './catalogs/g5EnglishSem1.ts';
 import { nccdG5EnglishSem2, g5EnglishSem2LessonKbId } from './catalogs/g5EnglishSem2.ts';
+import { buildG8EngSem1BrowserCatalog } from './catalogs/g8EngSem1.ts';
 import { buildG9EngSem1BrowserCatalog } from './catalogs/g9EngSem1.ts';
 import { buildG9EngSem2BrowserCatalog } from './catalogs/g9EngSem2.ts';
 import { buildEngSem1BrowserCatalog } from './catalogs/g10EnglishSem1.ts';
@@ -124,8 +125,12 @@ interface BrowserBook {
   lessons: { id: string; unitId: string; title: string; titleAr: string }[];
 }
 
-/** Grade 10 semester 2 has no vocabulary extracted yet, so it contributes no lessons. */
+/**
+ * Grade 10 semester 2 has no vocabulary extracted yet, so it contributes no lessons. Nor does Grade 8
+ * semester 2: its PDF's text layer is rejected by `extract-text`, so only semester 1 is here.
+ */
 const VOCAB_BOOKS: [number, 1 | 2, BrowserBook][] = [
+  [8, 1, buildG8EngSem1BrowserCatalog()],
   [9, 1, buildG9EngSem1BrowserCatalog()],
   [9, 2, buildG9EngSem2BrowserCatalog()],
   [10, 1, buildEngSem1BrowserCatalog()],
@@ -205,10 +210,10 @@ export const ENGLISH_HUB_LESSONS: HubLesson[] = [...build(), ...buildFromVocabul
 
 /**
  * Tab order: grade order. The picked grade travels as its number in the URL, never as a
- * position, so a grade can be slotted in (5 went between 4 and 9). Grades 6–8 are not
- * here yet: their books carry no vocabulary to drill.
+ * position, so a grade can be slotted in (5 went between 4 and 9, 8 between 5 and 9). Grades 6
+ * and 7 are not here yet: their books carry no vocabulary to drill (and are third-party text).
  */
-export const ENGLISH_HUB_GRADES = [1, 2, 3, 4, 5, 9, 10] as const;
+export const ENGLISH_HUB_GRADES = [1, 2, 3, 4, 5, 8, 9, 10] as const;
 
 export function hubLessonsForGrade(grade: number): HubLesson[] {
   return ENGLISH_HUB_LESSONS.filter(l => l.grade === grade);
