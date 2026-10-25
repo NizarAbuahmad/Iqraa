@@ -106,6 +106,18 @@
    "pages": 80,
    "source": "our copy of the student book"
   },
+  "eng-8-s1-student-book": {
+   "bookId": "kb-eng-8-s1",
+   "pdfUrl": null,
+   "pages": 80,
+   "source": "our copy of the student book"
+  },
+  "eng-8-s2-student-book": {
+   "bookId": "kb-eng-8-s2",
+   "pdfUrl": null,
+   "pages": 80,
+   "source": "our copy of the student book"
+  },
   "eng-9-s1-student-book": {
    "bookId": "kb-eng-9-s1",
    "pdfUrl": null,
@@ -8792,6 +8804,426 @@
    "startPage": 174,
    "endPage": 193,
    "aspect": 0.7586
+  },
+  "kbl-g8-eng-s1-nccd-u1_l1": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 7,
+   "endPage": 7,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u1_l2": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 8,
+   "endPage": 8,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u1_l3": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 9,
+   "endPage": 9,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u1_l4": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 10,
+   "endPage": 11,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u1_l5": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 12,
+   "endPage": 12,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u1_l6": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 13,
+   "endPage": 13,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u1_l7": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 14,
+   "endPage": 16,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u2_l1": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 17,
+   "endPage": 17,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u2_l2": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 18,
+   "endPage": 18,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u2_l3": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 19,
+   "endPage": 19,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u2_l4": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 20,
+   "endPage": 21,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u2_l5": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 22,
+   "endPage": 22,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u2_l6": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 23,
+   "endPage": 23,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u2_l7": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 24,
+   "endPage": 27,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u3_l1": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 28,
+   "endPage": 29,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u3_l2": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 30,
+   "endPage": 30,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u3_l3": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 31,
+   "endPage": 31,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u3_l4": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 32,
+   "endPage": 32,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u3_l5": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 33,
+   "endPage": 33,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u3_l6": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 34,
+   "endPage": 35,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u3_l7": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 36,
+   "endPage": 37,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u4_l1": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 38,
+   "endPage": 39,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u4_l2": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 40,
+   "endPage": 40,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u4_l3": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 41,
+   "endPage": 41,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u4_l4": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 42,
+   "endPage": 43,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u4_l5": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 44,
+   "endPage": 44,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u4_l6": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 45,
+   "endPage": 45,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u4_l7": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 46,
+   "endPage": 49,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u5_l1": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 50,
+   "endPage": 51,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u5_l2": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 52,
+   "endPage": 52,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u5_l3": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 53,
+   "endPage": 53,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u5_l4": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 54,
+   "endPage": 54,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u5_l5": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 55,
+   "endPage": 55,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u5_l6": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 56,
+   "endPage": 57,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s1-nccd-u5_l7": {
+   "sourceId": "eng-8-s1-student-book",
+   "startPage": 58,
+   "endPage": 77,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u10_l1": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 50,
+   "endPage": 51,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u10_l2": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 52,
+   "endPage": 52,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u10_l3": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 53,
+   "endPage": 53,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u10_l4": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 54,
+   "endPage": 55,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u10_l5": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 56,
+   "endPage": 56,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u10_l6": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 57,
+   "endPage": 57,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u10_l7": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 58,
+   "endPage": 77,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u6_l1": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 7,
+   "endPage": 7,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u6_l2": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 8,
+   "endPage": 9,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u6_l3": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 10,
+   "endPage": 10,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u6_l4": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 11,
+   "endPage": 11,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u6_l5": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 12,
+   "endPage": 12,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u6_l6": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 13,
+   "endPage": 13,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u6_l7": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 14,
+   "endPage": 18,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u7_l1": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 19,
+   "endPage": 19,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u7_l2": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 20,
+   "endPage": 20,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u7_l3": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 21,
+   "endPage": 21,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u7_l4": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 22,
+   "endPage": 22,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u7_l5": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 23,
+   "endPage": 23,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u7_l6": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 24,
+   "endPage": 25,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u7_l7": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 26,
+   "endPage": 28,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u8_l1": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 29,
+   "endPage": 29,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u8_l2": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 30,
+   "endPage": 30,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u8_l3": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 31,
+   "endPage": 31,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u8_l4": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 32,
+   "endPage": 32,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u8_l5": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 33,
+   "endPage": 33,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u8_l6": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 34,
+   "endPage": 35,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u8_l7": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 36,
+   "endPage": 39,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u9_l1": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 40,
+   "endPage": 41,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u9_l2": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 42,
+   "endPage": 42,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u9_l3": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 43,
+   "endPage": 43,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u9_l4": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 44,
+   "endPage": 44,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u9_l5": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 45,
+   "endPage": 45,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u9_l6": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 46,
+   "endPage": 47,
+   "aspect": 0.7166
+  },
+  "kbl-g8-eng-s2-nccd-u9_l7": {
+   "sourceId": "eng-8-s2-student-book",
+   "startPage": 48,
+   "endPage": 49,
+   "aspect": 0.7166
   },
   "kbl-g8-finlit-s1-nccd-u1_l1": {
    "sourceId": "g8-finlit-s1-student-book",
