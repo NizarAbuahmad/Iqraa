@@ -203,9 +203,20 @@ function PeriodRow({ period, isNew, onSave, onDelete, isRTL, colors, t }: {
         <Pressable
           onPress={() => onSave(period.periodNumber, { startTime: time, durationMinutes: durationNum })}
           disabled={!canSave}
-          style={{ opacity: canSave ? 1 : 0.35, padding: 8, borderRadius: 8, backgroundColor: ACCENT_FILL }}
+          accessibilityRole="button"
+          accessibilityLabel={isNew ? t('scheduleAddPeriod') : t('save')}
+          style={{
+            opacity: canSave ? 1 : 0.35, padding: 8, borderRadius: 8, backgroundColor: ACCENT_FILL,
+            flexDirection: 'row', alignItems: 'center', gap: 6,
+          }}
         >
           <Ionicons name="checkmark" size={16} color="#fff" />
+          {/* A bare tick is the only thing that saves a period, and the modal's one
+              labelled button used to be «Cancel»: a typed time was thrown away.
+              The row that adds a period says so. */}
+          {isNew ? (
+            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{t('scheduleAddPeriod')}</Text>
+          ) : null}
         </Pressable>
         {!isNew ? (
           <Pressable onPress={() => onDelete(period.periodNumber)} hitSlop={8}>
@@ -264,8 +275,9 @@ function PeriodsEditorModal({ visible, schoolName, schoolLabel, periods, onClose
             />
           </ScrollView>
           <View style={styles.modalActions}>
-            <Pressable onPress={onClose} style={styles.modalBtn}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>{t('cancel')}</Text>
+            {/* Every change here saves on its own tick, so there is nothing to cancel. */}
+            <Pressable onPress={onClose} style={[styles.modalBtn, styles.modalPrimary, { backgroundColor: ACCENT_FILL }]}>
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold' }}>{t('schedulePeriodsDone')}</Text>
             </Pressable>
           </View>
         </View>
@@ -363,6 +375,14 @@ function SlotEditorModal({ title, classes, current, period, onClose, onSave, onS
   };
   const [notes, setNotes] = useState(current?.notes ?? '');
   const align = isRTL ? 'right' : 'left';
+  // «No class» is highlighted when the period is empty, so a teacher who presses
+  // Save without tapping a class used to store an empty slot and see nothing
+  // change (Today's timetable prompt only clears once a slot holds a class).
+  const effectiveSubject = subjectChoices.length > 1 ? subjectId : '';
+  const dirty =
+    selected !== (current?.classGroupId ?? null) ||
+    effectiveSubject !== (current?.subjectId ?? '') ||
+    notes !== (current?.notes ?? '');
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
@@ -432,8 +452,9 @@ function SlotEditorModal({ title, classes, current, period, onClose, onSave, onS
             <Pressable
               // A one-subject class sends '' — there is nothing for the
               // period to choose between, and a stale value must not linger.
-              onPress={() => onSave({ classGroupId: selected, subjectId: subjectChoices.length > 1 ? subjectId : '', notes })}
-              style={[styles.modalBtn, styles.modalPrimary, { backgroundColor: ACCENT_FILL }]}
+              onPress={() => onSave({ classGroupId: selected, subjectId: effectiveSubject, notes })}
+              disabled={!dirty}
+              style={[styles.modalBtn, styles.modalPrimary, { backgroundColor: ACCENT_FILL, opacity: dirty ? 1 : 0.4 }]}
             >
               <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold' }}>{t('save')}</Text>
             </Pressable>
