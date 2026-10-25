@@ -147,6 +147,37 @@ describe("tokenize", () => {
   });
 });
 
+describe("contractions", () => {
+  it("treats it's / that's / how's / there's / I'm as the stopwords they are", () => {
+    assert.deepEqual(tokenize("it's"), []);
+    assert.deepEqual(tokenize("It\u2019s"), []);
+    assert.deepEqual(tokenize("that's how's there's I'm"), []);
+    assert.deepEqual(tokenize("it's free"), ["free"]);
+  });
+
+  it("keeps negations and their contractions, which change the meaning", () => {
+    for (const w of ["not", "isnt", "dont", "doesnt", "cant"]) {
+      assert.deepEqual(tokenize(w), [w], w);
+    }
+    assert.deepEqual(tokenize("isn't"), ["isnt"]);
+    assert.deepEqual(tokenize("don't"), ["dont"]);
+  });
+
+  it("answers «it's free?» and «that's the price?» from the fixture", () => {
+    assert.equal(idOf("it's free?"), "price");
+    assert.equal(idOf("It\u2019s free"), "price");
+    assert.equal(idOf("that's the price?"), "price");
+    assert.equal(idOf("how's the price"), "price");
+  });
+
+  it("still refuses a negated question, because the negation is an unknown word", () => {
+    assert.equal(idOf("isn't free"), null);
+    assert.equal(idOf("is iqraa isn't free"), null);
+    assert.equal(idOf("it's not free"), null);
+    assert.equal(idOf("I don't know the price"), null);
+  });
+});
+
 describe("detectLanguage", () => {
   it("detects Arabic", () => {
     assert.equal(detectLanguage("هل التطبيق مجاني؟"), "ar");

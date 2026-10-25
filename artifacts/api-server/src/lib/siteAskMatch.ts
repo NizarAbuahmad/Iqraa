@@ -73,6 +73,10 @@ const STOPWORDS: ReadonlySet<string> = new Set([
   "a", "an", "the", "is", "are", "was", "do", "does", "did", "can", "could", "i", "we", "you", "it",
   "to", "of", "for", "in", "on", "at", "and", "or", "how", "what", "whats", "who", "which", "there",
   "this", "that", "me", "my", "your", "with", "be", "about", "tell", "please",
+  // Contractions as `normalizeText` leaves them once the apostrophe is gone. Negations
+  // (not, isnt, dont, doesnt, cant) are NOT here: they flip the meaning, so they stay
+  // unknown and the vocabulary veto sends such a question to the AI path.
+  "its", "thats", "hows", "theres", "im",
 ]);
 
 // Tried in this order; the first that fits (and leaves at least 2 letters) wins.
