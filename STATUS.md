@@ -58,6 +58,13 @@ Checked 2026-10-22:
 
 ## Open
 
+- **`GUARDIAN_APPROVAL` is built (server and app) and off; do not set it** until the app has
+  reached users, the parent-consent wording has been read by a native speaker and a lawyer, and
+  `constants/legal.ts` and `LEGAL_VERSION` are updated. With it on, every email student with no
+  teacher link is held (403 `guardian_approval_required`) until a parent approves by email, and
+  existing email students are locked out until a parent acts. The owner's steps are numbered in
+  the entry «Parent approval for email students — the app (PR B)» in the log; the server side is
+  «Parent approval for email students — server (PR A)».
 - **A student can sign up with an email and no teacher's code — the legal wording needs a person
   to read it before this merges.** The privacy policy §5 and terms §1 (`constants/legal.ts`,
   `LEGAL_VERSION` 2026-10-23) now say a student may join with an email after confirming they are
@@ -114,6 +121,22 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-25 — English audio check: the first real run, and three kinds of false alarm removed
+- 2026-10-25 — Lesson games: «ما معنى المصطلح؟» from the books' printed glossary, and a draft route that stays hidden
+- 2026-10-25 — A parent signs up with an email or a teacher's code
+- 2026-10-24 — Parent approval for email students: the app (off)
+- 2026-10-24 — Parent approval for email students: the server (off)
+- 2026-10-24 — English audio: a speech-to-text check of every recording
+- 2026-10-24 — English corner: all ten grades, the official books, and free listening and reading sites
+- 2026-10-24 — English audio on phones: clips are saved on the device and a lesson's clips are fetched ahead
+- 2026-10-24 — Tests for the roster consent gate
+- 2026-10-24 — Tests for the login-code reissue route
+- 2026-10-24 — Grade 10 grammar (Semester 2) in the English corner — built, shown to nobody yet
+- 2026-10-24 — English audio: voice register fixed, clips trimmed and levelled, and an audit that needs no keys
+- 2026-10-24 — Tests for the code-only account routes
+- 2026-10-24 — Printed grammar forms fit the page, sign-off no longer covers rows, and True or false says right or wrong without pictures
+- 2026-10-24 — Grade 10 grammar (Semester 1) in the English corner — built, shown to nobody yet
+- 2026-10-24 — Generator screens: Retry repeats the run, and the evaluations picker row
 - 2026-10-24 — Generator screens: the toast clears the docked bar
 - 2026-10-23 — Students choose an email or a teacher's code
 - 2026-10-23 — Generator screens: Cancel then a refusal, and the banner contrast
@@ -128,27 +151,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-23 — Grade 9 grammar: the passive added, and a wrong «no hub lesson» corrected
 - 2026-10-23 — The tab bar is drawn
 - 2026-10-23 — Neon leaves the Free plan before launch
-- 2026-10-23 — Leftover icon colours follow CONCEPTS
-- 2026-10-23 — Grade 9 grammar, thirteen lessons in the English corner — built, shown to nobody yet
-- 2026-10-23 — Iqraa draws its own icons
-- 2026-10-23 — Grade 9 grammar pilot (Unit 4) in the English corner — built, shown to nobody yet
-- 2026-10-23 — Icons follow one system
-- 2026-10-22 — Today wears the lesson's subject
-- 2026-10-22 — Grade 5 in the English corner — words glossed, recordings still to make
-- 2026-10-22 — The desktop Tools grid reads right to left in Arabic
-- 2026-10-22 — Live games: students answer from any device
-- 2026-10-22 — Status-bar icons read on the corner bands
-- 2026-10-22 — Grade 4 reading in the English corner — built, shown to nobody yet
-- 2026-10-22 — Game buttons read in dark mode
-- 2026-10-22 — A lesson game can be homework, and the teacher sees the scores
-- 2026-10-22 — Any deck plays as Class Challenge, with sound
-- 2026-10-22 — Progress is celebrated
-- 2026-10-22 — Math Corner exercises: learn or test yourself on a lesson from the book
-- 2026-10-22 — Grade 4 grammar in the English corner — built, shown to nobody yet
 
 ## Finding older detail, and recording new work
 
-- The log has 382 sections. Anything cited elsewhere as
+- The log has 414 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line

@@ -888,6 +888,29 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     // Everything this API returns is a roster, a paper or a child's marks.
     assert.equal(res.headers.get("cache-control"), "no-store");
   });
+
+  it("serves the guardian-approval config without a token, and closes the rest with the flag off", async () => {
+    const config = await fetch(`${base}/guardian-consent/config`);
+    assert.equal(config.status, 200);
+    assert.deepEqual(await config.json(), { enabled: false });
+    const post = (path: string, body: unknown) =>
+      fetch(`${base}/guardian-consent/${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    const lookup = await post("lookup", { token: "a".repeat(43) });
+    assert.equal(lookup.status, 404);
+    assert.equal(((await lookup.json()) as { code: string }).code, "guardian_approval_disabled");
+    const decide = await post("decide", { token: "a".repeat(43), decision: "declined" });
+    assert.equal(decide.status, 404);
+    assert.equal(((await decide.json()) as { code: string }).code, "guardian_approval_disabled");
+  });
+
+  it("does not let the guardian-consent router shadow an unowned path", async () => {
+    const res = await fetch(`${base}/guardian-consents-typo`);
+    assert.equal(res.status, 404);
+  });
 });
 
 describe("API register (student accounts enabled)", { skip: built ? false : "run `pnpm build` first" }, () => {

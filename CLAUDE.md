@@ -764,3 +764,19 @@ sweep in your staged files.
   control on a new generator screen (a field whose real options are not a short list
   stays a dropdown), and how it looks (check it in `pnpm run dev:mobile:web`, phone
   and desktop, light and dark, RTL).
+- **A student's class-code claim waits for the teacher (since 2026-10-24).** The
+  pick is a row in `roster_link_requests`, not in `roster_links`, so nothing that
+  reads a link (chat contacts, homework, exams, parent letters) can see it: an
+  unapproved account has no access *by construction*. Keep it that way — do not
+  add a `status` column to `roster_links`, and never read `pending` as access. Only
+  a `self` claim made through the CLASS code is held (`claimNeedsApproval`);
+  per-student codes and parents link at once. Approval is
+  `POST /students/:id/link-requests/:requestId/approve`, which re-checks the sender
+  is still a `student` account. Two traps: a code-only signup names the new account
+  after the roster name it picked, so the teacher's list must say so (`codeSignup`)
+  rather than let the name stand as proof; and the waiting card withdraws with
+  `DELETE /auth/claim?pendingOnly=1`, because the plain `DELETE /auth/claim` also
+  deletes links and the teacher may have approved since the card last looked. A
+  student is not gated onto `/claim-required` (only a parent is), so the waiting
+  state is shown by `claim-required`, `join-class` and the code-signup note — widen
+  `needsRosterClaim` only on purpose.

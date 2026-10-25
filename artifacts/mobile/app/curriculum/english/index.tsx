@@ -2,8 +2,11 @@
  * The English hub: pick a grade, pick a lesson, play with its words.
  *
  * Under `/curriculum` so students reach it without touching the role gate
- * (`services/routeGating.ts`). Grades 1–4 and 9–10 — the books whose words
- * are glossed; see `@workspace/curriculum/englishHub`.
+ * (`services/routeGating.ts`). Every grade 1–10 has a tab (`ENGLISH_CORNER_GRADES`);
+ * word games exist for the grades whose books are glossed (`ENGLISH_HUB_GRADES`,
+ * `@workspace/curriculum/englishHub`). A grade without them, or without a semester
+ * of them, says so rather than looking empty. Every grade also gets its official
+ * books and free listening / reading sites (`ResourceShelves`).
  */
 import React, { useCallback, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
@@ -12,13 +15,15 @@ import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { ENGLISH_HUB_GRADES, hubLessonsForGrade } from '@workspace/curriculum/englishHub';
+import { hubLessonsForGrade } from '@workspace/curriculum/englishHub';
+import { ENGLISH_CORNER_GRADES } from '@workspace/curriculum/englishLinks';
 import { hubLessonVisible } from '@workspace/curriculum/englishGrammar';
 import { BADGE_IDS, badgesEarned, currentStreak, dayOf, lessonStars } from '@/services/englishHub/games';
 import { useHubProgress } from '@/services/englishHub/progressStore';
 import { goBack } from '@/services/navigation';
 import { unitNames } from '@/services/contentLanguage';
 import { BADGE_META } from '@/components/englishHub/badgeMeta';
+import { BooksShelf, FreeSitesShelf } from '@/components/englishHub/ResourceShelves';
 import { disableDailyReminder, enableDailyReminder, isReminderEnabled, syncDailyReminder } from '@/services/englishHub/dailyReminder';
 import { CornerFrame } from '@/components/corners/CornerFrame';
 import { CornerGrid } from '@/components/corners/CornerGrid';
@@ -33,7 +38,7 @@ export default function EnglishHubScreen() {
   const params = useLocalSearchParams<{ grade?: string }>();
   const [grade, setGrade] = useState(() => {
     const g = Number(params.grade);
-    return (ENGLISH_HUB_GRADES as readonly number[]).includes(g) ? g : 1;
+    return (ENGLISH_CORNER_GRADES as readonly number[]).includes(g) ? g : 1;
   });
   const { progress } = useHubProgress();
   const today = dayOf(new Date());
@@ -116,7 +121,7 @@ export default function EnglishHubScreen() {
       ) : null}
 
       <View style={[styles.chips, { flexDirection: row }]}>
-        {ENGLISH_HUB_GRADES.map(g => {
+        {ENGLISH_CORNER_GRADES.map(g => {
           const on = g === grade;
           return (
             <Pressable
@@ -172,6 +177,21 @@ export default function EnglishHubScreen() {
           );
         })}
       </CornerGrid>
+
+      {/* A grade with no word lists (6–8) or only one semester of them (10) must not look finished. */}
+      {lessons.length === 0 ? (
+        <View style={[styles.notice, surface, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+          <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.body, textAlign: align }}>{t('hubNoWordsTitle')}</Text>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>{t('hubNoWordsBody')}</Text>
+        </View>
+      ) : !lessons.some(l => l.semester === 2) ? (
+        <View style={[styles.notice, surface, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>{t('hubSem2Soon')}</Text>
+        </View>
+      ) : null}
+
+      <BooksShelf grade={grade} />
+      <FreeSitesShelf grade={grade} />
     </CornerFrame>
   );
 }
@@ -186,4 +206,5 @@ const styles = StyleSheet.create({
   chip: { borderWidth: 1, borderRadius: RADIUS.pill, paddingHorizontal: 14, paddingVertical: 7 },
   unit: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 },
   card: { alignItems: 'center', gap: 10, padding: 14, flexGrow: 1 },
+  notice: { gap: 4, padding: 14, marginHorizontal: SPACE.lg, marginTop: SPACE.md },
 });

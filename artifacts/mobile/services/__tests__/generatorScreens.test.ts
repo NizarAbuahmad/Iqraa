@@ -552,7 +552,7 @@ test('pressing generate again on the same refusal scrolls to it again: the effec
   for (const [name, src] of [['quiz', quizCode], ['worksheet', worksheetCode], ['lesson plan', lessonPlanCode], ['activity', activityCode]] as const) {
     assert.match(src, /const \[attempt, setAttempt\] = useState\(0\);/, `${name}: no attempt counter`);
     // Bumped first thing in generate, before any early return (the refusals), and nothing else about generate moves.
-    assert.match(src, /const generate = async \(opts\?: \{[^}]*\}\) => \{\s*(\/\/[^\n]*\n\s*)*setAttempt\(n => n \+ 1\);\s*(\/\/[^\n]*\n\s*)*setCancelled\(false\);\s*const previous = result;/, `${name}: attempt is not bumped at the start of generate`);
+    assert.match(src, /const generate = async \(opts\?: \{[^}]*\}\) => \{\s*(\/\/[^\n]*\n\s*)*setAttempt\(n => n \+ 1\);\s*(lastRunRef\.current = runOptions\(opts\);\s*)?(\/\/[^\n]*\n\s*)*setCancelled\(false\);\s*const previous = result;/, `${name}: attempt is not bumped at the start of generate`);
     assert.match(src, /\}, \[statusPhase, attempt\]\);/, `${name}: the effect ignores the attempt`);
     assert.match(src, /if \(isDesktop \|\| statusPhase === 'idle'\) return;/, `${name}: an idle form must not scroll`);
     assert.doesNotMatch(src, /statusPhase === 'idle' \|\| (topicRefusal|refusal)/, `${name}: no special case for a refusal: cancelled is cleared first, so the phase is idle then`);
@@ -1379,4 +1379,52 @@ test('the bar\'s height is one constant in a pure file, re-exported by DockedAct
   assert.doesNotMatch(dock, /DOCKED_BAR_HEIGHT = /, 'a second definition of the height');
   // The toast takes a lift and defaults to none, so every other screen\'s toast is where it was.
   assert.match(code(read('components', 'ui', 'Toast.tsx')), /bottomOffset = 0/);
+});
+
+// ── Retry repeats the run; the evaluations picker row ──────────────────────
+
+test('Retry is an explicit arrow on every generator screen, so the press event can never become `generate`\'s options', () => {
+  for (const [name, src] of [['quiz', quizCode], ['lesson plan', lessonPlanCode], ['activity', activityCode], ['slides', slidesCode]] as const) {
+    assert.match(src, /onRetry=\{\(\) => generate\(\)\}/, name);
+    assert.doesNotMatch(src, /onRetry=\{generate\}/, `${name}: a bare generate gets the press event`);
+  }
+  assert.doesNotMatch(worksheetCode, /onRetry=\{generate\}/);
+});
+
+test('the worksheet\'s Retry repeats what was last asked, three levels included', () => {
+  assert.match(worksheetCode, /import \{ runOptions, type RunOptions \} from '@\/services\/runOptions';/);
+  assert.match(worksheetCode, /const lastRunRef = useRef<RunOptions>\(\{ regenerate: false, levels: false \}\);/);
+  // Recorded at the top of generate, next to the attempt bump, before any refusal can return.
+  assert.match(worksheetCode, /setAttempt\(n => n \+ 1\);\s*(\/\/[^\n]*\n\s*)*lastRunRef\.current = runOptions\(opts\);/);
+  const at = worksheetCode.indexOf('lastRunRef.current = runOptions(opts);');
+  assert.ok(at > 0 && at < worksheetCode.indexOf("if (!topic.trim()) { setError(t('topicRequired')); return; }"), 'the run is recorded after a refusal could already return');
+  assert.match(worksheetCode, /onRetry=\{\(\) => generate\(lastRunRef\.current\)\}/);
+  // A levels run reads `opts?.levels`, which is exactly the field the stored options carry.
+  assert.match(worksheetCode, /if \(opts\?\.levels\) \{/);
+  assert.match(worksheetCode, /generate\(\{ levels: true \}\)/);
+});
+
+test('the evaluations paper builder draws its dropdown\'s selected row as an opaque fill with its own ink, and it reads at 4.5:1', () => {
+  const evals = code(read('app', 'evaluations', 'new.tsx'));
+  assert.match(evals, /import \{ selectedRow \} from '@\/services\/readableColor';/);
+  assert.match(evals, /const row = selectedRow\(props\.accent, props\.colors\.card\);/);
+  assert.match(evals, /selectedTint=\{row\.fill\}/);
+  assert.match(evals, /accent=\{row\.ink\}/);
+  assert.doesNotMatch(evals, /selectedTint=\{[^}]*\+ '15'\}/);
+  // This screen's accent is palette.primary: the light teal on the light card, the bright teal on the dark one.
+  const src = read('constants', 'colors.ts');
+  const primary = (theme: 'light' | 'dark') => {
+    const at = src.indexOf(`  ${theme}: {`);
+    return new RegExp(`\\n    primary:\\s+'(#[0-9A-Fa-f]{6})'`).exec(src.slice(at, src.indexOf('\n  },', at)))![1]!;
+  };
+  for (const [theme, c] of Object.entries(themeColours())) {
+    const accent = primary(theme as 'light' | 'dark');
+    const row = selectedRow(accent, c.card);
+    assert.ok(contrast(row.ink, row.fill) >= 4.5, `evaluations on ${theme}: ${row.ink} on ${row.fill} is ${contrast(row.ink, row.fill).toFixed(2)}:1`);
+    // And it did not read worse than the translucent tint it replaces.
+    assert.ok(contrast(row.ink, row.fill) >= contrast(accent, tintOver(accent, 0x15 / 255, c.card)) - 1e-9, `${theme}: got worse`);
+  }
+  // The shared dropdown's own doc no longer says a screen still passes the translucent tint.
+  assert.doesNotMatch(read('components', 'ui', 'PickerField.tsx'), /still passes `accent \+ '15'`/);
+  assert.doesNotMatch(read('app', 'evaluations', 'new.tsx'), /ACCENT \+ '15'/);
 });

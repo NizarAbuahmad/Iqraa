@@ -771,7 +771,7 @@ export default function QuizScreen() {
         loadingLabel={t('generatingQuiz')}
         errorDetail={error}
         onCancel={cancelGenerate}
-        onRetry={generate}
+        onRetry={() => generate()}
         colors={colors}
         isRTL={isRTL}
         lang={uiLang}
