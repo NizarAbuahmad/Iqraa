@@ -18,7 +18,7 @@ import multiprocessing as mp
 import subprocess
 
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 
 import build_poster_reel as bp
 import music_inspire
@@ -166,15 +166,19 @@ def setup():
 def background():
     img = Image.new("RGBA", (W, H), SAND + (255,))
     d = ImageDraw.Draw(img)
-    cx, cy, r = 540, 600, 430
+    cx, cy, r = 540, 640, 470
     d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=TEAL + (255,))
-    d.ellipse((940 - 62, 470 - 62, 940 + 62, 470 + 62), fill=YELLOW + (255,))
+    d.ellipse((940 - 62, 450 - 62, 940 + 62, 450 + 62), fill=YELLOW + (255,))
     return img
 
 
 def sheet():
+    """A light bottom sheet (paper), with a soft shadow above it, running off the bottom edge."""
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    ImageDraw.Draw(img).rounded_rectangle((0, SHEET_Y, W, H + 80), 56, fill=INK + (255,))
+    sh = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    ImageDraw.Draw(sh).rounded_rectangle((0, SHEET_Y - 10, W, H + 80), 56, fill=(11, 27, 51, 70))
+    img.alpha_composite(sh.filter(ImageFilter.GaussianBlur(18)))
+    ImageDraw.Draw(img).rounded_rectangle((0, SHEET_Y, W, H + 80), 56, fill=SAND + (255,))
     return img
 
 
@@ -217,6 +221,12 @@ def render_frame(f):
         G["readers"] = {key_: FrameReader(G["takes"][take_n], src)}
     sc = dict(src=src, rate=rate, cam=(0, 0, 390, 844))
     foot = bp.footage(G["takes"][take_n], G["readers"][key_], sc, t, t - sub_t0)
+    if take_n == "r2n_library":
+        fade_h = int(foot.height * 0.28)
+        grad = Image.new("RGBA", (foot.width, fade_h))
+        gp = np.zeros((fade_h, foot.width, 4), np.uint8); gp[..., :3] = (246, 245, 241)
+        gp[..., 3] = (np.linspace(0, 1, fade_h) ** 1.4 * 255).astype(np.uint8)[:, None]
+        foot.alpha_composite(Image.fromarray(gp, "RGBA"), (0, foot.height - fade_h))
     foot.putalpha(G["mask"])
     ph = G["body"].copy(); ph.alpha_composite(foot, (bp.BZ, bp.BZ))
     pop = bp.back_out(min((t - sub_t0) / 0.3, 1), 1.5)
@@ -230,7 +240,9 @@ def render_frame(f):
     ov = G["ov"]
     frame.alpha_composite(ov["lk"], (1015 - ov["lk"].width, 276))
     frame.alpha_composite(ov["chip"], (65, 298))
-    frame.alpha_composite(ov["tag"], (65, 372))
+    lk = G.setdefault("lk_big", ov["lk"].resize((int(ov["lk"].width * 1.25), int(ov["lk"].height * 1.25)), Image.LANCZOS))
+    frame.alpha_composite(lk, (540 - lk.width // 2, 1560))
+    frame.alpha_composite(ov["url"], (540 - ov["url"].width // 2, 1560 + lk.height + 20))
     if demo:
         pill = ov["pill_" + demo]
         frame.alpha_composite(bp.fade(pill, ease((t - sub_t0) / 0.2)), (65, 930))
@@ -239,7 +251,7 @@ def render_frame(f):
     ci = next((j for j in range(len(lens)) if t < edge[j + 1]), len(lens) - 1)
     t_c = max(s0, edge[ci] - 0.1) if ci else s0
     img = ov[f"c{si}_{ci}"]
-    wipe_in(frame, img, 640, 1038, t - t_c)
+    wipe_in(frame, img, 600, 1038, t - t_c)
     if si == len(SENTENCES) - 1:
         q = ease((t - (sp0 + 0.5)) / 0.4)
         if q > 0:
