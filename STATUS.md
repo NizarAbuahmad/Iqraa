@@ -121,6 +121,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-25 — Lesson games: «ما معنى المصطلح؟» from the books' printed glossary, and a draft route that stays hidden
 - 2026-10-25 — A parent signs up with an email or a teacher's code
 - 2026-10-24 — Parent approval for email students: the app (off)
 - 2026-10-24 — Parent approval for email students: the server (off)
@@ -150,11 +151,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-23 — The tab bar is drawn
 - 2026-10-23 — Neon leaves the Free plan before launch
 - 2026-10-23 — Leftover icon colours follow CONCEPTS
-- 2026-10-23 — Grade 9 grammar, thirteen lessons in the English corner — built, shown to nobody yet
 
 ## Finding older detail, and recording new work
 
-- The log has 411 sections. Anything cited elsewhere as
+- The log has 413 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line

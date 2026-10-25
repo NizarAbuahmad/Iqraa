@@ -35,6 +35,80 @@ with near-misses that stay with the model.
 rating the app, showing the lesson on a TV, one student's answers on an exam (the answers screen
 is built for typing in a paper's answers, so I did not claim it shows an online sitting) and
 «أرى الشعب التي أدرّسها» (the place card is enough).
+## Lesson games: «ما معنى المصطلح؟» from the books' printed glossary, and a draft route that stays hidden — 2026-10-25
+
+A fourth lesson game: the app shows the **book's own definition** and the student picks the term. The
+definitions are not written by a model — they are the printed «مسرد المصطلحات» of the Grade 9–10 science
+student books, read from each PDF.
+
+- **Extraction** (`lib/curriculum/scripts/glossary/`, PyMuPDF `rawdict`): an entry is a row with a coloured Latin
+  term; Arabic term to its right, definition to its left. The PDFs' text layer drops or swaps the lam-alef ligature
+  («لا» → «ال»: «اللازمة» reads «الازمة»), so it is repaired from glyph widths — a zero-width alef then a wide lam
+  (swap), or one wide alef (lam lost). The reference list after the glossary is cut off by its heading.
+- **What is served** (`lib/curriculum/src/data/glossary/science-g9-10.json`, **436 entries from 15 books**): of 558
+  entries read, 122 are held back in `science-g9-10.held.json` with a reason — a formula fragment in the definition
+  (47: «H⁺», «8e⁻», «1A» come out of the PDF in the wrong order), brackets or symbols in the term, a lost «لا» still
+  showing, an alef missing after a tanween («قليلً»), a lone letter or a Greek symbol, a word nobody else prints, an
+  English term with an abbreviation, too long, and 9 held by hand. A held entry is never shown. Every served entry
+  is Arabic-only prose with balanced brackets and no word that appears nowhere else in the 146k-word corpus of the
+  extracted books; tatweel (letter-stretching in some printed titles) and doubled diacritics are stripped, and four
+  two-word terms the PDF reverses («نسيجٌ فقاعي» came out «فقاعي نسيجٌ») are corrected.
+- **Reviewed by a second pass, then fixed.** The first version (459) was read by an independent reviewer: of a 65-entry
+  sample, 12 (about 18%) had damage a student would see — the tatweel, three entries still reading «اللّبة» for
+  «اللابة», reversed terms, missing alefs, orphan letters, a Greek symbol, an English typo. Those classes are now
+  filters (and `glossary.test.ts` pins them over all 436). A second, fresh 73-entry sample of that corrected file had
+  4 damaged (5.5%), all **reversed terms**, and whole-file scans found 6 more reversed terms and 2 broken definitions
+  (one scrambled dash clause, one stranded letter in «خلال») — 12 entries in 440 (2.7%), none of the classes the first
+  pass had found. Those are now corrected (10 terms, each put in its right order) or held, and a rule holds a term
+  whose last word is voweled with a damma while its first has no vowel. That reviewer's verdict was that nobody can
+  yet call the definitions clean: it read 73 of 440 in full and a scan only finds damage someone thought to look for.
+  **So this is a ~2–3% residual in the terms and an unmeasured one in the definitions, not zero.**
+- **Gaps, not smoothed over:** Grade 10 chemistry S1's PDF was not on this machine (no entries); physics S1 has 23
+  of its terms (the symbols in brackets after each term had to be stripped from the term).
+- **Draft route, hidden until signed off** (`chem-g10-s1.draft.json`, 29 terms of Grade 10 chemistry S1):
+  definitions a model wrote, flagged `source: 'draft'`. `servedGlossary()` returns a draft only with **both**
+  `reviewedBy` and a `reviewedAt` date (the English grammar units' rule); today **none is signed off, so no student
+  sees any** (`glossary.test.ts` and `lessonMeaning.test.ts` pin both). An independent reviewer found no scientific
+  error in the 29 and 18 wording problems; 15 of them are applied (the three covalent-bond terms now carry the pair
+  count and an example, so «ثنائية» is not read as two electrons; the atomic and line spectra no longer both fit).
+  `pnpm --filter @workspace/curriculum run glossary-sheet` prints the teacher's review table, plus a skim table of
+  the served printed terms. Sign-off is an edit of the JSON by whoever holds the teacher's answer — there is no
+  in-app screen for it. When a draft is signed off the game labels it «تعريف راجعه معلّم», not «من كتاب الطالب».
+  The drafts' text does ship inside the app bundle (the loader imports the file), unsigned; students cannot reach it
+  through the app, but it is extractable.
+- **The game** (`lessonGames.ts`: `lessonMeanings`, `hasMeaningGame`, `buildMeaningRound`): a printed glossary does
+  not say which lesson a term is from, so a lesson is tied to a definition through its own key terms (harakat-,
+  hamza- and «ال»-insensitive, exact spelling tried first). A round asks the lesson's own terms first, then the other
+  lessons' of the unit (**including later ones — not yet taught**; the in-app help says so); the three wrong terms
+  come from the same book. A definition that contains its own term is never a question. Offered only when the lesson
+  has ≥1 defined term of its own and ≥4 in the pool. It also works as a homework attachment (`meaning` added to the
+  mobile union, the API's `GAMES`, and the db type — the column is text, no migration).
+- **An older app build used to remove a `meaning` attachment on any edit** (found in review): a build that does not
+  know a game drops that attachment when it re-sends the list, and `gamesIncluded: true` made the server believe the
+  list. The client now sends `knownGames`, and the server keeps an existing attachment of any game not in it (a
+  client that sends none is read as the four games that existed before; `carryOverGames(…, known)`,
+  `game.test.ts`). This protects the next new game too. Not exercised against a database.
+
+**Reach, measured on the real catalog — read this before promising anything:** the meaning game exists on **65 of
+3,332 lessons**. Only **10 of them are new lessons** (lessons with any lesson game: 495 → 505); the other 55 already
+had the other three games and now have a fourth. The printed glossary adds depth, not breadth, because it exists
+only for the books whose lessons already carry key terms. Where the breadth is: 1,464 lessons have ≥1 key term, 969
+of them fewer than 4 (no game), and **5,158 of the 5,400 key-term mentions have no definition** — English (Grades
+2–5 and 10), Islamic education (7–8), digital literacy and social studies are the largest. Giving those a definition
+is the only way to widen, and each needs a person's review (the draft route above is that pilot, 29 terms).
+
+**Verified:** `pnpm run typecheck`; the new `glossary.test.ts` (12) and `lessonMeaning.test.ts` (7) plus the existing
+`lessonGames`, `homework`, `gameAmber` (a fourth accent, ≥8 ΔE from the others, white text ≥4.5:1), `i18n*` and
+`appHelp` suites; the API's `game.test.ts`. In the browser (Expo web): a Grade 9 chemistry lesson opens the game with
+the book's definition and four terms, the right answer turns green and the score reads «1 من 6»; its chooser shows
+four tiles; a lesson with two key terms shows only this tile; no console errors.
+**Not verified:** a homework with a `meaning` attachment end to end against a database (the enum change is covered by
+unit tests only); the game on a phone; dark mode of the new screen; that every served entry is right against the
+printed page (the filters and two independent samples are not a page-by-page read — a teacher skimming the term
+column of the skim table in `glossary-sheet` would be). The full
+mobile and curriculum suites fail on this Windows checkout for line-ending reasons unrelated to this change
+(`scopeSelection`, the committed-sheet comparisons, `quran_corner.json`).
+
 ## A parent signs up with an email or a teacher's code — 2026-10-25
 
 Since 2026-10-10 a parent could only sign up with a teacher's code (no email, no password), so a parent who did not have

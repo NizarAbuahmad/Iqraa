@@ -103,7 +103,7 @@ test('the accent tables are found (a renamed constant must not empty these tests
   assert.equal(WARNING, '#B54708');
   assert.ok(ELEMENTS_ACCENT, 'ELEMENTS_ACCENT not found');
   assert.equal(Object.keys(hubAccents()).length, 10, 'the hub lists ten games');
-  assert.deepEqual(Object.keys(lessonAccents()).sort(), ['memory', 'scramble', 'spot']);
+  assert.deepEqual(Object.keys(lessonAccents()).sort(), ['meaning', 'memory', 'scramble', 'spot']);
   assert.deepEqual(Object.keys(drillAccents()).sort(), ['add', 'div', 'mul', 'sub']);
   assert.ok(allAccents().length >= 22, `found only ${allAccents().length} accents`);
 });
@@ -163,7 +163,7 @@ test('every KNOWN_CLOSE pair is still close (so the list shrinks when a pair is 
   }
 });
 
-test(`the lesson-game chooser's three tiles are ${MIN_DE}+ ΔE2000 apart`, () => {
+test(`the lesson-game chooser's four tiles are ${MIN_DE}+ ΔE2000 apart`, () => {
   const l = lessonAccents();
   const ids = Object.keys(l);
   for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
