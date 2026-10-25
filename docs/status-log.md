@@ -10,6 +10,24 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+
+## Grade 8 English gets its book pages; Grades 1-7 do not, 2026-10-25
+
+The 16 English student books for Grades 1-8 (about 1.9 GB) were downloaded from the catalog's NCCD
+links into a scratch folder outside the repo.
+
+- **Grade 8 (2 books):** same «High Note» layout as Grades 9-10, so `map_english_pages.py` took
+  them as they are: 70 lessons (35 × 2), 142 pages, every opener checked on a contact sheet of
+  16. `book-page-links.json` lists 2,022 lessons / 12,889 pages. Pages are in R2.
+- **Grades 1-7 (14 books) are not mapped.** They are the «Team Together» series, whose pages carry
+  a small «Lesson N» tab, not a «LESSON nA» header, and the tabs do not line up with the
+  curriculum's lessons: Grade 7 has 4 units of 9 lessons in the catalog, but the book numbers its
+  lessons up to 11 and skips some tabs (1, 2, 3, 5, 6, 8, 9, 10, 11), so a position-based match
+  would be a guess. Grades 1-5 are coarser still: the catalog has two lessons per unit
+  («Vocabulary & Grammar», «Listening & Speaking») against about nine book pages. A
+  unit-level page set was considered and not done, because a lesson's pages would not be that
+  lesson's. The PDFs are still in the scratch folder if someone wants to hand-map them.
+
 ## Chat app-help, twenty-ninth live pass: three short answers and wordings for fourteen existing ones — 2026-10-25
 
 The demo account's monthly generation allowance was still spent, so every question the matcher did
@@ -36,6 +54,29 @@ rating the app, showing the lesson on a TV, one student's answers on an exam (th
 is built for typing in a paper's answers, so I did not claim it shows an online sitting) and
 «أرى الشعب التي أدرّسها» (the place card is enough).
 
+
+## Timetable: a period saves with a labelled button, and an empty slot cannot be saved — 2026-10-24
+
+A teacher on app.iqrra.com added their timetable and Today kept saying «أضف جدولك الأسبوعي».
+Reproduced in the real app (throwaway Postgres, built API and web bundle, Chromium at phone
+width): the API and `timetableSetupStep` are right — once a slot holds a class the prompt turns
+into «… ليس لها خطة وتيرة» (plan step), so a prompt still on the timetable step means no slot
+had a class. Two things on «جدول الحصص» led there. (1) The period editor's only labelled
+button was «إلغاء»; a period saved only on its bare ✓ icon, so typing a time and pressing the
+labelled button threw it away, and with no period no slot can be saved. (2) The slot editor opens
+with «بدون شعبة» highlighted and a live «احفظ»: saving without tapping a class stored an empty
+slot, which the prompt ignores. Now: the new-period row's button reads «إضافة حصة»
+(`scheduleAddPeriod`, which existed unused), the modal's closing button is «تم»
+(`schedulePeriodsDone`), and «احفظ» in the slot editor is disabled until class, subject or note
+changed.
+
+Verified: `pnpm run typecheck`; mobile `pnpm test` (7,186 pass, 10 skipped); the whole flow
+re-run in the browser on the rebuilt bundle (add period → assign class → Today shows the plan
+prompt). **Not verified:** that this is what the reporting teacher did (they were asked and did
+not answer), Arabic/RTL on a device, and no test pins these two screens (they import
+`react-native`, which the bare `node --test` runner cannot load). Not changed: after a
+correct setup Today's lesson card still shows no «الحصة القادمة» line until the class has a
+pacing plan — the prompt now says so, but the card itself gives no sign the timetable saved.
 
 ## A revision unit with no picture shows its outcomes and terms side by side, 2026-10-25
 
@@ -160,6 +201,28 @@ printed page (the filters and two independent samples are not a page-by-page rea
 column of the skim table in `glossary-sheet` would be). The full
 mobile and curriculum suites fail on this Windows checkout for line-ending reasons unrelated to this change
 (`scopeSelection`, the committed-sheet comparisons, `quran_corner.json`).
+
+
+## English lessons (grades 9-10) get their book pages, 2026-10-25
+
+English was the one subject the page mapper could not touch: the catalog names every lesson by
+its skill («القراءة والمفردات», «المحادثة»), repeated in every unit, and the book is in English,
+so there is no title to match.
+
+- `scripts/map_english_pages.py` finds the lessons by position instead. «High Note» prints a
+  running header, «LESSON 1A …», numbered 1-7 inside each unit; the headers in page order, cut
+  into units wherever the number drops, must come out in exactly the shape the curriculum has
+  (5 units × 7 lessons), or the book is left alone. All four student books on disk fit: 140
+  lessons (Grade 9 S1/S2, Grade 10 S1/S2), 288 pages, rendered with `render_lesson_pages.py`
+  and uploaded to `iqraa-public/book-pages/`. `book-page-links.json` lists 1,952 lessons /
+  12,747 pages.
+- Checked on a contact sheet of 18 sampled openers: each starts at its «LESSON nA» header (a
+  unit's first lesson shares its page with the unit's banner).
+- **Not covered:** Grades 1-8 English. Their PDFs are not on disk (the figure folders for
+  grades 7-8 hold only pictures), and the catalog's NCCD links come to about 1.9 GB for the
+  16 books. Those books are laid out differently (the primary ones are picture-led), so the
+  header method would need checking on each. The four Grade 10 vocational English books have
+  no student-book link.
 
 ## A parent signs up with an email or a teacher's code — 2026-10-25
 
