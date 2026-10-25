@@ -22,6 +22,7 @@ import { Celebrate } from '@/components/ui/Celebrate';
 import { justCompleted, type Progress } from '@/services/celebration';
 import type { TranslationKey } from '@/services/i18n';
 import { trackEvent } from '@/services/analytics';
+import { goToGames } from '@/services/navigation';
 
 export function GameShell({
   titleKey, accent, scoreLabel, gameOver, onReplay, onBack, analytics, onFinished, footer, children,
@@ -82,10 +83,13 @@ export function GameShell({
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={{ width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', flex: 1 }}>
         <View style={[styles.header, { paddingTop: topPad, backgroundColor: accent, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          {/* Cast: '/play' isn't in the generated typed-routes union until the
-              dev server regenerates it — same reason other new routes in this
-              app are cast (see app/_layout.tsx). */}
-          <Pressable onPress={onBack ?? (() => router.replace('/play' as any))} style={styles.backBtn} hitSlop={10}>
+          <Pressable
+            onPress={onBack ?? goToGames}
+            style={styles.backBtn}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={t(onBack ? 'back' : 'playBackToMenu')}
+          >
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color="#fff" />
           </Pressable>
           <Text style={[styles.title, { textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
@@ -110,6 +114,14 @@ export function GameShell({
             {footer}
 
             <Button label={t('playPlayAgain')} onPress={() => onReplay?.()} fill={accent} style={{ marginTop: 12 }} fullWidth size="lg" />
+            {/* A game the hub opened goes back to the hub; one opened from a lesson
+                (`onBack`) goes back to where it was opened from. */}
+            <Button
+              label={t(onBack ? 'back' : 'playBackToMenu')}
+              onPress={onBack ?? goToGames}
+              variant="secondary"
+              fullWidth
+            />
 
             {!user && (
               <View style={[styles.ctaCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
