@@ -47,6 +47,8 @@ type Props = {
    * nothing to report.
    */
   startClassError?: string;
+  /** The message is a state (allowance spent), not a fault: a neutral notice, not the amber alert. */
+  startClassNote?: boolean;
   uploadedLabel: (n: number) => string;
   onChangeLesson: () => void;
   onToggleCollapse: () => void;
@@ -83,6 +85,7 @@ export function CurrentLessonCard({
   onStartClass,
   startClassBusy = false,
   startClassError = '',
+  startClassNote = false,
   uploadedLabel,
   onChangeLesson,
   onToggleCollapse,
@@ -108,12 +111,24 @@ export function CurrentLessonCard({
   */
   const errorStrip = startClassError ? (
     <View
-      style={[styles.errorRow, { flexDirection: rowDir, backgroundColor: ERROR_ACCENT + '14' }]}
-      accessibilityRole="alert"
+      style={[
+        styles.errorRow,
+        { flexDirection: rowDir, backgroundColor: startClassNote ? colors.muted : ERROR_ACCENT + '14' },
+      ]}
+      accessibilityRole={startClassNote ? undefined : 'alert'}
       accessibilityLiveRegion="polite"
     >
-      <Ionicons name="alert-circle" size={14} color={ERROR_ACCENT} />
-      <Text style={[styles.errorText, { color: ERROR_ACCENT, textAlign: align, flex: 1 }]}>
+      <Ionicons
+        name={startClassNote ? 'information-circle' : 'alert-circle'}
+        size={14}
+        color={startClassNote ? colors.mutedForeground : ERROR_ACCENT}
+      />
+      <Text
+        style={[
+          styles.errorText,
+          { color: startClassNote ? colors.mutedForeground : ERROR_ACCENT, textAlign: align, flex: 1 },
+        ]}
+      >
         {startClassError}
       </Text>
     </View>

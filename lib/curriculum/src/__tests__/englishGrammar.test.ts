@@ -94,6 +94,19 @@ test('an unreviewed unit is offered to nobody', () => {
   assert.equal(grammarUnit('nope'), undefined);
 });
 
+test('a slot Choose never offers a bare article as its wrong option, on Grades 1 and 2', () => {
+  // «boots» takes no article and «coat» does, so cutting «a coat» with «boots»' one-token span used to offer «a».
+  const bare = new Set(['a', 'an']);
+  for (const grade of [1, 2]) {
+    for (const u of grammarUnitsForGrade(grade)) {
+      for (const s of unitSentences(u)) {
+        if (s.choose?.kind !== 'slot') continue;
+        assert.ok(!bare.has(s.choose.wrong.toLowerCase()), `${s.key}: wrong option «${s.choose.wrong}» against «${s.choose.right}»`);
+      }
+    }
+  }
+});
+
 test('every spoken string has its own recording key, shared with no other string or word', () => {
   // `playWord(text)` plays `<audioSlug>.mp3`; a collision would play another string. Spoken strings are
   // the sentences, plus the questions and the No exchange a Yes or No item says.

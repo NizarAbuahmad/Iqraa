@@ -10,6 +10,94 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## «ابدأ الحصة الآن» says the allowance is spent, as a note — 2026-10-24
+
+A teacher whose monthly AI allowance (`AI_USER_BUDGET_USD`, `1` in production) was used up pressed
+«ابدأ الحصة الآن» and got the red «تعذّر تجهيز العرض. اضغط … للمحاولة مرة أخرى.», with the amber
+«تعذّر الاتصال · محتوى تجريبي» badge above it. Cause: `buildClassDeck` asks `/generate/classroom-activity`
+for the quick-check, and `generateWithProvenance` re-throws a cap error on purpose (it will not hide a spent
+allowance behind made-up content); the two `catch {}` blocks (`useTodayLesson.ts`, `app/(tabs)/iqra.tsx`) threw
+the real error away and always printed the generic retry text. «Try again» cannot help in that state.
+
+**Now.** `startClassFailure(e)` (`services/ai/aiProvenance.ts`) maps `user_quota_exceeded` / `budget_exceeded` to
+`aiQuotaSpent` and `live_mode_off` to `aiUnavailable`, both with `note: true`; every other failure
+(including `generation_in_flight`, where retrying is right) keeps `startClassFailed`. A note is drawn as a
+neutral `information-circle` on `colors.muted` in `PhoneToday`, the desktop workspace and `CurrentLessonCard`
+(was red / amber alert), and the chat card skips the error haptic. Tests: `aiProvenance.test.ts`.
+
+**Verified.** Mobile suite 7221 pass / 0 fail, `pnpm run typecheck` clean. Before the change I ran the offline
+path for the failing lesson (`kbl-chem-s1-nccd-u1_lab`, Grade 10 chemistry lab, no objectives): it builds a
+deck, so the lesson itself is not the problem. **Not verified:** the screens in a browser or on a device, and the
+live cap response itself (confirmed by the teacher: their allowance was spent, not read from the server).
+
+**Known limit.** Start class still needs the AI call, so a teacher with no allowance cannot start a *new* deck;
+a saved «عرض الحصة» still opens. Falling back to the offline book-based quick-check on a cap was not done: it
+is a product decision (the same rule that keeps a worksheet from being faked), left open.
+
+## Chat app-help, thirtieth live pass: colloquial «ب» verbs, five short answers, nine more wordings — 2026-10-25
+
+Two passes. The allowance was still spent, so both were app-only and a question the matcher missed
+came back as «انتهت حصة التوليد الجديد لهذا الشهر».
+
+**Colloquial Arabic (30 questions in the Jordanian dialect) got a correct in-app answer to 8, and
+a wrong one to 4**: «كيف بسكر الامتحان؟» was answered with how to *build* an exam, «كيف بحفظ
+الشرائح؟» opened the slides tool on a lesson nobody named and «شلون بضيف سؤال للامتحان؟» asked
+which English lesson was meant. Every rule is written for the written «أضيف / أسكّر / أقترح»; speech
+puts «ب» in front of the present tense. `foldColloquial` (in `matchForm` and `plain`) drops that «ب»
+from a fixed list of verb stems, and only straight after a question word, so «كيف بنى» and «كيف
+بعد» keep theirs; it also reads «كيف بدي X» as «كيف X», moves a trailing «شلون» to the front
+(«بدي أطبع ورقة العمل شلون») and «شو يعني X» as «ما هو X». Run again, 17 of the 22 that failed
+resolve to the right answer. «سكّر» joins the words for closing an exam, «أصحح الامتحان» gets
+`howOpenGrading`, and «وين زر حذف الواجب / الامتحان» get their answers.
+
+**Formal wording (30 questions, 13 missed):** five short answers, each checked in code —
+`howMessageDelete` (no per-message delete; a conversation is deleted from ⋮, for you only),
+`howTimetableWeek` (the timetable is one weekly pattern, there is no "next week"),
+`howLiveGameEnd` (back → «إنهاء اللعبة؟» → «إنهاء»), `howClassCount` (the count is on the class
+card) and `howClassOrder` (no sorting of classes) — and wordings for answers that existed:
+muting a conversation (`howMuteChat`), searching Messages (`howSearchMessages`), a picture in
+Messages (`howSendFileMessage`), resending the verification code, a student's register number, a
+private note on a student, late homework (a count of who ticked), and opening a subject's book.
+(I first wrote new answers for the first three, having looked for them by key name only; a search
+of the answers' text found them. Check the text, not the key.)
+
+**Left alone:** «شو يعني تحدي الصف» (the tool card is the answer), «شلون أرسل رسالة لأهل الطالب»
+(stays with the model by design). The teaching-plan export is already answered by `howTeachingPlan`.
+## The screenshot script can shoot the English UI — 2026-10-25
+
+- **What changed.** `e2e/screens.mjs` shot the Arabic UI only (`@iqra_language`
+  was hard-coded to `ar`). `UI_LANG=en` now shoots English, with locale
+  `en-US`, and its file names end in `-en`. `e2e/README-screens.md` says so.
+  Direction is set per component, not by the document, so a row layout needs
+  checking in both languages.
+- **Why.** It was written to check «The desktop Tools grid reads right to left
+  in Arabic» in both languages. That fix landed separately, so only the script
+  change is left here.
+- **Verified.** On this branch's web build, `ONLY=tools` ran with and without
+  `UI_LANG=en`. Desktop English starts at "Lesson slides" top left; Arabic
+  starts at «شرائح الدرس» top right. **Not checked:** routes other than `tools`
+  in English.
+
+## Grade 1–2 grammar: «boots» is no longer offered against «a» — 2026-10-22
+
+- **What was wrong.** `unitSentences` built the wrong option of a `slot` Choose
+  by realising the sentence with the other word and cutting it with the right
+  word's span. When the right word takes no article and the other does, that
+  span is one token and caught only the article.
+- **Fix.** The other word is measured with its own span
+  (`realise(...).spans[c.slot]`), for every grade.
+- **The printed forms changed in 4 rows.** Grade 1 «I'm wearing boots.» («a» →
+  «a dress») and «socks» («a» → «a T-shirt»); Grade 2 «boots» («a» → «a coat»)
+  and «shoes» («a» → «a T-shirt»), in `docs/english-grammar-g{1,2}-review.html`
+  and `-sheet.md`. Nothing else in them moved. Regenerated with
+  `pnpm --filter @workspace/curriculum run grammar-sheet`.
+- **Verified.** A new test (`englishGrammar.test.ts`) fails on the old code and
+  passes on the new: no Grade 1–2 `slot` Choose has a bare article as its wrong
+  option. The curriculum suite passes except three files that need packages not
+  installed in this environment (`extraction`, `quranCorner`, `r2`), which fail
+  identically without this change.
+- **Not verified.** No one has re-read the four changed rows against a signed
+  form; anyone mid-review of Grade 1 or 2 should be told.
 
 ## Grade 8 English gets its book pages; Grades 1-7 do not, 2026-10-25
 
@@ -310,6 +398,40 @@ that stay with the model.
 are right this time; the app questions that fell to the model after the allowance ran out. The
 cap is the account's monthly generation allowance — a pass of 30 questions spends it, and this
 account has now had many passes.
+
+## Parent approval for email students — merged and deployed, flag still off — 2026-10-25
+
+PR #1274 («server and app, flag off») was marked ready and squash-merged to `main` as `2277f57` on
+2026-10-25, by the owner's instruction, after CI was green on its head. This entry records what the
+deploy did; what was built and its limits are in the two entries below it, «… the app (PR B)» and
+«… server (PR A)», dated 2026-10-24.
+
+**What the deploy did** (workflow run 801, from its job and step results; not re-read from production):
+
+- *production migrations* succeeded, so migration `0018` (nullable `users.guardian_approved_at`, new
+  owner-only table `guardian_consents`) was applied before the new API revision took traffic.
+- *production schema / production tables present* succeeded.
+- `iqraa-api`: the Cloud Run deploy succeeded (about 3.5 minutes) and its «Verify the deployed commit»
+  step passed, so the serving revision reports `2277f57`.
+- `iqraa-web`: the web build and the Cloudflare Pages publish succeeded and «Verify the deployed
+  bundle» passed.
+- `iqraa-verifier` was skipped (not changed).
+
+**Still off.** No workflow in `.github/workflows/` sets `GUARDIAN_APPROVAL` (a `grep` found nothing), and
+the deploy only updates the env vars it names, so unless someone set it by hand on the service it is
+unset: the server holds nobody, `GET /guardian-consent/config` answers `{enabled:false}`, and the web
+register screen and the role-switch screens behave as before this merge.
+
+**Not checked.** This session cannot reach production (its egress proxy refuses
+`iqraa-api-…run.app` and `app.iqrra.com`), so none of these was read by command: the serving revision's
+name and traffic split, `/api/healthz/version`, the `config` answer on production, the live web bundle
+in a browser, and the service's actual env (reading Cloud Run env is on the denied list; the claim above
+rests on the workflows). `STATUS.md` was updated from the deploy run, and those lines say so.
+
+**Next, all the owner's** (the numbered list is in the PR B entry): the consent wording read by a native
+speaker and a lawyer and `constants/legal.ts` + `LEGAL_VERSION` updated; Resend click tracking off for the
+parent mail and Cloudflare Web Analytics not recording URL fragments; the share of users on the new bundle
+checked; then `GUARDIAN_APPROVAL=true`, which locks every existing email student until a parent approves.
 
 ## Parent approval for email students — the app (PR B) — 2026-10-24
 
