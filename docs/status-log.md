@@ -71,6 +71,44 @@ Unsubscribes are not pushed back to Resend contacts. The deploy order matters: m
 Site_Iqra wording PR (it promises an unsubscribe link that only exists once this is live), then set
 `UPDATES_CONSENT_FROM`.
 
+## Thirty-third live pass: questions about the app itself, 2026-10-25
+
+**Why.** A 30-question pass on app.iqrra.com of the questions a teacher asks before using the app
+(is it the Ministry's curriculum, can private schools use it, who made it, when does the monthly limit renew,
+can students see the solutions, does it work on an iPhone) got 24 misses: the matcher knew screens, not the app.
+
+**Built.** Six answers and their rules in `appHelp.ts` / `i18n.ts` (ar + en), plus wordings on the existing
+`install-app` rule:
+
+- `howAboutCurriculum`, `howAboutWhoFor`, `howAboutMaker` — **the wording is the owner's, given in chat on
+  2026-10-25**: aligned with the Jordanian curriculum; for private *and* public schools and for teachers and
+  students; made by a Jordanian team. Nothing was added to it. In particular the curriculum answer does **not**
+  say the Ministry approved, accredited or endorsed the app, and a question that asks for approval
+  («معتمد من الوزارة», "is it approved") gets the same alignment answer. If the owner wants to say more, that
+  is a wording change in `i18n.ts`, not a matcher change.
+- `howAllowanceRenew` — verified in code, not from memory: the cap is per account (`AI_USER_BUDGET_USD`,
+  `AI_STUDENT_BUDGET_USD`), the period is the calendar month, and `GET /auth/me/ai-usage` reports `resetsAt` as the
+  first of next month (UTC). The refusal text is the real `aiQuotaSpent` string, and Settings → Account shows
+  the percentage and the renewal date (`howAiUsage`). It names no number: the limit is an environment variable.
+- `howStudentSolutions` — verified: a student sees answers and worked steps only when the exam is `closed`,
+  results are released, the paper's result is not provisional **and** the teacher turned on «اعرض الإجابات
+  والحلول للطلبة» (`studentReviewReady`, `setSolutionsShown` refuses an exam that is not closed).
+- `howTryNoAccount` — games open from a link without sign-in (`faqA12`), and a student hands in an exam from its
+  `/take/CODE` link without an account (the e2e smoke test does exactly that). The teacher tools need a free account.
+- Devices: no new answer. `howInstallApp` already says Iqrra is **not** in Google Play or the App Store and
+  runs in the browser at app.iqrra.com, so «does it work on an iPhone / Android / a computer» now reaches it.
+  `app.json` has an `ios` block, but that is not evidence of an iOS build, so nothing claims one.
+
+**Verified.** `appHelp.test.ts` pins 33 questions and 7 near-misses (a school, a curriculum or a limit named in a
+request for something else) and the owner's wording. The 813 historic questions in the live-pass corpus give
+the identical result before and after (0 changed). Full mobile suite and typecheck below.
+
+**Not verified.** Live: the demo account's monthly allowance is spent, so the model path cannot be exercised and
+no class exists on the demo teacher. These answers are app-only, so that does not block them, but they have not
+been seen in the running chat yet — re-run the 33 on app.iqrra.com after the deploy. Not answered (still go to the
+model): «is it free for private schools» (pricing plus schools), how many students a class may hold, whether AI
+output is checked.
+
 ## CI listens for the merge queue, 2026-10-25
 
 **Why.** `main` requires an up-to-date branch and a green `typecheck + tests`, and takes a merge about every
