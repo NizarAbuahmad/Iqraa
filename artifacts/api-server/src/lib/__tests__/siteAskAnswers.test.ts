@@ -285,39 +285,72 @@ describe("CURATED_ANSWERS — the phrases", () => {
 });
 
 describe("CURATED_ANSWERS — content anchors", () => {
-  // One distinctive substring per language per entry. Routing tests prove a question reaches
-  // an entry; these prove the entry's text is still ABOUT that topic, so a swapped or pasted-over
-  // answer cannot pass.
+  // Distinctive substrings per language per entry. Routing tests prove a question reaches an entry;
+  // these prove the entry's text is still ABOUT that topic, so a swapped or pasted-over answer
+  // cannot pass. An anchor is only useful if no OTHER entry contains it, and "anchors are unique"
+  // below enforces that for all of them, so a new answer cannot quietly satisfy a neighbour's anchor.
   const URL_MANHAJ = "https://www.iqrra.com/manhaj";
   const URL_PRIVACY = "https://www.iqrra.com/privacy";
   const URL_APP = "https://app.iqrra.com";
   const MAIL = "info@iqrra.com";
-  const ANCHORS: Record<(typeof EXPECTED_IDS)[number], { ar: readonly string[]; en: readonly string[] }> = {
-    greeting: { ar: ["أهلًا بك"], en: ["Hello and welcome"] },
+  type Id = (typeof EXPECTED_IDS)[number];
+  const ANCHORS: Record<Id, { ar: readonly string[]; en: readonly string[] }> = {
+    greeting: { ar: ["أهلًا بك في إقرأ"], en: ["Hello and welcome"] },
     thanks: { ar: ["عفوًا"], en: ["You're welcome"] },
-    "what-is": { ar: ["مساعد تعليمي"], en: ["teaching assistant"] },
-    free: { ar: ["مجاني"], en: ["free"] },
-    curriculum: { ar: ["المنهاج الأردني"], en: ["Jordanian curriculum"] },
-    coverage: { ar: [URL_MANHAJ], en: [URL_MANHAJ] },
-    outputs: { ar: ["أوراق عمل"], en: ["worksheets"] },
-    "math-check": { ar: ["الرياضية"], en: ["math"] },
-    "app-needed": { ar: [URL_APP], en: [URL_APP] },
-    android: { ar: ["أندرويد"], en: ["Android", "Google Play"] },
-    iphone: { ar: ["آيفون"], en: ["iPhone"] },
-    students: { ar: ["رابط"], en: ["link"] },
-    privacy: { ar: [URL_PRIVACY, MAIL], en: [URL_PRIVACY, MAIL] },
-    contact: { ar: [MAIL], en: [MAIL] },
-    "not-a-chatbot": { ar: ["روبوت محادثة"], en: ["chatbot"] },
-    "teacher-review": { ar: ["قابل للتعديل"], en: ["editable"] },
-    "other-countries": { ar: ["الأردن"], en: ["Jordan"] },
+    "what-is": { ar: ["مساعد تعليمي عربي"], en: ["Arabic teaching assistant"] },
+    free: { ar: ["مجاني بالكامل"], en: ["completely free"] },
+    curriculum: { ar: ["المحتوى مرتبط بالمنهاج الأردني"], en: ["tied to the Jordanian curriculum"] },
+    coverage: { ar: [URL_MANHAJ, "من الصف الأول إلى الصف العاشر"], en: [URL_MANHAJ, "from the first grade to the tenth"] },
+    outputs: { ar: ["رسائل لأولياء الأمور"], en: ["messages to parents"] },
+    "math-check": { ar: ["أداة تحقق رياضية", "الإجابات الرياضية"], en: ["math answers", "mathematical verification tool"] },
+    "app-needed": { ar: ["لا حاجة إلى تنزيل تطبيق"], en: ["no need to install anything"] },
+    android: { ar: ["أندرويد حاليًا", "متجر Play"], en: ["currently in closed testing", "Play store"] },
+    iphone: { ar: ["تطبيق آيفون"], en: ["The iPhone app"] },
+    students: { ar: ["يشاركه المعلم"], en: ["the teacher shares"] },
+    privacy: { ar: [URL_PRIVACY, "سياسة الخصوصية"], en: [URL_PRIVACY, "privacy policy"] },
+    contact: { ar: ["نموذج تكتب فيه اقتراحك"], en: ["a form where you can write your suggestion"] },
+    "not-a-chatbot": { ar: ["روبوت محادثة"], en: ["not a general chatbot"] },
+    "teacher-review": { ar: ["قابل للتعديل"], en: ["is editable"] },
+    "other-countries": { ar: ["خارج الأردن"], en: ["outside Jordan"] },
   };
+  // Links and the address are not unique to one entry (the app link is in two), so they are checked
+  // separately: each of these entries must carry exactly these, in both languages.
+  const REQUIRED_REFS: Partial<Record<Id, readonly string[]>> = {
+    coverage: [URL_MANHAJ],
+    "app-needed": [URL_APP],
+    iphone: [URL_APP],
+    privacy: [URL_PRIVACY, MAIL],
+    contact: [MAIL],
+  };
+  const norm = (t: string) => t.trim().toLowerCase();
 
   it("has the anchors in the right text of every entry", () => {
+    assert.deepEqual(Object.keys(ANCHORS), [...EXPECTED_IDS]);
     for (const e of CURATED_ANSWERS) {
-      const a = ANCHORS[e.id as (typeof EXPECTED_IDS)[number]];
+      const a = ANCHORS[e.id as Id];
       assert.ok(a, `${e.id}: no anchors`);
-      for (const needle of a.ar) assert.ok(e.ar.includes(needle), `${e.id}.ar must contain «${needle}»`);
-      for (const needle of a.en) assert.ok(e.en.includes(needle), `${e.id}.en must contain «${needle}»`);
+      for (const needle of a.ar) assert.ok(norm(e.ar).includes(norm(needle)), `${e.id}.ar must contain «${needle}»`);
+      for (const needle of a.en) assert.ok(norm(e.en).includes(norm(needle)), `${e.id}.en must contain «${needle}»`);
+    }
+  });
+
+  it("anchors are unique: no entry's anchor appears in any other entry's text of that language", () => {
+    for (const e of CURATED_ANSWERS) {
+      const a = ANCHORS[e.id as Id];
+      for (const other of CURATED_ANSWERS) {
+        if (other.id === e.id) continue;
+        for (const needle of a.ar) assert.ok(!norm(other.ar).includes(norm(needle)), `${e.id}.ar anchor «${needle}» is also in ${other.id}.ar`);
+        for (const needle of a.en) assert.ok(!norm(other.en).includes(norm(needle)), `${e.id}.en anchor «${needle}» is also in ${other.id}.en`);
+      }
+    }
+  });
+
+  it("carries the required links and address in both languages", () => {
+    for (const e of CURATED_ANSWERS) {
+      for (const ref of REQUIRED_REFS[e.id as Id] ?? []) {
+        assert.ok(e.ar.includes(ref), `${e.id}.ar must contain ${ref}`);
+        assert.ok(e.en.includes(ref), `${e.id}.en must contain ${ref}`);
+      }
     }
   });
 
