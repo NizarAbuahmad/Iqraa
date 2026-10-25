@@ -32,6 +32,26 @@ requires reports on it. If one does not, the queue entry times out and the PR dr
 restores the old behaviour, and reverting this PR changes nothing for a repository with the queue off.
 `deploy.yml` is untouched: the queue merges into `main`, which is still a push to `main`.
 
+## Teaching plan: the lesson date boxes follow «توزيع تلقائي» — 2026-10-25
+
+A teacher pressed «توزيع تلقائي» in a teaching plan and every lesson's date box stayed empty, so the
+plan looked unscheduled and the home card kept asking for it. Reproduced in the browser (API,
+timetable and a Grade 10 plan on a local database): the button did work — it set 36 dates (the
+rows' borders turned green) and «حفظ» stored all 36, after which Today showed the Monday period's
+lesson — but each `LessonDateRow` keeps its own typed text, set once from the date when the row
+first rendered, so dates arriving from outside were never shown. A teacher who sees empty boxes
+presses «إلغاء», and nothing is saved. The row now takes the date again whenever the date changes
+(`useEffect` on `date`, `app/teaching-plans/index.tsx`); a half-typed date does not propagate, so
+typing is not overwritten.
+
+Verified in the browser on a rebuilt bundle: after «توزيع تلقائي» the boxes read 2026-10-25,
+2026-10-26, 2026-11-01…; a typed date, a half-deleted one and a retyped one behave; Save stores 36
+entries. `pnpm run typecheck`. **Not verified:** Arabic/RTL and a phone, the full mobile suite
+locally (CI runs it), and that this is the reporting teacher's exact case (a teacher who did press
+«حفظ» would not have hit it). **Not tested:** no test pins the row — it needs React Native, which
+the bare `node --test` runner cannot load. **Not changed:** «توزيع تلقائي» still does nothing, silently,
+when no school day is selected or the start date is invalid; the button is dimmed but says nothing.
+
 ## Grade 8 semester 1 word lists in the English corner, 2026-10-25
 
 Grades 6–8 had a tab and a «word games coming» notice (PR #1268) but no words. Grade 8's
