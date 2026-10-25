@@ -102,7 +102,7 @@ const HOMOPHONE_GROUPS: string[][] = [
   ['there', 'their', "they're"],
   ['to', 'too', 'two'],
   ['no', 'know'],
-  ['see', 'sea'],
+  ['see', 'sea', 'c'],
   ['buy', 'by', 'bye'],
   ['hear', 'here'],
   ['one', 'won'],
@@ -121,6 +121,11 @@ const HOMOPHONE_GROUPS: string[][] = [
   ['sale', 'sail'],
   ['steal', 'steel'],
   ['break', 'brake'],
+  // Found in the first real run: the recogniser wrote the other member of each pair for a clip that was right.
+  ['pea', 'p'],
+  ['hanger', 'hangar'],
+  ['sew', 'so', 'sow'],
+  ['high', 'hi'],
 ];
 const HOMOPHONES: Record<string, string> = {};
 for (const [head, ...rest] of HOMOPHONE_GROUPS) for (const w of rest) HOMOPHONES[w] = head as string;
@@ -187,6 +192,19 @@ function editDistance<T>(a: readonly T[], b: readonly T[]): number {
   return prev[b.length] as number;
 }
 
+/** The spacing rule applies to items of up to this many words (a compound or a short phrase, never a sentence). */
+const SPACING_MAX_WORDS = 3;
+
+/**
+ * Letters only: «'s» is read as a plural «s» (a possessive and a plural sound the same,
+ * and a recogniser writes either), and for a short item the spaces go too, so «yo-yo»,
+ * «yoyo» and «yo yo» are one thing. Different letters are never joined.
+ */
+function letterKey(normalised: string, dropSpaces: boolean): string {
+  const folded = normalised.replace(/'s\b/g, 's');
+  return dropSpaces ? folded.replace(/ /g, '') : folded;
+}
+
 /** A single expected word can be `close` only from this length. */
 const CLOSE_MIN_LETTERS = 6;
 /** The endings that make one word the other's inflection (firefighter / firefighters). */
@@ -200,7 +218,9 @@ function isInflection(a: string, b: string): boolean {
 
 /**
  * - `silent`   nothing heard;
- * - `match`    equal once both are normalised;
+ * - `match`    equal once both are normalised, or equal in letters once «'s» is read as a
+ *              plural «s» and, for an item of up to three words, the spaces are ignored
+ *              (yo-yo / yoyo, butcher's / butchers);
  * - `close`    a single expected word of 6+ letters whose heard form is it plus or
  *              minus one inflection ending (s es d ed ing er ers); or a multi-word
  *              text within floor(10% of its words) word edits: none under 10 words,
@@ -219,6 +239,8 @@ export function compareSpoken(expected: string, heard: string): Comparison {
 
   const ew = e.split(' ');
   const hw = h.split(' ');
+  const short = ew.length <= SPACING_MAX_WORDS && hw.length <= SPACING_MAX_WORDS;
+  if (letterKey(e, short) === letterKey(h, short)) return { verdict: 'match', distance: 0, expected: e, heard: h };
   if (ew.length === 1 && hw.length === 1) {
     const distance = editDistance([...e], [...h]);
     const close = [...e].length >= CLOSE_MIN_LETTERS && isInflection(e, h);
