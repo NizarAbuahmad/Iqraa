@@ -7,6 +7,7 @@ from make_avatar_overlays import CSS as BASE, FLAG
 
 CSS = BASE + """
 .cap2{width:520px;text-align:right;font-family:"Cairo";font-weight:900;font-size:54px;line-height:1.28;color:var(--ink)}
+.hcap{width:960px;text-align:right;font-family:"Cairo";font-weight:900;font-size:56px;line-height:1.25;color:var(--ink)}
 .tag2{background:#fff;color:var(--ink);font-size:27px}
 .cta{font-size:40px;padding:14px 28px;border-radius:22px;background:var(--primary);color:#fff;border-color:var(--ink);box-shadow:0 8px 0 var(--ink)}
 .cta span{color:#fff}
@@ -20,6 +21,7 @@ for k, t in PILL.items():
 for i, s in enumerate(SENTENCES):
     for j, c in enumerate(s["chunks"]):
         rows.append(f'<div id="c{i}_{j}" class="o cap2">{c}</div>')
+        rows.append(f'<div id="h{i}_{j}" class="o hcap">{c}</div>')
 cta = CTA.replace("www.iqrra.com", "<span>www.iqrra.com</span>")
 rows.append(f'<div id="cta" class="o"><div class="cta">{cta}</div></div>')
 open("avatar_real_ov.html", "w").write(f"<!doctype html><meta charset='utf-8'><style>{CSS}</style><body>\n" + "\n".join(rows))

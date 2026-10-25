@@ -35,6 +35,10 @@ BLOCK_Y = 330
 SHEET_Y = 1000
 LONG_GAP, KEEP_GAP = 0.7, 0.22                    # silences above LONG_GAP are cut to 2 x KEEP_GAP
 PHONE_C = (850, 1110)
+BUB = 360                                         # the presenter's bubble, hero style
+BUB_CROP = (700, 540, 760, 760)                   # head and shoulders, square
+HERO_PHONE = (560, 1212)                          # the whole 390x844 screen
+HERO_C = (650, 1185)
 G = {}
 
 
@@ -99,19 +103,20 @@ def remap(t_src, keep):
 class ClipReader:
     """The presenter's frames at 30 fps, cropped and scaled, one ffmpeg per kept stretch."""
 
-    def __init__(self, clip, keep):
+    def __init__(self, clip, keep, crop=None, size=None):
         self.clip, self.keep = clip, keep
+        self.crop, self.size = crop or CROP, size or BLOCK
         self.starts = np.cumsum([0.0] + [b - a for a, b in keep])
         self.proc = self.cur = self.pos = None
 
     def _open(self, k, frame_in_stretch):
         self.close()
         a, b = self.keep[k]
-        x, y, w, h = CROP
+        x, y, w, h = self.crop
         t0 = a + frame_in_stretch / FPS
         self.proc = subprocess.Popen(
             ["ffmpeg", "-v", "error", "-ss", f"{t0:.3f}", "-i", str(self.clip), "-t", f"{b - t0 + 0.2:.3f}",
-             "-vf", f"fps={FPS},crop={w}:{h}:{x}:{y},scale={BLOCK[0]}:{BLOCK[1]}:flags=lanczos", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
+             "-vf", f"fps={FPS},crop={w}:{h}:{x}:{y},scale={self.size[0]}:{self.size[1]}:flags=lanczos", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
             stdout=subprocess.PIPE)
         self.cur, self.pos = k, frame_in_stretch - 1
 
@@ -120,12 +125,12 @@ class ClipReader:
         want = int(round((t_out - self.starts[k]) * FPS))
         if self.cur != k or self.pos is None or want < self.pos:
             self._open(k, want)
-        size = BLOCK[0] * BLOCK[1] * 3
+        size = self.size[0] * self.size[1] * 3
         while self.pos < want:
             buf = self.proc.stdout.read(size)
             if len(buf) < size:
                 break
-            self.frame = np.frombuffer(buf, np.uint8).reshape(BLOCK[1], BLOCK[0], 3)
+            self.frame = np.frombuffer(buf, np.uint8).reshape(self.size[1], self.size[0], 3)
             self.pos += 1
         return self.frame
 
@@ -260,16 +265,113 @@ def render_frame(f):
     return frame.convert("RGB")
 
 
+def background_hero():
+    img = Image.new("RGBA", (W, H), SAND + (255,))
+    d = ImageDraw.Draw(img)
+    d.ellipse((650 - 540, 1160 - 540, 650 + 540, 1160 + 540), fill=TEAL + (255,))
+    d.ellipse((1000 - 54, 700 - 54, 1000 + 54, 700 + 54), fill=YELLOW + (255,))
+    return img
+
+
+def bubble(face):
+    """The presenter in a round bubble: her keyed cut-out on teal, a white ring, a soft shadow."""
+    circ = Image.new("L", (BUB * 4, BUB * 4), 0)
+    ImageDraw.Draw(circ).ellipse((0, 0, BUB * 4 - 1, BUB * 4 - 1), fill=255)
+    circ = circ.resize((BUB, BUB), Image.LANCZOS)
+    base = Image.new("RGBA", (BUB, BUB), TEAL + (255,))
+    base.alpha_composite(face)
+    base.putalpha(circ)
+    pad = 40
+    out = Image.new("RGBA", (BUB + 2 * pad, BUB + 2 * pad), (0, 0, 0, 0))
+    sh = Image.new("RGBA", out.size, (0, 0, 0, 0))
+    ImageDraw.Draw(sh).ellipse((pad, pad + 14, pad + BUB, pad + BUB + 14), fill=(11, 27, 51, 90))
+    out.alpha_composite(sh.filter(ImageFilter.GaussianBlur(14)))
+    ring = Image.new("RGBA", (BUB + 20, BUB + 20), (0, 0, 0, 0))
+    ImageDraw.Draw(ring).ellipse((0, 0, BUB + 19, BUB + 19), fill=(255, 255, 255, 255))
+    out.alpha_composite(ring, (pad - 10, pad - 10))
+    out.alpha_composite(base, (pad, pad))
+    return out
+
+
+def render_frame_hero(f):
+    setup()
+    t = f / FPS
+    ctx = G["ctx"]
+    spans = ctx["spans"]
+    si = max(i for i, sp in enumerate(spans) if sp[0] <= t + 1e-9)
+    s0, s1, sp0, sp1 = spans[si]
+    sent = SENTENCES[si]
+    frame = G.setdefault("bg_h", background_hero()).copy()
+
+    # the app, big
+    n_sub = len(sent["subs"])
+    d = (s1 - s0) / n_sub
+    k = min(n_sub - 1, int((t - s0) / d))
+    sub_t0 = s0 + k * d
+    take_n, src, rate, demo = sent["subs"][k]
+    key_ = (si, k)
+    if key_ not in G["readers"]:
+        for r in G["readers"].values():
+            r.close()
+        G["readers"] = {key_: FrameReader(G["takes"][take_n], src)}
+    foot = bp.footage(G["takes"][take_n], G["readers"][key_], dict(src=src, rate=rate, cam=(0, 0, 390, 844)), t, t - sub_t0)
+    if take_n == "r2n_library":
+        fade_h = int(foot.height * 0.28)
+        gp = np.zeros((fade_h, foot.width, 4), np.uint8); gp[..., :3] = (246, 245, 241)
+        gp[..., 3] = (np.linspace(0, 1, fade_h) ** 1.4 * 255).astype(np.uint8)[:, None]
+        foot.alpha_composite(Image.fromarray(gp, "RGBA"), (0, foot.height - fade_h))
+    foot.putalpha(G["mask"])
+    ph = G["body"].copy(); ph.alpha_composite(foot, (bp.BZ, bp.BZ))
+    notch = Image.new("RGBA", ph.size, (0, 0, 0, 0))
+    ImageDraw.Draw(notch).rounded_rectangle((ph.width // 2 - 70, bp.BZ + 14, ph.width // 2 + 70, bp.BZ + 46), 16, fill=INK + (255,))
+    ph.alpha_composite(notch)
+    pop = bp.back_out(min((t - sub_t0) / 0.3, 1), 1.5)
+    kk = 0.95 + 0.05 * pop
+    ph = ph.resize((int(ph.width * kk), int(ph.height * kk)), Image.LANCZOS)
+    ph = ph.rotate(-1.5 + 0.5 * np.sin(t * 1.5), resample=Image.BICUBIC, expand=True)
+    sprite, _ = bp.shadowed(ph)
+    bp.paste_center(frame, sprite, HERO_C[0], HERO_C[1] + 6 * np.sin(t * 2.0))
+
+    # the presenter, small, in the lower-left corner
+    if "bub" not in G:
+        G["bub"] = ClipReader(ctx["clip"], ctx["keep"], crop=BUB_CROP, size=(BUB, BUB))
+    pop_b = bp.back_out(min(t / 0.5, 1), 1.6)
+    bb = bubble(key(G["bub"].get(t), ctx["bg"]))
+    sc_ = 0.6 + 0.4 * pop_b
+    if sc_ < 0.999:
+        bb = bb.resize((int(bb.width * sc_), int(bb.height * sc_)), Image.LANCZOS)
+    bp.paste_center(frame, bb, 40 + bb.width // 2 - 20, 1010 + 6 * np.sin(t * 1.8))
+
+    # text
+    ov = G["ov"]
+    frame.alpha_composite(ov["lk"], (1015 - ov["lk"].width, 276))
+    frame.alpha_composite(ov["chip"], (65, 298))
+    if demo:
+        frame.alpha_composite(bp.fade(ov["pill_" + demo], ease((t - sub_t0) / 0.2)), (65, 372))
+    lens = np.array([len(c) for c in sent["chunks"]], float)
+    edge = sp0 + (sp1 - sp0) * np.concatenate([[0], np.cumsum(lens)]) / lens.sum()
+    ci = next((j for j in range(len(lens)) if t < edge[j + 1]), len(lens) - 1)
+    t_c = max(s0, edge[ci] - 0.1) if ci else s0
+    wipe_in(frame, ov[f"h{si}_{ci}"], 1015, 410, t - t_c)
+    if si == len(SENTENCES) - 1:
+        q = ease((t - (sp0 + 0.5)) / 0.4)
+        if q > 0:
+            cta = ov["cta"]
+            frame.alpha_composite(bp.fade(cta, q), (1015 - cta.width, int(1235 + (1 - q) * 24)))
+    return frame.convert("RGB")
+
+
 def render_chunk(args):
     n, f0, f1, ctx = args
     G.clear(); setup(); G["ctx"] = ctx
+    render = render_frame_hero if ctx.get("style") == "hero" else render_frame
     path = OUT / f"_ar_{n}.mp4"
     enc = subprocess.Popen(
         ["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
          "-c:v", "libx264", "-profile:v", "high", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", "-g", "60",
          "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", str(path)], stdin=subprocess.PIPE)
     for f in range(f0, f1):
-        enc.stdin.write(render_frame(f).tobytes())
+        enc.stdin.write(render(f).tobytes())
     enc.stdin.close(); enc.wait()
     return str(path)
 
@@ -278,6 +380,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--clip", required=True, help="the D-ID clip (flat background, bust filling the width)")
     ap.add_argument("--final", action="store_true", help="a watermark-free clip: names the file Iqrra_18_Worksheet_Presenter.mp4 instead of ..._DRAFT")
+    ap.add_argument("--style", choices=["sheet", "hero"], default="sheet", help="sheet: the presenter on top, captions below; hero: the app recording is the hero, the presenter a small bubble")
     ap.add_argument("--sample", type=float, default=0, help="seconds of video to render (a smoke test)")
     a = ap.parse_args()
 
@@ -299,7 +402,9 @@ def main():
         s0 = 0.0 if i == 0 else (out_spans[i - 1][1] + o0) / 2
         e0 = total if i == len(out_spans) - 1 else (o1 + out_spans[i + 1][0]) / 2
         spans.append((s0, e0, o0, o1))
-    ctx = dict(clip=str(a.clip), keep=keep, spans=spans, spans_out=out_spans, bg=bg_colour(a.clip))
+    ctx = dict(clip=str(a.clip), keep=keep, spans=spans, spans_out=out_spans, bg=bg_colour(a.clip), style=a.style)
+    if a.style == "hero":
+        bp.SW, bp.SH = HERO_PHONE
     print(f"source {total_src:.1f}s -> {total:.1f}s; keep {[(round(x, 1), round(y, 1)) for x, y in keep]}")
     print("sentences:", [(round(s[0], 1), round(s[1], 1)) for s in spans], "bg", ctx["bg"])
 
@@ -326,7 +431,8 @@ def main():
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(a.clip), "-filter_complex", ";".join(parts_f + [cat]), "-map", "[voice]", "-ac", "2", "-ar", "44100", str(voice)], check=True)
     bed = OUT / "_ar_music.wav"
     music_inspire.render(bed, total, hits=[sp[0] for sp in spans[1:]], end=spans[-1][2])
-    name = "Iqrra_18_Worksheet_Presenter.mp4" if a.final else "Iqrra_18_Worksheet_Presenter_DRAFT.mp4"
+    base = "Iqrra_18_Worksheet_Presenter" if a.style == "sheet" else "Iqrra_18b_Worksheet_App_Hero"
+    name = f"{base}.mp4" if a.final else f"{base}_DRAFT.mp4"
     final = OUT / name
     flt = (f"[1:a]volume=-21dB,afade=t=out:st={total - 1.2:.2f}:d=1.2[m];[2:a]loudnorm=I=-16:TP=-1.5:LRA=9[v];[m][v]amix=inputs=2:normalize=0:duration=first[a]")
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(silent), "-i", str(bed), "-i", str(voice), "-filter_complex", flt, "-map", "0:v", "-map", "[a]",
