@@ -58,6 +58,8 @@ artifacts/math-verifier/prove_slice_report.json
 __pycache__/
 **/__pycache__/
 *.py[cod]
+# Intermediate output of lib/curriculum/scripts/glossary (the PDF extraction)
+lib/curriculum/scripts/glossary/.work/
 
 # Large teacher PDF support packs (catalog JSON is committed; binaries stay local)
 knowledge-base/**/support-pdfs/
