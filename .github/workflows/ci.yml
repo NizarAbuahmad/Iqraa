@@ -11,6 +11,9 @@ on:
   pull_request:
   push:
     branches: [main]
+  # The merge queue tests each entry on its own temporary branch; a workflow
+  # that does not listen for this never reports, and the queue waits forever.
+  merge_group:
 
 # Without this block a workflow inherits the repository default, which can be
 # write-all — so every job here would run holding a token able to push to main,

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { loadPrepSkips, setPrepSkip, subscribeLessonPick, saveLessonPick, timetableWins, type HomeLessonPick } from '../lessonContext.ts';
+import { loadPrepSkips, setPrepSkip, subscribeLessonPick, saveLessonPick, showsPeriodLine, timetableWins, type HomeLessonPick } from '../lessonContext.ts';
 import { todayISO } from '../planEntries.ts';
 
 const pick = (topic: string): HomeLessonPick => ({ topic, unitOrder: null, gradeId: 'grade-10' });
@@ -70,6 +70,25 @@ describe('timetableWins', () => {
 
   it('never wins without a scheduled lesson', () => {
     assert.equal(timetableWins(null, false, today), false);
+  });
+});
+
+describe('showsPeriodLine', () => {
+  it('shows the next period when the card follows the timetable', () => {
+    assert.equal(showsPeriodLine(true, true, true), true);
+  });
+
+  it('shows it when the class has no lesson yet, so a saved timetable is visible at once', () => {
+    assert.equal(showsPeriodLine(true, false, false), true);
+  });
+
+  it('hides it when a lesson picked today is on the card instead of the period\'s lesson', () => {
+    assert.equal(showsPeriodLine(true, true, false), false);
+  });
+
+  it('has nothing to show without a next period', () => {
+    assert.equal(showsPeriodLine(false, false, false), false);
+    assert.equal(showsPeriodLine(false, true, true), false);
   });
 });
 

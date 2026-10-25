@@ -54,6 +54,11 @@ const OUT = path.resolve(HERE, '../src/data/english_vocabulary.json');
  */
 const BOOKS: { sourceId: string; lessonId: (unit: number, lesson: number) => string }[] = [
   { sourceId: 'eng-s1-student-book', lessonId: (u, l) => `kbl-eng-s1-nccd-u${u}_l${l}` },
+  // Grade 8 is the same Jordan High Note series and layout as Grade 9: seven `LESSON nA…G` pages per unit, and a
+  // Word List whose `WL<unit>.<lesson>` markers number the lessons the catalog numbers. Semester 2
+  // (`g8-english-s2-student-book`) is absent on purpose: its text layer is rejected by `extract-text`'s Arabic
+  // gates (the Arabic front pages), so there is no extraction to read yet.
+  { sourceId: 'g8-english-s1-student-book', lessonId: (u, l) => `kbl-g8-eng-s1-nccd-u${u}_l${l}` },
   { sourceId: 'g9-english-s1-student-book', lessonId: (u, l) => `kbl-g9-eng-s1-nccd-u${u}_l${l}` },
   { sourceId: 'g9-english-s2-student-book', lessonId: (u, l) => `kbl-g9-eng-s2-nccd-u${u}_l${l}` },
 ];
@@ -139,7 +144,9 @@ function wordsFrom(book: (typeof BOOKS)[number]): Row[] {
 
     let buf = '';
     for (const line of page.text.split('\n').map(s => s.trim()).filter(Boolean)) {
-      const wl = line.match(/^WL\s*(\d+)\.(\d+)/);
+      // The marker is usually a line of its own ("WL1.2"), but when a lesson heading wraps onto three lines it ends
+      // the last heading line instead ("GRAMMAR \tWL1.1", Grade 8). A line with a slash is an IPA row, never a marker.
+      const wl = line.match(/^WL\s*(\d+)\.(\d+)/) ?? (line.includes('/') ? null : line.match(/\sWL\s*(\d+)\.(\d+)\s*$/));
       if (wl) {
         marker = { unit: Number(wl[1]), lesson: Number(wl[2]) };
         buf = '';

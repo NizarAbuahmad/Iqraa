@@ -2240,3 +2240,137 @@ describe('files, slides, exams, classes, the account and the app — wordings of
     });
   }
 });
+
+describe('colloquial «ب» verbs, and messages, the timetable, the live game and the class list — wordings of answers (thirtieth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    // Jordanian speech: «ب» before the present tense.
+    ['شلون بضيف طالب جديد؟', 'howAddStudent'],
+    ['كيف بدي أضيف طالب', 'howAddStudent'],
+    ['كيف بفتح التقويم؟', 'howCalendar'],
+    ['كيف بحذف شعبة؟', 'howArchiveClass'],
+    ['كيف بسجل خروج؟', 'howSignOut'],
+    ['شلون بنزل الكتاب المدرسي؟', 'howBookDownload'],
+    ['كيف بحفظ الشرائح؟', 'howSaveSlides'],
+    ['كيف بنشر النتائج للطلاب؟', 'howReleaseResults'],
+    ['شلون بضيف سؤال للامتحان؟', 'howEditExamQuestions'],
+    ['كيف بعرف رمز دخول الطالب؟', 'howReissueLoginCode'],
+    ['كيف بصحح الامتحان؟', 'howOpenGrading'],
+    ['كيف أصحح الامتحان؟', 'howOpenGrading'],
+    ['شلون بسكر الامتحان؟', 'howCloseExam'],
+    ['كيف بلغي واجب؟', 'howHomeworkEdit'],
+    ['وين بقترح ميزة؟', 'howSuggestFeature'],
+    ['بدي أطبع ورقة العمل شلون؟', 'faqA4'],
+    ['وين زر حذف الواجب؟', 'howHomeworkEdit'],
+    ['وين زر حذف الامتحان؟', 'howDeleteExam'],
+    // Messages, the timetable, the live game, the class list.
+    ['كيف أحذف رسالة أرسلتها؟', 'howMessageDelete'],
+    ['how do i delete a message i sent', 'howMessageDelete'],
+    ['كيف أرسل صورة في الرسائل؟', 'howSendFileMessage'],
+    ['كيف أكتم إشعارات محادثة معينة؟', 'howMuteChat'],
+    ['كيف أبحث في الرسائل؟', 'howSearchMessages'],
+    ['كيف أرى جدول الأسبوع القادم؟', 'howTimetableWeek'],
+    ['كيف أنهي اللعبة المباشرة؟', 'howLiveGameEnd'],
+    ['how do i end the live game', 'howLiveGameEnd'],
+    ['كيف أعرف عدد الطلبة في كل شعبة؟', 'howClassCount'],
+    ['كيف أرتّب الشعب حسب الاسم؟', 'howClassOrder'],
+    // Answers that existed under wordings the matcher did not know.
+    ['كيف أرسل رمز التحقق مرة أخرى؟', 'howVerifyEmail'],
+    ['كيف أضيف رقماً مدرسياً للطالب؟', 'howEditStudent'],
+    ['كيف أضيف ملاحظة خاصة على طالب؟', 'howStudentNote'],
+    ['كيف أرى الواجبات المتأخرة؟', 'howHomeworkDone'],
+    ['كيف أفتح كتاب الرياضيات للصف العاشر؟', 'howSearchLesson'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  // The «ب» is dropped only from the listed verbs straight after a question word.
+  const stayWithModel = [
+    'كيف بنى المصريون الأهرامات',
+    'كيف بعد الحرب',
+    'كيف بالإنجليزية أقول مرحبا',
+    'كيف بدأت الحرب العالمية',
+    'كيف أحذف رسالة من البريد الإلكتروني',
+    'كيف أكتم الصوت في الفيديو',
+    'كيف أنهي المسألة بخطوة أخيرة',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howMessageDelete', 'howMuteChat', 'howLiveGameEnd', 'howAddStudent', 'howCloseExam', 'howHomeworkEdit', 'howArchiveClass', 'howSignOut', 'howOpenGrading']);
+      const a = answerAppHelp(q, 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});
+
+describe('greetings, «الطريقة لـ», «أقدر / بقدر» and «أرى / أشوف» — the same questions in other written styles (thirty-first live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    // A greeting or a run-up in front of the question.
+    ['لو سمحت كيف أضيف واجب', 'howAddHomework'],
+    ['ممكن تشرح كيف أرسل واجب', 'howAddHomework'],
+    ['عندي مشكلة كيف أغلق الامتحان', 'howCloseExam'],
+    ['مرحبا كيف أحذف شعبة', 'howArchiveClass'],
+    // «ما هي / شو / وش … الطريقة (ل)…».
+    ['وش طريقة تغيير كلمة المرور', 'howChangePassword'],
+    ['شو الطريقة لحفظ الشرائح', 'howSaveSlides'],
+    ['ما هي طريقة نشر النتائج؟', 'howReleaseResults'],
+    // «أقدر / بقدر» after the question word, or leading a yes/no.
+    ['كيف اقدر احذف طالب', 'howRemoveStudent'],
+    ['هل بقدر اغير اسم الشعبة', 'howRenameClass'],
+    // «أرى / أشوف» + a place.
+    ['كيف أرى جدول الحصص', 'howTimetable'],
+    ['كيف اشوف جدول الحصص', 'howTimetable'],
+    ['وين لاقي سجل الطالب', 'howStudentRecord'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  // A greeting is dropped only in front of a question word, and «أرى» alone claims nothing.
+  const stayWithModel = [
+    'كيف أرى الفرق بين الحمض والقاعدة',
+    'كيف أرى المعادلة',
+    'كيف اشوف الاقترانات',
+    'مرحبا بكم في الصف',
+    'ما هي طريقة حل المعادلة التربيعية',
+    'شو الطريقة لحساب مساحة الدائرة',
+    'كيف اقدر احسب المساحة',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howAddHomework', 'howCloseExam', 'howArchiveClass', 'howChangePassword', 'howSaveSlides', 'howReleaseResults', 'howRemoveStudent', 'howRenameClass', 'howTimetable', 'howStudentRecord']);
+      const a = answerAppHelp(q, 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});
+
+describe('three English wordings of answers that existed (thirty-first live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['Is there a way to download the textbook?', 'howBookDownload'],
+    ['how do i add a due date to homework', 'howAddHomework'],
+    ['how do i post results to students', 'howReleaseResults'],
+    ['how do i show the results to students', 'howReleaseResults'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, 'en', t).text, `<${key}>`);
+    });
+  }
+  for (const q of ['Is there a way to download a video from youtube', 'how do i post a comment on a blog', 'how do i add a due date to a library book']) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howBookDownload', 'howAddHomework', 'howReleaseResults']);
+      assert.equal(ids.has(answerAppHelp(q, 'en', t).text.replace(/[<>]/g, '')), false);
+    });
+  }
+});
