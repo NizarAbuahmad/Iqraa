@@ -535,11 +535,10 @@ export function unitSentences(unit: GrammarUnit): GrammarSentence[] {
         const other = nextPictured(slotList(unit, p, c.slot), fill[c.slot]);
         if (other) {
           const span = spans[c.slot];
+          // Measure the other word with its own span: «boots» takes no article and «coat» does, so cutting
+          // «I'm wearing a coat.» with «boots»' one-token span offered «a» against «boots».
           const otherRealised = realise(p.text, { ...fill, [c.slot]: other });
-          // Grades 1–2 measured the other word with this word's span, so «boots» was offered against «a» (the
-          // article of «a coat»). Their forms are signed off as printed, so that stays until they are re-reviewed;
-          // Grade 3 measures the other word's own span («glasses» against «a dress»).
-          const wrong = spanText(otherRealised.tokens, grade >= 3 ? otherRealised.spans[c.slot] : span);
+          const wrong = spanText(otherRealised.tokens, otherRealised.spans[c.slot]);
           choose = { kind: 'slot', start: span[0], length: span[1], right: spanText(tokens, span), wrong };
         }
       } else if (c?.kind === 'whole' && picture) {
