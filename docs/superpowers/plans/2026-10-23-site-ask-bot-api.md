@@ -1633,3 +1633,14 @@ Report to the user that the API is verified, and ask whether to write the `Site_
 **Placeholder scan.** Every code step has full code; every command has its expected result. Task 8's log entry has no blanks, and Task 9 replaces its "Not checked" sentence with findings, which cannot be written before the check happens.
 
 **Type consistency.** `SiteAskInput`/`SiteAskTurn` (Task 2) feed `buildSiteAskMessages` (Task 6). `SiteAskDeps` members match the `realDeps` object in Task 7 one for one (`liveModeOn`, `budgetAvailable`, `dailyCapOpen`, `loadFacts`, `complete`, `recordUsage`). `SiteAskReason` uses `"error"` everywhere (the spec's "model error" is the same case). `SITE_ASK_KIND` is defined in Task 5 and used in Task 7. `SITE_ASK_PROMPT_VERSION` and `SITE_ASK_FALLBACK_MESSAGE` are defined in Task 3 and used in Task 7. `recordUsage(usage, model, { kind, promptVersion, durationMs })` matches `GenerationDetail` in `lib/aiBudget.ts`.
+
+## Amendments after the final whole-branch review
+
+The code blocks above are as written before the review; the shipped code differs in these ways.
+
+- Global limiter `site-ask-all`: 600 -> 100 an hour (about what a $1/day cap pays for at roughly $0.01 an answer).
+- The spend gate gained `add(usd)` (adds to the cached total only when a total was actually read), the pure helper `estimateCostUsd(usage, pricing)`, and an optional `ledgerHealthy` option. The route's `recordUsage` dep calls `spendGate.add(estimateCostUsd(usage, getPricing(model)))`, and passes `ledgerHealthy: () => getPersistenceFailure() !== "insert"`, so a failing ledger insert closes the gate.
+- `siteFacts` rejects a 200 whose `content-type` is present and not `text/plain` or `text/markdown` (falls back to the built-in facts); an absent header is accepted.
+- The Task 5 header comment's "a few cents at most" was wrong: a 600-request first-minute burst through a gate that last saw "under the cap" would have been about $6-10 at roughly $0.01 an answer. The shipped comment describes `add()` and the 100/hour limiter instead.
+- The Task 5 code block's header comment ("separate from the teachers' budget") predates the ruling that the bot's spend counts toward `AI_BUDGET_USD`; it is superseded by the shipped code.
+- Deferred, with reasons: awaiting the `ai_generations` insert before answering (needs the shared `recordUsage` in `aiBudget.ts`, teacher-facing budget code, to return its promise, for a low-probability throttling case that `add()` now covers locally); keeping stale facts on a failed refresh, estimating cost when usage is absent, collapsing public refusal reasons, a warn-level log for the empty refusal, and `finish_reason` "length" (none changes money, security or correctness beyond the fixes above).

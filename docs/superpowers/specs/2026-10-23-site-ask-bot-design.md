@@ -37,7 +37,10 @@ answer about Iqraa in the language they wrote in, at a cost we cap.
    The defences are limits, not CORS (CORS only constrains browsers; curl ignores
    it). `app.ts` already allows `https://iqrra.com` and `https://www.iqrra.com`.
    - `createRateLimiter` per IP: 20 requests per hour.
-   - `createRateLimiter` global (`key: () => "all"`): 600 per hour.
+   - `createRateLimiter` global (`key: () => "all"`): 100 per hour. That is about
+     what a $1/day cap pays for at roughly $0.01 an answer; it is also a lever for
+     exhausting the bot (a global ceiling turns every other visitor away), so tune it
+     from the dashboard.
    - Input caps: message at most 300 characters, at most 4 earlier turns. A
      visitor's earlier turn is capped at 300 characters like the message; the
      bot's own earlier reply at 1200, because the widget sends its replies back
@@ -56,8 +59,11 @@ answer about Iqraa in the language they wrote in, at a cost we cap.
      24 hours, cached for 60 seconds. It is a query, not an in-process counter,
      because the API runs up to 20 Cloud Run instances and a counter per instance
      would allow 20 times the cap. Column names are confirmed against
-     `lib/db/src/schema/aiGenerations.ts` in the plan.
-   - The route also calls `assertBudgetAvailable()` and `assertLiveModeEnabled()`,
+     `lib/db/src/schema/aiGenerations.ts` in the plan. The gate also adds each
+     answer's estimated cost to its cached total in-process, so a burst closes the
+     gate within the cache window, and the gate refuses when `getPersistenceFailure()`
+     says the ledger insert is failing.
+   - The route also calls `assertBudgetAvailable()` and tests `isAiLiveModeOn()`,
      so the global budget still stops it.
    - **The bot's spend counts toward the shared monthly total.** `recordUsage` adds
      every answer to the process-wide month-to-date total that `AI_BUDGET_USD` caps,

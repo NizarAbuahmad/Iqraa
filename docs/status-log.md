@@ -13,10 +13,17 @@ Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 **A public «اسأل إقرأ» bot for iqrra.com — the API half (2026-10-23).** `POST /api/site/ask`
 answers a visitor's question about Iqraa from the site's own `llms.txt` (fetched from
 `https://www.iqrra.com/llms.txt`, cached an hour, with a built-in fallback that states no numbers).
-Public with no key, so the limits are the defence: 20 requests an hour per IP and 600 an hour in
+Public with no key, so the limits are the defence: 20 requests an hour per IP and 100 an hour in
 total, a 300-character question and four earlier turns. It has its own spend ceiling,
 `SITE_BOT_BUDGET_USD_DAILY` (default 1, 0 = off), summed from `ai_generations` rows of kind
-`site-ask` over 24 hours and cached for a minute; an unreadable total refuses. **It bounds the
+`site-ask` over 24 hours and cached for a minute; an unreadable total refuses, and so does a
+ledger whose inserts are failing (`getPersistenceFailure()`). Each answer's estimated cost is also
+added to the gate's cached total in-process, so a burst closes this instance's gate inside the cache
+window instead of after it. Estimates, from gpt-5.4-mini rates and to be replaced by the measured
+`cost_usd` after the first live answers: about $0.01 an answer today, so a deliberate burst is
+bounded by the 100 an hour limit and by that increment, and the bot's spend counts toward the shared
+`AI_BUDGET_USD` (production: 50), so a sustained abuse of about $2 a day would take roughly 25 days
+to exhaust it. **It bounds the
 bot's spend but does not separate it from the teachers' budget:** `recordUsage` adds every answer to
 the shared month-to-date total that `AI_BUDGET_USD` caps (production: 50), so at the default the bot
 can use up to about $30 of a month. Size `AI_BUDGET_USD` above teachers' use plus that, or lower the
@@ -33,7 +40,8 @@ window, error, empty, oversize, single flight), the spend gate, and the decision
 and the facts fetch never run once a cap has tripped); the built bundle answers `/site/ask`
 without a token, POST only, with CORS for `www.iqrra.com` and not for other origins.
 **Not checked:** the real spend query against Postgres (it is a one-statement sum, exercised only
-in production); answer quality on real visitor questions, including off-topic and injection tries
+in production); the real per-answer cost and the `/healthz/ai-budget` `persisted` flag after the
+first answers; answer quality on real visitor questions, including off-topic and injection tries
 (to be run against the deployed route before the widget ships, and recorded here); the widget,
 which is a separate change in the `Site_Iqra` repo and has not been written.
 
