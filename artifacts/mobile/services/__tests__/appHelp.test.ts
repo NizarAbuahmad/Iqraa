@@ -2240,3 +2240,69 @@ describe('files, slides, exams, classes, the account and the app — wordings of
     });
   }
 });
+
+describe('colloquial «ب» verbs, and messages, the timetable, the live game and the class list — wordings of answers (thirtieth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    // Jordanian speech: «ب» before the present tense.
+    ['شلون بضيف طالب جديد؟', 'howAddStudent'],
+    ['كيف بدي أضيف طالب', 'howAddStudent'],
+    ['كيف بفتح التقويم؟', 'howCalendar'],
+    ['كيف بحذف شعبة؟', 'howArchiveClass'],
+    ['كيف بسجل خروج؟', 'howSignOut'],
+    ['شلون بنزل الكتاب المدرسي؟', 'howBookDownload'],
+    ['كيف بحفظ الشرائح؟', 'howSaveSlides'],
+    ['كيف بنشر النتائج للطلاب؟', 'howReleaseResults'],
+    ['شلون بضيف سؤال للامتحان؟', 'howEditExamQuestions'],
+    ['كيف بعرف رمز دخول الطالب؟', 'howReissueLoginCode'],
+    ['كيف بصحح الامتحان؟', 'howOpenGrading'],
+    ['كيف أصحح الامتحان؟', 'howOpenGrading'],
+    ['شلون بسكر الامتحان؟', 'howCloseExam'],
+    ['كيف بلغي واجب؟', 'howHomeworkEdit'],
+    ['وين بقترح ميزة؟', 'howSuggestFeature'],
+    ['بدي أطبع ورقة العمل شلون؟', 'faqA4'],
+    ['وين زر حذف الواجب؟', 'howHomeworkEdit'],
+    ['وين زر حذف الامتحان؟', 'howDeleteExam'],
+    // Messages, the timetable, the live game, the class list.
+    ['كيف أحذف رسالة أرسلتها؟', 'howMessageDelete'],
+    ['how do i delete a message i sent', 'howMessageDelete'],
+    ['كيف أرسل صورة في الرسائل؟', 'howSendFileMessage'],
+    ['كيف أكتم إشعارات محادثة معينة؟', 'howMuteChat'],
+    ['كيف أبحث في الرسائل؟', 'howSearchMessages'],
+    ['كيف أرى جدول الأسبوع القادم؟', 'howTimetableWeek'],
+    ['كيف أنهي اللعبة المباشرة؟', 'howLiveGameEnd'],
+    ['how do i end the live game', 'howLiveGameEnd'],
+    ['كيف أعرف عدد الطلبة في كل شعبة؟', 'howClassCount'],
+    ['كيف أرتّب الشعب حسب الاسم؟', 'howClassOrder'],
+    // Answers that existed under wordings the matcher did not know.
+    ['كيف أرسل رمز التحقق مرة أخرى؟', 'howVerifyEmail'],
+    ['كيف أضيف رقماً مدرسياً للطالب؟', 'howEditStudent'],
+    ['كيف أضيف ملاحظة خاصة على طالب؟', 'howStudentNote'],
+    ['كيف أرى الواجبات المتأخرة؟', 'howHomeworkDone'],
+    ['كيف أفتح كتاب الرياضيات للصف العاشر؟', 'howSearchLesson'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  // The «ب» is dropped only from the listed verbs straight after a question word.
+  const stayWithModel = [
+    'كيف بنى المصريون الأهرامات',
+    'كيف بعد الحرب',
+    'كيف بالإنجليزية أقول مرحبا',
+    'كيف بدأت الحرب العالمية',
+    'كيف أحذف رسالة من البريد الإلكتروني',
+    'كيف أكتم الصوت في الفيديو',
+    'كيف أنهي المسألة بخطوة أخيرة',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howMessageDelete', 'howMuteChat', 'howLiveGameEnd', 'howAddStudent', 'howCloseExam', 'howHomeworkEdit', 'howArchiveClass', 'howSignOut', 'howOpenGrading']);
+      const a = answerAppHelp(q, 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});
