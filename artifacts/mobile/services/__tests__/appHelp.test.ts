@@ -9,6 +9,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { answerAppHelp, findAppPlaces, isAppHelpQuery } from '../appHelp.ts';
+import translations from '../i18n.ts';
 import { classifyChatIntent } from '../ai/intentRouter.ts';
 import { toolAskFromQuery } from '../chatToolAsk.ts';
 
@@ -2373,4 +2374,75 @@ describe('three English wordings of answers that existed (thirty-first live pass
       assert.equal(ids.has(answerAppHelp(q, 'en', t).text.replace(/[<>]/g, '')), false);
     });
   }
+});
+
+describe('questions about the app itself — the curriculum, who it is for, who made it, the monthly allowance (thirty-third live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string, 'ar' | 'en']> = [
+    ['هل التطبيق متوافق مع وزارة التربية والتعليم', 'howAboutCurriculum', 'ar'],
+    ['هل المحتوى مطابق للمنهاج الأردني', 'howAboutCurriculum', 'ar'],
+    ['هل الاسئلة مطابقة للمنهاج', 'howAboutCurriculum', 'ar'],
+    ['Is it aligned with the Ministry of Education', 'howAboutCurriculum', 'en'],
+    ['does the app follow the Jordanian curriculum', 'howAboutCurriculum', 'en'],
+    ['هل يصلح للمدارس الخاصة', 'howAboutWhoFor', 'ar'],
+    ['هل تستخدمه المدارس الخاصة', 'howAboutWhoFor', 'ar'],
+    ['هل يمكن للمدارس الخاصة استخدامه', 'howAboutWhoFor', 'ar'],
+    ['هل التطبيق للمدارس الحكومية فقط', 'howAboutWhoFor', 'ar'],
+    ['هل التطبيق للمعلمين والطلاب', 'howAboutWhoFor', 'ar'],
+    ['لمن هذا التطبيق', 'howAboutWhoFor', 'ar'],
+    ['من يستطيع استخدام التطبيق', 'howAboutWhoFor', 'ar'],
+    ['Can private schools use it', 'howAboutWhoFor', 'en'],
+    ['who is Iqrra for', 'howAboutWhoFor', 'en'],
+    ['من صنع إقرأ', 'howAboutMaker', 'ar'],
+    ['من وراء التطبيق', 'howAboutMaker', 'ar'],
+    ['من هم مطورو التطبيق', 'howAboutMaker', 'ar'],
+    ['هل التطبيق أردني', 'howAboutMaker', 'ar'],
+    ['who built Iqrra', 'howAboutMaker', 'en'],
+    ['متى تتجدد الحصة الشهرية', 'howAllowanceRenew', 'ar'],
+    ['ماذا يحدث إذا انتهت الحصة الشهرية', 'howAllowanceRenew', 'ar'],
+    ['انتهت حصة التوليد الجديد لهذا الشهر', 'howAllowanceRenew', 'ar'],
+    ['ما هي الحصة الشهرية', 'howAllowanceRenew', 'ar'],
+    ['when does my monthly allowance reset', 'howAllowanceRenew', 'en'],
+    ['هل الطلاب يشوفون الحلول', 'howStudentSolutions', 'ar'],
+    ['do students see the answers', 'howStudentSolutions', 'en'],
+    ['هل اقدر اجرب التطبيق بدون حساب', 'howTryNoAccount', 'ar'],
+    ['هل أستطيع استخدام التطبيق بدون حساب', 'howTryNoAccount', 'ar'],
+    ['can I try it without an account', 'howTryNoAccount', 'en'],
+    ['هل يعمل على الايفون', 'howInstallApp', 'ar'],
+    ['هل يعمل على الحاسوب', 'howInstallApp', 'ar'],
+    ['does it work on iPhone', 'howInstallApp', 'en'],
+    ['is there an Android app', 'howInstallApp', 'en'],
+  ];
+  for (const [q, key, lang] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, lang, t).text, `<${key}>`);
+    });
+  }
+
+  // A school, a curriculum or a limit named inside a request for something else claims nothing.
+  const stayWithModel = [
+    'كيف أنشئ اختبار للمدارس الخاصة',
+    'اشرح لي المنهاج الأردني في الرياضيات',
+    'ما الفرق بين المدارس الحكومية والخاصة',
+    'who made the first telephone',
+    'من صنع الحاسوب',
+    'متى تتجدد الخلايا في الجسم',
+    'هل الطلاب يرون الفرق بين الحمض والقاعدة',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howAboutCurriculum', 'howAboutWhoFor', 'howAboutMaker', 'howAllowanceRenew', 'howStudentSolutions', 'howTryNoAccount']);
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+
+  // The owner's wording: curriculum alignment only — no claim of ministry approval — and a Jordanian team.
+  it('the Arabic answers say what the owner said and nothing more', () => {
+    const ar = (k: string) => (translations.ar as unknown as Record<string, string>)[k];
+    assert.match(ar('howAboutMaker'), /فريق أردني/);
+    assert.match(ar('howAboutWhoFor'), /للمدارس الخاصة والحكومية/);
+    assert.doesNotMatch(ar('howAboutCurriculum'), /معتمد|مصادق|برعاية|رسمي/);
+  });
 });
