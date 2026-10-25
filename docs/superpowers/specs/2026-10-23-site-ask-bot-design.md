@@ -38,8 +38,11 @@ answer about Iqraa in the language they wrote in, at a cost we cap.
    it). `app.ts` already allows `https://iqrra.com` and `https://www.iqrra.com`.
    - `createRateLimiter` per IP: 20 requests per hour.
    - `createRateLimiter` global (`key: () => "all"`): 600 per hour.
-   - Input caps: message at most 300 characters, at most 4 earlier turns, each
-     capped the same. Anything over is a 400, not a truncation.
+   - Input caps: message at most 300 characters, at most 4 earlier turns. A
+     visitor's earlier turn is capped at 300 characters like the message; the
+     bot's own earlier reply at 1200, because the widget sends its replies back
+     as history. Only `user` and `assistant` roles are accepted from the
+     client. Anything over is a 400, not a truncation.
    - Numbers are a starting point, tuned after the first week from the admin
      dashboard's limits table.
 3. **Its own spend ceiling**, separate from the teachers' `AI_BUDGET_USD`.
@@ -62,8 +65,12 @@ answer about Iqraa in the language they wrote in, at a cost we cap.
    response carries `{ answered: false, reason }` so the widget and the logs can
    tell a refusal from an answer.
 5. **Grounded in the site's own `llms.txt`.**
-   - The route fetches `https://www.iqrra.com/llms.txt` with a 5 second timeout, at
-     most 20 KB, and caches it for one hour in memory.
+   - The route fetches `https://www.iqrra.com/llms.txt` with a 5 second timeout and
+     caches it for one hour in memory. Text beyond 24,000 characters is cut, with a
+     warning in the log (the top of the file holds what matters, and refusing a
+     long file would silently drop the bot to the fallback as the blog list
+     grows). A response that declares more than 200,000 bytes is refused. A failed
+     fetch is retried after 60 seconds, not on every request.
    - If the fetch fails or the file is empty, it falls back to a short built-in fact
      block (what it is, free beta, Jordan curriculum, Android early access, contact
      address). It does not invent coverage numbers: the fallback omits them.
@@ -74,9 +81,15 @@ answer about Iqraa in the language they wrote in, at a cost we cap.
    language, in at most a few sentences; to say it does not know and point to the
    contact form when the facts do not cover the question; to refuse anything
    off-topic in one line; and never to write lesson content, solve problems or
-   give opinions on other products. Model: `getChatModel()`, `max_tokens` about
-   300, no tools. With no tools the worst case of a successful prompt injection is
-   a wrong sentence, not an action. The prompt lives in `lib/siteAskPrompts.ts`,
+   give opinions on other products. Model: `getChatModel()`, `max_completion_tokens`
+   800, no tools, request options `{ timeout: 20000, maxRetries: 0 }`. The ceiling
+   is 800 and not about 300 because the production chat model counts hidden
+   reasoning against the same ceiling (see the note in `routes/chat.ts`), so 300
+   could return an empty reply; an empty reply is treated as a non-answer. The
+   conversation ends with a one-line system reminder after the visitor's message,
+   because history comes from the browser and a forged "assistant" turn is the
+   easy way to talk a model out of its rules. With no tools the worst case of a
+   successful prompt injection is a wrong sentence, not an action. The prompt lives in `lib/siteAskPrompts.ts`,
    beside `chatPrompts.ts`, so it can be imported by a test without the OpenAI
    client (`CLAUDE.md`, «The OpenAI client throws at module scope without a key»;
    the client is imported lazily inside the handler).
