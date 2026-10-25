@@ -201,6 +201,23 @@ export function aiErrorMessageKey(
 }
 
 /**
+ * What «ابدأ الحصة الآن» tells the teacher when building the deck threw.
+ *
+ * A spent allowance or a switched-off service is a state, not a fault: «try
+ * again» will not help and a red «could not build the slides» reads as a broken
+ * button. Those two get their own sentence and `note: true`, so the screen shows
+ * a notice instead of an alert. Everything else keeps the retry message.
+ */
+export function startClassFailure(
+  e: unknown,
+): { key: 'aiQuotaSpent' | 'aiUnavailable' | 'startClassFailed'; note: boolean } {
+  const key = aiErrorMessageKey(e);
+  return key === 'aiQuotaSpent' || key === 'aiUnavailable'
+    ? { key, note: true }
+    : { key: 'startClassFailed', note: false };
+}
+
+/**
  * Why the live call failed, when the offline fallback that followed it then
  * refused for want of a question bank. `generateWithProvenance` attaches it as
  * `liveError`; null for every other error.
