@@ -138,6 +138,47 @@ describe("CURATED_ANSWERS — golden questions that must fall through to the AI 
   });
 });
 
+describe("CURATED_ANSWERS — regression probes that must fall through to the AI path", () => {
+  // Questions that sound close to an entry but ask for something no fixed answer states.
+  // A new phrase that turns one of these into a match is the bug, not the probe.
+  const PROBES: readonly string[] = [
+    "do students pay",
+    "does it work offline",
+    "can i use it on my phone",
+    "is my data safe",
+    "is it safe for children",
+    "who made iqraa",
+    "how do i sign up",
+    "كيف اسجل",
+    "do you have a parent app",
+    "can parents see results",
+    "is there an api",
+    "can i export to powerpoint",
+    "do you support the english curriculum",
+    "does iqraa support arabic",
+    "is iqraa made by the ministry",
+    "what is the difference between iqraa and chatgpt",
+    "هل المعلم يحتاج انترنت",
+    "شو الفرق بين الباقات",
+    "هل في خصم للمدارس",
+    "can i use it for grade 12",
+    "السلام عليكم كيف أبدأ",
+  ];
+  for (const q of PROBES) {
+    it(`null: ${JSON.stringify(q)}`, () => {
+      assert.equal(idOf(q), null);
+    });
+  }
+
+  it("sends the open-ended «how does it work» questions to what-is, not to the install answer", () => {
+    for (const q of ["كيف يعمل", "كيف يعمل إقرأ", "how does it work", "how does iqraa work"]) {
+      assert.equal(idOf(q), "what-is", q);
+    }
+    // «does it work» alone is ambiguous (works where? works how?): the AI path or what-is, never app-needed.
+    assert.notEqual(idOf("does it work"), "app-needed");
+  });
+});
+
 describe("CURATED_ANSWERS — the reviewed text", () => {
   const ALLOWED_URLS = ["https://www.iqrra.com/manhaj", "https://www.iqrra.com/privacy", "https://app.iqrra.com"];
   const ALLOWED_EMAIL = "info@iqrra.com";
@@ -240,5 +281,49 @@ describe("CURATED_ANSWERS — the phrases", () => {
         owner.set(key, e.id);
       }
     }
+  });
+});
+
+describe("CURATED_ANSWERS — content anchors", () => {
+  // One distinctive substring per language per entry. Routing tests prove a question reaches
+  // an entry; these prove the entry's text is still ABOUT that topic, so a swapped or pasted-over
+  // answer cannot pass.
+  const URL_MANHAJ = "https://www.iqrra.com/manhaj";
+  const URL_PRIVACY = "https://www.iqrra.com/privacy";
+  const URL_APP = "https://app.iqrra.com";
+  const MAIL = "info@iqrra.com";
+  const ANCHORS: Record<(typeof EXPECTED_IDS)[number], { ar: readonly string[]; en: readonly string[] }> = {
+    greeting: { ar: ["أهلًا بك"], en: ["Hello and welcome"] },
+    thanks: { ar: ["عفوًا"], en: ["You're welcome"] },
+    "what-is": { ar: ["مساعد تعليمي"], en: ["teaching assistant"] },
+    free: { ar: ["مجاني"], en: ["free"] },
+    curriculum: { ar: ["المنهاج الأردني"], en: ["Jordanian curriculum"] },
+    coverage: { ar: [URL_MANHAJ], en: [URL_MANHAJ] },
+    outputs: { ar: ["أوراق عمل"], en: ["worksheets"] },
+    "math-check": { ar: ["الرياضية"], en: ["math"] },
+    "app-needed": { ar: [URL_APP], en: [URL_APP] },
+    android: { ar: ["أندرويد"], en: ["Android", "Google Play"] },
+    iphone: { ar: ["آيفون"], en: ["iPhone"] },
+    students: { ar: ["رابط"], en: ["link"] },
+    privacy: { ar: [URL_PRIVACY, MAIL], en: [URL_PRIVACY, MAIL] },
+    contact: { ar: [MAIL], en: [MAIL] },
+    "not-a-chatbot": { ar: ["روبوت محادثة"], en: ["chatbot"] },
+    "teacher-review": { ar: ["قابل للتعديل"], en: ["editable"] },
+    "other-countries": { ar: ["الأردن"], en: ["Jordan"] },
+  };
+
+  it("has the anchors in the right text of every entry", () => {
+    for (const e of CURATED_ANSWERS) {
+      const a = ANCHORS[e.id as (typeof EXPECTED_IDS)[number]];
+      assert.ok(a, `${e.id}: no anchors`);
+      for (const needle of a.ar) assert.ok(e.ar.includes(needle), `${e.id}.ar must contain «${needle}»`);
+      for (const needle of a.en) assert.ok(e.en.includes(needle), `${e.id}.en must contain «${needle}»`);
+    }
+  });
+
+  it("has the same links and addresses in the Arabic and the English of every entry", () => {
+    const refs = (t: string) =>
+      [...new Set([...(t.match(/https?:\/\/[^\s،]*[^\s،.]/g) ?? []), ...(t.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g) ?? [])])].sort();
+    for (const e of CURATED_ANSWERS) assert.deepEqual(refs(e.ar), refs(e.en), e.id);
   });
 });
