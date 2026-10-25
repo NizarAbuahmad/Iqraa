@@ -39,6 +39,20 @@ of the answers' text found them. Check the text, not the key.)
 
 **Left alone:** «شو يعني تحدي الصف» (the tool card is the answer), «شلون أرسل رسالة لأهل الطالب»
 (stays with the model by design). The teaching-plan export is already answered by `howTeachingPlan`.
+## The screenshot script can shoot the English UI — 2026-10-25
+
+- **What changed.** `e2e/screens.mjs` shot the Arabic UI only (`@iqra_language`
+  was hard-coded to `ar`). `UI_LANG=en` now shoots English, with locale
+  `en-US`, and its file names end in `-en`. `e2e/README-screens.md` says so.
+  Direction is set per component, not by the document, so a row layout needs
+  checking in both languages.
+- **Why.** It was written to check «The desktop Tools grid reads right to left
+  in Arabic» in both languages. That fix landed separately, so only the script
+  change is left here.
+- **Verified.** On this branch's web build, `ONLY=tools` ran with and without
+  `UI_LANG=en`. Desktop English starts at "Lesson slides" top left; Arabic
+  starts at «شرائح الدرس» top right. **Not checked:** routes other than `tools`
+  in English.
 
 ## Grade 8 English gets its book pages; Grades 1-7 do not, 2026-10-25
 
