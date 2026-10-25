@@ -185,6 +185,28 @@ column of the skim table in `glossary-sheet` would be). The full
 mobile and curriculum suites fail on this Windows checkout for line-ending reasons unrelated to this change
 (`scopeSelection`, the committed-sheet comparisons, `quran_corner.json`).
 
+
+## English lessons (grades 9-10) get their book pages, 2026-10-25
+
+English was the one subject the page mapper could not touch: the catalog names every lesson by
+its skill («القراءة والمفردات», «المحادثة»), repeated in every unit, and the book is in English,
+so there is no title to match.
+
+- `scripts/map_english_pages.py` finds the lessons by position instead. «High Note» prints a
+  running header, «LESSON 1A …», numbered 1-7 inside each unit; the headers in page order, cut
+  into units wherever the number drops, must come out in exactly the shape the curriculum has
+  (5 units × 7 lessons), or the book is left alone. All four student books on disk fit: 140
+  lessons (Grade 9 S1/S2, Grade 10 S1/S2), 288 pages, rendered with `render_lesson_pages.py`
+  and uploaded to `iqraa-public/book-pages/`. `book-page-links.json` lists 1,952 lessons /
+  12,747 pages.
+- Checked on a contact sheet of 18 sampled openers: each starts at its «LESSON nA» header (a
+  unit's first lesson shares its page with the unit's banner).
+- **Not covered:** Grades 1-8 English. Their PDFs are not on disk (the figure folders for
+  grades 7-8 hold only pictures), and the catalog's NCCD links come to about 1.9 GB for the
+  16 books. Those books are laid out differently (the primary ones are picture-led), so the
+  header method would need checking on each. The four Grade 10 vocational English books have
+  no student-book link.
+
 ## A parent signs up with an email or a teacher's code — 2026-10-25
 
 Since 2026-10-10 a parent could only sign up with a teacher's code (no email, no password), so a parent who did not have
