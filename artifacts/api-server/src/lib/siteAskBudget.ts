@@ -1,5 +1,5 @@
 /**
- * The public bot's own daily spend ceiling, separate from the teachers' budget.
+ * The public bot's own daily spend ceiling.
  *
  * A visitor costs real money and has no account, so a flood of them needs a
  * ceiling of its own: SITE_BOT_BUDGET_USD_DAILY, default 1, and 0 switches the
