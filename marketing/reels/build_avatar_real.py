@@ -347,7 +347,8 @@ def render_frame_hero(f):
     frame.alpha_composite(ov["lk"], (1015 - ov["lk"].width, 276))
     frame.alpha_composite(ov["chip"], (65, 298))
     if demo:
-        frame.alpha_composite(bp.fade(ov["pill_" + demo], ease((t - sub_t0) / 0.2)), (65, 372))
+        pill = G.setdefault("pill_h_" + demo, ov["pill_" + demo].resize((int(ov["pill_" + demo].width * 0.8), int(ov["pill_" + demo].height * 0.8)), Image.LANCZOS))
+        frame.alpha_composite(bp.fade(pill, ease((t - sub_t0) / 0.2)), (40, 770))        # above the bubble, left of the phone
     lens = np.array([len(c) for c in sent["chunks"]], float)
     edge = sp0 + (sp1 - sp0) * np.concatenate([[0], np.cumsum(lens)]) / lens.sum()
     ci = next((j for j in range(len(lens)) if t < edge[j + 1]), len(lens) - 1)
