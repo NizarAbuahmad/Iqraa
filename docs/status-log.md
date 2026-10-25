@@ -28,6 +28,25 @@ links into a scratch folder outside the repo.
   unit-level page set was considered and not done, because a lesson's pages would not be that
   lesson's. The PDFs are still in the scratch folder if someone wants to hand-map them.
 
+## Today shows the next period as soon as a timetable is saved — 2026-10-25
+
+After «Timetable: a period saves with a labelled button…» a teacher saved their timetable and
+reported that nothing showed on Today. It was the limit that entry named: the next-period line
+(«الحصة القادمة · العاشر ب · 10:15») appeared only when the class had a lesson in a pacing plan, so
+a class with no plan changed only the banner («… ليس لها خطة وتيرة») and the card looked
+untouched. `showsPeriodLine` (`services/lessonContext.ts`) now also shows the line when the next
+period's class has no lesson yet; it stays hidden when a lesson picked today replaced the period's
+lesson, which would read as the period's own. The phone Today and the desktop workspace both read
+it through `useTodayLesson`.
+
+Verified: the rule is pinned in `lessonContext.test.ts`; `pnpm run typecheck`; the whole flow in
+the browser on a rebuilt bundle (period → class → Today shows «In class now · 10B · 08:00» above the
+unchanged lesson, banner asks for a plan). **Not verified:** Arabic/RTL on a device, the desktop
+layout (same hook, not looked at), and that this is what the reporting teacher meant by "nothing
+shows". **Known limit:** beside a lesson that is not that class's (no plan), the line reads as the
+next period, not as the lesson's period; the banner under it is what says the lesson is not linked.
+The chat screen keeps its own rule and still shows the line only for a timetable lesson.
+
 ## Chat app-help, twenty-ninth live pass: three short answers and wordings for fourteen existing ones — 2026-10-25
 
 The demo account's monthly generation allowance was still spent, so every question the matcher did
