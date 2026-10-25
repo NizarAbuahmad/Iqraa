@@ -21,9 +21,12 @@ import { useStudentAccountsStatus } from '@/services/features';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { emailNotSent } from '@/services/emailDelivery';
 import {
-  needsAgeConfirmation, signupForm,
+  guardianConfigStale, signupForm, signupPlan,
   type SignupRole, type StudentSignupMethod,
 } from '@/services/signupMethod';
+import { resetGuardianConfigCache, useGuardianConfig } from '@/services/guardianConfig';
+import { looksLikeEmail } from '@/services/guardianApproval';
+import { ApiError } from '@/services/apiClient';
 import { Ionicons } from '@expo/vector-icons';
 import { CheckRow } from '@/components/ui/CheckRow';
 import { BackButton } from '@/components/ui/BackButton';
@@ -58,18 +61,40 @@ export default function RegisterScreen() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
-  // A parent signs up from the teacher's code alone (no email, no password, no
-  // Google): the code already says who they are, and email can be added later
-  // from the profile. A teacher signs up with an email. A student chooses —
-  // no default, see services/signupMethod.ts.
+  // A teacher signs up with an email. A parent or student chooses: with a
+  // teacher's code (no email, no password — the code already says who they are,
+  // and an email can be added later from the profile) or with an email. No
+  // default, see services/signupMethod.ts.
   const [studentMethod, setStudentMethod] = useState<StudentSignupMethod | null>(null);
   const form = signupForm(chosenRole, studentMethod);
   const codeSignup = form === 'code';
-  // A student with an email has no teacher's code vouching for them, so they
-  // confirm they are an adult or have a guardian's agreement.
-  const askAge = needsAgeConfirmation(chosenRole, studentMethod);
+  // A student with an email has no teacher's code vouching for them. When the
+  // server asks a parent to approve such accounts (guardian.enabled) they give a
+  // parent's email; otherwise they confirm they are an adult or have a guardian's
+  // agreement. Fails off: an unreachable config leaves today's tick in place.
+  const guardian = useGuardianConfig();
+  const { askAge, askParent, waitingForConfig } = signupPlan(chosenRole, studentMethod, guardian.enabled, guardian.loading);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
-  const readyToSignUp = termsAccepted && (!askAge || ageConfirmed);
+  const [parentEmail, setParentEmail] = useState('');
+  const [parentTouched, setParentTouched] = useState(false);
+  const parentOk = !askParent || looksLikeEmail(parentEmail);
+  const readyToSignUp = termsAccepted && (!askAge || ageConfirmed) && parentOk && !waitingForConfig;
+  // What the hints under the Google button ('Below') and the submit ('First')
+  // say is missing, in the order the form asks for it. Null when nothing the
+  // person can do is missing, e.g. while the config is still being read.
+  const missing: 'terms' | 'parent' | 'age' | null =
+    !termsAccepted ? 'terms' : askParent && !parentOk ? 'parent' : askAge && !ageConfirmed ? 'age' : null;
+  const hintBelow = missing === 'terms' ? 'registerAcceptTermsBelow' : missing === 'parent' ? 'registerParentEmailFirst' : missing === 'age' ? 'ageConfirmBelow' : null;
+  const hintFirst = missing === 'terms' ? 'registerAcceptTermsFirst' : missing === 'parent' ? 'registerParentEmailFirst' : missing === 'age' ? 'ageConfirmFirst' : null;
+
+  // The server's switch can differ from the copy the screen read; when it says
+  // so, forget the copy and read it again so the next try asks the right thing.
+  const forgetStaleGuardianConfig = (e: unknown) => {
+    if (e instanceof ApiError && guardianConfigStale(e.code)) {
+      resetGuardianConfigCache();
+      guardian.refresh();
+    }
+  };
 
   const handleGoogleCredential = async (credential: string) => {
     setError('');
@@ -81,6 +106,10 @@ export default function RegisterScreen() {
     }
     if (askAge && !ageConfirmed) {
       setError(t('errAgeConfirmRequired'));
+      return;
+    }
+    if (askParent && !parentOk) {
+      setError(t('registerParentEmailFirst'));
       return;
     }
     setGoogleLoading(true);
@@ -95,9 +124,11 @@ export default function RegisterScreen() {
         role: chosenRole ?? undefined,
         acceptedTerms: true,
         ageConfirmed: askAge && ageConfirmed,
+        parentEmail: askParent ? parentEmail.trim() : undefined,
       });
       router.replace('/(tabs)');
     } catch (e: any) {
+      forgetStaleGuardianConfig(e);
       // The server only refuses the pill's role when the existing account can
       // no longer change it (lib/roleSwitch.ts); otherwise it applies it.
       // The role-locked refusals (lib/roleSwitch.ts) are among the codes
@@ -122,10 +153,12 @@ export default function RegisterScreen() {
         // Never trust the local selection: the flag can flip while this
         // screen is open, and the server would refuse it anyway. No roster
         // code is collected here: a student joins a class later from
-        // /join-class, and a parent never gets this form.
+        // /join-class, and a parent links to a child on the claim screen the
+        // routing gate sends an unlinked account to.
         role: chosenRole,
         acceptedTerms: termsAccepted,
         ageConfirmed: askAge && ageConfirmed,
+        parentEmail: askParent ? parentEmail.trim() : undefined,
       });
       // No session yet — a password account is unverified until it proves
       // the address it just typed. Google's "Continue with" button above
@@ -138,6 +171,7 @@ export default function RegisterScreen() {
       });
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      forgetStaleGuardianConfig(e);
       setError(apiErrorMessage(e, 'errRegisterFailed', t));
     } finally {
       setLoading(false);
@@ -261,9 +295,10 @@ export default function RegisterScreen() {
             />
           ) : null}
 
-          {/* A student chooses how to sign up. Not a default: with a teacher's
-              code they need no email; with an email they need no class. */}
-          {chosenRole === 'student' ? (
+          {/* A student or parent chooses how to sign up. Not a default: with a
+              teacher's code they need no email; with an email they need no
+              code yet (a parent links to a child afterwards). */}
+          {chosenRole === 'student' || chosenRole === 'parent' ? (
             <>
               <PillSelector
                 label={t('signupMethodLabel')}
@@ -281,7 +316,7 @@ export default function RegisterScreen() {
               />
               {studentMethod === 'email' ? (
                 <Text style={[styles.terms, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-                  {t('studentEmailNote')}
+                  {chosenRole === 'parent' ? t('parentEmailNote') : askParent ? t('studentEmailNoteParent') : t('studentEmailNote')}
                 </Text>
               ) : null}
             </>
@@ -324,9 +359,9 @@ export default function RegisterScreen() {
                   {t('googleAccountHint')}
                 </Text>
               ) : null}
-              {!readyToSignUp ? (
+              {!readyToSignUp && hintBelow ? (
                 <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-                  {t(termsAccepted ? 'ageConfirmBelow' : 'registerAcceptTermsBelow')}
+                  {t(hintBelow)}
                 </Text>
               ) : null}
               {googleLoading ? (
@@ -421,6 +456,25 @@ export default function RegisterScreen() {
             isRTL={isRTL}
           />
 
+          {/* Above the terms row: it is asked before the agreements close the form. */}
+          {askParent ? (
+            <Input
+              label={t('registerParentEmailLabel')}
+              hint={t('registerParentEmailHint')}
+              value={parentEmail}
+              onChangeText={setParentEmail}
+              onBlur={() => setParentTouched(true)}
+              // Not from the first keystroke: after the field was left, or once it holds an «@».
+              error={(parentTouched || parentEmail.includes('@')) && parentEmail.trim().length > 0 && !parentOk ? t('errParentEmailInvalid') : undefined}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              // Not the student's own address: no autofill suggestion for this field.
+              autoComplete="off"
+              textContentType="none"
+              isRTL={isRTL}
+            />
+          ) : null}
+
           {agreements}
 
           <Button
@@ -430,9 +484,9 @@ export default function RegisterScreen() {
             disabled={!canSubmit}
             fullWidth
           />
-          {!readyToSignUp ? (
+          {!readyToSignUp && hintFirst ? (
             <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-              {t(termsAccepted ? 'ageConfirmFirst' : 'registerAcceptTermsFirst')}
+              {t(hintFirst)}
             </Text>
           ) : null}
             </>

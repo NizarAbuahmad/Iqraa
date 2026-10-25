@@ -2141,3 +2141,46 @@ describe('results, who opened an exam, a forgotten password, a link, no going ba
     });
   }
 });
+
+describe('exam titles, typed questions, who joined, uploads, attachments, copy and print — wordings of answers (twenty-eighth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['كيف أغيّر اسم الامتحان بعد نشره؟', 'howRenameExam'],
+    ['how do i rename the exam after publishing', 'howRenameExam'],
+    ['كيف أضيف سؤال صح وخطأ إلى الامتحان؟', 'howExamAddTyped'],
+    ['how do i add a true or false question to the exam', 'howExamAddTyped'],
+    ['كيف أعرف الطلبة الذين ربطوا حساباتهم؟', 'howWhoJoined'],
+    ['how do i see which students joined', 'howWhoJoined'],
+    ['كيف أضيف مرفقاً إلى الواجب؟', 'howAddHomework'],
+    ['how do i attach a file to the homework', 'howAddHomework'],
+    ['كيف أرفع ملفاً إلى ملفاتي؟', 'howUploadFile'],
+    ['how do i upload a file to my files', 'howUploadFile'],
+    ['كيف أطبع شرائح الدرس؟', 'howSaveSlides'],
+    ['كيف أحفظ الاختبار القصير كملف وورد؟', 'faqA4'],
+    ['كيف أنسخ الاختبار القصير إلى الحافظة؟', 'faqA4'],
+    ['how do i copy the quiz to the clipboard', 'faqA4'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  const stayWithModel = [
+    'كيف أغير اسم الشعبة بعد إنشائها',
+    'how do i rename the quiz',
+    'كيف أضيف سؤالا صعبا إلى الامتحان',
+    'كيف أعرف الطلبة الذين يحتاجون دعما',
+    'كيف أرفع مستوى الطلبة',
+    'كيف أطبع الصور من الشريحة',
+    'كيف أنسخ الجدول إلى الحافظة',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howRenameExam', 'howExamAddTyped', 'howWhoJoined', 'howAddHomework', 'howUploadFile', 'howSaveSlides', 'faqA4']);
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});
