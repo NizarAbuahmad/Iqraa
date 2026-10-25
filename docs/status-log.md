@@ -10,6 +10,40 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Parent approval for email students — merged and deployed, flag still off — 2026-10-25
+
+PR #1274 («server and app, flag off») was marked ready and squash-merged to `main` as `2277f57` on
+2026-10-25, by the owner's instruction, after CI was green on its head. This entry records what the
+deploy did; what was built and its limits are in the two entries below it, «… the app (PR B)» and
+«… server (PR A)», dated 2026-10-24.
+
+**What the deploy did** (workflow run 801, from its job and step results; not re-read from production):
+
+- *production migrations* succeeded, so migration `0018` (nullable `users.guardian_approved_at`, new
+  owner-only table `guardian_consents`) was applied before the new API revision took traffic.
+- *production schema / production tables present* succeeded.
+- `iqraa-api`: the Cloud Run deploy succeeded (about 3.5 minutes) and its «Verify the deployed commit»
+  step passed, so the serving revision reports `2277f57`.
+- `iqraa-web`: the web build and the Cloudflare Pages publish succeeded and «Verify the deployed
+  bundle» passed.
+- `iqraa-verifier` was skipped (not changed).
+
+**Still off.** No workflow in `.github/workflows/` sets `GUARDIAN_APPROVAL` (a `grep` found nothing), and
+the deploy only updates the env vars it names, so unless someone set it by hand on the service it is
+unset: the server holds nobody, `GET /guardian-consent/config` answers `{enabled:false}`, and the web
+register screen and the role-switch screens behave as before this merge.
+
+**Not checked.** This session cannot reach production (its egress proxy refuses
+`iqraa-api-…run.app` and `app.iqrra.com`), so none of these was read by command: the serving revision's
+name and traffic split, `/api/healthz/version`, the `config` answer on production, the live web bundle
+in a browser, and the service's actual env (reading Cloud Run env is on the denied list; the claim above
+rests on the workflows). `STATUS.md` was updated from the deploy run, and those lines say so.
+
+**Next, all the owner's** (the numbered list is in the PR B entry): the consent wording read by a native
+speaker and a lawyer and `constants/legal.ts` + `LEGAL_VERSION` updated; Resend click tracking off for the
+parent mail and Cloudflare Web Analytics not recording URL fragments; the share of users on the new bundle
+checked; then `GUARDIAN_APPROVAL=true`, which locks every existing email student until a parent approves.
+
 ## Chat app-help, twenty-eighth live pass: three short answers and wordings for five existing ones — 2026-10-24
 
 The pass was only half usable: from its seventh question the demo account answered «انتهت حصة
