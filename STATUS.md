@@ -154,7 +154,6 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-23 — The "now" amber is only for now
 - 2026-10-23 — Grammar-only hub lessons, and the last five Grade 9 grammar lessons — built, shown to nobody yet
 - 2026-10-23 — Grade 9 grammar: the passive added, and a wrong «no hub lesson» corrected
-- 2026-10-23 — The tab bar is drawn
 
 ## Finding older detail, and recording new work
 
