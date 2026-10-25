@@ -275,7 +275,7 @@ export default function AdminSignupsScreen() {
             </View>
           )}
           {canInvite && (
-            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, gap: 10 }]}>
+            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, gap: 8 }]}>
               <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
                 {ar ? 'راسل قائمة الانتظار' : 'Message the waitlist'}
               </Text>
@@ -293,7 +293,7 @@ export default function AdminSignupsScreen() {
                   );
                 })}
               </View>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, textAlign: align }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 18, textAlign: align }}>
                 {purpose === 'invite'
                   ? (ar ? 'يُرسَل نص الدعوة الثابت مع رابط التحميل إلى من لم تُرسَل إليهم دعوة بعد ولم ينضموا إلى التطبيق.' : 'Sends the standard invite with the download link to everyone not yet invited and not already joined.')
                   : purpose === 'launch'
@@ -408,26 +408,26 @@ export default function AdminSignupsScreen() {
               {!!s.message && <Text selectable style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align }}>{s.message}</Text>}
               {!!s.context && <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: align }}>{s.context}</Text>}
               {s.kind === 'waitlist' && (!!s.invitedAt || !!s.joinedAt || !!s.unsubscribedAt) && (
-                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 6 }}>
+                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
                   {!!s.invitedAt && (
                     <View style={[styles.badge, { borderColor: ACCENT }]}>
-                      <Ionicons name="paper-plane-outline" size={13} color={ACCENT} />
-                      <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
+                      <Ionicons name="paper-plane-outline" size={14} color={ACCENT} />
+                      <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
                         {ar ? `أُرسلت الدعوة · ${fmtDay(s.invitedAt)}` : `Invite sent · ${fmtDay(s.invitedAt)}`}
                       </Text>
                     </View>
                   )}
                   {!!s.joinedAt && (
                     <View style={[styles.badge, { borderColor: SUCCESS }]}>
-                      <Ionicons name="checkmark-circle" size={13} color={SUCCESS} />
-                      <Text style={{ color: SUCCESS, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
+                      <Ionicons name="checkmark-circle" size={14} color={SUCCESS} />
+                      <Text style={{ color: SUCCESS, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
                         {ar ? `انضم · ${fmtDay(s.joinedAt)}` : `Joined · ${fmtDay(s.joinedAt)}`}
                       </Text>
                     </View>
                   )}
                   {!!s.unsubscribedAt && (
                     <View style={[styles.badge, { borderColor: colors.destructive }]}>
-                      <Text style={{ color: colors.destructive, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
+                      <Text style={{ color: colors.destructive, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
                         {ar ? `ألغى الاشتراك · ${fmtDay(s.unsubscribedAt)}` : `Unsubscribed · ${fmtDay(s.unsubscribedAt)}`}
                       </Text>
                     </View>
@@ -468,5 +468,5 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 20 },
   card: { padding: 12, borderWidth: 1, gap: 6 },
   chip: { paddingHorizontal: 14, paddingVertical: 7, borderWidth: 1.5 },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderRadius: 999 },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderRadius: 999 },
 });
