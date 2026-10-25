@@ -35,6 +35,39 @@ with near-misses that stay with the model.
 rating the app, showing the lesson on a TV, one student's answers on an exam (the answers screen
 is built for typing in a paper's answers, so I did not claim it shows an online sitting) and
 «أرى الشعب التي أدرّسها» (the place card is enough).
+## English audio check: the first real run, and three kinds of false alarm removed — 2026-10-25
+
+The speech check had never called the real API. On 2026-10-25, once `gpt-4o-transcribe` was allowed on the OpenAI project
+(its **Allowed models** list on the project's Limits page had only the chat and text-to-speech models, which is why every
+earlier attempt stopped with a 403 `model_not_found`), it ran for the first time: a 50-clip trial, then all **1,248 word
+recordings** — 1,207 `match`, 41 `mismatch`, none silent, missing or errored; a few cents; the key never printed. The request
+and response shape worked as written. **Nothing was re-voiced and no recording changed.** The sentences (3,383) are not
+voiced yet and were not checked.
+
+This change only makes the comparison fairer; it touches no recording. 17 of the 41 flags were the checker's, not the
+clip's, and `compareSpoken` now treats them as a `match`:
+
+- **Spacing in a short item** (up to three words): `yoyo` / «Yo-yo», `roller skate` / «Rollerskate», `photo blog`, `crime
+  fighter`, `ear plugs`, `power bank`, `a stomach ache`. The letters are compared with the spaces ignored. A sentence is not
+  given this: «I like ice cream» / «I like I scream» stays a `mismatch`. Different letters are never joined (`go swimming` /
+  «goat swimming», `a cold` / «are cold»). The old rule «a single word heard as two words is a mismatch» was kept only for
+  different letters («firefighter» / «fire fighters»).
+- **`'s` heard as a plural**: `butcher's` / «Butchers» and the other four shop names. They sound the same.
+- **Four pairs added to the homophone table**: `pea` / «P», `hanger` / «Hangar», `sew` / «So», `high` / «Hi»; and «C» joins
+  `see` / `sea` (`see double` / «C double»). A recogniser writes either member; the check cannot tell them apart.
+
+Re-grading the saved transcripts with the new rules (no API calls): 1,224 `match`, 24 `mismatch`, no clip that matched
+before stopped matching. The 24 are still to be **listened to by a person**: first sounds that may be wrong or may be an
+over-trimmed onset (`ball` / «Bald», `shell` / «Show», `boat` / «Vote», `fancy` / «Sansie», `cheap` / «Sheep», `fit` /
+«Sit», `vain` / «Zane», `chill` / «Shill», `ring` / «Green», `burned` / «Don't», `fix the gate` / «Six, the gate», `go
+swimming` / «Goat swimming»), accent or weak-form cases (`been` / «bin», `tummy` / «Tommy», `aunt` / «Odd», `house`,
+`hand`, `narrow`, `honour`, `honest`, `fattening`, `a cold`, `look good in front of sb`), and **`a cough`, heard as profanity
+(«Fuck off.»), which a person should hear first** — in a children's app, even if it is the recogniser mishearing a clipped clip.
+
+**Not verified:** whether the 24 are wrong recordings (no one has listened); whether the trim cuts the start of a quiet
+first sound (a hypothesis from the pattern of first-sound mismatches, not checked against the untrimmed originals).
+`been` / «bin» and the other accent cases stay flagged on purpose. The `r2.test.ts` case «R2 helpers are inert, not broken,
+when unconfigured» fails in this environment with and without this change (it is not part of it).
 ## Lesson games: «ما معنى المصطلح؟» from the books' printed glossary, and a draft route that stays hidden — 2026-10-25
 
 A fourth lesson game: the app shows the **book's own definition** and the student picks the term. The

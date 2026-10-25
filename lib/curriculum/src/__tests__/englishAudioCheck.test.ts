@@ -224,8 +224,62 @@ describe('compareSpoken', () => {
   it('mismatch: ship vs sheep', () => {
     assert.equal(compareSpoken('ship', 'sheep').verdict, 'mismatch');
   });
-  it('a single word heard as two words is a mismatch', () => {
-    assert.equal(compareSpoken('firefighter', 'fire fighter').verdict, 'mismatch');
+  it('a single word heard as two words with other letters is a mismatch', () => {
+    assert.equal(compareSpoken('firefighter', 'fire fighters').verdict, 'mismatch');
+    assert.equal(compareSpoken('carpet', 'car pet s').verdict, 'mismatch');
+  });
+  it('match: the same letters spaced or hyphenated differently (found in the first real run)', () => {
+    for (const [expected, heard] of [
+      ['yoyo', 'Yo-yo'],
+      ['roller skate', 'Rollerskate'],
+      ['photo blog', 'Photoblog'],
+      ['crime fighter', 'Crimefighter'],
+      ['ear plugs', 'Earplugs'],
+      ['power bank', 'Powerbank'],
+      ['a stomach ache', 'A stomachache.'],
+      ['firefighter', 'fire fighter'],
+    ] as const) {
+      assert.equal(compareSpoken(expected, heard).verdict, 'match', `${expected} / ${heard}`);
+    }
+  });
+  it('the spacing rule is for short items only: a sentence still needs its own words', () => {
+    // «an ice cream» and «a nice cream» are the same letters; a four-word text is a sentence
+    assert.equal(compareSpoken('I like ice cream', 'I like I scream').verdict, 'mismatch');
+  });
+  it('the spacing rule never joins different letters', () => {
+    assert.equal(compareSpoken('ear plugs', 'ear pugs').verdict, 'mismatch');
+    assert.equal(compareSpoken('go swimming', 'goat swimming').verdict, 'mismatch');
+    assert.equal(compareSpoken('a cold', 'are cold').verdict, 'mismatch');
+  });
+  it('match: a possessive heard as a plural, which sound the same', () => {
+    for (const [expected, heard] of [
+      ["butcher's", 'Butchers'],
+      ["newsagent's", 'Newsagents.'],
+      ["greengrocer's", 'Greengrocers'],
+      ["jeweller's", 'Jewellers'],
+      ["fishmonger's", 'Fishmongers'],
+    ] as const) {
+      assert.equal(compareSpoken(expected, heard).verdict, 'match', `${expected} / ${heard}`);
+    }
+    assert.equal(compareSpoken("Mum's cat sat", 'mums cat sat').verdict, 'match');
+  });
+  it('match: words a recogniser writes either way (pea / P, hanger / hangar, sew / so, high / hi, see / C)', () => {
+    assert.equal(compareSpoken('pea', 'P').verdict, 'match');
+    assert.equal(compareSpoken('hanger', 'Hangar').verdict, 'match');
+    assert.equal(compareSpoken('sew', 'So.').verdict, 'match');
+    assert.equal(compareSpoken('high', 'Hi').verdict, 'match');
+    assert.equal(compareSpoken('see double', 'C double').verdict, 'match');
+  });
+  it('still a mismatch: accent and wrong-sound cases the check exists to find', () => {
+    for (const [expected, heard] of [
+      ['ball', 'Bald'],
+      ['cheap', 'Sheep'],
+      ['been', 'bin'],
+      ['fit', 'Sit'],
+      ['tummy', 'Tommy'],
+    ] as const) {
+      assert.equal(compareSpoken(expected, heard).verdict, 'mismatch', `${expected} / ${heard}`);
+    }
   });
   it('close: one word substituted in ten', () => {
     const ten = 'we go to the park with our dog every day';
