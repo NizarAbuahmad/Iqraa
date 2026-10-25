@@ -1,0 +1,38 @@
+{
+  "meta": {
+    "what": "DRAFT definitions for the 29 key terms of Grade 10 Chemistry, semester 1 (book-chem-10). Written by a model, NOT copied from the book: that book's printed glossary could not be read (its source PDF was unavailable). Hidden from students until a teacher signs an entry off.",
+    "signOff": "A teacher reads each definition against the textbook (pnpm --filter @workspace/curriculum run glossary-sheet prints the sheet), fixes the wording in `def` if needed, and only then sets `reviewedBy` (their name) and `reviewedAt` (YYYY-MM-DD) on that entry. Until both are set, the entry is never served.",
+    "scope": "One subject on purpose: this is the pilot of the draft-then-review route. Other subjects need the same pass before their terms get a definition."
+  },
+  "entries": [
+    { "bookId": "book-chem-10", "ar": "الطيف المرئي", "en": "Visible Spectrum", "def": "الجزء من الطيف الكهرومغناطيسي الذي تستطيع العين البشرية رؤيته، وهو يضم ألوان قوس المطر من البنفسجي إلى الأحمر.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "الطيف المتصل", "en": "Continuous Spectrum", "def": "طيف تتداخل فيه الألوان من دون فواصل بين الأطوال الموجية ضمن مدى معين، مثل الطيف الصادر عن جسم صلب متوهج.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "الطيف غير المرئي", "en": "Invisible Spectrum", "def": "أطوال موجية من الطيف الكهرومغناطيسي لا تستطيع العين البشرية رؤيتها، مثل الأشعة تحت الحمراء والأشعة فوق البنفسجية.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "الكم", "en": "Quantum", "def": "أصغر كمية من الطاقة يمكن أن تمتصها الذرة أو تُصدرها في صورة إشعاع.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "طول الموجة", "en": "Wavelength", "def": "المسافة بين قمتين متتاليتين أو قاعين متتاليين في الموجة.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "التردد", "en": "Frequency", "def": "عدد الموجات التي تمر بنقطة معينة في الثانية الواحدة، ويُقاس بوحدة الهرتز.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "الذرة المثارة", "en": "Excited Atom", "def": "ذرة انتقل فيها إلكترون أو أكثر من مستوى طاقة أقل إلى مستوى طاقة أعلى بعد امتصاصها طاقة.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "الطيف الذري", "en": "Atomic Spectrum", "def": "الطيف الصادر عن ذرات عنصر ما عند إثارتها، ويختلف من عنصر إلى آخر فيُعدّ بصمةً له.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "الطيف الخطي", "en": "Line Spectrum", "def": "طيف يتكوّن من خطوط ملونة منفصلة تفصل بينها مناطق معتمة، ويقابل كل خط طولًا موجيًا محددًا.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "مستوى الطاقة", "en": "Energy Level", "def": "منطقة حول النواة يشغلها الإلكترون ولها مقدار محدد من الطاقة.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "الفلك", "en": "Orbital", "def": "منطقة في الفراغ حول النواة يزداد فيها احتمال وجود الإلكترون، ويتّسع لإلكترونين على الأكثر.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "أعداد الكم", "en": "Quantum Numbers", "def": "أعداد تصف حالة الإلكترون في الذرة، فتحدد مستوى طاقته وشكل الفلك الذي يشغله وتوجّهه في الفراغ واتجاه دوران الإلكترون حول نفسه (المغزلي).", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "النظرية الميكانيكية الموجية", "en": "Wave Mechanical Theory", "def": "نظرية تصف الإلكترون في الذرة بأنه يمتلك خصائص الموجة والجسيم معًا، وتحدد احتمال وجوده في منطقة حول النواة بدلًا من مسار ثابت.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "مبدأ أوفباو", "en": "Aufbau Principle", "def": "تُملأ أفلاك الذرة بالإلكترونات بدءًا من الفلك الأقل طاقة ثم الأعلى طاقة بالتدريج.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "قاعدة هوند", "en": "Hund's Rule", "def": "عند وجود أفلاك متساوية في الطاقة تتوزع الإلكترونات عليها فرادى أولًا بالاتجاه المغزلي نفسه، ثم يبدأ ازدواجها.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "العناصر الممثلة", "en": "The Representative Elements", "def": "عناصر ينتهي توزيعها الإلكتروني بالمستوى الفرعي s أو p، وتقع في الفئتين s وp من الجدول الدوري.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "العناصر الانتقالية", "en": "Transition Elements", "def": "عناصر ينتهي توزيعها الإلكتروني بالمستوى الفرعي d، وتقع في الفئة d من الجدول الدوري.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "طاقة التأين", "en": "Ionization Energy", "def": "الطاقة اللازمة لانتزاع أبعد إلكترون عن ذرة غازية متعادلة في حالتها الأرضية.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "نصف القطر الذري", "en": "Atomic Radius", "def": "نصف المسافة بين نواتي ذرتين متماثلتين متجاورتين.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "شحنة النواة الفعالة", "en": "Effective Nuclear Charge", "def": "الشحنة الموجبة التي يشعر بها إلكترون التكافؤ فعليًا، وهي شحنة النواة بعد طرح تأثير الحجب الذي تسببه الإلكترونات الداخلية.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "السالبية الكهربائية", "en": "Electronegativity", "def": "قدرة الذرة على جذب إلكترونات الرابطة نحوها في الجزيء.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "الرابطة التساهمية الأحادية", "en": "Mono Covalent Bond", "def": "رابطة تنشأ من مشاركة ذرتين بزوج واحد من الإلكترونات (إلكترونان)، كما في جزيء الهيدروجين.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "الرابطة التساهمية الثنائية", "en": "Double Covalent Bond", "def": "رابطة تنشأ من مشاركة ذرتين بزوجين من الإلكترونات (أربعة إلكترونات)، كما في جزيء الأكسجين.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "الرابطة التساهمية الثلاثية", "en": "Triple Covalent Bond", "def": "رابطة تنشأ من مشاركة ذرتين بثلاثة أزواج من الإلكترونات (ستة إلكترونات)، كما في جزيء النيتروجين.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "الرابطة الفلزية", "en": "Metallic Bond", "def": "قوة التجاذب بين الأيونات الموجبة في الفلز والإلكترونات الحرة التي تتحرك حولها.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "بحر الإلكترونات", "en": "Sea of Electrons", "def": "إلكترونات التكافؤ حرة الحركة بين الأيونات الموجبة في الفلز، لا تخص ذرة بعينها بل الفلز كله.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "تركيب لويس", "en": "Lewis Structure", "def": "رسم يمثل إلكترونات التكافؤ في الذرة أو الجزيء بنقاط أو خطوط حول رموز العناصر، ويبيّن الأزواج الرابطة وغير الرابطة.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "المركبات الأيونية", "en": "Ionic Compounds", "def": "مركبات تنتج من انتقال إلكترونات من ذرات الفلزات إلى ذرات اللافلزات، وتتماسك بالتجاذب الكهربائي بين الأيونات الموجبة والسالبة.", "reviewedBy": null, "reviewedAt": null },
+    { "bookId": "book-chem-10", "ar": "المركبات التساهمية (الجزيئية)", "en": "Covalent (Molecular) Compounds", "def": "مركبات تتكوّن من اتحاد ذرات اللافلزات بروابط تساهمية، وتوجد في صورة جزيئات منفصلة.", "reviewedBy": null, "reviewedAt": null }
+  ]
+}

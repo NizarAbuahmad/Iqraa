@@ -52,8 +52,8 @@ export interface HomeworkMaterialResource {
  * `exercises` is the Math Corner's «اختبر نفسك» set for a maths lesson: it opens
  * `/curriculum/math/exercises/<lessonId>?hw=…` instead, and reports the same way.
  */
-export type HomeworkGameName = 'memory' | 'scramble' | 'spot' | 'exercises';
-export const HOMEWORK_GAMES: readonly HomeworkGameName[] = ['memory', 'scramble', 'spot', 'exercises'];
+export type HomeworkGameName = 'memory' | 'scramble' | 'spot' | 'meaning' | 'exercises';
+export const HOMEWORK_GAMES: readonly HomeworkGameName[] = ['memory', 'scramble', 'spot', 'meaning', 'exercises'];
 export interface HomeworkGameResource {
   kind: 'game';
   lessonId: string;

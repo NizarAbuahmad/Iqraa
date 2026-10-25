@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { LESSONS, type Lesson } from '@workspace/curriculum';
 import {
-  MIN_LESSON_TERMS, buildTermScramble, buildTermSpotRound, gameLessonsForScope, hasLessonGames, homeworkGamesFor,
+  MIN_LESSON_TERMS, availableLessonGames, buildTermScramble, buildTermSpotRound, gameLessonsForScope, hasLessonGames, homeworkGamesFor,
   isTermUnscrambled, lessonTerms, plainTerm,
 } from '../lessonGames.ts';
 import { resolveExerciseLesson } from '../mathExercises.ts';
@@ -35,8 +35,9 @@ test('plainTerm strips harakat and tatweel', () => {
   assert.equal(plainTerm('دورةُ  الخليـةِ'), 'دورة الخلية');
 });
 
-test('every real lesson with games has ≥4 distinct Arabic terms and no empty ones', () => {
-  const offered = LESSONS.filter(hasLessonGames);
+test('every real lesson with term games has ≥4 distinct Arabic terms and no empty ones', () => {
+  // A lesson whose only game is the glossary's «ما معنى المصطلح؟» needs no 4 terms of its own.
+  const offered = LESSONS.filter(hasLessonGames).filter(l => availableLessonGames(l).some(g => g !== 'meaning'));
   assert.ok(offered.length > 400, `only ${offered.length} lessons offer games`);
   for (const l of offered) {
     const terms = lessonTerms(l);
