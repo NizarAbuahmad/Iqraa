@@ -5,18 +5,18 @@ export type SignupForm = 'code' | 'email' | 'choose';
 /**
  * Which sign-up form the register screen shows for a role.
  *
- * A teacher signs up with an email and a parent with their child's code. A
- * student picks (since 2026-10-23): with a teacher's code, no email needed; or
- * with an email, no class needed — the code is only for joining one later.
- * Until the student has picked, `'choose'`: no default, so nobody is sent down
- * a path they were not asked about. With no role picked yet the email form
+ * A teacher signs up with an email. A student picks (since 2026-10-23), and so
+ * does a parent (since 2026-10-25): with a teacher's code, no email needed; or
+ * with an email, no class needed — the code is only for linking to a child
+ * later, on the screen the routing gate sends an unlinked account to.
+ * Until they have picked, `'choose'`: no default, so nobody is sent down a
+ * path they were not asked about. With no role picked yet the email form
  * stays up (its submit is disabled), as the screen always did.
  *
  * Kept out of the screen because `node --test` cannot load a React Native file.
  */
 export function signupForm(role: SignupRole | null, method: StudentSignupMethod | null): SignupForm {
-  if (role === 'parent') return 'code';
-  if (role === 'student') return method ?? 'choose';
+  if (role === 'parent' || role === 'student') return method ?? 'choose';
   return 'email';
 }
 
