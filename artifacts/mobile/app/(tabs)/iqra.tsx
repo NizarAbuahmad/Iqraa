@@ -1628,11 +1628,21 @@ export default function IqraScreen() {
     the buttons level with the empty one below. One row while empty, and it
     follows what is typed; a native build already grows its own input and the
     ref there has no `style` to write to (`fitTextareaHeight` does nothing).
-    Re-fitted when the window width changes too, as a line may wrap differently.
+    Re-fitted when the window width changes too, as a line may wrap differently,
+    and once the web fonts are in: the first fit runs before Almarai loads, and a
+    placeholder that wraps in the real font left a clipped second line in a field
+    measured with the fallback one.
   */
   useEffect(() => {
     if (Platform.OS !== 'web') return;
-    fitTextareaHeight(composerRef.current as unknown as Parameters<typeof fitTextareaHeight>[0]);
+    const fit = () =>
+      fitTextareaHeight(composerRef.current as unknown as Parameters<typeof fitTextareaHeight>[0]);
+    fit();
+    let live = true;
+    (globalThis as { document?: { fonts?: { ready: Promise<unknown> } } }).document?.fonts?.ready
+      .then(() => { if (live) fit(); })
+      .catch(() => {});
+    return () => { live = false; };
   }, [input, viewportW]);
 
   // Web has no notch and no native header, so the 67pt allowance left a band
