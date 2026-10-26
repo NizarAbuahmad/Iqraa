@@ -7,6 +7,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NotificationBell } from '@/components/ui/NotificationBell';
 import { IqraaMark } from '@/components/ui/IqraaMark';
+import { useTourTarget } from '@/components/tour/TourTarget';
 import { isTabActive, tabHref } from '@/services/tabRoute';
 import type { TabEntry } from '@/app/(tabs)/_layout';
 
@@ -16,9 +17,12 @@ function SidebarRow({ entry, active }: { entry: TabEntry; active: boolean }) {
   const colors = useColors();
   const { t } = useLanguage();
   const [hovered, setHovered] = useState(false);
+  // The first-run tour points at this row as `nav-<name>` (a phone's tab bar is `tab-<name>`).
+  const tourRef = useTourTarget(`nav-${entry.name}`);
 
   return (
     <Pressable
+      ref={tourRef}
       onPress={() => router.push(tabHref(entry.name) as never)}
       accessibilityRole="tab"
       aria-selected={active}
