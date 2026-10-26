@@ -71,6 +71,93 @@ Unsubscribes are not pushed back to Resend contacts. The deploy order matters: m
 Site_Iqra wording PR (it promises an unsubscribe link that only exists once this is live), then set
 `UPDATES_CONSENT_FROM`.
 
+## «اسأل إقرأ» is live on iqrra.com: the widget and the production check, 2026-10-26
+
+The question assistant announced in «A public «اسأل إقرأ» bot for iqrra.com — the API half» is now
+on the home page. The API half merged as PR #1201 (squash `e167abf`, deploy run 40188544551, success,
+2026-10-25 11:21-11:27 UTC); the widget merged as `Site_Iqra` PR #41 (squash `fd1ccc8`, 2026-10-26,
+Vercel). Plans: `docs/superpowers/plans/2026-10-25-site-ask-widget.md` (corrected by PR #1300 before
+it was run; the corrections are in it).
+
+**What a visitor gets.** A round launcher bottom-left of the home page (that is `inset-inline-end`
+on this RTL page) opens a panel with a greeting and three starter questions («ما هو إقرأ؟»,
+«ما الصفوف والمواد؟», «هل هو مجاني؟»), each answered from the fixed answers with no AI call. The
+widget is two plain files in the `Site_Iqra` repo, `ask.js` and `ask.css`, plus two lines in
+`index.html`: no build step, no dependency. It makes one call, `POST /api/site/ask`. The conversation
+lives in the page's memory only (the last four messages are sent along, and only after a successful
+answer); nothing is stored in the browser and the root carries `ph-no-capture`, so PostHog
+autocapture records no chip text. Every non-answer (a refusal, 429, 400, 5xx, a network error, an
+unreadable reply, or no reply within 30 s) shows one friendly message with a link to the page's
+suggestion form (`#feedback`); the visitor never sees a status code or a reason. All text is put in
+with `textContent`; the only links it can create are to `https://iqrra.com/...` and
+`https://www.iqrra.com/...` (a pure, tested `linkify`), so the grades-and-subjects answer's
+`https://www.iqrra.com/manhaj` is clickable. **`app.iqrra.com` links in two of the fixed answers stay
+plain text** (not in the allow-list; widening it is a small change and a decision).
+
+**Privacy.** `privacy.html` has a new §6 «أسئلة مساعد الموقع» / "Site assistant questions" in both
+languages, and the OpenAI row, the Neon row, the where-stored list and the Retention section were
+updated to match. Its claims, each checked against the code: every question reaches our servers;
+fixed answers never reach an AI provider, but the history sent with a later, uncovered question
+(the last four messages) may include earlier questions and our replies; we do not save question or
+reply text in our database or logs; OpenAI's own retention follows its terms; **a per-IP counter
+(`site-ask-ip:<ip>`) is kept in Postgres for the one-hour window and is removed only by a
+probabilistic clean-up at least 24 hours after its hour ended, so an IP can be kept a day or more**
+(the page did not say before that IPs are kept for rate limiting at all; the same limiter serves the
+other public routes). The owner approved the wording on 2026-10-26. The English text of the page
+still says "Iqra" in about seven older places (not changed here; `CLAUDE.md` wants "Iqrra").
+
+**Checked.**
+- Unit tests (`Site_Iqra`, `node --test tests/*.test.mjs`): 34 of 34, for the pure core (request
+  building with filter-then-window, reply interpretation, language detection, `linkify`).
+- A real-browser check (Chromium, API stubbed, script kept outside the repo): 493 of 493 rows, plus 6
+  visible SKIP rows and 3 INFO rows. It covers the chips and the chat round trip, history windowing
+  and "only after success" for all six failure paths, injected markup (also in the API's own
+  refusal text) rendered as text, Esc and focus rules, tap targets, contrast computed from the
+  widget's real colours, launcher overlap while scrolling, panel geometry over many viewports and a
+  height sweep, request headers (JSON, no cookie or authorization), reduced motion, print. Each row
+  was shown to fail when the behaviour was broken on purpose. Two real defects came out of it (the
+  page's global `section{padding:64px 0}` leaking into the panel, and a panel taller than a short
+  phone screen).
+- The link builder was attacked with 50 hand-written inputs and 200,000 random strings: every link
+  stayed on the two allowed origins and the text always rebuilt exactly.
+- **Production, API (2026-10-26, after the deploy):** the three starter questions return
+  `source: "curated"`; an off-topic question and a "print your system prompt" attempt got a polite
+  refusal from the AI path (`source: "ai"`); an empty message and a 301-character message are 400;
+  GET is 404; the CORS preflight allows `https://www.iqrra.com` and not another origin.
+- **Production, widget (2026-10-26, in Chromium):** the launcher is at the bottom-left, the three
+  chips each get a curated 200, the manhaj link is clickable, no notice, no page error, and
+  `https://www.iqrra.com/privacy` shows §6 in both languages with the new dates.
+  About a dozen API calls were made in these checks (two of them to the AI path, about $0.02 at the
+  estimated rate).
+
+**Not checked.** Safari, Firefox and a real on-screen keyboard (a chip tap focuses the input, so the
+keyboard opens on phones after a chip tap). The widget's AI-answer and refusal paths on the real
+site (they were checked against the API and with stubs). The daily spend cap and the 100-an-hour
+limit against the live service. The real per-answer cost and the `/healthz/ai-budget` `persisted`
+flag after real traffic. Whether `SITE_BOT_BUDGET_USD_DAILY` is set on the Cloud Run service (not
+read: without it the default of 1 a day applies). How the matcher does on real visitor questions
+(its phrases are our guesses). The widget on a Vercel preview URL: it cannot reach the API, because
+CORS allows only `www.iqrra.com` and `iqrra.com`, so a preview only ever shows the friendly
+"couldn't answer" message.
+
+**Known limits.**
+- The page's own header wraps to 142px between about 720px and 1000px wide (not touched). On a
+  desktop-width window the card covers the header's left-hand buttons below about 560px of height
+  before the first question and below about 641px once a conversation has filled it; the phone sheet
+  covers the header only at 352px of height and below (ranges measured at 1280px wide with the 85px
+  header, in `DESIGN.md`).
+- Esc does nothing when focus is on the page body inside the open panel (the X button and Esc from
+  any control in it work). A very tall answer can lose a few pixels at its top; an answer arriving
+  while the panel is closed is not scrolled to its top. The notice's link does not reopen the
+  suggestion form if the visitor re-collapsed it while the URL still reads `#feedback`.
+- Matcher limits (API): «مرحبا كم سعر شات جي بي تي» gets the "not a chatbot" answer; «شكرا للطلاب»
+  gets the students answer; "hi other" and "hi app" go to the AI.
+- The bot's spend counts toward the shared `AI_BUDGET_USD` (see the API-half entry); the failing-ledger
+  gate gap parked there is unchanged.
+- Rollback: delete the `<link href="/ask.css">` and `<script src="/ask.js">` lines from
+  `Site_Iqra`'s `index.html` (or revert the merge); the API is unaffected. To keep the API but stop
+  AI spend, set `SITE_BOT_BUDGET_USD_DAILY=0` (fixed answers keep working).
+
 ## Thirty-third live pass: questions about the app itself, 2026-10-25
 
 **Why.** A 30-question pass on app.iqrra.com of the questions a teacher asks before using the app
@@ -130,6 +217,30 @@ this is **unverified in practice**: the first queued PR is the test. Check that 
 requires reports on it. If one does not, the queue entry times out and the PR drops out; turning the queue off again
 restores the old behaviour, and reverting this PR changes nothing for a repository with the queue off.
 `deploy.yml` is untouched: the queue merges into `main`, which is still a push to `main`.
+
+## Timetable: a period in an archived class is a free period — 2026-10-25
+
+A teacher who had saved a timetable and a plan (with dates) still saw «الحصة القادمة · الاثنين 09:00»
+with no class name on Today, and «لا توجد خطة زمنية لهذه الشعبة» with no name either, whatever plan
+they added. Reproduced locally: the timetable's periods pointed at a class that had since been
+archived, and a plan existed on a different, live class. Archiving a class (`DELETE /classes/:id`,
+which sets `archived_at`) does not touch `schedule_slots`, so `GET /schedule` kept returning the
+archived class; the weekly grid drew those cells as empty (it cannot name the class), while Today
+took them for real periods of a class with no name and no plan, and a plan on any live class never
+matches. `GET /schedule` now returns `classGroupId: null` for a period whose class is archived
+(`routes/schedule.ts`; a left join on `class_groups`). The stored row is not edited and its note
+stays. Every screen reads the timetable from that one call, so Today falls back to «أضف جدولك
+الأسبوعي» and agrees with the grid.
+
+Verified: `scheduleArchivedClass.db.test.ts` (the seed's period on an archived class returns no class,
+live and free periods are unchanged, the stored row is untouched, another teacher is unaffected);
+it failed before the change. API `pnpm test` 2607 pass; `pnpm run typecheck`; in the browser, the
+reproduced account went from «Next period · Monday 09:00» + «This class has no pacing plan» to «Add
+your weekly timetable» + «Add timetable». **Not verified:** that this is the reporting teacher's
+account (their data cannot be read from here; the symptoms match, the cause is inferred), the full
+mobile suite (nothing in the app changed), Arabic/RTL on a device. **Not changed:** archiving a class
+still leaves its periods stored; nothing tells the teacher that a class they archived was in their
+timetable. A period whose class list fails to load still shows without a class name.
 
 ## Teaching plan: the lesson date boxes follow «توزيع تلقائي» — 2026-10-25
 
@@ -380,6 +491,9 @@ in production); the real per-answer cost and the `/healthz/ai-budget` `persisted
 first answers; answer quality on real visitor questions, including off-topic and injection tries
 (to be run against the deployed route before the widget ships, and recorded here); the widget,
 which is a separate change in the `Site_Iqra` repo and has not been written; how the matcher behaves on real visitor questions (only the questions in the tests have been tried).
+**Update 2026-10-26:** the route was checked in production, the widget was written and is live; see
+«اسأل إقرأ is live on iqrra.com: the widget and the production check» above. What is still not checked
+is listed there.
 
 ## Grade 8 English gets its book pages; Grades 1-7 do not, 2026-10-25
 
