@@ -26,8 +26,8 @@ import { loadTimetable } from '@/services/schedule';
 import { formatNextPeriod, type NextPeriodLesson, type TimetableSetupStep } from '@/services/scheduleCalendar';
 import { todayISO } from '@/services/planEntries';
 import {
-  HomeLessonPick, dismissSetupNudge, loadLessonPick, loadPrepSkips, setPrepSkip, showsPeriodLine, subscribeLessonPick, timetableWins,
-  wasSetupNudgeDismissed,
+  HomeLessonPick, dismissSetupNudge, loadLessonPick, loadPrepSkips, resolveCurrentLesson, setPrepSkip, showsPeriodLine,
+  subscribeLessonPick, wasSetupNudgeDismissed,
 } from '@/services/lessonContext';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { lessonPickerParams, resolveLessonPrepContext, scopePickerParams } from '@/services/lessonPrep';
@@ -177,14 +177,9 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
     () => (next?.lessonId ? resolveLessonPrepContext(next.lessonId, lang as 'ar' | 'en') : null),
     [next?.lessonId, lang],
   );
-  const fromSchedule = timetableWins(pick, !!scheduled, todayISO());
-  const active = fromSchedule && scheduled
-    ? { topic: scheduled.topic, lessonId: scheduled.lessonId, gradeId: scheduled.gradeId, subjectId: scheduled.subjectId }
-    : pick?.topic?.trim()
-      ? { topic: pick.topic.trim(), lessonId: pick.lessonId ?? null, gradeId: pick.gradeId, subjectId: pick.subjectId }
-      : fallback
-        ? { topic: fallback.topic, lessonId: fallback.lessonId, gradeId: fallback.gradeId, subjectId: fallback.subjectId }
-        : null;
+  // The one rule, shared with the sidebar card, ⌘K and the chat's strip.
+  const { lesson: active, source: lessonSource } = resolveCurrentLesson({ pick, scheduled, fallback, today: todayISO() });
+  const fromSchedule = lessonSource === 'schedule';
   // «الحصة القادمة · العاشر ب · 10:15» — when the card shows that period's lesson, or the class has
   // no lesson yet (`showsPeriodLine`); never beside a lesson picked today that replaced it.
   const periodLine = next && showsPeriodLine(true, !!scheduled, fromSchedule)

@@ -72,6 +72,15 @@ type Props = {
    * board keeps the count.
    */
   hideCount?: boolean;
+  /**
+   * Name the subject and grade under the lesson in the collapsed strip. Desktop
+   * has the room, and it sits beside the sidebar card, which always names the
+   * subject: two lessons that differ then differ where the teacher can see it,
+   * instead of one reading «المفردات والقواعد» and the other «النجوم» with
+   * nothing to say they are even different subjects. The phone strip is one
+   * line and stays one.
+   */
+  showSubject?: boolean;
 };
 
 export function CurrentLessonCard({
@@ -93,6 +102,7 @@ export function CurrentLessonCard({
   onClear,
   clearLabel,
   hideCount = false,
+  showSubject = false,
 }: Props) {
   const align = isRTL ? 'right' : 'left' as const;
   const rowDir = isRTL ? 'row-reverse' : 'row' as const;
@@ -206,15 +216,26 @@ export function CurrentLessonCard({
             style={[styles.collapsedMain, { flexDirection: rowDir, flex: 1 }]}
             accessibilityRole="button"
             aria-expanded={false}
-            accessibilityLabel={lesson.unitLesson}
+            accessibilityLabel={showSubject ? `${lesson.unitLesson} — ${lesson.subjectGrade}` : lesson.unitLesson}
           >
             <JordanFlag width={17} />
-            <Text
-              numberOfLines={1}
-              style={[styles.collapsedTitle, { color: colors.foreground, textAlign: align, flex: 1 }]}
-            >
-              {lesson.unitLesson}
-            </Text>
+            {showSubject ? (
+              <View style={styles.collapsedTexts}>
+                <Text numberOfLines={1} style={[styles.collapsedTitle, { color: colors.foreground, textAlign: align }]}>
+                  {lesson.unitLesson}
+                </Text>
+                <Text numberOfLines={1} style={[styles.collapsedSubject, { color: colors.mutedForeground, textAlign: align }]}>
+                  {lesson.subjectGrade}
+                </Text>
+              </View>
+            ) : (
+              <Text
+                numberOfLines={1}
+                style={[styles.collapsedTitle, { color: colors.foreground, textAlign: align, flex: 1 }]}
+              >
+                {lesson.unitLesson}
+              </Text>
+            )}
             {/* Says there is more under the fold, and how much of it is done. */}
             {totalCount > 0 ? (
               <View
@@ -446,6 +467,12 @@ const styles = StyleSheet.create({
   collapsedTitle: {
     fontFamily: 'ReadexPro_600SemiBold',
     fontSize: 13,
+  },
+  collapsedTexts: { flex: 1, gap: 1 },
+  collapsedSubject: {
+    fontFamily: 'Almarai_400Regular',
+    fontSize: 11,
+    lineHeight: 16,
   },
   errorRow: {
     alignItems: 'center',

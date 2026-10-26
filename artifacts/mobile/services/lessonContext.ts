@@ -15,6 +15,7 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { todayISO } from './planEntries.ts';
+import type { NextPeriodLesson } from './scheduleCalendar.ts';
 
 const HOME_LESSON_KEY = '@iqra_home_lesson_v1';
 const ONBOARDED_KEY = '@iqra_onboarded_v1';
@@ -27,7 +28,67 @@ let activeUserId: string | null = null;
 
 /** Called by AuthContext whenever the signed-in user changes. */
 export function setActiveLessonContextUser(userId: string | null): void {
+  // AuthContext repeats the call on restore: only a different teacher forgets
+  // the period read for the last one.
+  if (userId !== activeUserId) {
+    activeUserId = userId;
+    setNextPeriod(undefined);
+    return;
+  }
   activeUserId = userId;
+}
+
+/** Who the context is for now. A reader captures it before a request, and hands it back to `publishNextPeriod`. */
+export function activeLessonContextUser(): string | null {
+  return activeUserId;
+}
+
+/*
+  The period now/next and its pacing-plan lesson, shared. Whoever reads the
+  timetable (Today on every focus, the chat on mount, the tab layout on
+  navigation) publishes it here, and whoever shows or acts on the current lesson
+  (the sidebar card, ⌘K, the Tools tab) follows, so one fresh read corrects all
+  of them instead of each waiting for its own. Each kept its own copy before, and
+  the copies went stale at different times.
+
+  `undefined` = not read since this teacher signed in; `null` = read, and there
+  is nothing on the timetable. The two are different answers: a surface that has
+  not heard yet must not read the absence of an answer as «no lesson scheduled».
+*/
+let nextPeriod: NextPeriodLesson | null | undefined;
+let nextPeriodReadAt = 0;
+type NextPeriodListener = (next: NextPeriodLesson | null | undefined) => void;
+const nextPeriodListeners = new Set<NextPeriodListener>();
+
+function setNextPeriod(next: NextPeriodLesson | null | undefined): void {
+  nextPeriod = next;
+  nextPeriodReadAt = next === undefined ? 0 : Date.now();
+  nextPeriodListeners.forEach(fn => fn(next));
+}
+
+export function getNextPeriod(): NextPeriodLesson | null | undefined {
+  return nextPeriod;
+}
+
+/** Milliseconds since anyone last read the timetable for this teacher; `Infinity` if nobody has. */
+export function getNextPeriodAgeMs(): number {
+  return nextPeriodReadAt ? Date.now() - nextPeriodReadAt : Infinity;
+}
+
+/**
+ * Record a read of the timetable. `readFor` is the teacher the request was made
+ * for (`activeLessonContextUser()` at the moment it started): an answer that
+ * lands after a different teacher signed in is dropped, not shown to them.
+ */
+export function publishNextPeriod(next: NextPeriodLesson | null, readFor: string | null): boolean {
+  if (readFor !== activeUserId) return false;
+  setNextPeriod(next);
+  return true;
+}
+
+export function subscribeNextPeriod(fn: NextPeriodListener): () => void {
+  nextPeriodListeners.add(fn);
+  return () => nextPeriodListeners.delete(fn);
 }
 
 function scopedKey(base: string): string {
@@ -83,11 +144,58 @@ export async function loadLessonPick(): Promise<HomeLessonPick | null> {
 /**
  * Whether the timetable's lesson should replace the teacher's pick. A pick
  * made today is a decision and wins; an older one (or none) is where they
- * were, and yields. Home and chat both ask this, so they show one lesson.
+ * were, and yields. This is the building block of `resolveCurrentLesson`, which
+ * every surface calls so they show one lesson — call that, not this.
  */
 export function timetableWins(pick: HomeLessonPick | null, hasScheduledLesson: boolean, today: string): boolean {
   if (!hasScheduledLesson) return false;
   return !(pick?.topic?.trim() && pick.pickedOn === today);
+}
+
+/** A lesson as the surfaces show it: the id travels with the title, which does not identify a lesson. */
+export type CurrentLesson = {
+  topic: string;
+  lessonId: string | null;
+  gradeId?: string;
+  subjectId?: string;
+};
+
+/** Where the current lesson came from: the timetable, a hand pick, or the chat's default. */
+export type CurrentLessonSource = 'schedule' | 'pick' | 'default';
+
+/**
+ * The lesson the teacher is on — THE rule, so the sidebar card, ⌘K, the chat's
+ * lesson strip and Today cannot name different ones. In order: the pacing-plan
+ * lesson of the period now or next, unless the teacher picked one by hand
+ * today (`timetableWins`); else their saved pick; else the default the chat
+ * seeds. A pick from last week is where they were, not where they are.
+ *
+ * Pure: `scheduled` and `fallback` arrive already resolved to a lesson
+ * (`resolveLessonPrepContext`), so a caller with no timetable passes null.
+ * Whoever shows a lesson calls this — never `timetableWins` on its own.
+ *
+ * Not `lessonCopilot.resolveActiveLesson` (the chat memory's KB lesson) nor
+ * `teachingAssistant.resolveActiveLesson`: those answer a different question,
+ * which is why this one is named for the lesson the teacher is *on*.
+ */
+export function resolveCurrentLesson(input: {
+  pick: HomeLessonPick | null;
+  scheduled: CurrentLesson | null;
+  fallback: CurrentLesson | null;
+  today: string;
+}): { lesson: CurrentLesson | null; source: CurrentLessonSource | null } {
+  const { pick, scheduled, fallback, today } = input;
+  const own = (l: CurrentLesson): CurrentLesson => ({
+    topic: l.topic,
+    lessonId: l.lessonId ?? null,
+    gradeId: l.gradeId,
+    subjectId: l.subjectId,
+  });
+  if (scheduled && timetableWins(pick, true, today)) return { lesson: own(scheduled), source: 'schedule' };
+  const topic = pick?.topic?.trim();
+  if (pick && topic) return { lesson: own({ ...pick, topic, lessonId: pick.lessonId ?? null }), source: 'pick' };
+  if (fallback) return { lesson: own(fallback), source: 'default' };
+  return { lesson: null, source: null };
 }
 
 /**

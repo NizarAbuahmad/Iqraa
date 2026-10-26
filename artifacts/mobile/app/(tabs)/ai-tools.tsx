@@ -15,8 +15,10 @@ import { useSurface } from '@/components/ui/Surface';
 import { SPACE } from '@/constants/theme';
 import { openGeogebraGraphing } from '@/services/geogebra';
 import { trackEvent } from '@/services/analytics';
-import { pickPrefillParams } from '@/services/lessonPrep';
-import { loadLessonPick } from '@/services/lessonContext';
+import { pickPrefillParams, resolveLessonPrepContext } from '@/services/lessonPrep';
+import { getNextPeriod, loadLessonPick, resolveCurrentLesson } from '@/services/lessonContext';
+import { loadNextPeriod } from '@/services/schedule';
+import { todayISO } from '@/services/planEntries';
 import { classToolParamsFromRoute, type ClassToolParams } from '@/services/classToolParams';
 import { readableOn } from '@/services/readableColor';
 import {
@@ -46,12 +48,21 @@ async function runToolAction(tool: ToolDef, lang: 'ar' | 'en', forClass: ClassTo
     // routeParams always win; the teacher can still change it in the tool —
     // that change stays local to the material being generated.
     const pick = await loadLessonPick();
+    // The lesson the lesson bar above these cards names, by the same rule
+    // (`resolveCurrentLesson`): the raw saved pick here used to open a quiz on
+    // last week's lesson while the bar said the period's own. The period is the
+    // shared copy the layout keeps fresh; only when nobody has read it yet
+    // (`undefined` — `null` is an answer: nothing scheduled) is it fetched.
+    const cached = getNextPeriod();
+    const next = cached !== undefined ? cached : await loadNextPeriod();
+    const scheduled = next?.lessonId ? resolveLessonPrepContext(next.lessonId, lang) : null;
+    const { lesson } = resolveCurrentLesson({ pick, scheduled, fallback: null, today: todayISO() });
     // The lesson's own grade and subject travel with its title — see
     // `pickPrefillParams`. An explicit `routeParams.topic` still wins whole:
     // the pick's grade must not ride along with somebody else's topic.
     const prefill: Record<string, string> = tool.routeParams?.topic
       ? {}
-      : pickPrefillParams(pick, lang) as Record<string, string>;
+      : pickPrefillParams(lesson, lang) as Record<string, string>;
     router.push({ pathname: tool.route as any, params: { ...prefill, ...tool.routeParams } });
   }
 }

@@ -1,6 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { loadPrepSkips, setPrepSkip, subscribeLessonPick, saveLessonPick, showsPeriodLine, timetableWins, type HomeLessonPick } from '../lessonContext.ts';
+import {
+  activeLessonContextUser, getNextPeriod, getNextPeriodAgeMs, loadPrepSkips, publishNextPeriod, setActiveLessonContextUser, setPrepSkip,
+  subscribeLessonPick, subscribeNextPeriod, saveLessonPick, showsPeriodLine, timetableWins, type HomeLessonPick,
+} from '../lessonContext.ts';
+import type { NextPeriodLesson } from '../scheduleCalendar.ts';
 import { todayISO } from '../planEntries.ts';
 
 const pick = (topic: string): HomeLessonPick => ({ topic, unitOrder: null, gradeId: 'grade-10' });
@@ -89,6 +93,79 @@ describe('showsPeriodLine', () => {
   it('has nothing to show without a next period', () => {
     assert.equal(showsPeriodLine(false, false, false), false);
     assert.equal(showsPeriodLine(false, true, true), false);
+  });
+});
+
+/*
+  The period now/next is read by whoever shows or acts on the current lesson
+  (Today on focus, the chat on mount, the tab layout on navigation, the Tools tab
+  on a tap). One shared copy means a fresh read by any of them corrects all of
+  them: the sidebar followed Today's reload instead of waiting for its own.
+*/
+describe('the shared next period', () => {
+  const period = (lessonId: string | null): NextPeriodLesson => ({
+    schoolName: '', periodNumber: 2, startTime: '23:00', durationMinutes: 50,
+    classGroupId: 'class-1', subjectId: 'earth-science', date: '2026-10-26', happeningNow: false, lessonId,
+  });
+
+  it('is unread (undefined, not null) until someone publishes, and again after a different teacher signs in', () => {
+    setActiveLessonContextUser('teacher-a');
+    assert.equal(getNextPeriod(), undefined);
+    publishNextPeriod(period('L1'), activeLessonContextUser());
+    assert.equal(getNextPeriod()?.lessonId, 'L1');
+    setActiveLessonContextUser('teacher-b');
+    assert.equal(getNextPeriod(), undefined, 'teacher A\'s period must not be teacher B\'s');
+  });
+
+  it('keeps null as an answer: read, and nothing on the timetable', () => {
+    setActiveLessonContextUser('teacher-c');
+    publishNextPeriod(null, activeLessonContextUser());
+    assert.equal(getNextPeriod(), null);
+  });
+
+  it('tells every subscriber, and stops once unsubscribed', () => {
+    setActiveLessonContextUser('teacher-d');
+    const seen: (NextPeriodLesson | null | undefined)[] = [];
+    const unsubscribe = subscribeNextPeriod(n => seen.push(n));
+    publishNextPeriod(period('L1'), activeLessonContextUser());
+    unsubscribe();
+    publishNextPeriod(period('L2'), activeLessonContextUser());
+    assert.deepEqual(seen.map(n => n?.lessonId), ['L1']);
+  });
+
+  it('drops an answer that was asked for by a teacher who has since signed out', () => {
+    setActiveLessonContextUser('teacher-e');
+    const askedBy = activeLessonContextUser(); // the request starts…
+    setActiveLessonContextUser('teacher-f'); // …another teacher signs in…
+    const seen: (NextPeriodLesson | null | undefined)[] = [];
+    const unsubscribe = subscribeNextPeriod(n => seen.push(n));
+    assert.equal(publishNextPeriod(period('E-LESSON'), askedBy), false); // …and E's answer lands.
+    unsubscribe();
+    assert.equal(getNextPeriod(), undefined);
+    assert.deepEqual(seen, []);
+  });
+
+  it('says how long ago anyone read it, so a surface can skip a read that was just made', () => {
+    setActiveLessonContextUser('teacher-i');
+    assert.equal(getNextPeriodAgeMs(), Infinity, 'never read');
+    publishNextPeriod(period('L1'), activeLessonContextUser());
+    const age = getNextPeriodAgeMs();
+    assert.ok(age >= 0 && age < 1000, `just read, got ${age}`);
+    setActiveLessonContextUser('teacher-j');
+    assert.equal(getNextPeriodAgeMs(), Infinity, 'a different teacher has never read it');
+  });
+
+  it('tells subscribers the period is unread again when the teacher changes, and not when it is the same one', () => {
+    setActiveLessonContextUser('teacher-g');
+    publishNextPeriod(period('L1'), activeLessonContextUser());
+    const seen: (NextPeriodLesson | null | undefined)[] = [];
+    const unsubscribe = subscribeNextPeriod(n => seen.push(n));
+    setActiveLessonContextUser('teacher-g'); // AuthContext repeats the call on restore
+    assert.deepEqual(seen, []);
+    assert.equal(getNextPeriod()?.lessonId, 'L1');
+    setActiveLessonContextUser('teacher-h');
+    unsubscribe();
+    assert.deepEqual(seen, [undefined]);
   });
 });
 

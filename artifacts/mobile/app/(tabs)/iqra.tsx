@@ -46,7 +46,7 @@ import {
 import { getPickerGrades, getPickerSubjects, hasCurriculumForSubjectGrade } from '@/services/curriculumData';
 import { AR_LATIN } from '@/services/dateLabels';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
-import { loadLessonPick, loadPrepBoardOpen, loadPrepSkips, saveLessonPick, savePrepBoardOpen, setPrepSkip, timetableWins, type HomeLessonPick } from '@/services/lessonContext';
+import { loadLessonPick, loadPrepBoardOpen, loadPrepSkips, resolveCurrentLesson, saveLessonPick, savePrepBoardOpen, setPrepSkip, type HomeLessonPick } from '@/services/lessonContext';
 import {
   buildResponse,
   deduplicateByUnit,
@@ -1856,14 +1856,17 @@ export default function IqraScreen() {
   // chat all agree on one lesson. Runs after the seed effect (declaration
   // order) and again on language change, which re-seeds.
   //
-  // The timetable takes part the same way it does on home (`timetableWins`):
-  // the pacing-plan lesson of the period now or next replaces a pick that was
-  // not made today. It is shaped as a pick so everything below — the lesson
-  // id travelling with the topic, the soft pin — applies to it unchanged.
+  // The lesson is named by `resolveCurrentLesson`, the same rule as Today and the
+  // sidebar card: the pacing-plan lesson of the period now or next replaces a
+  // pick that was not made today. It is shaped as a pick so everything below —
+  // the lesson id travelling with the topic, the soft pin — applies to it
+  // unchanged. No fallback is passed: the default is already seeded above, and
+  // handing it over here would make it look like something the teacher picked.
   useEffect(() => {
     void Promise.all([loadLessonPick(), loadNextPeriod()]).then(([saved, next]) => {
       const scheduled = next?.lessonId ? resolveLessonPrepContext(next.lessonId, lang as 'ar' | 'en') : null;
-      const fromSchedule = timetableWins(saved, !!scheduled, todayISO());
+      const { lesson, source } = resolveCurrentLesson({ pick: saved, scheduled, fallback: null, today: todayISO() });
+      const fromSchedule = source === 'schedule';
       setPeriodLine('');
       if (fromSchedule && next) {
         listClasses()
@@ -1874,10 +1877,10 @@ export default function IqraScreen() {
             nowLabel: t('homePeriodNow'), nextLabel: t('homePeriodNext'),
           })));
       }
-      const pick: HomeLessonPick | null = fromSchedule && scheduled
-        ? { topic: scheduled.topic, unitOrder: null, gradeId: scheduled.gradeId, subjectId: scheduled.subjectId, lessonId: scheduled.lessonId }
-        : saved;
-      if (!pick?.topic) return;
+      const pick: HomeLessonPick | null = lesson
+        ? { ...lesson, unitOrder: source === 'pick' ? saved?.unitOrder ?? null : null }
+        : null;
+      if (!pick) return;
       // A pick made in the sheet while this read was in flight wins — but the
       // topic and its lesson id must move together, so both are guarded by
       // the same condition rather than by two independent updaters.
@@ -3798,6 +3801,8 @@ export default function IqraScreen() {
           }}
           // The board right below it is already counting, from better data.
           hideCount={Boolean(introPrepBoard)}
+          // Beside the sidebar card, which names the subject: a mismatch shows.
+          showSubject={isDesktop}
           // A band welded to both window edges on desktop; a card over the
           // thread it describes here.
           containerStyle={
