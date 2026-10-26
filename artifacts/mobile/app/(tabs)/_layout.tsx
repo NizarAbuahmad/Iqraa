@@ -20,7 +20,11 @@ import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { badgeLabel, setUnreadMessages, useUnreadMessages } from '@/services/unreadMessages';
 import { ensureNotificationChannels, syncAppBadge } from '@/services/pushTokens';
 import { TranslationKey } from '@/services/i18n';
-import { HomeLessonPick, loadLessonPick, subscribeLessonPick } from '@/services/lessonContext';
+import {
+  HomeLessonPick, ScheduledLesson, currentScheduledLesson, lessonShown, loadLessonPick, subscribeLessonPick,
+  subscribeScheduledLesson,
+} from '@/services/lessonContext';
+import { todayISO } from '@/services/planEntries';
 import { defaultLessonIdFor } from '@/services/lessonCopilot';
 import { lessonPickerParams, resolveLessonPrepContext, scopePickerParams } from '@/services/lessonPrep';
 import { showLessonBar, tabVisible, type TabName } from '@/services/tabVisibility';
@@ -168,18 +172,29 @@ function ClassicTabLayout() {
   // first one's lesson, because the role — the only dependency — never changed.
   }, [isTeacher, user?.id]);
 
+  // The lesson the timetable puts on Today, as Today (or the chat) worked it out. Without it this bar,
+  // the sidebar card and ⌘K named the saved pick beside a Today card that followed the timetable.
+  const [scheduledLesson, setScheduledLesson] = useState<ScheduledLesson | null>(currentScheduledLesson());
+  useEffect(() => {
+    if (!isTeacher) return;
+    setScheduledLesson(currentScheduledLesson());
+    return subscribeScheduledLesson(setScheduledLesson);
+  }, [isTeacher, user?.id]);
+  const lessonOnCard = lessonShown(lessonPick, scheduledLesson, todayISO());
+
   /*
-    The lesson ⌘K acts on: the teacher's pick, or the one the chat and the
+    The lesson ⌘K acts on: the lesson the home card shows (a pick made today,
+    else the timetable's, else an older pick), or the one the chat and the
     workspace both fall back to when there is none. Resolved here rather than
-    in the palette so all three surfaces name the same lesson.
+    in the palette so all the surfaces name the same lesson.
   */
   const fallbackLesson = resolveLessonPrepContext(defaultLessonIdFor(user?.teachingAssignments), lang as 'ar' | 'en');
-  const activeLesson = lessonPick?.topic?.trim()
+  const activeLesson = lessonOnCard?.topic?.trim()
     ? {
-        topic: lessonPick.topic.trim(),
-        lessonId: lessonPick.lessonId ?? null,
-        gradeId: lessonPick.gradeId,
-        subjectId: lessonPick.subjectId,
+        topic: lessonOnCard.topic.trim(),
+        lessonId: lessonOnCard.lessonId ?? null,
+        gradeId: lessonOnCard.gradeId,
+        subjectId: lessonOnCard.subjectId,
       }
     : fallbackLesson
       ? {

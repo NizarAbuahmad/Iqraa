@@ -138,6 +138,33 @@ function isOnlyAsking(s: string): boolean {
 }
 
 /**
+ * «هذا الدرس», «للدرس الحالي», «درس اليوم», "this lesson", "today's lesson".
+ *
+ * A pointer at the lesson already picked, not the name of a lesson. Left as a
+ * topic it titled the saved material «هذا الدرس» and, on the live path, was
+ * searched for in the curriculum — so the one phrasing teachers use most to
+ * say "the lesson on the card" was the one that ignored the card. The whole
+ * topic has to be the pointer: «الدرس الأول» and "lesson planning" are names.
+ */
+const CURRENT_LESSON_REF = new RegExp(
+  [
+    // «هذا الدرس», «لهذا الدرس», «لنفس الدرس», «في هذا الدرس اليوم»
+    '^(?:(?:في|على|من)\\s+)?[لب]?(?:هذا|هذه|نفس)\\s+(?:ال)?درس(?:\\s+اليوم)?$',
+    // «الدرس الحالي», «للدرس الحالي», «درس اليوم», «لدرس اليوم», «الدرس نفسه»
+    '^(?:(?:في|على|من)\\s+)?(?:لل|بال|ال|[لب])?درس(?:نا)?\\s+(?:الحالي|اليوم|هذا|نفسه)$',
+    // «الدرس», «للدرس», «درسنا»
+    '^(?:(?:في|على|من)\\s+)?(?:(?:لل|بال|ال)درس|[لب]?درسنا)$',
+    '^(?:(?:in|on|of|from|to)\\s+)?(?:this|that|my|our|the|current|the\\s+current|the\\s+same|same|today[\'’]?s)\\s+lesson$',
+  ].join('|'),
+  'i',
+);
+
+function isCurrentLessonRef(s: string): boolean {
+  // Vowel marks and tatweel are typing noise here, not part of the pointer.
+  return CURRENT_LESSON_REF.test(s.replace(/[ً-ْـ]/g, '').trim());
+}
+
+/**
  * The topic an ask is about, with the asking stripped off.
  *
  * Not cosmetic: this string titles the saved material and heads the first
@@ -176,7 +203,7 @@ export function topicFromQuery(query: string): string {
     .replace(/^(?:a|an|the)\s+/i, '')
     .trim();
   const topic = trimEdgeFiller(out.replace(HOW_LEAD, ''));
-  return isOnlyAsking(topic) ? '' : topic;
+  return isOnlyAsking(topic) || isCurrentLessonRef(topic) ? '' : topic;
 }
 
 /** Resolve topic string for generation from lesson / docs / query. */
