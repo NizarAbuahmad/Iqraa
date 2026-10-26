@@ -26,7 +26,8 @@ import { loadTimetable } from '@/services/schedule';
 import { formatNextPeriod, type NextPeriodLesson, type TimetableSetupStep } from '@/services/scheduleCalendar';
 import { todayISO } from '@/services/planEntries';
 import {
-  HomeLessonPick, dismissSetupNudge, loadLessonPick, loadPrepSkips, setPrepSkip, showsPeriodLine, subscribeLessonPick, timetableWins,
+  HomeLessonPick, dismissSetupNudge, loadLessonPick, loadPrepSkips, publishScheduledLesson, setPrepSkip, showsPeriodLine,
+  subscribeLessonPick, timetableWins,
   wasSetupNudgeDismissed,
 } from '@/services/lessonContext';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
@@ -177,6 +178,15 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
     () => (next?.lessonId ? resolveLessonPrepContext(next.lessonId, lang as 'ar' | 'en') : null),
     [next?.lessonId, lang],
   );
+  // Told to the lesson bar, the sidebar card and ⌘K, which read the saved pick alone and
+  // named another lesson beside this card (`lessonShown` applies the same rule there).
+  useEffect(() => {
+    publishScheduledLesson(
+      scheduled
+        ? { topic: scheduled.topic, lessonId: scheduled.lessonId, gradeId: scheduled.gradeId, subjectId: scheduled.subjectId }
+        : null,
+    );
+  }, [scheduled]);
   const fromSchedule = timetableWins(pick, !!scheduled, todayISO());
   const active = fromSchedule && scheduled
     ? { topic: scheduled.topic, lessonId: scheduled.lessonId, gradeId: scheduled.gradeId, subjectId: scheduled.subjectId }

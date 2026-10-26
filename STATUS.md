@@ -25,6 +25,11 @@ Checked 2026-10-22:
   `2277f57` **(2026-10-25, from deploy run 801 — its «Verify the deployed commit» step passed; the
   revision name and traffic split were not re-read)**. Last read by command, 2026-10-22: `9346b5f`,
   revision `iqraa-api-00390-d4p`, 100% of traffic (`/api/healthz/version`).
+- **Site assistant «اسأل إقرأ»** (checked 2026-10-26 by command): `POST /api/site/ask` is live
+  and the widget is on `www.iqrra.com` (`Site_Iqra`). The three starter questions are answered from
+  fixed answers (`source: "curated"`); anything else goes to the AI path, capped by
+  `SITE_BOT_BUDGET_USD_DAILY` (default 1 a day; **whether it is set on the service was not read**) and
+  counted in `AI_BUDGET_USD`. See «`اسأل إقرأ` is live on iqrra.com» in the log.
 - **Math verifier** `iqraa-verifier`: `/api/healthz/verifier` answers `ok`, self-test `pass`.
 - **Web app** `app.iqrra.com` (Cloudflare Pages): 200. **Landing** `iqrra.com` (separate repo
   `Site_Iqra`, Vercel) answers 308 to `www.iqrra.com`, which is 200.
