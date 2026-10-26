@@ -20,7 +20,9 @@ import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { badgeLabel, setUnreadMessages, useUnreadMessages } from '@/services/unreadMessages';
 import { ensureNotificationChannels, syncAppBadge } from '@/services/pushTokens';
 import { TranslationKey } from '@/services/i18n';
-import { HomeLessonPick, loadLessonPick, subscribeLessonPick } from '@/services/lessonContext';
+import { HomeLessonPick, loadLessonPick, resolveActiveLesson, subscribeLessonPick } from '@/services/lessonContext';
+import { todayISO } from '@/services/planEntries';
+import { useNextPeriod } from '@/hooks/useNextPeriod';
 import { defaultLessonIdFor } from '@/services/lessonCopilot';
 import { lessonPickerParams, resolveLessonPrepContext, scopePickerParams } from '@/services/lessonPrep';
 import { showLessonBar, tabVisible, type TabName } from '@/services/tabVisibility';
@@ -169,26 +171,24 @@ function ClassicTabLayout() {
   }, [isTeacher, user?.id]);
 
   /*
-    The lesson ⌘K acts on: the teacher's pick, or the one the chat and the
-    workspace both fall back to when there is none. Resolved here rather than
-    in the palette so all three surfaces name the same lesson.
+    The lesson the sidebar card, the lesson bar and ⌘K name: the same one the
+    chat's strip and Today name, by the same rule (`resolveActiveLesson`) — the
+    period's pacing-plan lesson unless a lesson was picked by hand today, else
+    the saved pick, else the default. This used to read only the pick and the
+    default, so with a timetable and a pick from an earlier day the sidebar
+    named one lesson while the chat beside it named another.
   */
+  const nextPeriod = useNextPeriod(isTeacher, user?.id, pathname);
+  const scheduledLesson = nextPeriod?.lessonId
+    ? resolveLessonPrepContext(nextPeriod.lessonId, lang as 'ar' | 'en')
+    : null;
   const fallbackLesson = resolveLessonPrepContext(defaultLessonIdFor(user?.teachingAssignments), lang as 'ar' | 'en');
-  const activeLesson = lessonPick?.topic?.trim()
-    ? {
-        topic: lessonPick.topic.trim(),
-        lessonId: lessonPick.lessonId ?? null,
-        gradeId: lessonPick.gradeId,
-        subjectId: lessonPick.subjectId,
-      }
-    : fallbackLesson
-      ? {
-          topic: fallbackLesson.topic,
-          lessonId: fallbackLesson.lessonId,
-          gradeId: fallbackLesson.gradeId,
-          subjectId: fallbackLesson.subjectId,
-        }
-      : null;
+  const { lesson: activeLesson } = resolveActiveLesson({
+    pick: lessonPick,
+    scheduled: scheduledLesson,
+    fallback: fallbackLesson,
+    today: todayISO(),
+  });
 
   const unread = useUnreadMessages();
   const loadUnread = useCallback(async () => {

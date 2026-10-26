@@ -83,11 +83,54 @@ export async function loadLessonPick(): Promise<HomeLessonPick | null> {
 /**
  * Whether the timetable's lesson should replace the teacher's pick. A pick
  * made today is a decision and wins; an older one (or none) is where they
- * were, and yields. Home and chat both ask this, so they show one lesson.
+ * were, and yields. This is the building block of `resolveActiveLesson`, which
+ * every surface calls so they show one lesson — call that, not this.
  */
 export function timetableWins(pick: HomeLessonPick | null, hasScheduledLesson: boolean, today: string): boolean {
   if (!hasScheduledLesson) return false;
   return !(pick?.topic?.trim() && pick.pickedOn === today);
+}
+
+/** A lesson as the surfaces show it: the id travels with the title, which does not identify a lesson. */
+export type ActiveLesson = {
+  topic: string;
+  lessonId: string | null;
+  gradeId?: string;
+  subjectId?: string;
+};
+
+/** Where the active lesson came from: the timetable, a hand pick, or the chat's default. */
+export type ActiveLessonSource = 'schedule' | 'pick' | 'default';
+
+/**
+ * The lesson the teacher is on — THE rule, so the sidebar card, ⌘K, the chat's
+ * lesson strip and Today cannot name different ones. In order: the pacing-plan
+ * lesson of the period now or next, unless the teacher picked one by hand
+ * today (`timetableWins`); else their saved pick; else the default the chat
+ * seeds. A pick from last week is where they were, not where they are.
+ *
+ * Pure: `scheduled` and `fallback` arrive already resolved to a lesson
+ * (`resolveLessonPrepContext`), so a caller with no timetable passes null.
+ * Whoever shows a lesson calls this — never `timetableWins` on its own.
+ */
+export function resolveActiveLesson(input: {
+  pick: HomeLessonPick | null;
+  scheduled: ActiveLesson | null;
+  fallback: ActiveLesson | null;
+  today: string;
+}): { lesson: ActiveLesson | null; source: ActiveLessonSource | null } {
+  const { pick, scheduled, fallback, today } = input;
+  const own = (l: ActiveLesson): ActiveLesson => ({
+    topic: l.topic,
+    lessonId: l.lessonId ?? null,
+    gradeId: l.gradeId,
+    subjectId: l.subjectId,
+  });
+  if (scheduled && timetableWins(pick, true, today)) return { lesson: own(scheduled), source: 'schedule' };
+  const topic = pick?.topic?.trim();
+  if (pick && topic) return { lesson: own({ ...pick, topic, lessonId: pick.lessonId ?? null }), source: 'pick' };
+  if (fallback) return { lesson: own(fallback), source: 'default' };
+  return { lesson: null, source: null };
 }
 
 /**

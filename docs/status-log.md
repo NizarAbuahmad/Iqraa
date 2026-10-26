@@ -10,6 +10,85 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## One rule names the current lesson: sidebar, ⌘K, chat strip and Today, 2026-10-26
+
+**Why.** On app.iqrra.com/iqra (desktop) the chat's lesson strip read «النجوم • الأنظمة النجمية والكوكبات» while
+the sidebar's «الدرس الحالي» card read «المفردات والقواعد — اللغة الإنجليزية · الصف العاشر», for the same teacher at
+the same moment.
+
+**Cause (read from the code; the reporter's account and timetable were not looked at).** Two rules picked "the
+current lesson". Today (`useTodayLesson`) and the chat (`iqra.tsx`) ran `timetableWins(pick, scheduled, today)`:
+the pacing-plan lesson of the period now or next replaces a pick that was not made today. The tab layout
+(`_layout.tsx`), which feeds the sidebar card, the lesson bar and ⌘K, never read the timetable at all: it showed
+the saved pick or the default. So a teacher with a timetable, a pacing plan and no pick made today saw the
+scheduled lesson in the chat and on Today and an older pick (or the default) in the sidebar. «المفردات
+والقواعد» is also the title of a lesson in each of units 1–3 of the grade 10 English book, which is why the
+sidebar's version cannot be told apart from the chat's by title alone.
+
+**Built.**
+- `resolveActiveLesson({ pick, scheduled, fallback, today })` in `services/lessonContext.ts`, next to
+  `timetableWins`: pure, returns the lesson (id, grade and subject travel with the title; it hands back those
+  four fields only) and where it came from (`'schedule' | 'pick' | 'default'`). The rule is unchanged: a pick made
+  today wins; otherwise the timetable's lesson; otherwise the saved pick; otherwise the default.
+- The three surfaces call it and none calls `timetableWins` any more. Today: same behaviour, the inline chain
+  replaced. Chat: same behaviour; it passes `fallback: null` on purpose, because the default is already seeded by
+  `seedDefaultLessonMemory` and passing it would make it look like a teacher's pick. Layout: now reads the
+  timetable through the new `useNextPeriod` hook (`hooks/useNextPeriod.ts`) and resolves like the others.
+- `useNextPeriod` loads the next period for a teacher account, and re-reads on a change of route at most once a
+  minute (`loadNextPeriod` is three requests). A change of teacher always re-reads and drops the previous
+  teacher's period at once. Only the newest request may land, counted per request rather than per effect run,
+  so a throttled re-run does not discard an answer still in flight.
+- `CurrentLessonCard` takes `showSubject`; the chat passes `isDesktop`. The collapsed strip then has a second
+  muted line, «المادة • الصف» (`lesson.subjectGrade`), the same text as the sidebar card's meta line, so two
+  lessons that differ would differ where the teacher can see it. The phone strip is unchanged. Its accessibility
+  label includes the subject when it is shown.
+- `saveLessonPick` is still only called from the chat's picker; who writes the pick did not change.
+
+**Verified.**
+- `services/__tests__/activeLesson.test.ts` (11 tests) states the rule with the two real KB lessons from the
+  report (`kbl-earth-science-s1-nccd-u2_l2`, `kbl-eng-s1-nccd-u1_l1`): written first and failing (the resolver did
+  not exist), passing now.
+- `services/__tests__/activeLessonSurfaces.test.ts` (7 tests) reads the three surfaces and requires each to call
+  `resolveActiveLesson`, none to call `timetableWins`, and the layout to read the timetable. Before the change 6
+  of the 7 failed — in particular «the tab layout reads the timetable» — which is the bug, pinned.
+- `pnpm run typecheck` clean (it caught a real name clash: `useTodayLesson` already has a parameter called
+  `source`). Mobile suite on the final tree: 7800 tests, 7790 pass, 0 fail, 10 skipped (the same 10 as before).
+- **In a browser, before and after.** A throwaway Postgres (migrated and seeded as in `e2e/`), the built API, and
+  two web builds — the unmodified base commit and this change — against it; Playwright (Chromium) signed in a
+  throwaway teacher with grade 10 English and earth science, a class, a timetable for every day, a pacing plan
+  putting «الأنظمة النجمية والكوكبات» (`kbl-earth-science-s1-nccd-u2_l2`) on today, and a saved pick of
+  «المفردات والقواعد» (`kbl-eng-s1-nccd-u1_l1`) dated yesterday.
+  - Base build, desktop (1440 px), `/iqra`: sidebar card «المفردات والقواعد · اللغة الإنجليزية • الصف العاشر»,
+    chat strip «النجوم • الأنظمة النجمية والكوكبات» — the report, reproduced. On Today the main panel named the
+    stars lesson while the sidebar card still named the English one.
+  - This change, same data: sidebar card, chat strip and Today all name «الأنظمة النجمية والكوكبات», and the
+    strip carries «علوم الأرض والبيئة • الصف العاشر».
+  - The same account with the pick dated today: all three name «المفردات والقواعد» (the timetable yields).
+  - Phone width (390 px): the chat strip and Today name the stars lesson and the strip stays one line; on
+    `/ai-tools` the lesson bar named the English lesson on the base build and the stars lesson now.
+  - No page errors in any run. Screenshots were looked at (desktop chat, phone chat).
+
+**Not verified.**
+- Not the reporter's own account and timetable. The scenario above is built to match the report's symptom
+  (two lessons, the sidebar's one being an older pick or the default); whether their sidebar was showing a
+  stale pick or the default was not determined, and the fix covers both.
+- The Playwright smoke test (`e2e/`) was not run, nor the api-server, curriculum and verifier suites (nothing
+  in them changed). ⌘K was not opened: it reads the same `activeLesson` as the sidebar card, which was checked.
+- `useNextPeriod` is a React hook and the mobile runner is bare `node --test`, so its throttle and its ordering
+  guard are reviewed, not unit-tested. In the browser only its first load was exercised (one teacher, fresh page
+  loads): the once-a-minute refresh on a change of route and the switch from one teacher to another were not.
+
+**Known limits.**
+- The surfaces still refresh on their own schedules: the chat reads the timetable once per mount (and on a
+  change of language or teacher), Today on every focus, the layout on navigation at most once a minute. After a
+  timetable edit, or when a period ends, the already-open chat keeps its first reading until it re-seeds, so
+  the chat can still lag the other two — now by staleness, not by a different rule. Making the chat follow the
+  timetable live would mean re-pinning a session the teacher is in the middle of, so it was left alone.
+- A teacher with no timetable pays one extra three-request load in the layout (at most once a minute while
+  navigating).
+- The chat's × on the lesson strip un-pins for the session but does not clear the saved pick, so the sidebar
+  keeps naming it. Untouched.
+
 ## Thirty-third live pass: questions about the app itself, 2026-10-25
 
 **Why.** A 30-question pass on app.iqrra.com of the questions a teacher asks before using the app
