@@ -24,7 +24,7 @@ import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { goBack } from '@/services/navigation';
 import { confirm } from '@/services/confirm';
 import { ACCENT, Bar, FilterChip, KeyValue, SectionTitle, StatCard, Table } from '@/components/admin/widgets';
-import { DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
+import { DateField, DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
 import { palette } from '@/constants/colors';
 import { TYPE } from '@/constants/theme';
 import { BackButton } from '@/components/ui/BackButton';
@@ -657,15 +657,7 @@ function GrowthSection({ metrics, onSaved, isRTL, ar, colors }: {
           keyboardType="number-pad"
           style={[input, { width: 120 }]}
         />
-        <TextInput
-          value={date}
-          onChangeText={setDate}
-          placeholder="YYYY-MM-DD"
-          placeholderTextColor={colors.mutedForeground}
-          style={[input, { width: 120 }]}
-          // A native date picker on web.
-          {...(Platform.OS === 'web' ? ({ type: 'date' } as object) : {})}
-        />
+        <DateField value={date} onChange={setDate} label={ar ? 'التاريخ' : 'Date'} isRTL={isRTL} colors={colors} />
         <Pressable
           onPress={save}
           disabled={saving || !value}
