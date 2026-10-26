@@ -10,6 +10,44 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat first screen: words that say what to ask, 2026-10-26
+
+**Why.** A review of the empty chat on app.iqrra.com/iqra (desktop) found its words doing less than they could:
+the pitch listed vague activities («التخطيط، اقتراح الأفكار») and closed on a stock «كيف أدعمك اليوم؟»; the
+composer placeholder was an instruction with no example; the working lines spoke about Iqrra in the third person
+(«يراجع إقرأ طلبك…», «يجري تجهيز المادة…») while every answer speaks as «أنا»; the failure line blamed «العملية»;
+and the lesson strip's «0/5» did not say five of what.
+
+**Built.**
+- `i18n.ts` (ar + en): `iqraAgentPitch` names what can be asked for (lesson plan, worksheet, short quiz, class
+  activity) and says it is prepared from the Jordanian curriculum — still no «الذكي»;
+  `iqraPlaceholder` carries an example («اكتب طلبك، مثل: اختبار قصير عن هذا الدرس»); `iqraTyping`,
+  `iqraGeneratingLessonPlan`, `iqraGeneratingArtifact` are first person («أراجع طلبك…», «أجهّز خطة الدرس…»,
+  «أجهّز المادة…»); `iqraChatError` says what happened and what to do. The Arabic went through a native-copy review.
+- **A bug the placeholder exposed.** «اختبار قصير عن هذا الدرس» — the most natural way to say "the lesson on the
+  card" — was read by `topicFromQuery` as a lesson literally named «هذا الدرس»: the saved material was titled that
+  and the live path searched the curriculum for it. A request whose whole topic is a pointer at the picked lesson
+  («هذا الدرس», «للدرس الحالي», «درس اليوم», «نفس الدرس», "this lesson", "today's lesson") now names no topic, so
+  `isBareArtifactShortcut` is true and the picked lesson is used (`artifactTopic.ts`, pinned in
+  `artifactTopic.test.ts`). A topic that merely contains the words («الدرس الأول في الوحدة», "lesson planning")
+  is still a topic.
+- `CurrentLessonCard`: the count pill has an accessible name (`readyLabel`, the existing `homeReady`) and, on desktop
+  only (`readyInline`), prints «0 من 5 جاهزة» instead of «0/5».
+- `chatEmptyStateCopy.test.ts` holds the above: the pitch names the materials, the placeholder's example is run
+  through the same `isBareArtifactShortcut` the chat uses (so it cannot teach a phrasing the chat misreads), the
+  status lines are first person, the failure line gives a way forward.
+
+**Not done, on purpose.**
+- The chips keep their own verbs («حضّر خطة الدرس», «أنشئ ورقة عمل», «جهّز اختباراً…»): the same words are parsing
+  vocabulary in `askVocabulary` / `artifactTopic` and appear in help answers and tests, so unifying them is its own change.
+- **Found, not fixed:** in the screenshot that started this review the chat's strip and the sidebar's «الدرس الحالي»
+  named different lessons. By the code: the chat and Today apply `timetableWins`, the sidebar (`_layout.tsx`) reads the
+  raw saved pick. Not reproduced with real data; queued as its own task.
+- Web composer: react-native-web renders a multiline input two rows tall, so the placeholder sits on the top row while
+  `+` and send sit at the bottom. Left alone; it needs a look in a browser, not a guess.
+
+**Verified / not verified.** See the PR description for the commands run. Strings were not read by a second native speaker.
+
 ## Thirty-third live pass: questions about the app itself, 2026-10-25
 
 **Why.** A 30-question pass on app.iqrra.com of the questions a teacher asks before using the app

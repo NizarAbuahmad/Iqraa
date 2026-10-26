@@ -72,6 +72,14 @@ type Props = {
    * board keeps the count.
    */
   hideCount?: boolean;
+  /**
+   * Says what the «٠/٥» counts («٠ من ٥ جاهزة»). A bare fraction next to a
+   * lesson title left a teacher to guess five of what. It is always the pill's
+   * accessible name; `readyInline` also prints it in place of the fraction,
+   * which only fits where the strip has room (desktop).
+   */
+  readyLabel?: (done: number, total: number) => string;
+  readyInline?: boolean;
 };
 
 export function CurrentLessonCard({
@@ -93,6 +101,8 @@ export function CurrentLessonCard({
   onClear,
   clearLabel,
   hideCount = false,
+  readyLabel,
+  readyInline = false,
 }: Props) {
   const align = isRTL ? 'right' : 'left' as const;
   const rowDir = isRTL ? 'row-reverse' : 'row' as const;
@@ -218,6 +228,8 @@ export function CurrentLessonCard({
             {/* Says there is more under the fold, and how much of it is done. */}
             {totalCount > 0 ? (
               <View
+                accessible={!!readyLabel}
+                accessibilityLabel={readyLabel?.(doneCount, totalCount)}
                 style={[
                   styles.countPill,
                   {
@@ -226,12 +238,15 @@ export function CurrentLessonCard({
                 ]}
               >
                 <Text
+                  numberOfLines={1}
                   style={[
                     styles.countPillText,
                     { color: doneCount > 0 ? colors.primary : colors.mutedForeground },
                   ]}
                 >
-                  {doneCount}/{totalCount}
+                  {readyInline && readyLabel
+                    ? readyLabel(doneCount, totalCount)
+                    : `${doneCount}/${totalCount}`}
                 </Text>
               </View>
             ) : null}
