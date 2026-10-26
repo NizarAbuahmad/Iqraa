@@ -64,7 +64,7 @@ Tasks 1–5 can be done at any time. **Task 6 (the pull request and the live che
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces (Task 2 relies on these exact names): `core.ENDPOINT`, `core.MESSAGE_MAX` (300), `core.REPLY_MAX` (1200), `core.HISTORY_MAX` (4), `core.TIMEOUT_MS` (25000), `core.EMAIL`, `core.CHIPS` (array of 3 strings), `core.hasArabic(text) -> boolean`, `core.langOf(text) -> "ar" | "en"`, `core.normalizeMessage(text) -> string`, `core.buildRequest(message, turns) -> { message: string, history: Array<{ role: "user" | "assistant", content: string }> }`, `core.interpret(status, body, lang) -> { kind: "answer", text: string, source: "curated" | "ai" } | { kind: "notice", text: string, reason: string }`. In the browser `core` is `window.IqraaAsk`; in Node `require`/`import` of `ask.js` yields it.
+- Produces (Task 2 relies on these exact names): `core.ENDPOINT`, `core.MESSAGE_MAX` (300), `core.REPLY_MAX` (1200), `core.HISTORY_MAX` (4), `core.TIMEOUT_MS` (25000), `core.EMAIL`, `core.CHIPS` (array of 3 strings), `core.hasArabic(text) -> boolean`, `core.langOf(text) -> "ar" | "en"`, `core.normalizeMessage(text) -> string`, `core.buildRequest(message, turns) -> { message: string, history: Array<{ role: "user" | "assistant", content: string }> }`, `core.interpret(status, body, lang) -> { kind: "answer", text: string, source: "curated" | "ai" } | { kind: "notice", text: string, reason: string }`. In the browser `core` is `window.IqrraAsk`; in Node `require`/`import` of `ask.js` yields it.
 
 - [ ] **Step 1: Attach the repo with push access and create the working branch**
 
