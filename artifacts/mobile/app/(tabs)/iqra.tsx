@@ -46,7 +46,7 @@ import {
 import { getPickerGrades, getPickerSubjects, hasCurriculumForSubjectGrade } from '@/services/curriculumData';
 import { AR_LATIN } from '@/services/dateLabels';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
-import { loadLessonPick, loadPrepBoardOpen, loadPrepSkips, resolveActiveLesson, saveLessonPick, savePrepBoardOpen, setPrepSkip, type HomeLessonPick } from '@/services/lessonContext';
+import { loadLessonPick, loadPrepBoardOpen, loadPrepSkips, resolveCurrentLesson, saveLessonPick, savePrepBoardOpen, setPrepSkip, type HomeLessonPick } from '@/services/lessonContext';
 import {
   buildResponse,
   deduplicateByUnit,
@@ -1856,7 +1856,7 @@ export default function IqraScreen() {
   // chat all agree on one lesson. Runs after the seed effect (declaration
   // order) and again on language change, which re-seeds.
   //
-  // The lesson is named by `resolveActiveLesson`, the same rule as Today and the
+  // The lesson is named by `resolveCurrentLesson`, the same rule as Today and the
   // sidebar card: the pacing-plan lesson of the period now or next replaces a
   // pick that was not made today. It is shaped as a pick so everything below —
   // the lesson id travelling with the topic, the soft pin — applies to it
@@ -1865,7 +1865,7 @@ export default function IqraScreen() {
   useEffect(() => {
     void Promise.all([loadLessonPick(), loadNextPeriod()]).then(([saved, next]) => {
       const scheduled = next?.lessonId ? resolveLessonPrepContext(next.lessonId, lang as 'ar' | 'en') : null;
-      const { lesson, source } = resolveActiveLesson({ pick: saved, scheduled, fallback: null, today: todayISO() });
+      const { lesson, source } = resolveCurrentLesson({ pick: saved, scheduled, fallback: null, today: todayISO() });
       const fromSchedule = source === 'schedule';
       setPeriodLine('');
       if (fromSchedule && next) {

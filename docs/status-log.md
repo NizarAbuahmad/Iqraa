@@ -26,18 +26,30 @@ scheduled lesson in the chat and on Today and an older pick (or the default) in 
 sidebar's version cannot be told apart from the chat's by title alone.
 
 **Built.**
-- `resolveActiveLesson({ pick, scheduled, fallback, today })` in `services/lessonContext.ts`, next to
+- `resolveCurrentLesson({ pick, scheduled, fallback, today })` in `services/lessonContext.ts`, next to
   `timetableWins`: pure, returns the lesson (id, grade and subject travel with the title; it hands back those
   four fields only) and where it came from (`'schedule' | 'pick' | 'default'`). The rule is unchanged: a pick made
-  today wins; otherwise the timetable's lesson; otherwise the saved pick; otherwise the default.
-- The three surfaces call it and none calls `timetableWins` any more. Today: same behaviour, the inline chain
+  today wins; otherwise the timetable's lesson; otherwise the saved pick; otherwise the default. **Not
+  `resolveActiveLesson`:** `lessonCopilot.ts` and `ai/teachingAssistant.ts` each already export a function by that
+  name that answers a different question (the chat memory's KB lesson), so the first name of this one was an
+  import-mixup waiting to happen, and the surfaces test now also requires the import to come from `lessonContext`.
+- Four surfaces call it and none calls `timetableWins` any more. Today: same behaviour, the inline chain
   replaced. Chat: same behaviour; it passes `fallback: null` on purpose, because the default is already seeded by
   `seedDefaultLessonMemory` and passing it would make it look like a teacher's pick. Layout: now reads the
   timetable through the new `useNextPeriod` hook (`hooks/useNextPeriod.ts`) and resolves like the others.
-- `useNextPeriod` loads the next period for a teacher account, and re-reads on a change of route at most once a
-  minute (`loadNextPeriod` is three requests). A change of teacher always re-reads and drops the previous
-  teacher's period at once. Only the newest request may land, counted per request rather than per effect run,
-  so a throttled re-run does not discard an answer still in flight.
+  **Tools tab** (`ai-tools.tsx`, found in review): a tool opened from the hub is prefilled from the same lesson
+  the lesson bar above it names. It used to prefill from the raw saved pick, so after this change's first commit a
+  teacher with an older pick would have seen the bar say the period's lesson and the quiz open on the old one.
+- **The period now/next is one shared copy** (`getNextPeriod` / `publishNextPeriod` / `subscribeNextPeriod` in
+  `lessonContext.ts`). `loadTimetable` publishes every successful read to it, so Today's reload on focus, the
+  chat's read on mount and the layout's own read all update every follower at once. `undefined` means not read yet
+  and `null` means read and nothing scheduled — kept apart on purpose, because the Tools tab must not re-fetch on
+  `null`. It is forgotten when a different teacher signs in, and an answer asked for by a teacher who has since
+  signed out is dropped (`publishNextPeriod(next, readFor)`). A failed read publishes nothing, so the last good
+  answer stays.
+- `useNextPeriod` follows that copy and fills its gaps: it reads on a change of route and, on the web, when the
+  window regains focus, but skips a read when anyone read the timetable in the last minute
+  (`getNextPeriodAgeMs`; `loadNextPeriod` is three requests) and does not retry a failed one inside a minute.
 - `CurrentLessonCard` takes `showSubject`; the chat passes `isDesktop`. The collapsed strip then has a second
   muted line, «المادة • الصف» (`lesson.subjectGrade`), the same text as the sidebar card's meta line, so two
   lessons that differ would differ where the teacher can see it. The phone strip is unchanged. Its accessibility
@@ -48,11 +60,16 @@ sidebar's version cannot be told apart from the chat's by title alone.
 - `services/__tests__/activeLesson.test.ts` (11 tests) states the rule with the two real KB lessons from the
   report (`kbl-earth-science-s1-nccd-u2_l2`, `kbl-eng-s1-nccd-u1_l1`): written first and failing (the resolver did
   not exist), passing now.
-- `services/__tests__/activeLessonSurfaces.test.ts` (7 tests) reads the three surfaces and requires each to call
-  `resolveActiveLesson`, none to call `timetableWins`, and the layout to read the timetable. Before the change 6
-  of the 7 failed — in particular «the tab layout reads the timetable» — which is the bug, pinned.
+- `services/__tests__/activeLessonSurfaces.test.ts` (10 tests) reads the four surfaces and requires each to call
+  `resolveCurrentLesson` imported from `lessonContext`, none to call `timetableWins`, the layout to read the
+  timetable, and the Tools tab not to prefill from the raw pick. Before the change 6 of the first 7 failed — in
+  particular «the tab layout reads the timetable» — which is the bug, pinned; the Tools-tab pins were written
+  failing before that surface was fixed.
+- `services/__tests__/lessonContext.test.ts`: the shared period's behaviour (5 tests, written failing first):
+  unread vs. nothing scheduled, forgotten for another teacher, subscribers, a late answer for a signed-out teacher
+  dropped, the repeated call on restore not wiping it, its age.
 - `pnpm run typecheck` clean (it caught a real name clash: `useTodayLesson` already has a parameter called
-  `source`). Mobile suite on the final tree: 7800 tests, 7790 pass, 0 fail, 10 skipped (the same 10 as before).
+  `source`). Mobile suite on the final tree: 7809 tests, 7799 pass, 0 fail, 10 skipped (the same 10 as before).
 - **In a browser, before and after.** A throwaway Postgres (migrated and seeded as in `e2e/`), the built API, and
   two web builds — the unmodified base commit and this change — against it; Playwright (Chromium) signed in a
   throwaway teacher with grade 10 English and earth science, a class, a timetable for every day, a pacing plan
@@ -67,6 +84,13 @@ sidebar's version cannot be told apart from the chat's by title alone.
   - Phone width (390 px): the chat strip and Today name the stars lesson and the strip stays one line; on
     `/ai-tools` the lesson bar named the English lesson on the base build and the stars lesson now.
   - No page errors in any run. Screenshots were looked at (desktop chat, phone chat).
+  - Second round, after the review's findings, on a fresh build of the final code and the same data:
+    **Tools tab** — tapping the quiz tool with the pick dated yesterday opened
+    `/ai-tools/quiz?topic=الأنظمة النجمية والكوكبات…` (the period's lesson), and with the pick dated today opened it
+    on «المفردات والقواعد». **Today's reload reaches the sidebar** — with Today open, the plan on the server was
+    changed to «دورة حياة النجوم» and the window's `focus` event fired: Today and the sidebar card both changed,
+    with no navigation, and the layout's own read was inside its one-minute skip, so the sidebar followed Today's
+    published read. No page errors.
 
 **Not verified.**
 - Not the reporter's own account and timetable. The scenario above is built to match the report's symptom
@@ -74,18 +98,30 @@ sidebar's version cannot be told apart from the chat's by title alone.
   stale pick or the default was not determined, and the fix covers both.
 - The Playwright smoke test (`e2e/`) was not run, nor the api-server, curriculum and verifier suites (nothing
   in them changed). ⌘K was not opened: it reads the same `activeLesson` as the sidebar card, which was checked.
-- `useNextPeriod` is a React hook and the mobile runner is bare `node --test`, so its throttle and its ordering
-  guard are reviewed, not unit-tested. In the browser only its first load was exercised (one teacher, fresh page
-  loads): the once-a-minute refresh on a change of route and the switch from one teacher to another were not.
+- `useNextPeriod` is a React hook and the mobile runner is bare `node --test`, so the hook itself is reviewed, not
+  unit-tested (the shared copy it follows is). In the browser: the first load, and a publish by Today reaching the
+  sidebar, were exercised. Not exercised: its own refresh on a change of route and on window focus (the focus
+  scenario above was inside the one-minute skip), and the switch from one teacher to another.
+- The Android and iOS builds, and the two-line strip in light and dark: only the web, in light mode, was looked at.
 
 **Known limits.**
-- The surfaces still refresh on their own schedules: the chat reads the timetable once per mount (and on a
-  change of language or teacher), Today on every focus, the layout on navigation at most once a minute. After a
-  timetable edit, or when a period ends, the already-open chat keeps its first reading until it re-seeds, so
-  the chat can still lag the other two — now by staleness, not by a different rule. Making the chat follow the
-  timetable live would mean re-pinning a session the teacher is in the middle of, so it was left alone.
-- A teacher with no timetable pays one extra three-request load in the layout (at most once a minute while
-  navigating).
+- **The chat can still lag the other surfaces, by staleness and no longer by a different rule.** It reads the
+  timetable once per mount (and on a change of language or teacher) and, once it has a lesson, does not follow
+  later reads: after a timetable edit, or when a period ends, an already-open chat keeps its first reading until it
+  re-seeds. Making it follow the shared period live would mean re-pinning a session the teacher is in the middle
+  of, so it was left alone. The sidebar, Today and the Tools tab do follow it.
+- **A cold start can flip the sidebar once.** Until the first read of the timetable lands, the layout names the
+  saved pick or the default, then the period's lesson (a moment; longer on a cold API). ⌘K used in that moment
+  acts on the first. Today flips the same way and always did. If it shows, the hook already returns `undefined`
+  for «not heard yet», so the card could hold; that needs a pending look for the card, not done here.
+- A read that fails publishes nothing, so the sidebar keeps the last good period while Today (which treats a
+  failed read as «none») can show a different lesson for as long as the outage lasts.
+- A teacher with no timetable pays three requests at start in the layout, in addition to Today's and the chat's
+  (no in-flight sharing between them), and then at most one per minute while navigating.
+- The Tools tab prefill still sends the topic and the grade/subject indices but not the lesson id
+  (`pickPrefillParams`), so the same title in another unit («المفردات والقواعد» is in units 1–3 of grade 10
+  English) is grounded by title and scope. Older than this change and a separate defect; CLAUDE.md says a route
+  into a generator should pass `lessonId`.
 - The chat's × on the lesson strip un-pins for the session but does not clear the saved pick, so the sidebar
   keeps naming it. Untouched.
 

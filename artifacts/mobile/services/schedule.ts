@@ -13,6 +13,7 @@ import { apiFetch } from './apiClient.ts';
 import { nextPeriodLesson, timetableSetupStep, type NextPeriodLesson, type TimetableSetupStep } from './scheduleCalendar.ts';
 import { listTeachingPlans } from './teachingPlans.ts';
 import { listClasses } from './roster.ts';
+import { activeLessonContextUser, publishNextPeriod } from './lessonContext.ts';
 
 export interface SchedulePeriod {
   id: string;
@@ -102,6 +103,9 @@ export async function loadNextPeriod(now: Date = new Date()): Promise<NextPeriod
 export async function loadTimetable(
   now: Date = new Date(),
 ): Promise<{ next: NextPeriodLesson | null; setup: TimetableSetupStep | null } | null> {
+  // Who asked, captured before the first await: an answer that lands after
+  // another teacher signed in is not theirs (`publishNextPeriod` drops it).
+  const readFor = activeLessonContextUser();
   try {
     // Classes resolve a plan with no subject of its own to its class's
     // primary one. Best-effort: without them such a plan still matches.
@@ -111,6 +115,9 @@ export async function loadTimetable(
       listClasses().catch(() => []),
     ]);
     const next = nextPeriodLesson(now, schedule.periods, schedule.slots, plans, classes);
+    // Every reader of the current lesson follows this read, not only the caller.
+    // A failed read (the catch below) publishes nothing: the last good answer stays.
+    publishNextPeriod(next, readFor);
     return { next, setup: timetableSetupStep(schedule.slots, next) };
   } catch {
     return null;

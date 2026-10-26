@@ -20,7 +20,7 @@ import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { badgeLabel, setUnreadMessages, useUnreadMessages } from '@/services/unreadMessages';
 import { ensureNotificationChannels, syncAppBadge } from '@/services/pushTokens';
 import { TranslationKey } from '@/services/i18n';
-import { HomeLessonPick, loadLessonPick, resolveActiveLesson, subscribeLessonPick } from '@/services/lessonContext';
+import { HomeLessonPick, loadLessonPick, resolveCurrentLesson, subscribeLessonPick } from '@/services/lessonContext';
 import { todayISO } from '@/services/planEntries';
 import { useNextPeriod } from '@/hooks/useNextPeriod';
 import { defaultLessonIdFor } from '@/services/lessonCopilot';
@@ -172,7 +172,7 @@ function ClassicTabLayout() {
 
   /*
     The lesson the sidebar card, the lesson bar and ⌘K name: the same one the
-    chat's strip and Today name, by the same rule (`resolveActiveLesson`) — the
+    chat's strip and Today name, by the same rule (`resolveCurrentLesson`) — the
     period's pacing-plan lesson unless a lesson was picked by hand today, else
     the saved pick, else the default. This used to read only the pick and the
     default, so with a timetable and a pick from an earlier day the sidebar
@@ -183,7 +183,7 @@ function ClassicTabLayout() {
     ? resolveLessonPrepContext(nextPeriod.lessonId, lang as 'ar' | 'en')
     : null;
   const fallbackLesson = resolveLessonPrepContext(defaultLessonIdFor(user?.teachingAssignments), lang as 'ar' | 'en');
-  const { lesson: activeLesson } = resolveActiveLesson({
+  const { lesson: activeLesson } = resolveCurrentLesson({
     pick: lessonPick,
     scheduled: scheduledLesson,
     fallback: fallbackLesson,

@@ -4,40 +4,59 @@
  * bar, ⌘K). Without it that chrome could not tell the period's lesson from an
  * old pick, and named a different lesson from the chat and Today beside it.
  *
- * `loadNextPeriod` is three requests (schedule, plans, classes), so a change of
- * `refreshKey` — the route — re-reads at most once a minute; a change of teacher
- * always re-reads and drops the previous teacher's period at once.
+ * It follows the shared copy in `services/lessonContext` (`getNextPeriod`), which
+ * every read of the timetable — Today's reload on focus included — publishes to,
+ * so the sidebar is corrected by Today's read instead of waiting for its own.
+ * Its own reads fill the gaps: on a change of route and, on the web, when the
+ * window regains focus. `loadNextPeriod` is three requests, so a read is skipped
+ * when anyone read the timetable in the last minute, and a failed one is not
+ * retried before a minute has passed either.
+ *
+ * `undefined` until the first answer (a different thing from `null`: read, and
+ * nothing is scheduled), so a caller can tell «not heard yet» from «no lesson».
  */
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Platform } from 'react-native';
+import { getNextPeriod, getNextPeriodAgeMs, subscribeNextPeriod } from '@/services/lessonContext';
 import { loadNextPeriod } from '@/services/schedule';
 import type { NextPeriodLesson } from '@/services/scheduleCalendar';
 
 const REFRESH_AFTER_MS = 60_000;
 
-export function useNextPeriod(enabled: boolean, userId: string | undefined, refreshKey: string): NextPeriodLesson | null {
-  const [next, setNext] = useState<NextPeriodLesson | null>(null);
-  const loaded = useRef<{ userId: string | undefined; at: number } | null>(null);
-  // Only the newest request may land. Counted per request, not per effect run:
-  // a throttled re-run starts no request, and must not orphan the one in flight.
-  const latest = useRef(0);
+export function useNextPeriod(
+  enabled: boolean,
+  userId: string | undefined,
+  refreshKey: string,
+): NextPeriodLesson | null | undefined {
+  const [next, setNext] = useState(getNextPeriod);
+
+  // A different teacher: take whatever the shared copy holds for them now (it is
+  // `undefined` straight after a switch), then follow it.
+  useEffect(() => {
+    setNext(getNextPeriod());
+    return subscribeNextPeriod(setNext);
+  }, [userId]);
+
+  const lastTried = useRef<{ userId: string | undefined; at: number } | null>(null);
+  const refresh = useCallback(() => {
+    if (!enabled) return;
+    if (getNextPeriodAgeMs() < REFRESH_AFTER_MS) return;
+    const tried = lastTried.current;
+    if (tried && tried.userId === userId && Date.now() - tried.at < REFRESH_AFTER_MS) return;
+    lastTried.current = { userId, at: Date.now() };
+    void loadNextPeriod(); // publishes to the shared copy, which `next` follows
+  }, [enabled, userId]);
 
   useEffect(() => {
-    if (!enabled) {
-      latest.current += 1;
-      loaded.current = null;
-      setNext(null);
-      return;
-    }
-    const last = loaded.current;
-    const sameTeacher = !!last && last.userId === userId;
-    if (sameTeacher && Date.now() - last.at < REFRESH_AFTER_MS) return;
-    if (!sameTeacher) setNext(null);
-    const mine = ++latest.current;
-    loaded.current = { userId, at: Date.now() };
-    void loadNextPeriod().then(period => {
-      if (latest.current === mine) setNext(period);
-    });
-  }, [enabled, userId, refreshKey]);
+    refresh();
+  }, [refresh, refreshKey]);
 
-  return next;
+  // A browser tab switched back to is not a navigation: the period may have moved on.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, [refresh]);
+
+  return enabled ? next : undefined;
 }

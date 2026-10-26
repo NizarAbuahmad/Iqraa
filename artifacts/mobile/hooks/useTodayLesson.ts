@@ -26,7 +26,7 @@ import { loadTimetable } from '@/services/schedule';
 import { formatNextPeriod, type NextPeriodLesson, type TimetableSetupStep } from '@/services/scheduleCalendar';
 import { todayISO } from '@/services/planEntries';
 import {
-  HomeLessonPick, dismissSetupNudge, loadLessonPick, loadPrepSkips, resolveActiveLesson, setPrepSkip, showsPeriodLine,
+  HomeLessonPick, dismissSetupNudge, loadLessonPick, loadPrepSkips, resolveCurrentLesson, setPrepSkip, showsPeriodLine,
   subscribeLessonPick, wasSetupNudgeDismissed,
 } from '@/services/lessonContext';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
@@ -178,7 +178,7 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
     [next?.lessonId, lang],
   );
   // The one rule, shared with the sidebar card, ⌘K and the chat's strip.
-  const { lesson: active, source: lessonSource } = resolveActiveLesson({ pick, scheduled, fallback, today: todayISO() });
+  const { lesson: active, source: lessonSource } = resolveCurrentLesson({ pick, scheduled, fallback, today: todayISO() });
   const fromSchedule = lessonSource === 'schedule';
   // «الحصة القادمة · العاشر ب · 10:15» — when the card shows that period's lesson, or the class has
   // no lesson yet (`showsPeriodLine`); never beside a lesson picked today that replaced it.
