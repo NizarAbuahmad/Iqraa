@@ -15,12 +15,25 @@ export function SectionTitle({ text, isRTL, colors }: { text: string; isRTL: boo
   );
 }
 
-export function StatCard({ label, value, colors }: { label: string; value: number | string; colors: any }) {
-  return (
-    <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+/** With `onPress` the card is a button that opens the list behind its number. */
+export function StatCard({ label, value, colors, onPress }: { label: string; value: number | string; colors: any; onPress?: () => void }) {
+  const body = (
+    <>
       <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 20 }}>{value}</Text>
       <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, marginTop: 2, textAlign: 'center' }}>{label}</Text>
-    </View>
+    </>
+  );
+  const card = { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius };
+  if (!onPress) return <View style={[styles.statCard, card]}>{body}</View>;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${label}: ${value}`}
+      onPress={onPress}
+      style={({ pressed }) => [styles.statCard, card, { opacity: pressed ? 0.7 : 1 }]}
+    >
+      {body}
+    </Pressable>
   );
 }
 

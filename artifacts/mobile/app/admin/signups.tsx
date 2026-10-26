@@ -10,6 +10,7 @@
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Sharing from 'expo-sharing';
@@ -22,12 +23,13 @@ import { apiFetch, apiJson } from '@/services/apiClient';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
 import { BackButton } from '@/components/ui/BackButton';
+import { parseSignupKind, type SignupKind } from '@/services/adminSignupKind';
 
 const ACCENT = '#4F46E5';
 const ADMIN_ROLES = ['school_admin', 'system_admin'];
 
 type Signup = { id: string; kind: 'waitlist' | 'contact' | 'idea'; email: string; name: string; message: string; context: string; createdAt: string };
-type Kind = 'all' | 'waitlist' | 'contact' | 'idea';
+type Kind = SignupKind;
 
 export default function AdminSignupsScreen() {
   const colors = useColors();
@@ -39,7 +41,9 @@ export default function AdminSignupsScreen() {
   // The invite endpoint is system_admin only; school admins would just get a 403.
   const canInvite = user?.role === 'system_admin';
 
-  const [kind, setKind] = useState<Kind>('all');
+  // The dashboard's overview tiles open this on the chip they count.
+  const params = useLocalSearchParams<{ kind?: string | string[] }>();
+  const [kind, setKind] = useState<Kind>(() => parseSignupKind(params.kind));
   const [range, setRange] = useState<Range>(EMPTY_RANGE);
   const [items, setItems] = useState<Signup[]>([]);
   const [total, setTotal] = useState(0);
