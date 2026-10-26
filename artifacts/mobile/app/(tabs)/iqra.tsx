@@ -3802,6 +3802,9 @@ export default function IqraScreen() {
           }}
           // The board right below it is already counting, from better data.
           hideCount={Boolean(introPrepBoard)}
+          // «0/5» alone does not say five of what; the window has room to.
+          readyLabel={(done, total) => t('homeReady', done, total)}
+          readyInline={isDesktop}
           // A band welded to both window edges on desktop; a card over the
           // thread it describes here.
           containerStyle={
