@@ -21,7 +21,8 @@ and the lesson strip's «0/5» did not say five of what.
 **Built.**
 - `i18n.ts` (ar + en): `iqraAgentPitch` names what can be asked for (lesson plan, worksheet, short quiz, class
   activity) and says it is prepared from the Jordanian curriculum — still no «الذكي»;
-  `iqraPlaceholder` carries an example («اكتب طلبك، مثل: اختبار قصير عن هذا الدرس»); `iqraTyping`,
+  `iqraPlaceholder` carries an example («مثل: اختبار قصير عن هذا الدرس»; the first draft opened with «اكتب طلبك،»
+  and wrapped on a 390px phone, leaving «الدرس» alone on a second line); `iqraTyping`,
   `iqraGeneratingLessonPlan`, `iqraGeneratingArtifact` are first person («أراجع طلبك…», «أجهّز خطة الدرس…»,
   «أجهّز المادة…»); `iqraChatError` says what happened and what to do. The Arabic went through a native-copy review.
 - **A bug the placeholder exposed.** «اختبار قصير عن هذا الدرس» — the most natural way to say "the lesson on the
@@ -46,7 +47,15 @@ and the lesson strip's «0/5» did not say five of what.
 - Web composer: react-native-web renders a multiline input two rows tall, so the placeholder sits on the top row while
   `+` and send sit at the bottom. Left alone; it needs a look in a browser, not a guess.
 
-**Verified / not verified.** See the PR description for the commands run. Strings were not read by a second native speaker.
+**Verified.** `pnpm run typecheck` clean; `artifacts/mobile` `pnpm test` 7798 pass, 0 fail, 10 skipped. The real web
+build (throwaway Postgres, API with `AI_LIVE_MODE=false`, `build:web`) was opened as a fresh teacher at 1920x1080 in
+Arabic and English and at 390x844 in Arabic, and looked at: pitch, chips, placeholder and the «0 من 5 جاهزة» pill fit
+without clipping. Typing «اختبار قصير عن هذا الدرس» produced a material titled «اختبار قصير: تركيب الاقترانات» (the
+lesson on the strip), not «هذا الدرس».
+
+**Not verified.** The shortened placeholder was checked by character count against the wrapped line, not re-screenshotted.
+The new working lines («أراجع طلبك…») and the failure line were not seen on screen (too brief; no failure induced).
+Strings were not read by a second native speaker.
 
 ## Thirty-third live pass: questions about the app itself, 2026-10-25
 

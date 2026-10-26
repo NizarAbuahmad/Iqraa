@@ -1005,7 +1005,9 @@ const translations = {
     // The example names no lesson on purpose: «عن هذا الدرس» is read as «the
     // lesson on the card» (`topicFromQuery`), and `chatEmptyStateCopy.test.ts`
     // holds the example to that, so it cannot teach a phrasing the chat misreads.
-    iqraPlaceholder: 'اكتب طلبك، مثل: اختبار قصير عن هذا الدرس',
+    // No lead-in verb: with one the example wrapped on a 390px phone and left
+    // «الدرس» alone on a second line. The pitch above already says «اطلب…».
+    iqraPlaceholder: 'مثل: اختبار قصير عن هذا الدرس',
     iqraPlaceholderDocs: 'اسأل عن ملفاتك… أو اكتب: لخّص الدرس',
     iqraInputLabel: 'رسالتك إلى إقرأ',
     iqraInputHint: 'اكتب ما تحتاجه بلغتك — مثل: حضّر خطة درس عن تركيب الاقترانات.',
