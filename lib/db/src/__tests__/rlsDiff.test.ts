@@ -7,6 +7,7 @@ import path from "node:path";
 import { after, before, describe, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { rlsDiffPort } from "../testing/ports.ts";
 import { seed, TEST_URL, type Fixture } from "../testing/rlsHarness.ts";
 
 /**
@@ -63,7 +64,7 @@ async function boot(enforce: "on" | "off"): Promise<Server> {
   const pushLog = path.join(dir, "pushes.jsonl");
   writeFileSync(stub, PUSH_STUB);
   writeFileSync(pushLog, "");
-  const port = 8500 + Math.floor(Math.random() * 400);
+  const port = rlsDiffPort(enforce);
   const child = spawn(process.execPath, [entry], {
     env: {
       ...process.env,
