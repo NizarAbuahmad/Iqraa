@@ -496,6 +496,41 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     }
   });
 
+  it("answers 400, not 500, when an email, code or password is not a string", async () => {
+    // JSON can carry a number, array or object where the app always sends a
+    // string. Those used to pass a truthiness check and throw inside
+    // `.toLowerCase()` / `.trim()` / bcrypt, so a malformed request was a 500
+    // and an error-log line. /login was fixed first; these are its siblings.
+    // As with the empty body above, a 400 is reached before the database this
+    // suite cannot supply, so a pass also proves the type check runs first.
+    const strong = "Str0ngPassw0rd!x";
+    const cases: [path: string, body: Record<string, unknown>, code: string][] = [
+      ["/auth/verify-email", { email: { a: 1 }, code: "123456" }, "missing_fields"],
+      ["/auth/verify-email", { email: ["a@example.com"], code: "123456" }, "missing_fields"],
+      ["/auth/verify-email", { email: "a@example.com", code: 123456 }, "missing_fields"],
+      ["/auth/verify-email", { email: "a@example.com", code: ["123456"] }, "missing_fields"],
+      ["/auth/resend-verification", { email: 5 }, "missing_fields"],
+      ["/auth/resend-verification", { email: { a: 1 } }, "missing_fields"],
+      ["/auth/forgot-password", { email: { a: 1 } }, "invalid_email"],
+      // An array holding "@" used to satisfy the `includes("@")` check.
+      ["/auth/forgot-password", { email: ["@"] }, "invalid_email"],
+      ["/auth/reset-password", { email: { a: 1 }, code: "123456", password: strong }, "missing_fields"],
+      ["/auth/reset-password", { email: "a@example.com", code: 123456, password: strong }, "missing_fields"],
+      ["/auth/change-unverified-email", { email: { a: 1 }, password: strong, newEmail: "b@example.com" }, "missing_fields"],
+      ["/auth/change-unverified-email", { email: "a@example.com", password: { a: 1 }, newEmail: "b@example.com" }, "missing_fields"],
+    ];
+    for (const [path, body, code] of cases) {
+      const res = await fetch(`${base}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const label = `${path} ${JSON.stringify(body)}`;
+      assert.equal(res.status, 400, `${label} is a malformed request, not a server error`);
+      assert.equal(((await res.json()) as { code: string }).code, code, label);
+    }
+  });
+
   it("refuses a malformed address before an account exists for it", async () => {
     // «info@zarya.gate@gmail.com» used to pass a bare includes("@") check: the
     // account was created, the app said "code sent", and no mail could ever be

@@ -71,6 +71,31 @@ Unsubscribes are not pushed back to Resend contacts. The deploy order matters: m
 Site_Iqra wording PR (it promises an unsubscribe link that only exists once this is live), then set
 `UPDATES_CONSENT_FROM`.
 
+## A non-string email or code answers 400, not 500, 2026-10-26
+
+**Why.** Running the built API on a throwaway Postgres to check email sign-up with a code (register → verify →
+resend) showed `POST /auth/verify-email`, `/resend-verification` and `/forgot-password` answering **500** when
+`email` or `code` was a number, array or object. The app only ever sends strings, so a real sign-up never hit
+it; the cost was a 500 and an error-log line per malformed request. `/login` was fixed for the same thing
+earlier (its comment says so); these were its siblings.
+
+**Built.** `routes/auth.ts`: a `typeof … !== "string"` check in front of the existing truthiness check on
+`verify-email` (`email`, `code`), `resend-verification` (`email`), `forgot-password` (`email`),
+`reset-password` (`email`, `code`) and `change-unverified-email` (`email`, `password`, `newEmail`). The answer is
+the route's own existing 400 (`missing_fields`, or `invalid_email` on `forgot-password`); a string input takes
+the same path as before. One table-driven test in `mountOrder.test.ts` posts 12 malformed bodies and expects the
+400 and its code. That suite's database is unreachable, so a pass also shows the check runs before any query.
+
+**Verified.** All 12 bodies answered 500 on the old code and 400 with the expected code on the new (old and new
+`auth.ts` built and run against each other); `pnpm run typecheck`; api-server `pnpm build` and `pnpm test`
+(2608 pass); the register → verify → resend flow again on a local Postgres, with the code read from the dev log.
+
+**Not verified.** That production actually delivers the code email (the sender set in `RESEND_FROM_EMAIL`;
+Resend's shared `onboarding@resend.dev` reaches only the account owner). `reset-password`'s `password` and
+`confirmPassword` are still typed `string` and not checked for type; an array holding a strong password may get
+past `isStrongPassword`, and whether that 500s needs a database to see. Only `auth.ts` was audited for this
+pattern. `schema-push:` none.
+
 ## Chat first screen: words that say what to ask, 2026-10-26
 
 **Why.** A review of the empty chat on app.iqrra.com/iqra (desktop) found its words doing less than they could:
@@ -137,10 +162,12 @@ answer); nothing is stored in the browser and the root carries `ph-no-capture`, 
 autocapture records no chip text. Every non-answer (a refusal, 429, 400, 5xx, a network error, an
 unreadable reply, or no reply within 30 s) shows one friendly message with a link to the page's
 suggestion form (`#feedback`); the visitor never sees a status code or a reason. All text is put in
-with `textContent`; the only links it can create are to `https://iqrra.com/...` and
-`https://www.iqrra.com/...` (a pure, tested `linkify`), so the grades-and-subjects answer's
-`https://www.iqrra.com/manhaj` is clickable. **`app.iqrra.com` links in two of the fixed answers stay
-plain text** (not in the allow-list; widening it is a small change and a decision).
+with `textContent`; the only links it can create are to `https://iqrra.com/...`,
+`https://www.iqrra.com/...` and, since `Site_Iqra` PR #42 (squash `87f9c56`, 2026-10-26),
+`https://app.iqrra.com/...` — a hardcoded list of exactly three origins, not a wildcard (a pure,
+tested `linkify`) — so the grades-and-subjects answer's `https://www.iqrra.com/manhaj` and the
+iPhone and app-needed answers' `https://app.iqrra.com` are clickable (checked live: the iPhone answer
+gives one link, new tab, `rel="noopener"`, the full stop outside it). Any other host stays plain text.
 
 **Privacy.** `privacy.html` has a new §6 «أسئلة مساعد الموقع» / "Site assistant questions" in both
 languages, and the OpenAI row, the Neon row, the where-stored list and the Retention section were
