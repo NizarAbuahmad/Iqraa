@@ -71,6 +71,32 @@ Unsubscribes are not pushed back to Resend contacts. The deploy order matters: m
 Site_Iqra wording PR (it promises an unsubscribe link that only exists once this is live), then set
 `UPDATES_CONSENT_FROM`.
 
+## The two servers in the RLS diff test can no longer share a port, 2026-10-26
+
+**Why.** The `row-level security` check failed once on the PR for «A non-string email or code answers 400,
+not 500» (run 40385392925, three tests in `rlsDiff.test.ts`) and passed on a re-run of identical code.
+`boot()` drew each server's port on its own, `8500 + random(400)`, so one pair in 400 matched. The second
+server then failed to bind and the first answered the health check for both: every request meant for the
+enforcing server reached the other. The failure looked like an RLS regression (the enforcing server answered
+`200` where it must refuse, never took the held path, and its push log was empty while the other's held every
+push twice) and was not one.
+
+**Reproduced, not just inferred.** With `Math.random` pinned to 0 so both servers got port 8500, the real
+suite failed the same three tests with the same messages as in CI. The same pinned run passes after the fix.
+
+**Built.** `lib/db/src/testing/ports.ts`: `rlsDiffPort(mode)` gives the off server a port in 8500-8699 and the
+on server one in 8700-8899, still random inside the range. `rlsDiff.test.ts` uses it. `rlsDiffPort.test.ts`
+checks that no pair of draws gives the two modes the same port; it needs no database, so it also runs in the
+plain `Test db` step. Putting both modes in one range makes it fail (`draws 0 and 0 collided`).
+
+**Verified.** Pinned-collision run before and after (3 failures, then 4 of 4 pass); normal run 4 of 4; the full
+`lib/db` suite as the RLS job runs it (68 pass) and without a database (16 pass); `pnpm run typecheck`.
+
+**Not verified.** That this was the cause of the one CI failure: the run's own log cannot show which ports were
+drawn, so the evidence is the reproduction plus the matching symptoms. A port taken by an unrelated process on
+the runner is still possible; unless that process happens to answer `/api/healthz`, the suite then stops with
+«did not start» after 30 seconds instead of comparing a server with itself. `schema-push:` none.
+
 ## A non-string email or code answers 400, not 500, 2026-10-26
 
 **Why.** Running the built API on a throwaway Postgres to check email sign-up with a code (register → verify →
