@@ -135,6 +135,27 @@ been seen in the running chat yet — re-run the 33 on app.iqrra.com after the d
 model): «is it free for private schools» (pricing plus schools), how many students a class may hold, whether AI
 output is checked.
 
+## The sidebar card, the lesson bar and ⌘K name the lesson Today shows — 2026-10-26
+
+On the desktop home a teacher saw the main card on one lesson («الأنظمة النجمية والكوكبات», from the
+timetable's plan) and the «الدرس الحالي» card in the sidebar on another («المفردات والقواعد», a lesson
+picked by hand days before). `GlobalLessonBar` (the sidebar card on desktop, the lesson bar on a phone)
+and the ⌘K palette were fed the saved pick alone, in `app/(tabs)/_layout.tsx`, while Today and the chat
+apply `timetableWins`. The layout now takes the same lesson: `useTodayLesson` and the chat publish the
+lesson the timetable puts on the card (`publishScheduledLesson`, `lessonContext.ts`, in memory, cleared
+when another teacher signs in) and the layout names `lessonShown(pick, scheduled, today)` — the
+timetable's lesson unless a lesson was picked today. No new requests: Today and the chat already load
+the timetable.
+
+Verified: `lessonContext.test.ts` (`lessonShown` and the publish/subscribe store; written first and
+failing); `pnpm run typecheck`; in the browser on a rebuilt bundle, with a timetable and a plan: the
+home card and the sidebar card both name «حل نظام مكوَّن من معادلة خطية ومعادلة تربيعية», and with a
+lesson picked today both name that pick. **Not verified:** the phone's lesson bar (same component,
+not looked at), Arabic/RTL, the full mobile suite locally (CI runs it). **Known limit:** the layout learns
+the timetable's lesson only once Today or the chat has loaded it, so a teacher who lands on another
+screen first (a deep link) sees the saved pick there until one of them opens; the chat card, Today and ⌘K
+do not wait on each other beyond that.
+
 ## CI listens for the merge queue, 2026-10-25
 
 **Why.** `main` requires an up-to-date branch and a green `typecheck + tests`, and takes a merge about every
