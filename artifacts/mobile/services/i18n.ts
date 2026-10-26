@@ -970,7 +970,10 @@ const translations = {
     // the product is careful elsewhere to separate what is verified from what
     // is judged; the front door should not oversell what the rest labels.
     iqraAgentName: 'مساعد إقرأ',
-    iqraAgentPitch: 'أساعدك في التخطيط، واقتراح الأفكار، وإعداد الاختبارات. كيف أدعمك اليوم؟',
+    // Names the things that can be asked for (the chips under it are two of
+    // them) instead of a generic «كيف أدعمك اليوم؟». Still no «الذكي»: it says
+    // what Iqrra prepares, not how clever it is.
+    iqraAgentPitch: 'اطلب خطة درس أو ورقة عمل أو اختبارًا قصيرًا أو نشاطًا صفّيًا، وسأجهّزها لك وفق المنهاج الأردني.',
     // Grounding: whether generated material is anchored to a curriculum lesson.
     groundedInCurriculum: (lesson: string) => `مرتبط بالمنهاج الأردني — ${lesson}`,
     notGroundedTitle: 'محتوى عام، غير مرتبط بدرس من المنهاج',
@@ -999,7 +1002,12 @@ const translations = {
     bookFiguresLessonNote: 'أشكالُ هذا الدرس من كتابك المدرسي، مع رقم الصفحة المطبوعة.',
     iqraWelcome: 'مرحبًا — أنا إقرأ، رفيقك في تحضير الحصص.',
     iqraWelcomeDocs: 'أنا إقرأ، رفيقك في تحضير الحصص.\n\nارفع خطة درس أو عرضًا أو ورقة عمل أو صورة من الكتاب — ونحضّر معًا التلخيص والشرح وخطط الدرس وأوراق العمل والواجبات والاختبارات من موادك.',
-    iqraPlaceholder: 'اكتب ما تحتاجه…',
+    // The example names no lesson on purpose: «عن هذا الدرس» is read as «the
+    // lesson on the card» (`topicFromQuery`), and `chatEmptyStateCopy.test.ts`
+    // holds the example to that, so it cannot teach a phrasing the chat misreads.
+    // No lead-in verb: with one the example wrapped on a 390px phone and left
+    // «الدرس» alone on a second line. The pitch above already says «اطلب…».
+    iqraPlaceholder: 'مثل: اختبار قصير عن هذا الدرس',
     iqraPlaceholderDocs: 'اسأل عن ملفاتك… أو اكتب: لخّص الدرس',
     iqraInputLabel: 'رسالتك إلى إقرأ',
     iqraInputHint: 'اكتب ما تحتاجه بلغتك — مثل: حضّر خطة درس عن تركيب الاقترانات.',
@@ -1044,13 +1052,14 @@ const translations = {
     iqraKeyTerms: 'المصطلحات الأساسية',
     iqraRules: 'القواعد والصيغ',
     iqraExamples: 'أمثلة',
-    iqraTyping: 'يراجع إقرأ طلبك…',
-    iqraGeneratingLessonPlan: 'يعمل إقرأ على إعداد خطة الدرس…',
-    iqraGeneratingArtifact: 'يجري تجهيز المادة…',
+    // First person, like every answer the assistant gives («لم أجد…», «أنا معك»).
+    iqraTyping: 'أراجع طلبك…',
+    iqraGeneratingLessonPlan: 'أجهّز خطة الدرس…',
+    iqraGeneratingArtifact: 'أجهّز المادة…',
     iqraChatBusy: 'لحظة — ما زلت أكمل الطلب السابق.',
     iqraStop: 'أوقف',
     iqraStopped: 'توقّف الرد عند هذا الحد.',
-    iqraChatError: 'تعذّر إتمام العملية. حاول مرة أخرى أو أعد صياغة الطلب.',
+    iqraChatError: 'لم أتمكن من إتمام طلبك هذه المرة. حاول مرة أخرى، أو اكتبه بصياغة مختلفة.',
     iqraArtifactNeedTopic: 'حاضر — عن أي درس نجهّز هذه المادة؟ اكتب اسم الدرس أو اختر من الاقتراحات.',
     changeLesson: 'تغيير الدرس',
     unpinLesson: 'إلغاء تثبيت الدرس',
@@ -4407,7 +4416,7 @@ const translations = {
     iqraChatSubtitle: 'Your prep companion',
     iqraWelcome: "Hi — I'm Iqrra, your lesson-prep companion.",
     iqraAgentName: 'Iqrra assistant',
-    iqraAgentPitch: 'I help with planning, ideas, and building assessments. What do you need today?',
+    iqraAgentPitch: "Ask for a lesson plan, worksheet, short quiz or class activity, and I'll prepare it from the Jordanian curriculum.",
     groundedInCurriculum: (lesson: string) => `Based on the Jordanian curriculum — ${lesson}`,
     notGroundedTitle: 'General content, not tied to a curriculum lesson',
     notGroundedHint: 'No matching curriculum lesson was found for this topic, so the content was generated generically. Pick the lesson from Curriculum to anchor it to real outcomes and vocabulary.',
@@ -4434,7 +4443,7 @@ const translations = {
     bookFiguresStudentNote: "Figures from your student book for the lessons this exam covers. Look here for any question that refers to one.",
     bookFiguresLessonNote: "This lesson's figures from your student book, with the printed page number.",
     iqraWelcomeDocs: "I'm Iqrra, your lesson-prep companion.\n\nUpload a lesson plan, PowerPoint, worksheet, or a photo of a textbook page — and I'll help you summarise, explain, build lesson plans, worksheets, homework, and quizzes from your own materials.",
-    iqraPlaceholder: 'Write what you need…',
+    iqraPlaceholder: 'Type your request, e.g. a short quiz on this lesson',
     iqraPlaceholderDocs: 'Ask about your files… or type: Summarize this lesson',
     iqraInputLabel: 'Your message to Iqrra',
     iqraInputHint: 'Type what you need in your own words — for example: prepare a lesson plan on composing functions.',
@@ -4479,13 +4488,13 @@ const translations = {
     iqraKeyTerms: 'Key terms',
     iqraRules: 'Rules and formulas',
     iqraExamples: 'Examples',
-    iqraTyping: 'Iqrra is thinking…',
-    iqraGeneratingLessonPlan: 'Generating lesson plan…',
+    iqraTyping: 'Reading your request…',
+    iqraGeneratingLessonPlan: 'Preparing your lesson plan…',
     iqraGeneratingArtifact: 'Preparing your teaching material…',
     iqraChatBusy: 'One moment — I’m still working on the previous request.',
     iqraStop: 'Stop',
     iqraStopped: 'Stopped here.',
-    iqraChatError: 'Something went wrong while handling your request. Try again or rephrase.',
+    iqraChatError: "I couldn't complete that request this time. Try again, or phrase it differently.",
     iqraArtifactNeedTopic: 'Sure — which lesson should this material cover? Type the lesson name or pick a topic below.',
     changeLesson: 'Change lesson',
     unpinLesson: 'Unpin lesson',

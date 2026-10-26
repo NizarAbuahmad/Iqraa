@@ -28,6 +28,41 @@ let activeUserId: string | null = null;
 /** Called by AuthContext whenever the signed-in user changes. */
 export function setActiveLessonContextUser(userId: string | null): void {
   activeUserId = userId;
+  // The previous teacher's timetable lesson must not name itself on the next one's screen.
+  publishScheduledLesson(null);
+}
+
+/**
+ * The lesson the timetable puts on the home card (the pacing-plan lesson of the
+ * period now or next), as Today resolved it — or null when there is none.
+ *
+ * Today and the chat work it out (they already load the timetable); the lesson
+ * bar, the desktop sidebar card and ⌘K only needed to hear it. Without that
+ * they read the saved pick alone and named a different lesson from the card
+ * beside them. Nothing is stored: it is rebuilt each time Today opens.
+ */
+export type ScheduledLesson = {
+  topic: string;
+  lessonId: string | null;
+  gradeId?: string;
+  subjectId?: string;
+};
+
+let scheduledLesson: ScheduledLesson | null = null;
+const scheduledLessonListeners = new Set<(lesson: ScheduledLesson | null) => void>();
+
+export function publishScheduledLesson(lesson: ScheduledLesson | null): void {
+  scheduledLesson = lesson;
+  scheduledLessonListeners.forEach(fn => fn(lesson));
+}
+
+export function currentScheduledLesson(): ScheduledLesson | null {
+  return scheduledLesson;
+}
+
+export function subscribeScheduledLesson(fn: (lesson: ScheduledLesson | null) => void): () => void {
+  scheduledLessonListeners.add(fn);
+  return () => scheduledLessonListeners.delete(fn);
 }
 
 function scopedKey(base: string): string {
@@ -88,6 +123,27 @@ export async function loadLessonPick(): Promise<HomeLessonPick | null> {
 export function timetableWins(pick: HomeLessonPick | null, hasScheduledLesson: boolean, today: string): boolean {
   if (!hasScheduledLesson) return false;
   return !(pick?.topic?.trim() && pick.pickedOn === today);
+}
+
+/**
+ * The lesson to NAME, for every surface that is not Today's own card: the
+ * timetable's lesson where `timetableWins`, otherwise the saved pick. The same
+ * rule Today and the chat apply, so the lesson bar, the sidebar card and ⌘K
+ * cannot name a different lesson from the one on the home card.
+ */
+export function lessonShown(
+  pick: HomeLessonPick | null,
+  scheduled: ScheduledLesson | null,
+  today: string,
+): HomeLessonPick | null {
+  if (!scheduled || !timetableWins(pick, true, today)) return pick;
+  return {
+    topic: scheduled.topic,
+    unitOrder: null,
+    gradeId: scheduled.gradeId,
+    subjectId: scheduled.subjectId,
+    lessonId: scheduled.lessonId ?? undefined,
+  };
 }
 
 /**

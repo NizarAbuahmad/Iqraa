@@ -180,3 +180,42 @@ describe('an ask with no topic of its own carries the picked lesson', () => {
     assert.equal(isBareArtifactShortcut('make a quiz on fractions'), false);
   });
 });
+
+// «عن هذا الدرس» is the most natural way to say "the lesson I already picked",
+// and it was read as the NAME of a lesson: the chat titled the saved material
+// «هذا الدرس» (and, on the live path, grounded on a search for that string)
+// instead of using the lesson on the card. The placeholder under the composer
+// now teaches a teacher to write exactly this.
+describe('a reference to the picked lesson names no topic', () => {
+  const refs = [
+    'اختبار قصير عن هذا الدرس', 'ورقة عمل لهذا الدرس', 'خطة درس للدرس الحالي',
+    'اعمل لي اختبار عن الدرس', 'نشاط صفي لدرس اليوم', 'واجب لنفس الدرس',
+    'أنشئ ورقة عمل عن هذا الدرس.', 'جهّز اختبارًا قصيرًا عن هذا الدرس',
+    'make a quiz on this lesson', 'quiz about the current lesson',
+    'a worksheet for today’s lesson', 'homework for the same lesson',
+  ];
+  for (const q of refs) {
+    it(JSON.stringify(q), () => {
+      assert.equal(topicFromQuery(q), '');
+      assert.equal(isBareArtifactShortcut(q), true);
+    });
+  }
+
+  it('resolves to the lesson that is picked', () => {
+    const lesson = { titleAr: 'تركيب الاقترانات', titleEn: 'Composition of Functions' } as never;
+    assert.equal(
+      resolveArtifactTopic({ ...base, lesson, lang: 'ar', query: 'اختبار قصير عن هذا الدرس' }),
+      'تركيب الاقترانات',
+    );
+    assert.equal(
+      resolveArtifactTopic({ ...base, lesson, lang: 'en', query: 'make a quiz on this lesson' }),
+      'Composition of Functions',
+    );
+  });
+
+  it('a topic that only contains the words keeps them', () => {
+    assert.equal(topicFromQuery('اختبار عن الدرس الأول في الوحدة'), 'الدرس الأول في الوحدة');
+    assert.equal(topicFromQuery('worksheet on lesson planning'), 'lesson planning');
+    assert.equal(topicFromQuery('quiz on this lesson of Newton'), 'this lesson of Newton');
+  });
+});
