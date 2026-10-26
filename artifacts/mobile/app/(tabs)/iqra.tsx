@@ -46,7 +46,7 @@ import {
 import { getPickerGrades, getPickerSubjects, hasCurriculumForSubjectGrade } from '@/services/curriculumData';
 import { AR_LATIN } from '@/services/dateLabels';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
-import { loadLessonPick, loadPrepBoardOpen, loadPrepSkips, saveLessonPick, savePrepBoardOpen, setPrepSkip, timetableWins, type HomeLessonPick } from '@/services/lessonContext';
+import { loadLessonPick, loadPrepBoardOpen, loadPrepSkips, publishScheduledLesson, saveLessonPick, savePrepBoardOpen, setPrepSkip, timetableWins, type HomeLessonPick } from '@/services/lessonContext';
 import {
   buildResponse,
   deduplicateByUnit,
@@ -1864,6 +1864,10 @@ export default function IqraScreen() {
     void Promise.all([loadLessonPick(), loadNextPeriod()]).then(([saved, next]) => {
       const scheduled = next?.lessonId ? resolveLessonPrepContext(next.lessonId, lang as 'ar' | 'en') : null;
       const fromSchedule = timetableWins(saved, !!scheduled, todayISO());
+      // The lesson bar and the sidebar card name this lesson too, when the chat is the first screen opened.
+      publishScheduledLesson(
+        scheduled ? { topic: scheduled.topic, lessonId: scheduled.lessonId, gradeId: scheduled.gradeId, subjectId: scheduled.subjectId } : null,
+      );
       setPeriodLine('');
       if (fromSchedule && next) {
         listClasses()

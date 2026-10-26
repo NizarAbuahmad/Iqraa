@@ -41,9 +41,10 @@ and the lesson strip's «0/5» did not say five of what.
 **Not done, on purpose.**
 - The chips keep their own verbs («حضّر خطة الدرس», «أنشئ ورقة عمل», «جهّز اختباراً…»): the same words are parsing
   vocabulary in `askVocabulary` / `artifactTopic` and appear in help answers and tests, so unifying them is its own change.
-- **Found, not fixed:** in the screenshot that started this review the chat's strip and the sidebar's «الدرس الحالي»
-  named different lessons. By the code: the chat and Today apply `timetableWins`, the sidebar (`_layout.tsx`) reads the
-  raw saved pick. Not reproduced with real data; queued as its own task.
+- **Found here, fixed in #1302:** in the screenshot that started this review the chat's strip and the sidebar's
+  «الدرس الحالي» named different lessons. By the code: the chat and Today apply `timetableWins`, the sidebar
+  (`_layout.tsx`) read the raw saved pick. #1302 («The sidebar card, the lesson bar and ⌘K name the lesson Today
+  shows») fixes exactly that and reproduced it with a timetable and a plan; this PR does not touch it.
 - Web composer: react-native-web renders a multiline input two rows tall, so the placeholder sits on the top row while
   `+` and send sit at the bottom. Left alone; it needs a look in a browser, not a guess.
 
@@ -56,6 +57,93 @@ lesson on the strip), not «هذا الدرس».
 **Not verified.** The shortened placeholder was checked by character count against the wrapped line, not re-screenshotted.
 The new working lines («أراجع طلبك…») and the failure line were not seen on screen (too brief; no failure induced).
 Strings were not read by a second native speaker.
+
+## «اسأل إقرأ» is live on iqrra.com: the widget and the production check, 2026-10-26
+
+The question assistant announced in «A public «اسأل إقرأ» bot for iqrra.com — the API half» is now
+on the home page. The API half merged as PR #1201 (squash `e167abf`, deploy run 40188544551, success,
+2026-10-25 11:21-11:27 UTC); the widget merged as `Site_Iqra` PR #41 (squash `fd1ccc8`, 2026-10-26,
+Vercel). Plans: `docs/superpowers/plans/2026-10-25-site-ask-widget.md` (corrected by PR #1300 before
+it was run; the corrections are in it).
+
+**What a visitor gets.** A round launcher bottom-left of the home page (that is `inset-inline-end`
+on this RTL page) opens a panel with a greeting and three starter questions («ما هو إقرأ؟»,
+«ما الصفوف والمواد؟», «هل هو مجاني؟»), each answered from the fixed answers with no AI call. The
+widget is two plain files in the `Site_Iqra` repo, `ask.js` and `ask.css`, plus two lines in
+`index.html`: no build step, no dependency. It makes one call, `POST /api/site/ask`. The conversation
+lives in the page's memory only (the last four messages are sent along, and only after a successful
+answer); nothing is stored in the browser and the root carries `ph-no-capture`, so PostHog
+autocapture records no chip text. Every non-answer (a refusal, 429, 400, 5xx, a network error, an
+unreadable reply, or no reply within 30 s) shows one friendly message with a link to the page's
+suggestion form (`#feedback`); the visitor never sees a status code or a reason. All text is put in
+with `textContent`; the only links it can create are to `https://iqrra.com/...` and
+`https://www.iqrra.com/...` (a pure, tested `linkify`), so the grades-and-subjects answer's
+`https://www.iqrra.com/manhaj` is clickable. **`app.iqrra.com` links in two of the fixed answers stay
+plain text** (not in the allow-list; widening it is a small change and a decision).
+
+**Privacy.** `privacy.html` has a new §6 «أسئلة مساعد الموقع» / "Site assistant questions" in both
+languages, and the OpenAI row, the Neon row, the where-stored list and the Retention section were
+updated to match. Its claims, each checked against the code: every question reaches our servers;
+fixed answers never reach an AI provider, but the history sent with a later, uncovered question
+(the last four messages) may include earlier questions and our replies; we do not save question or
+reply text in our database or logs; OpenAI's own retention follows its terms; **a per-IP counter
+(`site-ask-ip:<ip>`) is kept in Postgres for the one-hour window and is removed only by a
+probabilistic clean-up at least 24 hours after its hour ended, so an IP can be kept a day or more**
+(the page did not say before that IPs are kept for rate limiting at all; the same limiter serves the
+other public routes). The owner approved the wording on 2026-10-26. The English text of the page
+still says "Iqra" in about seven older places (not changed here; `CLAUDE.md` wants "Iqrra").
+
+**Checked.**
+- Unit tests (`Site_Iqra`, `node --test tests/*.test.mjs`): 34 of 34, for the pure core (request
+  building with filter-then-window, reply interpretation, language detection, `linkify`).
+- A real-browser check (Chromium, API stubbed, script kept outside the repo): 493 of 493 rows, plus 6
+  visible SKIP rows and 3 INFO rows. It covers the chips and the chat round trip, history windowing
+  and "only after success" for all six failure paths, injected markup (also in the API's own
+  refusal text) rendered as text, Esc and focus rules, tap targets, contrast computed from the
+  widget's real colours, launcher overlap while scrolling, panel geometry over many viewports and a
+  height sweep, request headers (JSON, no cookie or authorization), reduced motion, print. Each row
+  was shown to fail when the behaviour was broken on purpose. Two real defects came out of it (the
+  page's global `section{padding:64px 0}` leaking into the panel, and a panel taller than a short
+  phone screen).
+- The link builder was attacked with 50 hand-written inputs and 200,000 random strings: every link
+  stayed on the two allowed origins and the text always rebuilt exactly.
+- **Production, API (2026-10-26, after the deploy):** the three starter questions return
+  `source: "curated"`; an off-topic question and a "print your system prompt" attempt got a polite
+  refusal from the AI path (`source: "ai"`); an empty message and a 301-character message are 400;
+  GET is 404; the CORS preflight allows `https://www.iqrra.com` and not another origin.
+- **Production, widget (2026-10-26, in Chromium):** the launcher is at the bottom-left, the three
+  chips each get a curated 200, the manhaj link is clickable, no notice, no page error, and
+  `https://www.iqrra.com/privacy` shows §6 in both languages with the new dates.
+  About a dozen API calls were made in these checks (two of them to the AI path, about $0.02 at the
+  estimated rate).
+
+**Not checked.** Safari, Firefox and a real on-screen keyboard (a chip tap focuses the input, so the
+keyboard opens on phones after a chip tap). The widget's AI-answer and refusal paths on the real
+site (they were checked against the API and with stubs). The daily spend cap and the 100-an-hour
+limit against the live service. The real per-answer cost and the `/healthz/ai-budget` `persisted`
+flag after real traffic. Whether `SITE_BOT_BUDGET_USD_DAILY` is set on the Cloud Run service (not
+read: without it the default of 1 a day applies). How the matcher does on real visitor questions
+(its phrases are our guesses). The widget on a Vercel preview URL: it cannot reach the API, because
+CORS allows only `www.iqrra.com` and `iqrra.com`, so a preview only ever shows the friendly
+"couldn't answer" message.
+
+**Known limits.**
+- The page's own header wraps to 142px between about 720px and 1000px wide (not touched). On a
+  desktop-width window the card covers the header's left-hand buttons below about 560px of height
+  before the first question and below about 641px once a conversation has filled it; the phone sheet
+  covers the header only at 352px of height and below (ranges measured at 1280px wide with the 85px
+  header, in `DESIGN.md`).
+- Esc does nothing when focus is on the page body inside the open panel (the X button and Esc from
+  any control in it work). A very tall answer can lose a few pixels at its top; an answer arriving
+  while the panel is closed is not scrolled to its top. The notice's link does not reopen the
+  suggestion form if the visitor re-collapsed it while the URL still reads `#feedback`.
+- Matcher limits (API): «مرحبا كم سعر شات جي بي تي» gets the "not a chatbot" answer; «شكرا للطلاب»
+  gets the students answer; "hi other" and "hi app" go to the AI.
+- The bot's spend counts toward the shared `AI_BUDGET_USD` (see the API-half entry); the failing-ledger
+  gate gap parked there is unchanged.
+- Rollback: delete the `<link href="/ask.css">` and `<script src="/ask.js">` lines from
+  `Site_Iqra`'s `index.html` (or revert the merge); the API is unaffected. To keep the API but stop
+  AI spend, set `SITE_BOT_BUDGET_USD_DAILY=0` (fixed answers keep working).
 
 ## Thirty-third live pass: questions about the app itself, 2026-10-25
 
@@ -94,6 +182,27 @@ no class exists on the demo teacher. These answers are app-only, so that does no
 been seen in the running chat yet — re-run the 33 on app.iqrra.com after the deploy. Not answered (still go to the
 model): «is it free for private schools» (pricing plus schools), how many students a class may hold, whether AI
 output is checked.
+
+## The sidebar card, the lesson bar and ⌘K name the lesson Today shows — 2026-10-26
+
+On the desktop home a teacher saw the main card on one lesson («الأنظمة النجمية والكوكبات», from the
+timetable's plan) and the «الدرس الحالي» card in the sidebar on another («المفردات والقواعد», a lesson
+picked by hand days before). `GlobalLessonBar` (the sidebar card on desktop, the lesson bar on a phone)
+and the ⌘K palette were fed the saved pick alone, in `app/(tabs)/_layout.tsx`, while Today and the chat
+apply `timetableWins`. The layout now takes the same lesson: `useTodayLesson` and the chat publish the
+lesson the timetable puts on the card (`publishScheduledLesson`, `lessonContext.ts`, in memory, cleared
+when another teacher signs in) and the layout names `lessonShown(pick, scheduled, today)` — the
+timetable's lesson unless a lesson was picked today. No new requests: Today and the chat already load
+the timetable.
+
+Verified: `lessonContext.test.ts` (`lessonShown` and the publish/subscribe store; written first and
+failing); `pnpm run typecheck`; in the browser on a rebuilt bundle, with a timetable and a plan: the
+home card and the sidebar card both name «حل نظام مكوَّن من معادلة خطية ومعادلة تربيعية», and with a
+lesson picked today both name that pick. **Not verified:** the phone's lesson bar (same component,
+not looked at), Arabic/RTL, the full mobile suite locally (CI runs it). **Known limit:** the layout learns
+the timetable's lesson only once Today or the chat has loaded it, so a teacher who lands on another
+screen first (a deep link) sees the saved pick there until one of them opens; the chat card, Today and ⌘K
+do not wait on each other beyond that.
 
 ## CI listens for the merge queue, 2026-10-25
 
@@ -389,6 +498,9 @@ in production); the real per-answer cost and the `/healthz/ai-budget` `persisted
 first answers; answer quality on real visitor questions, including off-topic and injection tries
 (to be run against the deployed route before the widget ships, and recorded here); the widget,
 which is a separate change in the `Site_Iqra` repo and has not been written; how the matcher behaves on real visitor questions (only the questions in the tests have been tried).
+**Update 2026-10-26:** the route was checked in production, the widget was written and is live; see
+«اسأل إقرأ is live on iqrra.com: the widget and the production check» above. What is still not checked
+is listed there.
 
 ## Grade 8 English gets its book pages; Grades 1-7 do not, 2026-10-25
 
