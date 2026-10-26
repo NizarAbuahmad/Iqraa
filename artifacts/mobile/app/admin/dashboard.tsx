@@ -22,6 +22,7 @@ import { openExternal } from '@/services/externalLinks';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { goBack } from '@/services/navigation';
+import { signupsHref } from '@/services/adminSignupKind';
 import { confirm } from '@/services/confirm';
 import { ACCENT, Bar, FilterChip, KeyValue, SectionTitle, StatCard, Table } from '@/components/admin/widgets';
 import { DateField, DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
@@ -279,9 +280,9 @@ export default function AdminDashboardScreen() {
                   <StatCard label={lang === 'ar' ? 'كل الحسابات' : 'All accounts'} value={summary.totalUsers} colors={colors} />
                   <StatCard label={lang === 'ar' ? 'نشطون ٧ أيام' : 'Active 7d'} value={summary.activeUsers7d} colors={colors} />
                   <StatCard label={lang === 'ar' ? 'نشطون ٣٠ يومًا' : 'Active 30d'} value={summary.activeUsers30d} colors={colors} />
-                  <StatCard label={lang === 'ar' ? 'قائمة الانتظار' : 'Waitlist emails'} value={summary.siteSignups.waitlist} colors={colors} />
-                  <StatCard label={lang === 'ar' ? 'رسائل التواصل' : 'Contact messages'} value={summary.siteSignups.contact} colors={colors} />
-                  <StatCard label={lang === 'ar' ? 'اقتراحات الزوار' : 'Visitor ideas'} value={summary.siteSignups.idea ?? 0} colors={colors} />
+                  <StatCard label={lang === 'ar' ? 'قائمة الانتظار' : 'Waitlist emails'} value={summary.siteSignups.waitlist} colors={colors} onPress={() => router.push(signupsHref('waitlist') as any)} />
+                  <StatCard label={lang === 'ar' ? 'رسائل التواصل' : 'Contact messages'} value={summary.siteSignups.contact} colors={colors} onPress={() => router.push(signupsHref('contact') as any)} />
+                  <StatCard label={lang === 'ar' ? 'اقتراحات الزوار' : 'Visitor ideas'} value={summary.siteSignups.idea ?? 0} colors={colors} onPress={() => router.push(signupsHref('idea') as any)} />
                   <StatCard label={lang === 'ar' ? 'محظورون' : 'Blocked'} value={summary.suspendedCount} colors={colors} />
                 </View>
                 <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginTop: 10 }]}>
