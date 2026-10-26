@@ -122,6 +122,26 @@ test('the welcome card is centred on the screen', () => {
   assert.deepEqual(centerCard(screen, card), { top: 320, left: 40 });
 });
 
+test('a card taller or wider than the screen is pinned to the margin, never placed off-screen', () => {
+  // Large accessibility text can make the card outgrow a small phone; a negative
+  // top would put its Skip button above the screen with no way to reach it.
+  const tall = { width: 320, height: 900 };
+  assert.deepEqual(centerCard(screen, tall), { top: 16, left: 40 });
+  assert.deepEqual(centerCard(screen, { width: 500, height: 100 }), { top: 350, left: 16 });
+  const docked = placeCard({ x: 16, y: 100, width: 368, height: 560 }, screen, tall);
+  assert.equal(docked.side, 'dock');
+  assert.equal(docked.top, 16);
+});
+
+test('a target wholly off the screen has no hole, rather than a negative one', () => {
+  const off = holeFor({ x: 500, y: 100, width: 50, height: 50 }, screen);
+  assert.equal(off.width, 0);
+  assert.ok(off.height > 0);
+  const below = holeFor({ x: 10, y: 900, width: 50, height: 50 }, screen);
+  assert.equal(below.height, 0);
+  assert.ok(off.width >= 0 && below.width >= 0);
+});
+
 test('the connector joins the hole to the card edge that faces it', () => {
   const hole = { x: 140, y: 100, width: 120, height: 60 };
   const below = placeCard(hole, screen, card);

@@ -210,17 +210,15 @@ function RootLayoutNav() {
   }, [isLoading]);
 
   // While the first-run tour is up the app behind it is hidden from screen
-  // readers (`importantForAccessibility` is Android's, `accessibilityElementsHidden`
-  // iOS's) — the tour card is the only thing that should be read.
+  // readers — the tour card is the only thing that should be read. `aria-hidden`
+  // is the one spelling all three platforms act on: React Native maps it to
+  // Android's `importantForAccessibility` and iOS's `accessibilityElementsHidden`,
+  // and react-native-web puts it on the DOM, where it ignores those two props.
   const tourActive = useTourActive();
 
   return (
     <>
-    <View
-      style={{ flex: 1 }}
-      importantForAccessibility={tourActive ? 'no-hide-descendants' : 'auto'}
-      accessibilityElementsHidden={tourActive}
-    >
+    <View style={{ flex: 1 }} aria-hidden={tourActive ? true : undefined}>
     <Stack
       screenOptions={{ headerShown: false, animation: 'fade' }}
       // Every screen's content sits above the keyboard — see KeyboardSafeView

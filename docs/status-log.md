@@ -43,10 +43,11 @@ suggest something better". Design: [`docs/superpowers/specs/2026-10-26-first-run
   `pnpm install --frozen-lockfile` accepts it.
 
 **Verified.**
-- Unit tests: 64 new (steps, eligibility matrix, navigation, registry, placement, store + analytics, and a
+- Unit tests: 72 new (steps, eligibility matrix, navigation, registry, placement, store + analytics, and a
   source-scan contract `tourTargets.test.ts` that reads both sides of every target name). Mutation-checked:
-  renaming a step's target fails the contract test. Whole mobile suite, re-run on the tree after merging
-  `main` (4 commits, one textual conflict, in this file): 7,868 pass, 0 fail, 10 skipped (none tour-related).
+  renaming a step's target fails the contract test. Whole mobile suite on the final tree (after merging
+  `main` — 4 commits, one textual conflict, in this file — and the review fixes below): 7,876 pass, 0 fail,
+  10 skipped (none tour-related).
 - `pnpm run typecheck` in `artifacts/mobile`: 12 errors, **the same 12 on a clean tree** (push-token and
   Quran-audio typings, `expo-file-system` types — a sandbox artefact), none in a file this change touched.
 - Built web bundle driven in Chromium with a stubbed API, teacher / student / parent × phone (390×844) /
@@ -69,6 +70,27 @@ suggest something better". Design: [`docs/superpowers/specs/2026-10-26-first-run
   where the board says «عرض الحصة» / «نشاط صفّي»; the Library step described books only, and the screen says
   worksheets, videos, photos, activities and book resources; and «الأسئلة الشائعة» is not the row's name
   («كيف أستخدم إقرأ؟»). Singular «المعلم» became «المعلمين» (a student has several). The English got the same.
+- An independent code review (a separate reviewer reading the diff cold) found no blockers, five should-fix
+  items and seven nits; each was checked against the code before acting (two against react-native-web's
+  source), and all but one were fixed:
+  - the card could outgrow a small phone under large accessibility text and push Skip off the screen →
+    the card is capped to the screen and its text scrolls; the centred and docked positions can no longer be
+    negative (browser-checked in a 390×300 window: Next and Skip stay on screen);
+  - on web the app behind the tour stayed in the accessibility tree — react-native-web ignores
+    `importantForAccessibility` / `accessibilityElementsHidden` → now `aria-hidden`, which all three platforms act on;
+  - on web a screen reader heard nothing after step 1 (Next keeps focus, the text just changes) → a polite live region;
+  - Replay waited a fixed 700 ms after navigating and could be ended by the overlay's own "not on the home
+    route" check on a slow device → a replay is now a *request* that starts once the home screen has held
+    still, like the automatic start (the request lapses after 8 s if navigation stalls);
+  - «كلٌّ منها يُنشأ بضغطة» promised more than the button does (it opens the generator) → «على بُعد ضغطة»;
+  - the "of N" shrank when a step was dropped, and `tour_step` was reported for a step nobody saw → steps whose
+    target is not mounted are left out when the tour begins, and `tour_step` is sent when a step is *shown*;
+  - ⌘K opened the command palette over the tour and fought its Escape / Tab handling → the palette ignores ⌘K
+    while a tour is up (browser-checked with a positive control: it opens once the tour is over);
+  - the overlay could stay dimmed with no card if its own `measureInWindow` never answered → falls back to
+    its layout size at the window's corner; a target wholly off the screen is dropped, not given a negative ring;
+  - the e2e now asserts "Step 6 of 6", so it fails if middle steps go missing; a spacing comment was corrected.
+  - **Not changed:** `TOUR_SINCE` is a date written on the day of the work. See *Before merging* below.
 
 **Not verified.**
 - **Any real phone.** All of the above is the web build in desktop Chromium. Not seen on a device: Android
@@ -80,6 +102,14 @@ suggest something better". Design: [`docs/superpowers/specs/2026-10-26-first-run
   react-navigation would have, with a ref.
 - Student and parent were walked with a stubbed API, not a real account: the e2e cannot make one
   (`STUDENT_ACCOUNTS` is off there).
+- The review's fixes for a **stalled replay navigation** and an **overlay that cannot measure itself** are
+  covered by unit tests of the store and by the normal Replay path in the browser, but neither failure was
+  reproduced (a slow device, a `measureInWindow` that never answers). Large accessibility text was simulated
+  with a short window, not a real Dynamic Type / font-scale setting.
+
+**Before merging.** Set `TOUR_SINCE` in `services/tour.ts` to the day the change is merged (the tests follow
+it). It says "an account made on or after this is new"; written on the day of the work, a later merge would show
+the tour to accounts that have already been using the app for days.
 
 **Limits and decisions.**
 - The flag is on the device: the same person on a new phone or browser is shown the tour once more. A

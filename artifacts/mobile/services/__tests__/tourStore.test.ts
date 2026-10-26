@@ -5,11 +5,15 @@ import { beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   beginTour,
+  clearReplayRequest,
   dropStep,
   getTourSnapshot,
+  isReplayPending,
   isTourActive,
   nextStep,
   prevStep,
+  reportStepShown,
+  requestReplay,
   setTourTracker,
   skipTour,
   subscribeTour,
@@ -50,20 +54,75 @@ test('a second begin while one is running changes nothing', () => {
   beginTour({ role: 'teacher', layout: 'phone', source: 'replay' });
   assert.equal(getTourSnapshot()?.steps.length, parentSteps().length);
   assert.equal(getTourSnapshot()?.index, 1);
-  assert.equal(events.length, 2, 'started + one step, no second start');
+  assert.equal(events.length, 1, 'started only: no second start');
 });
 
-test('next and back move through the steps, and each arrival reports its step', () => {
+test('next and back move through the steps without reporting anything themselves', () => {
   beginTour({ role: 'parent', layout: 'phone', source: 'auto' });
   nextStep();
   assert.equal(getTourSnapshot()?.index, 1);
   prevStep();
   assert.equal(getTourSnapshot()?.index, 0);
-  const stepEvents = events.filter(([e]) => e === 'tour_step');
-  assert.deepEqual(stepEvents.map(([, p]) => p), [
+  assert.equal(events.filter(([e]) => e === 'tour_step').length, 0);
+});
+
+test('a step is reported when it is SHOWN — once, and again when the person comes back to it', () => {
+  // The overlay calls this once a step has somewhere to be drawn. A step whose
+  // target never appears is dropped before then, so nobody is counted as seeing it.
+  beginTour({ role: 'parent', layout: 'phone', source: 'auto' });
+  reportStepShown();
+  reportStepShown(); // a re-render or a resize: same step, no second event
+  nextStep();
+  reportStepShown();
+  prevStep();
+  reportStepShown();
+  assert.deepEqual(events.filter(([e]) => e === 'tour_step').map(([, p]) => p), [
+    { step: parentSteps()[0].id, index: 0 },
     { step: parentSteps()[1].id, index: 1 },
     { step: parentSteps()[0].id, index: 0 },
   ]);
+});
+
+test('reporting with no tour running does nothing', () => {
+  reportStepShown();
+  assert.deepEqual(events, []);
+});
+
+test('steps whose target is not on screen are left out when the tour begins, so the count never shrinks mid-tour', () => {
+  const missing = new Set(['tab-profile']);
+  beginTour({ role: 'parent', layout: 'phone', source: 'auto', isAvailable: id => !missing.has(id) });
+  const ids = getTourSnapshot()!.steps.map(s => s.targetId);
+  assert.equal(ids.includes('tab-profile'), false);
+  assert.equal(ids.length, parentSteps().length - 1);
+  assert.equal(ids[0], null, 'the welcome stays');
+});
+
+test('a tour with nothing to point at is not started at all', () => {
+  beginTour({ role: 'parent', layout: 'phone', source: 'auto', isAvailable: () => false });
+  assert.equal(isTourActive(), false);
+  assert.deepEqual(events, []);
+});
+
+test('a replay can be requested before the home screen is up, and beginning a tour answers it', () => {
+  assert.equal(isReplayPending(), false);
+  let calls = 0;
+  const off = subscribeTour(() => { calls++; });
+  requestReplay();
+  assert.equal(isReplayPending(), true);
+  assert.equal(calls, 1, 'subscribers are told, so the hook that waits for the home route wakes');
+  beginTour({ role: 'parent', layout: 'phone', source: 'replay' });
+  assert.equal(isReplayPending(), false);
+  off();
+});
+
+test('a replay request can be withdrawn, and does nothing to a tour already running', () => {
+  requestReplay();
+  clearReplayRequest();
+  assert.equal(isReplayPending(), false);
+  beginTour({ role: 'parent', layout: 'phone', source: 'auto' });
+  requestReplay();
+  clearReplayRequest();
+  assert.equal(isTourActive(), true);
 });
 
 test('moving past the last step completes the tour, once', () => {

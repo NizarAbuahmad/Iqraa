@@ -116,19 +116,43 @@ the per-account flag cannot be pre-seeded (the user id does not exist yet).
 
 ## Accessibility
 
+While a tour is up, the app behind it is hidden from assistive technology with
+`aria-hidden` on a wrapper around the `Stack` — the one spelling all three platforms
+act on (React Native maps it to Android's `importantForAccessibility` and iOS's
+`accessibilityElementsHidden`; react-native-web ignores those two and only puts
+`aria-hidden` on the DOM).
+
 Web: `role="dialog"`, `aria-modal`, Escape skips (capture-phase keydown, as
 `CommandPalette`), Tab is trapped on the card, focus moves to Next each step with
-the brand's 3 px focus ring. Native: `accessibilityViewIsModal` (iOS) and the app
-behind is hidden from TalkBack / VoiceOver while a tour is up (a wrapper View around
-the `Stack`, `importantForAccessibility` / `accessibilityElementsHidden`); each step
-is announced. Hardware Back steps back, then skips. Targets are 44 pt, state is
-`aria-*`, motion respects reduce-motion. A deep link or push that navigates away from
-the home route ends the tour.
+the brand's 3 px focus ring. Because the card stays mounted, Next keeps focus and
+nothing would be announced, so the title and sentence sit in an `aria-live="polite"`
+region. Native: `accessibilityViewIsModal` (iOS) and `announceForAccessibility` per
+step. Hardware Back steps back, then skips. Targets are 44 pt, state is `aria-*`,
+motion respects reduce-motion. A deep link or push that navigates away from the home
+route ends the tour. ⌘K is ignored while a tour is up (the palette's Escape / Tab
+handling would fight the tour's).
+
+The card is capped at the screen height less its margins, and its title and sentence
+scroll past that: large accessibility text can make them taller than a small phone,
+and Skip and Next must never leave the screen. The centred and docked positions are
+clamped to the margin for the same reason.
+
+## Replay
+
+Profile's row asks for a replay (`requestReplay`) and navigates home; the tour starts
+once the home screen has arrived and held still, exactly as the automatic start does.
+A fixed delay after navigating could fire before a slow device got there, and the
+overlay ends a tour that is not on the home route. A request that never reaches home
+lapses after 8 s.
 
 ## Analytics
 
 `tour_started {role, layout}`, `tour_replayed {role, layout}`, `tour_step {step, index}`,
 `tour_completed {steps}`, `tour_skipped {atStep, index}`. No new `EXPO_PUBLIC_*` key.
+`tour_step` is sent when a step is **shown** (the overlay calls `reportStepShown`), not when
+Next is pressed: a step whose target never appears is dropped before it is seen and must not
+count. Steps whose target is not mounted are left out when the tour begins, so "of N" is
+fixed for the whole tour, and a tour with nothing left to point at does not start.
 
 ## Out of scope
 

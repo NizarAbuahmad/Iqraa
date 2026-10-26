@@ -35,6 +35,10 @@ export type TourStep = {
  * Account must have been created on or after this to be shown the tour on its
  * own, so someone who signed up a week before it shipped is not ambushed in
  * the middle of using the app. They can still open it from Profile.
+ *
+ * **Set this to the day the change is merged.** It was written on the day the
+ * work was done; if the merge is later, accounts made in between are already using
+ * the app and would meet a tour on their next launch.
  */
 export const TOUR_SINCE = '2026-10-26T00:00:00.000Z';
 export const TOUR_MAX_AGE_DAYS = 14;

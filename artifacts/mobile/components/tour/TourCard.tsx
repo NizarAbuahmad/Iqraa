@@ -9,7 +9,7 @@
  * Next to move keyboard focus there on web.
  */
 import React, { useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -22,6 +22,8 @@ type Props = {
   index: number;
   total: number;
   width: number;
+  /** The tallest the card may be (the screen less its margins); its text scrolls past that. */
+  maxHeight?: number;
   style?: StyleProp<ViewStyle>;
   cardRef?: React.Ref<View>;
   nextRef?: React.Ref<View>;
@@ -109,7 +111,7 @@ function SkipButton({ label, onPress }: { label: string; onPress: () => void }) 
   );
 }
 
-export function TourCard({ step, index, total, width, style, cardRef, nextRef, onLayout, onNext, onBack, onSkip }: Props) {
+export function TourCard({ step, index, total, width, maxHeight, style, cardRef, nextRef, onLayout, onNext, onBack, onSkip }: Props) {
   const colors = useColors();
   const { t, isRTL } = useLanguage();
   const surface = useSurface('raised');
@@ -126,7 +128,7 @@ export function TourCard({ step, index, total, width, style, cardRef, nextRef, o
       role="dialog"
       aria-modal
       aria-label={t('tourDialogLabel')}
-      style={[surface, styles.card, { width }, style]}
+      style={[surface, styles.card, { width }, maxHeight ? { maxHeight } : null, style]}
     >
       <View style={[styles.topRow, { flexDirection: row }]}>
         <Text style={[styles.counter, { color: colors.mutedForeground, writingDirection: dir }]}>
@@ -135,15 +137,30 @@ export function TourCard({ step, index, total, width, style, cardRef, nextRef, o
         {!isLast ? <SkipButton label={t('onboardingSkip')} onPress={onSkip} /> : null}
       </View>
 
-      <Text
-        accessibilityRole="header"
-        style={[styles.title, { color: colors.foreground, textAlign: align, writingDirection: dir }]}
+      {/*
+        The title and the sentence scroll if the card is capped (`maxHeight`): large
+        accessibility text can make them taller than a small phone, and the buttons
+        above and below must stay on the screen.
+
+        The card stays mounted from step to step, so Next keeps keyboard focus and a
+        screen reader on web would hear nothing change; a polite live region says it.
+      */}
+      <ScrollView
+        style={styles.copy}
+        contentContainerStyle={styles.copyContent}
+        aria-live="polite"
+        showsVerticalScrollIndicator
       >
-        {t(step.titleKey)}
-      </Text>
-      <Text style={[styles.body, { color: colors.mutedForeground, textAlign: align, writingDirection: dir }]}>
-        {t(step.bodyKey)}
-      </Text>
+        <Text
+          accessibilityRole="header"
+          style={[styles.title, { color: colors.foreground, textAlign: align, writingDirection: dir }]}
+        >
+          {t(step.titleKey)}
+        </Text>
+        <Text style={[styles.body, { color: colors.mutedForeground, textAlign: align, writingDirection: dir }]}>
+          {t(step.bodyKey)}
+        </Text>
+      </ScrollView>
 
       {/* Decorative: the counter above already says where you are. */}
       <View
@@ -178,6 +195,9 @@ export function TourCard({ step, index, total, width, style, cardRef, nextRef, o
 
 const styles = StyleSheet.create({
   card: { padding: SPACE.lg, gap: SPACE.sm },
+  // `flexGrow: 0`: sized by its text when there is room, shrunk only when the card is capped.
+  copy: { flexGrow: 0, flexShrink: 1 },
+  copyContent: { gap: SPACE.sm },
   topRow: { alignItems: 'center', justifyContent: 'space-between', minHeight: 44 },
   counter: { fontSize: TYPE.caption, fontFamily: 'Almarai_400Regular' },
   // The target is padding around the label, not hitSlop: react-native-web ignores hitSlop.

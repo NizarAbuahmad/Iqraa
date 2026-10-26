@@ -40,6 +40,7 @@ import {
   isTourActive,
   nextStep,
   prevStep,
+  reportStepShown,
   skipTour,
   subscribeTour,
 } from '@/services/tourStore';
@@ -99,10 +100,15 @@ function TourOverlay({ state }: { state: TourState }) {
   const scrim = scheme === 'dark' ? DARK_SCRIM : `${colors.ink}C7`;
 
   // ── where this overlay sits in the window ────────────────────────────────
-  const onRootLayout = useCallback(() => {
+  // The size comes from the layout event, so it is never missing; only the origin
+  // needs `measureInWindow`, and if that never answers the overlay assumes the
+  // window's own corner. Without it the screen would stay dimmed with no card, and
+  // on iOS no way out.
+  const onRootLayout = useCallback((e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
     void measureInWindow(rootRef.current).then(r => {
-      if (!r) return;
-      setBox(prev => (prev && prev.x === r.x && prev.y === r.y && prev.width === r.width && prev.height === r.height ? prev : r));
+      const next = r ?? { x: 0, y: 0, width, height };
+      setBox(prev => (prev && prev.x === next.x && prev.y === next.y && prev.width === next.width && prev.height === next.height ? prev : next));
     });
   }, []);
 
@@ -156,6 +162,18 @@ function TourOverlay({ state }: { state: TourState }) {
   const radius = hole ? holeRadius(hole) : 0;
   const connector = hole && placement && placement.side !== 'center' && card ? connectorFor(hole, placement, card) : null;
   const shown = placement !== null;
+  const offScreen = hole !== null && (hole.width <= 0 || hole.height <= 0);
+
+  // A target that is wholly off the screen (a desktop element scrolled out of
+  // view) has nothing to ring: skip the step, as for one that never appeared.
+  useEffect(() => {
+    if (offScreen) dropStep(direction.current);
+  }, [offScreen]);
+
+  // A step counts as seen once it has somewhere to be drawn.
+  useEffect(() => {
+    if (shown && !offScreen) reportStepShown();
+  }, [shown, offScreen, step.id]);
 
   // The ring and card fade in once the step has somewhere to be; between steps the
   // screen is simply dim, which reads as the transition.
@@ -293,6 +311,7 @@ function TourOverlay({ state }: { state: TourState }) {
             index={state.index}
             total={total}
             width={cardWidth}
+            maxHeight={size.height - 2 * EDGE}
             cardRef={cardRef}
             nextRef={nextRef}
             onLayout={onCardLayout}

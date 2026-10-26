@@ -30,7 +30,8 @@ export function holeFor(rect: Rect, size: Size, pad: number = HOLE_PAD): Rect {
   const y0 = Math.max(0, rect.y - pad);
   const x1 = Math.min(size.width, rect.x + rect.width + pad);
   const y1 = Math.min(size.height, rect.y + rect.height + pad);
-  return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+  // A target wholly off the screen trims to nothing: zero, never negative.
+  return { x: x0, y: y0, width: Math.max(0, x1 - x0), height: Math.max(0, y1 - y0) };
 }
 
 export function holeRadius(hole: Rect): number {
@@ -101,13 +102,20 @@ export function placeCard(hole: Rect, size: Size, card: Size): CardPlacement {
   const aboveTop = hole.y - CARD_GAP - card.height;
   if (aboveTop >= EDGE_MARGIN) return { top: aboveTop, left, side: 'above' };
   const holeCentreY = hole.y + hole.height / 2;
-  const top = holeCentreY < size.height / 2 ? size.height - EDGE_MARGIN - card.height : EDGE_MARGIN;
+  const top = holeCentreY < size.height / 2 ? Math.max(EDGE_MARGIN, size.height - EDGE_MARGIN - card.height) : EDGE_MARGIN;
   return { top, left, side: 'dock' };
 }
 
-/** The welcome step has no target: its card sits in the middle. */
+/**
+ * The welcome step has no target: its card sits in the middle. Never past the
+ * margin, though: large accessibility text can make a card outgrow a small phone,
+ * and a negative `top` would put its Skip button above the screen.
+ */
 export function centerCard(size: Size, card: Size): { top: number; left: number } {
-  return { top: (size.height - card.height) / 2, left: (size.width - card.width) / 2 };
+  return {
+    top: Math.max(EDGE_MARGIN, (size.height - card.height) / 2),
+    left: Math.max(EDGE_MARGIN, (size.width - card.width) / 2),
+  };
 }
 
 /** From the hole edge facing the card to the card's own edge; none when the card overlaps the hole. */

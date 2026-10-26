@@ -29,11 +29,18 @@ export function setTourTracker(fn: Track): void {
 }
 
 let current: TourState | null = null;
+let replayPending = false;
+/** The step last reported as shown, so a re-render or a resize does not report it twice. */
+let lastShown: string | null = null;
 const listeners = new Set<() => void>();
+
+function notify(): void {
+  listeners.forEach(l => l());
+}
 
 function set(next: TourState | null): void {
   current = next;
-  listeners.forEach(l => l());
+  notify();
 }
 
 export function subscribeTour(listener: () => void): () => void {
@@ -52,22 +59,71 @@ export function isTourActive(): boolean {
   return current !== null;
 }
 
-/** `auto` is the first-run start; `replay` is the Profile row. A tour already running is left alone. */
-export function beginTour(opts: { role: TourRole; layout: TourLayout; source: 'auto' | 'replay' }): void {
+/**
+ * Profile's «Replay the tour» asks for a replay and navigates home; the tour
+ * starts once the home screen has actually arrived and held still (the hook in
+ * `hooks/useTour.ts` watches this). A fixed delay after navigating could fire
+ * before a slow device got there, and the overlay ends a tour that is not on the
+ * home route.
+ */
+export function requestReplay(): void {
+  if (replayPending) return;
+  replayPending = true;
+  notify();
+}
+
+export function clearReplayRequest(): void {
+  if (!replayPending) return;
+  replayPending = false;
+  notify();
+}
+
+export function isReplayPending(): boolean {
+  return replayPending;
+}
+
+/**
+ * `auto` is the first-run start; `replay` is the Profile row. A tour already
+ * running is left alone. `isAvailable` says whether a target is on screen: steps
+ * whose target is not are left out up front, so the "of N" never shrinks mid-tour,
+ * and a tour with nothing left to point at is not started.
+ */
+export function beginTour(opts: {
+  role: TourRole;
+  layout: TourLayout;
+  source: 'auto' | 'replay';
+  isAvailable?: (targetId: string) => boolean;
+}): void {
+  clearReplayRequest();
   if (current) return;
-  const state = startTour(stepsFor(opts.role, opts.layout));
+  const all = stepsFor(opts.role, opts.layout);
+  const { isAvailable } = opts;
+  const steps = isAvailable ? all.filter(s => s.targetId === null || isAvailable(s.targetId)) : all;
+  if (isAvailable && !steps.some(s => s.targetId !== null)) return;
+  const state = startTour(steps);
   if (!state) return;
+  lastShown = null;
   track(opts.source === 'auto' ? 'tour_started' : 'tour_replayed', { role: opts.role, layout: opts.layout });
   set(state);
 }
 
-function arrived(state: TourState): void {
-  track('tour_step', { step: state.steps[state.index].id, index: state.index });
+/**
+ * Called by the overlay once a step has somewhere to be drawn — not when Next is
+ * pressed, because a step whose target never appears is dropped before it is ever
+ * seen, and must not count as seen.
+ */
+export function reportStepShown(): void {
+  if (!current) return;
+  const { id } = current.steps[current.index];
+  if (lastShown === id) return;
+  lastShown = id;
+  track('tour_step', { step: id, index: current.index });
 }
 
 function finish(kind: 'completed' | 'skipped', from: TourState): void {
   if (kind === 'completed') track('tour_completed', { steps: from.steps.length });
   else track('tour_skipped', { atStep: from.steps[from.index].id, index: from.index });
+  lastShown = null;
   set(null);
 }
 
@@ -76,14 +132,11 @@ export function nextStep(): void {
   const next = stepForward(current);
   if (!next) return finish('completed', current);
   set(next);
-  arrived(next);
 }
 
 export function prevStep(): void {
   if (!current || current.index === 0) return;
-  const prev = stepBack(current);
-  set(prev);
-  arrived(prev);
+  set(stepBack(current));
 }
 
 export function skipTour(): void {

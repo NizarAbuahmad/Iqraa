@@ -43,6 +43,10 @@ test("a new teacher is walked through Today once, and can replay it", async ({ b
   await test.step("Next walks every step, and the last one says Done", async () => {
     // Bounded: a teacher's tour is six steps; ten means Next never reaches Done.
     for (let i = 0; i < 10 && (await next.count()) > 0; i++) await next.click();
+    // The last step is "Step 6 of 6" — a window this size shows the sidebar flavour,
+    // six steps. A button that merely says Done would also be there if every middle
+    // step had been dropped, so the count has to say all of them were reached.
+    await expect(tour.getByText("Step 6 of 6", { exact: true })).toBeVisible();
     await done.click();
     await expect(tour).toHaveCount(0);
   });

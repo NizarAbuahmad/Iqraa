@@ -396,7 +396,8 @@ function LessonWorkspace() {
 const s = StyleSheet.create({
   // The header band, in the lesson's subject colour (`subjectTheme`).
   band: { paddingHorizontal: 24, paddingTop: 14, paddingBottom: 26, gap: 14 },
-  // The topbar and the lesson were the band's two children, 14 apart; one target now holds both.
+  // The topbar and the lesson were the band's two children, 14 apart; one target now holds both,
+  // 12 apart (SPACE.md, the nearest step on the spacing scale; 14 is off it).
   bandTarget: { gap: SPACE.md },
   bandLesson: { gap: 8 },
   bandProgress: { alignItems: 'center', gap: 12, marginTop: 4 },
