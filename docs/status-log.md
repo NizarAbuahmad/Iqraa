@@ -10,6 +10,44 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Thirty-third live pass: questions about the app itself, 2026-10-25
+
+**Why.** A 30-question pass on app.iqrra.com of the questions a teacher asks before using the app
+(is it the Ministry's curriculum, can private schools use it, who made it, when does the monthly limit renew,
+can students see the solutions, does it work on an iPhone) got 24 misses: the matcher knew screens, not the app.
+
+**Built.** Six answers and their rules in `appHelp.ts` / `i18n.ts` (ar + en), plus wordings on the existing
+`install-app` rule:
+
+- `howAboutCurriculum`, `howAboutWhoFor`, `howAboutMaker` — **the wording is the owner's, given in chat on
+  2026-10-25**: aligned with the Jordanian curriculum; for private *and* public schools and for teachers and
+  students; made by a Jordanian team. Nothing was added to it. In particular the curriculum answer does **not**
+  say the Ministry approved, accredited or endorsed the app, and a question that asks for approval
+  («معتمد من الوزارة», "is it approved") gets the same alignment answer. If the owner wants to say more, that
+  is a wording change in `i18n.ts`, not a matcher change.
+- `howAllowanceRenew` — verified in code, not from memory: the cap is per account (`AI_USER_BUDGET_USD`,
+  `AI_STUDENT_BUDGET_USD`), the period is the calendar month, and `GET /auth/me/ai-usage` reports `resetsAt` as the
+  first of next month (UTC). The refusal text is the real `aiQuotaSpent` string, and Settings → Account shows
+  the percentage and the renewal date (`howAiUsage`). It names no number: the limit is an environment variable.
+- `howStudentSolutions` — verified: a student sees answers and worked steps only when the exam is `closed`,
+  results are released, the paper's result is not provisional **and** the teacher turned on «اعرض الإجابات
+  والحلول للطلبة» (`studentReviewReady`, `setSolutionsShown` refuses an exam that is not closed).
+- `howTryNoAccount` — games open from a link without sign-in (`faqA12`), and a student hands in an exam from its
+  `/take/CODE` link without an account (the e2e smoke test does exactly that). The teacher tools need a free account.
+- Devices: no new answer. `howInstallApp` already says Iqrra is **not** in Google Play or the App Store and
+  runs in the browser at app.iqrra.com, so «does it work on an iPhone / Android / a computer» now reaches it.
+  `app.json` has an `ios` block, but that is not evidence of an iOS build, so nothing claims one.
+
+**Verified.** `appHelp.test.ts` pins 33 questions and 7 near-misses (a school, a curriculum or a limit named in a
+request for something else) and the owner's wording. The 813 historic questions in the live-pass corpus give
+the identical result before and after (0 changed). Full mobile suite and typecheck below.
+
+**Not verified.** Live: the demo account's monthly allowance is spent, so the model path cannot be exercised and
+no class exists on the demo teacher. These answers are app-only, so that does not block them, but they have not
+been seen in the running chat yet — re-run the 33 on app.iqrra.com after the deploy. Not answered (still go to the
+model): «is it free for private schools» (pricing plus schools), how many students a class may hold, whether AI
+output is checked.
+
 ## CI listens for the merge queue, 2026-10-25
 
 **Why.** `main` requires an up-to-date branch and a green `typecheck + tests`, and takes a merge about every
@@ -31,6 +69,50 @@ this is **unverified in practice**: the first queued PR is the test. Check that 
 requires reports on it. If one does not, the queue entry times out and the PR drops out; turning the queue off again
 restores the old behaviour, and reverting this PR changes nothing for a repository with the queue off.
 `deploy.yml` is untouched: the queue merges into `main`, which is still a push to `main`.
+
+## Timetable: a period in an archived class is a free period — 2026-10-25
+
+A teacher who had saved a timetable and a plan (with dates) still saw «الحصة القادمة · الاثنين 09:00»
+with no class name on Today, and «لا توجد خطة زمنية لهذه الشعبة» with no name either, whatever plan
+they added. Reproduced locally: the timetable's periods pointed at a class that had since been
+archived, and a plan existed on a different, live class. Archiving a class (`DELETE /classes/:id`,
+which sets `archived_at`) does not touch `schedule_slots`, so `GET /schedule` kept returning the
+archived class; the weekly grid drew those cells as empty (it cannot name the class), while Today
+took them for real periods of a class with no name and no plan, and a plan on any live class never
+matches. `GET /schedule` now returns `classGroupId: null` for a period whose class is archived
+(`routes/schedule.ts`; a left join on `class_groups`). The stored row is not edited and its note
+stays. Every screen reads the timetable from that one call, so Today falls back to «أضف جدولك
+الأسبوعي» and agrees with the grid.
+
+Verified: `scheduleArchivedClass.db.test.ts` (the seed's period on an archived class returns no class,
+live and free periods are unchanged, the stored row is untouched, another teacher is unaffected);
+it failed before the change. API `pnpm test` 2607 pass; `pnpm run typecheck`; in the browser, the
+reproduced account went from «Next period · Monday 09:00» + «This class has no pacing plan» to «Add
+your weekly timetable» + «Add timetable». **Not verified:** that this is the reporting teacher's
+account (their data cannot be read from here; the symptoms match, the cause is inferred), the full
+mobile suite (nothing in the app changed), Arabic/RTL on a device. **Not changed:** archiving a class
+still leaves its periods stored; nothing tells the teacher that a class they archived was in their
+timetable. A period whose class list fails to load still shows without a class name.
+
+## Teaching plan: the lesson date boxes follow «توزيع تلقائي» — 2026-10-25
+
+A teacher pressed «توزيع تلقائي» in a teaching plan and every lesson's date box stayed empty, so the
+plan looked unscheduled and the home card kept asking for it. Reproduced in the browser (API,
+timetable and a Grade 10 plan on a local database): the button did work — it set 36 dates (the
+rows' borders turned green) and «حفظ» stored all 36, after which Today showed the Monday period's
+lesson — but each `LessonDateRow` keeps its own typed text, set once from the date when the row
+first rendered, so dates arriving from outside were never shown. A teacher who sees empty boxes
+presses «إلغاء», and nothing is saved. The row now takes the date again whenever the date changes
+(`useEffect` on `date`, `app/teaching-plans/index.tsx`); a half-typed date does not propagate, so
+typing is not overwritten.
+
+Verified in the browser on a rebuilt bundle: after «توزيع تلقائي» the boxes read 2026-10-25,
+2026-10-26, 2026-11-01…; a typed date, a half-deleted one and a retyped one behave; Save stores 36
+entries. `pnpm run typecheck`. **Not verified:** Arabic/RTL and a phone, the full mobile suite
+locally (CI runs it), and that this is the reporting teacher's exact case (a teacher who did press
+«حفظ» would not have hit it). **Not tested:** no test pins the row — it needs React Native, which
+the bare `node --test` runner cannot load. **Not changed:** «توزيع تلقائي» still does nothing, silently,
+when no school day is selected or the start date is invalid; the button is dimmed but says nothing.
 
 ## Grade 8 semester 1 word lists in the English corner, 2026-10-25
 

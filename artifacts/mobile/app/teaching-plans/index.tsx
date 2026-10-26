@@ -113,6 +113,12 @@ function LessonDateRow({ title, periods, date, onChangeDate, isRTL, colors, peri
   periodsLabel: (n: number) => string;
 }) {
   const [draft, setDraft] = useState(date ?? '');
+  // The box is typed into, so it keeps its own text; but «توزيع تلقائي» sets the
+  // dates from outside, and a box that never heard of it stayed empty while the
+  // dates were in fact set (and saved) — the teacher saw nothing happen and left.
+  // Runs only when the date itself changes: a half-typed date does not propagate,
+  // so typing is never overwritten.
+  useEffect(() => { setDraft(date ?? ''); }, [date]);
 
   const onDraft = (next: string) => {
     // Arabic-Indic digits reach this box on an Arabic keyboard; fold them so
