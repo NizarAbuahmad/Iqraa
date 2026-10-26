@@ -10,6 +10,197 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Thirty-third live pass: questions about the app itself, 2026-10-25
+
+**Why.** A 30-question pass on app.iqrra.com of the questions a teacher asks before using the app
+(is it the Ministry's curriculum, can private schools use it, who made it, when does the monthly limit renew,
+can students see the solutions, does it work on an iPhone) got 24 misses: the matcher knew screens, not the app.
+
+**Built.** Six answers and their rules in `appHelp.ts` / `i18n.ts` (ar + en), plus wordings on the existing
+`install-app` rule:
+
+- `howAboutCurriculum`, `howAboutWhoFor`, `howAboutMaker` — **the wording is the owner's, given in chat on
+  2026-10-25**: aligned with the Jordanian curriculum; for private *and* public schools and for teachers and
+  students; made by a Jordanian team. Nothing was added to it. In particular the curriculum answer does **not**
+  say the Ministry approved, accredited or endorsed the app, and a question that asks for approval
+  («معتمد من الوزارة», "is it approved") gets the same alignment answer. If the owner wants to say more, that
+  is a wording change in `i18n.ts`, not a matcher change.
+- `howAllowanceRenew` — verified in code, not from memory: the cap is per account (`AI_USER_BUDGET_USD`,
+  `AI_STUDENT_BUDGET_USD`), the period is the calendar month, and `GET /auth/me/ai-usage` reports `resetsAt` as the
+  first of next month (UTC). The refusal text is the real `aiQuotaSpent` string, and Settings → Account shows
+  the percentage and the renewal date (`howAiUsage`). It names no number: the limit is an environment variable.
+- `howStudentSolutions` — verified: a student sees answers and worked steps only when the exam is `closed`,
+  results are released, the paper's result is not provisional **and** the teacher turned on «اعرض الإجابات
+  والحلول للطلبة» (`studentReviewReady`, `setSolutionsShown` refuses an exam that is not closed).
+- `howTryNoAccount` — games open from a link without sign-in (`faqA12`), and a student hands in an exam from its
+  `/take/CODE` link without an account (the e2e smoke test does exactly that). The teacher tools need a free account.
+- Devices: no new answer. `howInstallApp` already says Iqrra is **not** in Google Play or the App Store and
+  runs in the browser at app.iqrra.com, so «does it work on an iPhone / Android / a computer» now reaches it.
+  `app.json` has an `ios` block, but that is not evidence of an iOS build, so nothing claims one.
+
+**Verified.** `appHelp.test.ts` pins 33 questions and 7 near-misses (a school, a curriculum or a limit named in a
+request for something else) and the owner's wording. The 813 historic questions in the live-pass corpus give
+the identical result before and after (0 changed). Full mobile suite and typecheck below.
+
+**Not verified.** Live: the demo account's monthly allowance is spent, so the model path cannot be exercised and
+no class exists on the demo teacher. These answers are app-only, so that does not block them, but they have not
+been seen in the running chat yet — re-run the 33 on app.iqrra.com after the deploy. Not answered (still go to the
+model): «is it free for private schools» (pricing plus schools), how many students a class may hold, whether AI
+output is checked.
+
+## CI listens for the merge queue, 2026-10-25
+
+**Why.** `main` requires an up-to-date branch and a green `typecheck + tests`, and takes a merge about every
+ten minutes while that job takes about nine. On 2026-10-25 one PR lost that race four times running: every
+head was green, and each merge was refused (405, «Required status check "typecheck + tests" is expected»)
+because another PR had landed first. A merge queue removes the race: GitHub tests each entry on top of the
+ones ahead of it and merges it, with no hand-run «update branch».
+
+**Built.** `merge_group:` added to the triggers of `ci.yml`, `e2e.yml` and `destructive-migration-ack.yml`.
+Without it a queue entry never gets the four `ci.yml` checks or the smoke test, and waits forever on checks
+that never report. The destructive-migration job reads the PR body, which a queue entry does not have, so it
+is skipped there (a skipped required check counts as passing; the body was already checked on the PR) and its
+concurrency group falls back to the ref, so two entries never cancel each other.
+
+**Not done, and not doable from a PR.** The queue itself is a repository setting: *Settings → Rules →
+Rulesets* (or branch protection for `main`) → «Require merge queue». Merge this PR first, then turn it on;
+the other order leaves every entry stuck. `merge_group` runs cannot be exercised before the queue exists, so
+this is **unverified in practice**: the first queued PR is the test. Check that every check the ruleset
+requires reports on it. If one does not, the queue entry times out and the PR drops out; turning the queue off again
+restores the old behaviour, and reverting this PR changes nothing for a repository with the queue off.
+`deploy.yml` is untouched: the queue merges into `main`, which is still a push to `main`.
+
+## Timetable: a period in an archived class is a free period — 2026-10-25
+
+A teacher who had saved a timetable and a plan (with dates) still saw «الحصة القادمة · الاثنين 09:00»
+with no class name on Today, and «لا توجد خطة زمنية لهذه الشعبة» with no name either, whatever plan
+they added. Reproduced locally: the timetable's periods pointed at a class that had since been
+archived, and a plan existed on a different, live class. Archiving a class (`DELETE /classes/:id`,
+which sets `archived_at`) does not touch `schedule_slots`, so `GET /schedule` kept returning the
+archived class; the weekly grid drew those cells as empty (it cannot name the class), while Today
+took them for real periods of a class with no name and no plan, and a plan on any live class never
+matches. `GET /schedule` now returns `classGroupId: null` for a period whose class is archived
+(`routes/schedule.ts`; a left join on `class_groups`). The stored row is not edited and its note
+stays. Every screen reads the timetable from that one call, so Today falls back to «أضف جدولك
+الأسبوعي» and agrees with the grid.
+
+Verified: `scheduleArchivedClass.db.test.ts` (the seed's period on an archived class returns no class,
+live and free periods are unchanged, the stored row is untouched, another teacher is unaffected);
+it failed before the change. API `pnpm test` 2607 pass; `pnpm run typecheck`; in the browser, the
+reproduced account went from «Next period · Monday 09:00» + «This class has no pacing plan» to «Add
+your weekly timetable» + «Add timetable». **Not verified:** that this is the reporting teacher's
+account (their data cannot be read from here; the symptoms match, the cause is inferred), the full
+mobile suite (nothing in the app changed), Arabic/RTL on a device. **Not changed:** archiving a class
+still leaves its periods stored; nothing tells the teacher that a class they archived was in their
+timetable. A period whose class list fails to load still shows without a class name.
+
+## Teaching plan: the lesson date boxes follow «توزيع تلقائي» — 2026-10-25
+
+A teacher pressed «توزيع تلقائي» in a teaching plan and every lesson's date box stayed empty, so the
+plan looked unscheduled and the home card kept asking for it. Reproduced in the browser (API,
+timetable and a Grade 10 plan on a local database): the button did work — it set 36 dates (the
+rows' borders turned green) and «حفظ» stored all 36, after which Today showed the Monday period's
+lesson — but each `LessonDateRow` keeps its own typed text, set once from the date when the row
+first rendered, so dates arriving from outside were never shown. A teacher who sees empty boxes
+presses «إلغاء», and nothing is saved. The row now takes the date again whenever the date changes
+(`useEffect` on `date`, `app/teaching-plans/index.tsx`); a half-typed date does not propagate, so
+typing is not overwritten.
+
+Verified in the browser on a rebuilt bundle: after «توزيع تلقائي» the boxes read 2026-10-25,
+2026-10-26, 2026-11-01…; a typed date, a half-deleted one and a retyped one behave; Save stores 36
+entries. `pnpm run typecheck`. **Not verified:** Arabic/RTL and a phone, the full mobile suite
+locally (CI runs it), and that this is the reporting teacher's exact case (a teacher who did press
+«حفظ» would not have hit it). **Not tested:** no test pins the row — it needs React Native, which
+the bare `node --test` runner cannot load. **Not changed:** «توزيع تلقائي» still does nothing, silently,
+when no school day is selected or the start date is invalid; the button is dimmed but says nothing.
+
+## Grade 8 semester 1 word lists in the English corner, 2026-10-25
+
+Grades 6–8 had a tab and a «word games coming» notice (PR #1268) but no words. Grade 8's
+two books are *Jordan High Note*, the series Grade 9 uses, with the same Word List at the back,
+so Grade 8 follows the Grade 9 pipeline. **Semester 1 is built; semester 2 is not.** Grades 6
+and 7 are untouched (*Jordan Team Together*, Pearson third-party text, whose vocabulary the
+catalog leaves empty on purpose — see `g6EnglishSem1.ts`).
+
+- **How the text got here.** The Ministry site is unreachable from the build container, so the
+  owner downloaded both PDFs, ran `extract-text` on their own machine and committed
+  `data/extracted/g8-english-s1-student-book.json` (80 pages, 143,910 characters). The PDFs are
+  gitignored and stay on that machine; `LOCAL_FILES` in `scripts/localSources.ts` names them
+  `g8-english-s{1,2}-student-book.pdf` (PR #1283).
+- **Registered in `g10_sources.json`** as `third-party`, like Grade 9 (Pearson/York Press ©, so
+  not quotable); `extraction.test.ts` requires a manifest row for every extracted file.
+- **A parsing bug found on the way, and fixed.** The Word List reader took a `WL<unit>.<lesson>`
+  marker only at the start of a line. In this book a wrapped three-line heading ends in the
+  marker (`GRAMMAR <tab>WL1.1`), so the first run lost lesson 1 of every unit and filed the next
+  unit's words under the previous marker — the Writing lessons held 26 words each. It now also
+  takes a marker that ends a line with no `/` in it. The Grade 9 and 10 rows are byte-identical
+  to before (compared row by row). `englishHub.test.ts` pins it: lesson 1 of every unit has
+  ≥ 10 words, a Writing lesson ≤ 10; with the fix removed it fails.
+- **390 words in 35 lessons; 27 lessons are offered.** A lesson needs `MIN_HUB_WORDS` (4)
+  words, and 8 short Speaking / Writing lessons have 2–3. Slash entries (`before/after school`)
+  are dropped by the hub's own `isDrillableWord`, as for Grades 9–10. Two words are lost to the
+  parser and not fixed here: `shelf (pl. shelves)` and `shower` in lesson 2.2 (a wrapped IPA row).
+  The extracted list was read in full and the first three Word List pages (file pp. 64–66) were
+  compared with the raw text; pp. 67, 68 and 74 were not compared line by line.
+- **338 new Arabic glosses, drafted by Claude; no teacher has reviewed them** (same status as
+  Grades 5, 9 and 10). One sense each, chosen against the book's own sentence, no two words in a
+  lesson alike. Judgement calls worth a teacher's eye: «ice cream» آيس كريم and «tomato» طماطم
+  (Jordanian «بندورة»), «Drama» التمثيل المسرحي, «assembly» التجمع المدرسي, «cooker» موقد الطهي,
+  «can» / «tin» علبة مشروبات / علبة معلبات, «hall» صالة المدخل, «slim» رشيق against «thin» نحيف.
+  **`suit` and `light` already had a gloss from Grades 9–10 with the other sense** (the noun,
+  «not heavy»), and a printed word has one gloss, so both senses are now in it
+  («بدلة، يليق بـ», «خفيف، فاتح»); `englishHub.test.ts` pins both halves.
+- **The Grade 5, 9 and 10 teacher forms were regenerated** (`grammar-sheet`): only each unit's
+  «words outside the vocabulary lists» note changed, because Grade 8 teaches a few words
+  (`cook`, `tall`, `closed`, `different`…) that were outside the lists. No question text moved
+  and no unit has a sign-off, so none is invalidated.
+- **`ENGLISH_HUB_GRADES` is `[1, 2, 3, 4, 5, 8, 9, 10]`.** The Grade 8 tab, the browse banner and
+  the library read it; the «Semester 2 word games are coming» note on the Grade 8 tab is
+  data-driven and shows because no Semester 2 lesson exists. A Grade 8 lesson offers the six word
+  activities (no «Match the picture»: none of these words has a picture set).
+- **Checked:** `pnpm run typecheck` clean; mobile suite 0 failures; `lib/curriculum` suite all
+  green except `R2 helpers are inert, not broken, when unconfigured`, which fails on `main` too;
+  the CI brand grep. In the web build (Playwright, Chromium): the Grade 8 tab in English, light,
+  and in Arabic, dark, on a phone; a Grade 8 lesson in Arabic.
+- **Not done: recordings.** 348 distinct Grade 8 words; **107 have an MP3 and 241 do not**
+  (HEAD request on 2026-10-25). Until `pnpm --filter @workspace/curriculum run english-audio` is
+  run with the OpenAI and R2 keys, web speaks the word in the browser's voice and native is
+  silent, which makes «استمع واختر» unplayable on a phone. Run it before the merge deploys, or
+  accept that for now.
+- **Not done: semester 2.** `extract-text` rejects `g8-english-s2-student-book` (Arabic in
+  reversed presentation-form glyphs; the OCR fallback was rejected too: 10,916 Arabic words, fewer
+  than 100 recognisable). The book is English, so its Word List may be perfectly readable; the
+  way forward is an opt-in that skips the Arabic gates for an English book, or pasting the Word
+  List text. Also not done: Grades 6 and 7, Grade 10 semester 2, a real phone.
+
+## Chat app-help, thirty-first live pass: greetings, «الطريقة لـ», «أقدر / بقدر», «أرى / أشوف» — 2026-10-25
+
+Thirty known questions asked in other written styles (app-only: the demo account's allowance is
+still spent). 19 got a correct in-app answer — missing hamzas, plurals, «؟؟؟», Egyptian and Gulf
+phrasing, English and «اريد …» all work. The rest:
+
+- **A greeting or run-up in front of the question gave a wrong answer.** «لو سمحت كيف أضيف
+  واجب», «ممكن تشرح كيف أرسل واجب» and «عندي مشكلة كيف أغلق الامتحان» each got «أيّ مادة تقصد؟»
+  (the generator), «مرحبا كيف أحذف شعبة» only a place card. `foldColloquial` now drops the run-up
+  (a fixed list), and only when a question word follows.
+- **«شو / وش / ما هي (ال)طريقة (ل)…»** (`وش طريقة تغيير كلمة المرور`, `شو الطريقة لحفظ الشرائح`)
+  is read as «طريقة …», a form the rules already know; the «ل / ب» is dropped only before a fixed
+  list of verbal nouns, so «طريقة لعبة» keeps its «ل».
+- **«كيف اقدر / بقدر X» and «هل بقدر X»** are read as «كيف X».
+- **«كيف أرى / أشوف جدول الحصص»** was not an app question at all, formal Arabic included: the
+  how-pattern had «أفتح» and «أجد» but no view verb. «أرى» and «أشوف» are added; a place or an
+  app noun must still follow, so «كيف أرى المعادلة» stays teaching.
+- **«وين لاقي سجل الطالب»** reaches the student record.
+- **Three English wordings** from a 30-question English pass (24 answered in-app, 3 cards, 3 missed):
+  «Is there a way to download the textbook?» (`howBookDownload`), «how do i add a due date to
+  homework» (`howAddHomework`) and «how do i post results to students» (`howReleaseResults`).
+  English questions asked in an Arabic-language app are answered in Arabic: the answer follows the
+  app's language, not the question's.
+- **Checked on the running app:** the Settings «الإصدار» row (`1.5.0 · embedded` on the web), the
+  Profile rows, the timetable's «إعداد الحصص» icon, Messages' «رسالة جديدة / رسالة جماعية»,
+  Evaluations' «تقييم جديد» and the Calendar's «عرض امتحانات المدرسة». Settings has no
+  «التنبيهات» on the web (a phone section). Not checked: the class page — the demo teacher has no
+  class.
 ## «ابدأ الحصة الآن» says the allowance is spent, as a note — 2026-10-24
 
 A teacher whose monthly AI allowance (`AI_USER_BUDGET_USD`, `1` in production) was used up pressed
@@ -99,6 +290,59 @@ of the answers' text found them. Check the text, not the key.)
 - **Not verified.** No one has re-read the four changed rows against a signed
   form; anyone mid-review of Grade 1 or 2 should be told.
 
+## A public «اسأل إقرأ» bot for iqrra.com — the API half, 2026-10-23
+
+`POST /api/site/ask` answers a visitor's question about Iqraa from the site's own `llms.txt` (fetched from
+`https://www.iqrra.com/llms.txt`, cached an hour, with a built-in fallback that states no numbers).
+Public with no key, so the limits are the defence: 20 requests an hour per IP and 100 an hour in
+total, a 300-character question and four earlier turns. It has its own spend ceiling,
+`SITE_BOT_BUDGET_USD_DAILY` (default 1, 0 = off), summed from `ai_generations` rows of kind
+`site-ask` over 24 hours and cached for a minute; an unreadable total refuses. A ledger whose
+inserts are failing (`getPersistenceFailure()`) also closes the gate, but only intermittently: that
+flag is cleared by the next successful sum read, which this route triggers about once a minute, so
+the gate closes and reopens instead of staying shut. A dedicated insert-failure latch in
+`aiUsageLog.ts` would fix that; it changes the teachers' budget code and is left as a follow-up. Each answer's estimated cost is also
+added to the gate's cached total in-process, so a burst closes this instance's gate inside the cache
+window instead of after it. Estimates, from gpt-5.4-mini rates and to be replaced by the measured
+`cost_usd` after the first live answers: about $0.01 an answer today, so a deliberate burst is
+bounded by the 100 an hour limit and by that increment, and the bot's spend counts toward the shared
+`AI_BUDGET_USD` (production: 50). **It bounds the
+bot's spend but does not separate it from the teachers' budget:** `recordUsage` adds every answer to
+the shared month-to-date total that `AI_BUDGET_USD` caps (production: 50), so at the default the bot
+can use up to about $30 of a month. Size `AI_BUDGET_USD` above teachers' use plus that, or lower the
+cap; excluding the bot from the shared total would mean changing the teachers' budget code and was
+not done. Every refusal (live mode off, either budget, a model
+error, an empty reply) is a 200 with `answered: false`, a reason, and a fixed Arabic and English
+message pointing to info@iqrra.com — never a mock answer. The reply ceiling is 800
+`max_completion_tokens`, not 300, because the production chat model counts hidden reasoning against
+it. No message text is logged or stored. No migration and no `deploy.yml` change. Spec:
+`docs/superpowers/specs/2026-10-23-site-ask-bot-design.md`; plan:
+`docs/superpowers/plans/2026-10-23-site-ask-bot-api.md`.
+Checked: unit tests for the parser, the prompt rules, the facts loader (success, cache, retry
+window, error, empty, oversize, single flight), the spend gate, and the decision order (the model
+and the facts fetch never run once a cap has tripped); the built bundle answers `/site/ask`
+without a token, POST only, with CORS for `www.iqrra.com` and not for other origins.
+
+**Fixed answers first, AI second (2026-10-25).** A reviewed list of 17 fixed answers (Arabic and
+English: greeting, thanks, what it is, price, curriculum, coverage, what it makes, maths checking,
+app needed, Android, iPhone, students, privacy, contact, not a general chatbot, teacher review,
+other countries) is matched without AI before anything else (`lib/siteAskMatch.ts`,
+`lib/siteAskAnswers.ts`). A hit costs nothing, makes no model call and works with live mode off or
+`SITE_BOT_BUDGET_USD_DAILY=0`; anything the list does not cover goes through the AI path as
+described above. Matching is Dice overlap on token sets (answer at 0.5 or more, ahead of the
+runner-up by 0.15 or more) plus an unknown-word veto: a question containing a word that no answer's
+phrasings know falls through to the AI. The veto exists because review found short same-frame
+questions getting a confident wrong answer ("how much does chatgpt cost" returned the price answer).
+The success response now carries `source: "curated" | "ai"`. The answers are a copy of the site's
+FAQ wording and can drift from it; cross-topic questions ("is the Android app free") go to the
+nearest status answer. The owner approved the wording of the 17 answers in chat on 2026-10-25. Greeting and thanks words are set aside, wherever they sit, when a real question comes with them (anything beside the salutation counts, so «hi, what is Iqraa» asks what it is); a thank-you that names a thing («شكرا على التطبيق», "thanks for the app") is answered with thanks or by the AI, never with that thing's answer. The English copy of the answers and the prompts say "Iqrra", the Latin product name.
+
+**Not checked:** the real spend query against Postgres (it is a one-statement sum, exercised only
+in production); the real per-answer cost and the `/healthz/ai-budget` `persisted` flag after the
+first answers; answer quality on real visitor questions, including off-topic and injection tries
+(to be run against the deployed route before the widget ships, and recorded here); the widget,
+which is a separate change in the `Site_Iqra` repo and has not been written; how the matcher behaves on real visitor questions (only the questions in the tests have been tried).
+
 ## Grade 8 English gets its book pages; Grades 1-7 do not, 2026-10-25
 
 The 16 English student books for Grades 1-8 (about 1.9 GB) were downloaded from the catalog's NCCD
@@ -115,6 +359,25 @@ links into a scratch folder outside the repo.
   («Vocabulary & Grammar», «Listening & Speaking») against about nine book pages. A
   unit-level page set was considered and not done, because a lesson's pages would not be that
   lesson's. The PDFs are still in the scratch folder if someone wants to hand-map them.
+
+## Today shows the next period as soon as a timetable is saved — 2026-10-25
+
+After «Timetable: a period saves with a labelled button…» a teacher saved their timetable and
+reported that nothing showed on Today. It was the limit that entry named: the next-period line
+(«الحصة القادمة · العاشر ب · 10:15») appeared only when the class had a lesson in a pacing plan, so
+a class with no plan changed only the banner («… ليس لها خطة وتيرة») and the card looked
+untouched. `showsPeriodLine` (`services/lessonContext.ts`) now also shows the line when the next
+period's class has no lesson yet; it stays hidden when a lesson picked today replaced the period's
+lesson, which would read as the period's own. The phone Today and the desktop workspace both read
+it through `useTodayLesson`.
+
+Verified: the rule is pinned in `lessonContext.test.ts`; `pnpm run typecheck`; the whole flow in
+the browser on a rebuilt bundle (period → class → Today shows «In class now · 10B · 08:00» above the
+unchanged lesson, banner asks for a plan). **Not verified:** Arabic/RTL on a device, the desktop
+layout (same hook, not looked at), and that this is what the reporting teacher meant by "nothing
+shows". **Known limit:** beside a lesson that is not that class's (no plan), the line reads as the
+next period, not as the lesson's period; the banner under it is what says the lesson is not linked.
+The chat screen keeps its own rule and still shows the line only for a timetable lesson.
 
 ## Chat app-help, twenty-ninth live pass: three short answers and wordings for fourteen existing ones — 2026-10-25
 
@@ -2272,6 +2535,23 @@ with fewer than four words (3, 1, 2, 0 and 2).
   `english-audio` run).
 - **Still open:** the five lessons the hub does not carry need a change to how the hub builds lessons (its own
   spec).
+
+## A way back to the games hub, 2026-10-23
+
+**Built.** A public game's game-over screen now has a visible «كل الألعاب» button back to `/play` (it
+offered only «العب مرة أخرى» and the teacher sign-up). A game opened from a lesson passes `onBack`, so
+there the same button reads «رجوع» and returns to the lesson, not to the hub. The header arrow and the
+button share one exit, and the arrow now carries an accessible label. The hub exit is `goToGames()`
+(`services/navigation.ts`): `dismissTo('/play')` when there is history, `replace('/play')` when there is
+none (a shared link, a refreshed tab). The old `replace` alone left the hub twice in the browser history
+(hub → game became hub → hub), so Back looked dead. `playBackToMenu` already existed and was unused.
+
+**Verified.** `pnpm run typecheck`, the whole mobile suite (7047 pass, 0 fail), and the new
+`gameShellBack.test.ts`, which reads the source (the runner cannot load React Native).
+
+**Not verified.** Not tried on a real iOS Safari or Android Chrome tab: whether `dismissTo` pops cleanly
+in the web history stack rather than pushing a second hub entry was read from expo-router's docs, not
+observed. Check it on `pnpm run dev:mobile:web` before relying on it.
 
 ## Claude writes the documents, 2026-10-23
 

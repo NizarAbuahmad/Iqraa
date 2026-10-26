@@ -7,7 +7,7 @@
  */
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { schedulePeriods, scheduleSlots } from "@workspace/db";
+import { classGroups, schedulePeriods, scheduleSlots } from "@workspace/db";
 import { and, asc, eq } from "drizzle-orm";
 import {
   authMiddleware,
@@ -55,21 +55,34 @@ function failSchedule(
   res.status(500).json({ error: `Failed to ${action}` });
 }
 
-/** The whole grid in one call: every period's time, and every filled slot. */
+/**
+ * The whole grid in one call: every period's time, and every filled slot.
+ *
+ * A slot whose class has been archived comes back with no class. Archiving a
+ * class does not touch the timetable, and every screen reads it from here: left
+ * alone, the weekly grid drew the cell as empty while Today announced a next
+ * period for a class nobody could name and asked for a plan on it that no plan
+ * of the teacher's could match. The stored row is not edited — the class is
+ * archived, not deleted, so there is nothing to repair — and the note stays.
+ */
 router.get("/schedule", async (req: AuthenticatedRequest, res) => {
   try {
-    const [periods, slots] = await Promise.all([
+    const [periods, slotRows] = await Promise.all([
       db
         .select()
         .from(schedulePeriods)
         .where(eq(schedulePeriods.teacherId, req.user!.id))
         .orderBy(asc(schedulePeriods.periodNumber)),
       db
-        .select()
+        .select({ slot: scheduleSlots, classArchivedAt: classGroups.archivedAt })
         .from(scheduleSlots)
+        .leftJoin(classGroups, eq(classGroups.id, scheduleSlots.classGroupId))
         .where(eq(scheduleSlots.teacherId, req.user!.id))
         .orderBy(asc(scheduleSlots.dayOfWeek), asc(scheduleSlots.periodNumber)),
     ]);
+    const slots = slotRows.map(({ slot, classArchivedAt }) =>
+      classArchivedAt ? { ...slot, classGroupId: null } : slot,
+    );
     res.json({ periods, slots });
   } catch (err) {
     failSchedule(res, err, "load schedule");

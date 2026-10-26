@@ -68,13 +68,15 @@ Checked 2026-10-22:
   existing email students are locked out until a parent acts. The owner's steps are numbered in
   the entry «Parent approval for email students — the app (PR B)» in the log; the server side is
   «Parent approval for email students — server (PR A)».
-- **A student can sign up with an email and no teacher's code — the legal wording needs a person
-  to read it before this merges.** The privacy policy §5 and terms §1 (`constants/legal.ts`,
-  `LEGAL_VERSION` 2026-10-23) now say a student may join with an email after confirming they are
-  an adult or have a guardian's agreement; they were drafted, not reviewed by a lawyer, and the
-  store declaration (`lib/features.ts` comment) still describes accounts made only through a
-  class. Merging deploys it, and every user is asked to accept the new version. Becoming a
-  student by switching role asks for the same confirmation as signing up as one. Entry:
+- **A student can sign up with an email and no teacher's code (PR #1226, merged 2026-10-24) — the
+  legal wording still needs a person to read it.** The privacy policy §5 and terms §1
+  (`constants/legal.ts`, `LEGAL_VERSION` 2026-10-23) say a student may join with an email after
+  confirming they are an adult or have a guardian's agreement. They were drafted, not reviewed by
+  a lawyer, and nothing in the repo records a review since. Merging deploys, so every user is
+  asked to accept that version. The code comment on the store declaration
+  (`artifacts/api-server/src/lib/features.ts`) now describes both ways in; **the store declaration
+  itself (Play Console) was not checked** and may still say accounts are made only through a class.
+  Becoming a student by switching role asks for the same confirmation as signing up as one. Entry:
   «Students choose an email or a teacher's code» in the log.
 - **Neon is on Launch (applied 2026-10-23 by the owner); two checks remain.** Autoscaling 0.25-0.5
   CU, scale to zero on: about $10 a month expected, about $39 at most (estimates; read Neon's
@@ -124,6 +126,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-25 — Grade 8 semester 1 word lists in the English corner
 - 2026-10-25 — English audio check: the first real run, and three kinds of false alarm removed
 - 2026-10-25 — Lesson games: «ما معنى المصطلح؟» from the books' printed glossary, and a draft route that stays hidden
 - 2026-10-25 — A parent signs up with an email or a teacher's code
@@ -153,12 +156,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-23 — The "now" amber is only for now
 - 2026-10-23 — Grammar-only hub lessons, and the last five Grade 9 grammar lessons — built, shown to nobody yet
 - 2026-10-23 — Grade 9 grammar: the passive added, and a wrong «no hub lesson» corrected
-- 2026-10-23 — The tab bar is drawn
-- 2026-10-23 — Neon leaves the Free plan before launch
 
 ## Finding older detail, and recording new work
 
-- The log has 414 sections. Anything cited elsewhere as
+- The log has 415 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line

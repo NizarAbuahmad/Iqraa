@@ -9,6 +9,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { answerAppHelp, findAppPlaces, isAppHelpQuery } from '../appHelp.ts';
+import translations from '../i18n.ts';
 import { classifyChatIntent } from '../ai/intentRouter.ts';
 import { toolAskFromQuery } from '../chatToolAsk.ts';
 
@@ -2305,4 +2306,143 @@ describe('colloquial «ب» verbs, and messages, the timetable, the live game an
       assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
     });
   }
+});
+
+describe('greetings, «الطريقة لـ», «أقدر / بقدر» and «أرى / أشوف» — the same questions in other written styles (thirty-first live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    // A greeting or a run-up in front of the question.
+    ['لو سمحت كيف أضيف واجب', 'howAddHomework'],
+    ['ممكن تشرح كيف أرسل واجب', 'howAddHomework'],
+    ['عندي مشكلة كيف أغلق الامتحان', 'howCloseExam'],
+    ['مرحبا كيف أحذف شعبة', 'howArchiveClass'],
+    // «ما هي / شو / وش … الطريقة (ل)…».
+    ['وش طريقة تغيير كلمة المرور', 'howChangePassword'],
+    ['شو الطريقة لحفظ الشرائح', 'howSaveSlides'],
+    ['ما هي طريقة نشر النتائج؟', 'howReleaseResults'],
+    // «أقدر / بقدر» after the question word, or leading a yes/no.
+    ['كيف اقدر احذف طالب', 'howRemoveStudent'],
+    ['هل بقدر اغير اسم الشعبة', 'howRenameClass'],
+    // «أرى / أشوف» + a place.
+    ['كيف أرى جدول الحصص', 'howTimetable'],
+    ['كيف اشوف جدول الحصص', 'howTimetable'],
+    ['وين لاقي سجل الطالب', 'howStudentRecord'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  // A greeting is dropped only in front of a question word, and «أرى» alone claims nothing.
+  const stayWithModel = [
+    'كيف أرى الفرق بين الحمض والقاعدة',
+    'كيف أرى المعادلة',
+    'كيف اشوف الاقترانات',
+    'مرحبا بكم في الصف',
+    'ما هي طريقة حل المعادلة التربيعية',
+    'شو الطريقة لحساب مساحة الدائرة',
+    'كيف اقدر احسب المساحة',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howAddHomework', 'howCloseExam', 'howArchiveClass', 'howChangePassword', 'howSaveSlides', 'howReleaseResults', 'howRemoveStudent', 'howRenameClass', 'howTimetable', 'howStudentRecord']);
+      const a = answerAppHelp(q, 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});
+
+describe('three English wordings of answers that existed (thirty-first live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['Is there a way to download the textbook?', 'howBookDownload'],
+    ['how do i add a due date to homework', 'howAddHomework'],
+    ['how do i post results to students', 'howReleaseResults'],
+    ['how do i show the results to students', 'howReleaseResults'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, 'en', t).text, `<${key}>`);
+    });
+  }
+  for (const q of ['Is there a way to download a video from youtube', 'how do i post a comment on a blog', 'how do i add a due date to a library book']) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howBookDownload', 'howAddHomework', 'howReleaseResults']);
+      assert.equal(ids.has(answerAppHelp(q, 'en', t).text.replace(/[<>]/g, '')), false);
+    });
+  }
+});
+
+describe('questions about the app itself — the curriculum, who it is for, who made it, the monthly allowance (thirty-third live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string, 'ar' | 'en']> = [
+    ['هل التطبيق متوافق مع وزارة التربية والتعليم', 'howAboutCurriculum', 'ar'],
+    ['هل المحتوى مطابق للمنهاج الأردني', 'howAboutCurriculum', 'ar'],
+    ['هل الاسئلة مطابقة للمنهاج', 'howAboutCurriculum', 'ar'],
+    ['Is it aligned with the Ministry of Education', 'howAboutCurriculum', 'en'],
+    ['does the app follow the Jordanian curriculum', 'howAboutCurriculum', 'en'],
+    ['هل يصلح للمدارس الخاصة', 'howAboutWhoFor', 'ar'],
+    ['هل تستخدمه المدارس الخاصة', 'howAboutWhoFor', 'ar'],
+    ['هل يمكن للمدارس الخاصة استخدامه', 'howAboutWhoFor', 'ar'],
+    ['هل التطبيق للمدارس الحكومية فقط', 'howAboutWhoFor', 'ar'],
+    ['هل التطبيق للمعلمين والطلاب', 'howAboutWhoFor', 'ar'],
+    ['لمن هذا التطبيق', 'howAboutWhoFor', 'ar'],
+    ['من يستطيع استخدام التطبيق', 'howAboutWhoFor', 'ar'],
+    ['Can private schools use it', 'howAboutWhoFor', 'en'],
+    ['who is Iqrra for', 'howAboutWhoFor', 'en'],
+    ['من صنع إقرأ', 'howAboutMaker', 'ar'],
+    ['من وراء التطبيق', 'howAboutMaker', 'ar'],
+    ['من هم مطورو التطبيق', 'howAboutMaker', 'ar'],
+    ['هل التطبيق أردني', 'howAboutMaker', 'ar'],
+    ['who built Iqrra', 'howAboutMaker', 'en'],
+    ['متى تتجدد الحصة الشهرية', 'howAllowanceRenew', 'ar'],
+    ['ماذا يحدث إذا انتهت الحصة الشهرية', 'howAllowanceRenew', 'ar'],
+    ['انتهت حصة التوليد الجديد لهذا الشهر', 'howAllowanceRenew', 'ar'],
+    ['ما هي الحصة الشهرية', 'howAllowanceRenew', 'ar'],
+    ['when does my monthly allowance reset', 'howAllowanceRenew', 'en'],
+    ['هل الطلاب يشوفون الحلول', 'howStudentSolutions', 'ar'],
+    ['do students see the answers', 'howStudentSolutions', 'en'],
+    ['هل اقدر اجرب التطبيق بدون حساب', 'howTryNoAccount', 'ar'],
+    ['هل أستطيع استخدام التطبيق بدون حساب', 'howTryNoAccount', 'ar'],
+    ['can I try it without an account', 'howTryNoAccount', 'en'],
+    ['هل يعمل على الايفون', 'howInstallApp', 'ar'],
+    ['هل يعمل على الحاسوب', 'howInstallApp', 'ar'],
+    ['does it work on iPhone', 'howInstallApp', 'en'],
+    ['is there an Android app', 'howInstallApp', 'en'],
+  ];
+  for (const [q, key, lang] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, lang, t).text, `<${key}>`);
+    });
+  }
+
+  // A school, a curriculum or a limit named inside a request for something else claims nothing.
+  const stayWithModel = [
+    'كيف أنشئ اختبار للمدارس الخاصة',
+    'اشرح لي المنهاج الأردني في الرياضيات',
+    'ما الفرق بين المدارس الحكومية والخاصة',
+    'who made the first telephone',
+    'من صنع الحاسوب',
+    'متى تتجدد الخلايا في الجسم',
+    'هل الطلاب يرون الفرق بين الحمض والقاعدة',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howAboutCurriculum', 'howAboutWhoFor', 'howAboutMaker', 'howAllowanceRenew', 'howStudentSolutions', 'howTryNoAccount']);
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+
+  // The owner's wording: curriculum alignment only — no claim of ministry approval — and a Jordanian team.
+  it('the Arabic answers say what the owner said and nothing more', () => {
+    const ar = (k: string) => (translations.ar as unknown as Record<string, string>)[k];
+    assert.match(ar('howAboutMaker'), /فريق أردني/);
+    assert.match(ar('howAboutWhoFor'), /للمدارس الخاصة والحكومية/);
+    assert.doesNotMatch(ar('howAboutCurriculum'), /معتمد|مصادق|برعاية|رسمي/);
+  });
 });
