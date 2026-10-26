@@ -10,6 +10,54 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat first screen: words that say what to ask, 2026-10-26
+
+**Why.** A review of the empty chat on app.iqrra.com/iqra (desktop) found its words doing less than they could:
+the pitch listed vague activities («التخطيط، اقتراح الأفكار») and closed on a stock «كيف أدعمك اليوم؟»; the
+composer placeholder was an instruction with no example; the working lines spoke about Iqrra in the third person
+(«يراجع إقرأ طلبك…», «يجري تجهيز المادة…») while every answer speaks as «أنا»; the failure line blamed «العملية»;
+and the lesson strip's «0/5» did not say five of what.
+
+**Built.**
+- `i18n.ts` (ar + en): `iqraAgentPitch` names what can be asked for (lesson plan, worksheet, short quiz, class
+  activity) and says it is prepared from the Jordanian curriculum — still no «الذكي»;
+  `iqraPlaceholder` carries an example («مثل: اختبار قصير عن هذا الدرس»; the first draft opened with «اكتب طلبك،»
+  and wrapped on a 390px phone, leaving «الدرس» alone on a second line); `iqraTyping`,
+  `iqraGeneratingLessonPlan`, `iqraGeneratingArtifact` are first person («أراجع طلبك…», «أجهّز خطة الدرس…»,
+  «أجهّز المادة…»); `iqraChatError` says what happened and what to do. The Arabic went through a native-copy review.
+- **A bug the placeholder exposed.** «اختبار قصير عن هذا الدرس» — the most natural way to say "the lesson on the
+  card" — was read by `topicFromQuery` as a lesson literally named «هذا الدرس»: the saved material was titled that
+  and the live path searched the curriculum for it. A request whose whole topic is a pointer at the picked lesson
+  («هذا الدرس», «للدرس الحالي», «درس اليوم», «نفس الدرس», "this lesson", "today's lesson") now names no topic, so
+  `isBareArtifactShortcut` is true and the picked lesson is used (`artifactTopic.ts`, pinned in
+  `artifactTopic.test.ts`). A topic that merely contains the words («الدرس الأول في الوحدة», "lesson planning")
+  is still a topic.
+- `CurrentLessonCard`: the count pill has an accessible name (`readyLabel`, the existing `homeReady`) and, on desktop
+  only (`readyInline`), prints «0 من 5 جاهزة» instead of «0/5».
+- `chatEmptyStateCopy.test.ts` holds the above: the pitch names the materials, the placeholder's example is run
+  through the same `isBareArtifactShortcut` the chat uses (so it cannot teach a phrasing the chat misreads), the
+  status lines are first person, the failure line gives a way forward.
+
+**Not done, on purpose.**
+- The chips keep their own verbs («حضّر خطة الدرس», «أنشئ ورقة عمل», «جهّز اختباراً…»): the same words are parsing
+  vocabulary in `askVocabulary` / `artifactTopic` and appear in help answers and tests, so unifying them is its own change.
+- **Found here, fixed in #1302:** in the screenshot that started this review the chat's strip and the sidebar's
+  «الدرس الحالي» named different lessons. By the code: the chat and Today apply `timetableWins`, the sidebar
+  (`_layout.tsx`) read the raw saved pick. #1302 («The sidebar card, the lesson bar and ⌘K name the lesson Today
+  shows») fixes exactly that and reproduced it with a timetable and a plan; this PR does not touch it.
+- Web composer: react-native-web renders a multiline input two rows tall, so the placeholder sits on the top row while
+  `+` and send sit at the bottom. Left alone; it needs a look in a browser, not a guess.
+
+**Verified.** `pnpm run typecheck` clean; `artifacts/mobile` `pnpm test` 7798 pass, 0 fail, 10 skipped. The real web
+build (throwaway Postgres, API with `AI_LIVE_MODE=false`, `build:web`) was opened as a fresh teacher at 1920x1080 in
+Arabic and English and at 390x844 in Arabic, and looked at: pitch, chips, placeholder and the «0 من 5 جاهزة» pill fit
+without clipping. Typing «اختبار قصير عن هذا الدرس» produced a material titled «اختبار قصير: تركيب الاقترانات» (the
+lesson on the strip), not «هذا الدرس».
+
+**Not verified.** The shortened placeholder was checked by character count against the wrapped line, not re-screenshotted.
+The new working lines («أراجع طلبك…») and the failure line were not seen on screen (too brief; no failure induced).
+Strings were not read by a second native speaker.
+
 ## «اسأل إقرأ» is live on iqrra.com: the widget and the production check, 2026-10-26
 
 The question assistant announced in «A public «اسأل إقرأ» bot for iqrra.com — the API half» is now
@@ -136,6 +184,27 @@ no class exists on the demo teacher. These answers are app-only, so that does no
 been seen in the running chat yet — re-run the 33 on app.iqrra.com after the deploy. Not answered (still go to the
 model): «is it free for private schools» (pricing plus schools), how many students a class may hold, whether AI
 output is checked.
+
+## The sidebar card, the lesson bar and ⌘K name the lesson Today shows — 2026-10-26
+
+On the desktop home a teacher saw the main card on one lesson («الأنظمة النجمية والكوكبات», from the
+timetable's plan) and the «الدرس الحالي» card in the sidebar on another («المفردات والقواعد», a lesson
+picked by hand days before). `GlobalLessonBar` (the sidebar card on desktop, the lesson bar on a phone)
+and the ⌘K palette were fed the saved pick alone, in `app/(tabs)/_layout.tsx`, while Today and the chat
+apply `timetableWins`. The layout now takes the same lesson: `useTodayLesson` and the chat publish the
+lesson the timetable puts on the card (`publishScheduledLesson`, `lessonContext.ts`, in memory, cleared
+when another teacher signs in) and the layout names `lessonShown(pick, scheduled, today)` — the
+timetable's lesson unless a lesson was picked today. No new requests: Today and the chat already load
+the timetable.
+
+Verified: `lessonContext.test.ts` (`lessonShown` and the publish/subscribe store; written first and
+failing); `pnpm run typecheck`; in the browser on a rebuilt bundle, with a timetable and a plan: the
+home card and the sidebar card both name «حل نظام مكوَّن من معادلة خطية ومعادلة تربيعية», and with a
+lesson picked today both name that pick. **Not verified:** the phone's lesson bar (same component,
+not looked at), Arabic/RTL, the full mobile suite locally (CI runs it). **Known limit:** the layout learns
+the timetable's lesson only once Today or the chat has loaded it, so a teacher who lands on another
+screen first (a deep link) sees the saved pick there until one of them opens; the chat card, Today and ⌘K
+do not wait on each other beyond that.
 
 ## CI listens for the merge queue, 2026-10-25
 
