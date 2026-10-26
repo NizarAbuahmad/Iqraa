@@ -10,6 +10,31 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## A non-string email or code answers 400, not 500, 2026-10-26
+
+**Why.** Running the built API on a throwaway Postgres to check email sign-up with a code (register → verify →
+resend) showed `POST /auth/verify-email`, `/resend-verification` and `/forgot-password` answering **500** when
+`email` or `code` was a number, array or object. The app only ever sends strings, so a real sign-up never hit
+it; the cost was a 500 and an error-log line per malformed request. `/login` was fixed for the same thing
+earlier (its comment says so); these were its siblings.
+
+**Built.** `routes/auth.ts`: a `typeof … !== "string"` check in front of the existing truthiness check on
+`verify-email` (`email`, `code`), `resend-verification` (`email`), `forgot-password` (`email`),
+`reset-password` (`email`, `code`) and `change-unverified-email` (`email`, `password`, `newEmail`). The answer is
+the route's own existing 400 (`missing_fields`, or `invalid_email` on `forgot-password`); a string input takes
+the same path as before. One table-driven test in `mountOrder.test.ts` posts 12 malformed bodies and expects the
+400 and its code. That suite's database is unreachable, so a pass also shows the check runs before any query.
+
+**Verified.** All 12 bodies answered 500 on the old code and 400 with the expected code on the new (old and new
+`auth.ts` built and run against each other); `pnpm run typecheck`; api-server `pnpm build` and `pnpm test`
+(2608 pass); the register → verify → resend flow again on a local Postgres, with the code read from the dev log.
+
+**Not verified.** That production actually delivers the code email (the sender set in `RESEND_FROM_EMAIL`;
+Resend's shared `onboarding@resend.dev` reaches only the account owner). `reset-password`'s `password` and
+`confirmPassword` are still typed `string` and not checked for type; an array holding a strong password may get
+past `isStrongPassword`, and whether that 500s needs a database to see. Only `auth.ts` was audited for this
+pattern. `schema-push:` none.
+
 ## Thirty-third live pass: questions about the app itself, 2026-10-25
 
 **Why.** A 30-question pass on app.iqrra.com of the questions a teacher asks before using the app
