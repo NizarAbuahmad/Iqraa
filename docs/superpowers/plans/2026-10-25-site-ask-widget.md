@@ -377,7 +377,7 @@ Create `ask.js`:
 - [ ] **Step 5: Run it to see it pass**
 
 Run: `node --test tests/ask.test.mjs`
-Expected: PASS, 15 tests, no warnings. Also run the site's existing test so nothing else changed: `node --test tests/waitlist.test.mjs` (PASS).
+Expected: PASS, every test in the file (16 at the time of writing), no warnings. Also run the site's existing test so nothing else changed: `node --test tests/waitlist.test.mjs` (PASS).
 
 - [ ] **Step 6: Commit**
 
@@ -759,7 +759,7 @@ node --test tests/ask.test.mjs
 node --check ask.js
 grep -n "innerHTML\|outerHTML\|insertAdjacentHTML\|document.write" ask.js || echo "no markup-from-string calls"
 ```
-Expected: 15 tests pass (the file still loads in Node because the DOM half stops at `typeof document === "undefined"`), `--check` prints nothing, and the grep prints `no markup-from-string calls`.
+Expected: every test passes, as in Task 1 (the file still loads in Node because the DOM half stops at `typeof document === "undefined"`), `--check` prints nothing, and the grep prints `no markup-from-string calls`.
 
 - [ ] **Step 5: Commit**
 
@@ -1068,8 +1068,8 @@ Use the Edit tool. In the Arabic section, directly before the line `<h2>لماذ
 <h3>6. أسئلة مساعد الموقع</h3>
 <p>
   إن كتبتَ سؤالًا في مساعد الموقع («اسأل إقرأ»)، نردّ عليه أولًا من إجابات جاهزة كتبناها، ولا يصل سؤالك
-  في هذه الحالة إلى أي مزوّد ذكاء اصطناعي. وإن لم تغطِّه الإجابات الجاهزة، يُرسَل نصّ سؤالك مع الأسئلة
-  والأجوبة الأربعة الأخيرة من المحادثة إلى OpenAI (المذكورة في الجدول أدناه) لتوليد ردّ قصير.
+  في هذه الحالة إلى أي مزوّد ذكاء اصطناعي. وإن لم تغطِّه الإجابات الجاهزة، يُرسَل نصّ سؤالك مع آخر
+  أربع رسائل من المحادثة إلى OpenAI (المذكورة في الجدول أدناه) لتوليد ردّ قصير.
   لا نحفظ ولا نسجّل ما تكتبه، ولا نطلب منك اسمًا أو بريدًا، وتبقى المحادثة في ذاكرة متصفحك فقط وتزول
   حين تغلق الصفحة أو تُعيد تحميلها. ولمنع الإساءة نعدّ الطلبات الواردة من عنوان IP الخاص بك خلال الساعة
   الواحدة، ولا نربط هذا العدّ بما كتبته. لذلك لا تكتب بيانات شخصية في هذا المساعد.
@@ -1085,7 +1085,7 @@ In the English section, directly before `<h2>Why we process this data</h2>` (occ
 <p>
   If you type a question into the site assistant ("Ask Iqrra"), we answer it first from ready-made
   answers written by our team, and in that case your question does not reach any AI provider. If those
-  answers do not cover it, the text of your question, with the last four questions and answers of the
+  answers do not cover it, the text of your question, with the last four messages of the
   conversation, is sent to OpenAI (listed in the table below) to write a short reply. We do not store
   or log what you type and we do not ask for a name or an email address. The conversation stays in
   your browser's memory only and disappears when you close or reload the page. To prevent abuse we
@@ -1193,7 +1193,7 @@ In `DESIGN.md`, under `## Components`, after the line starting `- **nav-link**:`
 ```
 and append one row at the end of the `## Decisions Log` table (after the last row, in the same pipe format):
 ```markdown
-| 2026-10-25 | The home page gets a question assistant: a round teal launcher bottom-left and a card panel, no new colour, no emoji, hand-built icons, nothing animated except a 200ms fade-and-rise on open. Starter questions are the three a visitor most often has (what it is, which grades and subjects, whether it is free). Replies are plain text only, and a notice reuses the form-error banner colours with a link to the suggestion form | Teachers and school staff asked the same few questions the page already answers but make them read the whole page; a person-sized answer in place beats a longer FAQ. It follows the existing system rather than adding to it, which is why this row is the only change to DESIGN.md besides the component line. The launcher sits bottom-left because the page is RTL and its primary actions are on the right |
+| 2026-10-25 | The home page gets a question assistant: a round teal launcher bottom-left and a card panel, no new colour, no emoji, hand-built icons, nothing animated except a 200ms fade-and-rise on open. Starter questions are the three a visitor most often has (what it is, which grades and subjects, whether it is free). Replies are plain text only, and a notice reuses the form-error banner colours with a link to the suggestion form | A short answer in place is quicker than reading the whole page for the few things most visitors want to know (what it is, which grades, whether it is free). It follows the existing system rather than adding to it, which is why this row is the only change to DESIGN.md besides the component line. The launcher sits bottom-left because the page is RTL and its primary actions are on the right |
 ```
 
 - [ ] **Step 3: Check and commit**
