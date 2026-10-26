@@ -28,10 +28,12 @@ answer); nothing is stored in the browser and the root carries `ph-no-capture`, 
 autocapture records no chip text. Every non-answer (a refusal, 429, 400, 5xx, a network error, an
 unreadable reply, or no reply within 30 s) shows one friendly message with a link to the page's
 suggestion form (`#feedback`); the visitor never sees a status code or a reason. All text is put in
-with `textContent`; the only links it can create are to `https://iqrra.com/...` and
-`https://www.iqrra.com/...` (a pure, tested `linkify`), so the grades-and-subjects answer's
-`https://www.iqrra.com/manhaj` is clickable. **`app.iqrra.com` links in two of the fixed answers stay
-plain text** (not in the allow-list; widening it is a small change and a decision).
+with `textContent`; the only links it can create are to `https://iqrra.com/...`,
+`https://www.iqrra.com/...` and, since `Site_Iqra` PR #42 (squash `87f9c56`, 2026-10-26),
+`https://app.iqrra.com/...` — a hardcoded list of exactly three origins, not a wildcard (a pure,
+tested `linkify`) — so the grades-and-subjects answer's `https://www.iqrra.com/manhaj` and the
+iPhone and app-needed answers' `https://app.iqrra.com` are clickable (checked live: the iPhone answer
+gives one link, new tab, `rel="noopener"`, the full stop outside it). Any other host stays plain text.
 
 **Privacy.** `privacy.html` has a new §6 «أسئلة مساعد الموقع» / "Site assistant questions" in both
 languages, and the OpenAI row, the Neon row, the where-stored list and the Retention section were
