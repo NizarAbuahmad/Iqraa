@@ -642,8 +642,9 @@ router.post("/register", shedWhenHashingBusy(), registerLimiter, registerEmailLi
 // POST /auth/verify-email
 router.post("/verify-email", verifyEmailLimiter, verifyEmailAddressLimiter, async (req, res) => {
   try {
-    const { email, code } = req.body as { email?: string; code?: string };
-    if (!email || !code) {
+    const { email, code } = req.body as { email?: unknown; code?: unknown };
+    // Type-checked, not just truthy: see /login.
+    if (typeof email !== "string" || typeof code !== "string" || !email || !code) {
       res.status(400).json({ error: "Email and code are required", code: "missing_fields" });
       return;
     }
@@ -754,8 +755,8 @@ router.post("/verify-email", verifyEmailLimiter, verifyEmailAddressLimiter, asyn
 // POST /auth/resend-verification
 router.post("/resend-verification", resendVerificationLimiter, resendVerificationEmailLimiter, async (req, res) => {
   try {
-    const { email } = req.body as { email?: string };
-    if (!email) {
+    const { email } = req.body as { email?: unknown };
+    if (typeof email !== "string" || !email) {
       res.status(400).json({ error: "Email is required", code: "missing_fields" });
       return;
     }
@@ -804,12 +805,15 @@ router.post("/resend-verification", resendVerificationLimiter, resendVerificatio
 router.post("/change-unverified-email", shedWhenHashingBusy(), changeEmailLimiter, changeEmailAddressLimiter, async (req, res) => {
   try {
     const { email, password, newEmail } = req.body as {
-      email?: string;
-      password?: string;
-      newEmail?: string;
+      email?: unknown;
+      password?: unknown;
+      newEmail?: unknown;
     };
 
-    if (!email || !password || !newEmail) {
+    if (
+      typeof email !== "string" || typeof password !== "string" || typeof newEmail !== "string" ||
+      !email || !password || !newEmail
+    ) {
       res.status(400).json({ error: "Current email, password and a valid new email are required", code: "missing_fields" });
       return;
     }
@@ -903,8 +907,8 @@ router.post("/change-unverified-email", shedWhenHashingBusy(), changeEmailLimite
  */
 router.post("/forgot-password", forgotPasswordLimiter, forgotPasswordEmailLimiter, async (req, res) => {
   try {
-    const { email } = req.body as { email?: string };
-    if (!email?.includes("@")) {
+    const { email } = req.body as { email?: unknown };
+    if (typeof email !== "string" || !email.includes("@")) {
       res.status(400).json({ error: "Valid email is required", code: "invalid_email" });
       return;
     }
@@ -969,13 +973,13 @@ router.post("/forgot-password", forgotPasswordLimiter, forgotPasswordEmailLimite
 router.post("/reset-password", shedWhenHashingBusy(), resetPasswordLimiter, async (req, res) => {
   try {
     const { email, code, password, confirmPassword } = req.body as {
-      email?: string;
-      code?: string;
+      email?: unknown;
+      code?: unknown;
       password?: string;
       confirmPassword?: string;
     };
 
-    if (!email || !code) {
+    if (typeof email !== "string" || typeof code !== "string" || !email || !code) {
       res.status(400).json({ error: "Email and code are required", code: "missing_fields" });
       return;
     }
