@@ -10,6 +10,31 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Admin overview: the signup tiles open their list, 2026-10-26
+
+**Why.** On the admin dashboard's «نظرة عامة» row, «اقتراحات الزوار» showed a count and nothing else; finding the
+suggestions meant knowing they live on «البريد المجمّع» under the «اقتراحات» chip. «قائمة الانتظار» and «رسائل
+التواصل» are counted from the same table and had the same dead end.
+
+**Built.** The three tiles are buttons that open `/admin/signups?kind=idea|waitlist|contact`. `StatCard`
+(`components/admin/widgets.tsx`) takes an optional `onPress` (a `Pressable` with a pressed state and an accessible
+label); a card without it is unchanged, so «كل الحسابات», «نشطون» and «محظورون» are still plain. `signups.tsx` reads
+`kind` from the URL for its starting chip and still switches chips as before. The parse lives in
+`services/adminSignupKind.ts` so a test can load it: a missing or unknown `kind` opens on «الكل», never on an empty
+filter, and an `Object.prototype` name is not read as a chip. `adminSignupKind.test.ts` pins that and that the link
+the dashboard builds is read back as the same chip.
+
+**Verified.** The new test failed before the helper existed (module not found) and passes (8); `pnpm run typecheck`;
+mobile `pnpm test` (7822 tests: 7812 pass, 0 fail, 10 skipped); the real Expo web build driven in Chromium with the admin API mocked at the network layer: each tile navigates to
+its URL, the screen then asks the API for that kind only and lists only those rows (screenshot: the «اقتراحات» chip
+selected, two ideas shown), `?kind=bogus` and no `kind` both ask for everything, no uncaught page errors.
+
+**Not verified.** Against a real API and database (the rows and counts in that check were fixtures); on a phone
+(the tiles are plain `Pressable`s, so native should behave, but only web was driven). The tiles do not look
+clickable until hovered or pressed: no chevron was added, to keep the row as it was. «اقتراحات الزوار» counts
+only signed-out visitors; suggestions from signed-in teachers are in the feedback list at the bottom of the
+dashboard («اقتراحات» chip) and are not linked from here. `schema-push:` none.
+
 ## A non-string email or code answers 400, not 500, 2026-10-26
 
 **Why.** Running the built API on a throwaway Postgres to check email sign-up with a code (register → verify →
