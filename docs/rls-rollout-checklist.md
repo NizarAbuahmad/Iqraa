@@ -188,7 +188,8 @@ Outside school hours, and only with A, B and C ticked.
 
 ## E. Make the CI job required
 
-- [ ] **E1.** GitHub repo → Settings → Rules (or Branches) → the rule for `main` → *Require
+- [x] **E1 — done by the owner, 2026-10-27** (the screenshot showed it listed next to `typecheck + tests`
+  before saving; the save is the owner's report). GitHub repo → Settings → Rules (or Branches) → the rule for `main` → *Require
   status checks to pass* → add **`row-level security`** (next to `typecheck + tests`) → save.
   A PR that breaks a policy then cannot merge.
 
@@ -200,4 +201,4 @@ Outside school hours, and only with A, B and C ticked.
 | B | owner, via the GitHub workflow | 2026-10-23 | run 39931238295: migrations applied; 46/46 direct, 46/46 pooled. Direct tests ≈ 3.4 min, pooled ≈ 3.3 min (CI runner → Neon, not a latency measurement). Run 4 before it failed only because the pooled secret held a malformed string. |
 | C | owner | 2026-10-23 / 2026-10-24 | C2 (10-23): maxScale 20, pooled host, max_connections 225 — pass via the pooler. C1: first run (10-23) **failed** — +336.5 ms p95 per 15-statement request (budget +100 ms); +21.9 ms per statement; RTT ≈ 11 ms. Re-run (10-24, 8 statements, three modes): held **+20.8 ms p95 — passes**; not held +346 ms (about 22 ms per statement at the median). |
 | D | owner | 2026-10-24 / 2026-10-27 | On 10-24 (00417); switched off and on by mistake several times since (00452 off, 00454 on, 00455 off, 00456 on). Hand test on 10-27 passed per the owner: teacher inbox, chat message, parent notification and reply, chat moves to top. Log searches for `permission denied` / `row-level security` printed nothing. **D3 (30-minute watch of 5xx, p95, push volume) not completed on the last switch-on.** |
-| E | | | |
+| E | owner | 2026-10-27 | `row-level security` added to the required checks on `main`. |

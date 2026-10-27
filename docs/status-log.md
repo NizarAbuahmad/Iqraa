@@ -10,6 +10,13 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Row-level security is a required check, 2026-10-27
+
+The owner added `row-level security` to the required status checks of the `main` branch rule (GitHub → Settings →
+Branches), next to `typecheck + tests` (checklist E1). **Verified:** a screenshot of the rule page with both checks
+listed. **Not verified:** that the save went through (the owner said "done"; this session cannot read branch
+protection) — a later PR showing the check as required would confirm it. Docs only.
+
 ## Row-level security switched on in production, 2026-10-27
 
 The owner set `RLS_ENFORCE=on` on `iqraa-api` (Cloud Run, `europe-west1`, project `iqraa-auth-507315`) from Cloud
