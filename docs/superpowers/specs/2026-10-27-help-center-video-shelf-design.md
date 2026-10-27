@@ -119,10 +119,10 @@ On the screen:
 - **Design-system rules (CLAUDE.md):** the card takes `useSurface()` and **drops its own `borderWidth: 1`** (a
   light surface has no border colour, so a leftover width draws black); no `overflow: 'hidden'` on the surface (clip
   the thumbnail on an inner view); `PressableScale` for the press; `Entrance` for the stagger, with motion off under
-  `useReduceMotion()`; colours from `useColors()`; icons on the `ICON` scale; no hand-written hex.
+  `useReduceMotion()`; colours from `useColors()`; icons on the `ICON` scale; no hand-written hex except the scrim pair the play button and the duration pill sit on, `ON_SCRIM` (`#FFFFFF`) and `SCRIM` (`#000000B3`). Those two are the same in both themes, as the tour overlay's scrim is (`ON_SCRIM` and `DARK_SCRIM` in `components/tour/TourHost.tsx`, the same values).
 - **Accessibility:** `accessibilityRole="button"`, a 44 pt target, `aria-*` state (never `accessibilityState`), and a
   label composed in code as `"<title>، <m:ss>. <helpVideoOpensInBrowser>"`, where the title and the length are
-  joined with ', ' in the English UI and with the Arabic comma `،` in the Arabic UI. The brand focus ring on web, as
+  joined with ', ' in the English UI and with the Arabic comma `،` in the Arabic UI. In the English UI the label also speaks the narration tag, after the length: `"<title>, <m:ss>, <helpVideoNarrationAr>. <helpVideoOpensInBrowser>"`, because the label replaces the card's children for a screen reader. The brand focus ring on web, as
   other pressables.
 
 ## Playback and analytics
@@ -178,6 +178,9 @@ title keys; run the mobile tests; PR; publish.
   is the only guard, and it does not catch a video removed later.
 - **Android `WebBrowser` opening the nocookie embed page** has not been tried on a device. If it misbehaves, open the
   plain watch URL instead.
+- **Thumbnails come from `img.youtube.com` as soon as a card is on screen,** for a student or a parent as much as for a
+  teacher. That is the same posture as the Library's video thumbnails (`videoCoverFromUrl` in
+  `app/curriculum/resources.tsx`). Playback uses the privacy-friendly `youtube-nocookie.com` embed host, and only after a tap.
 - **The FAQ is role-blind** (a student sees teacher-oriented questions under a teacher-worded subtitle). Unchanged by
   this work; worth its own change.
 

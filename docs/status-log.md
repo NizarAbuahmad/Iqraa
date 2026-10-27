@@ -23,7 +23,7 @@ three i18n keys. No dependency, native module, `app.json` `version`, schema or e
 after the plan was written: a grid cell is 31% of the row and does not grow, so one, two or four videos keep the size of a card in a row of three
 (a row of three ends up to about 29 pt (about 4%) short of the search box's end edge, a fourth card starts a second row); the phone strip's RTL scroll uses
 `onContentSizeChange` plus a 60 ms timeout effect, like the FAQ's chip row; and the card's accessibility label joins title and length with
-', ' in English and with the Arabic comma in Arabic. One plan defect was caught in review: the validator's Arabic brand check first held the
+', ' in English and with the Arabic comma in Arabic; in English the label also speaks the narration tag ("Arabic narration") after the length. One plan defect was caught in review: the validator's Arabic brand check first held the
 quoted old brand spelling as a literal, which CI's brand gate rejects; the string is now built from code points (`OLD_QUOTED_BRAND` in
 `helpVideos.ts`).
 
@@ -43,7 +43,7 @@ ads settings for student and parent videos, are still open (see the spec). No re
 and an embed-disabled video have not been seen. The shelf sits above the FAQ search box (a placement the spec chose), so a query that matches
 no video makes it vanish and the box jump up; changing that is a spec change. The mobile typecheck (`pnpm run typecheck` in
 `artifacts/mobile`) still shows its 12 existing errors, none in a file this change touches. The FAQ itself is still role-blind (a student sees
-the teacher-worded questions); unchanged here.
+the teacher-worded questions); unchanged here. After the browser check, the final review added the narration tag to the card's spoken label in the English UI; the guard suites still pass, but none asserts the label text, so that change rests on a read of the code and was not re-driven in a browser.
 
 ## Implementation plan for the help-center video shelf, 2026-10-27
 

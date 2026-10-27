@@ -59,11 +59,17 @@ function HelpVideoCard({ video, onOpen }: { video: HelpVideo; onOpen: () => void
   const align = isRTL ? 'right' : 'left';
   // The Arabic comma reads right only in Arabic; an English screen gets an English comma.
   const separator = lang === 'en' ? ', ' : '، ';
+  // The narration tag shows in the English UI only. A label replaces the children for a screen reader,
+  // so the same check decides whether the tag is spoken too.
+  const narration = narrationTagVisible(video, lang);
+  const spoken = narration
+    ? `${title}${separator}${length}${separator}${t('helpVideoNarrationAr')}`
+    : `${title}${separator}${length}`;
 
   return (
     <PressableScale
       onPress={onOpen}
-      accessibilityLabel={`${title}${separator}${length}. ${t('helpVideoOpensInBrowser')}`}
+      accessibilityLabel={`${spoken}. ${t('helpVideoOpensInBrowser')}`}
       style={[surface, styles.card]}
     >
       <View style={[styles.thumb, { backgroundColor: colors.secondary }]}>
@@ -88,7 +94,7 @@ function HelpVideoCard({ video, onOpen }: { video: HelpVideo; onOpen: () => void
         <Text numberOfLines={2} style={[styles.title, { color: colors.foreground, textAlign: align }]}>
           {title}
         </Text>
-        {narrationTagVisible(video, lang) ? (
+        {narration ? (
           <Text style={[styles.tag, { color: colors.mutedForeground, textAlign: align }]}>
             {t('helpVideoNarrationAr')}
           </Text>
