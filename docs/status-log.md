@@ -47,7 +47,7 @@ was titled «خطة درس: حسّن الدرس «…» واجعلها …» and
   «Make a harder quiz…» / «Improve my classroom management» guards hold.
 - The real offline `generateLessonPlan` with the old topic vs the new: the old plan's text carries «حسّن الدرس» /
   «أين نلتقي بحسّن»; the new one does not (topic «تركيب الاقترانات»).
-- `pnpm run typecheck` clean; whole mobile suite: see the PR.
+- `pnpm run typecheck` clean; whole mobile suite on the final tree: 7,906 pass, 0 fail, 10 skipped (none related).
 
 **Not verified / known limits.**
 - **Not driven in a browser.** `iqra.tsx` has no unit seam; the wiring there is typechecked and its decision logic is
