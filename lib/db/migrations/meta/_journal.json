@@ -134,6 +134,13 @@
       "when": 1792857789709,
       "tag": "0018_lush_nighthawk",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792924418820,
+      "tag": "0019_bizarre_stone_men",
+      "breakpoints": true
     }
   ]
 }

@@ -237,6 +237,67 @@ clickable until hovered or pressed: no chevron was added, to keep the row as it 
 only signed-out visitors; suggestions from signed-in teachers are in the feedback list at the bottom of the
 dashboard («اقتراحات» chip) and are not linked from here. `schema-push:` none.
 
+## Message the iqrra.com waitlist from the admin signups screen, 2026-10-25
+
+The signups screen already listed the people who asked for the app on iqrra.com and could mail one
+invite at a time, but it remembered nothing (who was invited), had no unsubscribe, and the bulk
+"send the invite" step was a manual Resend broadcast. A system_admin can now message the list from
+**المسجّلون → «راسل قائمة الانتظار»** (`POST /admin/broadcasts`).
+
+- **Three purposes, and the server decides who each may reach** (`lib/siteMail.ts`
+  `pickRecipients`). `invite`: the fixed invite mail, to addresses not yet invited. `launch`: free
+  text, to everyone subscribed. `update` (news): free text, **only to people who signed up after the
+  form's wording allowed it**. The form has promised «دعوة التجربة وإشعار الإطلاق فقط», so
+  `UPDATES_CONSENT_FROM` is `null` and `update` matches **nobody** (409 `updates-closed`) until it is
+  set to the day the reworded form deploys. Everyone who signed up before then gets invites and the
+  launch notice and nothing else.
+- **Recorded per address.** `site_signups` gains `invited_at`, `last_messaged_at`, `unsubscribed_at`
+  (migration `0019`, additive). Stamped by lower-cased email, so a duplicate signup moves together,
+  and only for addresses Resend accepted — a refused batch stays eligible. The per-row invite and
+  `POST /admin/invites` stamp `invited_at` too; the screen shows «تمت الدعوة · date» and
+  «ألغى الاشتراك» and filters on both.
+- **A 12-hour hold-back** on anyone already mailed (`RECENTLY_MESSAGED_MS`): `launch` and `update`
+  match everyone each time, so without it a retry after a half-failed send, or a double tap, would
+  mail the same people twice. The dry-run count says how many are held back.
+- **Unsubscribe.** Every broadcast carries a signed link (HMAC of the row id keyed on
+  `SESSION_SECRET`, so no new secret) in the footer and as `List-Unsubscribe` / one-click headers.
+  `GET /site/unsubscribe` only *asks* (a scanner that pre-fetches links would otherwise unsubscribe
+  everyone); the button, or a mail client's one-click, POSTs. Unsubscribing is by address, so
+  signing up again does not resubscribe, and the single-invite endpoint refuses an unsubscribed
+  address (409). The link's origin is `API_PUBLIC_URL`, default the Cloud Run URL.
+- **Test copy.** «أرسل نسخة تجريبية لي» mails the admin's own address and records nothing.
+- **Sent and joined, per person.** Each waitlist row shows «أُرسلت الدعوة · date» once the invite went
+  out and «انضم · date» once an account with that email exists (`JOINED_AT` in `admin.ts`: the earliest
+  `users.created_at` for the address, matched ignoring case; also a `joined_at` CSV column and an
+  «انضموا» filter). The invite mail skips people who already joined; the launch notice and news do
+  not. It is a match on the address typed into the site, so someone who registers with a different
+  email is not recognised as joined.
+
+**Verified.** `pnpm run typecheck`; api-server `pnpm build && pnpm test` (2347 pass), including new
+`siteMail.test.ts` (recipient rules, token forgery, body escaping) and `broadcast.test.ts` (batching,
+partial failure, headers) and the mount-order checks (`/admin/broadcasts` and `/admin/invites` 401
+without a token; `/site/unsubscribe` reachable without a session and 400 on a forged link). Run end
+to end locally against a scratch Postgres with Resend stubbed in-process: the screen's dry-run count,
+test copy, confirm dialog and send; a refused send stamped nothing; duplicates collapsed to one mail;
+the hold-back blocked a repeat; the unsubscribe GET changed nothing and the POST did; `update` stayed
+closed; the rendered Arabic body kept its paragraphs and linked its URL. The «joined» match was
+re-run on a fresh scratch database with registered accounts: a mixed-case signup matched its account,
+a contact row with no email matched nothing, the `joined` filter returned exactly those, and the
+invite audience dropped them.
+
+**Not verified.** Nothing was sent through real Resend — the stub answered, so Resend's *real*
+acceptance of the batch payload (`/emails/batch`, the `headers` field) and the unsubscribe link in a
+real inbox are untested; send the test copy to yourself first. Not checked on a phone or in Android's
+share/CSV paths. Production `RESEND_API_KEY` / `RESEND_FROM_EMAIL` / `SITE_INGEST_KEY` (on Vercel too)
+were not inspected.
+
+**Known limits.** The send is synchronous (100 per batch, ~0.6 s apart) — fine into the low
+thousands, then it wants a queue. Signups from before 2026-10-02 are still only in Resend / the
+`FEEDBACK_TO` inbox and are not in this table (no backfill yet), so they cannot be mailed from here.
+Unsubscribes are not pushed back to Resend contacts. The deploy order matters: merge this, then the
+Site_Iqra wording PR (it promises an unsubscribe link that only exists once this is live), then set
+`UPDATES_CONSENT_FROM`.
+
 ## The two servers in the RLS diff test can no longer share a port, 2026-10-26
 
 **Why.** The `row-level security` check failed once on the PR for «A non-string email or code answers 400,
@@ -550,6 +611,7 @@ locally (CI runs it), and that this is the reporting teacher's exact case (a tea
 «حفظ» would not have hit it). **Not tested:** no test pins the row — it needs React Native, which
 the bare `node --test` runner cannot load. **Not changed:** «توزيع تلقائي» still does nothing, silently,
 when no school day is selected or the start date is invalid; the button is dimmed but says nothing.
+
 
 ## Grade 8 semester 1 word lists in the English corner, 2026-10-25
 

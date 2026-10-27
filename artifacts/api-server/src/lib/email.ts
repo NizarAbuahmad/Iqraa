@@ -5,9 +5,13 @@ import { guardianConsentBodyHtml, guardianConsentSubject } from "./guardianConse
  * Shared chrome for every outgoing mail: logo + bilingual wordmark/tagline up
  * top, a light card around the message, a footer link back to the site. One
  * shell so a design tweak (or a future subject) touches one place instead of
- * every `render*Html` function separately.
+ * every `render*Html` function separately. `footerHtml` replaces the site link
+ * for mail that needs more there (the waitlist broadcast's unsubscribe line).
  */
-function renderEmailShell(bodyHtml: string): string {
+function renderEmailShell(
+  bodyHtml: string,
+  footerHtml = `<a href="https://www.iqrra.com" style="font-size:12px;color:#94A3B8;text-decoration:none;">iqrra.com</a>`,
+): string {
   return `
     <div style="background:#F1F5F9;padding:24px 12px;font-family:Tahoma,Arial,sans-serif;">
       <div style="max-width:480px;margin:0 auto;background:#FFFFFF;border-radius:12px;overflow:hidden;border:1px solid #E2E8F0;">
@@ -32,7 +36,7 @@ function renderEmailShell(bodyHtml: string): string {
           ${bodyHtml}
         </div>
         <div style="padding:16px 20px;border-top:1px solid #E2E8F0;text-align:center;">
-          <a href="https://www.iqrra.com" style="font-size:12px;color:#94A3B8;text-decoration:none;">iqrra.com</a>
+          ${footerHtml}
         </div>
       </div>
     </div>
@@ -298,6 +302,8 @@ function renderArtifactReportedEmailHtml(info: { kind: string; lessonRef: string
  * for no key, a refusal or a lost request, so the admin screen can say so.
  */
 const DEFAULT_APP_INVITE_URL = "https://play.google.com/store/apps/details?id=com.iqra.teachingassistant";
+export const APP_INVITE_SUBJECT = "دعوتك لتجربة تطبيق إقرأ / You're invited to try the Iqrra app";
+export const appInviteUrl = () => process.env.APP_INVITE_URL || DEFAULT_APP_INVITE_URL;
 
 export async function sendAppInviteEmail(to: string): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY;
@@ -316,8 +322,8 @@ export async function sendAppInviteEmail(to: string): Promise<boolean> {
       body: JSON.stringify({
         from: process.env.RESEND_FROM_EMAIL ?? "Iqrra <onboarding@resend.dev>",
         to,
-        subject: "دعوتك لتجربة تطبيق إقرأ / You're invited to try the Iqrra app",
-        html: renderAppInviteEmailHtml(process.env.APP_INVITE_URL || DEFAULT_APP_INVITE_URL),
+        subject: APP_INVITE_SUBJECT,
+        html: renderAppInviteEmailHtml(appInviteUrl()),
       }),
     });
     if (!res.ok) {
@@ -332,9 +338,14 @@ export async function sendAppInviteEmail(to: string): Promise<boolean> {
 }
 
 export function renderAppInviteEmailHtml(link: string): string {
+  return renderEmailShell(appInviteBodyHtml(link));
+}
+
+/** The invite's content without the shell, so the waitlist broadcast can wrap it with its own footer. */
+export function appInviteBodyHtml(link: string): string {
   const button = (label: string) =>
     `<p style="margin:20px 0;"><a href="${link}" style="display:inline-block;background:#006D65;color:#FFFFFF;text-decoration:none;font-weight:bold;padding:12px 24px;border-radius:8px;">${label}</a></p>`;
-  return renderEmailShell(`
+  return `
     <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-bottom:24px;">
       <p>مرحبًا،</p>
       <p>شكرًا لاهتمامك بتطبيق إقرأ. يسعدنا أن ندعوك لتحميل التطبيق وتجربته على هاتفك الأندرويد.</p>
@@ -350,7 +361,77 @@ export function renderAppInviteEmailHtml(link: string): string {
       <p>Open the link on your phone, tap Install, then sign in and create your first lesson or worksheet.</p>
       <p>Questions or feedback? Write to <a href="mailto:info@iqrra.com" style="color:#006D65;">info@iqrra.com</a>.</p>
     </div>
-  `);
+  `;
+}
+
+/**
+ * One message to many waitlist addresses (admin «راسل قائمة الانتظار»), through
+ * Resend's batch endpoint — up to 100 mails per request, one request at a time
+ * with a pause because the default limit is 2 requests a second. Each mail
+ * carries its own unsubscribe link in the footer and the
+ * `List-Unsubscribe` / one-click headers, so a mail client's "unsubscribe"
+ * button works too.
+ *
+ * Returns who was handed to Resend and who was not, so the caller stamps only
+ * the first group. A batch is accepted or refused whole, so one bad chunk
+ * lands entirely in `failed`; no key means everyone failed.
+ */
+const BATCH_SIZE = 100;
+const BATCH_PAUSE_MS = 600;
+
+export async function sendBroadcast(
+  recipients: readonly { id: string; email: string }[],
+  subject: string,
+  bodyHtml: string,
+  unsubscribeUrl: (id: string) => string,
+): Promise<{ sent: string[]; failed: string[] }> {
+  const out = { sent: [] as string[], failed: [] as string[] };
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    logger.warn({ count: recipients.length }, "RESEND_API_KEY not set — broadcast not sent");
+    out.failed.push(...recipients.map(r => r.email));
+    return out;
+  }
+  const from = process.env.RESEND_FROM_EMAIL ?? "Iqrra <onboarding@resend.dev>";
+
+  for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
+    const chunk = recipients.slice(i, i + BATCH_SIZE);
+    if (i > 0) await new Promise(r => setTimeout(r, BATCH_PAUSE_MS));
+    try {
+      const res = await fetch("https://api.resend.com/emails/batch", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify(
+          chunk.map(r => {
+            const url = unsubscribeUrl(r.id);
+            return {
+              from,
+              to: r.email,
+              subject,
+              html: renderEmailShell(
+                bodyHtml,
+                `<div style="font-size:12px;color:#94A3B8;line-height:1.7;">
+                  <div dir="rtl">تلقّيت هذه الرسالة لأنك سجّلت اهتمامك بتطبيق إقرأ على iqrra.com. <a href="${url}" style="color:#94A3B8;">إلغاء الاشتراك</a></div>
+                  <div dir="ltr">You received this because you signed up for Iqrra at iqrra.com. <a href="${url}" style="color:#94A3B8;">Unsubscribe</a></div>
+                </div>`,
+              ),
+              headers: { "List-Unsubscribe": `<${url}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
+            };
+          }),
+        ),
+      });
+      if (!res.ok) {
+        logger.error({ status: res.status, body: await res.text(), size: chunk.length }, "resend broadcast batch failed");
+        out.failed.push(...chunk.map(r => r.email));
+        continue;
+      }
+      out.sent.push(...chunk.map(r => r.email));
+    } catch (err) {
+      logger.error({ err, size: chunk.length }, "resend broadcast batch threw");
+      out.failed.push(...chunk.map(r => r.email));
+    }
+  }
+  return out;
 }
 
 /**

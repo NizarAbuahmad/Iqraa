@@ -5,7 +5,7 @@
  * PostHog already; this endpoint deliberately doesn't try to duplicate it —
  * see STATUS.md.
  */
-import { Router } from "express";
+import { Router, type NextFunction, type Request, type Response } from "express";
 import { hashPassword } from "../lib/passwordHash.js";
 import {
   aiGenerations,
@@ -22,15 +22,23 @@ import {
   students,
   users,
 } from "@workspace/db";
-import { and, asc, desc, eq, gte, ilike, inArray, isNotNull, isNull, lt, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, gte, ilike, inArray, isNotNull, isNull, lt, or, sql, type SQL } from "drizzle-orm";
 import { getBudgetStatus, getUserBudgetLimitUsd } from "../lib/aiBudget.js";
 import { currentPeriodStart } from "../lib/aiUsageLog.js";
 import { RATE_LIMITS } from "../lib/rateLimit.js";
 import { parseSchoolAssignment, parseSchoolIdFilter, parseSchoolInput } from "../lib/adminSchools.js";
 import { parseDateRange, parseMetricInput, parsePublicIdea, parseSiteSignup, siteKeyMatches, toCsv, UUID } from "../lib/adminMetrics.js";
 import { notifyAdminsOfWaitlistSignup } from "../lib/adminNotify.js";
-import { sendAppInviteEmail } from "../lib/email.js";
+import { APP_INVITE_SUBJECT, appInviteBodyHtml, appInviteUrl, sendAppInviteEmail, sendBroadcast } from "../lib/email.js";
 import { isValidEmailAddress } from "../lib/emailAddress.js";
+import {
+  parseBroadcast,
+  pickRecipients,
+  renderBroadcastBody,
+  unsubscribeUrl,
+  UPDATES_CONSENT_FROM,
+  verifyUnsubscribe,
+} from "../lib/siteMail.js";
 import {
   authMiddleware,
   requireRole,
@@ -580,29 +588,58 @@ router.post("/admin/metrics", authMiddleware, requireRole(...ADMIN_ROLES), async
   }
 });
 
-/** GET /admin/signups?kind=waitlist|contact&offset= — or &format=csv for all of them. */
+/**
+ * When an account with this signup's email registered in the app — the earliest
+ * `users.created_at` for that address, null if there is none ("joined"). Matched
+ * ignoring case, and only for a signup that has an email. It is a match on the
+ * address typed into the site, so a teacher who registers with a different email
+ * is not recognised.
+ *
+ * Raw SQL on purpose: drizzle renders a column inside a `sql` fragment of a
+ * single-table select without its table name, which would make `email` here
+ * resolve to `users.email` and match every row against itself.
+ */
+const JOINED_AT = sql<Date | null>`(select min(u.created_at) from users u where u.email is not null and site_signups.email <> '' and lower(u.email) = lower(site_signups.email))`.mapWith(
+  (v) => (v == null ? null : new Date(v as string)),
+);
+
+/** `?status=` on the signups list: the waitlist-mail state, see siteSignups.invitedAt / unsubscribedAt. */
+const SIGNUP_STATUS: Record<string, () => SQL> = {
+  uninvited: () => isNull(siteSignups.invitedAt),
+  invited: () => isNotNull(siteSignups.invitedAt),
+  joined: () => sql`${JOINED_AT} is not null`,
+  unsubscribed: () => isNotNull(siteSignups.unsubscribedAt),
+};
+
+/** GET /admin/signups?kind=waitlist|contact&status=uninvited|invited|joined|unsubscribed&offset= — or &format=csv for all of them. */
 router.get("/admin/signups", authMiddleware, requireRole(...ADMIN_ROLES), async (req, res) => {
   try {
     const kind = req.query["kind"];
+    const status = req.query["status"];
     const range = parseDateRange(req.query as Record<string, unknown>);
     if ("error" in range) {
       res.status(400).json({ error: range.error });
       return;
     }
+    if (status !== undefined && status !== "" && !(typeof status === "string" && Object.hasOwn(SIGNUP_STATUS, status))) {
+      res.status(400).json({ error: "status must be uninvited, invited, joined or unsubscribed" });
+      return;
+    }
     const where = and(
       kind === "waitlist" || kind === "contact" || kind === "idea" ? eq(siteSignups.kind, kind) : undefined,
+      status ? SIGNUP_STATUS[status as string]!() : undefined,
       range.from ? gte(siteSignups.createdAt, range.from) : undefined,
       range.to ? lt(siteSignups.createdAt, range.to) : undefined,
     );
-    const base = db.select().from(siteSignups).where(where).orderBy(desc(siteSignups.createdAt));
+    const base = db.select({ ...getTableColumns(siteSignups), joinedAt: JOINED_AT.as("joined_at") }).from(siteSignups).where(where).orderBy(desc(siteSignups.createdAt));
     if (req.query["format"] === "csv") {
       const rows = await base;
       res.setHeader("Content-Type", "text/csv; charset=utf-8");
       res.setHeader("Content-Disposition", `attachment; filename="iqraa-signups.csv"`);
       // BOM so Excel reads the Arabic as UTF-8.
       res.send("﻿" + toCsv(
-        ["date", "kind", "email", "name", "message", "context"],
-        rows.map((r) => [r.createdAt, r.kind, r.email, r.name, r.message, r.context]),
+        ["date", "kind", "email", "name", "message", "context", "invited_at", "last_messaged_at", "unsubscribed_at", "joined_at"],
+        rows.map((r) => [r.createdAt, r.kind, r.email, r.name, r.message, r.context, r.invitedAt, r.lastMessagedAt, r.unsubscribedAt, r.joinedAt]),
       ));
       return;
     }
@@ -630,12 +667,131 @@ router.post("/admin/invites", authMiddleware, requireRole("system_admin"), invit
     res.status(400).json({ error: "email" });
     return;
   }
+  // Someone who unsubscribed asked for no more mail, and typing their address here doesn't change that.
+  try {
+    const [optedOut] = await db
+      .select({ id: siteSignups.id })
+      .from(siteSignups)
+      .where(and(sql`lower(${siteSignups.email}) = ${email.toLowerCase()}`, isNotNull(siteSignups.unsubscribedAt)))
+      .limit(1);
+    if (optedOut) {
+      res.status(409).json({ error: "unsubscribed" });
+      return;
+    }
+  } catch (err) {
+    logger.error({ err }, "invite unsubscribe check failed");
+    res.status(500).json({ error: "Failed to send" });
+    return;
+  }
   if (!(await sendAppInviteEmail(email))) {
     res.status(502).json({ error: "send" });
     return;
   }
   logger.info({ to: email }, "app invite sent");
+  // The mail is already out, so a failure to remember it is logged, not a 500.
+  await stampSent([email], "invite").catch((err) => logger.warn({ err }, "invite sent but not recorded"));
   res.json({ ok: true });
+});
+
+/**
+ * Records a send on the waitlist rows for these addresses (matched ignoring case,
+ * so every duplicate signup moves together). Only called with addresses Resend
+ * accepted — a failed send must stay eligible for the next one.
+ */
+async function stampSent(emails: string[], purpose: "invite" | "launch" | "update"): Promise<void> {
+  if (emails.length === 0) return;
+  await db
+    .update(siteSignups)
+    .set({
+      lastMessagedAt: sql`now()`,
+      ...(purpose === "invite" ? { invitedAt: sql`coalesce(${siteSignups.invitedAt}, now())` } : {}),
+    })
+    .where(and(eq(siteSignups.kind, "waitlist"), inArray(sql<string>`lower(${siteSignups.email})`, emails.map((e) => e.toLowerCase()))));
+}
+
+/**
+ * POST /admin/broadcasts {purpose, subject?, body?, dryRun?, testOnly?} — one
+ * message to the iqrra.com waitlist. system_admin only.
+ *
+ *   dryRun   → {count, heldBack, updatesOpen}, sends nothing (what the confirm dialog shows)
+ *   testOnly → one copy to the caller's own address, records nothing
+ *   otherwise → sends, then records only the addresses Resend accepted
+ *
+ * Who may receive what is siteMail.pickRecipients; this route only moves data.
+ * ponytail: the send is synchronous, which is fine into the low thousands (100
+ * per batch, ~0.6 s apart, well inside Cloud Run's request timeout); past that
+ * it wants a queue.
+ */
+const broadcastSendLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  name: "admin-broadcasts",
+  key: (req) => (req as AuthenticatedRequest).user?.id ?? req.ip ?? "unknown",
+});
+// A dry run sends nothing, and the screen runs one every time the admin changes the audience.
+const broadcastLimiter = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  if (req.body?.dryRun === true) next();
+  else await broadcastSendLimiter(req, res, next);
+};
+
+router.post("/admin/broadcasts", authMiddleware, requireRole("system_admin"), broadcastLimiter, async (req: AuthenticatedRequest, res) => {
+  const parsed = parseBroadcast(req.body);
+  if ("error" in parsed) {
+    res.status(400).json({ error: parsed.error });
+    return;
+  }
+  const { purpose } = parsed;
+  const subject = purpose === "invite" ? APP_INVITE_SUBJECT : parsed.subject;
+  const html = purpose === "invite" ? appInviteBodyHtml(appInviteUrl()) : renderBroadcastBody(parsed.text);
+  try {
+    if (parsed.testOnly) {
+      const me = req.user!;
+      if (!me.email) {
+        res.status(400).json({ error: "no-email" });
+        return;
+      }
+      const test = await sendBroadcast([{ id: me.id, email: me.email }], `[تجريبي] ${subject}`, html, unsubscribeUrl);
+      if (test.failed.length > 0) {
+        res.status(502).json({ error: "send" });
+        return;
+      }
+      res.json({ ok: true, sentTo: me.email });
+      return;
+    }
+
+    const updatesOpen = UPDATES_CONSENT_FROM !== null;
+    if (purpose === "update" && !updatesOpen && !parsed.dryRun) {
+      res.status(409).json({ error: "updates-closed" });
+      return;
+    }
+    const rows = await db
+      .select({
+        id: siteSignups.id,
+        kind: siteSignups.kind,
+        email: siteSignups.email,
+        createdAt: siteSignups.createdAt,
+        invitedAt: siteSignups.invitedAt,
+        lastMessagedAt: siteSignups.lastMessagedAt,
+        unsubscribedAt: siteSignups.unsubscribedAt,
+        joinedAt: JOINED_AT.as("joined_at"),
+      })
+      .from(siteSignups)
+      .where(eq(siteSignups.kind, "waitlist"));
+    const recipients = pickRecipients(rows, purpose);
+    if (parsed.dryRun) {
+      const eligible = pickRecipients(rows, purpose, { ignoreRecent: true }).length;
+      res.json({ count: recipients.length, heldBack: eligible - recipients.length, updatesOpen });
+      return;
+    }
+
+    const result = await sendBroadcast(recipients, subject, html, unsubscribeUrl);
+    await stampSent(result.sent, purpose).catch((err) => logger.error({ err }, "broadcast sent but not recorded"));
+    logger.info({ by: req.user!.id, purpose, sent: result.sent.length, failed: result.failed.length }, "waitlist broadcast");
+    res.json({ sent: result.sent.length, failed: result.failed.length });
+  } catch (err) {
+    logger.error({ err }, "admin broadcast failed");
+    res.status(500).json({ error: "Failed to send" });
+  }
 });
 
 /** `?platform=` on the AI pages: «mobile» is both app stores, «unknown» is rows with no marker. */
@@ -800,6 +956,62 @@ router.post("/site/signups", siteSignupLimiter, async (req, res) => {
   } catch (err) {
     logger.error({ err }, "site signup insert failed");
     res.status(500).json({ error: "Failed to store signup" });
+  }
+});
+
+/**
+ * GET|POST /site/unsubscribe?id=&t= — the link in every waitlist broadcast. No
+ * session and no site key: the HMAC token (siteMail.signUnsubscribe) is the
+ * credential, and an unsigned or altered link gets the same neutral page.
+ *
+ * GET only *asks* — a mail scanner that pre-fetches links would otherwise
+ * unsubscribe everyone it scans. The button POSTs here, and so does a mail
+ * client's own one-click "unsubscribe" (`List-Unsubscribe-Post`). Unsubscribing
+ * is by address: every waitlist row with that email is stamped, so a second
+ * signup can't put someone back on the list.
+ */
+const unsubscribeLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 120, name: "site-unsubscribe" });
+
+const unsubscribePage = (message: string, form = "") => `<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>إقرأ · Iqrra</title>
+<style>body{margin:0;padding:48px 20px;background:#F1F5F9;font-family:Tahoma,Arial,sans-serif;color:#0B1220;text-align:center}main{max-width:420px;margin:0 auto;background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:28px 20px;line-height:1.8}button{margin-top:12px;background:#006D65;color:#fff;border:0;border-radius:8px;padding:12px 24px;font:inherit;font-weight:bold;cursor:pointer}</style></head>
+<body><main>${message}${form}</main></body></html>`;
+
+router.get("/site/unsubscribe", unsubscribeLimiter, (req, res) => {
+  const id = req.query["id"];
+  const t = req.query["t"];
+  if (!verifyUnsubscribe(id, t)) {
+    res.status(400).type("html").send(unsubscribePage("<p>هذا الرابط غير صالح.</p><p dir=\"ltr\">This link is not valid.</p>"));
+    return;
+  }
+  // `id` is a uuid and `t` the exact hex digest we just verified, so both are safe to place in the URL.
+  res.type("html").send(
+    unsubscribePage(
+      "<p>هل تريد إيقاف رسائل إقرأ على بريدك؟</p><p dir=\"ltr\">Stop Iqrra emails to this address?</p>",
+      `<form method="post" action="/api/site/unsubscribe?id=${id}&amp;t=${t}"><button type="submit">إلغاء الاشتراك · Unsubscribe</button></form>`,
+    ),
+  );
+});
+
+router.post("/site/unsubscribe", unsubscribeLimiter, async (req, res) => {
+  const id = req.query["id"];
+  if (!verifyUnsubscribe(id, req.query["t"])) {
+    res.status(400).type("html").send(unsubscribePage("<p>هذا الرابط غير صالح.</p><p dir=\"ltr\">This link is not valid.</p>"));
+    return;
+  }
+  try {
+    const [row] = await db.select({ email: siteSignups.email }).from(siteSignups).where(eq(siteSignups.id, id as string)).limit(1);
+    // No row is not an error: the admin's test copy carries a user id, and the answer should not reveal which ids exist.
+    if (row?.email) {
+      await db
+        .update(siteSignups)
+        .set({ unsubscribedAt: sql`coalesce(${siteSignups.unsubscribedAt}, now())` })
+        .where(sql`lower(${siteSignups.email}) = ${row.email.toLowerCase()}`);
+    }
+    res.type("html").send(unsubscribePage("<p>تم إلغاء اشتراكك. لن تصلك رسائل أخرى.</p><p dir=\"ltr\">You're unsubscribed. We won't email you again.</p>"));
+  } catch (err) {
+    logger.error({ err }, "unsubscribe failed");
+    res.status(500).type("html").send(unsubscribePage("<p>تعذّر إتمام الطلب. حاول مرة أخرى لاحقًا.</p><p dir=\"ltr\">Something went wrong. Please try again later.</p>"));
   }
 });
 
