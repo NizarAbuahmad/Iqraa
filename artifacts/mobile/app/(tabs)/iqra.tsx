@@ -2679,6 +2679,8 @@ export default function IqraScreen() {
             ? primaryTopicFromDocuments(docBundle.documents, docNames[0] || q)
             : null,
           preferDocuments: hasDocs && sessionMemory.lessonPin !== 'hard',
+          // «حسّن…» / "make the quiz harder" is the change, not the lesson.
+          refinement: route.intent === 'refinement',
         });
         // A new topic keeps the picked grade unless the message names another:
         // "a quiz on fractions" with grade 7 picked meant grade 7's fractions,
@@ -2738,6 +2740,7 @@ export default function IqraScreen() {
             ? primaryTopicFromDocuments(docBundle.documents, docNames[0] || q)
             : null,
           preferDocuments: hasDocs && sessionMemory.lessonPin !== 'hard',
+          refinement: route.intent === 'refinement',
         });
         try {
           const generated = await generateChatArtifact({

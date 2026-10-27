@@ -10,6 +10,63 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## The improve chips no longer title the material with their own sentence, 2026-10-27
+
+**Why.** Left open by «One verb for "make me this material"» (below, «Found, not changed»). Tapping «✏️ حسّن خطة الدرس» sent
+«حسّن خطة الدرس عن «تركيب الاقترانات» واجعلها أوضح للتنفيذ في الحصة القادمة», and the chat regenerated the plan titled with
+the whole sentence («خطة درس: حسّن الدرس «تركيب الاقترانات» واجعلها أوضح …»), opened the reply «المادة جاهزة لدرس «<sentence>»»
+and handed the sentence to the generator as its topic. «🔥 اجعل الاختبار أصعب» did the same («اختبار قصير: اجعل الاختبار أصعب
+وأضف سؤالين»), and so does any typed refinement: «اجعله أبسط» titled one «اجعله أبسط».
+
+**Root cause (two, found by running the chat's own parsers on the chip strings).**
+1. A refinement went through `resolveArtifactTopic` like a creation ask. `topicFromQuery` only strips the words of a creation
+   ask (verbs, material nouns), so a refinement's words survived as the "topic", and anything of three characters or more
+   outranks the lesson on the card. The words of a refinement never reach the generator (`ask` only feeds quiz counts and
+   types), so the topic is the *only* thing such a message can contribute.
+2. In English the improve chips were not refinements at all. `isRefinement` knew «حسّن» and «اجعله أصعب» but, in English, only
+   «make it harder»: "Improve the current lesson plan…" and "Make the quiz harder…" classified as `artifact` with the topic
+   «harder». That also lost a soft-pinned lesson, because `shouldReuseActiveLesson` keeps it for `refinement` outright but for
+   `artifact` only when the ask is a bare shortcut, which a sentence is not.
+
+**Built.**
+- `resolveArtifactTopic` takes `refinement` (`artifactTopic.ts`). For one, the only topic read from the message is one fenced in
+  quotes (`quotedTopic`: «…», "…", “…” — which is how the chip writes its topic; a quoted pointer such as «الدرس الحالي» or
+  "the current lesson", what the chip says while no lesson is open, names nothing); otherwise the lesson, document or active
+  topic decides, as it already did for a creation ask with no topic. Creation asks are untouched.
+- `iqra.tsx` passes `refinement: route.intent === 'refinement'` at both of its `resolveArtifactTopic` calls (one ranks lessons,
+  one titles the material); a test reads the file and fails a call without it.
+- `isRefinement` (`intentRouter.ts`) gains the English forms where a material is named: "improve (the/my/current) lesson plan /
+  worksheet / quiz / homework / activity", "make the quiz / worksheet / … harder / easier / simpler / clearer / shorter /
+  longer". «improve student engagement», «make students work harder» and «make a worksheet for harder topics» stay what they were
+  (teaching, teaching, artifact).
+- `refineChips.test.ts` (new, 35 cases), built from the real chips (`buildLessonSuggestions`) rather than retyped strings: both
+  chips route as refinements in both languages, resolve to the lesson on the card with and without a matched lesson, typed
+  refinements do not title anything, a quoted topic is honoured, a quoted pointer is not, creation asks are unchanged, and the
+  chat file passes the flag at every call.
+
+**Left alone, on purpose.**
+- What the regenerated material *is*. A refinement still regenerates the material for the lesson; it does not edit the previous
+  one, and «واجعلها أوضح للتنفيذ» still reaches nothing. Making the chip's words change the output is a different feature.
+- `topicFromQuery` itself and its other callers (infographic, subject scope, `mergeScopeReply`, `isBareArtifactShortcut`): they
+  handle creation asks.
+- The follow-up chip row cut off at the pane's edge, and «واجب بيتي» versus «واجباً منزلياً» (both still open, see below).
+
+**Verified.** Before the fix, `refineChips.test.ts` failed 25 of its 35 cases, for the reasons above (English not routed as a
+refinement; the sentence as the topic in both languages, with and without a matched lesson; the flag missing in `iqra.tsx`);
+the creation-ask and false-positive cases already passed and still do. After it: 35/35; `pnpm run typecheck` clean (one error
+in the first draft of the test, a `URL` type, fixed); `artifacts/mobile` `pnpm test` 7984 pass, 0 fail, 10 skipped.
+Browser check of the real chat: **pending when this entry was written** — see the PR description for the result.
+
+**Not verified.** Native (iOS/Android) was not run; the change is JavaScript only. Only the lesson-plan and quiz chips were
+looked at; a refinement of a worksheet, homework or activity takes the same path but was not tried by hand. The English
+phrasings of a typed refinement are the ones listed above, not a vocabulary: «make it simpler for my class» is still read by the
+older bare patterns (refinement), and an English refinement that names no material is still not one («tweak this» →
+ambiguous, «can you redo it?» → teaching; both probed).
+- A how-question that names the material but no purpose, «how do I improve my lesson plan?», now routes as a `refinement`
+  (probed). Before this change it fell through to `artifact` (nothing matched `isRefinement`, and `isPurposeQuestion` only
+  fires with a purpose clause such as «so that» / «for weak students»), so it was never answered as advice either; the
+  difference is that it now keeps the open lesson as its topic instead of being titled «improve».
+
 ## One verb for "make me this material": «جهّز» / "Create", 2026-10-27
 
 **Why.** Left open by «Chat first screen: words that say what to ask» (PR #1301). The create chips said five different
