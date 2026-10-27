@@ -4470,7 +4470,9 @@ const translations = {
     bookFiguresStudentNote: "Figures from your student book for the lessons this exam covers. Look here for any question that refers to one.",
     bookFiguresLessonNote: "This lesson's figures from your student book, with the printed page number.",
     iqraWelcomeDocs: "I'm Iqrra, your lesson-prep companion.\n\nUpload a lesson plan, PowerPoint, worksheet, or a photo of a textbook page — and I'll help you summarise, explain, build lesson plans, worksheets, homework, and quizzes from your own materials.",
-    iqraPlaceholder: 'Type your request, e.g. a short quiz on this lesson',
+    // Short on purpose, like the Arabic: the web composer is one row, and the
+    // longer «Type your request, e.g. …» wrapped on a 390px phone.
+    iqraPlaceholder: 'e.g. a short quiz on this lesson',
     iqraPlaceholderDocs: 'Ask about your files… or type: Summarize this lesson',
     iqraInputLabel: 'Your message to Iqrra',
     iqraInputHint: 'Type what you need in your own words — for example: prepare a lesson plan on composing functions.',
