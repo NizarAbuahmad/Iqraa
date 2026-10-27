@@ -264,8 +264,9 @@ still says "Iqra" in about seven older places (not changed here; `CLAUDE.md` wan
 keyboard opens on phones after a chip tap). The widget's AI-answer and refusal paths on the real
 site (they were checked against the API and with stubs). The daily spend cap and the 100-an-hour
 limit against the live service. The real per-answer cost and the `/healthz/ai-budget` `persisted`
-flag after real traffic. Whether `SITE_BOT_BUDGET_USD_DAILY` is set on the Cloud Run service (not
-read: without it the default of 1 a day applies). How the matcher does on real visitor questions
+flag after real traffic. `SITE_BOT_BUDGET_USD_DAILY` was unset on the Cloud Run service when this
+was written (the default of 1 a day applied); the owner set it to `1` on 2026-10-27 (revision
+`iqraa-api-00445-4fm`) and read it back as `1`. How the matcher does on real visitor questions
 (its phrases are our guesses). The widget on a Vercel preview URL: it cannot reach the API, because
 CORS allows only `www.iqrra.com` and `iqrra.com`, so a preview only ever shows the friendly
 "couldn't answer" message.
