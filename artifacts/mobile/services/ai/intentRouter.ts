@@ -120,7 +120,22 @@ function isOffTopic(q: string): boolean {
   return OFF_TOPIC_PATTERNS.some(pattern => pattern.test(q));
 }
 
+/**
+ * «Make the quiz harder», «improve my lesson plan»: a named material with an edit
+ * asked of it. Arabic had this (حسّن, اجعله أصعب), English only had «make it
+ * harder» — so the improve chips in English were routed as a new artifact, not a
+ * refinement, and lost a soft-pinned lesson. "Improve" and "harder" alone are
+ * everyday words («improve student engagement»), so the material has to be named.
+ */
+const EN_MATERIAL = '(?:lesson\\s*plan|plan|worksheet|quiz|homework|activity)';
+const EN_REFINE_MATERIAL = new RegExp(
+  `\\bimprove\\s+(?:(?:the|this|that|my|our|current|existing)\\s+){0,2}${EN_MATERIAL}\\b`
+    + `|\\bmake\\s+(?:the|this|that|my|our)\\s+(?:current\\s+)?${EN_MATERIAL}\\s+(?:a\\s+(?:bit|little)\\s+)?(?:harder|easier|simpler|clearer|shorter|longer)\\b`,
+  'i',
+);
+
 function isRefinement(q: string): boolean {
+  if (EN_REFINE_MATERIAL.test(q)) return true;
   return (
     /اجعله\s*أبسط|أجعله\s*أبسط|ابسطه|أبسطه|بسّ?طه|اختصره|اختصار|أضف\s*مثالاً?|اضف\s*مثال|أضف\s*سؤال|اضف\s*سؤال|اجعله\s*أصعب|أجعله\s*أصعب|أصعب|اسهل|أسهل|للطلاب\s*الضعفاء|للطلبة\s*الضعفاء|للطلاب\s*المتفوقين|للطلبة\s*المتفوقين|للضعفاء|للمتفوقين|أكثر\s*تفصيلاً?|اقل\s*تفصيلاً?|نفس\s*(الخطة|الورقة|الاختبار|الواجب)|عدّل|عدل|حسّن|حسن|simplify|make\s*it\s*simpler|make\s*it\s*easier|make\s*it\s*harder|add\s*an?\s*example|add\s*\d*\s*questions?|shorten\s*it|for\s*struggling|for\s*advanced|too\s*long|too\s*short|another\s*quiz|same\s*lesson\s*plan/i.test(
       q,
