@@ -975,7 +975,7 @@ router.post("/reset-password", shedWhenHashingBusy(), resetPasswordLimiter, asyn
     const { email, code, password, confirmPassword } = req.body as {
       email?: unknown;
       code?: unknown;
-      password?: string;
+      password?: unknown;
       confirmPassword?: string;
     };
 
@@ -983,7 +983,7 @@ router.post("/reset-password", shedWhenHashingBusy(), resetPasswordLimiter, asyn
       res.status(400).json({ error: "Email and code are required", code: "missing_fields" });
       return;
     }
-    if (!password || !isStrongPassword(password)) {
+    if (typeof password !== "string" || !password || !isStrongPassword(password)) {
       res.status(400).json({ error: PASSWORD_POLICY_MESSAGE, code: "password_policy" });
       return;
     }
