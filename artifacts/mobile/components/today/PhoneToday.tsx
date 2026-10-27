@@ -10,7 +10,7 @@
  * (see `showLessonBar`). Amber (`palette.live`) is only on Start class: it
  * means "now".
  */
-import React, { useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -34,6 +34,7 @@ import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { LessonPrepBoard } from '@/components/ui/LessonPrepBoard';
 import { Celebrate } from '@/components/ui/Celebrate';
 import { NotificationBell } from '@/components/ui/NotificationBell';
+import { TourTarget, measureInWindow } from '@/components/tour/TourTarget';
 import { periodClassLabel } from '@/services/classSubjects';
 import { className, classNameFor } from '@/services/materialClass';
 import { todayLabel } from '@/services/dateLabels';
@@ -70,6 +71,20 @@ export function PhoneToday() {
     setDraft('');
   };
 
+  // The first-run tour rings the lesson, the prep board and the ask card, and the
+  // last two are below the fold. Before it measures one, it scrolls it to the top.
+  // The zero-height anchor and the target scroll together, so measuring both gives
+  // the target's place in the content whatever the current scroll offset is.
+  const scrollRef = useRef<ScrollView>(null);
+  const contentTopRef = useRef<View>(null);
+  const revealInScroll = useCallback(async (node: View | null) => {
+    const [anchor, target] = await Promise.all([measureInWindow(contentTopRef.current), measureInWindow(node)]);
+    if (!anchor || !target) return;
+    scrollRef.current?.scrollTo({ y: Math.max(0, target.y - anchor.y - insets.top - SPACE.lg), animated: false });
+    // Let the scroll commit before the tour measures.
+    await new Promise<void>(resolve => setTimeout(resolve, 60));
+  }, [insets.top]);
+
   const rowDir = isRTL ? 'row-reverse' as const : 'row' as const;
   const align = isRTL ? 'right' as const : 'left' as const;
 
@@ -78,12 +93,14 @@ export function PhoneToday() {
   return (
     <View style={{ flex: 1 }}>
       <ScrollView
+        ref={scrollRef}
         style={{ flex: 1, backgroundColor: colors.background }}
         contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
         // Without this a tap on send or a suggestion only closes the keyboard.
         keyboardShouldPersistTaps="handled"
       >
+        <View ref={contentTopRef} collapsable={false} style={{ height: 0 }} />
         <Band
           color={hero}
           motif={theme.motif}
@@ -107,7 +124,7 @@ export function PhoneToday() {
             {t(greetingKey(new Date().getHours()), user?.firstName ?? '')}
           </Text>
 
-          <View style={s.lessonPanel}>
+          <TourTarget id="today-lesson" reveal={revealInScroll} style={s.lessonPanel}>
             {periodLine ? (
               <View
                 style={[
@@ -163,7 +180,7 @@ export function PhoneToday() {
                 <Text style={s.btnText}>{t('changeLesson')}</Text>
               </PressableScale>
             </View>
-          </View>
+          </TourTarget>
         </Band>
 
         <View style={s.content}>
@@ -221,6 +238,7 @@ export function PhoneToday() {
           ) : null}
 
           <Entrance index={section++}>
+            <TourTarget id="today-prep" reveal={revealInScroll}>
             <Surface style={{ padding: SPACE.lg }}>
               <LessonPrepBoard
                 rows={board}
@@ -247,6 +265,7 @@ export function PhoneToday() {
                 allCopiesLabel={t('homePrepAllCopies')}
               />
             </Surface>
+            </TourTarget>
           </Entrance>
 
           <Entrance index={section++}>
@@ -275,6 +294,7 @@ export function PhoneToday() {
             {/* Hands off rather than holding its own thread: one conversation per
                 teacher, and it lives in the chat. Sending opens it with the
                 question already sent. */}
+            <TourTarget id="today-ask" reveal={revealInScroll}>
             <Surface style={{ padding: SPACE.lg, gap: SPACE.md }}>
               <View style={[s.rowCenter, { flexDirection: rowDir }]}>
                 <IqraaMark size={28} tone="soft" />
@@ -328,6 +348,7 @@ export function PhoneToday() {
                 </Text>
               </Pressable>
             </Surface>
+            </TourTarget>
           </Entrance>
 
           <Entrance index={section++}>

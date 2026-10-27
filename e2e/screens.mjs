@@ -76,6 +76,7 @@ for (const colorScheme of ['light', 'dark']) {
       await ctx.addInitScript(([who, lang]) => {
         localStorage.setItem('@iqra_language', lang);
         localStorage.setItem('@iqra_intro_seen_v1', '1');
+        localStorage.setItem('@iqra_tour_off_v1', '1'); // the first-run tour would dim every screenshot
         localStorage.setItem('iqra_access_token', 'fake');
         localStorage.setItem('iqra_refresh_token', 'fake');
         localStorage.setItem('@iqra_user_snapshot_v1', JSON.stringify(who));

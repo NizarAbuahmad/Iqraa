@@ -20,6 +20,7 @@ import { router } from 'expo-router';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { buildCommands, filterCommands, type Command, type NavEntry } from '@/services/commandPalette';
+import { isTourActive } from '@/services/tourStore';
 
 const CARD_WIDTH = 620;
 
@@ -93,6 +94,9 @@ export function CommandPalette({
   useEffect(() => {
     if (!enabled || Platform.OS !== 'web' || typeof document === 'undefined') return;
     const onKey = (e: KeyboardEvent) => {
+      // The first-run tour owns the keyboard while it is up (its own Escape and
+      // Tab handling would fight an open palette), so ⌘K waits.
+      if (isTourActive()) return;
       const s = stateRef.current;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
