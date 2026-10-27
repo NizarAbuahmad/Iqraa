@@ -33,13 +33,15 @@ import { SPACE, TYPE } from '@/constants/theme';
 interface Props {
   role: 'parent' | 'student';
   termsAccepted: boolean;
+  /** The screen's agreement boxes, drawn just above the button they gate. */
+  agreements?: React.ReactNode;
   lang: 'ar' | 'en';
   colors: any;
   isRTL: boolean;
   t: (key: TranslationKey, ...args: any[]) => string;
 }
 
-export function CodeSignupForm({ role, termsAccepted, lang, colors, isRTL, t }: Props) {
+export function CodeSignupForm({ role, termsAccepted, agreements, lang, colors, isRTL, t }: Props) {
   const { redeemCode } = useAuth();
   const lookup = useJoinCodeLookup();
   const [submitting, setSubmitting] = useState(false);
@@ -175,6 +177,8 @@ export function CodeSignupForm({ role, termsAccepted, lang, colors, isRTL, t }: 
           the wrong kind of code, and a dead button would not say so. */}
       {classCodeForParent ? <ErrorBanner text={t('claimParentNeedsOwnCode')} colors={colors} isRTL={isRTL} /> : null}
       {error ? <ErrorBanner text={error} colors={colors} isRTL={isRTL} /> : null}
+
+      {agreements}
 
       <Button
         label={lookup.confirmed ? t('joinConfirmYes') : t('createAccount')}

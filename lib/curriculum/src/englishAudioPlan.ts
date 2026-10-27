@@ -87,6 +87,18 @@ export const PRONUNCIATION: Record<string, string> = {
   eraser:
     'Pronounce it the British way, ih-RAY-zuh (/ɪˈreɪzə/): a short "i" at the start, not "ee"; ' +
     'stress on "RAY"; a "z" sound in the middle, not "s"; no "r" sound at the end.',
+  // A Grade 2 teacher (2026-10-24): "not accurate". The recording was GA-rzh: a short
+  // "a" and then straight into the "zh" with the second vowel all but missing
+  // (measured: its energy is a tenth of the first vowel's).
+  garage:
+    'Pronounce it the British way, GA-rahzh (/ˈɡærɑːʒ/): stress on the first syllable, a short "a" as in "cat"; ' +
+    'then a clear, full, long "ah" as in "father" in the second syllable, ending in the "zh" of "measure". ' +
+    'Do not swallow the second vowel, and do not stress the end ("ga-RAHZH").',
+  // A Grade 4 teacher (2026-10-24): "loudly" is too slow. Measured across all 750 single
+  // words, it and "firefighter" are the two worst: 1.7 s of speech for two syllables, 2.5
+  // times "quietly" — "a little slowly" is read too literally on some words.
+  loudly: 'Say it at a quick, natural speaking pace, LOUD-lee: two short syllables as one smooth word, nothing stretched.',
+  firefighter: 'Say it at a quick, natural speaking pace, FIRE-fy-ter: one smooth word, no pause between the parts.',
 };
 
 /** The model instructions for one item: its register, plus its pronunciation hint if it has one. */
@@ -182,4 +194,33 @@ export function audioPlan(): AudioItem[] {
   for (const w of allHubWords()) add(w, 'word');
   for (const u of GRAMMAR_UNITS) for (const t of unitSpoken(u)) add(t, 'grammar');
   return [...items.values()];
+}
+
+/**
+ * The clips one hub lesson plays, once per slug: its words, then the strings its
+ * grammar unit speaks (`unitSpoken`, which already leaves out the True-or-false
+ * twins nobody hears). The phone fetches these ahead when the lesson opens
+ * (`prefetchLessonAudio` in the app), so it reads the same two inputs `audioPlan()`
+ * does — every slug here is one the generator voices, and a test pins that.
+ *
+ * `grammar: false` for a lesson whose grammar no teacher has signed: the app does
+ * not show it, so fetching its sentences would spend the rate-limited link on
+ * clips nobody can reach.
+ */
+export function lessonAudioTexts(lessonId: string, opts: { grammar?: boolean } = {}): string[] {
+  const lesson = hubLesson(lessonId);
+  if (!lesson) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const add = (text: string) => {
+    const slug = audioSlug(text);
+    if (!slug || seen.has(slug)) return;
+    seen.add(slug);
+    out.push(text);
+  };
+  for (const w of lesson.words) add(w.en);
+  if (opts.grammar !== false) {
+    for (const u of GRAMMAR_UNITS) if (u.lessonId === lessonId) for (const t of unitSpoken(u)) add(t);
+  }
+  return out;
 }

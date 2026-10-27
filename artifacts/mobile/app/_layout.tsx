@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { View } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/services/queryClient';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -8,6 +9,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AppSplash } from '@/components/ui/AppSplash';
 import { ConfirmHost } from '@/components/ui/ConfirmDialog';
 import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
+import { TourHost, useTourActive } from '@/components/tour/TourHost';
 /**
  * Arabic type. Inter has no Arabic glyphs, so every Arabic string — which is
  * nearly the whole product — was being drawn by whatever fallback each device
@@ -32,7 +34,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { hasSeenAppIntro } from '@/services/appIntro';
-import { CLAIM_REQUIRED_ROUTE, isEntryRoute, isNonTeacherRoute, isPublicRoute, GRADE_SETUP_ROUTE, needsGradeSetup, needsRosterClaim, needsTeacherSetup, TEACHER_SETUP_ROUTE } from '@/services/routeGating';
+import { shouldTrackScreen } from '@/services/screenTracking';
+import { CLAIM_REQUIRED_ROUTE, guardianGate, isEntryRoute, isNonTeacherRoute, isPublicRoute, GRADE_SETUP_ROUTE, needsGradeSetup, needsRosterClaim, needsTeacherSetup, TEACHER_SETUP_ROUTE } from '@/services/routeGating';
 import { identifyUser, initAnalytics, resetAnalyticsIdentity, trackEvent, trackScreen } from '@/services/analytics';
 import { subscribeToGenerations } from '@/services/ai/aiProvenance';
 import { clearCrashContext, initCrashReporting, setCrashContext } from '@/services/crashReporting';
@@ -71,6 +74,20 @@ function RootLayoutNav() {
     // signed-out one would send them to a login screen they can never pass,
     // and the signed-in one would yank a teacher testing the link to the tabs.
     if (isPublicRoute(pathname)) {
+      wasLoading.current = false;
+      wasSignedIn.current = signedIn;
+      return;
+    }
+
+    // A student the server is holding for a parent's approval goes to the waiting screen from anywhere else,
+    // and a student who is no longer held is moved off it. Before the other gates, which would send a held
+    // student to screens the server refuses (grade setup saves through a route that is not open to them).
+    // A held student is consumed here on the open screens too (waiting, join-class, delete-account): they are
+    // not redirected, but the later gates must not run for them either, or an email student with no grades
+    // is sent to /setup-grade and back by this gate, forever (see `guardianGate`).
+    const g = signedIn && user ? guardianGate(user, pathname) : { redirect: null, stop: false };
+    if (g.redirect) router.replace(g.redirect as any);
+    if (g.stop) {
       wasLoading.current = false;
       wasSignedIn.current = signedIn;
       return;
@@ -165,8 +182,11 @@ function RootLayoutNav() {
 
   // One screen-view event per route change — covers every screen in the app
   // (not just AI tools) without instrumenting each one individually.
+  // Mind the parent's page (/guardian#token): expo-router also keeps the URL fragment in the route params
+  // (`params['#']`), so on web nothing may log or send global params / navigation state without excluding
+  // `/guardian` first, as shouldTrackScreen does here.
   useEffect(() => {
-    if (pathname) trackScreen(pathname);
+    if (pathname && shouldTrackScreen(pathname)) trackScreen(pathname);
   }, [pathname]);
 
   /**
@@ -189,8 +209,16 @@ function RootLayoutNav() {
     if (!isLoading) SplashScreen.hideAsync().catch(() => {});
   }, [isLoading]);
 
+  // While the first-run tour is up the app behind it is hidden from screen
+  // readers — the tour card is the only thing that should be read. `aria-hidden`
+  // is the one spelling all three platforms act on: React Native maps it to
+  // Android's `importantForAccessibility` and iOS's `accessibilityElementsHidden`,
+  // and react-native-web puts it on the DOM, where it ignores those two props.
+  const tourActive = useTourActive();
+
   return (
     <>
+    <View style={{ flex: 1 }} aria-hidden={tourActive ? true : undefined}>
     <Stack
       screenOptions={{ headerShown: false, animation: 'fade' }}
       // Every screen's content sits above the keyboard — see KeyboardSafeView
@@ -233,10 +261,13 @@ function RootLayoutNav() {
       <Stack.Screen name="join-class" options={{ headerShown: false }} />
       <Stack.Screen name="add-email" options={{ headerShown: false }} />
       <Stack.Screen name="claim-required" options={{ headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="guardian-waiting" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="setup-subjects" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="setup-grade" options={{ headerShown: false }} />
     </Stack>
+    </View>
     <AppSplash visible={isLoading} onLayout={() => SplashScreen.hideAsync().catch(() => {})} />
+    <TourHost />
     <ConfirmHost />
     </>
   );

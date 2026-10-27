@@ -82,7 +82,7 @@ function sentenceSection(lessonId: string): string {
 function renderUnit(u: ReadingUnit, grade: number): string {
   const lesson = hubLesson(u.lessonId)!;
   const rows = lesson.words.map((w, i) => {
-    const pic = wordPicture(w.en);
+    const pic = wordPicture(w.en, w.ar);
     const letter = firstSound(w.en);
     const skip = firstSoundSkip(w.en);
     const sound = letter

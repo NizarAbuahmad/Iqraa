@@ -46,7 +46,7 @@ import {
 import { getPickerGrades, getPickerSubjects, hasCurriculumForSubjectGrade } from '@/services/curriculumData';
 import { AR_LATIN } from '@/services/dateLabels';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
-import { loadLessonPick, loadPrepBoardOpen, loadPrepSkips, saveLessonPick, savePrepBoardOpen, setPrepSkip, timetableWins, type HomeLessonPick } from '@/services/lessonContext';
+import { loadLessonPick, loadPrepBoardOpen, loadPrepSkips, publishScheduledLesson, saveLessonPick, savePrepBoardOpen, setPrepSkip, timetableWins, type HomeLessonPick } from '@/services/lessonContext';
 import {
   buildResponse,
   deduplicateByUnit,
@@ -60,7 +60,7 @@ import { KB_SUGGEST_SCORE, shouldAskWhichLesson } from '@/services/kbSuggestion'
 import { Toast } from '@/components/ui/Toast';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
 import { DEMO_MODE } from '@/services/ai/demoMode';
-import { aiErrorText, isCapError } from '@/services/ai/aiProvenance';
+import { aiErrorText, isCapError, startClassFailure } from '@/services/ai/aiProvenance';
 import { shouldSendOnEnter } from '@/services/composerKeys';
 import type { ArtifactScope } from '@/services/ai/artifactScope';
 import {
@@ -181,6 +181,7 @@ import {
 import { quizExports, type QuizCopy } from '@/services/quizExport';
 import { worksheetExports } from '@/services/worksheetExport';
 import { buildClassDeck } from '@/services/startClass';
+import { fitTextareaHeight } from '@/services/webTextarea';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
@@ -1446,6 +1447,7 @@ export default function IqraScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [inputFocused, setInputFocused] = useState(false);
+  const composerRef = useRef<TextInput>(null);
   const [isThinking, setIsThinking] = useState(false);
   /**
    * The assistant bubble being filled by a streamed reply, if any. While set
@@ -1488,6 +1490,7 @@ export default function IqraScreen() {
   const [lessonCardCollapsed, setLessonCardCollapsed] = useState(true);
   const [startingClass, setStartingClass] = useState(false);
   const [startClassError, setStartClassError] = useState('');
+  const [startClassNote, setStartClassNote] = useState(false);
   const [changeLessonOpen, setChangeLessonOpen] = useState(false);
   /** Set only while a picker opened by the `openLessonPicker` param is up; an in-chat open leaves it null. */
   const pickerReturnTo = useRef<string | null>(null);
@@ -1618,6 +1621,29 @@ export default function IqraScreen() {
    */
   const viewportW = useViewportWidth();
   const isDesktop = Platform.OS === 'web' && viewportW >= DESKTOP_BREAKPOINT;
+
+  /*
+    The web composer is a <textarea> that react-native-web leaves two rows tall
+    and never resizes: the empty field kept its placeholder on the top row with
+    the buttons level with the empty one below. One row while empty, and it
+    follows what is typed; a native build already grows its own input and the
+    ref there has no `style` to write to (`fitTextareaHeight` does nothing).
+    Re-fitted when the window width changes too, as a line may wrap differently,
+    and once the web fonts are in: the first fit runs before Almarai loads, and a
+    placeholder that wraps in the real font left a clipped second line in a field
+    measured with the fallback one.
+  */
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const fit = () =>
+      fitTextareaHeight(composerRef.current as unknown as Parameters<typeof fitTextareaHeight>[0]);
+    fit();
+    let live = true;
+    (globalThis as { document?: { fonts?: { ready: Promise<unknown> } } }).document?.fonts?.ready
+      .then(() => { if (live) fit(); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [input, viewportW]);
 
   // Web has no notch and no native header, so the 67pt allowance left a band
   // of dead space above the logo in the browser.
@@ -1863,6 +1889,10 @@ export default function IqraScreen() {
     void Promise.all([loadLessonPick(), loadNextPeriod()]).then(([saved, next]) => {
       const scheduled = next?.lessonId ? resolveLessonPrepContext(next.lessonId, lang as 'ar' | 'en') : null;
       const fromSchedule = timetableWins(saved, !!scheduled, todayISO());
+      // The lesson bar and the sidebar card name this lesson too, when the chat is the first screen opened.
+      publishScheduledLesson(
+        scheduled ? { topic: scheduled.topic, lessonId: scheduled.lessonId, gradeId: scheduled.gradeId, subjectId: scheduled.subjectId } : null,
+      );
       setPeriodLine('');
       if (fromSchedule && next) {
         listClasses()
@@ -3396,6 +3426,7 @@ export default function IqraScreen() {
     if (!topic) return;
     setStartingClass(true);
     setStartClassError('');
+    setStartClassNote(false);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       // A «عرض الحصة» already saved for this lesson is the deck the teacher
@@ -3425,14 +3456,17 @@ export default function IqraScreen() {
       setPendingClassroomActivity(activity);
       trackEvent('class_started', { source: 'chat', deck: 'built' });
       router.push('/ai-tools/classroom/presentation' as any);
-    } catch {
+    } catch (e) {
       // Surfacing this as a chat message would still be wrong — the teacher
       // pressed a button on a card, they did not ask a question. But saying
       // nothing at all was worse: `Haptics` is a no-op on web, so the whole
       // failure signal was a buzz that platform never plays, and the press
       // vanished. The card says what happened instead, and stays the retry.
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setStartClassError(t('startClassFailed'));
+      const failure = startClassFailure(e);
+      // A spent allowance is a state to read, not a failed press: no error buzz.
+      if (!failure.note) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setStartClassError(t(failure.key));
+      setStartClassNote(failure.note);
     } finally {
       setStartingClass(false);
     }
@@ -3778,6 +3812,7 @@ export default function IqraScreen() {
           startClassLabel={t('startClass')}
           startClassBusy={startingClass}
           startClassError={startClassError}
+          startClassNote={startClassNote}
           onStartClass={handleStartClass}
           changeLabel={t('changeLesson')}
           clearLabel={t('unpinLesson')}
@@ -3792,6 +3827,9 @@ export default function IqraScreen() {
           }}
           // The board right below it is already counting, from better data.
           hideCount={Boolean(introPrepBoard)}
+          // «0/5» alone does not say five of what; the window has room to.
+          readyLabel={(done, total) => t('homeReady', done, total)}
+          readyInline={isDesktop}
           // A band welded to both window edges on desktop; a card over the
           // thread it describes here.
           containerStyle={
@@ -4128,8 +4166,15 @@ export default function IqraScreen() {
             <Ionicons name="add" size={20} color={colors.primary} />
           </Pressable>
           <TextInput
+            ref={composerRef}
+            // Web only: a one-row <textarea> that `fitTextareaHeight` grows. Native
+            // sizes its own multiline input, and `rows` there is Android's line count.
+            {...(Platform.OS === 'web' ? { rows: 1 } : {})}
             style={[
               styles.input,
+              // Web's one line is as tall as the send button, so a single line of
+              // text sits level with the buttons instead of on the bottom edge.
+              Platform.OS === 'web' && styles.inputWeb,
               isDesktop && styles.inputWide,
               { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' },
             ]}
@@ -4420,6 +4465,8 @@ const styles = StyleSheet.create({
   inputBarInner: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
   inputWrap: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 14, paddingVertical: 8, gap: 8 },
   input: { flex: 1, fontSize: 15, maxHeight: 100, paddingVertical: 0, outlineStyle: 'none' as never },
+  // 22 + 2×8 = 38, the send button's height: one line sits level with the buttons.
+  inputWeb: { lineHeight: 22, paddingVertical: 8 },
   inputWide: { fontSize: 15, maxHeight: 160, lineHeight: 22 },
   plusBtn: {
     width: 34,

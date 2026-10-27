@@ -28,13 +28,15 @@ import { TYPE } from '@/constants/theme';
 import { postGameResult } from '@/services/homeworkApi';
 import { SendStatus } from '@/components/ui/SendStatus';
 import {
-  availableLessonGames, buildTermSpotRound, lessonTerms, type LessonGame, type TermSpotQuestion,
+  availableLessonGames, buildMeaningRound, buildTermSpotRound, lessonTerms, type LessonGame, type MeaningQuestion,
+  type TermSpotQuestion,
 } from '@/services/lessonGames';
 
 const META: Record<LessonGame, { icon: keyof typeof Ionicons.glyphMap; color: string; titleKey: TranslationKey; descKey: TranslationKey }> = {
   memory: { icon: 'apps-outline', color: '#0369A1', titleKey: 'lessonGameMemoryTitle', descKey: 'lessonGameMemoryDesc' },
   scramble: { icon: 'shuffle-outline', color: '#7C3AED', titleKey: 'lessonGameScrambleTitle', descKey: 'lessonGameScrambleDesc' },
   spot: { icon: 'search-outline', color: '#831843', titleKey: 'lessonGameSpotTitle', descKey: 'lessonGameSpotDesc' },
+  meaning: { icon: 'book-outline', color: '#047857', titleKey: 'lessonGameMeaningTitle', descKey: 'lessonGameMeaningDesc' },
 };
 
 export default function LessonGamesScreen() {
@@ -50,6 +52,7 @@ export default function LessonGamesScreen() {
   );
   const terms = useMemo(() => (lesson ? lessonTerms(lesson) : []), [lesson]);
   const spotRound = useCallback(() => (lesson ? buildTermSpotRound(lesson) : []), [lesson]);
+  const meaningRound = useCallback(() => (lesson ? buildMeaningRound(lesson) : []), [lesson]);
 
   const title = lesson ? (lang === 'ar' ? lesson.titleAr : lesson.title) || lesson.titleAr : '';
   const back = () => setGame(null);
@@ -114,6 +117,33 @@ export default function LessonGamesScreen() {
     );
   }
 
+  if (lesson && game === 'meaning') {
+    return (
+      <TriviaBoard<MeaningQuestion>
+        titleKey="lessonGameMeaningTitle"
+        accent={META.meaning.color}
+        buildRound={meaningRound}
+        onBack={back}
+        analytics={analytics}
+        onFinished={finish}
+        footer={footer}
+        renderPrompt={q => (
+          <View style={[styles.definition, surface]}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: TYPE.caption, textAlign: 'center' }}>
+              {t('lessonGameMeaningPrompt')}
+            </Text>
+            <Text style={{ color: colors.foreground, fontFamily: 'Almarai_700Bold', fontSize: TYPE.bodyLg, lineHeight: 28, textAlign: 'center' }}>
+              {q.definition}
+            </Text>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.micro, textAlign: 'center' }}>
+              {t(q.source === 'book-glossary' ? 'lessonGameMeaningSource' : 'lessonGameMeaningDraftSource')}
+            </Text>
+          </View>
+        )}
+      />
+    );
+  }
+
   return (
     <CornerFrame title={t('lessonGamesTitle')} subtitle={title}>
       {games.length === 0 ? (
@@ -147,5 +177,6 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, padding: 20 },
   cell: { flexBasis: '46%', flexGrow: 1 },
   card: { flexGrow: 1, padding: 18, gap: 8, alignItems: 'center' },
+  definition: { padding: 18, gap: 10, alignItems: 'center' },
   iconWrap: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
 });

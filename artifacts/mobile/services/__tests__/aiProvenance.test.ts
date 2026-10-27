@@ -8,6 +8,7 @@ import {
   isAbortError,
   throwIfAborted,
   isCapError,
+  startClassFailure,
   getGenerationHistory,
   getLastGeneration,
   recordGeneration,
@@ -398,4 +399,22 @@ test('throwIfAborted rejects a cancelled signal the way fetch would', () => {
 test('throwIfAborted is a no-op on a live signal', () => {
   const controller = new AbortController();
   assert.doesNotThrow(() => throwIfAborted(controller.signal));
+});
+
+// ─── startClassFailure ───────────────────────────────────────────────────────
+
+test('startClassFailure says the allowance is spent, as a note rather than an error', () => {
+  for (const code of ['user_quota_exceeded', 'budget_exceeded']) {
+    assert.deepEqual(startClassFailure({ code }), { key: 'aiQuotaSpent', note: true });
+  }
+});
+
+test('startClassFailure says the AI is switched off, as a note', () => {
+  assert.deepEqual(startClassFailure({ code: 'live_mode_off' }), { key: 'aiUnavailable', note: true });
+});
+
+test('startClassFailure keeps the generic retry message for everything else', () => {
+  for (const e of [new Error('boom'), { code: 'generation_in_flight' }, { code: 'no_question_bank' }, null, undefined]) {
+    assert.deepEqual(startClassFailure(e), { key: 'startClassFailed', note: false });
+  }
 });

@@ -4,7 +4,7 @@
  * Grade 1 reading activities likewise (`offeredReading`), and the end-of-round
  * card.
  */
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +17,7 @@ import type { TranslationKey } from '@/services/i18n';
 import { GRAMMAR_ACTIVITIES, HUB_ACTIVITIES, READING_ACTIVITIES, dayOf, grammarActivityAvailable, lessonHasPictureMatch, newlyEarnedBadges, progressKey, readSentenceAvailable, readingActivityAvailable, recordResult, starsFor, trueFalseDescKey, yesNoDescKey, type BadgeId, type HubActivity } from '@/services/englishHub/games';
 import { useHubProgress } from '@/services/englishHub/progressStore';
 import { goBack } from '@/services/navigation';
+import { prefetchLessonAudio } from '@/services/englishAudio';
 import { trackEvent } from '@/services/analytics';
 import { unitNames } from '@/services/contentLanguage';
 import { Flashcards, ListenChoose, MatchMeaning, PictureMatch, Scramble, Speaking, SpellIt } from '@/components/englishHub/Activities';
@@ -67,6 +68,15 @@ export default function EnglishHubLessonScreen() {
   const grammar = useMemo(() => offeredGrammar(lessonId ?? ''), [lessonId]);
   const reading = useMemo(() => offeredReading(lessonId ?? ''), [lessonId]);
   const readingSentences = useMemo(() => offeredReadingSentences(lessonId ?? ''), [lessonId]);
+  // On a phone, fetch this lesson's clips ahead so its activities play without the network
+  // (a no-op on the web). Grammar strings only once the grammar is offered: they are not shown before.
+  // Leaving the lesson cancels what has not started.
+  const lessonShown = Boolean(lesson);
+  const grammarShown = grammar !== null;
+  useEffect(() => {
+    if (!lessonId || !lessonShown) return undefined;
+    return prefetchLessonAudio(lessonId, { grammar: grammarShown });
+  }, [lessonId, lessonShown, grammarShown]);
   const row = isRTL ? 'row-reverse' : 'row';
   const align = isRTL ? 'right' : 'left';
 

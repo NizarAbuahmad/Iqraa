@@ -70,6 +70,7 @@
     "@react-native-firebase/crashlytics": "^26.4.0",
     "@react-native-google-signin/google-signin": "^16.1.5",
     "@react-navigation/bottom-tabs": "^7.18.14",
+    "@react-navigation/elements": "^2.9.36",
     "@workspace/arabic-spelling": "workspace:*",
     "@workspace/exam-paper": "workspace:*",
     "@workspace/math-practice": "workspace:*",

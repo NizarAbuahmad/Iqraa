@@ -21,6 +21,13 @@ describe('where the English clips live', () => {
     assert.equal(auditBase, appBase);
   });
 
+  it('the speech check fetches the URL the app plays from', () => {
+    const check = read('../../scripts/check-english-audio.ts');
+    const checkBase = check.match(/const DEFAULT_AUDIO_BASE_URL = '([^']+)'/)?.[1];
+    assert.ok(appBase, 'ENGLISH_AUDIO_BASE_URL not found in the app');
+    assert.equal(checkBase, appBase);
+  });
+
   it('the generator uploads under the prefix the app reads', () => {
     assert.equal(ENGLISH_AUDIO_PREFIX, 'english-audio');
     assert.ok(appBase!.endsWith(`/${ENGLISH_AUDIO_PREFIX}`), appBase);

@@ -22,15 +22,22 @@ math answer keys (`artifacts/math-verifier`), RTL/Arabic-first UX.
 Checked 2026-10-22:
 
 - **API** `iqraa-api` (Cloud Run, europe-west1, project `iqraa-auth-507315`): commit
-  `9346b5f`, revision `iqraa-api-00390-d4p`, 100% of traffic (`/api/healthz/version`).
+  `2277f57` **(2026-10-25, from deploy run 801 — its «Verify the deployed commit» step passed; the
+  revision name and traffic split were not re-read)**. Last read by command, 2026-10-22: `9346b5f`,
+  revision `iqraa-api-00390-d4p`, 100% of traffic (`/api/healthz/version`).
+- **Site assistant «اسأل إقرأ»** (checked 2026-10-26 by command): `POST /api/site/ask` is live
+  and the widget is on `www.iqrra.com` (`Site_Iqra`). The three starter questions are answered from
+  fixed answers (`source: "curated"`); anything else goes to the AI path, capped by
+  `SITE_BOT_BUDGET_USD_DAILY` (unset until 2026-10-27, then set to `1` a day by the owner, revision
+  `iqraa-api-00445-4fm`, read back as `1`) and counted in `AI_BUDGET_USD`. See «`اسأل إقرأ` is live on iqrra.com» in the log.
 - **Math verifier** `iqraa-verifier`: `/api/healthz/verifier` answers `ok`, self-test `pass`.
 - **Web app** `app.iqrra.com` (Cloudflare Pages): 200. **Landing** `iqrra.com` (separate repo
   `Site_Iqra`, Vercel) answers 308 to `www.iqrra.com`, which is 200.
 - **Database:** Neon Postgres, **Launch plan since 2026-10-23** (was Free: 100 compute-hours a
   month, 30.92 used, after which Neon suspends the compute), autoscaling 0.25-0.5 CU, scale to
   zero on, $10 spend alert — see «Neon leaves the Free plan before launch» in the log and the
-  first item under *Open*. The schema deploys as migrations (17 files in
-  `lib/db/migrations`); `verify-schema` runs before every API deploy.
+  first item under *Open*. The schema deploys as migrations (19 files in
+  `lib/db/migrations`, `0018` applied by deploy run 801 on 2026-10-25); `verify-schema` runs before every API deploy.
 - **Live config** (plain env on the service): `AI_LIVE_MODE=true`; models `gpt-5.4-mini`
   for generation and for chat (`AI_MODEL_DOCUMENTS`, which would move lesson plans,
   worksheets, quizzes and slide decks to Claude Sonnet 5.5, is **unset**: the code is in,
@@ -58,13 +65,23 @@ Checked 2026-10-22:
 
 ## Open
 
-- **A student can sign up with an email and no teacher's code — the legal wording needs a person
-  to read it before this merges.** The privacy policy §5 and terms §1 (`constants/legal.ts`,
-  `LEGAL_VERSION` 2026-10-23) now say a student may join with an email after confirming they are
-  an adult or have a guardian's agreement; they were drafted, not reviewed by a lawyer, and the
-  store declaration (`lib/features.ts` comment) still describes accounts made only through a
-  class. Merging deploys it, and every user is asked to accept the new version. Becoming a
-  student by switching role asks for the same confirmation as signing up as one. Entry:
+- **`GUARDIAN_APPROVAL` is built (server and app), merged and deployed (PR #1274, 2026-10-25), and
+  off; do not set it** until the app has
+  reached users, the parent-consent wording has been read by a native speaker and a lawyer, and
+  `constants/legal.ts` and `LEGAL_VERSION` are updated. With it on, every email student with no
+  teacher link is held (403 `guardian_approval_required`) until a parent approves by email, and
+  existing email students are locked out until a parent acts. The owner's steps are numbered in
+  the entry «Parent approval for email students — the app (PR B)» in the log; the server side is
+  «Parent approval for email students — server (PR A)».
+- **A student can sign up with an email and no teacher's code (PR #1226, merged 2026-10-24) — the
+  legal wording still needs a person to read it.** The privacy policy §5 and terms §1
+  (`constants/legal.ts`, `LEGAL_VERSION` 2026-10-23) say a student may join with an email after
+  confirming they are an adult or have a guardian's agreement. They were drafted, not reviewed by
+  a lawyer, and nothing in the repo records a review since. Merging deploys, so every user is
+  asked to accept that version. The code comment on the store declaration
+  (`artifacts/api-server/src/lib/features.ts`) now describes both ways in; **the store declaration
+  itself (Play Console) was not checked** and may still say accounts are made only through a class.
+  Becoming a student by switching role asks for the same confirmation as signing up as one. Entry:
   «Students choose an email or a teacher's code» in the log.
 - **Neon is on Launch (applied 2026-10-23 by the owner); two checks remain.** Autoscaling 0.25-0.5
   CU, scale to zero on: about $10 a month expected, about $39 at most (estimates; read Neon's
@@ -114,6 +131,18 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-25 — Grade 8 semester 1 word lists in the English corner
+- 2026-10-25 — English audio check: the first real run, and three kinds of false alarm removed
+- 2026-10-25 — Lesson games: «ما معنى المصطلح؟» from the books' printed glossary, and a draft route that stays hidden
+- 2026-10-25 — A parent signs up with an email or a teacher's code
+- 2026-10-25 — Parent approval for email students: merged and deployed, flag still off
+- 2026-10-24 — Parent approval for email students: the app (off)
+- 2026-10-24 — Parent approval for email students: the server (off)
+- 2026-10-24 — English audio: a speech-to-text check of every recording
+- 2026-10-24 — English corner: all ten grades, the official books, and free listening and reading sites
+- 2026-10-24 — English audio on phones: clips are saved on the device and a lesson's clips are fetched ahead
+- 2026-10-24 — Tests for the roster consent gate
+- 2026-10-24 — Tests for the login-code reissue route
 - 2026-10-24 — Grade 10 grammar (Semester 2) in the English corner — built, shown to nobody yet
 - 2026-10-24 — English audio: voice register fixed, clips trimmed and levelled, and an audit that needs no keys
 - 2026-10-24 — Tests for the code-only account routes
@@ -132,22 +161,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-23 — The "now" amber is only for now
 - 2026-10-23 — Grammar-only hub lessons, and the last five Grade 9 grammar lessons — built, shown to nobody yet
 - 2026-10-23 — Grade 9 grammar: the passive added, and a wrong «no hub lesson» corrected
-- 2026-10-23 — The tab bar is drawn
-- 2026-10-23 — Neon leaves the Free plan before launch
-- 2026-10-23 — Leftover icon colours follow CONCEPTS
-- 2026-10-23 — Grade 9 grammar, thirteen lessons in the English corner — built, shown to nobody yet
-- 2026-10-23 — Iqraa draws its own icons
-- 2026-10-23 — Grade 9 grammar pilot (Unit 4) in the English corner — built, shown to nobody yet
-- 2026-10-23 — Icons follow one system
-- 2026-10-22 — Today wears the lesson's subject
-- 2026-10-22 — Grade 5 in the English corner — words glossed, recordings still to make
-- 2026-10-22 — The desktop Tools grid reads right to left in Arabic
-- 2026-10-22 — Live games: students answer from any device
-- 2026-10-22 — Status-bar icons read on the corner bands
 
 ## Finding older detail, and recording new work
 
-- The log has 397 sections. Anything cited elsewhere as
+- The log has 415 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line
