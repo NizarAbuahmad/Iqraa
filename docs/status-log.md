@@ -70,6 +70,118 @@ homework), none a question back, none a different material; English: «Create le
 native speaker; «جهّز» is the verb the app already used on six tool buttons. Marketing material outside this repo that quotes
 «حضّر خطة درس» (the tutorial video text in `marketing/tutorial/build.py`) is unchanged.
 
+## First-run spotlight tour for new accounts, 2026-10-26
+
+**Why.** A new teacher, student or parent landed on their home screen with no guidance: the only intro is
+the pre-login carousel, and the in-app coach card was retired. The ask was a walkthrough in the style of
+other apps — dim the screen, ring one real element, say one thing about it, move on — and "feel free to
+suggest something better". Design: [`docs/superpowers/specs/2026-10-26-first-run-tour-design.md`](./superpowers/specs/2026-10-26-first-run-tour-design.md).
+
+**Built.**
+- **Engine** (pure, `node --test`-able): `services/tour.ts` (steps per role × layout, `tourBlocker` eligibility,
+  step navigation, storage keys), `tourStore.ts` (live state + analytics), `tourRegistry.ts` (a target id can
+  have several registrants; the first with an area wins), `tourPlacement.ts` (hole, even-odd scrim path, card
+  placed below / above / beside / docked, connector), `tourStorage.ts` (fails closed).
+- **UI**: `components/tour/` — `TourHost` (a root overlay, **not a `<Modal>`**), `TourCard`, `TourTarget` /
+  `useTourTarget`, `TourTabButton`; `hooks/useTour.ts` (autostart and Replay). The scrim, the dashed ring, the
+  connector and its dot are one `react-native-svg` drawing; the text sits on a solid card, which is the
+  improvement over the reference screenshots (contrast in light, dark, Arabic and English).
+- **Wired**: root layout (the app behind the tour is hidden from screen readers), the tab bar (a custom
+  `tabBarButton` on a phone), the desktop sidebar rows, Today on phone and desktop, a Profile row
+  «إعادة الجولة التعريفية», and the existing `howIntroReplay` help answer, whose «no button to watch it again»
+  was no longer true.
+- **Steps**: teacher phone / desktop 6 (welcome, lesson, prep board, ask card or sidebar chat, Tools, Profile),
+  student 5, parent 4. A step whose target is not on screen is dropped.
+- **Who sees it on its own**: an account created on or after `TOUR_SINCE` (2026-10-27) and at most 14 days
+  ago, once the app has put it on its home screen with no setup or approval gate pending (the gates are
+  imported from `routeGating.ts`, not copied). It is **marked done when it starts**. Everyone else has
+  Profile → Replay. The flag is on the device, per account (`@iqra_tour_done_v1:<id>`); no migration.
+- **New dependency**: `@react-navigation/elements` ^2.9.36, already installed transitively (2.9.36), pure JS —
+  **no `app.json` `version` bump**, so it is OTA-safe. The lockfile change is a deliberate 3-line hand edit:
+  `pnpm add` re-serialised every `(supports-color@8.1.1)` peer suffix in the file (800+ lines of noise, no
+  version change), so it was reverted and the importer entry added with the string already in the lockfile;
+  `pnpm install --frozen-lockfile` accepts it.
+
+**Verified.**
+- Unit tests: 72 new (steps, eligibility matrix, navigation, registry, placement, store + analytics, and a
+  source-scan contract `tourTargets.test.ts` that reads both sides of every target name). Mutation-checked:
+  renaming a step's target fails the contract test. Whole mobile suite on the final tree (after merging
+  `main` — 4 commits, one textual conflict, in this file — and the review fixes below): 7,876 pass, 0 fail,
+  10 skipped (none tour-related).
+- `pnpm run typecheck` in `artifacts/mobile`: 12 errors, **the same 12 on a clean tree** (push-token and
+  Quran-audio typings, `expo-file-system` types — a sandbox artefact), none in a file this change touched.
+- Built web bundle driven in Chromium with a stubbed API, teacher / student / parent × phone (390×844) /
+  desktop (1280×720) × Arabic / English × light / dark: every step shows, each ring is on its target, Done
+  closes it, a reload does not bring it back. Also: Escape, Skip, Back, Replay from Profile, a fresh teacher
+  (the tour is **not** drawn over `/setup-subjects` and opens on Today after it), the suppress switch, an
+  account older than 14 days (no tour), a resize inside the desktop layout (stays), and a drag across the
+  sidebar breakpoint (ends cleanly, the app underneath is usable). Screenshots were looked at, which found
+  and fixed: a harsh black browser focus ring on Next (now the brand's 3 px ring), a dark-mode scrim that
+  barely dimmed a navy page, a card that covered the very sidebar rows the next steps point at, and a
+  desktop→phone resize that ended the tour through the "target missing" path and reported it completed.
+- Real API + real Postgres (migrations applied, `seed:assessment`, API built — the e2e workflow's own steps):
+  `teacher-to-student.spec.ts` still passes, and the new `tour.spec.ts` passes — a real sign-up, subject
+  setup with no tour over it, the tour on Today, walking it, no repeat after a reload, Replay, Escape. With the
+  suppress switch on, `tour.spec.ts` fails, as it should. `teacher-to-student.spec.ts` also passes **without**
+  the switch today (it leaves Today by a reload inside the tour's 700 ms wait), so the switch there is a guard
+  against a future race, not a present fix; an earlier draft of its comment claimed more and was corrected.
+- Arabic copy reviewed (native-reader pass). It found four things that were then fixed: the prep step called
+  items «جاهز بضغطة» while the board says «لم تُنشأ بعد» and offers «أنشئ»; it used «الشرائح» / «النشاط»
+  where the board says «عرض الحصة» / «نشاط صفّي»; the Library step described books only, and the screen says
+  worksheets, videos, photos, activities and book resources; and «الأسئلة الشائعة» is not the row's name
+  («كيف أستخدم إقرأ؟»). Singular «المعلم» became «المعلمين» (a student has several). The English got the same.
+- An independent code review (a separate reviewer reading the diff cold) found no blockers, five should-fix
+  items and seven nits; each was checked against the code before acting (two against react-native-web's
+  source), and all but one were fixed:
+  - the card could outgrow a small phone under large accessibility text and push Skip off the screen →
+    the card is capped to the screen and its text scrolls; the centred and docked positions can no longer be
+    negative (browser-checked in a 390×300 window: Next and Skip stay on screen);
+  - on web the app behind the tour stayed in the accessibility tree — react-native-web ignores
+    `importantForAccessibility` / `accessibilityElementsHidden` → now `aria-hidden`, which all three platforms act on;
+  - on web a screen reader heard nothing after step 1 (Next keeps focus, the text just changes) → a polite live region;
+  - Replay waited a fixed 700 ms after navigating and could be ended by the overlay's own "not on the home
+    route" check on a slow device → a replay is now a *request* that starts once the home screen has held
+    still, like the automatic start (the request lapses after 8 s if navigation stalls);
+  - «كلٌّ منها يُنشأ بضغطة» promised more than the button does (it opens the generator) → «على بُعد ضغطة»;
+  - the "of N" shrank when a step was dropped, and `tour_step` was reported for a step nobody saw → steps whose
+    target is not mounted are left out when the tour begins, and `tour_step` is sent when a step is *shown*;
+  - ⌘K opened the command palette over the tour and fought its Escape / Tab handling → the palette ignores ⌘K
+    while a tour is up (browser-checked with a positive control: it opens once the tour is over);
+  - the overlay could stay dimmed with no card if its own `measureInWindow` never answered → falls back to
+    its layout size at the window's corner; a target wholly off the screen is dropped, not given a negative ring;
+  - the e2e now asserts "Step 6 of 6", so it fails if middle steps go missing; a spacing comment was corrected.
+  - `TOUR_SINCE` was a date written on the day of the work (2026-10-26); it was then set to 2026-10-27 on
+    request. See *Before merging* below: it still has to match the day the change is merged.
+
+**Not verified.**
+- **Any real phone.** All of the above is the web build in desktop Chromium. Not seen on a device: Android
+  hardware Back (`BackHandler`), edge-to-edge / status-bar offsets in the overlay's own-origin maths,
+  `measureInWindow` against a target mid-`Entrance` on the native driver, `collapsable={false}` on every
+  target, the iOS blur tab bar behind a ring, TalkBack / VoiceOver reading the step and ignoring the app
+  behind it. **Ship to the `preview` OTA channel and look on a phone before the manual `production` publish.**
+- The tab-button path was typechecked and run on web only; on native it renders the same `PlatformPressable`
+  react-navigation would have, with a ref.
+- Student and parent were walked with a stubbed API, not a real account: the e2e cannot make one
+  (`STUDENT_ACCOUNTS` is off there).
+- The review's fixes for a **stalled replay navigation** and an **overlay that cannot measure itself** are
+  covered by unit tests of the store and by the normal Replay path in the browser, but neither failure was
+  reproduced (a slow device, a `measureInWindow` that never answers). Large accessibility text was simulated
+  with a short window, not a real Dynamic Type / font-scale setting.
+
+**Before merging.** `TOUR_SINCE` in `services/tour.ts` is **2026-10-27** (set on that day, as asked). It says
+"an account made on or after this is new", so if the change is merged on a later day, move it to the merge day
+(the tests follow it): otherwise accounts made in between are already using the app and would be shown the tour
+on their next launch.
+
+**Limits and decisions.**
+- The flag is on the device: the same person on a new phone or browser is shown the tour once more. A
+  cross-device flag needs a migration and an API field — out of scope.
+- `TOUR_SINCE` is a constant. An account made before it never gets the tour on its own; it has Replay.
+- A window dragged across the sidebar breakpoint ends the tour as **skipped** (the steps are layout-specific).
+- Deviation from the plan: no new `appHelp` rule — the existing `intro-replay` rule already catches «replay the
+  tour» questions, so its answer was corrected instead of adding a competing rule.
+- Left alone on purpose: the dead `wasCoachDismissed` / `coach*` code and its i18n keys.
+
 ## The admin set-password route checks that the password is a string, 2026-10-27
 
 **Why.** «`reset-password` checks that the new password is a string» (below) listed this route as the one other

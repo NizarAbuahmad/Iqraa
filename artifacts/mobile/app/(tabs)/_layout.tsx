@@ -6,6 +6,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { BlurView } from 'expo-blur';
 import { router, Tabs, usePathname } from 'expo-router';
+import type { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
+import { TourTabButton } from '@/components/tour/TourTabButton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { DESKTOP_BREAKPOINT } from '@/constants/layout';
@@ -287,6 +289,12 @@ function ClassicTabLayout() {
                   title: t(entry.titleKey),
                   tabBarIcon: ({ color, focused }) => entry.icon({ color, focused }),
                   tabBarBadge: entry.badge,
+                  // A phone's tab registers itself as `tab-<name>` for the first-run
+                  // tour. Desktop hides this bar (display:none); the sidebar rows
+                  // register the same destinations as `nav-<name>` instead.
+                  ...(isDesktop
+                    ? {}
+                    : { tabBarButton: (props: BottomTabBarButtonProps) => <TourTabButton tabName={entry.name} {...props} /> }),
                 }
               : HIDDEN
           }
