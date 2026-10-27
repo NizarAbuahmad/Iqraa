@@ -273,6 +273,22 @@ Suggested six, in listing order: **generated lesson plan → quiz with answer ke
 → lesson slides → curriculum browser → class roster → iQra chat**. Lead with
 output, not with a menu.
 
+### Captured 2026-10-24 — `screenshots/`
+
+Eight phone screenshots (`01`–`08`, 1080×1920, Arabic UI) plus three `extra-*`,
+taken from the built web bundle (`DEMO_MODE=false`, no badge on screen) against
+a local API and throwaway Postgres, as a local teacher with a class of eight
+students. Everything shown is real app output: the exam paper (`07`) is the
+evaluation generator's own paper with real book questions.
+
+**What is missing, and why.** There is no generated lesson plan, quiz or slide
+deck, which the list above leads with. Live generation needs a model key, and
+without `AI_LIVE_MODE=true` the app either refuses ("AI service is currently
+stopped") or, in demo mode, labels everything «وضع العرض · محتوى تجريبي». A
+frame from demo mode is a labelled sample, not what the store build produces, so
+none is included. The offline quiz also returned 5 of the 10 questions asked for.
+Capture those three on a build with live AI on, as a real teacher account.
+
 ---
 
 ## `eas submit`
