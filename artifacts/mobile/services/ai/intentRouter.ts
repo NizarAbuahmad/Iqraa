@@ -120,9 +120,17 @@ function isOffTopic(q: string): boolean {
   return OFF_TOPIC_PATTERNS.some(pattern => pattern.test(q));
 }
 
+// The English the refine chips send — «Improve the current lesson plan for …»,
+// «Make the quiz harder …». Anchored on «the/this/my/that» + an artifact so «Make
+// a harder quiz on circles» (a new quiz) and «improve my classroom management»
+// (advice) are not edits of the open material.
+const ENGLISH_EDIT =
+  /improve\s+(?:the|this|my|that)\s+(?:current\s+)?(?:lesson(?:\s+plan)?|plan|quiz|worksheet|homework|activity)|make\s+(?:the|this|my|that)\s+(?:\w+\s+){0,2}?(?:harder|easier|simpler|clearer)/i;
+
 function isRefinement(q: string): boolean {
   return (
-    /اجعله\s*أبسط|أجعله\s*أبسط|ابسطه|أبسطه|بسّ?طه|اختصره|اختصار|أضف\s*مثالاً?|اضف\s*مثال|أضف\s*سؤال|اضف\s*سؤال|اجعله\s*أصعب|أجعله\s*أصعب|أصعب|اسهل|أسهل|للطلاب\s*الضعفاء|للطلبة\s*الضعفاء|للطلاب\s*المتفوقين|للطلبة\s*المتفوقين|للضعفاء|للمتفوقين|أكثر\s*تفصيلاً?|اقل\s*تفصيلاً?|نفس\s*(الخطة|الورقة|الاختبار|الواجب)|عدّل|عدل|حسّن|حسن|simplify|make\s*it\s*simpler|make\s*it\s*easier|make\s*it\s*harder|add\s*an?\s*example|add\s*\d*\s*questions?|shorten\s*it|for\s*struggling|for\s*advanced|too\s*long|too\s*short|another\s*quiz|same\s*lesson\s*plan/i.test(
+    ENGLISH_EDIT.test(q)
+    || /اجعله\s*أبسط|أجعله\s*أبسط|ابسطه|أبسطه|بسّ?طه|اختصره|اختصار|أضف\s*مثالاً?|اضف\s*مثال|أضف\s*سؤال|اضف\s*سؤال|اجعله\s*أصعب|أجعله\s*أصعب|أصعب|اسهل|أسهل|للطلاب\s*الضعفاء|للطلبة\s*الضعفاء|للطلاب\s*المتفوقين|للطلبة\s*المتفوقين|للضعفاء|للمتفوقين|أكثر\s*تفصيلاً?|اقل\s*تفصيلاً?|نفس\s*(الخطة|الورقة|الاختبار|الواجب)|عدّل|عدل|حسّن|حسن|simplify|make\s*it\s*simpler|make\s*it\s*easier|make\s*it\s*harder|add\s*an?\s*example|add\s*\d*\s*questions?|shorten\s*it|for\s*struggling|for\s*advanced|too\s*long|too\s*short|another\s*quiz|same\s*lesson\s*plan/i.test(
       q,
     )
   );

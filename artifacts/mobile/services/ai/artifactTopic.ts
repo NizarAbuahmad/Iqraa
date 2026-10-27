@@ -206,8 +206,40 @@ export function topicFromQuery(query: string): string {
   return isOnlyAsking(topic) || isCurrentLessonRef(topic) ? '' : topic;
 }
 
+/**
+ * Verbs that ask for a NEW material. «make» is left out on purpose: «Make the
+ * quiz harder» is an edit, and «Make a quiz on circles» never reaches the
+ * refinement route to be asked about.
+ */
+const CREATE_VERB_RE = new RegExp(
+  `(^|\\s)(?:${['حضر', 'جهز', 'أنشئ', 'انشئ', 'اعمل', 'أعمل', 'ولد', 'create', 'generate', 'prepare', 'build'].join('|')})(?=\\s|$)`,
+  'i',
+);
+
+/**
+ * Does this message edit the material already in the thread, rather than ask for
+ * a new one?
+ *
+ * The refine chips — «حسّن خطة الدرس عن «X» واجعلها أوضح…», «اجعل الاختبار أصعب
+ * وأضف سؤالين» — and a typed «اجعله أصعب» name no topic: the sentence is an edit
+ * instruction, and read as a topic it titled the saved plan «حسّن الدرس «X»
+ * واجعلها أوضح للتنفيذ…». Their topic is the lesson in play, which the caller
+ * holds by id; this says only when to trust that over the sentence.
+ *
+ * A create verb still wins: «أصعب» sends «أنشئ اختباراً أصعب عن الدائرة» to the
+ * refinement route, but it asks for a quiz on circles and has to keep naming it.
+ */
+export function editsLessonInPlay(intent: string, query: string): boolean {
+  return intent === 'refinement' && !CREATE_VERB_RE.test(query.replace(/[ً-ْـ]/g, ''));
+}
+
 /** Resolve topic string for generation from lesson / docs / query. */
 export function resolveArtifactTopic(opts: {
+  /**
+   * The message edits the material in the thread (`editsLessonInPlay`). With a
+   * `lesson`, that lesson is the topic and the sentence is not read for one.
+   */
+  refinement?: boolean;
   lang: 'ar' | 'en';
   query: string;
   lesson: KBLesson | null;
@@ -225,9 +257,12 @@ export function resolveArtifactTopic(opts: {
     activeTopicEn,
     docTopic,
     preferDocuments = false,
+    refinement = false,
   } = opts;
 
   if (preferDocuments && docTopic?.trim()) return docTopic.trim();
+
+  if (refinement && lesson) return lang === 'ar' ? lesson.titleAr : lesson.titleEn;
 
   const stripped = topicFromQuery(query);
 
