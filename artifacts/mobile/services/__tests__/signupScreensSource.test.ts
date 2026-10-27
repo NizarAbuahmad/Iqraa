@@ -76,8 +76,46 @@ describe('register.tsx: the sign-up plan', () => {
     assert.ok(register.includes('guardianConfigStale(') && register.includes('resetGuardianConfigCache()') && register.includes('guardian.refresh()'));
   });
 
-  it('holds the submit until the config is read, and for a parent email that does not look like one', () => {
-    assert.match(register, /const readyToSignUp = termsAccepted && \(!askAge \|\| ageConfirmed\) && parentOk && !waitingForConfig;/);
+  it('decides who may tap what through signupReadiness: Google does not wait for the config, the password form does', () => {
+    const args = callArgs(register, 'signupReadiness');
+    for (const input of ['plan', 'termsAccepted', 'ageConfirmed', 'parentOk', 'optionsLoading: featuresLoading']) {
+      assert.ok(args.includes(input), `signupReadiness( does not get ${input}: ${args}`);
+    }
+    // Google's wrapper follows `readiness.google`, the create-account button `readiness.submit`.
+    assert.match(register, /pointerEvents=\{readiness\.google \? 'auto' : 'none'\}/);
+    assert.match(register, /aria-disabled=\{!readiness\.google\}/);
+    assert.match(register, /const canSubmit =[^;]*readiness\.submit/);
+    assert.match(register, /disabled=\{!canSubmit\}/);
+    // The screen itself never reads the loading flag, or Google would be held by it again.
+    assert.ok(!register.includes('waitingForConfig'), 'register.tsx reads waitingForConfig: Google would wait for the config again');
+    assert.ok(!register.includes('readyToSignUp'), 'readyToSignUp is gone: one gate per way to sign up, from signupReadiness');
+  });
+
+  it('puts the parent-email field and the agreements above the Google button, where what unlocks it can be seen with it', () => {
+    const google = register.indexOf('<GoogleSignInButton');
+    const agreements = register.search(/^\s*\{agreements\}/m);
+    const parentField = register.indexOf('{askParent ? (');
+    assert.ok(google >= 0 && agreements >= 0 && parentField >= 0, 'the Google button, {agreements} or the parent field is missing');
+    assert.ok(parentField < agreements, 'the parent email goes before the terms row, as it always did');
+    assert.ok(agreements < google, 'the agreements must sit above the Google button');
+    // The fields only the password form uses stay below it, so the boxes are not pushed away again.
+    for (const field of ["label={t('firstName')}", "label={t('emailAddress')}", "label={t('password')}", "label={t('confirmPassword')}"]) {
+      assert.ok(register.indexOf(field) > google, `${field} must stay below the Google button`);
+    }
+  });
+
+  it('says "above" in every hint, and says when it is only loading', () => {
+    for (const key of ['registerAcceptTermsFirst', 'registerParentEmailFirst', 'ageConfirmFirst', 'signupLoadingOptions']) {
+      assert.ok(register.includes(`'${key}'`), `${key} is not used`);
+    }
+    // The boxes used to be at the bottom of the form, under the button they unlock.
+    for (const key of ['registerAcceptTermsBelow', 'ageConfirmBelow', 'hintBelow']) {
+      assert.ok(!register.includes(key), `${key} points at a place the boxes no longer are`);
+    }
+  });
+
+  it('draws a loading line where the Google button will be, not nothing, while the roles are read', () => {
+    assert.match(register, /isGoogleSignInAvailable\(\) && featuresLoading/);
   });
 
   it('has exactly two CheckRows: the terms row, and the age tick that only shows under askAge', () => {

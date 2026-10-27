@@ -149,9 +149,8 @@ const translations = {
     errStudentAccountsDisabled: 'حسابات الطلبة وأولياء الأمور غير متاحة بعد.',
     errTermsRequired: 'وافق على شروط الاستخدام وسياسة الخصوصية لإنشاء الحساب.',
     registerAcceptTermsFirst: 'ضع علامة الموافقة على الشروط أعلاه أولًا.',
-    // The agreement boxes sit under the form, so the Google button above them
-    // points down, not up.
-    registerAcceptTermsBelow: 'ضع علامة الموافقة على الشروط في أسفل النموذج أولًا.',
+    // Shown while the register screen is still asking the server which roles and sign-up boxes it offers.
+    signupLoadingOptions: 'جارٍ تحميل خيارات التسجيل…',
     orSignUpWithEmail: 'أو أنشئ حسابك ببريدك الإلكتروني',
     googleAccountHint: 'حساب Google المسجّل على هذا الجهاز. اضغط السهم لاختيار حساب آخر.',
     loginGoogleTermsNotice: 'إن أنشأت حسابًا جديدًا عبر Google فأنت توافق على',
@@ -3040,7 +3039,6 @@ const translations = {
     parentEmailNote: 'بالبريد الإلكتروني تنشئ حسابك وتؤكد بريدك أولًا، ثم تدخل رمز الربط الذي يعطيك إياه معلم ابنك أو ابنتك لتتابع نتائجه.',
     ageConfirmLabel: 'أنا بالغ، أو وليّ أمري موافق على إنشاء هذا الحساب',
     ageConfirmFirst: 'ضع علامة تأكيد العمر أعلاه أولًا.',
-    ageConfirmBelow: 'ضع علامة تأكيد العمر في أسفل النموذج أولًا.',
     errAgeConfirmRequired: 'أكّد أنك بالغ أو أن وليّ أمرك موافق على إنشاء حساب طالب.',
     errParentEmailRequired: 'أدخل بريد أحد والديك.',
     errParentEmailInvalid: 'بريد الوالد غير صالح.',
@@ -3665,7 +3663,7 @@ const translations = {
     errStudentAccountsDisabled: 'Student and parent accounts are not available yet.',
     errTermsRequired: 'Accept the terms of use and privacy policy to create an account.',
     registerAcceptTermsFirst: 'Tick the terms box above first.',
-    registerAcceptTermsBelow: 'Tick the terms box at the bottom of the form first.',
+    signupLoadingOptions: 'Loading sign-up options…',
     orSignUpWithEmail: 'Or create your account with your own email',
     googleAccountHint: 'The Google account signed in on this device. Tap the arrow to choose another.',
     loginGoogleTermsNotice: 'If you create a new account with Google, you agree to the',
@@ -6455,7 +6453,6 @@ const translations = {
     parentEmailNote: "With an email you create and verify your account first, then enter the link code your child's teacher gives you to follow their results.",
     ageConfirmLabel: "I'm an adult, or my parent agrees to this account",
     ageConfirmFirst: 'Tick the age confirmation above first.',
-    ageConfirmBelow: 'Tick the age confirmation at the bottom of the form first.',
     errAgeConfirmRequired: 'Confirm you are an adult, or that your parent agrees, to create a student account.',
     errParentEmailRequired: "Enter a parent's email.",
     errParentEmailInvalid: 'That parent email is not valid.',
