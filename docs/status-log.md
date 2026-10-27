@@ -122,6 +122,31 @@ on their next launch.
   tour» questions, so its answer was corrected instead of adding a competing rule.
 - Left alone on purpose: the dead `wasCoachDismissed` / `coach*` code and its i18n keys.
 
+## The admin set-password route checks that the password is a string, 2026-10-27
+
+**Why.** «`reset-password` checks that the new password is a string» (below) listed this route as the one other
+caller of `isStrongPassword` with no string check. `POST /admin/users/:id/password` (system admin only) tested
+`!password || !isStrongPassword(password)`; the policy turns its argument into a string, so an **array** holding a
+strong password passed it, and its `length` of 1 passed the 128-character cap. The request then failed inside the
+hasher, after the account lookup, and answered **500**. An object or a number already got a correct 400.
+
+**Built.** `routes/admin.ts`: `password` is `unknown` and a non-string gets the same 400 as a weak one, the guard
+`register`, `add-email` and `reset-password` use. A string takes the same path as before. After this, every caller
+of `isStrongPassword` in `routes/` checks the type first (`grep "isStrongPassword(" routes/*.ts` lists four, all guarded).
+The new `adminSetPassword.db.test.ts` runs against a real database through the built bundle: as an admin it sends an
+array, a nested array, an object and a number to a teacher's account and expects 400 with the stored hash unchanged,
+then a string and expects 200 and a bcrypt hash. It could not go in `mountOrder.test.ts`: `authMiddleware` re-reads
+the user from the database, so that suite (no database) never reaches this route with a signed token.
+
+**Verified.** The new test against the old bundle: the array and the nested array answered **500**, the object and the
+number 400, the string 200. Against the fix: 5 of 5. `pnpm run typecheck`. The whole api-server suite with
+`TEST_DATABASE_URL` set and `REQUIRE_DB_TESTS=true`, as CI runs it: 2973 tests, 0 failed, 0 skipped.
+
+**Not verified, not done.** Production was not called; this sandbox cannot reach it. The 500's cause on this route was
+inferred from `reset-password`, where the server log showed bcrypt refusing a non-string; here only the status was
+observed. The same unguarded-body shape may exist in other route files; only `auth.ts` and this route were checked for
+the password and email/code fields. `schema-push:` none.
+
 ## `reset-password` checks that the new password is a string, 2026-10-27
 
 **Why.** «A non-string email or code answers 400, not 500» (2026-10-26) guarded `email` and `code` on five routes
