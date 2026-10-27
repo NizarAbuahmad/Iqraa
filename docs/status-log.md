@@ -10,6 +10,24 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Design for a video shelf in the help center, 2026-10-27
+
+**Why.** The scripts for the first five tutorial videos are in `docs/tutorial-videos-ar.md`; this is where they will live in the
+app. Spec: `docs/superpowers/specs/2026-10-27-help-center-video-shelf-design.md` (approved by the owner). **Design only: no app code
+changed.**
+
+**Decided.** A shelf at the top of the FAQ screen (Profile → «كيف أستخدم إقرأ؟»), each role seeing its own videos; a static typed
+catalog in the app (`services/helpVideos.ts`), unlisted YouTube opened through the existing `openExternal`; v1 ships the mechanism
+with an **empty** catalog, so users see nothing until the first video is added. No server-managed list, no in-app player (that would
+need a native module, a native build and an `app.json` `version` bump), no tour or assistant change.
+
+**Read, not run.** The FAQ has no role concept (every role sees the same 18 entries; `/faq` is open to all), every video in the app opens
+through `openExternal`, there is no video player dependency, and there is no server-managed app content to copy. The Library is the
+wrong shelf: each item needs a grade and a subject.
+
+**Not verified.** Nothing was built or run. YouTube on school networks, the "Made for kids" / ads settings for student and parent
+videos, and `WebBrowser` opening the nocookie embed page on an Android phone are all open and listed in the spec.
+
 ## Scripts and shot lists for the first five «كيف أستخدم إقرأ؟» tutorial videos, 2026-10-27
 
 **Why.** After the first-run tour went live (2026-10-27), the next ask was tutorial videos. A review of the code found the
