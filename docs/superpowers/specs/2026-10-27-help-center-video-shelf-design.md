@@ -41,7 +41,7 @@ Profile → «كيف أستخدم إقرأ؟» (`app/faq.tsx`).
 
 | Piece | Where | Pure? |
 |---|---|---|
-| The catalog type, `HELP_VIDEOS`, `helpVideosFor`, `formatVideoLength`, `helpVideoWatchUrl` | `services/helpVideos.ts` | yes |
+| The catalog type, `HELP_VIDEOS`, `helpVideosFor`, `validateCatalog`, `formatVideoLength`, the URL helpers (`helpVideoWatchUrl`, `helpVideoPlayUrl`, `helpVideoThumbnailUrl`) and `narrationTagVisible` | `services/helpVideos.ts` | yes |
 | The shelf (cards, thumbnails, press) | `components/help/HelpVideoShelf.tsx` | no |
 | Mounted as the first child of the FAQ column, above the search box | `app/faq.tsx` | no |
 | Copy for the shelf (Arabic and English) | `services/i18n.ts` | |
@@ -102,26 +102,34 @@ On the screen:
   `maxWidth: 760`.
 - **Section:** a title (`helpVideosTitle`: «فيديوهات قصيرة» / "Short videos") and the cards.
 - **Phone:** a horizontal `ScrollView`, card width `min(260, 72% of the window)`. RTL as the chip row does it: a
-  reversed row and `scrollToEnd` on `onContentSizeChange` when `isRTL`.
-- **Wide (the column is at least 600 pt wide):** a wrapping grid, three cards per row, gap `SPACE.md`. Narrower than
-  that, the horizontal row above, whatever the platform.
+  reversed row and `scrollToEnd` on `onContentSizeChange` when `isRTL`, and also from a 60 ms timeout effect keyed on
+  `[isRTL, wide]`, the same as the FAQ's chip row, because on web `onContentSizeChange` can fire before the scroller has
+  a width. The scroller reaches `SPACE.lg` into the FAQ's own padding and its content is padded by the same, so the
+  card shadow (18 pt below, 14 pt to each side) is not clipped.
+- **Wide (the window is at least 640 pt wide, which makes the FAQ column at least 600):** a wrapping grid, three cards
+  per row, gap `SPACE.md`. Each card is 31% of the row and does not grow, so one, two or four videos keep the size of a
+  card in a row of three. A row of three starts flush at the start edge and stops about 29 pt (about 4%) short of the
+  search box's end edge; a fourth card starts a second row. Narrower than that, the horizontal row above, whatever the
+  platform.
 - **Card:** a 16:9 thumbnail (`youtubeThumbnail`, `expo-image`), a centred play glyph in a black-based scrim circle,
   a duration pill (`m:ss`, `formatVideoLength`) in a corner, then the title in at most two lines, then the narration
-  tag when it applies. If the thumbnail fails or the device is offline, a neutral `IconTile` with
-  `play-circle-outline` stands in; the card still works.
+  tag when it applies. If the thumbnail fails or the device is offline, the plain tile shows with the play button
+  still on it (an icon above the button looked cluttered); the card still works.
 - **Design-system rules (CLAUDE.md):** the card takes `useSurface()` and **drops its own `borderWidth: 1`** (a
   light surface has no border colour, so a leftover width draws black); no `overflow: 'hidden'` on the surface (clip
   the thumbnail on an inner view); `PressableScale` for the press; `Entrance` for the stagger, with motion off under
   `useReduceMotion()`; colours from `useColors()`; icons on the `ICON` scale; no hand-written hex.
 - **Accessibility:** `accessibilityRole="button"`, a 44 pt target, `aria-*` state (never `accessibilityState`), and a
-  label composed in code as `"<title>، <m:ss>. <helpVideoOpensInBrowser>"`. The brand focus ring on web, as other
-  pressables.
+  label composed in code as `"<title>، <m:ss>. <helpVideoOpensInBrowser>"`, where the title and the length are
+  joined with ', ' in the English UI and with the Arabic comma `،` in the Arabic UI. The brand focus ring on web, as
+  other pressables.
 
 ## Playback and analytics
 
 On press: `trackEvent('help_video_opened', { id, role, surface: 'faq' })`, then
-`void openExternal(youtubeEmbedUrl(helpVideoWatchUrl(video)))`. If the embed URL were ever `null`, fall back to the
-watch URL. The event follows the existing `<noun>_opened` naming (`virtual_lab_opened`).
+`void openExternal(helpVideoPlayUrl(video))`: the nocookie embed URL built from `helpVideoWatchUrl`, or the watch URL
+itself if the embed URL could not be built. The event follows the existing `<noun>_opened` naming
+(`virtual_lab_opened`).
 
 No new `EXPO_PUBLIC_*` key. **Success measure:** opens per new account in its first 14 days, read next to
 `tour_completed`. Watch completion is not measurable: playback leaves the app.
