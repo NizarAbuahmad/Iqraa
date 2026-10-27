@@ -10,6 +10,49 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## One verb for "make me this material": «جهّز» / "Create", 2026-10-27
+
+**Why.** Left open by «Chat first screen: words that say what to ask» (PR #1301). The create chips said five different
+things in Arabic (حضّر / أنشئ / جهّز / اقترح / أنشئ), the follow-up chips under a reply were bare nouns in Arabic and
+«Create …» (with «Classroom activity» the odd one) in English, and the tool screens' own buttons were already «جهّز …» for
+the worksheet, quiz, homework, activity, slides and game with only the lesson plan saying «حضّر خطة الدرس». The words are
+also what a chip SENDS, so they appear as the teacher's own message in the thread. Counted before the change: of the Arabic
+strings that open with a make-a-thing verb, «جهّز» 18, «أنشئ» 15, «حضّر» 4, «اقترح» 4; «أنشئ» was used for records (account,
+class, exam, code, group, file), which is the split worth keeping.
+
+**Rule.** «جهّز» for a teaching material; «أنشئ» only for a record. English «Create …». The owner picked this over «حضّر»
+everywhere and «أنشئ» everywhere (each would have changed six tool buttons and three help answers) and over chat-only
+(it would have left the chip and the lesson-plan screen it opens saying different words).
+
+**Built.**
+- `services/materialPrompts.ts` (new): what a chip sends, one table. There were three copies of the five sentences
+  (`CREATE_CHIP` in `lessonCopilot.ts`, `promptForTeachingAction` and `handleResourcePress` in `iqra.tsx`), each with its
+  own verb. English now says "Create a full lesson plan / a classroom activity …" (was «Prepare» / «Suggest»).
+- `CREATE_CHIP` (exported for the test): five Arabic labels «جهّز …»; «Class activity» → «Create class activity».
+- Follow-up chips (`defaultTeachingActions`): «جهّز خطة درس / ورقة عمل / اختباراً قصيراً / واجباً بيتياً / نشاطاً صفياً».
+- Home prompt chips (`homeAiTools.ts`) and the uploaded-files quick actions (`documents/quickActions.ts`): «جهّز …» / "Create …".
+- The lesson-plan outlier: `generateLessonPlanBtn`, `generateAILesson`, the help answer `howMakeLessonPlan` (button name and
+  the example to type), `howPlanLanguage`, `continueEmptyDesc`, `docReadyMessage`, `faqA1`, `iqraInputHint` and the
+  next-step line «أقترح الآن: جهّز خطة الدرس.»
+- `chipVerbs.test.ts` (new): every material's prompt, chip label and follow-up label opens with «جهّز» / "Create"; the chat
+  routes each of the ten prompts to generating a material and reads back the right material and topic; the four help answers
+  quote the button as it is spelled; and what a teacher TYPES is still understood with either verb.
+
+**Left alone, on purpose.**
+- Everything that parses what a teacher types (`askVocabulary`, `artifactTopic` `VERBS`, `intentRouter`): «حضّر» and «أنشئ»
+  keep working as requests. This changes what the app says, not what it hears.
+- The API's model prompts («أنشئ خطة درس كاملة لمادة …»): they address the model, are not shown, and do not parse chips.
+- Prose that is not a chip («حضّر حصتك:», «المعلم يحضّر حصصه», the home hero's «حضّر حصة عن …» example), the records' «أنشئ …»
+  buttons, the prep board's «أنشئ», and the file quick actions' noun labels («خطة درس»).
+
+**Verified.** `pnpm run typecheck` clean; `artifacts/mobile` `pnpm test` 7871 pass, 0 fail, 10 skipped (before the routing
+assertions were added to `chipVerbs.test.ts`, which then passes on its own, 57 cases). No existing test pinned the old chip
+wording.
+
+**Not verified.** Native (iOS/Android) was not run; the change is JavaScript only. The strings were not read by a second
+native speaker; «جهّز» is the verb the app already used on six tool buttons. Marketing material outside this repo that quotes
+«حضّر خطة درس» (the tutorial video text in `marketing/tutorial/build.py`) is unchanged.
+
 ## The admin set-password route checks that the password is a string, 2026-10-27
 
 **Why.** «`reset-password` checks that the new password is a string» (below) listed this route as the one other

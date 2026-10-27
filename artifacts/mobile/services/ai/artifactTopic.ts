@@ -171,7 +171,7 @@ function isCurrentLessonRef(s: string): boolean {
  * slide when the material is projected, so anything left behind is read by a
  * class. Every rule here earned its place by leaking into one — see the
  * chip-prompt cases in the tests, which are the exact strings the product
- * sends when a teacher taps «حضّر خطة الدرس».
+ * sends when a teacher taps «جهّز خطة الدرس».
  *
  * Removals repeat until they stop finding anything: the parts are written as
  * whole words, and one pass leaves «ورقة عمل صفية» as «صفية» — a qualifier

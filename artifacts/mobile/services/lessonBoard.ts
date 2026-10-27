@@ -205,7 +205,7 @@ export type ChatArtifactType = 'lesson-plan' | 'worksheet' | 'quiz' | 'activity'
  * The chat's material types this lesson already has saved in موادي.
  *
  * The chat's chips and lesson card read its own session, which forgets a plan
- * made yesterday or from the tools tab — so they offered «حضّر خطة الدرس» for a
+ * made yesterday or from the tools tab — so they offered «جهّز خطة الدرس» for a
  * lesson whose board already counted one. This is the same saved record the
  * board reads, in the chat's own terms: a homework is saved as a worksheet
  * tagged `materialKind: 'homework'` and is counted as homework here (the board
