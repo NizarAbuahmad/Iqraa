@@ -10,6 +10,41 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Help-center video shelf: the mechanism, shipped empty, 2026-10-27
+
+**Why.** The scripts for the first five tutorial videos are in `docs/tutorial-videos-ar.md`; this is where they will live. Spec:
+`docs/superpowers/specs/2026-10-27-help-center-video-shelf-design.md`. **The catalog is empty on purpose: nothing is visible to any user
+until the first video is added**, one small PR per video.
+
+**Built.** `services/helpVideos.ts` (pure: the type, the empty `HELP_VIDEOS`, `helpVideosFor` by role and by title with the FAQ's Arabic
+folding, `validateCatalog`, URL and length helpers); `components/help/HelpVideoShelf.tsx` (a row that scrolls sideways on a phone, a grid of
+three from a 640 pt window; opens a video through `openExternal`; draws nothing when the reader has none); mounted first in the FAQ column;
+three i18n keys. No dependency, native module, `app.json` `version`, schema or env change, so no production OTA is needed. Three details changed
+after the plan was written: a grid cell is 31% of the row and does not grow, so one, two or four videos keep the size of a card in a row of three
+(a row of three ends up to about 29 pt (about 4%) short of the search box's end edge, a fourth card starts a second row); the phone strip's RTL scroll uses
+`onContentSizeChange` plus a 60 ms timeout effect, like the FAQ's chip row; and the card's accessibility label joins title and length with
+', ' in English and with the Arabic comma in Arabic; in English the label also speaks the narration tag ("Arabic narration") after the length. One plan defect was caught in review: the validator's Arabic brand check first held the
+quoted old brand spelling as a literal, which CI's brand gate rejects; the string is now built from code points (`OLD_QUOTED_BRAND` in
+`helpVideos.ts`).
+
+**Verified.** 19 new unit tests (role filter, search folding, validator, formatting, links), mutation-checked: breaking the role filter fails
+3 of them. The whole mobile suite: 8025 tests, 8015 pass, 0 fail, 10 skipped (the chemistry `searchKB` tests in `knowledgeBase.test.ts`, skipped while the MVP set hides chemistry); the design-scale,
+aria, icon, i18n (parity and terminology), corner and status-bar guard tests are among them. The brand check CI runs is clean. Mobile typecheck: no
+new errors. In a built web bundle with throwaway fixture videos (removed, never committed): 295 browser checks passed and 0 failed, over 20
+combinations in two builds (fixtures: three for teachers and one for students, then four for teachers and two for students), covering
+teacher/student/parent, phone and desktop, Arabic and English, light and dark, and 1, 2, 3 and 4 cards (each card 31% of the 760 column, four
+cards as 3+1). They include visibility per role, the RTL start edge, no page overflow, search narrowing the shelf, a no-match query hiding it,
+the Arabic strip back at its right edge after the shelf was hidden by a no-match search and shown again, and a tap opening the nocookie embed
+URL of the first card. The screenshots were read for shadow room and the fallback tile.
+
+**Not verified.** Nothing was seen on a real phone or in a native build (iOS or Android); the `WebBrowser` open of the embed page on Android
+is untried. A window resized across the 640 pt breakpoint in Arabic was not exercised. YouTube on school networks, and the "Made for kids" /
+ads settings for student and parent videos, are still open (see the spec). No real video is in the catalog, so a real thumbnail, a dead link
+and an embed-disabled video have not been seen. The shelf sits above the FAQ search box (a placement the spec chose), so a query that matches
+no video makes it vanish and the box jump up; changing that is a spec change. The mobile typecheck (`pnpm run typecheck` in
+`artifacts/mobile`) still shows its 12 existing errors, none in a file this change touches. The FAQ itself is still role-blind (a student sees
+the teacher-worded questions); unchanged here. After the browser check, the final review added the narration tag to the card's spoken label in the English UI; the guard suites still pass, but none asserts the label text, so that change rests on a read of the code and was not re-driven in a browser.
+
 ## Row-level security switched on in production, 2026-10-27
 
 The owner set `RLS_ENFORCE=on` on `iqraa-api` (Cloud Run, `europe-west1`, project `iqraa-auth-507315`) from Cloud
