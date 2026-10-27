@@ -10,6 +10,90 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## The two refine chips kept the sentence as the topic, 2026-10-27
+
+**Symptom.** Tapping «✏️ حسّن خطة الدرس» (`refine-plan`) sends «حسّن خطة الدرس عن «تركيب الاقترانات» واجعلها
+أوضح للتنفيذ في الحصة القادمة». The offline reply was «المادة جاهزة لدرس «حسّن الدرس «…» واجعلها …»», the plan
+was titled «خطة درس: حسّن الدرس «…» واجعلها …» and its text said «أين نلتقي بحسّن الدرس …». Identical on a clean
+`main`, so it predates the verb-unification PR (#1316).
+
+**Root cause (three layers, found by running the real strings, not retyped ones).**
+1. `topicFromQuery` is a word blacklist of *create* verbs; «حسّن» is not on it, and the clause «واجعلها أوضح …»
+   cannot be listed. The whole sentence came back as the topic. `اجعل الاختبار أصعب وأضف سؤالين` (the other
+   refine chip, `harder-quiz`) has no topic in it at all, so it failed the same way.
+2. The chat then **re-derived the lesson from that text** (`searchKBRanked(topicForArt)` → `lessonForArt`), though
+   the chip had already sent the lesson's id as `pinnedLessonId`. That is the title-is-not-a-lesson trap in
+   CLAUDE.md, here with a whole sentence as the title.
+3. **English was a different bug:** the router's `isRefinement` knew «حسّن» and «أصعب» but no English edit, so
+   «Improve the current lesson plan for …» and «Make the quiz harder …» were routed as `artifact` — a request for a
+   NEW material, the topic parsed as «Improve the current "…" and it clearer to run tomorrow».
+
+**Fix (minimum — the topic stays the picked lesson).**
+- `intentRouter.ts`: `ENGLISH_EDIT` — the whole message has to BE an edit of an artifact: it opens with «improve
+  the/this/my/that [current] lesson plan|lesson|plan|quiz|worksheet|homework|activity» (the noun must end there or
+  be followed by for/about/on/and/so/to/with) or «make the/this/my/that <artifact> [a bit] harder|easier|simpler|
+  clearer», after an optional «please / can you». Anchored this tightly because «How can I improve my lesson
+  delivery?», «improve my planning skills» and «How do I make this topic easier to understand?» are teaching
+  questions, and «Make a harder quiz on circles» asks for a new quiz.
+- `artifactTopic.ts`: `refinementTarget({ intent, query, pinnedLesson, openLesson, namedLesson, preferDocuments })`
+  — the lesson a refinement edits, or null for the ordinary path. A lesson **tapped this turn** (every chip carries
+  its id) is the answer, with no reading of the sentence. A typed message falls to the open lesson unless it says what
+  it is about («عن X», «حول X», "about X", "on X") **and** that names another lesson. `resolveArtifactTopic` takes
+  `refinement`: with a lesson, the lesson's title is the topic.
+- `kbContext.ts`: `lessonNamedByTopic(topic, lang, gradeId)` — the screen's inline "is the topic search sure"
+  block, moved so the test runs the same code the chat does.
+- `iqra.tsx` (artifact branch): calls the two above; `lessonForArt = refineTarget ?? <the old choice>`. When
+  `refineTarget` is null (not a refinement, uploads outrank the lesson, or the message names its own lesson) the old
+  path runs as before.
+
+**What the first version got wrong (caught in review, reproduced, then redesigned).** It treated a refinement as an
+edit of the open lesson unless the text held a *create verb*. (1) The router calls «اختبار قصير عن معدل الوحدة»
+(«عدل» inside «معدل»), «أريد اختباراً أصعب عن الدائرة», «Give me another quiz on vectors» refinements too, and a verb
+list cannot cover «أريد», «أعدّ», «give me»…; they were built on the open lesson. (2) The verb test ran over the
+quoted lesson title, so the chip failed again for a lesson titled «…أُنْشِئُ جَدْوَلًا». (3) The English pattern
+turned teaching questions into refinements. The pinned-lesson rule removes (2) and the title from the question
+entirely; the clause rule and the tighter pattern fix (1) and (3). Also found: on `main` a typed «عدّل الاختبار وأضف
+سؤالين» scores 11 on the unrelated «الاقتران العكسي» (the edit words match the curriculum) and built the quiz on it —
+now it stays on the open lesson.
+
+**Verified.**
+- `services/__tests__/refineChips.test.ts` (23 tests). It builds the prompts with `buildLessonSuggestions` and
+  runs the pieces the chat runs (`classifyChatIntent`, `lessonNamedByTopic`, `refinementTarget`,
+  `resolveArtifactTopic`), not a copy of the screen's logic. Both chips × both languages route as `refinement` and
+  resolve to the lesson title; **for every lesson in `KB_LESSONS`** both chips in both languages keep their lesson;
+  the lesson whose title holds «أُنْشِئُ» too; typed free wording stays on the open lesson, including the
+  keyword-noise case above (the test asserts its premise: the search *is* confident about another lesson); five
+  new-material asks the router calls refinements keep their own lesson (premise asserted too); twelve English
+  teaching questions and new-material asks are not refinements; a document topic still wins.
+  Mutation-checked: ignoring a named lesson fails the five new-material tests; dropping the «says what it is about»
+  requirement fails the two typed-refinement tests.
+- The real offline `generateLessonPlan` with the old topic vs the new: the old plan's text carries «حسّن الدرس» /
+  «أين نلتقي بحسّن»; the new one does not (topic «تركيب الاقترانات»).
+- `pnpm run typecheck` clean; whole mobile suite on the final tree (after the redesign above): 7,915 pass, 0 fail,
+  10 skipped (none related).
+
+**Not verified / known limits.**
+- **Not driven in a browser.** `iqra.tsx` has no unit seam; the wiring there is typechecked and its decision logic is
+  the tested pure functions above, but the tap-through in `pnpm run dev:mobile:web` was not repeated after the fix.
+- **A refine chip still regenerates; it does not edit the plan in the thread.** `generateChatArtifact` builds a
+  fresh request with `difficulty: 'medium'` and ignores the edit clause, so «اجعل الاختبار أصعب» makes a new
+  medium quiz of the lesson (`questionCountFromAsk` reads digits only, so «سؤالين» adds nothing either) and
+  «واجعلها أوضح للتنفيذ» changes nothing. Making the chips *do* what they say needs the existing artifact passed in
+  (`lastGeneratedResource` / the message's `artifactData`), a difficulty/instruction channel on `AIRequest`, and the
+  live prompt twin in `api-server/src/lib/prompts.ts` — an owner decision, deliberately not taken here.
+- The create chips carry the same gap in one respect: their lesson is still re-found by searching the title in the
+  artifact branch even though `pinnedLessonId` is known. Out of scope (#1316 owns the create verbs); the refine path
+  no longer does it.
+- `topicFromQuery` itself was not taught the refine verbs: a refinement now never needs it, and a word list cannot
+  cover a free-form tail.
+- **A typed message that names a lesson without a clause word** («اختبار أسهل في الدائرة», "make the circle quiz
+  easier") and that the router calls a refinement is now read as an edit of the open lesson. Before, it reached the
+  right lesson only when the keyword search happened to land there (the same search that lands on «الاقتران
+  العكسي» for «عدّل الاختبار»). A chip never has this problem — it carries the id. If this shows up, the fix is a
+  better "names its own lesson" signal, not the verb list.
+- The router's Arabic `isRefinement` is unanchored (`عدل`, `حسن`, `أصعب` match inside other words); this change
+  leaves it alone and makes the artifact branch safe against it instead.
+
 ## First-run spotlight tour for new accounts, 2026-10-26
 
 **Why.** A new teacher, student or parent landed on their home screen with no guidance: the only intro is

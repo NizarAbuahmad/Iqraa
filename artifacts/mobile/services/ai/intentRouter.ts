@@ -120,9 +120,28 @@ function isOffTopic(q: string): boolean {
   return OFF_TOPIC_PATTERNS.some(pattern => pattern.test(q));
 }
 
+// The English the refine chips send — «Improve the current lesson plan for …»,
+// «Make the quiz harder …». The whole message has to BE an edit of an artifact: it
+// opens with the verb (after a «please» / «can you»), names the artifact right
+// after «the/this/my/that», and ends the noun there. Looser, «How can I improve my
+// lesson delivery?», «improve my planning skills» and «How do I make this topic
+// easier to understand?» are teaching questions, and «Make a harder quiz on
+// circles» asks for a new quiz.
+const EDIT_NOUN = '(?:current\\s+)?(?:lesson\\s+plan|lesson|plan|quiz|worksheet|homework|activity)';
+const ENGLISH_EDIT = new RegExp(
+  '^(?:(?:please|pls|can you|could you|would you)\\s+)*(?:'
+  // «Improve the lesson plan» / «… for "X" and …» — never «… my lesson delivery».
+  + `improve\\s+(?:the|this|my|that)\\s+${EDIT_NOUN}(?=\\s*$|\\s*[,.:;]|\\s+(?:for|about|on|and|so|to|with)\\b)`
+  + '|'
+  + `make\\s+(?:the|this|my|that)\\s+${EDIT_NOUN}\\s+(?:a\\s+(?:bit|little)\\s+)?(?:harder|easier|simpler|clearer)\\b`
+  + ')',
+  'i',
+);
+
 function isRefinement(q: string): boolean {
   return (
-    /اجعله\s*أبسط|أجعله\s*أبسط|ابسطه|أبسطه|بسّ?طه|اختصره|اختصار|أضف\s*مثالاً?|اضف\s*مثال|أضف\s*سؤال|اضف\s*سؤال|اجعله\s*أصعب|أجعله\s*أصعب|أصعب|اسهل|أسهل|للطلاب\s*الضعفاء|للطلبة\s*الضعفاء|للطلاب\s*المتفوقين|للطلبة\s*المتفوقين|للضعفاء|للمتفوقين|أكثر\s*تفصيلاً?|اقل\s*تفصيلاً?|نفس\s*(الخطة|الورقة|الاختبار|الواجب)|عدّل|عدل|حسّن|حسن|simplify|make\s*it\s*simpler|make\s*it\s*easier|make\s*it\s*harder|add\s*an?\s*example|add\s*\d*\s*questions?|shorten\s*it|for\s*struggling|for\s*advanced|too\s*long|too\s*short|another\s*quiz|same\s*lesson\s*plan/i.test(
+    ENGLISH_EDIT.test(q)
+    || /اجعله\s*أبسط|أجعله\s*أبسط|ابسطه|أبسطه|بسّ?طه|اختصره|اختصار|أضف\s*مثالاً?|اضف\s*مثال|أضف\s*سؤال|اضف\s*سؤال|اجعله\s*أصعب|أجعله\s*أصعب|أصعب|اسهل|أسهل|للطلاب\s*الضعفاء|للطلبة\s*الضعفاء|للطلاب\s*المتفوقين|للطلبة\s*المتفوقين|للضعفاء|للمتفوقين|أكثر\s*تفصيلاً?|اقل\s*تفصيلاً?|نفس\s*(الخطة|الورقة|الاختبار|الواجب)|عدّل|عدل|حسّن|حسن|simplify|make\s*it\s*simpler|make\s*it\s*easier|make\s*it\s*harder|add\s*an?\s*example|add\s*\d*\s*questions?|shorten\s*it|for\s*struggling|for\s*advanced|too\s*long|too\s*short|another\s*quiz|same\s*lesson\s*plan/i.test(
       q,
     )
   );
