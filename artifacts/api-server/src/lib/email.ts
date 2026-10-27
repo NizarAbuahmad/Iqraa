@@ -296,14 +296,16 @@ function renderArtifactReportedEmailHtml(info: { kind: string; lessonRef: string
 
 /**
  * The Android invite an admin sends to someone who asked for it (a waitlist
- * row, or any address typed into the admin signups screen). `APP_INVITE_URL`
- * lets the link change — the closed-test opt-in link, then the public store
- * page — without a deploy. Same failure posture as every mail here: false
- * for no key, a refusal or a lost request, so the admin screen can say so.
+ * row, or any address typed into the admin signups screen). The link is the
+ * public Play listing and nothing else: it used to come from `APP_INVITE_URL`
+ * so the closed-test opt-in link could be swapped in, and a value left behind
+ * on Cloud Run would keep sending the waitlist to a test track they cannot
+ * join. The env var is ignored on purpose. Same failure posture as every mail
+ * here: false for no key, a refusal or a lost request, so the admin screen can
+ * say so.
  */
-const DEFAULT_APP_INVITE_URL = "https://play.google.com/store/apps/details?id=com.iqra.teachingassistant";
+export const APP_INVITE_URL = "https://play.google.com/store/apps/details?id=com.iqra.teachingassistant";
 export const APP_INVITE_SUBJECT = "دعوتك لتجربة تطبيق إقرأ / You're invited to try the Iqrra app";
-export const appInviteUrl = () => process.env.APP_INVITE_URL || DEFAULT_APP_INVITE_URL;
 
 export async function sendAppInviteEmail(to: string): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY;
@@ -323,7 +325,7 @@ export async function sendAppInviteEmail(to: string): Promise<boolean> {
         from: process.env.RESEND_FROM_EMAIL ?? "Iqrra <onboarding@resend.dev>",
         to,
         subject: APP_INVITE_SUBJECT,
-        html: renderAppInviteEmailHtml(appInviteUrl()),
+        html: renderAppInviteEmailHtml(APP_INVITE_URL),
       }),
     });
     if (!res.ok) {

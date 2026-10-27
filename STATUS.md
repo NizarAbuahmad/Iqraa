@@ -129,8 +129,8 @@ From session notes **(notes)**:
 - Several shipped features still await a **device check**: notifications, grade-setup
   undo, chat identity / leave, the student «اختباراتي» screen, the arch-review fixes.
 - **Unsplash** is on the Demo tier (50 requests/hour, shared); it needs Production before launch.
-- **Play Store:** `1.2.0` in Closed testing since 2026-10-01; production needs 12 testers
-  for 14 days. Native-module changes since then (keyboard, photo shrinking) need a new
+- **Play Store:** public on Google Play (`com.iqra.teachingassistant`) since 2026-10-27; the
+  admin invite and waitlist «invite» mail link that listing, fixed in code. Native-module changes since then (keyboard, photo shrinking) need a new
   Android build; until one is installed an installed app is unchanged.
 - Render demo services are **suspended**, not deleted; if they are ever deleted, also remove
   `https://iqraa-web.onrender.com` from the Google web client's authorised origins.
