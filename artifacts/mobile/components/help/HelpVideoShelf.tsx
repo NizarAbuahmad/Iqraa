@@ -10,10 +10,11 @@
  * - A tap opens the video through `openExternal`: an in-app browser on a phone (the
  *   back gesture returns), a new tab on web. There is no player to ship.
  * - Phone-width: one row that scrolls sideways. Wide: a wrapping grid of three.
- * - RTL: the row is reversed and starts scrolled to its far end, exactly as the FAQ's
- *   own chip row does it.
+ * - RTL: the row is reversed and starts scrolled to its far end. Two triggers do it, as
+ *   the FAQ's chip row does: `onContentSizeChange`, and a 60 ms timer, because on web the
+ *   first call can fire before the scroller has a width.
  */
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -56,11 +57,13 @@ function HelpVideoCard({ video, onOpen }: { video: HelpVideo; onOpen: () => void
   const title = t(video.titleKey);
   const length = formatVideoLength(video.seconds);
   const align = isRTL ? 'right' : 'left';
+  // The Arabic comma reads right only in Arabic; an English screen gets an English comma.
+  const separator = lang === 'en' ? ', ' : '، ';
 
   return (
     <PressableScale
       onPress={onOpen}
-      accessibilityLabel={`${title}، ${length}. ${t('helpVideoOpensInBrowser')}`}
+      accessibilityLabel={`${title}${separator}${length}. ${t('helpVideoOpensInBrowser')}`}
       style={[surface, styles.card]}
     >
       <View style={[styles.thumb, { backgroundColor: colors.secondary }]}>
@@ -104,10 +107,18 @@ export function HelpVideoShelf({ query }: { query: string }) {
   const scroller = useRef<ScrollView>(null);
   const role = tourRoleOf(user?.role);
   const videos = useMemo(() => helpVideosFor(HELP_VIDEOS, role, query, t), [role, query, t]);
+  const wide = width >= WIDE_FROM;
+
+  // Same pattern as the FAQ's chip row: onContentSizeChange alone is not enough on web, where it can
+  // fire before the scroller has a width. Only the phone row scrolls; the wide grid has no scroll.
+  useEffect(() => {
+    if (!isRTL || wide) return;
+    const id = setTimeout(() => scroller.current?.scrollToEnd({ animated: false }), 60);
+    return () => clearTimeout(id);
+  }, [isRTL, wide]);
 
   if (!role || videos.length === 0) return null;
 
-  const wide = width >= WIDE_FROM;
   const rowDir = isRTL ? 'row-reverse' : 'row';
   const cardWidth = Math.min(PHONE_CARD_MAX, Math.round(width * PHONE_CARD_SHARE));
 
@@ -160,7 +171,8 @@ const styles = StyleSheet.create({
   // flexGrow so a reversed (Arabic) row fills the scroller and hugs the start edge.
   row: { gap: SPACE.md, paddingTop: SPACE.md, paddingBottom: SPACE.xl, paddingHorizontal: SPACE.lg, flexGrow: 1 },
   grid: { flexWrap: 'wrap', gap: SPACE.md, paddingTop: SPACE.md, paddingBottom: SPACE.xl },
-  gridCell: { flexBasis: '31%', flexGrow: 1 },
+  // Fixed at a third of the row, so a lone fourth card keeps the width of the others rather than filling the row.
+  gridCell: { flexBasis: '31%', flexGrow: 0, flexShrink: 0 },
   // No border and no overflow here: useSurface() draws the shadow or the border, and a clip would cut the shadow.
   card: { minHeight: 44 },
   thumb: {
