@@ -208,8 +208,8 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
       "can i use it in the browser",
       "install",
     ],
-    ar: "لا حاجة إلى تنزيل تطبيق: يمكنك استخدام إقرأ مباشرة من المتصفح على الحاسوب أو الهاتف أو الجهاز اللوحي عبر https://app.iqrra.com. وتطبيق أندرويد في مرحلة الاختبار المغلق على Google Play، ويمكنك الانضمام إلى قائمة الدعوات من الصفحة الرئيسية.",
-    en: "There is no need to install anything: you can use Iqrra directly in the browser on a computer, phone or tablet at https://app.iqrra.com. The Android app is in closed testing on Google Play, and you can join the early-access list on the home page.",
+    ar: "لا حاجة إلى تنزيل تطبيق: يمكنك استخدام إقرأ مباشرة من المتصفح على الحاسوب أو الهاتف أو الجهاز اللوحي عبر https://app.iqrra.com. وإن فضّلت تطبيقًا، فتطبيق أندرويد متاح أيضًا على Google Play.",
+    en: "There is no need to install anything: you can use Iqrra directly in the browser on a computer, phone or tablet at https://app.iqrra.com. If you prefer an app, the Android app is also available on Google Play.",
   },
   {
     id: "android",
@@ -228,8 +228,8 @@ export const CURATED_ANSWERS: readonly CuratedEntry[] = [
       "google play",
       "play store",
     ],
-    ar: "تطبيق أندرويد حاليًا في مرحلة الاختبار المغلق على Google Play. لتجربته مبكرًا ولنُعلمك حين ينزل على متجر Play، سجّل بريدك في قائمة الدعوات بالصفحة الرئيسية، ويُفضَّل بريد حساب Google الذي تستخدمه على هاتفك.",
-    en: "The Android app is currently in closed testing on Google Play. To try it early and be told when it reaches the Play store, leave your email on the early-access list on the home page, preferably the Google account email you use on your phone.",
+    ar: "تطبيق إقرأ لأندرويد متوفر الآن على Google Play: اضغط «حمّل تطبيق أندرويد» أعلى الصفحة. وحسابك نفسه يعمل في التطبيق وفي المتصفح.",
+    en: "The Iqrra Android app is now on Google Play: tap the Android download button at the top of the page. The same account works in the app and in the browser.",
   },
   {
     id: "iphone",
