@@ -10,6 +10,26 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Implementation plan for the help-center video shelf, 2026-10-27
+
+**Why.** The spec («Design for a video shelf in the help center», below) was approved and merged; this is the plan that builds its mechanism:
+`docs/superpowers/plans/2026-10-27-help-center-video-shelf.md`. **A plan only: no app code changed.**
+
+**What is in it.** Four tasks: the pure module and its tests (`services/helpVideos.ts`); the shelf component, three i18n keys and the FAQ mount; a
+browser check with three throwaway fixture videos that are never committed; and the write-up plus four corrections to the spec. The catalog ships
+**empty**, so nothing is visible until the first video is added.
+
+**Verified before writing it (by building it, then discarding the build).** The code in the plan is the code that was run: 19 unit tests pass and a
+deliberately broken role filter fails 3 of them; the typecheck adds no error to the 12 that were already there; the design-scale, aria, icon, i18n,
+corner and status-bar guard tests pass; and 50 browser checks pass over teacher/student/parent × phone/desktop × ar/en × light/dark on a built
+web bundle, with the screenshots read. That exercise found and fixed two layout flaws (a clipped card shadow; an icon crowding the play button) and
+four places where the spec was loose; the plan lists them under *Deviations from the spec* and has the implementer correct the spec. Every
+Edit anchor in the plan was checked to occur exactly once in the real file.
+
+**Not verified.** The plan has not been executed by a second person from a clean checkout. Nothing was seen on a phone or in a native build. The
+analytics event is not covered by a test (the component cannot be loaded by `node --test`). The open risks in the spec (YouTube on school
+networks; "Made for kids" and ads for student and parent videos; the Android in-app browser opening the embed page) are unchanged.
+
 ## Design for a video shelf in the help center, 2026-10-27
 
 **Why.** The scripts for the first five tutorial videos are in `docs/tutorial-videos-ar.md`; this is where they will live in the
