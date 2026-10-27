@@ -10,6 +10,43 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat composer on web: one row when empty, grows with the text, 2026-10-26
+
+**Why.** Left open by «Chat first screen: words that say what to ask» (PR #1301). react-native-web renders a
+multiline `TextInput` as a `<textarea>` with HTML's default of two rows and never resizes it, so on app.iqrra.com
+the empty composer was 44px tall with its one-line placeholder on the top row and the `+` / send buttons about 14px
+lower, level with the empty row.
+
+**Built.**
+- `app/(tabs)/iqra.tsx`, web only: `rows={1}`; a 22px line with 8px vertical padding (`inputWeb`, 38px = the send
+  button's height) so one line sits level with the buttons; an effect that calls `fitTextareaHeight` after every change
+  of the text, when the window width changes, and once `document.fonts` is ready. Native passes no `rows` and the helper
+  does nothing where the ref has no `style` object.
+- `services/webTextarea.ts` (new): `fitTextareaHeight` sets `height` to `auto` **before** reading `scrollHeight`. A
+  textarea that has been given an explicit height reports at least that height, so without the reset the field grows
+  but never shrinks after a send. `max-height` (160px desktop, 100px narrower) still clamps it; past that it scrolls
+  inside. Pinned by `fitTextareaHeight.test.ts`, which fakes the DOM and holds the order of the two writes.
+- English `iqraPlaceholder` is «e.g. a short quiz on this lesson» (was «Type your request, e.g. …»): a one-row field
+  cannot wrap, and the longer text wrapped on a 390px phone, leaving a clipped second line. `chatEmptyStateCopy.test.ts`
+  keeps both languages under 34 characters (a 390px phone's 248px field holds about 39).
+
+**Verified.** `pnpm run typecheck` clean; `artifacts/mobile` `pnpm test` 7811 pass, 0 fail, 10 skipped. In the real web
+build (throwaway Postgres, API with `AI_LIVE_MODE=false`, Playwright, rects measured and every zoom looked at): empty
+field 38px with the placeholder centred on the buttons' line (Arabic and English, 1920 and 390 wide); 1–7 lines give
+38 → 60 → 82 → 104 → 126 → 148 → 160 and then scroll inside; `+` and send stay on the bottom edge while it grows; back to
+38px after a send; phone caps at 100px. English at 390px stays on one line, also on a cold load with the font delayed;
+at 320px (where it wraps) the field is 60px and shows both lines, nothing clipped.
+
+**Not verified / known limits.**
+- Native (iOS/Android) was not run; the change is web-only by construction.
+- At a few widths near 330px the placeholder wraps in the fallback font but not in Almarai: on a cold load the field
+  sits at 60px with an empty second row until the font arrives (about 6s with a forced delay), then settles at 38px. It
+  is never clipped; the re-fit on `document.fonts.ready` is what brings it back.
+- Arabic at 320px wraps and leaves «الدرس» alone on its second line, with the field grown to show it. A 320px phone
+  is below what the placeholder was sized for.
+- Not looked at: a line that is wider than the field because of a very long unbroken word, and iOS Safari's
+  textarea metrics.
+
 ## Admin overview: the signup tiles open their list, 2026-10-26
 
 **Why.** On the admin dashboard's «نظرة عامة» row, «اقتراحات الزوار» showed a count and nothing else; finding the
