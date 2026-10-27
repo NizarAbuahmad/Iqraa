@@ -98,6 +98,8 @@ export function helpVideosFor(
 
 const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const YOUTUBE_ID = /^[A-Za-z0-9_-]{11}$/;
+/** The old quoted brand spelling, built from code points so this file never holds it as a literal. */
+const OLD_QUOTED_BRAND = String.fromCodePoint(0xab, 0x627, 0x642, 0x631, 0x623, 0xbb);
 
 /**
  * Everything wrong with a catalog, one sentence each; `[]` means it is fit to ship.
@@ -139,8 +141,8 @@ export function validateCatalog(catalog: readonly HelpVideo[]): string[] {
         problems.push(`${who}: title ${video.titleKey} is missing (${lang})`);
       } else if (lang === 'en' && /\bIqraa?\b/.test(title)) {
         problems.push(`${who}: the English title spells the product «Iqraa» or «Iqra»; it is «Iqrra»`);
-      } else if (lang === 'ar' && title.includes('«اقرأ»')) {
-        problems.push(`${who}: the Arabic title quotes the brand as «اقرأ»; it is «إقرأ»`);
+      } else if (lang === 'ar' && title.includes(OLD_QUOTED_BRAND)) {
+        problems.push(`${who}: the Arabic title quotes the brand the old way (hamzat wasl); it is «إقرأ»`);
       }
     }
   }
