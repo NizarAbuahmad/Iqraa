@@ -1,8 +1,9 @@
 # Help-center video shelf — design
 
-2026-10-27. **Status: design approved by the owner; nothing is built.** The scripts the videos are made from are
-[`docs/tutorial-videos-ar.md`](../../tutorial-videos-ar.md). The write-up of what gets verified will be the top
-entry of [`docs/status-log.md`](../../status-log.md) in the implementing PR.
+2026-10-27. **Status: the mechanism is built and shipped with an empty catalog on 2026-10-27; the first real video is
+still to come.** The scripts the videos are made from are [`docs/tutorial-videos-ar.md`](../../tutorial-videos-ar.md).
+The write-up of what was verified is the top entry of [`docs/status-log.md`](../../status-log.md), «Help-center video
+shelf: the mechanism, shipped empty».
 
 ## Why
 
@@ -108,9 +109,9 @@ On the screen:
   card shadow (18 pt below, 14 pt to each side) is not clipped.
 - **Wide (the window is at least 640 pt wide, which makes the FAQ column at least 600):** a wrapping grid, three cards
   per row, gap `SPACE.md`. Each card is 31% of the row and does not grow, so one, two or four videos keep the size of a
-  card in a row of three. A row of three starts flush at the start edge and stops about 29 pt (about 4%) short of the
-  search box's end edge; a fourth card starts a second row. Narrower than that, the horizontal row above, whatever the
-  platform.
+  card in a row of three. A row of three starts flush at the start edge and stops up to about 29 pt (about 4%) short
+  of the search box's end edge; a fourth card starts a second row. Narrower than that, the horizontal row above,
+  whatever the platform.
 - **Card:** a 16:9 thumbnail (`youtubeThumbnail`, `expo-image`), a centred play glyph in a black-based scrim circle,
   a duration pill (`m:ss`, `formatVideoLength`) in a corner, then the title in at most two lines, then the narration
   tag when it applies. If the thumbnail fails or the device is offline, the plain tile shows with the play button
@@ -153,9 +154,10 @@ The existing source scans cover the component without new work: `designScale`, `
 ## Rollout
 
 1. **PR A (the mechanism):** the type, the empty catalog, `helpVideosFor`, the shelf, the FAQ mount, the shelf strings,
-   the tests, a status-log entry. Nothing is visible. Verification adds **one throwaway fixture entry locally**
-   (never committed) and checks the built web bundle at phone and desktop widths, Arabic and English, light and dark;
-   then reverts it. The first real video's PR is the first time a real card ships.
+   the tests, a status-log entry. Nothing is visible. Verification adds **throwaway fixture entries locally**
+   (never committed; the check used three, then five, across two builds) and checks the built web bundle at phone and
+   desktop widths, Arabic and English, light and dark; then reverts them. The first real video's PR is the first time a
+   real card ships.
 2. **One PR per video (or a batch)**, after it is recorded and checked: the catalog entry plus its title keys. Then
    `gh workflow run mobile-update.yml -f branch=production`.
 3. **Later, optional:** one sentence in `tourProfileBody` and an `appHelp` rule pointing at the shelf — only once every
