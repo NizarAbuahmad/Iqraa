@@ -10,6 +10,33 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## `reset-password` checks that the new password is a string, 2026-10-27
+
+**Why.** «A non-string email or code answers 400, not 500» (2026-10-26) guarded `email` and `code` on five routes
+and listed `reset-password`'s `password` as not done. `isStrongPassword` turns its argument into a string, so
+an **array** holding a strong password (`["Str0ngPassw0rd!x"]`, or one level deeper) passed the policy, and its
+`length` of 1 passed the 128-character cap. It then reached the hasher, where bcrypt refused it
+(`Illegal arguments: object, string`), and the route answered **500**. An object or a number already got a correct
+`400 password_policy`, because their string form fails the policy's letter-and-digit test; only arrays slipped
+through.
+
+**Built.** `routes/auth.ts`: `reset-password` takes `password` as `unknown` and refuses a non-string with the same
+`400 password_policy` as a weak one, the guard `register` and `add-email` already use. Two cases (an array and a
+nested array holding a strong password) join the malformed-body table in `mountOrder.test.ts`; that suite has no
+reachable database, so they also pin that the check runs before the account lookup.
+
+**Verified.** On a throwaway Postgres with a valid, unused reset code planted (its hash is
+`sha256("userId:code")`): the old build answered an array and a nested array **500**, an object and a number 400;
+the new build answers all four 400 with the code still unused, then a string password resets the account and the
+new password logs in (200), with no `reset password failed` line in the server log. The new test fails on the old
+code (`500 !== 400`) and passes on the new; `pnpm run typecheck`; api-server `pnpm build` and `pnpm test` (2608 pass).
+
+**Not verified, not done.** `admin.ts:257` (an admin setting someone's password) has the same
+`!password || !isStrongPassword(password)` shape with no string check; it is admin-only and was not touched or
+tested. `confirmPassword` is still typed `string`: a non-string one already fails the `!==` comparison and
+answers `passwords_mismatch`, so it was left alone. Production behavior was not called; this sandbox cannot
+reach it. `schema-push:` none.
+
 ## Admin overview: the signup tiles open their list, 2026-10-26
 
 **Why.** On the admin dashboard's «نظرة عامة» row, «اقتراحات الزوار» showed a count and nothing else; finding the
