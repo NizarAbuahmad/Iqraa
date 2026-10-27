@@ -596,7 +596,7 @@ export function defaultTeachingActions(): TeachingAction[] {
     { type: 'lesson-plan', labelAr: 'جهّز خطة درس', labelEn: 'Create lesson plan', emoji: '📄' },
     { type: 'worksheet', labelAr: 'جهّز ورقة عمل', labelEn: 'Create worksheet', emoji: '📝' },
     { type: 'quiz', labelAr: 'جهّز اختباراً قصيراً', labelEn: 'Create quiz', emoji: '❓' },
-    { type: 'homework', labelAr: 'جهّز واجباً بيتياً', labelEn: 'Create homework', emoji: '🏠' },
+    { type: 'homework', labelAr: 'جهّز واجباً منزلياً', labelEn: 'Create homework', emoji: '🏠' },
     { type: 'activity', labelAr: 'جهّز نشاطاً صفياً', labelEn: 'Create classroom activity', emoji: '🎯' },
   ];
 }

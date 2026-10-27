@@ -29,7 +29,8 @@ everywhere and «أنشئ» everywhere (each would have changed six tool buttons
   (`CREATE_CHIP` in `lessonCopilot.ts`, `promptForTeachingAction` and `handleResourcePress` in `iqra.tsx`), each with its
   own verb. English now says "Create a full lesson plan / a classroom activity …" (was «Prepare» / «Suggest»).
 - `CREATE_CHIP` (exported for the test): five Arabic labels «جهّز …»; «Class activity» → «Create class activity».
-- Follow-up chips (`defaultTeachingActions`): «جهّز خطة درس / ورقة عمل / اختباراً قصيراً / واجباً بيتياً / نشاطاً صفياً».
+- Follow-up chips (`defaultTeachingActions`): «جهّز خطة درس / ورقة عمل / اختباراً قصيراً / واجباً منزلياً / نشاطاً صفياً»
+  (homework said «بيتياً» in a first draft, a third spelling next to the chip's and its prompt's «منزلياً»; pinned in the test).
 - Home prompt chips (`homeAiTools.ts`) and the uploaded-files quick actions (`documents/quickActions.ts`): «جهّز …» / "Create …".
 - The lesson-plan outlier: `generateLessonPlanBtn`, `generateAILesson`, the help answer `howMakeLessonPlan` (button name and
   the example to type), `howPlanLanguage`, `continueEmptyDesc`, `docReadyMessage`, `faqA1`, `iqraInputHint` and the
@@ -46,8 +47,24 @@ everywhere and «أنشئ» everywhere (each would have changed six tool buttons
   buttons, the prep board's «أنشئ», and the file quick actions' noun labels («خطة درس»).
 
 **Verified.** `pnpm run typecheck` clean; `artifacts/mobile` `pnpm test` 7871 pass, 0 fail, 10 skipped (before the routing
-assertions were added to `chipVerbs.test.ts`, which then passes on its own, 57 cases). No existing test pinned the old chip
-wording.
+assertions and the homework-spelling guard were added to `chipVerbs.test.ts`, which then passes on its own, 58 cases). No
+existing test pinned the old chip wording. In the real web build (throwaway Postgres, API with `AI_LIVE_MODE=false`,
+Playwright; every screenshot looked at), Arabic desktop: the empty chat's chips read «جهّز خطة الدرس» / «جهّز ورقة عمل»;
+tapping the lesson-plan chip sends «جهّز خطة درس كاملة عن: <the lesson on the strip>» and returns a lesson plan; the worksheet,
+quiz, activity and homework chips each sent their own «جهّز …» text and returned that material (worksheet, quiz, activity,
+homework), none a question back, none a different material; English: «Create lesson plan» / «Create worksheet» sent
+«Create a full lesson plan about: …» / «Create an in-class worksheet about: …» and returned a lesson plan and a worksheet;
+`/ai-tools/lesson-plan`'s button reads «جهّز خطة الدرس», not clipped.
+
+**Found, not changed (all there before this change).**
+- «✏️ حسّن خطة الدرس» (the refine chip, `lessonCopilot.ts`) sends «حسّن خطة الدرس عن «تركيب الاقترانات» واجعلها أوضح للتنفيذ في
+  الحصة القادمة» and `topicFromQuery` returns «حسّن الدرس «تركيب الاقترانات» واجعلها أوضح …» as the lesson topic (same output on
+  a clean `main`), so the offline generator titles the plan with the whole sentence. «حسّن» is not a create verb, so it is
+  outside this change.
+- The follow-up chip row is a horizontal scroller, and its third chip is cut off at the pane's edge on a 1920px window
+  («اجعل الاختبار أصعب»); not looked at further.
+- The material's own title and checklist say «واجب بيتي» while the chip says «واجباً منزلياً»: two names for homework that
+  predate this change.
 
 **Not verified.** Native (iOS/Android) was not run; the change is JavaScript only. The strings were not read by a second
 native speaker; «جهّز» is the verb the app already used on six tool buttons. Marketing material outside this repo that quotes

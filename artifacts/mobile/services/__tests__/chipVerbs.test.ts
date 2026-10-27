@@ -94,6 +94,14 @@ describe('the follow-up chips under a reply', () => {
       assert.ok(action.labelEn.startsWith('Create '), action.labelEn);
     });
   }
+
+  // The same ask must not be spelled three ways: a follow-up used «واجباً
+  // بيتياً» while the chip and the text it sends say «واجباً منزلياً».
+  it('homework: names the ask the way the chip and its prompt do', () => {
+    const label = actions.find(a => a.type === 'homework')!.labelAr;
+    assert.equal(label, CREATE_CHIP.homework.labelAr);
+    assert.ok(materialPrompt('homework', TOPIC, 'ar').includes('واجباً منزلياً'));
+  });
 });
 
 describe('the home prompt chips and the file quick actions', () => {
