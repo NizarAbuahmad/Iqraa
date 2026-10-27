@@ -80,6 +80,56 @@ export function signupPlan(
   };
 }
 
+export type SignupMissing = 'terms' | 'parent' | 'age';
+
+export type SignupReadiness = {
+  /** «متابعة عبر Google» may be tapped. Never waits for the server's switch, see below. */
+  google: boolean;
+  /** The create-account button may be tapped. */
+  submit: boolean;
+  /** What Google still needs from the person, in the order the form asks for it; null when nothing. */
+  googleMissing: SignupMissing | null;
+  /** What holds the create-account button: `googleMissing`, else `'config'` while something is still being read. */
+  submitMissing: SignupMissing | 'config' | null;
+};
+
+/**
+ * Who may tap what on the register screen: the boxes the person has to fill in, in the order the form asks for
+ * them (terms, then a parent's address, then the age tick), and whether anything is still loading.
+ *
+ * Google does NOT wait for the loading. The switch (`plan.waitingForConfig`) only decides which box a student with
+ * an email is shown, and the server refuses a sign-up that lacks it with a code `guardianConfigStale` knows, after
+ * which the screen re-reads the switch. Holding Google for it left the button dim and unexplained for as long as a
+ * slow API took: up to ~49 s, three tries of 15 s with 1 s and 3 s between. The password form still waits (it
+ * would send a payload the server then refuses after the person typed a password), and says so (`'config'`).
+ *
+ * `optionsLoading` is the roles request (`/healthz/features`): until it answers the role is not known to be the
+ * teacher's, so the password form holds. It never holds Google, whose button is not drawn until then anyway.
+ */
+export function signupReadiness(input: {
+  termsAccepted: boolean;
+  ageConfirmed: boolean;
+  parentOk: boolean;
+  plan: SignupPlan;
+  optionsLoading: boolean;
+}): SignupReadiness {
+  const { termsAccepted, ageConfirmed, parentOk, plan, optionsLoading } = input;
+  const googleMissing: SignupMissing | null = !termsAccepted
+    ? 'terms'
+    : plan.askParent && !parentOk
+      ? 'parent'
+      : plan.askAge && !ageConfirmed
+        ? 'age'
+        : null;
+  const loading = plan.waitingForConfig || optionsLoading;
+  return {
+    google: googleMissing === null,
+    submit: googleMissing === null && !loading,
+    googleMissing,
+    submitMissing: googleMissing ?? (loading ? 'config' : null),
+  };
+}
+
 /**
  * A refusal that means the app's copy of the server's parent-approval switch is out of date: the app thought
  * it was off and the server wants a parent's email, or the other way round. The screen drops its cached

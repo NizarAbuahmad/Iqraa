@@ -10,6 +10,164 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## «متابعة عبر Google» no longer waits for the parent-approval switch, and the boxes that unlock it sit above it, 2026-10-27
+
+**Why.** Reported from app.iqrra.com/register, as a student and as a parent: the Google button stayed dim, then "activated after
+a long time", with no message either way.
+
+**Found (read in the code, not measured).**
+1. The gate (`readyToSignUp`) held Google for the terms box, the age tick (or a parent's address) and — for a student with an
+   email — for `GET /guardian-consent/config` (`waitingForConfig`). The boxes sat at the **bottom** of the form, under first
+   name, last name, email, password and confirm password, none of which Google uses; in both screenshots they were off screen.
+2. The config call has a 15 s deadline per try and two retries (1 s, 3 s): up to ~49 s on a slow API. During it `missing` was
+   `null`, so the dim button had no hint at all.
+3. A parent is never held by the config (`signupPlan` waits only for a student), so for a parent the delay was the box.
+4. No server defect: `/auth/google` was read end to end for a new student and a new parent. The other thing a reporter can hit —
+   a Google address that already is a teacher with classes gets `role_locked_teaching` (409) — is by design and unchanged.
+
+**Changed (mobile only; no server, schema or env change).**
+- `signupReadiness` (`services/signupMethod.ts`, pure, tested): one gate per way to sign up. Google needs only what the person
+  can do (terms, then a parent's address, then the age tick); the password form also waits for the switch and the roles and says
+  so (`'config'`).
+- `app/(auth)/register.tsx`: the parent-email field and the agreements now open the email form, **above** the Google button, so
+  what unlocks it is on screen with it. Every hint says «أعلاه»; `registerAcceptTermsBelow` and `ageConfirmBelow` are gone. A new
+  line, `signupLoadingOptions` («جارٍ تحميل خيارات التسجيل…»), shows where the Google button will be while the roles load, and
+  under the create-account button while the switch is read.
+- A student who taps Google before the switch arrives sends no tick and no parent address; the server refuses it with
+  `age_confirmation_required` / `parent_email_required`, which `guardianConfigStale` already turns into a re-read of the switch
+  (nothing is created: both refusals come before the insert).
+
+**Verified.** Written test-first: 9 `signupReadiness` cases (`signupMethod.test.ts`) and 4 screen pins
+(`signupScreensSource.test.ts`: the gate comes from `signupReadiness`, the boxes sit above the Google button, no hint points
+«أسفل», the loading line exists) plus the new copy key in `guardianCopy.test.ts` — all failed first, for the missing feature.
+Root `pnpm run typecheck` clean; `cd artifacts/mobile && pnpm test`: 8,006 tests in 1,339 suites, 7,996 passed, 0 failed, 10
+skipped; the brand grep from `ci.yml` is clean on the touched files. The api-server was not touched and was not re-run.
+
+**Not verified.**
+- **How it looks in a browser** (phone and desktop, light and dark, RTL), and a real Google sign-up as a student or a parent (no
+  Google credential here). The 49 s figure is the worst case from the constants, not a timing taken on production: this
+  sandbox's proxy refuses the Cloud Run host.
+- Known limit: a student who taps Google inside the wait is shown the refusal («أكّد أنك بالغ…» / «أدخل بريد أحد والديك») before
+  the box it names has been drawn, and the Google credential is single use, so a second tap is needed.
+- The Arabic line was written by the implementer with no independent reviewer.
+
+## The improve chips no longer title the material with their own sentence, 2026-10-27
+
+**Why.** Left open by «One verb for "make me this material"» (below, «Found, not changed»). Tapping «✏️ حسّن خطة الدرس» sent
+«حسّن خطة الدرس عن «تركيب الاقترانات» واجعلها أوضح للتنفيذ في الحصة القادمة», and the chat regenerated the plan titled with
+the whole sentence («خطة درس: حسّن الدرس «تركيب الاقترانات» واجعلها أوضح …»), opened the reply «المادة جاهزة لدرس «<sentence>»»
+and handed the sentence to the generator as its topic. «🔥 اجعل الاختبار أصعب» did the same («اختبار قصير: اجعل الاختبار أصعب
+وأضف سؤالين»), and so does any typed refinement: «اجعله أبسط» titled one «اجعله أبسط».
+
+**Root cause (two, found by running the chat's own parsers on the chip strings).**
+1. A refinement went through `resolveArtifactTopic` like a creation ask. `topicFromQuery` only strips the words of a creation
+   ask (verbs, material nouns), so a refinement's words survived as the "topic", and anything of three characters or more
+   outranks the lesson on the card. The words of a refinement never reach the generator (`ask` only feeds quiz counts and
+   types), so the topic is the *only* thing such a message can contribute.
+2. In English the improve chips were not refinements at all. `isRefinement` knew «حسّن» and «اجعله أصعب» but, in English, only
+   «make it harder»: "Improve the current lesson plan…" and "Make the quiz harder…" classified as `artifact` with the topic
+   «harder». That also lost a soft-pinned lesson, because `shouldReuseActiveLesson` keeps it for `refinement` outright but for
+   `artifact` only when the ask is a bare shortcut, which a sentence is not.
+
+**Built.**
+- `resolveArtifactTopic` takes `refinement` (`artifactTopic.ts`). For one, the only topic read from the message is one fenced in
+  quotes (`quotedTopic`: «…», "…", “…” — which is how the chip writes its topic; a quoted pointer such as «الدرس الحالي» or
+  "the current lesson", what the chip says while no lesson is open, names nothing); otherwise the lesson, document or active
+  topic decides, as it already did for a creation ask with no topic. Creation asks are untouched.
+- `iqra.tsx` passes `refinement: route.intent === 'refinement'` at both of its `resolveArtifactTopic` calls (one ranks lessons,
+  one titles the material); a test reads the file and fails a call without it.
+- `isRefinement` (`intentRouter.ts`) gains the English forms where a material is named: "improve (the/my/current) lesson plan /
+  worksheet / quiz / homework / activity", "make the quiz / worksheet / … harder / easier / simpler / clearer / shorter /
+  longer". «improve student engagement», «make students work harder» and «make a worksheet for harder topics» stay what they were
+  (teaching, teaching, artifact).
+- `refineChips.test.ts` (new, 35 cases), built from the real chips (`buildLessonSuggestions`) rather than retyped strings: both
+  chips route as refinements in both languages, resolve to the lesson on the card with and without a matched lesson, typed
+  refinements do not title anything, a quoted topic is honoured, a quoted pointer is not, creation asks are unchanged, and the
+  chat file passes the flag at every call.
+
+**Left alone, on purpose.**
+- What the regenerated material *is*. A refinement still regenerates the material for the lesson; it does not edit the previous
+  one, and «واجعلها أوضح للتنفيذ» still reaches nothing. Making the chip's words change the output is a different feature.
+- `topicFromQuery` itself and its other callers (infographic, subject scope, `mergeScopeReply`, `isBareArtifactShortcut`): they
+  handle creation asks.
+- The follow-up chip row cut off at the pane's edge, and «واجب بيتي» versus «واجباً منزلياً» (both still open, see below).
+
+**Verified.** Before the fix, `refineChips.test.ts` failed 25 of its 35 cases, for the reasons above (English not routed as a
+refinement; the sentence as the topic in both languages, with and without a matched lesson; the flag missing in `iqra.tsx`);
+the creation-ask and false-positive cases already passed and still do. After it: 35/35; `pnpm run typecheck` clean (one error
+in the first draft of the test, a `URL` type, fixed); `artifacts/mobile` `pnpm test` 7984 pass, 0 fail, 10 skipped.
+Browser check of the real chat: **pending when this entry was written** — see the PR description for the result.
+
+**Not verified.** Native (iOS/Android) was not run; the change is JavaScript only. Only the lesson-plan and quiz chips were
+looked at; a refinement of a worksheet, homework or activity takes the same path but was not tried by hand. The English
+phrasings of a typed refinement are the ones listed above, not a vocabulary: «make it simpler for my class» is still read by the
+older bare patterns (refinement), and an English refinement that names no material is still not one («tweak this» →
+ambiguous, «can you redo it?» → teaching; both probed).
+- A how-question that names the material but no purpose, «how do I improve my lesson plan?», now routes as a `refinement`
+  (probed). Before this change it fell through to `artifact` (nothing matched `isRefinement`, and `isPurposeQuestion` only
+  fires with a purpose clause such as «so that» / «for weak students»), so it was never answered as advice either; the
+  difference is that it now keeps the open lesson as its topic instead of being titled «improve».
+
+## One verb for "make me this material": «جهّز» / "Create", 2026-10-27
+
+**Why.** Left open by «Chat first screen: words that say what to ask» (PR #1301). The create chips said five different
+things in Arabic (حضّر / أنشئ / جهّز / اقترح / أنشئ), the follow-up chips under a reply were bare nouns in Arabic and
+«Create …» (with «Classroom activity» the odd one) in English, and the tool screens' own buttons were already «جهّز …» for
+the worksheet, quiz, homework, activity, slides and game with only the lesson plan saying «حضّر خطة الدرس». The words are
+also what a chip SENDS, so they appear as the teacher's own message in the thread. Counted before the change: of the Arabic
+strings that open with a make-a-thing verb, «جهّز» 18, «أنشئ» 15, «حضّر» 4, «اقترح» 4; «أنشئ» was used for records (account,
+class, exam, code, group, file), which is the split worth keeping.
+
+**Rule.** «جهّز» for a teaching material; «أنشئ» only for a record. English «Create …». The owner picked this over «حضّر»
+everywhere and «أنشئ» everywhere (each would have changed six tool buttons and three help answers) and over chat-only
+(it would have left the chip and the lesson-plan screen it opens saying different words).
+
+**Built.**
+- `services/materialPrompts.ts` (new): what a chip sends, one table. There were three copies of the five sentences
+  (`CREATE_CHIP` in `lessonCopilot.ts`, `promptForTeachingAction` and `handleResourcePress` in `iqra.tsx`), each with its
+  own verb. English now says "Create a full lesson plan / a classroom activity …" (was «Prepare» / «Suggest»).
+- `CREATE_CHIP` (exported for the test): five Arabic labels «جهّز …»; «Class activity» → «Create class activity».
+- Follow-up chips (`defaultTeachingActions`): «جهّز خطة درس / ورقة عمل / اختباراً قصيراً / واجباً منزلياً / نشاطاً صفياً»
+  (homework said «بيتياً» in a first draft, a third spelling next to the chip's and its prompt's «منزلياً»; pinned in the test).
+- Home prompt chips (`homeAiTools.ts`) and the uploaded-files quick actions (`documents/quickActions.ts`): «جهّز …» / "Create …".
+- The lesson-plan outlier: `generateLessonPlanBtn`, `generateAILesson`, the help answer `howMakeLessonPlan` (button name and
+  the example to type), `howPlanLanguage`, `continueEmptyDesc`, `docReadyMessage`, `faqA1`, `iqraInputHint` and the
+  next-step line «أقترح الآن: جهّز خطة الدرس.»
+- `chipVerbs.test.ts` (new): every material's prompt, chip label and follow-up label opens with «جهّز» / "Create"; the chat
+  routes each of the ten prompts to generating a material and reads back the right material and topic; the four help answers
+  quote the button as it is spelled; and what a teacher TYPES is still understood with either verb.
+
+**Left alone, on purpose.**
+- Everything that parses what a teacher types (`askVocabulary`, `artifactTopic` `VERBS`, `intentRouter`): «حضّر» and «أنشئ»
+  keep working as requests. This changes what the app says, not what it hears.
+- The API's model prompts («أنشئ خطة درس كاملة لمادة …»): they address the model, are not shown, and do not parse chips.
+- Prose that is not a chip («حضّر حصتك:», «المعلم يحضّر حصصه», the home hero's «حضّر حصة عن …» example), the records' «أنشئ …»
+  buttons, the prep board's «أنشئ», and the file quick actions' noun labels («خطة درس»).
+
+**Verified.** `pnpm run typecheck` clean; `artifacts/mobile` `pnpm test` 7871 pass, 0 fail, 10 skipped (before the routing
+assertions and the homework-spelling guard were added to `chipVerbs.test.ts`, which then passes on its own, 58 cases). No
+existing test pinned the old chip wording. In the real web build (throwaway Postgres, API with `AI_LIVE_MODE=false`,
+Playwright; every screenshot looked at), Arabic desktop: the empty chat's chips read «جهّز خطة الدرس» / «جهّز ورقة عمل»;
+tapping the lesson-plan chip sends «جهّز خطة درس كاملة عن: <the lesson on the strip>» and returns a lesson plan; the worksheet,
+quiz, activity and homework chips each sent their own «جهّز …» text and returned that material (worksheet, quiz, activity,
+homework), none a question back, none a different material; English: «Create lesson plan» / «Create worksheet» sent
+«Create a full lesson plan about: …» / «Create an in-class worksheet about: …» and returned a lesson plan and a worksheet;
+`/ai-tools/lesson-plan`'s button reads «جهّز خطة الدرس», not clipped.
+
+**Found, not changed (all there before this change).**
+- «✏️ حسّن خطة الدرس» (the refine chip, `lessonCopilot.ts`) sends «حسّن خطة الدرس عن «تركيب الاقترانات» واجعلها أوضح للتنفيذ في
+  الحصة القادمة» and `topicFromQuery` returns «حسّن الدرس «تركيب الاقترانات» واجعلها أوضح …» as the lesson topic (same output on
+  a clean `main`), so the offline generator titles the plan with the whole sentence. «حسّن» is not a create verb, so it is
+  outside this change.
+- The follow-up chip row is a horizontal scroller, and its third chip is cut off at the pane's edge on a 1920px window
+  («اجعل الاختبار أصعب»); not looked at further.
+- The material's own title and checklist say «واجب بيتي» while the chip says «واجباً منزلياً»: two names for homework that
+  predate this change.
+
+**Not verified.** Native (iOS/Android) was not run; the change is JavaScript only. The strings were not read by a second
+native speaker; «جهّز» is the verb the app already used on six tool buttons. Marketing material outside this repo that quotes
+«حضّر خطة درس» (the tutorial video text in `marketing/tutorial/build.py`) is unchanged.
+
 ## First-run spotlight tour for new accounts, 2026-10-26
 
 **Why.** A new teacher, student or parent landed on their home screen with no guidance: the only intro is

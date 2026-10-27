@@ -99,6 +99,11 @@ export const PRONUNCIATION: Record<string, string> = {
   // times "quietly" — "a little slowly" is read too literally on some words.
   loudly: 'Say it at a quick, natural speaking pace, LOUD-lee: two short syllables as one smooth word, nothing stretched.',
   firefighter: 'Say it at a quick, natural speaking pace, FIRE-fy-ter: one smooth word, no pause between the parts.',
+  // The speech-to-text check (2026-10-27) heard "Sin", then "fin" — the "th" came out as "s"
+  // and then as "f". The Grade 8 word list is its first user.
+  thin:
+    'Pronounce it /θɪn/: the voiceless "th" of "think", with the tongue tip between the teeth and air pushed out — ' +
+    'not "s", not "f", not "t". Then a short "i" as in "sit" and a clear "n".',
 };
 
 /** The model instructions for one item: its register, plus its pronunciation hint if it has one. */

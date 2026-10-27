@@ -182,6 +182,7 @@ import { quizExports, type QuizCopy } from '@/services/quizExport';
 import { worksheetExports } from '@/services/worksheetExport';
 import { buildClassDeck } from '@/services/startClass';
 import { fitTextareaHeight } from '@/services/webTextarea';
+import { materialPrompt } from '@/services/materialPrompts';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
@@ -203,29 +204,7 @@ function promptForTeachingAction(
   topic: string,
   lang: 'ar' | 'en',
 ): string {
-  const prompts: Record<TeachingAction['type'], { ar: string; en: string }> = {
-    'lesson-plan': {
-      ar: `حضّر خطة درس كاملة عن: ${topic}`,
-      en: `Prepare a full lesson plan about: ${topic}`,
-    },
-    worksheet: {
-      ar: `أنشئ ورقة عمل صفية عن: ${topic}`,
-      en: `Create an in-class worksheet about: ${topic}`,
-    },
-    homework: {
-      ar: `أنشئ واجباً منزلياً عن: ${topic}`,
-      en: `Create homework about: ${topic}`,
-    },
-    quiz: {
-      ar: `جهّز اختباراً قصيراً عن: ${topic}`,
-      en: `Create a short quiz about: ${topic}`,
-    },
-    activity: {
-      ar: `اقترح نشاطاً صفياً عن: ${topic}`,
-      en: `Suggest a classroom activity about: ${topic}`,
-    },
-  };
-  return prompts[type][lang];
+  return materialPrompt(type, topic, lang);
 }
 
 function ephemeralFromTeachingActions(
@@ -2700,6 +2679,8 @@ export default function IqraScreen() {
             ? primaryTopicFromDocuments(docBundle.documents, docNames[0] || q)
             : null,
           preferDocuments: hasDocs && sessionMemory.lessonPin !== 'hard',
+          // «حسّن…» / "make the quiz harder" is the change, not the lesson.
+          refinement: route.intent === 'refinement',
         });
         // A new topic keeps the picked grade unless the message names another:
         // "a quiz on fractions" with grade 7 picked meant grade 7's fractions,
@@ -2759,6 +2740,7 @@ export default function IqraScreen() {
             ? primaryTopicFromDocuments(docBundle.documents, docNames[0] || q)
             : null,
           preferDocuments: hasDocs && sessionMemory.lessonPin !== 'hard',
+          refinement: route.intent === 'refinement',
         });
         try {
           const generated = await generateChatArtifact({
@@ -3286,14 +3268,7 @@ export default function IqraScreen() {
       });
       return;
     }
-    const prompts: Record<SessionArtifact, { ar: string; en: string }> = {
-      'lesson-plan': { ar: `حضّر خطة درس كاملة عن: ${topic}`, en: `Prepare a full lesson plan about: ${topic}` },
-      worksheet: { ar: `أنشئ ورقة عمل صفية عن: ${topic}`, en: `Create an in-class worksheet about: ${topic}` },
-      homework: { ar: `أنشئ واجباً منزلياً عن: ${topic}`, en: `Create homework about: ${topic}` },
-      quiz: { ar: `جهّز اختباراً قصيراً عن: ${topic}`, en: `Create a short quiz about: ${topic}` },
-      activity: { ar: `اقترح نشاطاً صفياً عن: ${topic}`, en: `Suggest a classroom activity about: ${topic}` },
-    };
-    sendMessage(lang === 'ar' ? prompts[type].ar : prompts[type].en, sessionMemory.activeLessonId ?? undefined);
+    sendMessage(materialPrompt(type, topic, lang as 'ar' | 'en'), sessionMemory.activeLessonId ?? undefined);
   }, [lang, sendMessage, sessionMemory]);
 
   /**
@@ -3502,7 +3477,7 @@ export default function IqraScreen() {
    * The starting actions, in one place.
    *
    * They render inside the intro while the thread is empty and above the
-   * composer once it isn't — the same chips either way, so "حضّر خطة الدرس"
+   * composer once it isn't — the same chips either way, so "جهّز خطة الدرس"
    * does not become a different affordance halfway through a conversation.
    */
   // The lab chip is the lesson's own material, so it must stay reachable where
@@ -3963,7 +3938,7 @@ export default function IqraScreen() {
             // Only while the thread is still just the intro — otherwise the
             // same three chips appear twice on one screen.
             // Nor the lesson chips under the readiness board: its rows already are
-            // «حضّر خطة الدرس» / «أنشئ ورقة عمل», the same actions twice — but
+            // «جهّز خطة الدرس» / «جهّز ورقة عمل», the same actions twice — but
             // the lab chip is not one of those rows, so it stays, alone.
             introActions={
               item.id === 'welcome' && messages.length <= 1
@@ -3998,10 +3973,10 @@ export default function IqraScreen() {
         Shown once the intro has scrolled out of the way, and only when the
         one-shot follow-ups below are not — two chip strips stacked on a phone
         is the clutter this change set out to remove.
-        Not under an answer about the app: «حضّر خطة الدرس» next to «where is
+        Not under an answer about the app: «جهّز خطة الدرس» next to «where is
         Settings» offers a lesson to someone who asked for a screen. Nor under a
         question back to the teacher («أيّ مادة تقصد؟»): it carries its own
-        choices, and «أنشئ ورقة عمل» under «أريد ورقة عمل → أيّ مادة؟» repeats
+        choices, and «جهّز ورقة عمل» under «أريد ورقة عمل → أيّ مادة؟» repeats
         the ask instead of answering it.
       */}
       {ephemeralSuggestions.length === 0 && !isThinking && messages.length > 1
