@@ -21,7 +21,7 @@ export const SITE_ASK_PROMPT_VERSION = "site-ask-1";
 export const SITE_ASK_FALLBACK_FACTS = `Iqrra (إقرأ) is an Arabic-native lesson-preparation assistant for teachers in Jordan, built on the national curriculum (NCCD, Ministry of Education).
 The teacher picks a grade, subject, unit and lesson, and Iqrra builds a lesson plan, worksheet, short quiz, classroom activity or slide deck grounded in that lesson's official learning outcomes. Everything is shown for the teacher to review and edit before use.
 Maths answer keys are checked by a symbolic maths engine before they are marked as verified.
-Iqrra is free for teachers during the beta. It works in a web browser (app.iqrra.com) on desktop, phone and tablet. The Android app is in closed testing on Google Play; teachers can join the early-access list on the home page. An iPhone app is in development.
+Iqrra is free for teachers during the beta. It works in a web browser (app.iqrra.com) on desktop, phone and tablet. The Android app is available on Google Play; the site header button «حمّل تطبيق أندرويد» opens the store listing, and the same account works in the app and in the browser. An iPhone app is in development.
 Iqrra is not a general chatbot, and it does not replace the teacher's judgement. It covers the Jordanian curriculum only.
 Contact: ${SITE_ASK_CONTACT_EMAIL}, or the contact form on the home page.`;
 

@@ -366,7 +366,7 @@ describe("CURATED_ANSWERS — content anchors", () => {
     outputs: { ar: ["رسائل لأولياء الأمور"], en: ["messages to parents"] },
     "math-check": { ar: ["أداة تحقق رياضية", "الإجابات الرياضية"], en: ["math answers", "mathematical verification tool"] },
     "app-needed": { ar: ["لا حاجة إلى تنزيل تطبيق"], en: ["no need to install anything"] },
-    android: { ar: ["أندرويد حاليًا", "متجر Play"], en: ["currently in closed testing", "Play store"] },
+    android: { ar: ["لأندرويد متوفر الآن", "حمّل تطبيق أندرويد"], en: ["is now on Google Play", "same account works"] },
     iphone: { ar: ["تطبيق آيفون"], en: ["The iPhone app"] },
     students: { ar: ["يشاركه المعلم"], en: ["the teacher shares"] },
     privacy: { ar: [URL_PRIVACY, "سياسة الخصوصية"], en: [URL_PRIVACY, "privacy policy"] },

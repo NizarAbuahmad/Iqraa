@@ -45,6 +45,38 @@ no video makes it vanish and the box jump up; changing that is a spec change. Th
 `artifacts/mobile`) still shows its 12 existing errors, none in a file this change touches. The FAQ itself is still role-blind (a student sees
 the teacher-worded questions); unchanged here. After the browser check, the final review added the narration tag to the card's spoken label in the English UI; the guard suites still pass, but none asserts the label text, so that change rests on a read of the code and was not re-driven in a browser.
 
+## Row-level security switched on in production, 2026-10-27
+
+The owner set `RLS_ENFORCE=on` on `iqraa-api` (Cloud Run, `europe-west1`, project `iqraa-auth-507315`) from Cloud
+Shell: first on 2026-10-24 (revision `iqraa-api-00417-n5n`), then, after the flag was switched off and on again
+by mistake several times (a Cloud Shell opened on the wrong project, and a rollback command pasted instead of
+the on command), last on 2026-10-27 about 21:16 on the owner's clock (revision `iqraa-api-00456-7md`). Every
+command named `--project iqraa-auth-507315`, so the shell's default project (`monroo`) did not matter.
+
+**Verified (owner's report):** a teacher's inbox and chat load, a message reaches the parent with a
+notification, the parent's reply shows for the teacher and moves the chat to the top of the inbox. The
+`permission denied` / `row-level security` log search printed nothing each time it was run.
+
+**Not verified:** the 30-minute watch of 5xx rate, p95 latency and push volume (checklist D3) was not done on the
+last switch-on; there is no unbroken run of days with enforcement on; real hold times and statement counts under
+traffic (read `held scope ended` at `LOG_LEVEL=debug`); the `row-level security` check is still not a required
+check on `main` (checklist E1). Routes not on the held list pay about 22 ms per statement.
+
+## Row-level security: the held connection measured — the inbox passes the latency gate, 2026-10-24
+
+`bench:rls` (three modes) run from Cloud Shell against the rehearsal Neon project's pooled endpoint, 8 statements
+per request: median 92.8 ms off / 270.9 ms on / 108.9 ms held; p95 96.7 / 442.7 / 117.6 ms. A held route
+(today only `GET /messaging/threads`, PR #1223) adds **+20.8 ms at p95**, inside the +100 ms budget; a route that
+is not held adds +346 ms at p95 for the same 8 statements (about 22 ms per statement at the median). This closes
+checklist C1 for the inbox; the first run's failure (+336.5 ms at 15 statements, 2026-10-23) is kept in the
+checklist.
+
+**Not verified:** real hold times and the real cost of every unlisted route under production traffic (after a flip,
+`LOG_LEVEL=debug` shows `held scope ended` with each request's statement count and hold time); the other
+routes' statement counts, which decide which to add to `heldReads.ts` next. `RLS_ENFORCE` is still unset in
+production; switching it on is the owner's step (checklist D) after deciding whether the ~22 ms per statement on
+unlisted routes is acceptable.
+
 ## Implementation plan for the help-center video shelf, 2026-10-27
 
 **Why.** The spec («Design for a video shelf in the help center», below) was approved and merged; this is the plan that builds its mechanism:
