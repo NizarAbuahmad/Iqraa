@@ -69,7 +69,8 @@ now it stays on the open lesson.
   requirement fails the two typed-refinement tests.
 - The real offline `generateLessonPlan` with the old topic vs the new: the old plan's text carries «حسّن الدرس» /
   «أين نلتقي بحسّن»; the new one does not (topic «تركيب الاقترانات»).
-- `pnpm run typecheck` clean; whole mobile suite on the final tree: 7,906 pass, 0 fail, 10 skipped (none related).
+- `pnpm run typecheck` clean; whole mobile suite on the final tree (after the redesign above): 7,915 pass, 0 fail,
+  10 skipped (none related).
 
 **Not verified / known limits.**
 - **Not driven in a browser.** `iqra.tsx` has no unit seam; the wiring there is typechecked and its decision logic is
