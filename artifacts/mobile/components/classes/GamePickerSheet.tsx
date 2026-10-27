@@ -2,8 +2,9 @@
  * "A game from the lesson" — opened from the homework form, beside the Library
  * and My files. The list is the class's grade and subjects run through
  * `gameLessonsForScope` (code, not a network call, so no loading state):
- * lessons with enough key terms, by unit. Tapping a lesson shows the games it
- * can offer (`availableLessonGames`); tapping one adds it and the sheet stays
+ * lessons with enough key terms or with Math Corner exercises, by unit. Tapping a
+ * lesson shows what it can offer (`homeworkGamesFor`: its games, and «تمارين
+ * الرياضيات» for a covered maths lesson); tapping one adds it and the sheet stays
  * open, the added game reading «مضاف». No text input, so no KeyboardSafeView.
  */
 import React, { useMemo, useState } from 'react';
@@ -13,8 +14,8 @@ import { getLessonById } from '@workspace/curriculum';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
-import { LESSON_GAME_TITLE_KEY, availableLessonGames, gameLessonsForScope, type LessonGame } from '@/services/lessonGames';
-import { resourceKey, type HomeworkGameResource } from '@/services/homework';
+import { HOMEWORK_GAME_TITLE_KEY, gameLessonsForScope, homeworkGamesFor } from '@/services/lessonGames';
+import { resourceKey, type HomeworkGameName, type HomeworkGameResource } from '@/services/homework';
 
 export function GamePickerSheet({
   visible,
@@ -43,7 +44,7 @@ export function GamePickerSheet({
   );
   const games = useMemo(() => {
     const lesson = openId ? getLessonById(openId) : undefined;
-    return lesson ? availableLessonGames(lesson) : [];
+    return lesson ? homeworkGamesFor(lesson) : [];
   }, [openId]);
 
   return (
@@ -94,7 +95,7 @@ export function GamePickerSheet({
                       </Pressable>
                       {on ? (
                         <View style={[styles.chips, { flexDirection: rowDir }]}>
-                          {games.map((game: LessonGame) => {
+                          {games.map((game: HomeworkGameName) => {
                             const resource: HomeworkGameResource = { kind: 'game', lessonId: l.id, game, title: l.title };
                             const isAdded = added.has(resourceKey(resource));
                             return (
@@ -120,7 +121,7 @@ export function GamePickerSheet({
                                     fontSize: TYPE.caption,
                                   }}
                                 >
-                                  {t(LESSON_GAME_TITLE_KEY[game])}
+                                  {t(HOMEWORK_GAME_TITLE_KEY[game])}
                                 </Text>
                               </Pressable>
                             );

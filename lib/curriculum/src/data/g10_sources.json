@@ -4010,6 +4010,39 @@
       }
     },
     {
+      "id": "g8-english-s1-student-book",
+      "title": "Jordan-High Note-G8-S1-SB.pdf",
+      "bytes": 43101745,
+      "subject": "english",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "Jordan-High Note-G8-S1-SB.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g8-eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-8",
+        "english",
+        "اللغة الإنجليزية",
+        "ثامن",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "نزّل مالكُ المشروعِ الملفَّ من موقعِ المركزِ الوطنيِّ لتطويرِ المناهجِ والتقويمِ في 2026-10-25 واستُخرج نصُّه بـ pdf-parse (80 صفحة) لبناءِ قوائمِ كلماتِ ركنِ الإنجليزيةِ. الكتابُ إنجليزيٌّ، فبوابةُ قلبِ اللامِ لا تقيسُ فيه شيئًا — وهذا انعدامُ قياسٍ لا شهادةُ سلامة. قُرئت قائمةُ الكلماتِ المستخرجةُ كلُّها (390 كلمة في 35 درسًا) وقورنت مباشرةً بنصِّ الصفحاتِ 64–66 في الملف؛ أمّا الصفحاتُ 67 و68 و74 فلم تُقارَن سطرًا بسطرٍ. رموزُ WL1.1…WL5.7 وعناوينُ الدروسِ ظاهرةٌ، لكنَّ رمزَ الدرسِ يأتي أحيانًا في آخرِ سطرِ العنوانِ لا في سطرٍ مستقلٍّ (ثلاثةُ أسطرٍ للعنوان)، فعُدِّل قارئُ extract-english-vocabulary.ts ليلتقطَه دونَ أن يتغيَّرَ ناتجُ الصفين التاسعِ والعاشر. من السلسلةِ نفسِها (Jordan High Note) التي يستعملُها الصفُّ التاسع: © Pearson Education Limited و York Press، فهو third-party كالتاسع، لا يُقتبَسُ منه حرفيًّا. الفصلُ الثاني (g8-english-s2-student-book) لم يُسجَّل: رفضت بوابةُ extract-text نصَّه (عربيّةٌ بحروفِ العرضِ المعكوسةِ في صفحاتِه العربيةِ) ورفضَها بعدَها بديلُ OCR، فلا استخراجَ له بعد.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-10-25",
+        "pages": 80,
+        "chars": 143910,
+        "localPath": "knowledge-base/grade-8-english/support-pdfs/g8-english-s1-student-book.pdf",
+        "sha256": "4f906bff343810d72e96bb029bff22deeff70ae881c4451a45a26a38c83fe3dc"
+      }
+    },
+    {
       "id": "g9-english-s1-student-book",
       "title": "كتاب الطالب لمادة اللغة الإنجليزية الصف التاسع الفصل الأول.pdf",
       "bytes": 25684559,

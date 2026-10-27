@@ -36,7 +36,7 @@ describe('Read and find', () => {
         assert.equal(q.options.length, READING_OPTIONS);
         assert.equal(q.options[q.answerIndex], q.word.en);
         assert.ok(q.options.every(isPicturable), `${l.id} ${q.options}`);
-        assert.equal(new Set(q.options.map(wordPicture)).size, READING_OPTIONS);
+        assert.equal(new Set(q.options.map(o => wordPicture(o))).size, READING_OPTIONS);
       }
     }
   });

@@ -64,9 +64,10 @@ shows «حساب: <name> · <date>» under the name.
 **Table** `roster_link_requests`: `id`, `student_id` → students (cascade),
 `user_id` → users (cascade), `relation` (always `self` for now), `created_at`;
 unique `(student_id, user_id)`; index on `student_id`. Additive migration through
-`pnpm --filter @workspace/db run generate`; not destructive. Classified in
-`rlsCoverage.test.ts`; the grant to `iqraa_app` is written by hand (none is
-automatic) and covered by `rlsDiff`.
+`pnpm --filter @workspace/db run generate`; not destructive. Classified `PROTECTED` in
+`rlsCoverage.test.ts`: RLS on, a select and a delete policy (the sender and the student's
+teacher), no insert or update policy, grant to `iqraa_app` written by hand, proved in
+`rlsMatrix.test.ts`.
 
 **Claim write path** (`linkRosterRowInTx` in `routes/auth.ts`, shared by
 `/claim` and `/redeem`): when `claimNeedsApproval`, insert into
@@ -75,26 +76,42 @@ return outcome `pending`. Rules:
 - Several accounts may have a pending request on the same name — a squatter must
   not lock out the real child. Cap of 5 pending per student (`pending_limit`).
 - A name that already has a self link is refused as today (`claim_already_linked`).
-- The response carries `{ pending: true, studentName }`; no `hasRosterLink`.
+- `POST /auth/claim` answers **202** `{ pending: true, studentId, studentName }`
+  (201 `{ studentId, relation }` is unchanged for a link); `POST /auth/redeem` answers
+  201 as today with `user.hasRosterLink: false` plus `pending: true, studentName`;
+  `GET /auth/claim` returns `{ links, pending }`; the cap answers 409
+  `claim_pending_limit`.
+- An account holds one waiting pick: choosing another name replaces it, and a refused
+  pick (cap) costs it nothing. Re-entering the code for a name the account already holds
+  queues nothing.
+- `DELETE /auth/claim` withdraws the waiting pick as well as the links;
+  `DELETE /auth/claim?pendingOnly=1` withdraws the pick and never touches a link (the
+  waiting card uses it, because the teacher may have approved since it last looked).
 
 **Approve / reject** (teacher, `routes/roster.ts`, ownership checked in the
 WHERE, "not found" for anything not theirs):
 - `GET /classes/:id/link-requests` → pending requests for the class's live
   students: account first/last name, join date, student name.
-- `POST /link-requests/:id/approve` — one transaction, student row locked
-  `for update`: re-check no self link exists, insert `roster_links`, delete **all**
-  requests for that student, then `syncClassThreadsForStudent`. If a self link
-  already exists, 409.
-- `POST /link-requests/:id/reject` — delete the one request.
+- `POST /students/:id/link-requests/:requestId/approve` — the request is consumed first,
+  then `roster_links` is inserted (the partial unique index `roster_links_one_self_idx`
+  refuses a second student account, answered 409 `claim_already_linked`), then every
+  other request on that name is deleted and `syncClassThreadsForStudent` runs; the index
+  is the guard, not a lock. An account that switched role while waiting is dropped on
+  approval (409 `claim_request_stale`) and is not listed. Each list item says whether
+  the account was just created from the class code (`codeSignup`), because such an
+  account is named after the roster name that was picked and so proves nothing itself.
+- `POST /students/:id/link-requests/:requestId/reject` — delete the one request.
 - An archived student or removed class membership drops its requests (cascade /
   checked on read).
 
-**Applicant side.** `hasRosterLink` stays false, so the existing claim gate keeps
-them out of the app. The gate gains a waiting state — «بانتظار موافقة المعلم على
-انضمامك باسم «…»» — with a refresh button and a "choose a different name" action
-(deletes their own pending request). Code-only accounts keep their login code, so
-a rejected applicant can return and pick another name. Copy ar + en in `i18n.ts`;
-Latin brand wording unaffected.
+**Applicant side.** `hasRosterLink` stays false, so the account has no access. Since
+2026-10-23 a student is not gated onto the claim screen (only a parent is), so the
+waiting state lives in three places: `claim-required` (a parent or a student who got
+there), `join-class` (reads the account's claims on open), and a note under the login
+code on the code-only signup. The waiting card says which name was asked for, with
+"check again" and "pick a different name" (withdraw-only). A held student with no class
+still lands on the grade picker after signup — the routing gate was deliberately not
+widened. Copy ar + en in `i18n.ts`.
 
 **Teacher side.** A banner at the top of the Students tab — «٢ طلاب بانتظار
 الموافقة» — opens the list with Approve / Reject per request. Hidden at zero.

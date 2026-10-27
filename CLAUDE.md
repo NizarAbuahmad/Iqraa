@@ -764,3 +764,35 @@ sweep in your staged files.
   control on a new generator screen (a field whose real options are not a short list
   stays a dropdown), and how it looks (check it in `pnpm run dev:mobile:web`, phone
   and desktop, light and dark, RTL).
+- **A student's class-code claim waits for the teacher (since 2026-10-24).** The
+  pick is a row in `roster_link_requests`, not in `roster_links`, so nothing that
+  reads a link (chat contacts, homework, exams, parent letters) can see it: an
+  unapproved account has no access *by construction*. Keep it that way — do not
+  add a `status` column to `roster_links`, and never read `pending` as access. Only
+  a `self` claim made through the CLASS code is held (`claimNeedsApproval`);
+  per-student codes and parents link at once. Approval is
+  `POST /students/:id/link-requests/:requestId/approve`, which re-checks the sender
+  is still a `student` account. Two traps: a code-only signup names the new account
+  after the roster name it picked, so the teacher's list must say so (`codeSignup`)
+  rather than let the name stand as proof; and the waiting card withdraws with
+  `DELETE /auth/claim?pendingOnly=1`, because the plain `DELETE /auth/claim` also
+  deletes links and the teacher may have approved since the card last looked. A
+  student is not gated onto `/claim-required` (only a parent is), so the waiting
+  state is shown by `claim-required`, `join-class` and the code-signup note — widen
+  `needsRosterClaim` only on purpose.
+- **The first-run tour points at an element by NAME, and the name lives in two places
+  (since 2026-10-26).** `services/tour.ts` says what each role's steps ring
+  (`today-lesson`, `tab-ai-tools`, `nav-profile`…); the screen that owns the element
+  registers the same string (`<TourTarget id>` / `useTourTarget`, the tab bar's
+  `TourTabButton`, the sidebar rows). A rename on one side leaves a step that is
+  silently dropped at run time, which is why `tourTargets.test.ts` reads both sides.
+  Traps: a phone's tab is `tab-<name>` and a desktop sidebar row `nav-<name>` (the
+  tour ends if a window is dragged across the breakpoint); `TourHost` is a root
+  overlay and **not a `<Modal>`**; a new gate that sends a signed-in user somewhere
+  before their home screen belongs in `tourBlocker` by importing it from
+  `routeGating.ts`, never by copying it; and the tour is **marked done when it
+  starts**, so a bug that starts it early costs that user their one automatic tour.
+  The flag is on the device, per account (`@iqra_tour_done_v1:<id>`); `@iqra_tour_off_v1`
+  turns it off for a whole device, which the e2e journey sets. A new tab or sidebar
+  destination needs no registration of its own; a step on a new element does.
+  See `docs/superpowers/specs/2026-10-26-first-run-tour-design.md`.

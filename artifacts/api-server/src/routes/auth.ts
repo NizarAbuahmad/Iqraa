@@ -2,6 +2,7 @@ import { Router, type Request } from "express";
 import { signupSource } from "../lib/adminMetrics.js";
 import { termsAcceptance } from "../lib/termsAcceptance.ts";
 import { ageConfirmation } from "../lib/ageConfirmation.ts";
+import { guardianSignup } from "../lib/guardianSignup.ts";
 import { comparePassword, hashPassword, shedWhenHashingBusy } from "../lib/passwordHash.js";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
@@ -12,6 +13,7 @@ import {
   users,
   refreshTokens,
   rosterLinks,
+  rosterLinkRequests,
   lessonMedia,
   chatMessages,
   classGroups,
@@ -29,7 +31,7 @@ import { deleteObject, deletePublicObject, isPublicR2Configured, newAvatarKey, p
 import { googleClientIds } from "../lib/googleClients.js";
 import { decideGoogleLink, googleRoleConflict } from "../lib/googleLink.js";
 import { decideRefresh, refreshTokenTtlMs } from "../lib/refreshPolicy.js";
-import { studentAccountsEnabled } from "../lib/features.js";
+import { guardianApprovalEnabled, studentAccountsEnabled } from "../lib/features.js";
 import { syncClassThreadsForStudent } from "../lib/classThread.js";
 import { audioKeysForTeacher } from "../lib/attemptAudio.ts";
 import {
@@ -56,6 +58,19 @@ import {
 import { resolveClaimCode, type ClaimResolution, type ClaimRole } from "../lib/rosterClaim.js";
 import { generateLoginCode, hashLoginCode } from "../lib/loginCode.ts";
 import { guardianLimitReached } from "../lib/guardianLimit.ts";
+import { hasLiveRosterLink } from "../lib/rosterLinkState.ts";
+import { guardianStatus, needsLinkLookup } from "../lib/guardianGate.ts";
+import { GUARDIAN_LIMITS, limitReached, maskEmail, normalizeParentEmail } from "../lib/guardianConsent.ts";
+import {
+  countForParent,
+  currentRequest,
+  issueAndSend,
+  queueRequest,
+  recentCounts,
+  sendQueuedGuardianRequestWithin,
+  supersedeOpenRequests,
+} from "../lib/guardianRequests.ts";
+import { claimNeedsApproval, pendingLimitReached } from "../lib/claimDecision.ts";
 import { namesForNewAccount, redeemRoleCheck } from "../lib/redeemPolicy.ts";
 import { studentGradeIds } from "../lib/studentGrades.ts";
 import { resyncClassGroupThreadIfExists } from "../lib/classThread.js";
@@ -131,6 +146,7 @@ const changeEmailLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 30
 // attempts" for something ten classmates had just done.
 const perUser = (req: Request) => (req as AuthenticatedRequest).user?.id ?? req.ip ?? "unknown";
 const claimLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 10, name: "claim", key: perUser });
+const guardianRequestLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 20, name: "guardian-request", key: perUser });
 
 /*
  * Signing up from a code has no email to key a limit on, and the IP is the wrong
@@ -318,36 +334,24 @@ async function hasAnyRosterLink(userId: string): Promise<boolean> {
   return !!row;
 }
 
-/**
- * A link to a live roster row — what the claim gate (`hasRosterLink` on the
- * user) asks. A student whose only link is to an archived row used to pass
- * the gate into an app with no class, no teacher and no contacts;
- * `/messaging/contacts` already drops archived rows, and this is that rule.
- */
-async function hasLiveRosterLink(userId: string): Promise<boolean> {
-  const [row] = await db
-    .select({ id: rosterLinks.id })
-    .from(rosterLinks)
-    .innerJoin(students, eq(students.id, rosterLinks.studentId))
-    .where(and(eq(rosterLinks.userId, userId), isNull(students.archivedAt)))
-    .limit(1);
-  return !!row;
-}
-
 type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-type ClaimWriteOutcome = "linked" | "taken" | "guardian_taken" | "guardian_limit";
+type ClaimWriteOutcome = "linked" | "pending" | "taken" | "guardian_taken" | "guardian_limit" | "pending_limit";
 
 /**
  * What a refused claim answers. One table for `/claim` and `/redeem`, so the two
  * cannot word the same refusal differently — the app translates by `code`.
  */
-const CLAIM_REFUSALS: Record<Exclude<ClaimWriteOutcome, "linked">, { error: string; code: string }> = {
+const CLAIM_REFUSALS: Record<Exclude<ClaimWriteOutcome, "linked" | "pending">, { error: string; code: string }> = {
   taken: { error: "This student is already linked to an account", code: "claim_already_linked" },
   guardian_taken: { error: "A parent account is already linked to this student", code: "claim_guardian_taken" },
   guardian_limit: {
     error: "This student already has the most parent accounts allowed. Ask the teacher to remove one.",
     code: "claim_guardian_limit",
+  },
+  pending_limit: {
+    error: "Too many accounts are waiting on this name. Ask the teacher.",
+    code: "claim_pending_limit",
   },
 };
 
@@ -416,6 +420,41 @@ async function linkRosterRowInTx(
         ),
       );
     if (guardianLimitReached(n)) return "guardian_limit";
+  }
+  // A student's pick off the CLASS list waits for the teacher (lib/claimDecision.ts).
+  // Nothing here touches roster_links, so the account stays without access until the
+  // teacher approves (routes/roster.ts).
+  if (claimNeedsApproval(resolved)) {
+    // Already this child's account (a per-student code, or an approved request):
+    // entering the class code again must not queue a request for a link it holds.
+    const [mine] = await tx
+      .select({ id: rosterLinks.id })
+      .from(rosterLinks)
+      .where(
+        and(
+          eq(rosterLinks.studentId, resolved.studentId),
+          eq(rosterLinks.relation, "self"),
+          eq(rosterLinks.userId, userId),
+        ),
+      )
+      .limit(1);
+    if (mine) return "linked";
+    // Counted under the same row lock as the checks above, and BEFORE this account's
+    // earlier request is replaced, so a refused pick costs it nothing.
+    const [{ n } = { n: 0 }] = await tx
+      .select({ n: sql<number>`count(*)::int` })
+      .from(rosterLinkRequests)
+      .where(and(eq(rosterLinkRequests.studentId, resolved.studentId), ne(rosterLinkRequests.userId, userId)));
+    if (pendingLimitReached(n)) return "pending_limit";
+    // One waiting pick per account: choosing another name replaces the first.
+    await tx
+      .delete(rosterLinkRequests)
+      .where(and(eq(rosterLinkRequests.userId, userId), ne(rosterLinkRequests.studentId, resolved.studentId)));
+    await tx
+      .insert(rosterLinkRequests)
+      .values({ studentId: resolved.studentId, userId, relation: resolved.relation })
+      .onConflictDoNothing();
+    return "pending";
   }
   await tx
     .insert(rosterLinks)
@@ -522,12 +561,19 @@ router.post("/register", shedWhenHashingBusy(), registerLimiter, registerEmailLi
       return;
     }
 
-    // A student with an email has no teacher's code vouching for them, so they
-    // confirm they are an adult or have a guardian's agreement. Not asked of
-    // anyone else; see lib/ageConfirmation.ts.
-    const age = ageConfirmation(req.body, role);
+    // A student with an email has no teacher's code vouching for them. With GUARDIAN_APPROVAL on, a parent
+    // approves by email (lib/guardianConsent.ts); with it off they tick that they are an adult or have a
+    // guardian's agreement (lib/ageConfirmation.ts). The live app still sends the tick until the flag is on.
+    const age = await guardianSignup({
+      flagOn: guardianApprovalEnabled(),
+      role,
+      body: req.body,
+      studentEmail: email,
+      countForParent,
+      ageConfirmation,
+    });
     if (!age.ok) {
-      res.status(age.status).json({ error: age.error, code: age.code });
+      res.status(age.status).json(age.body);
       return;
     }
 
@@ -562,6 +608,18 @@ router.post("/register", shedWhenHashingBusy(), registerLimiter, registerEmailLi
 
     if (!user) throw new Error("Failed to create user");
 
+    // Queued with no token: the parent is mailed only after the student has verified their own address.
+    if (age.parentEmail) {
+      try {
+        const queued = await queueRequest(user.id, age.parentEmail);
+        // Over a cap since the check above (a race): the account stays, and the student can ask again later.
+        if (!queued.ok) logger.warn({ userId: user.id, reason: queued.reason }, "guardian request not queued at sign-up");
+      } catch (err) {
+        // The account exists and can ask again from the waiting screen; this must not turn a sign-up into a 500.
+        logger.error({ err, userId: user.id }, "could not queue the guardian request at sign-up");
+      }
+    }
+
     // No tokens issued here: a password account is unverified until it
     // proves the address at POST /auth/verify-email, which is what hands
     // back the session. Google accounts skip all of this — they set
@@ -584,8 +642,9 @@ router.post("/register", shedWhenHashingBusy(), registerLimiter, registerEmailLi
 // POST /auth/verify-email
 router.post("/verify-email", verifyEmailLimiter, verifyEmailAddressLimiter, async (req, res) => {
   try {
-    const { email, code } = req.body as { email?: string; code?: string };
-    if (!email || !code) {
+    const { email, code } = req.body as { email?: unknown; code?: unknown };
+    // Type-checked, not just truthy: see /login.
+    if (typeof email !== "string" || typeof code !== "string" || !email || !code) {
       res.status(400).json({ error: "Email and code are required", code: "missing_fields" });
       return;
     }
@@ -650,6 +709,10 @@ router.post("/verify-email", verifyEmailLimiter, verifyEmailAddressLimiter, asyn
       .where(eq(users.id, user.id))
       .returning();
 
+    // The student's own address is now proved, so a parent's approval request queued at sign-up can be mailed.
+    // Capped at 4 s and never throwing: the verification has succeeded whatever the mail provider does.
+    if (verified.role === "student") await sendQueuedGuardianRequestWithin(verified.id);
+
     const { accessToken, refreshTokenValue } = generateTokens(verified.id, verified.email, verified.role);
     await storeRefreshToken(verified.id, refreshTokenValue, req.headers.origin);
 
@@ -692,8 +755,8 @@ router.post("/verify-email", verifyEmailLimiter, verifyEmailAddressLimiter, asyn
 // POST /auth/resend-verification
 router.post("/resend-verification", resendVerificationLimiter, resendVerificationEmailLimiter, async (req, res) => {
   try {
-    const { email } = req.body as { email?: string };
-    if (!email) {
+    const { email } = req.body as { email?: unknown };
+    if (typeof email !== "string" || !email) {
       res.status(400).json({ error: "Email is required", code: "missing_fields" });
       return;
     }
@@ -742,12 +805,15 @@ router.post("/resend-verification", resendVerificationLimiter, resendVerificatio
 router.post("/change-unverified-email", shedWhenHashingBusy(), changeEmailLimiter, changeEmailAddressLimiter, async (req, res) => {
   try {
     const { email, password, newEmail } = req.body as {
-      email?: string;
-      password?: string;
-      newEmail?: string;
+      email?: unknown;
+      password?: unknown;
+      newEmail?: unknown;
     };
 
-    if (!email || !password || !newEmail) {
+    if (
+      typeof email !== "string" || typeof password !== "string" || typeof newEmail !== "string" ||
+      !email || !password || !newEmail
+    ) {
       res.status(400).json({ error: "Current email, password and a valid new email are required", code: "missing_fields" });
       return;
     }
@@ -841,8 +907,8 @@ router.post("/change-unverified-email", shedWhenHashingBusy(), changeEmailLimite
  */
 router.post("/forgot-password", forgotPasswordLimiter, forgotPasswordEmailLimiter, async (req, res) => {
   try {
-    const { email } = req.body as { email?: string };
-    if (!email?.includes("@")) {
+    const { email } = req.body as { email?: unknown };
+    if (typeof email !== "string" || !email.includes("@")) {
       res.status(400).json({ error: "Valid email is required", code: "invalid_email" });
       return;
     }
@@ -907,17 +973,17 @@ router.post("/forgot-password", forgotPasswordLimiter, forgotPasswordEmailLimite
 router.post("/reset-password", shedWhenHashingBusy(), resetPasswordLimiter, async (req, res) => {
   try {
     const { email, code, password, confirmPassword } = req.body as {
-      email?: string;
-      code?: string;
-      password?: string;
+      email?: unknown;
+      code?: unknown;
+      password?: unknown;
       confirmPassword?: string;
     };
 
-    if (!email || !code) {
+    if (typeof email !== "string" || typeof code !== "string" || !email || !code) {
       res.status(400).json({ error: "Email and code are required", code: "missing_fields" });
       return;
     }
-    if (!password || !isStrongPassword(password)) {
+    if (typeof password !== "string" || !password || !isStrongPassword(password)) {
       res.status(400).json({ error: PASSWORD_POLICY_MESSAGE, code: "password_policy" });
       return;
     }
@@ -933,7 +999,7 @@ router.post("/reset-password", shedWhenHashingBusy(), resetPasswordLimiter, asyn
     const invalid = () => res.status(400).json({ error: "Invalid or expired code", code: "invalid_code" });
 
     const [user] = await db
-      .select({ id: users.id })
+      .select({ id: users.id, emailVerified: users.emailVerified })
       .from(users)
       .where(eq(users.email, email.toLowerCase().trim()))
       .limit(1);
@@ -985,6 +1051,19 @@ router.post("/reset-password", shedWhenHashingBusy(), resetPasswordLimiter, asyn
       await tx.delete(refreshTokens).where(eq(refreshTokens.userId, user.id));
     });
 
+    // This verified an address that /verify-email never saw. A parent's approval request queued at sign-up on an
+    // unverified row was chosen by whoever created the row (see lib/googleLink.ts), so it is retired, not mailed:
+    // the account is held until its owner asks for approval themselves.
+    if (!user.emailVerified) {
+      try {
+        await supersedeOpenRequests(user.id);
+      } catch (err) {
+        // The password is already reset; a stale queued row is never mailed from here, only from /verify-email,
+        // which now refuses an already-verified address.
+        logger.error({ err, userId: user.id }, "could not retire the guardian request after a password reset");
+      }
+    }
+
     logger.info({ userId: user.id }, "password reset completed");
     res.json({ ok: true });
   } catch (err) {
@@ -1031,6 +1110,16 @@ router.post("/claim", authMiddleware, claimLimiter, async (req: AuthenticatedReq
 
     const userId = req.user!.id;
     const outcome = await db.transaction(tx => linkRosterRowInTx(tx, userId, resolved));
+    if (outcome === "pending") {
+      const [row] = await db
+        .select({ displayName: students.displayName })
+        .from(students)
+        .where(eq(students.id, resolved.studentId))
+        .limit(1);
+      // 202, not 201: nothing was linked. The app shows a waiting screen, not the class.
+      res.status(202).json({ pending: true, studentId: resolved.studentId, studentName: row?.displayName ?? "" });
+      return;
+    }
     if (outcome !== "linked") {
       res.status(409).json(CLAIM_REFUSALS[outcome]);
       return;
@@ -1103,7 +1192,25 @@ router.get("/claim", authMiddleware, async (req: AuthenticatedRequest, res) => {
       if (!seen) byStudent.set(r.studentId, { studentId: r.studentId, displayName: r.displayName, gradeId });
       else if (!seen.gradeId) seen.gradeId = gradeId;
     }
-    res.json({ links: [...byStudent.values()] });
+    // Only a request the teacher could still answer: the same rule as the teacher's
+    // list (routes/roster.ts) — the student live, and in a live class of that
+    // student's own teacher. Otherwise the card waits on a request nobody can see.
+    // DISTINCT, since a student in two live classes would otherwise list twice.
+    const pending = await db
+      .selectDistinct({ studentId: students.id, displayName: students.displayName })
+      .from(rosterLinkRequests)
+      .innerJoin(students, eq(students.id, rosterLinkRequests.studentId))
+      .innerJoin(classMemberships, eq(classMemberships.studentId, students.id))
+      .innerJoin(
+        classGroups,
+        and(
+          eq(classGroups.id, classMemberships.classGroupId),
+          eq(classGroups.teacherId, students.teacherId),
+          isNull(classGroups.archivedAt),
+        ),
+      )
+      .where(and(eq(rosterLinkRequests.userId, req.user!.id), isNull(students.archivedAt)));
+    res.json({ links: [...byStudent.values()], pending });
   } catch (err) {
     logger.error({ err }, "claim list failed");
     res.status(500).json({ error: "Failed to load your links" });
@@ -1119,6 +1226,17 @@ router.get("/claim", authMiddleware, async (req: AuthenticatedRequest, res) => {
  */
 router.delete("/claim", authMiddleware, async (req: AuthenticatedRequest, res) => {
   try {
+    // A pick that is still waiting is withdrawn with the rest — "choose a different name".
+    await db.delete(rosterLinkRequests).where(eq(rosterLinkRequests.userId, req.user!.id));
+    // `?pendingOnly=1`: withdraw the waiting pick and nothing else. The waiting card
+    // uses it, because the teacher may have approved since the card last looked and an
+    // unconditional unlink would delete that fresh link.
+    if (req.query["pendingOnly"] === "1") {
+      // The live rule, as /auth/me and the routing gate read it: a link to an archived
+      // row is not access, so the card must not be told it has one.
+      res.json({ hasRosterLink: await hasLiveRosterLink(req.user!.id) });
+      return;
+    }
     const removed = await db
       .delete(rosterLinks)
       .where(eq(rosterLinks.userId, req.user!.id))
@@ -1160,6 +1278,8 @@ router.post("/role", authMiddleware, roleSwitchLimiter, async (req: Authenticate
       hasTeachingData: () => hasAnyTeachingData(req.user!.id),
       // A literal true, like /register: a string in a consent field is not one.
       ageConfirmed: (req.body ?? {}).ageConfirmed === true,
+      // A parent's approval replaces the tick when GUARDIAN_APPROVAL is on.
+      ageTickRequired: !guardianApprovalEnabled(),
     });
 
     if (!decision.ok) {
@@ -1170,15 +1290,22 @@ router.post("/role", authMiddleware, roleSwitchLimiter, async (req: Authenticate
     }
 
     if (decision.changed) {
-      await db
-        .update(users)
-        .set({
-          role: decision.role,
-          // Only a change into student carries the confirmation (the decision
-          // refused it otherwise), and it is recorded like a sign-up's.
-          ...(decision.role === "student" ? { guardianConfirmedAt: new Date() } : {}),
-        })
-        .where(eq(users.id, req.user!.id));
+      await db.transaction(async tx => {
+        await tx
+          .update(users)
+          .set({
+            role: decision.role,
+            // Only a change into student carries the confirmation (the decision
+            // refused it otherwise), and it is recorded like a sign-up's.
+            ...(decision.role === "student" && !guardianApprovalEnabled() ? { guardianConfirmedAt: new Date() } : {}),
+          })
+          .where(eq(users.id, req.user!.id));
+        // A name picked off a class code waits for a teacher to answer it as THIS
+        // student's account. An account that is now a parent (or a teacher) must not
+        // keep that request alive: it would sit in the teacher's list for a role the
+        // account no longer has, and a switch back would silently revive it.
+        await tx.delete(rosterLinkRequests).where(eq(rosterLinkRequests.userId, req.user!.id));
+      });
       logger.info({ userId: req.user!.id, from: req.user!.role, to: decision.role }, "role switched");
     }
 
@@ -1320,7 +1447,7 @@ function codeAccountUser(user: typeof users.$inferSelect, hasRosterLink: boolean
 
 /** Thrown inside the redeem transaction to roll the new user back when the roster row turns out to be taken. */
 class RedeemRefused extends Error {
-  constructor(readonly outcome: Exclude<ClaimWriteOutcome, "linked">) {
+  constructor(readonly outcome: Exclude<ClaimWriteOutcome, "linked" | "pending">) {
     super(outcome);
   }
 }
@@ -1412,6 +1539,9 @@ router.post("/redeem", redeemIpLimiter, redeemCodeLimiter, async (req, res) => {
     const loginCode = generateLoginCode();
     const names = namesForNewAccount(role, student.displayName);
 
+    // `as boolean`: assigned inside the transaction callback, which control-flow
+    // analysis does not follow, so a bare `false` initialiser narrows every read below to `false`.
+    let held = false as boolean;
     let user: typeof users.$inferSelect;
     try {
       user = await db.transaction(async tx => {
@@ -1436,7 +1566,8 @@ router.post("/redeem", redeemIpLimiter, redeemCodeLimiter, async (req, res) => {
         if (!created) throw new Error("Failed to create user");
 
         const outcome = await linkRosterRowInTx(tx, created.id, resolved);
-        if (outcome !== "linked") throw new RedeemRefused(outcome);
+        if (outcome !== "linked" && outcome !== "pending") throw new RedeemRefused(outcome);
+        held = outcome === "pending";
         return created;
       });
     } catch (err) {
@@ -1447,7 +1578,7 @@ router.post("/redeem", redeemIpLimiter, redeemCodeLimiter, async (req, res) => {
       throw err;
     }
 
-    if (resolved.relation === "self") {
+    if (resolved.relation === "self" && !held) {
       try {
         await syncClassThreadsForStudent(resolved.studentId);
         await resyncClassThreadsOfStudent(resolved.studentId);
@@ -1465,7 +1596,9 @@ router.post("/redeem", redeemIpLimiter, redeemCodeLimiter, async (req, res) => {
       accessToken,
       refreshToken: refreshTokenValue,
       loginCode,
-      user: codeAccountUser(user, true),
+      // A held claim has no link yet; the app's routing gate then waits on the teacher.
+      user: codeAccountUser(user, !held),
+      ...(held ? { pending: true, studentName: student.displayName } : {}),
     });
   } catch (err) {
     logger.error({ err }, "redeem failed");
@@ -1596,6 +1729,81 @@ router.post("/add-email", shedWhenHashingBusy(), authMiddleware, addEmailUserLim
     }
     logger.error({ err }, "add email failed");
     res.status(500).json({ error: "Could not add the email" });
+  }
+});
+
+/** A request row reduced to what `guardianStatus` reads. */
+const requestView = (cur: Awaited<ReturnType<typeof currentRequest>>) =>
+  cur ? { decision: cur.decision, expiresAt: cur.expiresAt } : null;
+
+/** The current request as `guardianStatus` reads it; null when the flag is off or none exists. */
+async function currentRequestView(userId: string) {
+  if (!guardianApprovalEnabled()) return null;
+  return requestView(await currentRequest(userId));
+}
+
+/**
+ * POST /auth/guardian-request — a held student gives (or changes) their parent's email and a link is mailed.
+ *
+ * Allowed through the middleware gate (lib/guardianGate.ts) because it is how a held student gets out. Each call
+ * supersedes the previous link. Limited to 3 a day per student and 5 a day per parent address, counted from
+ * `guardian_consents`, on top of the per-user hourly limiter above.
+ */
+router.post("/guardian-request", authMiddleware, guardianRequestLimiter, async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!guardianApprovalEnabled()) {
+      res.status(404).json({ code: "guardian_approval_disabled", error: "Not available" });
+      return;
+    }
+    const [user] = await db.select().from(users).where(eq(users.id, req.user!.id)).limit(1);
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    const status = guardianStatus(user, {
+      flagOn: true,
+      hasLiveLink: user.role === "student" ? await hasLiveRosterLink(user.id) : false,
+      request: await currentRequestView(user.id),
+      now: new Date(),
+    });
+    if (status === "approved") {
+      res.status(409).json({ error: "This account is already approved", code: "guardian_already_approved" });
+      return;
+    }
+    if (status === "not_required") {
+      res.status(409).json({ error: "This account does not need a parent's approval", code: "guardian_not_required" });
+      return;
+    }
+    if (!user.emailVerified) {
+      res.status(409).json({ error: "Verify your own email first", code: "email_not_verified" });
+      return;
+    }
+    const parent = normalizeParentEmail((req.body ?? {}).parentEmail, user.email);
+    if (!parent.ok) {
+      res.status(parent.status).json({ error: parent.error, code: parent.code });
+      return;
+    }
+    const counts = await recentCounts(user.id, parent.email);
+    if (limitReached(counts.forStudent, GUARDIAN_LIMITS.perStudentPerDay) || limitReached(counts.forParent, GUARDIAN_LIMITS.perParentPerDay)) {
+      res.status(429).json({ error: "Too many requests. Try again tomorrow.", code: "guardian_rate_limited" });
+      return;
+    }
+    // The pre-check above is for a clear message; this is the one that holds under concurrency.
+    const queued = await queueRequest(user.id, parent.email);
+    if (!queued.ok) {
+      res.status(429).json({ error: "Too many requests. Try again tomorrow.", code: "guardian_rate_limited" });
+      return;
+    }
+    // A request that a newer one from the same student superseded meanwhile is not mailed: `emailSent: false`.
+    const issued = await issueAndSend(queued.id);
+    res.json({
+      parentEmailMasked: maskEmail(parent.email),
+      emailSent: issued.ok ? issued.emailSent : false,
+      expiresAt: issued.ok ? issued.expiresAt : null,
+    });
+  } catch (err) {
+    logger.error({ err }, "guardian request failed");
+    res.status(500).json({ error: "Could not send the request" });
   }
 });
 
@@ -1795,6 +2003,7 @@ router.post("/google", googleLimiter, async (req, res) => {
           hasTeachingData: () => hasAnyTeachingData(known!.id),
           // The register screen sends it for a student on the email/Google path.
           ageConfirmed: req.body?.ageConfirmed === true,
+          ageTickRequired: !guardianApprovalEnabled(),
         });
         if (!decision.ok) {
           // A missing tick is a bad request, not a clash between two accounts.
@@ -1814,7 +2023,7 @@ router.post("/google", googleLimiter, async (req, res) => {
           .update(users)
           .set({
             role: decision.role,
-            ...(decision.changed && decision.role === "student" ? { guardianConfirmedAt: new Date() } : {}),
+            ...(decision.changed && decision.role === "student" && !guardianApprovalEnabled() ? { guardianConfirmedAt: new Date() } : {}),
           })
           .where(eq(users.id, known!.id));
         logger.info({ userId: known!.id, from: known!.role, to: decision.role }, "role switched via google signup");
@@ -1859,6 +2068,13 @@ router.post("/google", googleLimiter, async (req, res) => {
                 eq(emailVerificationTokens.used, false),
               ),
             );
+          // A parent's address chosen at sign-up on this row was chosen by whoever created it, so it is retired,
+          // not mailed: the real owner is held until they ask for approval themselves.
+          try {
+            await supersedeOpenRequests(linkedId);
+          } catch (err) {
+            logger.error({ err, userId: linkedId }, "could not retire the guardian request after a Google link");
+          }
           logger.info(
             { userId: linkedId },
             "google linked to an unverified account — password cleared, pending codes burned",
@@ -1892,10 +2108,17 @@ router.post("/google", googleLimiter, async (req, res) => {
           return;
         }
 
-        // Same as /register: a student with no teacher's code confirms their age.
-        const age = ageConfirmation(req.body, role);
+        // Same as /register: a parent's approval when GUARDIAN_APPROVAL is on, the age tick otherwise.
+        const age = await guardianSignup({
+          flagOn: guardianApprovalEnabled(),
+          role,
+          body: req.body,
+          studentEmail: email,
+          countForParent,
+          ageConfirmation,
+        });
         if (!age.ok) {
-          res.status(age.status).json({ error: age.error, code: age.code });
+          res.status(age.status).json(age.body);
           return;
         }
 
@@ -1916,6 +2139,17 @@ router.post("/google", googleLimiter, async (req, res) => {
             ...signupSource(req.headers),
           })
           .returning();
+
+        // Google has already proved the address, so the parent can be mailed at once.
+        if (age.parentEmail && user) {
+          try {
+            const queued = await queueRequest(user.id, age.parentEmail);
+            if (queued.ok) await sendQueuedGuardianRequestWithin(user.id);
+            else logger.warn({ userId: user.id, reason: queued.reason }, "guardian request not queued for a Google sign-up");
+          } catch (err) {
+            logger.error({ err, userId: user.id }, "could not queue the guardian request for a Google sign-up");
+          }
+        }
       }
     }
 
@@ -2150,6 +2384,18 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
         ? await hasLiveRosterLink(user.id)
         : undefined;
 
+    // The request is read only when it can change the answer: an email student the flag holds, with no approval and
+    // no live link. Everyone else (and everyone, with the flag off) costs no guardian query at all.
+    const flagOn = guardianApprovalEnabled();
+    const guardianRequest =
+      needsLinkLookup(user, flagOn) && hasRosterLink === false ? await currentRequest(user.id) : null;
+    const guardian = guardianStatus(user, {
+      flagOn,
+      hasLiveLink: hasRosterLink === true,
+      request: requestView(guardianRequest),
+      now: new Date(),
+    });
+
     res.json({
       id: user.id,
       firstName: user.firstName,
@@ -2182,6 +2428,11 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
       teachingAssignments: user.teachingAssignments,
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,
+      // Whether a parent must approve this student's account, and where the request stands. The app reads it on
+      // every boot and again whenever a call answers guardian_approval_required. The masked address goes with any
+      // request that exists and still counts (waiting, declined, or "needed" because its link expired).
+      guardianStatus: guardian,
+      ...(guardianRequest ? { guardianParentEmailMasked: maskEmail(guardianRequest.parentEmail) } : {}),
       ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
     });
   } catch (err) {

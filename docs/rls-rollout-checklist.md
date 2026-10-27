@@ -165,7 +165,8 @@ Outside school hours, and only with A, B and C ticked.
   gcloud run services describe iqraa-api --region europe-west1 \
     --project iqraa-auth-507315 --format='value(status.latestReadyRevisionName)'
   ```
-- [ ] **D2. Turn it on:**
+- [x] **D2. Turn it on — done by the owner** (first 2026-10-24, revision `iqraa-api-00417-n5n`; after
+  accidental switch-offs, last on 2026-10-27 ~21:16 owner's clock, revision `iqraa-api-00456-7md`):
 
   ```bash
   gcloud run services update iqraa-api --region europe-west1 \
@@ -183,8 +184,7 @@ Outside school hours, and only with A, B and C ticked.
   gcloud run services update iqraa-api --region europe-west1 \
     --project iqraa-auth-507315 --update-env-vars RLS_ENFORCE=off
   ```
-- [ ] **D5. Update `STATUS.md`** (the *Row-level security is built and switched off* section
-  says "off" and "never run against Neon") in the same sitting, and tick this file's date below.
+- [x] **D5. Update `STATUS.md`** — done 2026-10-27 (this change).
 
 ## E. Make the CI job required
 
@@ -199,5 +199,5 @@ Outside school hours, and only with A, B and C ticked.
 | A | | | |
 | B | owner, via the GitHub workflow | 2026-10-23 | run 39931238295: migrations applied; 46/46 direct, 46/46 pooled. Direct tests ≈ 3.4 min, pooled ≈ 3.3 min (CI runner → Neon, not a latency measurement). Run 4 before it failed only because the pooled secret held a malformed string. |
 | C | owner | 2026-10-23 / 2026-10-24 | C2 (10-23): maxScale 20, pooled host, max_connections 225 — pass via the pooler. C1: first run (10-23) **failed** — +336.5 ms p95 per 15-statement request (budget +100 ms); +21.9 ms per statement; RTT ≈ 11 ms. Re-run (10-24, 8 statements, three modes): held **+20.8 ms p95 — passes**; not held +346 ms (about 22 ms per statement at the median). |
-| D | | | |
+| D | owner | 2026-10-24 / 2026-10-27 | On 10-24 (00417); switched off and on by mistake several times since (00452 off, 00454 on, 00455 off, 00456 on). Hand test on 10-27 passed per the owner: teacher inbox, chat message, parent notification and reply, chat moves to top. Log searches for `permission denied` / `row-level security` printed nothing. **D3 (30-minute watch of 5xx, p95, push volume) not completed on the last switch-on.** |
 | E | | | |

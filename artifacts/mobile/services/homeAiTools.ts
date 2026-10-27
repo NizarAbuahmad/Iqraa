@@ -189,11 +189,11 @@ export type PromptChip = {
 };
 
 export const PROMPT_CHIPS: PromptChip[] = [
-  { id: 'act', labelAr: 'أنشئ نشاطاً', labelEn: 'Create an activity', promptAr: 'أنشئ نشاطاً صفياً عن', promptEn: 'Create a class activity about', enabled: true },
-  { id: 'quiz', labelAr: 'أنشئ اختباراً', labelEn: 'Create a quiz', promptAr: 'أنشئ اختباراً قصيراً عن', promptEn: 'Create a short quiz about', enabled: true },
+  { id: 'act', labelAr: 'جهّز نشاطاً', labelEn: 'Create an activity', promptAr: 'جهّز نشاطاً صفياً عن', promptEn: 'Create a class activity about', enabled: true },
+  { id: 'quiz', labelAr: 'جهّز اختباراً', labelEn: 'Create a quiz', promptAr: 'جهّز اختباراً قصيراً عن', promptEn: 'Create a short quiz about', enabled: true },
   { id: 'real', labelAr: 'اربطه بالواقع', labelEn: 'Real-life example', promptAr: 'أعطني مثالاً من الواقع عن', promptEn: 'Give me a real-life example of', enabled: true },
-  { id: 'hw', labelAr: 'أنشئ واجباً', labelEn: 'Create homework', promptAr: 'أنشئ واجباً منزلياً عن', promptEn: 'Create homework about', enabled: true },
-  { id: 'hook', labelAr: 'افتتح الحصة', labelEn: 'Opening activity', promptAr: 'اقترح نشاطاً افتتاحياً عن', promptEn: 'Suggest an opening activity for', enabled: true },
+  { id: 'hw', labelAr: 'جهّز واجباً', labelEn: 'Create homework', promptAr: 'جهّز واجباً منزلياً عن', promptEn: 'Create homework about', enabled: true },
+  { id: 'hook', labelAr: 'افتتح الحصة', labelEn: 'Opening activity', promptAr: 'جهّز نشاطاً افتتاحياً عن', promptEn: 'Create an opening activity for', enabled: true },
   // Hidden until fully implemented
   { id: 'bloom', labelAr: 'أضف أسئلة بلوم', labelEn: 'Add Bloom questions', promptAr: 'أضف أسئلة بلوم عن', promptEn: 'Add Bloom taxonomy questions about', enabled: false },
   { id: 'review', labelAr: 'راجع المحتوى', labelEn: 'Review content', promptAr: 'راجع محتوى درس', promptEn: 'Review the lesson content for', enabled: false },

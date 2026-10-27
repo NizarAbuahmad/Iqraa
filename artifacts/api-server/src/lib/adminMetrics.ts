@@ -5,7 +5,11 @@
  */
 import { timingSafeEqual } from "node:crypto";
 
-/** Numbers typed in by hand — see lib/db schema adminMetrics.ts for why manual. */
+/**
+ * Numbers typed in by hand — see lib/db schema adminMetrics.ts for why manual.
+ * `youtube` is the exception: GET /admin/metrics fills it (routes/admin.ts,
+ * lib/youtubeSubscribers.ts), and typing one for the day still wins.
+ */
 export const METRIC_KEYS = [
   "play_downloads",
   "instagram",

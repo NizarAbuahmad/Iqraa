@@ -85,6 +85,75 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(body.status, "ok");
   });
 
+  it("keeps /site/ask public, POST-only and open to the site's own origin, and shadows nothing", async () => {
+    // No token and a dead database. The rate-limit store fails open (and logs),
+    // so the body check is what answers: a 400 proves the route is mounted and
+    // public. A 401 would mean a guard mounted elsewhere is swallowing it.
+    const bad = await fetch(`${base}/site/ask`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    assert.equal(bad.status, 400);
+
+    // Only POST is answered; anything else falls through to the 404.
+    const get = await fetch(`${base}/site/ask`);
+    assert.equal(get.status, 404);
+
+    // A browser on the site sends a preflight before it posts JSON.
+    const preflight = await fetch(`${base}/site/ask`, {
+      method: "OPTIONS",
+      headers: {
+        Origin: "https://www.iqrra.com",
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "content-type",
+      },
+    });
+    assert.equal(preflight.status, 204);
+    assert.equal(preflight.headers.get("access-control-allow-origin"), "https://www.iqrra.com");
+
+    // CORS only constrains browsers, but it must not be open to every page.
+    const foreign = await fetch(`${base}/site/ask`, {
+      method: "OPTIONS",
+      headers: {
+        Origin: "https://evil.example",
+        "Access-Control-Request-Method": "POST",
+      },
+    });
+    assert.equal(foreign.headers.get("access-control-allow-origin"), null);
+
+    // Mounting it made nothing underneath it public.
+    const below = await fetch(`${base}/site/ask/extra`, { method: "POST" });
+    assert.equal(below.status, 404);
+  });
+
+  it("answers a greeting to /site/ask from the fixed answers, with no database, no live mode and no model", async () => {
+    // The fixed answers are decided first, so this holds with a dead database,
+    // regardless of AI_LIVE_MODE (the harness inherits process.env; a fixed
+    // answer is decided before any env read) and with only a placeholder OpenAI
+    // key: a model call here could not succeed anyway.
+    for (const message of ["مرحبا", "hello"]) {
+      const res = await fetch(`${base}/site/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
+      assert.equal(res.status, 200);
+      const body = (await res.json()) as Record<string, unknown>;
+      assert.equal(body.answered, true);
+      assert.equal(body.source, "curated");
+      assert.equal(typeof body.content, "string");
+      assert.ok((body.content as string).length > 0);
+      // The route answers in the language of the question.
+      assert.equal(
+        /\p{Script=Arabic}/u.test(body.content as string),
+        message === "مرحبا",
+        `${message}: wrong language in ${JSON.stringify(body.content)}`,
+      );
+      assert.ok(!("reason" in body), "a fixed answer carries no refusal reason");
+    }
+  });
+
   it("keeps published curriculum data public", async () => {
     const res = await fetch(`${base}/curriculum/grades`);
     assert.equal(res.status, 200);
@@ -424,6 +493,45 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
         body: "{}",
       });
       assert.equal(res.status, 400, `${path} must be mounted, public, and validate its body`);
+    }
+  });
+
+  it("answers 400, not 500, when an email, code or password is not a string", async () => {
+    // JSON can carry a number, array or object where the app always sends a
+    // string. Those used to pass a truthiness check and throw inside
+    // `.toLowerCase()` / `.trim()` / bcrypt, so a malformed request was a 500
+    // and an error-log line. /login was fixed first; these are its siblings.
+    // As with the empty body above, a 400 is reached before the database this
+    // suite cannot supply, so a pass also proves the type check runs first.
+    const strong = "Str0ngPassw0rd!x";
+    const cases: [path: string, body: Record<string, unknown>, code: string][] = [
+      ["/auth/verify-email", { email: { a: 1 }, code: "123456" }, "missing_fields"],
+      ["/auth/verify-email", { email: ["a@example.com"], code: "123456" }, "missing_fields"],
+      ["/auth/verify-email", { email: "a@example.com", code: 123456 }, "missing_fields"],
+      ["/auth/verify-email", { email: "a@example.com", code: ["123456"] }, "missing_fields"],
+      ["/auth/resend-verification", { email: 5 }, "missing_fields"],
+      ["/auth/resend-verification", { email: { a: 1 } }, "missing_fields"],
+      ["/auth/forgot-password", { email: { a: 1 } }, "invalid_email"],
+      // An array holding "@" used to satisfy the `includes("@")` check.
+      ["/auth/forgot-password", { email: ["@"] }, "invalid_email"],
+      ["/auth/reset-password", { email: { a: 1 }, code: "123456", password: strong }, "missing_fields"],
+      ["/auth/reset-password", { email: "a@example.com", code: 123456, password: strong }, "missing_fields"],
+      // The policy check turns its argument into a string, so an array holding a strong password passed it, and
+      // its length (1) passed the 128 cap too. It then failed inside the hasher, after the account lookup.
+      ["/auth/reset-password", { email: "a@example.com", code: "123456", password: [strong] }, "password_policy"],
+      ["/auth/reset-password", { email: "a@example.com", code: "123456", password: [[strong]] }, "password_policy"],
+      ["/auth/change-unverified-email", { email: { a: 1 }, password: strong, newEmail: "b@example.com" }, "missing_fields"],
+      ["/auth/change-unverified-email", { email: "a@example.com", password: { a: 1 }, newEmail: "b@example.com" }, "missing_fields"],
+    ];
+    for (const [path, body, code] of cases) {
+      const res = await fetch(`${base}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const label = `${path} ${JSON.stringify(body)}`;
+      assert.equal(res.status, 400, `${label} is a malformed request, not a server error`);
+      assert.equal(((await res.json()) as { code: string }).code, code, label);
     }
   });
 
@@ -792,10 +900,22 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     }
     const del = await fetch(`${base}/feedback/${crypto.randomUUID()}`, { method: "DELETE" });
     assert.equal(del.status, 401, "DELETE /feedback/:id must require a token");
-    for (const route of ["/admin/metrics", `/admin/users/${crypto.randomUUID()}/suspend`]) {
+    for (const route of ["/admin/metrics", "/admin/invites", "/admin/broadcasts", `/admin/users/${crypto.randomUUID()}/suspend`]) {
       const res = await fetch(`${base}${route}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
       assert.equal(res.status, 401, `POST ${route} must require a token`);
     }
+  });
+
+  it("serves the waitlist unsubscribe page without a session, and refuses an unsigned link", async () => {
+    // Opened from an inbox by someone with no session, so no guard may sit in
+    // front of it — and the token, not the route, is what protects it. 400 is
+    // the tell: 401 means a guard shadows it, 404 means it isn't mounted.
+    const id = crypto.randomUUID();
+    const get = await fetch(`${base}/site/unsubscribe?id=${id}&t=forged`);
+    assert.equal(get.status, 400);
+    assert.match(await get.text(), /not valid/);
+    const post = await fetch(`${base}/site/unsubscribe?id=${id}&t=forged`, { method: "POST" });
+    assert.equal(post.status, 400, "a forged link must not unsubscribe anyone");
   });
 
   it("hides the site-signup ingest without the shared key", async () => {
@@ -887,6 +1007,29 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.match(res.headers.get("strict-transport-security") ?? "", /max-age=\d+/);
     // Everything this API returns is a roster, a paper or a child's marks.
     assert.equal(res.headers.get("cache-control"), "no-store");
+  });
+
+  it("serves the guardian-approval config without a token, and closes the rest with the flag off", async () => {
+    const config = await fetch(`${base}/guardian-consent/config`);
+    assert.equal(config.status, 200);
+    assert.deepEqual(await config.json(), { enabled: false });
+    const post = (path: string, body: unknown) =>
+      fetch(`${base}/guardian-consent/${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    const lookup = await post("lookup", { token: "a".repeat(43) });
+    assert.equal(lookup.status, 404);
+    assert.equal(((await lookup.json()) as { code: string }).code, "guardian_approval_disabled");
+    const decide = await post("decide", { token: "a".repeat(43), decision: "declined" });
+    assert.equal(decide.status, 404);
+    assert.equal(((await decide.json()) as { code: string }).code, "guardian_approval_disabled");
+  });
+
+  it("does not let the guardian-consent router shadow an unowned path", async () => {
+    const res = await fetch(`${base}/guardian-consents-typo`);
+    assert.equal(res.status, 404);
   });
 });
 

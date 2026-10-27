@@ -1,6 +1,6 @@
 /**
- * The English hub's word lists — Grades 1–4 straight from the lesson JSON,
- * Grades 9–10 from `vocabulary.ts`.
+ * The English hub's word lists — Grades 1–5 straight from the lesson JSON,
+ * Grades 8–10 from `vocabulary.ts`.
  *
  * Separate subpath, like `vocabulary.ts`: the answers are public on purpose
  * (practice records nothing), so this must never become the source of an exam.
@@ -25,6 +25,7 @@ import { nccdG4EnglishSem1, g4EnglishSem1LessonKbId } from './catalogs/g4English
 import { nccdG4EnglishSem2, g4EnglishSem2LessonKbId } from './catalogs/g4EnglishSem2.ts';
 import { nccdG5EnglishSem1, g5EnglishSem1LessonKbId } from './catalogs/g5EnglishSem1.ts';
 import { nccdG5EnglishSem2, g5EnglishSem2LessonKbId } from './catalogs/g5EnglishSem2.ts';
+import { buildG8EngSem1BrowserCatalog } from './catalogs/g8EngSem1.ts';
 import { buildG9EngSem1BrowserCatalog } from './catalogs/g9EngSem1.ts';
 import { buildG9EngSem2BrowserCatalog } from './catalogs/g9EngSem2.ts';
 import { buildEngSem1BrowserCatalog } from './catalogs/g10EnglishSem1.ts';
@@ -60,8 +61,8 @@ export const MIN_HUB_WORDS = 4;
 
 /**
  * Grammar-only lessons: Grade 9 lessons whose book statement is a grammar topic but with fewer than `MIN_HUB_WORDS`
- * words (used to; the two present perfects; the first conditional; reported speech), and Grade 10's Articles (no
- * vocabulary rows). They are in the hub for their grammar only: the lesson screen hides the word activities, and
+ * words (used to; the two present perfects; the first conditional; reported speech), and Grade 10's Articles and its
+ * Semester 2 grammar lessons (no vocabulary rows are extracted for Semester 2). They are in the hub for their grammar only: the lesson screen hides the word activities, and
  * `hubLessonVisible` keeps one out of sight until a teacher signs its unit. A test pins that each id has fewer than
  * four words and a grammar unit, so this list cannot go stale. It lives here because englishGrammar.ts imports this file.
  */
@@ -72,6 +73,16 @@ export const GRAMMAR_ONLY_LESSONS: readonly string[] = [
   'kbl-g9-eng-s2-nccd-u8_l5',
   'kbl-g9-eng-s2-nccd-u9_l3',
   'kbl-eng-s1-nccd-u1_l5',
+  'kbl-eng-s2-nccd-u6_l1',
+  'kbl-eng-s2-nccd-u6_l4',
+  'kbl-eng-s2-nccd-u7_l1',
+  'kbl-eng-s2-nccd-u7_l5',
+  'kbl-eng-s2-nccd-u8_l1',
+  'kbl-eng-s2-nccd-u8_l6',
+  'kbl-eng-s2-nccd-u9_l1',
+  'kbl-eng-s2-nccd-u9_l4',
+  'kbl-eng-s2-nccd-u10_l1',
+  'kbl-eng-s2-nccd-u10_l3',
 ];
 
 const BOOKS: [number, 1 | 2, NccdCurriculumFile, (id: string) => string][] = [
@@ -114,8 +125,12 @@ interface BrowserBook {
   lessons: { id: string; unitId: string; title: string; titleAr: string }[];
 }
 
-/** Grade 10 semester 2 has no vocabulary extracted yet, so it contributes no lessons. */
+/**
+ * Grade 10 semester 2 has no vocabulary extracted yet, so it contributes no lessons. Nor does Grade 8
+ * semester 2: its PDF's text layer is rejected by `extract-text`, so only semester 1 is here.
+ */
 const VOCAB_BOOKS: [number, 1 | 2, BrowserBook][] = [
+  [8, 1, buildG8EngSem1BrowserCatalog()],
   [9, 1, buildG9EngSem1BrowserCatalog()],
   [9, 2, buildG9EngSem2BrowserCatalog()],
   [10, 1, buildEngSem1BrowserCatalog()],
@@ -195,10 +210,10 @@ export const ENGLISH_HUB_LESSONS: HubLesson[] = [...build(), ...buildFromVocabul
 
 /**
  * Tab order: grade order. The picked grade travels as its number in the URL, never as a
- * position, so a grade can be slotted in (5 went between 4 and 9). Grades 6–8 are not
- * here yet: their books carry no vocabulary to drill.
+ * position, so a grade can be slotted in (5 went between 4 and 9, 8 between 5 and 9). Grades 6
+ * and 7 are not here yet: their books carry no vocabulary to drill (and are third-party text).
  */
-export const ENGLISH_HUB_GRADES = [1, 2, 3, 4, 5, 9, 10] as const;
+export const ENGLISH_HUB_GRADES = [1, 2, 3, 4, 5, 8, 9, 10] as const;
 
 export function hubLessonsForGrade(grade: number): HubLesson[] {
   return ENGLISH_HUB_LESSONS.filter(l => l.grade === grade);

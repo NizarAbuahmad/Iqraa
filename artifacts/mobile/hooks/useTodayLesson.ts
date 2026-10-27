@@ -26,13 +26,15 @@ import { loadTimetable } from '@/services/schedule';
 import { formatNextPeriod, type NextPeriodLesson, type TimetableSetupStep } from '@/services/scheduleCalendar';
 import { todayISO } from '@/services/planEntries';
 import {
-  HomeLessonPick, dismissSetupNudge, loadLessonPick, loadPrepSkips, setPrepSkip, subscribeLessonPick, timetableWins,
+  HomeLessonPick, dismissSetupNudge, loadLessonPick, loadPrepSkips, publishScheduledLesson, setPrepSkip, showsPeriodLine,
+  subscribeLessonPick, timetableWins,
   wasSetupNudgeDismissed,
 } from '@/services/lessonContext';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { lessonPickerParams, resolveLessonPrepContext, scopePickerParams } from '@/services/lessonPrep';
 import { defaultLessonIdFor } from '@/services/lessonCopilot';
 import { buildClassDeck } from '@/services/startClass';
+import { startClassFailure } from '@/services/ai/aiProvenance';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { WORKFLOW, type ToolDef } from '@/services/toolCatalog';
 import { trackEvent } from '@/services/analytics';
@@ -43,7 +45,7 @@ export type TodayLesson = {
   topic: string;
   /** The resolved lesson: today's pick, else the timetable's, else an older pick, else the chat's default. */
   active: { topic: string; lessonId: string | null; gradeId?: string | null; subjectId?: string | null } | null;
-  /** «الحصة القادمة · العاشر ب · 10:15», or '' when the card is not showing that period's lesson. */
+  /** «الحصة القادمة · العاشر ب · 10:15», or '' when there is no next period or a lesson picked today replaced its lesson. */
   periodLine: string;
   next: NextPeriodLesson | null;
   setup: TimetableSetupStep | null;
@@ -66,6 +68,8 @@ export type TodayLesson = {
   suggestions: string[];
   startingClass: boolean;
   startClassError: string;
+  /** The message is a state to read (allowance spent, AI off), not a fault: show it as a notice. */
+  startClassNote: boolean;
   startClass: () => Promise<void>;
   openLessonPicker: () => void;
   /** Opens the chat with `text` already sent. Does nothing for blank text. */
@@ -86,6 +90,7 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
   const [classes, setClasses] = useState<ClassGroup[]>([]);
   const [startingClass, setStartingClass] = useState(false);
   const [startClassError, setStartClassError] = useState('');
+  const [startClassNote, setStartClassNote] = useState(false);
   // The last judged state of the prep checklist; null until an authoritative
   // read has been judged, and dropped again by a degraded one.
   const prevPrep = useRef<Progress | null>(null);
@@ -173,6 +178,15 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
     () => (next?.lessonId ? resolveLessonPrepContext(next.lessonId, lang as 'ar' | 'en') : null),
     [next?.lessonId, lang],
   );
+  // Told to the lesson bar, the sidebar card and ⌘K, which read the saved pick alone and
+  // named another lesson beside this card (`lessonShown` applies the same rule there).
+  useEffect(() => {
+    publishScheduledLesson(
+      scheduled
+        ? { topic: scheduled.topic, lessonId: scheduled.lessonId, gradeId: scheduled.gradeId, subjectId: scheduled.subjectId }
+        : null,
+    );
+  }, [scheduled]);
   const fromSchedule = timetableWins(pick, !!scheduled, todayISO());
   const active = fromSchedule && scheduled
     ? { topic: scheduled.topic, lessonId: scheduled.lessonId, gradeId: scheduled.gradeId, subjectId: scheduled.subjectId }
@@ -181,8 +195,9 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
       : fallback
         ? { topic: fallback.topic, lessonId: fallback.lessonId, gradeId: fallback.gradeId, subjectId: fallback.subjectId }
         : null;
-  // «الحصة القادمة · العاشر ب · 10:15» — only when the card is showing that period's lesson.
-  const periodLine = fromSchedule && next
+  // «الحصة القادمة · العاشر ب · 10:15» — when the card shows that period's lesson, or the class has
+  // no lesson yet (`showsPeriodLine`); never beside a lesson picked today that replaced it.
+  const periodLine = next && showsPeriodLine(true, !!scheduled, fromSchedule)
     ? formatNextPeriod(next, {
         classLabel: periodClassLabel(classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'), next.subjectId, lang),
         today: todayISO(),
@@ -282,6 +297,7 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
     if (startingClass || !topic) return;
     setStartingClass(true);
     setStartClassError('');
+    setStartClassNote(false);
     try {
       // A «عرض الحصة» the teacher already made for this lesson is the deck
       // they meant to teach from — present it instead of building a new one.
@@ -307,8 +323,10 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
       setPendingClassroomActivity(activity);
       trackEvent('class_started', { source, deck: 'built' });
       router.push('/ai-tools/classroom/presentation' as never);
-    } catch {
-      setStartClassError(t('startClassFailed'));
+    } catch (e) {
+      const failure = startClassFailure(e);
+      setStartClassError(t(failure.key));
+      setStartClassNote(failure.note);
     } finally {
       setStartingClass(false);
     }
@@ -371,6 +389,7 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
     suggestions,
     startingClass,
     startClassError,
+    startClassNote,
     startClass: handleStartClass,
     openLessonPicker,
     ask,

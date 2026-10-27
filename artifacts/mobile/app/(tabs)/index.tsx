@@ -49,6 +49,8 @@ import { className, classNameFor } from '@/services/materialClass';
 import { todayLabel } from '@/services/dateLabels';
 import { palette } from '@/constants/colors';
 import { PhoneToday } from '@/components/today/PhoneToday';
+import { TourTarget } from '@/components/tour/TourTarget';
+import { SPACE } from '@/constants/theme';
 import { readableOn } from '@/services/readableColor';
 
 const START_CLASS_COLOR = palette.live;
@@ -89,7 +91,7 @@ function LessonWorkspace() {
   const today = useTodayLesson('workspace');
   const {
     topic, periodLine, next, setup, nudgeDismissed, classes, board, summary, toggleSkip,
-    gradeLabel, subjectLabel, toolParams, quickTools, startingClass, startClassError, openLessonPicker,
+    gradeLabel, subjectLabel, toolParams, quickTools, startingClass, startClassError, startClassNote, openLessonPicker,
   } = today;
 
   const [ask, setAsk] = useState('');
@@ -117,6 +119,8 @@ function LessonWorkspace() {
         only what is still missing.
       */}
       <Band color={hero} motif={theme.motif} motifOpacity={theme.motifOpacity} style={s.band}>
+      {/* The first-run tour rings the whole header: the lesson and the two buttons that act on it. */}
+      <TourTarget id="today-lesson" style={s.bandTarget}>
       <View style={[s.topbar, { flexDirection: rowDir }]}>
         <View style={[{ flexDirection: rowDir, alignItems: 'center', gap: 10 }]}>
           <Text style={[s.today, { color: 'rgba(255,255,255,0.78)' }]}>{todayLabel(lang as 'ar' | 'en')}</Text>
@@ -186,6 +190,7 @@ function LessonWorkspace() {
           </View>
         ) : null}
       </View>
+      </TourTarget>
       </Band>
 
       <View style={[s.body, { flexDirection: rowDir }]}>
@@ -236,13 +241,17 @@ function LessonWorkspace() {
             ) : null}
 
             {startClassError ? (
-              <View style={[s.errorRow, { backgroundColor: colors.destructive + '14', flexDirection: rowDir }]}>
-                <Ionicons name="alert-circle" size={14} color={colors.destructive} />
-                <Text style={[s.errorText, { color: colors.destructive, textAlign: align }]}>{startClassError}</Text>
+              <View style={[s.errorRow, { backgroundColor: startClassNote ? colors.muted : colors.destructive + '14', flexDirection: rowDir }]}>
+                <Ionicons
+                  name={startClassNote ? 'information-circle' : 'alert-circle'}
+                  size={14}
+                  color={startClassNote ? colors.mutedForeground : colors.destructive}
+                />
+                <Text style={[s.errorText, { color: startClassNote ? colors.mutedForeground : colors.destructive, textAlign: align }]}>{startClassError}</Text>
               </View>
             ) : null}
 
-            <View>
+            <TourTarget id="today-prep">
               <LessonPrepBoard
                 rows={board}
                 colors={colors}
@@ -267,7 +276,7 @@ function LessonWorkspace() {
                 onOpenAll={() => router.push({ pathname: '/workspace', params: { q: topic } })}
                 allCopiesLabel={t('homePrepAllCopies')}
               />
-            </View>
+            </TourTarget>
           </View>
 
           {/* Quick tools */}
@@ -387,6 +396,9 @@ function LessonWorkspace() {
 const s = StyleSheet.create({
   // The header band, in the lesson's subject colour (`subjectTheme`).
   band: { paddingHorizontal: 24, paddingTop: 14, paddingBottom: 26, gap: 14 },
+  // The topbar and the lesson were the band's two children, 14 apart; one target now holds both,
+  // 12 apart (SPACE.md, the nearest step on the spacing scale; 14 is off it).
+  bandTarget: { gap: SPACE.md },
   bandLesson: { gap: 8 },
   bandProgress: { alignItems: 'center', gap: 12, marginTop: 4 },
   bandTrack: { width: 220, height: 8, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.24)', overflow: 'hidden' },

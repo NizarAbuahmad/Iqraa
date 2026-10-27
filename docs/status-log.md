@@ -10,6 +10,23 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Row-level security switched on in production, 2026-10-27
+
+The owner set `RLS_ENFORCE=on` on `iqraa-api` (Cloud Run, `europe-west1`, project `iqraa-auth-507315`) from Cloud
+Shell: first on 2026-10-24 (revision `iqraa-api-00417-n5n`), then, after the flag was switched off and on again
+by mistake several times (a Cloud Shell opened on the wrong project, and a rollback command pasted instead of
+the on command), last on 2026-10-27 about 21:16 on the owner's clock (revision `iqraa-api-00456-7md`). Every
+command named `--project iqraa-auth-507315`, so the shell's default project (`monroo`) did not matter.
+
+**Verified (owner's report):** a teacher's inbox and chat load, a message reaches the parent with a
+notification, the parent's reply shows for the teacher and moves the chat to the top of the inbox. The
+`permission denied` / `row-level security` log search printed nothing each time it was run.
+
+**Not verified:** the 30-minute watch of 5xx rate, p95 latency and push volume (checklist D3) was not done on the
+last switch-on; there is no unbroken run of days with enforcement on; real hold times and statement counts under
+traffic (read `held scope ended` at `LOG_LEVEL=debug`); the `row-level security` check is still not a required
+check on `main` (checklist E1). Routes not on the held list pay about 22 ms per statement.
+
 ## Row-level security: the held connection measured — the inbox passes the latency gate, 2026-10-24
 
 `bench:rls` (three modes) run from Cloud Shell against the rehearsal Neon project's pooled endpoint, 8 statements
@@ -24,6 +41,2479 @@ checklist.
 routes' statement counts, which decide which to add to `heldReads.ts` next. `RLS_ENFORCE` is still unset in
 production; switching it on is the owner's step (checklist D) after deciding whether the ~22 ms per statement on
 unlisted routes is acceptable.
+
+## Design for a video shelf in the help center, 2026-10-27
+
+**Why.** The scripts for the first five tutorial videos are in `docs/tutorial-videos-ar.md`; this is where they will live in the
+app. Spec: `docs/superpowers/specs/2026-10-27-help-center-video-shelf-design.md` (approved by the owner). **Design only: no app code
+changed.**
+
+**Decided.** A shelf at the top of the FAQ screen (Profile → «كيف أستخدم إقرأ؟»), each role seeing its own videos; a static typed
+catalog in the app (`services/helpVideos.ts`), unlisted YouTube opened through the existing `openExternal`; v1 ships the mechanism
+with an **empty** catalog, so users see nothing until the first video is added. No server-managed list, no in-app player (that would
+need a native module, a native build and an `app.json` `version` bump), no tour or assistant change.
+
+**Read, not run.** The FAQ has no role concept (every role sees the same 18 entries; `/faq` is open to all), every video in the app opens
+through `openExternal`, there is no video player dependency, and there is no server-managed app content to copy. The Library is the
+wrong shelf: each item needs a grade and a subject.
+
+**Not verified.** Nothing was built or run. YouTube on school networks, the "Made for kids" / ads settings for student and parent
+videos, and `WebBrowser` opening the nocookie embed page on an Android phone are all open and listed in the spec.
+
+## Scripts and shot lists for the first five «كيف أستخدم إقرأ؟» tutorial videos, 2026-10-27
+
+**Why.** After the first-run tour went live (2026-10-27), the next ask was tutorial videos. A review of the code found the
+Library the wrong shelf for them: every Library item needs a grade and a subject (the admin upload form refuses one without),
+the list loads per grade, and students see it. A help-center shelf (Profile → «كيف أستخدم إقرأ؟», `app/faq.tsx`) fits better.
+No video player dependency exists (`expo-video` is not installed), so a link that opens in YouTube/the browser ships over the
+air; an in-app player would need a native module, a native build and an `app.json` `version` bump. This PR is the content
+only: nothing in the app changes.
+
+**Built.** `docs/tutorial-videos-ar.md`: Arabic narration, shot-by-shot actions, on-screen captions and a «تحقّق قبل
+التصوير» list for five videos: (1) the Today screen, (2) a quick quiz — a printable paper, (3) an evaluation sent to students
+by link with results, (4) a student joining with the class code, (5) a parent following a child. Plus shared recording rules and
+an appendix of the exact Arabic labels. Register: simple modern Arabic, first-person plural («نفتح، نختار»), brand «إقرأ».
+
+**Verified (read, not run).** Every quoted label was matched against `services/i18n.ts` (the Arabic table), the screens, and
+the order of `e2e/tests/teacher-to-student.spec.ts` (the real teacher → exam → student → results path). Two product facts the
+scripts depend on were read from the code: the Tools-tab quiz can only be exported (a shareable exam is an *Evaluation*), and a
+parent cannot sign up with the class-wide code (`claimParentNeedsOwnCode`). CI's «اقرأ» brand check does not scan `docs/`.
+
+**Not verified, not done.**
+- Nothing was run on a device or recorded. Where a button sits, or its exact label (the class screen's exam-attach button, the
+  student/parent sign-up entry, the roster-consent text, the results-dashboard count) was not read; each is listed under its video.
+- `STUDENT_ACCOUNTS` was not checked in production. It gates every student and parent screen; videos 4 and 5 should not be shot
+  before it is confirmed on.
+- No human native-Arabic reader has seen the text (the tour's review found four mismatches a reader caught).
+- The narration fills about 35–60 s of each video; the stated lengths include screen action and are not measured.
+- The help-center shelf, the links from the tour and Profile, and the hosting of the videos are a separate change.
+
+## «متابعة عبر Google» no longer waits for the parent-approval switch, and the boxes that unlock it sit above it, 2026-10-27
+
+**Why.** Reported from app.iqrra.com/register, as a student and as a parent: the Google button stayed dim, then "activated after
+a long time", with no message either way.
+
+**Found (read in the code, not measured).**
+1. The gate (`readyToSignUp`) held Google for the terms box, the age tick (or a parent's address) and — for a student with an
+   email — for `GET /guardian-consent/config` (`waitingForConfig`). The boxes sat at the **bottom** of the form, under first
+   name, last name, email, password and confirm password, none of which Google uses; in both screenshots they were off screen.
+2. The config call has a 15 s deadline per try and two retries (1 s, 3 s): up to ~49 s on a slow API. During it `missing` was
+   `null`, so the dim button had no hint at all.
+3. A parent is never held by the config (`signupPlan` waits only for a student), so for a parent the delay was the box.
+4. No server defect: `/auth/google` was read end to end for a new student and a new parent. The other thing a reporter can hit —
+   a Google address that already is a teacher with classes gets `role_locked_teaching` (409) — is by design and unchanged.
+
+**Changed (mobile only; no server, schema or env change).**
+- `signupReadiness` (`services/signupMethod.ts`, pure, tested): one gate per way to sign up. Google needs only what the person
+  can do (terms, then a parent's address, then the age tick); the password form also waits for the switch and the roles and says
+  so (`'config'`).
+- `app/(auth)/register.tsx`: the parent-email field and the agreements now open the email form, **above** the Google button, so
+  what unlocks it is on screen with it. Every hint says «أعلاه»; `registerAcceptTermsBelow` and `ageConfirmBelow` are gone. A new
+  line, `signupLoadingOptions` («جارٍ تحميل خيارات التسجيل…»), shows where the Google button will be while the roles load, and
+  under the create-account button while the switch is read.
+- A student who taps Google before the switch arrives sends no tick and no parent address; the server refuses it with
+  `age_confirmation_required` / `parent_email_required`, which `guardianConfigStale` already turns into a re-read of the switch
+  (nothing is created: both refusals come before the insert).
+
+**Verified.** Written test-first: 9 `signupReadiness` cases (`signupMethod.test.ts`) and 4 screen pins
+(`signupScreensSource.test.ts`: the gate comes from `signupReadiness`, the boxes sit above the Google button, no hint points
+«أسفل», the loading line exists) plus the new copy key in `guardianCopy.test.ts` — all failed first, for the missing feature.
+Root `pnpm run typecheck` clean; `cd artifacts/mobile && pnpm test`: 8,006 tests in 1,339 suites, 7,996 passed, 0 failed, 10
+skipped; the brand grep from `ci.yml` is clean on the touched files. The api-server was not touched and was not re-run.
+
+**Not verified.**
+- **How it looks in a browser** (phone and desktop, light and dark, RTL), and a real Google sign-up as a student or a parent (no
+  Google credential here). The 49 s figure is the worst case from the constants, not a timing taken on production: this
+  sandbox's proxy refuses the Cloud Run host.
+- Known limit: a student who taps Google inside the wait is shown the refusal («أكّد أنك بالغ…» / «أدخل بريد أحد والديك») before
+  the box it names has been drawn, and the Google credential is single use, so a second tap is needed.
+- The Arabic line was written by the implementer with no independent reviewer.
+
+## The improve chips no longer title the material with their own sentence, 2026-10-27
+
+**Why.** Left open by «One verb for "make me this material"» (below, «Found, not changed»). Tapping «✏️ حسّن خطة الدرس» sent
+«حسّن خطة الدرس عن «تركيب الاقترانات» واجعلها أوضح للتنفيذ في الحصة القادمة», and the chat regenerated the plan titled with
+the whole sentence («خطة درس: حسّن الدرس «تركيب الاقترانات» واجعلها أوضح …»), opened the reply «المادة جاهزة لدرس «<sentence>»»
+and handed the sentence to the generator as its topic. «🔥 اجعل الاختبار أصعب» did the same («اختبار قصير: اجعل الاختبار أصعب
+وأضف سؤالين»), and so does any typed refinement: «اجعله أبسط» titled one «اجعله أبسط».
+
+**Root cause (two, found by running the chat's own parsers on the chip strings).**
+1. A refinement went through `resolveArtifactTopic` like a creation ask. `topicFromQuery` only strips the words of a creation
+   ask (verbs, material nouns), so a refinement's words survived as the "topic", and anything of three characters or more
+   outranks the lesson on the card. The words of a refinement never reach the generator (`ask` only feeds quiz counts and
+   types), so the topic is the *only* thing such a message can contribute.
+2. In English the improve chips were not refinements at all. `isRefinement` knew «حسّن» and «اجعله أصعب» but, in English, only
+   «make it harder»: "Improve the current lesson plan…" and "Make the quiz harder…" classified as `artifact` with the topic
+   «harder». That also lost a soft-pinned lesson, because `shouldReuseActiveLesson` keeps it for `refinement` outright but for
+   `artifact` only when the ask is a bare shortcut, which a sentence is not.
+
+**Built.**
+- `resolveArtifactTopic` takes `refinement` (`artifactTopic.ts`). For one, the only topic read from the message is one fenced in
+  quotes (`quotedTopic`: «…», "…", “…” — which is how the chip writes its topic; a quoted pointer such as «الدرس الحالي» or
+  "the current lesson", what the chip says while no lesson is open, names nothing); otherwise the lesson, document or active
+  topic decides, as it already did for a creation ask with no topic. Creation asks are untouched.
+- `iqra.tsx` passes `refinement: route.intent === 'refinement'` at both of its `resolveArtifactTopic` calls (one ranks lessons,
+  one titles the material); a test reads the file and fails a call without it.
+- `isRefinement` (`intentRouter.ts`) gains the English forms where a material is named: "improve (the/my/current) lesson plan /
+  worksheet / quiz / homework / activity", "make the quiz / worksheet / … harder / easier / simpler / clearer / shorter /
+  longer". «improve student engagement», «make students work harder» and «make a worksheet for harder topics» stay what they were
+  (teaching, teaching, artifact).
+- `refineChips.test.ts` (new, 35 cases), built from the real chips (`buildLessonSuggestions`) rather than retyped strings: both
+  chips route as refinements in both languages, resolve to the lesson on the card with and without a matched lesson, typed
+  refinements do not title anything, a quoted topic is honoured, a quoted pointer is not, creation asks are unchanged, and the
+  chat file passes the flag at every call.
+
+**Left alone, on purpose.**
+- What the regenerated material *is*. A refinement still regenerates the material for the lesson; it does not edit the previous
+  one, and «واجعلها أوضح للتنفيذ» still reaches nothing. Making the chip's words change the output is a different feature.
+- `topicFromQuery` itself and its other callers (infographic, subject scope, `mergeScopeReply`, `isBareArtifactShortcut`): they
+  handle creation asks.
+- The follow-up chip row cut off at the pane's edge, and «واجب بيتي» versus «واجباً منزلياً» (both still open, see below).
+
+**Verified.** Before the fix, `refineChips.test.ts` failed 25 of its 35 cases, for the reasons above (English not routed as a
+refinement; the sentence as the topic in both languages, with and without a matched lesson; the flag missing in `iqra.tsx`);
+the creation-ask and false-positive cases already passed and still do. After it: 35/35; `pnpm run typecheck` clean (one error
+in the first draft of the test, a `URL` type, fixed); `artifacts/mobile` `pnpm test` 7984 pass, 0 fail, 10 skipped.
+Browser check of the real chat: **pending when this entry was written** — see the PR description for the result.
+
+**Not verified.** Native (iOS/Android) was not run; the change is JavaScript only. Only the lesson-plan and quiz chips were
+looked at; a refinement of a worksheet, homework or activity takes the same path but was not tried by hand. The English
+phrasings of a typed refinement are the ones listed above, not a vocabulary: «make it simpler for my class» is still read by the
+older bare patterns (refinement), and an English refinement that names no material is still not one («tweak this» →
+ambiguous, «can you redo it?» → teaching; both probed).
+- A how-question that names the material but no purpose, «how do I improve my lesson plan?», now routes as a `refinement`
+  (probed). Before this change it fell through to `artifact` (nothing matched `isRefinement`, and `isPurposeQuestion` only
+  fires with a purpose clause such as «so that» / «for weak students»), so it was never answered as advice either; the
+  difference is that it now keeps the open lesson as its topic instead of being titled «improve».
+
+## One verb for "make me this material": «جهّز» / "Create", 2026-10-27
+
+**Why.** Left open by «Chat first screen: words that say what to ask» (PR #1301). The create chips said five different
+things in Arabic (حضّر / أنشئ / جهّز / اقترح / أنشئ), the follow-up chips under a reply were bare nouns in Arabic and
+«Create …» (with «Classroom activity» the odd one) in English, and the tool screens' own buttons were already «جهّز …» for
+the worksheet, quiz, homework, activity, slides and game with only the lesson plan saying «حضّر خطة الدرس». The words are
+also what a chip SENDS, so they appear as the teacher's own message in the thread. Counted before the change: of the Arabic
+strings that open with a make-a-thing verb, «جهّز» 18, «أنشئ» 15, «حضّر» 4, «اقترح» 4; «أنشئ» was used for records (account,
+class, exam, code, group, file), which is the split worth keeping.
+
+**Rule.** «جهّز» for a teaching material; «أنشئ» only for a record. English «Create …». The owner picked this over «حضّر»
+everywhere and «أنشئ» everywhere (each would have changed six tool buttons and three help answers) and over chat-only
+(it would have left the chip and the lesson-plan screen it opens saying different words).
+
+**Built.**
+- `services/materialPrompts.ts` (new): what a chip sends, one table. There were three copies of the five sentences
+  (`CREATE_CHIP` in `lessonCopilot.ts`, `promptForTeachingAction` and `handleResourcePress` in `iqra.tsx`), each with its
+  own verb. English now says "Create a full lesson plan / a classroom activity …" (was «Prepare» / «Suggest»).
+- `CREATE_CHIP` (exported for the test): five Arabic labels «جهّز …»; «Class activity» → «Create class activity».
+- Follow-up chips (`defaultTeachingActions`): «جهّز خطة درس / ورقة عمل / اختباراً قصيراً / واجباً منزلياً / نشاطاً صفياً»
+  (homework said «بيتياً» in a first draft, a third spelling next to the chip's and its prompt's «منزلياً»; pinned in the test).
+- Home prompt chips (`homeAiTools.ts`) and the uploaded-files quick actions (`documents/quickActions.ts`): «جهّز …» / "Create …".
+- The lesson-plan outlier: `generateLessonPlanBtn`, `generateAILesson`, the help answer `howMakeLessonPlan` (button name and
+  the example to type), `howPlanLanguage`, `continueEmptyDesc`, `docReadyMessage`, `faqA1`, `iqraInputHint` and the
+  next-step line «أقترح الآن: جهّز خطة الدرس.»
+- `chipVerbs.test.ts` (new): every material's prompt, chip label and follow-up label opens with «جهّز» / "Create"; the chat
+  routes each of the ten prompts to generating a material and reads back the right material and topic; the four help answers
+  quote the button as it is spelled; and what a teacher TYPES is still understood with either verb.
+
+**Left alone, on purpose.**
+- Everything that parses what a teacher types (`askVocabulary`, `artifactTopic` `VERBS`, `intentRouter`): «حضّر» and «أنشئ»
+  keep working as requests. This changes what the app says, not what it hears.
+- The API's model prompts («أنشئ خطة درس كاملة لمادة …»): they address the model, are not shown, and do not parse chips.
+- Prose that is not a chip («حضّر حصتك:», «المعلم يحضّر حصصه», the home hero's «حضّر حصة عن …» example), the records' «أنشئ …»
+  buttons, the prep board's «أنشئ», and the file quick actions' noun labels («خطة درس»).
+
+**Verified.** `pnpm run typecheck` clean; `artifacts/mobile` `pnpm test` 7871 pass, 0 fail, 10 skipped (before the routing
+assertions and the homework-spelling guard were added to `chipVerbs.test.ts`, which then passes on its own, 58 cases). No
+existing test pinned the old chip wording. In the real web build (throwaway Postgres, API with `AI_LIVE_MODE=false`,
+Playwright; every screenshot looked at), Arabic desktop: the empty chat's chips read «جهّز خطة الدرس» / «جهّز ورقة عمل»;
+tapping the lesson-plan chip sends «جهّز خطة درس كاملة عن: <the lesson on the strip>» and returns a lesson plan; the worksheet,
+quiz, activity and homework chips each sent their own «جهّز …» text and returned that material (worksheet, quiz, activity,
+homework), none a question back, none a different material; English: «Create lesson plan» / «Create worksheet» sent
+«Create a full lesson plan about: …» / «Create an in-class worksheet about: …» and returned a lesson plan and a worksheet;
+`/ai-tools/lesson-plan`'s button reads «جهّز خطة الدرس», not clipped.
+
+**Found, not changed (all there before this change).**
+- «✏️ حسّن خطة الدرس» (the refine chip, `lessonCopilot.ts`) sends «حسّن خطة الدرس عن «تركيب الاقترانات» واجعلها أوضح للتنفيذ في
+  الحصة القادمة» and `topicFromQuery` returns «حسّن الدرس «تركيب الاقترانات» واجعلها أوضح …» as the lesson topic (same output on
+  a clean `main`), so the offline generator titles the plan with the whole sentence. «حسّن» is not a create verb, so it is
+  outside this change.
+- The follow-up chip row is a horizontal scroller, and its third chip is cut off at the pane's edge on a 1920px window
+  («اجعل الاختبار أصعب»); not looked at further.
+- The material's own title and checklist say «واجب بيتي» while the chip says «واجباً منزلياً»: two names for homework that
+  predate this change.
+
+**Not verified.** Native (iOS/Android) was not run; the change is JavaScript only. The strings were not read by a second
+native speaker; «جهّز» is the verb the app already used on six tool buttons. Marketing material outside this repo that quotes
+«حضّر خطة درس» (the tutorial video text in `marketing/tutorial/build.py`) is unchanged.
+
+## First-run spotlight tour for new accounts, 2026-10-26
+
+**Why.** A new teacher, student or parent landed on their home screen with no guidance: the only intro is
+the pre-login carousel, and the in-app coach card was retired. The ask was a walkthrough in the style of
+other apps — dim the screen, ring one real element, say one thing about it, move on — and "feel free to
+suggest something better". Design: [`docs/superpowers/specs/2026-10-26-first-run-tour-design.md`](./superpowers/specs/2026-10-26-first-run-tour-design.md).
+
+**Built.**
+- **Engine** (pure, `node --test`-able): `services/tour.ts` (steps per role × layout, `tourBlocker` eligibility,
+  step navigation, storage keys), `tourStore.ts` (live state + analytics), `tourRegistry.ts` (a target id can
+  have several registrants; the first with an area wins), `tourPlacement.ts` (hole, even-odd scrim path, card
+  placed below / above / beside / docked, connector), `tourStorage.ts` (fails closed).
+- **UI**: `components/tour/` — `TourHost` (a root overlay, **not a `<Modal>`**), `TourCard`, `TourTarget` /
+  `useTourTarget`, `TourTabButton`; `hooks/useTour.ts` (autostart and Replay). The scrim, the dashed ring, the
+  connector and its dot are one `react-native-svg` drawing; the text sits on a solid card, which is the
+  improvement over the reference screenshots (contrast in light, dark, Arabic and English).
+- **Wired**: root layout (the app behind the tour is hidden from screen readers), the tab bar (a custom
+  `tabBarButton` on a phone), the desktop sidebar rows, Today on phone and desktop, a Profile row
+  «إعادة الجولة التعريفية», and the existing `howIntroReplay` help answer, whose «no button to watch it again»
+  was no longer true.
+- **Steps**: teacher phone / desktop 6 (welcome, lesson, prep board, ask card or sidebar chat, Tools, Profile),
+  student 5, parent 4. A step whose target is not on screen is dropped.
+- **Who sees it on its own**: an account created on or after `TOUR_SINCE` (2026-10-27) and at most 14 days
+  ago, once the app has put it on its home screen with no setup or approval gate pending (the gates are
+  imported from `routeGating.ts`, not copied). It is **marked done when it starts**. Everyone else has
+  Profile → Replay. The flag is on the device, per account (`@iqra_tour_done_v1:<id>`); no migration.
+- **New dependency**: `@react-navigation/elements` ^2.9.36, already installed transitively (2.9.36), pure JS —
+  **no `app.json` `version` bump**, so it is OTA-safe. The lockfile change is a deliberate 3-line hand edit:
+  `pnpm add` re-serialised every `(supports-color@8.1.1)` peer suffix in the file (800+ lines of noise, no
+  version change), so it was reverted and the importer entry added with the string already in the lockfile;
+  `pnpm install --frozen-lockfile` accepts it.
+
+**Verified.**
+- Unit tests: 72 new (steps, eligibility matrix, navigation, registry, placement, store + analytics, and a
+  source-scan contract `tourTargets.test.ts` that reads both sides of every target name). Mutation-checked:
+  renaming a step's target fails the contract test. Whole mobile suite on the final tree (after merging
+  `main` — 4 commits, one textual conflict, in this file — and the review fixes below): 7,876 pass, 0 fail,
+  10 skipped (none tour-related).
+- `pnpm run typecheck` in `artifacts/mobile`: 12 errors, **the same 12 on a clean tree** (push-token and
+  Quran-audio typings, `expo-file-system` types — a sandbox artefact), none in a file this change touched.
+- Built web bundle driven in Chromium with a stubbed API, teacher / student / parent × phone (390×844) /
+  desktop (1280×720) × Arabic / English × light / dark: every step shows, each ring is on its target, Done
+  closes it, a reload does not bring it back. Also: Escape, Skip, Back, Replay from Profile, a fresh teacher
+  (the tour is **not** drawn over `/setup-subjects` and opens on Today after it), the suppress switch, an
+  account older than 14 days (no tour), a resize inside the desktop layout (stays), and a drag across the
+  sidebar breakpoint (ends cleanly, the app underneath is usable). Screenshots were looked at, which found
+  and fixed: a harsh black browser focus ring on Next (now the brand's 3 px ring), a dark-mode scrim that
+  barely dimmed a navy page, a card that covered the very sidebar rows the next steps point at, and a
+  desktop→phone resize that ended the tour through the "target missing" path and reported it completed.
+- Real API + real Postgres (migrations applied, `seed:assessment`, API built — the e2e workflow's own steps):
+  `teacher-to-student.spec.ts` still passes, and the new `tour.spec.ts` passes — a real sign-up, subject
+  setup with no tour over it, the tour on Today, walking it, no repeat after a reload, Replay, Escape. With the
+  suppress switch on, `tour.spec.ts` fails, as it should. `teacher-to-student.spec.ts` also passes **without**
+  the switch today (it leaves Today by a reload inside the tour's 700 ms wait), so the switch there is a guard
+  against a future race, not a present fix; an earlier draft of its comment claimed more and was corrected.
+- Arabic copy reviewed (native-reader pass). It found four things that were then fixed: the prep step called
+  items «جاهز بضغطة» while the board says «لم تُنشأ بعد» and offers «أنشئ»; it used «الشرائح» / «النشاط»
+  where the board says «عرض الحصة» / «نشاط صفّي»; the Library step described books only, and the screen says
+  worksheets, videos, photos, activities and book resources; and «الأسئلة الشائعة» is not the row's name
+  («كيف أستخدم إقرأ؟»). Singular «المعلم» became «المعلمين» (a student has several). The English got the same.
+- An independent code review (a separate reviewer reading the diff cold) found no blockers, five should-fix
+  items and seven nits; each was checked against the code before acting (two against react-native-web's
+  source), and all but one were fixed:
+  - the card could outgrow a small phone under large accessibility text and push Skip off the screen →
+    the card is capped to the screen and its text scrolls; the centred and docked positions can no longer be
+    negative (browser-checked in a 390×300 window: Next and Skip stay on screen);
+  - on web the app behind the tour stayed in the accessibility tree — react-native-web ignores
+    `importantForAccessibility` / `accessibilityElementsHidden` → now `aria-hidden`, which all three platforms act on;
+  - on web a screen reader heard nothing after step 1 (Next keeps focus, the text just changes) → a polite live region;
+  - Replay waited a fixed 700 ms after navigating and could be ended by the overlay's own "not on the home
+    route" check on a slow device → a replay is now a *request* that starts once the home screen has held
+    still, like the automatic start (the request lapses after 8 s if navigation stalls);
+  - «كلٌّ منها يُنشأ بضغطة» promised more than the button does (it opens the generator) → «على بُعد ضغطة»;
+  - the "of N" shrank when a step was dropped, and `tour_step` was reported for a step nobody saw → steps whose
+    target is not mounted are left out when the tour begins, and `tour_step` is sent when a step is *shown*;
+  - ⌘K opened the command palette over the tour and fought its Escape / Tab handling → the palette ignores ⌘K
+    while a tour is up (browser-checked with a positive control: it opens once the tour is over);
+  - the overlay could stay dimmed with no card if its own `measureInWindow` never answered → falls back to
+    its layout size at the window's corner; a target wholly off the screen is dropped, not given a negative ring;
+  - the e2e now asserts "Step 6 of 6", so it fails if middle steps go missing; a spacing comment was corrected.
+  - `TOUR_SINCE` was a date written on the day of the work (2026-10-26); it was then set to 2026-10-27 on
+    request. See *Before merging* below: it still has to match the day the change is merged.
+
+**Not verified.**
+- **Any real phone.** All of the above is the web build in desktop Chromium. Not seen on a device: Android
+  hardware Back (`BackHandler`), edge-to-edge / status-bar offsets in the overlay's own-origin maths,
+  `measureInWindow` against a target mid-`Entrance` on the native driver, `collapsable={false}` on every
+  target, the iOS blur tab bar behind a ring, TalkBack / VoiceOver reading the step and ignoring the app
+  behind it. **Ship to the `preview` OTA channel and look on a phone before the manual `production` publish.**
+- The tab-button path was typechecked and run on web only; on native it renders the same `PlatformPressable`
+  react-navigation would have, with a ref.
+- Student and parent were walked with a stubbed API, not a real account: the e2e cannot make one
+  (`STUDENT_ACCOUNTS` is off there).
+- The review's fixes for a **stalled replay navigation** and an **overlay that cannot measure itself** are
+  covered by unit tests of the store and by the normal Replay path in the browser, but neither failure was
+  reproduced (a slow device, a `measureInWindow` that never answers). Large accessibility text was simulated
+  with a short window, not a real Dynamic Type / font-scale setting.
+
+**Before merging.** `TOUR_SINCE` in `services/tour.ts` is **2026-10-27** (set on that day, as asked). It says
+"an account made on or after this is new", so if the change is merged on a later day, move it to the merge day
+(the tests follow it): otherwise accounts made in between are already using the app and would be shown the tour
+on their next launch.
+
+**Limits and decisions.**
+- The flag is on the device: the same person on a new phone or browser is shown the tour once more. A
+  cross-device flag needs a migration and an API field — out of scope.
+- `TOUR_SINCE` is a constant. An account made before it never gets the tour on its own; it has Replay.
+- A window dragged across the sidebar breakpoint ends the tour as **skipped** (the steps are layout-specific).
+- Deviation from the plan: no new `appHelp` rule — the existing `intro-replay` rule already catches «replay the
+  tour» questions, so its answer was corrected instead of adding a competing rule.
+- Left alone on purpose: the dead `wasCoachDismissed` / `coach*` code and its i18n keys.
+
+## The admin set-password route checks that the password is a string, 2026-10-27
+
+**Why.** «`reset-password` checks that the new password is a string» (below) listed this route as the one other
+caller of `isStrongPassword` with no string check. `POST /admin/users/:id/password` (system admin only) tested
+`!password || !isStrongPassword(password)`; the policy turns its argument into a string, so an **array** holding a
+strong password passed it, and its `length` of 1 passed the 128-character cap. The request then failed inside the
+hasher, after the account lookup, and answered **500**. An object or a number already got a correct 400.
+
+**Built.** `routes/admin.ts`: `password` is `unknown` and a non-string gets the same 400 as a weak one, the guard
+`register`, `add-email` and `reset-password` use. A string takes the same path as before. After this, every caller
+of `isStrongPassword` in `routes/` checks the type first (`grep "isStrongPassword(" routes/*.ts` lists four, all guarded).
+The new `adminSetPassword.db.test.ts` runs against a real database through the built bundle: as an admin it sends an
+array, a nested array, an object and a number to a teacher's account and expects 400 with the stored hash unchanged,
+then a string and expects 200 and a bcrypt hash. It could not go in `mountOrder.test.ts`: `authMiddleware` re-reads
+the user from the database, so that suite (no database) never reaches this route with a signed token.
+
+**Verified.** The new test against the old bundle: the array and the nested array answered **500**, the object and the
+number 400, the string 200. Against the fix: 5 of 5. `pnpm run typecheck`. The whole api-server suite with
+`TEST_DATABASE_URL` set and `REQUIRE_DB_TESTS=true`, as CI runs it: 2973 tests, 0 failed, 0 skipped.
+
+**Not verified, not done.** Production was not called; this sandbox cannot reach it. The 500's cause on this route was
+inferred from `reset-password`, where the server log showed bcrypt refusing a non-string; here only the status was
+observed. The same unguarded-body shape may exist in other route files; only `auth.ts` and this route were checked for
+the password and email/code fields. `schema-push:` none.
+
+## `reset-password` checks that the new password is a string, 2026-10-27
+
+**Why.** «A non-string email or code answers 400, not 500» (2026-10-26) guarded `email` and `code` on five routes
+and listed `reset-password`'s `password` as not done. `isStrongPassword` turns its argument into a string, so
+an **array** holding a strong password (`["Str0ngPassw0rd!x"]`, or one level deeper) passed the policy, and its
+`length` of 1 passed the 128-character cap. It then reached the hasher, where bcrypt refused it
+(`Illegal arguments: object, string`), and the route answered **500**. An object or a number already got a correct
+`400 password_policy`, because their string form fails the policy's letter-and-digit test; only arrays slipped
+through.
+
+**Built.** `routes/auth.ts`: `reset-password` takes `password` as `unknown` and refuses a non-string with the same
+`400 password_policy` as a weak one, the guard `register` and `add-email` already use. Two cases (an array and a
+nested array holding a strong password) join the malformed-body table in `mountOrder.test.ts`; that suite has no
+reachable database, so they also pin that the check runs before the account lookup.
+
+**Verified.** On a throwaway Postgres with a valid, unused reset code planted (its hash is
+`sha256("userId:code")`): the old build answered an array and a nested array **500**, an object and a number 400;
+the new build answers all four 400 with the code still unused, then a string password resets the account and the
+new password logs in (200), with no `reset password failed` line in the server log. The new test fails on the old
+code (`500 !== 400`) and passes on the new; `pnpm run typecheck`; api-server `pnpm build` and `pnpm test` (2608 pass).
+
+**Not verified, not done.** `admin.ts:257` (an admin setting someone's password) has the same
+`!password || !isStrongPassword(password)` shape with no string check; it is admin-only and was not touched or
+tested. `confirmPassword` is still typed `string`: a non-string one already fails the `!==` comparison and
+answers `passwords_mismatch`, so it was left alone. Production behavior was not called; this sandbox cannot
+reach it. `schema-push:` none.
+
+## Chat composer on web: one row when empty, grows with the text, 2026-10-26
+
+**Why.** Left open by «Chat first screen: words that say what to ask» (PR #1301). react-native-web renders a
+multiline `TextInput` as a `<textarea>` with HTML's default of two rows and never resizes it, so on app.iqrra.com
+the empty composer was 44px tall with its one-line placeholder on the top row and the `+` / send buttons about 14px
+lower, level with the empty row.
+
+**Built.**
+- `app/(tabs)/iqra.tsx`, web only: `rows={1}`; a 22px line with 8px vertical padding (`inputWeb`, 38px = the send
+  button's height) so one line sits level with the buttons; an effect that calls `fitTextareaHeight` after every change
+  of the text, when the window width changes, and once `document.fonts` is ready. Native passes no `rows` and the helper
+  does nothing where the ref has no `style` object.
+- `services/webTextarea.ts` (new): `fitTextareaHeight` sets `height` to `auto` **before** reading `scrollHeight`. A
+  textarea that has been given an explicit height reports at least that height, so without the reset the field grows
+  but never shrinks after a send. `max-height` (160px desktop, 100px narrower) still clamps it; past that it scrolls
+  inside. Pinned by `fitTextareaHeight.test.ts`, which fakes the DOM and holds the order of the two writes.
+- English `iqraPlaceholder` is «e.g. a short quiz on this lesson» (was «Type your request, e.g. …»): a one-row field
+  cannot wrap, and the longer text wrapped on a 390px phone, leaving a clipped second line. `chatEmptyStateCopy.test.ts`
+  keeps both languages under 34 characters (a 390px phone's 248px field holds about 39).
+
+**Verified.** `pnpm run typecheck` clean; `artifacts/mobile` `pnpm test` 7811 pass, 0 fail, 10 skipped. In the real web
+build (throwaway Postgres, API with `AI_LIVE_MODE=false`, Playwright, rects measured and every zoom looked at): empty
+field 38px with the placeholder centred on the buttons' line (Arabic and English, 1920 and 390 wide); 1–7 lines give
+38 → 60 → 82 → 104 → 126 → 148 → 160 and then scroll inside; `+` and send stay on the bottom edge while it grows; back to
+38px after a send; phone caps at 100px. English at 390px stays on one line, also on a cold load with the font delayed;
+at 320px (where it wraps) the field is 60px and shows both lines, nothing clipped.
+
+**Not verified / known limits.**
+- Native (iOS/Android) was not run; the change is web-only by construction.
+- At a few widths near 330px the placeholder wraps in the fallback font but not in Almarai: on a cold load the field
+  sits at 60px with an empty second row until the font arrives (about 6s with a forced delay), then settles at 38px. It
+  is never clipped; the re-fit on `document.fonts.ready` is what brings it back.
+- Arabic at 320px wraps and leaves «الدرس» alone on its second line, with the field grown to show it. A 320px phone
+  is below what the placeholder was sized for.
+- Not looked at: a line that is wider than the field because of a very long unbroken word, and iOS Safari's
+  textarea metrics.
+
+## Admin overview: the signup tiles open their list, 2026-10-26
+
+**Why.** On the admin dashboard's «نظرة عامة» row, «اقتراحات الزوار» showed a count and nothing else; finding the
+suggestions meant knowing they live on «البريد المجمّع» under the «اقتراحات» chip. «قائمة الانتظار» and «رسائل
+التواصل» are counted from the same table and had the same dead end.
+
+**Built.** The three tiles are buttons that open `/admin/signups?kind=idea|waitlist|contact`. `StatCard`
+(`components/admin/widgets.tsx`) takes an optional `onPress` (a `Pressable` with a pressed state and an accessible
+label); a card without it is unchanged, so «كل الحسابات», «نشطون» and «محظورون» are still plain. `signups.tsx` reads
+`kind` from the URL for its starting chip and still switches chips as before. The parse lives in
+`services/adminSignupKind.ts` so a test can load it: a missing or unknown `kind` opens on «الكل», never on an empty
+filter, and an `Object.prototype` name is not read as a chip. `adminSignupKind.test.ts` pins that and that the link
+the dashboard builds is read back as the same chip.
+
+**Verified.** The new test failed before the helper existed (module not found) and passes (8); `pnpm run typecheck`;
+mobile `pnpm test` (7822 tests: 7812 pass, 0 fail, 10 skipped); the real Expo web build driven in Chromium with the
+admin API mocked at the network layer: each tile navigates to its URL, the screen then asks the API for that kind
+only and lists only those rows (screenshot: the «اقتراحات» chip selected, two ideas shown), `?kind=bogus` and no
+`kind` both ask for everything, no uncaught page errors.
+
+**Not verified.** Against a real API and database (the rows and counts in that check were fixtures); on a phone
+(the tiles are plain `Pressable`s, so native should behave, but only web was driven). The tiles do not look
+clickable until hovered or pressed: no chevron was added, to keep the row as it was. «اقتراحات الزوار» counts
+only signed-out visitors; suggestions from signed-in teachers are in the feedback list at the bottom of the
+dashboard («اقتراحات» chip) and are not linked from here. `schema-push:` none.
+
+## Message the iqrra.com waitlist from the admin signups screen, 2026-10-25
+
+The signups screen already listed the people who asked for the app on iqrra.com and could mail one
+invite at a time, but it remembered nothing (who was invited), had no unsubscribe, and the bulk
+"send the invite" step was a manual Resend broadcast. A system_admin can now message the list from
+**المسجّلون → «راسل قائمة الانتظار»** (`POST /admin/broadcasts`).
+
+- **Three purposes, and the server decides who each may reach** (`lib/siteMail.ts`
+  `pickRecipients`). `invite`: the fixed invite mail, to addresses not yet invited. `launch`: free
+  text, to everyone subscribed. `update` (news): free text, **only to people who signed up after the
+  form's wording allowed it**. The form has promised «دعوة التجربة وإشعار الإطلاق فقط», so
+  `UPDATES_CONSENT_FROM` is `null` and `update` matches **nobody** (409 `updates-closed`) until it is
+  set to the day the reworded form deploys. Everyone who signed up before then gets invites and the
+  launch notice and nothing else.
+- **Recorded per address.** `site_signups` gains `invited_at`, `last_messaged_at`, `unsubscribed_at`
+  (migration `0019`, additive). Stamped by lower-cased email, so a duplicate signup moves together,
+  and only for addresses Resend accepted — a refused batch stays eligible. The per-row invite and
+  `POST /admin/invites` stamp `invited_at` too; the screen shows «تمت الدعوة · date» and
+  «ألغى الاشتراك» and filters on both.
+- **A 12-hour hold-back** on anyone already mailed (`RECENTLY_MESSAGED_MS`): `launch` and `update`
+  match everyone each time, so without it a retry after a half-failed send, or a double tap, would
+  mail the same people twice. The dry-run count says how many are held back.
+- **Unsubscribe.** Every broadcast carries a signed link (HMAC of the row id keyed on
+  `SESSION_SECRET`, so no new secret) in the footer and as `List-Unsubscribe` / one-click headers.
+  `GET /site/unsubscribe` only *asks* (a scanner that pre-fetches links would otherwise unsubscribe
+  everyone); the button, or a mail client's one-click, POSTs. Unsubscribing is by address, so
+  signing up again does not resubscribe, and the single-invite endpoint refuses an unsubscribed
+  address (409). The link's origin is `API_PUBLIC_URL`, default the Cloud Run URL.
+- **Test copy.** «أرسل نسخة تجريبية لي» mails the admin's own address and records nothing.
+- **Sent and joined, per person.** Each waitlist row shows «أُرسلت الدعوة · date» once the invite went
+  out and «انضم · date» once an account with that email exists (`JOINED_AT` in `admin.ts`: the earliest
+  `users.created_at` for the address, matched ignoring case; also a `joined_at` CSV column and an
+  «انضموا» filter). The invite mail skips people who already joined; the launch notice and news do
+  not. It is a match on the address typed into the site, so someone who registers with a different
+  email is not recognised as joined.
+
+**Verified.** `pnpm run typecheck`; api-server `pnpm build && pnpm test` (2347 pass), including new
+`siteMail.test.ts` (recipient rules, token forgery, body escaping) and `broadcast.test.ts` (batching,
+partial failure, headers) and the mount-order checks (`/admin/broadcasts` and `/admin/invites` 401
+without a token; `/site/unsubscribe` reachable without a session and 400 on a forged link). Run end
+to end locally against a scratch Postgres with Resend stubbed in-process: the screen's dry-run count,
+test copy, confirm dialog and send; a refused send stamped nothing; duplicates collapsed to one mail;
+the hold-back blocked a repeat; the unsubscribe GET changed nothing and the POST did; `update` stayed
+closed; the rendered Arabic body kept its paragraphs and linked its URL. The «joined» match was
+re-run on a fresh scratch database with registered accounts: a mixed-case signup matched its account,
+a contact row with no email matched nothing, the `joined` filter returned exactly those, and the
+invite audience dropped them.
+
+**Not verified.** Nothing was sent through real Resend — the stub answered, so Resend's *real*
+acceptance of the batch payload (`/emails/batch`, the `headers` field) and the unsubscribe link in a
+real inbox are untested; send the test copy to yourself first. Not checked on a phone or in Android's
+share/CSV paths. Production `RESEND_API_KEY` / `RESEND_FROM_EMAIL` / `SITE_INGEST_KEY` (on Vercel too)
+were not inspected.
+
+**Known limits.** The send is synchronous (100 per batch, ~0.6 s apart) — fine into the low
+thousands, then it wants a queue. Signups from before 2026-10-02 are still only in Resend / the
+`FEEDBACK_TO` inbox and are not in this table (no backfill yet), so they cannot be mailed from here.
+Unsubscribes are not pushed back to Resend contacts. The deploy order matters: merge this, then the
+Site_Iqra wording PR (it promises an unsubscribe link that only exists once this is live), then set
+`UPDATES_CONSENT_FROM`.
+
+## The two servers in the RLS diff test can no longer share a port, 2026-10-26
+
+**Why.** The `row-level security` check failed once on the PR for «A non-string email or code answers 400,
+not 500» (run 40385392925, three tests in `rlsDiff.test.ts`) and passed on a re-run of identical code.
+`boot()` drew each server's port on its own, `8500 + random(400)`, so one pair in 400 matched. The second
+server then failed to bind and the first answered the health check for both: every request meant for the
+enforcing server reached the other. The failure looked like an RLS regression (the enforcing server answered
+`200` where it must refuse, never took the held path, and its push log was empty while the other's held every
+push twice) and was not one.
+
+**Reproduced, not just inferred.** With `Math.random` pinned to 0 so both servers got port 8500, the real
+suite failed the same three tests with the same messages as in CI. The same pinned run passes after the fix.
+
+**Built.** `lib/db/src/testing/ports.ts`: `rlsDiffPort(mode)` gives the off server a port in 8500-8699 and the
+on server one in 8700-8899, still random inside the range. `rlsDiff.test.ts` uses it. `rlsDiffPort.test.ts`
+checks that no pair of draws gives the two modes the same port; it needs no database, so it also runs in the
+plain `Test db` step. Putting both modes in one range makes it fail (`draws 0 and 0 collided`).
+
+**Verified.** Pinned-collision run before and after (3 failures, then 4 of 4 pass); normal run 4 of 4; the full
+`lib/db` suite as the RLS job runs it (68 pass) and without a database (16 pass); `pnpm run typecheck`.
+
+**Not verified.** That this was the cause of the one CI failure: the run's own log cannot show which ports were
+drawn, so the evidence is the reproduction plus the matching symptoms. A port taken by an unrelated process on
+the runner is still possible; unless that process happens to answer `/api/healthz`, the suite then stops with
+«did not start» after 30 seconds instead of comparing a server with itself. `schema-push:` none.
+
+## A non-string email or code answers 400, not 500, 2026-10-26
+
+**Why.** Running the built API on a throwaway Postgres to check email sign-up with a code (register → verify →
+resend) showed `POST /auth/verify-email`, `/resend-verification` and `/forgot-password` answering **500** when
+`email` or `code` was a number, array or object. The app only ever sends strings, so a real sign-up never hit
+it; the cost was a 500 and an error-log line per malformed request. `/login` was fixed for the same thing
+earlier (its comment says so); these were its siblings.
+
+**Built.** `routes/auth.ts`: a `typeof … !== "string"` check in front of the existing truthiness check on
+`verify-email` (`email`, `code`), `resend-verification` (`email`), `forgot-password` (`email`),
+`reset-password` (`email`, `code`) and `change-unverified-email` (`email`, `password`, `newEmail`). The answer is
+the route's own existing 400 (`missing_fields`, or `invalid_email` on `forgot-password`); a string input takes
+the same path as before. One table-driven test in `mountOrder.test.ts` posts 12 malformed bodies and expects the
+400 and its code. That suite's database is unreachable, so a pass also shows the check runs before any query.
+
+**Verified.** All 12 bodies answered 500 on the old code and 400 with the expected code on the new (old and new
+`auth.ts` built and run against each other); `pnpm run typecheck`; api-server `pnpm build` and `pnpm test`
+(2608 pass); the register → verify → resend flow again on a local Postgres, with the code read from the dev log.
+
+**Not verified.** That production actually delivers the code email (the sender set in `RESEND_FROM_EMAIL`;
+Resend's shared `onboarding@resend.dev` reaches only the account owner). `reset-password`'s `password` and
+`confirmPassword` are still typed `string` and not checked for type; an array holding a strong password may get
+past `isStrongPassword`, and whether that 500s needs a database to see. Only `auth.ts` was audited for this
+pattern. `schema-push:` none.
+
+## Chat first screen: words that say what to ask, 2026-10-26
+
+**Why.** A review of the empty chat on app.iqrra.com/iqra (desktop) found its words doing less than they could:
+the pitch listed vague activities («التخطيط، اقتراح الأفكار») and closed on a stock «كيف أدعمك اليوم؟»; the
+composer placeholder was an instruction with no example; the working lines spoke about Iqrra in the third person
+(«يراجع إقرأ طلبك…», «يجري تجهيز المادة…») while every answer speaks as «أنا»; the failure line blamed «العملية»;
+and the lesson strip's «0/5» did not say five of what.
+
+**Built.**
+- `i18n.ts` (ar + en): `iqraAgentPitch` names what can be asked for (lesson plan, worksheet, short quiz, class
+  activity) and says it is prepared from the Jordanian curriculum — still no «الذكي»;
+  `iqraPlaceholder` carries an example («مثل: اختبار قصير عن هذا الدرس»; the first draft opened with «اكتب طلبك،»
+  and wrapped on a 390px phone, leaving «الدرس» alone on a second line); `iqraTyping`,
+  `iqraGeneratingLessonPlan`, `iqraGeneratingArtifact` are first person («أراجع طلبك…», «أجهّز خطة الدرس…»,
+  «أجهّز المادة…»); `iqraChatError` says what happened and what to do. The Arabic went through a native-copy review.
+- **A bug the placeholder exposed.** «اختبار قصير عن هذا الدرس» — the most natural way to say "the lesson on the
+  card" — was read by `topicFromQuery` as a lesson literally named «هذا الدرس»: the saved material was titled that
+  and the live path searched the curriculum for it. A request whose whole topic is a pointer at the picked lesson
+  («هذا الدرس», «للدرس الحالي», «درس اليوم», «نفس الدرس», "this lesson", "today's lesson") now names no topic, so
+  `isBareArtifactShortcut` is true and the picked lesson is used (`artifactTopic.ts`, pinned in
+  `artifactTopic.test.ts`). A topic that merely contains the words («الدرس الأول في الوحدة», "lesson planning")
+  is still a topic.
+- `CurrentLessonCard`: the count pill has an accessible name (`readyLabel`, the existing `homeReady`) and, on desktop
+  only (`readyInline`), prints «0 من 5 جاهزة» instead of «0/5».
+- `chatEmptyStateCopy.test.ts` holds the above: the pitch names the materials, the placeholder's example is run
+  through the same `isBareArtifactShortcut` the chat uses (so it cannot teach a phrasing the chat misreads), the
+  status lines are first person, the failure line gives a way forward.
+
+**Not done, on purpose.**
+- The chips keep their own verbs («حضّر خطة الدرس», «أنشئ ورقة عمل», «جهّز اختباراً…»): the same words are parsing
+  vocabulary in `askVocabulary` / `artifactTopic` and appear in help answers and tests, so unifying them is its own change.
+- **Found here, fixed in #1302:** in the screenshot that started this review the chat's strip and the sidebar's
+  «الدرس الحالي» named different lessons. By the code: the chat and Today apply `timetableWins`, the sidebar
+  (`_layout.tsx`) read the raw saved pick. #1302 («The sidebar card, the lesson bar and ⌘K name the lesson Today
+  shows») fixes exactly that and reproduced it with a timetable and a plan; this PR does not touch it.
+- Web composer: react-native-web renders a multiline input two rows tall, so the placeholder sits on the top row while
+  `+` and send sit at the bottom. Left alone; it needs a look in a browser, not a guess.
+
+**Verified.** `pnpm run typecheck` clean; `artifacts/mobile` `pnpm test` 7798 pass, 0 fail, 10 skipped. The real web
+build (throwaway Postgres, API with `AI_LIVE_MODE=false`, `build:web`) was opened as a fresh teacher at 1920x1080 in
+Arabic and English and at 390x844 in Arabic, and looked at: pitch, chips, placeholder and the «0 من 5 جاهزة» pill fit
+without clipping. Typing «اختبار قصير عن هذا الدرس» produced a material titled «اختبار قصير: تركيب الاقترانات» (the
+lesson on the strip), not «هذا الدرس».
+
+**Not verified.** The shortened placeholder was checked by character count against the wrapped line, not re-screenshotted.
+The new working lines («أراجع طلبك…») and the failure line were not seen on screen (too brief; no failure induced).
+Strings were not read by a second native speaker.
+
+## «اسأل إقرأ» is live on iqrra.com: the widget and the production check, 2026-10-26
+
+The question assistant announced in «A public «اسأل إقرأ» bot for iqrra.com — the API half» is now
+on the home page. The API half merged as PR #1201 (squash `e167abf`, deploy run 40188544551, success,
+2026-10-25 11:21-11:27 UTC); the widget merged as `Site_Iqra` PR #41 (squash `fd1ccc8`, 2026-10-26,
+Vercel). Plans: `docs/superpowers/plans/2026-10-25-site-ask-widget.md` (corrected by PR #1300 before
+it was run; the corrections are in it).
+
+**What a visitor gets.** A round launcher bottom-left of the home page (that is `inset-inline-end`
+on this RTL page) opens a panel with a greeting and three starter questions («ما هو إقرأ؟»,
+«ما الصفوف والمواد؟», «هل هو مجاني؟»), each answered from the fixed answers with no AI call. The
+widget is two plain files in the `Site_Iqra` repo, `ask.js` and `ask.css`, plus two lines in
+`index.html`: no build step, no dependency. It makes one call, `POST /api/site/ask`. The conversation
+lives in the page's memory only (the last four messages are sent along, and only after a successful
+answer); nothing is stored in the browser and the root carries `ph-no-capture`, so PostHog
+autocapture records no chip text. Every non-answer (a refusal, 429, 400, 5xx, a network error, an
+unreadable reply, or no reply within 30 s) shows one friendly message with a link to the page's
+suggestion form (`#feedback`); the visitor never sees a status code or a reason. All text is put in
+with `textContent`; the only links it can create are to `https://iqrra.com/...`,
+`https://www.iqrra.com/...` and, since `Site_Iqra` PR #42 (squash `87f9c56`, 2026-10-26),
+`https://app.iqrra.com/...` — a hardcoded list of exactly three origins, not a wildcard (a pure,
+tested `linkify`) — so the grades-and-subjects answer's `https://www.iqrra.com/manhaj` and the
+iPhone and app-needed answers' `https://app.iqrra.com` are clickable (checked live: the iPhone answer
+gives one link, new tab, `rel="noopener"`, the full stop outside it). Any other host stays plain text.
+
+**Privacy.** `privacy.html` has a new §6 «أسئلة مساعد الموقع» / "Site assistant questions" in both
+languages, and the OpenAI row, the Neon row, the where-stored list and the Retention section were
+updated to match. Its claims, each checked against the code: every question reaches our servers;
+fixed answers never reach an AI provider, but the history sent with a later, uncovered question
+(the last four messages) may include earlier questions and our replies; we do not save question or
+reply text in our database or logs; OpenAI's own retention follows its terms; **a per-IP counter
+(`site-ask-ip:<ip>`) is kept in Postgres for the one-hour window and is removed only by a
+probabilistic clean-up at least 24 hours after its hour ended, so an IP can be kept a day or more**
+(the page did not say before that IPs are kept for rate limiting at all; the same limiter serves the
+other public routes). The owner approved the wording on 2026-10-26. The English text of the page
+still says "Iqra" in about seven older places (not changed here; `CLAUDE.md` wants "Iqrra").
+
+**Checked.**
+- Unit tests (`Site_Iqra`, `node --test tests/*.test.mjs`): 34 of 34, for the pure core (request
+  building with filter-then-window, reply interpretation, language detection, `linkify`).
+- A real-browser check (Chromium, API stubbed, script kept outside the repo): 493 of 493 rows, plus 6
+  visible SKIP rows and 3 INFO rows. It covers the chips and the chat round trip, history windowing
+  and "only after success" for all six failure paths, injected markup (also in the API's own
+  refusal text) rendered as text, Esc and focus rules, tap targets, contrast computed from the
+  widget's real colours, launcher overlap while scrolling, panel geometry over many viewports and a
+  height sweep, request headers (JSON, no cookie or authorization), reduced motion, print. Each row
+  was shown to fail when the behaviour was broken on purpose. Two real defects came out of it (the
+  page's global `section{padding:64px 0}` leaking into the panel, and a panel taller than a short
+  phone screen).
+- The link builder was attacked with 50 hand-written inputs and 200,000 random strings: every link
+  stayed on the two allowed origins and the text always rebuilt exactly.
+- **Production, API (2026-10-26, after the deploy):** the three starter questions return
+  `source: "curated"`; an off-topic question and a "print your system prompt" attempt got a polite
+  refusal from the AI path (`source: "ai"`); an empty message and a 301-character message are 400;
+  GET is 404; the CORS preflight allows `https://www.iqrra.com` and not another origin.
+- **Production, widget (2026-10-26, in Chromium):** the launcher is at the bottom-left, the three
+  chips each get a curated 200, the manhaj link is clickable, no notice, no page error, and
+  `https://www.iqrra.com/privacy` shows §6 in both languages with the new dates.
+  About a dozen API calls were made in these checks (two of them to the AI path, about $0.02 at the
+  estimated rate).
+
+**Not checked.** Safari, Firefox and a real on-screen keyboard (a chip tap focuses the input, so the
+keyboard opens on phones after a chip tap). The widget's AI-answer and refusal paths on the real
+site (they were checked against the API and with stubs). The daily spend cap and the 100-an-hour
+limit against the live service. The real per-answer cost and the `/healthz/ai-budget` `persisted`
+flag after real traffic. `SITE_BOT_BUDGET_USD_DAILY` was unset on the Cloud Run service when this
+was written (the default of 1 a day applied); the owner set it to `1` on 2026-10-27 (revision
+`iqraa-api-00445-4fm`) and read it back as `1`. How the matcher does on real visitor questions
+(its phrases are our guesses). The widget on a Vercel preview URL: it cannot reach the API, because
+CORS allows only `www.iqrra.com` and `iqrra.com`, so a preview only ever shows the friendly
+"couldn't answer" message.
+
+**Known limits.**
+- The page's own header wraps to 142px between about 720px and 1000px wide (not touched). On a
+  desktop-width window the card covers the header's left-hand buttons below about 560px of height
+  before the first question and below about 641px once a conversation has filled it; the phone sheet
+  covers the header only at 352px of height and below (ranges measured at 1280px wide with the 85px
+  header, in `DESIGN.md`).
+- Esc does nothing when focus is on the page body inside the open panel (the X button and Esc from
+  any control in it work). A very tall answer can lose a few pixels at its top; an answer arriving
+  while the panel is closed is not scrolled to its top. The notice's link does not reopen the
+  suggestion form if the visitor re-collapsed it while the URL still reads `#feedback`.
+- Matcher limits (API): «مرحبا كم سعر شات جي بي تي» gets the "not a chatbot" answer; «شكرا للطلاب»
+  gets the students answer; "hi other" and "hi app" go to the AI.
+- The bot's spend counts toward the shared `AI_BUDGET_USD` (see the API-half entry); the failing-ledger
+  gate gap parked there is unchanged.
+- Rollback: delete the `<link href="/ask.css">` and `<script src="/ask.js">` lines from
+  `Site_Iqra`'s `index.html` (or revert the merge); the API is unaffected. To keep the API but stop
+  AI spend, set `SITE_BOT_BUDGET_USD_DAILY=0` (fixed answers keep working).
+
+## Thirty-third live pass: questions about the app itself, 2026-10-25
+
+**Why.** A 30-question pass on app.iqrra.com of the questions a teacher asks before using the app
+(is it the Ministry's curriculum, can private schools use it, who made it, when does the monthly limit renew,
+can students see the solutions, does it work on an iPhone) got 24 misses: the matcher knew screens, not the app.
+
+**Built.** Six answers and their rules in `appHelp.ts` / `i18n.ts` (ar + en), plus wordings on the existing
+`install-app` rule:
+
+- `howAboutCurriculum`, `howAboutWhoFor`, `howAboutMaker` — **the wording is the owner's, given in chat on
+  2026-10-25**: aligned with the Jordanian curriculum; for private *and* public schools and for teachers and
+  students; made by a Jordanian team. Nothing was added to it. In particular the curriculum answer does **not**
+  say the Ministry approved, accredited or endorsed the app, and a question that asks for approval
+  («معتمد من الوزارة», "is it approved") gets the same alignment answer. If the owner wants to say more, that
+  is a wording change in `i18n.ts`, not a matcher change.
+- `howAllowanceRenew` — verified in code, not from memory: the cap is per account (`AI_USER_BUDGET_USD`,
+  `AI_STUDENT_BUDGET_USD`), the period is the calendar month, and `GET /auth/me/ai-usage` reports `resetsAt` as the
+  first of next month (UTC). The refusal text is the real `aiQuotaSpent` string, and Settings → Account shows
+  the percentage and the renewal date (`howAiUsage`). It names no number: the limit is an environment variable.
+- `howStudentSolutions` — verified: a student sees answers and worked steps only when the exam is `closed`,
+  results are released, the paper's result is not provisional **and** the teacher turned on «اعرض الإجابات
+  والحلول للطلبة» (`studentReviewReady`, `setSolutionsShown` refuses an exam that is not closed).
+- `howTryNoAccount` — games open from a link without sign-in (`faqA12`), and a student hands in an exam from its
+  `/take/CODE` link without an account (the e2e smoke test does exactly that). The teacher tools need a free account.
+- Devices: no new answer. `howInstallApp` already says Iqrra is **not** in Google Play or the App Store and
+  runs in the browser at app.iqrra.com, so «does it work on an iPhone / Android / a computer» now reaches it.
+  `app.json` has an `ios` block, but that is not evidence of an iOS build, so nothing claims one.
+
+**Verified.** `appHelp.test.ts` pins 33 questions and 7 near-misses (a school, a curriculum or a limit named in a
+request for something else) and the owner's wording. The 813 historic questions in the live-pass corpus give
+the identical result before and after (0 changed). Full mobile suite and typecheck below.
+
+**Not verified.** Live: the demo account's monthly allowance is spent, so the model path cannot be exercised and
+no class exists on the demo teacher. These answers are app-only, so that does not block them, but they have not
+been seen in the running chat yet — re-run the 33 on app.iqrra.com after the deploy. Not answered (still go to the
+model): «is it free for private schools» (pricing plus schools), how many students a class may hold, whether AI
+output is checked.
+
+## The sidebar card, the lesson bar and ⌘K name the lesson Today shows — 2026-10-26
+
+On the desktop home a teacher saw the main card on one lesson («الأنظمة النجمية والكوكبات», from the
+timetable's plan) and the «الدرس الحالي» card in the sidebar on another («المفردات والقواعد», a lesson
+picked by hand days before). `GlobalLessonBar` (the sidebar card on desktop, the lesson bar on a phone)
+and the ⌘K palette were fed the saved pick alone, in `app/(tabs)/_layout.tsx`, while Today and the chat
+apply `timetableWins`. The layout now takes the same lesson: `useTodayLesson` and the chat publish the
+lesson the timetable puts on the card (`publishScheduledLesson`, `lessonContext.ts`, in memory, cleared
+when another teacher signs in) and the layout names `lessonShown(pick, scheduled, today)` — the
+timetable's lesson unless a lesson was picked today. No new requests: Today and the chat already load
+the timetable.
+
+Verified: `lessonContext.test.ts` (`lessonShown` and the publish/subscribe store; written first and
+failing); `pnpm run typecheck`; in the browser on a rebuilt bundle, with a timetable and a plan: the
+home card and the sidebar card both name «حل نظام مكوَّن من معادلة خطية ومعادلة تربيعية», and with a
+lesson picked today both name that pick. **Not verified:** the phone's lesson bar (same component,
+not looked at), Arabic/RTL, the full mobile suite locally (CI runs it). **Known limit:** the layout learns
+the timetable's lesson only once Today or the chat has loaded it, so a teacher who lands on another
+screen first (a deep link) sees the saved pick there until one of them opens; the chat card, Today and ⌘K
+do not wait on each other beyond that.
+
+## CI listens for the merge queue, 2026-10-25
+
+**Why.** `main` requires an up-to-date branch and a green `typecheck + tests`, and takes a merge about every
+ten minutes while that job takes about nine. On 2026-10-25 one PR lost that race four times running: every
+head was green, and each merge was refused (405, «Required status check "typecheck + tests" is expected»)
+because another PR had landed first. A merge queue removes the race: GitHub tests each entry on top of the
+ones ahead of it and merges it, with no hand-run «update branch».
+
+**Built.** `merge_group:` added to the triggers of `ci.yml`, `e2e.yml` and `destructive-migration-ack.yml`.
+Without it a queue entry never gets the four `ci.yml` checks or the smoke test, and waits forever on checks
+that never report. The destructive-migration job reads the PR body, which a queue entry does not have, so it
+is skipped there (a skipped required check counts as passing; the body was already checked on the PR) and its
+concurrency group falls back to the ref, so two entries never cancel each other.
+
+**Not done, and not doable from a PR.** The queue itself is a repository setting: *Settings → Rules →
+Rulesets* (or branch protection for `main`) → «Require merge queue». Merge this PR first, then turn it on;
+the other order leaves every entry stuck. `merge_group` runs cannot be exercised before the queue exists, so
+this is **unverified in practice**: the first queued PR is the test. Check that every check the ruleset
+requires reports on it. If one does not, the queue entry times out and the PR drops out; turning the queue off again
+restores the old behaviour, and reverting this PR changes nothing for a repository with the queue off.
+`deploy.yml` is untouched: the queue merges into `main`, which is still a push to `main`.
+
+## Timetable: a period in an archived class is a free period — 2026-10-25
+
+A teacher who had saved a timetable and a plan (with dates) still saw «الحصة القادمة · الاثنين 09:00»
+with no class name on Today, and «لا توجد خطة زمنية لهذه الشعبة» with no name either, whatever plan
+they added. Reproduced locally: the timetable's periods pointed at a class that had since been
+archived, and a plan existed on a different, live class. Archiving a class (`DELETE /classes/:id`,
+which sets `archived_at`) does not touch `schedule_slots`, so `GET /schedule` kept returning the
+archived class; the weekly grid drew those cells as empty (it cannot name the class), while Today
+took them for real periods of a class with no name and no plan, and a plan on any live class never
+matches. `GET /schedule` now returns `classGroupId: null` for a period whose class is archived
+(`routes/schedule.ts`; a left join on `class_groups`). The stored row is not edited and its note
+stays. Every screen reads the timetable from that one call, so Today falls back to «أضف جدولك
+الأسبوعي» and agrees with the grid.
+
+Verified: `scheduleArchivedClass.db.test.ts` (the seed's period on an archived class returns no class,
+live and free periods are unchanged, the stored row is untouched, another teacher is unaffected);
+it failed before the change. API `pnpm test` 2607 pass; `pnpm run typecheck`; in the browser, the
+reproduced account went from «Next period · Monday 09:00» + «This class has no pacing plan» to «Add
+your weekly timetable» + «Add timetable». **Not verified:** that this is the reporting teacher's
+account (their data cannot be read from here; the symptoms match, the cause is inferred), the full
+mobile suite (nothing in the app changed), Arabic/RTL on a device. **Not changed:** archiving a class
+still leaves its periods stored; nothing tells the teacher that a class they archived was in their
+timetable. A period whose class list fails to load still shows without a class name.
+
+## Teaching plan: the lesson date boxes follow «توزيع تلقائي» — 2026-10-25
+
+A teacher pressed «توزيع تلقائي» in a teaching plan and every lesson's date box stayed empty, so the
+plan looked unscheduled and the home card kept asking for it. Reproduced in the browser (API,
+timetable and a Grade 10 plan on a local database): the button did work — it set 36 dates (the
+rows' borders turned green) and «حفظ» stored all 36, after which Today showed the Monday period's
+lesson — but each `LessonDateRow` keeps its own typed text, set once from the date when the row
+first rendered, so dates arriving from outside were never shown. A teacher who sees empty boxes
+presses «إلغاء», and nothing is saved. The row now takes the date again whenever the date changes
+(`useEffect` on `date`, `app/teaching-plans/index.tsx`); a half-typed date does not propagate, so
+typing is not overwritten.
+
+Verified in the browser on a rebuilt bundle: after «توزيع تلقائي» the boxes read 2026-10-25,
+2026-10-26, 2026-11-01…; a typed date, a half-deleted one and a retyped one behave; Save stores 36
+entries. `pnpm run typecheck`. **Not verified:** Arabic/RTL and a phone, the full mobile suite
+locally (CI runs it), and that this is the reporting teacher's exact case (a teacher who did press
+«حفظ» would not have hit it). **Not tested:** no test pins the row — it needs React Native, which
+the bare `node --test` runner cannot load. **Not changed:** «توزيع تلقائي» still does nothing, silently,
+when no school day is selected or the start date is invalid; the button is dimmed but says nothing.
+
+
+## Grade 8 semester 1 word lists in the English corner, 2026-10-25
+
+Grades 6–8 had a tab and a «word games coming» notice (PR #1268) but no words. Grade 8's
+two books are *Jordan High Note*, the series Grade 9 uses, with the same Word List at the back,
+so Grade 8 follows the Grade 9 pipeline. **Semester 1 is built; semester 2 is not.** Grades 6
+and 7 are untouched (*Jordan Team Together*, Pearson third-party text, whose vocabulary the
+catalog leaves empty on purpose — see `g6EnglishSem1.ts`).
+
+- **How the text got here.** The Ministry site is unreachable from the build container, so the
+  owner downloaded both PDFs, ran `extract-text` on their own machine and committed
+  `data/extracted/g8-english-s1-student-book.json` (80 pages, 143,910 characters). The PDFs are
+  gitignored and stay on that machine; `LOCAL_FILES` in `scripts/localSources.ts` names them
+  `g8-english-s{1,2}-student-book.pdf` (PR #1283).
+- **Registered in `g10_sources.json`** as `third-party`, like Grade 9 (Pearson/York Press ©, so
+  not quotable); `extraction.test.ts` requires a manifest row for every extracted file.
+- **A parsing bug found on the way, and fixed.** The Word List reader took a `WL<unit>.<lesson>`
+  marker only at the start of a line. In this book a wrapped three-line heading ends in the
+  marker (`GRAMMAR <tab>WL1.1`), so the first run lost lesson 1 of every unit and filed the next
+  unit's words under the previous marker — the Writing lessons held 26 words each. It now also
+  takes a marker that ends a line with no `/` in it. The Grade 9 and 10 rows are byte-identical
+  to before (compared row by row). `englishHub.test.ts` pins it: lesson 1 of every unit has
+  ≥ 10 words, a Writing lesson ≤ 10; with the fix removed it fails.
+- **390 words in 35 lessons; 27 lessons are offered.** A lesson needs `MIN_HUB_WORDS` (4)
+  words, and 8 short Speaking / Writing lessons have 2–3. Slash entries (`before/after school`)
+  are dropped by the hub's own `isDrillableWord`, as for Grades 9–10. Two words are lost to the
+  parser and not fixed here: `shelf (pl. shelves)` and `shower` in lesson 2.2 (a wrapped IPA row).
+  The extracted list was read in full and the first three Word List pages (file pp. 64–66) were
+  compared with the raw text; pp. 67, 68 and 74 were not compared line by line.
+- **338 new Arabic glosses, drafted by Claude; no teacher has reviewed them** (same status as
+  Grades 5, 9 and 10). One sense each, chosen against the book's own sentence, no two words in a
+  lesson alike. Judgement calls worth a teacher's eye: «ice cream» آيس كريم and «tomato» طماطم
+  (Jordanian «بندورة»), «Drama» التمثيل المسرحي, «assembly» التجمع المدرسي, «cooker» موقد الطهي,
+  «can» / «tin» علبة مشروبات / علبة معلبات, «hall» صالة المدخل, «slim» رشيق against «thin» نحيف.
+  **`suit` and `light` already had a gloss from Grades 9–10 with the other sense** (the noun,
+  «not heavy»), and a printed word has one gloss, so both senses are now in it
+  («بدلة، يليق بـ», «خفيف، فاتح»); `englishHub.test.ts` pins both halves.
+- **The Grade 5, 9 and 10 teacher forms were regenerated** (`grammar-sheet`): only each unit's
+  «words outside the vocabulary lists» note changed, because Grade 8 teaches a few words
+  (`cook`, `tall`, `closed`, `different`…) that were outside the lists. No question text moved
+  and no unit has a sign-off, so none is invalidated.
+- **`ENGLISH_HUB_GRADES` is `[1, 2, 3, 4, 5, 8, 9, 10]`.** The Grade 8 tab, the browse banner and
+  the library read it; the «Semester 2 word games are coming» note on the Grade 8 tab is
+  data-driven and shows because no Semester 2 lesson exists. A Grade 8 lesson offers the six word
+  activities (no «Match the picture»: none of these words has a picture set).
+- **Checked:** `pnpm run typecheck` clean; mobile suite 0 failures; `lib/curriculum` suite all
+  green except `R2 helpers are inert, not broken, when unconfigured`, which fails on `main` too;
+  the CI brand grep. In the web build (Playwright, Chromium): the Grade 8 tab in English, light,
+  and in Arabic, dark, on a phone; a Grade 8 lesson in Arabic.
+- **Not done: recordings.** 348 distinct Grade 8 words; **107 have an MP3 and 241 do not**
+  (HEAD request on 2026-10-25). Until `pnpm --filter @workspace/curriculum run english-audio` is
+  run with the OpenAI and R2 keys, web speaks the word in the browser's voice and native is
+  silent, which makes «استمع واختر» unplayable on a phone. Run it before the merge deploys, or
+  accept that for now.
+- **Not done: semester 2.** `extract-text` rejects `g8-english-s2-student-book` (Arabic in
+  reversed presentation-form glyphs; the OCR fallback was rejected too: 10,916 Arabic words, fewer
+  than 100 recognisable). The book is English, so its Word List may be perfectly readable; the
+  way forward is an opt-in that skips the Arabic gates for an English book, or pasting the Word
+  List text. Also not done: Grades 6 and 7, Grade 10 semester 2, a real phone.
+
+## Chat app-help, thirty-first live pass: greetings, «الطريقة لـ», «أقدر / بقدر», «أرى / أشوف» — 2026-10-25
+
+Thirty known questions asked in other written styles (app-only: the demo account's allowance is
+still spent). 19 got a correct in-app answer — missing hamzas, plurals, «؟؟؟», Egyptian and Gulf
+phrasing, English and «اريد …» all work. The rest:
+
+- **A greeting or run-up in front of the question gave a wrong answer.** «لو سمحت كيف أضيف
+  واجب», «ممكن تشرح كيف أرسل واجب» and «عندي مشكلة كيف أغلق الامتحان» each got «أيّ مادة تقصد؟»
+  (the generator), «مرحبا كيف أحذف شعبة» only a place card. `foldColloquial` now drops the run-up
+  (a fixed list), and only when a question word follows.
+- **«شو / وش / ما هي (ال)طريقة (ل)…»** (`وش طريقة تغيير كلمة المرور`, `شو الطريقة لحفظ الشرائح`)
+  is read as «طريقة …», a form the rules already know; the «ل / ب» is dropped only before a fixed
+  list of verbal nouns, so «طريقة لعبة» keeps its «ل».
+- **«كيف اقدر / بقدر X» and «هل بقدر X»** are read as «كيف X».
+- **«كيف أرى / أشوف جدول الحصص»** was not an app question at all, formal Arabic included: the
+  how-pattern had «أفتح» and «أجد» but no view verb. «أرى» and «أشوف» are added; a place or an
+  app noun must still follow, so «كيف أرى المعادلة» stays teaching.
+- **«وين لاقي سجل الطالب»** reaches the student record.
+- **Three English wordings** from a 30-question English pass (24 answered in-app, 3 cards, 3 missed):
+  «Is there a way to download the textbook?» (`howBookDownload`), «how do i add a due date to
+  homework» (`howAddHomework`) and «how do i post results to students» (`howReleaseResults`).
+  English questions asked in an Arabic-language app are answered in Arabic: the answer follows the
+  app's language, not the question's.
+- **Checked on the running app:** the Settings «الإصدار» row (`1.5.0 · embedded` on the web), the
+  Profile rows, the timetable's «إعداد الحصص» icon, Messages' «رسالة جديدة / رسالة جماعية»,
+  Evaluations' «تقييم جديد» and the Calendar's «عرض امتحانات المدرسة». Settings has no
+  «التنبيهات» on the web (a phone section). Not checked: the class page — the demo teacher has no
+  class.
+## «ابدأ الحصة الآن» says the allowance is spent, as a note — 2026-10-24
+
+A teacher whose monthly AI allowance (`AI_USER_BUDGET_USD`, `1` in production) was used up pressed
+«ابدأ الحصة الآن» and got the red «تعذّر تجهيز العرض. اضغط … للمحاولة مرة أخرى.», with the amber
+«تعذّر الاتصال · محتوى تجريبي» badge above it. Cause: `buildClassDeck` asks `/generate/classroom-activity`
+for the quick-check, and `generateWithProvenance` re-throws a cap error on purpose (it will not hide a spent
+allowance behind made-up content); the two `catch {}` blocks (`useTodayLesson.ts`, `app/(tabs)/iqra.tsx`) threw
+the real error away and always printed the generic retry text. «Try again» cannot help in that state.
+
+**Now.** `startClassFailure(e)` (`services/ai/aiProvenance.ts`) maps `user_quota_exceeded` / `budget_exceeded` to
+`aiQuotaSpent` and `live_mode_off` to `aiUnavailable`, both with `note: true`; every other failure
+(including `generation_in_flight`, where retrying is right) keeps `startClassFailed`. A note is drawn as a
+neutral `information-circle` on `colors.muted` in `PhoneToday`, the desktop workspace and `CurrentLessonCard`
+(was red / amber alert), and the chat card skips the error haptic. Tests: `aiProvenance.test.ts`.
+
+**Verified.** Mobile suite 7221 pass / 0 fail, `pnpm run typecheck` clean. Before the change I ran the offline
+path for the failing lesson (`kbl-chem-s1-nccd-u1_lab`, Grade 10 chemistry lab, no objectives): it builds a
+deck, so the lesson itself is not the problem. **Not verified:** the screens in a browser or on a device, and the
+live cap response itself (confirmed by the teacher: their allowance was spent, not read from the server).
+
+**Known limit.** Start class still needs the AI call, so a teacher with no allowance cannot start a *new* deck;
+a saved «عرض الحصة» still opens. Falling back to the offline book-based quick-check on a cap was not done: it
+is a product decision (the same rule that keeps a worksheet from being faked), left open.
+
+## Chat app-help, thirtieth live pass: colloquial «ب» verbs, five short answers, nine more wordings — 2026-10-25
+
+Two passes. The allowance was still spent, so both were app-only and a question the matcher missed
+came back as «انتهت حصة التوليد الجديد لهذا الشهر».
+
+**Colloquial Arabic (30 questions in the Jordanian dialect) got a correct in-app answer to 8, and
+a wrong one to 4**: «كيف بسكر الامتحان؟» was answered with how to *build* an exam, «كيف بحفظ
+الشرائح؟» opened the slides tool on a lesson nobody named and «شلون بضيف سؤال للامتحان؟» asked
+which English lesson was meant. Every rule is written for the written «أضيف / أسكّر / أقترح»; speech
+puts «ب» in front of the present tense. `foldColloquial` (in `matchForm` and `plain`) drops that «ب»
+from a fixed list of verb stems, and only straight after a question word, so «كيف بنى» and «كيف
+بعد» keep theirs; it also reads «كيف بدي X» as «كيف X», moves a trailing «شلون» to the front
+(«بدي أطبع ورقة العمل شلون») and «شو يعني X» as «ما هو X». Run again, 17 of the 22 that failed
+resolve to the right answer. «سكّر» joins the words for closing an exam, «أصحح الامتحان» gets
+`howOpenGrading`, and «وين زر حذف الواجب / الامتحان» get their answers.
+
+**Formal wording (30 questions, 13 missed):** five short answers, each checked in code —
+`howMessageDelete` (no per-message delete; a conversation is deleted from ⋮, for you only),
+`howTimetableWeek` (the timetable is one weekly pattern, there is no "next week"),
+`howLiveGameEnd` (back → «إنهاء اللعبة؟» → «إنهاء»), `howClassCount` (the count is on the class
+card) and `howClassOrder` (no sorting of classes) — and wordings for answers that existed:
+muting a conversation (`howMuteChat`), searching Messages (`howSearchMessages`), a picture in
+Messages (`howSendFileMessage`), resending the verification code, a student's register number, a
+private note on a student, late homework (a count of who ticked), and opening a subject's book.
+(I first wrote new answers for the first three, having looked for them by key name only; a search
+of the answers' text found them. Check the text, not the key.)
+
+**Left alone:** «شو يعني تحدي الصف» (the tool card is the answer), «شلون أرسل رسالة لأهل الطالب»
+(stays with the model by design). The teaching-plan export is already answered by `howTeachingPlan`.
+## The screenshot script can shoot the English UI — 2026-10-25
+
+- **What changed.** `e2e/screens.mjs` shot the Arabic UI only (`@iqra_language`
+  was hard-coded to `ar`). `UI_LANG=en` now shoots English, with locale
+  `en-US`, and its file names end in `-en`. `e2e/README-screens.md` says so.
+  Direction is set per component, not by the document, so a row layout needs
+  checking in both languages.
+- **Why.** It was written to check «The desktop Tools grid reads right to left
+  in Arabic» in both languages. That fix landed separately, so only the script
+  change is left here.
+- **Verified.** On this branch's web build, `ONLY=tools` ran with and without
+  `UI_LANG=en`. Desktop English starts at "Lesson slides" top left; Arabic
+  starts at «شرائح الدرس» top right. **Not checked:** routes other than `tools`
+  in English.
+
+## Grade 1–2 grammar: «boots» is no longer offered against «a» — 2026-10-22
+
+- **What was wrong.** `unitSentences` built the wrong option of a `slot` Choose
+  by realising the sentence with the other word and cutting it with the right
+  word's span. When the right word takes no article and the other does, that
+  span is one token and caught only the article.
+- **Fix.** The other word is measured with its own span
+  (`realise(...).spans[c.slot]`), for every grade.
+- **The printed forms changed in 4 rows.** Grade 1 «I'm wearing boots.» («a» →
+  «a dress») and «socks» («a» → «a T-shirt»); Grade 2 «boots» («a» → «a coat»)
+  and «shoes» («a» → «a T-shirt»), in `docs/english-grammar-g{1,2}-review.html`
+  and `-sheet.md`. Nothing else in them moved. Regenerated with
+  `pnpm --filter @workspace/curriculum run grammar-sheet`.
+- **Verified.** A new test (`englishGrammar.test.ts`) fails on the old code and
+  passes on the new: no Grade 1–2 `slot` Choose has a bare article as its wrong
+  option. The curriculum suite passes except three files that need packages not
+  installed in this environment (`extraction`, `quranCorner`, `r2`), which fail
+  identically without this change.
+- **Not verified.** No one has re-read the four changed rows against a signed
+  form; anyone mid-review of Grade 1 or 2 should be told.
+
+## A public «اسأل إقرأ» bot for iqrra.com — the API half, 2026-10-23
+
+`POST /api/site/ask` answers a visitor's question about Iqraa from the site's own `llms.txt` (fetched from
+`https://www.iqrra.com/llms.txt`, cached an hour, with a built-in fallback that states no numbers).
+Public with no key, so the limits are the defence: 20 requests an hour per IP and 100 an hour in
+total, a 300-character question and four earlier turns. It has its own spend ceiling,
+`SITE_BOT_BUDGET_USD_DAILY` (default 1, 0 = off), summed from `ai_generations` rows of kind
+`site-ask` over 24 hours and cached for a minute; an unreadable total refuses. A ledger whose
+inserts are failing (`getPersistenceFailure()`) also closes the gate, but only intermittently: that
+flag is cleared by the next successful sum read, which this route triggers about once a minute, so
+the gate closes and reopens instead of staying shut. A dedicated insert-failure latch in
+`aiUsageLog.ts` would fix that; it changes the teachers' budget code and is left as a follow-up. Each answer's estimated cost is also
+added to the gate's cached total in-process, so a burst closes this instance's gate inside the cache
+window instead of after it. Estimates, from gpt-5.4-mini rates and to be replaced by the measured
+`cost_usd` after the first live answers: about $0.01 an answer today, so a deliberate burst is
+bounded by the 100 an hour limit and by that increment, and the bot's spend counts toward the shared
+`AI_BUDGET_USD` (production: 50). **It bounds the
+bot's spend but does not separate it from the teachers' budget:** `recordUsage` adds every answer to
+the shared month-to-date total that `AI_BUDGET_USD` caps (production: 50), so at the default the bot
+can use up to about $30 of a month. Size `AI_BUDGET_USD` above teachers' use plus that, or lower the
+cap; excluding the bot from the shared total would mean changing the teachers' budget code and was
+not done. Every refusal (live mode off, either budget, a model
+error, an empty reply) is a 200 with `answered: false`, a reason, and a fixed Arabic and English
+message pointing to info@iqrra.com — never a mock answer. The reply ceiling is 800
+`max_completion_tokens`, not 300, because the production chat model counts hidden reasoning against
+it. No message text is logged or stored. No migration and no `deploy.yml` change. Spec:
+`docs/superpowers/specs/2026-10-23-site-ask-bot-design.md`; plan:
+`docs/superpowers/plans/2026-10-23-site-ask-bot-api.md`.
+Checked: unit tests for the parser, the prompt rules, the facts loader (success, cache, retry
+window, error, empty, oversize, single flight), the spend gate, and the decision order (the model
+and the facts fetch never run once a cap has tripped); the built bundle answers `/site/ask`
+without a token, POST only, with CORS for `www.iqrra.com` and not for other origins.
+
+**Fixed answers first, AI second (2026-10-25).** A reviewed list of 17 fixed answers (Arabic and
+English: greeting, thanks, what it is, price, curriculum, coverage, what it makes, maths checking,
+app needed, Android, iPhone, students, privacy, contact, not a general chatbot, teacher review,
+other countries) is matched without AI before anything else (`lib/siteAskMatch.ts`,
+`lib/siteAskAnswers.ts`). A hit costs nothing, makes no model call and works with live mode off or
+`SITE_BOT_BUDGET_USD_DAILY=0`; anything the list does not cover goes through the AI path as
+described above. Matching is Dice overlap on token sets (answer at 0.5 or more, ahead of the
+runner-up by 0.15 or more) plus an unknown-word veto: a question containing a word that no answer's
+phrasings know falls through to the AI. The veto exists because review found short same-frame
+questions getting a confident wrong answer ("how much does chatgpt cost" returned the price answer).
+The success response now carries `source: "curated" | "ai"`. The answers are a copy of the site's
+FAQ wording and can drift from it; cross-topic questions ("is the Android app free") go to the
+nearest status answer. The owner approved the wording of the 17 answers in chat on 2026-10-25. Greeting and thanks words are set aside, wherever they sit, when a real question comes with them (anything beside the salutation counts, so «hi, what is Iqraa» asks what it is); a thank-you that names a thing («شكرا على التطبيق», "thanks for the app") is answered with thanks or by the AI, never with that thing's answer. The English copy of the answers and the prompts say "Iqrra", the Latin product name.
+
+**Not checked:** the real spend query against Postgres (it is a one-statement sum, exercised only
+in production); the real per-answer cost and the `/healthz/ai-budget` `persisted` flag after the
+first answers; answer quality on real visitor questions, including off-topic and injection tries
+(to be run against the deployed route before the widget ships, and recorded here); the widget,
+which is a separate change in the `Site_Iqra` repo and has not been written; how the matcher behaves on real visitor questions (only the questions in the tests have been tried).
+**Update 2026-10-26:** the route was checked in production, the widget was written and is live; see
+«اسأل إقرأ is live on iqrra.com: the widget and the production check» above. What is still not checked
+is listed there.
+
+## Grade 8 English gets its book pages; Grades 1-7 do not, 2026-10-25
+
+The 16 English student books for Grades 1-8 (about 1.9 GB) were downloaded from the catalog's NCCD
+links into a scratch folder outside the repo.
+
+- **Grade 8 (2 books):** same «High Note» layout as Grades 9-10, so `map_english_pages.py` took
+  them as they are: 70 lessons (35 × 2), 142 pages, every opener checked on a contact sheet of
+  16. `book-page-links.json` lists 2,022 lessons / 12,889 pages. Pages are in R2.
+- **Grades 1-7 (14 books) are not mapped.** They are the «Team Together» series, whose pages carry
+  a small «Lesson N» tab, not a «LESSON nA» header, and the tabs do not line up with the
+  curriculum's lessons: Grade 7 has 4 units of 9 lessons in the catalog, but the book numbers its
+  lessons up to 11 and skips some tabs (1, 2, 3, 5, 6, 8, 9, 10, 11), so a position-based match
+  would be a guess. Grades 1-5 are coarser still: the catalog has two lessons per unit
+  («Vocabulary & Grammar», «Listening & Speaking») against about nine book pages. A
+  unit-level page set was considered and not done, because a lesson's pages would not be that
+  lesson's. The PDFs are still in the scratch folder if someone wants to hand-map them.
+
+## Today shows the next period as soon as a timetable is saved — 2026-10-25
+
+After «Timetable: a period saves with a labelled button…» a teacher saved their timetable and
+reported that nothing showed on Today. It was the limit that entry named: the next-period line
+(«الحصة القادمة · العاشر ب · 10:15») appeared only when the class had a lesson in a pacing plan, so
+a class with no plan changed only the banner («… ليس لها خطة وتيرة») and the card looked
+untouched. `showsPeriodLine` (`services/lessonContext.ts`) now also shows the line when the next
+period's class has no lesson yet; it stays hidden when a lesson picked today replaced the period's
+lesson, which would read as the period's own. The phone Today and the desktop workspace both read
+it through `useTodayLesson`.
+
+Verified: the rule is pinned in `lessonContext.test.ts`; `pnpm run typecheck`; the whole flow in
+the browser on a rebuilt bundle (period → class → Today shows «In class now · 10B · 08:00» above the
+unchanged lesson, banner asks for a plan). **Not verified:** Arabic/RTL on a device, the desktop
+layout (same hook, not looked at), and that this is what the reporting teacher meant by "nothing
+shows". **Known limit:** beside a lesson that is not that class's (no plan), the line reads as the
+next period, not as the lesson's period; the banner under it is what says the lesson is not linked.
+The chat screen keeps its own rule and still shows the line only for a timetable lesson.
+
+## Chat app-help, twenty-ninth live pass: three short answers and wordings for fourteen existing ones — 2026-10-25
+
+The demo account's monthly generation allowance was still spent, so every question the matcher did
+not catch came back as «انتهت حصة التوليد الجديد لهذا الشهر» — which made the pass a clean test of
+the matcher (30 app-only questions, no curriculum controls, nothing about the model's answers).
+Twelve fell through to the model, six got only a place card and two got «لم أعرف أي قسم تقصد».
+
+Wordings added to existing answers: the slide background colour (`howSlideTheme`), deleting a slide
+(`howSlideEdit`), «احذف الشعبة نهائيًا» (`howArchiveClass`: there is only archiving), the class's
+subject (`howRenameClass`), sharing the app with a colleague (`howInviteTeacher`), using the app
+without internet (`howOffline`), a class's average mark on an exam (`howClassAverage`), one exam for
+several classes (`howCopyExam`: each exam has one class), closing an exam automatically
+(`howExamTime`: no timed close), a partial mark (`howOpenGrading`: the mark box takes any value
+between 0 and the question's marks) and restoring a deleted account (`howDeleteAccount`: permanent).
+
+Three new short answers, each checked in code: `howRenameFile` (the ⋯ menu in `app/workspace/index.tsx`
+has open, edit, class, duplicate and delete — no rename), `howDeleteExam` (the «احذف الاختبار»
+button in `app/evaluations/[id]/index.tsx` shows for a draft or a closed exam only, and archives
+it) and `howAppVersion` (the «الإصدار» row under «حول إقرأ» in Settings). Pinned in `appHelp.test.ts`
+with near-misses that stay with the model.
+
+**Left alone:** a daily lesson reminder (the only scheduled notification is the English corner's),
+rating the app, showing the lesson on a TV, one student's answers on an exam (the answers screen
+is built for typing in a paper's answers, so I did not claim it shows an online sitting) and
+«أرى الشعب التي أدرّسها» (the place card is enough).
+
+
+## Timetable: a period saves with a labelled button, and an empty slot cannot be saved — 2026-10-24
+
+A teacher on app.iqrra.com added their timetable and Today kept saying «أضف جدولك الأسبوعي».
+Reproduced in the real app (throwaway Postgres, built API and web bundle, Chromium at phone
+width): the API and `timetableSetupStep` are right — once a slot holds a class the prompt turns
+into «… ليس لها خطة وتيرة» (plan step), so a prompt still on the timetable step means no slot
+had a class. Two things on «جدول الحصص» led there. (1) The period editor's only labelled
+button was «إلغاء»; a period saved only on its bare ✓ icon, so typing a time and pressing the
+labelled button threw it away, and with no period no slot can be saved. (2) The slot editor opens
+with «بدون شعبة» highlighted and a live «احفظ»: saving without tapping a class stored an empty
+slot, which the prompt ignores. Now: the new-period row's button reads «إضافة حصة»
+(`scheduleAddPeriod`, which existed unused), the modal's closing button is «تم»
+(`schedulePeriodsDone`), and «احفظ» in the slot editor is disabled until class, subject or note
+changed.
+
+Verified: `pnpm run typecheck`; mobile `pnpm test` (7,186 pass, 10 skipped); the whole flow
+re-run in the browser on the rebuilt bundle (add period → assign class → Today shows the plan
+prompt). **Not verified:** that this is what the reporting teacher did (they were asked and did
+not answer), Arabic/RTL on a device, and no test pins these two screens (they import
+`react-native`, which the bare `node --test` runner cannot load). Not changed: after a
+correct setup Today's lesson card still shows no «الحصة القادمة» line until the class has a
+pacing plan — the prompt now says so, but the card itself gives no sign the timetable saved.
+
+## A revision unit with no picture shows its outcomes and terms side by side, 2026-10-25
+
+A whole-book revision deck for Grade 1 maths (66 lessons, 12 units, no book pictures) was 36
+slides, three per unit: a title, «نتاجات الوحدة» as a few short lines on a mostly empty slide,
+then «المفاهيم والمصطلحات» as cards. Each unit looked the same and two of its three slides were
+about a third full.
+
+- A unit with no figure to sit beside (`first` is empty), at most four outcomes and at most six
+  terms now gets ONE slide: the outcomes left, the terms right (the existing `compare` layout,
+  so the presenter, the PDF and the PowerPoint all already draw it). The slide is only used if
+  `resolveSlideLayout` accepts it; otherwise the unit keeps its two slides.
+- A unit with a book figure keeps its two slides (the figure sits beside the outcomes), and so
+  does a unit with more than four outcomes.
+- Grade 1 maths: 36 slides -> 27. `revisionDeck.test.ts` pins both shapes.
+- **Not verified:** how the side-by-side slide looks on a screen and in the exports (the layout is
+  an existing one, the content here is new), and whether teachers prefer it.
+
+## English audio check: the first real run, and three kinds of false alarm removed — 2026-10-25
+
+The speech check had never called the real API. On 2026-10-25, once `gpt-4o-transcribe` was allowed on the OpenAI project
+(its **Allowed models** list on the project's Limits page had only the chat and text-to-speech models, which is why every
+earlier attempt stopped with a 403 `model_not_found`), it ran for the first time: a 50-clip trial, then all **1,248 word
+recordings** — 1,207 `match`, 41 `mismatch`, none silent, missing or errored; a few cents; the key never printed. The request
+and response shape worked as written. **Nothing was re-voiced and no recording changed.** The sentences (3,383) are not
+voiced yet and were not checked.
+
+This change only makes the comparison fairer; it touches no recording. 17 of the 41 flags were the checker's, not the
+clip's, and `compareSpoken` now treats them as a `match`:
+
+- **Spacing in a short item** (up to three words): `yoyo` / «Yo-yo», `roller skate` / «Rollerskate», `photo blog`, `crime
+  fighter`, `ear plugs`, `power bank`, `a stomach ache`. The letters are compared with the spaces ignored. A sentence is not
+  given this: «I like ice cream» / «I like I scream» stays a `mismatch`. Different letters are never joined (`go swimming` /
+  «goat swimming», `a cold` / «are cold»). The old rule «a single word heard as two words is a mismatch» was kept only for
+  different letters («firefighter» / «fire fighters»).
+- **`'s` heard as a plural**: `butcher's` / «Butchers» and the other four shop names. They sound the same.
+- **Four pairs added to the homophone table**: `pea` / «P», `hanger` / «Hangar», `sew` / «So», `high` / «Hi»; and «C» joins
+  `see` / `sea` (`see double` / «C double»). A recogniser writes either member; the check cannot tell them apart.
+
+Re-grading the saved transcripts with the new rules (no API calls): 1,224 `match`, 24 `mismatch`, no clip that matched
+before stopped matching. The 24 are still to be **listened to by a person**: first sounds that may be wrong or may be an
+over-trimmed onset (`ball` / «Bald», `shell` / «Show», `boat` / «Vote», `fancy` / «Sansie», `cheap` / «Sheep», `fit` /
+«Sit», `vain` / «Zane», `chill` / «Shill», `ring` / «Green», `burned` / «Don't», `fix the gate` / «Six, the gate», `go
+swimming` / «Goat swimming»), accent or weak-form cases (`been` / «bin», `tummy` / «Tommy», `aunt` / «Odd», `house`,
+`hand`, `narrow`, `honour`, `honest`, `fattening`, `a cold`, `look good in front of sb`), and **`a cough`, heard as profanity
+(«Fuck off.»), which a person should hear first** — in a children's app, even if it is the recogniser mishearing a clipped clip.
+
+**Not verified:** whether the 24 are wrong recordings (no one has listened); whether the trim cuts the start of a quiet
+first sound (a hypothesis from the pattern of first-sound mismatches, not checked against the untrimmed originals).
+`been` / «bin» and the other accent cases stay flagged on purpose. The `r2.test.ts` case «R2 helpers are inert, not broken,
+when unconfigured» fails in this environment with and without this change (it is not part of it).
+## Lesson games: «ما معنى المصطلح؟» from the books' printed glossary, and a draft route that stays hidden — 2026-10-25
+
+A fourth lesson game: the app shows the **book's own definition** and the student picks the term. The
+definitions are not written by a model — they are the printed «مسرد المصطلحات» of the Grade 9–10 science
+student books, read from each PDF.
+
+- **Extraction** (`lib/curriculum/scripts/glossary/`, PyMuPDF `rawdict`): an entry is a row with a coloured Latin
+  term; Arabic term to its right, definition to its left. The PDFs' text layer drops or swaps the lam-alef ligature
+  («لا» → «ال»: «اللازمة» reads «الازمة»), so it is repaired from glyph widths — a zero-width alef then a wide lam
+  (swap), or one wide alef (lam lost). The reference list after the glossary is cut off by its heading.
+- **What is served** (`lib/curriculum/src/data/glossary/science-g9-10.json`, **436 entries from 15 books**): of 558
+  entries read, 122 are held back in `science-g9-10.held.json` with a reason — a formula fragment in the definition
+  (47: «H⁺», «8e⁻», «1A» come out of the PDF in the wrong order), brackets or symbols in the term, a lost «لا» still
+  showing, an alef missing after a tanween («قليلً»), a lone letter or a Greek symbol, a word nobody else prints, an
+  English term with an abbreviation, too long, and 9 held by hand. A held entry is never shown. Every served entry
+  is Arabic-only prose with balanced brackets and no word that appears nowhere else in the 146k-word corpus of the
+  extracted books; tatweel (letter-stretching in some printed titles) and doubled diacritics are stripped, and four
+  two-word terms the PDF reverses («نسيجٌ فقاعي» came out «فقاعي نسيجٌ») are corrected.
+- **Reviewed by a second pass, then fixed.** The first version (459) was read by an independent reviewer: of a 65-entry
+  sample, 12 (about 18%) had damage a student would see — the tatweel, three entries still reading «اللّبة» for
+  «اللابة», reversed terms, missing alefs, orphan letters, a Greek symbol, an English typo. Those classes are now
+  filters (and `glossary.test.ts` pins them over all 436). A second, fresh 73-entry sample of that corrected file had
+  4 damaged (5.5%), all **reversed terms**, and whole-file scans found 6 more reversed terms and 2 broken definitions
+  (one scrambled dash clause, one stranded letter in «خلال») — 12 entries in 440 (2.7%), none of the classes the first
+  pass had found. Those are now corrected (10 terms, each put in its right order) or held, and a rule holds a term
+  whose last word is voweled with a damma while its first has no vowel. That reviewer's verdict was that nobody can
+  yet call the definitions clean: it read 73 of 440 in full and a scan only finds damage someone thought to look for.
+  **So this is a ~2–3% residual in the terms and an unmeasured one in the definitions, not zero.**
+- **Gaps, not smoothed over:** Grade 10 chemistry S1's PDF was not on this machine (no entries); physics S1 has 23
+  of its terms (the symbols in brackets after each term had to be stripped from the term).
+- **Draft route, hidden until signed off** (`chem-g10-s1.draft.json`, 29 terms of Grade 10 chemistry S1):
+  definitions a model wrote, flagged `source: 'draft'`. `servedGlossary()` returns a draft only with **both**
+  `reviewedBy` and a `reviewedAt` date (the English grammar units' rule); today **none is signed off, so no student
+  sees any** (`glossary.test.ts` and `lessonMeaning.test.ts` pin both). An independent reviewer found no scientific
+  error in the 29 and 18 wording problems; 15 of them are applied (the three covalent-bond terms now carry the pair
+  count and an example, so «ثنائية» is not read as two electrons; the atomic and line spectra no longer both fit).
+  `pnpm --filter @workspace/curriculum run glossary-sheet` prints the teacher's review table, plus a skim table of
+  the served printed terms. Sign-off is an edit of the JSON by whoever holds the teacher's answer — there is no
+  in-app screen for it. When a draft is signed off the game labels it «تعريف راجعه معلّم», not «من كتاب الطالب».
+  The drafts' text does ship inside the app bundle (the loader imports the file), unsigned; students cannot reach it
+  through the app, but it is extractable.
+- **The game** (`lessonGames.ts`: `lessonMeanings`, `hasMeaningGame`, `buildMeaningRound`): a printed glossary does
+  not say which lesson a term is from, so a lesson is tied to a definition through its own key terms (harakat-,
+  hamza- and «ال»-insensitive, exact spelling tried first). A round asks the lesson's own terms first, then the other
+  lessons' of the unit (**including later ones — not yet taught**; the in-app help says so); the three wrong terms
+  come from the same book. A definition that contains its own term is never a question. Offered only when the lesson
+  has ≥1 defined term of its own and ≥4 in the pool. It also works as a homework attachment (`meaning` added to the
+  mobile union, the API's `GAMES`, and the db type — the column is text, no migration).
+- **An older app build used to remove a `meaning` attachment on any edit** (found in review): a build that does not
+  know a game drops that attachment when it re-sends the list, and `gamesIncluded: true` made the server believe the
+  list. The client now sends `knownGames`, and the server keeps an existing attachment of any game not in it (a
+  client that sends none is read as the four games that existed before; `carryOverGames(…, known)`,
+  `game.test.ts`). This protects the next new game too. Not exercised against a database.
+
+**Reach, measured on the real catalog — read this before promising anything:** the meaning game exists on **65 of
+3,332 lessons**. Only **10 of them are new lessons** (lessons with any lesson game: 495 → 505); the other 55 already
+had the other three games and now have a fourth. The printed glossary adds depth, not breadth, because it exists
+only for the books whose lessons already carry key terms. Where the breadth is: 1,464 lessons have ≥1 key term, 969
+of them fewer than 4 (no game), and **5,158 of the 5,400 key-term mentions have no definition** — English (Grades
+2–5 and 10), Islamic education (7–8), digital literacy and social studies are the largest. Giving those a definition
+is the only way to widen, and each needs a person's review (the draft route above is that pilot, 29 terms).
+
+**Verified:** `pnpm run typecheck`; the new `glossary.test.ts` (12) and `lessonMeaning.test.ts` (7) plus the existing
+`lessonGames`, `homework`, `gameAmber` (a fourth accent, ≥8 ΔE from the others, white text ≥4.5:1), `i18n*` and
+`appHelp` suites; the API's `game.test.ts`. In the browser (Expo web): a Grade 9 chemistry lesson opens the game with
+the book's definition and four terms, the right answer turns green and the score reads «1 من 6»; its chooser shows
+four tiles; a lesson with two key terms shows only this tile; no console errors.
+**Not verified:** a homework with a `meaning` attachment end to end against a database (the enum change is covered by
+unit tests only); the game on a phone; dark mode of the new screen; that every served entry is right against the
+printed page (the filters and two independent samples are not a page-by-page read — a teacher skimming the term
+column of the skim table in `glossary-sheet` would be). The full
+mobile and curriculum suites fail on this Windows checkout for line-ending reasons unrelated to this change
+(`scopeSelection`, the committed-sheet comparisons, `quran_corner.json`).
+
+
+## English lessons (grades 9-10) get their book pages, 2026-10-25
+
+English was the one subject the page mapper could not touch: the catalog names every lesson by
+its skill («القراءة والمفردات», «المحادثة»), repeated in every unit, and the book is in English,
+so there is no title to match.
+
+- `scripts/map_english_pages.py` finds the lessons by position instead. «High Note» prints a
+  running header, «LESSON 1A …», numbered 1-7 inside each unit; the headers in page order, cut
+  into units wherever the number drops, must come out in exactly the shape the curriculum has
+  (5 units × 7 lessons), or the book is left alone. All four student books on disk fit: 140
+  lessons (Grade 9 S1/S2, Grade 10 S1/S2), 288 pages, rendered with `render_lesson_pages.py`
+  and uploaded to `iqraa-public/book-pages/`. `book-page-links.json` lists 1,952 lessons /
+  12,747 pages.
+- Checked on a contact sheet of 18 sampled openers: each starts at its «LESSON nA» header (a
+  unit's first lesson shares its page with the unit's banner).
+- **Not covered:** Grades 1-8 English. Their PDFs are not on disk (the figure folders for
+  grades 7-8 hold only pictures), and the catalog's NCCD links come to about 1.9 GB for the
+  16 books. Those books are laid out differently (the primary ones are picture-led), so the
+  header method would need checking on each. The four Grade 10 vocational English books have
+  no student-book link.
+
+## A parent signs up with an email or a teacher's code — 2026-10-25
+
+Since 2026-10-10 a parent could only sign up with a teacher's code (no email, no password), so a parent who did not have
+a code in hand had no way to make an account. The register screen now gives a parent the same choice a student has had since
+2026-10-23: «برمز المعلم» or «ببريد إلكتروني», no default, and nothing shows until one is picked.
+
+- **`signupForm('parent', method)`** now returns `method ?? 'choose'`, as for a student (`services/signupMethod.ts`, tested).
+  A teacher is unchanged: email.
+- **A parent with an email is asked nothing extra.** `needsAgeConfirmation` and `signupPlan` stay student-only: a parent is
+  an adult and there is no guardian to approve them. The server already accepted `role: "parent"` on `POST /auth/register`
+  (it refuses only when `STUDENT_ACCOUNTS` is off), so **no server change**.
+- **What the email path does after sign-up:** the usual verify-email step, then the claim screen (`needsRosterClaim`), where
+  the parent enters the **per-student** code a teacher gives them. A new note under the choice says so
+  (`parentEmailNote`, ar/en), because an email alone does not link a parent to a child.
+- **Unchanged:** the code path (`POST /auth/redeem`), the rule that a parent may not sign up from a **class** code, the
+  personal login code, and the class picker after linking.
+- **Verified:** unit tests (`signupMethod.test.ts` fails without the change), typecheck, mobile and api-server tests. **Not
+  verified:** the screen in a browser or on a device; an email parent end to end (sign up, verify, claim, pick a class).
+
+## Sign-in: the last Google account is a line, not a chip — 2026-10-25
+
+A UX-copy review of the sign-in screen (saved account, Google's button, a green «آخر حساب Google
+استخدمته» chip, a terms line, a hint) found it said "which account" four ways at once.
+
+**What changed** (`app/(auth)/login.tsx`, `services/i18n.ts`; sign-in only, the register screen is untouched)
+- **The green chip is now one plain line**, «آخر حساب Google استخدمته هنا: <address>» (`loginGoogleLast`).
+  The chip looked tappable and was a plain `View`, repeated Google's own «Continue as <name>» when the
+  two matched, and put a second «آخر استخدام» next to the saved account's. The label and the address
+  are separate `Text`s in one row so the row's direction orders them and the Latin address is not mixed
+  into the Arabic run. It stays because the two can differ: Google's button shows the browser's active
+  Google account, this is what was last used on this device. (It was already hidden when the address
+  equals a saved Iqrra account's, `showLastGoogle`.)
+- **Removed «ستظهر لك قائمة حسابات Google لتختار البريد الذي تريده»** (`loginGoogleChoose`, both
+  languages). Google's personalised button normally continues as the account it names, so a list
+  may never appear. **Not checked on the deployed page**; if a tap on «Continue as …» is confirmed to
+  show a chooser, the hint can come back.
+- **Shorter wording:** the saved-account hint is «اضغط حسابك للدخول دون كلمة مرور.»; the Google terms
+  notice is «إن أنشأت حسابًا جديدًا عبر Google فأنت توافق على …» / "If you create a new account with
+  Google, you agree to the …". `accountsLastUsed` is unchanged and still badges the saved account.
+
+**Verified:** mobile `pnpm run typecheck`; mobile `pnpm test` (7,624 tests, 7,614 pass, 10 skipped, 0 fail).
+**Not verified:** how the line wraps and sits in a browser (phone, desktop, RTL, dark), or what a tap on
+Google's button does.
+
+## Chat app-help, twenty-eighth live pass: three short answers and wordings for five existing ones — 2026-10-24
+
+The pass was only half usable: from its seventh question the demo account answered «انتهت حصة
+التوليد الجديد لهذا الشهر» to everything that needed the model (17 of 30, all ten curriculum
+questions among them), so nothing about the model's answers can be said from it. The in-app
+answers still ran, and they found: «أرفع ملفاً إلى ملفاتي» (`howUploadFile`: there is no upload),
+«أضيف مرفقاً إلى الواجب» (`howAddHomework`), «أنسخ الاختبار القصير إلى الحافظة» and «أحفظه كملف
+وورد» (`faqA4`: «نسخ» and «تصدير» under every result — «القصير» was the word the matcher did not
+know) and «أطبع شرائح الدرس» (`howSaveSlides`; it had got the generic export answer, which says
+PDF or Word where the slides screen says PDF or PPTX).
+
+Three new short answers, each checked in code: `howRenameExam` (the server's
+`PATCH /evaluations/:id` takes only `classGroupId`, `examDate` and `examTime`, and the title is
+typed at «تقييم جديد»), `howExamAddTyped` («أضِف سؤالًا من إعدادك» opens `EditQuestionModal`,
+whose «نوع السؤال» chips come from `EDITABLE_TYPES`; a «صح / خطأ» question has «العبارة» and
+«الإجابة الصحيحة»), and `howWhoJoined` (a student row shows an «انضم» pill and «الحساب:» once an
+account is linked — `app/classes/[id]/index.tsx`). Pinned in `appHelp.test.ts` with near-misses
+that stay with the model.
+
+**Not checked, because of the allowance:** whether the model's answers to the curriculum controls
+are right this time; the app questions that fell to the model after the allowance ran out. The
+cap is the account's monthly generation allowance — a pass of 30 questions spends it, and this
+account has now had many passes.
+
+## Parent approval for email students — merged and deployed, flag still off — 2026-10-25
+
+PR #1274 («server and app, flag off») was marked ready and squash-merged to `main` as `2277f57` on
+2026-10-25, by the owner's instruction, after CI was green on its head. This entry records what the
+deploy did; what was built and its limits are in the two entries below it, «… the app (PR B)» and
+«… server (PR A)», dated 2026-10-24.
+
+**What the deploy did** (workflow run 801, from its job and step results; not re-read from production):
+
+- *production migrations* succeeded, so migration `0018` (nullable `users.guardian_approved_at`, new
+  owner-only table `guardian_consents`) was applied before the new API revision took traffic.
+- *production schema / production tables present* succeeded.
+- `iqraa-api`: the Cloud Run deploy succeeded (about 3.5 minutes) and its «Verify the deployed commit»
+  step passed, so the serving revision reports `2277f57`.
+- `iqraa-web`: the web build and the Cloudflare Pages publish succeeded and «Verify the deployed
+  bundle» passed.
+- `iqraa-verifier` was skipped (not changed).
+
+**Still off.** No workflow in `.github/workflows/` sets `GUARDIAN_APPROVAL` (a `grep` found nothing), and
+the deploy only updates the env vars it names, so unless someone set it by hand on the service it is
+unset: the server holds nobody, `GET /guardian-consent/config` answers `{enabled:false}`, and the web
+register screen and the role-switch screens behave as before this merge.
+
+**Not checked.** This session cannot reach production (its egress proxy refuses
+`iqraa-api-…run.app` and `app.iqrra.com`), so none of these was read by command: the serving revision's
+name and traffic split, `/api/healthz/version`, the `config` answer on production, the live web bundle
+in a browser, and the service's actual env (reading Cloud Run env is on the denied list; the claim above
+rests on the workflows). `STATUS.md` was updated from the deploy run, and those lines say so.
+
+**Next, all the owner's** (the numbered list is in the PR B entry): the consent wording read by a native
+speaker and a lawyer and `constants/legal.ts` + `LEGAL_VERSION` updated; Resend click tracking off for the
+parent mail and Cloudflare Web Analytics not recording URL fragments; the share of users on the new bundle
+checked; then `GUARDIAN_APPROVAL=true`, which locks every existing email student until a parent approves.
+
+## Parent approval for email students — the app (PR B) — 2026-10-24
+
+The app half of the gate in the entry below. **Nothing changes for anyone while `GUARDIAN_APPROVAL` is unset**, and
+the app commits touch no server file (the one server change made after the final review, a12d41d, is in the entry
+below). With the server's flag on,
+a student who signed up with an email and no teacher's code now lands on a waiting screen instead of a wall of 403s,
+and a parent can approve or decline from a page that needs no account. Design:
+`docs/superpowers/specs/2026-10-24-guardian-approval-design.md` (amended: see its *Client* section).
+
+- **Pure services, each tested:** `guardianApproval.ts` (the status from `/auth/me`, the 403 body test),
+  `routeGating.ts` (`needsGuardianApproval`, `guardianRedirect`, **`guardianGate`**, `/guardian` in `PUBLIC_ROUTES`,
+  `/guardian-waiting` in the non-teacher list), `guardianConsentLink.ts` (reads the token from `location.hash`, accepts
+  exactly 43 base64url characters, nothing else), `guardianConsentView.ts` (the parent page's state machine),
+  `guardianApi.ts` / `guardianConfig.ts` (config, lookup, decide; the token only ever in a POST body),
+  `signupMethod.ts` (`signupPlan`: tick, parent field, or neither), `screenTracking.ts` (never report `/guardian`).
+- **The gate and why it stops the later gates.** `guardianGate(user, pathname)` returns `{ redirect, stop }` and runs in
+  the root layout after the public-route return and before every other gate. A held student on one of their three open
+  screens is not redirected, but IS stopped. The review found why: without `stop`, an email student with no grades fell
+  through to the grade-setup gate, was sent to `/setup-grade`, bounced back to the waiting screen, and looped for ever.
+  `routeGating.test.ts` walks five start paths to a fixed point.
+- **Waiting screen** (`app/guardian-waiting.tsx`): "needed" and "declined" show an address field, "waiting" shows the
+  masked address and polls `/auth/me` every 20 s, plus "Check again". Exits: a teacher's link code (`/join-class`, which
+  lifts the hold), "I am a parent" (role switch), sign out, delete account. It no longer offers "I am a teacher": the final
+  review found it a one-tap way round the hold, advertised to the child being held (see the limit below). The screens a
+  held student may open are exactly `/guardian-waiting`, `/join-class`, `/delete-account`. The public routes (`/play`,
+  `/live`, `/take`, `/curriculum/english`, `/legal`, `/suggest-feature`) are outside the gate by design, as on the
+  server, which holds only authenticated student routes. A `needed` status that still carries a masked address means
+  the sent link expired; the waiting screen says so and asks for an email (`guardianWaitingView`, tested).
+- **Parent page** (`app/guardian.tsx`, `/guardian#{token}`, public): reads the token once from `location.hash` into state;
+  "I approve" needs the confirm tick (no request without it); closed states for an unusable, expired or decided link.
+  `guardianPageSource.test.ts` scans the source: no `console`, storage, `Linking`, `router`, analytics, `testID` or
+  printed token.
+- **Sign-up and role switches:** with the flag on, the register screen asks for a parent's email on the student-email path
+  instead of the age tick (Google sign-up too); the three role-switch screens (`setup-subjects`, `settings`,
+  `claim-required`) show a note instead of the tick. `switchNeedsAgeConfirmation` gained a third argument rather than
+  being deleted, because the tick is still asked while the switch is off. A refusal that means the cached switch is stale
+  (`parent_email_required`, `age_confirmation_required`) clears the cache and re-reads it.
+- **403 hook and `refreshUser`:** `apiClient` calls a registered callback on a 403 whose body is
+  `guardian_approval_required` (clone in a try/catch: a transport that cannot clone must not reject the call; 5 s debounce);
+  `AuthContext.refreshUser` re-reads `/auth/me`; the status lives on the session user and survives `updateProfile`.
+  The hook's body is now `services/guardianForbidden.ts` (`noteGuardianForbidden`, tested with real `Response` objects
+  and a throwing `clone`), and `layoutGateOrder.test.ts` pins in the layout's source that `isPublicRoute(` comes before
+  `guardianGate(`, which comes before the roster-claim, teacher-setup, grade-setup and non-teacher gates, and that the
+  guardian block returns before the next gate.
+- **The token never reaches a third party:** `shouldTrackScreen` drops `/guardian` from screen analytics, and the crash-report
+  scrub (`crashReportingCore.ts`) removes `#fragment` and any bare 43-character token. Those two rules run right after the
+  JWT and Bearer rules and before the number and code rules, so a token holding a digit run is not half-rewritten; the
+  JWT rule must stay first because a JWT signature is also 43 base64url characters.
+- **Flag off:** `GET /guardian-consent/config` says whether it is on and fails off. One deliberate difference: while the
+  config loads on the student-email path, neither the tick nor the parent field shows and submit is disabled — about one
+  request. The honest worst case is a request that hangs: 3 attempts x 15 s timeout plus 4 s of back-off, about 49 s,
+  and failures are not cached, so each mount repeats it. It is rarely visible, because the fetch starts when the
+  register screen opens. A parent opening a link while the flag is off sees "This link does
+  not work", with no retry loop.
+- **Mutation checks** (edit with the Edit tool, run 9 test files / 150 tests, restore, green again, `git diff --stat`
+  clean after each; all thirteen caught, the last three from the final-review fixes):
+  1. `needsGuardianApproval` also holds `approved`: 5 failures ("holds a student whose status is needed, waiting or
+     declined, and no one else", plus the `guardianRedirect` and `guardianGate` not-held cases).
+  2. `/guardian` removed from `PUBLIC_ROUTES`: "is public, and a route that merely starts with the same letters is not".
+  3. `/notifications` added to the held-may-open list: "sends a held student anywhere outside the three open screens to
+     the waiting screen".
+  4. `guardianGate` with `stop = redirect !== null`: "stops a held student on an open screen without redirecting" and
+     "a held student with no grades settles on an open screen instead of looping through grade setup".
+  5. Token pattern 43 changed to 42: "reads the token from a location.hash…" and "refuses anything that is not exactly a
+     43-character token".
+  6. `shouldTrackScreen` always true: "never reports the parent consent page".
+  7. `lookup` with the token in the URL as well: "lookup: POSTs the token in the body, never in the URL".
+  8. `signupPlan` ignoring the switch for `askAge`: "asks a student with an email for a parent when approval is on, and
+     not the tick" and "never asks both at once".
+  9. The two token rules moved to the END of `RULES`: "removes the whole token even when an earlier rule would match a
+     piece of it". The JWT test did not fail for this move (the JWT rule still runs first); it fails for the opposite one,
+     checked as well: the token rule placed above the JWT rule fails "still redacts a whole JWT, whose signature is also 43
+     base64url characters".
+  10. `console.log(token)` in `app/guardian.tsx`: "rule: never console.*" and "every line that mentions the token is the
+     state read, a guard, or one of the two guardianApi calls".
+  11. `guardianWaitingView` ignoring the masked address on `needed`: 1 failure ("needed with a masked address: the link
+     expired, says so with the address, and asks for an email").
+  12. The try/catch removed from `noteGuardianForbidden`: 1 failure (the throwing-`clone` test, "swallows a clone() that
+     throws…").
+  13. The `guardianGate` block moved below the grade-setup gate in `app/_layout.tsx`: 4 failures (before the roster-claim,
+     teacher-setup and grade-setup gates, and "the block after guardianGate( returns…").
+- **Browser run** (Chromium via Playwright against the real web build and the real API on a throwaway Postgres; flag on
+  and off; 390 and 1280 wide; light and dark; English and Arabic; RTL checked by eye and by measuring the masked address):
+  register with the parent field (disabled until a valid-looking address; "own address" refused with a translated text);
+  waiting screen and the gate (typed URLs `/notifications`, `/(tabs)`, `/`, `/classes`, `/settings` all end on the waiting
+  screen); every exit button driven except a real class join and a real deletion; the parent page (approve without the tick
+  sends nothing, approve, decline, "already decided" in a fresh context; the network log shows the token only in the body of
+  the lookup and decide POSTs, never in a URL, and not in the page's resource entries); the student leaving the waiting
+  screen 12 s after approval (inside the 20 s poll) and by "Check again" within 3 s; decline and re-send, a superseded link,
+  an expired link, six malformed links (zero API calls); flag off (age tick, no parent field, `/guardian` says "does not
+  work" with no retry loop, a student enters the app); the console shows nothing non-benign. Bugs it found: the line under
+  the student-email pills still said "right away" (fixed, `studentEmailNoteParent`), the waiting screen ran full width on
+  desktop (fixed, 560 max); two are listed below.
+  **Not driven:** Android and iOS; Google sign-up and Google link; a real class join with a teacher's code; actually deleting
+  an account; the 20 s poll timed in Arabic; the settings role switch with the flag off; any real mail (no key set); the
+  `/claim-required` role switch, in either flag state; and the two browser bugs fixed in 2a44b4e (the register note and
+  the waiting-screen width), which were fixed after the browser run and not re-driven.
+- **Counts (after the final-review fixes):** `pnpm run typecheck` at the root clean; `cd artifacts/mobile && pnpm test`:
+  7,601 tests in 1,310 suites, 7,591 passed, 0 failed, 10 skipped (the same 10 as before this work); the brand grep
+  from `ci.yml` clean. The app commits touch no server file; the api-server suite was rerun once for the server fix
+  a12d41d (2,679 passing, see the entry below).
+- **Not verified / known limits:**
+  - Android and iOS have never run this; the web build is the only thing driven. The keyboard and safe-area behaviour on
+    the waiting screen is by the repo's convention, not by eye on a phone.
+  - Google sign-up and Google link with a parent's address were not driven (no Google credential).
+  - A real class join with a teacher's code from the waiting screen, and real account deletion, were not driven.
+  - No real mail was sent (no `RESEND_API_KEY`); the link was read from the API log.
+  - **The Arabic was drafted and polished by the implementer with no independent reviewer** (the copy-review skill returned
+    a method, not a review). A native read of the consent screens is an owner step.
+  - No plain "send the same link again": the app holds only the masked address, so sending again means typing an address.
+  - The register screen's server error text (for example "A parent's email cannot be your own.") is drawn at the top of the
+    form and can sit above the fold after pressing "Create account". Every register error behaves this way today.
+  - About 150 ms of the Library tab shows right after verification for a new held student, then the waiting screen: the
+    status is read by a second `/auth/me` after the session starts. The same moment fires one burst of 403s from
+    background calls; they do not repeat.
+  - A held student can switch role to teacher at will: the waiting screen no longer offers "I am a teacher", but the
+    server still allows the switch, so the hold is advisory for any child who signs up as a teacher. A known limit.
+  - A student made from a teacher's code who later adds an email is never held (server commit a12d41d). The teacher's code
+    vouched for them at sign-up, and without the exemption a student whose class-code claim was still pending would be
+    held the moment they added an email and could not verify it from the waiting screen.
+  - That closes the unverified-email dead end for teacher-code students. An email student with an unverified email
+    cannot be in that state, because sign-up verifies the address before the account is held.
+  - An approved student who opens the app offline stays on the waiting screen until the device is back online.
+  - A held student whose class-code claim is pending sees only the parent-approval text.
+  - The parent page links no privacy policy and states no data processing beyond one sentence. Put it in front of the
+    lawyer.
+  - `constants/legal.ts` still describes the age tick; `LEGAL_VERSION` is unchanged.
+  - No e2e spec was added: the e2e job runs with `STUDENT_ACCOUNTS=false`, so a student never reaches this flow there.
+- **Owner steps before the flag is turned on:**
+  1. Have the parent-consent wording read by a native speaker and a lawyer (the `guardian*` and `parentConsent*` keys in
+     `services/i18n.ts`).
+  2. Update `constants/legal.ts` to describe parent approval and bump `LEGAL_VERSION` in the same change (it asks every
+     user to accept again).
+  3. Update the store declaration to say a parent confirms a student's sign-up.
+  4. Deploy the app: the web bundle ships with the merge; Android by an OTA (`mobile-update.yml`, then the `production`
+     channel by hand). No native change was made and `app.json` `version` is untouched, so an OTA reaches the installed
+     binaries.
+  5. Confirm Resend click tracking is OFF for this mail. A tracked link, or a mail scanner such as Outlook Safe Links,
+     puts the `#fragment` (the approval token) into third-party logs.
+  6. Confirm Cloudflare Pages Web Analytics auto-injection is off for the app domain, or that it does not record URL
+     fragments.
+  7. Check the share of users on the new bundle (PostHog) before the flag: an older bundle gets blanket 403s with no
+     waiting screen, and fails sign-up with `parent_email_required`.
+  8. Then set `GUARDIAN_APPROVAL=true` on the API service. Existing email students are locked until a parent approves.
+
+## Parent approval for email students — server (PR A) — 2026-10-24
+
+A student who signs up with an email and no teacher's code is, today, held by one unverified tick. This is
+the server half of a real gate: with `GUARDIAN_APPROVAL=true` such a student is held (403
+`guardian_approval_required`) until a parent approves by email. **The flag is off by default, and with it
+unset nobody sees a change:** no sign-up, sign-in or route behaves differently. Three things do happen on
+merge, flag or no flag: (1) the auth middleware (and the live-game join in `routes/live.ts`) reads one extra column,
+`users.guardian_approved_at`, on every authenticated request, so **migration 0018 must be applied before the new revision takes traffic**
+(`deploy.yml` migrates first); (2) `GET /auth/me` gains `guardianStatus`, which is `"not_required"` while the
+flag is off; (3) two paths, a password reset for an unverified account and a Google link of an unverified
+account, run a request-supersede that touches no rows when none exists. Design:
+`docs/superpowers/specs/2026-10-24-guardian-approval-design.md`.
+
+- **Built:** the gate is in `authMiddleware` with an allowlist (`lib/guardianGate.ts`: me, guardian-request,
+  role switch, logout, erase self, the class-claim routes), so a route added tomorrow is closed by default;
+  the roster-link query runs only for a student who could be held. `guardian_consents` is an owner-only table
+  and `users.guardian_approved_at` a new column (migration 0018). `lib/guardianRequests.ts` queues a
+  request at sign-up and mails it only after the student verifies their own address; at most 3 a day per
+  student and 5 a day per parent address, serialised by two transaction advisory locks. The token is 32
+  random bytes, only its SHA-256 is stored, it lasts 7 days and is single use through one conditional UPDATE
+  (`decideByToken`). **The token never travels in a URL path or query (ruling R10):** the mail links to
+  `{origin}/guardian#{token}`, a fragment a browser never sends to a server, and the parent's page posts it in a
+  body to `POST /guardian-consent/lookup` and `POST /guardian-consent/decide` (`GET /guardian-consent/config`
+  stays; `GET /guardian-consent/<token>` is a 404). That replaced a path-redaction helper (`lib/logUrl.ts`),
+  which is gone: a path segment would also have reached Cloud Run's request log, which the app cannot redact.
+  `POST /auth/guardian-request` asks again (supersedes the old link); `/me` returns `guardianStatus` and a
+  masked parent address. A held student may call `POST /auth/role` (ruling R11), so one who picked the wrong role
+  is not stuck; and the public live-game join, which verifies the access token itself and so never met the
+  middleware gate, now records no user id for a held student (ruling R12).
+  An account made from a teacher's code (it has a `login_code_hash`) is never held, even if it later adds an
+  email: otherwise a student whose class-code claim is still pending would be held the moment they added one and,
+  unable to verify it from the waiting screen, stranded; the teacher's code vouched for them at sign-up.
+- **Flag on vs off:** on, sign-up and Google sign-up ask for a parent's address instead of the age tick, and
+  switching role into student just yields a held account. Off, the age tick works exactly as before.
+- **Mutation checks** (edit, build, run `guardianApproval.db.test.ts`, restore, rebuild, green; each caught):
+  1. `hasLiveLink: true` in the middleware: 4 failures (the gate, "lifts the moment a parent approves",
+     "lifts when a teacher's per-student code links the account", the sign-up flow).
+  2. `GET /student/exams` added to the allowlist: the unit test `stops GET /api/student/exams` plus the same
+     four DB failures.
+  3. `isNull(decidedAt)` removed from `decideByToken`: "approving needs the parent's confirmation…" and
+     "two parents clicking at once: exactly one wins".
+  4. the superseding UPDATE removed from `queueRequest`: "asking again supersedes the old link" and
+     "six at once for one student…".
+  5. the mail call removed from `/verify-email`: "queues the request at sign-up, mails the parent only
+     after the student verifies, then holds them".
+  6. both advisory locks removed: the race reproduced in 4 of 5 runs ("six at once for one student" and
+     "seven students at once for one parent address", one or both); run 1 passed, so the two concurrency
+     tests are strong but not deterministic.
+- **Checked (final fix wave, after the token moved out of the URL; figures updated after the login-code exemption,
+  a12d41d):** `pnpm run typecheck` clean in
+  `artifacts/api-server` and at the repo root; api-server `pnpm build` then `pnpm test` with the database and
+  `REQUIRE_DB_TESTS=true`: 2,679 tests, 0 failed, 0 skipped; `guardianApproval.db.test.ts` 52 tests (49 before the
+  exemption, run 3 times alone then, all green); `guardianGate` unit file 35, `guardianConsentEmail` 6. The earlier `@workspace/db test` run (66 tests) had 1 failure in
+  `rlsDiff.test.ts` ("every read answers the same…": the order of `participants` in
+  `GET /messaging/threads/class/:id`, a read with no ORDER BY, in a file this branch does not touch). That file
+  alone failed 2 of 5 reruns and three further full runs passed 66 of 66, so it looks like an ordering flake; it
+  was not run on a clean `main`, and `lib/db` has not changed since, so it was not rerun. No file under
+  `artifacts/mobile` is touched. The brand grep from `ci.yml` is clean. Mutation: with the live-join gate
+  neutralised, 2 of the 3 live-join tests fail.
+  One more mutation, for the login-code exemption (a12d41d): dropping it was caught by 8 tests.
+- **Not verified / known limits:**
+  - The Google sign-up path was reviewed, not exercised (no Google credential); the supersede call on the
+    Google-link path and the new-account branch have no route-level test.
+  - The mail was never sent through Resend (no key locally).
+  - The app (PR B) does not exist, so turning the flag on today would lock existing email students out with
+    no waiting screen. Do not set it.
+  - The parent-consent wording is a draft and needs a legal and native-Arabic review.
+  - Email consent proves access to a mailbox, not that the person is the parent.
+  - A self-made teacher account that holds a roster row can unlock a held student: the teacher approving a
+    class-code claim is the exemption, and nothing proves a teacher is real (a second mailbox does it), so it
+    also overrides a parent's decline. The parent's approval proves a mailbox, this proves a sign-up.
+  - A decline does not bind: the student may ask the same or another parent again (3 a day).
+  - Five unverified sign-ups naming one parent address fill that address's 5-a-day cap for 24 hours, so a
+    real parent's own child can be refused for a day.
+  - `/me` says `waiting` even when the mail failed to send; only `emailSent: false` in the answer to the
+    request itself says so.
+  - A request queued with the flag on and verified after it was turned off is never mailed.
+  - PR B must keep `/guardian` out of analytics screen tracking and crash breadcrumbs: the fragment is
+    out of the server's reach, not out of the page's.
+  - A student who resets their password or links Google on an unverified address loses the queued request
+    and must re-enter the parent's address.
+  - `change-unverified-email` can repoint to the parent's address after the own-address check.
+  - Queued rows never mailed still count toward the 5-a-day parent cap.
+  - A request superseded between queue and issue answers 200 `emailSent: false`.
+
+## Math Corner practice by lesson, for the whole class — 2026-10-24
+
+**What a teacher sees.** The class's «تمارين الرياضيات» sheet opens on a new
+**«حسب الدرس»** view: every lesson of the class's grade that the Math Corner covers,
+by unit in book order, each with how many students practised it and their average
+best score («طالبان، المتوسط ٧٠٪»), or «لم يتدرّب أحد». A line on top counts the
+lessons practised («دروس تدرّب عليها الطلبة: ٢ من ٤٥»), and a switch shows only the
+lessons nobody has practised. **«حسب الطالب»** is the earlier per-student list. A class
+with no grade (or one with no exercises) shows only the per-student view.
+
+**How.** App only, no API or schema change: `practiceByLesson(rows, grade)` in
+`services/mathExercises.ts` folds the rows `GET /classes/:id/math-practice` already
+returns over `exerciseUnits(grade)`. The average is the mean of each student's best
+ratio, rounded to a whole percent; a row for a lesson outside the class's grade is
+left out of this view (the per-student view still shows it). The separator is the
+Arabic comma: next to Arabic-Indic digits a «·» read as a zero «٠» in the first
+browser check.
+
+**Verified.** `mathExercises.test.ts`: every covered Grade 5 lesson listed in book
+order, practised count and average (80% and 60% → 70%), other-grade rows left out,
+class grade parsing. In a browser against a throwaway database (Grade 5 class, two
+students, three results): «٢ من ٤٥», «طالبان، المتوسط ٧٠٪», «طالب واحد، المتوسط ٩٠٪»,
+43 lessons «لم يتدرّب أحد», the switch left only those 43, and «حسب الطالب» unchanged.
+
+**Not covered.** The average counts only students who practised the lesson, not the
+whole class, and there is no export. Exercises done as homework count here too: the
+exercise screen sends every finished set to `PUT /student/math-practice` as well as to
+the homework.
+
+
+
+## English audio: a speech-to-text check of every recording — 2026-10-24
+
+A recording can be the wrong word (the first voicing of «chair» was «share»), and only an ear found it. `english-audio-check`
+listens instead: it downloads each clip in `audioPlan()` from the public bucket, transcribes it with a speech-to-text model
+and reports where what is said differs from what the app expects. **Read-only**: it writes nothing to the bucket and never
+re-voices; it writes only a report and a cache and their `.tmp` / `.bak` files, all git-ignored by default. No app, API, schema or dependency change.
+
+- **Pure logic, tested** (`lib/curriculum/src/englishAudioCheck.ts`, `__tests__/englishAudioCheck.test.ts`): normalising
+  (case, apostrophes, punctuation, hyphens, digits → words, British → American spelling, a homophone table), the verdicts,
+  the cost estimate, the cache and the checking loop with its dependencies injected, the report. The command
+  (`scripts/check-english-audio.ts`) only wires flags, the real fetch and the real API call.
+- **Verdicts.** `match` (equal once normalised), `close`, `mismatch`, `silent` (nothing heard), and `missing` / `error`.
+  **`close` is deliberately narrow:** a single word of 6+ letters whose heard form is the expected one plus or minus one
+  inflection ending (`s es d ed ing er ers`), or a text of several words within floor(10%) of its words in word edits (none
+  under 10 words). A one-letter or one-word difference in a short text is the very confusion the check exists to find
+  («I am ten» / «I am two», «carrot» / «parrot», «bit» / «bet»), so those are `mismatch`. `close` rows go to a «Close: worth a
+  glance» table; only `mismatch` and `silent` produce the `english-audio -- --only a,b,c` line.
+- **The model is never told the expected text** (it would agree with whatever it was told): `language=en`, `temperature=0`
+  and a generic prompt only, and the uploaded file is named `clip.mp3`, not the slug (the slug is the expected text).
+  Model `gpt-4o-transcribe` by default.
+- **Flags:** `--only a,b` (slugs or words), `--grade N`, `--source word|grammar`, `--limit N`, `--model`, `--cache <file>`,
+  `--refresh`, `--out <file>` (the same report as `.json` beside it), `--dry-run`, `--fail-on-mismatch` (exit 1 on a
+  mismatch, a silent clip **or a clip that could not be checked**); an unknown flag, or `--cache` and `--out` that would
+  write the same file, is refused (exit 2).
+- **Key.** `OPENAI_API_KEY` from the environment or the repo-root `.env` (as the generator does); empty or `sk-your…` is
+  refused (exit 2), and so is a key with a space, control, line-break or non-ASCII character (`isPlausibleApiKey`: `fetch`
+  would throw an error quoting the header value) with a message that says nothing about the key; never printed, logged or
+  written to the report or the cache. A 401/403, a 404 / `model_not_found` (a typo in `--model`) or a 429 with code
+  `insufficient_quota` stops the run once (`shouldStopRun`) and prints OpenAI's reason with the key (and anything shaped like
+  one) removed; an ordinary 429 is waited out, and any other 4xx is one `error` row. The quota 429 is retried (five attempts per
+  clip, a few seconds) before it stops. `OPENAI_BASE_URL` and `AUDIO_BASE_URL` override the two endpoints (that is how it was
+  smoke-tested); the banner names the transcription host. Each attempt has a timeout (60 s for the API, 30 s for a clip;
+  opt-in in `audioHttp.ts`, the audit passes none).
+- **A stopped run is PARTIAL.** `checkClips` can return fewer results than clips when the API refuses the key, so the
+  command decides from `stopped`, never from the length: the report is headed PARTIAL with how many of how many were checked
+  (also as one line on stdout), the cache is still saved (it is also saved every 100 clips and on Ctrl+C), exit code 2.
+- **The cache is written atomically** (`<cache>.tmp`, then renamed); a cache file that has content but no readable
+  transcripts is copied once to `<cache>.bak` before it is replaced; if a `.bak` already holds something different, the run
+  refuses (exit 2, nothing written) instead of losing either file. `--refresh` replaces the transcripts of the clips it
+  re-heard, and a clip that now comes back silent loses its old one (`mergeRefreshed`).
+- **The fetch helper moved.** `retryAfterMs`, `backoffMs`, the request-with-backoff and the worker pool left
+  `audit-english-audio.ts` for `scripts/audioHttp.ts`; both commands use it. `englishAudioLocation.test.ts` now also pins the
+  check's default bucket URL to the app's.
+
+**How to run it** (`pnpm --filter @workspace/curriculum run english-audio-check -- <flags>`; behind a proxy add
+`NODE_USE_ENV_PROXY=1`): `-- --dry-run --source word` first (HEAD only, no key: counts, bytes, minutes, a cost estimate), then
+`-- --source word --limit 50` and read the report, then `-- --source word`. **Today that is about 1,248 transcriptions and
+roughly 15-20 minutes** (3 in flight). The 3,383 grammar sentences are not voiced yet, so a run without `--source word` asks the
+bucket for each, is answered 404 and lists them under «Missing» (the Markdown lists the first 50 and says so; the JSON has all);
+once they are voiced the full run is about 4,600 transcriptions and roughly 30-50 minutes. A re-run pays only for clips whose
+size or ETag changed (and asks again about a silent one). The console also says how many rows were `close` or missing.
+
+**Verified.**
+- Offline end to end against a local fake server (OpenAI endpoint and bucket both faked; the real API was never called) with 6
+  real clips (`moon eraser chair apples pink friday`) and canned transcripts: 4 `match`, 1 `mismatch` («chair» heard as
+  «Share.»), 1 `silent`, the `--only chair,pink` line, Markdown and JSON written, the request carried
+  `language=en temperature=0 response_format=json` and the generic prompt and the `Authorization` header. A second run sent 1
+  clip to the transcriber (the silent one, which is not cached), 5 came from the cache; with the silent clip left out, 0. The
+  fake server saw the uploaded file named `clip.mp3` on every request (it told the clips apart by their bytes), so the request
+  carries neither the slug nor the expected text; the prompt is the generic one.
+  `--refresh` sent 6. A server answering 429 with `Retry-After: 1` was waited out (12 requests for 6 clips, run ok in 3 s). A
+  400 on one clip became one `error` row and the run went on. A server answering 401 stopped the run with exit 2, printed its
+  message with the key replaced by `[key]`, the key appearing in no output, report or cache; a server that accepts 2 clips and
+  then refuses gave a PARTIAL report «2 of 6», 2 cached transcripts, exit 2, and finishing against a good server then
+  re-used those 2. `--dry-run` made no transcription request and needed no key. `--fail-on-mismatch` exits 1 on a mismatch and
+  0 without; no key, the placeholder and bad flags exit 2.
+- Also offline, after review: keys with a line break, a tab, a space or a non-ASCII letter are refused (exit 2, no request
+  reached the server, nothing of the key printed); a 429 `insufficient_quota` and a 404 `model_not_found` each stop the run
+  with OpenAI's scrubbed message and a PARTIAL report; a `--refresh` where a clip now comes back silent drops its seeded
+  stale transcript; a cache file that is not a cache is copied to `.bak` and replaced, with no `.tmp` left; `--fail-on-mismatch`
+  exits 1 for a run whose only problem is an `error` row; an attempt that hangs is aborted at `timeoutMs` and retried.
+- The live bucket, read-only: `--dry-run --source word` found all 1,248 hub-word clips present (7.01 MB, **at most 24.5
+  minutes at an assumed 40 kbps; about $0.147 for the audio alone** at OpenAI's per-minute estimate; the gpt-4o models bill by
+  tokens, so the prompt and the transcript add text tokens and the real bill on 1-2 s clips could be up to about double, not a
+  ceiling). The first version assumed 128 kbps and printed 7.7
+  minutes and $0.046 as an «upper bound»; that was backwards: the same bytes hold MORE seconds at a lower bitrate, and the
+  processed clips are 40 kbps (apples.mp3: 4,437 bytes, 0.84 s by ffprobe). 40 is the lowest bitrate in the bucket, so the
+  estimate can only over-count. It is an estimate of seconds from bytes, not a measurement.
+- The keyless audit against the live bucket, before and after the helper move: **byte-identical output** (1,248 voiced, 3,383
+  missing, 0 errors, of 4,631).
+
+**Not done.** The real OpenAI transcription call has never been made: no key was used and nothing has been transcribed, so
+how `gpt-4o-transcribe` actually hears these clips (how many rows land in each table) is unknown. The prices in
+`PRICE_PER_MINUTE_USD` are OpenAI's per-minute estimates as of 2026-10 for the audio only (the gpt-4o models bill by tokens, so
+expect up to about double on very short clips): check the pricing page before a big run. The 3,383 grammar sentences are not voiced yet,
+so there is nothing to check for them. Not in CI.
+
+**Honest limits.** It hears the word, not how it is said: accent and stress errors («EE-ray-ser» for «eraser») pass, because
+recognisers forgive them. A mismatch means a person should listen, not that the clip is wrong (homophones, rare words such as
+«doughnut», «sitcom»). A **homophone group lets a wrong recording pass**: pair / pear / pare, flower / flour and plane / plain
+sound the same to the recogniser and are folded to one form. The `er` and `ing` suffix closes can land a different word in the
+Close table (number / numb). Contractions are not expanded («I'm» / «I am» differ), and «prise» / «prize» fold together. A
+transcription POST aborted by the 60 s timeout and retried could in theory be billed twice (OpenAI bills on completion; unlikely),
+and a body that stalls after the headers arrive is not retried (one `error` row). The first run may be
+noisy: the `close` and `mismatch` strictness is deliberate (a one-letter or one-word difference in a short text is the very
+confusion being looked for), and if a real run shows too many harmless rows it can be loosened by a flag later; no such flag
+exists now. A host that cannot be reached stops the run after 10 clips in a row fail to connect (exit 2, «the transcription API
+is unreachable»); a report written after a stop, or with error rows, never says «Nothing needs a listen». The output folders of
+`--cache` and `--out` are created before the first request. Left as they are: Ctrl+C exits with `process.exit` after saving the cache; `--out x.json` names its JSON `x.json.json`; the
+`--cache`/`--out` collision check is case-sensitive.
+
+## English corner: all ten grades, the official books, and free listening and reading sites, 2026-10-24
+
+The English corner had tabs for Grades 1–5, 9 and 10, so a student in Grade 6, 7 or 8 found no
+tab at all, and nothing in it led to the books' own reading or listening. Draft PR #1268.
+
+- **Built:** `ENGLISH_CORNER_GRADES` (`[1..10]`, `lib/curriculum/src/englishLinks.ts`) now drives the
+  grade tabs. `ENGLISH_HUB_GRADES` is unchanged and still means "grades with word lists to play";
+  `browse.tsx` and `resources.tsx` read it. A grade with no word lists (6–8) shows «ألعاب الكلمات
+  لهذا الصف قادمة» instead of an empty page; Grade 10 says Semester 2 word games are coming: its ten Semester 2 hub lessons are grammar-only and unsigned, so hidden, and there are no word lists for them. The note is read from the data (no visible Semester 2 lesson), so it goes away by itself when one appears. Under every grade's lessons: a **books shelf** (the grade's Ministry student book per
+  semester, plus the activity book where one exists, read from the catalog's `pdfUrl` /
+  `activityPdfUrl`) and a **free sites shelf** picked by grade band: British Council LearnEnglish
+  Kids and Teens, BBC Learning English, VOA Learning English, Starfall, Storyline Online, Oxford
+  Owl (free account) and National Geographic Kids. They open through `openExternal`; nothing is
+  fetched or copied, so none of it needs a licence record like `external_resources.json`.
+  `playEnglishDesc` now says Grades 1–5 and 9–10 (it omitted Grade 5).
+- **Tests:** `englishLinks.test.ts` (ten grades; https; both languages; every grade has a listening
+  and a reading site and both semesters' student book) and `services/__tests__/englishCornerShelves.test.ts`
+  (the tabs read `ENGLISH_CORNER_GRADES`, both shelves render, links go through `openExternal`, no
+  `palette`, every key exists in both languages).
+- **Checked:** `pnpm run typecheck` clean; mobile suite 7,338 tests, 0 failures; curriculum suite 693
+  of 694 (the one failure, `R2 helpers are inert, not broken, when unconfigured`, fails the same on a
+  clean checkout); curriculum `verify` 0 errors; the brand grep from `ci.yml` clean. In the web build
+  (Playwright, Chromium): all ten tabs; Grades 7 and 8 show the notice and 4 books + the right sites;
+  Grade 10 shows the Semester 2 note; light/English and dark/Arabic RTL screenshots read correctly;
+  a link opens a new tab and leaves the app tab where it was. URLs: BBC, VOA, Starfall, Storyline
+  Online, Oxford Owl and National Geographic Kids answered 200; the British Council Kids and Teens
+  paths were read from the sites' own sitemap and navigation.
+- **First push failed CI, and why:** `ci.yml` bans the bare spelling «اقرأ» anywhere in `i18n.ts`,
+  verb included, because that file names the product. The heading «استمع واقرأ مجانًا» tripped it;
+  it is now «استماع وقراءة مجانًا». A new Arabic string in a named file must avoid the substring.
+- **Not checked:** the Ministry PDFs on `nccd.gov.jo` and the British Council pages could not be
+  opened from the build container (timeout / 403); open one per grade by hand. A real phone.
+- **Not done, and a correction to an earlier claim:** the books' **own listening audio is not in the
+  app**. The only decoded listening QR codes are English Grades 9–10 (24 rows in
+  `knowledge-base/book-qr-links.json`) and none answered when last probed (2026-09-15). **No English
+  lesson has per-lesson book-page images** (`book-page-links.json` lists none; an earlier note that
+  Grades 7–10 had them read the wrong section of that file). Still open: rendering and uploading
+  English book pages, Grade 5 recordings (190 of 221 words), Grade 10 Semester 2 vocabulary, and
+  word lists for Grades 6–8.
+- **Still hidden from students, on purpose:** all Grade 1–4 reading units (36) and every grammar
+  unit are `reviewedBy: null`. Turning them on is a teacher signing the review sheets
+  (`docs/english-reading-g{1-4}-review.html`, `docs/english-grammar-g*-review.html`); this change
+  signs nothing.
+
+## Chat app-help, twenty-seventh live pass: three short answers and wordings for ten existing ones — 2026-10-24
+
+A 30-question pass (20 app, 10 curriculum — all ten answers correct) on app.iqrra.com found app
+questions answered by the model for which the app already had an answer, and three it did not:
+«أخفي العلامات عن الطلبة» (`howReleaseResults`, whose last sentence names «إخفاء النتائج عن
+الطلبة»), «عدد الطلبة الذين فتحوا الامتحان» (`howExamSubmissions`: the dashboard lists every
+paper), a forgotten password (`howChangePassword` already says «نسيت كلمة المرور؟»; the model
+called it outside its scope), «شعار مدرستي» on the papers (`howWorksheetHeader`; the model
+described an «add logo» option that does not exist), one student's results across the exams
+(`howStudentRecord`) and switching the grade I teach (`howAddGrade`; the model said to type it
+into the chat). Four more were left over from the 26th pass: deleting a homework already sent
+(`howHomeworkEdit`), a time limit on a quiz (`howExamTime`), shuffling the questions per student
+(`howExamShuffle`) and «السبورة البيضاء» (`howWhiteboard`).
+
+Three new short answers, each a negative or a pointer I checked in code: `howMediaLink` (the
+lesson plan has no link field; `components/ui/LessonResources.tsx` on the slides screen takes a
+YouTube or image link and makes it a slide, and `SlideEditModal` replaces a slide's video),
+`howExamNoBack` (`app/take/[code].tsx` always shows «السابق» and «التالي») and `howVoiceNote`
+(nothing in `app/messaging` records or sends audio). Pinned in `appHelp.test.ts` with near-misses
+that stay with the model.
+
+**Left to the model on purpose:** turning a quiz into a game, flashcards for a teacher, the
+in-class timer (all teaching advice; the app has no matching tool), the question most students
+got wrong, a note on a student's paper and restoring a deleted exam (I found no screen for any).
+## English audio on phones: clips are saved on the device and a lesson's clips are fetched ahead — 2026-10-24
+
+On a phone every tap streamed its clip from `pub-…r2.dev/english-audio/<slug>.mp3`, so a weak connection or the
+`r2.dev` rate limit (429) meant silence. Native only, and OTA-safe: `expo-file-system` (~19, already in the binary,
+the `File`/`Directory`/`Paths` API `exportPptx.ts` uses) — no new native module, no `app.json` change. The web is
+unchanged.
+
+- **Play from the phone first.** `playWord` on native plays the saved copy when there is one; otherwise the remote URL
+  exactly as before, and a copy is saved in the background (never waited for, never rejects). A first tap on a clip
+  therefore fetches it twice (the player streams it, the cache downloads it) — once per clip per phone.
+- **A lesson's clips ahead.** `prefetchLessonAudio(lessonId, { grammar })` (no-op on the web), from one effect on
+  `app/curriculum/english/[lessonId].tsx` when a visible lesson opens: its words, plus its grammar strings only once the
+  grammar is offered (signed). The effect's cleanup cancels it (leaving the lesson stops what has not started), and a
+  new prefetch takes over the previous one's unstarted items it also wants and drops the rest. **Two downloads in flight
+  for the whole cache** — every prefetch and every save after a tap share two slots, and a tap's save goes to the front
+  of the queue, including a clip a prefetch had already queued — so the
+  rate-limited link never sees more than two at once from one phone. The list is `lessonAudioTexts` in
+  `lib/curriculum/src/englishAudioPlan.ts` (new subpath `@workspace/curriculum/englishAudioPlan`): the lesson's words and
+  `unitSpoken`, so the silent True-or-false twins are never fetched. A test pins that every slug it returns is in
+  `audioPlan()` and that the lessons between them cover the whole plan.
+- **Tidy.** `<cache>/english-audio/v1/<slug>.mp3` (`AUDIO_CACHE_VERSION = 1`, `services/audioCachePolicy.ts`): on first use
+  every other entry under `english-audio/` (older or newer version folders, strays) is deleted, as are half-downloads and
+  files under 1 KB. Downloads land in `<slug>.mp3.part` and are renamed into place only when complete, ≥ 1 KB (the
+  smallest clip in the bucket's manifest is 2.7 KB) and starting like an MP3 (`looksLikeMp3`: an `ID3` tag or an MPEG
+  frame sync, read with `FileHandle.readBytes(3)`; 26 sampled clips from the bucket all start `ID3`). A 200 that is not
+  an MP3 (a block page) is dropped and remembered like a 404. The folder is re-created before each download, in case
+  the OS cleared it mid-session. Cap 40 MB (the manifest's 652 clips total 3.8 MB), least recently used first; "last used" is the file's
+  modification time, or a tap this session (kept in memory — neither platform's API sets a file's mtime).
+- **The rate-limited link.** In memory, for the session: a 404 is not fetched again in the background; a 429 pauses
+  **every** background fetch for 60 s (the limit is the link's, not the clip's). A tap with no saved copy always plays the
+  remote URL. The status is read out of `expo-file-system`'s download error message («response has status: 404» on
+  Android, «… status 429» on iOS).
+- **Where the logic is.** `services/audioCache.ts` (all decisions, over an injectable `FsLike`), `services/audioCacheStore.ts`
+  (the thin `expo-file-system` mapping, not loadable by `node --test`), `services/englishAudio.ts` (wiring).
+- **Checked:** new tests — `audioCachePolicy.test.ts` 16, `audioCache.test.ts` 34 (fake file system: hit/miss, a dropped
+  download leaves nothing playable, the 1 KB floor, an HTML 200 rejected and ID3 / frame-sync bodies kept, temp-then-rename,
+  LRU order and cap, version purge, the folder cleared mid-session, 404/429 memory with an injected clock, two prefetches
+  plus two taps never more than two in flight, a second prefetch dropping the first's unstarted items, cancel, cancel
+  then the same lesson in one tick, a newer prefetch taking over a queued clip, a tap jumping the queue (also for a clip
+  already queued) and staying wanted through a later prefetch's cancel, OS-cleared files, a file system that throws everywhere), `englishAudioPhone.test.ts` 8 (source pins:
+  the web branch still goes straight to `playRecordingOrSpeak(englishAudioUrl(word), word)`, prefetch is a no-op on web,
+  the URL and slug mapping are unchanged, the recorder's `playUri` is not routed through the cache, the screen calls
+  prefetch from one effect above its early return and returns its cancel), `lib/curriculum` `englishLessonAudio.test.ts` 7
+  (Grade 1, a Grade 9 grammar-only lesson, a Grade 10 Semester 2 lesson). Five mutations (floor removed; download straight
+  into the clip name; no global limit; no folder re-create; a prefetch overwriting a tap's claim) each failed the suite. `pnpm run typecheck` clean;
+  `lib/curriculum` tests 743/743 and `verify` 0 errors; the English and audio mobile tests 203/203; the full mobile suite
+  7,396 passed, 0 failed, 10 skipped (of 7,406; run before the review fixes, which touched only the cache files, the lesson
+  screen's effect and their tests). Web build at 390 px (Playwright, Chromium), also before the fixes: a Grade 1
+  lesson opens, makes **no** clip request on open, a Flashcards «Listen» requests `…/english-audio/bag.mp3` directly, and
+  with the clip answered 404 the browser voice says «bag» — as before; no `expo-file-system` warning on the web.
+- **Not checked:** no real Android or iOS device ran this — not the download, the rename, `Paths.cache`, the eviction or
+  the error-message parsing against the real module; all of it is exercised only against the fake. First-launch behaviour
+  on a phone (an empty cache: each tap streams and saves) is reasoned, not observed; so is the cost of the one folder
+  listing on first use (synchronous, on the JS thread) — to be measured on a device. A lesson opened on top of another
+  replaces its prefetch, and going back does not restart the first one (its clips then save as they are tapped). Prefetch does not look at the network
+  type: across the 118 hub lessons a lesson is 0–37 word clips (median 12), and 4–134 with its grammar once signed
+  (median 41), each a few KB.
+- **After a re-record:** bump `AUDIO_CACHE_VERSION` in `services/audioCachePolicy.ts` in the same PR, or phones keep the
+  old take (the slug does not change) until the OS clears their cache.
+- **Deliberately not done:** a phone speech fallback for a clip that does not exist needs `expo-speech` — a native module,
+  so an `app.json` `version` bump and a new build. The custom audio domain needs the owner to add it in Cloudflare R2; then it
+  is a one-line constant in `artifacts/mobile/services/englishAudio.ts` and `lib/curriculum/scripts/audit-english-audio.ts`
+  (`englishAudioLocation.test.ts` fails until both agree) — and an `AUDIO_CACHE_VERSION` bump is not needed for that, since
+  the cache is keyed by slug.
+
+## Tests for the roster consent gate — 2026-10-24
+
+`lib/rosterConsent.ts` refuses a roster write (POST/PATCH/PUT/DELETE under `/classes` and `/students`) from a
+teacher who has not attested that their school holds the parental consent, and leaves reads open. Nothing
+asserted that by its code: every other DB test sets `roster_consent_at` on its teachers so the gate stays out of
+the way. New `routes/__tests__/rosterConsent.db.test.ts` runs it against a real database, 6 tests. Tests only; no
+production code changed.
+
+**What it pins:** a teacher with no attestation gets 403 `roster_consent_required` (with the current
+`consentVersion`) on creating a class, deleting a student and reissuing a login code, and nothing is created or
+deleted; the same teacher can still read `/classes` and `/students`; no token is a 401, not the consent refusal;
+`POST /auth/roster-consent` with an out-of-date statement version is a 409 `roster_consent_version_mismatch` that
+records nothing and leaves the gate shut; with the current version it stores the time and the version and the
+same writes then go through; attesting again moves the timestamp and keeps the version.
+
+**Verified:** 6/6 against a local Postgres 16; the whole api-server suite passes 2563/2563 with
+`REQUIRE_DB_TESTS=true`; `pnpm run typecheck` clean. Mutation check: leaving `/students` out of the gate's mount in
+`routes/roster.ts` failed the write test; restored, 6/6. The test reads the version from the server's own refusal
+instead of importing it, because `lib/rosterConsent.ts` pulls in the database client and a source-level import
+cannot load it under `node --test`.
+
+**Not covered:** the gate's 503 `roster_consent_unavailable` branch (a failing users read), PATCH and PUT
+methods (only POST and DELETE are driven), and the other routers that say they are deliberately not gated
+(homework, schedule, teaching plans).
+
+## Register: the agreement boxes close the form, and the email divider says what it is — 2026-10-24
+
+Two things asked for after #1229 («Register: the terms checkbox is visible») went live: the terms
+row sat above everything, and under the Google button the email field read as a second place to
+type the Google address.
+
+**What changed** (`app/(auth)/register.tsx`, `components/CodeSignupForm.tsx`, `services/i18n.ts`)
+- **The terms row, and the age confirmation for an email student, now sit directly above the
+  «إنشاء حساب» button**, after the fields, in both the email form and the code form (which takes
+  them as an `agreements` prop and draws them above its own button). They used to sit above the
+  Google button and the whole form.
+- **«متابعة عبر Google» is still gated on them**, so its hint now points down
+  (`registerAcceptTermsBelow`, `ageConfirmBelow`); the hint under the create button keeps the
+  «above» wording, which is now true of the boxes above it. The cost: someone who wants Google
+  has to scroll to the bottom to tick, then back up.
+- **The divider under the Google button reads «أو أنشئ حسابك ببريدك الإلكتروني»**
+  (`orSignUpWithEmail`) instead of a bare «أو». `orDivider` stays for the sign-in screen.
+- The Google button's own text («Continue as <name>» with the address) is drawn by Google's
+  script in an iframe, so it cannot be restyled or relabelled from here. It shows whichever
+  Google account the browser has active, not the last address used on Iqrra, so it must not be
+  captioned "last email used". A line under it says what it is (`googleAccountHint`: «حساب Google
+  المسجّل على هذا الجهاز. اضغط السهم لاختيار حساب آخر.»), **web only**: the phone app has no such
+  button and opens the account chooser every time.
+
+**Verified:** mobile `pnpm run typecheck`; mobile `pnpm test` (7,385 tests, 7,375 pass, 10 skipped,
+0 fail; 7,480 / 7,470 after the `googleAccountHint` line was added).
+**Not verified:** how it looks in a browser (phone, desktop, light, dark, RTL), and that the
+role pills, student method choice and the Google gate behave together on the screen. Nobody
+has loaded the deployed `/register` since the change.
+
+## Chat app-help, twenty-fifth live pass: one new answer and seven wordings — 2026-10-24
+
+A 30-question pass (20 app, 10 curriculum — all ten answers correct) on app.iqrra.com found
+app questions answered by the model, or by the wrong answer, for which the app already had one:
+«أضيف طالباً واحداً إلى الشعبة» got the new-class steps (`howAddStudent` did not accept «واحد»),
+posting a homework in the class chat (`howAddHomework` ends with it), turning a worksheet into an
+exam for students (`howSendWorksheet`), a reminder of the exam date for parents
+(`howExamParents`; the model refused), adding the book's picture to an exam question
+(`howEvalFigures`) and saving the slides as PowerPoint (`howSaveSlides`: «شرائحي» was not
+recognised). One new short answer, `howEditStudent` (ar + en): the pencil beside a student's name
+on the class's Students tab opens «تعديل بيانات الطالب» (name, register number, gender, the
+teacher's note; `components/classes/EditStudentSheet.tsx`). Pinned in `appHelp.test.ts` with
+near-misses that stay with the model («حوّل ورقة العمل إلى ملف PDF», «غيّر اسم الطالب في الاختبار
+الذي كتبه»…).
+
+**Checked and already right:** «أعيد فتح امتحان مغلق» got the close-exam answer, which ends
+«لفتحه مجددًا اضغط انشر التقييم», so reopening *is* answered; it is now pinned.
+
+**Left to the model on purpose:** printing the student list, telling who handed an exam in late,
+and the class pass rate — I found no screen for any of the three (the results dashboard shows a
+status and a percentage, not a time, and there is no pass mark), so an app answer would invent
+one. A «حددي» (feminine) in the model's worksheet-to-quiz answer is the model's, not the app's.
+
+## Tests for the login-code reissue route — 2026-10-24
+
+`POST /students/:id/links/:userId/login-code` (a teacher gives a parent or student who lost their personal
+login code a new one) had only the rule `canReissueLoginCode` under a unit test. New
+`routes/__tests__/loginCodeReissue.db.test.ts` runs the route against a real database, 9 tests, with accounts
+made through the real `/auth/redeem` and `/auth/add-email`. Tests only; no production code changed.
+
+**What it pins:** a code-only account gets a new code and only its hash is stored; the old code stops signing in;
+every open session of that account is deleted and the old refresh token no longer renews; a teacher who does not
+own the student, and an account not linked to that student, are both 404 and nothing changes (the other
+account's code keeps working); no token is 401 and a student's own token is refused; the lockout case the rule
+was changed for (an email and password added but the address never verified) is reissued, and once the address is
+verified the same call is a 409 `not_a_code_account` that leaves the current code working; a Google account, an
+account that never had a code and a verified email-and-password account are each 409 and nothing is minted.
+
+**Verified:** 9/9 against a local Postgres 16; the whole api-server suite passes 2557/2557 with
+`REQUIRE_DB_TESTS=true`; `pnpm run typecheck` clean. Two mutation checks, each rebuilt and run: dropping the
+refresh-token delete failed exactly the two session tests; replacing the rule with "any account" failed the
+lockout test and all three refusal tests. Both restored.
+
+**Not covered:** the teacher-consent gate on the roster routes (the test teachers carry `roster_consent_at` so
+the route can be reached; no test asserts the `roster_consent_required` refusal by its code), the race between a
+reissue and a sign-in on the row lock, and the `logger.info` line.
+
+## English corner: Dana's review (Grades 2, 4, 5) — three glosses, one picture, 201 recordings uploaded — 2026-10-24
+
+A teacher's review of the English corner (Grades 2–5), with three phone recordings (a Grade 2 «garage» card, a Grade 4
+«loudly» card, a Google lookup showing British ga·raazh against American gr·aazh). Checked against the data, not taken on trust.
+
+- **Glosses (JSON, the hub reads them from there):** G2 S2 U8 «hall» «ممرّ» → «قاعة / ممرّ»; G2 S2 U6 «orange» «برتقالي»
+  (the colour) → «برتقالة» (the fruit); G5 S1 U5 «purse» «كيس نقود» → «حقيبة يد» (the log of 2026-10-22 had already flagged it).
+- **Picture:** «orange» was 🟠 everywhere. `wordPicture(word, ar?)` now returns 🍊 when the gloss is «برتقالة», so the colour
+  lessons and the word's recording are untouched. Only callers that hold the Arabic pass it (flashcards, Speaking, Match the
+  picture, the Grade 2 reading review form); the reading games take English strings only and would still show 🟠 — Grade 2 has none.
+  `docs/english-reading-g2-review.html` was regenerated (one cell). Pinned in `englishHubGames.test.ts`.
+- **Grade 5 sounded broken because it was:** 205 of its 238 words had no MP3 (Grade 9: 8 more) — the gap the log of 2026-10-22
+  recorded as «recordings still to make». HEAD-checked 2026-10-24: Grades 1–4 and 10 complete.
+- **«loudly» too slow — measured:** 1.71 s of speech for two syllables, the worst of 750 single words (`quietly` 0.78 s).
+  `firefighter` (G3) is next (1.5 s). «A little slowly» is read too literally on some words; both now carry a pace hint in
+  `PRONUNCIATION` (`src/englishAudioPlan.ts`, where #1262 moved it). New takes: `loudly` 0.63 s, `firefighter` 0.90 s.
+- **«garage» not accurate — measured:** formants/energy of the old file: a stressed short «a», then the second vowel almost
+  absent (a tenth of the first vowel's energy) straight into «zh» — «GAR-zh». The hint now asks for British /ˈɡærɑːʒ/ with a full
+  long second vowel. The chosen take has a louder first syllable and a clear ~270 ms open second vowel. **Chosen by measurement,
+  not by ear — a teacher should listen.**
+- **Recordings:** 198 missing words voiced locally first (nothing uploaded), plus the three above. faster-whisper
+  `small.en` flagged 22 of the 198; 10 were real (silent «squid»; «bake a cake», «go swimming», «tell a story», «keyboard»,
+  «cheer» (→ «shear»), «comet», «appear», «metal», «explorer» mis-voiced) and were re-taken until Whisper agreed; the rest were
+  homophones (buy/sell/sun), numbers written as digits and spelling («moustache»). `a cold` still reads «are cold» in Whisper
+  and was left. **Uploaded 2026-10-24 on the owner's go-ahead** (201 files, 5.6 MB, none failed) with a temporary `--out`/`--from`
+  patch of the old script (write the takes to a folder, check them, upload exactly those files). That patch is **not** in the
+  merged script: #1262 replaced the script's pipeline, and the upload was already done. Afterwards a HEAD check of all 1,248 hub words found
+  every one present (Grades 1–5, 9, 10: 0 missing), and `garage`, `loudly`, `firefighter`, `squid`, `purse` came back
+  byte-identical to what was uploaded. Files carry `max-age=86400`, so a phone that cached the old `garage`/`loudly` keeps it up to a day.
+- **Not done:** Grade 3 units 1 and 6 (the teacher noticed the review units are absent; Grades 1 and 2 have theirs — a content
+  decision); Grade 5 is voiced in the teenage register as before; the «ردهة» wording for «hall» is the teacher's alternative.
+- **Checked:** `lib/curriculum` tests 677 of 678 (the one failure, `quranCorner`, cannot load `@quran.ws/text`, which this partial install lacks — nothing to do with English); the two
+  mobile English game suites 38 of 38. **Not checked:** the app typecheck and the screens in a browser (this worktree has no
+  full install; CI runs the typecheck).
+- **Processed afterwards (2026-10-24):** the 201 files first went up as the model returned them (128 kbps, untrimmed, not
+  levelled) because they were uploaded before #1262's pipeline reached this branch. Then
+  `english-audio --reprocess --only <the 201 slugs>` (dry run first: «201 to check and reprocess») trimmed, levelled and
+  re-encoded them: 201 reprocessed, 0 rejected, 5.61 MB → 1.11 MB, the originals backed up under `english-audio-original/`, and
+  `_manifest.json` has 201 entries at process version 1. Checked live: `garage` 1.03 s (0.83 s of speech), `loudly` 0.82 s,
+  `firefighter` 1.12 s, mean level −25 to −26 dB on seven clips, and faster-whisper `small.en` agreed with the word on 20 of 20
+  sampled live clips. **The older clips were reprocessed the same day** (before that the manifest listed none of the 1,248 at
+  process version 1; #1262's measurements on them were local only): `english-audio --reprocess` with no `--only` — 1,046
+  reprocessed, 201 skipped (already done), 29.50 MB → 5.90 MB, every replaced original backed up under
+  `english-audio-original/`, and `_manifest.json` then had 1,247 entries, all at version 1.
+  **One clip was rejected and left as stored: `tie` was blank** (0.36 s at −91 dB, the recording the #1262 audit found), so
+  «tie» played silence in the app. **Fixed the same day** with `english-audio --only tie` (first take accepted; the blank one
+  is backed up): live `tie.mp3` is 0.75 s (0.54 s of speech), −25.7 dB mean, ~40 kbps, faster-whisper `small.en` reads «tie»,
+  and the manifest now has all 1,248 entries at version 1. Heard by no one — «tie» is a one-syllable word the model has
+  already said wrongly once as silence, so a listener should confirm it.
+  Sample of 28 live clips (20 random older ones plus `tie` and the October re-voices `chair`, `cheap`, `hippo`, `pea`, `chef`,
+  and `eraser`, `mum`): all trimmed (0.6–1.2 s) and at −25 to −26 dB mean. faster-whisper `small.en` flagged 5: `tie` (blank),
+  and `bedroom` («Dead Room»), `pea` («P»), `socks` («Sucks») — which read the same way on the untouched originals, so they
+  are the checker's limits, not processing. **`cheap` reads «Sheep» after processing and «cheap» before.** Its onset is intact
+  (the first frames rise −27, −17, −13 dB below the peak before and −26, −16, −13 after; speech 0.61 s → 0.59 s), so processing
+  did not clip the «ch»; the louder level is what tips the checker. It is the word the model once said as «sheep» (the
+  2026-10-04 audit), so **someone should listen to `cheap`.**
+
+## Chat app-help, twenty-fourth live pass: 8 more wordings and a terms-of-service answer — 2026-10-24
+
+A 30-question pass (18 app, 12 curriculum) on app.iqrra.com found app questions answered by the
+model for which the app already had an answer: «ما ألعاب إقرأ المتاحة» (`howGamesList`), the
+lessons scheduled in the calendar and **colleagues' exams** (`howCalendar`: the model refused
+«لأسباب تتعلق بالخصوصية» although the calendar has a «عرض امتحانات المدرسة» switch), the privacy
+policy (`howPrivacy`, which the model called outside its scope), a library video for a lesson and
+filtering the library by type (`howLibraryVideos`). One new short answer, `howTerms` (ar + en):
+«شروط الخدمة» is the row under «سياسة الخصوصية» in Settings (`app/settings.tsx`, route
+`/legal/terms`) and the link at the foot of sign-in and sign-up. Wordings added to existing rule
+ids in `appHelp.ts` plus a new `terms` place and rule, pinned in `appHelp.test.ts` with
+near-misses that stay with the model.
+
+**Found, not fixed (a model answer, not the matcher):** asked «ما هي أنواع الروابط الكيميائية؟»
+the model listed single, double and triple covalent bonds and the metallic bond and **left out the
+ionic bond**; and for «س² − ٥س + ٦ = ٠» it solved correctly (2 and 3) but said the two numbers
+have sum 5, where the pair that factors it is −2 and −3 with sum −5. Neither is in the app-help
+code; the first is a question about how the chat grounds a chemistry answer on a lesson.
+
+**Left out on purpose:** the number of teams in Class Challenge (the answer belongs to the tool,
+not a rule), the settings screen's contents, the geometry sketchpad and the function grapher for a
+parabola (the model's usage tips are more useful than the Math Corner location answer), showing a
+lab experiment, and «أضيف شعبة جديدة بعد ما أنشأت حسابي» (card only; I did not find the rule
+that owns `howAddClass`).
+
+## Grade 10 grammar (Semester 2) in the English corner — built, shown to nobody yet, 2026-10-24
+
+The ten Grade 10 Semester 2 lessons whose book statement is a grammar topic now have grammar activities: Choose the word,
+Build the sentence and True or false. Semester 2 has no vocabulary rows (`english_vocabulary.json` holds none for
+`kbl-eng-s2-…`), so the hub never listed it; **all ten are grammar-only hub lessons** (`GRAMMAR_ONLY_LESSONS` goes from 6 ids to
+16) and **the Grade 10 hub goes from 21 to 31 lessons**. **All 21 Grade 10 units are `reviewedBy: null`
+(`englishGrammarG10.ts`), so no teacher or student sees a card, no Semester 2 lesson is in the Grade 10 index, and a direct
+URL says «lesson not found».** Spec: `docs/superpowers/specs/2026-10-24-english-corner-grammar-g10-s2-design.md`; plan:
+`docs/superpowers/plans/2026-10-24-english-corner-grammar-g10-s2.md`. Same engine and rules as Semester 1, Grade 9 and Grade 5;
+**no app screen, server, schema or migration change** (the app's own test file only grew).
+
+- **400 hand-written items, 40 a lesson, 30 sub-topics** (`englishGrammarG10Items.ts`, `G10_ITEM_LESSONS` now 21 entries,
+  each `statement` equal to `objectives[0]` of its lesson, read back from the JSON by a test). **102 are `meaning` and 298 are
+  `form`; Grade 10 as a whole is 21 lessons, 840 items, 308 `meaning` and 532 `form`.** Lessons (sub-topic size and kind):
+  - `u6_l1` first and second conditional: `first-conditional` 12 and `second-conditional` 12 form, `imagine-vs-real` 16 meaning.
+  - `u6_l4` zero conditional: `if-present` 14, `when-general-truths` 14, `questions-negatives` 12, all form.
+  - `u7_l1` reporting verbs: `verb-patterns` 16, `admit-deny-suggest` 14, `tell-ask-warn` 10, all form.
+  - `u7_l5` reported questions: `ask-wonder` 14, `if-whether` 12, `word-order` 14, all form. Reported speech tests no tense
+    shift (both «said she was tired» and «said she is tired» pass): the items turn on the verb pattern, the object,
+    `if`/`whether` and word order.
+  - `u8_l1` the passive: `present-past` 14, `with-modals` 12, `questions-negatives` 14, all form.
+  - `u8_l6` have/get something done: `have-something-done` 12 and `get-something-done` 12 form, `service-vs-self` 16 meaning.
+  - `u9_l1` third conditional: `third-conditional` 14 form, `past-unreal` 14 meaning, `would-have-forms` 12 form.
+  - `u9_l4` I wish and if only: `wish-present` 14 form, `wish-past-regrets` 14 meaning, `if-only` 12 form.
+  - `u10_l1` speculating about the present: `must-cant` 14 meaning, `might-may` 12 form, `be-v-ing` 14 form.
+  - `u10_l3` speculating about the past: `must-have` 14 meaning, `might-could-have` 12 form, `cant-have` 14 meaning.
+  - Sentences are nine words or fewer (`buildCap(10)`), no real or book-character names (family words and Jordan, Amman, Aqaba,
+    Petra, Irbid only), nothing religious, political or sensitive. A distractor is `form` (ungrammatical in standard English) or `meaning`
+    (grammatical, excluded by something in the sentence itself), never a form that could fit; each sub-topic's comment in
+    the data file says what decides the answer and which distractors were left out on purpose.
+- **Deviation from the spec: «imagine-vs-real» no longer has a «likely» side.** The spec said «Imagine …» and «If I were …»
+  against a real, likely condition. The first draft wrote that with mixed-conditional twins («Tomorrow, if it rains, we
+  would play indoors», «If I were a bird, I will fly away»), and the review found 9 of the 16 rows were really form errors or
+  twins a teacher could accept. The topic stays 16 `meaning` rows (so 102 and 298 stand) but every row is now an unreal
+  situation stated in its own sentence («Imagine …», «Suppose …» with a past verb) followed by a `would` result, and the
+  twin is a sound, stand-alone `will` sentence the opening word rules out. No row relies on a time word or on were/could +
+  will. The cost: the topic tests only the unreal opener, not likely against unlikely. The spec's marker sentence, the
+  `u6_l1` note in `NOT_COVERED_G10` and the sub-topic comment say so.
+- **Other plan example rows changed, no kind switched.** `u8_l6`: «We had the house painted by experts» was not used (its twin
+  «We painted the house by experts» is a form error); the service side is decided by a sentence saying the speaker cannot do
+  it, was away, did not do it or who did it, and the self side by `myself`/`ourselves`… plus a second clue («Nobody
+  helped.», «without a barber»). `u9_l1`: «We lost. If we had trained, we would have won.» was 10 words and «We lost» does
+  not rule out the mixed conditional, so every `past-unreal` row carries a past time word in the result clause («You'd have met
+  her yesterday if you'd come.»). `u10_l3`: «The lights were off. They must have left.» became «Their car is gone. …», because
+  lights that are off do not rule out «can't have left». No sub-topic switched between `meaning` and `form`.
+- **Hub and teacher's form.** `GRAMMAR_ONLY_LESSONS` gains the ten ids (`englishHub.ts`; `hubLessonVisible` hides each until
+  its unit is signed). `GRADE_COPY[10]` (`englishGrammarReview.ts`): the lead now says «الفصلان الأول والثاني», its list of
+  two-form choices gains «الشرط الأول أو الثاني», and the check line about lessons that need a wider context now names the
+  conditionals and speculation (must and can't). Nothing else in the renderer changed: 21 sections, each labelled with its
+  semester and unit. `docs/english-grammar-g10-review.html` is now 21 units, 840 sentences and 840 form or meaning chips,
+  and `docs/english-grammar-g10-sheet.md` was regenerated; the other grades' forms and the reading forms are byte-identical
+  (tests pin them). Measured in Chromium after the last data change: at 390 px the page does not scroll sideways, and in
+  print media at 1032 px no table cell crosses the page edge and no sign-off box overlaps a row in any of the 21 units; it
+  prints at 99 A4 landscape pages.
+- **True or false is silent** and **Yes or No is not offered**, as in Semester 1; Choose and Build play the correct sentence
+  after the answer. Nothing is pictured.
+- **Tests:** `englishGrammarG10Items.test.ts` (21 lessons, 840 items, every sub-topic's size and kind pinned for all 21,
+  statements against the Semester 1 or 2 JSON, caps, uniqueness, banned names, 308 and 532, a `must of`/`could of` guard, a guard
+  that no `u6_l4` distractor has will or would, the glued-«و» check over the whole form), `englishGrammarG10.test.ts` (21 units in hub order, all unsigned, each note plain
+  text), `englishHub.test.ts` (sixteen grammar-only ids, 31 Grade 10 lessons) and, in the app,
+  `englishGrammarG10ItemGames.test.ts` (Choose, Build and True or false on all 21, Yes or No on none, no twin voiced).
+- **Verified (2026-10-24, on `ccr-d9db5f6c-mgwkuo`):** root `pnpm run typecheck` clean (api-server, mobile, scripts);
+  `@workspace/curriculum` `test` **691 tests, 691 passing** with `env -u R2_ACCESS_KEY_ID -u R2_BUCKET -u R2_ENDPOINT -u
+  R2_SECRET_ACCESS_KEY` (with the sandbox's `R2_*` variables set `r2.test.ts` fails by design, as in every earlier entry), its
+  `verify` 197 files, 3306 lessons, 0 errors; the **full mobile suite 7303 tests, 7293 passing, 10 skipped, 0 failing**
+  (360 s). The api-server suites were not run: nothing there changed. **In a browser** at 390 px in Arabic and English, web
+  build with `EXPO_PUBLIC_DEMO_MODE=true`: unsigned, the Grade 10 index has 20 rows (units 1-5), no «grammar activities» row
+  and none of the ten Semester 2 lessons, and each of their URLs says «lesson not found». Then, with
+  **a temporary sign-off on the ten Semester 2 units in the working tree** (`reviewedBy: { name: 'LOCAL CHECK', … }`, restored
+  straight after with `git checkout`; `grep -rc "LOCAL CHECK"` over `lib/curriculum/src` and `artifacts/mobile/services` shows no
+  non-zero count; `git status` shows only the docs), the index has 30 rows (units 1-10, the Semester 1 Articles lesson stays
+  unsigned) and ten «grammar activities» rows, each under its unit; every one of the ten lesson pages holds a «Grammar» section
+  of exactly Choose, Build and True or false, with no Yes or No and no flashcards. Over a round of eight in each activity on
+  `u6_l1`, `u8_l6` and `u10_l3` (two questions on the other seven), in both languages: Choose and Build play the correct
+  sentence after the answer (a recording URL and the browser voice as fallback; every question, 0 plays before answering),
+  True or false shows no speaker button before or after answering and plays nothing, nine-tile Build rounds wrap their nine
+  slots onto two rows and their tiles onto two or three, the longest Choose stem met was nine words, and there is no
+  horizontal scroll at any step. I read the screenshots (the Semester 2 index rows in both languages, a lesson page in each
+  language, nine-tile Build rounds, Choose after answering, True or false before and after answering).
+- **Not verified:** the 400 sentences by a teacher (a script cannot tell wrong English from right; the printed form is the
+  review) — **no teacher has read a sentence**; the match of each lesson id to the printed book page; on a device; audio, which
+  does not exist for these sentences (the browser check heard the fallback voice, because `english-audio` needs the OpenAI and
+  R2 keys and has not been run for them); the browser check used a temporary local sign-off, never a committed one; and the
+  `e2e/` smoke test was not run (nothing it drives changed).
+- **Where a teacher will push back (the risky lessons and rows):**
+  1. **The conditionals** (u6_l1, u6_l4, u9_l1): `imagine-vs-real` tests only that «Imagine/Suppose + past» makes `will`
+     wrong, and «Imagine you have wings. You will fly.» would be acceptable English (no row offers the opener's tense as the
+     choice). `u9_l1 third-conditional` has four rows whose twin is «If I would have known», which informal American English
+     uses; standard grammar rules it out and the plan allows it. «If she lived in Aqaba, she would swim» was changed to test
+     `would swim` / `would swam`, because «If she would live» can mean willing.
+  2. **Wish and unreal past, with one-sided answers.** `past-unreal` (u9_l1) and `wish-past-regrets` (u9_l4), 14 rows each,
+     all have the perfect side as the answer: a clean present marker (now, today) does not rule out `would have` or `had` +
+     participle, so there is no opposite side, and a student who always picks the perfect form scores full marks inside the
+     topic. The twin is ruled out by a past time word («yesterday»), which a teacher may call a form error rather than
+     meaning. «I wish I studied last year» is heard in informal speech. `wish-present` answers `were`, with no was/were
+     contrast.
+  3. **Speculation** (u10_l1, u10_l3): `must-cant` and `must-have` rest on evidence a teacher may find soft («Everyone is laughing.
+     The film must be funny.», «My keys are gone. I must have lost them.» — they could be stolen), `cant-have` is always
+     `can't have`, and «could have took» / «might have ate» are dialect forms used as `form` distractors.
+  4. **Have/get something done** (u8_l6): `service-vs-self` is decided logically (a sentence says the speaker could not,
+     did not or was away), not grammatically, and a bare `myself` could be read as emphatic; the rows carry a second clue.
+     Bare-verb distractors that make a noun with the object («car repair», «a phone fix») were replaced by -ing or
+     object-after-participle errors; «had a swimming pool dug» / «digged» may be less familiar than «built».
+  5. **Smaller:** a reported question with inverted order («He asked where did I live») is accepted in Irish and Indian
+     English (the rows follow the standard rule); «admitted cheating in the test» is British («on the test» in American
+     English); «it don't» in a zero-conditional twin is dialect, wrong in standard English; «I have the only key. He can't have entered.»
+     would read more naturally with «got in», but that makes 10 words.
+- **Known limits:** the choice between forms is tested only where something in the sentence decides it, so some topics
+  that English also allows both ways (the tense after a reporting verb, `would` in a first-conditional result) are
+  not tested at all; a wrong True or false answer shows «Correct answer: False», not the corrected sentence; nothing is
+  pictured. The reviews were one per task, a fix round for each of the first two (the Task 1 round rewrote
+  imagine-vs-real, the Task 2 round applied nine review minors) and a final whole-branch fix wave (real distractors in the
+  `u6_l4` note, the form's lead no longer says the Semester 2 lessons have no book vocabulary, softer evidence rows
+  strengthened, one near-duplicate replaced).
+- **To switch a lesson on:** a Grade 10 English teacher reads and signs that lesson's page of
+  `docs/english-grammar-g10-review.html`, printed, and checks the book-page line; audio is recorded for the correct
+  sentences; then the unit's `reviewedBy` is set in `englishGrammarG10.ts`. The lesson appears in the Grade 10 index only once
+  its unit is signed. Until audio exists the Semester 2 lessons would be spoken by the browser voice.
+
+## Admin dashboard: the YouTube number fills itself — 2026-10-24
+
+The «YouTube» card under «التنزيلات والمتابعون» no longer needs typing. The first
+time an admin opens the dashboard each day, `GET /admin/metrics` asks YouTube for
+the subscriber count of `@IQRRA_ME` and stores it as that day's `youtube` row.
+
+**What changed**
+- `lib/youtubeSubscribers.ts`: `channels.list?part=statistics&forHandle=IQRRA_ME`
+  (1 quota unit, the existing `YOUTUBE_API_KEY`, 4 s timeout). Looked up by handle, so no
+  channel id is configured. It is **not** `teacherChannel.ts`, which is a third party's channel.
+- `refreshYoutubeMetric` in `routes/admin.ts`: skipped when today already has a `youtube` row
+  (a typed number wins), when the key is unset, or within 30 minutes of a failed try. Never
+  throws, and logs no error object because the request URL carries the key. Rows it writes have
+  `recorded_by` null.
+- No scheduler, no migration, no new secret.
+
+**Limits**
+- A day nobody opens the dashboard has no row — a gap, not a wrong number.
+- YouTube rounds public counts above 1,000 to three significant figures.
+- Instagram, Facebook, LinkedIn, X and Play downloads are still typed in: each needs its own
+  credentials or app review (see the advice behind this change).
+- Verified: unit tests for the parser, typecheck, and on a throwaway local database against a
+  stubbed YouTube reply — first load stored 137 (handle `IQRRA_ME`), second load did not call
+  again, and a number already typed for the day was kept with no lookup. **Not** verified: a
+  real YouTube reply with the production key, and the card in a browser (the response shape
+  is unchanged).
+
+## English audio: voice register fixed, clips trimmed and levelled, and an audit that needs no keys — 2026-10-24
+
+The English corner plays pre-voiced MP3s from the public bucket (`english-audio/<slug>.mp3`, made
+by `lib/curriculum/scripts/generate-english-audio.ts`). An audit of the 1,050 stored clips and of
+the plan found:
+
+- **Wrong register for Grade 5, 9 and 10 sentences.** The script put every grammar string in the
+  young set ("all are Grade 1–2"), so about 1,700 Grade 5/9/10 grammar strings (and more as Grade 10
+  Semester 2 lands) would have been read "to a six-year-old child … a little slowly". None of the
+  2,990 grammar strings is voiced yet, so
+  this cost nothing to fix.
+- **Dead air:** median 0.69 s of silence after the word (286 clips over 1 s, max 2.0 s), median
+  0.16 s before it (max 1.1 s); 17.6 of 32.3 minutes are outside the speech (14.0 of them after it).
+- **Size:** 128 kbps for one spoken word (29.6 MB, median 28 KB).
+- **Uneven loudness:** speech level p5 −33.2, median −29.0, p95 −25.4 dBFS, from −37.8 (`paint`)
+  to −21.6 (`duck`).
+- **One blank recording:** `tie.mp3` is 0.36 s of silence (peak −90 dBFS); nothing rejected it.
+- **No record of how a clip was made**, and **no way to check coverage without credentials.**
+
+**What changed (tooling only; the app is untouched):**
+
+- `lib/curriculum/src/englishAudioPlan.ts` (new, pure): `audioPlan()` — one item per slug with its
+  text, register, source and grades. Young = used by a Grade 1–4 lesson or grammar unit; everything
+  else teen (4,238 recordings on `main`: 1,707 young, 2,531 teen). The instructions, `PRONUNCIATION`,
+  model and voice moved here from the script, wording unchanged. `englishGrammar.ts` gained
+  `unitSpoken(unit)`; `allGrammarSpoken()` is now the union of it, same output, same order.
+- `lib/curriculum/src/englishAudioProcess.ts` (new, pure) and `scripts/audioFfmpeg.ts` (ffmpeg):
+  a verdict on the raw model output (blank: peak under −40 dBFS or no speech frame; under 0.15 s
+  or over 6 s of speech), then a gain to a −24 dBFS speech level (±12 dB, peak never over
+  −1.5 dBFS), a cut keeping 0.06 s before and 0.15 s after the speech, and a 40 kbps 24 kHz mono
+  MP3. `PROCESS_VERSION = 1`.
+- The generator rejects a bad take (listed, not uploaded), processes every kept one, and checks the
+  RESULT before uploading it (`processedVerdict`: it still passes the verdict, lost at most 0.1 s of
+  speech, kept at most 0.12 s / 0.25 s of silence, peaks within 0.5 dB of the ceiling — otherwise
+  rejected as `processing` and not stored, and the run stops if the first 10 all fail, so a broken
+  ffmpeg build damages nothing). It needs ffmpeg (exit 2) unless `--no-process` (uploaded not
+  checked or processed). It keeps `english-audio/_manifest.json` (text, register, model, voice,
+  process version, speech length, bytes per slug), merge-written every 50 uploads and at the end,
+  and stamps every upload with `x-amz-meta-process-version`. New `--reprocess`: no OpenAI key,
+  downloads each stored clip, processes it and puts it back under the same key and cache header;
+  skips clips whose metadata or manifest entry is at the current process version, leaves a failing
+  one untouched and lists it. A refused R2 credential stops the run once, like a refused TTS key.
+  Run one instance at a time.
+- **Backups:** before a stored clip is first replaced (`--reprocess`, `--force`, `--only`), it is
+  copied to `english-audio-original/<slug>.mp3` — a sibling prefix the clip listing never reads —
+  unless a backup is already there (never overwritten); a clip whose backup fails is not replaced.
+  To restore: copy `english-audio-original/<slug>.mp3` back over `english-audio/<slug>.mp3` and
+  delete the slug's entry in `_manifest.json`. A backup of one of the 1,050 pre-existing clips has
+  no process-version stamp; one made later by re-voicing a clip this script processed carries
+  `process-version=1` (CopyObject keeps metadata). Restoring with an S3 client copy keeps the
+  backup's stamp, so `--reprocess` correctly skips a stamped one; re-uploading through the
+  Cloudflare dashboard drops it, so the next `--reprocess` processes the clip. If the clip was
+  restored because processing damaged it, keep it out of the next `--reprocess` (name the others
+  with `--only`, or fix the cause first), or it is processed — and damaged — again.
+- `pnpm --filter @workspace/curriculum run english-audio-audit` (new): no credentials, `HEAD`s every
+  planned clip on the public URL (6 at a time, backoff on 429/5xx with `Retry-After`) and prints
+  coverage by grade and source; `--missing`, `--deep` (downloads and measures), `--fail-on-missing`.
+
+**Rulings, measured on the 1,050 clips.** The cut is `atrim` at sample positions computed from the
+same 10 ms frames the audit measures, not `silenceremove`: run after the gain, the latter's sliding
+window disagreed with the frames and left 0.13–0.28 s of leading or up to 0.43 s of trailing
+silence on 23 clips. The gain is computed on the speech span the result will have (a raised
+clip's soft edges join it), which moved 18 more clips inside ±1.5 dB. The cut is decided 1.5 dB
+above the −45 dBFS threshold at the output level: the encoder moves a faint frame by about a
+decibel, and many clips have a −44 to −49 dBFS click about 0.1 s before the word. The MP3 is
+written to a temp file outside the repo, not a pipe, because ffmpeg writes the gapless header only
+to a seekable output — through a pipe every clip gained 46 ms of encoder priming.
+
+**Measured (the pipeline run locally over all 1,050 downloaded clips; nothing uploaded):** `tie`
+rejected as blank; of the 1,049 kept, size median 28.1 → 5.3 KB (ratio 0.21, max 0.33), 32.3 →
+19.1 minutes, trailing silence max 0.17 s (was 2.0), leading max 0.06 s (was 1.1), speech level p5
+−24.5 / median −24.4 / p95 −24.2 dBFS with 1,046 within ±1.5 dB of −24 (the three outside —
+`paint`, `a-plate-of`, `project` — are at the +12 dB clamp), peak max −2.6 dBFS. No frame louder
+than −43.5 dBFS (output level) was cut from any clip. Speech spans are within 40 ms of the raw ones
+or longer (a raised clip's soft edges cross the threshold) except `doughnut`, 0.07 s shorter: the
+removed part is a −44 dBFS click 70 ms before the word, not the word. The upload check passes all
+1,049 processed clips, and rejects 1,042 of them when handed the untrimmed clip instead (what a
+build that ignored the cut would produce). 40 kbps keeps the spectrum
+up to 10 kHz within about 1 dB on `snake`, `safe`, `blue`, `giraffe`. The new audit, run against
+the live bucket, reproduces 1,050 voiced and 3,188 missing (190 Grade 5 and 8 Grade 9 words and
+all 2,990 grammar strings); `--deep` reproduces the figures above.
+
+**Not done:** no clip was re-voiced or reprocessed and nothing was uploaded — the generator was not
+run in any mode. Nobody listened to the processed clips. The first real run is `pnpm --filter
+@workspace/curriculum run english-audio -- --reprocess` (backs up each original it replaces
+to `english-audio-original/`, cleans the 1,049 good clips and writes the manifest;
+`tie` is listed, re-voice it with `--only tie`), then the plain run (voices the 3,188 missing,
+processed). `evening.mp3` has no trailing silence and may be cut off; listen before trusting it.
+
+**Next:** serve the clips from a custom domain instead of `r2.dev` (rate-limited), a native
+fallback and an offline cache in the app, and a speech-to-text round trip that checks each clip
+says its text.
+
+## Class-code claims wait for the teacher — 2026-10-24
+
+A student who picks their name off the **class** code used to become that child at once, so anyone who
+had the code could take any name in the class. Now the pick is held as a row in the new
+`roster_link_requests` table (migration 0017) and the teacher approves it from the class's Students tab.
+Nothing reads that table as access: an unapproved account has no `roster_links` row, so chat contacts,
+homework, exams and parent letters all see nothing. `roster_links` has no `status` column and must not get one.
+
+**What changed.** Server: `claimNeedsApproval` / `pendingLimitReached` (`lib/claimDecision.ts`), the held path in
+`linkRosterRowInTx` (`routes/auth.ts`, shared by `/claim` and `/redeem`), `GET /classes/:id/link-requests`,
+`POST /students/:id/link-requests/:requestId/approve|reject` (`routes/roster.ts`), `DELETE /auth/claim?pendingOnly=1`.
+App: `ClaimWaitingCard` + `useClaimWaiting` (shown by `claim-required`, `join-class`, and a note under the login
+code on code-only signup), `LinkRequestsBanner` on the Students tab, services `claimResult`, `claimWaiting`,
+`linkRequests`, and 16 strings (ar + en).
+
+**Rules.** Only a `self` claim made through the class code is held; per-student codes and parents link at once.
+Up to five accounts may wait on one name (409 `claim_pending_limit` for the sixth, which keeps its earlier pick);
+an account holds one waiting pick (choosing another replaces it; re-entering a held or already-linked name queues
+nothing). `POST /auth/claim` answers 202 `{pending, studentId, studentName}` for a held claim; `/redeem` answers 201
+as before with `hasRosterLink: false`, `pending`, `studentName`. Approval consumes the request, re-reads the
+sender's role (`claim_request_stale` if it is no longer a student), inserts the link (the partial unique index
+`roster_links_one_self_idx` answers `claim_already_linked`), clears the rest of that name's requests and syncs
+class threads. Switching role deletes the account's waiting requests. The student's `pending` list shows only
+requests a teacher could still answer (live student, live class of that teacher). The teacher's list says
+whether an account was just created from the class code (`codeSignup`) because such an account is named after the
+roster name it picked and so proves nothing; rows asking for the same name are flagged as competing.
+
+**Verified (final head, locally).** Root `pnpm run typecheck` clean. api-server `pnpm build` then `pnpm test`
+against a throwaway Postgres 16 with `REQUIRE_DB_TESTS=true`: 2524 tests, 2524 pass, 0 skipped — including
+`claimApproval.db.test.ts` and `linkRequests.db.test.ts`, and both again with `RLS_ENFORCE=on`. `lib/db`
+`pnpm test` (the row-level-security suites, `rlsCoverage`, `rlsMatrix`, `rlsDiff`) against the migrated throwaway
+database: 66 tests, 66 pass. Mobile `pnpm test`: 7245 tests, 7235 pass, 0 fail, 10 skipped. The math-verifier suite
+was not run here (no `sympy`); CI runs it and the branch does not touch it. CI on the pull request ran the same
+suites on each pushed head.
+
+**Not verified.** None of the screens (waiting card, join-class, signup note, banner) was run in a browser or on a
+device: layout, RTL, dark mode and the real approve/reject round trip are unchecked. Approve-versus-withdraw
+races have no interleaving test (outcomes are pinned; the `FOR UPDATE` on the sender's `users` row is what
+serialises approve against a role switch). `rlsDiff` has no step for the new teacher routes; their queries were
+read against the policies and run under `RLS_ENFORCE=on` in the HTTP tests only.
+
+**Known limits.** (1) The teacher gets no push or badge: a student waits until the teacher opens the class's
+Students tab, and the student has no push on approval either — they use "Check again". (2) A rejected student
+can ask again, and a squatter can repeat that up to the cap of five; the teacher rejects them one by one.
+(3) A held student with no class lands on the grade picker after signup — the routing gate (`needsRosterClaim`,
+parents only) was deliberately not widened. (4) `codeSignup` turns false once a code-only account adds an
+email, so such a request shows the name twice again. (5) Analytics: `class_joined` now fires only for a link made
+at once; a held join and an approval emit no event. (6) `failRoster` in `routes/roster.ts` logs the raw error
+object (existing behaviour, three more callers now). (7) **Rollout:** installed Android builds read any 2xx from
+`/auth/claim` as joined — on a 202 an old build shows the app empty (no data is exposed) and sends the student back
+to the code screen on the next `/auth/me`; teachers see the banner only on a build that has this change, and
+the `production` OTA is manual.
+
+## Tests for the code-only account routes — 2026-10-24
+
+`POST /auth/redeem`, `POST /auth/code-login` and `POST /auth/add-email` had no committed test: they were
+driven by hand when they shipped (see «Students choose an email or a teacher's code»). New
+`routes/__tests__/codeAccounts.db.test.ts` runs them against a real database through the built bundle,
+18 tests. Tests only; no production code changed.
+
+**What it pins:** a student's own code makes a code-only student linked `self`, named after the roster row,
+with `email`, `password_hash` and `guardian_confirmed_at` null; the login code is returned once and only its
+sha256 is stored; a taken student's code is a 409 and the refused sign-up leaves no user behind (the
+transaction rolls back); a parent gets a `guardian` link, named «ولي أمر» + the child, and a second parent may
+use the same per-student code; a class code needs a name picked (`claim_needs_name`), refuses a name not on that
+class (`claim_name_not_in_class`) and refuses a parent (`claim_parent_needs_student_code`); an unknown, expired,
+blank or whitespace code is one `claim_code_invalid`, and a missing role or missing terms is refused before any
+lookup; all three routes are closed with `student_accounts_disabled` when `STUDENT_ACCOUNTS` is off.
+`code-login` signs in with the code in any spelling (case, spaces, dashes), answers one 401 for wrong,
+malformed, missing or teacher-length codes, never accepts a teacher's code, reports a suspension only after the
+right code, and stamps `last_login`. `add-email` needs a session, a valid address and a strong password; stores
+the address trimmed and lower-cased, unverified, with a bcrypt hash and a verification token, leaves the login
+code working, keeps email-and-password sign-in refused until verified, leaves an account that already has an
+email untouched (`email_already_set`) and refuses an address another account holds (`email_taken`).
+
+**Verified:** the file passes 18/18 against a local Postgres 16; the whole api-server suite passes 2508/2508
+with `REQUIRE_DB_TESTS=true`. A mutation check: dropping `isNull(users.email)` from `add-email`'s update made
+exactly the `email_already_set` test fail; restored, the file passes again.
+
+**Not covered:** the rate limiters (`redeem`, `redeem-code`, `code-login`, `add-email-*` ceilings are not
+exercised), the two-students-redeem-at-once race on the row lock (needs concurrent requests; the `taken`
+refusal is covered, the interleaving is not), the class-thread sync after a redeem (it only logs on failure),
+and `POST /students/:id/links/:userId/login-code` (the reissue route, whose rule has its own unit test in
+`loginCodeReissue.test.ts`).
+
+## Math Corner exercises as homework — 2026-10-24
+
+**What a teacher does.** In a homework form, «لعبة أو تمارين من الدرس» (was «لعبة
+من الدرس») now offers «تمارين الرياضيات» on every maths lesson the Math Corner covers,
+beside the lesson's term games. The picker lists those lessons even when they have no
+key terms, so a Grade 1–9 maths class, which had almost no games, now has something to
+set. The homework's «النتائج» sheet shows each student's best exercises score and
+attempts, like a game («تمارين الرياضيات · محاولة · ٢ من ١٠»).
+
+**What a student sees.** The homework line reads «تمارين الرياضيات: <lesson>» with a
+calculator icon. It opens `/curriculum/math/exercises/<lessonId>?hw=<id>`, which starts
+in «اختبر نفسك»; each finished set is posted to the homework and the end card says
+whether it was sent (the games' `SendStatus`, now in `components/ui/SendStatus.tsx`,
+with a retry). The set also still counts for the Math Corner's own best score and the
+teacher's «تمارين الرياضيات» class sheet.
+
+**How.** `exercises` is a fourth homework "game": `GAMES` in
+`modules/homework/game.ts`, `HomeworkGameResource.game` in the schema (jsonb, no
+migration), `HomeworkGameName` in the app. Same attachment, same `game_results` row
+(best ratio, attempts), same tick on the homework, same results route. The server
+refuses `exercises` on a lesson that is not a catalog maths lesson (`isMathsLesson`).
+The app offers it only where the exercise bank covers the lesson
+(`homeworkGamesFor` → `resolveExerciseLesson`). `openResource` routes it to the Math
+Corner instead of `/play/lesson`. Labels go through `HOMEWORK_GAME_TITLE_KEY`.
+
+**Verified.** DB tests: exercises attach to a maths lesson and are refused on a history
+lesson (400); a student's `exercises` result saves, ticks the homework, and is 404 on a
+homework that did not attach it. App tests: `homeworkGamesFor` offers exercises exactly
+where `resolveExerciseLesson` covers the lesson, and a Grade 5 maths class's picker
+lists exercise-only lessons. In a browser against a throwaway database: the teacher's
+picker showed «تمارين الرياضيات» on «ضَرْبُ الأَعْدادِ»; the student opened it from
+«الواجبات», got test mode, finished 2/10, saw «أُرسلت نتيجتك إلى المعلم»; the teacher's
+list read «أنجزه 1 من 1» and the results sheet «سارة — ٢ من ١٠».
+
+**Not covered.** A web tab opened before this deploy drops the unknown `exercises`
+attachment from its list, and if it then saves the homework with `gamesIncluded: true`
+the exercises are detached; a reload fixes it. Android gets none of this until the
+1.5.0 build ships. A parent sees the line and the child's score and can open the
+exercises, but in learn mode with nothing posted: as with games, only the student's
+own finished set reports.
+
+
+## Chat app-help, twenty-third live pass: 13 more wordings for answers that already existed — 2026-10-24
+
+A 30-question pass on app.iqrra.com found 13 questions answered by the model for which the app
+already had a written answer: clearing the chat history (the model refused; `howChatHistory`
+says there is no history), the teacher's own objectives in a lesson plan (`howPlanOptions`),
+old teaching plans (the model sent the teacher to a non-existent «أدوات الذكاء الاصطناعي» tab;
+`howTeachingPlan`, a new rule block for the `teaching-plans` place), downloading the teacher's
+book, opening a lesson from a book, finding a lab experiment, the Math Corner's formulas and unit
+converter (the model had read «القوانين والصيغ» as angles), opening the Quran corner, sending the
+link code to parents, entering paper-exam marks by hand (`howEditMark`), finding struggling
+students after an exam (`howSupportGroups`) and preparing a remedial worksheet for them
+(`howRemedial`, which the model had answered by asking which subject). No new answer strings;
+wordings added to existing rule ids in `appHelp.ts`, pinned in `appHelp.test.ts` with
+near-misses that stay with the model.
+
+**Left out on purpose:** «أتدرب على تمارين الدروس» (the exercises exist in the Math Corner only,
+so a bare ask about another subject would get the wrong place), «أعرف أن ولي الأمر ربط حسابه»,
+«أشاهد ما يراه الطالب في حسابه», «أنسخ رد إقرأ» and «أطبع خطة الدرس» (the generic
+copy-and-export text is accurate), and «أعدّل التهيئة في خطة الدرس» (only the tool card; the
+edit answer `faqA5` is a different wording and I did not widen it).
+
+## Printed grammar forms fit the page, the sign-off no longer covers rows, and True or false says right or wrong without pictures — 2026-10-24
+
+Four small fixes found while building Grade 10 grammar (#1235); none changes a sentence, and no `-sheet.md` changed.
+
+- **The printed forms clipped.** The forms are right-to-left and their tables are `nowrap`, so in A4 landscape the
+  widest row set the table width and the last columns were cut off the left edge of the page. Measured in
+  Chromium print media at 1032 px (cell edge off the page before → after): Grade 3 38 → 0 px (a third of the notes
+  column), Grade 4 726 → 0 (tick, notes and yes/no columns), Grade 5 403 → 0 (notes), Grade 9 799 → 0 (kind,
+  tick, notes); Grades 1 and 2 already fit; Grade 10 got the same fix in #1235. Pages: Grade 3 45 → 34, 4 57 → 54, 5
+  42 → 44, 9 93 → 96. Every rule is inside `@media print`: at 390 px the screen layout is byte-for-byte what it was.
+- **The sign-off box covered the last rows.** The unit was a grid in print, so when its table ran onto a second page
+  the verdict and signature box was drawn over the last one to three rows (their sentences and tick boxes) and
+  left blank pages. Measured over the 7 grammar and 4 reading forms: 86 overlapping sign-offs and 11 blank pages
+  before, 0 and 0 after; page counts unchanged except reading Grade 2 (33 → 32) and Grade 4 (41 → 39), where the
+  blank pages went. This existed in every form from Grade 1 on.
+- **Arabic «و» glued to an English word.** The notes wrote «وafter»; the English run is an LTR span and the «و»
+  rendered like a stray letter. `ltr()` now puts a space after a standalone «و» before a Latin letter (and four
+  hand-written strings and the Grade 4 reading form's three leftovers are spaced). The rendered text of every
+  grammar and reading form has 0 glued cases; a test scans all of them. The changed docs differ from the old only by
+  inserted spaces (and the print rules): grammar Grades 1–5, 9 and reading Grades 2–4.
+- **True or false and Yes or No subtitles assumed a picture.** On the lesson screen True or false said «Does the
+  sentence match the picture?» and Yes or No said «Pick the answer that fits the picture» on lessons with none. Now a
+  lesson whose right-or-wrong questions have no picture says «Is the sentence right or wrong?» (every Grade 5, 9 and
+  10 lesson, Grade 4 Semester 1 Unit 4 and the picture-free Grade 3 and 4 lessons), and Yes or No on Grade 4 S1 U4
+  and Grade 9 S1 U4 says «Pick the right answer to the question». The rule is a pure helper pinned by tests against
+  the real lesson data.
+
+**Verified:** curriculum 688 tests, focused mobile suites 130, root typecheck; the print measurements above in
+Chromium; page images read for one page of every grade (Grade 3 page 6 shows the sign-off under row 40 with rows
+36–40 legible). **Not verified:** other browsers' print engines and a real printer (only Chromium's PDF output was
+measured); the lesson-screen subtitles in a browser (tested as data, not as a screenshot). **Known limit:** the
+teacher sheets (`-sheet.md`) still describe True or false as «beside its own picture», which is wrong for Grades 5, 9
+and 10; changing it would rewrite those committed sheets, so it is left for a later change.
 
 ## Chat app-help, twenty-second live pass: 10 more wordings for answers that already existed — 2026-10-24
 
@@ -315,6 +2805,36 @@ an invented «التقارير» screen. Both halves are the existing `howClassA
 **Not done:** «أنضم إلى مدرستي» (the school-join flow for a teacher is not something I
 verified), the book-source question and the ready-made-homework question (neither looked into),
 «أحفظ خطة الدرس بصيغة وورد» (already answered by the generic «PDF أو Word» export text).
+
+## Generator screens: Retry repeats the run, and the evaluations picker row — 2026-10-24
+
+The last two open items of the generator-screens work. Mobile only.
+
+**Retry repeats what was asked.** `GenerationStatus` hands its Retry button's press event to `onRetry`, so a screen that
+wrote `onRetry={generate}` passed that event to `generate` as its options, and on the worksheet a failed «ثلاثة مستويات»
+was retried as a single paper. The worksheet now records the run's options at the top of `generate` (`lastRunRef`, set
+right after the attempt is counted, before any refusal can return) and Retry calls `generate(lastRunRef.current)`, so a
+failed three-levels run is retried as three levels (a regenerate is carried the same way). The new pure
+`services/runOptions.ts` reads options defensively: only a literal `true` counts as a mode, so a press event or anything
+else can never switch one on. The quiz and lesson plan (no levels mode) now pass `() => generate()`, as activity and
+slides already did; a grep of `onRetry=` across `app/` found no other bare `generate`. Pinned by `runOptions.test.ts` and
+source tests for each screen's Retry arrow and the worksheet's ref, recording order and `generate(lastRunRef.current)`.
+
+**The evaluations builder's picker row.** `app/evaluations/new.tsx`'s local `PickerField` was the last screen in `app/`
+passing `accent + '15'`, so its wrapper now uses `selectedRow(accent, card)` (an opaque fill with matching ink), like the
+five generator screens. **The earlier entries guessed this row was likely 4.1 to 4.4:1 in dark. It was not:** this
+screen's accent is `palette.primary`, which measures 5.51 in light and 7.55 in dark either way, so the change makes the
+screen consistent and fixes no failing contrast; a test pins that the row stays at 4.5:1 or more and no worse than before
+in both modes. `app/admin/library.tsx` and `app/evaluations/[id]/scan-class.tsx` pass no `selectedTint` (they use the
+default secondary fill with a `palette.primary` label, a documented palette pair) and were left alone. The doc comment in
+`PickerField.tsx` no longer says a screen still passes `accent + '15'`.
+
+**Verified.** `pnpm run typecheck` clean; mobile `pnpm test` 7,290 tests, 7,280 pass, 10 skipped, 0 fail.
+
+**Not verified:** a real failed three-levels press followed by Retry (demo generation does not fail) beyond the source
+pins; the evaluations screen in a browser; any device.
+
+**Known limits.** None left from the generator-screens work except the device-only checks its entries list.
 
 ## Generator screens: the toast clears the docked bar — 2026-10-24
 
@@ -780,6 +3300,23 @@ with fewer than four words (3, 1, 2, 0 and 2).
   `english-audio` run).
 - **Still open:** the five lessons the hub does not carry need a change to how the hub builds lessons (its own
   spec).
+
+## A way back to the games hub, 2026-10-23
+
+**Built.** A public game's game-over screen now has a visible «كل الألعاب» button back to `/play` (it
+offered only «العب مرة أخرى» and the teacher sign-up). A game opened from a lesson passes `onBack`, so
+there the same button reads «رجوع» and returns to the lesson, not to the hub. The header arrow and the
+button share one exit, and the arrow now carries an accessible label. The hub exit is `goToGames()`
+(`services/navigation.ts`): `dismissTo('/play')` when there is history, `replace('/play')` when there is
+none (a shared link, a refreshed tab). The old `replace` alone left the hub twice in the browser history
+(hub → game became hub → hub), so Back looked dead. `playBackToMenu` already existed and was unused.
+
+**Verified.** `pnpm run typecheck`, the whole mobile suite (7047 pass, 0 fail), and the new
+`gameShellBack.test.ts`, which reads the source (the runner cannot load React Native).
+
+**Not verified.** Not tried on a real iOS Safari or Android Chrome tab: whether `dismissTo` pops cleanly
+in the web history stack rather than pushing a second hub entry was read from expo-router's docs, not
+observed. Check it on `pnpm run dev:mobile:web` before relying on it.
 
 ## Claude writes the documents, 2026-10-23
 
@@ -1331,6 +3868,26 @@ chips and a per-platform table (calls, cache hits, cost, p50, p95).
 - **Not** verified: a real model call end to end (the local API runs `AI_LIVE_MODE=false`, so rows were
   written through `recordGeneration` directly), Android / a device, and a re-screenshot after the last
   12 px of spacing above the chips.
+
+
+## The primary-grade and remaining books get their lesson pages too, 2026-10-24
+
+The 17 student books that had no PDF on disk (Grades 1-2 Arabic, Islamic and PE; Grades 3-5
+PE; Grade 6 digital; Grade 8 Arabic S2) were downloaded from the catalog's NCCD links
+(about 1.4 GB, kept in a scratch folder outside the repo) and put through the same page
+mapper as the other books (see «Arabic, Islamic, civic, digital and PE lessons get their
+book pages in decks»).
+
+- `map_lesson_pages.py --pdfs <json>` takes a `{kbBookId: pdf path}` map for books
+  `extract_book_figures.BOOKS` does not register.
+- 259 lessons mapped; a lesson found through the contents table had to agree with its
+  opener page's own heading (>= 0.6), so 180 are kept and 79 are left text-only (mostly
+  Grade 1-2 Islamic lessons, whose opener heading did not read as the lesson title; not
+  looked into further). Pages are in `iqraa-public/book-pages/`.
+- Still without pages: English (no source PDFs registered), the dropped 79 and the 52
+  maths/social/etc. lessons dropped in the earlier pass, Grade 4/5 digital literacy (no
+  student book exists), and lessons whose opener scored under 0.9.
+- Not verified on a device; phones need the build whose runtime matches the OTA.
 
 ## The tab bar is drawn — 2026-10-23
 

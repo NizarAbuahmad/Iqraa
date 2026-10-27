@@ -1,7 +1,9 @@
 /**
- * The eleven authored Grade 10 Semester 1 lessons on the app side (spec: docs/superpowers/specs/2026-10-23-english-corner-grammar-g10-design.md):
+ * The twenty-one authored Grade 10 lessons on the app side, both semesters (specs:
+ * docs/superpowers/specs/2026-10-23-english-corner-grammar-g10-design.md for Semester 1 and
+ * docs/superpowers/specs/2026-10-24-english-corner-grammar-g10-s2-design.md for Semester 2):
  * Choose, Build and True or false on hand-written items, no Yes or No, and a True or false that plays no sound.
- * Articles (u1_l5) is grammar-only, with no words.
+ * Articles (u1_l5) and the ten Semester 2 lessons are grammar-only, with no words.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -18,14 +20,17 @@ import {
 } from '../englishHub/games.ts';
 
 const LESSONS = [
-  'u1_l1', 'u1_l5', 'u2_l1', 'u2_l4', 'u3_l1', 'u3_l4', 'u3_l5', 'u4_l1', 'u4_l4', 'u5_l1', 'u5_l3',
-].map(s => `kbl-eng-s1-nccd-${s}`);
+  ...['u1_l1', 'u1_l5', 'u2_l1', 'u2_l4', 'u3_l1', 'u3_l4', 'u3_l5', 'u4_l1', 'u4_l4', 'u5_l1', 'u5_l3']
+    .map(s => `kbl-eng-s1-nccd-${s}`),
+  ...['u6_l1', 'u6_l4', 'u7_l1', 'u7_l5', 'u8_l1', 'u8_l6', 'u9_l1', 'u9_l4', 'u10_l1', 'u10_l3']
+    .map(s => `kbl-eng-s2-nccd-${s}`),
+];
 const SEEDS = [1, 2, 3, 4, 5, 6];
 const sentences = (id: string) => unitSentences(grammarUnit(id)!);
 
 describe('Grade 10 authored lessons in the app', () => {
   it('offer Choose, Build and True or false on every lesson, and never Yes or No', () => {
-    assert.equal(LESSONS.length, 11);
+    assert.equal(LESSONS.length, 21);
     for (const id of LESSONS) {
       const s = sentences(id);
       assert.equal(grammarActivityAvailable('grammar-choose', s), true, id);
