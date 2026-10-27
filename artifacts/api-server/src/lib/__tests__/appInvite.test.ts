@@ -1,6 +1,7 @@
 /**
  * What this guards: the admin invite mail carries the download link in both
- * languages, honours APP_INVITE_URL, and reports false for every way a send
+ * languages, always points at the public Play listing (a stale APP_INVITE_URL
+ * left on Cloud Run must not send people to the closed test), and reports false for every way a send
  * can fail so the admin screen never shows "sent" for a mail that was not.
  * Run against a stubbed `fetch`, so nothing is sent and no key is needed.
  */
@@ -42,8 +43,8 @@ describe("sendAppInviteEmail", () => {
     assert.match(sent!.html, /حمّل التطبيق/);
   });
 
-  it("uses APP_INVITE_URL when set", async () => {
-    process.env.APP_INVITE_URL = "https://play.google.com/apps/testing/com.example";
+  it("ignores a leftover APP_INVITE_URL (the closed-test link)", async () => {
+    process.env.APP_INVITE_URL = "https://play.google.com/apps/testing/com.iqra.teachingassistant";
     let html = "";
     globalThis.fetch = (async (_url: unknown, init?: RequestInit) => {
       html = JSON.parse(String(init?.body)).html;
@@ -51,8 +52,8 @@ describe("sendAppInviteEmail", () => {
     }) as typeof fetch;
 
     await sendAppInviteEmail("a@b.co");
-    assert.match(html, /apps\/testing\/com\.example/);
-    assert.doesNotMatch(html, /details\?id=/);
+    assert.doesNotMatch(html, /apps\/testing/);
+    assert.match(html, /store\/apps\/details\?id=com\.iqra\.teachingassistant/);
   });
 
   it("is false with no key, a refusal, or a lost request", async () => {

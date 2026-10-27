@@ -10,6 +10,25 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## App invites always link the public Play listing, 2026-10-27
+
+**Why.** The Android app is public on Google Play now, and the waitlist on iqrra.com is being sent its invite (admin → signups,
+«أرسل دعوة التطبيق» per row, or «راسل قائمة الانتظار» → invite). The code's default link was already the public listing, but
+`APP_INVITE_URL` overrode it, and `.env.example` told whoever set it to use the closed-test opt-in link. Cloud Run env cannot be read
+from a session (the settings deny it), so whether production still carried that value could not be checked.
+
+**Changed.** `APP_INVITE_URL` is now a constant in `lib/email.ts` (`https://play.google.com/store/apps/details?id=com.iqra.teachingassistant`)
+and the env var is ignored; both the single invite and the broadcast invite use it. Removed from `.env.example`. The in-app help answer
+`howInstallApp` («كيف أحمّل التطبيق على الجوال؟») said the app was not on Google Play; it now gives the store link for Android and
+app.iqrra.com for iPhone and computers. `STATUS.md`'s Play line no longer says closed testing.
+
+**Verified.** `appInvite.test.ts`: a leftover closed-test `APP_INVITE_URL` no longer reaches the mail, which links the store listing.
+api-server and mobile suites, typecheck.
+
+**Not done.** People already invited with the closed-test link carry `invitedAt`, so the «invite» broadcast skips them by design
+(`pickRecipients`); reaching them again is a «launch» broadcast with the link in its body. A stale `APP_INVITE_URL` may still sit on the
+Cloud Run service; it is harmless now and can be removed with `gcloud run services update --remove-env-vars APP_INVITE_URL`.
+
 ## Help-center video shelf: the mechanism, shipped empty, 2026-10-27
 
 **Why.** The scripts for the first five tutorial videos are in `docs/tutorial-videos-ar.md`; this is where they will live. Spec:

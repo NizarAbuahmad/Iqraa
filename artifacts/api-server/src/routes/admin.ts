@@ -30,7 +30,7 @@ import { parseSchoolAssignment, parseSchoolIdFilter, parseSchoolInput } from "..
 import { parseDateRange, parseMetricInput, parsePublicIdea, parseSiteSignup, siteKeyMatches, toCsv, UUID } from "../lib/adminMetrics.js";
 import { notifyAdminsOfWaitlistSignup } from "../lib/adminNotify.js";
 import { fetchSubscriberCount } from "../lib/youtubeSubscribers.js";
-import { APP_INVITE_SUBJECT, appInviteBodyHtml, appInviteUrl, sendAppInviteEmail, sendBroadcast } from "../lib/email.js";
+import { APP_INVITE_SUBJECT, APP_INVITE_URL, appInviteBodyHtml, sendAppInviteEmail, sendBroadcast } from "../lib/email.js";
 import { isValidEmailAddress } from "../lib/emailAddress.js";
 import {
   parseBroadcast,
@@ -774,7 +774,7 @@ router.post("/admin/broadcasts", authMiddleware, requireRole("system_admin"), br
   }
   const { purpose } = parsed;
   const subject = purpose === "invite" ? APP_INVITE_SUBJECT : parsed.subject;
-  const html = purpose === "invite" ? appInviteBodyHtml(appInviteUrl()) : renderBroadcastBody(parsed.text);
+  const html = purpose === "invite" ? appInviteBodyHtml(APP_INVITE_URL) : renderBroadcastBody(parsed.text);
   try {
     if (parsed.testOnly) {
       const me = req.user!;
