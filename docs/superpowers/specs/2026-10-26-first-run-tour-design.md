@@ -83,7 +83,7 @@ when **all** hold:
   `needsGuardianApproval` applies. These are the root layout's own gates, **imported
   from `routeGating.ts`**, not copies of them (an unread «skip the class picker»
   flag counts as not skipped);
-- the account was created on or after `TOUR_SINCE` (2026-10-26) and no more than
+- the account was created on or after `TOUR_SINCE` (2026-10-27, to be the merge day) and no more than
   14 days ago, so nobody who signed up before it shipped is ambushed mid-semester.
 
 It is **marked done when it starts**, not when it ends: a process killed halfway never

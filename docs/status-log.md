@@ -32,7 +32,7 @@ suggest something better". Design: [`docs/superpowers/specs/2026-10-26-first-run
   was no longer true.
 - **Steps**: teacher phone / desktop 6 (welcome, lesson, prep board, ask card or sidebar chat, Tools, Profile),
   student 5, parent 4. A step whose target is not on screen is dropped.
-- **Who sees it on its own**: an account created on or after `TOUR_SINCE` (2026-10-26) and at most 14 days
+- **Who sees it on its own**: an account created on or after `TOUR_SINCE` (2026-10-27) and at most 14 days
   ago, once the app has put it on its home screen with no setup or approval gate pending (the gates are
   imported from `routeGating.ts`, not copied). It is **marked done when it starts**. Everyone else has
   Profile → Replay. The flag is on the device, per account (`@iqra_tour_done_v1:<id>`); no migration.
@@ -90,7 +90,8 @@ suggest something better". Design: [`docs/superpowers/specs/2026-10-26-first-run
   - the overlay could stay dimmed with no card if its own `measureInWindow` never answered → falls back to
     its layout size at the window's corner; a target wholly off the screen is dropped, not given a negative ring;
   - the e2e now asserts "Step 6 of 6", so it fails if middle steps go missing; a spacing comment was corrected.
-  - **Not changed:** `TOUR_SINCE` is a date written on the day of the work. See *Before merging* below.
+  - `TOUR_SINCE` was a date written on the day of the work (2026-10-26); it was then set to 2026-10-27 on
+    request. See *Before merging* below: it still has to match the day the change is merged.
 
 **Not verified.**
 - **Any real phone.** All of the above is the web build in desktop Chromium. Not seen on a device: Android
@@ -107,9 +108,10 @@ suggest something better". Design: [`docs/superpowers/specs/2026-10-26-first-run
   reproduced (a slow device, a `measureInWindow` that never answers). Large accessibility text was simulated
   with a short window, not a real Dynamic Type / font-scale setting.
 
-**Before merging.** Set `TOUR_SINCE` in `services/tour.ts` to the day the change is merged (the tests follow
-it). It says "an account made on or after this is new"; written on the day of the work, a later merge would show
-the tour to accounts that have already been using the app for days.
+**Before merging.** `TOUR_SINCE` in `services/tour.ts` is **2026-10-27** (set on that day, as asked). It says
+"an account made on or after this is new", so if the change is merged on a later day, move it to the merge day
+(the tests follow it): otherwise accounts made in between are already using the app and would be shown the tour
+on their next launch.
 
 **Limits and decisions.**
 - The flag is on the device: the same person on a new phone or browser is shown the tour once more. A
