@@ -10,6 +10,34 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Scripts and shot lists for the first five «كيف أستخدم إقرأ؟» tutorial videos, 2026-10-27
+
+**Why.** After the first-run tour went live (2026-10-27), the next ask was tutorial videos. A review of the code found the
+Library the wrong shelf for them: every Library item needs a grade and a subject (the admin upload form refuses one without),
+the list loads per grade, and students see it. A help-center shelf (Profile → «كيف أستخدم إقرأ؟», `app/faq.tsx`) fits better.
+No video player dependency exists (`expo-video` is not installed), so a link that opens in YouTube/the browser ships over the
+air; an in-app player would need a native module, a native build and an `app.json` `version` bump. This PR is the content
+only: nothing in the app changes.
+
+**Built.** `docs/tutorial-videos-ar.md`: Arabic narration, shot-by-shot actions, on-screen captions and a «تحقّق قبل
+التصوير» list for five videos: (1) the Today screen, (2) a quick quiz — a printable paper, (3) an evaluation sent to students
+by link with results, (4) a student joining with the class code, (5) a parent following a child. Plus shared recording rules and
+an appendix of the exact Arabic labels. Register: simple modern Arabic, first-person plural («نفتح، نختار»), brand «إقرأ».
+
+**Verified (read, not run).** Every quoted label was matched against `services/i18n.ts` (the Arabic table), the screens, and
+the order of `e2e/tests/teacher-to-student.spec.ts` (the real teacher → exam → student → results path). Two product facts the
+scripts depend on were read from the code: the Tools-tab quiz can only be exported (a shareable exam is an *Evaluation*), and a
+parent cannot sign up with the class-wide code (`claimParentNeedsOwnCode`). CI's «اقرأ» brand check does not scan `docs/`.
+
+**Not verified, not done.**
+- Nothing was run on a device or recorded. Where a button sits, or its exact label (the class screen's exam-attach button, the
+  student/parent sign-up entry, the roster-consent text, the results-dashboard count) was not read; each is listed under its video.
+- `STUDENT_ACCOUNTS` was not checked in production. It gates every student and parent screen; videos 4 and 5 should not be shot
+  before it is confirmed on.
+- No human native-Arabic reader has seen the text (the tour's review found four mismatches a reader caught).
+- The narration fills about 35–60 s of each video; the stated lengths include screen action and are not measured.
+- The help-center shelf, the links from the tour and Profile, and the hosting of the videos are a separate change.
+
 ## «متابعة عبر Google» no longer waits for the parent-approval switch, and the boxes that unlock it sit above it, 2026-10-27
 
 **Why.** Reported from app.iqrra.com/register, as a student and as a parent: the Google button stayed dim, then "activated after
