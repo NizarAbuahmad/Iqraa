@@ -21,8 +21,8 @@ import { useStudentAccountsStatus } from '@/services/features';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { emailNotSent } from '@/services/emailDelivery';
 import {
-  guardianConfigStale, signupForm, signupPlan,
-  type SignupRole, type StudentSignupMethod,
+  guardianConfigStale, signupForm, signupPlan, signupReadiness,
+  type SignupMissing, type SignupRole, type StudentSignupMethod,
 } from '@/services/signupMethod';
 import { resetGuardianConfigCache, useGuardianConfig } from '@/services/guardianConfig';
 import { looksLikeEmail } from '@/services/guardianApproval';
@@ -73,19 +73,25 @@ export default function RegisterScreen() {
   // parent's email; otherwise they confirm they are an adult or have a guardian's
   // agreement. Fails off: an unreachable config leaves today's tick in place.
   const guardian = useGuardianConfig();
-  const { askAge, askParent, waitingForConfig } = signupPlan(chosenRole, studentMethod, guardian.enabled, guardian.loading);
+  const plan = signupPlan(chosenRole, studentMethod, guardian.enabled, guardian.loading);
+  const { askAge, askParent } = plan;
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [parentEmail, setParentEmail] = useState('');
   const [parentTouched, setParentTouched] = useState(false);
   const parentOk = !askParent || looksLikeEmail(parentEmail);
-  const readyToSignUp = termsAccepted && (!askAge || ageConfirmed) && parentOk && !waitingForConfig;
-  // What the hints under the Google button ('Below') and the submit ('First')
-  // say is missing, in the order the form asks for it. Null when nothing the
-  // person can do is missing, e.g. while the config is still being read.
-  const missing: 'terms' | 'parent' | 'age' | null =
-    !termsAccepted ? 'terms' : askParent && !parentOk ? 'parent' : askAge && !ageConfirmed ? 'age' : null;
-  const hintBelow = missing === 'terms' ? 'registerAcceptTermsBelow' : missing === 'parent' ? 'registerParentEmailFirst' : missing === 'age' ? 'ageConfirmBelow' : null;
-  const hintFirst = missing === 'terms' ? 'registerAcceptTermsFirst' : missing === 'parent' ? 'registerParentEmailFirst' : missing === 'age' ? 'ageConfirmFirst' : null;
+  // One gate per way to sign up. Google never waits for the parent-approval switch (a slow API left it dim and
+  // unexplained for up to ~49 s; the server refuses what is missing and the screen re-reads the switch); the
+  // password form does, and its hint says so. See signupReadiness.
+  const readiness = signupReadiness({ termsAccepted, ageConfirmed, parentOk, plan, optionsLoading: featuresLoading });
+  // The boxes sit directly above both buttons, so every hint points up.
+  const hintKey = (m: SignupMissing | 'config' | null) =>
+    m === 'terms' ? 'registerAcceptTermsFirst'
+      : m === 'parent' ? 'registerParentEmailFirst'
+        : m === 'age' ? 'ageConfirmFirst'
+          : m === 'config' ? 'signupLoadingOptions'
+            : null;
+  const googleHint = hintKey(readiness.googleMissing);
+  const submitHint = hintKey(readiness.submitMissing);
 
   // The server's switch can differ from the copy the screen read; when it says
   // so, forget the copy and read it again so the next try asks the right thing.
@@ -189,14 +195,15 @@ export default function RegisterScreen() {
     // so an empty confirm field was accepted here and refused there with an
     // English "Passwords do not match".
     confirmPassword === password &&
-    readyToSignUp;
+    readiness.submit;
 
-  // The agreement boxes close the form, just above the button that creates the
-  // account, so they are the last thing read before the tap. They govern every
-  // way to sign up here, Google included: «متابعة عبر Google» stays gated on
-  // them (`readyToSignUp`) and its hint says where they are. It used to sit under
-  // «إنشاء حساب» and gate only the password form, so Google created accounts
-  // nobody had asked to accept anything.
+  // The agreement boxes open the email form, above both buttons, so what
+  // unlocks «متابعة عبر Google» is on screen with it. They used to close the
+  // form, under four fields Google never uses, and on a desktop window they were
+  // off screen while the button above them sat dim. They govern every way to sign
+  // up here, Google included: it stays gated on them (`readiness.google`) and its
+  // hint says they are above. They once sat under «إنشاء حساب» and gated only the
+  // password form, so Google created accounts nobody had asked to accept anything.
   const agreements = (
     <>
       <CheckRow checked={termsAccepted} onPress={() => setTermsAccepted(v => !v)} isRTL={isRTL} colors={colors}>
@@ -338,14 +345,44 @@ export default function RegisterScreen() {
             />
           ) : (
             <>
+          {/* What the person has to tick or type comes first, above both ways
+              to sign up: the parent's address (parent approval on), then the
+              terms row, then the age tick (parent approval off). */}
+          {askParent ? (
+            <Input
+              label={t('registerParentEmailLabel')}
+              hint={t('registerParentEmailHint')}
+              value={parentEmail}
+              onChangeText={setParentEmail}
+              onBlur={() => setParentTouched(true)}
+              // Not from the first keystroke: after the field was left, or once it holds an «@».
+              error={(parentTouched || parentEmail.includes('@')) && parentEmail.trim().length > 0 && !parentOk ? t('errParentEmailInvalid') : undefined}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              // Not the student's own address: no autofill suggestion for this field.
+              autoComplete="off"
+              textContentType="none"
+              isRTL={isRTL}
+            />
+          ) : null}
+
+          {agreements}
+
+          {/* While the roles are read, the Google button is not drawn yet: say
+              so rather than leave a gap that looks like a missing feature. */}
+          {isGoogleSignInAvailable() && featuresLoading ? (
+            <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
+              {t('signupLoadingOptions')}
+            </Text>
+          ) : null}
           {isGoogleSignInAvailable() && !featuresLoading && (
             <>
               {/* Google draws its own button on web, which has no disabled
                   state; a non-interactive wrapper is the closest thing. */}
               <View
-                pointerEvents={readyToSignUp ? 'auto' : 'none'}
-                style={{ opacity: readyToSignUp ? 1 : 0.45 }}
-                aria-disabled={!readyToSignUp}
+                pointerEvents={readiness.google ? 'auto' : 'none'}
+                style={{ opacity: readiness.google ? 1 : 0.45 }}
+                aria-disabled={!readiness.google}
               >
                 <GoogleSignInButton onCredential={handleGoogleCredential} locale={lang} />
               </View>
@@ -359,9 +396,9 @@ export default function RegisterScreen() {
                   {t('googleAccountHint')}
                 </Text>
               ) : null}
-              {!readyToSignUp && hintBelow ? (
+              {!readiness.google && googleHint ? (
                 <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-                  {t(hintBelow)}
+                  {t(googleHint)}
                 </Text>
               ) : null}
               {googleLoading ? (
@@ -456,27 +493,6 @@ export default function RegisterScreen() {
             isRTL={isRTL}
           />
 
-          {/* Above the terms row: it is asked before the agreements close the form. */}
-          {askParent ? (
-            <Input
-              label={t('registerParentEmailLabel')}
-              hint={t('registerParentEmailHint')}
-              value={parentEmail}
-              onChangeText={setParentEmail}
-              onBlur={() => setParentTouched(true)}
-              // Not from the first keystroke: after the field was left, or once it holds an «@».
-              error={(parentTouched || parentEmail.includes('@')) && parentEmail.trim().length > 0 && !parentOk ? t('errParentEmailInvalid') : undefined}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              // Not the student's own address: no autofill suggestion for this field.
-              autoComplete="off"
-              textContentType="none"
-              isRTL={isRTL}
-            />
-          ) : null}
-
-          {agreements}
-
           <Button
             label={t('createAccount')}
             onPress={handleRegister}
@@ -484,9 +500,9 @@ export default function RegisterScreen() {
             disabled={!canSubmit}
             fullWidth
           />
-          {!readyToSignUp && hintFirst ? (
+          {!readiness.submit && submitHint ? (
             <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-              {t(hintFirst)}
+              {t(submitHint)}
             </Text>
           ) : null}
             </>

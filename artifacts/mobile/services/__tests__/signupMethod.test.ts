@@ -14,6 +14,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { signupForm, needsAgeConfirmation, switchNeedsAgeConfirmation, signupPlan, guardianConfigStale } from '../signupMethod.ts';
+import * as signupMethod from '../signupMethod.ts';
 
 describe('signupForm', () => {
   it('gives a teacher the email form, whatever method was tapped', () => {
@@ -153,5 +154,68 @@ describe('guardianConfigStale', () => {
     assert.equal(guardianConfigStale('parent_email_invalid'), false);
     assert.equal(guardianConfigStale('terms_required'), false);
     assert.equal(guardianConfigStale(undefined), false);
+  });
+});
+
+/**
+ * Who may tap what while the screen is still reading the server's parent-approval switch. Google does not wait for
+ * it: a student with an email who taps Google before the answer arrives is refused by the server with the code
+ * `guardianConfigStale` knows, and the screen re-reads the switch. The password form does wait, and says why.
+ */
+describe('signupReadiness', () => {
+  const ready = (over: Partial<Parameters<typeof signupMethod.signupReadiness>[0]> = {}) =>
+    signupMethod.signupReadiness({
+      termsAccepted: true,
+      ageConfirmed: false,
+      parentOk: true,
+      plan: signupPlan('teacher', null, false),
+      optionsLoading: false,
+      ...over,
+    });
+
+  it('lets a teacher with the terms ticked use either way, with nothing missing', () => {
+    assert.deepEqual(ready(), { google: true, submit: true, googleMissing: null, submitMissing: null });
+  });
+
+  it('holds both ways for the terms, and says so first', () => {
+    assert.deepEqual(ready({ termsAccepted: false }), { google: false, submit: false, googleMissing: 'terms', submitMissing: 'terms' });
+  });
+
+  it('does not make Google wait for the switch: a student with an email, terms ticked, switch still loading', () => {
+    const plan = signupPlan('student', 'email', false, true);
+    assert.deepEqual(ready({ plan }), { google: true, submit: false, googleMissing: null, submitMissing: 'config' });
+  });
+
+  it('names the terms before the switch while both are outstanding, because only one of them is the person\'s to do', () => {
+    const plan = signupPlan('student', 'email', false, true);
+    assert.deepEqual(ready({ plan, termsAccepted: false }), { google: false, submit: false, googleMissing: 'terms', submitMissing: 'terms' });
+  });
+
+  it('holds a student with an email for the age tick while the switch is off, on both ways', () => {
+    const plan = signupPlan('student', 'email', false);
+    assert.deepEqual(ready({ plan }), { google: false, submit: false, googleMissing: 'age', submitMissing: 'age' });
+    assert.deepEqual(ready({ plan, ageConfirmed: true }), { google: true, submit: true, googleMissing: null, submitMissing: null });
+  });
+
+  it('holds a student with an email for a parent address while the switch is on, and asks for no tick', () => {
+    const plan = signupPlan('student', 'email', true);
+    assert.deepEqual(ready({ plan, parentOk: false }), { google: false, submit: false, googleMissing: 'parent', submitMissing: 'parent' });
+    assert.deepEqual(ready({ plan, parentOk: true }), { google: true, submit: true, googleMissing: null, submitMissing: null });
+  });
+
+  it('asks for the terms, then the parent, then the tick', () => {
+    const plan = { askAge: true, askParent: true, waitingForConfig: false };
+    assert.equal(ready({ plan, termsAccepted: false, parentOk: false }).googleMissing, 'terms');
+    assert.equal(ready({ plan, parentOk: false }).googleMissing, 'parent');
+    assert.equal(ready({ plan }).googleMissing, 'age');
+  });
+
+  it('holds only the password form while the roles are still being read', () => {
+    assert.deepEqual(ready({ optionsLoading: true }), { google: true, submit: false, googleMissing: null, submitMissing: 'config' });
+  });
+
+  it('never holds a parent for the switch: a parent is asked nothing', () => {
+    const plan = signupPlan('parent', 'email', false, true);
+    assert.deepEqual(ready({ plan }), { google: true, submit: true, googleMissing: null, submitMissing: null });
   });
 });

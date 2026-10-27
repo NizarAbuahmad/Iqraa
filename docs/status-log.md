@@ -10,6 +10,47 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## «متابعة عبر Google» no longer waits for the parent-approval switch, and the boxes that unlock it sit above it, 2026-10-27
+
+**Why.** Reported from app.iqrra.com/register, as a student and as a parent: the Google button stayed dim, then "activated after
+a long time", with no message either way.
+
+**Found (read in the code, not measured).**
+1. The gate (`readyToSignUp`) held Google for the terms box, the age tick (or a parent's address) and — for a student with an
+   email — for `GET /guardian-consent/config` (`waitingForConfig`). The boxes sat at the **bottom** of the form, under first
+   name, last name, email, password and confirm password, none of which Google uses; in both screenshots they were off screen.
+2. The config call has a 15 s deadline per try and two retries (1 s, 3 s): up to ~49 s on a slow API. During it `missing` was
+   `null`, so the dim button had no hint at all.
+3. A parent is never held by the config (`signupPlan` waits only for a student), so for a parent the delay was the box.
+4. No server defect: `/auth/google` was read end to end for a new student and a new parent. The other thing a reporter can hit —
+   a Google address that already is a teacher with classes gets `role_locked_teaching` (409) — is by design and unchanged.
+
+**Changed (mobile only; no server, schema or env change).**
+- `signupReadiness` (`services/signupMethod.ts`, pure, tested): one gate per way to sign up. Google needs only what the person
+  can do (terms, then a parent's address, then the age tick); the password form also waits for the switch and the roles and says
+  so (`'config'`).
+- `app/(auth)/register.tsx`: the parent-email field and the agreements now open the email form, **above** the Google button, so
+  what unlocks it is on screen with it. Every hint says «أعلاه»; `registerAcceptTermsBelow` and `ageConfirmBelow` are gone. A new
+  line, `signupLoadingOptions` («جارٍ تحميل خيارات التسجيل…»), shows where the Google button will be while the roles load, and
+  under the create-account button while the switch is read.
+- A student who taps Google before the switch arrives sends no tick and no parent address; the server refuses it with
+  `age_confirmation_required` / `parent_email_required`, which `guardianConfigStale` already turns into a re-read of the switch
+  (nothing is created: both refusals come before the insert).
+
+**Verified.** Written test-first: 9 `signupReadiness` cases (`signupMethod.test.ts`) and 4 screen pins
+(`signupScreensSource.test.ts`: the gate comes from `signupReadiness`, the boxes sit above the Google button, no hint points
+«أسفل», the loading line exists) plus the new copy key in `guardianCopy.test.ts` — all failed first, for the missing feature.
+Root `pnpm run typecheck` clean; `cd artifacts/mobile && pnpm test`: 8,006 tests in 1,339 suites, 7,996 passed, 0 failed, 10
+skipped; the brand grep from `ci.yml` is clean on the touched files. The api-server was not touched and was not re-run.
+
+**Not verified.**
+- **How it looks in a browser** (phone and desktop, light and dark, RTL), and a real Google sign-up as a student or a parent (no
+  Google credential here). The 49 s figure is the worst case from the constants, not a timing taken on production: this
+  sandbox's proxy refuses the Cloud Run host.
+- Known limit: a student who taps Google inside the wait is shown the refusal («أكّد أنك بالغ…» / «أدخل بريد أحد والديك») before
+  the box it names has been drawn, and the Google credential is single use, so a second tap is needed.
+- The Arabic line was written by the implementer with no independent reviewer.
+
 ## The improve chips no longer title the material with their own sentence, 2026-10-27
 
 **Why.** Left open by «One verb for "make me this material"» (below, «Found, not changed»). Tapping «✏️ حسّن خطة الدرس» sent
