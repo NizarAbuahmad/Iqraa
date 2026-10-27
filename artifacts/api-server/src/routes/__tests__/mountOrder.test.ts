@@ -516,6 +516,10 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       ["/auth/forgot-password", { email: ["@"] }, "invalid_email"],
       ["/auth/reset-password", { email: { a: 1 }, code: "123456", password: strong }, "missing_fields"],
       ["/auth/reset-password", { email: "a@example.com", code: 123456, password: strong }, "missing_fields"],
+      // The policy check turns its argument into a string, so an array holding a strong password passed it, and
+      // its length (1) passed the 128 cap too. It then failed inside the hasher, after the account lookup.
+      ["/auth/reset-password", { email: "a@example.com", code: "123456", password: [strong] }, "password_policy"],
+      ["/auth/reset-password", { email: "a@example.com", code: "123456", password: [[strong]] }, "password_policy"],
       ["/auth/change-unverified-email", { email: { a: 1 }, password: strong, newEmail: "b@example.com" }, "missing_fields"],
       ["/auth/change-unverified-email", { email: "a@example.com", password: { a: 1 }, newEmail: "b@example.com" }, "missing_fields"],
     ];
@@ -896,10 +900,22 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     }
     const del = await fetch(`${base}/feedback/${crypto.randomUUID()}`, { method: "DELETE" });
     assert.equal(del.status, 401, "DELETE /feedback/:id must require a token");
-    for (const route of ["/admin/metrics", `/admin/users/${crypto.randomUUID()}/suspend`]) {
+    for (const route of ["/admin/metrics", "/admin/invites", "/admin/broadcasts", `/admin/users/${crypto.randomUUID()}/suspend`]) {
       const res = await fetch(`${base}${route}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
       assert.equal(res.status, 401, `POST ${route} must require a token`);
     }
+  });
+
+  it("serves the waitlist unsubscribe page without a session, and refuses an unsigned link", async () => {
+    // Opened from an inbox by someone with no session, so no guard may sit in
+    // front of it — and the token, not the route, is what protects it. 400 is
+    // the tell: 401 means a guard shadows it, 404 means it isn't mounted.
+    const id = crypto.randomUUID();
+    const get = await fetch(`${base}/site/unsubscribe?id=${id}&t=forged`);
+    assert.equal(get.status, 400);
+    assert.match(await get.text(), /not valid/);
+    const post = await fetch(`${base}/site/unsubscribe?id=${id}&t=forged`, { method: "POST" });
+    assert.equal(post.status, 400, "a forged link must not unsubscribe anyone");
   });
 
   it("hides the site-signup ingest without the shared key", async () => {

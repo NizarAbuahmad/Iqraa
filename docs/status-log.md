@@ -10,6 +10,267 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## One verb for "make me this material": «جهّز» / "Create", 2026-10-27
+
+**Why.** Left open by «Chat first screen: words that say what to ask» (PR #1301). The create chips said five different
+things in Arabic (حضّر / أنشئ / جهّز / اقترح / أنشئ), the follow-up chips under a reply were bare nouns in Arabic and
+«Create …» (with «Classroom activity» the odd one) in English, and the tool screens' own buttons were already «جهّز …» for
+the worksheet, quiz, homework, activity, slides and game with only the lesson plan saying «حضّر خطة الدرس». The words are
+also what a chip SENDS, so they appear as the teacher's own message in the thread. Counted before the change: of the Arabic
+strings that open with a make-a-thing verb, «جهّز» 18, «أنشئ» 15, «حضّر» 4, «اقترح» 4; «أنشئ» was used for records (account,
+class, exam, code, group, file), which is the split worth keeping.
+
+**Rule.** «جهّز» for a teaching material; «أنشئ» only for a record. English «Create …». The owner picked this over «حضّر»
+everywhere and «أنشئ» everywhere (each would have changed six tool buttons and three help answers) and over chat-only
+(it would have left the chip and the lesson-plan screen it opens saying different words).
+
+**Built.**
+- `services/materialPrompts.ts` (new): what a chip sends, one table. There were three copies of the five sentences
+  (`CREATE_CHIP` in `lessonCopilot.ts`, `promptForTeachingAction` and `handleResourcePress` in `iqra.tsx`), each with its
+  own verb. English now says "Create a full lesson plan / a classroom activity …" (was «Prepare» / «Suggest»).
+- `CREATE_CHIP` (exported for the test): five Arabic labels «جهّز …»; «Class activity» → «Create class activity».
+- Follow-up chips (`defaultTeachingActions`): «جهّز خطة درس / ورقة عمل / اختباراً قصيراً / واجباً منزلياً / نشاطاً صفياً»
+  (homework said «بيتياً» in a first draft, a third spelling next to the chip's and its prompt's «منزلياً»; pinned in the test).
+- Home prompt chips (`homeAiTools.ts`) and the uploaded-files quick actions (`documents/quickActions.ts`): «جهّز …» / "Create …".
+- The lesson-plan outlier: `generateLessonPlanBtn`, `generateAILesson`, the help answer `howMakeLessonPlan` (button name and
+  the example to type), `howPlanLanguage`, `continueEmptyDesc`, `docReadyMessage`, `faqA1`, `iqraInputHint` and the
+  next-step line «أقترح الآن: جهّز خطة الدرس.»
+- `chipVerbs.test.ts` (new): every material's prompt, chip label and follow-up label opens with «جهّز» / "Create"; the chat
+  routes each of the ten prompts to generating a material and reads back the right material and topic; the four help answers
+  quote the button as it is spelled; and what a teacher TYPES is still understood with either verb.
+
+**Left alone, on purpose.**
+- Everything that parses what a teacher types (`askVocabulary`, `artifactTopic` `VERBS`, `intentRouter`): «حضّر» and «أنشئ»
+  keep working as requests. This changes what the app says, not what it hears.
+- The API's model prompts («أنشئ خطة درس كاملة لمادة …»): they address the model, are not shown, and do not parse chips.
+- Prose that is not a chip («حضّر حصتك:», «المعلم يحضّر حصصه», the home hero's «حضّر حصة عن …» example), the records' «أنشئ …»
+  buttons, the prep board's «أنشئ», and the file quick actions' noun labels («خطة درس»).
+
+**Verified.** `pnpm run typecheck` clean; `artifacts/mobile` `pnpm test` 7871 pass, 0 fail, 10 skipped (before the routing
+assertions and the homework-spelling guard were added to `chipVerbs.test.ts`, which then passes on its own, 58 cases). No
+existing test pinned the old chip wording. In the real web build (throwaway Postgres, API with `AI_LIVE_MODE=false`,
+Playwright; every screenshot looked at), Arabic desktop: the empty chat's chips read «جهّز خطة الدرس» / «جهّز ورقة عمل»;
+tapping the lesson-plan chip sends «جهّز خطة درس كاملة عن: <the lesson on the strip>» and returns a lesson plan; the worksheet,
+quiz, activity and homework chips each sent their own «جهّز …» text and returned that material (worksheet, quiz, activity,
+homework), none a question back, none a different material; English: «Create lesson plan» / «Create worksheet» sent
+«Create a full lesson plan about: …» / «Create an in-class worksheet about: …» and returned a lesson plan and a worksheet;
+`/ai-tools/lesson-plan`'s button reads «جهّز خطة الدرس», not clipped.
+
+**Found, not changed (all there before this change).**
+- «✏️ حسّن خطة الدرس» (the refine chip, `lessonCopilot.ts`) sends «حسّن خطة الدرس عن «تركيب الاقترانات» واجعلها أوضح للتنفيذ في
+  الحصة القادمة» and `topicFromQuery` returns «حسّن الدرس «تركيب الاقترانات» واجعلها أوضح …» as the lesson topic (same output on
+  a clean `main`), so the offline generator titles the plan with the whole sentence. «حسّن» is not a create verb, so it is
+  outside this change.
+- The follow-up chip row is a horizontal scroller, and its third chip is cut off at the pane's edge on a 1920px window
+  («اجعل الاختبار أصعب»); not looked at further.
+- The material's own title and checklist say «واجب بيتي» while the chip says «واجباً منزلياً»: two names for homework that
+  predate this change.
+
+**Not verified.** Native (iOS/Android) was not run; the change is JavaScript only. The strings were not read by a second
+native speaker; «جهّز» is the verb the app already used on six tool buttons. Marketing material outside this repo that quotes
+«حضّر خطة درس» (the tutorial video text in `marketing/tutorial/build.py`) is unchanged.
+
+## First-run spotlight tour for new accounts, 2026-10-26
+
+**Why.** A new teacher, student or parent landed on their home screen with no guidance: the only intro is
+the pre-login carousel, and the in-app coach card was retired. The ask was a walkthrough in the style of
+other apps — dim the screen, ring one real element, say one thing about it, move on — and "feel free to
+suggest something better". Design: [`docs/superpowers/specs/2026-10-26-first-run-tour-design.md`](./superpowers/specs/2026-10-26-first-run-tour-design.md).
+
+**Built.**
+- **Engine** (pure, `node --test`-able): `services/tour.ts` (steps per role × layout, `tourBlocker` eligibility,
+  step navigation, storage keys), `tourStore.ts` (live state + analytics), `tourRegistry.ts` (a target id can
+  have several registrants; the first with an area wins), `tourPlacement.ts` (hole, even-odd scrim path, card
+  placed below / above / beside / docked, connector), `tourStorage.ts` (fails closed).
+- **UI**: `components/tour/` — `TourHost` (a root overlay, **not a `<Modal>`**), `TourCard`, `TourTarget` /
+  `useTourTarget`, `TourTabButton`; `hooks/useTour.ts` (autostart and Replay). The scrim, the dashed ring, the
+  connector and its dot are one `react-native-svg` drawing; the text sits on a solid card, which is the
+  improvement over the reference screenshots (contrast in light, dark, Arabic and English).
+- **Wired**: root layout (the app behind the tour is hidden from screen readers), the tab bar (a custom
+  `tabBarButton` on a phone), the desktop sidebar rows, Today on phone and desktop, a Profile row
+  «إعادة الجولة التعريفية», and the existing `howIntroReplay` help answer, whose «no button to watch it again»
+  was no longer true.
+- **Steps**: teacher phone / desktop 6 (welcome, lesson, prep board, ask card or sidebar chat, Tools, Profile),
+  student 5, parent 4. A step whose target is not on screen is dropped.
+- **Who sees it on its own**: an account created on or after `TOUR_SINCE` (2026-10-27) and at most 14 days
+  ago, once the app has put it on its home screen with no setup or approval gate pending (the gates are
+  imported from `routeGating.ts`, not copied). It is **marked done when it starts**. Everyone else has
+  Profile → Replay. The flag is on the device, per account (`@iqra_tour_done_v1:<id>`); no migration.
+- **New dependency**: `@react-navigation/elements` ^2.9.36, already installed transitively (2.9.36), pure JS —
+  **no `app.json` `version` bump**, so it is OTA-safe. The lockfile change is a deliberate 3-line hand edit:
+  `pnpm add` re-serialised every `(supports-color@8.1.1)` peer suffix in the file (800+ lines of noise, no
+  version change), so it was reverted and the importer entry added with the string already in the lockfile;
+  `pnpm install --frozen-lockfile` accepts it.
+
+**Verified.**
+- Unit tests: 72 new (steps, eligibility matrix, navigation, registry, placement, store + analytics, and a
+  source-scan contract `tourTargets.test.ts` that reads both sides of every target name). Mutation-checked:
+  renaming a step's target fails the contract test. Whole mobile suite on the final tree (after merging
+  `main` — 4 commits, one textual conflict, in this file — and the review fixes below): 7,876 pass, 0 fail,
+  10 skipped (none tour-related).
+- `pnpm run typecheck` in `artifacts/mobile`: 12 errors, **the same 12 on a clean tree** (push-token and
+  Quran-audio typings, `expo-file-system` types — a sandbox artefact), none in a file this change touched.
+- Built web bundle driven in Chromium with a stubbed API, teacher / student / parent × phone (390×844) /
+  desktop (1280×720) × Arabic / English × light / dark: every step shows, each ring is on its target, Done
+  closes it, a reload does not bring it back. Also: Escape, Skip, Back, Replay from Profile, a fresh teacher
+  (the tour is **not** drawn over `/setup-subjects` and opens on Today after it), the suppress switch, an
+  account older than 14 days (no tour), a resize inside the desktop layout (stays), and a drag across the
+  sidebar breakpoint (ends cleanly, the app underneath is usable). Screenshots were looked at, which found
+  and fixed: a harsh black browser focus ring on Next (now the brand's 3 px ring), a dark-mode scrim that
+  barely dimmed a navy page, a card that covered the very sidebar rows the next steps point at, and a
+  desktop→phone resize that ended the tour through the "target missing" path and reported it completed.
+- Real API + real Postgres (migrations applied, `seed:assessment`, API built — the e2e workflow's own steps):
+  `teacher-to-student.spec.ts` still passes, and the new `tour.spec.ts` passes — a real sign-up, subject
+  setup with no tour over it, the tour on Today, walking it, no repeat after a reload, Replay, Escape. With the
+  suppress switch on, `tour.spec.ts` fails, as it should. `teacher-to-student.spec.ts` also passes **without**
+  the switch today (it leaves Today by a reload inside the tour's 700 ms wait), so the switch there is a guard
+  against a future race, not a present fix; an earlier draft of its comment claimed more and was corrected.
+- Arabic copy reviewed (native-reader pass). It found four things that were then fixed: the prep step called
+  items «جاهز بضغطة» while the board says «لم تُنشأ بعد» and offers «أنشئ»; it used «الشرائح» / «النشاط»
+  where the board says «عرض الحصة» / «نشاط صفّي»; the Library step described books only, and the screen says
+  worksheets, videos, photos, activities and book resources; and «الأسئلة الشائعة» is not the row's name
+  («كيف أستخدم إقرأ؟»). Singular «المعلم» became «المعلمين» (a student has several). The English got the same.
+- An independent code review (a separate reviewer reading the diff cold) found no blockers, five should-fix
+  items and seven nits; each was checked against the code before acting (two against react-native-web's
+  source), and all but one were fixed:
+  - the card could outgrow a small phone under large accessibility text and push Skip off the screen →
+    the card is capped to the screen and its text scrolls; the centred and docked positions can no longer be
+    negative (browser-checked in a 390×300 window: Next and Skip stay on screen);
+  - on web the app behind the tour stayed in the accessibility tree — react-native-web ignores
+    `importantForAccessibility` / `accessibilityElementsHidden` → now `aria-hidden`, which all three platforms act on;
+  - on web a screen reader heard nothing after step 1 (Next keeps focus, the text just changes) → a polite live region;
+  - Replay waited a fixed 700 ms after navigating and could be ended by the overlay's own "not on the home
+    route" check on a slow device → a replay is now a *request* that starts once the home screen has held
+    still, like the automatic start (the request lapses after 8 s if navigation stalls);
+  - «كلٌّ منها يُنشأ بضغطة» promised more than the button does (it opens the generator) → «على بُعد ضغطة»;
+  - the "of N" shrank when a step was dropped, and `tour_step` was reported for a step nobody saw → steps whose
+    target is not mounted are left out when the tour begins, and `tour_step` is sent when a step is *shown*;
+  - ⌘K opened the command palette over the tour and fought its Escape / Tab handling → the palette ignores ⌘K
+    while a tour is up (browser-checked with a positive control: it opens once the tour is over);
+  - the overlay could stay dimmed with no card if its own `measureInWindow` never answered → falls back to
+    its layout size at the window's corner; a target wholly off the screen is dropped, not given a negative ring;
+  - the e2e now asserts "Step 6 of 6", so it fails if middle steps go missing; a spacing comment was corrected.
+  - `TOUR_SINCE` was a date written on the day of the work (2026-10-26); it was then set to 2026-10-27 on
+    request. See *Before merging* below: it still has to match the day the change is merged.
+
+**Not verified.**
+- **Any real phone.** All of the above is the web build in desktop Chromium. Not seen on a device: Android
+  hardware Back (`BackHandler`), edge-to-edge / status-bar offsets in the overlay's own-origin maths,
+  `measureInWindow` against a target mid-`Entrance` on the native driver, `collapsable={false}` on every
+  target, the iOS blur tab bar behind a ring, TalkBack / VoiceOver reading the step and ignoring the app
+  behind it. **Ship to the `preview` OTA channel and look on a phone before the manual `production` publish.**
+- The tab-button path was typechecked and run on web only; on native it renders the same `PlatformPressable`
+  react-navigation would have, with a ref.
+- Student and parent were walked with a stubbed API, not a real account: the e2e cannot make one
+  (`STUDENT_ACCOUNTS` is off there).
+- The review's fixes for a **stalled replay navigation** and an **overlay that cannot measure itself** are
+  covered by unit tests of the store and by the normal Replay path in the browser, but neither failure was
+  reproduced (a slow device, a `measureInWindow` that never answers). Large accessibility text was simulated
+  with a short window, not a real Dynamic Type / font-scale setting.
+
+**Before merging.** `TOUR_SINCE` in `services/tour.ts` is **2026-10-27** (set on that day, as asked). It says
+"an account made on or after this is new", so if the change is merged on a later day, move it to the merge day
+(the tests follow it): otherwise accounts made in between are already using the app and would be shown the tour
+on their next launch.
+
+**Limits and decisions.**
+- The flag is on the device: the same person on a new phone or browser is shown the tour once more. A
+  cross-device flag needs a migration and an API field — out of scope.
+- `TOUR_SINCE` is a constant. An account made before it never gets the tour on its own; it has Replay.
+- A window dragged across the sidebar breakpoint ends the tour as **skipped** (the steps are layout-specific).
+- Deviation from the plan: no new `appHelp` rule — the existing `intro-replay` rule already catches «replay the
+  tour» questions, so its answer was corrected instead of adding a competing rule.
+- Left alone on purpose: the dead `wasCoachDismissed` / `coach*` code and its i18n keys.
+
+## The admin set-password route checks that the password is a string, 2026-10-27
+
+**Why.** «`reset-password` checks that the new password is a string» (below) listed this route as the one other
+caller of `isStrongPassword` with no string check. `POST /admin/users/:id/password` (system admin only) tested
+`!password || !isStrongPassword(password)`; the policy turns its argument into a string, so an **array** holding a
+strong password passed it, and its `length` of 1 passed the 128-character cap. The request then failed inside the
+hasher, after the account lookup, and answered **500**. An object or a number already got a correct 400.
+
+**Built.** `routes/admin.ts`: `password` is `unknown` and a non-string gets the same 400 as a weak one, the guard
+`register`, `add-email` and `reset-password` use. A string takes the same path as before. After this, every caller
+of `isStrongPassword` in `routes/` checks the type first (`grep "isStrongPassword(" routes/*.ts` lists four, all guarded).
+The new `adminSetPassword.db.test.ts` runs against a real database through the built bundle: as an admin it sends an
+array, a nested array, an object and a number to a teacher's account and expects 400 with the stored hash unchanged,
+then a string and expects 200 and a bcrypt hash. It could not go in `mountOrder.test.ts`: `authMiddleware` re-reads
+the user from the database, so that suite (no database) never reaches this route with a signed token.
+
+**Verified.** The new test against the old bundle: the array and the nested array answered **500**, the object and the
+number 400, the string 200. Against the fix: 5 of 5. `pnpm run typecheck`. The whole api-server suite with
+`TEST_DATABASE_URL` set and `REQUIRE_DB_TESTS=true`, as CI runs it: 2973 tests, 0 failed, 0 skipped.
+
+**Not verified, not done.** Production was not called; this sandbox cannot reach it. The 500's cause on this route was
+inferred from `reset-password`, where the server log showed bcrypt refusing a non-string; here only the status was
+observed. The same unguarded-body shape may exist in other route files; only `auth.ts` and this route were checked for
+the password and email/code fields. `schema-push:` none.
+
+## `reset-password` checks that the new password is a string, 2026-10-27
+
+**Why.** «A non-string email or code answers 400, not 500» (2026-10-26) guarded `email` and `code` on five routes
+and listed `reset-password`'s `password` as not done. `isStrongPassword` turns its argument into a string, so
+an **array** holding a strong password (`["Str0ngPassw0rd!x"]`, or one level deeper) passed the policy, and its
+`length` of 1 passed the 128-character cap. It then reached the hasher, where bcrypt refused it
+(`Illegal arguments: object, string`), and the route answered **500**. An object or a number already got a correct
+`400 password_policy`, because their string form fails the policy's letter-and-digit test; only arrays slipped
+through.
+
+**Built.** `routes/auth.ts`: `reset-password` takes `password` as `unknown` and refuses a non-string with the same
+`400 password_policy` as a weak one, the guard `register` and `add-email` already use. Two cases (an array and a
+nested array holding a strong password) join the malformed-body table in `mountOrder.test.ts`; that suite has no
+reachable database, so they also pin that the check runs before the account lookup.
+
+**Verified.** On a throwaway Postgres with a valid, unused reset code planted (its hash is
+`sha256("userId:code")`): the old build answered an array and a nested array **500**, an object and a number 400;
+the new build answers all four 400 with the code still unused, then a string password resets the account and the
+new password logs in (200), with no `reset password failed` line in the server log. The new test fails on the old
+code (`500 !== 400`) and passes on the new; `pnpm run typecheck`; api-server `pnpm build` and `pnpm test` (2608 pass).
+
+**Not verified, not done.** `admin.ts:257` (an admin setting someone's password) has the same
+`!password || !isStrongPassword(password)` shape with no string check; it is admin-only and was not touched or
+tested. `confirmPassword` is still typed `string`: a non-string one already fails the `!==` comparison and
+answers `passwords_mismatch`, so it was left alone. Production behavior was not called; this sandbox cannot
+reach it. `schema-push:` none.
+
+## Chat composer on web: one row when empty, grows with the text, 2026-10-26
+
+**Why.** Left open by «Chat first screen: words that say what to ask» (PR #1301). react-native-web renders a
+multiline `TextInput` as a `<textarea>` with HTML's default of two rows and never resizes it, so on app.iqrra.com
+the empty composer was 44px tall with its one-line placeholder on the top row and the `+` / send buttons about 14px
+lower, level with the empty row.
+
+**Built.**
+- `app/(tabs)/iqra.tsx`, web only: `rows={1}`; a 22px line with 8px vertical padding (`inputWeb`, 38px = the send
+  button's height) so one line sits level with the buttons; an effect that calls `fitTextareaHeight` after every change
+  of the text, when the window width changes, and once `document.fonts` is ready. Native passes no `rows` and the helper
+  does nothing where the ref has no `style` object.
+- `services/webTextarea.ts` (new): `fitTextareaHeight` sets `height` to `auto` **before** reading `scrollHeight`. A
+  textarea that has been given an explicit height reports at least that height, so without the reset the field grows
+  but never shrinks after a send. `max-height` (160px desktop, 100px narrower) still clamps it; past that it scrolls
+  inside. Pinned by `fitTextareaHeight.test.ts`, which fakes the DOM and holds the order of the two writes.
+- English `iqraPlaceholder` is «e.g. a short quiz on this lesson» (was «Type your request, e.g. …»): a one-row field
+  cannot wrap, and the longer text wrapped on a 390px phone, leaving a clipped second line. `chatEmptyStateCopy.test.ts`
+  keeps both languages under 34 characters (a 390px phone's 248px field holds about 39).
+
+**Verified.** `pnpm run typecheck` clean; `artifacts/mobile` `pnpm test` 7811 pass, 0 fail, 10 skipped. In the real web
+build (throwaway Postgres, API with `AI_LIVE_MODE=false`, Playwright, rects measured and every zoom looked at): empty
+field 38px with the placeholder centred on the buttons' line (Arabic and English, 1920 and 390 wide); 1–7 lines give
+38 → 60 → 82 → 104 → 126 → 148 → 160 and then scroll inside; `+` and send stay on the bottom edge while it grows; back to
+38px after a send; phone caps at 100px. English at 390px stays on one line, also on a cold load with the font delayed;
+at 320px (where it wraps) the field is 60px and shows both lines, nothing clipped.
+
+**Not verified / known limits.**
+- Native (iOS/Android) was not run; the change is web-only by construction.
+- At a few widths near 330px the placeholder wraps in the fallback font but not in Almarai: on a cold load the field
+  sits at 60px with an empty second row until the font arrives (about 6s with a forced delay), then settles at 38px. It
+  is never clipped; the re-fit on `document.fonts.ready` is what brings it back.
+- Arabic at 320px wraps and leaves «الدرس» alone on its second line, with the field grown to show it. A 320px phone
+  is below what the placeholder was sized for.
+- Not looked at: a line that is wider than the field because of a very long unbroken word, and iOS Safari's
+  textarea metrics.
+
 ## Admin overview: the signup tiles open their list, 2026-10-26
 
 **Why.** On the admin dashboard's «نظرة عامة» row, «اقتراحات الزوار» showed a count and nothing else; finding the
@@ -35,6 +296,67 @@ only and lists only those rows (screenshot: the «اقتراحات» chip select
 clickable until hovered or pressed: no chevron was added, to keep the row as it was. «اقتراحات الزوار» counts
 only signed-out visitors; suggestions from signed-in teachers are in the feedback list at the bottom of the
 dashboard («اقتراحات» chip) and are not linked from here. `schema-push:` none.
+
+## Message the iqrra.com waitlist from the admin signups screen, 2026-10-25
+
+The signups screen already listed the people who asked for the app on iqrra.com and could mail one
+invite at a time, but it remembered nothing (who was invited), had no unsubscribe, and the bulk
+"send the invite" step was a manual Resend broadcast. A system_admin can now message the list from
+**المسجّلون → «راسل قائمة الانتظار»** (`POST /admin/broadcasts`).
+
+- **Three purposes, and the server decides who each may reach** (`lib/siteMail.ts`
+  `pickRecipients`). `invite`: the fixed invite mail, to addresses not yet invited. `launch`: free
+  text, to everyone subscribed. `update` (news): free text, **only to people who signed up after the
+  form's wording allowed it**. The form has promised «دعوة التجربة وإشعار الإطلاق فقط», so
+  `UPDATES_CONSENT_FROM` is `null` and `update` matches **nobody** (409 `updates-closed`) until it is
+  set to the day the reworded form deploys. Everyone who signed up before then gets invites and the
+  launch notice and nothing else.
+- **Recorded per address.** `site_signups` gains `invited_at`, `last_messaged_at`, `unsubscribed_at`
+  (migration `0019`, additive). Stamped by lower-cased email, so a duplicate signup moves together,
+  and only for addresses Resend accepted — a refused batch stays eligible. The per-row invite and
+  `POST /admin/invites` stamp `invited_at` too; the screen shows «تمت الدعوة · date» and
+  «ألغى الاشتراك» and filters on both.
+- **A 12-hour hold-back** on anyone already mailed (`RECENTLY_MESSAGED_MS`): `launch` and `update`
+  match everyone each time, so without it a retry after a half-failed send, or a double tap, would
+  mail the same people twice. The dry-run count says how many are held back.
+- **Unsubscribe.** Every broadcast carries a signed link (HMAC of the row id keyed on
+  `SESSION_SECRET`, so no new secret) in the footer and as `List-Unsubscribe` / one-click headers.
+  `GET /site/unsubscribe` only *asks* (a scanner that pre-fetches links would otherwise unsubscribe
+  everyone); the button, or a mail client's one-click, POSTs. Unsubscribing is by address, so
+  signing up again does not resubscribe, and the single-invite endpoint refuses an unsubscribed
+  address (409). The link's origin is `API_PUBLIC_URL`, default the Cloud Run URL.
+- **Test copy.** «أرسل نسخة تجريبية لي» mails the admin's own address and records nothing.
+- **Sent and joined, per person.** Each waitlist row shows «أُرسلت الدعوة · date» once the invite went
+  out and «انضم · date» once an account with that email exists (`JOINED_AT` in `admin.ts`: the earliest
+  `users.created_at` for the address, matched ignoring case; also a `joined_at` CSV column and an
+  «انضموا» filter). The invite mail skips people who already joined; the launch notice and news do
+  not. It is a match on the address typed into the site, so someone who registers with a different
+  email is not recognised as joined.
+
+**Verified.** `pnpm run typecheck`; api-server `pnpm build && pnpm test` (2347 pass), including new
+`siteMail.test.ts` (recipient rules, token forgery, body escaping) and `broadcast.test.ts` (batching,
+partial failure, headers) and the mount-order checks (`/admin/broadcasts` and `/admin/invites` 401
+without a token; `/site/unsubscribe` reachable without a session and 400 on a forged link). Run end
+to end locally against a scratch Postgres with Resend stubbed in-process: the screen's dry-run count,
+test copy, confirm dialog and send; a refused send stamped nothing; duplicates collapsed to one mail;
+the hold-back blocked a repeat; the unsubscribe GET changed nothing and the POST did; `update` stayed
+closed; the rendered Arabic body kept its paragraphs and linked its URL. The «joined» match was
+re-run on a fresh scratch database with registered accounts: a mixed-case signup matched its account,
+a contact row with no email matched nothing, the `joined` filter returned exactly those, and the
+invite audience dropped them.
+
+**Not verified.** Nothing was sent through real Resend — the stub answered, so Resend's *real*
+acceptance of the batch payload (`/emails/batch`, the `headers` field) and the unsubscribe link in a
+real inbox are untested; send the test copy to yourself first. Not checked on a phone or in Android's
+share/CSV paths. Production `RESEND_API_KEY` / `RESEND_FROM_EMAIL` / `SITE_INGEST_KEY` (on Vercel too)
+were not inspected.
+
+**Known limits.** The send is synchronous (100 per batch, ~0.6 s apart) — fine into the low
+thousands, then it wants a queue. Signups from before 2026-10-02 are still only in Resend / the
+`FEEDBACK_TO` inbox and are not in this table (no backfill yet), so they cannot be mailed from here.
+Unsubscribes are not pushed back to Resend contacts. The deploy order matters: merge this, then the
+Site_Iqra wording PR (it promises an unsubscribe link that only exists once this is live), then set
+`UPDATES_CONSENT_FROM`.
 
 ## The two servers in the RLS diff test can no longer share a port, 2026-10-26
 
@@ -200,8 +522,9 @@ still says "Iqra" in about seven older places (not changed here; `CLAUDE.md` wan
 keyboard opens on phones after a chip tap). The widget's AI-answer and refusal paths on the real
 site (they were checked against the API and with stubs). The daily spend cap and the 100-an-hour
 limit against the live service. The real per-answer cost and the `/healthz/ai-budget` `persisted`
-flag after real traffic. Whether `SITE_BOT_BUDGET_USD_DAILY` is set on the Cloud Run service (not
-read: without it the default of 1 a day applies). How the matcher does on real visitor questions
+flag after real traffic. `SITE_BOT_BUDGET_USD_DAILY` was unset on the Cloud Run service when this
+was written (the default of 1 a day applied); the owner set it to `1` on 2026-10-27 (revision
+`iqraa-api-00445-4fm`) and read it back as `1`. How the matcher does on real visitor questions
 (its phrases are our guesses). The widget on a Vercel preview URL: it cannot reach the API, because
 CORS allows only `www.iqrra.com` and `iqrra.com`, so a preview only ever shows the friendly
 "couldn't answer" message.
@@ -348,6 +671,7 @@ locally (CI runs it), and that this is the reporting teacher's exact case (a tea
 «حفظ» would not have hit it). **Not tested:** no test pins the row — it needs React Native, which
 the bare `node --test` runner cannot load. **Not changed:** «توزيع تلقائي» still does nothing, silently,
 when no school day is selected or the start date is invalid; the button is dimmed but says nothing.
+
 
 ## Grade 8 semester 1 word lists in the English corner, 2026-10-25
 

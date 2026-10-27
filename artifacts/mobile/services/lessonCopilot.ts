@@ -18,6 +18,7 @@ import {
 import { releasedVirtualLab, type VirtualLabSheet } from '@workspace/curriculum';
 import { DEMO_CONTINUE } from './continueTeaching.ts';
 import { stripScopePhrases, topicFromQuery } from './ai/artifactTopic.ts';
+import { materialPrompt } from './materialPrompts.ts';
 import { artifactFromAsk, isBareTeachAsk } from './ai/askVocabulary.ts';
 import { isStandaloneTurn } from './ai/intentRouter.ts';
 import {
@@ -632,34 +633,41 @@ export function nextStepActions(
   return [...left.filter(a => a.type === first), ...left.filter(a => a.type !== first)];
 }
 
-/** «حضّر خطة الدرس» and its siblings — the chip that makes each material. */
-const CREATE_CHIP: Record<SessionArtifact, Omit<LessonSuggestion, 'promptAr' | 'promptEn' | 'lessonId'> & {
+/**
+ * «جهّز خطة الدرس» and its siblings — the chip that makes each material.
+ *
+ * One verb for all five («جهّز» / "Create"): the labels used five different
+ * ones in Arabic. What a chip sends comes from `materialPrompt`, shared with the
+ * follow-ups under a reply and the lesson card's buttons, so the wording cannot
+ * drift between them again (`chipVerbs.test.ts`).
+ */
+export const CREATE_CHIP: Record<SessionArtifact, Omit<LessonSuggestion, 'promptAr' | 'promptEn' | 'lessonId'> & {
   promptAr: (topic: string) => string;
   promptEn: (topic: string) => string;
 }> = {
   'lesson-plan': {
-    id: 'create-plan', emoji: '📄', labelAr: 'حضّر خطة الدرس', labelEn: 'Create lesson plan',
-    promptAr: t => `حضّر خطة درس كاملة عن: ${t}`, promptEn: t => `Prepare a full lesson plan about: ${t}`,
+    id: 'create-plan', emoji: '📄', labelAr: 'جهّز خطة الدرس', labelEn: 'Create lesson plan',
+    promptAr: t => materialPrompt('lesson-plan', t, 'ar'), promptEn: t => materialPrompt('lesson-plan', t, 'en'),
     toolType: 'lesson-plan',
   },
   worksheet: {
-    id: 'create-ws', emoji: '📝', labelAr: 'أنشئ ورقة عمل', labelEn: 'Create worksheet',
-    promptAr: t => `أنشئ ورقة عمل صفية عن: ${t}`, promptEn: t => `Create an in-class worksheet about: ${t}`,
+    id: 'create-ws', emoji: '📝', labelAr: 'جهّز ورقة عمل', labelEn: 'Create worksheet',
+    promptAr: t => materialPrompt('worksheet', t, 'ar'), promptEn: t => materialPrompt('worksheet', t, 'en'),
     toolType: 'worksheet',
   },
   quiz: {
     id: 'create-quiz', emoji: '➕', labelAr: 'جهّز اختباراً قصيراً', labelEn: 'Create short quiz',
-    promptAr: t => `جهّز اختباراً قصيراً عن: ${t}`, promptEn: t => `Create a short quiz about: ${t}`,
+    promptAr: t => materialPrompt('quiz', t, 'ar'), promptEn: t => materialPrompt('quiz', t, 'en'),
     toolType: 'quiz',
   },
   activity: {
-    id: 'create-act', emoji: '🎯', labelAr: 'اقترح نشاطاً صفياً', labelEn: 'Class activity',
-    promptAr: t => `اقترح نشاطاً صفياً عن: ${t}`, promptEn: t => `Suggest a classroom activity about: ${t}`,
+    id: 'create-act', emoji: '🎯', labelAr: 'جهّز نشاطاً صفياً', labelEn: 'Create class activity',
+    promptAr: t => materialPrompt('activity', t, 'ar'), promptEn: t => materialPrompt('activity', t, 'en'),
     toolType: 'activity',
   },
   homework: {
-    id: 'create-hw', emoji: '🏠', labelAr: 'أنشئ واجباً منزلياً', labelEn: 'Create homework',
-    promptAr: t => `أنشئ واجباً منزلياً عن: ${t}`, promptEn: t => `Create homework about: ${t}`,
+    id: 'create-hw', emoji: '🏠', labelAr: 'جهّز واجباً منزلياً', labelEn: 'Create homework',
+    promptAr: t => materialPrompt('homework', t, 'ar'), promptEn: t => materialPrompt('homework', t, 'en'),
     toolType: 'homework',
   },
 };
@@ -670,7 +678,7 @@ const CREATE_CHIP: Record<SessionArtifact, Omit<LessonSuggestion, 'promptAr' | '
  * "Done" is this chat's session *or* موادي (`prep.saved`, from
  * `savedPrepArtifacts`). The chips read the session alone, so a plan saved
  * yesterday — counted on the board as 1/5 — was still offered as
- * «حضّر خطة الدرس». The first chip is the step the progress card recommends
+ * «جهّز خطة الدرس». The first chip is the step the progress card recommends
  * (`nextPrepStep`), then the next missing one in preparation order; a row the
  * teacher marked «غير مطلوب» (`prep.skipped`) is not offered. What this chat
  * made last gets an improve chip.
