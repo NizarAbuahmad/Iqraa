@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { View } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/services/queryClient';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -8,6 +9,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AppSplash } from '@/components/ui/AppSplash';
 import { ConfirmHost } from '@/components/ui/ConfirmDialog';
 import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
+import { TourHost, useTourActive } from '@/components/tour/TourHost';
 /**
  * Arabic type. Inter has no Arabic glyphs, so every Arabic string — which is
  * nearly the whole product — was being drawn by whatever fallback each device
@@ -207,8 +209,16 @@ function RootLayoutNav() {
     if (!isLoading) SplashScreen.hideAsync().catch(() => {});
   }, [isLoading]);
 
+  // While the first-run tour is up the app behind it is hidden from screen
+  // readers — the tour card is the only thing that should be read. `aria-hidden`
+  // is the one spelling all three platforms act on: React Native maps it to
+  // Android's `importantForAccessibility` and iOS's `accessibilityElementsHidden`,
+  // and react-native-web puts it on the DOM, where it ignores those two props.
+  const tourActive = useTourActive();
+
   return (
     <>
+    <View style={{ flex: 1 }} aria-hidden={tourActive ? true : undefined}>
     <Stack
       screenOptions={{ headerShown: false, animation: 'fade' }}
       // Every screen's content sits above the keyboard — see KeyboardSafeView
@@ -255,7 +265,9 @@ function RootLayoutNav() {
       <Stack.Screen name="setup-subjects" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="setup-grade" options={{ headerShown: false }} />
     </Stack>
+    </View>
     <AppSplash visible={isLoading} onLayout={() => SplashScreen.hideAsync().catch(() => {})} />
+    <TourHost />
     <ConfirmHost />
     </>
   );

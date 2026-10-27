@@ -1,5 +1,6 @@
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
-import { plantVerificationCode, resetRateLimits } from "../helpers/db";
+import { expect, test } from "@playwright/test";
+import { resetRateLimits } from "../helpers/db";
+import { pinLocale, signUpAndVerify } from "../helpers/journey";
 
 /**
  * The journey a teacher actually takes, end to end, against the real API and
@@ -18,41 +19,9 @@ import { plantVerificationCode, resetRateLimits } from "../helpers/db";
  * ai-tools quiz — that one can only be exported, never sent to students.
  */
 
-const PASSWORD = "E2e-Pass1234";
-const CODE = "123456";
 const STUDENTS = ["Student One", "Student Two"];
 
-// The app defaults to Arabic and shows an intro carousel on first launch; pin
-// both so selectors can be written once, in English.
-async function pinLocale(ctx: BrowserContext) {
-  await ctx.addInitScript(() => {
-    localStorage.setItem("@iqra_language", "en");
-    localStorage.setItem("@iqra_intro_seen_v1", "1");
-  });
-}
-
-async function signUpAndVerify(page: Page, email: string) {
-  await page.goto("/");
-  await expect(page).toHaveURL(/\/login/);
-  await page.getByText("Create account", { exact: true }).first().click();
-
-  await page.getByPlaceholder("Ahmad").fill("Test");
-  await page.getByPlaceholder("Al-Rashidi").fill("Teacher");
-  await page.getByPlaceholder("name@email.com").fill(email);
-  await page.getByPlaceholder("Minimum 8 characters").fill(PASSWORD);
-  await page.getByPlaceholder("Re-enter your password").fill(PASSWORD);
-  // The row holds links to the terms and privacy pages; its centre is a link, so click the box.
-  await page.getByRole("checkbox").click({ position: { x: 8, y: 8 } });
-  await page.getByRole("button", { name: "Create account" }).click();
-
-  // The verify screen appears once the register request returns, and only then
-  // does a code exist to plant. Password hashing makes this the slowest request
-  // of the journey (15 s on a loaded machine), so give it room.
-  await expect(page.getByPlaceholder("000000")).toBeVisible({ timeout: 60_000 });
-  await plantVerificationCode(email, CODE);
-  await page.getByPlaceholder("000000").fill(CODE);
-  await page.getByRole("button", { name: "Verify email" }).click();
-}
+// pinLocale and signUpAndVerify are shared with tour.spec.ts: ../helpers/journey.ts.
 
 test("teacher publishes an exam and a student hands it in", async ({ browser }) => {
   await resetRateLimits();

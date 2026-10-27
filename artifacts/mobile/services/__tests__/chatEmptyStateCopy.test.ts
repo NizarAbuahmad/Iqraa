@@ -54,6 +54,13 @@ describe('the composer placeholder teaches a request the chat understands', () =
       assert.match(placeholder, EXAMPLE[lang]);
     });
 
+    // The web composer is one row. Measured on a 390px phone, its 248px field
+    // holds about 39 characters of this font before the placeholder wraps; a
+    // narrower phone holds fewer, so keep well inside that.
+    it(`${lang}: is short enough to stay on one line on a phone`, () => {
+      assert.ok(placeholder.length <= 34, `${placeholder.length} characters: «${placeholder}»`);
+    });
+
     it(`${lang}: the example asks about the picked lesson, not a lesson of that name`, () => {
       const example = placeholder.match(EXAMPLE[lang])![1]!;
       assert.equal(

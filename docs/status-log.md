@@ -10,6 +10,207 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## First-run spotlight tour for new accounts, 2026-10-26
+
+**Why.** A new teacher, student or parent landed on their home screen with no guidance: the only intro is
+the pre-login carousel, and the in-app coach card was retired. The ask was a walkthrough in the style of
+other apps — dim the screen, ring one real element, say one thing about it, move on — and "feel free to
+suggest something better". Design: [`docs/superpowers/specs/2026-10-26-first-run-tour-design.md`](./superpowers/specs/2026-10-26-first-run-tour-design.md).
+
+**Built.**
+- **Engine** (pure, `node --test`-able): `services/tour.ts` (steps per role × layout, `tourBlocker` eligibility,
+  step navigation, storage keys), `tourStore.ts` (live state + analytics), `tourRegistry.ts` (a target id can
+  have several registrants; the first with an area wins), `tourPlacement.ts` (hole, even-odd scrim path, card
+  placed below / above / beside / docked, connector), `tourStorage.ts` (fails closed).
+- **UI**: `components/tour/` — `TourHost` (a root overlay, **not a `<Modal>`**), `TourCard`, `TourTarget` /
+  `useTourTarget`, `TourTabButton`; `hooks/useTour.ts` (autostart and Replay). The scrim, the dashed ring, the
+  connector and its dot are one `react-native-svg` drawing; the text sits on a solid card, which is the
+  improvement over the reference screenshots (contrast in light, dark, Arabic and English).
+- **Wired**: root layout (the app behind the tour is hidden from screen readers), the tab bar (a custom
+  `tabBarButton` on a phone), the desktop sidebar rows, Today on phone and desktop, a Profile row
+  «إعادة الجولة التعريفية», and the existing `howIntroReplay` help answer, whose «no button to watch it again»
+  was no longer true.
+- **Steps**: teacher phone / desktop 6 (welcome, lesson, prep board, ask card or sidebar chat, Tools, Profile),
+  student 5, parent 4. A step whose target is not on screen is dropped.
+- **Who sees it on its own**: an account created on or after `TOUR_SINCE` (2026-10-27) and at most 14 days
+  ago, once the app has put it on its home screen with no setup or approval gate pending (the gates are
+  imported from `routeGating.ts`, not copied). It is **marked done when it starts**. Everyone else has
+  Profile → Replay. The flag is on the device, per account (`@iqra_tour_done_v1:<id>`); no migration.
+- **New dependency**: `@react-navigation/elements` ^2.9.36, already installed transitively (2.9.36), pure JS —
+  **no `app.json` `version` bump**, so it is OTA-safe. The lockfile change is a deliberate 3-line hand edit:
+  `pnpm add` re-serialised every `(supports-color@8.1.1)` peer suffix in the file (800+ lines of noise, no
+  version change), so it was reverted and the importer entry added with the string already in the lockfile;
+  `pnpm install --frozen-lockfile` accepts it.
+
+**Verified.**
+- Unit tests: 72 new (steps, eligibility matrix, navigation, registry, placement, store + analytics, and a
+  source-scan contract `tourTargets.test.ts` that reads both sides of every target name). Mutation-checked:
+  renaming a step's target fails the contract test. Whole mobile suite on the final tree (after merging
+  `main` — 4 commits, one textual conflict, in this file — and the review fixes below): 7,876 pass, 0 fail,
+  10 skipped (none tour-related).
+- `pnpm run typecheck` in `artifacts/mobile`: 12 errors, **the same 12 on a clean tree** (push-token and
+  Quran-audio typings, `expo-file-system` types — a sandbox artefact), none in a file this change touched.
+- Built web bundle driven in Chromium with a stubbed API, teacher / student / parent × phone (390×844) /
+  desktop (1280×720) × Arabic / English × light / dark: every step shows, each ring is on its target, Done
+  closes it, a reload does not bring it back. Also: Escape, Skip, Back, Replay from Profile, a fresh teacher
+  (the tour is **not** drawn over `/setup-subjects` and opens on Today after it), the suppress switch, an
+  account older than 14 days (no tour), a resize inside the desktop layout (stays), and a drag across the
+  sidebar breakpoint (ends cleanly, the app underneath is usable). Screenshots were looked at, which found
+  and fixed: a harsh black browser focus ring on Next (now the brand's 3 px ring), a dark-mode scrim that
+  barely dimmed a navy page, a card that covered the very sidebar rows the next steps point at, and a
+  desktop→phone resize that ended the tour through the "target missing" path and reported it completed.
+- Real API + real Postgres (migrations applied, `seed:assessment`, API built — the e2e workflow's own steps):
+  `teacher-to-student.spec.ts` still passes, and the new `tour.spec.ts` passes — a real sign-up, subject
+  setup with no tour over it, the tour on Today, walking it, no repeat after a reload, Replay, Escape. With the
+  suppress switch on, `tour.spec.ts` fails, as it should. `teacher-to-student.spec.ts` also passes **without**
+  the switch today (it leaves Today by a reload inside the tour's 700 ms wait), so the switch there is a guard
+  against a future race, not a present fix; an earlier draft of its comment claimed more and was corrected.
+- Arabic copy reviewed (native-reader pass). It found four things that were then fixed: the prep step called
+  items «جاهز بضغطة» while the board says «لم تُنشأ بعد» and offers «أنشئ»; it used «الشرائح» / «النشاط»
+  where the board says «عرض الحصة» / «نشاط صفّي»; the Library step described books only, and the screen says
+  worksheets, videos, photos, activities and book resources; and «الأسئلة الشائعة» is not the row's name
+  («كيف أستخدم إقرأ؟»). Singular «المعلم» became «المعلمين» (a student has several). The English got the same.
+- An independent code review (a separate reviewer reading the diff cold) found no blockers, five should-fix
+  items and seven nits; each was checked against the code before acting (two against react-native-web's
+  source), and all but one were fixed:
+  - the card could outgrow a small phone under large accessibility text and push Skip off the screen →
+    the card is capped to the screen and its text scrolls; the centred and docked positions can no longer be
+    negative (browser-checked in a 390×300 window: Next and Skip stay on screen);
+  - on web the app behind the tour stayed in the accessibility tree — react-native-web ignores
+    `importantForAccessibility` / `accessibilityElementsHidden` → now `aria-hidden`, which all three platforms act on;
+  - on web a screen reader heard nothing after step 1 (Next keeps focus, the text just changes) → a polite live region;
+  - Replay waited a fixed 700 ms after navigating and could be ended by the overlay's own "not on the home
+    route" check on a slow device → a replay is now a *request* that starts once the home screen has held
+    still, like the automatic start (the request lapses after 8 s if navigation stalls);
+  - «كلٌّ منها يُنشأ بضغطة» promised more than the button does (it opens the generator) → «على بُعد ضغطة»;
+  - the "of N" shrank when a step was dropped, and `tour_step` was reported for a step nobody saw → steps whose
+    target is not mounted are left out when the tour begins, and `tour_step` is sent when a step is *shown*;
+  - ⌘K opened the command palette over the tour and fought its Escape / Tab handling → the palette ignores ⌘K
+    while a tour is up (browser-checked with a positive control: it opens once the tour is over);
+  - the overlay could stay dimmed with no card if its own `measureInWindow` never answered → falls back to
+    its layout size at the window's corner; a target wholly off the screen is dropped, not given a negative ring;
+  - the e2e now asserts "Step 6 of 6", so it fails if middle steps go missing; a spacing comment was corrected.
+  - `TOUR_SINCE` was a date written on the day of the work (2026-10-26); it was then set to 2026-10-27 on
+    request. See *Before merging* below: it still has to match the day the change is merged.
+
+**Not verified.**
+- **Any real phone.** All of the above is the web build in desktop Chromium. Not seen on a device: Android
+  hardware Back (`BackHandler`), edge-to-edge / status-bar offsets in the overlay's own-origin maths,
+  `measureInWindow` against a target mid-`Entrance` on the native driver, `collapsable={false}` on every
+  target, the iOS blur tab bar behind a ring, TalkBack / VoiceOver reading the step and ignoring the app
+  behind it. **Ship to the `preview` OTA channel and look on a phone before the manual `production` publish.**
+- The tab-button path was typechecked and run on web only; on native it renders the same `PlatformPressable`
+  react-navigation would have, with a ref.
+- Student and parent were walked with a stubbed API, not a real account: the e2e cannot make one
+  (`STUDENT_ACCOUNTS` is off there).
+- The review's fixes for a **stalled replay navigation** and an **overlay that cannot measure itself** are
+  covered by unit tests of the store and by the normal Replay path in the browser, but neither failure was
+  reproduced (a slow device, a `measureInWindow` that never answers). Large accessibility text was simulated
+  with a short window, not a real Dynamic Type / font-scale setting.
+
+**Before merging.** `TOUR_SINCE` in `services/tour.ts` is **2026-10-27** (set on that day, as asked). It says
+"an account made on or after this is new", so if the change is merged on a later day, move it to the merge day
+(the tests follow it): otherwise accounts made in between are already using the app and would be shown the tour
+on their next launch.
+
+**Limits and decisions.**
+- The flag is on the device: the same person on a new phone or browser is shown the tour once more. A
+  cross-device flag needs a migration and an API field — out of scope.
+- `TOUR_SINCE` is a constant. An account made before it never gets the tour on its own; it has Replay.
+- A window dragged across the sidebar breakpoint ends the tour as **skipped** (the steps are layout-specific).
+- Deviation from the plan: no new `appHelp` rule — the existing `intro-replay` rule already catches «replay the
+  tour» questions, so its answer was corrected instead of adding a competing rule.
+- Left alone on purpose: the dead `wasCoachDismissed` / `coach*` code and its i18n keys.
+
+## The admin set-password route checks that the password is a string, 2026-10-27
+
+**Why.** «`reset-password` checks that the new password is a string» (below) listed this route as the one other
+caller of `isStrongPassword` with no string check. `POST /admin/users/:id/password` (system admin only) tested
+`!password || !isStrongPassword(password)`; the policy turns its argument into a string, so an **array** holding a
+strong password passed it, and its `length` of 1 passed the 128-character cap. The request then failed inside the
+hasher, after the account lookup, and answered **500**. An object or a number already got a correct 400.
+
+**Built.** `routes/admin.ts`: `password` is `unknown` and a non-string gets the same 400 as a weak one, the guard
+`register`, `add-email` and `reset-password` use. A string takes the same path as before. After this, every caller
+of `isStrongPassword` in `routes/` checks the type first (`grep "isStrongPassword(" routes/*.ts` lists four, all guarded).
+The new `adminSetPassword.db.test.ts` runs against a real database through the built bundle: as an admin it sends an
+array, a nested array, an object and a number to a teacher's account and expects 400 with the stored hash unchanged,
+then a string and expects 200 and a bcrypt hash. It could not go in `mountOrder.test.ts`: `authMiddleware` re-reads
+the user from the database, so that suite (no database) never reaches this route with a signed token.
+
+**Verified.** The new test against the old bundle: the array and the nested array answered **500**, the object and the
+number 400, the string 200. Against the fix: 5 of 5. `pnpm run typecheck`. The whole api-server suite with
+`TEST_DATABASE_URL` set and `REQUIRE_DB_TESTS=true`, as CI runs it: 2973 tests, 0 failed, 0 skipped.
+
+**Not verified, not done.** Production was not called; this sandbox cannot reach it. The 500's cause on this route was
+inferred from `reset-password`, where the server log showed bcrypt refusing a non-string; here only the status was
+observed. The same unguarded-body shape may exist in other route files; only `auth.ts` and this route were checked for
+the password and email/code fields. `schema-push:` none.
+
+## `reset-password` checks that the new password is a string, 2026-10-27
+
+**Why.** «A non-string email or code answers 400, not 500» (2026-10-26) guarded `email` and `code` on five routes
+and listed `reset-password`'s `password` as not done. `isStrongPassword` turns its argument into a string, so
+an **array** holding a strong password (`["Str0ngPassw0rd!x"]`, or one level deeper) passed the policy, and its
+`length` of 1 passed the 128-character cap. It then reached the hasher, where bcrypt refused it
+(`Illegal arguments: object, string`), and the route answered **500**. An object or a number already got a correct
+`400 password_policy`, because their string form fails the policy's letter-and-digit test; only arrays slipped
+through.
+
+**Built.** `routes/auth.ts`: `reset-password` takes `password` as `unknown` and refuses a non-string with the same
+`400 password_policy` as a weak one, the guard `register` and `add-email` already use. Two cases (an array and a
+nested array holding a strong password) join the malformed-body table in `mountOrder.test.ts`; that suite has no
+reachable database, so they also pin that the check runs before the account lookup.
+
+**Verified.** On a throwaway Postgres with a valid, unused reset code planted (its hash is
+`sha256("userId:code")`): the old build answered an array and a nested array **500**, an object and a number 400;
+the new build answers all four 400 with the code still unused, then a string password resets the account and the
+new password logs in (200), with no `reset password failed` line in the server log. The new test fails on the old
+code (`500 !== 400`) and passes on the new; `pnpm run typecheck`; api-server `pnpm build` and `pnpm test` (2608 pass).
+
+**Not verified, not done.** `admin.ts:257` (an admin setting someone's password) has the same
+`!password || !isStrongPassword(password)` shape with no string check; it is admin-only and was not touched or
+tested. `confirmPassword` is still typed `string`: a non-string one already fails the `!==` comparison and
+answers `passwords_mismatch`, so it was left alone. Production behavior was not called; this sandbox cannot
+reach it. `schema-push:` none.
+
+## Chat composer on web: one row when empty, grows with the text, 2026-10-26
+
+**Why.** Left open by «Chat first screen: words that say what to ask» (PR #1301). react-native-web renders a
+multiline `TextInput` as a `<textarea>` with HTML's default of two rows and never resizes it, so on app.iqrra.com
+the empty composer was 44px tall with its one-line placeholder on the top row and the `+` / send buttons about 14px
+lower, level with the empty row.
+
+**Built.**
+- `app/(tabs)/iqra.tsx`, web only: `rows={1}`; a 22px line with 8px vertical padding (`inputWeb`, 38px = the send
+  button's height) so one line sits level with the buttons; an effect that calls `fitTextareaHeight` after every change
+  of the text, when the window width changes, and once `document.fonts` is ready. Native passes no `rows` and the helper
+  does nothing where the ref has no `style` object.
+- `services/webTextarea.ts` (new): `fitTextareaHeight` sets `height` to `auto` **before** reading `scrollHeight`. A
+  textarea that has been given an explicit height reports at least that height, so without the reset the field grows
+  but never shrinks after a send. `max-height` (160px desktop, 100px narrower) still clamps it; past that it scrolls
+  inside. Pinned by `fitTextareaHeight.test.ts`, which fakes the DOM and holds the order of the two writes.
+- English `iqraPlaceholder` is «e.g. a short quiz on this lesson» (was «Type your request, e.g. …»): a one-row field
+  cannot wrap, and the longer text wrapped on a 390px phone, leaving a clipped second line. `chatEmptyStateCopy.test.ts`
+  keeps both languages under 34 characters (a 390px phone's 248px field holds about 39).
+
+**Verified.** `pnpm run typecheck` clean; `artifacts/mobile` `pnpm test` 7811 pass, 0 fail, 10 skipped. In the real web
+build (throwaway Postgres, API with `AI_LIVE_MODE=false`, Playwright, rects measured and every zoom looked at): empty
+field 38px with the placeholder centred on the buttons' line (Arabic and English, 1920 and 390 wide); 1–7 lines give
+38 → 60 → 82 → 104 → 126 → 148 → 160 and then scroll inside; `+` and send stay on the bottom edge while it grows; back to
+38px after a send; phone caps at 100px. English at 390px stays on one line, also on a cold load with the font delayed;
+at 320px (where it wraps) the field is 60px and shows both lines, nothing clipped.
+
+**Not verified / known limits.**
+- Native (iOS/Android) was not run; the change is web-only by construction.
+- At a few widths near 330px the placeholder wraps in the fallback font but not in Almarai: on a cold load the field
+  sits at 60px with an empty second row until the font arrives (about 6s with a forced delay), then settles at 38px. It
+  is never clipped; the re-fit on `document.fonts.ready` is what brings it back.
+- Arabic at 320px wraps and leaves «الدرس» alone on its second line, with the field grown to show it. A 320px phone
+  is below what the placeholder was sized for.
+- Not looked at: a line that is wider than the field because of a very long unbroken word, and iOS Safari's
+  textarea metrics.
+
 ## Admin overview: the signup tiles open their list, 2026-10-26
 
 **Why.** On the admin dashboard's «نظرة عامة» row, «اقتراحات الزوار» showed a count and nothing else; finding the
@@ -261,8 +462,9 @@ still says "Iqra" in about seven older places (not changed here; `CLAUDE.md` wan
 keyboard opens on phones after a chip tap). The widget's AI-answer and refusal paths on the real
 site (they were checked against the API and with stubs). The daily spend cap and the 100-an-hour
 limit against the live service. The real per-answer cost and the `/healthz/ai-budget` `persisted`
-flag after real traffic. Whether `SITE_BOT_BUDGET_USD_DAILY` is set on the Cloud Run service (not
-read: without it the default of 1 a day applies). How the matcher does on real visitor questions
+flag after real traffic. `SITE_BOT_BUDGET_USD_DAILY` was unset on the Cloud Run service when this
+was written (the default of 1 a day applied); the owner set it to `1` on 2026-10-27 (revision
+`iqraa-api-00445-4fm`) and read it back as `1`. How the matcher does on real visitor questions
 (its phrases are our guesses). The widget on a Vercel preview URL: it cannot reach the API, because
 CORS allows only `www.iqrra.com` and `iqrra.com`, so a preview only ever shows the friendly
 "couldn't answer" message.

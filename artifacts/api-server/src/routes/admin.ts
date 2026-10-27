@@ -261,8 +261,8 @@ router.post(
   setPasswordLimiter,
   async (req: AuthenticatedRequest, res) => {
     try {
-      const { password } = req.body as { password?: string };
-      if (!password || !isStrongPassword(password)) {
+      const { password } = req.body as { password?: unknown };
+      if (typeof password !== "string" || !password || !isStrongPassword(password)) {
         res.status(400).json({ error: PASSWORD_POLICY_MESSAGE });
         return;
       }

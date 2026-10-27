@@ -516,6 +516,10 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       ["/auth/forgot-password", { email: ["@"] }, "invalid_email"],
       ["/auth/reset-password", { email: { a: 1 }, code: "123456", password: strong }, "missing_fields"],
       ["/auth/reset-password", { email: "a@example.com", code: 123456, password: strong }, "missing_fields"],
+      // The policy check turns its argument into a string, so an array holding a strong password passed it, and
+      // its length (1) passed the 128 cap too. It then failed inside the hasher, after the account lookup.
+      ["/auth/reset-password", { email: "a@example.com", code: "123456", password: [strong] }, "password_policy"],
+      ["/auth/reset-password", { email: "a@example.com", code: "123456", password: [[strong]] }, "password_policy"],
       ["/auth/change-unverified-email", { email: { a: 1 }, password: strong, newEmail: "b@example.com" }, "missing_fields"],
       ["/auth/change-unverified-email", { email: "a@example.com", password: { a: 1 }, newEmail: "b@example.com" }, "missing_fields"],
     ];

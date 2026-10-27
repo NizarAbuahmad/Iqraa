@@ -181,6 +181,7 @@ import {
 import { quizExports, type QuizCopy } from '@/services/quizExport';
 import { worksheetExports } from '@/services/worksheetExport';
 import { buildClassDeck } from '@/services/startClass';
+import { fitTextareaHeight } from '@/services/webTextarea';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
@@ -1446,6 +1447,7 @@ export default function IqraScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [inputFocused, setInputFocused] = useState(false);
+  const composerRef = useRef<TextInput>(null);
   const [isThinking, setIsThinking] = useState(false);
   /**
    * The assistant bubble being filled by a streamed reply, if any. While set
@@ -1619,6 +1621,29 @@ export default function IqraScreen() {
    */
   const viewportW = useViewportWidth();
   const isDesktop = Platform.OS === 'web' && viewportW >= DESKTOP_BREAKPOINT;
+
+  /*
+    The web composer is a <textarea> that react-native-web leaves two rows tall
+    and never resizes: the empty field kept its placeholder on the top row with
+    the buttons level with the empty one below. One row while empty, and it
+    follows what is typed; a native build already grows its own input and the
+    ref there has no `style` to write to (`fitTextareaHeight` does nothing).
+    Re-fitted when the window width changes too, as a line may wrap differently,
+    and once the web fonts are in: the first fit runs before Almarai loads, and a
+    placeholder that wraps in the real font left a clipped second line in a field
+    measured with the fallback one.
+  */
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const fit = () =>
+      fitTextareaHeight(composerRef.current as unknown as Parameters<typeof fitTextareaHeight>[0]);
+    fit();
+    let live = true;
+    (globalThis as { document?: { fonts?: { ready: Promise<unknown> } } }).document?.fonts?.ready
+      .then(() => { if (live) fit(); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [input, viewportW]);
 
   // Web has no notch and no native header, so the 67pt allowance left a band
   // of dead space above the logo in the browser.
@@ -4141,8 +4166,15 @@ export default function IqraScreen() {
             <Ionicons name="add" size={20} color={colors.primary} />
           </Pressable>
           <TextInput
+            ref={composerRef}
+            // Web only: a one-row <textarea> that `fitTextareaHeight` grows. Native
+            // sizes its own multiline input, and `rows` there is Android's line count.
+            {...(Platform.OS === 'web' ? { rows: 1 } : {})}
             style={[
               styles.input,
+              // Web's one line is as tall as the send button, so a single line of
+              // text sits level with the buttons instead of on the bottom edge.
+              Platform.OS === 'web' && styles.inputWeb,
               isDesktop && styles.inputWide,
               { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' },
             ]}
@@ -4433,6 +4465,8 @@ const styles = StyleSheet.create({
   inputBarInner: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
   inputWrap: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 14, paddingVertical: 8, gap: 8 },
   input: { flex: 1, fontSize: 15, maxHeight: 100, paddingVertical: 0, outlineStyle: 'none' as never },
+  // 22 + 2×8 = 38, the send button's height: one line sits level with the buttons.
+  inputWeb: { lineHeight: 22, paddingVertical: 8 },
   inputWide: { fontSize: 15, maxHeight: 160, lineHeight: 22 },
   plusBtn: {
     width: 34,
