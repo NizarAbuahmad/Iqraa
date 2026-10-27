@@ -10,6 +10,66 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## One verb for "make me this material": «جهّز» / "Create", 2026-10-27
+
+**Why.** Left open by «Chat first screen: words that say what to ask» (PR #1301). The create chips said five different
+things in Arabic (حضّر / أنشئ / جهّز / اقترح / أنشئ), the follow-up chips under a reply were bare nouns in Arabic and
+«Create …» (with «Classroom activity» the odd one) in English, and the tool screens' own buttons were already «جهّز …» for
+the worksheet, quiz, homework, activity, slides and game with only the lesson plan saying «حضّر خطة الدرس». The words are
+also what a chip SENDS, so they appear as the teacher's own message in the thread. Counted before the change: of the Arabic
+strings that open with a make-a-thing verb, «جهّز» 18, «أنشئ» 15, «حضّر» 4, «اقترح» 4; «أنشئ» was used for records (account,
+class, exam, code, group, file), which is the split worth keeping.
+
+**Rule.** «جهّز» for a teaching material; «أنشئ» only for a record. English «Create …». The owner picked this over «حضّر»
+everywhere and «أنشئ» everywhere (each would have changed six tool buttons and three help answers) and over chat-only
+(it would have left the chip and the lesson-plan screen it opens saying different words).
+
+**Built.**
+- `services/materialPrompts.ts` (new): what a chip sends, one table. There were three copies of the five sentences
+  (`CREATE_CHIP` in `lessonCopilot.ts`, `promptForTeachingAction` and `handleResourcePress` in `iqra.tsx`), each with its
+  own verb. English now says "Create a full lesson plan / a classroom activity …" (was «Prepare» / «Suggest»).
+- `CREATE_CHIP` (exported for the test): five Arabic labels «جهّز …»; «Class activity» → «Create class activity».
+- Follow-up chips (`defaultTeachingActions`): «جهّز خطة درس / ورقة عمل / اختباراً قصيراً / واجباً منزلياً / نشاطاً صفياً»
+  (homework said «بيتياً» in a first draft, a third spelling next to the chip's and its prompt's «منزلياً»; pinned in the test).
+- Home prompt chips (`homeAiTools.ts`) and the uploaded-files quick actions (`documents/quickActions.ts`): «جهّز …» / "Create …".
+- The lesson-plan outlier: `generateLessonPlanBtn`, `generateAILesson`, the help answer `howMakeLessonPlan` (button name and
+  the example to type), `howPlanLanguage`, `continueEmptyDesc`, `docReadyMessage`, `faqA1`, `iqraInputHint` and the
+  next-step line «أقترح الآن: جهّز خطة الدرس.»
+- `chipVerbs.test.ts` (new): every material's prompt, chip label and follow-up label opens with «جهّز» / "Create"; the chat
+  routes each of the ten prompts to generating a material and reads back the right material and topic; the four help answers
+  quote the button as it is spelled; and what a teacher TYPES is still understood with either verb.
+
+**Left alone, on purpose.**
+- Everything that parses what a teacher types (`askVocabulary`, `artifactTopic` `VERBS`, `intentRouter`): «حضّر» and «أنشئ»
+  keep working as requests. This changes what the app says, not what it hears.
+- The API's model prompts («أنشئ خطة درس كاملة لمادة …»): they address the model, are not shown, and do not parse chips.
+- Prose that is not a chip («حضّر حصتك:», «المعلم يحضّر حصصه», the home hero's «حضّر حصة عن …» example), the records' «أنشئ …»
+  buttons, the prep board's «أنشئ», and the file quick actions' noun labels («خطة درس»).
+
+**Verified.** `pnpm run typecheck` clean; `artifacts/mobile` `pnpm test` 7871 pass, 0 fail, 10 skipped (before the routing
+assertions and the homework-spelling guard were added to `chipVerbs.test.ts`, which then passes on its own, 58 cases). No
+existing test pinned the old chip wording. In the real web build (throwaway Postgres, API with `AI_LIVE_MODE=false`,
+Playwright; every screenshot looked at), Arabic desktop: the empty chat's chips read «جهّز خطة الدرس» / «جهّز ورقة عمل»;
+tapping the lesson-plan chip sends «جهّز خطة درس كاملة عن: <the lesson on the strip>» and returns a lesson plan; the worksheet,
+quiz, activity and homework chips each sent their own «جهّز …» text and returned that material (worksheet, quiz, activity,
+homework), none a question back, none a different material; English: «Create lesson plan» / «Create worksheet» sent
+«Create a full lesson plan about: …» / «Create an in-class worksheet about: …» and returned a lesson plan and a worksheet;
+`/ai-tools/lesson-plan`'s button reads «جهّز خطة الدرس», not clipped.
+
+**Found, not changed (all there before this change).**
+- «✏️ حسّن خطة الدرس» (the refine chip, `lessonCopilot.ts`) sends «حسّن خطة الدرس عن «تركيب الاقترانات» واجعلها أوضح للتنفيذ في
+  الحصة القادمة» and `topicFromQuery` returns «حسّن الدرس «تركيب الاقترانات» واجعلها أوضح …» as the lesson topic (same output on
+  a clean `main`), so the offline generator titles the plan with the whole sentence. «حسّن» is not a create verb, so it is
+  outside this change.
+- The follow-up chip row is a horizontal scroller, and its third chip is cut off at the pane's edge on a 1920px window
+  («اجعل الاختبار أصعب»); not looked at further.
+- The material's own title and checklist say «واجب بيتي» while the chip says «واجباً منزلياً»: two names for homework that
+  predate this change.
+
+**Not verified.** Native (iOS/Android) was not run; the change is JavaScript only. The strings were not read by a second
+native speaker; «جهّز» is the verb the app already used on six tool buttons. Marketing material outside this repo that quotes
+«حضّر خطة درس» (the tutorial video text in `marketing/tutorial/build.py`) is unchanged.
+
 ## First-run spotlight tour for new accounts, 2026-10-26
 
 **Why.** A new teacher, student or parent landed on their home screen with no guidance: the only intro is

@@ -19,26 +19,26 @@ export type DocQuickAction = {
 export const DOCUMENT_QUICK_ACTIONS: DocQuickAction[] = [
   {
     id: 'lesson-plan', emoji: '📖', labelAr: 'خطة درس', labelEn: 'Lesson Plan',
-    promptAr: 'حضّر خطة درس كاملة بناءً على الملفات المرفوعة',
-    promptEn: 'Prepare a full lesson plan based on the uploaded files',
+    promptAr: 'جهّز خطة درس كاملة بناءً على الملفات المرفوعة',
+    promptEn: 'Create a full lesson plan based on the uploaded files',
     toolId: 'lesson-plan',
   },
   {
     id: 'worksheet', emoji: '📝', labelAr: 'ورقة عمل', labelEn: 'Worksheet',
-    promptAr: 'أنشئ ورقة عمل صفية من المحتوى المرفوع',
+    promptAr: 'جهّز ورقة عمل صفية من المحتوى المرفوع',
     promptEn: 'Create an in-class worksheet from the uploaded content',
     toolId: 'worksheet',
   },
   {
     id: 'homework', emoji: '🏠', labelAr: 'واجب بيتي', labelEn: 'Homework',
-    promptAr: 'أنشئ واجباً منزلياً مناسباً من هذه الملفات',
+    promptAr: 'جهّز واجباً منزلياً مناسباً من هذه الملفات',
     promptEn: 'Create suitable homework from these materials',
     toolId: 'homework',
   },
   {
     id: 'quiz', emoji: '✅', labelAr: 'اختبار قصير', labelEn: 'Quiz',
     promptAr: 'جهّز اختباراً قصيراً من محتوى الملفات',
-    promptEn: 'Generate a short quiz grounded in the files',
+    promptEn: 'Create a short quiz grounded in the files',
     toolId: 'quiz',
   },
   {
@@ -48,13 +48,13 @@ export const DOCUMENT_QUICK_ACTIONS: DocQuickAction[] = [
   },
   {
     id: 'bloom', emoji: '🧠', labelAr: 'أسئلة بلوم', labelEn: 'Bloom Questions',
-    promptAr: 'أنشئ أسئلة حسب مستويات بلوم من المحتوى المرفوع',
+    promptAr: 'جهّز أسئلة حسب مستويات بلوم من المحتوى المرفوع',
     promptEn: 'Create Bloom taxonomy questions from the uploaded content',
   },
   {
     id: 'activity', emoji: '👥', labelAr: 'نشاط صفي', labelEn: 'Classroom Activity',
-    promptAr: 'اقترح نشاطاً صفياً عملياً من هذه الملفات',
-    promptEn: 'Suggest a practical classroom activity from these materials',
+    promptAr: 'جهّز نشاطاً صفياً عملياً من هذه الملفات',
+    promptEn: 'Create a practical classroom activity from these materials',
     toolId: 'activity',
   },
   {
@@ -84,7 +84,7 @@ export const DOCUMENT_QUICK_ACTIONS: DocQuickAction[] = [
   },
   {
     id: 'exit', emoji: '📋', labelAr: 'غلق الدرس', labelEn: 'Exit Ticket',
-    promptAr: 'حضّر غلق درس قصيرًا للتحقق من الفهم',
-    promptEn: 'Prepare a short exit ticket to check understanding',
+    promptAr: 'جهّز غلق درس قصيرًا للتحقق من الفهم',
+    promptEn: 'Create a short exit ticket to check understanding',
   },
 ];
