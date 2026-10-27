@@ -121,11 +121,22 @@ function isOffTopic(q: string): boolean {
 }
 
 // The English the refine chips send — «Improve the current lesson plan for …»,
-// «Make the quiz harder …». Anchored on «the/this/my/that» + an artifact so «Make
-// a harder quiz on circles» (a new quiz) and «improve my classroom management»
-// (advice) are not edits of the open material.
-const ENGLISH_EDIT =
-  /improve\s+(?:the|this|my|that)\s+(?:current\s+)?(?:lesson(?:\s+plan)?|plan|quiz|worksheet|homework|activity)|make\s+(?:the|this|my|that)\s+(?:\w+\s+){0,2}?(?:harder|easier|simpler|clearer)/i;
+// «Make the quiz harder …». The whole message has to BE an edit of an artifact: it
+// opens with the verb (after a «please» / «can you»), names the artifact right
+// after «the/this/my/that», and ends the noun there. Looser, «How can I improve my
+// lesson delivery?», «improve my planning skills» and «How do I make this topic
+// easier to understand?» are teaching questions, and «Make a harder quiz on
+// circles» asks for a new quiz.
+const EDIT_NOUN = '(?:current\\s+)?(?:lesson\\s+plan|lesson|plan|quiz|worksheet|homework|activity)';
+const ENGLISH_EDIT = new RegExp(
+  '^(?:(?:please|pls|can you|could you|would you)\\s+)*(?:'
+  // «Improve the lesson plan» / «… for "X" and …» — never «… my lesson delivery».
+  + `improve\\s+(?:the|this|my|that)\\s+${EDIT_NOUN}(?=\\s*$|\\s*[,.:;]|\\s+(?:for|about|on|and|so|to|with)\\b)`
+  + '|'
+  + `make\\s+(?:the|this|my|that)\\s+${EDIT_NOUN}\\s+(?:a\\s+(?:bit|little)\\s+)?(?:harder|easier|simpler|clearer)\\b`
+  + ')',
+  'i',
+);
 
 function isRefinement(q: string): boolean {
   return (

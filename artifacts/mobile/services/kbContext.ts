@@ -437,6 +437,27 @@ export function isConfidentSingleSubjectHit(ranked: KBScoredLesson[]): boolean {
   );
 }
 
+/**
+ * The lesson a topic names, when the curriculum search is sure of it.
+ *
+ * What the chat's artifact branch did inline: search the topic (inside the picked
+ * grade first, when there is one, else the whole curriculum) and trust the top hit
+ * only when it is confident for one subject, or clears `KB_CONFIDENT_SCORE` — unit
+ * asks («الدائرة») tie several lessons and still prefer that unit. Null otherwise.
+ * Shared so a test can run the decision the chat makes instead of a copy of it.
+ */
+export function lessonNamedByTopic(
+  topic: string,
+  lang: 'ar' | 'en',
+  gradeId: string | null,
+): KBLesson | null {
+  const all = searchKBRanked(topic, lang);
+  const inGrade = gradeId ? searchKBRanked(topic, lang, { gradeId }) : [];
+  const ranked = inGrade.length ? inGrade : all;
+  const strong = isConfidentSingleSubjectHit(ranked) || (ranked[0]?.score ?? 0) >= KB_CONFIDENT_SCORE;
+  return strong ? ranked[0]!.lesson : null;
+}
+
 /** Another subject within this share of the top score makes the hit a shared word. */
 const RIVAL_SUBJECT_SHARE = 0.5;
 

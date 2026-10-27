@@ -54,6 +54,7 @@ import {
   filterResultsByGrade,
   filterResultsBySubject,
   isConfidentSingleSubjectHit,
+  lessonNamedByTopic,
   liveChatGrounding,
 } from '@/services/kbContext';
 import { KB_SUGGEST_SCORE, shouldAskWhichLesson } from '@/services/kbSuggestion';
@@ -135,7 +136,7 @@ import { periodClassLabel } from '@/services/classSubjects';
 import { answerAppHelp } from '@/services/appHelp';
 import { TOOL_ASK_TARGETS, toolAskFromQuery, toolAskReply } from '@/services/chatToolAsk';
 import { isInfographicAsk } from '@/services/ai/infographic';
-import { editsLessonInPlay, topicFromQuery } from '@/services/ai/artifactTopic';
+import { refinementTarget, topicFromQuery } from '@/services/ai/artifactTopic';
 import { InfographicView } from '@/components/ui/InfographicView';
 import type { TranslationKey } from '@/services/i18n';
 import { resolveDeepLinkSend, type DeepLinkSend } from '@/services/chatDeepLink';
@@ -2690,21 +2691,12 @@ export default function IqraScreen() {
         // Real generators (same as AI Tools) — not thin chat outlines
         // Uploads outrank a lesson that is not hard-pinned.
         const preferDocs = hasDocs && sessionMemory.lessonPin !== 'hard';
-        // A refinement («حسّن خطة الدرس…», «اجعل الاختبار أصعب…») edits the
-        // material already in the thread. Its lesson and topic are the lesson in
-        // play — the chip's pinned one, else the open one — and are NOT read back
-        // out of the sentence: «حسّن الدرس «…» واجعلها أوضح…» is no topic, and
-        // searching it for a lesson can land on another one. Documents that outrank
-        // the lesson keep the path below.
-        const lessonInPlay = pinnedLesson ?? (reuseActive ? activeLesson : null) ?? null;
-        const refining = editsLessonInPlay(route.intent, q) && !!lessonInPlay && !preferDocs;
         // Resolve topic from the typed ask FIRST so soft-pinned "تركيب الاقترانات"
         // cannot override "خطة درس عن الأسس والمعادلات".
         const topicForArt = resolveArtifactTopic({
           lang: lang as 'ar' | 'en',
           query: q,
-          lesson: refining ? lessonInPlay : null,
-          refinement: refining,
+          lesson: null,
           activeTopicAr: sessionMemory.activeTopicAr,
           activeTopicEn: sessionMemory.activeTopicEn,
           docTopic: hasDocs
@@ -2731,20 +2723,26 @@ export default function IqraScreen() {
             ?? null,
           gradeId: artGradeId,
         };
-        const topicRankedAll = searchKBRanked(topicForArt, lang as 'ar' | 'en');
-        const topicRankedInGrade = artGradeId
-          ? searchKBRanked(topicForArt, lang as 'ar' | 'en', { gradeId: artGradeId })
-          : [];
-        const topicRanked = topicRankedInGrade.length ? topicRankedInGrade : topicRankedAll;
-        const topicConfident = isConfidentSingleSubjectHit(topicRanked);
         // Unit-level asks (الدائرة) often tie several lessons — still prefer that unit
-        const topicStrong =
-          !refining
-          && (topicConfident || ((topicRanked[0]?.score ?? 0) >= KB_CONFIDENT_SCORE));
-        let lessonForArt = refining
-          ? lessonInPlay
-          : topicStrong
-          ? topicRanked[0]!.lesson
+        const namedLesson = lessonNamedByTopic(topicForArt, lang as 'ar' | 'en', artGradeId);
+        const topicStrong = !!namedLesson;
+        // A refinement («حسّن خطة الدرس…», «اجعل الاختبار أصعب…») edits the
+        // material already in the thread. Its lesson and topic are that lesson —
+        // the one tapped this turn (a chip carries its id), else the open one — and
+        // are NOT read back out of the sentence: «حسّن الدرس «…» واجعلها أوضح…» is no
+        // topic, and searching it for a lesson can land on another one. A typed
+        // message that says what it is about («عن X») and names another lesson, or
+        // uploads that outrank the lesson, keep the path below. See `refinementTarget`.
+        const refineTarget = refinementTarget({
+          intent: route.intent,
+          query: q,
+          pinnedLesson: pinnedLesson ?? null,
+          openLesson: (reuseActive ? activeLesson : null) ?? null,
+          namedLesson,
+          preferDocuments: preferDocs,
+        });
+        const askedLesson = topicStrong
+          ? namedLesson
           : (preferDocs
             ? null
             : (
@@ -2754,6 +2752,7 @@ export default function IqraScreen() {
                 : null)
               ?? null
             ));
+        let lessonForArt = refineTarget ?? askedLesson;
         // Soft pin only when the teacher did not name a different topic
         if (
           softBareArtifact
@@ -2766,7 +2765,7 @@ export default function IqraScreen() {
           lang: lang as 'ar' | 'en',
           query: q,
           lesson: lessonForArt,
-          refinement: refining,
+          refinement: !!refineTarget,
           activeTopicAr: sessionMemory.activeTopicAr,
           activeTopicEn: sessionMemory.activeTopicEn,
           docTopic: hasDocs

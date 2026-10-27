@@ -207,37 +207,57 @@ export function topicFromQuery(query: string): string {
 }
 
 /**
- * Verbs that ask for a NEW material. «make» is left out on purpose: «Make the
- * quiz harder» is an edit, and «Make a quiz on circles» never reaches the
- * refinement route to be asked about.
- */
-const CREATE_VERB_RE = new RegExp(
-  `(^|\\s)(?:${['حضر', 'جهز', 'أنشئ', 'انشئ', 'اعمل', 'أعمل', 'ولد', 'create', 'generate', 'prepare', 'build'].join('|')})(?=\\s|$)`,
-  'i',
-);
-
-/**
- * Does this message edit the material already in the thread, rather than ask for
- * a new one?
+ * The lesson a refinement edits, or null when the message is not an edit of one
+ * and the ordinary path (the sentence's own topic) applies.
  *
  * The refine chips — «حسّن خطة الدرس عن «X» واجعلها أوضح…», «اجعل الاختبار أصعب
  * وأضف سؤالين» — and a typed «اجعله أصعب» name no topic: the sentence is an edit
  * instruction, and read as a topic it titled the saved plan «حسّن الدرس «X»
- * واجعلها أوضح للتنفيذ…». Their topic is the lesson in play, which the caller
- * holds by id; this says only when to trust that over the sentence.
+ * واجعلها أوضح للتنفيذ…». Their topic is the lesson being edited.
  *
- * A create verb still wins: «أصعب» sends «أنشئ اختباراً أصعب عن الدائرة» to the
- * refinement route, but it asks for a quiz on circles and has to keep naming it.
+ * - A lesson tapped this turn (`pinnedLesson`, which a chip carries by id) is that
+ *   lesson. Nothing is read from the sentence: it quotes the lesson's title, and a
+ *   title can hold any word, including a create verb («أُنْشِئُ جَدْوَلًا»).
+ * - A typed message has no id, so it falls to the open lesson — unless it says what
+ *   it is about («عن X») and that names another lesson (`namedLesson`). The router
+ *   calls «اختبار قصير عن معدل الوحدة» a refinement (the «عدل» inside «معدل»), as it
+ *   does «أصعب» and «for advanced»; those ask for a NEW material and have to keep
+ *   naming theirs. A confident search hit alone is not "it names a lesson": the
+ *   edit words themselves match the curriculum («عدّل الاختبار وأضف سؤالين» scores
+ *   11 on «الاقتران العكسي»), which is how a typed refinement used to be built on
+ *   an unrelated lesson.
+ * - Uploads that outrank the lesson (`preferDocuments`) keep their own path.
  */
-export function editsLessonInPlay(intent: string, query: string): boolean {
-  return intent === 'refinement' && !CREATE_VERB_RE.test(query.replace(/[ً-ْـ]/g, ''));
+export function refinementTarget(opts: {
+  intent: string;
+  /** The message as typed (or sent by a chip). */
+  query: string;
+  pinnedLesson: KBLesson | null;
+  /** The lesson the chat is on, when the turn reuses it. */
+  openLesson: KBLesson | null;
+  /** The lesson the sentence's own topic names with confidence (`lessonNamedByTopic`). */
+  namedLesson: KBLesson | null;
+  preferDocuments: boolean;
+}): KBLesson | null {
+  const { intent, query, pinnedLesson, openLesson, namedLesson, preferDocuments } = opts;
+  if (intent !== 'refinement' || preferDocuments) return null;
+  if (pinnedLesson) return pinnedLesson;
+  if (namedLesson && namedLesson.id !== openLesson?.id && namesItsTopic(query)) return null;
+  return openLesson;
+}
+
+/** «عن X», «حول X», «بخصوص X», "about X", "on X": the message says what it is about. */
+const TOPIC_CLAUSE_RE = /(?:^|\s)(?:عن|حول|بخصوص|about|on|regarding)\s+\S/i;
+
+function namesItsTopic(query: string): boolean {
+  return TOPIC_CLAUSE_RE.test(query);
 }
 
 /** Resolve topic string for generation from lesson / docs / query. */
 export function resolveArtifactTopic(opts: {
   /**
-   * The message edits the material in the thread (`editsLessonInPlay`). With a
-   * `lesson`, that lesson is the topic and the sentence is not read for one.
+   * The message edits `lesson` (`refinementTarget`). That lesson is the topic and
+   * the sentence is not read for one.
    */
   refinement?: boolean;
   lang: 'ar' | 'en';
