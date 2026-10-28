@@ -2446,3 +2446,79 @@ describe('questions about the app itself — the curriculum, who it is for, who 
     assert.doesNotMatch(ar('howAboutCurriculum'), /معتمد|مصادق|برعاية|رسمي/);
   });
 });
+
+describe('yes/no questions about the app — size, teachers, students, accuracy, grades (thirty-fourth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string, 'ar' | 'en']> = [
+    ['هل يوجد وضع ليلي', 'howDarkMode', 'ar'],
+    ['Is there a dark mode', 'howDarkMode', 'en'],
+    ['هل يعمل بدون انترنت', 'howOffline', 'ar'],
+    ['Does it work offline', 'howOffline', 'en'],
+    ['هل بيانات الطلبة آمنة', 'howPrivacy', 'ar'],
+    ["Is my students' data safe", 'howPrivacy', 'en'],
+    ['هل التطبيق مجاني للمدارس الخاصة', 'howPricing', 'ar'],
+    ['Is it free for private schools', 'howPricing', 'en'],
+    ['كم عدد الاختبارات التي أستطيع إنشاءها', 'howPricing', 'ar'],
+    ['How many exams can I create', 'howPricing', 'en'],
+    ['كم عدد الطلبة الذي يمكن إضافته في الشعبة', 'howClassSize', 'ar'],
+    ['هل يوجد حد لعدد الطلبة في الشعبة', 'howClassSize', 'ar'],
+    ['How many students can I add to a class', 'howClassSize', 'en'],
+    ['هل يمكن لأكثر من معلم استخدام نفس الشعبة', 'howOneTeacherClass', 'ar'],
+    ['Can two teachers share one class', 'howOneTeacherClass', 'en'],
+    ['هل يوجد تطبيق للطلاب', 'howStudentApp', 'ar'],
+    ['Is there a student app', 'howStudentApp', 'en'],
+    ['هل يمكن للطلبة مراسلة المعلم', 'howStudentMessage', 'ar'],
+    ['Can students message the teacher', 'howStudentMessage', 'en'],
+    ['ما الفرق بين حساب المعلم وحساب الطالب', 'howAccountTypes', 'ar'],
+    ['What is the difference between a teacher account and a student account', 'howAccountTypes', 'en'],
+    ['هل الأسئلة التي ينشئها الذكاء الاصطناعي صحيحة', 'howAiAccuracy', 'ar'],
+    ['Are the AI-generated questions accurate', 'howAiAccuracy', 'en'],
+    ['هل يوجد منهاج الصف الثاني عشر', 'howGradeCoverage', 'ar'],
+    ['هل يغطي التطبيق التوجيهي', 'howGradeCoverage', 'ar'],
+    ['هل يدعم التطبيق مادة اللغة العربية', 'howGradeCoverage', 'ar'],
+    ['أي الصفوف يغطيها إقرأ', 'howGradeCoverage', 'ar'],
+    ['Can I use it for Grade 12', 'howGradeCoverage', 'en'],
+    ['Which grades does the app cover', 'howGradeCoverage', 'en'],
+    ['هل يوجد نسخة بالإنجليزية', 'faqA16', 'ar'],
+    ['Is there an English version', 'faqA16', 'en'],
+    ['هل يصحح التطبيق الإجابات تلقائيا', 'howOpenGrading', 'ar'],
+    ['Does the app grade papers automatically', 'howOpenGrading', 'en'],
+    ['كيف أشارك الاختبار مع ولي الأمر', 'howParentExam', 'ar'],
+    ['How do I share the exam with the parents', 'howParentExam', 'en'],
+  ];
+  for (const [q, key, lang] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, lang, t).text, `<${key}>`);
+    });
+  }
+
+  // A number, a grade, an account or an AI named inside a question about something else claims nothing.
+  const stayWithModel = [
+    'كم عدد الطلبة في الأردن',
+    'ما المواد التي يدرسها الصف الثاني عشر في الأردن',
+    'ما الفرق بين الخلية الحيوانية والنباتية',
+    'هل الأسئلة في هذا الدرس صعبة',
+    'how many students are in the class photo',
+    'Which grades does Jordan include in the basic stage',
+    'Can students message each other',
+    'is the water in the dead sea safe to drink',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howClassSize', 'howOneTeacherClass', 'howStudentApp', 'howStudentMessage', 'howAccountTypes', 'howAiAccuracy', 'howGradeCoverage', 'howParentExam', 'howPrivacy', 'howDarkMode', 'howOffline']);
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+
+  // What the answers must not promise.
+  it('the answers claim no more than the code shows', () => {
+    const ar = (k: string) => (translations.ar as unknown as Record<string, string>)[k];
+    assert.match(ar('howGradeCoverage'), /من الأول إلى العاشر/);
+    assert.match(ar('howGradeCoverage'), /لا يشمل الصفين الحادي عشر والثاني عشر/);
+    assert.doesNotMatch(ar('howAiAccuracy'), /مضمون|دقيق تمامًا|بلا أخطاء|100/);
+    assert.doesNotMatch(ar('howStudentApp'), /متوفر في متجر/);
+    assert.match(ar('howStudentApp'), /غير موجود بعد في متجر/);
+  });
+});
