@@ -55,10 +55,10 @@ const OUT = path.resolve(HERE, '../src/data/english_vocabulary.json');
 const BOOKS: { sourceId: string; lessonId: (unit: number, lesson: number) => string }[] = [
   { sourceId: 'eng-s1-student-book', lessonId: (u, l) => `kbl-eng-s1-nccd-u${u}_l${l}` },
   // Grade 8 is the same Jordan High Note series and layout as Grade 9: seven `LESSON nA…G` pages per unit, and a
-  // Word List whose `WL<unit>.<lesson>` markers number the lessons the catalog numbers. Semester 2
-  // (`g8-english-s2-student-book`) is absent on purpose: its text layer is rejected by `extract-text`'s Arabic
-  // gates (the Arabic front pages), so there is no extraction to read yet.
+  // Word List whose `WL<unit>.<lesson>` markers number the lessons the catalog numbers. Semester 2 numbers its
+  // units 6-10 (as Grade 9 semester 2 does), so its markers run WL6.1 to WL10.7.
   { sourceId: 'g8-english-s1-student-book', lessonId: (u, l) => `kbl-g8-eng-s1-nccd-u${u}_l${l}` },
+  { sourceId: 'g8-english-s2-student-book', lessonId: (u, l) => `kbl-g8-eng-s2-nccd-u${u}_l${l}` },
   { sourceId: 'g9-english-s1-student-book', lessonId: (u, l) => `kbl-g9-eng-s1-nccd-u${u}_l${l}` },
   { sourceId: 'g9-english-s2-student-book', lessonId: (u, l) => `kbl-g9-eng-s2-nccd-u${u}_l${l}` },
 ];
@@ -93,6 +93,8 @@ function looksLikeGrammarTable(head: string): boolean {
   // A lone conjugation-table pronoun. These books never teach "He" as vocabulary,
   // and as a drill answer it is indistinguishable from the three distractors.
   if (PRONOUN_CELL.has(head.toLowerCase())) return true;
+  // Two or more of them side by side ("she we", Grade 8 semester 2): the same table, a row at a time.
+  if (head.toLowerCase().split(/\s+/).every(t => PRONOUN_CELL.has(t))) return true;
   // The irregular-verbs table: "spread /spred/ spread /spred/ spread". Its IPA
   // carries no stress mark, so the phonetic filter lets it through. A real
   // alternate headword writes the slash tight — "close/good friend".
@@ -161,7 +163,13 @@ function wordsFrom(book: (typeof BOOKS)[number]): Row[] {
       buf = buf ? `${buf} ${line}` : line;
       // Complete when the IPA closes. `endsWith(' /')` catches the wrap where a
       // long headword pushes the opening slash onto the previous line.
-      const closed = buf.endsWith('/') && !buf.endsWith(' /') && (buf.match(/\//g) ?? []).length >= 2;
+      // The exception (Grade 8 semester 2): an IPA that closes with a space before its last slash
+      // ("… /ˈsteɪ wɪð ˌsʌmbɒdi /"). It is told from a wrapped opener ("sculpture tour (n) /", "have coffee/a meal /")
+      // by what sits between the last two slashes: a transcription has phonetic characters, a headword does not.
+      const slashes = buf.match(/\//g) ?? [];
+      const closedWithSpace =
+        buf.endsWith(' /') && slashes.length >= 2 && PHONETIC_CHAR.test(buf.slice(buf.lastIndexOf('/', buf.length - 2) + 1, buf.length - 2));
+      const closed = (buf.endsWith('/') && !buf.endsWith(' /') && slashes.length >= 2) || closedWithSpace;
       if (!closed) continue;
 
       let cut = buf.lastIndexOf('/', buf.length - 2);
