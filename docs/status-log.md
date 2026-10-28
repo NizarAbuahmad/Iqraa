@@ -10,6 +10,21 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat starter chips wear their tool's icon and colour, 2026-10-28
+
+On the web chat's empty state «جهّز خطة الدرس» and «جهّز ورقة عمل» were the same button twice: teal text on one teal tint, told
+apart only by a font emoji (📄 / 📝) that renders differently on every platform. `starterChips` in `app/(tabs)/iqra.tsx` now draws
+each lesson chip on the card with its tool's own drawing and colour from `CONCEPTS` (`ConceptIcon`, colour lifted with
+`readableOn(…, colors.card, 3)` as on the Tools tab), dark text, a hover state on web, and no emoji. The virtual-lab chip takes the lab
+corner's drawing and colour. Chips with no tool (the no-lesson sample questions, «لخّص من الملفات») keep the old brand-tint look. Same
+chips above the composer once a thread starts.
+
+**Verified:** typecheck; mobile suite 8010/8025 — the 5 failures are this Windows checkout's CRLF/backslash paths in source-reading
+tests (`generatorScreens`, `iconSystem` ×3, `scopeSelection`), none touch this file, and the icon-system rules this change falls under
+pass. Rendered against a local API (fresh local DB, demo mode) at 1440 wide in Arabic and English, light and dark. **Not checked:** the
+phone app (on a phone the readiness board replaces these chips on the empty state; they still show above the composer mid-thread),
+and production.
+
 ## extract-text: an English book is judged as English, so Grade 8 semester 2 can be extracted, 2026-10-28
 
 Why Grade 8 semester 2 has no word lists. On 2026-10-25 `extract-text` rejected `g8-english-s2-student-book` for «Arabic in reversed
