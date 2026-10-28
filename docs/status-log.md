@@ -10,6 +10,13 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Row-level security is a required check, 2026-10-27
+
+The owner added `row-level security` to the required status checks of the `main` branch rule (GitHub → Settings →
+Branches), next to `typecheck + tests` (checklist E1). **Verified:** a screenshot of the rule page with both checks
+listed. **Not verified:** that the save went through (the owner said "done"; this session cannot read branch
+protection) — a later PR showing the check as required would confirm it. Docs only.
+
 ## Help-center video shelf: the mechanism, shipped empty, 2026-10-27
 
 **Why.** The scripts for the first five tutorial videos are in `docs/tutorial-videos-ar.md`; this is where they will live. Spec:
