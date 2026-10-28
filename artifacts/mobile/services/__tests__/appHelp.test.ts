@@ -2555,3 +2555,70 @@ describe('«only Jordan» — which countries the app is for (thirty-fifth live 
     assert.equal(ar, 'إقرأ للأردن فقط، ومبني على المنهاج الأردني.');
   });
 });
+
+describe('the thirty-sixth live pass — wordings of answers that existed, plus «no cheat control» and «no scheduled exam»', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string, 'ar' | 'en']> = [
+    ['هل يوجد سجل حضور وغياب', 'howAttendance', 'ar'],
+    ['كيف أسجل غياب الطالب', 'howAttendance', 'ar'],
+    ['هل أستطيع طباعة كشف علامات الصف', 'howExportMarks', 'ar'],
+    ['كيف أحسب معدل الطالب', 'howStudentRecord', 'ar'],
+    ['How do I calculate a student\'s average', 'howStudentRecord', 'en'],
+    ['الطالب لا يستطيع تسجيل الدخول', 'howReissueLoginCode', 'ar'],
+    ['كيف أعيد تعيين رمز دخول الطالب', 'howReissueLoginCode', 'ar'],
+    ['my student can\'t log in', 'howReissueLoginCode', 'en'],
+    ['هل يمكن للطالب تغيير اسمه', 'howChangeName', 'ar'],
+    ['هل يوجد ركن للقرآن الكريم', 'howQuranAbout', 'ar'],
+    ['Is there a Quran corner', 'howQuranAbout', 'en'],
+    ['هل يوجد مختبر افتراضي للكيمياء', 'howLabAbout', 'ar'],
+    ['هل توجد ألعاب تعليمية للصف الأول', 'howGamesList', 'ar'],
+    ['هل يمكن تحميل الدرس كملف باوربوينت', 'howSaveSlides', 'ar'],
+    ['هل يمكن تخصيص ورقة العمل لطالب ضعيف', 'howRemedial', 'ar'],
+    ['هل يوجد أسئلة للطلاب المتفوقين', 'howWorksheetLevels', 'ar'],
+    ['كيف أعطي الطالب علامة جزئية', 'howEditMark', 'ar'],
+    ['Give a student partial credit', 'howEditMark', 'en'],
+    ['كيف أغير العلامة الكلية للاختبار', 'howQuestionMarks', 'ar'],
+    ['هل يمكن إدراج صورة في السؤال', 'howQuestionImage', 'ar'],
+    ['هل يمكن تحديد مدة للاختبار', 'howExamTime', 'ar'],
+    ['How do I set an exam time limit', 'howExamTime', 'en'],
+    ['هل يمكن للطالب إعادة الاختبار', 'howExamRetake', 'ar'],
+    ['Can a student retake an exam', 'howExamRetake', 'en'],
+    ['هل يمنع التطبيق الغش في الاختبار', 'howExamCheat', 'ar'],
+    ['Does the app prevent cheating', 'howExamCheat', 'en'],
+    ['هل يمكن جدولة الاختبار لوقت لاحق', 'howExamSchedule', 'ar'],
+    ['Can I schedule an exam for later', 'howExamSchedule', 'en'],
+  ];
+  for (const [q, key, lang] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, lang, t).text, `<${key}>`);
+    });
+  }
+
+  // A word from these rules inside a question about something else claims nothing.
+  const stayWithModel = [
+    'ما هو الغش التجاري',
+    'كيف أحدد مدة الاختبار',
+    'كيف أمنع الطلاب من الغش',
+    'كيف أحدد مدة الحصة',
+    'جدولة الديون الخارجية',
+    'Can I schedule a meeting with a parent',
+    'Can students retake the driving test',
+    'Is there a Quran verse about patience',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howExamCheat', 'howExamSchedule', 'howExamTime', 'howExamRetake', 'howAttendance', 'howQuranAbout', 'howStudentRecord']);
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+
+  // The two new answers say what the app does not do, so they must not promise it.
+  it('the «no» answers claim no control the app lacks', () => {
+    const ar = (k: string) => (translations.ar as unknown as Record<string, string>)[k];
+    assert.match(ar('howExamCheat'), /لا يوجد في إقرأ ما يمنع الغش/);
+    assert.match(ar('howExamSchedule'), /لا يمكن جدولة نشر الامتحان/);
+    assert.match(ar('howExamSchedule'), /ولا يفتح الامتحان/);
+  });
+});

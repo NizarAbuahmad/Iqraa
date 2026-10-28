@@ -168,6 +168,8 @@ const SCREENS: AppPlace[] = [
   { id: 'try-no-account', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howTryNoAccount' },
   // The thirty-fourth live pass: more questions about the app itself.
   { id: 'jordan-only', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howJordanOnly' },
+  { id: 'exam-cheat', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howExamCheat' },
+  { id: 'exam-schedule', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howExamSchedule' },
   { id: 'class-size', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howClassSize' },
   { id: 'one-teacher-class', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howOneTeacherClass' },
   { id: 'student-app', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howStudentApp' },
@@ -1335,6 +1337,131 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
   // goes on the slides (not the lesson plan), a student can always go back, and
   // Messages has no voice notes. The nouns end each message, so «كيف أضيف رابط
   // يوتيوب إلى الشريحة» and «كيف أمنع الطلبة من الغش» stay with the model.
+  // The thirty-sixth live pass: wordings of answers that existed, and two that say what the app does not do.
+  {
+    id: 'attendance',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+)?(?:يوجد|فيه|في|يتوفر|متوفر)\s+(?:ال)?(?:سجل|تسجيل|نظام|خاصيه)\s+(?:ال)?(?:حضور|غياب)(?:\s+و\s*(?:ال)?(?:حضور|غياب))?(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اسجل|اضع|احسب|اعلم)\s+(?:ال)?(?:غياب|حضور)\s+(?:ال)?(?:طالب|طلبه)(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'export-marks',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+|كيف\s+)?(?:(?:استطيع|اقدر|يمكنني|يمكن)\s+(?:ان\s+)?)?(?:طباعه|اطبع|تصدير|اصدر|تحميل)\s+(?:ال)?(?:كشف|جدول|قائمه)\s+(?:ال)?علامات(?:\s+\S+){0,3}` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'exam-retake',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+)?(?:يمكن|يستطيع)\s+(?:لل|ل)?\s*(?:ال)?(?:طالب|طلبه)\s+(?:ان\s+)?(?:اعاده|يعيد|يكرر)\s+(?:ال)?(?:اختبار|امتحان)(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:can|could|may)\s+(?:a\s+|the\s+)?(?:student|students|pupil|pupils)\s+(?:retake|redo|repeat|resit|re-take)\s+(?:an?\s+|the\s+)?(?:exam|test|quiz)(?:\s+\w+){0,2}` + EN_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'exam-time',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+)?(?:يمكن|يوجد|فيه|في|استطيع|اقدر)\s+(?:ان\s+)?(?:تحديد|ضبط|وضع|تمديد|اضافه)\s+(?:ال)?(?:مده|مؤقت|وقت|زمن)\s+(?:لل|ل)\s*(?:ال)?(?:اختبار|امتحان)(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`(?:set|add|change|extend)\s+(?:an?\s+|the\s+)?(?:exam\s+|test\s+|quiz\s+)?(?:time\s+limit|timer|duration)(?:\s+(?:for|on)\s+(?:the\s+|an?\s+)?(?:exam|test|quiz))?` + EN_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'reissue-login',
+    res: [
+      new RegExp(String.raw`^(?:ال)?(?:طالب|طلبه)\s+(?:لا\s+|ما\s+)?(?:يستطيع|يستطيعون|يقدر|يقدرون)\s+(?:ال)?(?:دخول|تسجيل\s+(?:ال)?دخول)(?:\s+\S+){0,3}` + AR_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اعيد|اعاده)\s+(?:تعيين|ضبط)\s+(?:ال)?رمز\s+(?:ال)?دخول\s+(?:ال)?(?:طالب|طلبه)` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:my\s+)?student(?:s)?\s+(?:can['’]?t|cannot|is\s+unable\s+to|are\s+unable\s+to|isn['’]?t\s+able\s+to)\s+(?:log\s*in|sign\s+in)(?:\s+\w+){0,3}` + EN_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`reset\s+(?:a\s+|my\s+)?student['’]?s?\s+(?:login|log-in|sign-in)\s+code` + EN_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'change-name',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+)?(?:يمكن|يستطيع)\s+(?:لل|ل)?\s*(?:ال)?(?:طالب|طلبه)\s+(?:ان\s+)?(?:تغيير|يغير)\s+(?:اسمه|اسمهم)(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'quran-about',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+)?(?:يوجد|فيه|في|يتوفر|متوفر)\s+(?:ال)?(?:ركن|قسم)\s+(?:لل|ل)?(?:ال)?قران(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:is\s+there|do\s+you\s+have)\s+(?:an?\s+)?(?:quran|qur['’]?an)\s+(?:corner|section)` + EN_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'lab-about',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+)?(?:يوجد|فيه|في|يتوفر|متوفر)\s+(?:ال)?(?:مختبر|معمل)\s+(?:افتراضي|الكتروني|كيمياء|للكيمياء)(?:\s+\S+){0,3}` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:is\s+there|do\s+you\s+have)\s+(?:an?\s+)?(?:virtual|chemistry|science)\s+lab` + EN_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'games-list',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+)?(?:توجد|يوجد|فيه|في|تتوفر|يتوفر)\s+(?:ال)?عاب\s+(?:تعليميه\s+)?(?:لل|ل)\s*(?:ال)?صف(?:\s+\S+){0,3}` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:are\s+there|do\s+you\s+have)\s+(?:any\s+)?(?:educational\s+)?games(?:\s+for\s+\w+(?:\s+\w+)?)?` + EN_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'save-slides',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+|كيف\s+)?(?:(?:يمكن|استطيع|اقدر)\s+)?(?:تحميل|تنزيل|تصدير|حفظ)\s+(?:ال)?(?:درس|شرائح|عرض)\s+(?:ك?ملف\s+)?(?:باوربوينت|بوربوينت|powerpoint|pptx)(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'remedial-worksheet',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+)?(?:يمكن|استطيع|اقدر)\s+(?:تخصيص|تكييف|تعديل|اعداد)\s+(?:ال)?(?:ورقه|اوراق)\s+(?:ال)?عمل\s+(?:لل|ل)\s*(?:ال)?طالب\s+(?:ال)?(?:ضعيف|متعثر)(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'worksheet-levels',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+)?(?:يوجد|فيه|في|توجد)\s+(?:ال)?اسئله\s+(?:لل|ل)\s*(?:ال)?(?:طلاب|طلبه)\s+(?:ال)?متفوقين(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'student-record',
+    res: [
+      new RegExp(AR_RULE_LEAD + String.raw`(?:احسب|اعرف|اشوف|اطلع|ارى|اري)\s+(?:ال)?(?:معدل|متوسط)\s+(?:ال)?(?:طالب|طلبه)(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`(?:calculate|find|see|get|check)\s+(?:a\s+|the\s+|my\s+)?student['’]?s?\s+(?:average|mean|gpa)` + EN_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'edit-mark',
+    res: [
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اعطي|امنح|اضع)\s+(?:ال)?(?:طالب|طلبه)\s+(?:ال)?(?:علامه|درجه)\s+(?:جزئيه|ناقصه|نصفيه)` + AR_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`give\s+(?:a\s+)?(?:student|students)\s+partial\s+(?:credit|marks?)` + EN_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'question-marks',
+    res: [
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اغير|تغيير|اعدل)\s+(?:ال)?(?:علامه|درجه)\s+(?:ال)?(?:كليه|اجماليه|نهائيه)\s+(?:لل|ل)\s*(?:ال)?(?:اختبار|امتحان)` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'question-image',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+)?(?:يمكن|استطيع|اقدر)\s+(?:ادراج|اضافه|ارفاق|وضع)\s+(?:ال)?(?:صوره|شكل)\s+(?:في|ل)\s*(?:ال)?(?:سؤال|اسئله)(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'exam-cheat',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+)?(?:يمنع|يكشف|يراقب|يحمي\s+من|يوجد\s+حمايه\s+من|فيه\s+حمايه\s+من)\s+(?:(?:ال)?تطبيق\s+)?(?:ال)?غش(?:\s+\S+){0,3}` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:does|can|will)\s+(?:the\s+)?(?:app|iqrra|iqraa|it)\s+(?:prevent|stop|detect|block)\s+cheating(?:\s+\w+){0,3}` + EN_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`(?:prevent|stop)\s+(?:students\s+from\s+)?cheating(?:\s+\w+){0,3}` + EN_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'exam-schedule',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+)?(?:يمكن\s+)?(?:جدوله|جدولة|برمجه)\s+(?:ال)?(?:اختبار|امتحان|تقييم)(?:\s+(?:ل|الي)\s*(?:وقت|يوم|موعد|تاريخ)\s*\S*)?(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:انشر|نشر)\s+(?:ال)?(?:اختبار|امتحان|تقييم)\s+(?:في\s+)?(?:وقت|موعد|يوم)\s+(?:لاحق|محدد)` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:can|could)\s+(?:i|we)\s+schedule\s+(?:an?\s+|the\s+)?(?:exam|test|quiz)(?:\s+(?:for|to)\s+(?:later|publish\s+later|a\s+(?:later|specific)\s+(?:time|date)))?` + EN_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`(?:schedule|auto[\s-]?publish)\s+(?:an?\s+|the\s+)?(?:exam|test|quiz)` + EN_RULE_TAIL),
+    ],
+  },
   // The thirty-fourth live pass: more answers about the app itself.
   {
     id: 'jordan-only',
