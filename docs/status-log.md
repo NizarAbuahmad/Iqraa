@@ -10,6 +10,51 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 8 semester 2 word lists in the English corner, 2026-10-28
+
+Grade 8 semester 2 joins semester 1 in the English corner: 35 lessons and 399 words extracted from the book's Word List, 30 of those
+lessons offered (a lesson needs 4 glossed words; five short Speaking / Writing lessons have fewer), so Grade 8 now has 57 hub lessons,
+units 1–10. It follows the semester 1 pipeline (see «Grade 8 semester 1 word lists in the English corner»); the new part is how the
+text got here. `extract-text` had rejected the book on 2026-10-25 for «Arabic in reversed presentation-form glyphs». It is English; the
+few Arabic words in its front pages are encoded that way. PR #1329 made the quality gate judge an English book as English, the owner
+ran `extract-text` on their machine, and `data/extracted/g8-english-s2-student-book.json` (80 pages, 146,283 characters, sha256
+`4095abfc…`) is that extraction. The PDF stays gitignored.
+
+**Two reader fixes, neither changes any other book.** Both were measured by re-running the extractor and diffing every other book's
+rows: 0 removed, 0 added.
+- A transcription that closes with a space before its last slash (`… ˌsʌmbɒdi /`) was taken for a slash that opens a wrapped
+  transcription, so «stay with sb» was never closed and swallowed «take a trip»: both lost from lesson 7.1. The reader now tells the
+  two by whether phonetic characters sit between the last two slashes. A test pins lesson 7.1 at ten entries.
+- The Grammar Reference's pronoun table sits behind the last lesson's list and was read under its marker: «she we» landed in lesson
+  10.7. A headword made only of pronouns is now a table cell. (Stopping at the Grammar Reference page instead was tried and
+  rejected: it also removes 25 leaked rows from Grade 8 semester 1 and Grade 9, which is a change to other grades' data.)
+
+**Glosses.** 336 new Arabic glosses, **drafted by Claude, not reviewed by a teacher.** Two existing glosses had the other sense and a
+word has one gloss, so both senses are now in it: `hand` «يد، يناول» (lesson 9.3 is body parts) and `degree` «درجة، شهادة جامعية»
+(10.5 is weather). `robot` is «رجل آلي», as a Grade 1 teacher asked on 2026-10-15 and `englishHub.test.ts` pins for every hub
+`robot`, so «personal robot» follows; «USB cable» is spelled out in Arabic letters because the glossary test rejects Latin ones. Senses
+worth a teacher's eye: `fast`, `fat` / `flat` / `round` / `wide` (lesson 9.3), `present` and `spread` (10.4), `brilliant`, `setting`,
+`block`, `mystery`, `fiction`, `hostel`. Twenty entries with an alternation or a slash («go to the beach/the park») are in the data
+and not offered, by the existing rule that a drill word has no slash.
+
+**Elsewhere.** `g10_sources.json` has a third-party row for the book (same series, © Pearson / York Press, not quotable) and the
+semester 1 row's note no longer says semester 2 is unregistered. The Grade 5, 9 and 10 teacher forms were regenerated: only each unit's
+«words outside the vocabulary lists» note changed (for instance «abroad» is now in a list). No unit has a sign-off, so none is
+invalidated. The mobile corpus pin (`vocabularyDrill.test.ts`) is 1,519 words / 142 lessons / 499 sentences.
+
+**Verified:** `lib/curriculum` tests 895 of 896 (the one failure, «R2 helpers are inert, not broken, when unconfigured», fails on `main`
+too); the mobile vocabulary-drill test 11 of 11. The mobile suite 8,084 tests, 0 failures; `pnpm run typecheck` clean on the whole monorepo (after a `pnpm install`: the container's packages predated a dependency on `main`).
+
+**Not verified:**
+- The extraction against the PDF: I read the raw text of lessons 7.1–7.7 and the start of unit 8, and checked the parser's output
+  against it for 7.1 only (that is how the two lost entries were found). I read every word I glossed, grouped by lesson. Nothing
+  else was compared line by line, and the PDF itself was not opened: the container has only the owner's extracted text.
+- The glosses (above), and the screens: nobody has looked at the Grade 8 semester 2 lessons in a browser or on a phone.
+- **Recordings: 275 of the 357 distinct semester 2 words have no MP3** (checked by `HEAD` against the public bucket on 2026-10-28), so
+  on the web the word is spoken in the browser's voice and in the Android app it is silent until `english-audio` is run with the
+  OpenAI and R2 keys (`english-audio-check` afterwards). Decide whether to run it before this deploys.
+- Not done: Grades 6 and 7 (Pearson third-party text, vocabulary left empty on purpose), Grade 10 semester 2, an OTA for the Android app.
+
 ## Chat starter chips wear their tool's icon and colour, 2026-10-28
 
 On the web chat's empty state «جهّز خطة الدرس» and «جهّز ورقة عمل» were the same button twice: teal text on one teal tint, told

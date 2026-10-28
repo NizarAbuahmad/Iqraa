@@ -75,9 +75,9 @@ test('grade tabs are in grade order — the selected grade is a URL param carrie
   assert.deepEqual([...ENGLISH_HUB_GRADES], [1, 2, 3, 4, 5, 8, 9, 10]);
 });
 
-// Grade 8 comes from the same Word List pass as Grade 9 (`extract-english-vocabulary.ts`), semester 1 only: the
-// semester 2 PDF's text layer is rejected by `extract-text`, so it has no extraction to read.
-test('grade 8 offers semester 1 only, units 1–5', () => {
+// Grade 8 comes from the same Word List pass as Grade 9 (`extract-english-vocabulary.ts`). Semester 2 joined on
+// 2026-10-28, once `extract-text` accepted an English book whose few Arabic words are presentation-form glyphs.
+test('grade 8 offers both semesters, units 1–10', () => {
   const lessons = hubLessonsForGrade(8);
   // A lesson is offered when it reaches MIN_HUB_WORDS words; the book's short Speaking / Writing lessons do not.
   const distinct = new Map<string, Set<string>>();
@@ -88,9 +88,12 @@ test('grade 8 offers semester 1 only, units 1–5', () => {
   const expected = [...distinct].filter(([, s]) => s.size >= MIN_HUB_WORDS).map(([id]) => id).sort();
   assert.ok(expected.length >= 25, `only ${expected.length} lessons reach ${MIN_HUB_WORDS} words`);
   assert.deepEqual(lessons.map(l => l.id).sort(), expected);
-  assert.deepEqual([...new Set(lessons.map(l => l.semester))], [1]);
-  assert.deepEqual([...new Set(lessons.map(l => l.unitNumber))].sort((a, b) => a - b), [1, 2, 3, 4, 5]);
-  for (const l of lessons) assert.ok(l.id.startsWith('kbl-g8-eng-s1-nccd-u') && l.unitTitle && l.unitTitleAr, l.id);
+  assert.deepEqual([...new Set(lessons.map(l => l.semester))].sort(), [1, 2]);
+  assert.deepEqual([...new Set(lessons.map(l => l.unitNumber))].sort((a, b) => a - b), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  for (const l of lessons) {
+    assert.ok(l.id.startsWith(`kbl-g8-eng-s${l.semester}-nccd-u`) && l.unitTitle && l.unitTitleAr, l.id);
+    assert.equal(l.unitNumber, Number(l.id.match(/-u(\d+)_l/)![1]), `${l.id}: unit number`);
+  }
 });
 
 // The book sets a lesson's `WL<unit>.<lesson>` marker at the end of the last heading line when the heading wraps
@@ -99,10 +102,31 @@ test('grade 8 offers semester 1 only, units 1–5', () => {
 // held 26 words each. Lesson 1 is a vocabulary lesson everywhere; a Writing lesson has a handful at most.
 test('grade 8: lesson 1 of every unit has its words, and a Writing lesson does not hold a unit\'s worth', () => {
   const count = (id: string) => ENGLISH_VOCABULARY.filter(w => w.lessonId === id).length;
-  for (let u = 1; u <= 5; u++) {
-    assert.ok(count(`kbl-g8-eng-s1-nccd-u${u}_l1`) >= 10, `unit ${u} lesson 1`);
-    assert.ok(count(`kbl-g8-eng-s1-nccd-u${u}_l7`) <= 10, `unit ${u} lesson 7 (Writing)`);
+  for (let u = 1; u <= 10; u++) {
+    const s = u <= 5 ? 1 : 2;
+    assert.ok(count(`kbl-g8-eng-s${s}-nccd-u${u}_l1`) >= 10, `unit ${u} lesson 1`);
+    assert.ok(count(`kbl-g8-eng-s${s}-nccd-u${u}_l7`) <= 10, `unit ${u} lesson 7 (Writing)`);
   }
+});
+
+// Semester 2 prints some transcriptions with a space before the closing slash ("… ˌsʌmbɒdi /"). The reader took that
+// for a slash that opens a transcription wrapped onto the next line, so "stay with sb" was never closed and swallowed
+// "take a trip" with it: both were lost from lesson 7.1 (ten entries in the book).
+test('grade 8 semester 2: an entry whose transcription closes after a space is kept', () => {
+  const words = ENGLISH_VOCABULARY.filter(w => w.lessonId === 'kbl-g8-eng-s2-nccd-u7_l1').map(w => w.word);
+  assert.ok(words.includes('stay with sb'), words.join(' | '));
+  assert.ok(words.includes('take a trip'), words.join(' | '));
+  assert.equal(words.length, 10);
+});
+
+// The Grammar Reference's pronoun table sits behind the last lesson's list, and was read as vocabulary under its marker
+// ("she we", Grade 8 semester 2 lesson 10.7). No headword is made only of pronouns.
+test('no Grade 8 or 9 lesson holds a headword made only of pronouns', () => {
+  const pronoun = /^(i|you|he|she|it|we|they|yes|no)$/;
+  const bad = ENGLISH_VOCABULARY
+    .filter(w => /^kbl-g[89]-eng-/.test(w.lessonId) && !/[/]/.test(w.word) && w.word.trim().toLowerCase().split(/\s+/).every(t => pronoun.test(t)))
+    .map(w => `${w.lessonId}: ${w.word}`);
+  assert.deepEqual(bad, []);
 });
 
 // The hub drops a word with no Arabic without a word of complaint (see Grade 5 above), so say it here.
@@ -120,6 +144,12 @@ test('a word Grade 8 uses in a second sense carries both', () => {
   assert.match(GLOSSES.suit!, /يليق/);
   assert.match(GLOSSES.light!, /خفيف/);
   assert.match(GLOSSES.light!, /فاتح/);
+  // Semester 2: `hand` was only the verb ("hand it to me") and `degree` only the qualification, and its lessons teach
+  // the body part (9.3) and the temperature unit (10.5).
+  assert.match(GLOSSES.hand!, /يد/);
+  assert.match(GLOSSES.hand!, /يناول/);
+  assert.match(GLOSSES.degree!, /درجة/);
+  assert.match(GLOSSES.degree!, /شهادة/);
 });
 
 test('every drillable 9–10 word has a gloss, and every gloss names a real word', () => {
