@@ -10,6 +10,22 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## docs/deploying.md: the deploy-timing wording matches the workflow, 2026-10-28
+
+The follow-up the entry below left open. `docs/deploying.md` already had a paragraph saying each surface deploys only when its own
+paths changed, but four other places contradicted it: the intro ("ships all three from `main`"), the table ("Automatic on merge to
+`main`" for the API and verifier; the database row; the web row), the web section ("builds the bundle on every merge") and the
+version-probe note ("web ships on every merge", "this service is hand-deployed"). They now say a surface deploys when a merge
+touches it, the web bundle on any merge that could change it, and the API both automatically and, in an emergency, by hand. The
+existing paragraph gained the same "a skipped job is not a failure, open the run's job list" sentence `CLAUDE.md` has, with the
+three runs it was checked against (#1324 web alone, #1323 API path without the verifier or web, #1327 nothing).
+
+**Verified** by re-reading the `changes`, `migrate`, `schema`, `api`, `verifier` and `web` jobs in `.github/workflows/deploy.yml`
+(the migrations and the schema check share the API's condition; web needs only that no dependency failed or was cancelled, and a
+skipped one is fine) and against the three real runs. **Not changed:** the incident notes and the manual `gcloud` commands, which
+describe what happened or what to type, not when a merge deploys; and the line in the production-OTA section ("A merge deploys the
+web build at once"), which is true of the app change it is written about.
+
 ## CLAUDE.md: a merge deploys only the surfaces it touches, 2026-10-28
 
 `CLAUDE.md` said twice that a merge deploys all three services (API, verifier, web). It does not: the `what changed` job in

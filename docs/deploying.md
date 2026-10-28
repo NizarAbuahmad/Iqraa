@@ -1,16 +1,17 @@
 # Deploying
 
 Three services, and **the order they deploy in matters** — which is the reason
-this file exists. `.github/workflows/deploy.yml` ships all three from `main`:
-the API and verifier to Cloud Run first, the web bundle to Cloudflare Pages
-after, and it skips the web deploy entirely if either server deploy failed.
+this file exists. `.github/workflows/deploy.yml` ships all three from `main`,
+each only when a merge touches it (see below): the API and verifier to Cloud
+Run first, the web bundle to Cloudflare Pages after, and it skips the web
+deploy entirely if either server deploy failed.
 
 | | Where | How it deploys |
 | --- | --- | --- |
-| `iqraa-api` | Cloud Run | **Automatic** on merge to `main` |
-| `iqraa-verifier` | Cloud Run | **Automatic** on merge to `main` |
-| `iqraa-web` | Cloudflare Pages (static) | **Automatic**, gated on the two above |
-| Database | Neon | **Migrations apply automatically** on merge, before the new API revision takes traffic — see *Schema* below |
+| `iqraa-api` | Cloud Run | **Automatic** on a merge to `main` that touches the API |
+| `iqraa-verifier` | Cloud Run | **Automatic** on a merge to `main` that touches the verifier |
+| `iqraa-web` | Cloudflare Pages (static) | **Automatic** on a merge that could change the bundle; waits on the two above |
+| Database | Neon | **Migrations apply automatically** on a merge that touches the API (the API deploy's own condition), before the new API revision takes traffic — see *Schema* below |
 
 **Server before client, on purpose.** A new API behind an old bundle is
 harmless: the bundle simply does not call the new route. The reverse is an
@@ -29,6 +30,13 @@ the running system rather than trusting the tool: the API asserts
 printed a success line while traffic stayed pinned to an older revision
 (2026-09-07).
 
+A skipped job is not a failure, so a green Deploy run does not mean a surface
+shipped: open the run's job list. The 2026-10-27 video-shelf merge (#1324, only
+the app and docs) ran `iqraa-web` alone; an API-only merge (#1323) ran the
+migrations, the schema check and `iqraa-api` and skipped the verifier and the
+web bundle; a docs-only merge (#1327) ran none of them. The exact path lists are
+in the `what changed` job of `deploy.yml`, not here.
+
 CI authenticates to GCP with **Workload Identity Federation** — no service
 account key is stored in GitHub. The provider is bound by attribute condition to
 this repository alone and mints a short-lived token per run, which matters
@@ -46,7 +54,8 @@ Cloudflare has been serving for a while.
 ## The web app
 
 Nothing to do. The `web` job in `.github/workflows/deploy.yml` builds the bundle
-on every merge to `main` and publishes it to Cloudflare Pages, and the build inlines
+on every merge to `main` that could change it (an API-only, verifier-only or
+docs-only merge skips it) and publishes it to Cloudflare Pages, and the build inlines
 every `EXPO_PUBLIC_*` value — so changing one of those needs a **web rebuild**,
 not just an API redeploy. Those values live in that workflow now, not in
 `render.yaml`.
@@ -92,9 +101,9 @@ gcloud run deploy iqraa-api --source . --region europe-west1 --allow-unauthentic
 ```
 
 `GIT_SHA` is what `/healthz/version` reports back. It is the only way to tell
-whether a deploy actually happened, because this service is hand-deployed while
-web ships on every merge — a stale API looks identical to a current one from
-the outside. Omit the flag and the route answers `"unknown"`, which is honest
+whether a deploy actually happened, because the API deploys only when a merge
+touches it (or by hand, as here) while web ships whenever the app changes — a
+stale API looks identical to a current one from the outside. Omit the flag and the route answers `"unknown"`, which is honest
 but useless. `--update-env-vars` (not `--set-env-vars`) leaves the existing
 secrets alone; see the warning below.
 
