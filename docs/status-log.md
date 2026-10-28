@@ -58,6 +58,31 @@ the old code by reading, because 100 presentation-form glyphs outnumber 0 base-b
 `lib/curriculum/src/data/extracted/g8-english-s2-student-book.json`. The manifest row, the vocabulary extraction and the glosses follow
 as for semester 1.
 
+## Growth panel: a period filter that filters — 2026-10-28
+
+The cards under «التنزيلات والمتابعون» had no date filter. The date field beside them
+only says which day a typed number is saved under, so changing it moved nothing. The
+panel now has period chips — آخر إدخال / ٧ أيام / ٣٠ يومًا / منذ البداية — and every card
+measures its change over the chosen period.
+
+**What changed**
+- `services/growthMetrics.ts` (pure, tested): `growthSummary(rows, period, today)`. A day period
+  measures from the last entry on or before the period's first day, else the first entry inside
+  it; «آخر إدخال» is the old "since the previous entry" and stays the default; «منذ البداية» is
+  since the first entry. A metric whose newest entry is older than the period says "nothing
+  recorded in this period" instead of showing a zero.
+- Each card says what it was measured from (`+40 · منذ 2026-10-10`) and the date of the last
+  entry. Numbers and days inside Arabic text are wrapped in left-to-right isolates; unwrapped,
+  the day drew backwards (`20-09-2026`) in a screenshot.
+- The entry form says it is for recording a number, and its date is labelled «تاريخ الرقم».
+
+**Limits**
+- No per-day history or trend line yet; the period only changes the change figure.
+- Verified: 14 unit tests (helper + design-scale ratchet), whole-monorepo typecheck, and in the
+  browser against a throwaway local database with seeded entries on several dates — all four
+  chips gave the figures the tests predict, and the stale case rendered. **Not** verified:
+  dark mode, a phone-width layout, or production data.
+
 ## docs/deploying.md: the deploy-timing wording matches the workflow, 2026-10-28
 
 The follow-up the entry below left open. `docs/deploying.md` already had a paragraph saying each surface deploys only when its own
@@ -865,6 +890,26 @@ CORS allows only `www.iqrra.com` and `iqrra.com`, so a preview only ever shows t
 - Rollback: delete the `<link href="/ask.css">` and `<script src="/ask.js">` lines from
   `Site_Iqra`'s `index.html` (or revert the merge); the API is unaffected. To keep the API but stop
   AI spend, set `SITE_BOT_BUDGET_USD_DAILY=0` (fixed answers keep working).
+
+## Thirty-fifth live pass: «only Jordan», 2026-10-28
+
+**Why.** The 34th pass left one question for the owner: is the app usable outside Jordan («هل التطبيق يعمل في الأردن فقط»,
+«can I use it in Palestine»). The owner's answer, given in chat on 2026-10-28: **only Jordan.**
+
+**Built.** `howJordanOnly` (ar + en) and its rule: «إقرأ للأردن فقط، ومبني على المنهاج الأردني.» The wording is the
+owner's plus the curriculum fact already stated in `howAboutCurriculum`; it says nothing about *why* (no mention of
+law, licensing or a roadmap). The rule needs «فقط» when the question names Jordan, and takes a named country, «خارج
+الأردن», «في أي دولة» or «which countries». `foldColloquial` turns «هل يمكنني X» into «كيف X», so the rule accepts a
+leading «كيف» (found when «هل يمكنني استخدامه في فلسطين» missed on the first probe).
+
+**Verified.** `appHelp.test.ts`: 10 phrasings, 4 near-misses (a country named inside a different request), and the
+exact wording. The 813 historic questions answer identically (0 changed).
+
+**Why the demo account cannot test the model (checked, 2026-10-28).** `GET /auth/me/ai-usage` as the demo teacher:
+spent $1.0009 of a $1.00 limit, renews 2026-11-01 UTC. It is the **per-account** cap (`AI_USER_BUDGET_USD`), not the
+shared budget: the chat shows the same «انتهت حصة التوليد الجديد لهذا الشهر» for both (`user_quota_exceeded` and
+`budget_exceeded` map to one string), so read `ai-usage` before assuming which. Raising it is a production env change
+for every teacher account; it was not made.
 
 ## Thirty-fourth live pass: more questions about the app itself, 2026-10-28
 
