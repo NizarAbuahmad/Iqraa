@@ -851,6 +851,45 @@ CORS allows only `www.iqrra.com` and `iqrra.com`, so a preview only ever shows t
   `Site_Iqra`'s `index.html` (or revert the merge); the API is unaffected. To keep the API but stop
   AI spend, set `SITE_BOT_BUDGET_USD_DAILY=0` (fixed answers keep working).
 
+## Thirty-fourth live pass: more questions about the app itself, 2026-10-28
+
+**Why.** A 33-question pass on app.iqrra.com (2026-10-26) of what a teacher asks before relying on the app got
+7 right, 2 wrong and 24 unanswered. Most of the 24 were *yes/no* phrasings of things the app already answers
+(«هل يوجد وضع ليلي», «Does it work offline», «هل بيانات الطلبة آمنة»): the keyword places only fire behind a
+how/where word, so a yes/no question needed an anchored rule.
+
+**Built (ar + en, in `appHelp.ts` / `i18n.ts`).** New wordings on answers that existed: dark mode, offline,
+privacy (student data → the privacy answer, which claims no security), pricing (free for private schools, how
+many exams can I make), language («is there an English version» → `faqA16`), automatic marking
+(`howOpenGrading`). New answers, each checked in code first:
+
+- `howClassSize` — no cap on a class in `roster.ts` / the schema; the only number is `MAX_BULK_STUDENTS = 200`
+  names per paste. Phrased «لا يضع إقرأ حدًّا», so a cap added later makes it wrong: grep for one first.
+- `howOneTeacherClass` — `class_groups.teacher_id` is one account; no sharing. (No invite button: `howInviteTeacher`.)
+- `howStudentApp` — no separate app; browser at app.iqrra.com, not in either store (`howInstallApp`).
+- `howStudentMessage` — `GET /messaging/contacts` gives a student their linked teacher; direct threads are teacher
+  ↔ parent/student only, never student ↔ student.
+- `howAccountTypes` — teacher / student / parent in one line each.
+- `howAiAccuracy` — AI-prepared on the textbook lesson, review it; «تم التحقق من الإجابة رياضيًا» only when the
+  symbolic checker confirmed (`howVerified`); «بلّغ عن مشكلة». No accuracy figure.
+- `howGradeCoverage` — `MVP_GRADE_IDS` is grades 1–10, so Grades 11–12 (Tawjihi) are not covered; the subject list
+  is «ومن مباحثها…», not a promise for every grade (several books are one semester). The tab is «المكتبة».
+- `howParentExam` — a parent never opens the exam: they get the exam-date push and see the mark when the
+  student would (`/parent/exams` uses `studentExamRow`). Replaces `howExamParents` for «share the exam with the parent».
+
+**The trap that cost a round.** Rules run on `plain()`, which keeps the leading «ال» of every noun (only
+`matchForm()`, used for keyword places, strips it), and turns «التي / الذي» into themselves but «اللي» stays.
+A rule written against «طلبه» matched my English-style probe and missed «الطلبة» live. Every noun in a new
+anchored rule needs `(?:ال)?`; probe with the real question, not a hand-normalised one.
+
+**Not done.** «Is it usable in Palestine / Jordan only?» — no wording from the owner, so it still goes to the model.
+«Can I edit the questions after they are made?» — the answer depends on the tool (a plan and worksheet edit, an
+exam only as a draft), so one answer would be wrong for some.
+
+**Verified.** `appHelp.test.ts` pins 34 questions, 8 near-misses and what the answers must not promise. The 813
+historic questions answer identically before and after (0 changed). Not yet seen live: re-run the 33 after deploy.
+The demo account's allowance is still spent, so only the app-only path can be exercised.
+
 ## Thirty-third live pass: questions about the app itself, 2026-10-25
 
 **Why.** A 30-question pass on app.iqrra.com of the questions a teacher asks before using the app
