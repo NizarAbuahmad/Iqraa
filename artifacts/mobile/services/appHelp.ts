@@ -167,6 +167,7 @@ const SCREENS: AppPlace[] = [
   { id: 'student-solutions', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howStudentSolutions' },
   { id: 'try-no-account', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howTryNoAccount' },
   // The thirty-fourth live pass: more questions about the app itself.
+  { id: 'jordan-only', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howJordanOnly' },
   { id: 'class-size', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howClassSize' },
   { id: 'one-teacher-class', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howOneTeacherClass' },
   { id: 'student-app', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howStudentApp' },
@@ -1335,6 +1336,19 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
   // Messages has no voice notes. The nouns end each message, so «كيف أضيف رابط
   // يوتيوب إلى الشريحة» and «كيف أمنع الطلبة من الغش» stay with the model.
   // The thirty-fourth live pass: more answers about the app itself.
+  {
+    id: 'jordan-only',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+)?(?:(?:ال)?تطبيق\s+|اقرا\s+)*(?:هو\s+)?(?:(?:يعمل|يشتغل|متاح|متوفر|مخصص|موجه|يصلح|يستخدم)\s+)?(?:في\s+|داخل\s+)?(?:لل|ل|ب)?(?:ال)?اردن\s+فقط(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:هل\s+|كيف\s+)?(?:(?:يمكن(?:ني)?|اقدر|استطيع|ممكن)\s+(?:ان\s+)?)?(?:استخدم|استخدام|استعمل|استعمال)(?:ه|ها)?\s+(?:(?:ال)?تطبيق\s+)?(?:في\s+|ب)?(?:خارج\s+(?:ال)?اردن|(?:ال)?(?:فلسطين|سعوديه|مصر|عراق|لبنان|سوريا|امارات|كويت|قطر|بحرين|مغرب|جزائر|تونس|ليبيا|سودان|يمن))(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:هل\s+)?(?:(?:ال)?تطبيق\s+|اقرا\s+)+(?:متاح|متوفر|يعمل|موجود)\s+(?:في\s+|ب)?(?:خارج\s+(?:ال)?اردن|(?:ال)?(?:فلسطين|سعوديه|مصر|عراق|لبنان|سوريا|امارات|كويت|قطر|بحرين|مغرب|جزائر|تونس|ليبيا|سودان|يمن))(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:في\s+)?(?:اي|ما)\s+(?:ال)?(?:دول\S*|بلد\S*|بلاد)\s+(?:يعمل|متاح|يستخدم|يتوفر)\s+(?:ال)?(?:تطبيق|اقرا)(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:is|does)\s+(?:the\s+app|iqrra|iqraa|it)\s+(?:only\s+)?(?:work\s+|available\s+|made\s+|meant\s+|used\s+)*(?:only\s+)?(?:in|for)\s+jordan(?:\s+only)?` + EN_RULE_TAIL),
+      new RegExp(String.raw`^(?:can|could)\s+(?:i|we|teachers)\s+use\s+(?:it|the\s+app|iqrra|iqraa)\s+(?:outside\s+(?:of\s+)?jordan|in\s+(?:palestine|saudi(?:\s+arabia)?|egypt|iraq|lebanon|syria|the\s+uae|uae|kuwait|qatar|bahrain|morocco|algeria|tunisia|libya|sudan|yemen|another\s+country|other\s+countries|abroad))` + EN_RULE_TAIL),
+      new RegExp(String.raw`^(?:is|does)\s+(?:the\s+app|iqrra|iqraa|it)\s+(?:work|available|usable)\s+(?:outside\s+(?:of\s+)?jordan|in\s+(?:palestine|saudi(?:\s+arabia)?|egypt|iraq|lebanon|syria|the\s+uae|uae|kuwait|qatar|bahrain|morocco|algeria|tunisia|libya|sudan|yemen|another\s+country|other\s+countries|abroad))` + EN_RULE_TAIL),
+      new RegExp(String.raw`^which\s+countries\s+(?:is|does)\s+(?:the\s+app|iqrra|iqraa|it)\s+(?:available|work|used)(?:\s+\w+){0,2}` + EN_RULE_TAIL),
+    ],
+  },
   {
     id: 'dark-mode',
     res: [

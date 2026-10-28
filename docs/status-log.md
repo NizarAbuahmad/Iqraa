@@ -851,6 +851,26 @@ CORS allows only `www.iqrra.com` and `iqrra.com`, so a preview only ever shows t
   `Site_Iqra`'s `index.html` (or revert the merge); the API is unaffected. To keep the API but stop
   AI spend, set `SITE_BOT_BUDGET_USD_DAILY=0` (fixed answers keep working).
 
+## Thirty-fifth live pass: «only Jordan», 2026-10-28
+
+**Why.** The 34th pass left one question for the owner: is the app usable outside Jordan («هل التطبيق يعمل في الأردن فقط»,
+«can I use it in Palestine»). The owner's answer, given in chat on 2026-10-28: **only Jordan.**
+
+**Built.** `howJordanOnly` (ar + en) and its rule: «إقرأ للأردن فقط، ومبني على المنهاج الأردني.» The wording is the
+owner's plus the curriculum fact already stated in `howAboutCurriculum`; it says nothing about *why* (no mention of
+law, licensing or a roadmap). The rule needs «فقط» when the question names Jordan, and takes a named country, «خارج
+الأردن», «في أي دولة» or «which countries». `foldColloquial` turns «هل يمكنني X» into «كيف X», so the rule accepts a
+leading «كيف» (found when «هل يمكنني استخدامه في فلسطين» missed on the first probe).
+
+**Verified.** `appHelp.test.ts`: 10 phrasings, 4 near-misses (a country named inside a different request), and the
+exact wording. The 813 historic questions answer identically (0 changed).
+
+**Why the demo account cannot test the model (checked, 2026-10-28).** `GET /auth/me/ai-usage` as the demo teacher:
+spent $1.0009 of a $1.00 limit, renews 2026-11-01 UTC. It is the **per-account** cap (`AI_USER_BUDGET_USD`), not the
+shared budget: the chat shows the same «انتهت حصة التوليد الجديد لهذا الشهر» for both (`user_quota_exceeded` and
+`budget_exceeded` map to one string), so read `ai-usage` before assuming which. Raising it is a production env change
+for every teacher account; it was not made.
+
 ## Thirty-fourth live pass: more questions about the app itself, 2026-10-28
 
 **Why.** A 33-question pass on app.iqrra.com (2026-10-26) of what a teacher asks before relying on the app got

@@ -2522,3 +2522,36 @@ describe('yes/no questions about the app — size, teachers, students, accuracy,
     assert.match(ar('howStudentApp'), /غير موجود بعد في متجر/);
   });
 });
+
+describe('«only Jordan» — which countries the app is for (thirty-fifth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, 'ar' | 'en']> = [
+    ['هل التطبيق يعمل في الأردن فقط', 'ar'],
+    ['هل التطبيق للأردن فقط', 'ar'],
+    ['هل يمكنني استخدامه في فلسطين', 'ar'],
+    ['هل يمكنني استخدامه خارج الأردن', 'ar'],
+    ['هل التطبيق متاح في السعودية', 'ar'],
+    ['في أي دولة يعمل التطبيق', 'ar'],
+    ['Is it only for Jordan', 'en'],
+    ['Can I use it in Palestine', 'en'],
+    ['Can I use it outside Jordan', 'en'],
+    ['Which countries is the app available in', 'en'],
+  ];
+  for (const [q, lang] of steps) {
+    it(`«${q}» → howJordanOnly`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, lang, t).text, '<howJordanOnly>');
+    });
+  }
+  // A country named inside a request for something else claims nothing.
+  for (const q of ['ما عاصمة فلسطين', 'كيف أنشئ اختبار عن الأردن', 'اشرح تاريخ مصر القديمة', 'which countries border Jordan']) {
+    it(`«${q}» is not this answer`, () => {
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.notEqual(a, '<howJordanOnly>');
+    });
+  }
+  it('the answer is the owner\'s wording and nothing more', () => {
+    const ar = (translations.ar as unknown as Record<string, string>).howJordanOnly;
+    assert.equal(ar, 'إقرأ للأردن فقط، ومبني على المنهاج الأردني.');
+  });
+});
