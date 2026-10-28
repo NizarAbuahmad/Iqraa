@@ -43,6 +43,31 @@ the old code by reading, because 100 presentation-form glyphs outnumber 0 base-b
 `lib/curriculum/src/data/extracted/g8-english-s2-student-book.json`. The manifest row, the vocabulary extraction and the glosses follow
 as for semester 1.
 
+## Growth panel: a period filter that filters — 2026-10-28
+
+The cards under «التنزيلات والمتابعون» had no date filter. The date field beside them
+only says which day a typed number is saved under, so changing it moved nothing. The
+panel now has period chips — آخر إدخال / ٧ أيام / ٣٠ يومًا / منذ البداية — and every card
+measures its change over the chosen period.
+
+**What changed**
+- `services/growthMetrics.ts` (pure, tested): `growthSummary(rows, period, today)`. A day period
+  measures from the last entry on or before the period's first day, else the first entry inside
+  it; «آخر إدخال» is the old "since the previous entry" and stays the default; «منذ البداية» is
+  since the first entry. A metric whose newest entry is older than the period says "nothing
+  recorded in this period" instead of showing a zero.
+- Each card says what it was measured from (`+40 · منذ 2026-10-10`) and the date of the last
+  entry. Numbers and days inside Arabic text are wrapped in left-to-right isolates; unwrapped,
+  the day drew backwards (`20-09-2026`) in a screenshot.
+- The entry form says it is for recording a number, and its date is labelled «تاريخ الرقم».
+
+**Limits**
+- No per-day history or trend line yet; the period only changes the change figure.
+- Verified: 14 unit tests (helper + design-scale ratchet), whole-monorepo typecheck, and in the
+  browser against a throwaway local database with seeded entries on several dates — all four
+  chips gave the figures the tests predict, and the stale case rendered. **Not** verified:
+  dark mode, a phone-width layout, or production data.
+
 ## docs/deploying.md: the deploy-timing wording matches the workflow, 2026-10-28
 
 The follow-up the entry below left open. `docs/deploying.md` already had a paragraph saying each surface deploys only when its own

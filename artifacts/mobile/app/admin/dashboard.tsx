@@ -28,6 +28,14 @@ import { ACCENT, Bar, FilterChip, KeyValue, SectionTitle, StatCard, Table } from
 import { DateField, DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
 import { palette } from '@/constants/colors';
 import { TYPE } from '@/constants/theme';
+import { GROWTH_PERIODS, growthSummary, isolateLtr, type GrowthPeriod, type MetricRow } from '@/services/growthMetrics';
+
+const PERIOD_LABEL: Record<GrowthPeriod, { ar: string; en: string }> = {
+  last: { ar: 'آخر إدخال', en: 'Last entry' },
+  '7': { ar: '٧ أيام', en: '7 days' },
+  '30': { ar: '٣٠ يومًا', en: '30 days' },
+  all: { ar: 'منذ البداية', en: 'All time' },
+};
 import { BackButton } from '@/components/ui/BackButton';
 
 const ADMIN_ROLES = ['school_admin', 'system_admin'];
@@ -60,8 +68,6 @@ type UsageSummary = {
     rateLimits: { name: string; windowMs: number; max: number }[];
   };
 };
-
-type MetricRow = { key: string; value: number; date: string };
 
 /** GET /admin/ai-costs, the parts this screen reads. `byPlatform` ignores the filter. */
 type AiCosts = {
@@ -594,9 +600,11 @@ function GrowthSection({ metrics, onSaved, isRTL, ar, colors }: {
   ar: boolean;
   colors: any;
 }) {
+  const [period, setPeriod] = useState<GrowthPeriod>('last');
   const [key, setKey] = useState(METRICS[0].key);
   const [value, setValue] = useState('');
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const today = new Date().toISOString().slice(0, 10);
+  const [date, setDate] = useState(today);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
 
@@ -620,12 +628,16 @@ function GrowthSection({ metrics, onSaved, isRTL, ar, colors }: {
   return (
     <View style={{ marginHorizontal: 20, marginBottom: 16 }}>
       <SectionTitle text={ar ? 'التنزيلات والمتابعون' : 'Downloads & followers'} isRTL={isRTL} colors={colors} />
+      {/* The period decides how far back each card measures its change. The date in the form
+          below is a different thing: the day a typed number belongs to. */}
+      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+        {GROWTH_PERIODS.map(p => (
+          <FilterChip key={p} label={ar ? PERIOD_LABEL[p].ar : PERIOD_LABEL[p].en} active={period === p} onPress={() => setPeriod(p)} colors={colors} />
+        ))}
+      </View>
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 10 }}>
         {METRICS.map(m => {
-          const hist = metrics.filter(r => r.key === m.key);
-          const last = hist[hist.length - 1];
-          const prev = hist[hist.length - 2];
-          const delta = last && prev ? last.value - prev.value : null;
+          const { last, base, change: delta, stale } = growthSummary(metrics.filter(r => r.key === m.key), period, today);
           return (
             <View key={m.key} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexGrow: 1, flexBasis: 150 }]}>
               <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
@@ -635,16 +647,28 @@ function GrowthSection({ metrics, onSaved, isRTL, ar, colors }: {
               <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
                 {last ? last.value.toLocaleString() : '—'}
               </Text>
-              <Text style={{ color: delta == null ? colors.mutedForeground : delta >= 0 ? palette.success : colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>
-                {last
-                  ? `${delta == null ? '' : `${delta >= 0 ? '+' : ''}${delta.toLocaleString()} · `}${last.date}`
-                  : (ar ? 'لم يُسجَّل بعد' : 'Not recorded yet')}
+              <Text style={{ color: delta == null ? colors.mutedForeground : delta >= 0 ? palette.success : colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: TYPE.micro, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>
+                {!last
+                  ? (ar ? 'لم يُسجَّل بعد' : 'Not recorded yet')
+                  : stale
+                    ? (ar ? 'لا إدخال في هذه الفترة' : 'Nothing recorded in this period')
+                    : delta != null && base
+                      ? `${isolateLtr(`${delta >= 0 ? '+' : ''}${delta.toLocaleString()}`)} · ${ar ? 'منذ' : 'since'} ${isolateLtr(base.date)}`
+                      : (ar ? 'لا يوجد ما يُقارَن به بعد' : 'Nothing to compare with yet')}
               </Text>
+              {!!last && (
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.micro, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>
+                  {ar ? 'آخر إدخال' : 'Last entry'} {isolateLtr(last.date)}
+                </Text>
+              )}
             </View>
           );
         })}
       </View>
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginTop: 10, flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }]}>
+        <Text style={{ width: '100%', color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: isRTL ? 'right' : 'left' }}>
+          {ar ? 'تسجيل رقم يدويًا — يُحفظ تحت التاريخ المختار' : 'Record a number by hand — saved under the chosen date'}
+        </Text>
         <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 6 }}>
           {METRICS.map(m => (
             <FilterChip key={m.key} label={ar ? m.ar : m.en} active={key === m.key} onPress={() => setKey(m.key)} colors={colors} />
@@ -658,7 +682,7 @@ function GrowthSection({ metrics, onSaved, isRTL, ar, colors }: {
           keyboardType="number-pad"
           style={[input, { width: 120 }]}
         />
-        <DateField value={date} onChange={setDate} label={ar ? 'التاريخ' : 'Date'} isRTL={isRTL} colors={colors} />
+        <DateField value={date} onChange={setDate} label={ar ? 'تاريخ الرقم' : 'Number is for'} isRTL={isRTL} colors={colors} />
         <Pressable
           onPress={save}
           disabled={saving || !value}
