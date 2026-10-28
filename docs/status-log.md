@@ -55,6 +55,21 @@ too); the mobile vocabulary-drill test 11 of 11. The mobile suite 8,084 tests, 0
   OpenAI and R2 keys (`english-audio-check` afterwards). Decide whether to run it before this deploys.
 - Not done: Grades 6 and 7 (Pearson third-party text, vocabulary left empty on purpose), Grade 10 semester 2, an OTA for the Android app.
 
+## Chat starter chips wear their tool's icon and colour, 2026-10-28
+
+On the web chat's empty state «جهّز خطة الدرس» and «جهّز ورقة عمل» were the same button twice: teal text on one teal tint, told
+apart only by a font emoji (📄 / 📝) that renders differently on every platform. `starterChips` in `app/(tabs)/iqra.tsx` now draws
+each lesson chip on the card with its tool's own drawing and colour from `CONCEPTS` (`ConceptIcon`, colour lifted with
+`readableOn(…, colors.card, 3)` as on the Tools tab), dark text, a hover state on web, and no emoji. The virtual-lab chip takes the lab
+corner's drawing and colour. Chips with no tool (the no-lesson sample questions, «لخّص من الملفات») keep the old brand-tint look. Same
+chips above the composer once a thread starts.
+
+**Verified:** typecheck; mobile suite 8010/8025 — the 5 failures are this Windows checkout's CRLF/backslash paths in source-reading
+tests (`generatorScreens`, `iconSystem` ×3, `scopeSelection`), none touch this file, and the icon-system rules this change falls under
+pass. Rendered against a local API (fresh local DB, demo mode) at 1440 wide in Arabic and English, light and dark. **Not checked:** the
+phone app (on a phone the readiness board replaces these chips on the empty state; they still show above the composer mid-thread),
+and production.
+
 ## extract-text: an English book is judged as English, so Grade 8 semester 2 can be extracted, 2026-10-28
 
 Why Grade 8 semester 2 has no word lists. On 2026-10-25 `extract-text` rejected `g8-english-s2-student-book` for «Arabic in reversed
@@ -87,6 +102,31 @@ the old code by reading, because 100 presentation-form glyphs outnumber 0 base-b
 `pnpm --filter @workspace/curriculum run extract-text -- g8-english-s2-student-book`, and commit only
 `lib/curriculum/src/data/extracted/g8-english-s2-student-book.json`. The manifest row, the vocabulary extraction and the glosses follow
 as for semester 1.
+
+## Growth panel: a trend line on each card — 2026-10-28
+
+Each card under «التنزيلات والمتابعون» now draws the entries behind its change figure as a
+small line, so direction reads at a glance. It follows the same period chips as the figure.
+
+**What changed**
+- `sparkPoints(rows, period, today)` in `services/growthMetrics.ts` (pure, tested): the same entries
+  the change is measured over, spread along the time axis by date — a month-long gap is a long
+  stretch, not one step. «آخر إدخال» shows the newest eight, «منذ البداية» the newest sixty. A flat
+  series is a line across the middle. Fewer than two entries, or nothing recorded in the period,
+  draws no line.
+- `Spark` in `app/admin/dashboard.tsx`: a react-native-svg polyline with a dot on the newest entry,
+  measured with `onLayout`. Decorative, so `aria-hidden` (plus the native equivalents) keeps it out of
+  screen readers; the card text already says the number and the change.
+
+**Limits**
+- Time runs left to right in Arabic too, as on the signups chart.
+- No hover/tap values on the line, and no axis: it shows shape, not readings.
+- The line appears after the first layout pass, so in a background browser tab it can show up late.
+- Verified: 17 unit tests (helper + design-scale), mobile typecheck, and in the browser against a
+  throwaway database: 3 / 2 / 2 / 3 lines across the four chips as the tests predict, all hidden
+  from screen readers. **Not** verified: dark mode, a phone-width layout, a real screen reader.
+  `iconSystem.test.ts` fails locally on Windows paths in files this change does not touch;
+  CI on Linux is the check for that.
 
 ## Growth panel: a period filter that filters — 2026-10-28
 
