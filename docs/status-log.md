@@ -10,6 +10,39 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## extract-text: an English book is judged as English, so Grade 8 semester 2 can be extracted, 2026-10-28
+
+Why Grade 8 semester 2 has no word lists. On 2026-10-25 `extract-text` rejected `g8-english-s2-student-book` for «Arabic in reversed
+presentation-form glyphs», and the OCR fallback after it. The book is English on the page; its few Arabic words (front matter, rubrics)
+are encoded as isolated presentation-form glyphs, which is what that gate counts, and 100,000-odd English letters around them were never
+looked at. `rejectReason` (`lib/curriculum/scripts/textQuality.ts`) now treats text whose Latin letters are at least 30 times its
+Arabic ones (`LATIN_BOOK_RATIO`) as an English book: the Arabic gates (presentation forms, article and word transposition, "Arabic that
+spells nothing") are skipped, and it must instead read as English, with at least 12% of its words one of eleven function words
+(`MIN_ENGLISH_FUNCTION_WORD_SHARE`), or it is rejected as «Latin text that does not read as English». The control-character gate still
+runs first. This change only lets the extraction run; it does not add the book.
+
+**Measured on the 232 extractions on file, before changing anything.** Exactly 27 are Latin-dominant at that ratio and they are exactly
+the English books; the lowest ratio is 89 (a Grade 4 activity book) and their function-word share is 0.177–0.209, so 30 and 0.12 each
+leave a wide margin on both sides. No document outside the English books crosses the ratio, so no existing verdict changes. A test
+(`rejectReason.test.ts`) re-runs every one of those 27 and requires `null`, and pins four synthetic cases: English with a few
+presentation-form glyphs passes; Latin noise with no function words fails; a book that is mostly presentation-form Arabic still fails
+as such; control-character noise is still caught first.
+
+**Verified:** `rejectReason.test.ts` 19 of 19; `lib/curriculum` `pnpm test` 893 of 894 (the one failure, «R2 helpers are inert, not broken,
+when unconfigured», fails on `main` too); `pnpm run typecheck` in `lib/curriculum`.
+
+**Not verified:** the real Grade 8 semester 2 PDF. It is not on this build container (PDFs are gitignored and the Ministry site is not
+reachable from here), so nobody has run `extract-text` on it with this change, and its Latin-to-Arabic ratio and function-word share are
+unknown. If it is under 30, it is still rejected, and the reason printed will say so. Also, when the new test is run against the old
+`textQuality.ts` the file fails to import the new constants, so it does not show the first case failing on its own: that case fails on
+the old code by reading, because 100 presentation-form glyphs outnumber 0 base-block ones.
+
+**Next, for the owner:** after this merges, `git pull`, put the semester 2 PDF at
+`knowledge-base/grade-8-english/support-pdfs/g8-english-s2-student-book.pdf` as for semester 1, run
+`pnpm --filter @workspace/curriculum run extract-text -- g8-english-s2-student-book`, and commit only
+`lib/curriculum/src/data/extracted/g8-english-s2-student-book.json`. The manifest row, the vocabulary extraction and the glosses follow
+as for semester 1.
+
 ## docs/deploying.md: the deploy-timing wording matches the workflow, 2026-10-28
 
 The follow-up the entry below left open. `docs/deploying.md` already had a paragraph saying each surface deploys only when its own
