@@ -28,7 +28,7 @@ import { ACCENT, Bar, FilterChip, KeyValue, SectionTitle, StatCard, Table } from
 import { DateField, DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
 import { palette } from '@/constants/colors';
 import { TYPE } from '@/constants/theme';
-import { GROWTH_PERIODS, growthSummary, isolateLtr, sparkPoints, type GrowthPeriod, type MetricRow, type SparkPoint } from '@/services/growthMetrics';
+import { GROWTH_PERIODS, growthHistory, growthSummary, isolateLtr, sparkPoints, type GrowthPeriod, type MetricRow, type SparkPoint } from '@/services/growthMetrics';
 import Svg, { Circle, Polyline } from 'react-native-svg';
 
 const PERIOD_LABEL: Record<GrowthPeriod, { ar: string; en: string }> = {
@@ -634,6 +634,7 @@ function GrowthSection({ metrics, onSaved, isRTL, ar, colors }: {
   colors: any;
 }) {
   const [period, setPeriod] = useState<GrowthPeriod>('last');
+  const [openKey, setOpenKey] = useState<string | null>(null);
   const [key, setKey] = useState(METRICS[0].key);
   const [value, setValue] = useState('');
   const today = new Date().toISOString().slice(0, 10);
@@ -673,7 +674,14 @@ function GrowthSection({ metrics, onSaved, isRTL, ar, colors }: {
           const hist = metrics.filter(r => r.key === m.key);
           const { last, base, change: delta, stale } = growthSummary(hist, period, today);
           return (
-            <View key={m.key} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexGrow: 1, flexBasis: 150 }]}>
+            <Pressable
+              key={m.key}
+              onPress={() => setOpenKey(cur => (cur === m.key ? null : m.key))}
+              accessibilityRole="button"
+              aria-expanded={openKey === m.key}
+              accessibilityState={{ expanded: openKey === m.key }}
+              style={({ pressed }) => [styles.card, { backgroundColor: colors.card, borderColor: openKey === m.key ? ACCENT : colors.border, borderRadius: colors.radius, flexGrow: 1, flexBasis: 150, opacity: pressed ? 0.7 : 1 }]}
+            >
               <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
                 <Ionicons name={m.icon} size={16} color={ACCENT} />
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{ar ? m.ar : m.en}</Text>
@@ -696,10 +704,34 @@ function GrowthSection({ metrics, onSaved, isRTL, ar, colors }: {
                   {ar ? 'آخر إدخال' : 'Last entry'} {isolateLtr(last.date)}
                 </Text>
               )}
-            </View>
+            </Pressable>
           );
         })}
       </View>
+      {/* The entries behind the opened card, so a figure that looks stuck can be explained by the data. */}
+      {(() => {
+        const m = METRICS.find(x => x.key === openKey);
+        if (!m) {
+          return (
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.micro, marginTop: 8, textAlign: isRTL ? 'right' : 'left' }}>
+              {ar ? 'اضغط على بطاقة لرؤية الأرقام المسجَّلة خلفها' : 'Tap a card to see the numbers recorded behind it'}
+            </Text>
+          );
+        }
+        return (
+          <Table
+            head={ar ? ['التاريخ', 'القيمة', 'التغيّر'] : ['Date', 'Value', 'Change']}
+            rows={growthHistory(metrics.filter(r => r.key === m.key)).map(h => [
+              isolateLtr(h.date),
+              h.value.toLocaleString(),
+              h.change == null ? '—' : isolateLtr(`${h.change >= 0 ? '+' : ''}${h.change.toLocaleString()}`),
+            ])}
+            empty={ar ? 'لم يُسجَّل بعد' : 'Not recorded yet'}
+            isRTL={isRTL}
+            colors={colors}
+          />
+        );
+      })()}
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginTop: 10, flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }]}>
         <Text style={{ width: '100%', color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: isRTL ? 'right' : 'left' }}>
           {ar ? 'تسجيل رقم يدويًا — يُحفظ تحت التاريخ المختار' : 'Record a number by hand — saved under the chosen date'}
