@@ -98,12 +98,21 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
 
 - Feature branches + PRs. `main` is merge-only, and **only `main` is deployed** —
   if a change "isn't showing", check it is merged before debugging anything visual.
-  Since 2026-09-15 a merge deploys **all three** services —
-  `.github/workflows/deploy.yml` ships the API and verifier to Cloud Run first,
-  then the web bundle, and skips the web deploy if either failed
-  ([`docs/deploying.md`](./docs/deploying.md)). Between the 2026-09-05 Cloud Run
-  cutover and then, only the web app auto-deployed, which is how a bundle once
-  went live against an API without the matching route.
+  Since 2026-09-15 `.github/workflows/deploy.yml` ships all three services in
+  order — the API and verifier to Cloud Run first, then the web bundle, which is
+  skipped if either failed ([`docs/deploying.md`](./docs/deploying.md)) — **but a
+  merge deploys only the surfaces it touches**. The workflow's `what changed`
+  job diffs the push: the API (and its migrations) runs only when
+  `artifacts/api-server/`, `lib/`, the lockfile or `deploy.yml` changed, the
+  verifier only when `artifacts/math-verifier/` or `deploy.yml` did, and the web
+  bundle for anything not provably unable to reach it (so not a docs-only or
+  API-only change). The exact lists live in that job; read them there, not here.
+  A skipped job is not a failure, so a green Deploy run does not mean a surface
+  shipped — open the run's job list. (The 2026-10-27 video-shelf merge, #1324,
+  ran `iqraa-web` alone; `iqraa-api`, `iqraa-verifier` and both schema jobs were
+  skipped.) Between the 2026-09-05 Cloud Run cutover and 2026-09-15, only the web
+  app auto-deployed, which is how a bundle once went live against an API without
+  the matching route.
   The schema deploys too, as migrations — see *Schema* in that file.
 - Arabic is the product language; the UI is RTL-first. Compute maths in latin
   `x` and convert to `س` / Arabic digits **only at display time**.
@@ -149,9 +158,10 @@ and `.claude/skills/` are shared — change them in a PR. Your own tweaks go in
   schema drop, removing a service block, anything whose rollback needs secrets
   re-typed). GitHub refuses to merge a draft; "do not merge yet" in the body stops
   nothing. Caveats go in the PR body, not only in chat.
-- Merging to `main` deploys: the API and verifier to Cloud Run (project
-  `iqraa-auth-507315`, `europe-west1`), then the web bundle to Cloudflare Pages
-  (`.github/workflows/deploy.yml`, details in `docs/deploying.md`).
+- Merging to `main` deploys whichever of these the merge touched: the API and
+  verifier to Cloud Run (project `iqraa-auth-507315`, `europe-west1`), then the web
+  bundle to Cloudflare Pages (`.github/workflows/deploy.yml`, whose `what changed`
+  job decides which; details in `docs/deploying.md`).
 - The app ships over the air. A merge publishes to the `preview` channel on its own;
   the **`production` channel is manual**:
   `gh workflow run mobile-update.yml -f branch=production`. An OTA only reaches a

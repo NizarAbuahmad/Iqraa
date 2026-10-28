@@ -10,6 +10,23 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## CLAUDE.md: a merge deploys only the surfaces it touches, 2026-10-28
+
+`CLAUDE.md` said twice that a merge deploys all three services (API, verifier, web). It does not: the `what changed` job in
+`.github/workflows/deploy.yml` diffs the push and runs each surface only when its own files changed. Both sentences now say
+so, point at that job for the exact file lists (not copied into `CLAUDE.md`, so they cannot drift again), and tell the reader
+to open the Deploy run's job list, because a skipped job is not a failure and a green run does not mean a surface shipped.
+
+**Verified** against two real runs, in both directions. The #1324 merge (`06fce89c`, only `artifacts/mobile/` and `docs/`)
+ran `iqraa-web` alone; `iqraa-api`, `iqraa-verifier` and both schema jobs were skipped. The #1323 merge (`152acc8b`, only three
+files under `artifacts/api-server/`) ran the production migrations, the schema check and `iqraa-api`, and skipped
+`iqraa-verifier` and `iqraa-web`. The file lists in the workflow were read, not inferred.
+
+**Not changed.** `docs/deploying.md` still says "on every merge" in a few places (the intro, *The web app*, the version-probe
+note); that is loose in the same way and was left for a separate decision. The merged video-shelf plan and PR #1324 repeat the
+old claim as history. When the change filter was added could not be dated: the clone is shallow (145 commits), and the
+earliest commit it shows for `deploy.yml` is only where history stops. So `CLAUDE.md` gives no "since" date for the filter.
+
 ## Row-level security is a required check, 2026-10-27
 
 The owner added `row-level security` to the required status checks of the `main` branch rule (GitHub → Settings →
