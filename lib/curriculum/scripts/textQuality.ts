@@ -160,6 +160,39 @@ const ARABIC_PRESENTATION_FORMS_RE = /[ﭐ-﷿ﹰ-﻿]/g;
 const BASIC_ARABIC_RE = /[؀-ۿ]/g;
 
 /**
+ * A book that is English on the page, with a little Arabic around it.
+ *
+ * The Arabic gates below measure Arabic defects, and on this kind of book the
+ * only Arabic is front matter and a few rubrics, so they judge a handful of
+ * glyphs. `g8-english-s2-student-book` was rejected on 2026-10-25 for «Arabic in
+ * reversed presentation-form glyphs»: its few Arabic words are encoded that way,
+ * and the 100,000-odd English letters around them are fine. Latin letters at
+ * least 30 times the Arabic ones is that case. The lowest of the 27 English
+ * extractions on file is 89 (a Grade 4 activity book), so 30 leaves room on
+ * both sides; a book that is actually Arabic is nowhere near it.
+ */
+export const LATIN_BOOK_RATIO = 30;
+
+/**
+ * The share of English words that are one of eleven function words. Real English
+ * coursebooks sit between 0.177 and 0.209 across the 27 on file; text that only
+ * looks Latin (a wrong cmap, OCR with the wrong model) has almost none. 0.12 is
+ * under the lowest real book by a third.
+ */
+export const MIN_ENGLISH_FUNCTION_WORD_SHARE = 0.12;
+
+const ENGLISH_FUNCTION_WORDS = new Set(['the', 'and', 'is', 'to', 'of', 'a', 'in', 'you', 'it', 'that', 'are']);
+
+/** Function-word share of the Latin words in `text`, or `null` when there are none. */
+export function englishFunctionWordShare(text: string): number | null {
+  const words = text.toLowerCase().match(/[a-z']+/g);
+  if (!words?.length) return null;
+  let n = 0;
+  for (const w of words) if (ENGLISH_FUNCTION_WORDS.has(w)) n++;
+  return n / words.length;
+}
+
+/**
  * Whichever of the six quality gates the text fails, or `null` when it
  * passes all of them. Shared between `extract-text.ts`'s pdf-parse attempt
  * and its OCR fallback so both are held to the same bar — OCR output that
@@ -178,6 +211,18 @@ export function rejectReason(allText: string): string | null {
   const controlChars = (allText.match(CONTROL_CHAR_RE) ?? []).length;
   if (controlChars / allText.length > 0.05) {
     return 'decoded to mostly non-printable control characters (font cmap likely broken)';
+  }
+  // An English book is judged as English, not by the few Arabic glyphs in it.
+  // Not a pass for any Latin text: it must also read as English, or a Latin-looking
+  // wrong decode would slip through exactly where the Arabic gates cannot see it.
+  const latinLetters = (allText.match(/[A-Za-z]/g) ?? []).length;
+  const arabicLetters = (allText.match(ARABIC_PRESENTATION_FORMS_RE) ?? []).length + (allText.match(BASIC_ARABIC_RE) ?? []).length;
+  if (latinLetters >= LATIN_BOOK_RATIO * Math.max(arabicLetters, 1)) {
+    const share = englishFunctionWordShare(allText) ?? 0;
+    if (share < MIN_ENGLISH_FUNCTION_WORD_SHARE) {
+      return `Latin text that does not read as English (${(share * 100).toFixed(0)}% function words, a real book has about 20%) — wrong decode or wrong OCR model`;
+    }
+    return null;
   }
   // Found on three files from the same author: real Arabic, but the PDF
   // encodes it as Arabic Presentation Forms (isolated per-glyph shapes,
