@@ -679,7 +679,6 @@ function GrowthSection({ metrics, onSaved, isRTL, ar, colors }: {
               onPress={() => setOpenKey(cur => (cur === m.key ? null : m.key))}
               accessibilityRole="button"
               aria-expanded={openKey === m.key}
-              accessibilityState={{ expanded: openKey === m.key }}
               style={({ pressed }) => [styles.card, { backgroundColor: colors.card, borderColor: openKey === m.key ? ACCENT : colors.border, borderRadius: colors.radius, flexGrow: 1, flexBasis: 150, opacity: pressed ? 0.7 : 1 }]}
             >
               <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
