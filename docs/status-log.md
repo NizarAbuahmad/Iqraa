@@ -58,6 +58,31 @@ the old code by reading, because 100 presentation-form glyphs outnumber 0 base-b
 `lib/curriculum/src/data/extracted/g8-english-s2-student-book.json`. The manifest row, the vocabulary extraction and the glosses follow
 as for semester 1.
 
+## Growth panel: a trend line on each card — 2026-10-28
+
+Each card under «التنزيلات والمتابعون» now draws the entries behind its change figure as a
+small line, so direction reads at a glance. It follows the same period chips as the figure.
+
+**What changed**
+- `sparkPoints(rows, period, today)` in `services/growthMetrics.ts` (pure, tested): the same entries
+  the change is measured over, spread along the time axis by date — a month-long gap is a long
+  stretch, not one step. «آخر إدخال» shows the newest eight, «منذ البداية» the newest sixty. A flat
+  series is a line across the middle. Fewer than two entries, or nothing recorded in the period,
+  draws no line.
+- `Spark` in `app/admin/dashboard.tsx`: a react-native-svg polyline with a dot on the newest entry,
+  measured with `onLayout`. Decorative, so `aria-hidden` (plus the native equivalents) keeps it out of
+  screen readers; the card text already says the number and the change.
+
+**Limits**
+- Time runs left to right in Arabic too, as on the signups chart.
+- No hover/tap values on the line, and no axis: it shows shape, not readings.
+- The line appears after the first layout pass, so in a background browser tab it can show up late.
+- Verified: 17 unit tests (helper + design-scale), mobile typecheck, and in the browser against a
+  throwaway database: 3 / 2 / 2 / 3 lines across the four chips as the tests predict, all hidden
+  from screen readers. **Not** verified: dark mode, a phone-width layout, a real screen reader.
+  `iconSystem.test.ts` fails locally on Windows paths in files this change does not touch;
+  CI on Linux is the check for that.
+
 ## Growth panel: a period filter that filters — 2026-10-28
 
 The cards under «التنزيلات والمتابعون» had no date filter. The date field beside them

@@ -28,7 +28,8 @@ import { ACCENT, Bar, FilterChip, KeyValue, SectionTitle, StatCard, Table } from
 import { DateField, DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
 import { palette } from '@/constants/colors';
 import { TYPE } from '@/constants/theme';
-import { GROWTH_PERIODS, growthSummary, isolateLtr, type GrowthPeriod, type MetricRow } from '@/services/growthMetrics';
+import { GROWTH_PERIODS, growthSummary, isolateLtr, sparkPoints, type GrowthPeriod, type MetricRow, type SparkPoint } from '@/services/growthMetrics';
+import Svg, { Circle, Polyline } from 'react-native-svg';
 
 const PERIOD_LABEL: Record<GrowthPeriod, { ar: string; en: string }> = {
   last: { ar: 'آخر إدخال', en: 'Last entry' },
@@ -588,6 +589,38 @@ function SignupBars({ rows, ar, isRTL, colors }: { rows: UsageSummary['signupsBy
   );
 }
 
+const SPARK_HEIGHT = 28;
+const SPARK_PAD = 4;
+
+/**
+ * A card's trend line (`sparkPoints`): the entries in the chosen period joined
+ * left to right, oldest first, with a dot on the newest. Time runs left to
+ * right in Arabic too, as on the signups chart. Decorative — the card's text
+ * already says the number and the change — so it is hidden from screen readers.
+ */
+function Spark({ points, color }: { points: SparkPoint[]; color: string }) {
+  const [width, setWidth] = useState(0);
+  if (points.length < 2) return null;
+  const xy = points.map(p => [SPARK_PAD + p.x * Math.max(width - 2 * SPARK_PAD, 0), SPARK_PAD + (1 - p.y) * (SPARK_HEIGHT - 2 * SPARK_PAD)] as const);
+  const [lastX, lastY] = xy[xy.length - 1]!;
+  return (
+    <View
+      onLayout={e => setWidth(e.nativeEvent.layout.width)}
+      style={{ height: SPARK_HEIGHT, marginVertical: 4 }}
+      aria-hidden
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      {width > 0 && (
+        <Svg width={width} height={SPARK_HEIGHT}>
+          <Polyline points={xy.map(([x, y]) => `${x},${y}`).join(' ')} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+          <Circle cx={lastX} cy={lastY} r={3} fill={color} />
+        </Svg>
+      )}
+    </View>
+  );
+}
+
 /**
  * Hand-entered numbers from Play Console and each social platform. Shows the
  * latest value and the change since the previous entry; the form below
@@ -637,7 +670,8 @@ function GrowthSection({ metrics, onSaved, isRTL, ar, colors }: {
       </View>
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 10 }}>
         {METRICS.map(m => {
-          const { last, base, change: delta, stale } = growthSummary(metrics.filter(r => r.key === m.key), period, today);
+          const hist = metrics.filter(r => r.key === m.key);
+          const { last, base, change: delta, stale } = growthSummary(hist, period, today);
           return (
             <View key={m.key} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexGrow: 1, flexBasis: 150 }]}>
               <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
@@ -647,6 +681,7 @@ function GrowthSection({ metrics, onSaved, isRTL, ar, colors }: {
               <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
                 {last ? last.value.toLocaleString() : '—'}
               </Text>
+              <Spark points={sparkPoints(hist, period, today)} color={ACCENT} />
               <Text style={{ color: delta == null ? colors.mutedForeground : delta >= 0 ? palette.success : colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: TYPE.micro, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>
                 {!last
                   ? (ar ? 'لم يُسجَّل بعد' : 'Not recorded yet')

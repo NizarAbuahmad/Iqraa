@@ -21,6 +21,40 @@ export type GrowthSummary = {
   stale: boolean;
 };
 
+/** One dot of a card's trend line. Both axes run 0..1; `y` 1 is the highest value. */
+export type SparkPoint = { x: number; y: number };
+
+const SPARK_LAST_ENTRIES = 8;
+const SPARK_ALL_ENTRIES = 60;
+
+/**
+ * The trend line under a card: the entries the period's change is measured
+ * over, spread along the time axis by their dates (so a month-long gap is a
+ * long stretch, not one step). Empty when there are fewer than two entries to
+ * join, or when nothing was recorded inside the period.
+ */
+export function sparkPoints(rows: MetricRow[], period: GrowthPeriod, today: string): SparkPoint[] {
+  let shown: MetricRow[];
+  if (period === 'last') shown = rows.slice(-SPARK_LAST_ENTRIES);
+  else if (period === 'all') shown = rows.slice(-SPARK_ALL_ENTRIES);
+  else {
+    const { base, stale } = growthSummary(rows, period, today);
+    shown = stale ? [] : rows.slice(base ? rows.indexOf(base) : Math.max(rows.length - 1, 0));
+  }
+  if (shown.length < 2) return [];
+
+  const t0 = dayMs(shown[0]!.date);
+  const span = dayMs(shown[shown.length - 1]!.date) - t0;
+  const values = shown.map(r => r.value);
+  const lo = Math.min(...values);
+  const range = Math.max(...values) - lo;
+  return shown.map((r, i) => ({
+    // Entries all on one day have no time to spread over, so they go evenly.
+    x: span > 0 ? (dayMs(r.date) - t0) / span : i / (shown.length - 1),
+    y: range > 0 ? (r.value - lo) / range : 0.5,
+  }));
+}
+
 /**
  * A signed number or a `YYYY-MM-DD` day inside Arabic text. Left to the bidi
  * algorithm «منذ 2026-09-20» draws the day backwards and «+70» as «70+», so each
