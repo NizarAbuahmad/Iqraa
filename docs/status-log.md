@@ -10,6 +10,15 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Row-level security: the full watch written down, 2026-10-28
+
+`docs/rls-watch-checklist.md` spells out checklist D3 (the 30-minute watch after switching enforcement on) as five
+timed steps for the owner: a hand test, two read-only log searches (`permission denied` / `row-level security`, and
+HTTP 5xx), the Cloud Run p95 latency graph compared with before 2026-10-24 12:35, the quiet failures a log cannot
+show (notification, thread order, restricted exam, blocked user), and the logs again at minute 30. The rollout
+checklist's D3 links to it. **Docs only; the watch itself has not been run.** The log filters and the
+`httpRequest.status` field were written from the Cloud Logging format, not run against production by this session.
+
 ## extract-text: an English book is judged as English, so Grade 8 semester 2 can be extracted, 2026-10-28
 
 Why Grade 8 semester 2 has no word lists. On 2026-10-25 `extract-text` rejected `g8-english-s2-student-book` for «Arabic in reversed
