@@ -570,7 +570,7 @@ gcloud scheduler jobs create http homework-reminders $P \
 gcloud scheduler jobs run homework-reminders --location europe-west1 $P
 gcloud scheduler jobs describe homework-reminders --location europe-west1 $P \
   --format='value(lastAttemptTime,status)'
-gcloud logging read 'resource.labels.service_name="iqraa-api" AND jsonPayload.msg="homework reminders run"' \
+gcloud logging read 'resource.labels.service_name="iqraa-api" AND jsonPayload.message="homework reminders run"' \
   $P --limit 5 --freshness 1d
 unset KEY   # when done
 ```
