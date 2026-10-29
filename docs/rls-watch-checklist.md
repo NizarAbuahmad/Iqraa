@@ -21,7 +21,7 @@ switch first. Every command below names `--project iqraa-auth-507315` anyway.
 Each should print nothing, or only lines you can read as normal.
 
 ```bash
-gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="iqraa-api" AND ("permission denied" OR "row-level security")' --project iqraa-auth-507315 --freshness=30m --limit=20 --format='value(timestamp,severity,textPayload,jsonPayload.msg)'
+gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="iqraa-api" AND ("permission denied" OR "row-level security")' --project iqraa-auth-507315 --freshness=30m --limit=20 --format='value(timestamp,severity,textPayload,jsonPayload.message)'
 ```
 
 ```bash
