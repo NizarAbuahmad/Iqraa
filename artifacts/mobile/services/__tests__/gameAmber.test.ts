@@ -90,7 +90,7 @@ function allAccents(): Array<{ where: string; hex: string }> {
   for (const parts of [
     ['components', 'publicGames', 'ColorSpotGame.tsx'], ['components', 'publicGames', 'MemoryGame.tsx'],
     ['components', 'publicGames', 'TermScrambleGame.tsx'], ['app', 'play', 'capitals.tsx'], ['app', 'play', 'flags.tsx'],
-    ['app', 'play', 'antonyms.tsx'], ['app', 'play', 'plurals.tsx'], ['app', 'play', 'numberType.tsx'], ['app', 'play', 'fractions.tsx'], ['app', 'play', 'matter.tsx'],
+    ['app', 'play', 'antonyms.tsx'], ['app', 'play', 'plurals.tsx'], ['app', 'play', 'numberType.tsx'], ['app', 'play', 'fractions.tsx'], ['app', 'play', 'matter.tsx'], ['app', 'play', 'governorates.tsx'],
   ]) {
     const src = read(...parts);
     for (const re of [/\bACCENT\s*=\s*'(#[0-9A-Fa-f]{6})'/g, /\baccent="(#[0-9A-Fa-f]{6})"/g]) {
