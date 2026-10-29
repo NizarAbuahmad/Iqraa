@@ -30,7 +30,7 @@ Values used below: Cloud Run service `iqraa-api`, region `europe-west1`, project
      ```bash
      gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="iqraa-api" AND ("permission denied" OR "row-level security")' \
        --project iqraa-auth-507315 --freshness=3d --limit=20 \
-       --format='value(timestamp,severity,textPayload,jsonPayload.msg)'
+       --format='value(timestamp,severity,textPayload,jsonPayload.message)'
      ```
   2. Sign in as a teacher: open the inbox, a class and an evaluation, and send one test message.
 
