@@ -48,6 +48,7 @@ const GAMES: Array<{
   { id: 'antonyms', route: '/play/antonyms', icon: 'swap-horizontal-outline', color: '#A21CAF', titleKey: 'playAntonymsTitle', descKey: 'playAntonymsDesc' },
   { id: 'plurals', route: '/play/plurals', icon: 'copy-outline', color: '#334155', titleKey: 'playPluralsTitle', descKey: 'playPluralsDesc' },
   { id: 'numberType', route: '/play/numberType', icon: 'keypad-outline', color: '#4D7C0F', titleKey: 'playNumberTypeTitle', descKey: 'playNumberTypeDesc' },
+  { id: 'fractions', route: '/play/fractions', icon: 'contrast-outline', color: '#B91C1C', titleKey: 'playFractionsTitle', descKey: 'playFractionsDesc' },
 ];
 
 export default function PlayHubScreen() {
