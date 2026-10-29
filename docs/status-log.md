@@ -55,6 +55,40 @@ recording shows no text; if it does show text, do not set it. Also check where C
 state a location). **Before the Android build matters:** switch "Record user sessions" on in the PostHog project. Recording
 minors, exam answers included, is the owner's decision.
 
+## Growth numbers: Facebook, Instagram and Play can fill themselves, 2026-10-29
+
+The dashboard's YouTube card has filled itself since #1260. Facebook, Instagram and Play downloads
+can now do the same. **Nothing changes until someone adds their settings**: a figure with none is
+skipped, so this ships dormant. The steps that need an account owner are in `docs/deploying.md`
+(«Growth numbers that fill themselves»).
+
+**What changed**
+- `lib/autoMetrics.ts` replaces the YouTube-only refresh in `GET /admin/metrics` with one loop over
+  every figure that has its settings, fetched side by side, once per day each, a typed number for
+  the day still winning, a figure that came back empty not retried for 30 minutes.
+  - Facebook: the Page's `followers_count` (falling back to `fan_count`), `META_ACCESS_TOKEN` + `META_PAGE_ID`.
+  - Instagram: the account's `followers_count`, `META_ACCESS_TOKEN` + `META_IG_USER_ID`.
+  - Play downloads: the *Daily User Installs* column summed over Play's monthly
+    `installs_<package>_YYYYMM_overview.csv` reports (UTF-16), read with the Cloud Run runtime account
+    through the metadata server — no key, that account is invited in Play Console. `PLAY_STATS_BUCKET`.
+- The Meta token travels in an `Authorization` header, never the URL, so an error that quotes the
+  request cannot leak it. A figure that returns nothing is logged by key (`growth metric auto-fill
+  returned no number`), never with the error or URL, because a stopped feed otherwise looks exactly
+  like a working one with a stale date.
+
+**Limits**
+- Verified: 15 unit tests (parsers, a UTF-16 report built the way Play writes it, the token never in
+  a URL, which settings switch which figure on), typecheck, and the API on a throwaway database with
+  Meta, Google Cloud Storage and the metadata server stubbed: Facebook stored 41, Play stored 13
+  (4 + 7 + 2, the country report ignored), a failing Instagram stored nothing and held up neither,
+  the second load made no calls, and neither token appeared in the log.
+- **Not** run against the real Meta app, Page, Instagram account or Play Console. Three things the
+  documentation did not settle, each with a plain symptom in the log: whether `followers_count`
+  accepts a system-user token or needs the Page's own; whether a system-user token can be made
+  never-expiring; and whether Play accepts the runtime account as an invited user and shows the
+  expected columns. The Play figure trails by 3–7 days and is not the console's headline total.
+- LinkedIn and X stay typed in.
+
 ## Row-level security: the full watch ran clean, 2026-10-29
 
 The owner ran the 30-minute watch in `docs/rls-watch-checklist.md` (rollout checklist D3) against production and
