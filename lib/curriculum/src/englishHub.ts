@@ -26,6 +26,7 @@ import { nccdG4EnglishSem2, g4EnglishSem2LessonKbId } from './catalogs/g4English
 import { nccdG5EnglishSem1, g5EnglishSem1LessonKbId } from './catalogs/g5EnglishSem1.ts';
 import { nccdG5EnglishSem2, g5EnglishSem2LessonKbId } from './catalogs/g5EnglishSem2.ts';
 import { buildG8EngSem1BrowserCatalog } from './catalogs/g8EngSem1.ts';
+import { buildG8EngSem2BrowserCatalog } from './catalogs/g8EngSem2.ts';
 import { buildG9EngSem1BrowserCatalog } from './catalogs/g9EngSem1.ts';
 import { buildG9EngSem2BrowserCatalog } from './catalogs/g9EngSem2.ts';
 import { buildEngSem1BrowserCatalog } from './catalogs/g10EnglishSem1.ts';
@@ -126,11 +127,11 @@ interface BrowserBook {
 }
 
 /**
- * Grade 10 semester 2 has no vocabulary extracted yet, so it contributes no lessons. Nor does Grade 8
- * semester 2: its PDF's text layer is rejected by `extract-text`, so only semester 1 is here.
+ * Grade 10 semester 2 has no vocabulary extracted yet, so it contributes no lessons.
  */
 const VOCAB_BOOKS: [number, 1 | 2, BrowserBook][] = [
   [8, 1, buildG8EngSem1BrowserCatalog()],
+  [8, 2, buildG8EngSem2BrowserCatalog()],
   [9, 1, buildG9EngSem1BrowserCatalog()],
   [9, 2, buildG9EngSem2BrowserCatalog()],
   [10, 1, buildEngSem1BrowserCatalog()],
