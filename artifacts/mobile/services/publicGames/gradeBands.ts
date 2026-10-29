@@ -11,7 +11,7 @@
 
 export const PLAY_GAME_IDS = [
   'english', 'elements', 'flags', 'capitals', 'memory', 'colors', 'multiply', 'divide', 'add', 'subtract',
-  'antonyms', 'plurals', 'numberType', 'fractions',
+  'antonyms', 'plurals', 'numberType', 'fractions', 'matter',
 ] as const;
 export type PlayGameId = (typeof PLAY_GAME_IDS)[number];
 
@@ -33,6 +33,7 @@ export const PLAY_GAME_GRADES: Record<PlayGameId, readonly GradeRange[]> = {
   plurals: [[2, 5]],
   numberType: [[3, 6]],
   fractions: [[4, 7]],
+  matter: [[3, 7]],
 };
 
 /** U+2060 WORD JOINER around the dash: a narrow card wrapped «9–10» into «9–» / «10». */
