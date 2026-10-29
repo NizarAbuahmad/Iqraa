@@ -397,8 +397,9 @@ jobs:
           # Contentsquare (Hotjar's successor) heatmaps and recordings
           # (services/contentsquare.ts). A repository variable, not a value in
           # the repo, so recording is switched on in GitHub (Settings > Secrets
-          # and variables > Actions > Variables) once the project's masking is
-          # checked, without a PR. Unset, it is '' and the tag stays off. Web
+          # and variables > Actions > Variables) once a recording of the live
+          # site is seen to be masked (the code sets data-cs-mask on <body>),
+          # without a PR. Unset, it is '' and the tag stays off. Web
           # only: the tag is a browser script, so eas.json and mobile-update.yml
           # deliberately omit it.
           EXPO_PUBLIC_CONTENTSQUARE_TAG_ID: ${{ vars.CONTENTSQUARE_TAG_ID }}

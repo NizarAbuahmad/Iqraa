@@ -41,11 +41,19 @@ legalVersion, screenTracking) pass on the final one; typecheck has the same 12 e
 (sandbox Expo type resolution), none in changed files. **Not verified:** that the tag actually loads in a browser (the sandbox
 cannot reach `t.contentsquare.net`; the URL pattern is from Contentsquare's docs), that Contentsquare's own SPA detection does not
 double-count route changes, that PostHog replay records on a device (no Android build was made), the Android native build with
-the new module, and the policy wording by a lawyer. **Before setting the variable:** in the Contentsquare project turn on masking
-of displayed text and images (the policy says names, marks, answers and messages do not appear), and check where it stores data
-(the policy does not state a location for it). **Before the Android build matters:** switch "Record user sessions" on in the
-PostHog project. Recording minors, exam answers included, is the owner's decision; the code masks inputs but the web masking of
-displayed text lives in the Contentsquare dashboard.
+the new module, and the policy wording by a lawyer.
+
+**Web masking, decided 2026-10-29 (owner chose "A"):** Contentsquare has no project-wide "mask all text" switch for the web tag
+that this session could find (its docs mask form inputs by default and everything else per element, with a `data-cs-mask`
+attribute, selectors, or the Tag Configurator's Element Masking template; some of the pages read were app/Capacitor docs). So
+`installContentsquare` sets `data-cs-mask` on `<body>` **before** adding the script, and does not load the tag at all if there
+is no `<body>`: replays show layout and taps, not names, marks, answers or messages. Tests pin the order (mask, then script),
+the fail-closed case, and that nothing is touched when the tag is off or on `/guardian*`. **Not verified:** that `data-cs-mask`
+on `<body>` blanks the whole page in a real recording (docs only; the sandbox cannot reach Contentsquare), or what it does to
+heatmaps. **Before setting the variable:** open the live site with Contentsquare's Tracking Setup Assistant and confirm a
+recording shows no text; if it does show text, do not set it. Also check where Contentsquare stores data (the policy does not
+state a location). **Before the Android build matters:** switch "Record user sessions" on in the PostHog project. Recording
+minors, exam answers included, is the owner's decision.
 
 ## Row-level security: the full watch ran clean, 2026-10-29
 

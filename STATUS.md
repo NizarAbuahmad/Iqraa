@@ -71,9 +71,10 @@ Checked 2026-10-22:
 
 - **Screen recording of everyone is built and off until the owner switches it on.** Web:
   Contentsquare tag, loaded only when the `CONTENTSQUARE_TAG_ID` repository variable is set
-  (GitHub > Settings > Secrets and variables > Actions > Variables) — **set it only after** the
-  Contentsquare project masks displayed text (names, marks), because the policy now says it does and
-  the code can only mask inputs. Android: PostHog session replay, needs "Record user sessions" on in
+  (GitHub > Settings > Secrets and variables > Actions > Variables) — **set it only after** a
+  real recording of the live site, opened with Contentsquare's Tracking Setup Assistant, shows no
+  names, marks or answers: the code masks the whole page (`data-cs-mask` on `<body>`, from
+  Contentsquare's docs) and that has not been seen working in a browser. Android: PostHog session replay, needs "Record user sessions" on in
   the PostHog project **and a new 1.6.0 build** (see Mobile above). Students, parents and exam pages
   are recorded; the parent consent page is not. The policy (`LEGAL_VERSION` 2026-10-29) was updated
   by this session and **not reviewed by a lawyer**; Contentsquare's and PostHog's data locations were

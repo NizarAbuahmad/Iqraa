@@ -12,12 +12,26 @@ import {
 
 function fakeDom() {
   const appended: Array<{ async: boolean; src: string }> = [];
+  const bodyAttrs: Record<string, string> = {};
+  // Records the order of the two side effects that matter: mask, then script.
+  const order: string[] = [];
   const doc: ContentsquareDocument = {
     createElement: () => ({ async: false, src: '' }),
-    head: { appendChild: (n) => appended.push(n as { async: boolean; src: string }) },
+    head: {
+      appendChild: (n) => {
+        order.push('script');
+        return appended.push(n as { async: boolean; src: string });
+      },
+    },
+    body: {
+      setAttribute: (name, value) => {
+        order.push('mask');
+        bodyAttrs[name] = value;
+      },
+    },
   };
   const win: ContentsquareWindow = {};
-  return { doc, win, appended };
+  return { doc, win, appended, bodyAttrs, order };
 }
 
 describe('parseContentsquareTagId', () => {
@@ -37,8 +51,26 @@ describe('parseContentsquareTagId', () => {
 describe('installContentsquare', () => {
   it('loads nothing and makes no request without a valid tag id', () => {
     for (const v of [undefined, '', 'no']) {
-      const { doc, win, appended } = fakeDom();
+      const { doc, win, appended, bodyAttrs } = fakeDom();
       assert.equal(installContentsquare(v, win, doc, '/'), false);
+      assert.equal(appended.length, 0);
+      assert.equal(win._uxa, undefined);
+      assert.deepEqual(bodyAttrs, {}, 'a disabled tag must not touch the page');
+    }
+  });
+
+  it('masks the whole page (data-cs-mask on <body>) before the script is added', () => {
+    const { doc, win, bodyAttrs, order } = fakeDom();
+    assert.equal(installContentsquare('68a876b193165', win, doc, '/workspace'), true);
+    assert.deepEqual(bodyAttrs, { 'data-cs-mask': '' });
+    assert.deepEqual(order, ['mask', 'script']);
+  });
+
+  it('fails closed: with no <body> to mask it does not load the tag', () => {
+    for (const body of [null, undefined]) {
+      const { doc, win, appended } = fakeDom();
+      doc.body = body;
+      assert.equal(installContentsquare('68a876b193165', win, doc, '/'), false);
       assert.equal(appended.length, 0);
       assert.equal(win._uxa, undefined);
     }
@@ -63,10 +95,11 @@ describe('installContentsquare', () => {
 
   it('is not loaded on the parent consent page, whose address carries the approval token', () => {
     for (const p of ['/guardian', '/guardian/', '/guardian/x']) {
-      const { doc, win, appended } = fakeDom();
+      const { doc, win, appended, bodyAttrs } = fakeDom();
       assert.equal(installContentsquare('68a876b193165', win, doc, p), false, p);
       assert.equal(appended.length, 0, p);
       assert.equal(win._uxa, undefined, p);
+      assert.deepEqual(bodyAttrs, {}, p);
     }
   });
 
