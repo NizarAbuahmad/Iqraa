@@ -15,17 +15,18 @@
  * `mobile-update.yml`.
  *
  * Everyone who opens the web app is recorded, students and parents included,
- * and so is the exam page a student opens from a link. Contentsquare has no
- * project-wide "mask all text" switch for the web tag (what is *typed* is
- * masked by default; anything else is masked per element), so the whole page
- * is masked here: `data-cs-mask` goes on `<body>` before the tag is added, which
- * Contentsquare documents as removing the content of the element and
- * everything inside it. Heatmaps and click positions still work; replays show
- * layout and taps, not names, marks, answers or messages. The attribute is set
- * first and the tag is not loaded if it cannot be — a masking failure must not
- * become an unmasked recording. The privacy policy in `constants/legal.ts` says
- * displayed text is masked, so check a real recording with Contentsquare's
- * Tracking Setup Assistant before setting the tag id.
+ * and so is the exam page a student opens from a link. Two layers keep names,
+ * marks and answers out of the recordings. The Contentsquare project's own
+ * *Data masking* is set to «Full masking» with no page or element rules (rules
+ * unmask; do not add one). The code is the second layer, so a changed project
+ * setting is not the only thing standing between a student and a recording:
+ * `data-cs-mask` goes on `<body>` before the tag is added, which Contentsquare
+ * documents as removing the content of the element and everything inside it.
+ * Heatmaps and click positions still work; replays show layout and taps. The
+ * attribute is set first and the tag is not loaded if it cannot be — a masking
+ * failure must not become an unmasked recording. The privacy policy in
+ * `constants/legal.ts` says displayed text is masked, so look at a real
+ * recording to confirm it.
  *
  * One page is never recorded: the parent's consent page (`/guardian#token`).
  * Its address carries an approval token, which is a credential and not a
