@@ -70,6 +70,7 @@
     "@react-native-firebase/crashlytics": "^26.4.0",
     "@react-native-google-signin/google-signin": "^16.1.5",
     "@react-navigation/bottom-tabs": "^7.18.14",
+    "@react-navigation/elements": "^2.9.36",
     "@workspace/arabic-spelling": "workspace:*",
     "@workspace/exam-paper": "workspace:*",
     "@workspace/math-practice": "workspace:*",
@@ -89,6 +90,7 @@
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "posthog-react-native": "^4.63.2",
+    "posthog-react-native-session-replay": "^1.6.0",
     "pptxgenjs": "^4.0.1",
     "qrcode-generator": "2.0.4"
   }

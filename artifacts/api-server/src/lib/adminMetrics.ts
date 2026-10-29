@@ -5,7 +5,12 @@
  */
 import { timingSafeEqual } from "node:crypto";
 
-/** Numbers typed in by hand — see lib/db schema adminMetrics.ts for why manual. */
+/**
+ * Numbers typed in by hand — see lib/db schema adminMetrics.ts for why manual.
+ * `youtube`, `facebook`, `instagram` and `play_downloads` can fill themselves:
+ * GET /admin/metrics fetches each one that has its settings (routes/admin.ts,
+ * lib/autoMetrics.ts), and typing one for the day still wins.
+ */
 export const METRIC_KEYS = [
   "play_downloads",
   "instagram",

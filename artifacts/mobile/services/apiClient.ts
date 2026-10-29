@@ -6,6 +6,7 @@ import * as storage from './secureStorage';
 import { fetchWithTimeout } from './fetchWithTimeout';
 import { originHeaders } from './clientPlatform';
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, isSessionLost } from './sessionLoss';
+import { noteGuardianForbidden } from './guardianForbidden';
 
 const LOCAL_DEV_API = 'http://localhost:8080/api';
 
@@ -112,6 +113,14 @@ let _refreshInFlight: Promise<string | null> | null = null;
 
 export function setOnRefreshFailed(cb: () => void) {
   _onRefreshFailed = cb;
+}
+
+let _onGuardianRequired: (() => void) | null = null;
+
+/** Called when an authenticated call is answered 403 `guardian_approval_required`: the server is holding this
+ *  student for a parent's approval, so the app should re-read /auth/me and let the gate move them. */
+export function setOnGuardianRequired(cb: (() => void) | null) {
+  _onGuardianRequired = cb;
 }
 
 /**
@@ -228,6 +237,10 @@ export async function apiFetch(
     // refuses. A failed refresh already reported itself.
     if (isSessionLost(path, hadRefreshToken)) _onRefreshFailed?.();
   }
+
+  // A clone is read, so the caller can still read the body (see guardianForbidden.ts).
+  // The callback is read when the body arrives, not now, as before.
+  noteGuardianForbidden(res, _onGuardianRequired ? () => _onGuardianRequired?.() : null);
 
   return res;
 }

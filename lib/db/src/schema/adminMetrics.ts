@@ -42,6 +42,11 @@ export const siteSignups = pgTable(
     message: text("message").notNull().default(""),
     context: text("context").notNull().default(""),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    // Waitlist mail state (admin «راسل قائمة الانتظار»). Null = never. Stamped
+    // by email, not by row, so a duplicate signup for one address moves together.
+    invitedAt: timestamp("invited_at", { withTimezone: true }),
+    lastMessagedAt: timestamp("last_messaged_at", { withTimezone: true }),
+    unsubscribedAt: timestamp("unsubscribed_at", { withTimezone: true }),
   },
   t => [index("site_signups_created_at_idx").on(t.createdAt)],
 );

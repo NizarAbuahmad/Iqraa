@@ -32,6 +32,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { HelpVideoShelf } from '@/components/help/HelpVideoShelf';
 import { goBack } from '@/services/navigation';
 import {
   FAQ_CATEGORIES,
@@ -233,6 +234,7 @@ export default function FaqScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.column}>
+          <HelpVideoShelf query={query} />
           <View
             style={[
               styles.search,

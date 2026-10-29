@@ -98,12 +98,21 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
 
 - Feature branches + PRs. `main` is merge-only, and **only `main` is deployed** —
   if a change "isn't showing", check it is merged before debugging anything visual.
-  Since 2026-09-15 a merge deploys **all three** services —
-  `.github/workflows/deploy.yml` ships the API and verifier to Cloud Run first,
-  then the web bundle, and skips the web deploy if either failed
-  ([`docs/deploying.md`](./docs/deploying.md)). Between the 2026-09-05 Cloud Run
-  cutover and then, only the web app auto-deployed, which is how a bundle once
-  went live against an API without the matching route.
+  Since 2026-09-15 `.github/workflows/deploy.yml` ships all three services in
+  order — the API and verifier to Cloud Run first, then the web bundle, which is
+  skipped if either failed ([`docs/deploying.md`](./docs/deploying.md)) — **but a
+  merge deploys only the surfaces it touches**. The workflow's `what changed`
+  job diffs the push: the API (and its migrations) runs only when
+  `artifacts/api-server/`, `lib/`, the lockfile or `deploy.yml` changed, the
+  verifier only when `artifacts/math-verifier/` or `deploy.yml` did, and the web
+  bundle for anything not provably unable to reach it (so not a docs-only or
+  API-only change). The exact lists live in that job; read them there, not here.
+  A skipped job is not a failure, so a green Deploy run does not mean a surface
+  shipped — open the run's job list. (The 2026-10-27 video-shelf merge, #1324,
+  ran `iqraa-web` alone; `iqraa-api`, `iqraa-verifier` and both schema jobs were
+  skipped.) Between the 2026-09-05 Cloud Run cutover and 2026-09-15, only the web
+  app auto-deployed, which is how a bundle once went live against an API without
+  the matching route.
   The schema deploys too, as migrations — see *Schema* in that file.
 - Arabic is the product language; the UI is RTL-first. Compute maths in latin
   `x` and convert to `س` / Arabic digits **only at display time**.
@@ -149,9 +158,10 @@ and `.claude/skills/` are shared — change them in a PR. Your own tweaks go in
   schema drop, removing a service block, anything whose rollback needs secrets
   re-typed). GitHub refuses to merge a draft; "do not merge yet" in the body stops
   nothing. Caveats go in the PR body, not only in chat.
-- Merging to `main` deploys: the API and verifier to Cloud Run (project
-  `iqraa-auth-507315`, `europe-west1`), then the web bundle to Cloudflare Pages
-  (`.github/workflows/deploy.yml`, details in `docs/deploying.md`).
+- Merging to `main` deploys whichever of these the merge touched: the API and
+  verifier to Cloud Run (project `iqraa-auth-507315`, `europe-west1`), then the web
+  bundle to Cloudflare Pages (`.github/workflows/deploy.yml`, whose `what changed`
+  job decides which; details in `docs/deploying.md`).
 - The app ships over the air. A merge publishes to the `preview` channel on its own;
   the **`production` channel is manual**:
   `gh workflow run mobile-update.yml -f branch=production`. An OTA only reaches a
@@ -764,3 +774,35 @@ sweep in your staged files.
   control on a new generator screen (a field whose real options are not a short list
   stays a dropdown), and how it looks (check it in `pnpm run dev:mobile:web`, phone
   and desktop, light and dark, RTL).
+- **A student's class-code claim waits for the teacher (since 2026-10-24).** The
+  pick is a row in `roster_link_requests`, not in `roster_links`, so nothing that
+  reads a link (chat contacts, homework, exams, parent letters) can see it: an
+  unapproved account has no access *by construction*. Keep it that way — do not
+  add a `status` column to `roster_links`, and never read `pending` as access. Only
+  a `self` claim made through the CLASS code is held (`claimNeedsApproval`);
+  per-student codes and parents link at once. Approval is
+  `POST /students/:id/link-requests/:requestId/approve`, which re-checks the sender
+  is still a `student` account. Two traps: a code-only signup names the new account
+  after the roster name it picked, so the teacher's list must say so (`codeSignup`)
+  rather than let the name stand as proof; and the waiting card withdraws with
+  `DELETE /auth/claim?pendingOnly=1`, because the plain `DELETE /auth/claim` also
+  deletes links and the teacher may have approved since the card last looked. A
+  student is not gated onto `/claim-required` (only a parent is), so the waiting
+  state is shown by `claim-required`, `join-class` and the code-signup note — widen
+  `needsRosterClaim` only on purpose.
+- **The first-run tour points at an element by NAME, and the name lives in two places
+  (since 2026-10-26).** `services/tour.ts` says what each role's steps ring
+  (`today-lesson`, `tab-ai-tools`, `nav-profile`…); the screen that owns the element
+  registers the same string (`<TourTarget id>` / `useTourTarget`, the tab bar's
+  `TourTabButton`, the sidebar rows). A rename on one side leaves a step that is
+  silently dropped at run time, which is why `tourTargets.test.ts` reads both sides.
+  Traps: a phone's tab is `tab-<name>` and a desktop sidebar row `nav-<name>` (the
+  tour ends if a window is dragged across the breakpoint); `TourHost` is a root
+  overlay and **not a `<Modal>`**; a new gate that sends a signed-in user somewhere
+  before their home screen belongs in `tourBlocker` by importing it from
+  `routeGating.ts`, never by copying it; and the tour is **marked done when it
+  starts**, so a bug that starts it early costs that user their one automatic tour.
+  The flag is on the device, per account (`@iqra_tour_done_v1:<id>`); `@iqra_tour_off_v1`
+  turns it off for a whole device, which the e2e journey sets. A new tab or sidebar
+  destination needs no registration of its own; a step on a new element does.
+  See `docs/superpowers/specs/2026-10-26-first-run-tour-design.md`.

@@ -45,7 +45,7 @@ export interface HomeworkMaterialResource {
 }
 
 /**
- * A lesson game the students play (memory / scramble / spot). `lessonId` is a
+ * A lesson game the students play (memory / scramble / spot / meaning). `lessonId` is a
  * real curriculum lesson (checked when attached); `title` is the snapshot the
  * client sent, so the family list renders without reading the catalog. Results
  * live in `game_results`, one row per (homework, roster row, game).
@@ -53,7 +53,8 @@ export interface HomeworkMaterialResource {
 export interface HomeworkGameResource {
   kind: "game";
   lessonId: string;
-  game: "memory" | "scramble" | "spot";
+  /** `exercises` is the Math Corner's «اختبر نفسك» set for a maths lesson, scored like a game. */
+  game: "memory" | "scramble" | "spot" | "meaning" | "exercises";
   title: string;
 }
 

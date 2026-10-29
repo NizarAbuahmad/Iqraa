@@ -1,7 +1,7 @@
 /**
  * Grade 7 Physical Education (التربية الرياضية) — Semester 1 (NCCD student
- * book). Same skills-based shape as the Grade 9 precedent (there is no
- * Grade 8 PE): football, basketball, badminton, rhythmic movement, general
+ * book). Same skills-based shape as the Grade 9 precedent (Grade 8 PE
+ * Semester 1 was attached later, 2026-10-24 — see g8PeSem1.ts): football, basketball, badminton, rhythmic movement, general
  * safety. Title/main-idea/vocabulary come from each lesson's «الفكرة
  * الرئيسة» / «المفاهيم والمصطلحات» boxes where printed; the bulk of each
  * lesson (step-by-step technique instructions, official rules, enrichment,

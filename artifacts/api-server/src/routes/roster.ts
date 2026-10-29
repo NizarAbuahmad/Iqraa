@@ -28,6 +28,7 @@ import {
   evaluations,
   libraryResources,
   parentContacts,
+  rosterLinkRequests,
   rosterLinks,
   students,
   chatMessageReads,
@@ -35,7 +36,7 @@ import {
   users,
   type ParentContactChannel,
 } from "@workspace/db";
-import { and, asc, count, desc, eq, inArray, isNotNull, isNull, ne } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { getObjectiveById, resolveObjectiveIds } from "@workspace/curriculum";
 import { studentRecord } from "../modules/assessment/studentRecord.ts";
 import { aggregateClass, finishedAttempts } from "../modules/assessment/classInsights.ts";
@@ -51,6 +52,7 @@ import { logger } from "../lib/logger";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { generateShareCode } from "../modules/assessment/studentView.ts";
 import { generateLoginCode, hashLoginCode } from "../lib/loginCode.ts";
+import { canReissueLoginCode } from "../lib/loginCodeReissue.ts";
 import { isCodeLive } from "../lib/claimDecision.ts";
 import { letterReadState } from "../lib/parentContactRead.ts";
 import { requireRosterConsent } from "../lib/rosterConsent.js";
@@ -74,6 +76,7 @@ import {
 } from "../lib/classResource.js";
 import { labClassResourceSnapshot, parseLabClassResourceInput } from "../lib/labClassResource.js";
 import { subjectColumns, withSubjectIds } from "../lib/classSubjects.js";
+import { nameKey, nameTakenBy, renamedAccountNames } from "../lib/rosterRename.ts";
 
 const router = Router();
 
@@ -189,10 +192,6 @@ router.get("/classes/:id", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
-    // linkedCount answers the one question a shared join code creates: who has
-    // actually signed up, and who is still just a name I typed. Counted here
-    // rather than fetched per row — a thirty-name roster would otherwise be
-    // thirty round trips to render one column of ticks.
     const roster = await db
       .select({
         id: students.id,
@@ -202,18 +201,53 @@ router.get("/classes/:id", async (req: AuthenticatedRequest, res) => {
         teacherNote: students.teacherNote,
         gender: students.gender,
         createdAt: students.createdAt,
-        linkedCount: count(rosterLinks.id),
       })
       .from(classMemberships)
       .innerJoin(students, eq(students.id, classMemberships.studentId))
-      .leftJoin(rosterLinks, eq(rosterLinks.studentId, students.id))
       .where(and(eq(classMemberships.classGroupId, classId), isNull(students.archivedAt)))
-      .groupBy(students.id)
       .orderBy(asc(students.displayName));
+
+    // Who holds each name, not just whether anyone does. Read in one query for
+    // the whole roster rather than one per row, and with the same
+    // students → roster_links → users join the contacts picker uses
+    // (routes/messaging.ts), so the teacher's own scoped connection can read
+    // the linked accounts' names without systemDb.
+    const linkRows =
+      roster.length === 0
+        ? []
+        : await db
+            .select({
+              studentId: students.id,
+              userId: users.id,
+              relation: rosterLinks.relation,
+              firstName: users.firstName,
+              lastName: users.lastName,
+              linkedAt: rosterLinks.createdAt,
+            })
+            .from(students)
+            .innerJoin(rosterLinks, eq(rosterLinks.studentId, students.id))
+            .innerJoin(users, eq(users.id, rosterLinks.userId))
+            .where(
+              and(
+                eq(students.teacherId, req.user!.id),
+                inArray(students.id, roster.map(s => s.id)),
+              ),
+            )
+            .orderBy(asc(rosterLinks.createdAt));
+
+    const linksByStudent = new Map<string, Omit<(typeof linkRows)[number], "studentId">[]>();
+    for (const { studentId, ...link } of linkRows) {
+      const list = linksByStudent.get(studentId) ?? [];
+      list.push(link);
+      linksByStudent.set(studentId, list);
+    }
 
     res.json({
       class: withSubjectIds(group),
-      students: roster.map(({ linkedCount, ...s }) => ({ ...s, linked: linkedCount > 0 })),
+      students: roster.map(s => {
+        const links = linksByStudent.get(s.id) ?? [];
+        return { ...s, links, linked: links.length > 0 };
+      }),
     });
   } catch (err) {
     failRoster(res, err, "get class", "Failed to load class");
@@ -709,8 +743,6 @@ router.post("/classes/:id/students", async (req: AuthenticatedRequest, res) => {
      * students with identical names in one class have to be distinguished by
      * the teacher — their own register has the same problem.
      */
-    const nameKey = (name: string) => name.replace(/\s+/g, " ").trim().toLowerCase();
-
     const alreadyInClass = await db
       .select({ displayName: students.displayName })
       .from(classMemberships)
@@ -823,6 +855,190 @@ router.delete("/classes/:id/students/:studentId", async (req: AuthenticatedReque
     res.json({ removed: studentId });
   } catch (err) {
     failRoster(res, err, "remove student", "Failed to remove student");
+  }
+});
+
+// ─── Class-code claims waiting for the teacher ───────────────────────────────
+// A student who picks a name off the class code is held in roster_link_requests
+// (routes/auth.ts); until the teacher approves it the account has no roster
+// link and so no access to anything. See lib/claimDecision.ts.
+
+/** After a link is made: into this teacher's class chats for the child, as the claim route does. Never throws. */
+async function syncThreadsAfterApproval(studentId: string): Promise<void> {
+  try {
+    await syncClassThreadsForStudent(studentId);
+  } catch (err) {
+    logger.warn({ studentId, code: (err as { code?: unknown } | null)?.code }, "class thread sync after approval failed");
+  }
+}
+
+router.get("/classes/:id/link-requests", async (req: AuthenticatedRequest, res) => {
+  try {
+    const classId = req.params["id"] as string;
+    if (!isUuid(classId) || !(await findLiveClass(classId, req.user!.id))) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+
+    const rows = await db
+      .select({
+        id: rosterLinkRequests.id,
+        studentId: students.id,
+        studentName: students.displayName,
+        userId: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        requestedAt: rosterLinkRequests.createdAt,
+        // A code-only signup (POST /auth/redeem) has no email, and its account is
+        // named after the roster row it picked (lib/redeemPolicy.ts), so firstName /
+        // lastName say nothing about who is asking. The banner needs to know that.
+        codeSignup: sql<boolean>`(${users.email} is null)`,
+      })
+      .from(rosterLinkRequests)
+      .innerJoin(students, eq(students.id, rosterLinkRequests.studentId))
+      .innerJoin(
+        classMemberships,
+        and(eq(classMemberships.studentId, students.id), eq(classMemberships.classGroupId, classId)),
+      )
+      .innerJoin(users, eq(users.id, rosterLinkRequests.userId))
+      .where(
+        and(
+          eq(students.teacherId, req.user!.id),
+          isNull(students.archivedAt),
+          // A request from an account that has since become something else is not a student claim.
+          eq(users.role, "student"),
+        ),
+      )
+      .orderBy(asc(rosterLinkRequests.createdAt));
+
+    // A name that already has a student account has nothing left to approve.
+    const taken = rows.length === 0
+      ? []
+      : await db
+          .select({ studentId: rosterLinks.studentId })
+          .from(rosterLinks)
+          .where(and(inArray(rosterLinks.studentId, rows.map(r => r.studentId)), eq(rosterLinks.relation, "self")));
+    const takenIds = new Set(taken.map(t => t.studentId));
+
+    res.json({ requests: rows.filter(r => !takenIds.has(r.studentId)) });
+  } catch (err) {
+    failRoster(res, err, "list link requests", "Failed to load join requests");
+  }
+});
+
+/** The request, only if it is for this teacher's live student. "Not found" either way. */
+async function findOwnRequest(requestId: string, studentId: string, teacherId: string) {
+  if (!isUuid(requestId) || !isUuid(studentId)) return null;
+  const [row] = await db
+    .select({ id: rosterLinkRequests.id, userId: rosterLinkRequests.userId })
+    .from(rosterLinkRequests)
+    .innerJoin(students, eq(students.id, rosterLinkRequests.studentId))
+    // In one of this teacher's live classes, as the list requires: a request the
+    // list hides must not be actionable by id either.
+    .innerJoin(classMemberships, eq(classMemberships.studentId, students.id))
+    .innerJoin(
+      classGroups,
+      and(
+        eq(classGroups.id, classMemberships.classGroupId),
+        eq(classGroups.teacherId, teacherId),
+        isNull(classGroups.archivedAt),
+      ),
+    )
+    .where(
+      and(
+        eq(rosterLinkRequests.id, requestId),
+        eq(rosterLinkRequests.studentId, studentId),
+        eq(students.teacherId, teacherId),
+        isNull(students.archivedAt),
+      ),
+    )
+    .limit(1);
+  return row ?? null;
+}
+
+router.post("/students/:id/link-requests/:requestId/approve", async (req: AuthenticatedRequest, res) => {
+  try {
+    const studentId = req.params["id"] as string;
+    const requestId = req.params["requestId"] as string;
+    const request = await findOwnRequest(requestId, studentId, req.user!.id);
+    if (!request) {
+      res.status(404).json({ error: "Request not found" });
+      return;
+    }
+
+    // Consume the request FIRST, in the same transaction that decides what to do
+    // with it, so a withdrawal or a role switch that lands between a read and a
+    // write cannot be linked after the fact. Whatever the outcome below, the
+    // request is gone when this commits: a stale or already-answered request is
+    // not left behind for the list to hide.
+    //
+    // The transaction runs as the teacher (RLS on): the delete policy on
+    // roster_link_requests and roster_links_insert both use app_teaches_student.
+    const outcome = await db.transaction(async tx => {
+      const [consumed] = await tx
+        .delete(rosterLinkRequests)
+        .where(and(eq(rosterLinkRequests.id, request.id), eq(rosterLinkRequests.studentId, studentId)))
+        .returning({ userId: rosterLinkRequests.userId });
+      if (!consumed) return "gone" as const;
+
+      // The sender's role, locked: POST /auth/role updates this row, so a switch
+      // either commits before this read (and we see it) or waits for our commit.
+      // An account that became anything but a student while it waited must not be
+      // linked as the child's own: it would read a child's exam answers.
+      const [sender] = await tx
+        .select({ role: users.role })
+        .from(users)
+        .where(eq(users.id, consumed.userId))
+        .for("update");
+      if (sender?.role !== "student") return "stale" as const;
+
+      // ON CONFLICT DO NOTHING, not a caught unique violation: a violation would
+      // abort this transaction and take the delete above with it.
+      // roster_links_one_self_idx: one student account per name, enforced where a race cannot get past it.
+      const [linked] = await tx
+        .insert(rosterLinks)
+        .values({ studentId, userId: consumed.userId, relation: "self" })
+        .onConflictDoNothing()
+        .returning({ id: rosterLinks.id });
+      return linked ? ({ linked: consumed.userId } as const) : ("taken" as const);
+    });
+
+    if (outcome === "gone") {
+      res.status(404).json({ error: "Request not found" });
+      return;
+    }
+    if (outcome === "stale") {
+      res.status(409).json({ error: "That request is no longer valid", code: "claim_request_stale" });
+      return;
+    }
+    if (outcome === "taken") {
+      res.status(409).json({ error: "This student is already linked to an account", code: "claim_already_linked" });
+      return;
+    }
+
+    // Everyone else who was waiting on this name is answered by the link itself.
+    await db.delete(rosterLinkRequests).where(eq(rosterLinkRequests.studentId, studentId));
+    await syncThreadsAfterApproval(studentId);
+
+    res.json({ approved: request.id, studentId, userId: outcome.linked });
+  } catch (err) {
+    failRoster(res, err, "approve link request", "Failed to approve the request");
+  }
+});
+
+router.post("/students/:id/link-requests/:requestId/reject", async (req: AuthenticatedRequest, res) => {
+  try {
+    const studentId = req.params["id"] as string;
+    const requestId = req.params["requestId"] as string;
+    const request = await findOwnRequest(requestId, studentId, req.user!.id);
+    if (!request) {
+      res.status(404).json({ error: "Request not found" });
+      return;
+    }
+    await db.delete(rosterLinkRequests).where(eq(rosterLinkRequests.id, request.id));
+    res.json({ rejected: request.id });
+  } catch (err) {
+    failRoster(res, err, "reject link request", "Failed to reject the request");
   }
 });
 
@@ -1020,17 +1236,108 @@ router.delete("/classes/:id/resources/:rid", async (req: AuthenticatedRequest, r
   }
 });
 
+/**
+ * After a rename, the linked code-only accounts (a login code set, no password,
+ * no Google id) are named from the roster row, so they are re-derived here — but
+ * only while they still carry the OLD roster name (see lib/rosterRename.ts).
+ *
+ * systemDb: it writes other users' rows, which the app role cannot. That is a
+ * second connection, so this cannot share a transaction with the roster update;
+ * it runs after it and only logs on failure, because the rename the teacher
+ * asked for has already been saved and must not be reported as failed.
+ *
+ * What a failure logs: the student id, the account id being written (when
+ * there is one) and the database error code. It never logs the error object:
+ * drizzle's query error carries the SQL parameters in its message, and for the
+ * update those are the child's new first and last name.
+ */
+async function syncLinkedAccountNames(studentId: string, oldName: string, newName: string): Promise<void> {
+  let userId: string | undefined;
+  try {
+    const linked = await systemDb
+      .select({
+        userId: users.id,
+        relation: rosterLinks.relation,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        loginCodeHash: users.loginCodeHash,
+        passwordHash: users.passwordHash,
+        googleId: users.googleId,
+      })
+      .from(rosterLinks)
+      .innerJoin(users, eq(users.id, rosterLinks.userId))
+      .where(eq(rosterLinks.studentId, studentId));
+
+    for (const account of linked) {
+      if (!account.loginCodeHash || account.passwordHash || account.googleId) continue;
+      const next = renamedAccountNames({
+        relation: account.relation,
+        oldRosterName: oldName,
+        newRosterName: newName,
+        current: account,
+      });
+      if (next) {
+        userId = account.userId;
+        await systemDb.update(users).set(next).where(eq(users.id, account.userId));
+      }
+    }
+  } catch (err) {
+    const e = err as { code?: unknown; cause?: { code?: unknown } } | null;
+    const code = [e?.cause?.code, e?.code].find((c): c is string => typeof c === "string");
+    logger.error({ studentId, userId, code }, "renaming a student's linked accounts failed — the roster name was saved");
+  }
+}
+
 const STUDENT_GENDERS = new Set(["male", "female", ""]);
 
 router.patch("/students/:id", async (req: AuthenticatedRequest, res) => {
   try {
     const studentId = req.params["id"] as string;
     const patch: Record<string, unknown> = { updatedAt: new Date() };
+    let renamedFrom: string | null = null;
     if (req.body?.displayName !== undefined) {
       const displayName = trimmed(req.body.displayName);
       if (!displayName) {
         res.status(400).json({ error: "displayName cannot be empty" });
         return;
+      }
+      const [current] = await db
+        .select({ displayName: students.displayName })
+        .from(students)
+        .where(and(eq(students.id, studentId), eq(students.teacherId, req.user!.id)))
+        .limit(1);
+      if (!current) {
+        res.status(404).json({ error: "Student not found" });
+        return;
+      }
+      if (displayName !== current.displayName) {
+        // The same rule the add route applies: a name already in one of this
+        // student's classes would split a child's results across two look-alike
+        // rows. Other classes and other teachers are free to reuse it.
+        const myClasses = db
+          .select({ id: classMemberships.classGroupId })
+          .from(classMemberships)
+          .where(eq(classMemberships.studentId, studentId));
+        const peers = await db
+          .selectDistinct({ displayName: students.displayName })
+          .from(classMemberships)
+          .innerJoin(students, eq(students.id, classMemberships.studentId))
+          .where(
+            and(
+              inArray(classMemberships.classGroupId, myClasses),
+              ne(students.id, studentId),
+              eq(students.teacherId, req.user!.id),
+              isNull(students.archivedAt),
+            ),
+          );
+        if (nameTakenBy(displayName, peers.map(p => p.displayName))) {
+          res.status(409).json({
+            error: "A student with this name is already in the class",
+            code: "student_name_taken",
+          });
+          return;
+        }
+        renamedFrom = current.displayName;
       }
       patch["displayName"] = displayName;
     }
@@ -1059,6 +1366,9 @@ router.patch("/students/:id", async (req: AuthenticatedRequest, res) => {
     if (!row) {
       res.status(404).json({ error: "Student not found" });
       return;
+    }
+    if (renamedFrom !== null) {
+      await syncLinkedAccountNames(studentId, renamedFrom, row.displayName);
     }
     res.json({ student: row });
   } catch (err) {
@@ -1498,11 +1808,12 @@ router.post("/students/:id/links/:userId/login-code", async (req: AuthenticatedR
           loginCodeHash: users.loginCodeHash,
           passwordHash: users.passwordHash,
           googleId: users.googleId,
+          emailVerified: users.emailVerified,
         })
         .from(users)
         .where(eq(users.id, linkedUserId))
         .for("update");
-      if (!target || !target.loginCodeHash || target.passwordHash || target.googleId) return false;
+      if (!target || !canReissueLoginCode(target)) return false;
 
       await tx.update(users).set({ loginCodeHash: hashLoginCode(loginCode)! }).where(eq(users.id, linkedUserId));
       await tx.delete(refreshTokens).where(eq(refreshTokens.userId, linkedUserId));

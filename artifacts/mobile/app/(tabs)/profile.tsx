@@ -15,6 +15,7 @@ import { Band, BRAND_MOTIF_OPACITY } from '@/components/ui/Band';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { useSurface } from '@/components/ui/Surface';
 import { IconTile } from '@/components/ui/IconTile';
+import { useReplayTour } from '@/hooks/useTour';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { AR_LATIN } from '@/services/dateLabels';
 
@@ -58,6 +59,7 @@ export default function ProfileScreen() {
   const surface = useSurface();
   const { t, isRTL } = useLanguage();
   const { user, logout, uploadAvatar, removeAvatar } = useAuth();
+  const { canReplay, replay } = useReplayTour();
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
@@ -412,6 +414,9 @@ export default function ProfileScreen() {
             isRTL={isRTL}
             colors={colors}
           />
+          {canReplay ? (
+            <SettingRow icon="compass-outline" label={t('tourReplayTitle')} onPress={replay} isRTL={isRTL} colors={colors} />
+          ) : null}
           <SettingRow
             icon="bulb-outline"
             label={t('suggestFeature')}

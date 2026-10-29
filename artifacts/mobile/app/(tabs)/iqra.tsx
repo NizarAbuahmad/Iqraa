@@ -28,7 +28,10 @@ function useSafeTabBarHeight(): number {
   }
 }
 import { Ionicons } from '@expo/vector-icons';
-import { ICON } from '@/constants/icons';
+import { CONCEPTS, ICON, type Concept, type IconName } from '@/constants/icons';
+import { CORNERS } from '@/constants/corners';
+import { ConceptIcon } from '@/components/ui/Glyph';
+import { readableOn } from '@/services/readableColor';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -46,7 +49,7 @@ import {
 import { getPickerGrades, getPickerSubjects, hasCurriculumForSubjectGrade } from '@/services/curriculumData';
 import { AR_LATIN } from '@/services/dateLabels';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
-import { loadLessonPick, loadPrepBoardOpen, loadPrepSkips, saveLessonPick, savePrepBoardOpen, setPrepSkip, timetableWins, type HomeLessonPick } from '@/services/lessonContext';
+import { loadLessonPick, loadPrepBoardOpen, loadPrepSkips, publishScheduledLesson, saveLessonPick, savePrepBoardOpen, setPrepSkip, timetableWins, type HomeLessonPick } from '@/services/lessonContext';
 import {
   buildResponse,
   deduplicateByUnit,
@@ -60,7 +63,7 @@ import { KB_SUGGEST_SCORE, shouldAskWhichLesson } from '@/services/kbSuggestion'
 import { Toast } from '@/components/ui/Toast';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
 import { DEMO_MODE } from '@/services/ai/demoMode';
-import { aiErrorText, isCapError } from '@/services/ai/aiProvenance';
+import { aiErrorText, isCapError, startClassFailure } from '@/services/ai/aiProvenance';
 import { shouldSendOnEnter } from '@/services/composerKeys';
 import type { ArtifactScope } from '@/services/ai/artifactScope';
 import {
@@ -181,6 +184,8 @@ import {
 import { quizExports, type QuizCopy } from '@/services/quizExport';
 import { worksheetExports } from '@/services/worksheetExport';
 import { buildClassDeck } from '@/services/startClass';
+import { fitTextareaHeight } from '@/services/webTextarea';
+import { materialPrompt } from '@/services/materialPrompts';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
@@ -202,29 +207,7 @@ function promptForTeachingAction(
   topic: string,
   lang: 'ar' | 'en',
 ): string {
-  const prompts: Record<TeachingAction['type'], { ar: string; en: string }> = {
-    'lesson-plan': {
-      ar: `حضّر خطة درس كاملة عن: ${topic}`,
-      en: `Prepare a full lesson plan about: ${topic}`,
-    },
-    worksheet: {
-      ar: `أنشئ ورقة عمل صفية عن: ${topic}`,
-      en: `Create an in-class worksheet about: ${topic}`,
-    },
-    homework: {
-      ar: `أنشئ واجباً منزلياً عن: ${topic}`,
-      en: `Create homework about: ${topic}`,
-    },
-    quiz: {
-      ar: `جهّز اختباراً قصيراً عن: ${topic}`,
-      en: `Create a short quiz about: ${topic}`,
-    },
-    activity: {
-      ar: `اقترح نشاطاً صفياً عن: ${topic}`,
-      en: `Suggest a classroom activity about: ${topic}`,
-    },
-  };
-  return prompts[type][lang];
+  return materialPrompt(type, topic, lang);
 }
 
 function ephemeralFromTeachingActions(
@@ -1446,6 +1429,7 @@ export default function IqraScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [inputFocused, setInputFocused] = useState(false);
+  const composerRef = useRef<TextInput>(null);
   const [isThinking, setIsThinking] = useState(false);
   /**
    * The assistant bubble being filled by a streamed reply, if any. While set
@@ -1488,6 +1472,7 @@ export default function IqraScreen() {
   const [lessonCardCollapsed, setLessonCardCollapsed] = useState(true);
   const [startingClass, setStartingClass] = useState(false);
   const [startClassError, setStartClassError] = useState('');
+  const [startClassNote, setStartClassNote] = useState(false);
   const [changeLessonOpen, setChangeLessonOpen] = useState(false);
   /** Set only while a picker opened by the `openLessonPicker` param is up; an in-chat open leaves it null. */
   const pickerReturnTo = useRef<string | null>(null);
@@ -1618,6 +1603,29 @@ export default function IqraScreen() {
    */
   const viewportW = useViewportWidth();
   const isDesktop = Platform.OS === 'web' && viewportW >= DESKTOP_BREAKPOINT;
+
+  /*
+    The web composer is a <textarea> that react-native-web leaves two rows tall
+    and never resizes: the empty field kept its placeholder on the top row with
+    the buttons level with the empty one below. One row while empty, and it
+    follows what is typed; a native build already grows its own input and the
+    ref there has no `style` to write to (`fitTextareaHeight` does nothing).
+    Re-fitted when the window width changes too, as a line may wrap differently,
+    and once the web fonts are in: the first fit runs before Almarai loads, and a
+    placeholder that wraps in the real font left a clipped second line in a field
+    measured with the fallback one.
+  */
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const fit = () =>
+      fitTextareaHeight(composerRef.current as unknown as Parameters<typeof fitTextareaHeight>[0]);
+    fit();
+    let live = true;
+    (globalThis as { document?: { fonts?: { ready: Promise<unknown> } } }).document?.fonts?.ready
+      .then(() => { if (live) fit(); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [input, viewportW]);
 
   // Web has no notch and no native header, so the 67pt allowance left a band
   // of dead space above the logo in the browser.
@@ -1863,6 +1871,10 @@ export default function IqraScreen() {
     void Promise.all([loadLessonPick(), loadNextPeriod()]).then(([saved, next]) => {
       const scheduled = next?.lessonId ? resolveLessonPrepContext(next.lessonId, lang as 'ar' | 'en') : null;
       const fromSchedule = timetableWins(saved, !!scheduled, todayISO());
+      // The lesson bar and the sidebar card name this lesson too, when the chat is the first screen opened.
+      publishScheduledLesson(
+        scheduled ? { topic: scheduled.topic, lessonId: scheduled.lessonId, gradeId: scheduled.gradeId, subjectId: scheduled.subjectId } : null,
+      );
       setPeriodLine('');
       if (fromSchedule && next) {
         listClasses()
@@ -2670,6 +2682,8 @@ export default function IqraScreen() {
             ? primaryTopicFromDocuments(docBundle.documents, docNames[0] || q)
             : null,
           preferDocuments: hasDocs && sessionMemory.lessonPin !== 'hard',
+          // «حسّن…» / "make the quiz harder" is the change, not the lesson.
+          refinement: route.intent === 'refinement',
         });
         // A new topic keeps the picked grade unless the message names another:
         // "a quiz on fractions" with grade 7 picked meant grade 7's fractions,
@@ -2729,6 +2743,7 @@ export default function IqraScreen() {
             ? primaryTopicFromDocuments(docBundle.documents, docNames[0] || q)
             : null,
           preferDocuments: hasDocs && sessionMemory.lessonPin !== 'hard',
+          refinement: route.intent === 'refinement',
         });
         try {
           const generated = await generateChatArtifact({
@@ -3256,14 +3271,7 @@ export default function IqraScreen() {
       });
       return;
     }
-    const prompts: Record<SessionArtifact, { ar: string; en: string }> = {
-      'lesson-plan': { ar: `حضّر خطة درس كاملة عن: ${topic}`, en: `Prepare a full lesson plan about: ${topic}` },
-      worksheet: { ar: `أنشئ ورقة عمل صفية عن: ${topic}`, en: `Create an in-class worksheet about: ${topic}` },
-      homework: { ar: `أنشئ واجباً منزلياً عن: ${topic}`, en: `Create homework about: ${topic}` },
-      quiz: { ar: `جهّز اختباراً قصيراً عن: ${topic}`, en: `Create a short quiz about: ${topic}` },
-      activity: { ar: `اقترح نشاطاً صفياً عن: ${topic}`, en: `Suggest a classroom activity about: ${topic}` },
-    };
-    sendMessage(lang === 'ar' ? prompts[type].ar : prompts[type].en, sessionMemory.activeLessonId ?? undefined);
+    sendMessage(materialPrompt(type, topic, lang as 'ar' | 'en'), sessionMemory.activeLessonId ?? undefined);
   }, [lang, sendMessage, sessionMemory]);
 
   /**
@@ -3396,6 +3404,7 @@ export default function IqraScreen() {
     if (!topic) return;
     setStartingClass(true);
     setStartClassError('');
+    setStartClassNote(false);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       // A «عرض الحصة» already saved for this lesson is the deck the teacher
@@ -3425,14 +3434,17 @@ export default function IqraScreen() {
       setPendingClassroomActivity(activity);
       trackEvent('class_started', { source: 'chat', deck: 'built' });
       router.push('/ai-tools/classroom/presentation' as any);
-    } catch {
+    } catch (e) {
       // Surfacing this as a chat message would still be wrong — the teacher
       // pressed a button on a card, they did not ask a question. But saying
       // nothing at all was worse: `Haptics` is a no-op on web, so the whole
       // failure signal was a buzz that platform never plays, and the press
       // vanished. The card says what happened instead, and stays the retry.
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setStartClassError(t('startClassFailed'));
+      const failure = startClassFailure(e);
+      // A spent allowance is a state to read, not a failed press: no error buzz.
+      if (!failure.note) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setStartClassError(t(failure.key));
+      setStartClassNote(failure.note);
     } finally {
       setStartingClass(false);
     }
@@ -3468,39 +3480,51 @@ export default function IqraScreen() {
    * The starting actions, in one place.
    *
    * They render inside the intro while the thread is empty and above the
-   * composer once it isn't — the same chips either way, so "حضّر خطة الدرس"
+   * composer once it isn't — the same chips either way, so "جهّز خطة الدرس"
    * does not become a different affordance halfway through a conversation.
    */
   // The lab chip is the lesson's own material, so it must stay reachable where
   // the starter row is not shown: under the readiness board, and once a reply's
   // follow-up chips have replaced the starter row.
   const labChip = lessonSuggestions.find(s => s.action === 'virtual-lab');
+  // Each chip wears its tool's own drawing and colour (CONCEPTS), as on the
+  // Tools tab. They were all teal text on one teal tint behind a font emoji,
+  // so «جهّز خطة الدرس» and «جهّز ورقة عمل» read as the same button.
+  const chipIcon = (sug: (typeof lessonSuggestions)[number]): Concept | null =>
+    sug.toolType ? CONCEPTS[sug.toolType]
+      : sug.action === 'virtual-lab'
+      ? { icon: CORNERS.lab.icon as IconName, glyph: CORNERS.lab.drawing, color: CORNERS.lab.light.primary }
+      : null;
+  const lessonChip = (sug: (typeof lessonSuggestions)[number]) => {
+    const concept = chipIcon(sug);
+    return {
+      key: sug.id,
+      // Without a drawing the emoji is the only cue left, so it stays.
+      label: concept ? (lang === 'ar' ? sug.labelAr : sug.labelEn) : `${sug.emoji} ${lang === 'ar' ? sug.labelAr : sug.labelEn}`,
+      concept,
+      onPress: () => handleLessonSuggestion(sug),
+    };
+  };
   const starterChips = (variant: 'intro' | 'composer', labOnly = false) => {
     if (labOnly && !labChip) return null;
-    const items = labOnly && labChip
-      ? [{
-        key: labChip.id,
-        label: `${labChip.emoji} ${lang === 'ar' ? labChip.labelAr : labChip.labelEn}`,
-        onPress: () => handleLessonSuggestion(labChip),
-      }]
+    const items: { key: string; label: string; concept: Concept | null; onPress: () => void }[] = labOnly && labChip
+      ? [lessonChip(labChip)]
       : lessonSuggestions.length > 0
-      ? lessonSuggestions.map(sug => ({
-        key: sug.id,
-        label: `${sug.emoji} ${lang === 'ar' ? sug.labelAr : sug.labelEn}`,
-        onPress: () => handleLessonSuggestion(sug),
-      }))
+      ? lessonSuggestions.map(lessonChip)
       : suggestions.map((sug, i) => ({
         key: `s-${i}`,
         label: sug.text,
+        concept: null,
         onPress: () => sendMessage(sug.text, sug.lessonId),
       }));
+    const wide = variant === 'intro' && isDesktop;
     if (items.length === 0) return null;
 
     return (
       <View
         style={[
           variant === 'intro' ? styles.introChips : styles.composerChips,
-          variant === 'intro' && isDesktop && styles.introChipsWide,
+          wide && styles.introChipsWide,
           { flexDirection: isRTL ? 'row-reverse' : 'row' },
         ]}
       >
@@ -3508,21 +3532,35 @@ export default function IqraScreen() {
           <Pressable
             key={item.key}
             onPress={item.onPress}
-            style={({ pressed }) => [
+            accessibilityRole="button"
+            style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
               styles.chip,
-              variant === 'intro' && isDesktop && styles.chipWide,
-              {
-                backgroundColor: colors.secondary,
-                borderColor: colors.primary + '2E',
-                opacity: pressed ? 0.7 : 1,
-              },
+              wide && styles.chipWide,
+              { flexDirection: isRTL ? 'row-reverse' : 'row' },
+              // A tool chip sits on the card so its colour is the one that
+              // speaks; a plain question chip keeps the brand tint.
+              item.concept
+                ? {
+                  backgroundColor: hovered || pressed ? colors.secondary : colors.card,
+                  borderColor: hovered ? readableOn(item.concept.color, colors.card, 3) : colors.border,
+                }
+                : { backgroundColor: colors.secondary, borderColor: colors.primary + '2E' },
+              { opacity: pressed ? 0.7 : 1 },
             ]}
           >
+            {item.concept ? (
+              <ConceptIcon
+                icon={item.concept.icon}
+                glyph={item.concept.glyph}
+                size={wide ? ICON.lg : ICON.md}
+                color={readableOn(item.concept.color, colors.card, 3)}
+              />
+            ) : null}
             <Text
               style={[
                 styles.chipText,
-                variant === 'intro' && isDesktop && styles.chipTextWide,
-                { color: colors.primary, fontFamily: 'ReadexPro_500Medium' },
+                wide && styles.chipTextWide,
+                { color: item.concept ? colors.foreground : colors.primary, fontFamily: 'ReadexPro_500Medium' },
               ]}
             >
               {item.label}
@@ -3778,6 +3816,7 @@ export default function IqraScreen() {
           startClassLabel={t('startClass')}
           startClassBusy={startingClass}
           startClassError={startClassError}
+          startClassNote={startClassNote}
           onStartClass={handleStartClass}
           changeLabel={t('changeLesson')}
           clearLabel={t('unpinLesson')}
@@ -3792,6 +3831,9 @@ export default function IqraScreen() {
           }}
           // The board right below it is already counting, from better data.
           hideCount={Boolean(introPrepBoard)}
+          // «0/5» alone does not say five of what; the window has room to.
+          readyLabel={(done, total) => t('homeReady', done, total)}
+          readyInline={isDesktop}
           // A band welded to both window edges on desktop; a card over the
           // thread it describes here.
           containerStyle={
@@ -3925,7 +3967,7 @@ export default function IqraScreen() {
             // Only while the thread is still just the intro — otherwise the
             // same three chips appear twice on one screen.
             // Nor the lesson chips under the readiness board: its rows already are
-            // «حضّر خطة الدرس» / «أنشئ ورقة عمل», the same actions twice — but
+            // «جهّز خطة الدرس» / «جهّز ورقة عمل», the same actions twice — but
             // the lab chip is not one of those rows, so it stays, alone.
             introActions={
               item.id === 'welcome' && messages.length <= 1
@@ -3960,10 +4002,10 @@ export default function IqraScreen() {
         Shown once the intro has scrolled out of the way, and only when the
         one-shot follow-ups below are not — two chip strips stacked on a phone
         is the clutter this change set out to remove.
-        Not under an answer about the app: «حضّر خطة الدرس» next to «where is
+        Not under an answer about the app: «جهّز خطة الدرس» next to «where is
         Settings» offers a lesson to someone who asked for a screen. Nor under a
         question back to the teacher («أيّ مادة تقصد؟»): it carries its own
-        choices, and «أنشئ ورقة عمل» under «أريد ورقة عمل → أيّ مادة؟» repeats
+        choices, and «جهّز ورقة عمل» under «أريد ورقة عمل → أيّ مادة؟» repeats
         the ask instead of answering it.
       */}
       {ephemeralSuggestions.length === 0 && !isThinking && messages.length > 1
@@ -4128,8 +4170,15 @@ export default function IqraScreen() {
             <Ionicons name="add" size={20} color={colors.primary} />
           </Pressable>
           <TextInput
+            ref={composerRef}
+            // Web only: a one-row <textarea> that `fitTextareaHeight` grows. Native
+            // sizes its own multiline input, and `rows` there is Android's line count.
+            {...(Platform.OS === 'web' ? { rows: 1 } : {})}
             style={[
               styles.input,
+              // Web's one line is as tall as the send button, so a single line of
+              // text sits level with the buttons instead of on the bottom edge.
+              Platform.OS === 'web' && styles.inputWeb,
               isDesktop && styles.inputWide,
               { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' },
             ]}
@@ -4355,7 +4404,7 @@ const styles = StyleSheet.create({
   deskHeader: { alignItems: 'center', paddingHorizontal: 16, paddingBottom: 2 },
   lessonSlotWide: { paddingHorizontal: 16, paddingTop: 10 },
   brandWord: { fontFamily: 'ReadexPro_700Bold', fontSize: 19 },
-  chip: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
+  chip: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, borderWidth: 1, alignItems: 'center', gap: 6 },
   chipWide: { paddingHorizontal: 18, paddingVertical: 12, borderRadius: 14 },
   chipText: { fontSize: 12 },
   chipTextWide: { fontSize: 14 },
@@ -4420,6 +4469,8 @@ const styles = StyleSheet.create({
   inputBarInner: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
   inputWrap: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 14, paddingVertical: 8, gap: 8 },
   input: { flex: 1, fontSize: 15, maxHeight: 100, paddingVertical: 0, outlineStyle: 'none' as never },
+  // 22 + 2×8 = 38, the send button's height: one line sits level with the buttons.
+  inputWeb: { lineHeight: 22, paddingVertical: 8 },
   inputWide: { fontSize: 15, maxHeight: 160, lineHeight: 22 },
   plusBtn: {
     width: 34,

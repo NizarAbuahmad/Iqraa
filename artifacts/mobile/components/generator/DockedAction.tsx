@@ -35,6 +35,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { useSurface } from '@/components/ui/Surface';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 import { readableOn, textOn } from '@/services/readableColor';
+import { DOCKED_BAR_HEIGHT } from '@/services/dockedBar';
 
 export interface DockedSecondary {
   label: string;
@@ -127,8 +128,8 @@ export function DockedAction({ summary, label, onPress, loading = false, disable
   );
 }
 
-/** What the docked bar adds to the bottom of the screen, for the scroll content's padding (excluding the inset). */
-export const DOCKED_BAR_HEIGHT = 108;
+/** What the docked bar adds to the bottom of the screen, for the scroll content's padding (excluding the inset). Lives in `services/dockedBar.ts` so it can be tested; re-exported for the screens. */
+export { DOCKED_BAR_HEIGHT };
 
 const styles = StyleSheet.create({
   bar: { position: 'absolute', left: 0, right: 0, bottom: 0, gap: SPACE.sm, paddingHorizontal: SPACE.lg, paddingTop: SPACE.md, borderTopWidth: 1 },

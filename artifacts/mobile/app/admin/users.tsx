@@ -9,6 +9,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useColors } from '@/hooks/useColors';
@@ -21,6 +22,7 @@ import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
 import { BackButton } from '@/components/ui/BackButton';
 import { TYPE } from '@/constants/theme';
+import { channelOf, isNewUser, newUsersFrom, parseNewUsersParam } from '@/services/adminUsers';
 
 const ACCENT = '#4F46E5';
 const ADMIN_ROLES = ['school_admin', 'system_admin'];
@@ -47,8 +49,32 @@ type UserRow = {
 const DEFAULT_REASON =
   `Your account has been suspended. Contact ${LEGAL_CONTACT_EMAIL} if you think this is a mistake.`;
 
+/**
+ * A small label. Outlined and tinted by default; `solid` fills it, which is how
+ * «جديد» stays apart from the channel labels even where their hues sit close.
+ * The words carry the meaning, the colour only helps the eye find it.
+ */
+function Pill({ label, color, solid, icon, radius }: { label: string; color: string; solid?: boolean; icon: keyof typeof Ionicons.glyphMap; radius: number }) {
+  const fg = solid ? '#fff' : color;
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius, borderWidth: 1, borderColor: color, backgroundColor: solid ? color : `${color}1F` }}>
+      <Ionicons name={icon} size={14} color={fg} />
+      <Text style={{ color: fg, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.micro, lineHeight: 18 }}>{label}</Text>
+    </View>
+  );
+}
+
+/** Web, the app (with which store platform), or unknown — one colour each. */
+function ChannelPill({ platform, ar, colors }: { platform: string | null; ar: boolean; colors: any }) {
+  const channel = channelOf(platform);
+  if (channel === 'web') return <Pill label={ar ? 'ويب' : 'Web'} color={colors.info} icon="globe-outline" radius={colors.radius} />;
+  if (channel === 'mobile') return <Pill label={`${ar ? 'تطبيق' : 'App'} · ${platform}`} color={colors.primary} icon="phone-portrait-outline" radius={colors.radius} />;
+  return <Pill label={ar ? 'غير معروف' : 'Unknown'} color={colors.mutedForeground} icon="help-circle-outline" radius={colors.radius} />;
+}
+
 export default function AdminUsersScreen() {
   const colors = useColors();
+  const today = new Date().toISOString().slice(0, 10);
   const insets = useSafeAreaInsets();
   const { isRTL, lang } = useLanguage();
   const ar = lang === 'ar';
@@ -57,7 +83,10 @@ export default function AdminUsersScreen() {
 
   const [q, setQ] = useState('');
   const [onlySuspended, setOnlySuspended] = useState(false);
-  const [range, setRange] = useState<Range>(EMPTY_RANGE);
+  // The dashboard's «جدد» tile links here with ?new=1: open on the new window, which
+  // is the «٧ أيام» chip (dayAgo(6)) so that chip lights up.
+  const params = useLocalSearchParams<{ new?: string | string[] }>();
+  const [range, setRange] = useState<Range>(() => (parseNewUsersParam(params.new) ? { from: newUsersFrom(today), to: '' } : EMPTY_RANGE));
   const [items, setItems] = useState<UserRow[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -174,19 +203,29 @@ export default function AdminUsersScreen() {
               <View key={u.id} style={[styles.card, { backgroundColor: colors.card, borderColor: u.suspendedAt ? colors.destructive : colors.border, borderRadius: colors.radius }]}>
                 <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
-                      {`${u.firstName} ${u.lastName}`.trim() || '—'} · <Text style={{ color: colors.mutedForeground }}>{u.role}</Text>
-                    </Text>
+                    <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                      <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
+                        {`${u.firstName} ${u.lastName}`.trim() || '—'} · <Text style={{ color: colors.mutedForeground }}>{u.role}</Text>
+                      </Text>
+                      {isNewUser(u.createdAt, today) && <Pill label={ar ? 'جديد' : 'New'} color={ACCENT} solid icon="sparkles" radius={colors.radius} />}
+                    </View>
                     <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
                       {u.email ?? (ar ? 'بلا بريد' : 'no email')} · {u.google ? 'Google' : u.email ? (ar ? 'كلمة مرور' : 'password') : (ar ? 'رمز دخول' : 'login code')}
                     </Text>
                     <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, textAlign: align }}>
                       {ar ? 'انضم' : 'Joined'} {date(u.createdAt)} · {ar ? 'آخر دخول' : 'Last login'} {date(u.lastLogin)} · AI ${u.monthSpendUsd.toFixed(3)}
                     </Text>
-                    <Text numberOfLines={1} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, textAlign: align }}>
-                      {ar ? 'انضم عبر' : 'Joined via'} {u.signupPlatform ?? (ar ? 'غير معروف (قبل ٢ تشرين الأول)' : 'unknown (before 2 Oct)')}
-                      {u.signupReferrer ? ` ← ${u.signupReferrer}` : ''}
-                    </Text>
+                    <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18 }}>
+                        {ar ? 'انضم عبر' : 'Joined via'}
+                      </Text>
+                      <ChannelPill platform={u.signupPlatform} ar={ar} colors={colors} />
+                      {!!u.signupReferrer && (
+                        <Text numberOfLines={1} style={{ flexShrink: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18 }}>
+                          {`← ${u.signupReferrer}`}
+                        </Text>
+                      )}
+                    </View>
                     {u.role === 'teacher' && (
                       <Text numberOfLines={1} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 18, textAlign: align }}>
                         {ar ? 'المدرسة' : 'School'}: {u.schoolName ?? (ar ? 'غير مرتبط' : 'not linked')}

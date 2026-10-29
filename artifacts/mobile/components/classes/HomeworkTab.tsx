@@ -63,7 +63,7 @@ import {
   type HomeworkResource,
   type TeacherHomework,
 } from '@/services/homework';
-import { LESSON_GAME_TITLE_KEY } from '@/services/lessonGames';
+import { HOMEWORK_GAME_TITLE_KEY } from '@/services/lessonGames';
 import { archiveHomework, createHomework, listClassHomework, shareHomework, updateHomework } from '@/services/homeworkApi';
 
 const ACCENT = palette.primary;
@@ -140,7 +140,7 @@ export function HomeworkTab({
   }, [load]);
 
   // A game's stored title is the lesson's; the teacher's lists say which game it is too.
-  const resourceLabel = (r: HomeworkResource) => (r.kind === 'game' ? `${t(LESSON_GAME_TITLE_KEY[r.game])}: ${r.title}` : r.title);
+  const resourceLabel = (r: HomeworkResource) => (r.kind === 'game' ? `${t(HOMEWORK_GAME_TITLE_KEY[r.game])}: ${r.title}` : r.title);
 
   const today = ammanToday();
   const published = exams.filter(e => e.status === 'published');

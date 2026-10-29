@@ -47,6 +47,7 @@ import {
 } from '@/services/wideScopeRequest';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { runOptions, type RunOptions } from '@/services/runOptions';
 import { captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope } from '@/services/generationScope';
 import { createVerificationTracker } from '@/services/verificationTracker';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
@@ -89,6 +90,8 @@ import { Stepper } from '@/components/generator/Stepper';
 import { ChipGroup } from '@/components/generator/ChipGroup';
 import { LessonCard } from '@/components/generator/LessonCard';
 import { DockedAction, DOCKED_BAR_HEIGHT } from '@/components/generator/DockedAction';
+import { toastLift } from '@/services/dockedBar';
+import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
 import { GeneratorLayout, useIsDesktopGenerator } from '@/components/generator/GeneratorLayout';
 import { PaperPreview } from '@/components/generator/PaperPreview';
 import { PressableScale } from '@/components/ui/PressableScale';
@@ -237,6 +240,7 @@ export default function WorksheetScreen() {
   // returns before `setError('')`, so pressing again with the same refusal leaves the phase at 'error'
   // and, without this, would show the teacher nothing.
   const [attempt, setAttempt] = useState(0);
+  const lastRunRef = useRef<RunOptions>({ regenerate: false, levels: false });
   /**
    * Held across renders so Cancel can reach the in-flight request. A cancel
    * that only cleared the spinner would leave the call running and still
@@ -456,6 +460,8 @@ export default function WorksheetScreen() {
     // Read before any setState clears it — this is what the teacher is
     // looking at, and what a regeneration must not hand back.
     setAttempt(n => n + 1);
+    // What this run was asked for, so Retry after a failure repeats it (a failed «ثلاثة مستويات» retried as one paper).
+    lastRunRef.current = runOptions(opts);
     // A Cancel leaves `cancelled` set, and it outranks an error in the status block: clear it before any
     // refusal below can return, or «أُلغي» would be shown over the refusal's own message.
     setCancelled(false);
@@ -809,6 +815,9 @@ export default function WorksheetScreen() {
   }, [statusPhase, attempt]);
   // The result's own save bar takes the bottom of a phone while a fresh paper is unsaved.
   const saveBarVisible = !!result && !loading && !savedId && saveLabel === 'save';
+  // The toast sits above the docked bar while the bar is really on screen (a phone, not yielded to the screen's own bar, keyboard closed).
+  const keyboardOpen = useKeyboardVisible();
+  const toastBottom = toastLift({ isDesktop, barHidden: saveBarVisible, keyboardOpen });
   const surface = useSurface();
 
   // The question types as chips. A format the lesson's bank cannot build is offered DISABLED, drawn
@@ -980,7 +989,8 @@ export default function WorksheetScreen() {
         loadingLabel={t('buildingWorksheet')}
         errorDetail={error}
         onCancel={cancelGenerate}
-        onRetry={generate}
+        // Repeats what was last asked (three levels included); never the press event Retry hands in.
+        onRetry={() => generate(lastRunRef.current)}
         colors={colors}
         isRTL={isRTL}
         lang={uiLang}
@@ -1447,7 +1457,7 @@ export default function WorksheetScreen() {
       loadingSlides={loadingSlides}
       labels={exportLabels}
     />
-    <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
+    <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} bottomOffset={toastBottom} />
     </View>
   );
 }

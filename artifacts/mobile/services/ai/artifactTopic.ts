@@ -138,13 +138,40 @@ function isOnlyAsking(s: string): boolean {
 }
 
 /**
+ * «هذا الدرس», «للدرس الحالي», «درس اليوم», "this lesson", "today's lesson".
+ *
+ * A pointer at the lesson already picked, not the name of a lesson. Left as a
+ * topic it titled the saved material «هذا الدرس» and, on the live path, was
+ * searched for in the curriculum — so the one phrasing teachers use most to
+ * say "the lesson on the card" was the one that ignored the card. The whole
+ * topic has to be the pointer: «الدرس الأول» and "lesson planning" are names.
+ */
+const CURRENT_LESSON_REF = new RegExp(
+  [
+    // «هذا الدرس», «لهذا الدرس», «لنفس الدرس», «في هذا الدرس اليوم»
+    '^(?:(?:في|على|من)\\s+)?[لب]?(?:هذا|هذه|نفس)\\s+(?:ال)?درس(?:\\s+اليوم)?$',
+    // «الدرس الحالي», «للدرس الحالي», «درس اليوم», «لدرس اليوم», «الدرس نفسه»
+    '^(?:(?:في|على|من)\\s+)?(?:لل|بال|ال|[لب])?درس(?:نا)?\\s+(?:الحالي|اليوم|هذا|نفسه)$',
+    // «الدرس», «للدرس», «درسنا»
+    '^(?:(?:في|على|من)\\s+)?(?:(?:لل|بال|ال)درس|[لب]?درسنا)$',
+    '^(?:(?:in|on|of|from|to)\\s+)?(?:this|that|my|our|the|current|the\\s+current|the\\s+same|same|today[\'’]?s)\\s+lesson$',
+  ].join('|'),
+  'i',
+);
+
+function isCurrentLessonRef(s: string): boolean {
+  // Vowel marks and tatweel are typing noise here, not part of the pointer.
+  return CURRENT_LESSON_REF.test(s.replace(/[ً-ْـ]/g, '').trim());
+}
+
+/**
  * The topic an ask is about, with the asking stripped off.
  *
  * Not cosmetic: this string titles the saved material and heads the first
  * slide when the material is projected, so anything left behind is read by a
  * class. Every rule here earned its place by leaking into one — see the
  * chip-prompt cases in the tests, which are the exact strings the product
- * sends when a teacher taps «حضّر خطة الدرس».
+ * sends when a teacher taps «جهّز خطة الدرس».
  *
  * Removals repeat until they stop finding anything: the parts are written as
  * whole words, and one pass leaves «ورقة عمل صفية» as «صفية» — a qualifier
@@ -176,7 +203,25 @@ export function topicFromQuery(query: string): string {
     .replace(/^(?:a|an|the)\s+/i, '')
     .trim();
   const topic = trimEdgeFiller(out.replace(HOW_LEAD, ''));
-  return isOnlyAsking(topic) ? '' : topic;
+  return isOnlyAsking(topic) || isCurrentLessonRef(topic) ? '' : topic;
+}
+
+const QUOTED_TOPIC_RE = /«([^«»]+)»|“([^“”]+)”|"([^"]+)"/;
+
+/**
+ * The topic an ask fences in quotes — «الدائرة», "circles", “circles” — or ''.
+ *
+ * A refinement has nothing to strip: «اجعل الاختبار أصعب» and «حسّن خطة الدرس عن
+ * «X» واجعلها أوضح للتنفيذ» are all change, and `topicFromQuery` only knows the
+ * words of a creation ask. The one way such a message names a lesson is by
+ * fencing it, which is how the improve chip writes it. A pointer inside the
+ * quotes («الدرس الحالي», "the current lesson" — what the chip says while no
+ * lesson is open) names nothing.
+ */
+export function quotedTopic(query: string): string {
+  const m = QUOTED_TOPIC_RE.exec(query);
+  const topic = (m?.[1] ?? m?.[2] ?? m?.[3] ?? '').replace(/\s+/g, ' ').trim();
+  return topic.length >= 3 && !isCurrentLessonRef(topic) ? topic : '';
 }
 
 /** Resolve topic string for generation from lesson / docs / query. */
@@ -189,6 +234,14 @@ export function resolveArtifactTopic(opts: {
   docTopic?: string | null;
   /** When true, uploaded materials beat a soft-pinned curriculum lesson. */
   preferDocuments?: boolean;
+  /**
+   * The message asks to change what was made last («حسّن…», «اجعله أبسط», "make
+   * the quiz harder"). Its words are the change, not a topic: only a topic it
+   * fences in quotes counts, and otherwise the lesson on the card is the topic.
+   * Without this the leftover sentence — three characters or more — outranked
+   * the lesson and titled the regenerated material.
+   */
+  refinement?: boolean;
 }): string {
   const {
     lang,
@@ -198,11 +251,12 @@ export function resolveArtifactTopic(opts: {
     activeTopicEn,
     docTopic,
     preferDocuments = false,
+    refinement = false,
   } = opts;
 
   if (preferDocuments && docTopic?.trim()) return docTopic.trim();
 
-  const stripped = topicFromQuery(query);
+  const stripped = refinement ? quotedTopic(query) : topicFromQuery(query);
 
   // Prefer an explicit topic in the message over soft-pinned / default lesson
   if (stripped && stripped.length >= 3) {

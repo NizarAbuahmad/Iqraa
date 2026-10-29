@@ -292,7 +292,7 @@ export function nextPrepRecommendation(
   if (isAr) {
     if (next === 'worksheet') return 'لنجهّز الآن ورقة عمل.';
     if (next === 'quiz') return 'أنصح باختبار قصير قبل أن نغلق تحضير الدرس.';
-    if (next === 'lesson-plan') return 'أقترح الآن: حضّر خطة الدرس.';
+    if (next === 'lesson-plan') return 'أقترح الآن: جهّز خطة الدرس.';
     if (next === 'activity') return 'لنصمّم نشاطاً صفياً قصيراً.';
     if (next === 'homework') return 'أضف واجباً منزلياً خفيفاً لتثبيت الفكرة.';
     return `أقترح الآن: ${prepStepLabel(next, true)}.`;
@@ -590,11 +590,14 @@ function actionMenu(isAr: boolean, omitted?: TeachingActionType): string {
 
 export function defaultTeachingActions(): TeachingAction[] {
   return [
-    { type: 'lesson-plan', labelAr: 'خطة درس', labelEn: 'Create lesson plan', emoji: '📄' },
-    { type: 'worksheet', labelAr: 'ورقة عمل', labelEn: 'Create worksheet', emoji: '📝' },
-    { type: 'quiz', labelAr: 'اختبار قصير', labelEn: 'Create quiz', emoji: '❓' },
-    { type: 'homework', labelAr: 'واجب بيتي', labelEn: 'Create homework', emoji: '🏠' },
-    { type: 'activity', labelAr: 'نشاط صفي', labelEn: 'Classroom activity', emoji: '🎯' },
+    // «جهّز …» / "Create …" like the chips under the composer. These were bare
+    // nouns in Arabic and «Classroom activity» in English, so the same five asks
+    // read as an action in one place and a label in another.
+    { type: 'lesson-plan', labelAr: 'جهّز خطة درس', labelEn: 'Create lesson plan', emoji: '📄' },
+    { type: 'worksheet', labelAr: 'جهّز ورقة عمل', labelEn: 'Create worksheet', emoji: '📝' },
+    { type: 'quiz', labelAr: 'جهّز اختباراً قصيراً', labelEn: 'Create quiz', emoji: '❓' },
+    { type: 'homework', labelAr: 'جهّز واجباً منزلياً', labelEn: 'Create homework', emoji: '🏠' },
+    { type: 'activity', labelAr: 'جهّز نشاطاً صفياً', labelEn: 'Create classroom activity', emoji: '🎯' },
   ];
 }
 

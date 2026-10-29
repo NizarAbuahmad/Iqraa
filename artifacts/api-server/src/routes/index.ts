@@ -10,6 +10,7 @@ import workspaceRouter from "./workspace";
 import verifiedMathRouter from "./verifiedMath";
 import curriculumRouter from "./curriculum";
 import bankRouter from "./bank";
+import siteAskRouter from "./siteAsk";
 import rosterRouter from "./roster";
 import homeworkRouter from "./homework";
 import teachingPlansRouter from "./teachingPlans";
@@ -17,6 +18,7 @@ import scheduleRouter from "./schedule";
 import examCalendarRouter from "./examCalendar";
 import evaluationsRouter from "./evaluations";
 import attemptsRouter from "./attempts";
+import guardianConsentRouter from "./guardianConsent";
 import studentAttemptRouter from "./studentAttempt";
 import studentExamsRouter from "./studentExams";
 import liveRouter from "./live";
@@ -93,6 +95,9 @@ router.use(curriculumRouter);
 // A catalog of document titles and provenance, on the same reasoning. It does
 // not serve the documents; there is nothing here to serve.
 router.use(bankRouter);
+// The visitor-facing bot on iqrra.com: public, rate-limited and spend-capped
+// inside the router. Path-prefixed, never bare — it is a public router.
+router.use("/site/ask", siteAskRouter);
 router.use(rosterRouter);
 // Teacher homework: /homework is guarded inside the router (path-scoped); the class read
 // carries its own guards on the route.
@@ -107,6 +112,8 @@ router.use(attemptsRouter);
 // token check, both path-scoped inside the router. Mounted *after* the
 // teacher routers so it cannot shadow them, and asserted in mountOrder.test.ts
 // both ways: reachable without a token, and not having made anything else so.
+// The parent's approval page: public (the parent has no account), every path under /guardian-consent, rate limited.
+router.use(guardianConsentRouter);
 router.use(studentAttemptRouter);
 // Live (Kahoot-style) games. /live/* is the players' side — public like /take,
 // token-authenticated and rate-limited inside the router, with every limiter

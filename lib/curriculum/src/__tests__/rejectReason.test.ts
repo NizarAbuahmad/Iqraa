@@ -7,9 +7,14 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync, readdirSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
+  LATIN_BOOK_RATIO,
   MIN_ARABIC_WORDS_TO_JUDGE,
   arabicWordCount,
+  englishFunctionWordShare,
   lamTranspositionRate,
   rejectReason,
   wordTranspositionRate,
@@ -114,5 +119,52 @@ describe('rejectReason', () => {
     // return *a* reason, not throw or silently pass.
     const both = '\x01\x02'.repeat(50) + 'احلركة امليكانيكا '.repeat(30);
     assert.notEqual(rejectReason(both), null);
+  });
+
+  describe('an English book with a little Arabic in it', () => {
+    const ENGLISH = 'The students are learning to read the story and to talk about it in class. '.repeat(200);
+    // The shape of g8-english-s2-student-book on 2026-10-25: a few Arabic words,
+    // encoded as isolated presentation-form glyphs, in 100,000 English letters.
+    const FRONT_MATTER = '\uFE8D\uFE8E\uFEDF\uFEE3\uFEE0'.repeat(20);
+
+    it('passes although its few Arabic glyphs are presentation forms', () => {
+      assert.ok(ENGLISH.length > LATIN_BOOK_RATIO * FRONT_MATTER.length);
+      assert.equal(rejectReason(FRONT_MATTER + ENGLISH), null);
+    });
+
+    it('still fails when the Latin text does not read as English', () => {
+      // Letters that spell nothing, in the shape a wrong cmap or the wrong OCR
+      // model leaves: no function words, so the Arabic gates being skipped must
+      // not become a pass.
+      const noise = 'xqzv kjhg wprt bnmc lfds zxcv qwrt '.repeat(300);
+      assert.ok(englishFunctionWordShare(noise)! < 0.01);
+      assert.match(rejectReason(FRONT_MATTER + noise)!, /does not read as English/);
+    });
+
+    it('still judges a book that is mostly Arabic as Arabic', () => {
+      const mostlyArabic = '\uFE8D\uFE8E'.repeat(400) + ENGLISH.slice(0, 200);
+      assert.match(rejectReason(mostlyArabic)!, /presentation-form/);
+    });
+
+    it('still rejects control-character noise first', () => {
+      assert.match(rejectReason('\x01\x02\x03\x04'.repeat(200) + ENGLISH)!, /control characters/);
+    });
+
+    it('leaves every real English extraction on file passing', () => {
+      // 27 books at 0.177-0.209 function words. If a re-extraction or a change to
+      // the thresholds moves one under the line, this names the file.
+      const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'data', 'extracted');
+      let checked = 0;
+      for (const f of readdirSync(dir).filter(n => n.endsWith('.json'))) {
+        const { text } = JSON.parse(readFileSync(path.join(dir, f), 'utf8')) as { text: Array<{ text: string } | string> };
+        const all = text.map(p => (typeof p === 'string' ? p : p.text)).join('');
+        const latin = (all.match(/[A-Za-z]/g) ?? []).length;
+        const arabic = (all.match(/[\u0600-\u06FF\uFB50-\uFDFF\uFE70-\uFEFF]/g) ?? []).length;
+        if (latin < LATIN_BOOK_RATIO * Math.max(arabic, 1)) continue;
+        checked++;
+        assert.equal(rejectReason(all), null, f);
+      }
+      assert.ok(checked >= 27, `only ${checked} Latin-dominant extractions found`);
+    });
   });
 });

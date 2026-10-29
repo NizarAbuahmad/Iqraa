@@ -84,6 +84,8 @@ import { getT } from '@/services/i18n';
 import { ChipGroup } from '@/components/generator/ChipGroup';
 import { LessonCard } from '@/components/generator/LessonCard';
 import { DockedAction, DOCKED_BAR_HEIGHT } from '@/components/generator/DockedAction';
+import { toastLift } from '@/services/dockedBar';
+import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
 import { GeneratorLayout, useIsDesktopGenerator } from '@/components/generator/GeneratorLayout';
 import { PaperPreview } from '@/components/generator/PaperPreview';
 import { PressableScale } from '@/components/ui/PressableScale';
@@ -1067,6 +1069,9 @@ export default function SlidesScreen() {
   // teacher saved, or a reopened one whose stored content equals what is shown, so the bar stays under those.
   // The rebuild is still reachable: the same action sits inline at the end of the form, above the results.
   const deckUnsaved = !!deck && !loading && !workspace.saved;
+  // The toast sits above the docked bar while the bar is really on screen (a phone, not yielded to the screen's own bar, keyboard closed).
+  const keyboardOpen = useKeyboardVisible();
+  const toastBottom = toastLift({ isDesktop, barHidden: deckUnsaved, keyboardOpen });
   const includeOptions: { id: DeckOption; label: string }[] = [
     ...(offerExamples ? [{ id: 'examples' as const, label: t('genSlidesOptExamples') }] : []),
     { id: 'practice' as const, label: t('genSlidesOptPractice') },
@@ -1353,7 +1358,7 @@ export default function SlidesScreen() {
         t={t}
       />
 
-      <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} bottomOffset={isDesktop || deckUnsaved ? 0 : DOCKED_BAR_HEIGHT} />
+      <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} bottomOffset={toastBottom} />
     </View>
   );
 }

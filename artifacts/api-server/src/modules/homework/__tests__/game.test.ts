@@ -2,12 +2,12 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
 import type { HomeworkResource } from "@workspace/db";
-import { attachedGames, carryOverGames, gameResourceKey, isBetterResult, parseGameResult } from "../game.ts";
+import { LEGACY_GAMES, attachedGames, carryOverGames, gameResourceKey, isBetterResult, knownGamesOf, parseGameResult } from "../game.ts";
 import { buildFamilyHomework, type GameResultRow } from "../familyHomework.ts";
 
 const L1 = "lesson-1";
 const L2 = "lesson-2";
-const game = (lessonId: string, g: "memory" | "scramble" | "spot"): HomeworkResource => ({ kind: "game", lessonId, game: g, title: `${lessonId}/${g}` });
+const game = (lessonId: string, g: "memory" | "scramble" | "spot" | "meaning"): HomeworkResource => ({ kind: "game", lessonId, game: g, title: `${lessonId}/${g}` });
 const lib = (n: string): HomeworkResource => ({ kind: "library", source: "s", nativeId: n, title: n, mediaKind: "pdf", url: null, thumbnailUrl: null });
 
 describe("parseGameResult", () => {
@@ -17,6 +17,7 @@ describe("parseGameResult", () => {
       value: { lessonId: L1, game: "memory", score: 3, total: 8 },
     });
     assert.equal(parseGameResult({ lessonId: L1, game: "spot", score: 0, total: 1 }).ok, true);
+    assert.equal(parseGameResult({ lessonId: L1, game: "meaning", score: 4, total: 6 }).ok, true);
     assert.equal(parseGameResult({ lessonId: "x".repeat(200), game: "scramble", score: 100, total: 100 }).ok, true);
   });
 
@@ -86,6 +87,23 @@ describe("carryOverGames", () => {
   });
   it("carries nothing when there are no games, and never a non-game", () => {
     assert.deepEqual(carryOverGames([lib("a")], [lib("old")], 10), [lib("a")]);
+  });
+});
+
+describe("carryOverGames with `known` (a client that sends gamesIncluded: true)", () => {
+  const meaning = (l: string): HomeworkResource => ({ kind: "game", lessonId: l, game: "meaning", title: `${l}/meaning` });
+  it("keeps an attachment of a game the client does not know, and lets it remove one it knows", () => {
+    const existing = [meaning(L1), game(L1, "spot")];
+    const out = carryOverGames([lib("a")], existing, 10, knownGamesOf(undefined));
+    assert.deepEqual(out.map(r => r.title), ["a", `${L1}/meaning`], "an older build drops meaning by accident; spot was a real removal");
+  });
+  it("carries nothing when the client lists every game", () => {
+    const out = carryOverGames([lib("a")], [meaning(L1), game(L1, "spot")], 10, knownGamesOf(["memory", "scramble", "spot", "meaning", "exercises"]));
+    assert.deepEqual(out.map(r => r.title), ["a"]);
+  });
+  it("reads a malformed knownGames as the legacy list", () => {
+    assert.deepEqual(knownGamesOf("spot"), LEGACY_GAMES);
+    assert.deepEqual(knownGamesOf([1, "spot"]), ["spot"]);
   });
 });
 

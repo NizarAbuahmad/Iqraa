@@ -552,7 +552,7 @@ test('pressing generate again on the same refusal scrolls to it again: the effec
   for (const [name, src] of [['quiz', quizCode], ['worksheet', worksheetCode], ['lesson plan', lessonPlanCode], ['activity', activityCode]] as const) {
     assert.match(src, /const \[attempt, setAttempt\] = useState\(0\);/, `${name}: no attempt counter`);
     // Bumped first thing in generate, before any early return (the refusals), and nothing else about generate moves.
-    assert.match(src, /const generate = async \(opts\?: \{[^}]*\}\) => \{\s*(\/\/[^\n]*\n\s*)*setAttempt\(n => n \+ 1\);\s*(\/\/[^\n]*\n\s*)*setCancelled\(false\);\s*const previous = result;/, `${name}: attempt is not bumped at the start of generate`);
+    assert.match(src, /const generate = async \(opts\?: \{[^}]*\}\) => \{\s*(\/\/[^\n]*\n\s*)*setAttempt\(n => n \+ 1\);\s*(lastRunRef\.current = runOptions\(opts\);\s*)?(\/\/[^\n]*\n\s*)*setCancelled\(false\);\s*const previous = result;/, `${name}: attempt is not bumped at the start of generate`);
     assert.match(src, /\}, \[statusPhase, attempt\]\);/, `${name}: the effect ignores the attempt`);
     assert.match(src, /if \(isDesktop \|\| statusPhase === 'idle'\) return;/, `${name}: an idle form must not scroll`);
     assert.doesNotMatch(src, /statusPhase === 'idle' \|\| (topicRefusal|refusal)/, `${name}: no special case for a refusal: cancelled is cleared first, so the phase is idle then`);
@@ -1203,7 +1203,7 @@ test('the docked bar yields to an unsaved deck on a phone, and the rebuild stays
 });
 
 test('the slides toast is lifted above the docked bar while the bar is shown on a phone', () => {
-  assert.match(slidesCode, /<Toast [\s\S]*?bottomOffset=\{isDesktop \|\| deckUnsaved \? 0 : DOCKED_BAR_HEIGHT\} \/>/);
+  // (The lift itself is the shared helper: see the test on `toastLift` at the end of this file.)
   const toast = code(read('components', 'ui', 'Toast.tsx'));
   assert.match(toast, /bottomOffset\?: number;/);
   assert.match(toast, /bottomOffset = 0/, 'every other screen\'s toast stays where it was');
@@ -1350,4 +1350,81 @@ test('GenerationStatus takes its phase type from the one service, not a second d
   assert.match(src, /import type \{ GenerationPhase \} from '@\/services\/generationPhase';/);
   assert.match(src, /export type \{ GenerationPhase \};/);
   assert.doesNotMatch(src, /type GenerationPhase =/);
+});
+
+// ── The toast clears the docked bar ─────────────────────────────────────────
+
+test('every generator lifts its toast over the docked bar through the one helper, with the same condition it hides the bar by', () => {
+  const screens = [
+    ['quiz', quizCode, 'saveBarVisible'], ['worksheet', worksheetCode, 'saveBarVisible'], ['lesson plan', lessonPlanCode, 'saveBarVisible'],
+    ['activity', activityCode, 'saveBarVisible'], ['slides', slidesCode, 'deckUnsaved'],
+  ] as const;
+  for (const [name, src, hidden] of screens) {
+    assert.match(src, /import \{ toastLift \} from '@\/services\/dockedBar';/, name);
+    assert.match(src, /import \{ useKeyboardVisible \} from '@\/hooks\/useKeyboardVisible';/, name);
+    assert.match(src, /const keyboardOpen = useKeyboardVisible\(\);/, name);
+    assert.match(src, new RegExp(`const toastBottom = toastLift\\(\\{ isDesktop, barHidden: ${hidden}, keyboardOpen \\}\\);`), `${name}: not computed through toastLift with the bar's own hidden condition`);
+    assert.match(src, /<Toast [\s\S]*?bottomOffset=\{toastBottom\} \/>/, `${name}: the toast is not lifted`);
+    // The same condition really is what hides the bar on that screen.
+    assert.match(src, new RegExp(`hidden=\\{docked && ${hidden}\\}`), `${name}: the bar is hidden by another condition`);
+    assert.doesNotMatch(src, /bottomOffset=\{isDesktop/, `${name}: an inline expression is back`);
+  }
+});
+
+test('the bar\'s height is one constant in a pure file, re-exported by DockedAction so the screens\' imports keep working', () => {
+  assert.match(code(read('services', 'dockedBar.ts')), /export const DOCKED_BAR_HEIGHT = 108;/);
+  const dock = code(read('components', 'generator', 'DockedAction.tsx'));
+  assert.match(dock, /import \{ DOCKED_BAR_HEIGHT \} from '@\/services\/dockedBar';/);
+  assert.match(dock, /export \{ DOCKED_BAR_HEIGHT \};/);
+  assert.doesNotMatch(dock, /DOCKED_BAR_HEIGHT = /, 'a second definition of the height');
+  // The toast takes a lift and defaults to none, so every other screen\'s toast is where it was.
+  assert.match(code(read('components', 'ui', 'Toast.tsx')), /bottomOffset = 0/);
+});
+
+// ── Retry repeats the run; the evaluations picker row ──────────────────────
+
+test('Retry is an explicit arrow on every generator screen, so the press event can never become `generate`\'s options', () => {
+  for (const [name, src] of [['quiz', quizCode], ['lesson plan', lessonPlanCode], ['activity', activityCode], ['slides', slidesCode]] as const) {
+    assert.match(src, /onRetry=\{\(\) => generate\(\)\}/, name);
+    assert.doesNotMatch(src, /onRetry=\{generate\}/, `${name}: a bare generate gets the press event`);
+  }
+  assert.doesNotMatch(worksheetCode, /onRetry=\{generate\}/);
+});
+
+test('the worksheet\'s Retry repeats what was last asked, three levels included', () => {
+  assert.match(worksheetCode, /import \{ runOptions, type RunOptions \} from '@\/services\/runOptions';/);
+  assert.match(worksheetCode, /const lastRunRef = useRef<RunOptions>\(\{ regenerate: false, levels: false \}\);/);
+  // Recorded at the top of generate, next to the attempt bump, before any refusal can return.
+  assert.match(worksheetCode, /setAttempt\(n => n \+ 1\);\s*(\/\/[^\n]*\n\s*)*lastRunRef\.current = runOptions\(opts\);/);
+  const at = worksheetCode.indexOf('lastRunRef.current = runOptions(opts);');
+  assert.ok(at > 0 && at < worksheetCode.indexOf("if (!topic.trim()) { setError(t('topicRequired')); return; }"), 'the run is recorded after a refusal could already return');
+  assert.match(worksheetCode, /onRetry=\{\(\) => generate\(lastRunRef\.current\)\}/);
+  // A levels run reads `opts?.levels`, which is exactly the field the stored options carry.
+  assert.match(worksheetCode, /if \(opts\?\.levels\) \{/);
+  assert.match(worksheetCode, /generate\(\{ levels: true \}\)/);
+});
+
+test('the evaluations paper builder draws its dropdown\'s selected row as an opaque fill with its own ink, and it reads at 4.5:1', () => {
+  const evals = code(read('app', 'evaluations', 'new.tsx'));
+  assert.match(evals, /import \{ selectedRow \} from '@\/services\/readableColor';/);
+  assert.match(evals, /const row = selectedRow\(props\.accent, props\.colors\.card\);/);
+  assert.match(evals, /selectedTint=\{row\.fill\}/);
+  assert.match(evals, /accent=\{row\.ink\}/);
+  assert.doesNotMatch(evals, /selectedTint=\{[^}]*\+ '15'\}/);
+  // This screen's accent is palette.primary: the light teal on the light card, the bright teal on the dark one.
+  const src = read('constants', 'colors.ts');
+  const primary = (theme: 'light' | 'dark') => {
+    const at = src.indexOf(`  ${theme}: {`);
+    return new RegExp(`\\n    primary:\\s+'(#[0-9A-Fa-f]{6})'`).exec(src.slice(at, src.indexOf('\n  },', at)))![1]!;
+  };
+  for (const [theme, c] of Object.entries(themeColours())) {
+    const accent = primary(theme as 'light' | 'dark');
+    const row = selectedRow(accent, c.card);
+    assert.ok(contrast(row.ink, row.fill) >= 4.5, `evaluations on ${theme}: ${row.ink} on ${row.fill} is ${contrast(row.ink, row.fill).toFixed(2)}:1`);
+    // And it did not read worse than the translucent tint it replaces.
+    assert.ok(contrast(row.ink, row.fill) >= contrast(accent, tintOver(accent, 0x15 / 255, c.card)) - 1e-9, `${theme}: got worse`);
+  }
+  // The shared dropdown's own doc no longer says a screen still passes the translucent tint.
+  assert.doesNotMatch(read('components', 'ui', 'PickerField.tsx'), /still passes `accent \+ '15'`/);
+  assert.doesNotMatch(read('app', 'evaluations', 'new.tsx'), /ACCENT \+ '15'/);
 });

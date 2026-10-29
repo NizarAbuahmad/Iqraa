@@ -686,13 +686,15 @@ describe("buildGenerationPrompt — pressing for a checkable key", () => {
     assert.match(user, /SAME question the stem asks/);
   });
 
-  it("writes several solutions with «or», because the verifier refuses a comma list", () => {
+  it("writes several solutions with «or», and says when a comma is not a list", () => {
     // The first draft of these instructions used "x = 1, 3" as its example; the
-    // model copied it and the verifier answered "multi-variable answer" for every
-    // correct two-root key (undecided went from 5 to 14 of ~30 judged).
+    // model copied it, and the verifier (which then refused every comma) answered
+    // "multi-variable answer" for each correct two-root key. The verifier now reads
+    // a same-variable list, but "or" stays the form the prompt teaches.
     const { user } = buildGenerationPrompt(mathsReq);
     assert.match(user, /"x = 1 or x = 3"/);
-    assert.match(user, /Join several solutions with "or", never with a comma/);
+    assert.match(user, /Join several solutions with "or"/);
+    assert.match(user, /«x = 2, y = 3» is a\s+system/);
     assert.equal(user.includes('"x = 1, 3"'), false);
   });
 

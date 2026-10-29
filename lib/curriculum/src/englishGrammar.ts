@@ -22,6 +22,7 @@ import { GRAMMAR_UNITS_G3 } from './englishGrammarG3.ts';
 import { GRAMMAR_UNITS_G4 } from './englishGrammarG4.ts';
 import { GRAMMAR_UNITS_G5 } from './englishGrammarG5.ts';
 import { GRAMMAR_UNITS_G9 } from './englishGrammarG9.ts';
+import { GRAMMAR_UNITS_G10 } from './englishGrammarG10.ts';
 
 export type GrammarMarker = 'yes' | 'no' | 'boy' | 'girl' | 'many';
 
@@ -375,7 +376,7 @@ const GRAMMAR_UNITS_G1: GrammarUnit[] = [
 ];
 
 /** Grade 1 first, then 2, then 3: the order the lessons come in. */
-export const GRAMMAR_UNITS: GrammarUnit[] = [...GRAMMAR_UNITS_G1, ...GRAMMAR_UNITS_G2, ...GRAMMAR_UNITS_G3, ...GRAMMAR_UNITS_G4, ...GRAMMAR_UNITS_G5, ...GRAMMAR_UNITS_G9];
+export const GRAMMAR_UNITS: GrammarUnit[] = [...GRAMMAR_UNITS_G1, ...GRAMMAR_UNITS_G2, ...GRAMMAR_UNITS_G3, ...GRAMMAR_UNITS_G4, ...GRAMMAR_UNITS_G5, ...GRAMMAR_UNITS_G9, ...GRAMMAR_UNITS_G10];
 
 export function grammarUnit(lessonId: string): GrammarUnit | undefined {
   return GRAMMAR_UNITS.find(u => u.lessonId === lessonId);
@@ -534,11 +535,10 @@ export function unitSentences(unit: GrammarUnit): GrammarSentence[] {
         const other = nextPictured(slotList(unit, p, c.slot), fill[c.slot]);
         if (other) {
           const span = spans[c.slot];
+          // Measure the other word with its own span: «boots» takes no article and «coat» does, so cutting
+          // «I'm wearing a coat.» with «boots»' one-token span offered «a» against «boots».
           const otherRealised = realise(p.text, { ...fill, [c.slot]: other });
-          // Grades 1–2 measured the other word with this word's span, so «boots» was offered against «a» (the
-          // article of «a coat»). Their forms are signed off as printed, so that stays until they are re-reviewed;
-          // Grade 3 measures the other word's own span («glasses» against «a dress»).
-          const wrong = spanText(otherRealised.tokens, grade >= 3 ? otherRealised.spans[c.slot] : span);
+          const wrong = spanText(otherRealised.tokens, otherRealised.spans[c.slot]);
           choose = { kind: 'slot', start: span[0], length: span[1], right: spanText(tokens, span), wrong };
         }
       } else if (c?.kind === 'whole' && picture) {
@@ -635,27 +635,34 @@ export function allGrammarSentences(): string[] {
 }
 
 /**
- * Every string the grammar activities speak: each sentence, and for Yes or No the
- * question alone and the No exchange («Is it a plane? No, it isn't.»). Voiced before
- * a unit is signed off, like the sentences.
+ * Every string one unit's activities speak, in first-seen order without repeats:
+ * each sentence, the voiced false claim, the build prompt, and for Yes or No the
+ * question alone and the No exchange («Is it a plane? No, it isn't.»). Per unit so
+ * the audio plan can voice each string in its grade's register.
  */
-export function allGrammarSpoken(): string[] {
+export function unitSpoken(unit: GrammarUnit): string[] {
   const out = new Set<string>();
-  for (const u of GRAMMAR_UNITS) {
-    for (const s of unitSentences(u)) {
-      out.add(s.text);
-      if (s.claim && s.claim.voiced !== false) out.add(s.claim.falseText);
-      if (s.build?.prompt) out.add(s.build.prompt);
-      const y = s.yesNo;
-      if (!y) continue;
-      out.add(y.question);
-      if (y.otherQuestion) {
-        out.add(y.otherQuestion);
-        out.add(`${y.otherQuestion} ${y.no}`);
-      }
+  for (const s of unitSentences(unit)) {
+    out.add(s.text);
+    if (s.claim && s.claim.voiced !== false) out.add(s.claim.falseText);
+    if (s.build?.prompt) out.add(s.build.prompt);
+    const y = s.yesNo;
+    if (!y) continue;
+    out.add(y.question);
+    if (y.otherQuestion) {
+      out.add(y.otherQuestion);
+      out.add(`${y.otherQuestion} ${y.no}`);
     }
   }
   return [...out];
+}
+
+/**
+ * Every string the grammar activities speak, across every unit (`unitSpoken`).
+ * Voiced before a unit is signed off, like the sentences.
+ */
+export function allGrammarSpoken(): string[] {
+  return [...new Set(GRAMMAR_UNITS.flatMap(unitSpoken))];
 }
 
 // ─── The teacher's sheet ──────────────────────────────────────────────────
