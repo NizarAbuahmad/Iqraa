@@ -23,6 +23,7 @@ import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { goBack } from '@/services/navigation';
 import { signupsHref } from '@/services/adminSignupKind';
+import { NEW_USERS_HREF, countNewUsers } from '@/services/adminUsers';
 import { confirm } from '@/services/confirm';
 import { ACCENT, Bar, FilterChip, KeyValue, SectionTitle, StatCard, Table } from '@/components/admin/widgets';
 import { DateField, DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
@@ -285,6 +286,12 @@ export default function AdminDashboardScreen() {
                 <SectionTitle text={lang === 'ar' ? 'نظرة عامة' : 'Overview'} isRTL={isRTL} colors={colors} />
                 <View style={[styles.statRow, { flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap' }]}>
                   <StatCard label={lang === 'ar' ? 'كل الحسابات' : 'All accounts'} value={summary.totalUsers} colors={colors} />
+                  <StatCard
+                    label={lang === 'ar' ? 'جدد ٧ أيام' : 'New 7d'}
+                    value={countNewUsers(summary.signupsByDay, new Date().toISOString().slice(0, 10))}
+                    colors={colors}
+                    onPress={() => router.push(NEW_USERS_HREF as any)}
+                  />
                   <StatCard label={lang === 'ar' ? 'نشطون ٧ أيام' : 'Active 7d'} value={summary.activeUsers7d} colors={colors} />
                   <StatCard label={lang === 'ar' ? 'نشطون ٣٠ يومًا' : 'Active 30d'} value={summary.activeUsers30d} colors={colors} />
                   <StatCard label={lang === 'ar' ? 'قائمة الانتظار' : 'Waitlist emails'} value={summary.siteSignups.waitlist} colors={colors} onPress={() => router.push(signupsHref('waitlist') as any)} />
@@ -748,7 +755,7 @@ function GrowthSection({ metrics, onSaved, isRTL, ar, colors }: {
           keyboardType="number-pad"
           style={[input, { width: 120 }]}
         />
-        <DateField value={date} onChange={setDate} label={ar ? 'تاريخ الرقم' : 'Number is for'} isRTL={isRTL} colors={colors} />
+        <DateField value={date} onChange={setDate} label={ar ? 'تاريخ الرقم' : 'Number is for'} max={today} ar={ar} isRTL={isRTL} colors={colors} />
         <Pressable
           onPress={save}
           disabled={saving || !value}
