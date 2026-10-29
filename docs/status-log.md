@@ -10,6 +10,23 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## A standing «beta» line next to the AI source badge — 2026-10-29
+
+Teachers should expect the odd mistake in generated material. `AiSourceBadge` now draws a
+second pill, `BetaNotice`, above the source badge: «نسخة تجريبية — قد تحتوي النتائج على
+أخطاء» / «Beta — results may have mistakes» (`betaNotice` in `i18n.ts`). It shows in **live
+mode too** — it is not a demo label, and `DEMO_MODE` is untouched. It appears wherever the
+badge already does: Today (phone and desktop), the Tools tab, every generator header, the
+chat and the lesson-prep panel. It is not shown to parents or students, who see no AI badge,
+and not on sign-in.
+
+**Verified:** mobile typecheck clean; mobile suite green apart from the i18n terminology rule
+(no «please»), which the English copy had tripped and no longer does. In a browser against a
+local API and a throwaway Postgres, web bundle built with `EXPO_PUBLIC_DEMO_MODE=false`: the
+pill renders on Today and on the quiz header, in English and in Arabic, and fits at 390 px.
+**Not verified:** Android, the lesson-prep panel and chat placements (same component, not
+opened), dark mode.
+
 ## Schools tab: a slow answer no longer lands after the screen moved on — 2026-10-24
 
 Found from a screenshot of the live tab (app.iqrra.com/admin/schools): the «ابحث عن معلم»

@@ -32,7 +32,7 @@ function useLastGeneration(): AiGenerationRecord | null {
  * a broken key or a sleeping API server looked like working AI. This labels
  * that case loudly, in the same slot every generator screen already renders.
  */
-export function AiSourceBadge({ onDark = false, isRTL }: Props) {
+function SourceBadge({ onDark = false, isRTL }: Props) {
   const { t, isRTL: ctxRtl } = useLanguage();
   const colors = useColors();
   const rtl = isRTL ?? ctxRtl;
@@ -71,6 +71,46 @@ export function AiSourceBadge({ onDark = false, isRTL }: Props) {
         {label}
       </Text>
     </View>
+  );
+}
+
+/**
+ * A standing «beta» line, independent of where the content came from: the app
+ * is live and fully working, but a teacher should expect the odd mistake and
+ * check a paper before handing it out. It is not a demo label — it shows in
+ * live mode too, which is the point.
+ */
+function BetaNotice({ onDark = false, isRTL }: Props) {
+  const { t, isRTL: ctxRtl } = useLanguage();
+  const colors = useColors();
+  const rtl = isRTL ?? ctxRtl;
+  const tint = onDark ? 'rgba(255,255,255,0.92)' : colors.mutedForeground;
+  return (
+    <View
+      style={[
+        styles.wrap,
+        onDark ? styles.wrapDark : styles.wrapLight,
+        // Shrinks and wraps inside a header row rather than running off its edge.
+        { flexDirection: rtl ? 'row-reverse' : 'row', alignSelf: rtl ? 'flex-end' : 'flex-start', flexShrink: 1 },
+      ]}
+    >
+      <Ionicons name="information-circle-outline" size={14} color={tint} />
+      <Text
+        style={[styles.text, { flexShrink: 1, color: tint, fontFamily: 'Almarai_400Regular', textAlign: rtl ? 'right' : 'left' }]}
+      >
+        {t('betaNotice')}
+      </Text>
+    </View>
+  );
+}
+
+/** The beta line, then the source badge when there is something true to say. */
+export function AiSourceBadge(props: Props) {
+  return (
+    <>
+      <BetaNotice {...props} />
+      <SourceBadge {...props} />
+    </>
   );
 }
 
