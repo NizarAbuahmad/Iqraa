@@ -19,6 +19,91 @@ show (notification, thread order, restricted exam, blocked user), and the logs a
 checklist's D3 links to it. **Docs only; the watch itself has not been run.** The log filters and the
 `httpRequest.status` field were written from the Cloud Logging format, not run against production by this session.
 
+## Grade 8 semester 2 word lists in the English corner, 2026-10-28
+
+Grade 8 semester 2 joins semester 1 in the English corner: 35 lessons and 399 words extracted from the book's Word List, 30 of those
+lessons offered (a lesson needs 4 glossed words; five short Speaking / Writing lessons have fewer), so Grade 8 now has 57 hub lessons,
+units 1–10. It follows the semester 1 pipeline (see «Grade 8 semester 1 word lists in the English corner»); the new part is how the
+text got here. `extract-text` had rejected the book on 2026-10-25 for «Arabic in reversed presentation-form glyphs». It is English; the
+few Arabic words in its front pages are encoded that way. PR #1329 made the quality gate judge an English book as English, the owner
+ran `extract-text` on their machine, and `data/extracted/g8-english-s2-student-book.json` (80 pages, 146,283 characters, sha256
+`4095abfc…`) is that extraction. The PDF stays gitignored.
+
+**Two reader fixes, neither changes any other book.** Both were measured by re-running the extractor and diffing every other book's
+rows: 0 removed, 0 added.
+- A transcription that closes with a space before its last slash (`… ˌsʌmbɒdi /`) was taken for a slash that opens a wrapped
+  transcription, so «stay with sb» was never closed and swallowed «take a trip»: both lost from lesson 7.1. The reader now tells the
+  two by whether phonetic characters sit between the last two slashes. A test pins lesson 7.1 at ten entries.
+- The Grammar Reference's pronoun table sits behind the last lesson's list and was read under its marker: «she we» landed in lesson
+  10.7. A headword made only of pronouns is now a table cell. (Stopping at the Grammar Reference page instead was tried and
+  rejected: it also removes 25 leaked rows from Grade 8 semester 1 and Grade 9, which is a change to other grades' data.)
+
+**Glosses.** 336 new Arabic glosses, **drafted by Claude, not reviewed by a teacher.** Two existing glosses had the other sense and a
+word has one gloss, so both senses are now in it: `hand` «يد، يناول» (lesson 9.3 is body parts) and `degree` «درجة، شهادة جامعية»
+(10.5 is weather). `robot` is «رجل آلي», as a Grade 1 teacher asked on 2026-10-15 and `englishHub.test.ts` pins for every hub
+`robot`, so «personal robot» follows; «USB cable» is spelled out in Arabic letters because the glossary test rejects Latin ones. Senses
+worth a teacher's eye: `fast`, `fat` / `flat` / `round` / `wide` (lesson 9.3), `present` and `spread` (10.4), `brilliant`, `setting`,
+`block`, `mystery`, `fiction`, `hostel`. Twenty entries with an alternation or a slash («go to the beach/the park») are in the data
+and not offered, by the existing rule that a drill word has no slash.
+
+**Elsewhere.** `g10_sources.json` has a third-party row for the book (same series, © Pearson / York Press, not quotable) and the
+semester 1 row's note no longer says semester 2 is unregistered. The Grade 5, 9 and 10 teacher forms were regenerated: only each unit's
+«words outside the vocabulary lists» note changed (for instance «abroad» is now in a list). No unit has a sign-off, so none is
+invalidated. The mobile corpus pin (`vocabularyDrill.test.ts`) is 1,519 words / 142 lessons / 499 sentences.
+
+**Verified:** `lib/curriculum` tests 895 of 896 (the one failure, «R2 helpers are inert, not broken, when unconfigured», fails on `main`
+too); the mobile vocabulary-drill test 11 of 11. The mobile suite 8,084 tests, 0 failures; `pnpm run typecheck` clean on the whole monorepo (after a `pnpm install`: the container's packages predated a dependency on `main`).
+
+**Not verified:**
+- The extraction against the PDF: I read the raw text of lessons 7.1–7.7 and the start of unit 8, and checked the parser's output
+  against it for 7.1 only (that is how the two lost entries were found). I read every word I glossed, grouped by lesson. Nothing
+  else was compared line by line, and the PDF itself was not opened: the container has only the owner's extracted text.
+- The glosses (above), and the screens: nobody has looked at the Grade 8 semester 2 lessons in a browser or on a phone.
+- **Recordings: 275 of the 357 distinct semester 2 words have no MP3** (checked by `HEAD` against the public bucket on 2026-10-28), so
+  on the web the word is spoken in the browser's voice and in the Android app it is silent until `english-audio` is run with the
+  OpenAI and R2 keys (`english-audio-check` afterwards). Decide whether to run it before this deploys.
+- Not done: Grades 6 and 7 (Pearson third-party text, vocabulary left empty on purpose), Grade 10 semester 2, an OTA for the Android app.
+
+## Chat starter chips wear their tool's icon and colour, 2026-10-28
+
+On the web chat's empty state «جهّز خطة الدرس» and «جهّز ورقة عمل» were the same button twice: teal text on one teal tint, told
+apart only by a font emoji (📄 / 📝) that renders differently on every platform. `starterChips` in `app/(tabs)/iqra.tsx` now draws
+each lesson chip on the card with its tool's own drawing and colour from `CONCEPTS` (`ConceptIcon`, colour lifted with
+`readableOn(…, colors.card, 3)` as on the Tools tab), dark text, a hover state on web, and no emoji. The virtual-lab chip takes the lab
+corner's drawing and colour. Chips with no tool (the no-lesson sample questions, «لخّص من الملفات») keep the old brand-tint look. Same
+chips above the composer once a thread starts.
+
+**Verified:** typecheck; mobile suite 8010/8025 — the 5 failures are this Windows checkout's CRLF/backslash paths in source-reading
+tests (`generatorScreens`, `iconSystem` ×3, `scopeSelection`), none touch this file, and the icon-system rules this change falls under
+pass. Rendered against a local API (fresh local DB, demo mode) at 1440 wide in Arabic and English, light and dark. **Not checked:** the
+phone app (on a phone the readiness board replaces these chips on the empty state; they still show above the composer mid-thread),
+and production.
+
+## Growth panel: tap a card to see the entries behind it — 2026-10-28
+
+A card that reads «+0» now explains itself. Tapping one of the six cards under
+«التنزيلات والمتابعون» opens a table of its entries below the row — date, value, and how far
+each moved from the one before — newest first, up to ten. Tapping it again, or another card,
+closes or switches it. A short hint under the cards says they can be tapped. This came from a
+production screenshot: the YouTube card showed +0 because its only two entries were both 3,
+and nothing on screen said so.
+
+**What changed**
+- `growthHistory(rows, limit)` in `services/growthMetrics.ts` (pure, tested). An entry still
+  measures from the one before it even when that one is cut off by the limit; the first entry
+  ever has no change (—).
+- The cards are `Pressable` buttons carrying `aria-expanded` (the web ignored the native
+  `accessibilityState` alone — seen in the DOM), the opened card is outlined, and the table reuses
+  the dashboard's `Table`. Dates and signed numbers are isolated left-to-right as elsewhere.
+
+**Limits**
+- Read-only. A wrong number is still fixed by entering the same day again (it replaces); there is
+  no delete, and the list does not show who entered a row or whether the YouTube card filled itself.
+- Verified: 25 unit tests (helper + design-scale), mobile typecheck, and in the browser on a
+  throwaway database — the flat YouTube case and a four-entry Instagram history both listed
+  correctly, `aria-expanded` flipped on the tapped card only. **Not** verified: dark mode, a
+  phone-width layout, a real screen reader.
+
 ## extract-text: an English book is judged as English, so Grade 8 semester 2 can be extracted, 2026-10-28
 
 Why Grade 8 semester 2 has no word lists. On 2026-10-25 `extract-text` rejected `g8-english-s2-student-book` for «Arabic in reversed
@@ -51,6 +136,56 @@ the old code by reading, because 100 presentation-form glyphs outnumber 0 base-b
 `pnpm --filter @workspace/curriculum run extract-text -- g8-english-s2-student-book`, and commit only
 `lib/curriculum/src/data/extracted/g8-english-s2-student-book.json`. The manifest row, the vocabulary extraction and the glosses follow
 as for semester 1.
+
+## Growth panel: a trend line on each card — 2026-10-28
+
+Each card under «التنزيلات والمتابعون» now draws the entries behind its change figure as a
+small line, so direction reads at a glance. It follows the same period chips as the figure.
+
+**What changed**
+- `sparkPoints(rows, period, today)` in `services/growthMetrics.ts` (pure, tested): the same entries
+  the change is measured over, spread along the time axis by date — a month-long gap is a long
+  stretch, not one step. «آخر إدخال» shows the newest eight, «منذ البداية» the newest sixty. A flat
+  series is a line across the middle. Fewer than two entries, or nothing recorded in the period,
+  draws no line.
+- `Spark` in `app/admin/dashboard.tsx`: a react-native-svg polyline with a dot on the newest entry,
+  measured with `onLayout`. Decorative, so `aria-hidden` (plus the native equivalents) keeps it out of
+  screen readers; the card text already says the number and the change.
+
+**Limits**
+- Time runs left to right in Arabic too, as on the signups chart.
+- No hover/tap values on the line, and no axis: it shows shape, not readings.
+- The line appears after the first layout pass, so in a background browser tab it can show up late.
+- Verified: 17 unit tests (helper + design-scale), mobile typecheck, and in the browser against a
+  throwaway database: 3 / 2 / 2 / 3 lines across the four chips as the tests predict, all hidden
+  from screen readers. **Not** verified: dark mode, a phone-width layout, a real screen reader.
+  `iconSystem.test.ts` fails locally on Windows paths in files this change does not touch;
+  CI on Linux is the check for that.
+
+## Growth panel: a period filter that filters — 2026-10-28
+
+The cards under «التنزيلات والمتابعون» had no date filter. The date field beside them
+only says which day a typed number is saved under, so changing it moved nothing. The
+panel now has period chips — آخر إدخال / ٧ أيام / ٣٠ يومًا / منذ البداية — and every card
+measures its change over the chosen period.
+
+**What changed**
+- `services/growthMetrics.ts` (pure, tested): `growthSummary(rows, period, today)`. A day period
+  measures from the last entry on or before the period's first day, else the first entry inside
+  it; «آخر إدخال» is the old "since the previous entry" and stays the default; «منذ البداية» is
+  since the first entry. A metric whose newest entry is older than the period says "nothing
+  recorded in this period" instead of showing a zero.
+- Each card says what it was measured from (`+40 · منذ 2026-10-10`) and the date of the last
+  entry. Numbers and days inside Arabic text are wrapped in left-to-right isolates; unwrapped,
+  the day drew backwards (`20-09-2026`) in a screenshot.
+- The entry form says it is for recording a number, and its date is labelled «تاريخ الرقم».
+
+**Limits**
+- No per-day history or trend line yet; the period only changes the change figure.
+- Verified: 14 unit tests (helper + design-scale ratchet), whole-monorepo typecheck, and in the
+  browser against a throwaway local database with seeded entries on several dates — all four
+  chips gave the figures the tests predict, and the stale case rendered. **Not** verified:
+  dark mode, a phone-width layout, or production data.
 
 ## docs/deploying.md: the deploy-timing wording matches the workflow, 2026-10-28
 
@@ -859,6 +994,26 @@ CORS allows only `www.iqrra.com` and `iqrra.com`, so a preview only ever shows t
 - Rollback: delete the `<link href="/ask.css">` and `<script src="/ask.js">` lines from
   `Site_Iqra`'s `index.html` (or revert the merge); the API is unaffected. To keep the API but stop
   AI spend, set `SITE_BOT_BUDGET_USD_DAILY=0` (fixed answers keep working).
+
+## Thirty-fifth live pass: «only Jordan», 2026-10-28
+
+**Why.** The 34th pass left one question for the owner: is the app usable outside Jordan («هل التطبيق يعمل في الأردن فقط»,
+«can I use it in Palestine»). The owner's answer, given in chat on 2026-10-28: **only Jordan.**
+
+**Built.** `howJordanOnly` (ar + en) and its rule: «إقرأ للأردن فقط، ومبني على المنهاج الأردني.» The wording is the
+owner's plus the curriculum fact already stated in `howAboutCurriculum`; it says nothing about *why* (no mention of
+law, licensing or a roadmap). The rule needs «فقط» when the question names Jordan, and takes a named country, «خارج
+الأردن», «في أي دولة» or «which countries». `foldColloquial` turns «هل يمكنني X» into «كيف X», so the rule accepts a
+leading «كيف» (found when «هل يمكنني استخدامه في فلسطين» missed on the first probe).
+
+**Verified.** `appHelp.test.ts`: 10 phrasings, 4 near-misses (a country named inside a different request), and the
+exact wording. The 813 historic questions answer identically (0 changed).
+
+**Why the demo account cannot test the model (checked, 2026-10-28).** `GET /auth/me/ai-usage` as the demo teacher:
+spent $1.0009 of a $1.00 limit, renews 2026-11-01 UTC. It is the **per-account** cap (`AI_USER_BUDGET_USD`), not the
+shared budget: the chat shows the same «انتهت حصة التوليد الجديد لهذا الشهر» for both (`user_quota_exceeded` and
+`budget_exceeded` map to one string), so read `ai-usage` before assuming which. Raising it is a production env change
+for every teacher account; it was not made.
 
 ## Thirty-fourth live pass: more questions about the app itself, 2026-10-28
 

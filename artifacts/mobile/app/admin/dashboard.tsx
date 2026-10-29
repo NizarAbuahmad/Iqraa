@@ -28,6 +28,15 @@ import { ACCENT, Bar, FilterChip, KeyValue, SectionTitle, StatCard, Table } from
 import { DateField, DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
 import { palette } from '@/constants/colors';
 import { TYPE } from '@/constants/theme';
+import { GROWTH_PERIODS, growthHistory, growthSummary, isolateLtr, sparkPoints, type GrowthPeriod, type MetricRow, type SparkPoint } from '@/services/growthMetrics';
+import Svg, { Circle, Polyline } from 'react-native-svg';
+
+const PERIOD_LABEL: Record<GrowthPeriod, { ar: string; en: string }> = {
+  last: { ar: 'آخر إدخال', en: 'Last entry' },
+  '7': { ar: '٧ أيام', en: '7 days' },
+  '30': { ar: '٣٠ يومًا', en: '30 days' },
+  all: { ar: 'منذ البداية', en: 'All time' },
+};
 import { BackButton } from '@/components/ui/BackButton';
 
 const ADMIN_ROLES = ['school_admin', 'system_admin'];
@@ -60,8 +69,6 @@ type UsageSummary = {
     rateLimits: { name: string; windowMs: number; max: number }[];
   };
 };
-
-type MetricRow = { key: string; value: number; date: string };
 
 /** GET /admin/ai-costs, the parts this screen reads. `byPlatform` ignores the filter. */
 type AiCosts = {
@@ -582,6 +589,38 @@ function SignupBars({ rows, ar, isRTL, colors }: { rows: UsageSummary['signupsBy
   );
 }
 
+const SPARK_HEIGHT = 28;
+const SPARK_PAD = 4;
+
+/**
+ * A card's trend line (`sparkPoints`): the entries in the chosen period joined
+ * left to right, oldest first, with a dot on the newest. Time runs left to
+ * right in Arabic too, as on the signups chart. Decorative — the card's text
+ * already says the number and the change — so it is hidden from screen readers.
+ */
+function Spark({ points, color }: { points: SparkPoint[]; color: string }) {
+  const [width, setWidth] = useState(0);
+  if (points.length < 2) return null;
+  const xy = points.map(p => [SPARK_PAD + p.x * Math.max(width - 2 * SPARK_PAD, 0), SPARK_PAD + (1 - p.y) * (SPARK_HEIGHT - 2 * SPARK_PAD)] as const);
+  const [lastX, lastY] = xy[xy.length - 1]!;
+  return (
+    <View
+      onLayout={e => setWidth(e.nativeEvent.layout.width)}
+      style={{ height: SPARK_HEIGHT, marginVertical: 4 }}
+      aria-hidden
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      {width > 0 && (
+        <Svg width={width} height={SPARK_HEIGHT}>
+          <Polyline points={xy.map(([x, y]) => `${x},${y}`).join(' ')} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+          <Circle cx={lastX} cy={lastY} r={3} fill={color} />
+        </Svg>
+      )}
+    </View>
+  );
+}
+
 /**
  * Hand-entered numbers from Play Console and each social platform. Shows the
  * latest value and the change since the previous entry; the form below
@@ -594,9 +633,12 @@ function GrowthSection({ metrics, onSaved, isRTL, ar, colors }: {
   ar: boolean;
   colors: any;
 }) {
+  const [period, setPeriod] = useState<GrowthPeriod>('last');
+  const [openKey, setOpenKey] = useState<string | null>(null);
   const [key, setKey] = useState(METRICS[0].key);
   const [value, setValue] = useState('');
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const today = new Date().toISOString().slice(0, 10);
+  const [date, setDate] = useState(today);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
 
@@ -620,14 +662,25 @@ function GrowthSection({ metrics, onSaved, isRTL, ar, colors }: {
   return (
     <View style={{ marginHorizontal: 20, marginBottom: 16 }}>
       <SectionTitle text={ar ? 'التنزيلات والمتابعون' : 'Downloads & followers'} isRTL={isRTL} colors={colors} />
+      {/* The period decides how far back each card measures its change. The date in the form
+          below is a different thing: the day a typed number belongs to. */}
+      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+        {GROWTH_PERIODS.map(p => (
+          <FilterChip key={p} label={ar ? PERIOD_LABEL[p].ar : PERIOD_LABEL[p].en} active={period === p} onPress={() => setPeriod(p)} colors={colors} />
+        ))}
+      </View>
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 10 }}>
         {METRICS.map(m => {
           const hist = metrics.filter(r => r.key === m.key);
-          const last = hist[hist.length - 1];
-          const prev = hist[hist.length - 2];
-          const delta = last && prev ? last.value - prev.value : null;
+          const { last, base, change: delta, stale } = growthSummary(hist, period, today);
           return (
-            <View key={m.key} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexGrow: 1, flexBasis: 150 }]}>
+            <Pressable
+              key={m.key}
+              onPress={() => setOpenKey(cur => (cur === m.key ? null : m.key))}
+              accessibilityRole="button"
+              aria-expanded={openKey === m.key}
+              style={({ pressed }) => [styles.card, { backgroundColor: colors.card, borderColor: openKey === m.key ? ACCENT : colors.border, borderRadius: colors.radius, flexGrow: 1, flexBasis: 150, opacity: pressed ? 0.7 : 1 }]}
+            >
               <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
                 <Ionicons name={m.icon} size={16} color={ACCENT} />
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{ar ? m.ar : m.en}</Text>
@@ -635,16 +688,53 @@ function GrowthSection({ metrics, onSaved, isRTL, ar, colors }: {
               <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
                 {last ? last.value.toLocaleString() : '—'}
               </Text>
-              <Text style={{ color: delta == null ? colors.mutedForeground : delta >= 0 ? palette.success : colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>
-                {last
-                  ? `${delta == null ? '' : `${delta >= 0 ? '+' : ''}${delta.toLocaleString()} · `}${last.date}`
-                  : (ar ? 'لم يُسجَّل بعد' : 'Not recorded yet')}
+              <Spark points={sparkPoints(hist, period, today)} color={ACCENT} />
+              <Text style={{ color: delta == null ? colors.mutedForeground : delta >= 0 ? palette.success : colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: TYPE.micro, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>
+                {!last
+                  ? (ar ? 'لم يُسجَّل بعد' : 'Not recorded yet')
+                  : stale
+                    ? (ar ? 'لا إدخال في هذه الفترة' : 'Nothing recorded in this period')
+                    : delta != null && base
+                      ? `${isolateLtr(`${delta >= 0 ? '+' : ''}${delta.toLocaleString()}`)} · ${ar ? 'منذ' : 'since'} ${isolateLtr(base.date)}`
+                      : (ar ? 'لا يوجد ما يُقارَن به بعد' : 'Nothing to compare with yet')}
               </Text>
-            </View>
+              {!!last && (
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.micro, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>
+                  {ar ? 'آخر إدخال' : 'Last entry'} {isolateLtr(last.date)}
+                </Text>
+              )}
+            </Pressable>
           );
         })}
       </View>
+      {/* The entries behind the opened card, so a figure that looks stuck can be explained by the data. */}
+      {(() => {
+        const m = METRICS.find(x => x.key === openKey);
+        if (!m) {
+          return (
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.micro, marginTop: 8, textAlign: isRTL ? 'right' : 'left' }}>
+              {ar ? 'اضغط على بطاقة لرؤية الأرقام المسجَّلة خلفها' : 'Tap a card to see the numbers recorded behind it'}
+            </Text>
+          );
+        }
+        return (
+          <Table
+            head={ar ? ['التاريخ', 'القيمة', 'التغيّر'] : ['Date', 'Value', 'Change']}
+            rows={growthHistory(metrics.filter(r => r.key === m.key)).map(h => [
+              isolateLtr(h.date),
+              h.value.toLocaleString(),
+              h.change == null ? '—' : isolateLtr(`${h.change >= 0 ? '+' : ''}${h.change.toLocaleString()}`),
+            ])}
+            empty={ar ? 'لم يُسجَّل بعد' : 'Not recorded yet'}
+            isRTL={isRTL}
+            colors={colors}
+          />
+        );
+      })()}
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginTop: 10, flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }]}>
+        <Text style={{ width: '100%', color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: isRTL ? 'right' : 'left' }}>
+          {ar ? 'تسجيل رقم يدويًا — يُحفظ تحت التاريخ المختار' : 'Record a number by hand — saved under the chosen date'}
+        </Text>
         <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 6 }}>
           {METRICS.map(m => (
             <FilterChip key={m.key} label={ar ? m.ar : m.en} active={key === m.key} onPress={() => setKey(m.key)} colors={colors} />
@@ -658,7 +748,7 @@ function GrowthSection({ metrics, onSaved, isRTL, ar, colors }: {
           keyboardType="number-pad"
           style={[input, { width: 120 }]}
         />
-        <DateField value={date} onChange={setDate} label={ar ? 'التاريخ' : 'Date'} isRTL={isRTL} colors={colors} />
+        <DateField value={date} onChange={setDate} label={ar ? 'تاريخ الرقم' : 'Number is for'} isRTL={isRTL} colors={colors} />
         <Pressable
           onPress={save}
           disabled={saving || !value}
