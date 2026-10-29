@@ -9,7 +9,8 @@
  *
  * **Every factual claim below was written from the code, not from a
  * template.** The subprocessor list is `lib/r2.ts` (Cloudflare R2),
- * `lib/db` (Neon), `services/analytics.ts` (PostHog, US host by default),
+ * `lib/db` (Neon), `services/analytics.ts` (PostHog, US host by default, plus
+ * Android session replay), `services/contentsquare.ts` (Contentsquare, web only),
  * `services/pushTokens.ts` (Expo), `routes/auth.ts` (Google Sign-In) and the
  * OpenAI client in `lib/aiBudget.ts`. The data inventory is `lib/db/src/schema`.
  * If one of those changes, this file is part of the same change — a policy
@@ -47,7 +48,7 @@
 export const LEGAL_CONTACT_EMAIL = 'info@iqrra.com';
 
 /** Shown on both documents. Bump when the text below changes materially. */
-export const LEGAL_LAST_UPDATED = { ar: '23 تشرين الأول 2026', en: '23 October 2026' };
+export const LEGAL_LAST_UPDATED = { ar: '29 تشرين الأول 2026', en: '29 October 2026' };
 
 /**
  * The same date, as the version a new account records it accepted
@@ -56,7 +57,7 @@ export const LEGAL_LAST_UPDATED = { ar: '23 تشرين الأول 2026', en: '23
  * an acceptance record naming a version the documents never carried is a
  * record of nothing.
  */
-export const LEGAL_VERSION = '2026-10-23';
+export const LEGAL_VERSION = '2026-10-29';
 
 export type LegalSection = { heading: string; body: string[] };
 export type LegalDoc = { title: string; intro: string; sections: LegalSection[] };
@@ -76,6 +77,7 @@ const PRIVACY_AR: LegalDoc = {
         'الرسائل: نحفظ نصّ الرسائل داخل التطبيق ووقتها ومَن أرسلها، والصور المرفقة بها إن وُجدت، ورمز الإشعارات الخاصّ بجهازك لإيصال التنبيهات. لا نقرأ الرسائل إلّا عند مراجعة بلاغ.',
         'الملفات: ما يرفعه المعلّم من صور أو مستندات ويربطه بدرس.',
         'بيانات تقنية: رمز الإشعارات الخاص بجهازك إن فعّلت الإشعارات، وأحداث استخدام مجهّلة نسبيًا (أيّ شاشة فُتحت، وأيّ أداة استُخدمت) — وهذه الأخيرة لا تُجمع إطلاقًا ما لم يكن مفتاح التحليلات مضبوطًا في النسخة التي تستخدمها.',
+        'تسجيلات الشاشة: قد نسجّل ما يظهر على شاشتك وأين تلمس أو تنقر أثناء استخدامك التطبيق، لنفهم أين يتعثّر المستخدمون. يشمل ذلك المعلّمين والطلبة وأولياء الأمور، وصفحة الاختبار التي يفتحها الطالب من رابط. يتولّى ذلك على الويب Contentsquare (التي أصبحت Hotjar جزءًا منها)، وعلى أندرويد PostHog. تُحجب النصوص المعروضة وحقول الإدخال والصور في التسجيلات، فلا يظهر فيها اسم طالب ولا علامة ولا إجابة ولا رسالة. لا نسجّل صفحة موافقة وليّ الأمر لأنّ رابطها يحمل رمز الموافقة. لا يُسجَّل شيء ما لم تكن هذه الأدوات مضبوطة في النسخة التي تستخدمها.',
         'لا نجمع موقعك الجغرافي، ولا نصل إلى الكاميرا أو الميكروفون. التطبيق يطلب الإذن بالوصول إلى صور جهازك فقط، وفقط عند إرفاق صورة بنفسك.',
       ],
     },
@@ -84,7 +86,7 @@ const PRIVACY_AR: LegalDoc = {
       body: [
         'لتشغيل ما طلبته: إنشاء الحساب والدخول إليه، وتوليد الخطط وأوراق العمل والاختبارات، وتصحيحها، وإيصال الرسائل والإشعارات.',
         'لحماية الخدمة: الحدّ من محاولات الدخول المتكرّرة، ومعالجة بلاغات الإساءة.',
-        'لتحسين الخدمة: قياس أيّ الأدوات تُستخدم فعلًا. هذا الاستخدام هو الوحيد الذي يعتمد على التحليلات، وهو الأقلّ ضرورة.',
+        'لتحسين الخدمة: قياس أيّ الأدوات تُستخدم فعلًا، ومشاهدة تسجيلات الشاشة لفهم أين يتعثّر المستخدمون. هذا الاستخدام هو الوحيد الذي يعتمد على التحليلات، وهو الأقلّ ضرورة.',
         'لا نبيع بياناتك، ولا نستخدمها في إعلانات، ولا نبني منها ملفًّا إعلانيًّا عنك.',
       ],
     },
@@ -99,7 +101,7 @@ const PRIVACY_AR: LegalDoc = {
     {
       heading: '4) مع من تُشارَك',
       body: [
-        'مزوّدو خدمة يعالجون البيانات نيابةً عنّا، لا أكثر: Neon لقاعدة البيانات (تُستضاف في فرانكفورت داخل الاتحاد الأوروبي)، وCloudflare R2 لتخزين الملفات والصور، وGoogle Cloud Run لتشغيل الخادم (أوروبا الغربية)، وRender لاستضافة نسخة الويب، وOpenAI لتوليد المحتوى، وExpo لإيصال الإشعارات، وPostHog لقياس الاستخدام (خوادمها في الولايات المتحدة افتراضيًّا)، وGoogle لخدمة الدخول بحساب Google.',
+        'مزوّدو خدمة يعالجون البيانات نيابةً عنّا، لا أكثر: Neon لقاعدة البيانات (تُستضاف في فرانكفورت داخل الاتحاد الأوروبي)، وCloudflare R2 لتخزين الملفات والصور، وGoogle Cloud Run لتشغيل الخادم (أوروبا الغربية)، وCloudflare Pages لاستضافة نسخة الويب، وContentsquare لتسجيل الشاشة على نسخة الويب، وOpenAI لتوليد المحتوى، وExpo لإيصال الإشعارات، وPostHog لقياس الاستخدام وتسجيل الشاشة على أندرويد (خوادمها في الولايات المتحدة افتراضيًّا)، وGoogle لخدمة الدخول بحساب Google.',
         'ويعني ذلك أنّ بعض بياناتك تُعالَج خارج الأردن وخارج الاتحاد الأوروبي.',
         'قد نُفصح عن بيانات إذا ألزمنا القانون بذلك، أو لحماية سلامة شخص ما.',
       ],
@@ -166,6 +168,7 @@ const PRIVACY_EN: LegalDoc = {
         'Messages: we store the text of in-app messages, when they were sent and by whom, any image attached to them, and your device push token so notifications can be delivered. We do not read messages except when reviewing a report.',
         'Files: images or documents a teacher uploads and attaches to a lesson.',
         'Technical data: your device\'s push notification token if you enable notifications, and usage events (which screen was opened, which tool was used). Usage events are not collected at all unless an analytics key is configured in the build you are using.',
+        'Screen recordings: we may record what appears on your screen and where you tap or click while you use the app, to see where people get stuck. This includes teachers, students and parents, and the exam page a student opens from a link. On the web this is done by Contentsquare (of which Hotjar is now part), on Android by PostHog. Displayed text, input fields and images are masked in the recordings, so no student name, mark, answer or message appears in them. We do not record the parent consent page, because its link carries the approval token. Nothing is recorded unless these tools are configured in the build you are using.',
         'We do not collect your location, and we do not access your camera or microphone. The app asks for photo library access only, and only when you attach an image yourself.',
       ],
     },
@@ -174,7 +177,7 @@ const PRIVACY_EN: LegalDoc = {
       body: [
         'To run what you asked for: creating and signing in to an account, generating lesson plans, worksheets and tests, marking them, and delivering messages and notifications.',
         'To protect the service: limiting repeated sign-in attempts and acting on abuse reports.',
-        'To improve the service: measuring which tools are actually used. This is the only purpose that relies on analytics, and the least necessary one.',
+        'To improve the service: measuring which tools are actually used, and watching screen recordings to see where people get stuck. This is the only purpose that relies on analytics, and the least necessary one.',
         'We do not sell your data, we do not use it for advertising, and we do not build an advertising profile from it.',
       ],
     },
@@ -189,7 +192,7 @@ const PRIVACY_EN: LegalDoc = {
     {
       heading: '4) Who it is shared with',
       body: [
-        'Service providers that process data on our behalf, and nothing more: Neon for the database (hosted in Frankfurt, in the EU), Cloudflare R2 for file and image storage, Google Cloud Run to run the server (western Europe), Render to host the web version, OpenAI for content generation, Expo to deliver notifications, PostHog for usage measurement (its servers are in the United States by default), and Google for Google Sign-In.',
+        'Service providers that process data on our behalf, and nothing more: Neon for the database (hosted in Frankfurt, in the EU), Cloudflare R2 for file and image storage, Google Cloud Run to run the server (western Europe), Cloudflare Pages to host the web version, Contentsquare for screen recording on the web version, OpenAI for content generation, Expo to deliver notifications, PostHog for usage measurement and screen recording on Android (its servers are in the United States by default), and Google for Google Sign-In.',
         'This means some of your data is processed outside Jordan and outside the EU.',
         'We may disclose data where the law requires it, or to protect someone\'s safety.',
       ],
