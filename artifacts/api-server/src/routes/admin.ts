@@ -29,7 +29,7 @@ import { RATE_LIMITS } from "../lib/rateLimit.js";
 import { parseSchoolAssignment, parseSchoolIdFilter, parseSchoolInput } from "../lib/adminSchools.js";
 import { parseDateRange, parseMetricInput, parsePublicIdea, parseSiteSignup, siteKeyMatches, toCsv, UUID } from "../lib/adminMetrics.js";
 import { notifyAdminsOfWaitlistSignup } from "../lib/adminNotify.js";
-import { fetchSubscriberCount } from "../lib/youtubeSubscribers.js";
+import { configuredAutoMetrics } from "../lib/autoMetrics.js";
 import { APP_INVITE_SUBJECT, appInviteBodyHtml, appInviteUrl, sendAppInviteEmail, sendBroadcast } from "../lib/email.js";
 import { isValidEmailAddress } from "../lib/emailAddress.js";
 import {
@@ -553,39 +553,51 @@ router.post(
   },
 );
 
-let youtubeTriedAt = 0;
+const autoTriedAt = new Map<string, number>();
 
 /**
- * Today's YouTube subscriber count, fetched the first time an admin opens the
- * dashboard each day — no scheduler to run, and a day nobody looks is a gap in
- * a chart nobody saw. A number an admin already typed for today is kept, and a
- * failed lookup is not retried for 30 minutes so a bad key costs one 4 s wait,
- * not one per page load. Never throws: the dashboard loads without it.
+ * Today's number for each growth figure that has its settings (lib/autoMetrics.ts:
+ * YouTube, Facebook, Instagram, Play downloads), fetched the first time an admin
+ * opens the dashboard each day — no scheduler to run, and a day nobody looks is a
+ * gap in a chart nobody saw. A number an admin already typed for today is kept,
+ * and a figure that came back empty is not retried for 30 minutes, so a bad key
+ * costs one wait, not one per page load. The figures are fetched side by side and
+ * one failing does not hold up the others. Never throws: the dashboard loads
+ * without them.
+ *
+ * An empty answer is logged by key (never the error or URL: either may quote a
+ * token), because a feed that has quietly stopped looks exactly like a working
+ * one with a stale date on its card.
  */
-async function refreshYoutubeMetric(): Promise<void> {
-  const apiKey = process.env["YOUTUBE_API_KEY"];
-  if (!apiKey || Date.now() - youtubeTriedAt < 30 * 60 * 1000) return;
-  try {
-    const today = new Date().toISOString().slice(0, 10);
-    const [have] = await db
-      .select({ id: manualMetrics.id })
-      .from(manualMetrics)
-      .where(and(eq(manualMetrics.key, "youtube"), eq(manualMetrics.recordedOn, today)))
-      .limit(1);
-    if (have) return;
-    youtubeTriedAt = Date.now();
-    const value = await fetchSubscriberCount(apiKey);
-    if (value == null) return;
-    await db.insert(manualMetrics).values({ key: "youtube", value, recordedOn: today }).onConflictDoNothing();
-  } catch {
-    // Deliberately no `err` in the log: the request URL carries the API key.
-    logger.warn("youtube subscriber refresh failed");
-  }
+async function refreshAutoMetrics(): Promise<void> {
+  const today = new Date().toISOString().slice(0, 10);
+  await Promise.all(
+    configuredAutoMetrics().map(async (m) => {
+      if (Date.now() - (autoTriedAt.get(m.key) ?? 0) < 30 * 60 * 1000) return;
+      try {
+        const [have] = await db
+          .select({ id: manualMetrics.id })
+          .from(manualMetrics)
+          .where(and(eq(manualMetrics.key, m.key), eq(manualMetrics.recordedOn, today)))
+          .limit(1);
+        if (have) return;
+        autoTriedAt.set(m.key, Date.now());
+        const value = await m.fetch();
+        if (value == null) {
+          logger.warn({ key: m.key }, "growth metric auto-fill returned no number");
+          return;
+        }
+        await db.insert(manualMetrics).values({ key: m.key, value, recordedOn: today }).onConflictDoNothing();
+      } catch {
+        logger.warn({ key: m.key }, "growth metric auto-fill failed");
+      }
+    }),
+  );
 }
 
-/** GET /admin/metrics — every growth number, oldest first per key. YouTube fills itself; the rest are typed in. */
+/** GET /admin/metrics — every growth number, oldest first per key. The ones with settings fill themselves; the rest are typed in. */
 router.get("/admin/metrics", authMiddleware, requireRole(...ADMIN_ROLES), async (_req, res) => {
-  await refreshYoutubeMetric();
+  await refreshAutoMetrics();
   try {
     const rows = await db
       .select({ key: manualMetrics.key, value: manualMetrics.value, date: manualMetrics.recordedOn })
