@@ -47,6 +47,7 @@ const GAMES: Array<{
   { id: 'subtract', route: '/play/subtract', icon: 'remove-circle-outline', color: '#BE123C', titleKey: 'playSubtractTitle', descKey: 'playSubtractDesc' },
   { id: 'antonyms', route: '/play/antonyms', icon: 'swap-horizontal-outline', color: '#A21CAF', titleKey: 'playAntonymsTitle', descKey: 'playAntonymsDesc' },
   { id: 'plurals', route: '/play/plurals', icon: 'copy-outline', color: '#334155', titleKey: 'playPluralsTitle', descKey: 'playPluralsDesc' },
+  { id: 'numberType', route: '/play/numberType', icon: 'keypad-outline', color: '#4D7C0F', titleKey: 'playNumberTypeTitle', descKey: 'playNumberTypeDesc' },
 ];
 
 export default function PlayHubScreen() {
