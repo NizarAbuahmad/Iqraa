@@ -174,7 +174,7 @@ Outside school hours, and only with A, B and C ticked.
   ```
 
   Use `--update-env-vars`, never `--set-env-vars` (that replaces every secret).
-- [ ] **D3. Watch for 30 minutes:** 5xx rate, p95 latency, push volume, and logs for
+- [ ] **D3. Watch for 30 minutes** (step by step: `docs/rls-watch-checklist.md`): 5xx rate, p95 latency, push volume, and logs for
   `permission denied` / `row-level security`. Repeat the teacher inbox and a parent reply by
   hand. The failure to look for is quiet: a notification not sent, a block not honoured, a
   thread that does not move up the inbox — not a 500.
