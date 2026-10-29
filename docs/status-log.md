@@ -38,22 +38,33 @@ see CLAUDE.md). The lockfile change is 18 lines, hand-applied to the existing en
 only, idempotent, not loaded on `/guardian*`, loaded on `/take/*`, replay masks pinned on); the whole mobile suite passed
 (8,105 pass, 0 fail, 10 skipped) on the earlier Hotjar version of this change, and the touched suites (contentsquare, legalDocs,
 legalVersion, screenTracking) pass on the final one; typecheck has the same 12 errors as a clean checkout of the same commit
-(sandbox Expo type resolution), none in changed files. **Not verified:** that the tag actually loads in a browser (the sandbox
-cannot reach `t.contentsquare.net`; the URL pattern is from Contentsquare's docs), that Contentsquare's own SPA detection does not
+(sandbox Expo type resolution), none in changed files. **Not verified at the time:** that the tag actually loads in a browser (the sandbox
+cannot reach `t.contentsquare.net`; the URL pattern is from Contentsquare's docs; **later confirmed by Contentsquare's own
+"Verify tag installation", see «Gone live» below**), that Contentsquare's own SPA detection does not
 double-count route changes, that PostHog replay records on a device (no Android build was made), the Android native build with
 the new module, and the policy wording by a lawyer.
 
-**Web masking, decided 2026-10-29 (owner chose "A"):** Contentsquare has no project-wide "mask all text" switch for the web tag
-that this session could find (its docs mask form inputs by default and everything else per element, with a `data-cs-mask`
-attribute, selectors, or the Tag Configurator's Element Masking template; some of the pages read were app/Capacitor docs). So
-`installContentsquare` sets `data-cs-mask` on `<body>` **before** adding the script, and does not load the tag at all if there
-is no `<body>`: replays show layout and taps, not names, marks, answers or messages. Tests pin the order (mask, then script),
-the fail-closed case, and that nothing is touched when the tag is off or on `/guardian*`. **Not verified:** that `data-cs-mask`
-on `<body>` blanks the whole page in a real recording (docs only; the sandbox cannot reach Contentsquare), or what it does to
-heatmaps. **Before setting the variable:** open the live site with Contentsquare's Tracking Setup Assistant and confirm a
-recording shows no text; if it does show text, do not set it. Also check where Contentsquare stores data (the policy does not
-state a location). **Before the Android build matters:** switch "Record user sessions" on in the PostHog project. Recording
-minors, exam answers included, is the owner's decision.
+**Web masking, decided 2026-10-29 (owner chose "A"):** this session first searched Contentsquare's docs and found no project-wide
+"mask all text" switch for the web tag (the docs mask form inputs by default and everything else per element, with a
+`data-cs-mask` attribute, selectors, or the Tag Configurator's Element Masking template; some pages read were app/Capacitor
+docs). **That was incomplete:** the project's own settings have a *Data masking* page, and the owner's screenshot shows it on
+«Full masking» (hide all text, all numbers, all media) with 0 page rules and 0 element rules. So there are two layers, and the
+code one is a belt-and-braces copy: `installContentsquare` sets `data-cs-mask` on `<body>` **before** adding the script, and
+does not load the tag at all if there is no `<body>`. Tests pin the order (mask, then script), the fail-closed case, and that
+nothing is touched when the tag is off or on `/guardian*`. **Not verified, for either layer:** what a real recording shows
+(neither the sandbox nor this session could reach Contentsquare), or what `data-cs-mask` does to heatmaps. Page and element
+rules exist to *unmask*; adding one is how a name or a mark would reach a recording.
+
+**Gone live, 2026-10-29 (from the owner's screenshots and the Deploy log, not seen from the sandbox):** the owner first saved
+`CONTENTSQUARE_TAG_ID` as a repository *secret*, which `deploy.yml` does not read (it reads `vars.`), then added it as a
+repository variable (`68a876b193165`) and re-ran Deploy #868 (attempt 2, commit `d630dd7`, all six jobs green). The `iqraa-web`
+build log shows `EXPO_PUBLIC_CONTENTSQUARE_TAG_ID: 68a876b193165` in its environment and `app.iqrra.com` serving the new
+commit. Contentsquare's "Verify tag installation" first said «Tag not found» for the owner's other site, then «Installation
+successful. Data is being captured on your site.» for the app: **the tag is on the app (`app.iqrra.com`), not the marketing
+website.** From that point everyone who opens the web app is recorded, the exam page included, with `/guardian` excluded.
+**Still open:** look at one real recording; the Android side needs a PostHog login (the owner has none; the project behind the
+key in the builds has no known owner) and a 1.6.0 build; where Contentsquare stores data is unchecked (the policy states no
+location); the plan shows 200K sessions a month. Recording minors, exam answers included, is the owner's decision.
 
 ## Growth numbers: Facebook, Instagram and Play can fill themselves, 2026-10-29
 

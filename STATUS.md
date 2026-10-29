@@ -69,16 +69,21 @@ Checked 2026-10-22:
 
 ## Open
 
-- **Screen recording of everyone is built and off until the owner switches it on.** Web:
-  Contentsquare tag, loaded only when the `CONTENTSQUARE_TAG_ID` repository variable is set
-  (GitHub > Settings > Secrets and variables > Actions > Variables) — **set it only after** a
-  real recording of the live site, opened with Contentsquare's Tracking Setup Assistant, shows no
-  names, marks or answers: the code masks the whole page (`data-cs-mask` on `<body>`, from
-  Contentsquare's docs) and that has not been seen working in a browser. Android: PostHog session replay, needs "Record user sessions" on in
-  the PostHog project **and a new 1.6.0 build** (see Mobile above). Students, parents and exam pages
-  are recorded; the parent consent page is not. The policy (`LEGAL_VERSION` 2026-10-29) was updated
-  by this session and **not reviewed by a lawyer**; Contentsquare's and PostHog's data locations were
-  not checked. Entry: «Screen recordings: Contentsquare on the web, PostHog replay on Android» in the log.
+- **Screen recording of everyone is ON for the web app (since the 2026-10-29 re-run of Deploy
+  #868) and not yet running on Android.** Web: the Contentsquare tag loads on `app.iqrra.com` (not
+  the marketing website) because the `CONTENTSQUARE_TAG_ID` repository **variable** is set; delete
+  it and re-run Deploy to switch it off. Contentsquare's own check reads «Installation
+  successful» for the app (owner's screenshot). Two layers of masking, both unverified in a real
+  replay: the project's *Data masking* is on «Full masking» with 0 page and 0 element rules
+  (owner's screenshot; do not add rules, they unmask), and the code puts `data-cs-mask` on
+  `<body>`. **Still to do: open one real recording under Replays and confirm it shows no names,
+  marks or answers.** Android: PostHog session replay needs "Record user sessions" on in the
+  PostHog project (**the owner has no PostHog login yet**; the project behind the key in the
+  builds has no known owner) **and a new 1.6.0 build** (see Mobile above). Students, parents and
+  exam pages are recorded; the parent consent page is not. The policy (`LEGAL_VERSION` 2026-10-29)
+  was written by a model and **not reviewed by a lawyer**; Contentsquare's and PostHog's data
+  locations were not checked, and the Contentsquare plan shows a 200K sessions a month cap.
+  Entry: «Screen recordings: Contentsquare on the web, PostHog replay on Android» in the log.
 - **`GUARDIAN_APPROVAL` is built (server and app), merged and deployed (PR #1274, 2026-10-25), and
   off; do not set it** until the app has
   reached users, the parent-consent wording has been read by a native speaker and a lawyer, and
