@@ -57,6 +57,38 @@ the rollout checklist and `STATUS.md` no longer lists the watch as not done. Als
 first log command read `jsonPayload.msg`, which prints blank since #1238 moved the text to `jsonPayload.message`
 (#1339 made the same change elsewhere); the search itself still matched either way, so a clean result is unaffected.
 
+## Admin: new users, coloured channels, and a calendar for phones — 2026-10-29
+
+Three things on the admin screens, from one request.
+
+**What changed**
+- **New users.** The dashboard's overview has a «جدد ٧ أيام» tile (signups in the last seven days,
+  summed from the `signupsByDay` the summary already returns — no API change). Tapping it opens
+  «المستخدمون والحظر» with `?new=1`, which starts the list on the «٧ أيام» chip. On that list, anyone
+  who joined in that window carries a solid indigo «جديد» label beside their name. «New» is seven UTC
+  days including today — the same window as the chip (`dayAgo(6)`), pinned in `adminUsers.test.ts`
+  so the tile, the label and the chip cannot disagree.
+- **Coloured channel.** «انضم عبر» is a label, not plain text: blue «ويب», teal «تطبيق · android/ios»,
+  grey «غير معروف» (accounts made before 2 Oct or by a client that does not say). Each has an icon and
+  words, so colour is never the only signal; «جديد» is the only solid one.
+- **A calendar on phones.** `DateField` was a plain text box off the web, where you had to type
+  `YYYY-MM-DD`. It is now a button that opens `CalendarPicker`: a month grid in plain React Native
+  views, Sunday first, right to left in Arabic, 44-point days, «اليوم» / «مسح» (on the from/to
+  filters, where empty means open-ended) / «إغلاق». Plain views rather than
+  `@react-native-community/datetimepicker` on purpose: a native module needs a new store build
+  (and an `app.json` version bump), this ships over the air. The growth form's date also stops at
+  today now, which the API already enforced.
+
+**Limits**
+- The calendar only mounts off the web, so it was checked by forcing it on in the browser (then
+  reverting): open, page months, pick, close, reopen with the day marked, clear. **Not** checked on a
+  real Android device or with TalkBack, and not in dark mode.
+- It runs only on a build that has it: web at once, phones with the next OTA (no native change).
+- Which of the five new-user cases is «new» is the user's `created_at`, not a first login.
+- Verified: 26 new unit tests (`adminUsers`, `calendarGrid`) on top of the existing guards, mobile
+  typecheck, and in the browser at 420 px on a throwaway database with new and old users on web, the
+  app and unknown: tile counted 3, deep link landed on the chip, labels and colours as above.
+
 ## Row-level security: the full watch written down, 2026-10-28
 
 `docs/rls-watch-checklist.md` spells out checklist D3 (the 30-minute watch after switching enforcement on) as five
