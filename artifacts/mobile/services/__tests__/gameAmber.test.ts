@@ -15,6 +15,7 @@ import { contrast } from '../readableColor.ts';
 import { deltaE2000 } from '../colorDistance.ts';
 import { CONCEPTS } from '../../constants/icons.ts';
 import { CORNERS } from '../../constants/corners.ts';
+import { PLAY_GAME_IDS } from '../publicGames/gradeBands.ts';
 
 const ROOT = join(import.meta.dirname, '..', '..');
 const read = (...p: string[]) => readFileSync(join(ROOT, ...p), 'utf8');
@@ -89,6 +90,7 @@ function allAccents(): Array<{ where: string; hex: string }> {
   for (const parts of [
     ['components', 'publicGames', 'ColorSpotGame.tsx'], ['components', 'publicGames', 'MemoryGame.tsx'],
     ['components', 'publicGames', 'TermScrambleGame.tsx'], ['app', 'play', 'capitals.tsx'], ['app', 'play', 'flags.tsx'],
+    ['app', 'play', 'antonyms.tsx'],
   ]) {
     const src = read(...parts);
     for (const re of [/\bACCENT\s*=\s*'(#[0-9A-Fa-f]{6})'/g, /\baccent="(#[0-9A-Fa-f]{6})"/g]) {
@@ -102,7 +104,7 @@ test('the accent tables are found (a renamed constant must not empty these tests
   assert.equal(LIVE, '#B45309', 'palette.live moved: re-read this file');
   assert.equal(WARNING, '#B54708');
   assert.ok(ELEMENTS_ACCENT, 'ELEMENTS_ACCENT not found');
-  assert.equal(Object.keys(hubAccents()).length, 10, 'the hub lists ten games');
+  assert.equal(Object.keys(hubAccents()).length, PLAY_GAME_IDS.length, 'every registered game has a hub tile');
   assert.deepEqual(Object.keys(lessonAccents()).sort(), ['meaning', 'memory', 'scramble', 'spot']);
   assert.deepEqual(Object.keys(drillAccents()).sort(), ['add', 'div', 'mul', 'sub']);
   assert.ok(allAccents().length >= 22, `found only ${allAccents().length} accents`);
