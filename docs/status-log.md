@@ -10,6 +10,16 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Row-level security: the full watch ran clean, 2026-10-29
+
+The owner ran the 30-minute watch in `docs/rls-watch-checklist.md` (rollout checklist D3) against production and
+reported **"watch clean"**. **Verified:** only that report. **Not verified:** which readings they took, the
+Cloud Run p95 compared with before 2026-10-24 12:35, any log output, or whether the optional restricted-exam and
+blocked-user checks were done — none was given to this session, so none is recorded as a number. D3 is ticked in
+the rollout checklist and `STATUS.md` no longer lists the watch as not done. Also fixed in the watch checklist: its
+first log command read `jsonPayload.msg`, which prints blank since #1238 moved the text to `jsonPayload.message`
+(#1339 made the same change elsewhere); the search itself still matched either way, so a clean result is unaffected.
+
 ## Row-level security: the full watch written down, 2026-10-28
 
 `docs/rls-watch-checklist.md` spells out checklist D3 (the 30-minute watch after switching enforcement on) as five

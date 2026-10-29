@@ -106,8 +106,9 @@ Checked 2026-10-22:
   reply, and the chat moving up the inbox all working, and the `permission denied` / `row-level security`
   log searches run that day printed nothing **(owner's report and log searches — not re-checked by me)**.
   It had been switched off and on by mistake more than once between 2026-10-24 and 2026-10-27, so there is
-  no unbroken run of days to point to, and the full 30-minute watch (checklist D3) was not completed on this
-  switch-on. Rehearsed on 2026-10-23 on a separate empty Neon project: all migrations apply and the
+  no unbroken run of days to point to. The full 30-minute watch (`docs/rls-watch-checklist.md`, checklist D3)
+  was run by the owner on 2026-10-29 and reported **clean** **(owner's report only — which readings they took
+  and any numbers were not given to me)**. Rehearsed on 2026-10-23 on a separate empty Neon project: all migrations apply and the
   database suite passes 46/46 on both the direct and the pooled endpoint (workflow run
   39931238295). The connection ceiling checks out (20 instances, pooled endpoint, `max_connections` 225).
   **Latency (C1):** the first benchmark (2026-10-23) failed — +336 ms p95 on a 15-statement request, budget
@@ -117,8 +118,8 @@ Checked 2026-10-22:
   **+20.8 ms at p95** held (budget +100 ms: passes), against +346 ms without it. Routes not on the held list
   still pay about 22 ms per statement, so each is known and accepted or added to the list
   (`artifacts/api-server/src/lib/heldReads.ts`). Not done: deciding which more routes to hold (read
-  `held scope ended` at `LOG_LEVEL=debug` for real statement counts), a proper watch of p95 latency and push
-  volume — steps in `docs/rls-rollout-checklist.md`.
+  `held scope ended` at `LOG_LEVEL=debug` for real statement counts) — steps in
+  `docs/rls-rollout-checklist.md`.
   To turn it off: `RLS_ENFORCE=off` with `--update-env-vars` (rollback, checklist D4).
 - **Draft PR #730** (teacher visibility into English Corner practice) changes the schema,
   conflicts with `main`, and needs `pnpm --filter @workspace/db run generate` after it is updated.
