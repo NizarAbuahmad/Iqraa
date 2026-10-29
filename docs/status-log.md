@@ -10,6 +10,22 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Schools tab: a slow answer no longer lands after the screen moved on — 2026-10-24
+
+Found from a screenshot of the live tab (app.iqrra.com/admin/schools): the «ابحث عن معلم»
+list was showing teachers under an **empty** search box.
+
+- **Search.** The debounce effect cleared its 300 ms timer on cleanup but not a request already
+  sent, so typing, pausing, then clearing the box let the old answer call `setFound` after the
+  box was empty. The effect now marks its request stale in cleanup and ignores it.
+- **Members.** Same shape: open school A, then B before A's teachers (now paged) arrive, and A's
+  list was written under B's card, each row with a Remove button. `loadMembers` now writes only
+  if that school is still the open one (`openRef`).
+
+**Verified:** mobile typecheck clean. **Not verified:** in a browser — no authenticated admin
+session here, and nothing tests a React Native screen under the node runner. The cause is read
+from the code and matches the screenshot, not reproduced.
+
 ## Screen recordings: Contentsquare on the web, PostHog replay on Android, 2026-10-29
 
 The owner asked to connect the app and the web to Hotjar to track users, then chose to record **everyone** (teachers, students,
