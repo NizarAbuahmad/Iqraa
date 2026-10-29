@@ -15,12 +15,20 @@ Add six games that fill those gaps, in the hub's existing pattern.
 | `antonyms` | ضد الكلمة | Arabic | 1–4 | "What is the opposite of X?" | hand-written pairs (~40) |
 | `plurals` | جمع الكلمة | Arabic | 2–5 | "What is the plural of X?" | hand-written singular/plural pairs (~30), incl. broken plurals |
 | `numberType` | أيّ عدد؟ (زوجي، فردي، أولي) | Maths | 3–6 | "Which of these is even / odd / prime?" (four numbers) | computed in code |
-| `fractions` | أي كسر أكبر؟ | Maths | 4–7 | "Which fraction is larger?" | computed in code; the two values are always distinct |
+| `fractions` | قارن الكسور | Maths | 4–7 | "Which fraction is larger / smaller?" | computed in code; the two values are always distinct |
 | `matter` | صلب، سائل أم غاز؟ | Science | 3–7 | "Is X a solid, liquid or gas?" | hand-written list (~30 unambiguous substances) |
-| `governorates` | محافظات الأردن | Geography | 4–9 | governorate → centre, and centre → governorate | the 12 governorates and their centres |
+| `governorates` | محافظات الأردن | Geography | 4–9 | "Which governorate is this town or site in?" (Ramtha, Wadi Rum, Mu'ta…) | ~26 hand-written towns and sites across the 12 governorates, each checked against a published source |
 
 Grade bands are judged against the curriculum, like the existing ones in
 `gradeBands.ts`, not measured.
+
+Revisions made while planning (2026-10-29): eleven of the twelve governorates
+share their name with their centre (only Balqa → Salt differs), so a
+"governorate → centre" question is near-trivial; the geography game asks which
+governorate a town or site is in instead. The plurals game always shows Arabic
+words and options (the question is about Arabic morphology), only its prompt
+is localised. The fractions game asks "larger" and "smaller", so its title is
+«قارن الكسور».
 
 Items that are not unambiguous are left out (the Dead Sea spans governorates;
 milk is a colloid). Ambiguous items make a bad answer key.
