@@ -45,8 +45,11 @@ Checked 2026-10-22:
   student `0.20`; `STUDENT_ACCOUNTS=true`; `MASTERY_GATE=true`.
 - **Credentials:** 11 are Secret Manager references, 18 are plain config. Rotation:
   [`docs/deploying.md`](./docs/deploying.md), «Rotating a secret».
-- **Mobile:** `app.json` version `1.5.0`. An OTA update only reaches a binary with the same
-  version (CLAUDE.md, «`app.json`'s `version` is the OTA compatibility key»).
+- **Mobile:** `app.json` version `1.6.0` once the screen-recording PR merges (bumped 2026-10-29 for
+  PostHog session replay's native module); **the installed production binary is still `1.5.0`**, so
+  OTAs published from `main` stop reaching it until a 1.6.0 build is made and installed. An OTA
+  update only reaches a binary with the same version (CLAUDE.md, «`app.json`'s `version` is the OTA
+  compatibility key»).
 - **Every shipped build uses live AI.** `EXPO_PUBLIC_DEMO_MODE=false` is set for Android
   (`eas.json`, `mobile-update.yml`) and, since 2026-10-16, for the web build (`deploy.yml`).
   The code default in `demoMode.ts` is still demo mode; do not flip it without a decision
@@ -66,6 +69,15 @@ Checked 2026-10-22:
 
 ## Open
 
+- **Screen recording of everyone is built and off until the owner switches it on.** Web:
+  Contentsquare tag, loaded only when the `CONTENTSQUARE_TAG_ID` repository variable is set
+  (GitHub > Settings > Secrets and variables > Actions > Variables) — **set it only after** the
+  Contentsquare project masks displayed text (names, marks), because the policy now says it does and
+  the code can only mask inputs. Android: PostHog session replay, needs "Record user sessions" on in
+  the PostHog project **and a new 1.6.0 build** (see Mobile above). Students, parents and exam pages
+  are recorded; the parent consent page is not. The policy (`LEGAL_VERSION` 2026-10-29) was updated
+  by this session and **not reviewed by a lawyer**; Contentsquare's and PostHog's data locations were
+  not checked. Entry: «Screen recordings: Contentsquare on the web, PostHog replay on Android» in the log.
 - **`GUARDIAN_APPROVAL` is built (server and app), merged and deployed (PR #1274, 2026-10-25), and
   off; do not set it** until the app has
   reached users, the parent-consent wording has been read by a native speaker and a lawyer, and
@@ -141,6 +153,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-29 — Screen recordings: Contentsquare on the web, PostHog replay on Android
 - 2026-10-28 — Grade 8 semester 2 word lists in the English corner
 - 2026-10-28 — extract-text judges an English book as English, so Grade 8 semester 2 can be extracted
 - 2026-10-25 — Grade 8 semester 1 word lists in the English corner
@@ -170,7 +183,6 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-23 — Generator screens: the worksheet and homework
 - 2026-10-23 — Grade 5 grammar in the English corner — built, shown to nobody yet
 - 2026-10-23 — Generator screens: the shared pieces and the quiz
-- 2026-10-23 — The "now" amber is only for now
 
 ## Finding older detail, and recording new work
 

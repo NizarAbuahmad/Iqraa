@@ -10,6 +10,43 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Screen recordings: Contentsquare on the web, PostHog replay on Android, 2026-10-29
+
+The owner asked to connect the app and the web to Hotjar to track users, then chose to record **everyone** (teachers, students,
+parents, the exam page a student opens from a link) with inputs masked. Hotjar has no React Native SDK, and Hotjar is now part of
+Contentsquare (its accounts are being moved onto it), so the web side loads the **Contentsquare tag**
+(`services/contentsquare.ts`, `https://t.contentsquare.net/uxa/<tag id>.js`, `_uxa` queue, path set before the tag loads,
+`trackPageview` per route change once `CS_CONF` exists) and the Android app records with **PostHog session replay**
+(`posthog-react-native-session-replay`, `SESSION_REPLAY_CONFIG` in `services/analytics.ts`: all text, images and system views
+masked, no console logs, no network telemetry). The tag loads only when `EXPO_PUBLIC_CONTENTSQUARE_TAG_ID` is set; `deploy.yml`
+reads it from the `CONTENTSQUARE_TAG_ID` repository variable, so recording is a switch the owner flips in GitHub, not a value in
+the repo. It is web-only, so `eas.json` and `mobile-update.yml` deliberately omit it.
+
+**One page is excluded although "everyone" was chosen:** `/guardian#token`. Its address carries the parent's approval token, a
+credential, and the repo already forbids sending it to a third party (`shouldTrackScreen`). The tag is not loaded when the app
+opens there and `trackPageview` skips it; nothing in the app navigates to it. Contentsquare also erases everything after `#`
+and only the path is sent. The privacy policy (AR and EN) now discloses recordings, names both providers, and was corrected
+where it said «Render» hosts the web version (`deploy.yml` publishes to Cloudflare Pages); `LEGAL_VERSION` and the date moved to
+2026-10-29, so new sign-ups record the new version.
+
+**Native change:** `app.json` `version` 1.5.0 → 1.6.0 (a new native module). OTAs published from `main` after the merge carry
+runtime 1.6.0 and **do not reach installed 1.5.0 binaries** until a 1.6.0 build is made (run it from a clean worktree of `main`,
+see CLAUDE.md). The lockfile change is 18 lines, hand-applied to the existing entries because the sandbox's pnpm rewrote
+`(supports-color…)` peer suffixes across ~1,700 lines; `pnpm install --frozen-lockfile` accepts it.
+
+**Verified:** `services/__tests__/contentsquare.test.ts` (tag id parsing, nothing loaded without a valid id, one script, path
+only, idempotent, not loaded on `/guardian*`, loaded on `/take/*`, replay masks pinned on); the whole mobile suite passed
+(8,105 pass, 0 fail, 10 skipped) on the earlier Hotjar version of this change, and the touched suites (contentsquare, legalDocs,
+legalVersion, screenTracking) pass on the final one; typecheck has the same 12 errors as a clean checkout of the same commit
+(sandbox Expo type resolution), none in changed files. **Not verified:** that the tag actually loads in a browser (the sandbox
+cannot reach `t.contentsquare.net`; the URL pattern is from Contentsquare's docs), that Contentsquare's own SPA detection does not
+double-count route changes, that PostHog replay records on a device (no Android build was made), the Android native build with
+the new module, and the policy wording by a lawyer. **Before setting the variable:** in the Contentsquare project turn on masking
+of displayed text and images (the policy says names, marks, answers and messages do not appear), and check where it stores data
+(the policy does not state a location for it). **Before the Android build matters:** switch "Record user sessions" on in the
+PostHog project. Recording minors, exam answers included, is the owner's decision; the code masks inputs but the web masking of
+displayed text lives in the Contentsquare dashboard.
+
 ## Row-level security: the full watch ran clean, 2026-10-29
 
 The owner ran the 30-minute watch in `docs/rls-watch-checklist.md` (rollout checklist D3) against production and
