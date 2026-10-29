@@ -33,6 +33,16 @@ test('matter round: three state options, the marked one is the substance\'s stat
   }
 });
 
+test('pinned answer key: six substances looked up by id, with literal expected states', () => {
+  const state = (id: string) => SUBSTANCES.find(s => s.id === id)?.state;
+  assert.equal(state('water'), 'liquid');
+  assert.equal(state('water-vapour'), 'gas');
+  assert.equal(state('salt'), 'solid');
+  assert.equal(state('ice'), 'solid');
+  assert.equal(state('oxygen'), 'gas');
+  assert.equal(state('olive-oil'), 'liquid');
+});
+
 test('a round is not all one state', () => {
   for (let seed = 1; seed <= 50; seed++) {
     const states = new Set(buildMatterRound('ar', 8, makeRng(seed)).map(q => q.correctId));

@@ -1,11 +1,18 @@
 /**
- * Solid, liquid or gas? (/play/matter) — name the state of an everyday
- * substance at room temperature. Grades 3–7.
+ * Solid, liquid or gas? (/play/matter) — name the state a substance is
+ * normally known in. Grades 3–7.
  *
- * Only unambiguous substances: no milk or mayonnaise (colloids), no honey or
- * toothpaste (arguable), no "air" (a mixture), no mercury (a liquid metal that
- * contradicts the child's "metals are solid" rule). Salt and sugar are
- * granular solids, not powders-that-pour, and are listed as solids on purpose.
+ * The question is the state most people know a thing in, not its state at some
+ * particular temperature. Ice and water vapour are listed on purpose as the
+ * solid and gas forms of water, so a child learns that one substance can be
+ * all three. Salt and sugar are granular solids, not powders-that-pour, and
+ * are listed as solids on purpose.
+ *
+ * Excluded: milk, honey, toothpaste, "air" and mercury. Their state is arguable
+ * for a child: milk and honey pour, toothpaste keeps its shape, air is a mixture
+ * of gases, and mercury is a liquid metal, which contradicts the child's rule
+ * that metals are solid. A right answer would then depend on the child's reading
+ * of the word, not on the substance.
  */
 import { sample, shuffle } from './rng.ts';
 import type { TextQuestion } from './textQuiz.ts';
@@ -22,6 +29,7 @@ export interface Substance {
 export const SUBSTANCES: Substance[] = [
   { id: 'wood', ar: 'خشب', en: 'Wood', state: 'solid' },
   { id: 'iron', ar: 'حديد', en: 'Iron', state: 'solid' },
+  { id: 'ice', ar: 'ثلج', en: 'Ice', state: 'solid' },
   { id: 'glass', ar: 'زجاج', en: 'Glass', state: 'solid' },
   { id: 'stone', ar: 'حجر', en: 'Stone', state: 'solid' },
   { id: 'gold', ar: 'ذهب', en: 'Gold', state: 'solid' },
@@ -29,6 +37,7 @@ export const SUBSTANCES: Substance[] = [
   { id: 'sugar', ar: 'سكّر', en: 'Sugar', state: 'solid' },
   { id: 'water', ar: 'ماء', en: 'Water', state: 'liquid' },
   { id: 'olive-oil', ar: 'زيت الزيتون', en: 'Olive oil', state: 'liquid' },
+  { id: 'orange-juice', ar: 'عصير البرتقال', en: 'Orange juice', state: 'liquid' },
   { id: 'vinegar', ar: 'خلّ', en: 'Vinegar', state: 'liquid' },
   { id: 'seawater', ar: 'ماء البحر', en: 'Seawater', state: 'liquid' },
   { id: 'rose-water', ar: 'ماء الورد', en: 'Rose water', state: 'liquid' },
