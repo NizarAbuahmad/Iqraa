@@ -21,6 +21,22 @@ export type GrowthSummary = {
   stale: boolean;
 };
 
+export type HistoryRow = { date: string; value: number; change: number | null };
+
+/**
+ * The entries behind a card, newest first, each with how far it moved from the
+ * entry before it (null for the very first entry ever, which has no earlier one
+ * even when it is the last row shown). `rows` are oldest first.
+ */
+export function growthHistory(rows: MetricRow[], limit = 10): HistoryRow[] {
+  const out: HistoryRow[] = [];
+  for (let i = rows.length - 1; i >= 0 && out.length < limit; i--) {
+    const r = rows[i]!;
+    out.push({ date: r.date, value: r.value, change: i > 0 ? r.value - rows[i - 1]!.value : null });
+  }
+  return out;
+}
+
 /** One dot of a card's trend line. Both axes run 0..1; `y` 1 is the highest value. */
 export type SparkPoint = { x: number; y: number };
 

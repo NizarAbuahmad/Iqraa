@@ -70,6 +70,31 @@ pass. Rendered against a local API (fresh local DB, demo mode) at 1440 wide in A
 phone app (on a phone the readiness board replaces these chips on the empty state; they still show above the composer mid-thread),
 and production.
 
+## Growth panel: tap a card to see the entries behind it — 2026-10-28
+
+A card that reads «+0» now explains itself. Tapping one of the six cards under
+«التنزيلات والمتابعون» opens a table of its entries below the row — date, value, and how far
+each moved from the one before — newest first, up to ten. Tapping it again, or another card,
+closes or switches it. A short hint under the cards says they can be tapped. This came from a
+production screenshot: the YouTube card showed +0 because its only two entries were both 3,
+and nothing on screen said so.
+
+**What changed**
+- `growthHistory(rows, limit)` in `services/growthMetrics.ts` (pure, tested). An entry still
+  measures from the one before it even when that one is cut off by the limit; the first entry
+  ever has no change (—).
+- The cards are `Pressable` buttons carrying `aria-expanded` (the web ignored the native
+  `accessibilityState` alone — seen in the DOM), the opened card is outlined, and the table reuses
+  the dashboard's `Table`. Dates and signed numbers are isolated left-to-right as elsewhere.
+
+**Limits**
+- Read-only. A wrong number is still fixed by entering the same day again (it replaces); there is
+  no delete, and the list does not show who entered a row or whether the YouTube card filled itself.
+- Verified: 25 unit tests (helper + design-scale), mobile typecheck, and in the browser on a
+  throwaway database — the flat YouTube case and a four-entry Instagram history both listed
+  correctly, `aria-expanded` flipped on the tapped card only. **Not** verified: dark mode, a
+  phone-width layout, a real screen reader.
+
 ## extract-text: an English book is judged as English, so Grade 8 semester 2 can be extracted, 2026-10-28
 
 Why Grade 8 semester 2 has no word lists. On 2026-10-25 `extract-text` rejected `g8-english-s2-student-book` for «Arabic in reversed
