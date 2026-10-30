@@ -13,20 +13,26 @@
  * class (case 1). Phase 2 lists the bucket under `homework-submissions/` and deletes the objects
  * no row refers to (cases 2 and 3), through the pure classifier in modules/homework/submissionSweep.ts.
  *
- * Deletion is irreversible, so the design only ever errs toward keeping: a grace period (an upload
- * stores the object a moment before it records the row), a strict key shape, a cap per run, a dry
- * run, and the ORDER in phase 2 — see there.
+ * Deletion is irreversible, so the design only ever errs toward keeping: a grace period for phase 2
+ * (an upload stores the object a moment before it records the row), a strict key shape, a cap per
+ * run, a dry run, and two guards against a database and a bucket that do not belong together (a
+ * local `.env` with the production R2 credentials, a staging service): an object is deleted only if
+ * THIS database has its homework, and a run that would delete most of what it can attribute is
+ * refused (modules/homework/submissionSweep.ts). Phase 1 ignores age: an archived homework's photos
+ * go at once, however new.
  *
  * Work finishes before the route answers: Cloud Run throttles CPU once a response is sent.
  */
 // systemDb: the sweep is called by Cloud Scheduler with no user, and reads every submission row
 // (drafts included, which no teacher's identity can see) and every archived homework and class.
+// Under RLS_ENFORCE the app `db` with no user would read NO submission rows, and every photo would
+// look unreferenced — so this file must never import it.
 import { classGroups, homework, homeworkSubmissions, systemDb as db } from "@workspace/db";
-import { eq, or, isNotNull, sql } from "drizzle-orm";
+import { eq, or, inArray, isNotNull, sql } from "drizzle-orm";
 import { logger } from "./logger";
 import { deleteObject, isR2Configured, listObjects } from "./r2.ts";
 import { purgeSubmissions } from "./homeworkSubmission.ts";
-import { SUBMISSION_PREFIX, isSubmissionKey, planSweep } from "../modules/homework/submissionSweep.ts";
+import { SUBMISSION_PREFIX, homeworkIdOf, isSubmissionKey, planSweep } from "../modules/homework/submissionSweep.ts";
 
 export interface SweepRun {
   dryRun: boolean;
@@ -40,18 +46,23 @@ export interface SweepRun {
   objectsListed: number;
   /** Conforming objects a row refers to. */
   referenced: number;
-  /** Old, unreferenced, conforming objects: those deleted plus those the cap kept for the next run. */
+  /** Old, unreferenced, conforming objects under a known homework: those deleted plus those the cap kept for the next run. */
   orphanObjects: number;
-  /** Objects actually deleted in phase 2 (0 in a dry run). */
+  /** Objects actually deleted in phase 2 (0 in a dry run, and 0 when refused). */
   deleted: number;
   skippedYoung: number;
   skippedBadKey: number;
+  /** Old, unreferenced, conforming objects whose homework this database does not have: kept, never deleted. */
+  skippedUnknownHomework: number;
   capped: number;
+  /** The ratio guard refused phase 2: nothing was deleted (phase 1 had already run). Logged at error level. */
+  refused: boolean;
+  refusedReason?: string;
   /** The listing hit its ceiling: the run only swept what it saw. */
   listTruncated: boolean;
   /** R2 is not configured on this server, so phase 2 did not run. */
   objectsSkipped: boolean;
-  /** Up to 20 keys of what was (or, in a dry run, would be) deleted. */
+  /** Up to 20 keys of what was (or, in a dry run, would be) deleted. A refused dry run lists what it refused to delete; a refused real run, nothing. */
   sample: string[];
 }
 
@@ -66,10 +77,16 @@ export interface SweepRun {
 export const LIST_CAP = 200_000;
 const SAMPLE_MAX = 20;
 const DELETE_BATCH = 10;
+/** Homework ids per lookup query (a parameterised `inArray`, so this many bind parameters at most). */
+const HOMEWORK_LOOKUP_CHUNK = 1000;
 
 /** Every photo key a row names. Tolerant of a malformed list: whatever string key is there is kept protected. */
-function photoKeys(photos: unknown): string[] {
-  if (!Array.isArray(photos)) return [];
+function photoKeys(rowId: string, photos: unknown): string[] {
+  if (!Array.isArray(photos)) {
+    // Nothing in it can protect an object, so say so: a row whose photos then get swept must not be silent.
+    logger.warn({ rowId }, "homework submission sweep: a submission's photos is not a list");
+    return [];
+  }
   const keys: string[] = [];
   for (const p of photos) {
     const key = (p as { key?: unknown } | null)?.key;
@@ -112,6 +129,20 @@ async function purgeArchived(dryRun: boolean): Promise<{ archivedHomework: numbe
   return { archivedHomework, purgeFailed, rowsPurged };
 }
 
+/**
+ * Which of `ids` this database has a homework row for, archived or not. One query per chunk; a query
+ * that throws fails the whole run (the route answers 500) before anything in phase 2 is deleted.
+ */
+async function existingHomeworkIds(ids: readonly string[]): Promise<Set<string>> {
+  const found = new Set<string>();
+  for (let i = 0; i < ids.length; i += HOMEWORK_LOOKUP_CHUNK) {
+    const chunk = ids.slice(i, i + HOMEWORK_LOOKUP_CHUNK);
+    const rows = await db.select({ id: homework.id }).from(homework).where(inArray(homework.id, chunk));
+    for (const r of rows) found.add(r.id);
+  }
+  return found;
+}
+
 export async function sweepSubmissionOrphans(
   opts: { now?: Date; dryRun?: boolean; graceMs?: number; maxDeletes?: number } = {},
 ): Promise<SweepRun> {
@@ -128,7 +159,9 @@ export async function sweepSubmissionOrphans(
     deleted: 0,
     skippedYoung: 0,
     skippedBadKey: 0,
+    skippedUnknownHomework: 0,
     capped: 0,
+    refused: false,
     listTruncated: false,
     objectsSkipped: false,
     sample: [],
@@ -145,27 +178,57 @@ export async function sweepSubmissionOrphans(
     return run;
   }
 
-  // ORDER MATTERS: list the bucket FIRST, read the referenced keys SECOND. An upload stores its
-  // object and then writes its row, so a row written between the two steps can only protect an
-  // object the listing already saw, never hide a reference to one it saw as unreferenced. Reading
-  // the references first would let an object listed afterwards, whose row was written after that
-  // read, look like an orphan. (The grace period is the second line of defence for the same race.)
+  // The bucket is listed first and the referenced keys read second. What protects an upload in flight
+  // is the GRACE PERIOD, not this order: an upload whose object lands before the listing and whose row
+  // is written after the key read looks unreferenced whichever way round the two steps run, and only
+  // its age (well under 24 hours) keeps it. The order merely narrows that window — reading the keys
+  // first would add every object stored between the read and the listing to it. `addPhoto` always
+  // stores a fresh-UUID key and never attaches an existing one, so a key cannot become referenced
+  // after the fact, and no re-check of references before a delete is needed.
   const listing = await listObjects(SUBMISSION_PREFIX, { maxKeys: LIST_CAP });
   if (listing.truncated) {
     logger.warn({ listed: listing.objects.length }, "homework submission sweep: listing was truncated, orphans past the cut-off are not seen");
   }
-  const rows = await db.select({ photos: homeworkSubmissions.photos }).from(homeworkSubmissions);
+  const rows = await db.select({ id: homeworkSubmissions.id, photos: homeworkSubmissions.photos }).from(homeworkSubmissions);
   const referencedKeys = new Set<string>();
-  for (const r of rows) for (const key of photoKeys(r.photos)) referencedKeys.add(key);
+  for (const r of rows) for (const key of photoKeys(r.id, r.photos)) referencedKeys.add(key);
 
-  const plan = planSweep({ objects: listing.objects, referencedKeys, now, graceMs: opts.graceMs, maxDeletes: opts.maxDeletes });
+  // The known-homework guard: an object is deletable only if THIS database has its homework. Every
+  // conforming key's homework is looked up, not only the candidates', because the ratio guard counts
+  // all objects under known homework. A failed lookup throws: the run fails before any delete.
+  const homeworkIds = new Set<string>();
+  for (const o of listing.objects) {
+    const id = homeworkIdOf(o.key);
+    if (id !== null) homeworkIds.add(id);
+  }
+  const knownHomeworkIds = await existingHomeworkIds([...homeworkIds]);
+
+  const plan = planSweep({
+    objects: listing.objects,
+    referencedKeys,
+    knownHomeworkIds,
+    now,
+    graceMs: opts.graceMs,
+    maxDeletes: opts.maxDeletes,
+  });
   run.objectsListed = listing.objects.length;
   run.listTruncated = listing.truncated;
   run.referenced = plan.referenced;
-  run.orphanObjects = plan.toDelete.length + plan.capped;
+  run.orphanObjects = plan.wouldDelete.length + plan.capped;
   run.skippedYoung = plan.skippedYoung;
   run.skippedBadKey = plan.skippedBadKey;
+  run.skippedUnknownHomework = plan.skippedUnknownHomework;
   run.capped = plan.capped;
+  run.refused = plan.refused;
+  if (plan.refusedReason !== undefined) run.refusedReason = plan.refusedReason;
+
+  if (plan.refused) {
+    // There is deliberately no override: a person checks that this service's database and bucket
+    // belong together (docs/deploying.md, the submission sweep). A dry run shows what was refused.
+    if (dryRun) run.sample = plan.wouldDelete.slice(0, SAMPLE_MAX).map(o => o.key);
+    logger.error({ run, known: plan.known }, "homework submission sweep refused");
+    return run;
+  }
 
   if (dryRun) {
     run.sample = plan.toDelete.slice(0, SAMPLE_MAX).map(o => o.key);
@@ -176,7 +239,7 @@ export async function sweepSubmissionOrphans(
     const batch = plan.toDelete.slice(i, i + DELETE_BATCH);
     const results = await Promise.all(
       batch.map(async o => {
-        // The classifier already guarantees this; the check sits next to the irreversible call anyway.
+        // A key-shape and prefix check only, next to the irreversible call; the classifier already did it.
         if (!isSubmissionKey(o.key) || !o.key.startsWith(SUBMISSION_PREFIX)) return false;
         try {
           await deleteObject(o.key);

@@ -22,6 +22,8 @@ export interface S3Stub {
   lastModified(key: string): Date | undefined;
   /** How many ListObjectsV2 requests the stub has answered — proof that a listing really paged. */
   listRequests(): number;
+  /** Test-only: while on, a truncated ListObjectsV2 page says `IsTruncated` but carries no `NextContinuationToken`. */
+  omitContinuationToken(on: boolean): void;
   close(): Promise<void>;
 }
 
@@ -57,6 +59,7 @@ export async function startS3Stub(bucket = "iqraa-media", options: S3StubOptions
   const pageSize = options.pageSize ?? 1000;
   const objects = new Map<string, { body: Buffer; lastModified: Date }>();
   let listCount = 0;
+  let omitToken = false;
 
   /** ListObjectsV2: `GET /<bucket>?list-type=2&prefix=&max-keys=&continuation-token=`. */
   function listObjectsV2(url: URL, res: http.ServerResponse): void {
@@ -82,7 +85,7 @@ export async function startS3Stub(bucket = "iqraa-media", options: S3StubOptions
       `<?xml version="1.0" encoding="UTF-8"?><ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">` +
       `<Name>${xmlEscape(bucket)}</Name><Prefix>${xmlEscape(prefix)}</Prefix><KeyCount>${page.length}</KeyCount>` +
       `<MaxKeys>${maxKeys}</MaxKeys><IsTruncated>${truncated}</IsTruncated>` +
-      (truncated ? `<NextContinuationToken>${encodeToken(page[page.length - 1]!)}</NextContinuationToken>` : "") +
+      (truncated && !omitToken ? `<NextContinuationToken>${encodeToken(page[page.length - 1]!)}</NextContinuationToken>` : "") +
       contents +
       `</ListBucketResult>`;
     res.statusCode = 200;
@@ -152,6 +155,9 @@ export async function startS3Stub(bucket = "iqraa-media", options: S3StubOptions
     },
     lastModified: key => objects.get(key)?.lastModified,
     listRequests: () => listCount,
+    omitContinuationToken: on => {
+      omitToken = on;
+    },
     close: () => new Promise<void>(resolve => server.close(() => resolve())),
   };
 }

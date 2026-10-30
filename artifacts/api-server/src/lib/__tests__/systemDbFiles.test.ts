@@ -60,6 +60,19 @@ describe("which files may use the connection that bypasses row-level security", 
     assert.deepEqual(using, Object.keys(ALLOWED).sort());
   });
 
+  // The sweep must read EVERY submission row with no user. Under RLS_ENFORCE the app `db` would return none, and
+  // every photo in the bucket would look unreferenced and be deleted — so for this file, "mentions systemDb" is not
+  // enough: it must import systemDb and must not import the app `db` at all.
+  test("the submission sweep imports systemDb and never the app db", () => {
+    const text = readFileSync(path.join(src, "lib/homeworkSubmissionSweep.ts"), "utf8");
+    const imports = [...text.matchAll(/import\s*(?:type\s*)?\{([^}]*)\}\s*from\s*["']@workspace\/db["']/g)];
+    assert.ok(imports.length > 0, "it imports from @workspace/db");
+    const imported = imports.flatMap(m => m[1]!.split(",").map(s => s.trim().split(/\s+as\s+/)[0]!.trim()).filter(Boolean));
+    assert.ok(imported.includes("systemDb"), `imports systemDb (got ${imported.join(", ")})`);
+    assert.ok(!imported.includes("db"), "must not import the app db, which reads no submission row without a user under RLS");
+    assert.doesNotMatch(text, /import\s+\*\s+as\s+\w+\s+from\s*["']@workspace\/db["']/, "no namespace import that would reach db");
+  });
+
   test("the auth token tables are only ever touched from a file that may use it", () => {
     const tokenTables = /\b(refreshTokens|passwordResetTokens|emailVerificationTokens)\b/;
     const offenders = sources(src)

@@ -189,7 +189,8 @@ const LIST_PAGE_SIZE = 1000;
  * Listing is bucket-wide by prefix, so a caller must pass a non-empty one: an empty prefix is refused
  * rather than listing the whole bucket by accident. Pages through ListObjectsV2 with a continuation
  * token; `maxKeys` caps the TOTAL returned (default 10_000) so a runaway prefix cannot exhaust memory,
- * and `truncated` is true only when objects beyond the cap really exist. The caller checks
+ * and `truncated` is true only when objects beyond what was returned really exist (the cap was hit,
+ * or a page said it was truncated but carried no continuation token). The caller checks
  * `isR2Configured()` first — unconfigured throws, like `putObject`.
  */
 export async function listObjects(
@@ -215,9 +216,10 @@ export async function listObjects(
       if (!o.Key || !o.LastModified) continue;
       objects.push({ key: o.Key, lastModified: o.LastModified });
     }
-    const more = page.IsTruncated === true && !!page.NextContinuationToken;
-    if (!more) return { objects, truncated: false };
-    if (objects.length >= cap) return { objects, truncated: true };
+    if (page.IsTruncated !== true) return { objects, truncated: false };
+    // More exists. Stop at the cap, or when the bucket gave no token to ask for it with: either way
+    // the listing is incomplete, and a caller must not read it as "this is everything".
+    if (objects.length >= cap || !page.NextContinuationToken) return { objects, truncated: true };
     token = page.NextContinuationToken;
   }
 }

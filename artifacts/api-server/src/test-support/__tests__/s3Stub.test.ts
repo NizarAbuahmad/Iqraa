@@ -105,6 +105,22 @@ describe("the S3 stub, driven by the real r2.ts", () => {
       assert.equal(truncated, false);
     });
 
+    // A page that says "there is more" but gives no token to fetch it: the listing cannot go on, and it must not
+    // claim it saw everything — the sweep reads `truncated: false` as "every orphan was seen".
+    it("calls it truncated when a page is truncated but carries no continuation token", async () => {
+      for (let i = 0; i < 5; i++) await stub.putForTest(`list-test/notoken/${i}.png`, PNG, T0);
+      stub.omitContinuationToken(true);
+      try {
+        const requestsBefore = stub.listRequests();
+        const { objects, truncated } = await r2.listObjects("list-test/notoken/");
+        assert.equal(truncated, true);
+        assert.equal(objects.length, 3, "the one page it got");
+        assert.equal(stub.listRequests() - requestsBefore, 1, "it stopped: there was no token to ask with");
+      } finally {
+        stub.omitContinuationToken(false);
+      }
+    });
+
     it("refuses an empty prefix, so the whole bucket cannot be listed by accident", async () => {
       const requestsBefore = stub.listRequests();
       await assert.rejects(() => r2.listObjects(""), /listObjects needs a prefix/);

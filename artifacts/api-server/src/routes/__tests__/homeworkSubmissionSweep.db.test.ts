@@ -35,11 +35,14 @@ describeDb("homework submission orphan sweep over HTTP, against a real database"
   let w: FamilyWorld;
   let s3: S3Stub;
   let server: TestServer;
+  /** A live homework of this database: orphans are seeded under it unless a case says otherwise (the known-homework guard). */
+  let knownHw: string;
   const toClose: Array<() => Promise<void>> = [];
 
   before(async () => {
     db = await setupTestDb();
     w = await seedFamilyWorld(db.pool);
+    knownHw = await mkHomework();
   });
   after(async () => {
     await db?.drop();
@@ -96,11 +99,22 @@ describeDb("homework submission orphan sweep over HTTP, against a real database"
     );
   };
   const rowsOf = async (...hws: string[]) => (await db.pool.query(`SELECT 1 FROM homework_submissions WHERE homework_id = ANY($1::uuid[])`, [hws])).rowCount;
-  /** A key no row names, stored `lastModified`. */
-  const seedOrphan = async (lastModified: Date, ext = "jpg"): Promise<string> => {
-    const key = photoKey(randomUUID(), randomUUID(), ext);
-    await s3.putForTest(key, JPEG, lastModified);
+  /** A key no row names, stored `lastModified`, under `hw` (by default a homework this database has). */
+  const seedOrphan = async (lastModified: Date, ext = "jpg", hw: string = knownHw, stub: S3Stub = s3): Promise<string> => {
+    const key = photoKey(hw, randomUUID(), ext);
+    await stub.putForTest(key, JPEG, lastModified);
     return key;
+  };
+  /** `n` old photos under the known homework, all named by one draft row: they dilute the ratio guard. */
+  const seedReferenced = async (n: number, stub: S3Stub = s3): Promise<string[]> => {
+    const student = await mkStudent();
+    const keys = Array.from({ length: n }, () => photoKey(knownHw, student));
+    for (const k of keys) await stub.putForTest(k, JPEG, ancientDate());
+    await db.pool.query(
+      `INSERT INTO homework_submissions (homework_id, student_id, photos) VALUES ($1, $2, $3::jsonb)`,
+      [knownHw, student, JSON.stringify(keys.map((key, i) => ({ id: `p${i}`, key, mime: "image/jpeg", sizeBytes: JPEG.length })))],
+    );
+    return keys;
   };
 
   describe("who may call it", () => {
@@ -150,7 +164,9 @@ describeDb("homework submission orphan sweep over HTTP, against a real database"
         deleted: 1,
         skippedYoung: 2,
         skippedBadKey: 0,
+        skippedUnknownHomework: 0,
         capped: 0,
+        refused: false,
         listTruncated: false,
         objectsSkipped: false,
         sample: [oldOrphan],
@@ -171,13 +187,16 @@ describeDb("homework submission orphan sweep over HTTP, against a real database"
     });
 
     it("keeps only a sample of 20 keys in the answer however many it deleted", async () => {
+      // 25 orphans next to 25 live photos: exactly half, which the ratio guard allows.
+      const live = await seedReferenced(25);
       for (let i = 0; i < 25; i++) await seedOrphan(oldDate());
       const run = await sweep();
       assert.equal(run.status, 200, run.text);
+      assert.equal(run.json.refused, false);
       assert.equal(run.json.deleted, 25);
       assert.equal(run.json.capped, 0);
       assert.equal(run.json.sample.length, 20);
-      assert.deepEqual(s3.keys(), []);
+      assert.deepEqual(s3.keys(), [...live].sort());
     });
 
     it("keeps a photo of a LIVE homework whose row names it, drafts included", async () => {
@@ -193,6 +212,143 @@ describeDb("homework submission orphan sweep over HTTP, against a real database"
       assert.equal(run.json.referenced, 2);
       assert.deepEqual(s3.keys(), [draft, handed].sort());
       assert.equal(await rowsOf(hw), 2);
+    });
+
+    // Production runs RLS_ENFORCE=on. Read through the app connection with no user, homework_submissions returns NO
+    // rows, so every photo would look unreferenced. The sweep reads the keys through systemDb; this pins it.
+    it("keeps an old DRAFT photo of a live homework with row-level security enforced, and still deletes the orphan beside it", async () => {
+      const enforcing = await startServer({ databaseUrl: db.url, env: { INTERNAL_CRON_KEY: CRON_KEY, RLS_ENFORCE: "on", ...s3Env(s3) } });
+      toClose.push(() => enforcing.stop());
+      const hw = await mkHomework();
+      const student = await mkStudent();
+      const draft = photoKey(hw, student);
+      await seedRow(hw, student, [draft], { submitted: false, lastModified: ancientDate() });
+      const orphan = await seedOrphan(oldDate(), "jpg", hw);
+      const run = await sweep("", enforcing);
+      assert.equal(run.status, 200, run.text);
+      assert.equal(run.json.referenced, 1, "the draft's row was read");
+      assert.equal(run.json.deleted, 1);
+      assert.deepEqual(s3.keys(), [draft], "the draft photo stays, the orphan went");
+      assert.equal(await rowsOf(hw), 1);
+    });
+  });
+
+  describe("a malformed row", () => {
+    it("logs a warning with the row's id, not its contents, when its photos is not a list", async () => {
+      const hw = await mkHomework();
+      const student = await mkStudent();
+      const secret = `homework-submissions/${hw}/${student}/${randomUUID()}.jpg`;
+      const row = await db.pool.query(
+        `INSERT INTO homework_submissions (homework_id, student_id, photos) VALUES ($1, $2, $3::jsonb) RETURNING id`,
+        [hw, student, JSON.stringify({ key: secret })],
+      );
+      const rowId = row.rows[0].id as string;
+      const run = await sweep();
+      assert.equal(run.status, 200, run.text);
+      // The logger writes from a worker thread, so the line can reach the child's stdout after the response: wait for the run's own line.
+      const deadline = Date.now() + 5000;
+      while (!server.logs().includes("homework submission sweep run") && Date.now() < deadline) await new Promise(r => setTimeout(r, 50));
+      const logs = server.logs();
+      assert.ok(logs.includes("homework submission sweep run"), `the run was logged at all:\n${logs.slice(-1500)}`);
+      assert.ok(logs.includes("a submission's photos is not a list"), "the warning is logged");
+      assert.ok(logs.includes(rowId), "with the row id");
+      assert.ok(!logs.includes(secret), "and not what the photos held");
+    });
+  });
+
+  // A server whose database and bucket do not belong together — a local .env with the production R2 credentials, a
+  // staging service — sees no rows, so every photo in the bucket looks unreferenced. Two guards stop that run.
+  describe("a database and a bucket that do not belong together", () => {
+    it("keeps old, unreferenced photos whose homework this database does not have (the wrong-database case)", async () => {
+      // This database has no submission row and none of these homework: 30 old photos of the right shape.
+      for (let i = 0; i < 30; i++) await seedOrphan(ancientDate(), "jpg", randomUUID());
+      const before = s3.keys();
+      const run = await sweep();
+      assert.equal(run.status, 200, run.text);
+      assert.deepEqual(run.json, {
+        dryRun: false,
+        archivedHomework: 0,
+        purgeFailed: 0,
+        rowsPurged: 0,
+        objectsListed: 30,
+        referenced: 0,
+        orphanObjects: 0,
+        deleted: 0,
+        skippedYoung: 0,
+        skippedBadKey: 0,
+        skippedUnknownHomework: 30,
+        capped: 0,
+        refused: false,
+        listTruncated: false,
+        objectsSkipped: false,
+        sample: [],
+      });
+      assert.deepEqual(s3.keys(), before, "the bucket is unchanged");
+    });
+
+    it("deletes the orphan of a homework this database has and keeps the one of a homework it does not", async () => {
+      const known = await seedOrphan(oldDate());
+      const unknown = await seedOrphan(oldDate(), "jpg", randomUUID());
+      const run = await sweep();
+      assert.equal(run.status, 200, run.text);
+      assert.equal(run.json.deleted, 1);
+      assert.equal(run.json.skippedUnknownHomework, 1);
+      assert.deepEqual(run.json.sample, [known]);
+      assert.deepEqual(s3.keys(), [unknown]);
+    });
+
+    it("counts an ARCHIVED homework as known: its row is still there, so an orphan under it is swept", async () => {
+      const archived = await mkHomework({ archived: true });
+      const orphan = await seedOrphan(oldDate(), "jpg", archived);
+      const run = await sweep();
+      assert.equal(run.json.skippedUnknownHomework, 0);
+      assert.equal(run.json.deleted, 1, "an orphan under an archived homework is still swept");
+      assert.equal(s3.body(orphan), undefined);
+    });
+
+    it("refuses a run whose orphans are most of what it can see: 25 orphans beside 5 live photos, nothing deleted", async () => {
+      const live = await seedReferenced(5);
+      const orphans: string[] = [];
+      for (let i = 0; i < 25; i++) orphans.push(await seedOrphan(oldDate()));
+      const before = s3.keys();
+      const run = await sweep();
+      assert.equal(run.status, 200, run.text);
+      assert.equal(run.json.refused, true);
+      assert.equal(typeof run.json.refusedReason, "string");
+      assert.ok(run.json.refusedReason.length > 0);
+      assert.equal(run.json.deleted, 0);
+      assert.equal(run.json.orphanObjects, 25);
+      assert.equal(run.json.referenced, 5);
+      assert.deepEqual(run.json.sample, [], "a refused real run deleted nothing, so its sample is empty");
+      assert.deepEqual(s3.keys(), before, "nothing was deleted");
+      assert.equal(live.length + orphans.length, before.length);
+    });
+
+    it("proceeds with 25 orphans beside 60 live photos: more than 20, but under half", async () => {
+      const live = await seedReferenced(60);
+      for (let i = 0; i < 25; i++) await seedOrphan(oldDate());
+      const run = await sweep();
+      assert.equal(run.status, 200, run.text);
+      assert.equal(run.json.refused, false);
+      assert.equal(run.json.refusedReason, undefined);
+      assert.equal(run.json.deleted, 25);
+      assert.deepEqual(s3.keys(), [...live].sort());
+    });
+
+    it("reports a refusal in a dry run too, with what it would have deleted in the sample", async () => {
+      await seedReferenced(5);
+      const orphans: string[] = [];
+      for (let i = 0; i < 25; i++) orphans.push(await seedOrphan(oldDate()));
+      const before = s3.keys();
+      const run = await sweep("?dryRun=1");
+      assert.equal(run.status, 200, run.text);
+      assert.equal(run.json.dryRun, true);
+      assert.equal(run.json.refused, true);
+      assert.equal(typeof run.json.refusedReason, "string");
+      assert.equal(run.json.deleted, 0);
+      assert.equal(run.json.sample.length, 20);
+      for (const k of run.json.sample) assert.ok(orphans.includes(k), `${k} is one of the orphans`);
+      assert.deepEqual(s3.keys(), before);
     });
   });
 
@@ -348,7 +504,9 @@ describeDb("homework submission orphan sweep over HTTP, against a real database"
           deleted: 0,
           skippedYoung: 1,
           skippedBadKey: 0,
+          skippedUnknownHomework: 0,
           capped: 0,
+          refused: false,
           listTruncated: false,
           objectsSkipped: false,
           sample: [orphan],
@@ -427,19 +585,24 @@ describeDb("homework submission orphan sweep over HTTP, against a real database"
   describe("a bucket with more than 10,000 submission objects", () => {
     // Listing used to stop at 10,000 keys, and S3 lists in key order, so every run saw the same first 10,000 (mostly live,
     // referenced photos) and an orphan sorting after the cut-off was never seen. The ceiling is now far above that.
+    // 9,000 live photos and 1,050 orphans: past 10,000 in all, and under half orphans so the ratio guard lets it run.
     it("lists them all and deletes up to the per-run cap, leaving the rest for the next run", async () => {
       const big = await startS3Stub();
       const bigServer = await startServer({ databaseUrl: db.url, env: { INTERNAL_CRON_KEY: CRON_KEY, ...s3Env(big) } });
       try {
+        const live = await seedReferenced(9000, big);
         const old = oldDate();
-        for (let i = 0; i < 10_050; i++) await big.putForTest(photoKey(randomUUID(), randomUUID()), Buffer.from("x"), old);
+        for (let i = 0; i < 1050; i++) await seedOrphan(old, "jpg", knownHw, big);
         const run = await sweep("", bigServer);
         assert.equal(run.status, 200, run.text);
-        assert.ok(run.json.objectsListed >= 10_050, `listed ${run.json.objectsListed}`);
+        assert.equal(run.json.objectsListed, 10_050);
         assert.equal(run.json.listTruncated, false);
+        assert.equal(run.json.refused, false);
+        assert.equal(run.json.referenced, 9000);
         assert.equal(run.json.deleted, 1000);
-        assert.equal(run.json.capped, 9050);
+        assert.equal(run.json.capped, 50);
         assert.equal(big.keys().length, 9050, "the rest are left for the next run");
+        for (const k of live) assert.ok(big.body(k), "no live photo went");
       } finally {
         await bigServer.stop();
         await big.close();
