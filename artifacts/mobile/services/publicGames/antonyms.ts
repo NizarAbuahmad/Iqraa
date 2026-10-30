@@ -60,11 +60,15 @@ function buildQuestion(pair: AntonymPair, lang: 'ar' | 'en', rng: () => number):
   const answer = flip ? { ar: pair.ar, en: pair.en } : { ar: pair.oppAr, en: pair.oppEn };
   const correct = { id: answer.ar, label: lang === 'ar' ? answer.ar : answer.en };
   const others = ALL_WORDS(lang).filter(o => o.id !== pair.ar && o.id !== pair.oppAr);
+  const subjectLabel = lang === 'ar' ? shown.ar : shown.en;
   return {
     promptKey: 'playAntonymsPrompt',
-    subject: lang === 'ar' ? shown.ar : shown.en,
+    subject: subjectLabel,
     options: withDistractors(correct, others, 3, rng),
     correctId: correct.id,
+    explanation: lang === 'ar'
+      ? `ضدّ «${subjectLabel}» هو «${correct.label}»`
+      : `The opposite of "${subjectLabel}" is "${correct.label}"`,
   };
 }
 

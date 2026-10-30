@@ -10,6 +10,131 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## /play games: a why line, sound and haptics, motion, personal best with retry, and a Jordan map — 2026-10-30
+
+Five changes to the public games (`/play`, no login), built as seven commits on top of `690c2bb` (spec and plan):
+`7285def`, `f27ff80`, `5eb7a29`, `e549686`, `bb043c3`, `2dc756b`, `da085e9`; then one commit for what the browser check
+found (below), and this entry.
+
+**Built.**
+1. **A one-line «why» under every revealed answer** in the six text games (antonyms, plurals, which-number, compare
+   fractions, states of matter, governorates). For the two maths games the line is **computed** in latin and converted at
+   display time (which-number: the divisibility fact; fractions: both fractions as decimals, `=` or `≈`, printed left to
+   right through `forceLtr`). Flags, capitals and element symbols have no why line; they have nothing to say beyond the key.
+2. **Answer sound and haptics, with a mute button** (`services/playFeedback.ts`, speaker icon in the header). A right answer
+   plays the Class Challenge's existing `correct.wav`, a wrong one a new quiet two-note `wrong.wav` (made by
+   `scripts/make-wrong-cue.ts`); phones also get a light tap or a soft warning. The mute covers both and is remembered
+   (`@iqra_play_sound_off_v1` in AsyncStorage). It is on every `TriviaBoard` game: flags, capitals, elements, the six text
+   games, and the lesson games «مصطلح من الدرس» and «ما معنى المصطلح؟».
+3. **Answer motion and a streak chip** (`AnswerOption.tsx`): the right option swells once, a wrong pick shakes once, nothing
+   moves under reduced motion; from two right in a row a flame chip shows the streak.
+4. **A personal best, and «retry the ones you missed»** (`services/publicGames/bestScore.ts`). The game-over panel prints
+   «أفضل نتيجة: 6 من 8» (and «رقم قياسي جديد!» when it was beaten) and, after any miss, a button that replays only the misses.
+   (Progress, score, streak and best print Latin digits, as the existing `playScoreLabel` always has; see the known limits.)
+   **A retry round is practice**: it never records a best and is never reported to a teacher (see the deviations).
+5. **A map of Jordan after each governorates answer** (`JordanMap.tsx`, react-native-svg): the right governorate lit in the
+   game's accent, a wrong pick outlined in red, a credit line under it.
+
+**Size added.** `git diff --stat 690c2bb..HEAD` (before the fixes commit): 36 files, +1093 −56 lines, of which 399 lines are tests.
+Shipped in the app: `assets/sounds/wrong.wav` **15,040 bytes** and `services/publicGames/jordanMapData.ts` **12,362 bytes** (the
+12 simplified paths) — about 27 KB, no new dependency and no native module (`expo-audio`, `expo-haptics`,
+`react-native-svg` were already there), so `app.json`'s `version` did not move. The source GeoJSON,
+`scripts/data/jordan-adm1-geoboundaries.geojson`, is **54,979 bytes** and is **not shipped**: it lives in `scripts/`, only
+`scripts/build-jordan-map.ts` and `jordanMapData.test.ts` read it (the test fails if the committed paths differ from what the
+script makes from it).
+
+**Map data attribution.** geoBoundaries (geoboundaries.org) gbOpen, Jordan (JOR) ADM1, simplified, release commit `9469f09`
+of wmgeolab/geoBoundaries. Licence Creative Commons Attribution 2.5 Generic, derived from Wikimedia Commons. **Data year
+2006**; the 12 governorates have not changed since 2001. The game shows the credit (`playMapCredit`) and
+`scripts/data/README.md` records the source and how to regenerate.
+
+**Verified.**
+- `pnpm run typecheck` clean. Mobile suite after the fixes: **8238 tests, 8228 pass, 0 fail, 10 skipped** (the same 10
+  pre-existing `searchKB` skips; the baseline on `main` was 8196). New test files: `answerMotion`, `bestScore`,
+  `feedbackPrefs`, `gameShellOverlay`, `jordanMapData`, `jordanMapWiring`, `playBestWiring`, `playFeedbackWiring`,
+  `playGameExplanations`, `wrongCue`.
+- **A real browser** (Chromium through the `playwright` library, against `pnpm run dev:mobile:web`), 2026-10-30, driven by a
+  script that reads each option's correct flag off the React tree so it can answer right or wrong on purpose. Seven boards
+  — flags, governorates, fractions, which-number, states of matter, antonyms, capitals — each played from the first question
+  to game over (right and wrong answers, a streak of 3, six of eight right), then «retry the ones you missed» (replays exactly
+  the two misses, «سؤال 1 من 2», no best line, no «new best», the stored best unchanged), then «Play again» (a full
+  eight-question round again). 42 runs: 390×844 and 1280×800, light and dark, Arabic; English at 390 light and 1280 dark.
+  Also looked at: elements (phone, light and dark) and the lesson term-spot game (phone, light and dark; the lesson-meaning
+  game was not opened, the lesson tried has no glossary); the mute button
+  (the icon and `aria-pressed` toggle, `@iqra_play_sound_off_v1` is `1` and the button is still muted after a reload, and no
+  `.wav` is requested while muted; unmuted, `wrong.wav` and `correct.wav` are requested); 360×640 with explanation and map
+  showing (the board scrolls, «التالي» is reachable) and the game-over panel there; 320×568 for the game-over panel.
+  Fractions print «٢/٧ ≈ ٠٫٢٩» left to right, not mirrored, in Arabic. The tick and cross icons at 24 px (`ICON.xl`) sit well in
+  the options; they were left as is. The speaker sits beside the score badge in both directions. In dark mode the lit
+  governorate and the flame chip are visible. No console errors after the fixes.
+- Looking at it found three defects, fixed in the commit after those seven (see the deviations below).
+
+**Not verified.**
+- **Sound and haptics were not heard or felt.** All that was confirmed is that answering does not throw and that the browser
+  requests `correct.wav` / `wrong.wav` (and none when muted). Whether `wrong.wav` is pleasant, and its loudness next to
+  `correct.wav`, nobody has judged. The haptics code path only runs off the web, so it was not run at all.
+- **Nothing was run on a device or a native build** (iOS, Android, `expo-audio` on native, `expo-haptics`, react-native-svg
+  native, the Android keyboard and gesture behaviour of the now-scrollable board). Shake and swell were seen in code and as
+  the final frame of a screenshot, not as motion.
+- The Arabic «why» sentences of the hand-written games were read by the author and the reviewer, and the new `play…` strings
+  went through an Arabic copy review at the end (two changed: the streak chip now reads «3 على التوالي» instead of «3 متتالية»,
+  which had no noun, and a new best reads «رقم قياسي جديد!» instead of «نتيجة جديدة!»), but no teacher has read them.
+- **After the game-over panel became a `ScrollView`, these other `GameShell` games were played to their game-over panel in a
+  browser** (390×844 and 320×568, light and dark, Arabic, no console errors): memory (`/play/memory`), colours, the
+  multiplication drill (`?secs=30`), the lesson memory game on an English lesson, and the lesson letter-scramble game on a maths
+  and an English lesson. The
+  panel is centred where it fits and scrolls at 320×568, with the signup card reachable after scrolling. **Not looked at:** the
+  add, subtract and divide drills (same component as multiply), the lesson-meaning game, a game-over panel with the homework
+  «sent to the teacher» footer, and anything on a device.
+- The map's governorate shapes were checked by eye against the names (Ajloun small in the north-west, Ma'an and the east
+  large), not against a second source.
+
+**Known limits.**
+- **Sound defaults to on**, including on the web, where the first tap is what lets audio play (answering is a tap).
+- **The board is now a `ScrollView`, which changes the layout of every `TriviaBoard` game** (flags, capitals, elements, the
+  six text games and the lesson games), not only the new ones: «التالي» sits under the content and under the map, so on a
+  short phone it is reached by scrolling.
+- **The game-over panel is a `ScrollView` for every `GameShell` game**, not only the trivia boards: memory, colours, the four
+  drills, the lesson memory and scramble games (so also an English lesson's) and the trivia boards. It looks the same where it
+  fits, and scrolls where it does not (it used to be cut off); `gameShellOverlay.test.ts` pins the shape (`flexGrow`, not
+  `flex: 1`, on the content container).
+- **Progress, score, streak and best print Latin digits** («سؤال 1 من 2», «6 من 8», «3 على التوالي»): `getT` does not convert
+  digits and the new strings interpolate raw numbers, as `playScoreLabel` always has. The which-number game's options and why
+  line, and the fractions' decimals, are Arabic-Indic. The mix predates this work and was not changed.
+- **The answer cue can ring through the iOS silent switch.** `playGameCue` (`services/gameSounds.ts`) sets
+  `playsInSilentMode: true` the first time it plays: the Class Challenge's existing choice, now also used by `/play`. Not
+  checked on a device.
+- **A best is per game and per device** (`@iqra_play_best_v1:<title key>`), and per lesson for the lesson games
+  (`…:<title key>:<lessonId>`); it is compared by share right (score over total), and only a full round records one.
+  It is not synced and not shown to a teacher. A best an older build kept under another key, if any
+  game did, is not migrated.
+- **A retry replays the same questions in the same option order**, so a child can answer by position; it is practice, not a
+  test. It is never reported to a teacher (`onFinished` is not passed for it, and `game_finished` carries `retry: '1'`).
+- A perfect retry (2 of 2) does not play the «full mark» celebration (`perfect` is false for a retry round); the small
+  game-over celebration still plays.
+- The streak chip shows from two in a row and exists on `TriviaBoard` games only; the maths drills, memory, colours and
+  scramble are unchanged.
+
+**Deviations from the plan, during the build.**
+- **The retry round reported itself (found in review, fixed in `bb043c3`).** The first version of retry passed the same
+  `onFinished` as a full round, so a homework lesson game would have posted «2 من 2» for a child who had missed two of eight
+  (a perfect ratio), and the server keeps the higher ratio. A retry round now never calls `onFinished`, never records a best and sends no
+  status footer. The same commit moved the lesson games' best from one per game to one per lesson.
+- **The map was unreadable (`da085e9`).** Unlit governorates were card on card (about 1.2:1), so only the lit one showed.
+  They now take `colors.muted` with a `mutedForeground` outline, the map is sized from its viewBox ratio instead of a fixed
+  height, the wrong pick's red outline is drawn last so a shared edge cannot cover it, and the credit names Wikimedia Commons
+  as well as geoBoundaries.
+- **Two build scripts had `import.meta.url` main-guard typing errors** (`build-jordan-map.ts`, `make-wrong-cue.ts`), fixed
+  in the same commits that added them.
+- **Three things only a browser showed (the fixes commit).** (1) `JordanMap` put `accessible={false}` on the `Svg`;
+  react-native-svg passes it to the DOM on web and React logged a console error on every governorates answer. The
+  decorative flags now sit on the wrapping `View`, and `jordanMapWiring.test.ts`, which pinned `accessible={false}`, now
+  pins the three props that hide the map and rejects `accessible=` (it failed before the fix). (2) The progress row was 16 px
+  tall and 25 px with the streak chip, so the question dropped 9 px mid-game; it now has a `minHeight` that holds the chip.
+  (3) The game-over panel was a fixed `View`; with the best line and the retry button it was cut off at the top and bottom
+  on a 320×568 phone (the trophy under the header, the teacher signup card unreachable). It is now a `ScrollView`.
+  `designScale.test.ts` needed no change.
+
 ## Slides: the class's turn, spot the mistake, and one point at a time — 2026-10-30
 
 A deck looked good and still ran as a lecture: Prompt Slides asked for every concept slide
