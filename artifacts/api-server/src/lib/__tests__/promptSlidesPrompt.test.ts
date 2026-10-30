@@ -32,6 +32,7 @@ import {
   sanitizeDeckStructure,
 } from "../promptSlidesPrompt.ts";
 import { DECK_LAYOUT_NAMES } from "../promptSlidesPrompt.ts";
+import { MAX_PASSIVE_RUN } from "../deckEngagement.ts";
 
 const baseBody = {
   subject: "Science",
@@ -239,6 +240,48 @@ describe("deck kind — a general deck is not a lesson", () => {
     assert.ok(!ar.includes("ما يحتاجه المعلّم قبل الحصة"), "teacherPreparation example still says الحصة");
     assert.ok(!promptSlidesPromptEn(body).includes("The lesson goal in one sentence"));
   });
+});
+
+describe("the class's turn — a teaching deck is not a lecture", () => {
+  /**
+   * The defect these pin: the arc put every concept slide first and the one
+   * worked example and one check «near the end», so a ten-slide lesson was
+   * seven slides of watching. `checkDeck`'s `passive_run` and the route's
+   * engagement log read the same limit back from live decks.
+   */
+  const body = { additionalContext: "درس عن المول والكتلة المولية", slideCount: 12 };
+  const teachingPart = (p: string, a: RegExp, b: RegExp) => p.slice(p.search(a), p.search(b));
+
+  for (const [label, build] of BOTH) {
+    const prompt = build(body);
+    const teaching = label === "ar"
+      ? teachingPart(prompt, /بنية \(أ\)/, /بنية \(ب\)/)
+      : teachingPart(prompt, /Structure for \(A\)/, /Structure for \(B\)/);
+    const general = label === "ar"
+      ? teachingPart(prompt, /بنية \(ب\)/, /أعد JSON/)
+      : teachingPart(prompt, /Structure for \(B\)/, /Return JSON/);
+
+    it(`${label}: caps explanation at two slides in a row, in the teaching arc only`, () => {
+      assert.equal(MAX_PASSIVE_RUN, 2);
+      const rule = label === "ar" ? /لا تتتالَ أكثر من شريحتي شرح/ : /Never more than two concept slides in a row/;
+      assert.match(teaching, rule);
+      // A parents' evening is not quizzed every two slides.
+      assert.doesNotMatch(general, rule);
+    });
+
+    it(`${label}: asks for a spot-the-mistake slide built from a real misconception`, () => {
+      assert.match(teaching, label === "ar" ? /اكتشف الخطأ/ : /Spot the mistake/);
+      assert.match(teaching, /commonMisconceptions/);
+      // The error is the puzzle: marking it on screen gives the answer away.
+      assert.match(teaching, label === "ar" ? /لا تُشِر إلى الخطأ في "content"/ : /Never mark the error in "content"/);
+    });
+
+    it(`${label}: sets examples in the students' own Jordan without inventing facts about it`, () => {
+      assert.match(prompt, label === "ar" ? /الأردن/ : /Jordan/);
+      assert.match(prompt, label === "ar" ? /الدينار/ : /dinar/);
+      assert.match(prompt, label === "ar" ? /لا تقدّمها حقائق/ : /never as facts about/);
+    });
+  }
 });
 
 describe("deckPhotoQueries — the deck's topic, not the school subject", () => {

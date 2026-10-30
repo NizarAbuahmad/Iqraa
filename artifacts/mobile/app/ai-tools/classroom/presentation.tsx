@@ -58,12 +58,22 @@ import { ImageViewerModal } from '@/components/ui/ImageViewer';
 import { PEN_COLORS, PenCanvas, PenPalette, type Stroke } from '@/components/classroom/PenLayer';
 import { bindOperators, hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
 import { creditSegments, type PhotoCredit } from '@/services/photoCredit';
+import { pacedBeats, pacedNext, revealThreshold } from '@/services/pacedReveal';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { goBack } from '@/services/navigation';
 import { confirm } from '@/services/confirm';
 
 
 /** The deck's theme, for every slide component below the screen. */
 const ThemeContext = createContext<DeckTheme>(DEFAULT_DECK_THEME);
+
+/**
+ * «One point at a time» (`services/pacedReveal.ts`): a `Reveal` whose index is
+ * below `threshold` is shown. The default shows everything, as before.
+ */
+const PaceContext = createContext<{ threshold: number; paced: boolean }>({ threshold: Infinity, paced: false });
+/** The teacher's choice, kept on the device. */
+const PACED_REVEAL_KEY = '@iqra_paced_reveal_v1';
 
 /** Open a media URL outside the app (native fallback — no WebView dep). */
 async function openExternalMedia(url: string): Promise<void> {
@@ -742,24 +752,31 @@ function StatsRowView({ items, accent, isRTL }: {
  * it by slide index). Skipped entirely when the device asks for reduced motion,
  * and capped at eight beats so a long list is not still arriving a second later.
  * Native-driven (opacity and transform only), so it costs the JS thread nothing.
+ *
+ * Paced (`PaceContext`), an item waits hidden until the teacher's Next reaches
+ * it, then plays at once — no stagger, the press is the beat. It keeps its
+ * space while hidden, so the slide does not reflow under the class.
  */
 function Reveal({ index, style, children }: { index: number; style?: StyleProp<ViewStyle>; children?: React.ReactNode }) {
   const progress = useRef(new Animated.Value(0)).current;
+  const { threshold, paced } = useContext(PaceContext);
+  const visible = index < threshold;
   useEffect(() => {
+    if (!visible) { progress.setValue(0); return; }
     let cancelled = false;
     AccessibilityInfo.isReduceMotionEnabled()
       .then(reduce => {
         if (cancelled) return;
         if (reduce) { progress.setValue(1); return; }
         Animated.timing(progress, {
-          toValue: 1, duration: 320, delay: 120 + Math.min(index, 8) * 90, useNativeDriver: NATIVE_DRIVER,
+          toValue: 1, duration: 320, delay: paced ? 0 : 120 + Math.min(index, 8) * 90, useNativeDriver: NATIVE_DRIVER,
         }).start();
       })
       // If the setting cannot be read, show the item rather than leave it invisible.
       .catch(() => progress.setValue(1));
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [visible]);
   return (
     <Animated.View
       style={[style, { opacity: progress, transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }] }]}
@@ -1334,6 +1351,23 @@ export default function PresentationScreen() {
   const [zoomed, setZoomed] = useState(false);
   // A split slide's side figure; lifted here so Esc closes it before leaving the deck.
   const [sideZoom, setSideZoom] = useState<string | null>(null);
+  // «One point at a time»: how many of this slide's points are out. Off by
+  // default — one press, one slide, as teachers know it — and remembered.
+  const [paced, setPaced] = useState(false);
+  const [shown, setShown] = useState(0);
+  // A phone's bar has no room for the toggle (see `compactBar`), so a choice
+  // remembered from a laptop must not pace a phone with no way to turn it off.
+  const pacing = paced && !compactBar;
+  useEffect(() => {
+    AsyncStorage.getItem(PACED_REVEAL_KEY).then(v => { if (v === '1') setPaced(true); }).catch(() => {});
+  }, []);
+  const togglePaced = () => {
+    const on = !paced;
+    setPaced(on);
+    AsyncStorage.setItem(PACED_REVEAL_KEY, on ? '1' : '0').catch(() => {});
+    // Switching it on mid-slide must not hide what the class is already reading.
+    setShown(Infinity);
+  };
   // Ink is kept per slide so stepping back shows what was drawn there.
   const [penOn, setPenOn] = useState(false);
   const [penColor, setPenColor] = useState(PEN_COLORS[0]!);
@@ -1388,6 +1422,7 @@ export default function PresentationScreen() {
   };
 
   const initSlide = (slide: ActivitySlide) => {
+    setShown(0);
     setHintVisible(false);
     setAnswerVisible(false);
     setTeacherPanelOpen(false);
@@ -1488,12 +1523,26 @@ export default function PresentationScreen() {
   const goToSlide = (idx: number) => {
     if (!activity || idx < 0 || idx >= activity.slides.length) return;
     const nextSlide = activity.slides[idx];
+    // Back to a slide already seen: whole. The same slide again (its own dot):
+    // as it was, not hidden back to its title.
+    const restore = idx < slideIndex ? Infinity : idx === slideIndex ? shown : null;
     Animated.timing(fadeAnim, { toValue: 0, duration: 140, useNativeDriver: NATIVE_DRIVER }).start(() => {
       setSlideIndex(idx);
       initSlide(nextSlide);
+      if (restore !== null) setShown(restore);
       Animated.timing(fadeAnim, { toValue: 1, duration: 180, useNativeDriver: NATIVE_DRIVER }).start();
     });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  /** The points Next still has to show on this slide; [] unless paced. */
+  const slideHere = activity?.slides[slideIndex];
+  const beatsHere = pacing && slideHere ? pacedBeats(slideHere) : [];
+  /** Next: this slide's next point while one is hidden, else the next slide. */
+  const stepForward = () => {
+    const next = pacedNext(beatsHere, shown);
+    if (next === 'advance') goToSlide(slideIndex + 1);
+    else setShown(next);
   };
 
   /** «Play as Class Challenge»: this deck's own choice questions become a team game, from slide 1. */
@@ -1618,7 +1667,7 @@ export default function PresentationScreen() {
       );
       if (!action) return;
       e.preventDefault();
-      if (action === 'next') goToSlide(slideIndex + 1);
+      if (action === 'next') stepForward();
       else if (action === 'prev') goToSlide(slideIndex - 1);
       else if (action === 'togglePause') togglePauseTimer();
       else if (action === 'toggleFullscreen' || action === 'exitFullscreen') toggleFullscreen();
@@ -1678,6 +1727,9 @@ export default function PresentationScreen() {
   // carries the photo's credit line.
   const photoHero = asPhotoHero(slide);
   const isLast = slideIndex === totalSlides - 1;
+  // A hidden point on this slide keeps Next live even on the last slide.
+  const pointPending = pacedNext(beatsHere, shown) !== 'advance';
+  const atEnd = isLast && !pointPending;
   const hasTimer = timerTotal > 0;
   const timerPct = calcTimerPct(timerSec, timerTotal);
   const tColor = timerColor(timerPct);
@@ -1860,7 +1912,11 @@ export default function PresentationScreen() {
               // pen layer below cannot share. Both sat in this ScrollView as
               // `key={slideIndex}`, and two siblings with one key made React keep
               // every slide it had shown: slide 3 drew slides 2 and 3 stacked.
-              : <SlideView key={`slide-${slideIndex}`} slide={slide} isRTL={slideRTL} onZoomSide={setSideZoom} />}
+              : (
+                <PaceContext.Provider value={{ threshold: pacing ? revealThreshold(beatsHere, shown) : Infinity, paced: pacing }}>
+                  <SlideView key={`slide-${slideIndex}`} slide={slide} isRTL={slideRTL} onZoomSide={setSideZoom} />
+                </PaceContext.Provider>
+              )}
           <ImageViewerModal
             url={sideZoom}
             onClose={() => setSideZoom(null)}
@@ -2103,6 +2159,23 @@ export default function PresentationScreen() {
 
         {/* Action row */}
         <View style={[styles.actionRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          {/* Not on a phone: its bar is budgeted for two icon buttons (see
+              `compactBar`), and «النقطة التالية» would not fit the Next button. */}
+          {!compactBar && (
+            <Pressable
+              onPress={togglePaced}
+              style={[styles.actionBtn, paced && { borderColor: T.accent + '50', backgroundColor: T.accent + '12' }]}
+              hitSlop={8}
+              accessibilityRole="button"
+              aria-selected={paced}
+              accessibilityLabel={t('pacedReveal')}
+            >
+              <Ionicons name={paced ? 'list' : 'list-outline'} size={20} color={paced ? T.accent : T.muted} />
+              <Text numberOfLines={1} style={[styles.actionLabel, paced && { color: T.accent }, { fontFamily: 'Almarai_400Regular' }]}>
+                {t('pacedReveal')}
+              </Text>
+            </Pressable>
+          )}
           <Pressable
             onPress={() => setPenOn(v => !v)}
             style={[styles.actionBtn, penOn && { borderColor: T.accent + '50', backgroundColor: T.accent + '12' }]}
@@ -2184,26 +2257,26 @@ export default function PresentationScreen() {
           )}
         </View>
 
-        {/* Next */}
+        {/* Next — on a paced slide, the next point first */}
         <Pressable
-          onPress={() => goToSlide(slideIndex + 1)}
-          disabled={isLast}
+          onPress={stepForward}
+          disabled={atEnd}
           style={[
             styles.navBtnWide,
             compactBar && styles.navBtnCompact,
             {
-              opacity: isLast ? 0.3 : 1,
-              backgroundColor: isLast ? 'transparent' : T.accent,
+              opacity: atEnd ? 0.3 : 1,
+              backgroundColor: atEnd ? 'transparent' : T.accent,
               flexDirection: isRTL ? 'row-reverse' : 'row',
             },
           ]}
           accessibilityRole="button"
-          accessibilityLabel={t('nextSlide')}
+          accessibilityLabel={pointPending ? t('nextPoint') : t('nextSlide')}
         >
-          <Text numberOfLines={1} style={[styles.navLabel, { color: isLast ? T.muted : '#fff', fontFamily: 'ReadexPro_700Bold' }]}>
-            {t('nextSlide')}
+          <Text numberOfLines={1} style={[styles.navLabel, { color: atEnd ? T.muted : '#fff', fontFamily: 'ReadexPro_700Bold' }]}>
+            {pointPending ? t('nextPoint') : t('nextSlide')}
           </Text>
-          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={isLast ? T.muted : '#fff'} />
+          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={atEnd ? T.muted : '#fff'} />
         </Pressable>
       </View>
 

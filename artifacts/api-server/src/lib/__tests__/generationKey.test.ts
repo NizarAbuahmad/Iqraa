@@ -14,7 +14,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { generationKeys, normalizeText } from "../generationKey.ts";
+import { generationKeys, normalizeText, PROMPT_VERSION, promptVersionFor } from "../generationKey.ts";
 
 const base = { subject: "رياضيات", grade: "10", topic: "كثيرات الحدود", language: "arabic" };
 const keys = (body: Record<string, unknown>) => generationKeys("worksheet", "gpt-5.4-mini", body);
@@ -314,5 +314,29 @@ describe("distribution in the cache key", () => {
 
   it("a request with no distribution hashes exactly as before", () => {
     assert.deepEqual(keys(base), keys({ ...base, distribution: undefined }));
+  });
+});
+
+describe("prompt version per kind", () => {
+  /**
+   * What this guards: a prompt change to one pooled kind must start that kind's
+   * pool afresh without restarting every other kind's. The lesson-teaching
+   * prompt gained «اكتشف الخطأ» (`mistake`) on 2026-10-30; under the one global
+   * version its old pooled sections, which have none, would be served forever.
+   */
+  const body = { lessonId: "kbl-g10-chem-1", subject: "Chemistry", grade: "10", language: "arabic" };
+
+  it("gives lesson-teaching its own version, and every other kind the global one", () => {
+    assert.notEqual(promptVersionFor("lesson-teaching"), PROMPT_VERSION);
+    for (const kind of ["worksheet", "quiz", "lesson-plan", "homework", "prompt-slides"]) {
+      assert.equal(promptVersionFor(kind), PROMPT_VERSION, kind);
+    }
+  });
+
+  it("keys a kind by its own version when the caller passes none", () => {
+    const own = generationKeys("lesson-teaching", "m", body);
+    const global = generationKeys("lesson-teaching", "m", body, PROMPT_VERSION);
+    assert.notEqual(own.strictKey, global.strictKey);
+    assert.deepEqual(generationKeys("worksheet", "m", body), generationKeys("worksheet", "m", body, PROMPT_VERSION));
   });
 });

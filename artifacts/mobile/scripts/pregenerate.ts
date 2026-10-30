@@ -278,12 +278,20 @@ export function assertReviewFileFree(exists: boolean, forced: boolean, path: str
   );
 }
 
+/**
+ * The keys a student is never served (`stripTeacherNotes` in the API's
+ * `lib/lessonExplanation.ts`): stage directions, and `mistake` — the deck's
+ * deliberately wrong solution, which would otherwise ask a reviewer to approve
+ * wrong maths as «what a student would see».
+ */
+const STUDENT_HIDDEN_KEYS = new Set(['teacherNote', 'mistake']);
+
 function withoutTeacherNotes(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(withoutTeacherNotes);
   if (value && typeof value === 'object') {
     return Object.fromEntries(
       Object.entries(value as Record<string, unknown>)
-        .filter(([key]) => key !== 'teacherNote')
+        .filter(([key]) => !STUDENT_HIDDEN_KEYS.has(key))
         .map(([key, inner]) => [key, withoutTeacherNotes(inner)]),
     );
   }
