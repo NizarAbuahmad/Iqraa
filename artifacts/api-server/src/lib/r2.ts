@@ -33,6 +33,9 @@ function r2Client(): S3Client | null {
     region: "auto",
     endpoint,
     credentials: { accessKeyId, secretAccessKey },
+    // Real R2 uses virtual-hosted style. The DB tests point R2_ENDPOINT at a local stub that has
+    // no wildcard DNS, so they set this; production never does.
+    forcePathStyle: process.env.R2_FORCE_PATH_STYLE === "true",
   });
   return cachedClient;
 }
@@ -100,6 +103,16 @@ export function newAvatarKey(extension: string): string {
  */
 export function newAttemptAudioKey(extension: string): string {
   return `attempt-audio/${randomUUID()}${extension}`;
+}
+
+/**
+ * A student's project photo. A prefix of its own, with the homework and the roster row in the
+ * path: this is a minor's work, so "delete everything for this homework" or "for this child" is
+ * a prefix operation rather than a query someone has to get right. The filename is never the
+ * caller's, and the UUID makes the key unguessable even if the bucket's public toggle is left on.
+ */
+export function newHomeworkSubmissionKey(homeworkId: string, studentId: string, extension: string): string {
+  return `homework-submissions/${homeworkId}/${studentId}/${randomUUID()}${extension}`;
 }
 
 export async function putObject(key: string, body: Buffer, contentType: string): Promise<void> {
