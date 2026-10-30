@@ -1,12 +1,20 @@
 import { logger } from "./logger.ts";
 import { guardianConsentBodyHtml, guardianConsentSubject } from "./guardianConsentEmail.ts";
+import {
+  emailUnsubscribeUrl,
+  normalizeEmail,
+  unsubscribeFooterHtml,
+  unsubscribeHeaders,
+  type EmailKind,
+} from "./emailUnsubscribe.ts";
 
 /**
  * Shared chrome for every outgoing mail: logo + bilingual wordmark/tagline up
  * top, a light card around the message, a footer link back to the site. One
  * shell so a design tweak (or a future subject) touches one place instead of
- * every `render*Html` function separately. `footerHtml` replaces the site link
- * for mail that needs more there (the waitlist broadcast's unsubscribe line).
+ * every `render*Html` function separately. Every mail that leaves through
+ * `deliver` gets the unsubscribe footer (emailUnsubscribe.ts) in place of the
+ * bare site link; the waitlist broadcast passes its own.
  */
 function renderEmailShell(
   bodyHtml: string,
@@ -44,6 +52,81 @@ function renderEmailShell(
 }
 
 /**
+ * Which addresses unsubscribed, given lowercased addresses. The real one reads
+ * `email_suppressions` (lib/emailSuppression.ts, registered when the routes
+ * load); this file cannot import the database and still load under
+ * `node --test`, so it is handed in rather than imported.
+ */
+export type SuppressionCheck = (emails: readonly string[]) => Promise<ReadonlySet<string>>;
+let suppressionCheck: SuppressionCheck | null = null;
+
+export function setSuppressionCheck(check: SuppressionCheck | null): void {
+  suppressionCheck = check;
+}
+
+/**
+ * The unsubscribed addresses among these. Throws when it cannot tell, and the
+ * callers then send nothing: mailing someone who asked us to stop is the
+ * failure that matters here. A production server with no check registered is
+ * that case too — only tests and scripts run without one.
+ */
+async function suppressedAmong(emails: readonly string[]): Promise<ReadonlySet<string>> {
+  if (suppressionCheck) return suppressionCheck(emails.map(normalizeEmail));
+  if (process.env.NODE_ENV === "production") throw new Error("email suppression check not registered");
+  return new Set();
+}
+
+/**
+ * One mail through Resend: the shell with the unsubscribe footer, the
+ * one-click headers, and — for `general` mail — the unsubscribe list first.
+ * False for an unsubscribed address, an unreadable list, a refusal or a lost
+ * request; true only when Resend accepted it. `what` names the mail in the log.
+ */
+async function deliver(
+  apiKey: string,
+  mail: { to: string; subject: string; bodyHtml: string; kind: EmailKind },
+  what: string,
+): Promise<boolean> {
+  const { to, subject, bodyHtml, kind } = mail;
+  if (kind === "general") {
+    try {
+      if ((await suppressedAmong([to])).has(normalizeEmail(to))) {
+        logger.info({ to }, `${what} not sent — the address unsubscribed`);
+        return false;
+      }
+    } catch (err) {
+      logger.error({ err, to }, `${what} not sent — the unsubscribe list could not be read`);
+      return false;
+    }
+  }
+  const url = emailUnsubscribeUrl(to);
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: process.env.RESEND_FROM_EMAIL ?? "Iqrra <onboarding@resend.dev>",
+        to,
+        subject,
+        html: renderEmailShell(bodyHtml, unsubscribeFooterHtml(url, kind)),
+        headers: unsubscribeHeaders(url),
+      }),
+    });
+    if (!res.ok) {
+      logger.error({ to, status: res.status, body: await res.text() }, `resend ${what} send failed`);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    logger.error({ err, to }, `resend ${what} send threw`);
+    return false;
+  }
+}
+
+/**
  * Sends the 6-digit signup verification code via Resend's REST API.
  *
  * Plain `fetch`, not the `resend` npm package — one POST call doesn't need a
@@ -64,33 +147,15 @@ export async function sendVerificationEmail(to: string, code: string): Promise<b
     return false;
   }
 
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: process.env.RESEND_FROM_EMAIL ?? "Iqrra <onboarding@resend.dev>",
-        to,
-        subject: "رمز تأكيد بريدك الإلكتروني في إقرأ / Your Iqrra verification code",
-        html: renderVerificationEmailHtml(code),
-      }),
-    });
-    if (!res.ok) {
-      logger.error({ to, status: res.status, body: await res.text() }, "resend send failed");
-      return false;
-    }
-    return true;
-  } catch (err) {
-    logger.error({ err, to }, "resend send threw");
-    return false;
-  }
+  return deliver(
+    apiKey,
+    { to, subject: "رمز تأكيد بريدك الإلكتروني في إقرأ / Your Iqrra verification code", bodyHtml: verificationBodyHtml(code), kind: "security" },
+    "verification",
+  );
 }
 
-function renderVerificationEmailHtml(code: string): string {
-  return renderEmailShell(`
+function verificationBodyHtml(code: string): string {
+  return `
     <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-bottom:24px;">
       <p>مرحبًا،</p>
       <p>رمز تأكيد بريدك الإلكتروني في إقرأ هو:</p>
@@ -104,7 +169,7 @@ function renderVerificationEmailHtml(code: string): string {
       <p style="font-size:28px;font-weight:bold;letter-spacing:4px;background:#F1F5F9;border-radius:8px;padding:12px;text-align:center;">${code}</p>
       <p>This code expires in 15 minutes. If you didn't create an Iqrra account, you can ignore this email.</p>
     </div>
-  `);
+  `;
 }
 
 /**
@@ -124,29 +189,11 @@ export async function sendPasswordResetEmail(to: string, code: string): Promise<
     return false;
   }
 
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: process.env.RESEND_FROM_EMAIL ?? "Iqrra <onboarding@resend.dev>",
-        to,
-        subject: "رمز إعادة تعيين كلمة المرور في إقرأ / Your Iqrra password reset code",
-        html: renderPasswordResetEmailHtml(code),
-      }),
-    });
-    if (!res.ok) {
-      logger.error({ to, status: res.status, body: await res.text() }, "resend password reset send failed");
-      return false;
-    }
-    return true;
-  } catch (err) {
-    logger.error({ err, to }, "resend password reset send threw");
-    return false;
-  }
+  return deliver(
+    apiKey,
+    { to, subject: "رمز إعادة تعيين كلمة المرور في إقرأ / Your Iqrra password reset code", bodyHtml: passwordResetBodyHtml(code), kind: "security" },
+    "password reset",
+  );
 }
 
 /**
@@ -162,33 +209,15 @@ export async function sendGoogleAccountNoticeEmail(to: string): Promise<boolean>
     return false;
   }
 
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: process.env.RESEND_FROM_EMAIL ?? "Iqrra <onboarding@resend.dev>",
-        to,
-        subject: "حسابك مرتبط بجوجل / Your account uses Google sign-in",
-        html: renderGoogleAccountNoticeHtml(),
-      }),
-    });
-    if (!res.ok) {
-      logger.error({ to, status: res.status, body: await res.text() }, "resend google-account notice send failed");
-      return false;
-    }
-    return true;
-  } catch (err) {
-    logger.error({ err, to }, "resend google-account notice send threw");
-    return false;
-  }
+  return deliver(
+    apiKey,
+    { to, subject: "حسابك مرتبط بجوجل / Your account uses Google sign-in", bodyHtml: googleAccountNoticeBodyHtml(), kind: "security" },
+    "google-account notice",
+  );
 }
 
-function renderGoogleAccountNoticeHtml(): string {
-  return renderEmailShell(`
+function googleAccountNoticeBodyHtml(): string {
+  return `
     <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-bottom:24px;">
       <p>مرحبًا،</p>
       <p>طلب أحدهم (على الأرجح أنت) رمز إعادة تعيين كلمة مرور لهذا البريد، لكن حسابك في إقرأ لا يستخدم كلمة مرور — إنه مرتبط بحساب جوجل.</p>
@@ -200,11 +229,11 @@ function renderGoogleAccountNoticeHtml(): string {
       <p>Someone (probably you) asked to reset the password for this email, but your Iqrra account doesn't have a password — it's linked to Google sign-in.</p>
       <p>Use the "Continue with Google" button to sign in instead.</p>
     </div>
-  `);
+  `;
 }
 
-function renderPasswordResetEmailHtml(code: string): string {
-  return renderEmailShell(`
+function passwordResetBodyHtml(code: string): string {
+  return `
     <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-bottom:24px;">
       <p>مرحبًا،</p>
       <p>رمز إعادة تعيين كلمة المرور في إقرأ هو:</p>
@@ -218,7 +247,7 @@ function renderPasswordResetEmailHtml(code: string): string {
       <p style="font-size:28px;font-weight:bold;letter-spacing:4px;background:#F1F5F9;border-radius:8px;padding:12px;text-align:center;">${code}</p>
       <p>This code expires in 15 minutes. If you didn't ask to reset your password, there's nothing to do — your current password still works.</p>
     </div>
-  `);
+  `;
 }
 
 /**
@@ -250,35 +279,17 @@ export async function sendArtifactReportedEmail(
     return false;
   }
 
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: process.env.RESEND_FROM_EMAIL ?? "Iqrra <onboarding@resend.dev>",
-        to,
-        subject: "تقرير محتوى جديد بانتظار المراجعة / New content report awaiting review",
-        html: renderArtifactReportedEmailHtml(info),
-      }),
-    });
-    if (!res.ok) {
-      logger.error({ to, status: res.status, body: await res.text() }, "resend artifact-report notice send failed");
-      return false;
-    }
-    return true;
-  } catch (err) {
-    logger.error({ err, to }, "resend artifact-report notice send threw");
-    return false;
-  }
+  return deliver(
+    apiKey,
+    { to, subject: "تقرير محتوى جديد بانتظار المراجعة / New content report awaiting review", bodyHtml: artifactReportedBodyHtml(info), kind: "general" },
+    "artifact-report notice",
+  );
 }
 
-function renderArtifactReportedEmailHtml(info: { kind: string; lessonRef: string }): string {
+function artifactReportedBodyHtml(info: { kind: string; lessonRef: string }): string {
   const kind = escapeHtml(info.kind);
   const lessonRef = escapeHtml(info.lessonRef || "—");
-  return renderEmailShell(`
+  return `
     <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-bottom:24px;">
       <p>أبلغ معلّم عن مشكلة في مادة مولَّدة بالذكاء الاصطناعي، وهي بانتظار مراجعتك.</p>
       <p><strong>النوع:</strong> ${kind}</p>
@@ -291,7 +302,7 @@ function renderArtifactReportedEmailHtml(info: { kind: string; lessonRef: string
       <p><strong>Lesson:</strong> ${lessonRef}</p>
       <p>Review it from the admin dashboard in the app.</p>
     </div>
-  `);
+  `;
 }
 
 /**
@@ -312,29 +323,11 @@ export async function sendAppInviteEmail(to: string): Promise<boolean> {
     return false;
   }
 
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: process.env.RESEND_FROM_EMAIL ?? "Iqrra <onboarding@resend.dev>",
-        to,
-        subject: APP_INVITE_SUBJECT,
-        html: renderAppInviteEmailHtml(appInviteUrl()),
-      }),
-    });
-    if (!res.ok) {
-      logger.error({ to, status: res.status, body: await res.text() }, "resend app invite send failed");
-      return false;
-    }
-    return true;
-  } catch (err) {
-    logger.error({ err, to }, "resend app invite send threw");
-    return false;
-  }
+  return deliver(
+    apiKey,
+    { to, subject: APP_INVITE_SUBJECT, bodyHtml: appInviteBodyHtml(appInviteUrl()), kind: "general" },
+    "app invite",
+  );
 }
 
 export function renderAppInviteEmailHtml(link: string): string {
@@ -374,7 +367,9 @@ export function appInviteBodyHtml(link: string): string {
  *
  * Returns who was handed to Resend and who was not, so the caller stamps only
  * the first group. A batch is accepted or refused whole, so one bad chunk
- * lands entirely in `failed`; no key means everyone failed.
+ * lands entirely in `failed`; no key, or an unreadable unsubscribe list, means
+ * everyone failed. Anyone who unsubscribed from any of our mail
+ * (`email_suppressions`) is left out, in `skipped`.
  */
 const BATCH_SIZE = 100;
 const BATCH_PAUSE_MS = 600;
@@ -384,8 +379,8 @@ export async function sendBroadcast(
   subject: string,
   bodyHtml: string,
   unsubscribeUrl: (id: string) => string,
-): Promise<{ sent: string[]; failed: string[] }> {
-  const out = { sent: [] as string[], failed: [] as string[] };
+): Promise<{ sent: string[]; failed: string[]; skipped: string[] }> {
+  const out = { sent: [] as string[], failed: [] as string[], skipped: [] as string[] };
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     logger.warn({ count: recipients.length }, "RESEND_API_KEY not set — broadcast not sent");
@@ -393,6 +388,17 @@ export async function sendBroadcast(
     return out;
   }
   const from = process.env.RESEND_FROM_EMAIL ?? "Iqrra <onboarding@resend.dev>";
+
+  let suppressed: ReadonlySet<string>;
+  try {
+    suppressed = await suppressedAmong(recipients.map(r => r.email));
+  } catch (err) {
+    logger.error({ err, count: recipients.length }, "broadcast not sent — the unsubscribe list could not be read");
+    out.failed.push(...recipients.map(r => r.email));
+    return out;
+  }
+  out.skipped.push(...recipients.filter(r => suppressed.has(normalizeEmail(r.email))).map(r => r.email));
+  recipients = recipients.filter(r => !suppressed.has(normalizeEmail(r.email)));
 
   for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
     const chunk = recipients.slice(i, i + BATCH_SIZE);
@@ -447,24 +453,9 @@ export async function sendGuardianConsentEmail(to: string, childFirstName: strin
     return false;
   }
 
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: process.env.RESEND_FROM_EMAIL ?? "Iqrra <onboarding@resend.dev>",
-        to,
-        subject: guardianConsentSubject,
-        html: renderEmailShell(guardianConsentBodyHtml(childFirstName, link)),
-      }),
-    });
-    if (!res.ok) {
-      logger.error({ to, status: res.status, body: await res.text() }, "resend send failed (guardian consent)");
-      return false;
-    }
-    return true;
-  } catch (err) {
-    logger.error({ err, to }, "resend send threw (guardian consent)");
-    return false;
-  }
+  return deliver(
+    apiKey,
+    { to, subject: guardianConsentSubject, bodyHtml: guardianConsentBodyHtml(childFirstName, link), kind: "general" },
+    "guardian consent",
+  );
 }

@@ -244,6 +244,7 @@ export default function LoginScreen() {
               <Text style={{ color: colors.primary }} onPress={() => router.push('/legal/privacy')}>
                 {t('privacyPolicy')}
               </Text>
+              {t('loginGoogleAdultNotice')}
             </Text>
             {googleLoading ? (
               <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>

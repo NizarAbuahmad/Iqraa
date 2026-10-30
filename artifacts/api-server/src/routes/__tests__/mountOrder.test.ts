@@ -918,6 +918,17 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(post.status, 400, "a forged link must not unsubscribe anyone");
   });
 
+  it("serves the unsubscribe page in every email without a session, and refuses a forged link", async () => {
+    // Same reasoning as the waitlist page above: 400 means mounted and unguarded, and the token is the check.
+    const get = await fetch(`${base}/email/unsubscribe?t=forged`);
+    assert.equal(get.status, 400);
+    assert.match(await get.text(), /not valid/);
+    for (const path of ["unsubscribe", "resubscribe"]) {
+      const post = await fetch(`${base}/email/${path}?t=forged`, { method: "POST" });
+      assert.equal(post.status, 400, `a forged link must not ${path} anyone`);
+    }
+  });
+
   it("hides the site-signup ingest without the shared key", async () => {
     // Server-to-server only (iqrra.com's Vercel functions). Without the key
     // it must look like no route at all, not like a guarded one.

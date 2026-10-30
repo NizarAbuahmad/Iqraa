@@ -204,10 +204,16 @@ export default function RegisterScreen() {
   // up here, Google included: it stays gated on them (`readiness.google`) and its
   // hint says they are above. They once sat under «إنشاء حساب» and gated only the
   // password form, so Google created accounts nobody had asked to accept anything.
+  //
+  // A teacher or a parent must be 18 or older (terms §1), and this box is where
+  // they say so: its wording is part of the acceptance the server stores with
+  // LEGAL_VERSION. A student is not asked here — the age tick below covers
+  // them. No role picked yet is a teacher (the server's default), so it asks.
+  const adult = chosenRole !== 'student';
   const agreements = (
     <>
       <CheckRow checked={termsAccepted} onPress={() => setTermsAccepted(v => !v)} isRTL={isRTL} colors={colors}>
-        {lang === 'ar' ? 'أوافق على ' : 'I agree to the '}
+        {adult ? t('registerAdultAgreePrefix') : lang === 'ar' ? 'أوافق على ' : 'I agree to the '}
         {/* Underlined: the two links fill most of the sentence, and
             tapping one opened the policy when the tap was meant to tick
             the box. Only «أوافق على» and the box itself toggle. */}
