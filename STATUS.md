@@ -163,6 +163,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-30 — «ما الجديد»: existing users are told about new features, once, in the app
 - 2026-10-30 — PostHog moves to the owner's own EU project
 - 2026-10-29 — Screen recordings: Contentsquare on the web, PostHog replay on Android
 - 2026-10-28 — Grade 8 semester 2 word lists in the English corner
@@ -202,3 +203,6 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line
   before you rely on it: CLAUDE.md's first rule applies here too.
+- **A change users can see adds a «ما الجديد» entry** to `WHATS_NEW`
+  (`artifacts/mobile/services/whatsNew.ts`), dated the day it merges, or says in the PR body
+  why it needs none.
