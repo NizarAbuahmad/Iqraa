@@ -10,6 +10,33 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## A teacher can message a family from the roster, and sees the letter before it goes — 2026-10-30
+
+**Asked:** a teacher with a parent linked could only find the AI letter screen from the class page;
+the plain chat was three screens away in «الرسائل». A letter also reached the parent with a stray line
+of free text and a typo'd signature, because the send confirmation named the recipients and nothing else.
+
+**What changed (mobile only, no API or schema change).**
+- A «رسالة» pill on each joined student's row in `classes/[id]` opens a chat with that family at once
+  (`startThread`, the same call «رسالة جديدة» makes). The pill shows only when someone is linked
+  (`chatTarget` in `services/rosterLinks.ts`, tested). One linked account opens directly; **several
+  go to the Messages tab instead of the app choosing** — a message to the wrong family cannot be
+  unsent. The «محادثة الشعبة» class chat still excludes parents (`GET /messaging/threads/class/:id`);
+  this does not change that.
+- The parent-letter «أرسل في التطبيق» confirmation now shows the full letter in a bounded, scrollable
+  box (`ConfirmOptions.preview`, `ConfirmDialog`), and its buttons read «أرسل الرسالة» / «عدّل الرسالة»
+  instead of «أرسل» / «إلغاء». The `confirm()` fallbacks (web `window.confirm`, `Alert`) print the
+  preview inside the message.
+
+**Verified:** `pnpm run typecheck`; mobile `pnpm test` (8258 pass, 0 fail, 10 skipped as before);
+the new `chatTarget` cases. **Not verified:** the pill and the preview box in a browser or on a
+device, in RTL, light and dark — only typechecked. The signature field was already editable
+(`parentMsgSignature`); a wrong signature comes from the saved or typed name, not a missing field.
+
+**Known limits.** A student with a self account and a parent counts as two links, so the pill sends
+the teacher to the inbox picker rather than opening one chat. Direct chat needs a linked account;
+a student with nobody joined shows no pill.
+
 ## Unsubscribe in every email, and 18+ for teachers and parents — 2026-10-30
 
 **Asked:** an unsubscribe button in every email we send, and terms that say teachers and parents
