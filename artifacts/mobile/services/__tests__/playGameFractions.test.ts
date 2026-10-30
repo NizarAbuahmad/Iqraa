@@ -35,9 +35,9 @@ test('exactly the larger (or smaller) of the two options is marked, over many se
 
 test('labels are wrapped in a left-to-right override, with Arabic-Indic digits in Arabic', () => {
   const ar = buildFractionQuestion('larger', 'ar', makeRng(1));
-  for (const o of ar.options) assert.match(o.label, /^‭[٠-٩]+\/[٠-٩]+‬$/);
+  for (const o of ar.options) assert.match(o.label, /^\u202D[٠-٩]+\/[٠-٩]+\u202C$/);
   const en = buildFractionQuestion('larger', 'en', makeRng(1));
-  for (const o of en.options) assert.match(o.label, /^‭[0-9]+\/[0-9]+‬$/);
+  for (const o of en.options) assert.match(o.label, /^\u202D[0-9]+\/[0-9]+\u202C$/);
 });
 
 test('a round has no repeated pair', () => {
@@ -47,4 +47,8 @@ test('a round has no repeated pair', () => {
     const pairs = round.map(q => q.options.map(o => o.id).sort().join('|'));
     assert.equal(new Set(pairs).size, 8);
   }
+});
+
+test('fraction round is deterministic for a seed', () => {
+  assert.deepEqual(buildFractionRound('ar', 8, makeRng(9)), buildFractionRound('ar', 8, makeRng(9)));
 });

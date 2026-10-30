@@ -44,3 +44,7 @@ test('governorate round: 8 different places, four distinct governorates each, th
     }
   }
 });
+
+test('governorate round is deterministic for a seed', () => {
+  assert.deepEqual(buildGovernorateRound('ar', 8, makeRng(9)), buildGovernorateRound('ar', 8, makeRng(9)));
+});

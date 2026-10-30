@@ -1295,6 +1295,18 @@ describe('the lab, the corners, groups, export and the rest (tenth live pass)', 
     ['كيف أفتح لعبة الأضداد؟', 'tool:games', 'toolGamesTitle'],
     ['كيف ألعب لعبة الكسور؟', 'tool:games', 'toolGamesTitle'],
     ['كيف ألعب لعبة حالات المادة؟', 'tool:games', 'toolGamesTitle'],
+    // The names printed on the hub tiles, not only the topic words.
+    ['how do i play the compare fractions game', 'tool:games', 'toolGamesTitle'],
+    ['how do i play the which number game', 'tool:games', 'toolGamesTitle'],
+    ['how do i play the arabic plurals game', 'tool:games', 'toolGamesTitle'],
+    ['how do i play the plurals game', 'tool:games', 'toolGamesTitle'],
+    ['how do i play the even numbers game', 'tool:games', 'toolGamesTitle'],
+    ["how do i play the jordan's governorates game", 'tool:games', 'toolGamesTitle'],
+    ['كيف ألعب لعبة قارن الكسور؟', 'tool:games', 'toolGamesTitle'],
+    ['كيف ألعب لعبة أيّ عدد؟', 'tool:games', 'toolGamesTitle'],
+    ['كيف ألعب لعبة ضد الكلمة؟', 'tool:games', 'toolGamesTitle'],
+    ['كيف ألعب لعبة محافظات الأردن؟', 'tool:games', 'toolGamesTitle'],
+    ['كيف ألعب لعبة الأعداد الأولية؟', 'tool:games', 'toolGamesTitle'],
   ];
   for (const [q, id, label] of places) {
     it(`«${q}» → the ${id} place`, () => {
@@ -1319,7 +1331,12 @@ describe('the lab, the corners, groups, export and the rest (tenth live pass)', 
     'how do i teach the plural of a word',
     'كيف أشرح الكسور للصف الرابع',
     'كيف أشرح محافظات الأردن',
-    // «جمع» alone is the addition game, so «لعبة جمع الكلمة» is not matched.
+    'how do i explain which number is prime',
+    'how do i explain compare fractions to my class',
+    'كيف أشرح قارن الكسور',
+    'اشرح قارن الكسور',
+    // «جمع» alone is the addition game, so «لعبة جمع الكلمة» is not matched
+    // (the plurals game has no Arabic phrase in this rule for that reason).
     'كيف ألعب لعبة جمع الكلمة',
   ];
   for (const q of stayWithModel) {

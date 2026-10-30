@@ -58,3 +58,7 @@ test('a round mixes the three kinds and never asks about the same answer twice',
     assert.equal(new Set(round.map(q => q.correctId)).size, 8);
   }
 });
+
+test('number-type round is deterministic for a seed', () => {
+  assert.deepEqual(buildNumberRound('ar', 8, makeRng(9)), buildNumberRound('ar', 8, makeRng(9)));
+});

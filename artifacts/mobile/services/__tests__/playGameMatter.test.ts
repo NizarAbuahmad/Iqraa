@@ -49,3 +49,7 @@ test('a round is not all one state', () => {
     assert.ok(states.size >= 2);
   }
 });
+
+test('matter round is deterministic for a seed', () => {
+  assert.deepEqual(buildMatterRound('ar', 8, makeRng(9)), buildMatterRound('ar', 8, makeRng(9)));
+});

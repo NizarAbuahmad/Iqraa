@@ -1,6 +1,6 @@
 # Six new games for the public /play hub — design
 
-Date: 2026-10-29. Status: approved in chat, spec awaiting review.
+Date: 2026-10-29. Status: approved; implemented on branch ccr-c35bc284-4ljn3c (PR #1345).
 
 ## Goal
 

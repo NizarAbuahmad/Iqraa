@@ -35,3 +35,7 @@ test('plural round: the marked answer is the table plural of the subject', () =>
     }
   }
 });
+
+test('plural round is deterministic for a seed', () => {
+  assert.deepEqual(buildPluralRound('ar', 8, makeRng(9)), buildPluralRound('ar', 8, makeRng(9)));
+});
