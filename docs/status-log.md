@@ -10,6 +10,28 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## «ردّ بالبريد» on idea and contact messages in «البريد المجمّع», 2026-10-30
+
+The owner asked whether they could answer the ideas listed in the admin's «البريد المجمّع» (`app/admin/signups.tsx`). Most of
+them they could not, and still cannot: a signed-out visitor's «اقترح ميزة» stores only the message, an optional email and name,
+and `context` (`app:android` / `app:web`); no account, IP or device. The three on their screen had left the email blank, which
+is what the card's «—» means. For the ones that did leave an email, the screen had no way to answer except copying the address.
+
+**Changed:** an idea or contact card with an email now has «ردّ بالبريد», which opens the admin's own mail app on a `mailto:`
+draft (`services/adminReplyMail.ts`): subject «بخصوص اقتراحك لتطبيق «إقرأ»» (or «رسالتك» for a contact message), a greeting
+by name when one was given, room to write, and the sender's message quoted under «اقتراحك:», cut at 600 characters so the link
+stays short enough for mail apps. The draft is in the **sender's** language, read off their message (any Arabic letter makes
+it Arabic), not the dashboard's. Nothing goes through the server and nothing is recorded: the screen does not know whether a
+reply was sent. Waitlist rows keep the invite button and get no reply button. On web the link is assigned to
+`window.location` rather than opened in a tab (a `mailto:` in a new tab leaves an empty one behind); on native it is
+`Linking.openURL`, and when no mail app takes it the screen says so and names the address to copy.
+
+**Verified:** `adminReplyMail.test.ts` (12 tests: who gets a button, an address carrying `?`/`&` refused, Arabic vs English
+draft, contact wording, multi-line quoting, the 600-character cut, `%20`/`%0D%0A` encoding rather than `+`); the full mobile
+suite and the monorepo typecheck. **Not verified:** the button on a running admin screen, or the draft as Gmail, Outlook or
+the Android/iOS mail apps open it (an RTL subject, the quoted lines); ideas from **signed-in** users, in the dashboard's
+feedback list, have no reply button — this change is the signups screen only.
+
 ## PostHog moves to the owner's own EU project, 2026-10-30
 
 The Android recording plan (see «Screen recordings: Contentsquare on the web, PostHog replay on Android») stalled on one fact:
