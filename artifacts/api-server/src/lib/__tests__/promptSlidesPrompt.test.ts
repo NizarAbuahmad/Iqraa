@@ -184,9 +184,31 @@ describe("promptSlidesPrompt — the rules that stop empty decks", () => {
       assert.match(prompt, label === "ar" ? /تعود إلى بدايتها/ : /return to the start/);
       assert.match(prompt, label === "ar" ? /تصنيف/ : /classification/);
     });
+    it(`${label}: says names must differ, and a Venn needs an item`, () => {
+      for (const k of ["cycle", "tree", "venn", "mindmap"]) {
+        const line = prompt.split("\n").find(l => l.startsWith(`- "${k}"`))!;
+        assert.match(line, label === "ar" ? /مختلفة/ : /different/, k);
+      }
+      const venn = prompt.split("\n").find(l => l.startsWith('- "venn"'))!;
+      assert.match(venn, label === "ar" ? /عنصر واحد على الأقل/ : /at least one item/);
+    });
     it(`${label}: states the gate's character caps and one-line content for the diagrams`, () => {
       const ascii = prompt.replace(/[\u0660-\u0669]/g, d => String(d.charCodeAt(0) - 0x660));
-      for (const n of ["24", "32", "40", "20", "60"]) assert.ok(ascii.includes(n), n);
+      const bullet = (k: string) => {
+        const line = ascii.split("\n").find(l => l.startsWith(`- "${k}"`));
+        assert.ok(line, k);
+        return line!;
+      };
+      const caps: Record<string, string[]> = {
+        cycle: ["24", "60"],
+        tree: ["32", "24", "4"],
+        venn: ["24", "32", "20", "4", "3"], // the shared cap of 2 is worded "عنصران" in Arabic
+        mindmap: ["40"],
+      };
+      for (const [k, nums] of Object.entries(caps)) {
+        const line = bullet(k);
+        for (const n of nums) assert.match(line, new RegExp(`(^|\\D)${n}(\\D|$)`), `${k}: ${n}`);
+      }
       assert.match(prompt, label === "ar" ? /سطر واحد عمدًا، وكذلك كل شريحة بشكل "cycle" أو "tree" أو "venn" أو "mindmap"/ : /one line on purpose, as is a slide shaped "cycle", "tree", "venn" or "mindmap"/);
     });
   }
