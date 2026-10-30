@@ -195,14 +195,15 @@ jobs:
       - name: gradlew bundleRelease assembleRelease
         if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
         working-directory: artifacts/mobile/android
-        # Same four EXPO_PUBLIC_* values as eas.json's preview profile /
+        # Same five EXPO_PUBLIC_* values as eas.json's preview profile /
         # mobile-update.yml — Metro inlines them into the JS bundle when the
         # bundleReleaseJsAndAssets Gradle task runs, further down this chain.
         env:
           EXPO_PUBLIC_API_BASE_URL: https://iqraa-api-613126375862.europe-west1.run.app/api
           EXPO_PUBLIC_DEMO_MODE: "false"
           EXPO_PUBLIC_GOOGLE_CLIENT_ID: 784063967007-86omgnji0cg28iaav1o1celb8cm9je26.apps.googleusercontent.com
-          EXPO_PUBLIC_POSTHOG_API_KEY: phc_t7Gd3Z4L7v3zDkPAciXoCvndiVqGfVxzGquEfbJPq9r8
+          EXPO_PUBLIC_POSTHOG_API_KEY: phc_scZFQcyzEpr2R7nQ7euVgtqQGwhZAh2fB8jvCBGAxjvv
+          EXPO_PUBLIC_POSTHOG_HOST: https://eu.i.posthog.com
         # `timeout` is the backstop for a JVM OutOfMemoryError, not the fix
         # for one (that's plugins/withAndroidGradleMemory.js). The first real
         # run (2026-09-20, 35504077233) hit a Metaspace OOM in

@@ -19,6 +19,10 @@ import type PostHog from 'posthog-react-native';
 export type AnalyticsProps = Record<string, string | number | boolean>;
 
 const POSTHOG_KEY = process.env.EXPO_PUBLIC_POSTHOG_API_KEY;
+// The default is the US cloud, but the project behind today's key is on the EU
+// cloud, so every build sets EXPO_PUBLIC_POSTHOG_HOST beside the key (deploy.yml,
+// mobile-update.yml, mobile-build-gradle.yml, eas.json). A key sent to the wrong
+// cloud is dropped silently; posthogProject.test.ts keeps the pair together.
 const POSTHOG_HOST = process.env.EXPO_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
 
 /**
