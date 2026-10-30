@@ -977,6 +977,21 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.notEqual(right.status, 401, "no session guard in front of it");
   });
 
+  it("hides the homework-submission sweep without the shared key, and opens it with the key", async () => {
+    // Same posture as the reminder: Cloud Scheduler, one shared key, 404 for everyone else, and no
+    // session guard in front. With the right key it reaches the route (here the database is
+    // unreachable, so it answers 500 or 200 — anything but 404/401). `?dryRun=1` so that even a
+    // reachable database would change nothing.
+    const post = (headers: Record<string, string>) =>
+      fetch(`${base}/internal/homework-submission-sweep?dryRun=1`, { method: "POST", headers });
+    assert.equal((await post({})).status, 404, "no key");
+    assert.equal((await post({ "x-internal-key": "wrong" })).status, 404, "wrong key");
+    assert.equal((await fetch(`${base}/internal/homework-submission-sweep`)).status, 404, "GET is not a route");
+    const right = await post({ "x-internal-key": MOUNT_ORDER_CRON_KEY });
+    assert.notEqual(right.status, 404, "the right key reaches the route");
+    assert.notEqual(right.status, 401, "no session guard in front of it");
+  });
+
   it("answers unknown paths with 404, not with another router's 401", async () => {
     // The tell for the original bug: a path no router owns came back 401,
     // because a root-mounted guard replied before routing finished.

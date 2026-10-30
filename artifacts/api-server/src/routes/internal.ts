@@ -6,7 +6,8 @@
  * time. A wrong, missing or UNSET key answers 404 — the route does not exist
  * for anyone else, the same posture as /site/signups. Unset is closed: until
  * the secret is created and attached to the service (docs/deploying.md,
- * «The homework reminder»), the reminder never runs.
+ * «The homework reminder»), neither job runs: the homework reminder and the
+ * homework-submission orphan sweep share this one key.
  *
  * No `router.use` here, and this router is mounted WITH a path prefix
  * (`router.use("/internal", internalRouter)`): a bare middleware at the root
@@ -17,8 +18,31 @@ import { Router } from "express";
 import { siteKeyMatches } from "../lib/adminMetrics.js";
 import { logger } from "../lib/logger";
 import { runHomeworkReminders } from "../lib/homeworkReminders.ts";
+import { sweepSubmissionOrphans } from "../lib/homeworkSubmissionSweep.ts";
 
 const router = Router();
+
+// The orphan sweep deletes a minor's photos for good, so a mistaken call must cost nothing:
+// `?dryRun=1` (or `true`) reports what would go and changes nothing. The limits (grace period,
+// cap per run) are constants in the sweep; the request cannot override them.
+router.post("/homework-submission-sweep", async (req, res) => {
+  if (!siteKeyMatches(process.env.INTERNAL_CRON_KEY, req.headers["x-internal-key"])) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  const flag = req.query.dryRun;
+  const dryRun = flag === "1" || flag === "true";
+  try {
+    // All the work finishes before the response: Cloud Run throttles CPU once it is sent.
+    const run = await sweepSubmissionOrphans({ now: new Date(), dryRun });
+    // The line docs/deploying.md tells the owner to look for.
+    logger.info(run, "homework submission sweep run");
+    res.json(run);
+  } catch (err) {
+    logger.error({ err }, "homework submission sweep failed");
+    res.status(500).json({ error: "Failed to sweep homework submissions" });
+  }
+});
 
 router.post("/homework-reminders", async (req, res) => {
   // siteKeyMatches is a generic constant-time shared-key check, named for its first user.
