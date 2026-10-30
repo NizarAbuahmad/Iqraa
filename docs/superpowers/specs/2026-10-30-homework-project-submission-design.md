@@ -1,6 +1,8 @@
 # Homework project submission — design
 
-Status: Phase 1 (API) built 2026-10-30; the app is not.
+Status: Phase 1 (API) built 2026-10-30. Phase 2 (the student app) built 2026-10-30,
+with photos from the library only (no camera; see §5). Phase 3 (the teacher's and the
+parent's app) is not built, so no screen can yet switch a homework to need a project.
 
 ## Why
 
@@ -233,6 +235,13 @@ Copy exists in Arabic and English. The Latin product name is **Iqrra**.
   downscaled on the device), a remove control per photo, and a «سلّم» button that
   is disabled until there is at least one photo or a note. After the due day a
   submitted project shows read-only with a short lock message.
+  **As built in phase 2: the gallery only, no camera.** `app.json` configures
+  `expo-image-picker` with `cameraPermission: false`, and adding a camera changes the
+  iOS usage string and the Android manifest: a native change, so an `app.json`
+  `version` bump and a new build. A student photographs the work with the phone's own
+  camera app and picks it from the library. The screen is
+  `app/homework-project/[id].tsx`, opened from the School tab row («افتح المشروع»);
+  parents get no link to it (their read-only view is phase 3).
 - **Parent — homework list:** the child's submission state, and a read-only view
   of the photos and note.
 - Photos on a card use `useSurface()` and tokens from `useColors()`, not `palette`;
@@ -245,6 +254,11 @@ dependencies. The plan must still **confirm both are in the shipped binary** (co
 plugins and permission strings in `app.json`) before deciding no `app.json` `version`
 bump is needed; if a permission string is missing it is a native change and the
 `version` must move, or the OTA will crash old binaries on launch.
+*Checked for phase 2:* both are dependencies and `expo-image-picker` is a config plugin
+in `app.json` with a `photosPermission` string; phase 2 changes nothing in `app.json`,
+`package.json`, `eas.json` or `android/` (`git diff origin/main --stat` on them is
+empty), so it ships over the air with no bump. The iOS photo-permission wording still
+names messages and lesson materials, not homework projects; changing it is a native change.
 
 ## 6. Phases — one PR each
 
@@ -252,7 +266,11 @@ bump is needed; if a permission string is missing it is a native change and the
    RLS policies, the `PROTECTED` entry, the R2 key helper, the student submission
    routes, the teacher list/detail routes, the delete cleanup, and the tests below.
    Draft PR; the migration is additive and reverts cleanly.
-2. **Student app.** The submit screen and list state.
+2. **Student app.** The submit screen and list state. **Built 2026-10-30** (plan
+   `docs/superpowers/plans/2026-10-30-homework-project-submission-student-app.md`;
+   status log «Homework project submission — student app»), gallery only. Left for
+   later: the camera (needs a native build), an offline upload queue, the homework's
+   title in the screen's header, a warning that a late first hand-in is final.
 3. **Teacher and parent app.** The teacher's list and detail, and the parent's
    read-only view.
 4. **Later, separate specs.** Teacher feedback or a mark on a submission;
@@ -281,7 +299,10 @@ bump is needed; if a permission string is missing it is a native change and the
   importing `react-native` cannot load there, so the logic lives in a pure module.
 - **Browser smoke (`e2e/`):** one added step to the existing journey: the teacher
   marks a homework as needing a submission, a student submits a photo, the teacher
-  sees the count change.
+  sees the count change. *Not built yet:* the teacher's switch does not exist until
+  phase 3, and the existing journey's student has no account (`STUDENT_ACCOUNTS` is
+  off in `e2e/playwright.config.ts`). Phase 2 was driven once by hand-written
+  Playwright scripts against the real API and an in-memory S3 instead (status log).
 
 ## 8. Risks and limits
 
@@ -337,7 +358,19 @@ bump is needed; if a permission string is missing it is a native change and the
   switch (phase 3), for example a 409 once any submission or completion exists.
 - **R2 not configured** (`isR2Configured()` false, e.g. a local checkout): upload
   routes answer 503 `storage_unavailable`, the same shape as media, and the app
-  hides the photo control rather than failing on tap.
+  hides the photo control rather than failing on tap. **Phase 2 does not hide it**
+  (the GET does not say whether storage is configured): the add slot shows, a pick
+  ends in the 503 and a toast «تعذّر حفظ الصورة الآن، حاول بعد قليل», and photos
+  already stored show a placeholder because their URL is `null`. Production has R2,
+  so this is a local-checkout case; hiding the control needs the API to say so first.
+- **Phase 2 limits (student app).** Library only, no camera. No offline queue: an
+  upload needs a connection at that moment. Photo URLs are re-read when the screen
+  regains focus, not on a timer: a screen left open past the URLs' ten minutes holds
+  links that no longer load until it is left and reopened (what an expired link looks
+  like on a phone was not checked). Before the due day every change to a
+  handed-in project (a photo added or removed, a note saved) is stored on the
+  handed-in row at once and is what the teacher reads; «سلّم من جديد» does not hold
+  changes back, it only re-checks the project and keeps the first `submitted_at`.
 - **No supervisor view.** The teacher's own phone is the demo path, and a stale
   signed URL (10 minutes) means a re-fetch, not a broken photo.
 

@@ -10,6 +10,157 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Homework project submission — student app — 2026-10-30
+
+Phase 2 of 3: a student whose homework needs a project can open it from the School tab,
+add one to six photos from the phone's library and a note, hand it in, change it until the
+due day ends, and see it read-only after that. It runs on the phase 1 API (the two entries
+below). **App code only** (`artifacts/mobile`): no API, schema or `app.json` change, so a
+merge ships it over the air to the `preview` channel; the `production` channel stays manual
+(`mobile-update.yml`). An update only reaches a binary with the same `app.json` `version`
+(1.6.0 on this branch; see *Mobile* in `STATUS.md` for which binary is installed). **No
+screen can yet switch a homework to need a project**: that is the teacher's app, phase 3.
+Until then only the API (`requiresSubmission` on `POST`/`PATCH /homework`) can, so in
+practice no student sees this yet. Spec:
+`docs/superpowers/specs/2026-10-30-homework-project-submission-design.md` (§5, §6, §8);
+plan: `docs/superpowers/plans/2026-10-30-homework-project-submission-student-app.md`.
+
+**What was built** (commits `889426b`…`b56c93a`)
+
+- **Rules in pure modules**, loaded by bare `node --test`: `services/homeworkSubmission.ts`
+  (types, the normaliser, `canAddPhoto`/`canHandIn`, the data-URL check, the limits
+  `PHOTOS_MAX = 6`, `NOTE_MAX = 2000`) and `services/homeworkProject.ts` (the screen's
+  decisions: when to save the note, when a removal would empty a handed-in project, which
+  upload errors may have stored the photo, when to celebrate).
+- **API client** `services/homeworkSubmissionApi.ts` (injected `apiFetch`, the
+  `guardianApi.ts` pattern; uploads with a 45 s timeout) and error mapping in
+  `services/apiErrorKey.ts` for `locked`, `photo_limit`, `empty`, `submission_required`,
+  `storage_unavailable`, `bad_image`, `bad_data_url` and a note that is too long.
+- **The School tab** (`app/(tabs)/school.tsx`, `HomeworkRow`): a homework that needs a
+  project shows a state chip («لم يُسلَّم بعد» / «تم التسليم» / «سُلِّم متأخرًا») and a
+  «افتح المشروع» link instead of the tick. The status icon beside it is not pressable.
+  Parents get no link (their read-only view is phase 3), and an item the account cannot
+  track gets none either.
+- **The picker** `services/homeworkPhotoPick.ts`: the library only, through
+  `expo-image-picker`, shrunk to 1600 px on the long edge by the existing
+  `pickedPhotoToDataUrl`. A result the server would refuse (not jpeg/png/webp, or a data URL
+  over 6,000,000 characters) is refused on the device with «تعذّرت قراءة هذه الصورة، جرّب
+  صورة أخرى» rather than sent.
+- **The screen** `app/homework-project/[id].tsx`: status card, photo grid (thumbnail opens
+  the existing image viewer; a remove control per photo behind a confirm), the add slot,
+  the note with a counter, «سلّم» / «سلّم من جديد». It reloads on every focus (signed photo
+  URLs live ten minutes), shows a retry when a load fails, saves the note on blur and on
+  leaving, and saves a typed note before a removal. Removing the last photo of a handed-in
+  project with no note is disabled, with the hint «أضف الصورة الجديدة أولًا ثم احذف
+  القديمة». Past the due day a handed-in project is read-only with «انتهى موعد التسليم،
+  المشروع للقراءة فقط». Only an on-time first hand-in made on the screen is celebrated; a late
+  one gets a toast.
+
+**Decisions**
+
+- **Library only, no camera.** `app.json` has `cameraPermission: false`; a camera is a
+  native change (`version` bump and a new build). A student photographs the work with the
+  phone's camera app and picks it. `git diff origin/main --stat -- artifacts/mobile/app.json
+  artifacts/mobile/package.json artifacts/mobile/eas.json artifacts/mobile/android` is empty.
+- **A thin screen over pure services**, so the rules are unit-tested and the screen is
+  pinned by a source-reading test (`homeworkProjectScreen.test.ts`).
+- **Parents get no link** in this phase.
+
+**Verified** (local, 2026-10-30)
+
+- `cd artifacts/mobile && pnpm test`: **8402 tests, 8392 passed, 0 failed, 0 cancelled, 10
+  skipped**, exit 0. Root `pnpm run typecheck`: clean. The two greps of ci.yml's «Brand is
+  «إقرأ»» step, run by hand: no match. Not run: the api-server suite (no API code changed in
+  this phase; `git diff 721946e..b56c93a --stat` lists only `artifacts/mobile` files),
+  curriculum, math-verifier, and the `e2e/` journey (it does not reach student accounts).
+- **Against the real stack, driven in a browser.** Postgres 16, a throwaway database
+  migrated with `migrate -- --from-env` (22 migrations) and `seed:assessment`, dropped
+  afterwards. The built API bundle with `RLS_ENFORCE=on` (as production), `STUDENT_ACCOUNTS=true`,
+  `AI_LIVE_MODE=false`, pointed at the in-memory S3 stub of the API tests
+  (`test-support/s3Stub.ts`), so uploads, deletes and signed URLs went through the real code
+  but **not to R2**. The web bundle built with `expo export` (`EXPO_PUBLIC_DEMO_MODE=true`),
+  served by `e2e/serve.mjs`, driven by Playwright scripts in headless Chromium. The teacher,
+  class, two roster students, their codes and three homework were made through the API (no
+  teacher screen sets the flag); each student signed up with `POST /auth/redeem` and signed
+  in through the app's own login-code screen. Each result below was read off the screen and
+  checked against the API or the database:
+  - **School row**: the chip «لم يُسلَّم بعد» and the link, and no checkbox (the page's only
+    checkbox was the ordinary homework's). Tapping the project row's status circle sent no
+    request; a direct `PUT …/done` answers 409 `submission_required`.
+  - **Photos**: an 800×600 JPEG, a 500×500 PNG and a 14 MB 4000×3000 JPEG were each one
+    `POST …/photos` → 201. The large one was stored as a 1600×1200 JPEG of 488 KB. Each
+    thumbnail loaded from a signed URL on the stub's host with `X-Amz-Expires=600`. A 6.7 MB
+    1500×1500 PNG (small enough to pass through unshrunk, too big to send) and a GIF were
+    refused on the device with the message above, and no request was sent. Removing a
+    photo: Cancel sent nothing; confirming sent one `DELETE` and the object left the stub.
+  - **Hand in**: with a typed note, «سلّم» sent `PUT …/submission` (the note) then
+    `POST …/submit`. The status read «تم التسليم» with the celebration. The list item came
+    back `done: true, submission: "submitted"`, and the School row moved to «تم إنجازه» with
+    the chip «تم التسليم».
+  - **Replace**: on reopening, a photo was added and the first one removed, then «سلّم من
+    جديد». `submitted_at` in the database kept the first hand-in's time.
+  - **Last photo** (English, dark): on a handed-in project with one photo and no note, the
+    remove control was `aria-disabled` (44×44) and the hint showed; tapping it opened
+    nothing. After typing a note it was enabled, and confirming sent `PUT` (the note) then
+    `DELETE`; the project kept the note, no photo, and its `submitted_at`.
+  - **Due day passed** (`homework.due_at` moved to yesterday, Amman, in the database): a
+    project handed in before it showed «تم التسليم» and the lock line, with no add, remove
+    or hand-in control and a read-only note; the API refused a photo with 409 `locked`.
+    The other student, with nothing handed in, could add a photo and hand in once. That
+    showed «سُلِّم متأخرًا», «سُلِّم بعد الموعد» and the lock line, with a toast and no
+    celebration. A second hand-in through the API: 409 `locked`. The School row read
+    «سُلِّم متأخرًا».
+  - **Another student**: with the second student's own token, `GET` on the first student's
+    homework returned his own empty project; `DELETE` of the first student's photo id was a
+    404; `?studentId=<her roster row>` was ignored. The first student's row was unchanged in
+    the database. Opening the same URL in the app as him showed his own empty project. A
+    teacher's token on the student route: 403.
+  - **Errors**: an ordinary homework id and an unknown id both showed «لم يعد هذا متاحًا.»
+    with no retry button. With the API started **without R2**, stored photos showed the
+    placeholder (their URLs are `null`), and an upload was a 503 shown as «تعذّر حفظ الصورة
+    الآن، حاول بعد قليل».
+  - **Sizes and themes**: phone 390×844 and desktop 1280×800, Arabic (RTL) and English,
+    light and dark (the system colour scheme, which the app reads at start). No horizontal
+    overflow at either width. Every screenshot was looked at.
+
+**Not verified**
+
+- **A real phone**: the Android and iOS photo pickers, their permission prompts, HEIC
+  photos (the device converts on a resize; a small HEIC that is not resized is refused on
+  the device as unsupported, by design), the on-device resize, the keyboard over the note,
+  and the image viewer's gestures. The browser's file input stands in for the picker, and
+  the web path shrinks through a canvas, not `expo-image-manipulator`.
+- **Real R2.** Only the in-memory stub; the bucket, its latency and real signed URLs were
+  not exercised.
+- **TalkBack / VoiceOver.** Only the `aria-*` attributes and labels were read in the browser.
+- **The camera**: deliberately absent (above).
+- **An expired signed URL**: what a thumbnail looks like after ten minutes on an open
+  screen was not checked.
+
+**Known limits**
+
+- Library only, no camera. The iOS photo-permission wording in `app.json` names messages and
+  lesson materials, not homework projects; changing it is a native change.
+- No offline queue: an upload needs a connection at that moment. Photo URLs are re-read on
+  focus only, not on a timer.
+- Before the due day, every change to a handed-in project is stored on the handed-in row at
+  once and is what the teacher reads. «سلّم من جديد» does not hold changes back; it only
+  re-checks the project and keeps the first `submitted_at`. It is enabled even when nothing
+  changed.
+- With R2 not configured the add slot is still shown and fails on use. The spec said it
+  would be hidden (§8, now corrected); the GET does not tell the app whether storage exists.
+- The project screen's header has no homework title.
+- Nothing warns that a late first hand-in is final and locks the project at once.
+- Clearing the note of a handed-in project that has no photo is refused with «لا يمكن أن
+  يبقى مشروع مُسلَّم فارغًا». The field then stays blank on screen while the server keeps the
+  old note, and every blur tries the save again.
+- Colour: the project screen marks «late» with `colors.warning` (an amber in dark mode); the
+  School row's late chip is red.
+- The School section's subtitle still says to tap a homework to mark it done, above project
+  rows that cannot be ticked, and their status circle looks like a tick box.
+- Not built here: the teacher's switch, list and detail, and the parent's view (phase 3);
+  the `e2e/` journey step the spec describes (§7).
+
 ## Homework submission cleanup sweep — 2026-10-30
 
 The orphan sweep that the entry below said "must land before phase 2 lets students
