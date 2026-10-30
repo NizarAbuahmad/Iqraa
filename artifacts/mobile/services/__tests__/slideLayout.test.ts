@@ -486,6 +486,34 @@ describe('diagram layouts', () => {
     assert.equal(resolveSlideLayout(mind({ center: 'c', nodes: [{ text: 'a', role: 'reason' }, { text: 'b' }, { text: 'c' }] })), null);
   });
 
+  // A model writes `"role": null` or `"leaves": null` for "none" as readily as it
+  // leaves the key out; refusing the whole drawing over an empty optional field
+  // is the same mistake the gate already avoids for a cycle's `note` and a Venn's
+  // `only` / `shared`.
+  it('reads a mind-map role of null or "" as absent, not as a reason to refuse', () => {
+    const r = resolveSlideLayout(mind({ center: 'c', nodes: [{ text: 'a', role: null }, { text: 'b', role: '' }, { text: 'c', role: 'cause' }] }));
+    assert.deepEqual(r, { kind: 'mindmap', center: 'c', nodes: [{ text: 'a' }, { text: 'b' }, { text: 'c', role: 'cause' }] });
+  });
+  it('reads tree leaves of null as none', () => {
+    const r = resolveSlideLayout(tree({ root: 'r', branches: [{ label: 'a', leaves: null }, { label: 'b', leaves: ['x'] }] }));
+    assert.deepEqual(r, { kind: 'tree', root: 'r', branches: [{ label: 'a', leaves: [] }, { label: 'b', leaves: ['x'] }] });
+  });
+  it('reads a cycle note of "" or null as absent', () => {
+    const r = resolveSlideLayout(cyc([{ label: 'a', note: '' }, { label: 'b', note: null }, { label: 'c' }]));
+    assert.deepEqual(r, { kind: 'cycle', stages: [{ label: 'a' }, { label: 'b' }, { label: 'c' }] });
+  });
+
+  it('refuses over-long roots and centres, repeated nodes and leaves, and a crowded three-set shared region', () => {
+    assert.equal(resolveSlideLayout(tree({ root: 'r'.repeat(33), branches: [{ label: 'a' }, { label: 'b' }] })), null);
+    assert.ok(resolveSlideLayout(tree({ root: 'r'.repeat(32), branches: [{ label: 'a' }, { label: 'b' }] })));
+    assert.equal(resolveSlideLayout(mind({ center: 'c'.repeat(41), nodes: [{ text: 'a' }, { text: 'b' }, { text: 'c' }] })), null);
+    assert.ok(resolveSlideLayout(mind({ center: 'c'.repeat(40), nodes: [{ text: 'a' }, { text: 'b' }, { text: 'c' }] })));
+    assert.equal(resolveSlideLayout(mind({ center: 'c', nodes: [{ text: 'a' }, { text: 'b' }, { text: 'a', role: 'cause' }] })), null);
+    assert.equal(resolveSlideLayout(tree({ root: 'r', branches: [{ label: 'a', leaves: ['x', 'x'] }, { label: 'b' }] })), null);
+    assert.equal(resolveSlideLayout(venn({ sets: [{ label: 'a', only: [] }, { label: 'b', only: [] }, { label: 'c', only: [] }], shared: ['1', '2', '3'] })), null);
+    assert.ok(resolveSlideLayout(venn({ sets: [{ label: 'a', only: [] }, { label: 'b', only: [] }, { label: 'c', only: [] }], shared: ['1', '2'] })));
+  });
+
   it('lists the four in SLIDE_LAYOUTS and falls back to their words', () => {
     for (const l of ['cycle', 'tree', 'venn', 'mindmap']) assert.ok((SLIDE_LAYOUTS as readonly string[]).includes(l), l);
     const lines = payloadLines(slide({

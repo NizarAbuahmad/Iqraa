@@ -296,7 +296,8 @@ export function resolveSlideLayout(slide: ActivitySlide): ResolvedLayout | null 
       const branches: { label: string; leaves: string[] }[] = [];
       for (const b of raw) {
         const label = needText(b?.label, MAX_DIAGRAM_LABEL_CHARS);
-        const leaves = b?.leaves === undefined ? [] : needTexts(b.leaves, MAX_DIAGRAM_LABEL_CHARS);
+        // `null` is how a model says "no leaves", as readily as leaving the key out.
+        const leaves = b?.leaves === undefined || b.leaves === null ? [] : needTexts(b.leaves, MAX_DIAGRAM_LABEL_CHARS);
         if (label === null || leaves === null || leaves.length > MAX_TREE_LEAVES || !distinct(leaves)) return null;
         branches.push({ label, leaves });
       }
@@ -329,7 +330,10 @@ export function resolveSlideLayout(slide: ActivitySlide): ResolvedLayout | null 
       const nodes: { text: string; role?: 'cause' | 'effect' }[] = [];
       for (const n of raw) {
         const text = needText(n?.text, MAX_MINDMAP_CHARS);
-        const role = n?.role;
+        // A null or empty role is "no role", as an absent one is; only a role
+        // that is present and not one of the two is refused.
+        const rawRole = n?.role as unknown;
+        const role = rawRole === undefined || rawRole === null || rawRole === '' ? undefined : rawRole;
         if (text === null || (role !== undefined && role !== 'cause' && role !== 'effect')) return null;
         nodes.push({ text, ...(role ? { role } : {}) });
       }
