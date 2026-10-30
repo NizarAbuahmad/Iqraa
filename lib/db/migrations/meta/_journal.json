@@ -141,6 +141,13 @@
       "when": 1792924418820,
       "tag": "0019_bizarre_stone_men",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793360124368,
+      "tag": "0020_glamorous_lifeguard",
+      "breakpoints": true
     }
   ]
 }
