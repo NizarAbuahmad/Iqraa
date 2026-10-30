@@ -24,3 +24,21 @@ test('the map is decorative for screen readers, takes colours from the theme and
   assert.doesNotMatch(map, /fontSize:\s*\d/);
   assert.match(map, /playMapCredit/);
 });
+
+test('unlit governorates are visible, the map is sized from its viewBox, and the wrong pick is outlined on top', () => {
+  const map = read('components', 'publicGames', 'JordanMap.tsx');
+  assert.match(map, /fill=\{id === correctId \? lit : colors\.muted\}/);
+  assert.match(map, /stroke=\{colors\.mutedForeground\}/);
+  assert.match(map, /aspectRatio: VW \/ VH/);
+  assert.doesNotMatch(map, /MAP_HEIGHT/);
+  // The red outline is its own Path after every fill, with no fill of its own.
+  const redPass = map.indexOf('fill="none" stroke={WRONG}');
+  assert.ok(redPass > map.indexOf('order.map('), 'the red outline is drawn after the fills');
+  assert.doesNotMatch(map.slice(0, redPass), /stroke=\{id === wrong/);
+});
+
+test('the credit names both the data set and Wikimedia Commons', () => {
+  const i18n = read('services', 'i18n.ts');
+  assert.match(i18n, /playMapCredit: 'الخريطة: geoBoundaries \/ ويكيميديا كومنز \(CC BY 2\.5\)'/);
+  assert.match(i18n, /playMapCredit: 'Map: geoBoundaries \/ Wikimedia Commons \(CC BY 2\.5\)'/);
+});

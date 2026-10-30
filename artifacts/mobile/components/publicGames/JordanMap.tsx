@@ -14,7 +14,8 @@ import { SPACE, TYPE } from '@/constants/theme';
 import { JORDAN_MAP } from '@/services/publicGames/jordanMapData';
 
 const WRONG = '#DC2626';
-const MAP_HEIGHT = 220; // the size of a drawing, not spacing: tall enough for the map at phone width; Svg scales to fit
+const MAP_MAX_WIDTH = 320; // the size of a drawing, not spacing
+const [, , VW, VH] = JORDAN_MAP.viewBox.split(' ').map(Number) as [number, number, number, number];
 
 export function JordanMap({ correctId, pickedId, accent }: { correctId: string; pickedId: string; accent: string }) {
   const colors = useColors();
@@ -25,19 +26,26 @@ export function JordanMap({ correctId, pickedId, accent }: { correctId: string; 
   const order = [...Object.keys(JORDAN_MAP.paths).filter(id => id !== wrong && id !== correctId), ...(wrong ? [wrong] : []), correctId];
   return (
     <View style={styles.wrap}>
-      <Svg width="100%" height={MAP_HEIGHT} viewBox={JORDAN_MAP.viewBox} accessible={false}>
-        {order.map(id => (
-          <Path
-            key={id}
-            d={JORDAN_MAP.paths[id]}
-            fillRule="evenodd"
-            fill={id === correctId ? lit : colors.card}
-            stroke={id === wrong ? WRONG : colors.border}
-            strokeWidth={id === wrong ? 2.5 : 0.8}
-            strokeLinejoin="round"
-          />
-        ))}
-      </Svg>
+      <View style={styles.map}>
+        <Svg width="100%" height="100%" viewBox={JORDAN_MAP.viewBox} accessible={false}>
+          {order.map(id => (
+            <Path
+              key={id}
+              d={JORDAN_MAP.paths[id]}
+              fillRule="evenodd"
+              fill={id === correctId ? lit : colors.muted}
+              stroke={colors.mutedForeground}
+              strokeOpacity={0.5}
+              strokeWidth={1}
+              strokeLinejoin="round"
+            />
+          ))}
+          {wrong ? (
+            // Last, so the right governorate's stroke cannot cover a shared edge.
+            <Path d={JORDAN_MAP.paths[wrong]} fill="none" stroke={WRONG} strokeWidth={2.5} strokeLinejoin="round" />
+          ) : null}
+        </Svg>
+      </View>
       <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.micro, textAlign: 'center' }}>
         {t('playMapCredit')}
       </Text>
@@ -45,4 +53,7 @@ export function JordanMap({ correctId, pickedId, accent }: { correctId: string; 
   );
 }
 
-const styles = StyleSheet.create({ wrap: { alignItems: 'stretch', gap: SPACE.xs } });
+const styles = StyleSheet.create({
+  wrap: { alignItems: 'stretch', gap: SPACE.xs },
+  map: { width: '100%', maxWidth: MAP_MAX_WIDTH, aspectRatio: VW / VH, alignSelf: 'center' },
+});
