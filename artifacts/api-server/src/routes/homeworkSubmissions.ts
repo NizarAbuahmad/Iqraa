@@ -1,6 +1,6 @@
 /**
  * A student's project for a homework that asks for one — the student's side. (The teacher's and
- * the parent's reads are in this file too, added below.)
+ * the parent's reads are added to this file in later tasks of the plan.)
  *
  * Guards are path-scoped and repeat the ones in familyHomework.ts on purpose, so moving a mount
  * cannot quietly open a route: see mountOrder.test.ts. No bare `router.use(mw)`.

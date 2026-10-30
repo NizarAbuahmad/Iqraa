@@ -34,6 +34,29 @@ async function call(server: TestServer, method: string, path: string, userId?: s
   return { status: res.status, text, json: (text ? JSON.parse(text) : null) as any };
 }
 
+/**
+ * A response must not carry an object key. The signed `url` legitimately contains the key path
+ * (it is an S3 URL), so it is removed from every photo first; after that no `key` property may
+ * exist at any depth and the bucket prefix may not appear anywhere in the text.
+ */
+function assertNoObjectKey(text: string, what: string): void {
+  const strip = (v: unknown): unknown => {
+    if (Array.isArray(v)) return v.map(strip);
+    if (v && typeof v === "object") {
+      const out: Record<string, unknown> = {};
+      for (const [k, val] of Object.entries(v)) {
+        if (k === "url") continue;
+        assert.notEqual(k, "key", `${what}: a "key" property is in the response`);
+        out[k] = strip(val);
+      }
+      return out;
+    }
+    return v;
+  };
+  const serialised = JSON.stringify(strip(JSON.parse(text)));
+  assert.equal(serialised.includes("homework-submissions/"), false, `${what}: an object key path is in the response`);
+}
+
 /** The Amman calendar day `days` from now. */
 const ammanDay = (days: number) => new Date(Date.now() + 3 * 3600_000 + days * 86_400_000).toISOString().slice(0, 10);
 
@@ -277,6 +300,11 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       assert.equal(up.status, 201, up.text);
       assert.equal(up.json.photoCount, 1);
       assert.equal("key" in up.json.photo, false, "the object key is never sent to a client");
+      assertNoObjectKey(up.text, "upload");
+      const read = await call(server, "GET", `/student/homework/${hwOpen}/submission`, w.users.studentA);
+      assert.equal(read.status, 200, read.text);
+      assert.equal(read.json.submission.photos.length, 1, "the GET lists the photo, so the key check below has something to check");
+      assertNoObjectKey(read.text, "GET");
 
       const keys = s3.keys().filter(k => k.startsWith(`homework-submissions/${hwOpen}/${w.students.sA1}/`));
       assert.equal(keys.length, 1);
@@ -303,6 +331,43 @@ describeDb("homework project submissions over HTTP, against a real database", ()
         assert.equal(r.json.code, code);
       }
       assert.equal(s3.keys().length, before, "nothing was stored");
+    });
+
+    it("answers 413 file_too_large for a photo one byte over 4 MiB, and stores nothing for it", async () => {
+      const before = s3.keys().length;
+      // A real JPEG header, padded: the decoded size (not the text length) is what is over the limit.
+      const big = Buffer.concat([JPEG, Buffer.alloc(4 * 1024 * 1024 + 1 - JPEG.length)]);
+      assert.equal(big.length, 4 * 1024 * 1024 + 1);
+      const r = await call(server, "POST", `/student/homework/${hwOpen}/submission/photos`, w.users.studentA, photoBody("image/jpeg", big));
+      assert.equal(r.status, 413, r.text);
+      assert.equal(r.json.code, "file_too_large");
+      assert.equal(s3.keys().length, before, "nothing was stored");
+      const row = await photosOf(hwOpen, w.students.sA1);
+      assert.equal(row.photos.length, 1, "the project did not gain a photo");
+    });
+
+    it("limits a student to 60 photo requests an hour, in their own bucket only", async () => {
+      // A dedicated account, so the quota of studentA and the classmate is untouched. `{}` costs nothing:
+      // it passes the target lookup and is refused by the parser, after the limiter has counted it.
+      // The limiter counts every request that reaches it (refused ones too), so 60 means 60 attempts.
+      const user = (await db.pool.query(`INSERT INTO users (first_name, last_name, role) VALUES ('Rana', 'D', 'student') RETURNING id`)).rows[0].id as string;
+      const row = (await db.pool.query(`INSERT INTO students (teacher_id, display_name) VALUES ($1, 'رنا') RETURNING id`, [w.users.t1])).rows[0].id as string;
+      await db.pool.query(`INSERT INTO class_memberships (class_group_id, student_id) VALUES ($1, $2)`, [w.classes.c1, row]);
+      await db.pool.query(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [row, user]);
+
+      for (let i = 1; i <= 60; i++) {
+        const r = await call(server, "POST", `/student/homework/${hwOpen}/submission/photos`, user, {});
+        assert.equal(r.status, 400, `request ${i}: ${r.text}`);
+        assert.equal(r.json.code, "missing_fields", `request ${i}`);
+      }
+      const over = await call(server, "POST", `/student/homework/${hwOpen}/submission/photos`, user, {});
+      assert.equal(over.status, 429, over.text);
+      assert.equal(over.json.code, "rate_limited");
+
+      // Another account (same IP, same class) is not throttled by it.
+      const other = await call(server, "POST", `/student/homework/${hwOpen}/submission/photos`, sibling.user, {});
+      assert.equal(other.status, 400, other.text);
+      assert.equal(other.json.code, "missing_fields");
     });
 
     it("keeps one project per student: a classmate's upload lands on their own row", async () => {
@@ -362,10 +427,14 @@ describeDb("homework project submissions over HTTP, against a real database", ()
     it("keeps the FIRST hand-in time when the student replaces their work before the due day", async () => {
       const first = await call(server, "POST", `/student/homework/${hwOpen}/submission/submit`, w.users.studentA);
       assert.equal(first.status, 200, first.text);
+      assert.equal(first.json.submission.photos.length, 5);
+      assertNoObjectKey(first.text, "submit");
       const t1 = (await photosOf(hwOpen, w.students.sA1)).submitted_at as Date;
       await new Promise(r => setTimeout(r, 30));
       const edit = await call(server, "PUT", `/student/homework/${hwOpen}/submission`, w.users.studentA, { note: "نسخة محسّنة" });
       assert.equal(edit.status, 200, edit.text);
+      assert.equal(edit.json.submission.photos.length, 5);
+      assertNoObjectKey(edit.text, "PUT note");
       const again = await call(server, "POST", `/student/homework/${hwOpen}/submission/submit`, w.users.studentA);
       assert.equal(again.status, 200);
       assert.equal(((await photosOf(hwOpen, w.students.sA1)).submitted_at as Date).getTime(), t1.getTime());
@@ -436,16 +505,34 @@ describeDb("homework project submissions over HTTP, against a real database", ()
     it("locks a handed-in project once the due day has ended, but takes a first hand-in as late", async () => {
       // A project handed in on time, then the clock passes the due day.
       const handedIn = await insertHomework("project-was-on-time", "5 days", true);
-      await call(server, "POST", `/student/homework/${handedIn}/submission/photos`, w.users.studentA, photoBody("image/jpeg", JPEG));
-      await call(server, "POST", `/student/homework/${handedIn}/submission/submit`, w.users.studentA);
+      // Two photos, so a removal that slipped past the lock would succeed (not be refused as "empty").
+      for (let i = 0; i < 2; i++) {
+        const up = await call(server, "POST", `/student/homework/${handedIn}/submission/photos`, w.users.studentA, photoBody("image/jpeg", JPEG));
+        assert.equal(up.status, 201, up.text);
+      }
+      assert.equal((await call(server, "POST", `/student/homework/${handedIn}/submission/submit`, w.users.studentA)).status, 200);
       await db.pool.query(`UPDATE homework SET due_at = now() - interval '1 hour' WHERE id = $1`, [handedIn]);
       const edit = await call(server, "PUT", `/student/homework/${handedIn}/submission`, w.users.studentA, { note: "متأخر" });
       assert.equal(edit.status, 409);
       assert.equal(edit.json.code, "locked");
+      const keysBefore = s3.keys().length;
       const photo = await call(server, "POST", `/student/homework/${handedIn}/submission/photos`, w.users.studentA, photoBody("image/jpeg", JPEG));
       assert.equal(photo.status, 409);
       assert.equal(photo.json.code, "locked");
+      assert.equal(s3.keys().length, keysBefore, "the refused photo was not left in the bucket");
       assert.equal((await call(server, "GET", `/student/homework/${handedIn}/submission`, w.users.studentA)).json.submission.locked, true);
+
+      // Removing a photo and handing in again are refused too, and change nothing.
+      const held = (await photosOf(handedIn, w.students.sA1)).photos as Array<{ id: string; key: string }>;
+      assert.equal(held.length, 2);
+      const del = await call(server, "DELETE", `/student/homework/${handedIn}/submission/photos/${held[0]!.id}`, w.users.studentA);
+      assert.equal(del.status, 409, del.text);
+      assert.equal(del.json.code, "locked");
+      assert.equal((await photosOf(handedIn, w.students.sA1)).photos.length, 2, "the photo is still on the project");
+      assert.ok(s3.body(held[0]!.key), "and its object is still stored");
+      const resubmit = await call(server, "POST", `/student/homework/${handedIn}/submission/submit`, w.users.studentA);
+      assert.equal(resubmit.status, 409, resubmit.text);
+      assert.equal(resubmit.json.code, "locked");
 
       // hwClosed was due yesterday and nobody handed anything in: one late hand-in is accepted.
       const up = await call(server, "POST", `/student/homework/${hwClosed}/submission/photos`, w.users.studentA, photoBody("image/jpeg", JPEG));
@@ -454,10 +541,22 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       assert.equal(late.status, 200, late.text);
       assert.equal(late.json.submission.status, "late");
       assert.equal(late.json.submission.locked, true, "a late hand-in is final");
+      const again = await call(server, "POST", `/student/homework/${hwClosed}/submission/submit`, w.users.studentA);
+      assert.equal(again.status, 409, again.text);
+      assert.equal(again.json.code, "locked", "a second submit after a late hand-in is refused");
     });
 
     it("answers 503 storage_unavailable when R2 is not configured", async () => {
-      const bare = await startServer({ databaseUrl: db.url });
+      // startServer spreads process.env: blank the R2 variables so a shell that has them cannot configure this server.
+      const bare = await startServer({
+        databaseUrl: db.url,
+        env: {
+          R2_ENDPOINT: undefined,
+          R2_ACCESS_KEY_ID: undefined,
+          R2_SECRET_ACCESS_KEY: undefined,
+          R2_FORCE_PATH_STYLE: undefined,
+        },
+      });
       try {
         const r = await call(bare, "POST", `/student/homework/${hwOpen}/submission/photos`, w.users.studentA, photoBody("image/jpeg", JPEG));
         assert.equal(r.status, 503);
