@@ -716,15 +716,20 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       }
     });
 
-    // A photo list that is not a list of photos (here `[null]`) makes the purge throw before it deletes anything.
+    // A photo list that holds a non-photo (here `null`) makes the purge throw. The bad value sits FIRST in the SAME
+    // row's list as the real photo, so the purge reads it before it has started deleting anything — with the bad value
+    // in another row the order the rows come back in decides whether the real photo was already being deleted, and
+    // that made this test pass or fail depending on the heap layout (it failed once in CI for exactly that reason).
     // The purge has to run BEFORE the archive: an archived homework is invisible to `ownedHomework`, so a purge
     // that failed after the archive could never be retried and the photos (a minor's work) would stay for good.
     it("keeps the homework live and answers 500 when the purge fails, and a retry then archives it and clears the photos", async () => {
       const hwBad = await insertHomework("project-purge-fails", "5 days", true);
       const key = `homework-submissions/${hwBad}/${w.students.sA1}/keep.jpg`;
       await seedHandedIn(hwBad, w.students.sA1, [{ id: "k1", key }], true);
-      await seedHandedIn(hwBad, sibling.row, [], false);
-      await db.pool.query(`UPDATE homework_submissions SET photos = '[null]'::jsonb WHERE homework_id = $1 AND student_id = $2`, [hwBad, sibling.row]);
+      const realPhoto = { id: "k1", key, mime: "image/jpeg", sizeBytes: JPEG.length };
+      const setPhotos = (photos: unknown[]) =>
+        db.pool.query(`UPDATE homework_submissions SET photos = $3::jsonb WHERE homework_id = $1 AND student_id = $2`, [hwBad, w.students.sA1, JSON.stringify(photos)]);
+      await setPhotos([null, realPhoto]);
 
       const failed = await call(server, "DELETE", `/homework/${hwBad}`, w.users.t1);
       assert.equal(failed.status, 500, failed.text);
@@ -733,7 +738,7 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       assert.ok(s3.body(key), "and nothing was half-deleted");
       assert.equal((await call(server, "GET", `/homework/${hwBad}/submissions`, w.users.t1)).status, 200, "it is still the teacher's to open");
 
-      await db.pool.query(`UPDATE homework_submissions SET photos = '[]'::jsonb WHERE homework_id = $1 AND student_id = $2`, [hwBad, sibling.row]);
+      await setPhotos([realPhoto]);
       const retried = await call(server, "DELETE", `/homework/${hwBad}`, w.users.t1);
       assert.equal(retried.status, 200, retried.text);
       assert.equal(retried.json.archived, hwBad);
