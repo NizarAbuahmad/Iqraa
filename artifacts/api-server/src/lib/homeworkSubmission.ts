@@ -9,9 +9,17 @@
  * The photo list is changed with single SQL statements (append with a count guard, remove by
  * filtering), not read-modify-write, so two uploads sent at once cannot lose a photo or pass the
  * cap of six together.
+ *
+ * The same goes for the rule that a handed-in project is never empty (`canSubmit`: a photo or a
+ * note with text). The JS checks below answer the common case early, but they read and then
+ * write, so two interleaved requests could both pass them. The rule is therefore ALSO in the
+ * WHERE of every UPDATE that could break it (`removePhoto`, `setNote`, `submit`): Postgres
+ * re-evaluates that WHERE against the committed row after waiting on the row lock, so the second
+ * request sees the first one's result. Zero rows back means the rule would have been broken (or,
+ * for `removePhoto`, that the photo is already gone), and the function answers accordingly.
  */
 import { db, homeworkSubmissions, type HomeworkSubmission, type SubmissionPhoto } from "@workspace/db";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { presignedGetUrl } from "./r2.ts";
 import { ownHomeworkRows, tickRows } from "./homeworkDone.ts";
 import {
@@ -58,6 +66,7 @@ export async function submissionTarget(userId: string, homeworkId: string): Prom
     .select({ studentId: homeworkSubmissions.studentId })
     .from(homeworkSubmissions)
     .where(and(eq(homeworkSubmissions.homeworkId, homeworkId), inArray(homeworkSubmissions.studentId, own.rows)))
+    .orderBy(homeworkSubmissions.studentId)
     .limit(1);
   return { homeworkId, studentId: held?.studentId ?? own.rows[0]!, rows: own.rows, dueAt: own.dueAt };
 }
@@ -97,6 +106,17 @@ export async function viewSubmission(
     submittedAt: row.submittedAt ? row.submittedAt.toISOString() : null,
   };
 }
+
+/**
+ * SQL form of `canSubmit` for an UPDATE's WHERE: the row holds a photo, or a note with some
+ * non-space character (what `trim() !== ""` means in JS; stored notes are already trimmed).
+ * `photosAfter` / `noteAfter` describe the row as the statement would leave it.
+ */
+function holdsWork(photosAfter: SQL, noteAfter: SQL | string): SQL {
+  return sql`(${photosAfter} > 0 OR ${noteAfter}::text ~ '\\S')`;
+}
+
+const photoCount = sql`jsonb_array_length(${homeworkSubmissions.photos})`;
 
 async function ensureRow(t: SubmissionTarget): Promise<void> {
   await db
@@ -138,14 +158,27 @@ export async function removePhoto(
   if (isLocked({ submittedAt: row.submittedAt, dueAt: t.dueAt, now })) return "locked";
   // A handed-in project may not be emptied by removing its last photo: it would stay "submitted" with nothing in it.
   if (row.submittedAt && !canSubmit({ photoCount: row.photos.length - 1, note: row.note })) return "empty";
-  await db
+  const updated = await db
     .update(homeworkSubmissions)
     .set({
       photos: sql`coalesce((SELECT jsonb_agg(p) FROM jsonb_array_elements(${homeworkSubmissions.photos}) p WHERE p->>'id' <> ${photoId}), '[]'::jsonb)`,
       updatedAt: now,
     })
-    .where(eq(homeworkSubmissions.id, row.id));
-  return { key: photo.key };
+    .where(
+      and(
+        eq(homeworkSubmissions.id, row.id),
+        // The photo must still be there, or a second tap on the same delete would answer "ok" twice.
+        sql`${homeworkSubmissions.photos} @> ${JSON.stringify([{ id: photoId }])}::jsonb`,
+        // A draft may lose its last photo; a handed-in project must keep something (re-checked at write time).
+        sql`(${homeworkSubmissions.submittedAt} IS NULL OR ${holdsWork(sql`${photoCount} - 1`, sql`${homeworkSubmissions.note}`)})`,
+      ),
+    )
+    .returning({ id: homeworkSubmissions.id });
+  if (updated.length > 0) return { key: photo.key };
+  // Nothing was written: a concurrent request changed the row after our read. Say which way.
+  const current = await readOwnSubmission(t);
+  if (!current || !current.photos.some(p => p.id === photoId)) return "not_found";
+  return "empty";
 }
 
 export async function setNote(
@@ -157,11 +190,20 @@ export async function setNote(
   if (existing && isLocked({ submittedAt: existing.submittedAt, dueAt: t.dueAt, now })) return "locked";
   if (existing?.submittedAt && !canSubmit({ photoCount: existing.photos.length, note })) return "empty";
   await ensureRow(t);
-  await db
+  const updated = await db
     .update(homeworkSubmissions)
     .set({ note, updatedAt: now })
-    .where(and(eq(homeworkSubmissions.homeworkId, t.homeworkId), eq(homeworkSubmissions.studentId, t.studentId)));
-  return "ok";
+    .where(
+      and(
+        eq(homeworkSubmissions.homeworkId, t.homeworkId),
+        eq(homeworkSubmissions.studentId, t.studentId),
+        // A handed-in project must keep a photo or the new note (re-checked at write time).
+        sql`(${homeworkSubmissions.submittedAt} IS NULL OR ${holdsWork(photoCount, note)})`,
+      ),
+    )
+    .returning({ id: homeworkSubmissions.id });
+  // The row exists (ensureRow) and the lock cannot change within a request, so no row means the guard refused.
+  return updated.length > 0 ? "ok" : "empty";
 }
 
 /**
@@ -173,10 +215,13 @@ export async function submit(t: SubmissionTarget, now: Date = new Date()): Promi
   const row = await readOwnSubmission(t);
   if (row && isLocked({ submittedAt: row.submittedAt, dueAt: t.dueAt, now })) return "locked";
   if (!row || !canSubmit({ photoCount: row.photos.length, note: row.note })) return "empty";
-  await db
+  const updated = await db
     .update(homeworkSubmissions)
     .set({ submittedAt: sql`coalesce(${homeworkSubmissions.submittedAt}, now())`, updatedAt: now })
-    .where(eq(homeworkSubmissions.id, row.id));
+    // Re-checked at write time: a photo removed since our read leaves the draft empty, and an empty one is never stamped.
+    .where(and(eq(homeworkSubmissions.id, row.id), holdsWork(photoCount, sql`${homeworkSubmissions.note}`)))
+    .returning({ id: homeworkSubmissions.id });
+  if (updated.length === 0) return "empty";
   await tickRows(t.homeworkId, t.rows);
   return "ok";
 }
