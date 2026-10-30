@@ -104,6 +104,10 @@ export const PRONUNCIATION: Record<string, string> = {
   thin:
     'Pronounce it /θɪn/: the voiceless "th" of "think", with the tongue tip between the teeth and air pushed out — ' +
     'not "s", not "f", not "t". Then a short "i" as in "sit" and a clear "n".',
+  // The speech-to-text check (2026-10-30) heard "Sacked", then "sat": the "f" came out as "s". Grade 8 semester 2.
+  fat:
+    'Pronounce it /fæt/: start with the "f" of "fish", the top teeth touching the lower lip and air pushed out — ' +
+    'not "s", not "th". Then a short "a" as in "cat" and a clear, quick "t".',
 };
 
 /** The model instructions for one item: its register, plus its pronunciation hint if it has one. */
