@@ -10,6 +10,40 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat on desktop: the composer joins the intro, one column width, an up arrow — 2026-10-30
+
+A design review of the desktop chat's empty state (`app/(tabs)/iqra.tsx`) found three things
+cheap enough to fix at once. Layout and one icon only; no copy, state or data changed.
+
+**The composer sits under the intro.** An empty desktop thread centred its intro in the list while
+the composer stayed welded to the window's bottom — about 250px of nothing between the offer and
+the box that answers it. With `emptyDesktop` (`isDesktop && messages.length <= 1`) the list stops
+growing (`flexGrow: 0`) and two spacers (`flex: 1` above, `flex: 1.4` below) centre intro, chips
+and composer as one group a little above the middle. The spacers are `null` once there is a
+thread, so every other sibling keeps its slot: it is the same `TextInput` before and after the
+first send, which is why the composer was not moved into the list's footer (that would remount it
+and drop focus on the first Enter).
+
+**One column width.** The lesson strip and the thread pad *inside* the 820px column (788px of
+content); the composer padded *outside* it (820px), a 16px step each side. Desktop now pads inside
+the column for the composer too.
+
+**Send is an up arrow.** `arrow-back` in RTL is a bare left arrow in a grey disc and reads as
+"back". The arrow is direction-neutral now.
+
+**Not changed, on purpose.** The review also suggested showing all five prep chips. The empty
+state offers the next two missing steps by design (`buildLessonSuggestions`, `.slice(0, 2)`), and
+on desktop the readiness board is not shown at all (`introPrepBoard` returns null for
+`isDesktop`, the workspace home carries it) — so the two chips are the whole offer. Left alone.
+Also left: the duplicate current-lesson card in the sidebar, lesson-specific H1, labelled «+»,
+subject tint, and the unpin ✕ spacing (see the review).
+
+**Verified:** `pnpm run typecheck` exit 0; `artifacts/mobile` `pnpm test` 8208 pass, 0 fail.
+**Not verified:** nothing was looked at in a browser (the chat needs a signed-in teacher, and
+this was done without a running API), so the centring, the spacer ratio and the 788px alignment
+are from the code, not the screen. The phone layout and the open-canvas layout are untouched by
+construction (`emptyDesktop` is false for both) but also unseen.
+
 ## Slides: the class's turn, spot the mistake, and one point at a time — 2026-10-30
 
 A deck looked good and still ran as a lecture: Prompt Slides asked for every concept slide
