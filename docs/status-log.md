@@ -135,6 +135,96 @@ of wmgeolab/geoBoundaries. Licence Creative Commons Attribution 2.5 Generic, der
   on a 320×568 phone (the trophy under the header, the teacher signup card unreachable). It is now a `ScrollView`.
   `designScale.test.ts` needed no change.
 
+## Slides: the class's turn, spot the mistake, and one point at a time — 2026-10-30
+
+A deck looked good and still ran as a lecture: Prompt Slides asked for every concept slide
+first and for its one worked example and one check «near the end», and the misconception the
+model writes for every concept slide only ever reached the teacher panel. Three changes, plus a
+way to measure them.
+
+**Measured on every live deck.** `deckEngagement` (`artifacts/api-server/src/lib/deckEngagement.ts`)
+counts a deck's activities (`question` + `challenge`), the slide number of the first one, the
+longest run of explanation (`intro`) slides after the cover (any other type ends a run, a divider
+too), laid-out and single-line content slides, and words per content slide. The prompt-slides
+route logs it at `info` for **every** deck («prompt-slides deck engagement»), and
+`scripts/provider-eval.ts` puts it on each slides row (`engagement`). `checkDeck` gains a `warn`,
+`passive_run`, named at the third explanation slide in a row (`MAX_PASSIVE_RUN = 2`), only on a
+deck with a `question` slide: the teaching arc requires one and the general arc, which has no such
+rule, usually has none. The log line carries the same flag (`hasCheck`), so before-and-after can
+compare teaching decks with teaching decks. It is a proxy, not the model's own choice of arc. The
+`deckChecks` fixture deck had three in a row and was reordered (the challenge moved up one).
+
+**Prompt Slides (`promptSlidesPrompt.ts`, Arabic and English).** The teaching arc (A) now says:
+never more than two concept slides in a row, then a slide the class acts on (a check or a
+challenge); the worked example comes after the idea it uses, not «near the end»; and in a deck of
+11 slides or more, a «اكتشف الخطأ» / "Spot the mistake" challenge — an imaginary student's
+solution with exactly one error, the error being the misconception written on a concept slide,
+never marked in `content`, the correction in `answer`. The general arc (B) is unchanged and the
+test checks the rule is not in it. A new mandatory rule for both arcs: when an example, hook or
+problem needs a setting, set it in Jordan (dinars, Amman, Aqaba, the Dead Sea…), and made-up
+numbers stay problem values, never facts about a real place.
+
+**Slides Maker.** `lessonTeachingPrompt.ts` asks for a `mistake` (`claim`, `hint`, `answer`) built
+from one of its own `misconception`s, plus the same Jordan rule. `usableTeaching` keeps it only
+with both a claim and an answer (a wrong solution with no correction teaches the mistake).
+`buildLessonDeck` projects it as a `challenge` titled «🔍 اكتشف الخطأ» right after the worked
+examples (§7a), timed like an example, only when examples are ticked; its 🔍 draws the `help`
+icon (`deckIcons.ts`), as the other check headings do. `rebuildAnswerKey` keys a
+challenge whose title says «اكتشف الخطأ» / "spot the mistake" by its own title instead of numbering
+it as «مثال 2» — matched by name (`services/spotTheMistake.ts`) so a Prompt Slides deck's
+model-titled slide counts too, and `verifyDeckExamples` never sends such a slide to SymPy (its
+content is wrong on purpose, so a proof against an equation in it would badge nonsense). A teacher
+who renames the slide turns it back into an ordinary challenge.
+
+**A student never receives `mistake`.** The same pooled teaching section is what students read
+(`GET /student/lesson-explanation/…`), so `stripTeacherNotes` (`lib/lessonExplanation.ts`) now
+drops `mistake` with `teacherNote`, and `pregenerate.ts`'s `reviewEntry` drops it from what the
+reviewer approves as «the text a student would see» (the hash is taken after, so approval still
+matches). The student cards never drew it either.
+
+**The lesson-teaching pool starts afresh; no other pool does.** Its sections stored before this
+have no `mistake` and would have been served forever. `PROMPT_VERSION` (`generationKey.ts`) is
+one value for every pooled kind, so instead of bumping it, a kind may now carry its own version
+(`PROMPT_VERSION_BY_KIND`, read through `promptVersionFor(kind)`, which `generationKeys` and the
+stored row both use); `lesson-teaching` is `2026-10-30.1`, every other kind keeps `2026-10-04.1`.
+The cost: the first teacher to build a Slides Maker deck for each lesson after the merge pays for
+a new teaching section (budget-capped as usual), including the lessons `pregenerate.ts` filled —
+re-run it to fill them ahead of teachers. **Students are unaffected:** their approved explanations
+are read by lesson and language (`readApprovedExplanations`), not by this key, so what an admin
+approved keeps being served; new sections need approving as before.
+
+**«نقطة بنقطة» / "One at a time" in the presenter.** A toggle in the action row (off by default,
+remembered on the device as `@iqra_paced_reveal_v1`). On, Next — the button and the clicker/keyboard
+path alike, both through `stepForward` — shows an explanation slide's next bullet, step, card,
+timeline event or flow box, and moves to the next slide only when all are out; the button reads
+«النقطة التالية» while one is hidden. `services/pacedReveal.ts` says which `Reveal` indices a slide
+has (`intro`/`summary` only, not the cover, at least two). If it ever disagrees with the renderer,
+`revealThreshold` shows everything once its beats run out, so a mismatch reveals early and never
+leaves a point hidden. Switching it on mid-slide and stepping back both show the whole slide;
+tapping the current slide's dot leaves it as it was. **Not on a phone** (`compactBar`, under
+600dp): that bar is budgeted for two icon buttons and «النقطة التالية» would not fit Next, so the
+toggle is hidden there and a choice remembered on a laptop does not pace a phone (`pacing =
+paced && !compactBar`). Presenter only: the PDF and PowerPoint are unchanged.
+
+**Verified.** `pnpm run typecheck` clean; api-server `pnpm build` + `pnpm test` 2,669 pass, 0 fail;
+mobile `pnpm test` 8,212 tests, 8,202 pass, 10 skipped, 0 fail (the two last fixes — the 🔍 icon
+and the toggle's storage write — were re-run in their own suites afterwards). New tests:
+`deckEngagement.test.ts`, `pacedReveal.test.ts`, and additions to `deckChecks`, `promptSlidesPrompt`,
+`lessonTeachingPrompt`, `lessonSlides` and `deckIcons` tests. The presenter was driven with
+Playwright in the built web bundle (desktop 1366, Arabic, light, stubbed API, demo-mode offline
+deck for «معادلة الدائرة»), screenshots looked at: with the toggle on, the outcomes slide opens on
+its title alone, each press adds one card, the button reads «النقطة التالية» until the last card and
+then «التالي»; a non-paced slide advances in one press; stepping back onto a paced slide shows it
+whole. The offline deck has no teaching section, so the «اكتشف الخطأ» slide was not seen on screen.
+
+**Not verified.** **No live model has seen either prompt change.** The OpenAI key in the session
+that built this lacks the `model.request` scope, so no deck was generated: whether the model keeps
+to two-in-a-row, writes a good «اكتشف الخطأ», or uses Jordanian settings well is unknown. The
+first measure is the engagement log line on production decks, or a provider-eval run before and
+after. Also not checked: the presenter on a phone or tablet, a clicker, screen readers, RTL/LTR on
+native. **Not done:** the per-slide timing suggestion and the other new formats (predict-then-reveal,
+think-pair-share, fill in the blank, agree/disagree, levelled challenges).
+
 ## PostHog moves to the owner's own EU project, 2026-10-30
 
 The Android recording plan (see «Screen recordings: Contentsquare on the web, PostHog replay on Android») stalled on one fact:

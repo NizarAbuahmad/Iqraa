@@ -63,7 +63,7 @@ import {
 import { ClaudeRefusalError, completeWithClaude } from "../lib/claude.ts";
 import { normalizeEscapeCodes } from "../lib/escapeCodes.ts";
 import { withGrounding, type Grounding } from "../lib/grounding.ts";
-import { PROMPT_VERSION, generationKeys, hasBookFigures, normalizeText, scopeKeyOf } from "../lib/generationKey.ts";
+import { PROMPT_VERSION, generationKeys, hasBookFigures, normalizeText, promptVersionFor, scopeKeyOf } from "../lib/generationKey.ts";
 import {
   noteServed,
   readPool,
@@ -102,6 +102,7 @@ import {
   type GenerationKind,
 } from "../lib/generationShape.ts";
 import { checkDeck } from "../lib/deckChecks.ts";
+import { deckEngagement } from "../lib/deckEngagement.ts";
 import { SOLUTION_LIMITS, cleanSolutionText } from "@workspace/math-verify";
 import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
 import { SOLVE_TOKENS, solveSystemPrompt } from "../lib/solvePrompt.ts";
@@ -345,7 +346,7 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
   const model = args.model ?? getDocumentModel(kind);
   const keys = generationKeys(kind, model, body);
   const regenerate = body.regenerate === true;
-  const detail = { kind, promptVersion: PROMPT_VERSION, userId, ...keys };
+  const detail = { kind, promptVersion: promptVersionFor(kind), userId, ...keys };
 
   // Only a shareable request touches the pool at all. A request carrying the
   // teacher's own pasted material is neither read from nor written to it —
@@ -590,7 +591,7 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
       coarseKey: keys.coarseKey,
       kind,
       model,
-      promptVersion: PROMPT_VERSION,
+      promptVersion: promptVersionFor(kind),
       language: typeof body.language === "string" ? body.language : "arabic",
       lessonRef: lessonRefOf(body),
       variantIndex: decision.variantIndex,
@@ -994,6 +995,9 @@ generateRouter.post('/generate/prompt-slides', async (req: AuthenticatedRequest,
     if (deckIssues.length > 0) {
       logger.warn({ deckIssues, model: getPromptSlidesModel() }, "prompt-slides deck broke its prompt contract");
     }
+    // Every deck, not only a bad one: these are the baseline any prompt change
+    // is measured against (see deckEngagement.ts).
+    logger.info({ engagement: deckEngagement(finalized), model: getPromptSlidesModel() }, "prompt-slides deck engagement");
     res.json(
       withMeta({ ...result, content: stripUnearnedVerification(finalized) }, null),
     );
