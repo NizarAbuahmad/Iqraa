@@ -10,6 +10,81 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Six new /play games: opposites, plurals, which-number, compare-fractions, states of matter, governorates — 2026-10-29
+
+The public hub (`/play`, no login) had ten tiles; it now has sixteen. The six new ones are appended after the existing ten, in
+this order, each a route file that hands a `build` function from `services/publicGames/` to one shared renderer,
+`components/publicGames/TextQuizGame.tsx` (a `TriviaBoard` whose prompt is an optional subject tile over a one-line question; eight
+questions per round, the usual reveal, score and teacher-signup game-over from `GameShell`; four options per question in
+antonyms, plurals, which-number and governorates, **three** in matter (solid / liquid / gas) and **two** in fractions):
+
+| id | title (ar) | grades | what it asks |
+| --- | --- | --- | --- |
+| `antonyms` | ضد الكلمة | 1–4 | the opposite of a word (27 pairs, either side asked) |
+| `plurals` | جمع الكلمة | 2–5 | the plural of an Arabic word (30 words) |
+| `numberType` | أيّ عدد؟ | 3–6 | which of four numbers is even / odd / prime |
+| `fractions` | قارن الكسور | 4–7 | which of two fractions is larger / smaller |
+| `matter` | صلب، سائل أم غاز؟ | 3–7 | the state a substance is known in (20 substances) |
+| `governorates` | محافظات الأردن | 4–9 | which governorate a town or site is in (25 places) |
+
+Also in this change: the chat assistant's `tool:games` rule (`services/appHelp.ts`) recognises the new games, by topic word and by
+the name printed on the tile. English: opposites / antonyms, (Arabic) plurals, (compare) fractions, governorates / Jordan's
+governorates, which number, states of matter, even / odd / prime numbers («play the compare fractions game»). Arabic: الأضداد /
+ضد الكلمة, (قارن) الكسور, محافظات (الأردن), أيّ عدد, الأعداد الأولية, حالات المادة («العب لعبة قارن الكسور»). **The plurals game
+has no Arabic phrase in the rule, on purpose:** «لعبة جمع الكلمة» starts with `جمع`, which already means the addition game, so
+asking the assistant for it in Arabic gets no pointer (it falls through to the model like any other question). And the hub tile icon is drawn in `readableOn(color, card, 3)` so the slate and navy tiles stay visible in dark mode
+(this also lightens the icons of existing tiles that were below 3:1 on the dark card; light mode is unchanged).
+
+**Verified.** `pnpm run typecheck` clean. Mobile suite: 8196 tests, 0 fail, 10 skipped (the pre-existing `searchKB` skips). Each
+game has its own test file (`playGameAntonyms`, `…Plurals`, `…NumberType`, `…Fractions`, `…Matter`, `…Governorates`) pinning the
+answer keys; `appHelp.test.ts` gained 20 positive cases (11 English, 9 Arabic; not every game in Arabic, see above) and nine negative ones
+(topic words without asking to play, «اشرح قارن الكسور», «لعبة جمع الكلمة»); the first nine positives were shown to fail against the
+old rule. Each of the five newer games has a same-seed-same-round test (antonyms already had one). The maths keys (`numberType`, `fractions`) are **computed**, in latin, and re-derived
+independently in the tests; they are not looked up from a table. A real browser (Chromium through the `playwright` library, against
+`pnpm run dev:mobile:web`) was used on 2026-10-29 for the first look at any of the six: the hub at 390 px and 1280 px, light and dark,
+Arabic and English; each game's question screen, a reveal (green tick on the key, red cross on a wrong pick), a full eight-question
+playthrough to the game-over screen with the signup card, and the English UI for all six. Fractions print «٢/٥» left to right
+(numerator first, not mirrored) in Arabic. No page errors were logged.
+
+**Not verified.** The answer keys of `antonyms`, `plurals`, `matter` and `governorates` are **hand-written**: they were read by their
+authors and by a reviewer per task, and the Arabic strings and words went through the Arabic-copy review (the words and keys needed no change; two tile descriptions were
+reworded afterwards, below), but
+no machine checks them, and the tests only pin what the author wrote. The governorates rows were each checked against English and
+Arabic Wikipedia and citypopulation.de; **no Jordanian government source was reachable**, so none is cited. Nothing was run on a
+phone or in a native build; the browser check is the web build only. The review suite's guard rails (`designScale`, `gameAmber`,
+`gameAccents`, `cornerTheme`) pass, but a contrast ratio is not the same as having looked at the tile on a device.
+
+**Known limits.**
+- The tables are small (27 / 30 / 20 / 25 items), so a round of eight repeats across plays; there is no "seen" memory between plays.
+- `plurals` shows Arabic words and Arabic options in the English UI, because the question is about Arabic morphology; only the
+  prompt is translated. Its options are always the table plurals of other words, so none is a second valid plural of the subject,
+  but a few words have one the game never offers («طالب»: طلّاب and طلبة).
+- Fractions pairs such as 5/11 against 4/9 need cross-multiplication, which is harder than Grade 4 work; the band 4–7 is a judgement,
+  not a measured level (denominators run 2–12 for every grade).
+- No sound and no analytics beyond what `GameShell` already sends (`game_finished`).
+- The options of `TriviaBoard` are tappable `View`s with no accessibility role (shared with the older games, not changed here).
+- «أحسنت!» is shown at any score, including 0 of 8 (`GameShell`, shared with every game).
+- In the Arabic hub the two tiles of a row sit in the order second-first (the pairs read right-to-left as 2,1): it is the same for
+  the original ten and was left as it was.
+
+**Deviations from the plan and spec.**
+1. `TextQuizGame` uses theme tokens (`TYPE.display`, `TYPE.bodyLg`, `SPACE`, `RADIUS`) instead of literal font sizes, because
+   `designScale.test.ts` has a ceiling with no slack; the subject tile text is 28 / 17 px, not the 30 / 18 of the plan.
+2. `matter` no longer says "at room temperature" in its premise; ice and orange juice were restored after review and the test
+   pins its answer keys.
+3. `governorates` asks which governorate a **town or site** is in, not governorate → centre (eleven of the twelve share their
+   centre's name, so that would be trivial). One row (الصافي) was dropped in this PR, leaving 25.
+4. `numberType` asks "which of these four numbers is X", because 7 is both odd and prime, so «is this number prime?» would have no
+   single answer in a mixed game.
+5. `fractions` is titled «قارن الكسور».
+6. Exactly two commits (0487937, 985f82c) carry a `Claude Haiku 5.5` trailer; all the others `Claude Sonnet 5.5`.
+7. Content is below the spec's targets: antonyms 27 pairs (spec ~40), matter 20 substances (spec ~30), plurals 30, governorates 25
+   places (26 planned, one row, الصافي, dropped in the last task). The tables are append-only data, so they can grow without touching a game.
+8. The chat-help rule covers the games as described under «Also in this change» (not «the six game names in both languages»:
+   plurals is English-only there).
+9. The Arabic tile description of governorates reads «اربط كل مدينة أو موقع بمحافظته» (the plan had «…ومعلم…», which unvowelled
+   reads as «مُعلّم», a teacher), and that of which-number ends «الأوّلي» (with the shadda, as its prompt does).
+
 ## Schools tab: a slow answer no longer lands after the screen moved on — 2026-10-24
 
 Found from a screenshot of the live tab (app.iqrra.com/admin/schools): the «ابحث عن معلم»

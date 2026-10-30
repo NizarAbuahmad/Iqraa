@@ -45,6 +45,12 @@ const GAMES: Array<{
   { id: 'divide', route: '/play/divide', icon: 'pie-chart-outline', color: '#7C3AED', titleKey: 'playDivideTitle', descKey: 'playDivideDesc' },
   { id: 'add', route: '/play/add', icon: 'add-circle-outline', color: '#4338CA', titleKey: 'playAddTitle', descKey: 'playAddDesc' },
   { id: 'subtract', route: '/play/subtract', icon: 'remove-circle-outline', color: '#BE123C', titleKey: 'playSubtractTitle', descKey: 'playSubtractDesc' },
+  { id: 'antonyms', route: '/play/antonyms', icon: 'swap-horizontal-outline', color: '#A21CAF', titleKey: 'playAntonymsTitle', descKey: 'playAntonymsDesc' },
+  { id: 'plurals', route: '/play/plurals', icon: 'copy-outline', color: '#334155', titleKey: 'playPluralsTitle', descKey: 'playPluralsDesc' },
+  { id: 'numberType', route: '/play/numberType', icon: 'keypad-outline', color: '#4D7C0F', titleKey: 'playNumberTypeTitle', descKey: 'playNumberTypeDesc' },
+  { id: 'fractions', route: '/play/fractions', icon: 'contrast-outline', color: '#B91C1C', titleKey: 'playFractionsTitle', descKey: 'playFractionsDesc' },
+  { id: 'matter', route: '/play/matter', icon: 'water-outline', color: '#0E7490', titleKey: 'playMatterTitle', descKey: 'playMatterDesc' },
+  { id: 'governorates', route: '/play/governorates', icon: 'map-outline', color: '#1E3A8A', titleKey: 'playGovernoratesTitle', descKey: 'playGovernoratesDesc' },
 ];
 
 export default function PlayHubScreen() {
@@ -63,7 +69,7 @@ export default function PlayHubScreen() {
               style={[styles.card, surface]}
             >
               <View style={[styles.iconWrap, { backgroundColor: `${g.color}1a` }]}>
-                <Ionicons name={g.icon} size={24} color={g.color} />
+                <Ionicons name={g.icon} size={24} color={readableOn(g.color, colors.card, 3)} />
               </View>
               <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16, textAlign: 'center' }}>
                 {t(g.titleKey)}
