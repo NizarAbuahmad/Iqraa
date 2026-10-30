@@ -36,6 +36,7 @@ const ALLOWED: Record<string, string> = {
   "lib/homeworkMaterial.ts": "a student or parent opens the teacher's saved material attached to a homework — the teacher's row, read only after the homework, class and membership checks pass as the caller",
   "lib/homeworkReminders.ts": "the day-before reminder is run by Cloud Scheduler with no user, over every teacher's homework and every family's ticks",
   "lib/adminNotify.ts": "notifies every system admin from a public, unauthenticated request",
+  "lib/emailSuppression.ts": "the unsubscribe link has no user, and a mail is checked against the list on behalf of whoever caused it (a child's sign-up mails their parent); the table has no app-role grant",
   "modules/assessment/attemptGrading.ts": "server-side grading writes the grade tables, which only a teacher's identity may write directly",
 };
 

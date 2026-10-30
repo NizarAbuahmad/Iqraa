@@ -12,8 +12,10 @@
  * its prose off the projector.
  *
  * So this asks for exactly the missing part, written FOR the projector: a
- * hook question, the explanation one idea per slide, one worked example and
- * one practice problem. Nothing the book already supplies is asked for, so
+ * hook question, the explanation one idea per slide, one worked example, one
+ * wrong solution built from a misconception for the class to correct («اكتشف
+ * الخطأ» — the misconceptions were written for every concept and only ever
+ * reached the teacher panel) and one practice problem. Nothing the book already supplies is asked for, so
  * the book's own wording is never replaced by a paraphrase of itself.
  *
  * The rules below each answer a failure seen in a real deck:
@@ -32,9 +34,9 @@ export const TEACHING_CONCEPTS_MAX = 5;
 export function lessonTeachingPromptAr(b: any): string {
   return `اكتب قسم الشرح في عرض شرائح يُعرض على شاشة الصف لدرس "${b.topic}" — مادة ${b.subject}، ${b.grade}.
 ${b.additionalContext ? `\nمحتوى الكتاب المدرسي لهذا الدرس (مرجعك الوحيد):\n${b.additionalContext}\n` : ''}
-يأخذ العرض من الكتاب مباشرةً: النتاجات، والمفردات، والقواعد، والأشكال، والأمثلة المحلولة. لا تكتب شيئًا من ذلك. اكتب فقط ما ينقص: سؤال التمهيد، والشرح، ومثالًا محلولًا، ومسألة تدريب.
+يأخذ العرض من الكتاب مباشرةً: النتاجات، والمفردات، والقواعد، والأشكال، والأمثلة المحلولة. لا تكتب شيئًا من ذلك. اكتب فقط ما ينقص: سؤال التمهيد، والشرح، ومثالًا محلولًا، وحلًّا خاطئًا يكتشف الطلبة خطأه، ومسألة تدريب.
 
-كل ما في "question" و"title" و"points" و"problem" و"steps" يُعرض على الطلبة كما هو:
+كل ما في "question" و"title" و"points" و"problem" و"steps" و"claim" يُعرض على الطلبة كما هو:
 - اكتبه للطلبة مباشرةً، لا للمعلّم. لا تعليمات إخراج مثل «ابدأ بسؤال…» أو «اطلب من الطلبة…» — هذه مكانها "teacherNote".
 - بالعربية الفصحى، جملًا قصيرة تُقرأ من آخر الصف.
 
@@ -54,6 +56,8 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي لهذا ال�
 8. إن لم يكن في الدرس ما يُحسب (درس وصفي بالكامل) فاجعل "workedExample" تحليلًا لحالة أو مقارنة محلولة، و"practice" سؤالًا تطبيقيًا بإجابة نموذجية.
 9. لا تُضِف حقل "verified" أو "verifiedBy" إطلاقًا.
 10. راجع إملاء المصطلحات قبل الإرجاع (المولات لا «الموغات»).
+11. "mistake" نشاط «اكتشف الخطأ»: "claim" حلّ قصير أو قول لطالب متخيَّل (سلمى، عمر…) من نوع المثال المحلول، فيه خطأ واحد فقط، وهذا الخطأ هو أحد الأخطاء التي كتبتها في "misconception" — لا خطأ حسابي عابر. لا تُشِر إلى الخطأ في "claim" — اكتشافه هو النشاط. "hint" يوجّه إلى مكان البحث دون أن يسمّي الخطأ، و"answer" يسمّي الخطوة الخاطئة ويصحّحها بالقيمة الصحيحة.
+12. حين يحتاج سؤال التمهيد أو المسألة إلى سياق، فليكن من حياة الطلبة في الأردن: الدينار الأردني، وأماكن أردنية (عمّان، العقبة، البحر الميت، إربد)، والحياة اليومية في البيت والمدرسة. لا تفرض سياقًا على فكرة لا تحتاجه. والأرقام التي تخترعها لمسألة تبقى قيم مسألة — لا تقدّمها حقائق عن مكان حقيقي.
 
 أعد JSON بهذا الشكل فقط:
 {
@@ -62,6 +66,7 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي لهذا ال�
     { "title": "الفكرة كجملة خبرية", "points": ["سطر الشرح", "مثال قصير"], "teacherNote": "ما يؤكّد عليه المعلّم", "misconception": "الخطأ الشائع" }
   ],
   "workedExample": { "problem": "نص المسألة بمعطياتها", "steps": ["الخطوة الأولى", "الخطوة الثانية"], "answer": "الإجابة النهائية" },
+  "mistake": { "claim": "قالت سلمى: … (حلّ فيه خطأ واحد)", "hint": "أين تبحث", "answer": "الخطوة الخاطئة وتصحيحها" },
   "practice": { "problem": "مسألة التدريب", "hint": "تلميح", "answer": "الإجابة" }
 }`;
 }
@@ -69,9 +74,9 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي لهذا ال�
 export function lessonTeachingPromptEn(b: any): string {
   return `Write the explanation section of a slide deck projected in class for the lesson "${b.topic}" — ${b.subject}, ${b.grade}.
 ${b.additionalContext ? `\nThe textbook content for this lesson (your only source):\n${b.additionalContext}\n` : ''}
-The deck takes these straight from the book: learning outcomes, vocabulary, rules, figures and worked examples. Do not write any of them. Write only what is missing: the hook question, the explanation, one worked example and one practice problem.
+The deck takes these straight from the book: learning outcomes, vocabulary, rules, figures and worked examples. Do not write any of them. Write only what is missing: the hook question, the explanation, one worked example, one wrong solution for the students to correct, and one practice problem.
 
-Everything in "question", "title", "points", "problem" and "steps" is projected to the students as written:
+Everything in "question", "title", "points", "problem", "steps" and "claim" is projected to the students as written:
 - Address the students directly, not the teacher. No stage directions such as "Start by asking…" or "Have students…" — those belong in "teacherNote".
 - Short sentences, readable from the back row.
 
@@ -91,6 +96,8 @@ Mandatory rules:
 8. If the lesson has nothing to calculate (a purely descriptive lesson), make "workedExample" a solved case analysis or comparison and "practice" an applied question with a model answer.
 9. Never add a "verified" or "verifiedBy" field.
 10. Check the spelling of subject terms before returning.
+11. "mistake" is a "Spot the mistake" activity: "claim" is a short solution or statement by an imaginary student (Salma, Omar…) of the same kind as the worked example, with exactly one error, and that error is one of the errors you wrote in "misconception" — not a passing arithmetic slip. Never mark the error in "claim" — finding it is the activity. "hint" says where to look without naming the error; "answer" names the wrong step and corrects it with the right value.
+12. When the hook or a problem needs a setting, set it in the students' own Jordan: Jordanian dinars (JD), Jordanian places (Amman, Aqaba, the Dead Sea, Irbid), everyday life at home and at school. Do not force a setting onto an idea that needs none. Numbers you make up for a problem stay problem values — never as facts about a real place.
 
 Return only JSON in this shape:
 {
@@ -99,6 +106,7 @@ Return only JSON in this shape:
     { "title": "The idea as a claim", "points": ["An explanation line", "A short example"], "teacherNote": "What the teacher stresses", "misconception": "The common error" }
   ],
   "workedExample": { "problem": "The problem with its givens", "steps": ["Step one", "Step two"], "answer": "The final answer" },
+  "mistake": { "claim": "Salma says: … (a solution with one error)", "hint": "Where to look", "answer": "The wrong step and its correction" },
   "practice": { "problem": "The practice problem", "hint": "A hint", "answer": "The answer" }
 }`;
 }

@@ -947,7 +947,7 @@ describe('usableTeaching', () => {
 
   it('treats garbage as nothing', () => {
     const t = usableTeaching(null);
-    assert.deepEqual(t, { hook: null, concepts: [], workedExample: null, practice: null });
+    assert.deepEqual(t, { hook: null, concepts: [], workedExample: null, practice: null, mistake: null });
     assert.deepEqual(usableTeaching({ concepts: 'x' as never }).concepts, []);
   });
 });
@@ -1041,6 +1041,52 @@ describe('generated explanation in the deck', () => {
   it('keeps the practice problem out of the answer key numbering', () => {
     const deck = buildLessonDeck('x', true, { lesson: BARE, plan: PLAN, teaching: TEACHING });
     assert.deepEqual(deck.answerKey, ['مثال 1: 2 mol']);
+  });
+
+  describe('spot the mistake', () => {
+    const MISTAKE = {
+      claim: 'قالت سلمى: كتلة 2 mol من الماء = 2 ÷ 18 = 0.11 g',
+      hint: 'انظري إلى العملية التي استعملتها',
+      answer: 'قسمت بدل أن تضرب: m = n × M = 2 × 18 = 36 g',
+    };
+    const withMistake = { ...TEACHING, mistake: MISTAKE };
+
+    it('projects the wrong solution as an attempt, with the correction behind the reveal', () => {
+      const deck = buildLessonDeck('x', true, { lesson: BARE, plan: PLAN, teaching: withMistake });
+      const slide = deck.slides.find(s => s.title.includes('اكتشف الخطأ'))!;
+      assert.equal(slide.type, 'challenge');
+      assert.equal(slide.content, MISTAKE.claim);
+      assert.equal(slide.hint, MISTAKE.hint);
+      assert.equal(slide.answer, MISTAKE.answer);
+      assert.equal(slide.aiWritten, true);
+      assert.ok(slide.durationSeconds > 0);
+      assert.equal(slide.teacher?.expectedAnswer, MISTAKE.answer);
+    });
+
+    it('comes after the worked example the class has just watched', () => {
+      const deck = buildLessonDeck('x', true, { lesson: BARE, plan: PLAN, teaching: withMistake });
+      const at = (t: string) => deck.slides.findIndex(s => s.title.includes(t));
+      assert.ok(at('مثال 1') < at('اكتشف الخطأ'));
+    });
+
+    it('is keyed by its own name in the answer key, not numbered as an example', () => {
+      const deck = buildLessonDeck('x', true, { lesson: BARE, plan: PLAN, teaching: withMistake });
+      assert.deepEqual(deck.answerKey, ['مثال 1: 2 mol', `🔍 اكتشف الخطأ: ${MISTAKE.answer}`]);
+    });
+
+    it('is left out when the teacher unticked examples, or the claim or answer is missing', () => {
+      const off = buildLessonDeck('x', true, { lesson: BARE, plan: PLAN, teaching: withMistake, includeExamples: false });
+      assert.equal(off.slides.some(s => s.title.includes('اكتشف الخطأ')), false);
+      for (const mistake of [{ ...MISTAKE, claim: ' ' }, { ...MISTAKE, answer: '' }]) {
+        const deck = buildLessonDeck('x', true, { lesson: BARE, plan: PLAN, teaching: { ...TEACHING, mistake } });
+        assert.equal(deck.slides.some(s => s.title.includes('اكتشف الخطأ')), false);
+      }
+    });
+
+    it('is drawn in English for an English deck', () => {
+      const deck = buildLessonDeck('x', false, { teaching: withMistake });
+      assert.ok(deck.slides.some(s => s.title === '🔍 Spot the Mistake'));
+    });
   });
 
   it('flags every generated slide, and no book slide, as aiWritten', () => {

@@ -5,13 +5,21 @@
  * services/publicGames/countries.ts. The element-symbols game reuses the
  * board with its own prompt (ElementsGame.tsx).
  */
-import React, { useCallback, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { ICON } from '@/constants/icons';
+import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 import { GameShell } from './GameShell';
+import { AnswerOption } from './AnswerOption';
+import { answerFeedback } from '@/services/playFeedback';
+import { nextStreak, showStreak } from '@/services/publicGames/answerMotion';
+import { recordBest, type BestResult } from '@/services/publicGames/bestScore';
+import { playStore } from '@/services/playStore';
+import { readableOn } from '@/services/readableColor';
 import { buildTriviaRound, flagUrl, type TriviaField, type TriviaOption, type TriviaQuestion } from '@/services/publicGames/countries';
 import type { TranslationKey } from '@/services/i18n';
 
@@ -47,7 +55,7 @@ export function TriviaGame({
 }
 
 export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: string }>({
-  titleKey, accent, buildRound, renderPrompt, onBack, analytics, onFinished, footer,
+  titleKey, accent, buildRound, renderPrompt, renderReveal, onBack, analytics, onFinished, footer,
 }: {
   titleKey: TranslationKey;
   accent: string;
@@ -58,6 +66,8 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
   /** Must be stable (module-level or useCallback): a new identity reshuffles the round. */
   buildRound: (lang: 'ar' | 'en') => Q[];
   renderPrompt: (question: Q) => React.ReactNode;
+  /** Shown under the options once an answer is picked (the picked option's id is passed). */
+  renderReveal?: (question: Q, pickedId: string) => React.ReactNode;
 }) {
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
@@ -66,21 +76,42 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
   const [score, setScore] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [gameOver, setGameOver] = useState(false);
+  const [streak, setStreak] = useState(0);
+  const [missed, setMissed] = useState<Q[]>([]);
+  const [retryQuestions, setRetryQuestions] = useState<Q[] | null>(null);
+  const [bestInfo, setBestInfo] = useState<BestResult | null>(null);
 
-  const questions: Q[] = useMemo(
+  const built: Q[] = useMemo(
     () => buildRound(lang),
     // A fresh set on mount and every "play again" — never mid-game, or the
     // options under a selected answer would shuffle out from under the tap.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [buildRound, lang, round],
   );
+  const questions: Q[] = retryQuestions ?? built;
   const question = questions[index];
 
   const pick = (optionId: string) => {
     if (selected) return; // one answer per question
     setSelected(optionId);
+    answerFeedback(optionId === question.correctId);
+    setStreak(s => nextStreak(s, optionId === question.correctId));
     if (optionId === question.correctId) setScore(s => s + 1);
+    if (optionId !== question.correctId) setMissed(m => [...m, question]);
   };
+
+  // A lesson game keeps one best per lesson (the lesson screen passes its id in `analytics`).
+  const bestGameKey = analytics?.lessonId ? `${titleKey}:${analytics.lessonId}` : titleKey;
+
+  // A finished full round records the personal best; a retry round never does.
+  useEffect(() => {
+    if (!gameOver || retryQuestions) return;
+    let alive = true;
+    void recordBest(playStore, bestGameKey, { score, total: questions.length }).then(r => { if (alive) setBestInfo(r); });
+    return () => { alive = false; };
+    // Once per finished full round.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameOver]);
 
   const next = () => {
     if (index + 1 >= questions.length) {
@@ -95,7 +126,22 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
     setRound(r => r + 1);
     setIndex(0);
     setScore(0);
+    setStreak(0);
     setSelected(null);
+    setGameOver(false);
+    setRetryQuestions(null);
+    setMissed([]);
+    setBestInfo(null);
+  };
+
+  const retryMissed = () => {
+    setRetryQuestions(missed);
+    setMissed([]);
+    setBestInfo(null);
+    setIndex(0);
+    setScore(0);
+    setSelected(null);
+    setStreak(0);
     setGameOver(false);
   };
 
@@ -104,55 +150,63 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
       titleKey={titleKey}
       accent={accent}
       scoreLabel={t('playScoreLabel', score, questions.length)}
-      gameOver={gameOver ? { message: t('playScoreLabel', score, questions.length), perfect: score === questions.length, score, total: questions.length } : null}
+      gameOver={gameOver ? { message: t('playScoreLabel', score, questions.length), perfect: !retryQuestions && score === questions.length, score, total: questions.length } : null}
       onReplay={replay}
       onBack={onBack}
-      analytics={analytics}
-      onFinished={onFinished}
-      footer={footer}
+      analytics={retryQuestions ? { ...analytics, retry: '1' } : analytics}
+      // A retry round is practice: it is never reported (the server keeps the higher
+      // ratio, so 2/2 on the missed ones would read as perfect) and never shows a send status.
+      onFinished={retryQuestions ? undefined : onFinished}
+      secondaryAction={missed.length > 0 ? { label: t('playRetryMissed', missed.length), onPress: retryMissed } : undefined}
+      footer={
+        <>
+          {bestInfo ? (
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.label, textAlign: 'center' }}>
+              {t('playBestScore', bestInfo.best.score, bestInfo.best.total)}{bestInfo.isNewBest ? `  ·  ${t('playNewBest')}` : ''}
+            </Text>
+          ) : null}
+          {retryQuestions ? null : footer}
+        </>
+      }
+      showSoundToggle
     >
-      <View style={{ flex: 1, padding: 20, gap: 20 }}>
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
-          {t('playQuestionProgress', index + 1, questions.length)}
-        </Text>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, padding: 20, gap: 20 }}>
+        {/* minHeight: room for the streak chip (25 px measured) so the question does not drop when it appears. */}
+        <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: ICON.md + SPACE.md }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: TYPE.caption, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('playQuestionProgress', index + 1, questions.length)}
+          </Text>
+          {showStreak(streak) ? (
+            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: SPACE.xs, paddingHorizontal: SPACE.md, paddingVertical: SPACE.xs, borderRadius: RADIUS.pill, backgroundColor: `${accent}1a` }}>
+              <Ionicons name="flame" size={ICON.md} color={readableOn(accent, colors.card, 3)} />
+              <Text style={{ color: readableOn(accent, colors.card), fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{t('playStreak', streak)}</Text>
+            </View>
+          ) : null}
+        </View>
 
         {renderPrompt(question)}
 
         <View style={styles.optionsGrid}>
-          {question.options.map(o => {
-            const isCorrect = o.id === question.correctId;
-            const isPicked = o.id === selected;
-            const revealed = selected !== null;
-            const bg = !revealed
-              ? colors.card
-              : isCorrect
-                ? '#16A34A22'
-                : isPicked
-                  ? '#DC262622'
-                  : colors.card;
-            const border = !revealed ? colors.border : isCorrect ? '#16A34A' : isPicked ? '#DC2626' : colors.border;
-            return (
-              <Pressable
-                key={o.id}
-                onPress={() => pick(o.id)}
-                style={[styles.option, { backgroundColor: bg, borderColor: border }]}
-              >
-                <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: 'center' }}>
-                  {o.label}
-                </Text>
-                {revealed && isCorrect && <Ionicons name="checkmark-circle" size={20} color="#16A34A" style={styles.optionIcon} />}
-                {revealed && isPicked && !isCorrect && <Ionicons name="close-circle" size={20} color="#DC2626" style={styles.optionIcon} />}
-              </Pressable>
-            );
-          })}
+          {question.options.map(o => (
+            <AnswerOption
+              key={o.id}
+              label={o.label}
+              revealed={selected !== null}
+              isCorrect={o.id === question.correctId}
+              isPicked={o.id === selected}
+              onPress={() => pick(o.id)}
+            />
+          ))}
         </View>
+
+        {selected && renderReveal ? renderReveal(question, selected) : null}
 
         {selected ? (
           <Pressable onPress={next} style={[styles.nextBtn, { backgroundColor: accent }]}>
             <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>{t('playNext')}</Text>
           </Pressable>
         ) : null}
-      </View>
+      </ScrollView>
     </GameShell>
   );
 }
@@ -161,10 +215,5 @@ const styles = StyleSheet.create({
   flagWrap: { alignItems: 'center' },
   flag: { width: 200, height: 120, borderRadius: 10, backgroundColor: '#eee' },
   optionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  option: {
-    flexBasis: '47%', flexGrow: 1, borderWidth: 1, borderRadius: 12, paddingVertical: 16, paddingHorizontal: 10,
-    alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6,
-  },
-  optionIcon: { marginTop: -2 },
   nextBtn: { alignItems: 'center', justifyContent: 'center', borderRadius: 12, paddingVertical: 15, marginTop: 'auto' },
 });

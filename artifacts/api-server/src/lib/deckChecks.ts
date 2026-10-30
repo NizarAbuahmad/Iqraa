@@ -21,6 +21,7 @@
  * options marks nothing right); `warn` is worth a teacher's glance.
  */
 import { sourceWordSet, supportIn, WEAK_BELOW } from "../modules/assessment/groundingCheck.ts";
+import { MAX_PASSIVE_RUN } from "./deckEngagement.ts";
 
 export type DeckIssueSeverity = "error" | "warn";
 
@@ -69,10 +70,19 @@ export function checkDeck(deck: unknown, sourceText = ""): DeckIssue[] {
 
   // ── Per slide ─────────────────────────────────────────────────────────────
   const seenTitles = new Map<string, number>();
+  // Explanation slides in a row since the class last did something; the cover
+  // does not count and any other type ends the run (see `deckEngagement.ts`).
+  // Only the prompt's teaching arc has the rule, and only it requires a check
+  // question: a general deck (a parents' evening) is not held to it.
+  const teaching = slides.some(s => s.type === "question");
+  let passive = 0;
   slides.forEach((s, i) => {
     const n = i + 1;
     const type = str(s.type);
     const content = str(s.content);
+
+    passive = i > 0 && type === "intro" ? passive + 1 : 0;
+    if (teaching && passive === MAX_PASSIVE_RUN + 1) add("warn", "passive_run", n, `slide ${n - MAX_PASSIVE_RUN} onwards`);
 
     if (!SLIDE_TYPES.has(type)) add("error", "unknown_type", n, type);
     if (s.slideNumber !== n) add("warn", "slide_number", n, `says ${String(s.slideNumber)}`);

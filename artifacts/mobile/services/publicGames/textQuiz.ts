@@ -15,6 +15,10 @@ export interface TextQuestion {
   subject?: string;
   options: TriviaOption[];
   correctId: string;
+  /** One line shown under the revealed answer, already in the question's language. Never holds an operator next to Arabic-Indic digits. */
+  explanation?: string;
+  /** A pure number line (digits, `/`, `=`, `≈`), drawn in its own left-to-right Text. Already wrapped in `forceLtr`. */
+  explanationLtr?: string;
 }
 
 /** One random item. Throws on an empty list: a game with no data is a bug, not an empty round. */
