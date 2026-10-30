@@ -23,6 +23,7 @@ import {
   normalizeGameResults,
   normalizeTeacherGameResults,
   resultForGame,
+  showsSubmissionLink,
   homeworkSections,
   normalizeTeacherHomework,
   normalizeTeacherList,
@@ -44,6 +45,8 @@ const hw = (over: Partial<FamilyHomework> = {}): FamilyHomework => ({
   resources: [],
   canTrack: true,
   gameResults: [],
+  requiresSubmission: false,
+  submission: 'none',
   ...over,
 });
 
@@ -151,6 +154,8 @@ test('normalizeFamilyHomework keeps a well-formed row', () => {
       resources: [],
       canTrack: true,
       gameResults: [],
+      requiresSubmission: false,
+      submission: 'none',
     },
   ]);
 });
@@ -558,6 +563,7 @@ test('allTrackedDone: every item that can be ticked is done', () => {
   const item = (id: string, done: boolean, canTrack = true) => ({
     id, title: id, instructions: '', dueDate: '2026-10-22', className: '', teacherName: '',
     done, state: done ? 'done' as const : 'open' as const, examTitle: null, resources: [], canTrack, gameResults: [],
+    requiresSubmission: false, submission: 'none' as const,
   });
   assert.equal(allTrackedDone([item('a', true), item('b', true)]), true);
   assert.equal(allTrackedDone([item('a', true), item('b', false)]), false);
@@ -625,4 +631,44 @@ test('gameScoreText: Arabic-Indic digits in the Arabic UI, latin in English', ()
   assert.equal(gameScoreText(7, 8, true), '٧ من ٨');
   assert.equal(gameScoreText(10, 12, true), '١٠ من ١٢');
   assert.equal(gameScoreText(7, 8, false), '7 of 8');
+});
+
+// ─── project submission fields ───────────────────────────────────────────────
+
+test('normalizeFamilyHomework reads an old-server payload (neither field) as no submission', () => {
+  const [row] = normalizeFamilyHomework([rawItem]);
+  assert.equal(row!.requiresSubmission, false);
+  assert.equal(row!.submission, 'none');
+});
+
+test('normalizeFamilyHomework keeps requiresSubmission and a late submission', () => {
+  const [row] = normalizeFamilyHomework([{ ...rawItem, requiresSubmission: true, submission: 'late' }]);
+  assert.equal(row!.requiresSubmission, true);
+  assert.equal(row!.submission, 'late');
+});
+
+test('normalizeFamilyHomework reads an unknown submission state as none', () => {
+  assert.equal(normalizeFamilyHomework([{ ...rawItem, requiresSubmission: true, submission: 'draft' }])[0]!.submission, 'none');
+});
+
+test('normalizeFamilyHomework reads a non-boolean requiresSubmission as false', () => {
+  assert.equal(normalizeFamilyHomework([{ ...rawItem, requiresSubmission: 'yes' }])[0]!.requiresSubmission, false);
+  assert.equal(normalizeFamilyHomework([{ ...rawItem, requiresSubmission: 1 }])[0]!.requiresSubmission, false);
+});
+
+test('showsSubmissionLink is true only when a submission is required and the item can be tracked', () => {
+  assert.equal(showsSubmissionLink({ requiresSubmission: true, canTrack: true }), true);
+  assert.equal(showsSubmissionLink({ requiresSubmission: true, canTrack: false }), false);
+  assert.equal(showsSubmissionLink({ requiresSubmission: false, canTrack: true }), false);
+  assert.equal(showsSubmissionLink({ requiresSubmission: false, canTrack: false }), false);
+});
+
+test('an untracked submission item is never ranked as overdue', () => {
+  // The existing rule (canTrack false => no «متأخّر» claim) must still hold when a project is required.
+  const untracked = hw({ id: 'u', requiresSubmission: true, canTrack: false, state: 'overdue', dueDate: '2026-10-25' });
+  const tracked = hw({ id: 't', requiresSubmission: true, canTrack: true, state: 'open', dueDate: '2026-10-20' });
+  const { todo } = splitHomework([tracked, untracked]);
+  assert.deepEqual(todo.map(h => h.id), ['t', 'u']); // by date, not pulled to the front as late
+  const late = hw({ id: 'l', requiresSubmission: true, canTrack: true, state: 'overdue', dueDate: '2026-10-18' });
+  assert.equal(splitHomework([tracked, untracked, late]).todo[0]!.id, 'l');
 });
