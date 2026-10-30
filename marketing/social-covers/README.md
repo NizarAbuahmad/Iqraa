@@ -17,10 +17,10 @@ the phone app.
 
 ## The copy
 
-- «ذكاء يساعدك لتعليم أفضل» is the existing tagline.
+- «رفيق المعلّم من التحضير إلى التقييم», "the teacher's companion, from prep to assessment".
 - «خطط دروس، أوراق عمل واختبارات — مبنية على المنهاج الأردني»
 - A call-to-action button, «ابدأ الآن مجاناً ←» ("start now for free"), beside `iqrra.com`. The arrow points left, the direction you read Arabic in.
-- *Iqrra · Free AI teaching assistant for Jordanian teachers*. This line is left off the LinkedIn banners: LinkedIn shows them at about half size, so it would render at roughly 8 px.
+- *Iqrra · Free AI teaching assistant for the Jordanian curriculum*. Every cover names the Jordanian curriculum, in Arabic in the line above and here in English. This line is left off the LinkedIn banners: LinkedIn shows them at about half size, so it would render at roughly 8 px.
 
 ## Rebuilding
 

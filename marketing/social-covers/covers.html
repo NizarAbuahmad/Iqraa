@@ -21,7 +21,7 @@ html,body{background:var(--ink)}
 .row{flex-direction:row;direction:rtl}
 .text{direction:rtl}
 .row .text{text-align:right}
-.tag{font-weight:700;line-height:1.25;letter-spacing:0}
+.tag{font-weight:700;line-height:1.25;letter-spacing:0;white-space:nowrap}
 .sub{font-weight:400;color:rgba(255,255,255,.82);line-height:1.5}
 .en{direction:ltr;font-weight:600;color:var(--aqua);letter-spacing:.02em;white-space:nowrap}
 .url{direction:ltr;font-weight:600;color:#fff;letter-spacing:.02em}
@@ -87,9 +87,9 @@ const art=(name,x,y,size,op=.5,rot=0)=>
   `<svg style="position:absolute;left:${x}px;top:${y}px;opacity:${op};transform:rotate(${rot}deg);overflow:visible" width="${size}" height="${size}" viewBox="0 0 100 100">${ART[name]}</svg>`;
 
 const COPY={
-  tag:'ذكاء يساعدك لتعليم أفضل',
+  tag:'رفيق المعلّم من التحضير إلى التقييم',
   sub:'خطط دروس، أوراق عمل واختبارات — مبنية على المنهاج الأردني',
-  en:'Free AI teaching assistant for Jordanian teachers',
+  en:'Free AI teaching assistant for the Jordanian curriculum',
   cta:'ابدأ الآن مجاناً',
   url:'iqrra.com',
 };
@@ -116,7 +116,7 @@ const SPECS={
       {k:'band',x:352,y:508,w:1856,h:424,t:'Tablet — 1855 × 423',bottom:true},
       {k:'safe',x:507,y:508,w:1546,h:424,t:'Safe on every device — 1546 × 423'},
     ],
-    content:{x:560,y:528,w:1440,h:384,layout:'row',logo:420,tag:72,sub:31,en:22,url:30,cta:30,gap:16},
+    content:{x:560,y:528,w:1440,h:384,layout:'row',logo:400,tag:66,sub:31,en:22,url:30,cta:30,gap:16},
     art:[['parabola',150,520,300,.45],['benzene',2130,530,260,.45],
          ['orbit',2200,180,380,.22],['parabola',260,980,360,.18,180],['benzene',1100,1060,300,.14],['orbit',1150,40,320,.12]],
   },
@@ -137,7 +137,7 @@ const SPECS={
       {k:'avoid',x:0,y:170,w:540,h:226,t:'Profile photo'},
       {k:'safe',x:560,y:30,w:990,h:336,t:'Clear of the photo'},
     ],
-    content:{x:590,y:46,w:940,h:304,layout:'row',logo:290,tag:44,sub:22,url:23,cta:23,gap:11},
+    content:{x:590,y:46,w:940,h:304,layout:'row',logo:280,tag:40,sub:22,url:23,cta:23,gap:11},
     art:[['benzene',70,26,130,.45],['orbit',300,40,110,.3]],
   },
 };
