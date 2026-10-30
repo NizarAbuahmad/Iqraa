@@ -100,11 +100,14 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
     if (optionId !== question.correctId) setMissed(m => [...m, question]);
   };
 
+  // A lesson game keeps one best per lesson (the lesson screen passes its id in `analytics`).
+  const bestGameKey = analytics?.lessonId ? `${titleKey}:${analytics.lessonId}` : titleKey;
+
   // A finished full round records the personal best; a retry round never does.
   useEffect(() => {
     if (!gameOver || retryQuestions) return;
     let alive = true;
-    void recordBest(playStore, titleKey, { score, total: questions.length }).then(r => { if (alive) setBestInfo(r); });
+    void recordBest(playStore, bestGameKey, { score, total: questions.length }).then(r => { if (alive) setBestInfo(r); });
     return () => { alive = false; };
     // Once per finished full round.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -151,7 +154,9 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
       onReplay={replay}
       onBack={onBack}
       analytics={retryQuestions ? { ...analytics, retry: '1' } : analytics}
-      onFinished={onFinished}
+      // A retry round is practice: it is never reported (the server keeps the higher
+      // ratio, so 2/2 on the missed ones would read as perfect) and never shows a send status.
+      onFinished={retryQuestions ? undefined : onFinished}
       secondaryAction={missed.length > 0 ? { label: t('playRetryMissed', missed.length), onPress: retryMissed } : undefined}
       footer={
         <>
@@ -160,7 +165,7 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
               {t('playBestScore', bestInfo.best.score, bestInfo.best.total)}{bestInfo.isNewBest ? `  ·  ${t('playNewBest')}` : ''}
             </Text>
           ) : null}
-          {footer}
+          {retryQuestions ? null : footer}
         </>
       }
       showSoundToggle
