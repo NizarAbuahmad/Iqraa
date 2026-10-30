@@ -29,6 +29,10 @@ html,body{background:var(--ink)}
 .row .meta{justify-content:flex-start}
 .stack .meta{justify-content:center}
 .dot{width:.32em;height:.32em;border-radius:50%;background:var(--teal);flex:none}
+.cta{direction:rtl;display:inline-flex;align-items:center;gap:.45em;background:var(--aqua);color:var(--ink);
+  font-weight:700;line-height:1;padding:.5em 1em .55em;border-radius:999px;white-space:nowrap;
+  box-shadow:0 0 0 .18em rgba(52,214,198,.18)}
+.enline{margin-top:.7em}
 .divider{align-self:stretch;width:2px;background:linear-gradient(transparent,rgba(52,214,198,.55),transparent)}
 .guide{position:absolute;border:3px dashed;font:600 18px/1.2 Plex,sans-serif;padding:6px 10px;direction:ltr}
 .guide span{background:rgba(11,27,51,.85);padding:2px 6px;border-radius:4px}
@@ -85,7 +89,8 @@ const art=(name,x,y,size,op=.5,rot=0)=>
 const COPY={
   tag:'ذكاء يساعدك لتعليم أفضل',
   sub:'خطط دروس، أوراق عمل واختبارات — مبنية على المنهاج الأردني',
-  en:'AI teaching assistant for Jordanian teachers',
+  en:'Free AI teaching assistant for Jordanian teachers',
+  cta:'ابدأ الآن مجاناً',
   url:'iqrra.com',
 };
 
@@ -99,7 +104,7 @@ const SPECS={
       {k:'safe',x:265,y:0,w:1110,h:624,t:'Mobile view — centre 1110 px (sides cropped)'},
       {k:'avoid',x:0,y:470,w:420,h:154,t:'Profile photo (desktop)'},
     ],
-    content:{x:300,y:70,w:1040,h:440,layout:'stack',logo:330,tag:58,sub:27,en:19,url:24,gap:22},
+    content:{x:300,y:70,w:1040,h:440,layout:'stack',logo:280,tag:56,sub:26,en:18,url:24,cta:24,gap:18},
     art:[['parabola',40,90,220,.45],['benzene',1420,70,180,.5],['orbit',1430,380,150,.35]],
   },
   youtube:{
@@ -111,7 +116,7 @@ const SPECS={
       {k:'band',x:352,y:508,w:1856,h:424,t:'Tablet — 1855 × 423',bottom:true},
       {k:'safe',x:507,y:508,w:1546,h:424,t:'Safe on every device — 1546 × 423'},
     ],
-    content:{x:560,y:528,w:1440,h:384,layout:'row',logo:420,tag:76,sub:32,en:24,url:28,gap:18},
+    content:{x:560,y:528,w:1440,h:384,layout:'row',logo:420,tag:72,sub:31,en:22,url:30,cta:30,gap:16},
     art:[['parabola',150,520,300,.45],['benzene',2130,530,260,.45],
          ['orbit',2200,180,380,.22],['parabola',260,980,360,.18,180],['benzene',1100,1060,300,.14],['orbit',1150,40,320,.12]],
   },
@@ -122,7 +127,7 @@ const SPECS={
       {k:'safe',x:228,y:30,w:1800,h:322,t:'Mobile — centre ~900 px (×2)'},
       {k:'avoid',x:0,y:140,w:600,h:242,t:'Company logo'},
     ],
-    content:{x:640,y:44,w:1360,h:294,layout:'row',logo:420,tag:62,sub:32,url:30,gap:14},
+    content:{x:640,y:44,w:1360,h:294,layout:'row',logo:420,tag:58,sub:30,url:30,cta:30,gap:12},
     art:[['benzene',60,22,130,.45],['parabola',2080,40,150,.4]],
   },
   linkedin_profile:{
@@ -132,7 +137,7 @@ const SPECS={
       {k:'avoid',x:0,y:170,w:540,h:226,t:'Profile photo'},
       {k:'safe',x:560,y:30,w:990,h:336,t:'Clear of the photo'},
     ],
-    content:{x:590,y:46,w:940,h:304,layout:'row',logo:290,tag:46,sub:23,url:24,gap:12},
+    content:{x:590,y:46,w:940,h:304,layout:'row',logo:290,tag:44,sub:22,url:23,cta:23,gap:11},
     art:[['benzene',70,26,130,.45],['orbit',300,40,110,.3]],
   },
 };
@@ -154,8 +159,9 @@ function render(name,guides){
   const deco=s.art.map(a=>art(...a)).join('');
   // LinkedIn shows its banners at about half the upload size, so a small
   // English line there would land near 8 px; those covers carry the URL only.
-  const en=c.en?`<span class="en" style="font-size:${c.en}px">Iqrra · ${COPY.en}</span><span class="dot"></span>`:'';
-  const meta=`<div class="meta" style="font-size:${c.url}px;margin-top:${c.gap}px">${en}<span class="url">${COPY.url}</span></div>`;
+  const en=c.en?`<div class="en enline" style="font-size:${c.en}px">Iqrra · ${COPY.en}</div>`:'';
+  const meta=`<div class="meta" style="font-size:${c.url}px;margin-top:${c.gap*1.2}px">
+      <span class="cta" style="font-size:${c.cta}px">${COPY.cta}<span aria-hidden="true">←</span></span><span class="url">${COPY.url}</span></div>${en}`;
   const text=`<div class="text">
       <div class="tag" style="font-size:${c.tag}px">${COPY.tag}</div>
       <div class="sub" style="font-size:${c.sub}px;margin-top:${c.gap*.5}px">${COPY.sub}</div>${meta}</div>`;

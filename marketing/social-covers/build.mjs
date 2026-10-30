@@ -39,7 +39,7 @@ for (const [name, file] of Object.entries(FILES)) {
     const { w, h, spill } = await page.evaluate((n) => {
       const s = window.SPECS[n];
       const box = document.querySelector('.content').getBoundingClientRect();
-      const spill = [...document.querySelectorAll('.content svg, .content .tag, .content .sub, .content .meta')]
+      const spill = [...document.querySelectorAll('.content svg, .content .tag, .content .sub, .content .meta, .content .cta, .content .en')]
         .map((e) => [e.className.baseVal ?? e.className, e.getBoundingClientRect()])
         .filter(([, r]) => r.left < box.left - 0.5 || r.right > box.right + 0.5 || r.top < box.top - 0.5 || r.bottom > box.bottom + 0.5)
         .map(([k, r]) => `${k || 'logo'} ${Math.round(r.left)},${Math.round(r.top)}–${Math.round(r.right)},${Math.round(r.bottom)}`);
