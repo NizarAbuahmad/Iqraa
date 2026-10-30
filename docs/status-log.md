@@ -1593,6 +1593,38 @@ CORS allows only `www.iqrra.com` and `iqrra.com`, so a preview only ever shows t
   `Site_Iqra`'s `index.html` (or revert the merge); the API is unaffected. To keep the API but stop
   AI spend, set `SITE_BOT_BUDGET_USD_DAILY=0` (fixed answers keep working).
 
+## Thirty-sixth live pass: wordings of answers that existed, 2026-10-28
+
+**Why.** A 36-question pass on app.iqrra.com of what a teacher asks while using the app got 14 in-app answers, 5 of
+them wrong («which subject?» for «كيف أحسب معدل الطالب», «Can a student retake an exam», «Can I schedule an exam for
+later», «هل يوجد أسئلة للطلاب المتفوقين», and «which lesson?» for how long a lesson plan takes), and 22 sent to the
+model. **Almost none needed a new answer:** 17 of the 22 already had one (`howAttendance`, `howExamRetake`,
+`howExamTime`, `howQuranAbout`, `howLabAbout`, `howGamesList`, `howRemedial`, `howReissueLoginCode`…); the question
+was phrased as a yes/no («هل يوجد…»), which the keyword places only answer behind a how/where word. Check
+`i18n.ts` for an existing `how*` before writing one.
+
+**Built.** Anchored wordings (ar + en) on 16 existing places, and two new answers that say what the app does not do:
+
+- `howExamCheat` — nothing prevents or watches for cheating. Checked by absence: no `visibilitychange` / `AppState` /
+  fullscreen / selection lock anywhere in `app/`, `services/` or `components/`, no shuffle (`howExamShuffle`), and no
+  server timer (below).
+- `howExamSchedule` — no scheduled publish. `evaluations` has no opens-at column; `examDate` is selected into the
+  student rows for display and gates nothing; the PATCH takes only `classGroupId` / `examDate` / `examTime`.
+
+**A schema column that looks like a feature.** `evaluations.time_limit_min` exists and the student exam path reads it
+(`examDeadline`), but **nothing writes it**: the create and PATCH routes never set it, so `howExamTime` («no exam
+duration setting») is right and this pass kept it.
+
+**Left with the model on purpose.** «كيف أحدد مدة الامتحان» and «كيف أمنع الطلاب من الغش» stay pedagogy questions
+(an existing test pins them); only the yes/no and feature forms («هل يمكن تحديد مدة للاختبار», «هل يمنع التطبيق
+الغش») reach the answers. Not answered: «send students a homework reminder» (a day-before push exists, but its
+Cloud Scheduler job is a manual one-time setup I cannot see from here, so I cannot say it is on), «does it support
+maths equations» and «how long does a lesson plan take» (nothing specific to say).
+
+**Verified.** `appHelp.test.ts`: 28 phrasings, 6 near-misses and the wording of the two new answers. The 813 historic
+questions answer identically (0 changed). Not yet seen live; re-run the 36 after the deploy (the allowance is still
+spent, so only the app path can be seen).
+
 ## Thirty-fifth live pass: «only Jordan», 2026-10-28
 
 **Why.** The 34th pass left one question for the owner: is the app usable outside Jordan («هل التطبيق يعمل في الأردن فقط»,
