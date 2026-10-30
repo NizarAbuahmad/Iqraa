@@ -6,7 +6,7 @@
  * board with its own prompt (ElementsGame.tsx).
  */
 import React, { useCallback, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
@@ -47,7 +47,7 @@ export function TriviaGame({
 }
 
 export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: string }>({
-  titleKey, accent, buildRound, renderPrompt, onBack, analytics, onFinished, footer,
+  titleKey, accent, buildRound, renderPrompt, renderReveal, onBack, analytics, onFinished, footer,
 }: {
   titleKey: TranslationKey;
   accent: string;
@@ -58,6 +58,8 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
   /** Must be stable (module-level or useCallback): a new identity reshuffles the round. */
   buildRound: (lang: 'ar' | 'en') => Q[];
   renderPrompt: (question: Q) => React.ReactNode;
+  /** Shown under the options once an answer is picked (the picked option's id is passed). */
+  renderReveal?: (question: Q, pickedId: string) => React.ReactNode;
 }) {
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
@@ -111,7 +113,7 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
       onFinished={onFinished}
       footer={footer}
     >
-      <View style={{ flex: 1, padding: 20, gap: 20 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, padding: 20, gap: 20 }}>
         <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
           {t('playQuestionProgress', index + 1, questions.length)}
         </Text>
@@ -147,12 +149,14 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
           })}
         </View>
 
+        {selected && renderReveal ? renderReveal(question, selected) : null}
+
         {selected ? (
           <Pressable onPress={next} style={[styles.nextBtn, { backgroundColor: accent }]}>
             <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>{t('playNext')}</Text>
           </Pressable>
         ) : null}
-      </View>
+      </ScrollView>
     </GameShell>
   );
 }
