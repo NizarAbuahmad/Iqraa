@@ -15,9 +15,19 @@ Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 Phase 2 of 3: a student whose homework needs a project can open it from the School tab,
 add one to six photos from the phone's library and a note, hand it in, change it until the
 due day ends, and see it read-only after that. It runs on the phase 1 API (the two entries
-below). **App code only** (`artifacts/mobile`): no API, schema or `app.json` change, so a
-merge ships it over the air to the `preview` channel; the `production` channel stays manual
-(`mobile-update.yml`). An update only reaches a binary with the same `app.json` `version`
+below). Phase 2 itself is app code only (`artifacts/mobile`), with no `app.json` change. But it
+merges in the same PR (#1356) as phase 1, so **a merge of that PR deploys three surfaces**
+(`deploy.yml`'s `what changed` job, which reads the whole push):
+- **The API.** Phase 1, the sweep and migration `0021_blushing_blockbuster` reach Cloud Run.
+  They are under `artifacts/api-server/` and `lib/`, so the schema job migrates first and the
+  new API revision takes traffic after it.
+- **The web bundle.** The app changes go to production on Cloudflare Pages (`iqraa-web`).
+  That is the live web app, not a preview.
+- **The over-the-air update.** It goes to the `preview` channel (`mobile-update.yml` on push to
+  `main`). The `production` channel stays manual
+  (`gh workflow run mobile-update.yml -f branch=production`).
+
+The verifier is skipped. An update only reaches a binary with the same `app.json` `version`
 (1.6.0 on this branch; see *Mobile* in `STATUS.md` for which binary is installed). **No
 screen can yet switch a homework to need a project**: that is the teacher's app, phase 3.
 Until then only the API (`requiresSubmission` on `POST`/`PATCH /homework`) can, so in
@@ -55,6 +65,18 @@ plan: `docs/superpowers/plans/2026-10-30-homework-project-submission-student-app
   القديمة». Past the due day a handed-in project is read-only with «انتهى موعد التسليم،
   المشروع للقراءة فقط». Only an on-time first hand-in made on the screen is celebrated; a late
   one gets a toast.
+- **After the final review** (same PR):
+  - **Late first hand-in.** It asks first: «سيُسجَّل التسليم متأخرًا ولن تتمكن من تعديله بعد
+    ذلك», because the server locks it at once.
+  - **State look.** Late is drawn in the destructive colour on both the School row and the
+    screen (`submissionLook`, never amber).
+  - **Locked note.** A locked project shows the teacher's note, never an unsaved draft.
+  - **Refused clear.** A note clear refused as `empty` goes back to the saved note.
+  - **Analytics.** The screen is not reported as a screen view (`shouldTrackScreen`).
+  - **Celebrations.** The project hand-in is the fifth celebration moment (CLAUDE.md, the
+    celebrations spec and `celebrateMoments.test.ts`).
+  - **Not checked in a browser.** None of these was re-run against the real stack; they are
+    covered by unit and source-reading tests.
 
 **Decisions**
 
