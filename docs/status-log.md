@@ -10,6 +10,45 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## /play hub: filter the games by subject and by grade — 2026-10-30
+
+The hub listed all 16 games with no way to narrow them. It now has two chip rows
+above the cards, **Subject** (All, Maths, Arabic, English, Science, Geography,
+Focus & memory) and **Grade** (All, 1–10), one choice in each, combined with AND,
+with a count line («لعبتان» / "2 games") and, when nothing matches, a card with
+«إزالة التصفية».
+
+- **Where it lives.** `services/publicGames/hubFilter.ts` (pure): `PLAY_GAME_SUBJECT`
+  is a `Record<PlayGameId, PlaySubject>`, so a new game without a subject fails
+  typecheck; `filterGames` keeps the hub's own order; a grade matches when it falls
+  inside any of the game's ranges from `PLAY_GAME_GRADES` (English is Grades 1–4
+  and 9–10, so Grade 5 does not show it). The screen reuses the generator's
+  `ChipGroup` in `single` mode with an «All» chip, so the chips are a radio group
+  (`role=radio`, `aria-checked`) and the tick means the state is not colour alone.
+- **The URL carries it.** `/play?subject=math&grade=6` opens filtered, every chip
+  press mirrors back with `router.setParams`, and «All» removes the param. The
+  filter is read from the URL once, at mount. A subject or grade that is not on the
+  chip list (`?subject=history`, `?grade=11`, `?grade=5.5`) is dropped, never
+  trusted, so an old or edited link shows the whole hub rather than an empty one.
+- **Subject choices** (a judgement, not measured): Maths — multiply, divide, add,
+  subtract, which number, compare fractions; Arabic — opposites, plurals; English —
+  the English corner; Science — elements, states of matter; Geography — flags,
+  capitals, governorates; Focus & memory — memory, colours.
+- **Verified:** `playHubFilter.test.ts` (8 tests: every game has a subject, every
+  subject chip and every grade 1–10 chip shows at least one game, the grade rule
+  checked against the ranges, AND, bad URL params, a round trip through the
+  params); typecheck; the mobile suite. In Chromium against the dev server:
+  deep link, choosing and clearing chips (the URL followed each one and a reload
+  restored it), the empty state, Arabic and English, light and dark, 390 px and
+  1280 px, no console errors.
+- **Not verified / limits.** Nothing was run on a native build, so
+  `router.setParams` on a phone binary is untested (it is the same call the maths
+  exercises screen makes). On a phone the two rows take about 280 px before the
+  first card; a collapsed «filter» button would be tighter, and was left out to keep
+  the first version plain. The count line is announced politely (`aria-live`) but
+  was not heard with a screen reader. The hub's analytics are unchanged: choosing a
+  filter is not tracked.
+
 ## /play games: a why line, sound and haptics, motion, personal best with retry, and a Jordan map — 2026-10-30
 
 Five changes to the public games (`/play`, no login), built as seven commits on top of `690c2bb` (spec and plan):
