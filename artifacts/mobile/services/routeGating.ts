@@ -92,6 +92,8 @@ const NON_TEACHER_ROUTES = [
   '/faq',
   // «اقترح ميزة» is linked from the profile tab for every role, like /faq.
   '/suggest-feature',
+  // «ما الجديد», linked from the profile tab for every role (services/whatsNew.ts).
+  '/whats-new',
   '/delete-account',
   // A student held for a parent's approval waits here (see `guardianRedirect`).
   '/guardian-waiting',

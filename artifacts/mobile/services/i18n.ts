@@ -3045,6 +3045,18 @@ const translations = {
     tourDialogLabel: 'جولة تعريفية في التطبيق',
     tourReplayTitle: 'إعادة الجولة التعريفية',
 
+    // «ما الجديد» — services/whatsNew.ts
+    whatsNewTitle: 'ما الجديد',
+    whatsNewDialogTitle: 'ما الجديد في «إقرأ»',
+    whatsNewSubtitle: 'ما أضفناه إلى التطبيق مؤخرًا.',
+    whatsNewTry: 'جرّبها',
+    whatsNewGotIt: 'حسنًا',
+    whatsNewEmpty: 'لا جديد بعد. سنخبرك هنا حين نضيف شيئًا.',
+    whatsNewPlayTitle: 'ألعاب جديدة، وتصفية حسب المادة والصف',
+    whatsNewPlayBody: 'في «ألعاب إقرأ» الآن ست عشرة لعبة، منها ست جديدة: «ضد الكلمة» و«جمع الكلمة» و«أيّ عدد؟» و«قارن الكسور» و«صلب، سائل أم غاز؟» و«محافظات الأردن». اختر المادة والصف لتجد ما يناسبك.',
+    whatsNewTourTitle: 'جولة تعريفية في التطبيق',
+    whatsNewTourBody: 'جولة قصيرة تشير إلى أهم أقسام التطبيق واحدًا تلو الآخر. يمكنك فتحها متى شئت من «حسابي» ثم «إعادة الجولة التعريفية».',
+
     // Sign-up role step + class code claim, and person-to-person messaging
     iAmA: 'أنا',
     pickRoleFirst: 'اختر نوع حسابك للمتابعة',
@@ -6516,6 +6528,18 @@ const translations = {
     tourStepOf: (n: number, total: number) => `Step ${n} of ${total}`,
     tourDialogLabel: 'App tour',
     tourReplayTitle: 'Replay the tour',
+
+    // "What's new" — services/whatsNew.ts
+    whatsNewTitle: "What's new",
+    whatsNewDialogTitle: "What's new in Iqrra",
+    whatsNewSubtitle: 'What we have added to the app lately.',
+    whatsNewTry: 'Try it',
+    whatsNewGotIt: 'Got it',
+    whatsNewEmpty: "Nothing new yet. We'll tell you here when we add something.",
+    whatsNewPlayTitle: 'New games, and a filter by subject and grade',
+    whatsNewPlayBody: 'Iqrra Games now has sixteen games, six of them new: opposites, plurals, which number, compare fractions, solid, liquid or gas, and the governorates of Jordan. Pick a subject and a grade to find the right one.',
+    whatsNewTourTitle: 'A guided tour of the app',
+    whatsNewTourBody: 'A short tour that points out the main parts of the app one by one. Start it any time from Profile, then "Replay the tour".',
 
     // Sign-up role step + class code claim, and person-to-person messaging
     iAmA: 'I am a',

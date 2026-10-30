@@ -10,6 +10,51 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## «ما الجديد»: existing users are told about new features, once, in the app — 2026-10-30
+
+Nothing told someone already using the app that it had changed: the tour is for new
+accounts, the admin broadcast mails the waitlist, and pushes fire only on classroom events.
+Design: `docs/superpowers/specs/2026-10-30-whats-new-design.md`.
+
+- **The list** is `WHATS_NEW` in `artifacts/mobile/services/whatsNew.ts`, newest first: an
+  `id`, the Amman `date` the feature reached users, the `roles`, title and body i18n keys,
+  and an optional `route` for «جرّبها». It ships in the same PR as the feature, so the note
+  reaches people with the same web deploy and OTA update — never before the feature.
+- **The dialog** (`components/whatsNew/WhatsNewHost.tsx`, mounted beside `TourHost`) opens
+  at most once per account per session, on the role's home screen, with the unseen entries
+  for that role, at most three, newest first (any more wait for the next launch). An entry is shown only to an account created **before** its date, only
+  once its day has come, and only while it is at most 45 days old. It waits for the tour's
+  gates (`routeGating.ts`), never opens while a tour runs or a replay is pending, holds back
+  for a young account that has not had its tour, and honours the tour's device off switch
+  (which the e2e sets). Entries are marked seen when the dialog opens
+  (`@iqra_whats_new_seen_v1:<id>`, on the device); a read that fails counts as "all seen".
+  Ids marked seen this session are also held in `services/whatsNewSession.ts`, so a note read
+  on the Profile screen is not offered again on the way back home.
+- **The screen** `/whats-new`, from a new Profile row «ما الجديد», lists every entry for the
+  role and marks them seen. It is in `NON_TEACHER_ROUTES`, so a parent or student is not
+  bounced from it.
+- **Two entries ship with it:** the six new games and the subject / grade filter in «ألعاب
+  إقرأ» (2026-10-30, `/play`), and the tour replay in Profile (2026-10-27) for accounts made
+  before the tour existed.
+- **Events:** `whats_new_shown` (`role`, `count`, `ids`), `whats_new_opened` (`id`,
+  `source`), `whats_new_closed` (`count`).
+- **The rule** (CLAUDE.md, STATUS.md): a change users can see adds an entry, or says in the
+  PR body why it needs none.
+
+**Verified:** `services/__tests__/whatsNew.test.ts` (23 tests: who sees what and when, the
+tour interplay, the session store, and that every real entry has a unique id, a real day,
+keys in both languages, and a route that is a real screen its roles may open); the whole
+mobile suite (8,311 pass, before the session-store fix, which re-ran its own file and
+`designScale`); `pnpm run typecheck`. A code-review pass found the dialog could fire a
+second time with four or more unseen entries, and could repeat notes just read in Profile;
+both are fixed and pinned.
+**Not verified:** the dialog and the screen were not opened in a browser or on a phone — the
+session had no database to sign in against. Check both in `pnpm run dev:mobile:web`, phone
+and desktop, light and dark, RTL, before relying on the look. Seen-state is per device, so a
+teacher on phone and web sees each note twice. «جرّبها» on the games note opens `/play`,
+whose hub has no back button on screen (`hideBack`); Android back and the browser's back
+work.
+
 ## Unsubscribe in every email, and 18+ for teachers and parents — 2026-10-30
 
 **Asked:** an unsubscribe button in every email we send, and terms that say teachers and parents
