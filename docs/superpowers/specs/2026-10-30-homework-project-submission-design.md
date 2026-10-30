@@ -314,8 +314,13 @@ bump is needed; if a permission string is missing it is a native change and the
   of what it can attribute is refused, with no override (a database and a bucket that
   do not belong together, e.g. a local `.env` with production R2 credentials, would
   otherwise see every photo as an orphan). Photos left under a homework row deleted
-  by cascade are therefore kept for good. **The Cloud Scheduler job still has
-  to be created by the owner** (`docs/deploying.md`, dry run first), so until then the
+  by cascade are therefore kept for good. **Those guards do not catch a copy or
+  branch of the production database** (a Neon branch knows every old homework, so
+  production photos uploaded since the branch point look like known orphans), so the
+  route is also a 404 unless `HOMEWORK_SUBMISSION_SWEEP=on` is set on the service, by
+  hand and on `iqraa-api` alone: no other server may hold the production R2
+  credentials with `INTERNAL_CRON_KEY`. **The switch and the Cloud Scheduler job still
+  have to be set up by the owner** (`docs/deploying.md`, dry run first), so until then the
   cases above stay open in production, and **it has never run against real R2**. Still
   open: a failed object delete in the sweep is not exercised by any test; the photo
   extension list exists twice (`modules/homework/submission.ts` and the sweep's key

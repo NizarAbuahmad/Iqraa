@@ -633,10 +633,33 @@ things, in this order:
 the repo can bring them back.** The code only ever errs toward keeping (see the
 limits below), but treat the first run as the dangerous one.
 
-It reuses **`INTERNAL_CRON_KEY`** and the same guard as the reminder: no new
-secret, nothing to add to `deploy.yml`, and **404 to everyone until the key is on
-the service** — so if the reminder section above is done, this route is already
-live and inert until a caller sends the key. The key value must never be echoed,
+It reuses **`INTERNAL_CRON_KEY`** and the same guard as the reminder (no new
+secret), and it needs one more thing the reminder does not: the plain env var
+**`HOMEWORK_SUBMISSION_SWEEP=on`** on the service. **The route answers 404 to
+everyone — the right key included — unless both are there**: the key, and that
+variable equal to exactly `on` (`ON`, `true`, `1` are all off). The variable is
+read on every request, is not a secret, and overrides none of the guards below.
+It is set **by hand, once, on `iqraa-api` only**, and deliberately not in
+`deploy.yml` (whose `--update-env-vars` changes only the variables it names, so
+it keeps this one, as it keeps `RLS_ENFORCE`):
+
+```bash
+gcloud run services update iqraa-api --region europe-west1 --project=iqraa-auth-507315 \
+  --update-env-vars=HOMEWORK_SUBMISSION_SWEEP=on
+# Off again, instantly: --remove-env-vars=HOMEWORK_SUBMISSION_SWEEP
+```
+
+**Why the switch exists: the guards do not catch a copy or branch of the
+production database.** A Neon branch (or a restored copy) of production knows
+every homework that existed at the branch point, so production photos uploaded
+since then look like orphans under *known* homework, few enough to stay under
+the ratio guard — and phase 1 there could purge a homework that was archived only
+in the branch. **No server other than `iqraa-api` may ever hold the production R2
+credentials together with `INTERNAL_CRON_KEY`** (no staging service, preview,
+Neon-branch test, laptop), and the switch is how that is enforced: such a server
+never has `HOMEWORK_SUBMISSION_SWEEP=on`, so its sweep route does not exist.
+
+The key value must never be echoed,
 printed or pasted into a transcript; run the commands below in **one shell
 session** with `$KEY` still set, exactly as the reminder recipe says. If you no
 longer have it, rotate (end of the reminder section) rather than read it back.
@@ -660,7 +683,11 @@ cannot change them.
 ```bash
 P=--project=iqraa-auth-507315   # one word, so it also works unquoted in zsh
 URL=https://iqraa-api-613126375862.europe-west1.run.app/api/internal/homework-submission-sweep
-# $KEY must be set in this shell (see above). 404 = the key is not on the service yet.
+# 0. Turn the route on, on iqraa-api only (above). Without it every call below is a 404.
+gcloud run services update iqraa-api --region europe-west1 $P \
+  --update-env-vars=HOMEWORK_SUBMISSION_SWEEP=on
+# $KEY must be set in this shell (see above). 404 = the key is not on the service yet,
+# or the switch is not (the answer does not say which).
 # 1. A DRY run by hand. Deletes nothing. Read the JSON.
 curl -sS -X POST -H "x-internal-key: $KEY" "$URL?dryRun=1"
 ```
@@ -679,7 +706,9 @@ and phase 2 did not run at all.
 **Two guards against a database and a bucket that do not belong together.** A
 server whose R2 credentials point at the production bucket but whose database is
 another one (a local `.env` holding the real R2 keys, a staging or e2e service)
-sees no rows, so every photo in the bucket would look like an orphan. So:
+sees no rows, so every photo in the bucket would look like an orphan. These two
+catch that. **They do not catch a copy or branch of the production database**
+(see the switch above), which is why the switch exists.
 
 - **Known homework only.** An object is deleted only if its homework id (the
   first segment after `homework-submissions/`) is a row in **this** service's
@@ -688,7 +717,8 @@ sees no rows, so every photo in the bucket would look like an orphan. So:
   above zero in production means photos under homework that no longer exists
   (see the known limit below), or a bucket shared with another database. If the
   lookup itself fails, the run fails (500) before anything in phase 2 is deleted.
-- **The ratio guard.** If more than 20 objects would be deleted **and** they are
+- **The ratio guard.** If more than 20 objects would be deleted (counted before
+  the 1000-per-run cap) **and** they are
   more than half of all the conforming objects under known homework (young, old,
   referenced or not), the run **refuses**: phase 2 deletes nothing, the report says
   `refused: true` with a short `refusedReason`, and the log has an error-level
@@ -697,10 +727,27 @@ sees no rows, so every photo in the bucket would look like an orphan. So:
   real run's `sample` is empty: it deleted nothing). Phase 1 has already run by
   then; it only ever touches rows this database has.
 
-**On `refused: true`: stop.** Run the dry run (`?dryRun=1`), read `sample`, and
-check that this service's `DATABASE_URL` and its R2 bucket belong together. There
-is deliberately **no override** — no parameter, no environment variable. A
-legitimate backlog that large means something is wrong with uploads and needs a
+**On `refused: true`: stop.** Nothing was deleted in phase 2, and nothing will be
+until a person acts. To decide whether this service's database and bucket belong
+together, **do not print the service's env or secrets** (`CLAUDE.md` forbids
+`gcloud run services describe` and friends for this reason). Read the run instead:
+
+1. Run the dry run (`?dryRun=1`) and read its numbers. A large
+   `skippedUnknownHomework` next to few `referenced` means this database does not
+   know the bucket's homework: the wrong database. `sample` lists keys that would
+   go; their homework ids can be looked up in the `homework` table of the database
+   you believe is production.
+2. Ask the person who runs the service which database and bucket it points at, if
+   the numbers do not settle it.
+
+If they **do** belong together, the orphans are real and there are many of them.
+Causes: deletes that failed on earlier runs (error-level `could not delete an
+orphan object` lines, with the key — investigate those first), or uploads that
+store a photo and then fail to record it (a backlog building since the last
+run). The remedy is a person deleting the listed keys by hand, or a PR that
+changes the thresholds in `modules/homework/submissionSweep.ts`. There is
+deliberately **no override** — no parameter, no environment variable
+(`HOMEWORK_SUBMISSION_SWEEP` only turns the route on): a run that large needs a
 person, not a flag.
 
 A dry run **does not do phase 1**: it counts the rows of archived homework
@@ -746,7 +793,9 @@ gcloud scheduler jobs update http homework-submission-sweep --location europe-we
 ```
 
 A job left on the old key gets a 404 from then on and the sweep silently stops
-running: after a rotation, check `lastAttemptTime`, `status` and the log line. The
+running — and so does one whose service has lost `HOMEWORK_SUBMISSION_SWEEP=on`
+(a `--set-env-vars`, which replaces the whole environment, would do that): after a
+rotation or any env change on `iqraa-api`, check `lastAttemptTime`, `status` and the log line. The
 warning above that `gcloud scheduler jobs create|update|describe` prints the
 stored key applies to this job just as much: keep `--format=none` on every write
 and a `value(...)` format that omits `httpTarget` on reads.
@@ -767,11 +816,15 @@ and a `value(...)` format that omits `httpTarget` on reads.
   the same ones, so an orphan sorting after the cut-off is never found. The code
   logs it at warn level; it needs a person (a bigger cap, or a listing that
   continues where the last one stopped), not another rerun.
-- **Only a key of exactly this shape is ever deleted:**
+- **Only a key of exactly this shape is ever deleted as an orphan:**
   `homework-submissions/<uuid>/<uuid>/<uuid>.(jpg|png|webp)`, all of it in lower
-  case — prefix, extension and the hex of the ids, as `randomUUID()` and Postgres
-  write them. Anything else under the prefix (an upper-case id included) is counted
-  in `skippedBadKey` and left for a person to look at.
+  case — prefix, extension and the hex of the ids. Anything else under the prefix
+  is counted in `skippedBadKey` and left for a person to look at. That includes an
+  upper-case homework id, which **can** be stored: the photo's own id is a
+  lower-case `randomUUID()`, but the homework segment is the raw id from the upload
+  request's URL, and Postgres matches a uuid in either case. Such a photo is kept
+  while its row names it, and purged with its row when the homework is archived
+  (the purge deletes every key a row names); only as an orphan is it never swept.
 - **An object a row refers to is kept, however old**, drafts included. The rows are
   read on the owner connection (`systemDb`): under `RLS_ENFORCE=on` the app
   connection with no user would read none of them.
@@ -804,8 +857,10 @@ only record of what went). Things worth a look when they repeat:
   have (see the known limit), or a bucket shared with another database.
 - `listTruncated: true`: see the limits.
 - `capped > 0` week after week: orphans arrive faster than 1000 a week. Find out why.
-- A real run where `orphanObjects − capped − deleted` is above zero: some object
-  deletes failed (`could not delete an orphan object`, at error level, with the key).
+- A real run with `refused: false` where `orphanObjects − capped − deleted` is above
+  zero: some object deletes failed (`could not delete an orphan object`, at error
+  level, with the key). In a refused run the difference is every orphan and means
+  nothing.
 - A first-ever run, or a sudden jump in `orphanObjects`: something is failing
   between storing a photo and recording it.
 

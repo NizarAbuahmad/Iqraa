@@ -16,7 +16,8 @@ The orphan sweep that the entry below said "must land before phase 2 lets studen
 upload". API only, no schema, no app code. Spec §8:
 `docs/superpowers/specs/2026-10-30-homework-project-submission-design.md`. **The
 Cloud Scheduler job does not exist yet and the sweep has never run against real
-R2 or production** — the owner has to create the job, and the recipe, including
+R2 or production** — the owner has to set `HOMEWORK_SUBMISSION_SWEEP=on` on
+`iqraa-api` and create the job, and the recipe, starting with that switch and then
 the dry-run-first order, is in `docs/deploying.md` «The submission sweep (Cloud
 Scheduler) — manual, once».
 
@@ -32,8 +33,11 @@ Scheduler) — manual, once».
   (`routes/internal.ts`), run by `sweepSubmissionOrphans`
   (`lib/homeworkSubmissionSweep.ts`, on `systemDb`, pinned in `systemDbFiles.test.ts`)
   with the decisions in a pure module (`modules/homework/submissionSweep.ts`).
-  Same `INTERNAL_CRON_KEY` and guard as the reminders: 404 to everyone without the key,
-  checked before the query is read; no new secret, nothing in `deploy.yml`.
+  Same `INTERNAL_CRON_KEY` and guard as the reminders, plus a deploy-only switch: 404
+  to everyone unless the key matches AND the service has `HOMEWORK_SUBMISSION_SWEEP`
+  equal to exactly `on` (read per request; a plain env var set by hand on `iqraa-api`
+  alone, not in `deploy.yml`; it overrides no guard), both checked before the query is
+  read; no new secret.
   - Phase 1 purges the rows and photos of archived homework and of homework in an
     archived class, through `purgeSubmissions`, and carries on past one that throws
     (`purgeFailed`, error log; its rows stay, so its photos stay referenced).
@@ -62,12 +66,20 @@ Scheduler) — manual, once».
   safe, so a preview that was meant to be one can never become a real run.
 
 **Limits, all in code.** An object a row refers to is kept however old. Only a key of
-exactly `homework-submissions/<uuid>/<uuid>/<uuid>.(jpg|png|webp)` is ever deleted, all
-lower case (prefix, extension and hex, as `randomUUID()` and Postgres write them);
-anything else under the prefix is counted in `skippedBadKey` and left. Only an object
-whose homework row exists in this database is deleted, and a run that would delete over
-20 objects that are over half of what it can attribute is refused (`REFUSE_MIN_ORPHANS`,
-`REFUSE_RATIO`, `shouldRefuse`). At most 200,000 objects are listed per run
+exactly `homework-submissions/<uuid>/<uuid>/<uuid>.(jpg|png|webp)` is ever deleted as
+an orphan, all lower case (prefix, extension and hex); anything else under the prefix
+is counted in `skippedBadKey` and left. That includes an upper-case homework id, which
+can be stored, because the homework segment is the raw id from the upload URL (the
+photo id is a lower-case `randomUUID()`): it is purged with its row by phase 1 but
+never swept as an orphan. An age it cannot compute (an invalid `lastModified`, a NaN
+grace period) counts as young. Only an object whose homework row exists in this
+database is deleted, and a run that would delete over 20 objects (counted before the
+1000 cap) that are over half of what it can attribute is refused (`REFUSE_MIN_ORPHANS`,
+`REFUSE_RATIO`, `shouldRefuse`). **The guards do not catch a copy or branch of the
+production database** (a Neon branch knows every old homework, so production photos
+uploaded since the branch point look like known orphans, under the ratio, and phase 1
+could purge a homework archived only in the branch): no server but `iqraa-api` may hold
+the production R2 credentials with `INTERNAL_CRON_KEY`, and the switch enforces it. At most 200,000 objects are listed per run
 (`LIST_CAP`); past that `listTruncated: true`, logged at warn level, and every run sees
 the same first 200,000 keys, so an orphan after the cut-off is never found — that needs a
 person. A listing page that says it is truncated but carries no continuation token also
@@ -117,6 +129,24 @@ stray photos then count as `skippedUnknownHomework` and are never deleted.
   failed); the key read moved to the app `db` (the RLS case deleted the draft photo, and
   the new `systemDbFiles.test.ts` pin failed); the warning removed (its test failed).
   The new route cases were also run against the previous build first: 10 failed.
+- **Re-review round** (same date and command, after `pnpm build`), the same six files:
+  `submissionSweep.test.ts` 36, `homeworkSubmissionSweep.db.test.ts` 28, `s3Stub.test.ts`
+  10, `systemDbFiles.test.ts` 3, `mountOrder.test.ts` 70, `homeworkSubmission.db.test.ts`
+  41: **188 passed, 0 failed, 0 skipped**; the whole api-server suite **3197 passed, 0
+  failed, 0 skipped**; root `pnpm run typecheck` clean. The switch: with the right key,
+  a 404 (body `{"error":"Not found"}`, as for an unset key) for `HOMEWORK_SUBMISSION_SWEEP`
+  unset, empty, `ON`, `On`, `true`, `1`, `yes`, ` on`, `on `, on a real run, a dry run and
+  an unknown parameter alike, with no object or row removed (phase 1 did not run either),
+  while the reminder on the same server still opens; exactly `on` runs, and a wrong key
+  is still a 404. Shown RED against the previous build (unset: the run deleted) and
+  against a case-folding, trimming mutant (`ON` deleted). The fail-safe age check: an
+  invalid `lastModified` and a NaN grace period were both deleted by the previous `<`
+  form (RED), and are kept now. The widened pin failed on a temporary dynamic
+  `import("@workspace/db")` and on `import { db } from "@workspace/db/schema"` in the
+  sweep, then passed once they were removed. Not verified: that `deploy.yml`'s
+  `--update-env-vars` keeps a hand-set plain variable is gcloud's documented behaviour
+  and how `RLS_ENFORCE` is already run (`docs/deploying.md`), not observed for
+  this variable, which does not exist on the service yet.
 
 **Not verified**
 
@@ -166,15 +196,34 @@ A final review then found:
   homework's photos at any age. Corrected.
 - Minors: comments and docs credited the list-then-read order with protection that belongs
   to the grace period (reworded; there is no re-check of references and none is needed,
-  since an upload always stores a fresh key); the key regex accepted upper-case hex, which
-  `randomUUID()` and Postgres never write and which would not match a homework id read
-  back from the database (now lower case only); `listObjects` reported a page marked
-  truncated but without a continuation token as complete (now `truncated: true`); a
-  non-list `photos` was skipped silently (now a warning with the row id).
+  since an upload always stores a fresh key); the key regex accepted upper-case hex,
+  which would not match a homework id read back from the database (now lower case only;
+  the re-review corrected this round's claim that no upper-case key is ever written —
+  see below); `listObjects` reported a page marked truncated but without a continuation
+  token as complete (now `truncated: true`); a non-list `photos` was skipped silently
+  (now a warning with the row id).
+
+A re-review of that round found no Critical, and:
+- **Important: a copy or branch of the production database passes both guards.** A Neon
+  branch knows every homework of the branch point, so production photos uploaded since
+  look like orphans under known homework, under the 50% ratio; and phase 1 there could
+  purge a homework archived only in the branch. Fixed with a deploy-only switch, not a
+  guard: the route is a 404 unless `HOMEWORK_SUBMISSION_SWEEP` is exactly `on` on the
+  service, set by hand on `iqraa-api` only. Docs name the case and say no other server
+  may hold the production R2 credentials with `INTERNAL_CRON_KEY`.
+- Minors: the age check is fail-safe again (`!(age >= graceMs)`: an invalid date or a NaN
+  grace period is young; the previous `<` form let both through as old); the upper-case
+  justification was wrong (the homework segment is the raw URL id, so an upper-case key
+  can be stored; it is kept and only never swept as an orphan); `orphanObjects − capped −
+  deleted` means failed deletes only when `refused` is false; the `refused: true`
+  guidance now says how to check without printing Cloud Run env or secrets, and what to do
+  when they do belong together; "over 20, counted before the 1000 cap"; the
+  `systemDbFiles.test.ts` pin covers `@workspace/db` subpaths and a dynamic `import()`.
 
 **Still open**
 
-- Create the scheduler job (dry run, then one real run, then weekly) — owner.
+- Set `HOMEWORK_SUBMISSION_SWEEP=on` on `iqraa-api`, then create the scheduler job (dry
+  run, then one real run, then weekly) — owner.
 - The decision on toggling `requiresSubmission` after work exists, before phase 3
   exposes the switch (see the entry below).
 - The untested items and the duplicated extension list above.
