@@ -15,10 +15,12 @@ import type { TextQuestion } from '@/services/publicGames/textQuiz';
 import type { TranslationKey } from '@/services/i18n';
 
 export function TextQuizGame({
-  titleKey, accent, build,
+  titleKey, accent, build, reveal,
 }: {
   titleKey: TranslationKey;
   accent: string;
+  /** Extra content under the explanation once an answer is picked, e.g. a map. */
+  reveal?: (q: TextQuestion, pickedId: string, accent: string) => React.ReactNode;
   /** Module-level (stable identity): a new function reshuffles the round. */
   build: (lang: 'ar' | 'en', count: number, rng?: () => number) => TextQuestion[];
 }) {
@@ -58,7 +60,20 @@ export function TextQuizGame({
       </View>
     ) : null;
 
-  return <TriviaBoard titleKey={titleKey} accent={accent} buildRound={buildRound} renderPrompt={renderPrompt} renderReveal={renderReveal} />;
+  return (
+    <TriviaBoard
+      titleKey={titleKey}
+      accent={accent}
+      buildRound={buildRound}
+      renderPrompt={renderPrompt}
+      renderReveal={(q, pickedId) => (
+        <>
+          {renderReveal(q)}
+          {reveal ? reveal(q, pickedId, accent) : null}
+        </>
+      )}
+    />
+  );
 }
 
 const styles = StyleSheet.create({
