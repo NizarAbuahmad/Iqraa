@@ -2,10 +2,10 @@
  * Plurals (/play/plurals) — pick the plural of an Arabic word. Grades 2–5.
  *
  * The question is about Arabic morphology, so the word and the options are
- * Arabic whatever the UI language is; only the prompt is localised. Only words
- * with ONE common plural are used (no «بيت» — بيوت/أبيات — and no «عين» —
- * عيون/أعين); the options are the plurals of other words in the table, never a
- * made-up form, so no distractor is a malformed or a second valid plural.
+ * Arabic whatever the UI language is; only the prompt is localised. The
+ * options are always the table plurals of OTHER words, never a made-up form, so
+ * no option can be a second valid plural of the subject. (Some words, e.g.
+ * «طالب» with طلّاب/طلبة, do have a second plural that the game never offers.)
  */
 import { sample, shuffle } from './rng.ts';
 import { withDistractors, type TextQuestion } from './textQuiz.ts';

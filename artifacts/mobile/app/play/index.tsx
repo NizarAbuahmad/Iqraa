@@ -69,7 +69,7 @@ export default function PlayHubScreen() {
               style={[styles.card, surface]}
             >
               <View style={[styles.iconWrap, { backgroundColor: `${g.color}1a` }]}>
-                <Ionicons name={g.icon} size={24} color={g.color} />
+                <Ionicons name={g.icon} size={24} color={readableOn(g.color, colors.card, 3)} />
               </View>
               <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16, textAlign: 'center' }}>
                 {t(g.titleKey)}

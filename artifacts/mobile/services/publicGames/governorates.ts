@@ -60,7 +60,6 @@ export const PLACES: Place[] = [
   { ar: 'ذيبان', en: 'Dhiban', gov: 'madaba' },
   { ar: 'جبل نيبو', en: 'Mount Nebo', gov: 'madaba' },
   { ar: 'مؤتة', en: "Mu'ta", gov: 'karak' },
-  { ar: 'الصافي', en: 'Safi', gov: 'karak' },
   { ar: 'دانا', en: 'Dana', gov: 'tafilah' },
   { ar: 'بصيرا', en: 'Busayra', gov: 'tafilah' },
   { ar: 'وادي موسى (البتراء)', en: 'Wadi Musa (Petra)', gov: 'maan' },

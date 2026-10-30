@@ -1285,6 +1285,16 @@ describe('the lab, the corners, groups, export and the rest (tenth live pass)', 
     ['how do i open the math corner', 'math-corner', 'mathEntryTitle'],
     ['كيف أفتح القرآن الكريم في التطبيق؟', 'quran-corner', 'quranTitle'],
     ['كيف ألعب لعبة الذاكرة؟', 'tool:games', 'toolGamesTitle'],
+    // The six games added to /play on 2026-10-29.
+    ['how do i play the fractions game', 'tool:games', 'toolGamesTitle'],
+    ['how do i play the antonyms game', 'tool:games', 'toolGamesTitle'],
+    ['how do i start the states of matter game', 'tool:games', 'toolGamesTitle'],
+    ['how do i open the prime numbers game', 'tool:games', 'toolGamesTitle'],
+    ['how do i play the governorates game', 'tool:games', 'toolGamesTitle'],
+    ['كيف ألعب لعبة محافظات؟', 'tool:games', 'toolGamesTitle'],
+    ['كيف أفتح لعبة الأضداد؟', 'tool:games', 'toolGamesTitle'],
+    ['كيف ألعب لعبة الكسور؟', 'tool:games', 'toolGamesTitle'],
+    ['كيف ألعب لعبة حالات المادة؟', 'tool:games', 'toolGamesTitle'],
   ];
   for (const [q, id, label] of places) {
     it(`«${q}» → the ${id} place`, () => {
@@ -1303,6 +1313,14 @@ describe('the lab, the corners, groups, export and the rest (tenth live pass)', 
     'how do i copy a worksheet for each student',
     'كيف أبحث عن معلومات لدرس الأسس',
     'how do i find the main idea of a lesson',
+    // Naming a topic of one of the new games without asking to play it is a
+    // teaching question for the model, not a pointer to the Games screen.
+    'how do i explain fractions to grade four',
+    'how do i teach the plural of a word',
+    'كيف أشرح الكسور للصف الرابع',
+    'كيف أشرح محافظات الأردن',
+    // «جمع» alone is the addition game, so «لعبة جمع الكلمة» is not matched.
+    'كيف ألعب لعبة جمع الكلمة',
   ];
   for (const q of stayWithModel) {
     it(`«${q}» is not app help`, () => assert.equal(isAppHelpQuery(q), false));
