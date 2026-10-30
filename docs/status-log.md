@@ -44,7 +44,7 @@ their JSON and their limits, and says names must differ; `deckChecks` warns `cyc
 `tree_incomplete`, `venn_incomplete`, `mindmap_incomplete`; the polish step turns a refused diagram's
 words back into bullets; the blank-slide check counts the four payloads as content.
 
-**Slides Maker.** A curriculum concept may carry a `shape` (one of the four, through the same gate), an
+**Slides Maker.** A curriculum concept may carry a `shape` (one of nine — compare, table, flow, timeline, stat and the four diagrams — through the same gate), an
 `icon`, a `chart` (only when it has no shape) or a `photo` phrase (only when it has none of those),
 all optional (`conceptExtras` in `lessonSlides.ts`, rule 13 in `lessonTeachingPrompt.ts`; the route logs
 `lesson-teaching visuals`). Up to **two** concept photos per deck (`teachingPhotoTargets`,
@@ -56,9 +56,18 @@ existing media path in `app/ai-tools/slides.tsx`; each costs one call on the sha
 stored before this carry none of the new fields and are not served. The first teacher to build a
 Slides Maker deck for each lesson after the merge pays for a new teaching section (budget-capped as
 usual), including the lessons `pregenerate.ts` filled — **re-run
-`artifacts/mobile/scripts/pregenerate.ts` to fill them ahead of teachers.** Students are unaffected:
-their approved explanations are read by lesson and language, not by this key; new sections need
-approving as before.
+`artifacts/mobile/scripts/pregenerate.ts` to fill them ahead of teachers.** Existing approved student
+explanations are read by lesson and language, not by this key, so they keep being served; new sections
+need approving as before.
+
+**What students see.** The student explanation cards draw only a concept's `points`, and rule 13 tells
+the model to make `points` a two-line summary when a concept has a `shape`. So `buildExplanationCards`
+(`lessonExplanationCards.ts`) now appends the shape's own words after the points, when the deck would
+draw that shape (`usableConceptShape`, the same gate; `payloadLines` for the words): a «دورة الماء»
+card shows its summary and then its stages, one per line (with the note after « — »); a comparison
+shows `title: item` lines; a table `header: cell — header: cell`. A shape the gate refuses adds
+nothing, so the card is its points, as before. Students still see no drawing, no icon, chart or photo
+— only the words. Cards already approved were built from an older section and are unchanged.
 
 **Looked at, and what changed because of it.** A fixture deck of the four diagrams at the gate's
 maximum sizes (6-stage cycle with notes of 60 characters, 4 × 4 tree, 2- and 3-set Venn, 6-node mind
@@ -96,7 +105,7 @@ scheme light and dark (no difference: see above). What was seen:
   beyond the two background blobs) and no `roundRect`, the right number of paragraphs (items one per
   paragraph); mind map 6 `roundRect`, 1 centre `ellipse`, 6 lines with 4 arrowheads; no connector
   objects; arrowhead ends checked against the box positions (cause at the centre, effect at the node,
-  cycle in reading order, mirrored in English); every paragraph `rtl` in Arabic and none in English.
+  cycle in reading order, mirrored between Arabic and English); every paragraph `rtl` in Arabic and none in English.
 - **Phone (390 × 844).** Nothing is clipped, but the drawing keeps its 960 × 430 landscape shape across
   a portrait screen, so labels come out around 7–8 px and notes around 6 px: **too small to read from
   a phone in the hand.** A portrait layout would be its own change; this one is meant for a projector.

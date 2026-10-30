@@ -427,6 +427,15 @@ describe('payloadLines — a refused layout still leaves the teacher the words',
     );
   });
 
+  it('gives a comparison and a statistic their words too', () => {
+    assert.deepEqual(
+      payloadLines(slide({ compare: { leftTitle: 'ذرة', left: ['متعادلة', '• محايدة'], rightTitle: 'أيون', right: ['مشحون'] } })),
+      ['ذرة: متعادلة', 'ذرة: محايدة', 'أيون: مشحون'],
+    );
+    assert.deepEqual(payloadLines(slide({ stat: { value: '40%', label: 'سكن' } })), ['40% — سكن']);
+    assert.deepEqual(payloadLines(slide({ compare: { leftTitle: '', left: ['أ'], rightTitle: 'ب', right: [] } })), ['أ']);
+  });
+
   it('survives junk instead of throwing', () => {
     assert.deepEqual(payloadLines(slide({ timeline: [null, { label: 5 }] as never, stats: 'x' as never })), []);
     assert.deepEqual(payloadLines(slide()), []);

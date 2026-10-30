@@ -64,6 +64,60 @@ test('malformed stored content is skipped, not thrown on, and valid siblings sur
   );
 });
 
+// Slides Maker draws a concept with a `shape` and its prompt asks for the points
+// to be a two-line summary of it. A student sees only the points, so without the
+// shape's own words a «دورة الماء» card would show a summary and lose its stages.
+test('a concept with a cycle shows its stages after the summary', () => {
+  const [card] = buildExplanationCards({
+    concepts: [{
+      title: 'الماء يدور بين الأرض والجو',
+      points: ['الماء يتبخر ثم يعود مطرًا', 'وتتكرر الدورة'],
+      shape: { layout: 'cycle', cycle: { stages: [{ label: 'تبخر', note: 'بفعل الحرارة' }, { label: 'تكاثف' }, { label: 'هطول' }] } },
+    }],
+  });
+  assert.deepEqual(card, {
+    kind: 'concept',
+    title: 'الماء يدور بين الأرض والجو',
+    points: ['الماء يتبخر ثم يعود مطرًا', 'وتتكرر الدورة', 'تبخر — بفعل الحرارة', 'تكاثف', 'هطول'],
+  });
+});
+
+test('every shape the gate draws adds its words, and the points stay first', () => {
+  const shapes: Record<string, [Record<string, unknown>, string[]]> = {
+    compare: [{ layout: 'compare', compare: { leftTitle: 'ذرة', left: ['متعادلة'], rightTitle: 'أيون', right: ['مشحون'] } }, ['ذرة: متعادلة', 'أيون: مشحون']],
+    table: [{ layout: 'table', table: { headers: ['س', 'ص'], rows: [['١', '٢'], ['٣', '٤']] } }, ['س: ١ — ص: ٢', 'س: ٣ — ص: ٤']],
+    flow: [{ layout: 'flow', flow: { steps: ['أ', 'ب', 'ج'] } }, ['أ', 'ب', 'ج']],
+    timeline: [{ layout: 'timeline', timeline: [{ label: '١', text: 'أول' }, { label: '٢', text: 'ثان' }, { label: '٣', text: 'ثالث' }] }, ['١ — أول', '٢ — ثان', '٣ — ثالث']],
+    stat: [{ layout: 'stat', stat: { value: '6.022×10²³', label: 'عدد أفوجادرو' } }, ['6.022×10²³ — عدد أفوجادرو']],
+    tree: [{ layout: 'tree', tree: { root: 'المادة', branches: [{ label: 'نقية', leaves: ['عنصر'] }, { label: 'مخلوط', leaves: null }] } }, ['المادة', 'نقية — عنصر', 'مخلوط']],
+    venn: [{ layout: 'venn', venn: { sets: [{ label: 'فلزات', only: ['موصلة'] }, { label: 'لافلزات', only: [] }], shared: ['عناصر'] } }, ['فلزات — موصلة', 'لافلزات', 'عناصر']],
+    mindmap: [{ layout: 'mindmap', mindmap: { center: 'التلوث', nodes: [{ text: 'مصانع', role: 'cause' }, { text: 'أمراض', role: 'effect' }, { text: 'حلول' }] } }, ['التلوث', 'مصانع', 'أمراض', 'حلول']],
+  };
+  for (const [name, [shape, words]] of Object.entries(shapes)) {
+    const [card] = buildExplanationCards({ concepts: [{ title: 'فكرة', points: ['ملخص'], shape }] });
+    assert.deepEqual(card, { kind: 'concept', title: 'فكرة', points: ['ملخص', ...words] }, name);
+  }
+});
+
+test('a refused or unknown shape adds nothing: the card is just its points', () => {
+  const bad: Record<string, unknown>[] = [
+    { layout: 'cycle', cycle: { stages: [{ label: 'أ' }, { label: 'ب' }] } },                                  // too few stages
+    { layout: 'cycle', cycle: { stages: [{ label: 'أ' }, { label: 'أ' }, { label: 'ب' }] } },                  // repeated label
+    { layout: 'tree', tree: { root: 'ر', branches: [{ label: 'أ' }] } },                                       // one branch
+    { layout: 'bogus', bogus: ['x', 'y', 'z'] },                                                               // not a layout
+    { layout: 'statement', statement: 'x' },                                                                   // a layout, but not one a concept may take
+    { layout: 'cycle' },                                                                                       // no payload
+  ];
+  for (const shape of bad) {
+    const [card] = buildExplanationCards({ concepts: [{ title: 'فكرة', points: ['ملخص'], shape }] });
+    assert.deepEqual(card, { kind: 'concept', title: 'فكرة', points: ['ملخص'] }, JSON.stringify(shape));
+  }
+  for (const shape of [null, 'cycle', 7, []] as never[]) {
+    const [card] = buildExplanationCards({ concepts: [{ title: 'فكرة', points: ['ملخص'], shape }] });
+    assert.deepEqual(card, { kind: 'concept', title: 'فكرة', points: ['ملخص'] });
+  }
+});
+
 test('stripMarker removes one leading bullet or dash marker', () => {
   for (const marker of ['• ', '- ', '* ', '– ', '— ']) {
     assert.equal(stripMarker(`${marker}المول وحدة عدّ`), 'المول وحدة عدّ', marker);

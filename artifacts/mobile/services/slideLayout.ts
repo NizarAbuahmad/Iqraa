@@ -364,6 +364,25 @@ export function resolveSlideLayout(slide: ActivitySlide): ResolvedLayout | null 
   }
 }
 
+/** Shapes a Slides Maker concept may take: each carries its data in a field of the same name. */
+export const TEACHING_SHAPES: ReadonlySet<string> = new Set(['compare', 'table', 'flow', 'timeline', 'stat', 'cycle', 'tree', 'venn', 'mindmap']);
+
+/**
+ * The payload of a generated concept's `shape` (`{ layout, [layout]: payload }`)
+ * as a slide field set (`{ layout, [layout]: payload }`), or `null` when the
+ * layout is not one a concept may take or the gate refuses its data. The one
+ * place that decides it, so the deck slide and the student card cannot disagree
+ * about whether a concept has a drawing.
+ */
+export function usableConceptShape(shape: unknown, title: string, content: string): Partial<ActivitySlide> | null {
+  if (shape === null || typeof shape !== 'object') return null;
+  const layout = (shape as Record<string, unknown>).layout;
+  if (typeof layout !== 'string' || !TEACHING_SHAPES.has(layout)) return null;
+  const payload = { layout, [layout]: (shape as Record<string, unknown>)[layout] } as Partial<ActivitySlide>;
+  const probe = { slideNumber: 2, type: 'intro', title, content, durationSeconds: 0, ...payload } as ActivitySlide;
+  return resolveSlideLayout(probe) ? payload : null;
+}
+
 /** The layouts whose data lives in a field of its own rather than in `content`. */
 export const PAYLOAD_LAYOUTS = ['stat', 'compare', 'timeline', 'stats', 'table', 'flow', 'quote', 'concepts', 'cycle', 'tree', 'venn', 'mindmap'] as const;
 
@@ -381,6 +400,14 @@ export function payloadLines(slide: ActivitySlide): string[] {
     const joined = parts.map(str).filter(Boolean).join(' — ');
     if (joined) out.push(joined);
   };
+  if (slide.stat) add(slide.stat.value, slide.stat.label);
+  if (slide.compare) {
+    const side = (title: unknown, items: unknown) => {
+      for (const i of Array.isArray(items) ? items : []) add(str(title) ? `${str(title)}: ${str(i)}` : i);
+    };
+    side(slide.compare.leftTitle, slide.compare.left);
+    side(slide.compare.rightTitle, slide.compare.right);
+  }
   for (const e of Array.isArray(slide.timeline) ? slide.timeline : []) add(e?.label, e?.text);
   for (const st of Array.isArray(slide.stats) ? slide.stats : []) add(st?.value, st?.label);
   if (slide.table && Array.isArray(slide.table.rows)) {

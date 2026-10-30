@@ -2,14 +2,15 @@
  * Turns a stored `lesson-teaching` artifact into the cards the student screen
  * draws.
  *
- * Pure, with a type-only import, so it runs under bare `node --test` (the
- * screen itself cannot). The text is shown as stored, the same as the slide
+ * Pure (its one runtime import, slideLayout, is react-free), so it runs under
+ * bare `node --test` (the screen itself cannot). The text is shown as stored, the same as the slide
  * deck shows it, except that a leading list marker on a point or a step is
  * removed (`stripMarker`). Anything blank is dropped here, so the screen never renders
  * an empty card; an artifact with nothing usable yields no cards and the
  * screen says so.
  */
-import type { LessonTeachingOutput } from './ai/AIService.ts';
+import type { ActivitySlide, LessonTeachingOutput } from './ai/AIService.ts';
+import { payloadLines, usableConceptShape } from './slideLayout.ts';
 
 export type ExplanationCard =
   | { kind: 'hook'; text: string }
@@ -55,6 +56,21 @@ export function stripMarker(text: string): string {
 const cleanList = (values: unknown): string[] =>
   Array.isArray(values) ? values.map(v => stripMarker(clean(v))).filter(Boolean) : [];
 
+/**
+ * The words a concept's drawn `shape` carries, as extra lines for its card.
+ *
+ * The teacher's deck draws the shape; the student screen draws only `points`,
+ * and the generator is told to make `points` a two-line summary when a shape is
+ * present — so without these lines a «دورة الماء» card would show the summary
+ * and lose the stages. Only a shape the deck would draw counts (the same gate,
+ * `usableConceptShape`); a refused one adds nothing and the card is its points.
+ */
+function shapeLines(shape: unknown, title: string, points: string[]): string[] {
+  const payload = usableConceptShape(shape, title, points.map(p => `• ${p}`).join('\n'));
+  if (!payload) return [];
+  return payloadLines(payload as ActivitySlide);
+}
+
 export function buildExplanationCards(content: LessonTeachingOutput | null | undefined): ExplanationCard[] {
   if (!content) return [];
   const cards: ExplanationCard[] = [];
@@ -66,10 +82,11 @@ export function buildExplanationCards(content: LessonTeachingOutput | null | und
     const title = clean(concept?.title);
     if (!title) continue;
     const misconception = clean(concept.misconception);
+    const points = cleanList(concept.points);
     cards.push({
       kind: 'concept',
       title,
-      points: cleanList(concept.points),
+      points: [...points, ...shapeLines(concept.shape, title, points)],
       ...(misconception ? { misconception } : {}),
     });
   }

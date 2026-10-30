@@ -28,7 +28,7 @@ import { buildChartSlide, buildGraphSlide, referencesShownVisual, scanGraphComma
 import { chartForLesson, usableChartVisual, visualForSlide } from './deckVisuals.ts';
 import { type BookFigure, bookPagesForLesson, figuresForLesson } from './bookFigures.ts';
 import { exerciseReference, exercisesForLesson } from './bookExercises.ts';
-import { inlineSteps, MAX_STAT_VALUE_CHARS, resolveSlideLayout } from './slideLayout.ts';
+import { inlineSteps, MAX_STAT_VALUE_CHARS, resolveSlideLayout, usableConceptShape } from './slideLayout.ts';
 import { iconForTopic, isSectionIconName } from './deckIcons.ts';
 import { englishOnly } from './englishText.ts';
 import { isSpotTheMistake } from './spotTheMistake.ts';
@@ -156,8 +156,6 @@ export interface LessonDeckOptions {
   teaching?: LessonTeachingOutput | null;
 }
 
-/** Shapes a teaching concept may take: each carries its data in a field of the same name. */
-const TEACHING_SHAPES = new Set(['compare', 'table', 'flow', 'timeline', 'stat', 'cycle', 'tree', 'venn', 'mindmap']);
 const PHOTO_QUERY = /^[\x20-\x7E]{3,60}$/;
 
 /**
@@ -171,13 +169,8 @@ const PHOTO_QUERY = /^[\x20-\x7E]{3,60}$/;
 function conceptExtras(raw: unknown, title: string, points: string[]): Partial<ActivitySlide> {
   const c = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
   const out: Partial<ActivitySlide> = {};
-  const shape = c.shape && typeof c.shape === 'object' ? (c.shape as Record<string, unknown>) : null;
-  const layout = typeof shape?.layout === 'string' ? shape.layout : '';
-  if (shape && TEACHING_SHAPES.has(layout)) {
-    const payload = { layout, [layout]: shape[layout] } as Partial<ActivitySlide>;
-    const probe = { slideNumber: 2, type: 'intro', title, content: points.map(p => `• ${p}`).join('\n'), durationSeconds: 0, ...payload } as ActivitySlide;
-    if (resolveSlideLayout(probe)) Object.assign(out, payload);
-  }
+  const shape = usableConceptShape(c.shape, title, points.map(p => `• ${p}`).join('\n'));
+  if (shape) Object.assign(out, shape);
   if (isSectionIconName(c.icon)) out.icon = c.icon;
   if (!out.layout) {
     const chart = usableChartVisual(c.chart);
