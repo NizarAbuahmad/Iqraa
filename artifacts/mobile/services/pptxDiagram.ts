@@ -30,17 +30,19 @@ export function drawPptxDiagram(
   c: PptxDiagramColors,
   opts: { x: number; y: number; rtl: boolean; font: string },
 ): void {
-  const fill = (p: Paint) => (p === 'none' ? { type: 'none' } : { color: p === 'tint' ? c.tint : c.card });
+  // No fill is "no `fill` key": pptxgenjs then writes an explicit <a:noFill/>,
+  // where `{ type: 'none' }` writes no fill element at all.
+  const fill = (p: Paint) => (p === 'none' ? {} : { fill: { color: p === 'tint' ? c.tint : c.card } });
   for (const sh of g.shapes) {
     if (sh.t === 'box') {
       s.addShape('roundRect', {
         x: opts.x + sh.x, y: opts.y + sh.y, w: sh.w, h: sh.h, rectRadius: 0.12,
-        fill: fill(sh.fill), line: { color: sh.stroke === 'accent' ? c.accent : c.border, width: 1.75 },
+        ...fill(sh.fill), line: { color: sh.stroke === 'accent' ? c.accent : c.border, width: 1.75 },
       });
     } else if (sh.t === 'ellipse') {
       s.addShape('ellipse', {
         x: opts.x + sh.cx - sh.rx, y: opts.y + sh.cy - sh.ry, w: 2 * sh.rx, h: 2 * sh.ry,
-        fill: fill(sh.fill), line: { color: sh.stroke === 'accent' ? c.accent : c.border, width: 2.25 },
+        ...fill(sh.fill), line: { color: sh.stroke === 'accent' ? c.accent : c.border, width: 2.25 },
       });
     } else {
       const x = Math.min(sh.x1, sh.x2);
@@ -55,6 +57,9 @@ export function drawPptxDiagram(
   for (const t of g.texts) {
     s.addText(t.text, {
       x: opts.x + t.x, y: opts.y + t.y, w: t.w, h: t.h, align: 'center', valign: 'middle',
+      // margin 0: the geometry already sizes each box with its own insets, and
+      // PowerPoint's default (0.1 in a side, 0.05 top and bottom) would come on top.
+      margin: 0,
       fontSize: PT[t.size], bold: t.bold, color: c.text, fontFace: opts.font, rtlMode: opts.rtl, fit: 'shrink',
     });
   }

@@ -73,11 +73,27 @@ describe('drawPptxDiagram: several items in one text box', () => {
   it('draws only the outlines of the sets (no fill) and keeps every box in the slide', () => {
     const ells = venn.calls.filter(c => c.type === 'ellipse');
     assert.equal(ells.length, 2);
-    for (const e of ells) assert.deepEqual((e.o as { fill: unknown }).fill, { type: 'none' });
+    // No `fill` key: pptxgenjs then writes an explicit <a:noFill/> (a { type: 'none' } writes nothing).
+    for (const e of ells) assert.equal('fill' in e.o, false);
     for (const t of venn.calls.filter(c => c.kind === 'text')) {
       const { x, y, w, h } = t.o as { x: number; y: number; w: number; h: number };
       assert.ok(x >= 0 && y >= 0 && x + w <= 10 && y + h <= 5.63);
     }
+  });
+});
+
+describe('drawPptxDiagram: text insets', () => {
+  // The geometry sizes every text box with its own insets. pptxgenjs writes no
+  // bodyPr insets unless asked, and PowerPoint then adds 0.1 in either side and
+  // 0.05 in top and bottom on top of them, so a full-width label would overflow.
+  it('every text box has margin 0, so only the geometry insets apply', () => {
+    const calls = [
+      ...draw({ kind: 'venn', sets: [{ label: 'أ', only: ['ب'] }, { label: 'ج', only: ['د'] }, { label: 'هـ', only: ['و'] }], shared: ['ز'] }).calls,
+      ...draw({ kind: 'cycle', stages: [{ label: 'تبخر', note: 'يصعد' }, { label: 'تكاثف' }, { label: 'هطول' }] }).calls,
+      ...draw({ kind: 'tree', root: 'المادة', branches: [{ label: 'نقية', leaves: ['عنصر'] }, { label: 'مخلوط', leaves: [] }] }).calls,
+    ].filter(c => c.kind === 'text');
+    assert.ok(calls.length >= 10);
+    for (const t of calls) assert.equal(t.o.margin, 0);
   });
 });
 
