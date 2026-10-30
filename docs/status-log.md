@@ -23,7 +23,10 @@ longest run of explanation (`intro`) slides after the cover (any other type ends
 too), laid-out and single-line content slides, and words per content slide. The prompt-slides
 route logs it at `info` for **every** deck («prompt-slides deck engagement»), and
 `scripts/provider-eval.ts` puts it on each slides row (`engagement`). `checkDeck` gains a `warn`,
-`passive_run`, named at the third explanation slide in a row (`MAX_PASSIVE_RUN = 2`). The
+`passive_run`, named at the third explanation slide in a row (`MAX_PASSIVE_RUN = 2`), only on a
+deck with a `question` slide: the teaching arc requires one and the general arc, which has no such
+rule, usually has none. The log line carries the same flag (`hasCheck`), so before-and-after can
+compare teaching decks with teaching decks. It is a proxy, not the model's own choice of arc. The
 `deckChecks` fixture deck had three in a row and was reordered (the challenge moved up one).
 
 **Prompt Slides (`promptSlidesPrompt.ts`, Arabic and English).** The teaching arc (A) now says:
@@ -43,10 +46,23 @@ with both a claim and an answer (a wrong solution with no correction teaches the
 examples (§7a), timed like an example, only when examples are ticked; its 🔍 draws the `help`
 icon (`deckIcons.ts`), as the other check headings do. `rebuildAnswerKey` keys a
 challenge whose title says «اكتشف الخطأ» / "spot the mistake" by its own title instead of numbering
-it as «مثال 2» — matched by name so a Prompt Slides deck's model-titled slide counts too. The
-student explanation cards (`lessonExplanationCards.ts`) ignore the new field, on purpose: a
-wrong solution must not reach a student without its correction. Pooled teaching sections written
-before this have no `mistake`, so their decks are exactly as before.
+it as «مثال 2» — matched by name (`services/spotTheMistake.ts`) so a Prompt Slides deck's
+model-titled slide counts too, and `verifyDeckExamples` never sends such a slide to SymPy (its
+content is wrong on purpose, so a proof against an equation in it would badge nonsense). A teacher
+who renames the slide turns it back into an ordinary challenge.
+
+**A student never receives `mistake`.** The same pooled teaching section is what students read
+(`GET /student/lesson-explanation/…`), so `stripTeacherNotes` (`lib/lessonExplanation.ts`) now
+drops `mistake` with `teacherNote`, and `pregenerate.ts`'s `reviewEntry` drops it from what the
+reviewer approves as «the text a student would see» (the hash is taken after, so approval still
+matches). The student cards never drew it either.
+
+**Pooled teaching sections written before this have no `mistake`, and keep being served.**
+`PROMPT_VERSION` (`generationKey.ts`) was **not** bumped: it is one value for every pooled kind,
+so a bump restarts every pool, not just this one. Until it is bumped (or made per kind), the
+spot-the-mistake slide appears only for lessons whose teaching section is generated after the
+merge — so **not**, in practice, for the pregenerated Grade 10 maths and chemistry lessons. That is
+a decision for the owner, left open.
 
 **«نقطة بنقطة» / "One at a time" in the presenter.** A toggle in the action row (off by default,
 remembered on the device as `@iqra_paced_reveal_v1`). On, Next — the button and the clicker/keyboard
@@ -55,8 +71,11 @@ timeline event or flow box, and moves to the next slide only when all are out; t
 «النقطة التالية» while one is hidden. `services/pacedReveal.ts` says which `Reveal` indices a slide
 has (`intro`/`summary` only, not the cover, at least two). If it ever disagrees with the renderer,
 `revealThreshold` shows everything once its beats run out, so a mismatch reveals early and never
-leaves a point hidden. Switching it on mid-slide and stepping back both show the whole slide.
-Presenter only: the PDF and PowerPoint are unchanged.
+leaves a point hidden. Switching it on mid-slide and stepping back both show the whole slide;
+tapping the current slide's dot leaves it as it was. **Not on a phone** (`compactBar`, under
+600dp): that bar is budgeted for two icon buttons and «النقطة التالية» would not fit Next, so the
+toggle is hidden there and a choice remembered on a laptop does not pace a phone (`pacing =
+paced && !compactBar`). Presenter only: the PDF and PowerPoint are unchanged.
 
 **Verified.** `pnpm run typecheck` clean; api-server `pnpm build` + `pnpm test` 2,669 pass, 0 fail;
 mobile `pnpm test` 8,212 tests, 8,202 pass, 10 skipped, 0 fail (the two last fixes — the 🔍 icon

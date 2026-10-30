@@ -13,6 +13,7 @@
  * `true` vouches for keys nobody checked, `false` hides the ones that were.
  */
 import type { ActivitySlide, QuizOutput, WorksheetOutput } from './ai/AIService.ts';
+import { isSpotTheMistake } from './spotTheMistake.ts';
 
 export type VerifyOutcome = { verifiedBy: 'symbolic' | 'bank'; computedAnswer?: string };
 
@@ -218,7 +219,7 @@ export async function verifyDeckExamples(
   return Promise.all(
     slides.map(async slide => {
       const rawAnswer = slide.answer?.trim();
-      if (slide.type !== 'challenge' || !rawAnswer) return undefined;
+      if (slide.type !== 'challenge' || !rawAnswer || isSpotTheMistake(slide)) return undefined;
       const { question, answer } = toVerifiablePair(slide.content, rawAnswer);
       let outcome: VerifyOutcome;
       try {

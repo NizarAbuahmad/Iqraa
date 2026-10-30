@@ -63,6 +63,11 @@ describe("deckEngagement", () => {
     assert.equal(e.wordsPerContentSlide, 3);
   });
 
+  it("says whether the deck has a check, which only the teaching arc requires", () => {
+    assert.equal(deckEngagement({ slides: [slide("intro"), slide("question")] }).hasCheck, true);
+    assert.equal(deckEngagement({ slides: [slide("intro"), slide("challenge")] }).hasCheck, false);
+  });
+
   it("survives a deck with no slides array", () => {
     const e = deckEngagement({});
     assert.equal(e.slides, 0);

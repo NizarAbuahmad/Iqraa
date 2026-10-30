@@ -1355,6 +1355,9 @@ export default function PresentationScreen() {
   // default — one press, one slide, as teachers know it — and remembered.
   const [paced, setPaced] = useState(false);
   const [shown, setShown] = useState(0);
+  // A phone's bar has no room for the toggle (see `compactBar`), so a choice
+  // remembered from a laptop must not pace a phone with no way to turn it off.
+  const pacing = paced && !compactBar;
   useEffect(() => {
     AsyncStorage.getItem(PACED_REVEAL_KEY).then(v => { if (v === '1') setPaced(true); }).catch(() => {});
   }, []);
@@ -1520,12 +1523,13 @@ export default function PresentationScreen() {
   const goToSlide = (idx: number) => {
     if (!activity || idx < 0 || idx >= activity.slides.length) return;
     const nextSlide = activity.slides[idx];
-    const back = idx < slideIndex;
+    // Back to a slide already seen: whole. The same slide again (its own dot):
+    // as it was, not hidden back to its title.
+    const restore = idx < slideIndex ? Infinity : idx === slideIndex ? shown : null;
     Animated.timing(fadeAnim, { toValue: 0, duration: 140, useNativeDriver: NATIVE_DRIVER }).start(() => {
       setSlideIndex(idx);
       initSlide(nextSlide);
-      // Stepping back returns to a slide the class has already seen whole.
-      if (back) setShown(Infinity);
+      if (restore !== null) setShown(restore);
       Animated.timing(fadeAnim, { toValue: 1, duration: 180, useNativeDriver: NATIVE_DRIVER }).start();
     });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1533,7 +1537,7 @@ export default function PresentationScreen() {
 
   /** The points Next still has to show on this slide; [] unless paced. */
   const slideHere = activity?.slides[slideIndex];
-  const beatsHere = paced && slideHere ? pacedBeats(slideHere) : [];
+  const beatsHere = pacing && slideHere ? pacedBeats(slideHere) : [];
   /** Next: this slide's next point while one is hidden, else the next slide. */
   const stepForward = () => {
     const next = pacedNext(beatsHere, shown);
@@ -1909,7 +1913,7 @@ export default function PresentationScreen() {
               // `key={slideIndex}`, and two siblings with one key made React keep
               // every slide it had shown: slide 3 drew slides 2 and 3 stacked.
               : (
-                <PaceContext.Provider value={{ threshold: paced ? revealThreshold(beatsHere, shown) : Infinity, paced }}>
+                <PaceContext.Provider value={{ threshold: pacing ? revealThreshold(beatsHere, shown) : Infinity, paced: pacing }}>
                   <SlideView key={`slide-${slideIndex}`} slide={slide} isRTL={slideRTL} onZoomSide={setSideZoom} />
                 </PaceContext.Provider>
               )}
@@ -2155,21 +2159,23 @@ export default function PresentationScreen() {
 
         {/* Action row */}
         <View style={[styles.actionRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Pressable
-            onPress={togglePaced}
-            style={[styles.actionBtn, paced && { borderColor: T.accent + '50', backgroundColor: T.accent + '12' }]}
-            hitSlop={8}
-            accessibilityRole="button"
-            aria-selected={paced}
-            accessibilityLabel={t('pacedReveal')}
-          >
-            <Ionicons name={paced ? 'list' : 'list-outline'} size={20} color={paced ? T.accent : T.muted} />
-            {compactBar ? null : (
+          {/* Not on a phone: its bar is budgeted for two icon buttons (see
+              `compactBar`), and «النقطة التالية» would not fit the Next button. */}
+          {!compactBar && (
+            <Pressable
+              onPress={togglePaced}
+              style={[styles.actionBtn, paced && { borderColor: T.accent + '50', backgroundColor: T.accent + '12' }]}
+              hitSlop={8}
+              accessibilityRole="button"
+              aria-selected={paced}
+              accessibilityLabel={t('pacedReveal')}
+            >
+              <Ionicons name={paced ? 'list' : 'list-outline'} size={20} color={paced ? T.accent : T.muted} />
               <Text numberOfLines={1} style={[styles.actionLabel, paced && { color: T.accent }, { fontFamily: 'Almarai_400Regular' }]}>
                 {t('pacedReveal')}
               </Text>
-            )}
-          </Pressable>
+            </Pressable>
+          )}
           <Pressable
             onPress={() => setPenOn(v => !v)}
             style={[styles.actionBtn, penOn && { borderColor: T.accent + '50', backgroundColor: T.accent + '12' }]}

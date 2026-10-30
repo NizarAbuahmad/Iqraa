@@ -31,6 +31,7 @@ import { exerciseReference, exercisesForLesson } from './bookExercises.ts';
 import { inlineSteps, MAX_STAT_VALUE_CHARS, resolveSlideLayout } from './slideLayout.ts';
 import { iconForTopic } from './deckIcons.ts';
 import { englishOnly } from './englishText.ts';
+import { isSpotTheMistake } from './spotTheMistake.ts';
 
 /**
  * `slide` drawn in `shape` when the gate accepts its data, else exactly as it
@@ -103,7 +104,6 @@ const EXAMPLE_THINK_SECONDS = 60;
 
 const SPOT_THE_MISTAKE_AR = '🔍 اكتشف الخطأ';
 const SPOT_THE_MISTAKE_EN = '🔍 Spot the Mistake';
-const SPOT_THE_MISTAKE = /اكتشف الخطأ|spot the mistake/i;
 
 export interface LessonDeckOptions {
   /** Curriculum lesson — the authoritative source when present. */
@@ -1189,7 +1189,7 @@ export function rebuildAnswerKey(slides: readonly ActivitySlide[], isAr: boolean
     // A spot-the-mistake slide is a challenge but not an example: «مثال 2» in
     // the key would send the teacher looking for a second worked example.
     // Matched by name so Prompt Slides' model-titled «اكتشف الخطأ» counts too.
-    if (s.type === 'challenge' && nonEmpty(s.answer) && SPOT_THE_MISTAKE.test(s.title)) {
+    if (isSpotTheMistake(s) && nonEmpty(s.answer)) {
       key.push(`${s.title}: ${s.answer}`);
       continue;
     }

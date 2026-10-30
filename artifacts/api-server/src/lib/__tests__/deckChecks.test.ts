@@ -98,9 +98,22 @@ describe("checkDeck", () => {
     assert.equal(issue.slide, 6);
   });
 
-  it("does not count the cover, or carry a run across a section break", () => {
+  it("does not count the cover", () => {
     const d = goodDeck();
-    // cover, hook, then the divider ends the run: two at most either side.
+    // cover, hook, an explanation slide where the divider was, then the challenge:
+    // three intros counting the cover, two without it.
+    Object.assign(d.slides[2]!, { type: "intro", content: "• سطر\n• سطر آخر" });
+    d.slides.splice(3, 2);
+    d.slides.forEach((s, i) => { s.slideNumber = i + 1; });
+    assert.ok(!codes(d).includes("passive_run"), "counted the cover");
+  });
+
+  it("does not hold a general deck to the rule — only a teaching deck (one with a check) has it", () => {
+    const d = goodDeck();
+    Object.assign(d.slides[5]!, { type: "intro", content: "• سطر\n• سطر آخر" });
+    // No check question: the prompt's general arc, where the question slide is optional.
+    d.slides.splice(7, 1);
+    d.slides.forEach((s, i) => { s.slideNumber = i + 1; });
     assert.ok(!codes(d).includes("passive_run"));
   });
 

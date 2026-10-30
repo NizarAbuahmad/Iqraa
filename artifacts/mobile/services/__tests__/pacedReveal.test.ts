@@ -97,12 +97,18 @@ describe('the presenter uses it', () => {
 
   it('is off until the teacher turns it on, and shows everything when off', () => {
     assert.match(src, /const \[paced, setPaced\] = useState\(false\);/);
-    assert.match(src, /threshold: paced \? revealThreshold\(beatsHere, shown\) : Infinity/);
+    assert.match(src, /threshold: pacing \? revealThreshold\(beatsHere, shown\) : Infinity/);
+  });
+
+  it('is not offered on a phone, and a choice remembered elsewhere does not pace one', () => {
+    assert.match(src, /const pacing = paced && !compactBar;/);
+    assert.match(src, /const beatsHere = pacing && slideHere/);
+    assert.match(src, /\{!compactBar && \(\s*<Pressable\s+onPress=\{togglePaced\}/);
   });
 
   it('never hides what is on screen: switching on and stepping back show the whole slide', () => {
     const toggle = src.slice(src.indexOf('const togglePaced'), src.indexOf('const [penOn'));
     assert.match(toggle, /setShown\(Infinity\)/);
-    assert.match(src, /if \(back\) setShown\(Infinity\);/);
+    assert.match(src, /const restore = idx < slideIndex \? Infinity : idx === slideIndex \? shown : null;/);
   });
 });

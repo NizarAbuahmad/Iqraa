@@ -214,6 +214,17 @@ describe('verifyDeckExamples', () => {
     assert.equal(out[2], undefined);
   });
 
+  // A spot-the-mistake slide's content is a wrong solution by design; a proof
+  // that its correction matches the first equation in it would badge nonsense.
+  it('never sends a spot-the-mistake slide to the verifier, even when a proof would come back', async () => {
+    let called = 0;
+    const mistake = { ...slide('challenge', 'x = 12x^3'), title: '🔍 اكتشف الخطأ', aiWritten: true };
+    const en = { ...mistake, title: 'Spot the mistake' };
+    const out = await verifyDeckExamples([mistake, en], async () => { called += 1; return proves; });
+    assert.deepEqual(out, [undefined, undefined]);
+    assert.equal(called, 0);
+  });
+
   // The first live AI example (a chemistry mole problem) came back labelled
   // «إجابة من بنك الأسئلة المُراجَع». Nobody reviewed it; only a proof counts.
   it('gives an AI-written example no bank badge, whether the verifier declines or is down', async () => {

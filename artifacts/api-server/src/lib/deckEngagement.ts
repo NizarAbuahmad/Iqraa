@@ -19,6 +19,12 @@ export const MAX_PASSIVE_RUN = 2;
 
 export interface DeckEngagement {
   slides: number;
+  /**
+   * Has a `question` slide. The prompt's teaching arc requires one and its
+   * general arc (an event, a parents' evening) usually has none, so this is how
+   * the log tells the two apart when comparing before and after.
+   */
+  hasCheck: boolean;
   /** `question` + `challenge` slides. */
   activities: number;
   /** 1-based slide number of the first activity, or null when there is none. */
@@ -44,6 +50,7 @@ export function deckEngagement(deck: unknown): DeckEngagement {
   const raw = isRec(deck) && Array.isArray(deck.slides) ? deck.slides : [];
   const slides = raw.filter(isRec);
   let activities = 0;
+  let hasCheck = false;
   let firstActivity: number | null = null;
   let run = 0;
   let longestPassiveRun = 0;
@@ -53,6 +60,7 @@ export function deckEngagement(deck: unknown): DeckEngagement {
   let words = 0;
   slides.forEach((s, i) => {
     const type = str(s.type);
+    if (type === "question") hasCheck = true;
     if (ACTIVITY.has(type)) {
       activities += 1;
       if (firstActivity === null) firstActivity = i + 1;
@@ -72,6 +80,7 @@ export function deckEngagement(deck: unknown): DeckEngagement {
   });
   return {
     slides: slides.length,
+    hasCheck,
     activities,
     firstActivity,
     longestPassiveRun,

@@ -85,6 +85,8 @@ test('reviewEntry shows what a student would read, and nothing else', () => {
   const entry = reviewEntry(call, {
     hook: { question: 'ما المول؟', teacherNote: 'ابدأ بسؤال' },
     concepts: [{ title: 'المول', points: ['a'], teacherNote: 'اشرح' }],
+    // A deliberately wrong solution for the class to correct; a student never sees it.
+    mistake: { claim: 'قالت سلمى: 2 ÷ 18', hint: 'h', answer: 'اضرب' },
     sources: [{ titleAr: 'كتاب', page: 3 }],
     servedReason: 'budget',
     variantId: V1,
