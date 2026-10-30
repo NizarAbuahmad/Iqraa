@@ -115,8 +115,12 @@ describe('homework project submission codes', () => {
   it('still maps the codes it shares with messaging, and a 429, as before', () => {
     assert.equal(apiErrorKey(sub('file_too_large', 413), 'fb'), 'errFileTooLarge');
     assert.equal(apiErrorKey(sub('unsupported_type', 400), 'fb'), 'errUnsupportedType');
-    assert.equal(apiErrorKey(sub('too_long', 400), 'fb'), 'errTooLong');
     assert.equal(apiErrorKey(sub(undefined, 429), 'fb'), 'errTooManyRequests');
+  });
+
+  it('says «note», not «message», for a project note that is too long; messaging keeps its own copy', () => {
+    assert.equal(apiErrorKey(sub('too_long', 400), 'fb'), 'errNoteTooLong');
+    assert.equal(apiErrorKey(err('too_long', 400), 'fb'), 'errTooLong');
   });
 
   it('leaves `invalid` to the screen’s own key: no existing copy fits, and none is invented', () => {

@@ -87,6 +87,8 @@ const BY_CODE_SCOPED = {
     empty: 'errSubmissionEmpty',
     photo_limit: 'errPhotoLimit',
     storage_unavailable: 'errStorageUnavailable',
+    // PUT .../submission: the project's note. Messaging's `too_long` keeps «الرسالة طويلة جدًا».
+    too_long: 'errNoteTooLong',
   },
 } as const;
 

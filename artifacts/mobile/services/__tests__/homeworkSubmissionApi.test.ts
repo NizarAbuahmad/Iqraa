@@ -56,12 +56,22 @@ describe('get', () => {
     assert.equal(out.submission.photos[0]!.id, 'p1');
   });
 
-  it('normalizes a junk body rather than trusting it', async () => {
-    const { api } = harness(() => ({ body: { submission: 'nope' } }));
+  it('normalizes junk fields inside a submission rather than trusting them', async () => {
+    const { api } = harness(() => ({ body: { submission: { status: 'weird', photos: 'x' }, dueDate: '2026-11-02' } }));
     const out = await api.get('h1');
     assert.equal(out.submission.status, 'none');
     assert.deepEqual(out.submission.photos, []);
-    assert.equal(out.dueDate, '');
+    assert.equal(out.dueDate, '2026-11-02');
+  });
+
+  it('refuses a 2xx with no usable submission or due day, so a screen never shows it as a blank project', async () => {
+    for (const body of [{ submission: 'nope', dueDate: '2026-11-02' }, { dueDate: '2026-11-02' }, { submission: VIEW }, { submission: VIEW, dueDate: '' }]) {
+      const { api } = harness(() => ({ body }));
+      const e = await rejection(api.get('h1'));
+      assert.equal(e.status, 200, JSON.stringify(body));
+    }
+    const { api } = harness(() => ({ raw: 'not json' }));
+    assert.equal((await rejection(api.get('h1'))).status, 200);
   });
 
   it('throws a SubmissionError with the status on a 404', async () => {
@@ -154,6 +164,11 @@ describe('saveNote', () => {
     assert.deepEqual(JSON.parse(calls[0]!.init!.body!), { note: 'hello' });
     assert.equal(out.note, 'done');
   });
+
+  it('refuses a 2xx whose body holds no submission', async () => {
+    const { api } = harness(() => ({ body: {} }));
+    assert.equal((await rejection(api.saveNote('h1', 'hello'))).status, 200);
+  });
 });
 
 describe('submit', () => {
@@ -163,6 +178,11 @@ describe('submit', () => {
     assert.equal(calls[0]!.path, '/student/homework/h1/submission/submit');
     assert.equal(calls[0]!.init?.method, 'POST');
     assert.equal(out.status, 'submitted');
+  });
+
+  it('refuses a 2xx whose body holds no submission, rather than reading it as not handed in', async () => {
+    const { api } = harness(() => ({ body: { ok: true } }));
+    assert.equal((await rejection(api.submit('h1'))).status, 200);
   });
 });
 

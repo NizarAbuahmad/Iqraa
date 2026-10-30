@@ -57,16 +57,26 @@ async function readJson(res: Response, action: string): Promise<Record<string, u
   return json;
 }
 
+/**
+ * The `submission` of a 2xx body, or a `SubmissionError` when there is none. A 2xx that does not hold one
+ * (a proxy's page, an empty body) must not read as a blank project or as «not handed in»: the screen
+ * shows an error with a retry instead.
+ */
+function viewOf(json: Record<string, unknown>, status: number): SubmissionView {
+  if (!isRecord(json['submission'])) throw new SubmissionError('Unexpected response', status);
+  return normalizeSubmission(json['submission']);
+}
+
 export function makeHomeworkSubmissionApi(deps: SubmissionApiDeps) {
   const base = (homeworkId: string) => `/student/homework/${encodeURIComponent(homeworkId)}/submission`;
 
   const api = {
     async get(homeworkId: string): Promise<{ submission: SubmissionView; dueDate: string }> {
-      const json = await readJson(await deps.apiFetch(base(homeworkId)), 'Loading your project');
-      return {
-        submission: normalizeSubmission(json['submission']),
-        dueDate: typeof json['dueDate'] === 'string' ? json['dueDate'] : '',
-      };
+      const res = await deps.apiFetch(base(homeworkId));
+      const json = await readJson(res, 'Loading your project');
+      const dueDate = json['dueDate'];
+      if (typeof dueDate !== 'string' || dueDate === '') throw new SubmissionError('Unexpected response', res.status);
+      return { submission: viewOf(json, res.status), dueDate };
     },
 
     async uploadPhoto(homeworkId: string, photoDataUrl: string): Promise<{ photo: SubmissionPhoto; photoCount: number }> {
@@ -92,16 +102,13 @@ export function makeHomeworkSubmissionApi(deps: SubmissionApiDeps) {
     },
 
     async saveNote(homeworkId: string, note: string): Promise<SubmissionView> {
-      const json = await readJson(
-        await deps.apiFetch(base(homeworkId), { method: 'PUT', body: JSON.stringify({ note }) }),
-        'Saving your note',
-      );
-      return normalizeSubmission(json['submission']);
+      const res = await deps.apiFetch(base(homeworkId), { method: 'PUT', body: JSON.stringify({ note }) });
+      return viewOf(await readJson(res, 'Saving your note'), res.status);
     },
 
     async submit(homeworkId: string): Promise<SubmissionView> {
-      const json = await readJson(await deps.apiFetch(`${base(homeworkId)}/submit`, { method: 'POST' }), 'Handing in your project');
-      return normalizeSubmission(json['submission']);
+      const res = await deps.apiFetch(`${base(homeworkId)}/submit`, { method: 'POST' });
+      return viewOf(await readJson(res, 'Handing in your project'), res.status);
     },
 
     /** Saves the note first only when `noteChanged(saved, note)`, then hands in. A failed save hands nothing in. */
