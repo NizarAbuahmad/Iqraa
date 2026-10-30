@@ -10,6 +10,70 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Unsubscribe in every email, and 18+ for teachers and parents — 2026-10-30
+
+**Asked:** an unsubscribe button in every email we send, and terms that say teachers and parents
+are 18 or older, with a review of the legal obligations around both.
+
+**Every mail has an unsubscribe link.** All seven senders in `artifacts/api-server/src/lib/email.ts`
+(sign-up code, password-reset code, Google sign-in notice, admin content-report notice, app invite,
+parent-approval request, waitlist broadcast) now leave through one `deliver` path that adds a
+bilingual footer link and the RFC 2369 / RFC 8058 headers (`List-Unsubscribe`,
+`List-Unsubscribe-Post`), so Gmail's and Outlook's own button works too. The broadcast keeps its
+per-row waitlist link. The link is `GET|POST /api/email/unsubscribe?t=` (`routes/emailPreferences.ts`):
+GET asks, POST unsubscribes (a mail scanner pre-fetching links unsubscribes nobody), and the
+confirmation offers an undo (`POST /api/email/resubscribe`). The token is the address
+**encrypted** (AES-256-GCM under a key derived from `SESSION_SECRET`), not `?email=…&sig=…`,
+because the query string lands in Cloud Run's request log; GCM makes it unforgeable. With no
+secret (tests, scripts) the footer and header fall back to `mailto:info@iqrra.com?subject=unsubscribe`.
+
+**What unsubscribing stops.** A new table, `email_suppressions` (migration 0020, one row per
+lowercased address, owner connection only — RLS on, no policy, no `iqraa_app` grant, LOCKED in
+`rlsCoverage.test.ts`; `lib/emailSuppression.ts` is on the systemDb list). It stops every
+`general` mail: app invite, parent-approval request, admin notices, and the broadcast (left out
+and counted as `skipped`; the admin screen shows it). It does **not** stop the three `security`
+mails — a code someone just asked for on that address — because withholding them locks a person
+out of their own account with nothing on screen saying why; their footer says so instead of
+promising what the button does not do. Transactional mail of that kind is outside CAN-SPAM's
+and GDPR/ePrivacy's opt-out rules. **This is a product choice, not a legal necessity: if you want
+an unsubscribed address to get no sign-up codes either, it is the `kind` on three calls.** The
+waitlist link (`/site/unsubscribe`) now also adds the address to the list, because its page
+promised «لن تصلك رسائل أخرى», and the admin invite refuses an address on either list (409).
+Fails closed: an unreadable list sends no general mail, and a production server whose list was
+never registered refuses general mail (`email.ts` cannot import the database and stay loadable
+under `node --test`, so the check is handed in by `lib/emailSuppression.ts`, which the router
+imports).
+
+**18+ for teachers and parents.** Terms §1 (both languages) said «age of majority where you
+live»; it now says a teacher or a parent must be 18 or older, confirms it at sign-up, and an
+under-18 teacher/parent account may be suspended or deleted. Students keep the existing rule
+(code from a teacher, or a parent's agreement). The sign-up checkbox for a teacher or a parent —
+and with no role picked, which the server treats as a teacher — now reads «أُقرّ بأنّ عمري 18 سنة
+أو أكثر، وأوافق على شروط الخدمة وسياسة الخصوصية» (`registerAdultAgreePrefix`); a parent signing
+up with a teacher's code sees the same box (`CodeSignupForm` renders `agreements`). The login
+screen's Google notice adds «وتُقرّ إن كنت معلّمًا أو وليّ أمر بأنّ عمرك 18 سنة أو أكثر».
+`LEGAL_VERSION` is `2026-10-30.b`, so an account made from now on records that it accepted the
+wording with the 18+ clause; no new column — the version names the wording.
+
+**Privacy policy, from the same review.** §2 says what we email and how to stop it; §4 lists
+**Resend** (it sends every mail and was missing from the processors); §5 says teachers and parents
+confirm 18+; §6 says an unsubscribed address is kept, alone, on a do-not-email list even after the
+account is deleted, until undone or removed on request.
+
+**Verified:** `pnpm run typecheck`; api-server `pnpm build` + `pnpm test` (2,695 pass, including
+the new `emailUnsubscribe.test.ts` — every sender carries a link that reads back as its
+recipient, general mail stops and security mail does not, an unreadable list and an unregistered
+production list send nothing — and `mountOrder.test.ts`, the route answers 400 to a forged token
+with no session); mobile `pnpm test` (8,208 pass). The verification and parent-approval mails
+were rendered to HTML and looked at in Chromium. **Not verified:** a real send through Resend, a
+real one-click unsubscribe from Gmail, the migration against Neon (CI applies it to an empty
+Postgres), and the RLS suite locally (no database here). **Not legal advice** — `legal.ts`'s own
+caveat stands.
+
+**Not done, for a decision:** existing accounts accepted the old «age of majority» wording and are
+not asked again (re-acceptance is a separate flow, `termsAcceptance.ts`); and the Site_Iqra
+waitlist form is a separate repo, untouched.
+
 ## Slides: the class's turn, spot the mistake, and one point at a time — 2026-10-30
 
 A deck looked good and still ran as a lecture: Prompt Slides asked for every concept slide

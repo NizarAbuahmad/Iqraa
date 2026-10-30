@@ -32,6 +32,8 @@ import { notifyAdminsOfWaitlistSignup } from "../lib/adminNotify.js";
 import { configuredAutoMetrics } from "../lib/autoMetrics.js";
 import { APP_INVITE_SUBJECT, appInviteBodyHtml, appInviteUrl, sendAppInviteEmail, sendBroadcast } from "../lib/email.js";
 import { isValidEmailAddress } from "../lib/emailAddress.js";
+import { unsubscribePage } from "../lib/emailUnsubscribe.ts";
+import { suppressedAmong, suppressEmail } from "../lib/emailSuppression.ts";
 import {
   parseBroadcast,
   pickRecipients,
@@ -711,14 +713,15 @@ router.post("/admin/invites", authMiddleware, requireRole("system_admin"), invit
     res.status(400).json({ error: "email" });
     return;
   }
-  // Someone who unsubscribed asked for no more mail, and typing their address here doesn't change that.
+  // Someone who unsubscribed asked for no more mail, and typing their address here doesn't change that —
+  // whether they pressed the waitlist link or the one at the foot of any other mail (email_suppressions).
   try {
     const [optedOut] = await db
       .select({ id: siteSignups.id })
       .from(siteSignups)
       .where(and(sql`lower(${siteSignups.email}) = ${email.toLowerCase()}`, isNotNull(siteSignups.unsubscribedAt)))
       .limit(1);
-    if (optedOut) {
+    if (optedOut || (await suppressedAmong([email])).size > 0) {
       res.status(409).json({ error: "unsubscribed" });
       return;
     }
@@ -830,8 +833,11 @@ router.post("/admin/broadcasts", authMiddleware, requireRole("system_admin"), br
 
     const result = await sendBroadcast(recipients, subject, html, unsubscribeUrl);
     await stampSent(result.sent, purpose).catch((err) => logger.error({ err }, "broadcast sent but not recorded"));
-    logger.info({ by: req.user!.id, purpose, sent: result.sent.length, failed: result.failed.length }, "waitlist broadcast");
-    res.json({ sent: result.sent.length, failed: result.failed.length });
+    logger.info(
+      { by: req.user!.id, purpose, sent: result.sent.length, failed: result.failed.length, skipped: result.skipped.length },
+      "waitlist broadcast",
+    );
+    res.json({ sent: result.sent.length, failed: result.failed.length, skipped: result.skipped.length });
   } catch (err) {
     logger.error({ err }, "admin broadcast failed");
     res.status(500).json({ error: "Failed to send" });
@@ -1012,14 +1018,11 @@ router.post("/site/signups", siteSignupLimiter, async (req, res) => {
  * unsubscribe everyone it scans. The button POSTs here, and so does a mail
  * client's own one-click "unsubscribe" (`List-Unsubscribe-Post`). Unsubscribing
  * is by address: every waitlist row with that email is stamped, so a second
- * signup can't put someone back on the list.
+ * signup can't put someone back on the list — and the address joins the list
+ * every other mail honours (email_suppressions), because the page promises no
+ * more mail, not just no more waitlist mail.
  */
 const unsubscribeLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 120, name: "site-unsubscribe" });
-
-const unsubscribePage = (message: string, form = "") => `<!doctype html>
-<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>إقرأ · Iqrra</title>
-<style>body{margin:0;padding:48px 20px;background:#F1F5F9;font-family:Tahoma,Arial,sans-serif;color:#0B1220;text-align:center}main{max-width:420px;margin:0 auto;background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:28px 20px;line-height:1.8}button{margin-top:12px;background:#006D65;color:#fff;border:0;border-radius:8px;padding:12px 24px;font:inherit;font-weight:bold;cursor:pointer}</style></head>
-<body><main>${message}${form}</main></body></html>`;
 
 router.get("/site/unsubscribe", unsubscribeLimiter, (req, res) => {
   const id = req.query["id"];
@@ -1031,8 +1034,8 @@ router.get("/site/unsubscribe", unsubscribeLimiter, (req, res) => {
   // `id` is a uuid and `t` the exact hex digest we just verified, so both are safe to place in the URL.
   res.type("html").send(
     unsubscribePage(
-      "<p>هل تريد إيقاف رسائل إقرأ على بريدك؟</p><p dir=\"ltr\">Stop Iqrra emails to this address?</p>",
-      `<form method="post" action="/api/site/unsubscribe?id=${id}&amp;t=${t}"><button type="submit">إلغاء الاشتراك · Unsubscribe</button></form>`,
+      "<p>هل تريد إيقاف رسائل إقرأ على بريدك؟</p><p dir=\"ltr\">Stop Iqrra emails to this address?</p>" +
+        `<form method="post" action="/api/site/unsubscribe?id=${id}&amp;t=${t}"><button type="submit">إلغاء الاشتراك · Unsubscribe</button></form>`,
     ),
   );
 });
@@ -1051,8 +1054,14 @@ router.post("/site/unsubscribe", unsubscribeLimiter, async (req, res) => {
         .update(siteSignups)
         .set({ unsubscribedAt: sql`coalesce(${siteSignups.unsubscribedAt}, now())` })
         .where(sql`lower(${siteSignups.email}) = ${row.email.toLowerCase()}`);
+      await suppressEmail(row.email, "waitlist");
     }
-    res.type("html").send(unsubscribePage("<p>تم إلغاء اشتراكك. لن تصلك رسائل أخرى.</p><p dir=\"ltr\">You're unsubscribed. We won't email you again.</p>"));
+    res.type("html").send(
+      unsubscribePage(
+        "<p>تم إلغاء اشتراكك. لن تصلك رسائل أخرى، إلا رمزًا تطلبه أنت لإنشاء حساب أو لاستعادة كلمة المرور.</p>" +
+          "<p dir=\"ltr\">You're unsubscribed. We won't email you again, except a code you ask for yourself to create an account or reset a password.</p>",
+      ),
+    );
   } catch (err) {
     logger.error({ err }, "unsubscribe failed");
     res.status(500).type("html").send(unsubscribePage("<p>تعذّر إتمام الطلب. حاول مرة أخرى لاحقًا.</p><p dir=\"ltr\">Something went wrong. Please try again later.</p>"));
