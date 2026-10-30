@@ -5,7 +5,7 @@
  * services/publicGames/countries.ts. The element-symbols game reuses the
  * board with its own prompt (ElementsGame.tsx).
  */
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +17,8 @@ import { GameShell } from './GameShell';
 import { AnswerOption } from './AnswerOption';
 import { answerFeedback } from '@/services/playFeedback';
 import { nextStreak, showStreak } from '@/services/publicGames/answerMotion';
+import { recordBest, type BestResult } from '@/services/publicGames/bestScore';
+import { playStore } from '@/services/playStore';
 import { readableOn } from '@/services/readableColor';
 import { buildTriviaRound, flagUrl, type TriviaField, type TriviaOption, type TriviaQuestion } from '@/services/publicGames/countries';
 import type { TranslationKey } from '@/services/i18n';
@@ -75,14 +77,18 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
   const [selected, setSelected] = useState<string | null>(null);
   const [gameOver, setGameOver] = useState(false);
   const [streak, setStreak] = useState(0);
+  const [missed, setMissed] = useState<Q[]>([]);
+  const [retryQuestions, setRetryQuestions] = useState<Q[] | null>(null);
+  const [bestInfo, setBestInfo] = useState<BestResult | null>(null);
 
-  const questions: Q[] = useMemo(
+  const built: Q[] = useMemo(
     () => buildRound(lang),
     // A fresh set on mount and every "play again" — never mid-game, or the
     // options under a selected answer would shuffle out from under the tap.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [buildRound, lang, round],
   );
+  const questions: Q[] = retryQuestions ?? built;
   const question = questions[index];
 
   const pick = (optionId: string) => {
@@ -91,7 +97,18 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
     answerFeedback(optionId === question.correctId);
     setStreak(s => nextStreak(s, optionId === question.correctId));
     if (optionId === question.correctId) setScore(s => s + 1);
+    if (optionId !== question.correctId) setMissed(m => [...m, question]);
   };
+
+  // A finished full round records the personal best; a retry round never does.
+  useEffect(() => {
+    if (!gameOver || retryQuestions) return;
+    let alive = true;
+    void recordBest(playStore, titleKey, { score, total: questions.length }).then(r => { if (alive) setBestInfo(r); });
+    return () => { alive = false; };
+    // Once per finished full round.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameOver]);
 
   const next = () => {
     if (index + 1 >= questions.length) {
@@ -109,6 +126,20 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
     setStreak(0);
     setSelected(null);
     setGameOver(false);
+    setRetryQuestions(null);
+    setMissed([]);
+    setBestInfo(null);
+  };
+
+  const retryMissed = () => {
+    setRetryQuestions(missed);
+    setMissed([]);
+    setBestInfo(null);
+    setIndex(0);
+    setScore(0);
+    setSelected(null);
+    setStreak(0);
+    setGameOver(false);
   };
 
   return (
@@ -119,9 +150,19 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
       gameOver={gameOver ? { message: t('playScoreLabel', score, questions.length), perfect: score === questions.length, score, total: questions.length } : null}
       onReplay={replay}
       onBack={onBack}
-      analytics={analytics}
+      analytics={retryQuestions ? { ...analytics, retry: '1' } : analytics}
       onFinished={onFinished}
-      footer={footer}
+      secondaryAction={missed.length > 0 ? { label: t('playRetryMissed', missed.length), onPress: retryMissed } : undefined}
+      footer={
+        <>
+          {bestInfo ? (
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.label, textAlign: 'center' }}>
+              {t('playBestScore', bestInfo.best.score, bestInfo.best.total)}{bestInfo.isNewBest ? `  ·  ${t('playNewBest')}` : ''}
+            </Text>
+          ) : null}
+          {footer}
+        </>
+      }
       showSoundToggle
     >
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, padding: 20, gap: 20 }}>

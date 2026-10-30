@@ -27,8 +27,10 @@ import { trackEvent } from '@/services/analytics';
 import { goToGames } from '@/services/navigation';
 
 export function GameShell({
-  titleKey, accent, scoreLabel, gameOver, onReplay, onBack, analytics, onFinished, footer, showSoundToggle, children,
+  titleKey, accent, scoreLabel, gameOver, onReplay, onBack, analytics, onFinished, footer, secondaryAction, showSoundToggle, children,
 }: {
+  /** An extra button between Play again and Back, e.g. «retry the ones you missed». */
+  secondaryAction?: { label: string; onPress: () => void };
   /** A speaker button that mutes the answer cues; only boards that make sound ask for it. */
   showSoundToggle?: boolean;
   /** Default: back to the /play menu. */
@@ -131,6 +133,9 @@ export function GameShell({
             {footer}
 
             <Button label={t('playPlayAgain')} onPress={() => onReplay?.()} fill={accent} style={{ marginTop: 12 }} fullWidth size="lg" />
+            {secondaryAction ? (
+              <Button label={secondaryAction.label} onPress={secondaryAction.onPress} variant="secondary" fullWidth />
+            ) : null}
             {/* A game the hub opened goes back to the hub; one opened from a lesson
                 (`onBack`) goes back to where it was opened from. */}
             <Button
