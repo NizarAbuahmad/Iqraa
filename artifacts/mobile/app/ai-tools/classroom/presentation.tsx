@@ -21,8 +21,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import {
-  DECK_DISPLAY_TYPE as D, DEFAULT_DECK_THEME, resolveDeckTheme, slideTypeAccent, TIMER_AMBER, TIMER_GREEN, type DeckTheme,
+  DECK_DISPLAY_TYPE as D, DEFAULT_DECK_THEME, diagramTint, resolveDeckTheme, slideTypeAccent, TIMER_AMBER, TIMER_GREEN, type DeckTheme,
 } from '@/services/deckTheme';
+import {
+  ALWAYS, arrowHead, DIAGRAM_FONT, DIAGRAM_H, DIAGRAM_W, diagramGeometry, isDiagram, type DiagramLayout, type DiagramShape,
+} from '@/services/diagramGeometry';
 import { NATIVE_DRIVER } from '@/constants/animation';
 import { useLanguage } from '@/context/LanguageContext';
 import { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
@@ -32,7 +35,7 @@ import {
   canTogglePause, slideIsRTL, tickTimer, timerColor, timerSecondsForSlide, timerShouldTick, toggleFullscreen,
 } from '@/services/presentationUtils';
 import { openExternal } from '@/services/externalLinks';
-import Svg, { Circle, G, Line, Path, Polyline, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Ellipse, G, Line, Path, Polygon, Polyline, Rect, Text as SvgText } from 'react-native-svg';
 import { DECK_ICON_SHAPES, iconForGlyph, isSectionIconName, type DeckIconName } from '@/services/deckIcons';
 import { chartGeometry, plotGeometry, seriesColor, visualForSlide } from '@/services/deckVisuals';
 // Shared with both exports so the projected slide and the exported one cannot
@@ -744,6 +747,66 @@ function StatsRowView({ items, accent, isRTL }: {
 }
 
 /**
+ * A cycle, tree, Venn or mind map, drawn from `diagramGeometry` — the same
+ * positions the PDF and PowerPoint use. Each beat is its own full-size layer
+ * (an Svg for its shapes and positioned Text for its labels) inside a `Reveal`,
+ * so «نقطة بنقطة» brings a stage or a branch in on the teacher's press; the
+ * `ALWAYS` layer (a tree's root, a mind map's centre) is there from the start.
+ * Labels are Text, not SVG text, so `isolateForeignRuns` keeps maths and Latin
+ * runs whole inside Arabic on the web, as everywhere else in the deck. Each text
+ * box is one Text (several Venn items are joined by a line break), centred in
+ * its box, which the geometry sized for the longest wrap.
+ */
+function DiagramView({ layout, accent, isRTL }: { layout: DiagramLayout; accent: string; isRTL: boolean }) {
+  const T = useContext(ThemeContext);
+  const [w, setW] = useState(0);
+  const g = diagramGeometry(layout, DIAGRAM_W, DIAGRAM_H, isRTL);
+  const k = w / DIAGRAM_W;
+  const fill = (p: 'card' | 'tint' | 'none') => (p === 'none' ? 'none' : p === 'tint' ? diagramTint(T) : T.card);
+  const shape = (s: DiagramShape, i: number) => {
+    if (s.t === 'box') return <Rect key={i} x={s.x} y={s.y} width={s.w} height={s.h} rx={10} fill={fill(s.fill)} stroke={s.stroke === 'accent' ? accent : T.border} strokeWidth={2.5} />;
+    if (s.t === 'ellipse') return <Ellipse key={i} cx={s.cx} cy={s.cy} rx={s.rx} ry={s.ry} fill={fill(s.fill)} stroke={s.stroke === 'accent' ? accent : T.border} strokeWidth={3} />;
+    return (
+      <G key={i}>
+        <Line x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} stroke={accent} strokeWidth={3} />
+        {s.arrow ? <Polygon points={arrowHead(s.x1, s.y1, s.x2, s.y2, 14).map(p => p.join(',')).join(' ')} fill={accent} /> : null}
+      </G>
+    );
+  };
+  const layer = (beat: number) => (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Svg viewBox={`0 0 ${DIAGRAM_W} ${DIAGRAM_H}`} width="100%" height="100%">
+        {g.shapes.filter(s => s.beat === beat).map(shape)}
+      </Svg>
+      {k > 0 && g.texts.filter(t => t.beat === beat).map((t, i) => (
+        <View
+          key={i}
+          style={{ position: 'absolute', left: t.x * k, top: t.y * k, width: t.w * k, height: t.h * k, justifyContent: 'center' }}
+        >
+          <Text
+            style={{
+              fontSize: DIAGRAM_FONT[t.size] * k, lineHeight: DIAGRAM_FONT[t.size] * k * 1.25, textAlign: 'center',
+              writingDirection: isRTL ? 'rtl' : 'ltr', color: T.text,
+              fontFamily: t.bold ? 'ReadexPro_700Bold' : 'Almarai_400Regular',
+            }}
+          >
+            {isolateForeignRuns(t.text)}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+  return (
+    <View style={{ width: '100%', aspectRatio: DIAGRAM_W / DIAGRAM_H }} onLayout={e => setW(e.nativeEvent.layout.width)}>
+      {layer(ALWAYS)}
+      {Array.from({ length: g.beats }, (_, b) => (
+        <Reveal key={b} index={b} style={StyleSheet.absoluteFill}>{layer(b)}</Reveal>
+      ))}
+    </View>
+  );
+}
+
+/**
  * An item that fades in and rises a few pixels, each `index` a beat after the one
  * before — the bullets, cards and boxes of a slide arriving one at a time, which
  * is how a teacher speaks to them, instead of the whole slide appearing at once.
@@ -952,11 +1015,12 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
   // fall through to the ordinary heading-plus-body grid below.
   const layout = resolveSlideLayout(slide);
   // `photo` never gets here: the dispatch hands it to HeroSlideView.
-  // The four diagram kinds are not drawn here yet: the ordinary grid stands in.
-  if (layout && layout.kind !== 'photo' && layout.kind !== 'cycle' && layout.kind !== 'tree'
-    && layout.kind !== 'venn' && layout.kind !== 'mindmap') {
+  if (layout && layout.kind !== 'photo') {
     return (
       <View style={slideStyles.cover}>
+        {isDiagram(layout) && <LayoutHeading heading={heading} icon={headIcon} accent={accent} isRTL={isRTL} />}
+        {isDiagram(layout) && <DiagramView layout={layout} accent={accent} isRTL={isRTL} />}
+
         {layout.kind === 'statement' && (
           <>
             <Text style={[slideStyles.coverTitle, { color: accent, textAlign: align, writingDirection: dir }]}>
