@@ -122,6 +122,10 @@ export function checkDeck(deck: unknown, sourceText = ""): DeckIssue[] {
       if (width < 2 || rows.length < 2 || rows.some(r => nItems(r) !== width)) add("warn", "table_incomplete", n);
     }
     if (layout === "flow" && nItems(isRec(s.flow) ? s.flow.steps : null) < 3) add("warn", "flow_incomplete", n);
+    if (layout === "cycle" && nItems(isRec(s.cycle) ? s.cycle.stages : null) < 3) add("warn", "cycle_incomplete", n);
+    if (layout === "tree" && nItems(isRec(s.tree) ? s.tree.branches : null) < 2) add("warn", "tree_incomplete", n);
+    if (layout === "venn" && nItems(isRec(s.venn) ? s.venn.sets : null) < 2) add("warn", "venn_incomplete", n);
+    if (layout === "mindmap" && nItems(isRec(s.mindmap) ? s.mindmap.nodes : null) < 3) add("warn", "mindmap_incomplete", n);
     if (layout === "quote" && !(isRec(s.quote) && str(s.quote.text))) add("warn", "quote_incomplete", n);
     // A photo with nothing to search by has no picture coming; the app drops the layout.
     if (layout === "photo" && !str(s.mediaPrompt)) add("warn", "photo_without_prompt", n);

@@ -117,7 +117,7 @@ function inferLayout(slide: ActivitySlide, index: number): InferredLayout | unde
   return undefined;
 }
 
-const STRUCTURE_LAYOUTS = new Set<NonNullable<ActivitySlide['layout']>>(['timeline', 'stats', 'table', 'flow', 'quote']);
+const STRUCTURE_LAYOUTS = new Set<NonNullable<ActivitySlide['layout']>>(['timeline', 'stats', 'table', 'flow', 'quote', 'cycle', 'tree', 'venn', 'mindmap']);
 
 /** A refused layout's words come back as a list; past this it is a wall of text, so the rest is cut. */
 const MAX_FALLBACK_LINES = 6;
@@ -148,7 +148,7 @@ function cleanStructure(slide: ActivitySlide): ActivitySlide {
   // — a layout on a question or a challenge would hide its options or its answer.
   if (next.layout && STRUCTURE_LAYOUTS.has(next.layout)) {
     if (!PROSE_TYPES.has(next.type) || !resolveSlideLayout(next)) {
-      const { layout: _l, timeline: _t, stats: _s, table: _b, flow: _f, quote: _q, ...rest } = next;
+      const { layout: _l, timeline: _t, stats: _s, table: _b, flow: _f, quote: _q, cycle: _c, tree: _r, venn: _v, mindmap: _m, ...rest } = next;
       const lines = payloadLines(next).slice(0, MAX_FALLBACK_LINES).map(l => `• ${l}`);
       next = { ...rest, content: [(rest.content ?? '').trim(), ...lines].filter(Boolean).join('\n') };
     }

@@ -173,6 +173,24 @@ describe("promptSlidesPrompt — the rules that stop empty decks", () => {
     });
   }
 
+  for (const [label, build] of BOTH) {
+    const prompt = build(baseBody);
+    it(`${label}: describes cycle, tree, venn and mindmap with their JSON`, () => {
+      for (const k of ['"cycle"', '"tree"', '"venn"', '"mindmap"', '"stages"', '"branches"', '"shared"', '"nodes"']) {
+        assert.ok(prompt.includes(k), k);
+      }
+    });
+    it(`${label}: says when each fits`, () => {
+      assert.match(prompt, label === "ar" ? /تعود إلى بدايتها/ : /return to the start/);
+      assert.match(prompt, label === "ar" ? /تصنيف/ : /classification/);
+    });
+    it(`${label}: states the gate's character caps and one-line content for the diagrams`, () => {
+      const ascii = prompt.replace(/[\u0660-\u0669]/g, d => String(d.charCodeAt(0) - 0x660));
+      for (const n of ["24", "32", "40", "20", "60"]) assert.ok(ascii.includes(n), n);
+      assert.match(prompt, label === "ar" ? /سطر واحد عمدًا، وكذلك كل شريحة بشكل "cycle" أو "tree" أو "venn" أو "mindmap"/ : /one line on purpose, as is a slide shaped "cycle", "tree", "venn" or "mindmap"/);
+    });
+  }
+
   it("no longer tells the model to withhold content the teacher did not ask for", () => {
     // This single line capped every deck's richness at the teacher's own
     // terseness — a two-line description bought a two-line deck.
