@@ -1,7 +1,7 @@
 # /play games: feedback, explanations, best score and a governorates map — design
 
-Date: 2026-10-30. Status: approved in chat ("go"), with these defaults: sound on, every game that shares
-`TriviaBoard` included, the map credit line shown.
+Date: 2026-10-30. Status: approved; implemented on branch ccr-c35bc284-4ljn3c (PR #1352). Approved in chat ("go"), with
+these defaults: sound on, every game that shares `TriviaBoard` included, the map credit line shown.
 
 ## Goal
 
@@ -49,11 +49,11 @@ photographs; per-state drawings for the matter game; a "same round for the whole
 ## Structure
 
 - Pure, testable under `node --test`: `services/publicGames/kvStore.ts` (the `KeyValueStore` type),
-  `feedbackPrefs.ts`, `bestScore.ts`, `streak.ts`, `jordanMapData.ts` (generated), and the explanation text in each
+  `feedbackPrefs.ts`, `bestScore.ts`, `answerMotion.ts` (the streak rule and the motion timings), `jordanMapData.ts` (generated), and the explanation text in each
   game module. Storage is injected, so tests use an in-memory store.
 - Bound to the device: `services/playStore.ts` (AsyncStorage), `services/playFeedback.ts` (expo-audio and
   expo-haptics, a mute store read with `useSyncExternalStore`), `assets/sounds/wrong.wav`
-  (built by `scripts/make-wrong-cue.mjs`).
+  (built by `scripts/make-wrong-cue.ts`).
 - UI: `components/publicGames/AnswerOption.tsx` (shake/pop), `JordanMap.tsx`, and edits to `TriviaGame.tsx`,
   `TextQuizGame.tsx`, `GameShell.tsx`.
 

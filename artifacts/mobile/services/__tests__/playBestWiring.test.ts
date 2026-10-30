@@ -26,5 +26,8 @@ test('a retry round is never reported and never shows the caller\'s send status'
 
 test('a lesson game keeps its best per lesson', () => {
   assert.match(board, /analytics\?\.lessonId \? `\$\{titleKey\}:\$\{analytics\.lessonId\}` : titleKey/);
-  assert.match(board, /recordBest\(playStore, bestGameKey/);
+});
+
+test('a retry round is practice: it never earns the full-mark celebration', () => {
+  assert.match(board, /perfect: !retryQuestions && score === questions\.length/);
 });

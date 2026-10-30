@@ -26,6 +26,11 @@ test('the map is decorative for screen readers, takes colours from the theme and
   assert.match(map, /importantForAccessibility="no-hide-descendants"/);
   assert.match(map, /aria-hidden/);
   assert.doesNotMatch(map, /accessible=/);
+  // Placement: all three on a <View>, none on the <Svg>.
+  assert.match(map, /<View[^>]*accessibilityElementsHidden/s);
+  assert.match(map, /<View[^>]*importantForAccessibility="no-hide-descendants"/s);
+  assert.match(map, /<View[^>]*aria-hidden/s);
+  assert.doesNotMatch(map, /<Svg[^>]*(aria-hidden|accessibilityElementsHidden|importantForAccessibility|accessible)/s);
   assert.match(map, /useColors\(\)/);
   assert.doesNotMatch(map, /palette/);
   assert.doesNotMatch(map, /fontSize:\s*\d/);

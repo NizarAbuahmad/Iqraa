@@ -29,7 +29,8 @@ found (below), and this entry.
 3. **Answer motion and a streak chip** (`AnswerOption.tsx`): the right option swells once, a wrong pick shakes once, nothing
    moves under reduced motion; from two right in a row a flame chip shows the streak.
 4. **A personal best, and «retry the ones you missed»** (`services/publicGames/bestScore.ts`). The game-over panel prints
-   «أفضل نتيجة: ٦ من ٨» (and «نتيجة جديدة!» when it was beaten) and, after any miss, a button that replays only the misses.
+   «أفضل نتيجة: 6 من 8» (and «رقم قياسي جديد!» when it was beaten) and, after any miss, a button that replays only the misses.
+   (Progress, score, streak and best print Latin digits, as the existing `playScoreLabel` always has; see the known limits.)
    **A retry round is practice**: it never records a best and is never reported to a teacher (see the deviations).
 5. **A map of Jordan after each governorates answer** (`JordanMap.tsx`, react-native-svg): the right governorate lit in the
    game's accent, a wrong pick outlined in red, a credit line under it.
@@ -48,15 +49,15 @@ of wmgeolab/geoBoundaries. Licence Creative Commons Attribution 2.5 Generic, der
 `scripts/data/README.md` records the source and how to regenerate.
 
 **Verified.**
-- `pnpm run typecheck` clean. Mobile suite after the fixes: **8235 tests, 8225 pass, 0 fail, 10 skipped** (the same 10
+- `pnpm run typecheck` clean. Mobile suite after the fixes: **8238 tests, 8228 pass, 0 fail, 10 skipped** (the same 10
   pre-existing `searchKB` skips; the baseline on `main` was 8196). New test files: `answerMotion`, `bestScore`,
-  `feedbackPrefs`, `jordanMapData`, `jordanMapWiring`, `playBestWiring`, `playFeedbackWiring`, `playGameExplanations`,
-  `wrongCue`.
+  `feedbackPrefs`, `gameShellOverlay`, `jordanMapData`, `jordanMapWiring`, `playBestWiring`, `playFeedbackWiring`,
+  `playGameExplanations`, `wrongCue`.
 - **A real browser** (Chromium through the `playwright` library, against `pnpm run dev:mobile:web`), 2026-10-30, driven by a
   script that reads each option's correct flag off the React tree so it can answer right or wrong on purpose. Seven boards
   — flags, governorates, fractions, which-number, states of matter, antonyms, capitals — each played from the first question
   to game over (right and wrong answers, a streak of 3, six of eight right), then «retry the ones you missed» (replays exactly
-  the two misses, «سؤال ١ من ٢», no best line, no «new best», the stored best unchanged), then «Play again» (a full
+  the two misses, «سؤال 1 من 2», no best line, no «new best», the stored best unchanged), then «Play again» (a full
   eight-question round again). 42 runs: 390×844 and 1280×800, light and dark, Arabic; English at 390 light and 1280 dark.
   Also looked at: elements (phone, light and dark) and the lesson term-spot game (phone, light and dark; the lesson-meaning
   game was not opened, the lesson tried has no glossary); the mute button
@@ -75,7 +76,16 @@ of wmgeolab/geoBoundaries. Licence Creative Commons Attribution 2.5 Generic, der
 - **Nothing was run on a device or a native build** (iOS, Android, `expo-audio` on native, `expo-haptics`, react-native-svg
   native, the Android keyboard and gesture behaviour of the now-scrollable board). Shake and swell were seen in code and as
   the final frame of a screenshot, not as motion.
-- The Arabic «why» sentences of the hand-written games were read by the author and the reviewer, not by a teacher.
+- The Arabic «why» sentences of the hand-written games were read by the author and the reviewer, and the new `play…` strings
+  went through an Arabic copy review at the end (two changed: the streak chip now reads «3 على التوالي» instead of «3 متتالية»,
+  which had no noun, and a new best reads «رقم قياسي جديد!» instead of «نتيجة جديدة!»), but no teacher has read them.
+- **After the game-over panel became a `ScrollView`, these other `GameShell` games were played to their game-over panel in a
+  browser** (390×844 and 320×568, light and dark, Arabic, no console errors): memory (`/play/memory`), colours, the
+  multiplication drill (`?secs=30`), the lesson memory game on an English lesson, and the lesson letter-scramble game on a maths
+  and an English lesson. The
+  panel is centred where it fits and scrolls at 320×568, with the signup card reachable after scrolling. **Not looked at:** the
+  add, subtract and divide drills (same component as multiply), the lesson-meaning game, a game-over panel with the homework
+  «sent to the teacher» footer, and anything on a device.
 - The map's governorate shapes were checked by eye against the names (Ajloun small in the north-west, Ma'an and the east
   large), not against a second source.
 
@@ -84,19 +94,30 @@ of wmgeolab/geoBoundaries. Licence Creative Commons Attribution 2.5 Generic, der
 - **The board is now a `ScrollView`, which changes the layout of every `TriviaBoard` game** (flags, capitals, elements, the
   six text games and the lesson games), not only the new ones: «التالي» sits under the content and under the map, so on a
   short phone it is reached by scrolling.
+- **The game-over panel is a `ScrollView` for every `GameShell` game**, not only the trivia boards: memory, colours, the four
+  drills, the lesson memory and scramble games (so also an English lesson's) and the trivia boards. It looks the same where it
+  fits, and scrolls where it does not (it used to be cut off); `gameShellOverlay.test.ts` pins the shape (`flexGrow`, not
+  `flex: 1`, on the content container).
+- **Progress, score, streak and best print Latin digits** («سؤال 1 من 2», «6 من 8», «3 على التوالي»): `getT` does not convert
+  digits and the new strings interpolate raw numbers, as `playScoreLabel` always has. The which-number game's options and why
+  line, and the fractions' decimals, are Arabic-Indic. The mix predates this work and was not changed.
+- **The answer cue can ring through the iOS silent switch.** `playGameCue` (`services/gameSounds.ts`) sets
+  `playsInSilentMode: true` the first time it plays: the Class Challenge's existing choice, now also used by `/play`. Not
+  checked on a device.
 - **A best is per game and per device** (`@iqra_play_best_v1:<title key>`), and per lesson for the lesson games
   (`…:<title key>:<lessonId>`); it is compared by share right (score over total), and only a full round records one.
   It is not synced and not shown to a teacher. A best an older build kept under another key, if any
   game did, is not migrated.
 - **A retry replays the same questions in the same option order**, so a child can answer by position; it is practice, not a
   test. It is never reported to a teacher (`onFinished` is not passed for it, and `game_finished` carries `retry: '1'`).
-- A perfect retry (2 of 2) still plays the «full mark» celebration, because the shell only knows score equals total.
+- A perfect retry (2 of 2) does not play the «full mark» celebration (`perfect` is false for a retry round); the small
+  game-over celebration still plays.
 - The streak chip shows from two in a row and exists on `TriviaBoard` games only; the maths drills, memory, colours and
   scramble are unchanged.
 
 **Deviations from the plan, during the build.**
 - **The retry round reported itself (found in review, fixed in `bb043c3`).** The first version of retry passed the same
-  `onFinished` as a full round, so a homework lesson game would have posted «٢ من ٢» for a child who had missed two of eight
+  `onFinished` as a full round, so a homework lesson game would have posted «2 من 2» for a child who had missed two of eight
   (a perfect ratio), and the server keeps the higher ratio. A retry round now never calls `onFinished`, never records a best and sends no
   status footer. The same commit moved the lesson games' best from one per game to one per lesson.
 - **The map was unreadable (`da085e9`).** Unlit governorates were card on card (about 1.2:1), so only the lit one showed.
