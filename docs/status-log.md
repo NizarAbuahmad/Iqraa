@@ -10,6 +10,24 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## API errors reach Cloud Error Reporting (PR #1238, merged 2026-10-24) — 2026-10-30
+
+In production the logger wrote pino's default JSON (`level: 50`, `msg`, no stack field), which
+Cloud Run reads as an unleveled entry, so Error Reporting never saw anything the API logged.
+`lib/cloudLogging.ts` + `lib/logger.ts` now write `severity` (`error` → ERROR, `fatal` →
+CRITICAL), `message`, `stack_trace` (copied from `err.stack`; 155 of ~190 error call sites log
+`{ err }`), `serviceContext` (`iqraa-api`, `K_REVISION`) and an ISO `time`. Production only;
+`/healthz/errors` and the dev transport are unchanged. `clouderrorreporting.googleapis.com` was
+enabled on `iqraa-auth-507315` by the owner on 2026-10-24.
+
+**Verified (2026-10-30, `gcloud logging read` on `iqraa-api`, 5 days):** 177 entries at ERROR; 84
+carry `stack_trace` and `serviceContext` (the rest are `logger.error` calls with no `err`). Four
+unit tests in `cloudLogging.test.ts`. **Not verified:** that the Error Reporting page groups
+them (the `gcloud beta` group is not installed here; look at the Error Reporting page in the
+console). **First thing it showed:** 79 of those stacks were an OpenAI `429`
+`credit_balance_exhausted` between 2026-10-28 18:30Z and 2026-10-29 23:51Z (`classroom-activity`,
+`chat`, `lesson-teaching`, `activity`, `evaluation` generation) — none since.
+
 ## Unsubscribe in every email, and 18+ for teachers and parents — 2026-10-30
 
 **Asked:** an unsubscribe button in every email we send, and terms that say teachers and parents
