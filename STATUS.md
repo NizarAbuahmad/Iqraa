@@ -167,6 +167,7 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-25 — Lesson games: «ما معنى المصطلح؟» from the books' printed glossary, and a draft route that stays hidden
 - 2026-10-25 — A parent signs up with an email or a teacher's code
 - 2026-10-25 — Parent approval for email students: merged and deployed, flag still off
+- 2026-10-30 — Slides: the class's turn, spot the mistake, and one point at a time (prompts untested against a live model)
 - 2026-10-24 — Parent approval for email students: the app (off)
 - 2026-10-24 — Parent approval for email students: the server (off)
 - 2026-10-24 — English audio: a speech-to-text check of every recording

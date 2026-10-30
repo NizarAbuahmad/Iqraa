@@ -159,6 +159,7 @@ const GLYPH_ICON: Record<string, DeckIconName> = {
   '✋': 'help',
   '🙋': 'help',
   '❓': 'help',
+  '🔍': 'help',
   '✍': 'pencil',
   '🎫': 'ticket',
   '✨': 'sparkles',

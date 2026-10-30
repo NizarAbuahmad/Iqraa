@@ -101,6 +101,10 @@ export function withoutSlide(
 /** Seconds a class gets to attempt a worked example before the reveal. */
 const EXAMPLE_THINK_SECONDS = 60;
 
+const SPOT_THE_MISTAKE_AR = '🔍 اكتشف الخطأ';
+const SPOT_THE_MISTAKE_EN = '🔍 Spot the Mistake';
+const SPOT_THE_MISTAKE = /اكتشف الخطأ|spot the mistake/i;
+
 export interface LessonDeckOptions {
   /** Curriculum lesson — the authoritative source when present. */
   lesson?: KBLesson | null;
@@ -158,6 +162,7 @@ export interface UsableTeaching {
   concepts: { title: string; points: string[]; teacherNote: string; misconception: string }[];
   workedExample: { problem: string; steps: string[]; answer: string } | null;
   practice: { problem: string; hint: string; answer: string } | null;
+  mistake: { claim: string; hint: string; answer: string } | null;
 }
 
 /** More than this and the explanation stops being a section of the lesson. */
@@ -200,6 +205,9 @@ export function usableTeaching(raw: LessonTeachingOutput | null | undefined): Us
   const answerShown = squashedAnswer.length >= 3
     && problem.replace(/\s+/g, '').includes(squashedAnswer);
   const practiceProblem = str(raw?.practice?.problem);
+  // A wrong solution with no correction is a slide that teaches the mistake.
+  const mistakeClaim = str(raw?.mistake?.claim);
+  const mistakeAnswer = str(raw?.mistake?.answer);
   return {
     hook: hookQ ? { question: hookQ, teacherNote: str(raw?.hook?.teacherNote) } : null,
     concepts,
@@ -208,6 +216,9 @@ export function usableTeaching(raw: LessonTeachingOutput | null | undefined): Us
       : null,
     practice: practiceProblem
       ? { problem: practiceProblem, hint: str(raw?.practice?.hint), answer: str(raw?.practice?.answer) }
+      : null,
+    mistake: mistakeClaim && mistakeAnswer
+      ? { claim: mistakeClaim, hint: str(raw?.mistake?.hint), answer: mistakeAnswer }
       : null,
   };
 }
@@ -941,6 +952,30 @@ export function buildLessonDeck(
     });
   }
 
+  // ── 7a. Spot the mistake — the misconception, as something to catch ─────
+  // The explanation names each idea's common error, but only in the teacher
+  // panel. Here one of them is projected as a classmate's wrong solution, after
+  // the class has watched it done right: finding the error is the attempt, and
+  // the correction waits behind the reveal like an example's answer.
+  const mistake = includeExamples ? teaching.mistake : null;
+  if (mistake) {
+    aiWritten = true;
+    push({
+      aiWritten: true,
+      type: 'challenge',
+      title: L(SPOT_THE_MISTAKE_AR, SPOT_THE_MISTAKE_EN),
+      content: mistake.claim,
+      ...(mistake.hint ? { hint: mistake.hint } : {}),
+      answer: mistake.answer,
+      durationSeconds: EXAMPLE_THINK_SECONDS,
+      teacher: {
+        expectedAnswer: mistake.answer,
+        teachingTips: L('اطلب منهم البحث عن الخطأ في أزواج، ثم اسأل: لماذا يبدو هذا الحل مقنعًا؟',
+          'Have pairs hunt for the error, then ask: why does this solution look convincing?'),
+      },
+    });
+  }
+
   // ── 7b. Second check — now that they have seen one done ─────────────────
   const laterChecks = midChecks.slice(firstCheckCount);
   laterChecks.forEach((check, i) => {
@@ -1151,6 +1186,13 @@ export function rebuildAnswerKey(slides: readonly ActivitySlide[], isAr: boolean
   let exampleNum = 0;
   const key: string[] = [];
   for (const s of slides) {
+    // A spot-the-mistake slide is a challenge but not an example: «مثال 2» in
+    // the key would send the teacher looking for a second worked example.
+    // Matched by name so Prompt Slides' model-titled «اكتشف الخطأ» counts too.
+    if (s.type === 'challenge' && nonEmpty(s.answer) && SPOT_THE_MISTAKE.test(s.title)) {
+      key.push(`${s.title}: ${s.answer}`);
+      continue;
+    }
     if (s.type === 'challenge' && nonEmpty(s.answer)) {
       exampleNum += 1;
       key.push(L(`مثال ${exampleNum}: ${s.answer}`, `Example ${exampleNum}: ${s.answer}`));

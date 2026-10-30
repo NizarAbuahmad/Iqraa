@@ -102,6 +102,7 @@ import {
   type GenerationKind,
 } from "../lib/generationShape.ts";
 import { checkDeck } from "../lib/deckChecks.ts";
+import { deckEngagement } from "../lib/deckEngagement.ts";
 import { SOLUTION_LIMITS, cleanSolutionText } from "@workspace/math-verify";
 import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
 import { SOLVE_TOKENS, solveSystemPrompt } from "../lib/solvePrompt.ts";
@@ -994,6 +995,9 @@ generateRouter.post('/generate/prompt-slides', async (req: AuthenticatedRequest,
     if (deckIssues.length > 0) {
       logger.warn({ deckIssues, model: getPromptSlidesModel() }, "prompt-slides deck broke its prompt contract");
     }
+    // Every deck, not only a bad one: these are the baseline any prompt change
+    // is measured against (see deckEngagement.ts).
+    logger.info({ engagement: deckEngagement(finalized), model: getPromptSlidesModel() }, "prompt-slides deck engagement");
     res.json(
       withMeta({ ...result, content: stripUnearnedVerification(finalized) }, null),
     );

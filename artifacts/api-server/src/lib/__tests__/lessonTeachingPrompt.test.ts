@@ -33,6 +33,19 @@ describe("lesson-teaching prompt", () => {
       }
     });
 
+    it(`${lang}: asks for a spot-the-mistake built from one of its own misconceptions`, () => {
+      const p = build(BODY);
+      for (const field of ['"mistake"', '"claim"']) assert.ok(p.includes(field), `missing ${field}`);
+      // The claim is projected: an error marked on screen is no longer a puzzle.
+      assert.match(p, lang === "ar" ? /لا تُشِر إلى الخطأ في "claim"/ : /Never mark the error in "claim"/);
+    });
+
+    it(`${lang}: sets the hook and practice in Jordan without inventing facts about it`, () => {
+      const p = build(BODY);
+      assert.match(p, lang === "ar" ? /الأردن/ : /Jordan/);
+      assert.match(p, lang === "ar" ? /لا تقدّمها حقائق/ : /never as facts about/);
+    });
+
     it(`${lang}: omits the context block when there is no book context`, () => {
       const p = build({ ...BODY, additionalContext: "" });
       assert.equal(p.includes("undefined"), false);

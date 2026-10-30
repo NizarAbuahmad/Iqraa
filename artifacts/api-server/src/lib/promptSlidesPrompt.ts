@@ -196,9 +196,11 @@ ${slideCountLine(b, true)}
 3. شريحة أهداف (intro): ثلاثة أسطر تبدأ بـ "• "، كل هدف سلوكي قابل للملاحظة (يحسب، يفسّر، يقارن) — لا تكتب "يفهم" أو "يعرف".
 4. شريحة فاصلة (divider) واحدة على الأقل بين الأقسام.
 5. شرائح الشرح (intro): معظم العرض. كل شريحة فكرة واحدة فقط.
-6. شريحة مثال محلول (challenge) قرب النهاية، مع الحل الكامل في teacher.expectedAnswer.
-7. شريحة تحقّق (question) بأربعة خيارات.
-8. شريحة خلاصة (summary) في النهاية: ثلاثة أسطر "• " + جملة تقول ما الذي يأتي بعد هذه الحصة.
+6. دور الصف: لا تتتالَ أكثر من شريحتي شرح. بعد شريحتين على الأكثر تأتي شريحة يعمل فيها الصف — تحقّق (question) أو تحدٍّ (challenge) — ثم الفكرة التالية. عرض يشرح ست شرائح ثم يسأل مرة واحدة في آخره محاضرة لا حصة.
+7. شريحة مثال محلول (challenge) بعد الفكرة التي يستعملها، مع الحل الكامل في teacher.expectedAnswer.
+8. شريحة تحقّق (question) بأربعة خيارات.
+9. في عرض من ١١ شريحة فأكثر: شريحة «اكتشف الخطأ» (challenge) عنوانها «اكتشف الخطأ». في "content" حلّ قصير أو قول لطالب متخيَّل (سلمى، عمر…) فيه خطأ واحد فقط، وهذا الخطأ هو خطأ شائع حقيقي في الموضوع — الذي كتبته في commonMisconceptions لإحدى شرائح الشرح. "hint" يوجّه إلى مكان البحث دون أن يسمّي الخطأ، و"answer" يسمّي الخطوة الخاطئة ويصحّحها. لا تُشِر إلى الخطأ في "content" — اكتشافه هو النشاط.
+10. شريحة خلاصة (summary) في النهاية: ثلاثة أسطر "• " + جملة تقول ما الذي يأتي بعد هذه الحصة.
 
 بنية (ب) — عرض عام:
 1. شريحة غلاف (intro): العنوان + سطر واحد يقول ما الذي سيخرج به الحضور من هذا العرض.
@@ -308,6 +310,7 @@ ${slideCountLine(b, true)}
   الشريحة ذات السطر الواحد مرفوضة. إن لم تجد ما تقوله في سطرين فادمج الشريحة مع التي تليها واجعل العرض أقصر — ست شرائح ممتلئة أفضل من عشر أنصاف فارغة.
 - لا تضع "mediaPrompt" على شريحة تحمل "layout" إلا إن كان "photo": تلك الشرائح تملأ الشاشة بشكلها الخاص ولا مكان فيها للصورة.
 - شريحة الشرح فكرة واحدة فقط. إن كان لديك فكرتان فاجعلهما شريحتين.
+- حين يحتاج مثال أو سؤال تشويق أو مسألة إلى سياق، فليكن من حياة الطلبة في الأردن: الدينار الأردني، وأماكن أردنية (عمّان، العقبة، البحر الميت، البتراء، إربد)، والحياة اليومية في البيت والمدرسة. لا تفرض سياقًا على فكرة مجرّدة لا تحتاجه. والأرقام التي تخترعها لمسألة تبقى قيم مسألة — لا تقدّمها حقائق عن مكان حقيقي (سعر، مسافة، عدد سكّان).
 - الخيارات الثلاثة الخاطئة في شريحة question أخطاء شائعة حقيقية، لا حشوًا ولا أرقامًا عشوائية. "correctIndex" فهرس مُصفَّر (0 يعني الخيار الأول)، لا ترتيب الخيار كما يعدّه الإنسان.
 - "deckPhotoQueries" مصفوفة من أربع عبارات بحث بالإنجليزية (٢-٥ كلمات لكل واحدة) تصف موضوع العرض نفسه، كلها مختلفة عن بعضها: الأولى لخلفية الغلاف، والثانية للشريحة الفاصلة، والثالثة والرابعة احتياط لشرائح المحتوى. الأربع مطلوبة. بالإنجليزية دائمًا مهما كانت لغة العرض — فهرس الصور إنجليزي، والبحث بالعربية يعود فارغًا. صِفْ الموضوع لا المادة الدراسية: عرض عن يوم الأم عبارته "mother and child hands" لا "mathematics classroom".
 - "type" واحد من: intro, divider, challenge, question, summary. لا تستخدم أي نوع آخر.
@@ -342,9 +345,11 @@ Structure for (A) — a teaching deck:
 3. Objectives slide (intro): three lines starting "• ", each an observable outcome (calculates, explains, compares) — never "understands" or "knows".
 4. At least one divider slide between sections.
 5. Concept slides (intro): the bulk of the deck. Exactly one idea per slide.
-6. A worked example (challenge) near the end, with the full solution in teacher.expectedAnswer.
-7. A check slide (question) with four options.
-8. A summary slide at the end: three "• " lines + a sentence naming what comes next.
+6. The class's turn: Never more than two concept slides in a row. After at most two, the next slide is one the class acts on — a check (question) or a challenge — and only then the next idea. A deck that explains for six slides and asks once at the end is a lecture, not a lesson.
+7. A worked example (challenge) after the idea it uses, with the full solution in teacher.expectedAnswer.
+8. A check slide (question) with four options.
+9. In a deck of 11 slides or more: a "Spot the mistake" slide (challenge) titled "Spot the mistake". "content" shows a short solution or claim by an imaginary student (Salma, Omar…) with exactly one error, and that error is a real common misconception in this topic — the one you wrote in a concept slide's commonMisconceptions. "hint" says where to look without naming the error; "answer" names the wrong step and corrects it. Never mark the error in "content" — finding it is the activity.
+10. A summary slide at the end: three "• " lines + a sentence naming what comes next.
 
 Structure for (B) — a general deck:
 1. Cover slide (intro): the title + one line naming what the audience leaves with.
@@ -454,6 +459,7 @@ Mandatory rules:
   A one-line slide is rejected. If you cannot find two lines worth saying, merge that slide into the next one and make the deck shorter — six full slides beat ten half-empty ones.
 - Never put "mediaPrompt" on a slide that carries a "layout" unless it is "photo": any other shape fills the screen with its own drawing and has nowhere to put a picture.
 - A concept slide carries exactly one idea. If you have two ideas, make two slides.
+- When an example, a hook or a problem needs a setting, set it in the students' own Jordan: Jordanian dinars (JD), Jordanian places (Amman, Aqaba, the Dead Sea, Petra, Irbid), everyday life at home and at school. Do not force a setting onto an abstract idea that needs none. Numbers you make up for a problem stay problem values — never as facts about a real place (a price, a distance, a population).
 - The three wrong options on a question slide are real, plausible misconceptions — not filler, not random numbers. "correctIndex" is 0-based (0 means the first option), never the option's position as a person would count it.
 - "deckPhotoQueries" is FOUR English search phrases (2-5 words each) describing the deck's own subject, all different from each other: the first backs the cover, the second the section break, and the third and fourth are spares for content slides. All four are required. Always English whatever language the deck is in — the photo index is English and an Arabic query comes back empty. Describe the TOPIC, not the school subject: a Mother's Day deck wants "mother and child hands", never "mathematics classroom".
 - "type" is one of: intro, divider, challenge, question, summary. Never any other type.
