@@ -12,7 +12,13 @@
  * already uses for a missing DB schema — not a 500, since this is a known,
  * expected state (R2 is optional), not a bug.
  */
-import { GetObjectCommand, PutObjectCommand, DeleteObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  ListObjectsV2Command,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "node:crypto";
 
@@ -168,6 +174,52 @@ export async function deleteObject(key: string): Promise<void> {
   const client = r2Client();
   if (!client) return;
   await client.send(new DeleteObjectCommand({ Bucket: bucket(), Key: key }));
+}
+
+export interface ListedObject {
+  key: string;
+  lastModified: Date;
+}
+
+const LIST_PAGE_SIZE = 1000;
+
+/**
+ * Every object under `prefix` in the PRIVATE bucket, in key order as S3 returns it. It exists for the
+ * homework-submission orphan sweep, which has to find stored photos that no database row refers to.
+ * Listing is bucket-wide by prefix, so a caller must pass a non-empty one: an empty prefix is refused
+ * rather than listing the whole bucket by accident. Pages through ListObjectsV2 with a continuation
+ * token; `maxKeys` caps the TOTAL returned (default 10_000) so a runaway prefix cannot exhaust memory,
+ * and `truncated` is true only when objects beyond the cap really exist. The caller checks
+ * `isR2Configured()` first — unconfigured throws, like `putObject`.
+ */
+export async function listObjects(
+  prefix: string,
+  opts: { maxKeys?: number } = {},
+): Promise<{ objects: ListedObject[]; truncated: boolean }> {
+  if (!prefix) throw new Error("listObjects needs a prefix");
+  const client = r2Client();
+  if (!client) throw new Error("R2 is not configured");
+  const cap = opts.maxKeys ?? 10_000;
+  const objects: ListedObject[] = [];
+  let token: string | undefined;
+  for (;;) {
+    const page = await client.send(
+      new ListObjectsV2Command({
+        Bucket: bucket(),
+        Prefix: prefix,
+        MaxKeys: Math.max(1, Math.min(LIST_PAGE_SIZE, cap - objects.length)),
+        ContinuationToken: token,
+      }),
+    );
+    for (const o of page.Contents ?? []) {
+      if (!o.Key || !o.LastModified) continue;
+      objects.push({ key: o.Key, lastModified: o.LastModified });
+    }
+    const more = page.IsTruncated === true && !!page.NextContinuationToken;
+    if (!more) return { objects, truncated: false };
+    if (objects.length >= cap) return { objects, truncated: true };
+    token = page.NextContinuationToken;
+  }
 }
 
 /** Like `deleteObject`, but from the public bucket. */
