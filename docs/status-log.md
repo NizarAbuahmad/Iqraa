@@ -29,8 +29,14 @@ of free text and a typo'd signature, because the send confirmation named the rec
   preview inside the message.
 
 **Verified:** `pnpm run typecheck`; mobile `pnpm test` (8258 pass, 0 fail, 10 skipped as before);
-the new `chatTarget` cases. **Not verified:** the pill and the preview box in a browser or on a
-device, in RTL, light and dark — only typechecked. The signature field was already editable
+the new `chatTarget` cases. Driven in Chromium against a local API with `STUDENT_ACCOUNTS=true`, a
+teacher, a class of two students and one parent linked by claim code, at a 1280-wide window: the
+pill shows on the joined student only (English and Arabic/RTL), a tap opens the chat with the
+parent («Parent · ahmad»), and the letter's confirmation shows the recipient, the "cannot be undone"
+note and the full letter in the scrollable box. **Not verified:** a phone-width layout, dark mode, a
+real device, the several-linked-accounts branch (it goes to the inbox) and a letter long enough to
+scroll the box, in the browser. In English the «Send the message» button wraps to two lines in a
+380-wide dialog. The signature field was already editable
 (`parentMsgSignature`); a wrong signature comes from the saved or typed name, not a missing field.
 
 **Known limits.** A student with a self account and a parent counts as two links, so the pill sends
