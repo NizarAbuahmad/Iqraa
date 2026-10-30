@@ -37,6 +37,7 @@ import { hasSeenAppIntro } from '@/services/appIntro';
 import { shouldTrackScreen } from '@/services/screenTracking';
 import { CLAIM_REQUIRED_ROUTE, guardianGate, isEntryRoute, isNonTeacherRoute, isPublicRoute, GRADE_SETUP_ROUTE, needsGradeSetup, needsRosterClaim, needsTeacherSetup, TEACHER_SETUP_ROUTE } from '@/services/routeGating';
 import { identifyUser, initAnalytics, resetAnalyticsIdentity, trackEvent, trackScreen } from '@/services/analytics';
+import { contentsquareTrackPageview, initContentsquare } from '@/services/contentsquare';
 import { subscribeToGenerations } from '@/services/ai/aiProvenance';
 import { clearCrashContext, initCrashReporting, setCrashContext } from '@/services/crashReporting';
 
@@ -186,7 +187,11 @@ function RootLayoutNav() {
   // (`params['#']`), so on web nothing may log or send global params / navigation state without excluding
   // `/guardian` first, as shouldTrackScreen does here.
   useEffect(() => {
-    if (pathname && shouldTrackScreen(pathname)) trackScreen(pathname);
+    if (pathname && shouldTrackScreen(pathname)) {
+      trackScreen(pathname);
+      // The web tag never sees a page load after the first (web only; no-op elsewhere).
+      contentsquareTrackPageview(pathname);
+    }
   }, [pathname]);
 
   /**
@@ -286,6 +291,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     initAnalytics();
+    initContentsquare();
     // Every generator already reports through aiProvenance, so one subscription
     // covers all of them — live and mock, every tool — instead of a trackEvent
     // call per screen that the next generator would forget to add.

@@ -9,12 +9,82 @@
  */
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { growthSummary, isolateLtr, type MetricRow } from '../growthMetrics.ts';
+import { growthHistory, growthSummary, isolateLtr, sparkPoints, type MetricRow } from '../growthMetrics.ts';
 
 const row = (date: string, value: number): MetricRow => ({ key: 'instagram', value, date });
 const TODAY = '2026-10-28';
 // oldest first, as the API returns them
 const rows = [row('2026-09-20', 100), row('2026-10-10', 130), row('2026-10-22', 150), row('2026-10-28', 170)];
+
+describe('growthHistory', () => {
+  it('lists the newest entry first, each with its move from the one before', () => {
+    assert.deepEqual(growthHistory(rows), [
+      { date: '2026-10-28', value: 170, change: 20 },
+      { date: '2026-10-22', value: 150, change: 20 },
+      { date: '2026-10-10', value: 130, change: 30 },
+      { date: '2026-09-20', value: 100, change: null },
+    ]);
+  });
+
+  it('a shown entry still measures from an older one cut off by the limit', () => {
+    const h = growthHistory(rows, 2);
+    assert.equal(h.length, 2);
+    assert.equal(h[1]!.change, 20); // 150 − 130, though 10-10 itself is not listed
+  });
+
+  it('shows the case behind a flat card: two days, the same number', () => {
+    assert.deepEqual(growthHistory([row('2026-10-27', 3), row('2026-10-28', 3)]), [
+      { date: '2026-10-28', value: 3, change: 0 },
+      { date: '2026-10-27', value: 3, change: null },
+    ]);
+  });
+
+  it('is empty for a metric nobody has recorded', () => {
+    assert.deepEqual(growthHistory([]), []);
+  });
+});
+
+describe('sparkPoints', () => {
+  it('draws nothing for fewer than two entries, in every period', () => {
+    for (const p of ['last', '7', '30', 'all'] as const) {
+      assert.deepEqual(sparkPoints([], p, TODAY), [], p);
+      assert.deepEqual(sparkPoints([row('2026-10-28', 5)], p, TODAY), [], p);
+    }
+  });
+
+  it('spreads entries by their dates, lowest value at 0 and highest at 1', () => {
+    const pts = sparkPoints([row('2026-10-01', 10), row('2026-10-03', 20), row('2026-10-11', 30)], 'all', TODAY);
+    assert.deepEqual(pts.map(p => p.y), [0, 0.5, 1]);
+    assert.deepEqual(pts.map(p => p.x), [0, 0.2, 1]);
+  });
+
+  it('a flat series is a line across the middle, not a divide by zero', () => {
+    const pts = sparkPoints([row('2026-10-01', 7), row('2026-10-05', 7)], 'all', TODAY);
+    assert.deepEqual(pts.map(p => p.y), [0.5, 0.5]);
+  });
+
+  it('entries all on one day are spaced evenly', () => {
+    const pts = sparkPoints([row('2026-10-01', 1), row('2026-10-01', 2), row('2026-10-01', 3)], 'all', TODAY);
+    assert.deepEqual(pts.map(p => p.x), [0, 0.5, 1]);
+  });
+
+  it('«last» shows at most the eight newest entries', () => {
+    const many = Array.from({ length: 12 }, (_, i) => row(`2026-10-${String(i + 1).padStart(2, '0')}`, i));
+    const pts = sparkPoints(many, 'last', TODAY);
+    assert.equal(pts.length, 8);
+    assert.equal(pts[0]!.y, 0);
+  });
+
+  it('a day period starts at the entry its change is measured from', () => {
+    // 7 days back from 10-28: baseline is the 10-10 entry, so 10-10, 10-22, 10-28.
+    assert.equal(sparkPoints(rows, '7', TODAY).length, 3);
+    assert.equal(sparkPoints(rows, '30', TODAY).length, 4);
+  });
+
+  it('draws nothing for a period nothing was recorded in', () => {
+    assert.deepEqual(sparkPoints([row('2026-08-01', 40), row('2026-09-01', 55)], '7', TODAY), []);
+  });
+});
 
 describe('isolateLtr', () => {
   it('wraps a run in a left-to-right isolate, so a day inside Arabic keeps its order', () => {

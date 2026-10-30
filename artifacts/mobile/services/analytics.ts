@@ -19,7 +19,30 @@ import type PostHog from 'posthog-react-native';
 export type AnalyticsProps = Record<string, string | number | boolean>;
 
 const POSTHOG_KEY = process.env.EXPO_PUBLIC_POSTHOG_API_KEY;
+// The default is the US cloud, but the project behind today's key is on the EU
+// cloud, so every build sets EXPO_PUBLIC_POSTHOG_HOST beside the key (deploy.yml,
+// mobile-update.yml, mobile-build-gradle.yml, eas.json). A key sent to the wrong
+// cloud is dropped silently; posthogProject.test.ts keeps the pair together.
 const POSTHOG_HOST = process.env.EXPO_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
+
+/**
+ * Session replay on Android (and iOS, if a binary ever exists). On web the SDK
+ * treats replay as a no-op — the web build gets its recordings from
+ * Contentsquare (`services/contentsquare.ts`). Recording needs "Record user sessions" switched on in
+ * the PostHog project settings as well; without it nothing is captured.
+ *
+ * Everyone is recorded, students and parents included, so every mask is on:
+ * all text and text inputs (names, marks, exam answers, chat) and all images
+ * show as placeholders. Do not loosen these without a decision — see the
+ * privacy policy section in `constants/legal.ts`, which says the same.
+ */
+export const SESSION_REPLAY_CONFIG = {
+  maskAllTextInputs: true,
+  maskAllImages: true,
+  maskAllSandboxedViews: true,
+  captureLog: false,
+  captureNetworkTelemetry: false,
+} as const;
 
 /** `undefined` = not yet attempted; `null` = attempted and unavailable/disabled. */
 let client: PostHog | null | undefined;
@@ -32,7 +55,11 @@ async function getClient(): Promise<PostHog | null> {
   }
   try {
     const { default: PostHogClient } = await import('posthog-react-native');
-    client = new PostHogClient(POSTHOG_KEY, { host: POSTHOG_HOST });
+    client = new PostHogClient(POSTHOG_KEY, {
+      host: POSTHOG_HOST,
+      enableSessionReplay: true,
+      sessionReplayConfig: { ...SESSION_REPLAY_CONFIG },
+    });
   } catch {
     client = null;
   }

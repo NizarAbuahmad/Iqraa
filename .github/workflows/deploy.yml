@@ -393,7 +393,19 @@ jobs:
           # them from the repo and not from the browser.
           EXPO_PUBLIC_API_BASE_URL: https://iqraa-api-613126375862.europe-west1.run.app/api
           EXPO_PUBLIC_GOOGLE_CLIENT_ID: 784063967007-86omgnji0cg28iaav1o1celb8cm9je26.apps.googleusercontent.com
-          EXPO_PUBLIC_POSTHOG_API_KEY: phc_t7Gd3Z4L7v3zDkPAciXoCvndiVqGfVxzGquEfbJPq9r8
+          # The PostHog project is on the EU cloud: the key only works against the
+          # EU host, so they change together (posthogProject.test.ts pins it).
+          EXPO_PUBLIC_POSTHOG_API_KEY: phc_scZFQcyzEpr2R7nQ7euVgtqQGwhZAh2fB8jvCBGAxjvv
+          EXPO_PUBLIC_POSTHOG_HOST: https://eu.i.posthog.com
+          # Contentsquare (Hotjar's successor) heatmaps and recordings
+          # (services/contentsquare.ts). A repository variable, not a value in
+          # the repo, so recording is switched on in GitHub (Settings > Secrets
+          # and variables > Actions > Variables) once a recording of the live
+          # site is seen to be masked (the code sets data-cs-mask on <body>),
+          # without a PR. Unset, it is '' and the tag stays off. Web
+          # only: the tag is a browser script, so eas.json and mobile-update.yml
+          # deliberately omit it.
+          EXPO_PUBLIC_CONTENTSQUARE_TAG_ID: ${{ vars.CONTENTSQUARE_TAG_ID }}
           # Read by scripts/inject-pwa.mjs for <meta name="build-commit">, and
           # the only way to tell which commit a served bundle came from.
           BUILD_COMMIT: ${{ github.sha }}

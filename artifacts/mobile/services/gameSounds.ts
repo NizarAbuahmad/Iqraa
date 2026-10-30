@@ -1,16 +1,18 @@
 /**
  * Class Challenge sound cues: a chime when a team is awarded, a low tone when
- * the thinking time runs out, a short fanfare on the podium. Bundled (synthesized
+ * the thinking time runs out, a short fanfare on the podium, and a quiet
+ * two-note «wrong» cue for the /play answer boards. Bundled (synthesized
  * tones, no licence to track) so a classroom without a good connection still
  * hears them. One player per cue, created on first use. Best-effort, like
  * `englishAudio.ts`: a cue that cannot play is silent, never an error.
  */
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 
-export type GameCue = 'correct' | 'timeup' | 'podium';
+export type GameCue = 'correct' | 'wrong' | 'timeup' | 'podium';
 
 const SOURCES: Record<GameCue, number> = {
   correct: require('../assets/sounds/correct.wav'),
+  wrong: require('../assets/sounds/wrong.wav'),
   timeup: require('../assets/sounds/timeup.wav'),
   podium: require('../assets/sounds/podium.wav'),
 };

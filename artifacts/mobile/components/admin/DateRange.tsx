@@ -4,9 +4,12 @@
  * two 'YYYY-MM-DD' strings or '' for open-ended; `rangeQuery` turns it into
  * the `&from=&to=` the API expects (lib/adminMetrics.ts parseDateRange).
  */
-import React from 'react';
-import { Platform, TextInput, View } from 'react-native';
+import React, { useState } from 'react';
+import { Platform, Pressable, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { CalendarPicker } from './CalendarPicker';
 import { FilterChip } from './widgets';
+import { TYPE } from '@/constants/theme';
 
 export type Range = { from: string; to: string };
 export const EMPTY_RANGE: Range = { from: '', to: '' };
@@ -20,27 +23,61 @@ export function rangeQuery(r: Range): string {
 
 /**
  * One date box. On web a real <input type="date"> (react-native-web's TextInput
- * forces type="text", so passing `type` to it never gave a picker); a plain
- * 'YYYY-MM-DD' text box on native. Clicking anywhere on the box opens the calendar.
+ * forces type="text", so passing `type` to it never gave a picker); on native a
+ * button that opens our own month calendar (`CalendarPicker`), because typing
+ * 'YYYY-MM-DD' on a phone keyboard is how a date gets mistyped. Clicking anywhere
+ * on the box opens the calendar. `clearable` offers «مسح» for a filter where an
+ * empty date means open-ended.
  */
-export function DateField({ value, onChange, label, min, max, isRTL, colors }: {
+export function DateField({ value, onChange, label, min, max, clearable, ar, isRTL, colors }: {
   value: string;
   onChange: (v: string) => void;
   label: string;
   min?: string;
   max?: string;
+  clearable?: boolean;
+  ar: boolean;
   isRTL: boolean;
   colors: any;
 }) {
+  const [open, setOpen] = useState(false);
   if (Platform.OS !== 'web') {
     return (
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        placeholder={label}
-        placeholderTextColor={colors.mutedForeground}
-        style={{ borderWidth: 1, borderColor: colors.border, borderRadius: colors.radius, paddingHorizontal: 10, paddingVertical: 7, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, width: 130 }}
-      />
+      <>
+        <Pressable
+          onPress={() => setOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel={`${label}: ${value || (ar ? 'غير محدد' : 'not set')}`}
+          style={({ pressed }) => ({
+            flexDirection: isRTL ? 'row-reverse' : 'row',
+            alignItems: 'center',
+            gap: 6,
+            minHeight: 44,
+            paddingHorizontal: 12,
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: colors.radius,
+            backgroundColor: colors.card,
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          <Ionicons name="calendar-outline" size={16} color={colors.mutedForeground} />
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption }}>{label}</Text>
+          <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, minWidth: 80, textAlign: 'center' }}>{value || '—'}</Text>
+        </Pressable>
+        <CalendarPicker
+          visible={open}
+          value={value}
+          min={min}
+          max={max}
+          clearable={clearable}
+          ar={ar}
+          isRTL={isRTL}
+          colors={colors}
+          onPick={ymd => { onChange(ymd); setOpen(false); }}
+          onClose={() => setOpen(false)}
+        />
+      </>
     );
   }
   return (
@@ -77,8 +114,8 @@ export function DateRange({ value, onChange, ar, isRTL, colors }: {
       {presets.map(([a, e, r]) => (
         <FilterChip key={e} label={ar ? a : e} active={value.from === r.from && value.to === r.to} onPress={() => onChange(r)} colors={colors} />
       ))}
-      <DateField value={value.from} onChange={from => onChange({ ...value, from })} label={ar ? 'من' : 'From'} max={value.to || undefined} isRTL={isRTL} colors={colors} />
-      <DateField value={value.to} onChange={to => onChange({ ...value, to })} label={ar ? 'إلى' : 'To'} min={value.from || undefined} isRTL={isRTL} colors={colors} />
+      <DateField value={value.from} onChange={from => onChange({ ...value, from })} label={ar ? 'من' : 'From'} max={value.to || undefined} clearable ar={ar} isRTL={isRTL} colors={colors} />
+      <DateField value={value.to} onChange={to => onChange({ ...value, to })} label={ar ? 'إلى' : 'To'} min={value.from || undefined} clearable ar={ar} isRTL={isRTL} colors={colors} />
     </View>
   );
 }

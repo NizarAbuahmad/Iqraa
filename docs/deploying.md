@@ -570,7 +570,7 @@ gcloud scheduler jobs create http homework-reminders $P \
 gcloud scheduler jobs run homework-reminders --location europe-west1 $P
 gcloud scheduler jobs describe homework-reminders --location europe-west1 $P \
   --format='value(lastAttemptTime,status)'
-gcloud logging read 'resource.labels.service_name="iqraa-api" AND jsonPayload.msg="homework reminders run"' \
+gcloud logging read 'resource.labels.service_name="iqraa-api" AND jsonPayload.message="homework reminders run"' \
   $P --limit 5 --freshness 1d
 unset KEY   # when done
 ```
@@ -668,6 +668,102 @@ $2 / $10 per million tokens and has not been checked against a bill. `AI_CLAUDE_
 depth. A refusal by the model answers 502 `model_declined` with the category in the log;
 the server-side refusal fallback is **not** enabled (it could not be tried without a live
 key), so a teacher who hits one sees the usual generation error and can try again.
+
+### Growth numbers that fill themselves (Facebook, Instagram, Play) — manual, once
+
+The admin dashboard's «التنزيلات والمتابعون» cards can fill in their own number: the first time an
+admin opens the dashboard each day, `GET /admin/metrics` fetches each figure that has its settings
+and stores it as that day's entry. YouTube already works this way (`YOUTUBE_API_KEY`). The code
+(`lib/autoMetrics.ts`) ships **dormant**: a figure with no settings is skipped, so deploying it
+changes nothing. A number an admin typed for the day is kept, and a figure that came back empty is
+not retried for 30 minutes. LinkedIn and X stay typed in by hand (LinkedIn needs an approved partner
+app; X now bills per read).
+
+| Figure | Settings | Secret? |
+| --- | --- | --- |
+| Facebook followers | `META_ACCESS_TOKEN` + `META_PAGE_ID` | the token |
+| Instagram followers | `META_ACCESS_TOKEN` + `META_IG_USER_ID` | the token |
+| Play downloads | `PLAY_STATS_BUCKET` (`PLAY_PACKAGE_NAME` only if the package ever changes) | none — no key |
+
+This was written from Meta's and Google's documentation and tested against stand-ins for both; it has
+**not** been run against the real accounts. The first dashboard open after setup is that test.
+
+**Facebook and Instagram.** Both read from one Meta token.
+
+1. The Instagram account must be a *Professional* account (Business or Creator) connected to the
+   Facebook Page. Followers are not readable for a personal account.
+2. developers.facebook.com → create an app (type *Business*) under the same business portfolio as the
+   Page.
+3. business.facebook.com → Business settings → Users → **System users** → add one → *Add assets*: the
+   Page and the Instagram account → *Generate new token* for the app, with `pages_show_list`,
+   `pages_read_engagement` and `instagram_basic`. Choose *never expires* if the form offers it; with
+   60 days only, the cards go stale and need a new token (rotation below).
+4. The Page id is on the Page (*About → Page transparency*). The Instagram user id comes from
+   `GET /<page-id>?fields=instagram_business_account` in the Graph API Explorer with that token.
+
+Do the secret in **Git Bash**, like the recipes above. The token is never typed into a chat or
+echoed: `read -rs` takes it without showing it.
+
+```bash
+P=--project=iqraa-auth-507315
+# 1. Paste the token (nothing is shown), then Enter.
+read -rs KEY
+printf %s "$KEY" | gcloud secrets create META_ACCESS_TOKEN --data-file=- $P
+unset KEY
+# 2. Let the API's runtime account read it.
+gcloud secrets add-iam-policy-binding META_ACCESS_TOKEN $P \
+  --member=serviceAccount:613126375862-compute@developer.gserviceaccount.com \
+  --role=roles/secretmanager.secretAccessor
+# 3. Put it on the service, and switch both figures on (the ids are not secret).
+gcloud run services update iqraa-api --region europe-west1 $P \
+  --update-secrets=META_ACCESS_TOKEN=META_ACCESS_TOKEN:latest \
+  --update-env-vars=META_PAGE_ID=<page id>,META_IG_USER_ID=<instagram user id>
+```
+
+**Play downloads.** No key: Play lets any account it has invited read its monthly report bucket, and
+the API already runs as one.
+
+1. Play Console → Users and permissions → *Invite new users* →
+   `613126375862-compute@developer.gserviceaccount.com` (the account the API runs as), with the
+   permission *View app information and download bulk reports (read-only)*.
+2. Play Console → *Download reports* → *Statistics* → *Copy Cloud Storage URI*. The bucket id is the
+   `pubsite_prod_rev_…` part, without `gs://` or anything after it.
+3. Switch it on (the bucket id is not secret):
+
+```bash
+gcloud run services update iqraa-api --region europe-west1 $P \
+  --update-env-vars=PLAY_STATS_BUCKET=pubsite_prod_rev_<digits>
+```
+
+Play writes these reports 3–7 days late, so the figure trails. It is the sum of the *Daily User
+Installs* column over the monthly `installs_<package>_YYYYMM_overview.csv` files, not the console's
+headline total, and it includes installs from before the app was public. If the console disagrees,
+the console is right.
+
+**Check it** by opening the dashboard once. A card that stays *not recorded* has a reason in the log,
+named by figure (never the error or the URL, either of which can quote a token):
+
+```bash
+gcloud logging read 'resource.labels.service_name="iqraa-api" AND jsonPayload.message:"growth metric auto-fill"' \
+  $P --limit 10 --freshness 1d
+```
+
+`returned no number` for a figure with a good key usually means a permission: the Meta token lacks
+the Page or Instagram asset, or `followers_count` needs the Page's own token rather than the system
+user's (then the API should exchange it for one: say so and it will be added), or Play has not
+accepted the invitation or has written no report yet. An expired Meta token looks the same, and a
+card whose *last entry* date has stopped moving is the other tell.
+
+**Roll back or rotate** with no deploy. `--remove-env-vars=META_PAGE_ID,META_IG_USER_ID` (or
+`PLAY_STATS_BUCKET`) turns a figure off. A new token is:
+
+```bash
+read -rs KEY
+printf %s "$KEY" | gcloud secrets versions add META_ACCESS_TOKEN --data-file=- $P
+unset KEY
+gcloud run services update iqraa-api --region europe-west1 $P \
+  --update-secrets=META_ACCESS_TOKEN=META_ACCESS_TOKEN:latest --update-labels rotated=$(date +%Y%m%d)
+```
 
 ## The Android app (Google Play)
 

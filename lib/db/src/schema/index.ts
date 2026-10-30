@@ -55,3 +55,6 @@ export * from "./liveGames";
 
 // Admin dashboard: hand-entered growth numbers + iqrra.com signups — see adminMetrics.ts
 export * from "./adminMetrics";
+
+// Addresses that unsubscribed from our email — see emailSuppressions.ts
+export * from "./emailSuppressions";

@@ -75,6 +75,14 @@ describe("stripTeacherNotes", () => {
     });
   });
 
+  it("drops the spot-the-mistake activity — a wrong solution is not for a student reading alone", () => {
+    const stored = {
+      concepts: [{ title: "المول", points: ["a"] }],
+      mistake: { claim: "قالت سلمى: 2 ÷ 18", hint: "h", answer: "اضرب لا تقسم" },
+    };
+    assert.deepEqual(stripTeacherNotes(stored), { concepts: [{ title: "المول", points: ["a"] }] });
+  });
+
   it("passes non-objects through and does not mutate its input", () => {
     assert.equal(stripTeacherNotes("text"), "text");
     assert.equal(stripTeacherNotes(null), null);

@@ -786,6 +786,8 @@ export interface LessonTeachingOutput {
   concepts?: { title?: string; points?: string[]; teacherNote?: string; misconception?: string }[];
   workedExample?: { problem?: string; steps?: string[]; answer?: string };
   practice?: { problem?: string; hint?: string; answer?: string };
+  /** A student's wrong solution built from a real misconception, for «اكتشف الخطأ». */
+  mistake?: { claim?: string; hint?: string; answer?: string };
 }
 
 export interface GenerateOptions {

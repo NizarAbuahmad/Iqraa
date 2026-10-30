@@ -33,14 +33,22 @@ export function pickExplanation(rows: readonly ExplanationRow[]): ExplanationRow
 /**
  * `teacherNote` is stage direction for whoever is projecting the slide
  * («ابدأ بسؤال…»). A student reading alone has no use for it and it reads as
- * an instruction to someone else. Removed at every depth; nothing else is.
+ * an instruction to someone else. Removed at every depth.
+ *
+ * `mistake` goes too: it is the deck's «اكتشف الخطأ» activity, a deliberately
+ * wrong solution the teacher reveals the correction to in class. A student
+ * reading alone would be shown a wrong solution as part of the explanation.
+ * `mobile/scripts/pregenerate.ts` drops the same two keys from what the
+ * reviewer approves. Nothing else is removed.
  */
+const STUDENT_HIDDEN_KEYS = new Set(["teacherNote", "mistake"]);
+
 export function stripTeacherNotes(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(stripTeacherNotes);
   if (value && typeof value === "object") {
     const out: Record<string, unknown> = {};
     for (const [key, inner] of Object.entries(value as Record<string, unknown>)) {
-      if (key === "teacherNote") continue;
+      if (STUDENT_HIDDEN_KEYS.has(key)) continue;
       out[key] = stripTeacherNotes(inner);
     }
     return out;

@@ -28,7 +28,10 @@ function useSafeTabBarHeight(): number {
   }
 }
 import { Ionicons } from '@expo/vector-icons';
-import { ICON } from '@/constants/icons';
+import { CONCEPTS, ICON, type Concept, type IconName } from '@/constants/icons';
+import { CORNERS } from '@/constants/corners';
+import { ConceptIcon } from '@/components/ui/Glyph';
+import { readableOn } from '@/services/readableColor';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -3484,32 +3487,44 @@ export default function IqraScreen() {
   // the starter row is not shown: under the readiness board, and once a reply's
   // follow-up chips have replaced the starter row.
   const labChip = lessonSuggestions.find(s => s.action === 'virtual-lab');
+  // Each chip wears its tool's own drawing and colour (CONCEPTS), as on the
+  // Tools tab. They were all teal text on one teal tint behind a font emoji,
+  // so «جهّز خطة الدرس» and «جهّز ورقة عمل» read as the same button.
+  const chipIcon = (sug: (typeof lessonSuggestions)[number]): Concept | null =>
+    sug.toolType ? CONCEPTS[sug.toolType]
+      : sug.action === 'virtual-lab'
+      ? { icon: CORNERS.lab.icon as IconName, glyph: CORNERS.lab.drawing, color: CORNERS.lab.light.primary }
+      : null;
+  const lessonChip = (sug: (typeof lessonSuggestions)[number]) => {
+    const concept = chipIcon(sug);
+    return {
+      key: sug.id,
+      // Without a drawing the emoji is the only cue left, so it stays.
+      label: concept ? (lang === 'ar' ? sug.labelAr : sug.labelEn) : `${sug.emoji} ${lang === 'ar' ? sug.labelAr : sug.labelEn}`,
+      concept,
+      onPress: () => handleLessonSuggestion(sug),
+    };
+  };
   const starterChips = (variant: 'intro' | 'composer', labOnly = false) => {
     if (labOnly && !labChip) return null;
-    const items = labOnly && labChip
-      ? [{
-        key: labChip.id,
-        label: `${labChip.emoji} ${lang === 'ar' ? labChip.labelAr : labChip.labelEn}`,
-        onPress: () => handleLessonSuggestion(labChip),
-      }]
+    const items: { key: string; label: string; concept: Concept | null; onPress: () => void }[] = labOnly && labChip
+      ? [lessonChip(labChip)]
       : lessonSuggestions.length > 0
-      ? lessonSuggestions.map(sug => ({
-        key: sug.id,
-        label: `${sug.emoji} ${lang === 'ar' ? sug.labelAr : sug.labelEn}`,
-        onPress: () => handleLessonSuggestion(sug),
-      }))
+      ? lessonSuggestions.map(lessonChip)
       : suggestions.map((sug, i) => ({
         key: `s-${i}`,
         label: sug.text,
+        concept: null,
         onPress: () => sendMessage(sug.text, sug.lessonId),
       }));
+    const wide = variant === 'intro' && isDesktop;
     if (items.length === 0) return null;
 
     return (
       <View
         style={[
           variant === 'intro' ? styles.introChips : styles.composerChips,
-          variant === 'intro' && isDesktop && styles.introChipsWide,
+          wide && styles.introChipsWide,
           { flexDirection: isRTL ? 'row-reverse' : 'row' },
         ]}
       >
@@ -3517,21 +3532,35 @@ export default function IqraScreen() {
           <Pressable
             key={item.key}
             onPress={item.onPress}
-            style={({ pressed }) => [
+            accessibilityRole="button"
+            style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
               styles.chip,
-              variant === 'intro' && isDesktop && styles.chipWide,
-              {
-                backgroundColor: colors.secondary,
-                borderColor: colors.primary + '2E',
-                opacity: pressed ? 0.7 : 1,
-              },
+              wide && styles.chipWide,
+              { flexDirection: isRTL ? 'row-reverse' : 'row' },
+              // A tool chip sits on the card so its colour is the one that
+              // speaks; a plain question chip keeps the brand tint.
+              item.concept
+                ? {
+                  backgroundColor: hovered || pressed ? colors.secondary : colors.card,
+                  borderColor: hovered ? readableOn(item.concept.color, colors.card, 3) : colors.border,
+                }
+                : { backgroundColor: colors.secondary, borderColor: colors.primary + '2E' },
+              { opacity: pressed ? 0.7 : 1 },
             ]}
           >
+            {item.concept ? (
+              <ConceptIcon
+                icon={item.concept.icon}
+                glyph={item.concept.glyph}
+                size={wide ? ICON.lg : ICON.md}
+                color={readableOn(item.concept.color, colors.card, 3)}
+              />
+            ) : null}
             <Text
               style={[
                 styles.chipText,
-                variant === 'intro' && isDesktop && styles.chipTextWide,
-                { color: colors.primary, fontFamily: 'ReadexPro_500Medium' },
+                wide && styles.chipTextWide,
+                { color: item.concept ? colors.foreground : colors.primary, fontFamily: 'ReadexPro_500Medium' },
               ]}
             >
               {item.label}
@@ -4375,7 +4404,7 @@ const styles = StyleSheet.create({
   deskHeader: { alignItems: 'center', paddingHorizontal: 16, paddingBottom: 2 },
   lessonSlotWide: { paddingHorizontal: 16, paddingTop: 10 },
   brandWord: { fontFamily: 'ReadexPro_700Bold', fontSize: 19 },
-  chip: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
+  chip: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, borderWidth: 1, alignItems: 'center', gap: 6 },
   chipWide: { paddingHorizontal: 18, paddingVertical: 12, borderRadius: 14 },
   chipText: { fontSize: 12 },
   chipTextWide: { fontSize: 14 },

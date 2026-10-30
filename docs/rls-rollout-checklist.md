@@ -30,7 +30,7 @@ Values used below: Cloud Run service `iqraa-api`, region `europe-west1`, project
      ```bash
      gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="iqraa-api" AND ("permission denied" OR "row-level security")' \
        --project iqraa-auth-507315 --freshness=3d --limit=20 \
-       --format='value(timestamp,severity,textPayload,jsonPayload.msg)'
+       --format='value(timestamp,severity,textPayload,jsonPayload.message)'
      ```
   2. Sign in as a teacher: open the inbox, a class and an evaluation, and send one test message.
 
@@ -174,7 +174,8 @@ Outside school hours, and only with A, B and C ticked.
   ```
 
   Use `--update-env-vars`, never `--set-env-vars` (that replaces every secret).
-- [ ] **D3. Watch for 30 minutes:** 5xx rate, p95 latency, push volume, and logs for
+- [x] **D3. Watch for 30 minutes — run by the owner 2026-10-29, reported clean** (owner's report; the readings
+  and numbers were not recorded) (step by step: `docs/rls-watch-checklist.md`): 5xx rate, p95 latency, push volume, and logs for
   `permission denied` / `row-level security`. Repeat the teacher inbox and a parent reply by
   hand. The failure to look for is quiet: a notification not sent, a block not honoured, a
   thread that does not move up the inbox — not a 500.
@@ -200,5 +201,5 @@ Outside school hours, and only with A, B and C ticked.
 | A | | | |
 | B | owner, via the GitHub workflow | 2026-10-23 | run 39931238295: migrations applied; 46/46 direct, 46/46 pooled. Direct tests ≈ 3.4 min, pooled ≈ 3.3 min (CI runner → Neon, not a latency measurement). Run 4 before it failed only because the pooled secret held a malformed string. |
 | C | owner | 2026-10-23 / 2026-10-24 | C2 (10-23): maxScale 20, pooled host, max_connections 225 — pass via the pooler. C1: first run (10-23) **failed** — +336.5 ms p95 per 15-statement request (budget +100 ms); +21.9 ms per statement; RTT ≈ 11 ms. Re-run (10-24, 8 statements, three modes): held **+20.8 ms p95 — passes**; not held +346 ms (about 22 ms per statement at the median). |
-| D | owner | 2026-10-24 / 2026-10-27 | On 10-24 (00417); switched off and on by mistake several times since (00452 off, 00454 on, 00455 off, 00456 on). Hand test on 10-27 passed per the owner: teacher inbox, chat message, parent notification and reply, chat moves to top. Log searches for `permission denied` / `row-level security` printed nothing. **D3 (30-minute watch of 5xx, p95, push volume) not completed on the last switch-on.** |
+| D | owner | 2026-10-24 / 2026-10-27 | On 10-24 (00417); switched off and on by mistake several times since (00452 off, 00454 on, 00455 off, 00456 on). Hand test on 10-27 passed per the owner: teacher inbox, chat message, parent notification and reply, chat moves to top. Log searches for `permission denied` / `row-level security` printed nothing. D3 (30-minute watch of 5xx, p95, push volume) was not completed on that switch-on; the owner ran the full watch on 2026-10-29 from `docs/rls-watch-checklist.md` and reported it clean, without giving readings. |
 | E | owner | 2026-10-27 | `row-level security` added to the required checks on `main`. |

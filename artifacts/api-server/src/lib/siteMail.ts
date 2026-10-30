@@ -160,7 +160,10 @@ export function verifyUnsubscribe(id: unknown, token: unknown, secret = process.
 // from an inbox, and the Cloud Run URL is the one place this route lives.
 const DEFAULT_API_PUBLIC_URL = "https://iqraa-api-613126375862.europe-west1.run.app";
 
+export function apiPublicBase(): string {
+  return (process.env.API_PUBLIC_URL || DEFAULT_API_PUBLIC_URL).replace(/\/+$/, "");
+}
+
 export function unsubscribeUrl(id: string): string {
-  const base = (process.env.API_PUBLIC_URL || DEFAULT_API_PUBLIC_URL).replace(/\/+$/, "");
-  return `${base}/api/site/unsubscribe?id=${id}&t=${signUnsubscribe(id)}`;
+  return `${apiPublicBase()}/api/site/unsubscribe?id=${id}&t=${signUnsubscribe(id)}`;
 }

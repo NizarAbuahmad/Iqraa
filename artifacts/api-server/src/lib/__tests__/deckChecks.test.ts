@@ -21,8 +21,8 @@ function goodDeck() {
       { slideNumber: 3, type: "divider", title: "الشرح", content: "• بداية\n• القسم", teacher: T },
       { slideNumber: 4, type: "intro", title: "ميل الخط المستقيم", content: "• الميل يساوي التغير في الصادات\n• على التغير في السينات", mediaPrompt: "straight line graph", teacher: T },
       { slideNumber: 5, type: "intro", title: "التمثيل", content: "• الاقتران الخطي يمثل بخط مستقيم\n• مثال", mediaPrompt: "road slope", teacher: T },
-      { slideNumber: 6, type: "intro", title: "حالة خاصة", content: "• الميل صفر\n• خط أفقي", mediaPrompt: "ramp incline", teacher: T },
-      { slideNumber: 7, type: "challenge", title: "مثال محلول", content: "أوجد ميل الخط المار بالنقطتين", answer: "2", teacher: { expectedAnswer: "الحل" } },
+      { slideNumber: 6, type: "challenge", title: "مثال محلول", content: "أوجد ميل الخط المار بالنقطتين", answer: "2", teacher: { expectedAnswer: "الحل" } },
+      { slideNumber: 7, type: "intro", title: "حالة خاصة", content: "• الميل صفر\n• خط أفقي", mediaPrompt: "ramp incline", teacher: T },
       {
         slideNumber: 8, type: "question", title: "تحقّق سريع", content: "ما ميل الخط المستقيم؟",
         options: ["التغير في الصادات على التغير في السينات", "مجموع الإحداثيات", "حاصل ضرب النقطتين", "طول القطعة"],
@@ -74,7 +74,7 @@ describe("checkDeck", () => {
 
   it("flags the wrong number of photo prompts, and a photo on a laid-out slide", () => {
     const d = goodDeck();
-    (d.slides[5] as Record<string, unknown>).mediaPrompt = "";
+    (d.slides[6] as Record<string, unknown>).mediaPrompt = "";
     assert.ok(codes(d).includes("media_prompt_count"));
     const e = goodDeck();
     (e.slides[3] as Record<string, unknown>).layout = "statement";
@@ -87,9 +87,39 @@ describe("checkDeck", () => {
     assert.ok(codes(d).includes("compare_incomplete"));
   });
 
+  it("flags three explanation slides in a row with nothing for the class to do", () => {
+    const d = goodDeck();
+    // slides 4, 5 then the challenge at 6: make the challenge an explanation slide.
+    Object.assign(d.slides[5]!, { type: "intro", content: "• سطر\n• سطر آخر" });
+    const issue = checkDeck(d).find(i => i.code === "passive_run");
+    assert.ok(issue, "expected a passive_run warning");
+    assert.equal(issue.severity, "warn");
+    // Named at the slide that breaks the limit — the third in a row.
+    assert.equal(issue.slide, 6);
+  });
+
+  it("does not count the cover", () => {
+    const d = goodDeck();
+    // cover, hook, an explanation slide where the divider was, then the challenge:
+    // three intros counting the cover, two without it.
+    Object.assign(d.slides[2]!, { type: "intro", content: "• سطر\n• سطر آخر" });
+    d.slides.splice(3, 2);
+    d.slides.forEach((s, i) => { s.slideNumber = i + 1; });
+    assert.ok(!codes(d).includes("passive_run"), "counted the cover");
+  });
+
+  it("does not hold a general deck to the rule — only a teaching deck (one with a check) has it", () => {
+    const d = goodDeck();
+    Object.assign(d.slides[5]!, { type: "intro", content: "• سطر\n• سطر آخر" });
+    // No check question: the prompt's general arc, where the question slide is optional.
+    d.slides.splice(7, 1);
+    d.slides.forEach((s, i) => { s.slideNumber = i + 1; });
+    assert.ok(!codes(d).includes("passive_run"));
+  });
+
   it("flags a challenge with no answer anywhere", () => {
     const d = goodDeck();
-    Object.assign(d.slides[6]!, { answer: "", teacher: T });
+    Object.assign(d.slides[5]!, { answer: "", teacher: T });
     assert.ok(codes(d).includes("challenge_without_answer"));
   });
 

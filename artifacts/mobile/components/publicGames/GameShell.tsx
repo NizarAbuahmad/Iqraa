@@ -8,11 +8,13 @@
  * risking one game shipping without it.
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
+import { ICON } from '@/constants/icons';
+import { setSoundOn, useSoundOn } from '@/services/playFeedback';
 import { useLightStatusBar } from '@/hooks/useLightStatusBar';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
@@ -25,8 +27,12 @@ import { trackEvent } from '@/services/analytics';
 import { goToGames } from '@/services/navigation';
 
 export function GameShell({
-  titleKey, accent, scoreLabel, gameOver, onReplay, onBack, analytics, onFinished, footer, children,
+  titleKey, accent, scoreLabel, gameOver, onReplay, onBack, analytics, onFinished, footer, secondaryAction, showSoundToggle, children,
 }: {
+  /** An extra button between Play again and Back, e.g. «retry the ones you missed». */
+  secondaryAction?: { label: string; onPress: () => void };
+  /** A speaker button that mutes the answer cues; only boards that make sound ask for it. */
+  showSoundToggle?: boolean;
   /** Default: back to the /play menu. */
   onBack?: () => void;
   /** Extra fields on the `game_finished` event, e.g. the lesson. */
@@ -51,6 +57,7 @@ export function GameShell({
   useLightStatusBar();
   const { t, isRTL } = useLanguage();
   const { user } = useAuth();
+  const soundOn = useSoundOn();
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   // A finished round celebrates on the crossing from playing to over, once.
@@ -95,6 +102,18 @@ export function GameShell({
           <Text style={[styles.title, { textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
             {t(titleKey)}
           </Text>
+          {showSoundToggle ? (
+            <Pressable
+              onPress={() => setSoundOn(!soundOn)}
+              style={styles.backBtn}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={t(soundOn ? 'playSoundMute' : 'playSoundUnmute')}
+              aria-pressed={!soundOn}
+            >
+              <Ionicons name={soundOn ? 'volume-high-outline' : 'volume-mute-outline'} size={ICON.xl} color="#fff" />
+            </Pressable>
+          ) : null}
           {scoreLabel ? (
             <View style={styles.scoreBadge}>
               <Text style={styles.scoreText}>{scoreLabel}</Text>
@@ -103,7 +122,9 @@ export function GameShell({
         </View>
 
         {gameOver ? (
-          <View style={styles.overlay}>
+          // Scrolls when a short phone cannot hold the panel (best line + retry button made it taller);
+          // contentContainerStyle keeps it centred when it fits.
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.overlay}>
             <Ionicons name="trophy" size={48} color={accent} />
             <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 22, textAlign: 'center' }}>
               {t('playGameOverTitle')}
@@ -114,6 +135,9 @@ export function GameShell({
             {footer}
 
             <Button label={t('playPlayAgain')} onPress={() => onReplay?.()} fill={accent} style={{ marginTop: 12 }} fullWidth size="lg" />
+            {secondaryAction ? (
+              <Button label={secondaryAction.label} onPress={secondaryAction.onPress} variant="secondary" fullWidth />
+            ) : null}
             {/* A game the hub opened goes back to the hub; one opened from a lesson
                 (`onBack`) goes back to where it was opened from. */}
             <Button
@@ -134,7 +158,7 @@ export function GameShell({
                 <Button label={t('playCtaButton')} onPress={() => router.push('/(auth)/register')} variant="secondary" fullWidth />
               </View>
             )}
-          </View>
+          </ScrollView>
         ) : (
           children
         )}
@@ -156,6 +180,6 @@ const styles = StyleSheet.create({
   title: { flex: 1, color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 17 },
   scoreBadge: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 },
   scoreText: { color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 },
-  overlay: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
+  overlay: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
   ctaCard: { width: '100%', borderWidth: 1, borderRadius: 14, padding: 18, gap: 10, marginTop: 24 },
 });

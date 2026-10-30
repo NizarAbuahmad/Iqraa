@@ -10,6 +10,665 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Unsubscribe in every email, and 18+ for teachers and parents — 2026-10-30
+
+**Asked:** an unsubscribe button in every email we send, and terms that say teachers and parents
+are 18 or older, with a review of the legal obligations around both.
+
+**Every mail has an unsubscribe link.** All seven senders in `artifacts/api-server/src/lib/email.ts`
+(sign-up code, password-reset code, Google sign-in notice, admin content-report notice, app invite,
+parent-approval request, waitlist broadcast) now leave through one `deliver` path that adds a
+bilingual footer link and the RFC 2369 / RFC 8058 headers (`List-Unsubscribe`,
+`List-Unsubscribe-Post`), so Gmail's and Outlook's own button works too. The broadcast keeps its
+per-row waitlist link. The link is `GET|POST /api/email/unsubscribe?t=` (`routes/emailPreferences.ts`):
+GET asks, POST unsubscribes (a mail scanner pre-fetching links unsubscribes nobody), and the
+confirmation offers an undo (`POST /api/email/resubscribe`). The token is the address
+**encrypted** (AES-256-GCM under a key derived from `SESSION_SECRET`), not `?email=…&sig=…`,
+because the query string lands in Cloud Run's request log; GCM makes it unforgeable. With no
+secret (tests, scripts) the footer and header fall back to `mailto:info@iqrra.com?subject=unsubscribe`.
+
+**What unsubscribing stops.** A new table, `email_suppressions` (migration 0020, one row per
+lowercased address, owner connection only — RLS on, no policy, no `iqraa_app` grant, LOCKED in
+`rlsCoverage.test.ts`; `lib/emailSuppression.ts` is on the systemDb list). It stops every
+`general` mail: app invite, parent-approval request, admin notices, and the broadcast (left out
+and counted as `skipped`; the admin screen shows it). It does **not** stop the three `security`
+mails — a code someone just asked for on that address — because withholding them locks a person
+out of their own account with nothing on screen saying why; their footer says so instead of
+promising what the button does not do. Transactional mail of that kind is outside CAN-SPAM's
+and GDPR/ePrivacy's opt-out rules. **This is a product choice, not a legal necessity: if you want
+an unsubscribed address to get no sign-up codes either, it is the `kind` on three calls.** The
+waitlist link (`/site/unsubscribe`) now also adds the address to the list, because its page
+promised «لن تصلك رسائل أخرى», and the admin invite refuses an address on either list (409).
+Fails closed: an unreadable list sends no general mail, and a production server whose list was
+never registered refuses general mail (`email.ts` cannot import the database and stay loadable
+under `node --test`, so the check is handed in by `lib/emailSuppression.ts`, which the router
+imports).
+
+**18+ for teachers and parents.** Terms §1 (both languages) said «age of majority where you
+live»; it now says a teacher or a parent must be 18 or older, confirms it at sign-up, and an
+under-18 teacher/parent account may be suspended or deleted. Students keep the existing rule
+(code from a teacher, or a parent's agreement). The sign-up checkbox for a teacher or a parent —
+and with no role picked, which the server treats as a teacher — now reads «أُقرّ بأنّ عمري 18 سنة
+أو أكثر، وأوافق على شروط الخدمة وسياسة الخصوصية» (`registerAdultAgreePrefix`); a parent signing
+up with a teacher's code sees the same box (`CodeSignupForm` renders `agreements`). The login
+screen's Google notice adds «وتُقرّ إن كنت معلّمًا أو وليّ أمر بأنّ عمرك 18 سنة أو أكثر».
+`LEGAL_VERSION` is `2026-10-30.b`, so an account made from now on records that it accepted the
+wording with the 18+ clause; no new column — the version names the wording.
+
+**Privacy policy, from the same review.** §2 says what we email and how to stop it; §4 lists
+**Resend** (it sends every mail and was missing from the processors); §5 says teachers and parents
+confirm 18+; §6 says an unsubscribed address is kept, alone, on a do-not-email list even after the
+account is deleted, until undone or removed on request.
+
+**Verified:** `pnpm run typecheck`; api-server `pnpm build` + `pnpm test` (2,695 pass, including
+the new `emailUnsubscribe.test.ts` — every sender carries a link that reads back as its
+recipient, general mail stops and security mail does not, an unreadable list and an unregistered
+production list send nothing — and `mountOrder.test.ts`, the route answers 400 to a forged token
+with no session); mobile `pnpm test` (8,208 pass). The verification and parent-approval mails
+were rendered to HTML and looked at in Chromium. **Not verified:** a real send through Resend, a
+real one-click unsubscribe from Gmail, the migration against Neon (CI applies it to an empty
+Postgres), and the RLS suite locally (no database here). **Not legal advice** — `legal.ts`'s own
+caveat stands.
+
+**Not done, for a decision:** existing accounts accepted the old «age of majority» wording and are
+not asked again (re-acceptance is a separate flow, `termsAcceptance.ts`); and the Site_Iqra
+waitlist form is a separate repo, untouched.
+
+## /play hub: filter the games by subject and by grade — 2026-10-30
+
+The hub listed all 16 games with no way to narrow them. It now has two chip rows
+above the cards, **Subject** (All, Maths, Arabic, English, Science, Geography,
+Focus & memory) and **Grade** (All, 1–10), one choice in each, combined with AND,
+with a count line («لعبتان» / "2 games") and, when nothing matches, a card with
+«إزالة التصفية».
+
+- **Where it lives.** `services/publicGames/hubFilter.ts` (pure): `PLAY_GAME_SUBJECT`
+  is a `Record<PlayGameId, PlaySubject>`, so a new game without a subject fails
+  typecheck; `filterGames` keeps the hub's own order; a grade matches when it falls
+  inside any of the game's ranges from `PLAY_GAME_GRADES` (English is Grades 1–4
+  and 9–10, so Grade 5 does not show it). The screen reuses the generator's
+  `ChipGroup` in `single` mode with an «All» chip, so the chips are a radio group
+  (`role=radio`, `aria-checked`) and the tick means the state is not colour alone.
+- **The URL carries it.** `/play?subject=math&grade=6` opens filtered, every chip
+  press mirrors back with `router.setParams`, and «All» removes the param. The
+  filter is read from the URL once, at mount. A subject or grade that is not on the
+  chip list (`?subject=history`, `?grade=11`, `?grade=5.5`) is dropped, never
+  trusted, so an old or edited link shows the whole hub rather than an empty one.
+- **Subject choices** (a judgement, not measured): Maths — multiply, divide, add,
+  subtract, which number, compare fractions; Arabic — opposites, plurals; English —
+  the English corner; Science — elements, states of matter; Geography — flags,
+  capitals, governorates; Focus & memory — memory, colours.
+- **Verified:** `playHubFilter.test.ts` (8 tests: every game has a subject, every
+  subject chip and every grade 1–10 chip shows at least one game, the grade rule
+  checked against the ranges, AND, bad URL params, a round trip through the
+  params); typecheck; the mobile suite. In Chromium against the dev server:
+  deep link, choosing and clearing chips (the URL followed each one and a reload
+  restored it), the empty state, Arabic and English, light and dark, 390 px and
+  1280 px, no console errors.
+- **Not verified / limits.** Nothing was run on a native build, so
+  `router.setParams` on a phone binary is untested (it is the same call the maths
+  exercises screen makes). On a phone the two rows take about 280 px before the
+  first card; a collapsed «filter» button would be tighter, and was left out to keep
+  the first version plain. The count line is announced politely (`aria-live`) but
+  was not heard with a screen reader. The hub's analytics are unchanged: choosing a
+  filter is not tracked.
+
+## /play games: a why line, sound and haptics, motion, personal best with retry, and a Jordan map — 2026-10-30
+
+Five changes to the public games (`/play`, no login), built as seven commits on top of `690c2bb` (spec and plan):
+`7285def`, `f27ff80`, `5eb7a29`, `e549686`, `bb043c3`, `2dc756b`, `da085e9`; then one commit for what the browser check
+found (below), and this entry.
+
+**Built.**
+1. **A one-line «why» under every revealed answer** in the six text games (antonyms, plurals, which-number, compare
+   fractions, states of matter, governorates). For the two maths games the line is **computed** in latin and converted at
+   display time (which-number: the divisibility fact; fractions: both fractions as decimals, `=` or `≈`, printed left to
+   right through `forceLtr`). Flags, capitals and element symbols have no why line; they have nothing to say beyond the key.
+2. **Answer sound and haptics, with a mute button** (`services/playFeedback.ts`, speaker icon in the header). A right answer
+   plays the Class Challenge's existing `correct.wav`, a wrong one a new quiet two-note `wrong.wav` (made by
+   `scripts/make-wrong-cue.ts`); phones also get a light tap or a soft warning. The mute covers both and is remembered
+   (`@iqra_play_sound_off_v1` in AsyncStorage). It is on every `TriviaBoard` game: flags, capitals, elements, the six text
+   games, and the lesson games «مصطلح من الدرس» and «ما معنى المصطلح؟».
+3. **Answer motion and a streak chip** (`AnswerOption.tsx`): the right option swells once, a wrong pick shakes once, nothing
+   moves under reduced motion; from two right in a row a flame chip shows the streak.
+4. **A personal best, and «retry the ones you missed»** (`services/publicGames/bestScore.ts`). The game-over panel prints
+   «أفضل نتيجة: 6 من 8» (and «رقم قياسي جديد!» when it was beaten) and, after any miss, a button that replays only the misses.
+   (Progress, score, streak and best print Latin digits, as the existing `playScoreLabel` always has; see the known limits.)
+   **A retry round is practice**: it never records a best and is never reported to a teacher (see the deviations).
+5. **A map of Jordan after each governorates answer** (`JordanMap.tsx`, react-native-svg): the right governorate lit in the
+   game's accent, a wrong pick outlined in red, a credit line under it.
+
+**Size added.** `git diff --stat 690c2bb..HEAD` (before the fixes commit): 36 files, +1093 −56 lines, of which 399 lines are tests.
+Shipped in the app: `assets/sounds/wrong.wav` **15,040 bytes** and `services/publicGames/jordanMapData.ts` **12,362 bytes** (the
+12 simplified paths) — about 27 KB, no new dependency and no native module (`expo-audio`, `expo-haptics`,
+`react-native-svg` were already there), so `app.json`'s `version` did not move. The source GeoJSON,
+`scripts/data/jordan-adm1-geoboundaries.geojson`, is **54,979 bytes** and is **not shipped**: it lives in `scripts/`, only
+`scripts/build-jordan-map.ts` and `jordanMapData.test.ts` read it (the test fails if the committed paths differ from what the
+script makes from it).
+
+**Map data attribution.** geoBoundaries (geoboundaries.org) gbOpen, Jordan (JOR) ADM1, simplified, release commit `9469f09`
+of wmgeolab/geoBoundaries. Licence Creative Commons Attribution 2.5 Generic, derived from Wikimedia Commons. **Data year
+2006**; the 12 governorates have not changed since 2001. The game shows the credit (`playMapCredit`) and
+`scripts/data/README.md` records the source and how to regenerate.
+
+**Verified.**
+- `pnpm run typecheck` clean. Mobile suite after the fixes: **8238 tests, 8228 pass, 0 fail, 10 skipped** (the same 10
+  pre-existing `searchKB` skips; the baseline on `main` was 8196). New test files: `answerMotion`, `bestScore`,
+  `feedbackPrefs`, `gameShellOverlay`, `jordanMapData`, `jordanMapWiring`, `playBestWiring`, `playFeedbackWiring`,
+  `playGameExplanations`, `wrongCue`.
+- **A real browser** (Chromium through the `playwright` library, against `pnpm run dev:mobile:web`), 2026-10-30, driven by a
+  script that reads each option's correct flag off the React tree so it can answer right or wrong on purpose. Seven boards
+  — flags, governorates, fractions, which-number, states of matter, antonyms, capitals — each played from the first question
+  to game over (right and wrong answers, a streak of 3, six of eight right), then «retry the ones you missed» (replays exactly
+  the two misses, «سؤال 1 من 2», no best line, no «new best», the stored best unchanged), then «Play again» (a full
+  eight-question round again). 42 runs: 390×844 and 1280×800, light and dark, Arabic; English at 390 light and 1280 dark.
+  Also looked at: elements (phone, light and dark) and the lesson term-spot game (phone, light and dark; the lesson-meaning
+  game was not opened, the lesson tried has no glossary); the mute button
+  (the icon and `aria-pressed` toggle, `@iqra_play_sound_off_v1` is `1` and the button is still muted after a reload, and no
+  `.wav` is requested while muted; unmuted, `wrong.wav` and `correct.wav` are requested); 360×640 with explanation and map
+  showing (the board scrolls, «التالي» is reachable) and the game-over panel there; 320×568 for the game-over panel.
+  Fractions print «٢/٧ ≈ ٠٫٢٩» left to right, not mirrored, in Arabic. The tick and cross icons at 24 px (`ICON.xl`) sit well in
+  the options; they were left as is. The speaker sits beside the score badge in both directions. In dark mode the lit
+  governorate and the flame chip are visible. No console errors after the fixes.
+- Looking at it found three defects, fixed in the commit after those seven (see the deviations below).
+
+**Not verified.**
+- **Sound and haptics were not heard or felt.** All that was confirmed is that answering does not throw and that the browser
+  requests `correct.wav` / `wrong.wav` (and none when muted). Whether `wrong.wav` is pleasant, and its loudness next to
+  `correct.wav`, nobody has judged. The haptics code path only runs off the web, so it was not run at all.
+- **Nothing was run on a device or a native build** (iOS, Android, `expo-audio` on native, `expo-haptics`, react-native-svg
+  native, the Android keyboard and gesture behaviour of the now-scrollable board). Shake and swell were seen in code and as
+  the final frame of a screenshot, not as motion.
+- The Arabic «why» sentences of the hand-written games were read by the author and the reviewer, and the new `play…` strings
+  went through an Arabic copy review at the end (two changed: the streak chip now reads «3 على التوالي» instead of «3 متتالية»,
+  which had no noun, and a new best reads «رقم قياسي جديد!» instead of «نتيجة جديدة!»), but no teacher has read them.
+- **After the game-over panel became a `ScrollView`, these other `GameShell` games were played to their game-over panel in a
+  browser** (390×844 and 320×568, light and dark, Arabic, no console errors): memory (`/play/memory`), colours, the
+  multiplication drill (`?secs=30`), the lesson memory game on an English lesson, and the lesson letter-scramble game on a maths
+  and an English lesson. The
+  panel is centred where it fits and scrolls at 320×568, with the signup card reachable after scrolling. **Not looked at:** the
+  add, subtract and divide drills (same component as multiply), the lesson-meaning game, a game-over panel with the homework
+  «sent to the teacher» footer, and anything on a device.
+- The map's governorate shapes were checked by eye against the names (Ajloun small in the north-west, Ma'an and the east
+  large), not against a second source.
+
+**Known limits.**
+- **Sound defaults to on**, including on the web, where the first tap is what lets audio play (answering is a tap).
+- **The board is now a `ScrollView`, which changes the layout of every `TriviaBoard` game** (flags, capitals, elements, the
+  six text games and the lesson games), not only the new ones: «التالي» sits under the content and under the map, so on a
+  short phone it is reached by scrolling.
+- **The game-over panel is a `ScrollView` for every `GameShell` game**, not only the trivia boards: memory, colours, the four
+  drills, the lesson memory and scramble games (so also an English lesson's) and the trivia boards. It looks the same where it
+  fits, and scrolls where it does not (it used to be cut off); `gameShellOverlay.test.ts` pins the shape (`flexGrow`, not
+  `flex: 1`, on the content container).
+- **Progress, score, streak and best print Latin digits** («سؤال 1 من 2», «6 من 8», «3 على التوالي»): `getT` does not convert
+  digits and the new strings interpolate raw numbers, as `playScoreLabel` always has. The which-number game's options and why
+  line, and the fractions' decimals, are Arabic-Indic. The mix predates this work and was not changed.
+- **The answer cue can ring through the iOS silent switch.** `playGameCue` (`services/gameSounds.ts`) sets
+  `playsInSilentMode: true` the first time it plays: the Class Challenge's existing choice, now also used by `/play`. Not
+  checked on a device.
+- **A best is per game and per device** (`@iqra_play_best_v1:<title key>`), and per lesson for the lesson games
+  (`…:<title key>:<lessonId>`); it is compared by share right (score over total), and only a full round records one.
+  It is not synced and not shown to a teacher. A best an older build kept under another key, if any
+  game did, is not migrated.
+- **A retry replays the same questions in the same option order**, so a child can answer by position; it is practice, not a
+  test. It is never reported to a teacher (`onFinished` is not passed for it, and `game_finished` carries `retry: '1'`).
+- A perfect retry (2 of 2) does not play the «full mark» celebration (`perfect` is false for a retry round); the small
+  game-over celebration still plays.
+- The streak chip shows from two in a row and exists on `TriviaBoard` games only; the maths drills, memory, colours and
+  scramble are unchanged.
+
+**Deviations from the plan, during the build.**
+- **The retry round reported itself (found in review, fixed in `bb043c3`).** The first version of retry passed the same
+  `onFinished` as a full round, so a homework lesson game would have posted «2 من 2» for a child who had missed two of eight
+  (a perfect ratio), and the server keeps the higher ratio. A retry round now never calls `onFinished`, never records a best and sends no
+  status footer. The same commit moved the lesson games' best from one per game to one per lesson.
+- **The map was unreadable (`da085e9`).** Unlit governorates were card on card (about 1.2:1), so only the lit one showed.
+  They now take `colors.muted` with a `mutedForeground` outline, the map is sized from its viewBox ratio instead of a fixed
+  height, the wrong pick's red outline is drawn last so a shared edge cannot cover it, and the credit names Wikimedia Commons
+  as well as geoBoundaries.
+- **Two build scripts had `import.meta.url` main-guard typing errors** (`build-jordan-map.ts`, `make-wrong-cue.ts`), fixed
+  in the same commits that added them.
+- **Three things only a browser showed (the fixes commit).** (1) `JordanMap` put `accessible={false}` on the `Svg`;
+  react-native-svg passes it to the DOM on web and React logged a console error on every governorates answer. The
+  decorative flags now sit on the wrapping `View`, and `jordanMapWiring.test.ts`, which pinned `accessible={false}`, now
+  pins the three props that hide the map and rejects `accessible=` (it failed before the fix). (2) The progress row was 16 px
+  tall and 25 px with the streak chip, so the question dropped 9 px mid-game; it now has a `minHeight` that holds the chip.
+  (3) The game-over panel was a fixed `View`; with the best line and the retry button it was cut off at the top and bottom
+  on a 320×568 phone (the trophy under the header, the teacher signup card unreachable). It is now a `ScrollView`.
+  `designScale.test.ts` needed no change.
+
+## Slides: the class's turn, spot the mistake, and one point at a time — 2026-10-30
+
+A deck looked good and still ran as a lecture: Prompt Slides asked for every concept slide
+first and for its one worked example and one check «near the end», and the misconception the
+model writes for every concept slide only ever reached the teacher panel. Three changes, plus a
+way to measure them.
+
+**Measured on every live deck.** `deckEngagement` (`artifacts/api-server/src/lib/deckEngagement.ts`)
+counts a deck's activities (`question` + `challenge`), the slide number of the first one, the
+longest run of explanation (`intro`) slides after the cover (any other type ends a run, a divider
+too), laid-out and single-line content slides, and words per content slide. The prompt-slides
+route logs it at `info` for **every** deck («prompt-slides deck engagement»), and
+`scripts/provider-eval.ts` puts it on each slides row (`engagement`). `checkDeck` gains a `warn`,
+`passive_run`, named at the third explanation slide in a row (`MAX_PASSIVE_RUN = 2`), only on a
+deck with a `question` slide: the teaching arc requires one and the general arc, which has no such
+rule, usually has none. The log line carries the same flag (`hasCheck`), so before-and-after can
+compare teaching decks with teaching decks. It is a proxy, not the model's own choice of arc. The
+`deckChecks` fixture deck had three in a row and was reordered (the challenge moved up one).
+
+**Prompt Slides (`promptSlidesPrompt.ts`, Arabic and English).** The teaching arc (A) now says:
+never more than two concept slides in a row, then a slide the class acts on (a check or a
+challenge); the worked example comes after the idea it uses, not «near the end»; and in a deck of
+11 slides or more, a «اكتشف الخطأ» / "Spot the mistake" challenge — an imaginary student's
+solution with exactly one error, the error being the misconception written on a concept slide,
+never marked in `content`, the correction in `answer`. The general arc (B) is unchanged and the
+test checks the rule is not in it. A new mandatory rule for both arcs: when an example, hook or
+problem needs a setting, set it in Jordan (dinars, Amman, Aqaba, the Dead Sea…), and made-up
+numbers stay problem values, never facts about a real place.
+
+**Slides Maker.** `lessonTeachingPrompt.ts` asks for a `mistake` (`claim`, `hint`, `answer`) built
+from one of its own `misconception`s, plus the same Jordan rule. `usableTeaching` keeps it only
+with both a claim and an answer (a wrong solution with no correction teaches the mistake).
+`buildLessonDeck` projects it as a `challenge` titled «🔍 اكتشف الخطأ» right after the worked
+examples (§7a), timed like an example, only when examples are ticked; its 🔍 draws the `help`
+icon (`deckIcons.ts`), as the other check headings do. `rebuildAnswerKey` keys a
+challenge whose title says «اكتشف الخطأ» / "spot the mistake" by its own title instead of numbering
+it as «مثال 2» — matched by name (`services/spotTheMistake.ts`) so a Prompt Slides deck's
+model-titled slide counts too, and `verifyDeckExamples` never sends such a slide to SymPy (its
+content is wrong on purpose, so a proof against an equation in it would badge nonsense). A teacher
+who renames the slide turns it back into an ordinary challenge.
+
+**A student never receives `mistake`.** The same pooled teaching section is what students read
+(`GET /student/lesson-explanation/…`), so `stripTeacherNotes` (`lib/lessonExplanation.ts`) now
+drops `mistake` with `teacherNote`, and `pregenerate.ts`'s `reviewEntry` drops it from what the
+reviewer approves as «the text a student would see» (the hash is taken after, so approval still
+matches). The student cards never drew it either.
+
+**The lesson-teaching pool starts afresh; no other pool does.** Its sections stored before this
+have no `mistake` and would have been served forever. `PROMPT_VERSION` (`generationKey.ts`) is
+one value for every pooled kind, so instead of bumping it, a kind may now carry its own version
+(`PROMPT_VERSION_BY_KIND`, read through `promptVersionFor(kind)`, which `generationKeys` and the
+stored row both use); `lesson-teaching` is `2026-10-30.1`, every other kind keeps `2026-10-04.1`.
+The cost: the first teacher to build a Slides Maker deck for each lesson after the merge pays for
+a new teaching section (budget-capped as usual), including the lessons `pregenerate.ts` filled —
+re-run it to fill them ahead of teachers. **Students are unaffected:** their approved explanations
+are read by lesson and language (`readApprovedExplanations`), not by this key, so what an admin
+approved keeps being served; new sections need approving as before.
+
+**«نقطة بنقطة» / "One at a time" in the presenter.** A toggle in the action row (off by default,
+remembered on the device as `@iqra_paced_reveal_v1`). On, Next — the button and the clicker/keyboard
+path alike, both through `stepForward` — shows an explanation slide's next bullet, step, card,
+timeline event or flow box, and moves to the next slide only when all are out; the button reads
+«النقطة التالية» while one is hidden. `services/pacedReveal.ts` says which `Reveal` indices a slide
+has (`intro`/`summary` only, not the cover, at least two). If it ever disagrees with the renderer,
+`revealThreshold` shows everything once its beats run out, so a mismatch reveals early and never
+leaves a point hidden. Switching it on mid-slide and stepping back both show the whole slide;
+tapping the current slide's dot leaves it as it was. **Not on a phone** (`compactBar`, under
+600dp): that bar is budgeted for two icon buttons and «النقطة التالية» would not fit Next, so the
+toggle is hidden there and a choice remembered on a laptop does not pace a phone (`pacing =
+paced && !compactBar`). Presenter only: the PDF and PowerPoint are unchanged.
+
+**Verified.** `pnpm run typecheck` clean; api-server `pnpm build` + `pnpm test` 2,669 pass, 0 fail;
+mobile `pnpm test` 8,212 tests, 8,202 pass, 10 skipped, 0 fail (the two last fixes — the 🔍 icon
+and the toggle's storage write — were re-run in their own suites afterwards). New tests:
+`deckEngagement.test.ts`, `pacedReveal.test.ts`, and additions to `deckChecks`, `promptSlidesPrompt`,
+`lessonTeachingPrompt`, `lessonSlides` and `deckIcons` tests. The presenter was driven with
+Playwright in the built web bundle (desktop 1366, Arabic, light, stubbed API, demo-mode offline
+deck for «معادلة الدائرة»), screenshots looked at: with the toggle on, the outcomes slide opens on
+its title alone, each press adds one card, the button reads «النقطة التالية» until the last card and
+then «التالي»; a non-paced slide advances in one press; stepping back onto a paced slide shows it
+whole. The offline deck has no teaching section, so the «اكتشف الخطأ» slide was not seen on screen.
+
+**Not verified.** **No live model has seen either prompt change.** The OpenAI key in the session
+that built this lacks the `model.request` scope, so no deck was generated: whether the model keeps
+to two-in-a-row, writes a good «اكتشف الخطأ», or uses Jordanian settings well is unknown. The
+first measure is the engagement log line on production decks, or a provider-eval run before and
+after. Also not checked: the presenter on a phone or tablet, a clicker, screen readers, RTL/LTR on
+native. **Not done:** the per-slide timing suggestion and the other new formats (predict-then-reveal,
+think-pair-share, fill in the blank, agree/disagree, levelled challenges).
+
+## PostHog moves to the owner's own EU project, 2026-10-30
+
+The Android recording plan (see «Screen recordings: Contentsquare on the web, PostHog replay on Android») stalled on one fact:
+the owner had no login to the PostHog project behind the key baked into every build (`phc_t7Gd3Z4L…`, US host by default), and
+nobody in the repo could say who did. The owner created a new project instead, **EU cloud, project 326639** (their screenshots:
+«This project has no events yet», Region «EU Cloud»). It is not the project the app reported to; the two keys differ.
+
+**Changed:** the new project key (`phc_scZFQcyz…`) replaces the old one in `deploy.yml` (web), `mobile-update.yml` (OTA),
+`mobile-build-gradle.yml` (Android build) and both profiles of `eas.json`, and `EXPO_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com`
+now sits beside it in each, because a key sent to the wrong cloud is dropped silently and the code default is still the US host.
+`posthogProject.test.ts` fails a file that has the key without the host, or the old key (mutation-checked: removing the host line
+from `mobile-update.yml` fails it). `render.yaml` still holds the old US key and was left alone: the Render demo services are
+suspended, and its own comment explains the host. The privacy policy (AR and EN) now says PostHog's servers are in the EU instead
+of the US (it was `LEGAL_VERSION` 2026-10-29, now 2026-10-30; the «outside Jordan and outside the EU» sentence still holds because
+OpenAI and Google Sign-In are outside it).
+
+**What this does and does not do:** from the merge, the web build sends usage events to the new project once the site
+redeploys, and Android builds made **after** the merge do too; apps already installed keep sending to the old US project (or
+nowhere) until the owner installs a new build, and the history of the old project stays behind. **Not verified:** that any event
+arrives in the new project (nothing here can reach PostHog; the first check is Activity in the project after a build); that
+Android session replay records (needs «Record user sessions» on in the new project and a 1.6.0 build); PostHog's plan limits.
+**The owner's next steps:** turn on «Record user sessions» in project 326639, run the Android Gradle build after this merges,
+install the APK, use the app, then look for events under Activity and a recording under Session replay.
+
+## Six new /play games: opposites, plurals, which-number, compare-fractions, states of matter, governorates — 2026-10-29
+
+The public hub (`/play`, no login) had ten tiles; it now has sixteen. The six new ones are appended after the existing ten, in
+this order, each a route file that hands a `build` function from `services/publicGames/` to one shared renderer,
+`components/publicGames/TextQuizGame.tsx` (a `TriviaBoard` whose prompt is an optional subject tile over a one-line question; eight
+questions per round, the usual reveal, score and teacher-signup game-over from `GameShell`; four options per question in
+antonyms, plurals, which-number and governorates, **three** in matter (solid / liquid / gas) and **two** in fractions):
+
+| id | title (ar) | grades | what it asks |
+| --- | --- | --- | --- |
+| `antonyms` | ضد الكلمة | 1–4 | the opposite of a word (27 pairs, either side asked) |
+| `plurals` | جمع الكلمة | 2–5 | the plural of an Arabic word (30 words) |
+| `numberType` | أيّ عدد؟ | 3–6 | which of four numbers is even / odd / prime |
+| `fractions` | قارن الكسور | 4–7 | which of two fractions is larger / smaller |
+| `matter` | صلب، سائل أم غاز؟ | 3–7 | the state a substance is known in (20 substances) |
+| `governorates` | محافظات الأردن | 4–9 | which governorate a town or site is in (25 places) |
+
+Also in this change: the chat assistant's `tool:games` rule (`services/appHelp.ts`) recognises the new games, by topic word and by
+the name printed on the tile. English: opposites / antonyms, (Arabic) plurals, (compare) fractions, governorates / Jordan's
+governorates, which number, states of matter, even / odd / prime numbers («play the compare fractions game»). Arabic: الأضداد /
+ضد الكلمة, (قارن) الكسور, محافظات (الأردن), أيّ عدد, الأعداد الأولية, حالات المادة («العب لعبة قارن الكسور»). **The plurals game
+has no Arabic phrase in the rule, on purpose:** «لعبة جمع الكلمة» starts with `جمع`, which already means the addition game, so
+asking the assistant for it in Arabic gets no pointer (it falls through to the model like any other question). And the hub tile icon is drawn in `readableOn(color, card, 3)` so the slate and navy tiles stay visible in dark mode
+(this also lightens the icons of existing tiles that were below 3:1 on the dark card; light mode is unchanged).
+
+**Verified.** `pnpm run typecheck` clean. Mobile suite: 8196 tests, 0 fail, 10 skipped (the pre-existing `searchKB` skips). Each
+game has its own test file (`playGameAntonyms`, `…Plurals`, `…NumberType`, `…Fractions`, `…Matter`, `…Governorates`) pinning the
+answer keys; `appHelp.test.ts` gained 20 positive cases (11 English, 9 Arabic; not every game in Arabic, see above) and nine negative ones
+(topic words without asking to play, «اشرح قارن الكسور», «لعبة جمع الكلمة»); the first nine positives were shown to fail against the
+old rule. Each of the five newer games has a same-seed-same-round test (antonyms already had one). The maths keys (`numberType`, `fractions`) are **computed**, in latin, and re-derived
+independently in the tests; they are not looked up from a table. A real browser (Chromium through the `playwright` library, against
+`pnpm run dev:mobile:web`) was used on 2026-10-29 for the first look at any of the six: the hub at 390 px and 1280 px, light and dark,
+Arabic and English; each game's question screen, a reveal (green tick on the key, red cross on a wrong pick), a full eight-question
+playthrough to the game-over screen with the signup card, and the English UI for all six. Fractions print «٢/٥» left to right
+(numerator first, not mirrored) in Arabic. No page errors were logged.
+
+**Not verified.** The answer keys of `antonyms`, `plurals`, `matter` and `governorates` are **hand-written**: they were read by their
+authors and by a reviewer per task, and the Arabic strings and words went through the Arabic-copy review (the words and keys needed no change; two tile descriptions were
+reworded afterwards, below), but
+no machine checks them, and the tests only pin what the author wrote. The governorates rows were each checked against English and
+Arabic Wikipedia and citypopulation.de; **no Jordanian government source was reachable**, so none is cited. Nothing was run on a
+phone or in a native build; the browser check is the web build only. The review suite's guard rails (`designScale`, `gameAmber`,
+`gameAccents`, `cornerTheme`) pass, but a contrast ratio is not the same as having looked at the tile on a device.
+
+**Known limits.**
+- The tables are small (27 / 30 / 20 / 25 items), so a round of eight repeats across plays; there is no "seen" memory between plays.
+- `plurals` shows Arabic words and Arabic options in the English UI, because the question is about Arabic morphology; only the
+  prompt is translated. Its options are always the table plurals of other words, so none is a second valid plural of the subject,
+  but a few words have one the game never offers («طالب»: طلّاب and طلبة).
+- Fractions pairs such as 5/11 against 4/9 need cross-multiplication, which is harder than Grade 4 work; the band 4–7 is a judgement,
+  not a measured level (denominators run 2–12 for every grade).
+- No sound and no analytics beyond what `GameShell` already sends (`game_finished`).
+- The options of `TriviaBoard` are tappable `View`s with no accessibility role (shared with the older games, not changed here).
+- «أحسنت!» is shown at any score, including 0 of 8 (`GameShell`, shared with every game).
+- In the Arabic hub the two tiles of a row sit in the order second-first (the pairs read right-to-left as 2,1): it is the same for
+  the original ten and was left as it was.
+
+**Deviations from the plan and spec.**
+1. `TextQuizGame` uses theme tokens (`TYPE.display`, `TYPE.bodyLg`, `SPACE`, `RADIUS`) instead of literal font sizes, because
+   `designScale.test.ts` has a ceiling with no slack; the subject tile text is 28 / 17 px, not the 30 / 18 of the plan.
+2. `matter` no longer says "at room temperature" in its premise; ice and orange juice were restored after review and the test
+   pins its answer keys.
+3. `governorates` asks which governorate a **town or site** is in, not governorate → centre (eleven of the twelve share their
+   centre's name, so that would be trivial). One row (الصافي) was dropped in this PR, leaving 25.
+4. `numberType` asks "which of these four numbers is X", because 7 is both odd and prime, so «is this number prime?» would have no
+   single answer in a mixed game.
+5. `fractions` is titled «قارن الكسور».
+6. Exactly two commits (0487937, 985f82c) carry a `Claude Haiku 5.5` trailer; all the others `Claude Sonnet 5.5`.
+7. Content is below the spec's targets: antonyms 27 pairs (spec ~40), matter 20 substances (spec ~30), plurals 30, governorates 25
+   places (26 planned, one row, الصافي, dropped in the last task). The tables are append-only data, so they can grow without touching a game.
+8. The chat-help rule covers the games as described under «Also in this change» (not «the six game names in both languages»:
+   plurals is English-only there).
+9. The Arabic tile description of governorates reads «اربط كل مدينة أو موقع بمحافظته» (the plan had «…ومعلم…», which unvowelled
+   reads as «مُعلّم», a teacher), and that of which-number ends «الأوّلي» (with the shadda, as its prompt does).
+
+## Schools tab: a slow answer no longer lands after the screen moved on — 2026-10-24
+
+Found from a screenshot of the live tab (app.iqrra.com/admin/schools): the «ابحث عن معلم»
+list was showing teachers under an **empty** search box.
+
+- **Search.** The debounce effect cleared its 300 ms timer on cleanup but not a request already
+  sent, so typing, pausing, then clearing the box let the old answer call `setFound` after the
+  box was empty. The effect now marks its request stale in cleanup and ignores it.
+- **Members.** Same shape: open school A, then B before A's teachers (now paged) arrive, and A's
+  list was written under B's card, each row with a Remove button. `loadMembers` now writes only
+  if that school is still the open one (`openRef`).
+
+**Verified:** mobile typecheck clean. **Not verified:** in a browser — no authenticated admin
+session here, and nothing tests a React Native screen under the node runner. The cause is read
+from the code and matches the screenshot, not reproduced.
+
+## Screen recordings: Contentsquare on the web, PostHog replay on Android, 2026-10-29
+
+The owner asked to connect the app and the web to Hotjar to track users, then chose to record **everyone** (teachers, students,
+parents, the exam page a student opens from a link) with inputs masked. Hotjar has no React Native SDK, and Hotjar is now part of
+Contentsquare (its accounts are being moved onto it), so the web side loads the **Contentsquare tag**
+(`services/contentsquare.ts`, `https://t.contentsquare.net/uxa/<tag id>.js`, `_uxa` queue, path set before the tag loads,
+`trackPageview` per route change once `CS_CONF` exists) and the Android app records with **PostHog session replay**
+(`posthog-react-native-session-replay`, `SESSION_REPLAY_CONFIG` in `services/analytics.ts`: all text, images and system views
+masked, no console logs, no network telemetry). The tag loads only when `EXPO_PUBLIC_CONTENTSQUARE_TAG_ID` is set; `deploy.yml`
+reads it from the `CONTENTSQUARE_TAG_ID` repository variable, so recording is a switch the owner flips in GitHub, not a value in
+the repo. It is web-only, so `eas.json` and `mobile-update.yml` deliberately omit it.
+
+**One page is excluded although "everyone" was chosen:** `/guardian#token`. Its address carries the parent's approval token, a
+credential, and the repo already forbids sending it to a third party (`shouldTrackScreen`). The tag is not loaded when the app
+opens there and `trackPageview` skips it; nothing in the app navigates to it. Contentsquare also erases everything after `#`
+and only the path is sent. The privacy policy (AR and EN) now discloses recordings, names both providers, and was corrected
+where it said «Render» hosts the web version (`deploy.yml` publishes to Cloudflare Pages); `LEGAL_VERSION` and the date moved to
+2026-10-29, so new sign-ups record the new version.
+
+**Native change:** `app.json` `version` 1.5.0 → 1.6.0 (a new native module). OTAs published from `main` after the merge carry
+runtime 1.6.0 and **do not reach installed 1.5.0 binaries** until a 1.6.0 build is made (run it from a clean worktree of `main`,
+see CLAUDE.md). The lockfile change is 18 lines, hand-applied to the existing entries because the sandbox's pnpm rewrote
+`(supports-color…)` peer suffixes across ~1,700 lines; `pnpm install --frozen-lockfile` accepts it.
+
+**Verified:** `services/__tests__/contentsquare.test.ts` (tag id parsing, nothing loaded without a valid id, one script, path
+only, idempotent, not loaded on `/guardian*`, loaded on `/take/*`, replay masks pinned on); the whole mobile suite passed
+(8,105 pass, 0 fail, 10 skipped) on the earlier Hotjar version of this change, and the touched suites (contentsquare, legalDocs,
+legalVersion, screenTracking) pass on the final one; typecheck has the same 12 errors as a clean checkout of the same commit
+(sandbox Expo type resolution), none in changed files. **Not verified at the time:** that the tag actually loads in a browser (the sandbox
+cannot reach `t.contentsquare.net`; the URL pattern is from Contentsquare's docs; **later confirmed by Contentsquare's own
+"Verify tag installation", see «Gone live» below**), that Contentsquare's own SPA detection does not
+double-count route changes, that PostHog replay records on a device (no Android build was made), the Android native build with
+the new module, and the policy wording by a lawyer.
+
+**Web masking, decided 2026-10-29 (owner chose "A"):** this session first searched Contentsquare's docs and found no project-wide
+"mask all text" switch for the web tag (the docs mask form inputs by default and everything else per element, with a
+`data-cs-mask` attribute, selectors, or the Tag Configurator's Element Masking template; some pages read were app/Capacitor
+docs). **That was incomplete:** the project's own settings have a *Data masking* page, and the owner's screenshot shows it on
+«Full masking» (hide all text, all numbers, all media) with 0 page rules and 0 element rules. So there are two layers, and the
+code one is a belt-and-braces copy: `installContentsquare` sets `data-cs-mask` on `<body>` **before** adding the script, and
+does not load the tag at all if there is no `<body>`. Tests pin the order (mask, then script), the fail-closed case, and that
+nothing is touched when the tag is off or on `/guardian*`. **Not verified, for either layer:** what a real recording shows
+(neither the sandbox nor this session could reach Contentsquare), or what `data-cs-mask` does to heatmaps. Page and element
+rules exist to *unmask*; adding one is how a name or a mark would reach a recording.
+
+**Gone live, 2026-10-29 (from the owner's screenshots and the Deploy log, not seen from the sandbox):** the owner first saved
+`CONTENTSQUARE_TAG_ID` as a repository *secret*, which `deploy.yml` does not read (it reads `vars.`), then added it as a
+repository variable (`68a876b193165`) and re-ran Deploy #868 (attempt 2, commit `d630dd7`, all six jobs green). The `iqraa-web`
+build log shows `EXPO_PUBLIC_CONTENTSQUARE_TAG_ID: 68a876b193165` in its environment and `app.iqrra.com` serving the new
+commit. Contentsquare's "Verify tag installation" first said «Tag not found» for the owner's other site, then «Installation
+successful. Data is being captured on your site.» for the app: **the tag is on the app (`app.iqrra.com`), not the marketing
+website.** From that point everyone who opens the web app is recorded, the exam page included, with `/guardian` excluded.
+**Still open:** look at one real recording; the Android side needs a PostHog login (the owner has none; the project behind the
+key in the builds has no known owner) and a 1.6.0 build; where Contentsquare stores data is unchecked (the policy states no
+location); the plan shows 200K sessions a month. Recording minors, exam answers included, is the owner's decision.
+
+## Growth numbers: Facebook, Instagram and Play can fill themselves, 2026-10-29
+
+The dashboard's YouTube card has filled itself since #1260. Facebook, Instagram and Play downloads
+can now do the same. **Nothing changes until someone adds their settings**: a figure with none is
+skipped, so this ships dormant. The steps that need an account owner are in `docs/deploying.md`
+(«Growth numbers that fill themselves»).
+
+**What changed**
+- `lib/autoMetrics.ts` replaces the YouTube-only refresh in `GET /admin/metrics` with one loop over
+  every figure that has its settings, fetched side by side, once per day each, a typed number for
+  the day still winning, a figure that came back empty not retried for 30 minutes.
+  - Facebook: the Page's `followers_count` (falling back to `fan_count`), `META_ACCESS_TOKEN` + `META_PAGE_ID`.
+  - Instagram: the account's `followers_count`, `META_ACCESS_TOKEN` + `META_IG_USER_ID`.
+  - Play downloads: the *Daily User Installs* column summed over Play's monthly
+    `installs_<package>_YYYYMM_overview.csv` reports (UTF-16), read with the Cloud Run runtime account
+    through the metadata server — no key, that account is invited in Play Console. `PLAY_STATS_BUCKET`.
+- The Meta token travels in an `Authorization` header, never the URL, so an error that quotes the
+  request cannot leak it. A figure that returns nothing is logged by key (`growth metric auto-fill
+  returned no number`), never with the error or URL, because a stopped feed otherwise looks exactly
+  like a working one with a stale date.
+
+**Limits**
+- Verified: 15 unit tests (parsers, a UTF-16 report built the way Play writes it, the token never in
+  a URL, which settings switch which figure on), typecheck, and the API on a throwaway database with
+  Meta, Google Cloud Storage and the metadata server stubbed: Facebook stored 41, Play stored 13
+  (4 + 7 + 2, the country report ignored), a failing Instagram stored nothing and held up neither,
+  the second load made no calls, and neither token appeared in the log.
+- **Not** run against the real Meta app, Page, Instagram account or Play Console. Three things the
+  documentation did not settle, each with a plain symptom in the log: whether `followers_count`
+  accepts a system-user token or needs the Page's own; whether a system-user token can be made
+  never-expiring; and whether Play accepts the runtime account as an invited user and shows the
+  expected columns. The Play figure trails by 3–7 days and is not the console's headline total.
+- LinkedIn and X stay typed in.
+
+## Row-level security: the full watch ran clean, 2026-10-29
+
+The owner ran the 30-minute watch in `docs/rls-watch-checklist.md` (rollout checklist D3) against production and
+reported **"watch clean"**. **Verified:** only that report. **Not verified:** which readings they took, the
+Cloud Run p95 compared with before 2026-10-24 12:35, any log output, or whether the optional restricted-exam and
+blocked-user checks were done — none was given to this session, so none is recorded as a number. D3 is ticked in
+the rollout checklist and `STATUS.md` no longer lists the watch as not done. Also fixed in the watch checklist: its
+first log command read `jsonPayload.msg`, which prints blank since #1238 moved the text to `jsonPayload.message`
+(#1339 made the same change elsewhere); the search itself still matched either way, so a clean result is unaffected.
+
+## Admin: new users, coloured channels, and a calendar for phones — 2026-10-29
+
+Three things on the admin screens, from one request.
+
+**What changed**
+- **New users.** The dashboard's overview has a «جدد ٧ أيام» tile (signups in the last seven days,
+  summed from the `signupsByDay` the summary already returns — no API change). Tapping it opens
+  «المستخدمون والحظر» with `?new=1`, which starts the list on the «٧ أيام» chip. On that list, anyone
+  who joined in that window carries a solid indigo «جديد» label beside their name. «New» is seven UTC
+  days including today — the same window as the chip (`dayAgo(6)`), pinned in `adminUsers.test.ts`
+  so the tile, the label and the chip cannot disagree.
+- **Coloured channel.** «انضم عبر» is a label, not plain text: blue «ويب», teal «تطبيق · android/ios»,
+  grey «غير معروف» (accounts made before 2 Oct or by a client that does not say). Each has an icon and
+  words, so colour is never the only signal; «جديد» is the only solid one.
+- **A calendar on phones.** `DateField` was a plain text box off the web, where you had to type
+  `YYYY-MM-DD`. It is now a button that opens `CalendarPicker`: a month grid in plain React Native
+  views, Sunday first, right to left in Arabic, 44-point days, «اليوم» / «مسح» (on the from/to
+  filters, where empty means open-ended) / «إغلاق». Plain views rather than
+  `@react-native-community/datetimepicker` on purpose: a native module needs a new store build
+  (and an `app.json` version bump), this ships over the air. The growth form's date also stops at
+  today now, which the API already enforced.
+
+**Limits**
+- The calendar only mounts off the web, so it was checked by forcing it on in the browser (then
+  reverting): open, page months, pick, close, reopen with the day marked, clear. **Not** checked on a
+  real Android device or with TalkBack, and not in dark mode.
+- It runs only on a build that has it: web at once, phones with the next OTA (no native change).
+- Which of the five new-user cases is «new» is the user's `created_at`, not a first login.
+- Verified: 26 new unit tests (`adminUsers`, `calendarGrid`) on top of the existing guards, mobile
+  typecheck, and in the browser at 420 px on a throwaway database with new and old users on web, the
+  app and unknown: tile counted 3, deep link landed on the chip, labels and colours as above.
+
+## Row-level security: the full watch written down, 2026-10-28
+
+`docs/rls-watch-checklist.md` spells out checklist D3 (the 30-minute watch after switching enforcement on) as five
+timed steps for the owner: a hand test, two read-only log searches (`permission denied` / `row-level security`, and
+HTTP 5xx), the Cloud Run p95 latency graph compared with before 2026-10-24 12:35, the quiet failures a log cannot
+show (notification, thread order, restricted exam, blocked user), and the logs again at minute 30. The rollout
+checklist's D3 links to it. **Docs only; the watch itself has not been run.** The log filters and the
+`httpRequest.status` field were written from the Cloud Logging format, not run against production by this session.
+
+## Grade 8 semester 2 word lists in the English corner, 2026-10-28
+
+Grade 8 semester 2 joins semester 1 in the English corner: 35 lessons and 399 words extracted from the book's Word List, 30 of those
+lessons offered (a lesson needs 4 glossed words; five short Speaking / Writing lessons have fewer), so Grade 8 now has 57 hub lessons,
+units 1–10. It follows the semester 1 pipeline (see «Grade 8 semester 1 word lists in the English corner»); the new part is how the
+text got here. `extract-text` had rejected the book on 2026-10-25 for «Arabic in reversed presentation-form glyphs». It is English; the
+few Arabic words in its front pages are encoded that way. PR #1329 made the quality gate judge an English book as English, the owner
+ran `extract-text` on their machine, and `data/extracted/g8-english-s2-student-book.json` (80 pages, 146,283 characters, sha256
+`4095abfc…`) is that extraction. The PDF stays gitignored.
+
+**Two reader fixes, neither changes any other book.** Both were measured by re-running the extractor and diffing every other book's
+rows: 0 removed, 0 added.
+- A transcription that closes with a space before its last slash (`… ˌsʌmbɒdi /`) was taken for a slash that opens a wrapped
+  transcription, so «stay with sb» was never closed and swallowed «take a trip»: both lost from lesson 7.1. The reader now tells the
+  two by whether phonetic characters sit between the last two slashes. A test pins lesson 7.1 at ten entries.
+- The Grammar Reference's pronoun table sits behind the last lesson's list and was read under its marker: «she we» landed in lesson
+  10.7. A headword made only of pronouns is now a table cell. (Stopping at the Grammar Reference page instead was tried and
+  rejected: it also removes 25 leaked rows from Grade 8 semester 1 and Grade 9, which is a change to other grades' data.)
+
+**Glosses.** 336 new Arabic glosses, **drafted by Claude, not reviewed by a teacher.** Two existing glosses had the other sense and a
+word has one gloss, so both senses are now in it: `hand` «يد، يناول» (lesson 9.3 is body parts) and `degree` «درجة، شهادة جامعية»
+(10.5 is weather). `robot` is «رجل آلي», as a Grade 1 teacher asked on 2026-10-15 and `englishHub.test.ts` pins for every hub
+`robot`, so «personal robot» follows; «USB cable» is spelled out in Arabic letters because the glossary test rejects Latin ones. Senses
+worth a teacher's eye: `fast`, `fat` / `flat` / `round` / `wide` (lesson 9.3), `present` and `spread` (10.4), `brilliant`, `setting`,
+`block`, `mystery`, `fiction`, `hostel`. Twenty entries with an alternation or a slash («go to the beach/the park») are in the data
+and not offered, by the existing rule that a drill word has no slash.
+
+**Elsewhere.** `g10_sources.json` has a third-party row for the book (same series, © Pearson / York Press, not quotable) and the
+semester 1 row's note no longer says semester 2 is unregistered. The Grade 5, 9 and 10 teacher forms were regenerated: only each unit's
+«words outside the vocabulary lists» note changed (for instance «abroad» is now in a list). No unit has a sign-off, so none is
+invalidated. The mobile corpus pin (`vocabularyDrill.test.ts`) is 1,519 words / 142 lessons / 499 sentences.
+
+**Verified:** `lib/curriculum` tests 895 of 896 (the one failure, «R2 helpers are inert, not broken, when unconfigured», fails on `main`
+too); the mobile vocabulary-drill test 11 of 11. The mobile suite 8,084 tests, 0 failures; `pnpm run typecheck` clean on the whole monorepo (after a `pnpm install`: the container's packages predated a dependency on `main`).
+
+**Not verified:**
+- The extraction against the PDF: I read the raw text of lessons 7.1–7.7 and the start of unit 8, and checked the parser's output
+  against it for 7.1 only (that is how the two lost entries were found). I read every word I glossed, grouped by lesson. Nothing
+  else was compared line by line, and the PDF itself was not opened: the container has only the owner's extracted text.
+- The glosses (above), and the screens: nobody has looked at the Grade 8 semester 2 lessons in a browser or on a phone.
+- **Recordings: 275 of the 357 distinct semester 2 words have no MP3** (checked by `HEAD` against the public bucket on 2026-10-28), so
+  on the web the word is spoken in the browser's voice and in the Android app it is silent until `english-audio` is run with the
+  OpenAI and R2 keys (`english-audio-check` afterwards). Decide whether to run it before this deploys.
+- Not done: Grades 6 and 7 (Pearson third-party text, vocabulary left empty on purpose), Grade 10 semester 2, an OTA for the Android app.
+
+## Chat starter chips wear their tool's icon and colour, 2026-10-28
+
+On the web chat's empty state «جهّز خطة الدرس» and «جهّز ورقة عمل» were the same button twice: teal text on one teal tint, told
+apart only by a font emoji (📄 / 📝) that renders differently on every platform. `starterChips` in `app/(tabs)/iqra.tsx` now draws
+each lesson chip on the card with its tool's own drawing and colour from `CONCEPTS` (`ConceptIcon`, colour lifted with
+`readableOn(…, colors.card, 3)` as on the Tools tab), dark text, a hover state on web, and no emoji. The virtual-lab chip takes the lab
+corner's drawing and colour. Chips with no tool (the no-lesson sample questions, «لخّص من الملفات») keep the old brand-tint look. Same
+chips above the composer once a thread starts.
+
+**Verified:** typecheck; mobile suite 8010/8025 — the 5 failures are this Windows checkout's CRLF/backslash paths in source-reading
+tests (`generatorScreens`, `iconSystem` ×3, `scopeSelection`), none touch this file, and the icon-system rules this change falls under
+pass. Rendered against a local API (fresh local DB, demo mode) at 1440 wide in Arabic and English, light and dark. **Not checked:** the
+phone app (on a phone the readiness board replaces these chips on the empty state; they still show above the composer mid-thread),
+and production.
+
+## Growth panel: tap a card to see the entries behind it — 2026-10-28
+
+A card that reads «+0» now explains itself. Tapping one of the six cards under
+«التنزيلات والمتابعون» opens a table of its entries below the row — date, value, and how far
+each moved from the one before — newest first, up to ten. Tapping it again, or another card,
+closes or switches it. A short hint under the cards says they can be tapped. This came from a
+production screenshot: the YouTube card showed +0 because its only two entries were both 3,
+and nothing on screen said so.
+
+**What changed**
+- `growthHistory(rows, limit)` in `services/growthMetrics.ts` (pure, tested). An entry still
+  measures from the one before it even when that one is cut off by the limit; the first entry
+  ever has no change (—).
+- The cards are `Pressable` buttons carrying `aria-expanded` (the web ignored the native
+  `accessibilityState` alone — seen in the DOM), the opened card is outlined, and the table reuses
+  the dashboard's `Table`. Dates and signed numbers are isolated left-to-right as elsewhere.
+
+**Limits**
+- Read-only. A wrong number is still fixed by entering the same day again (it replaces); there is
+  no delete, and the list does not show who entered a row or whether the YouTube card filled itself.
+- Verified: 25 unit tests (helper + design-scale), mobile typecheck, and in the browser on a
+  throwaway database — the flat YouTube case and a four-entry Instagram history both listed
+  correctly, `aria-expanded` flipped on the tapped card only. **Not** verified: dark mode, a
+  phone-width layout, a real screen reader.
+
 ## extract-text: an English book is judged as English, so Grade 8 semester 2 can be extracted, 2026-10-28
 
 Why Grade 8 semester 2 has no word lists. On 2026-10-25 `extract-text` rejected `g8-english-s2-student-book` for «Arabic in reversed
@@ -42,6 +701,31 @@ the old code by reading, because 100 presentation-form glyphs outnumber 0 base-b
 `pnpm --filter @workspace/curriculum run extract-text -- g8-english-s2-student-book`, and commit only
 `lib/curriculum/src/data/extracted/g8-english-s2-student-book.json`. The manifest row, the vocabulary extraction and the glosses follow
 as for semester 1.
+
+## Growth panel: a trend line on each card — 2026-10-28
+
+Each card under «التنزيلات والمتابعون» now draws the entries behind its change figure as a
+small line, so direction reads at a glance. It follows the same period chips as the figure.
+
+**What changed**
+- `sparkPoints(rows, period, today)` in `services/growthMetrics.ts` (pure, tested): the same entries
+  the change is measured over, spread along the time axis by date — a month-long gap is a long
+  stretch, not one step. «آخر إدخال» shows the newest eight, «منذ البداية» the newest sixty. A flat
+  series is a line across the middle. Fewer than two entries, or nothing recorded in the period,
+  draws no line.
+- `Spark` in `app/admin/dashboard.tsx`: a react-native-svg polyline with a dot on the newest entry,
+  measured with `onLayout`. Decorative, so `aria-hidden` (plus the native equivalents) keeps it out of
+  screen readers; the card text already says the number and the change.
+
+**Limits**
+- Time runs left to right in Arabic too, as on the signups chart.
+- No hover/tap values on the line, and no axis: it shows shape, not readings.
+- The line appears after the first layout pass, so in a background browser tab it can show up late.
+- Verified: 17 unit tests (helper + design-scale), mobile typecheck, and in the browser against a
+  throwaway database: 3 / 2 / 2 / 3 lines across the four chips as the tests predict, all hidden
+  from screen readers. **Not** verified: dark mode, a phone-width layout, a real screen reader.
+  `iconSystem.test.ts` fails locally on Windows paths in files this change does not touch;
+  CI on Linux is the check for that.
 
 ## Growth panel: a period filter that filters — 2026-10-28
 

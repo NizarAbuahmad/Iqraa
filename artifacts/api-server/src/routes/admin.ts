@@ -29,9 +29,11 @@ import { RATE_LIMITS } from "../lib/rateLimit.js";
 import { parseSchoolAssignment, parseSchoolIdFilter, parseSchoolInput } from "../lib/adminSchools.js";
 import { parseDateRange, parseMetricInput, parsePublicIdea, parseSiteSignup, siteKeyMatches, toCsv, UUID } from "../lib/adminMetrics.js";
 import { notifyAdminsOfWaitlistSignup } from "../lib/adminNotify.js";
-import { fetchSubscriberCount } from "../lib/youtubeSubscribers.js";
+import { configuredAutoMetrics } from "../lib/autoMetrics.js";
 import { APP_INVITE_SUBJECT, appInviteBodyHtml, appInviteUrl, sendAppInviteEmail, sendBroadcast } from "../lib/email.js";
 import { isValidEmailAddress } from "../lib/emailAddress.js";
+import { unsubscribePage } from "../lib/emailUnsubscribe.ts";
+import { suppressedAmong, suppressEmail } from "../lib/emailSuppression.ts";
 import {
   parseBroadcast,
   pickRecipients,
@@ -553,39 +555,51 @@ router.post(
   },
 );
 
-let youtubeTriedAt = 0;
+const autoTriedAt = new Map<string, number>();
 
 /**
- * Today's YouTube subscriber count, fetched the first time an admin opens the
- * dashboard each day — no scheduler to run, and a day nobody looks is a gap in
- * a chart nobody saw. A number an admin already typed for today is kept, and a
- * failed lookup is not retried for 30 minutes so a bad key costs one 4 s wait,
- * not one per page load. Never throws: the dashboard loads without it.
+ * Today's number for each growth figure that has its settings (lib/autoMetrics.ts:
+ * YouTube, Facebook, Instagram, Play downloads), fetched the first time an admin
+ * opens the dashboard each day — no scheduler to run, and a day nobody looks is a
+ * gap in a chart nobody saw. A number an admin already typed for today is kept,
+ * and a figure that came back empty is not retried for 30 minutes, so a bad key
+ * costs one wait, not one per page load. The figures are fetched side by side and
+ * one failing does not hold up the others. Never throws: the dashboard loads
+ * without them.
+ *
+ * An empty answer is logged by key (never the error or URL: either may quote a
+ * token), because a feed that has quietly stopped looks exactly like a working
+ * one with a stale date on its card.
  */
-async function refreshYoutubeMetric(): Promise<void> {
-  const apiKey = process.env["YOUTUBE_API_KEY"];
-  if (!apiKey || Date.now() - youtubeTriedAt < 30 * 60 * 1000) return;
-  try {
-    const today = new Date().toISOString().slice(0, 10);
-    const [have] = await db
-      .select({ id: manualMetrics.id })
-      .from(manualMetrics)
-      .where(and(eq(manualMetrics.key, "youtube"), eq(manualMetrics.recordedOn, today)))
-      .limit(1);
-    if (have) return;
-    youtubeTriedAt = Date.now();
-    const value = await fetchSubscriberCount(apiKey);
-    if (value == null) return;
-    await db.insert(manualMetrics).values({ key: "youtube", value, recordedOn: today }).onConflictDoNothing();
-  } catch {
-    // Deliberately no `err` in the log: the request URL carries the API key.
-    logger.warn("youtube subscriber refresh failed");
-  }
+async function refreshAutoMetrics(): Promise<void> {
+  const today = new Date().toISOString().slice(0, 10);
+  await Promise.all(
+    configuredAutoMetrics().map(async (m) => {
+      if (Date.now() - (autoTriedAt.get(m.key) ?? 0) < 30 * 60 * 1000) return;
+      try {
+        const [have] = await db
+          .select({ id: manualMetrics.id })
+          .from(manualMetrics)
+          .where(and(eq(manualMetrics.key, m.key), eq(manualMetrics.recordedOn, today)))
+          .limit(1);
+        if (have) return;
+        autoTriedAt.set(m.key, Date.now());
+        const value = await m.fetch();
+        if (value == null) {
+          logger.warn({ key: m.key }, "growth metric auto-fill returned no number");
+          return;
+        }
+        await db.insert(manualMetrics).values({ key: m.key, value, recordedOn: today }).onConflictDoNothing();
+      } catch {
+        logger.warn({ key: m.key }, "growth metric auto-fill failed");
+      }
+    }),
+  );
 }
 
-/** GET /admin/metrics — every growth number, oldest first per key. YouTube fills itself; the rest are typed in. */
+/** GET /admin/metrics — every growth number, oldest first per key. The ones with settings fill themselves; the rest are typed in. */
 router.get("/admin/metrics", authMiddleware, requireRole(...ADMIN_ROLES), async (_req, res) => {
-  await refreshYoutubeMetric();
+  await refreshAutoMetrics();
   try {
     const rows = await db
       .select({ key: manualMetrics.key, value: manualMetrics.value, date: manualMetrics.recordedOn })
@@ -699,14 +713,15 @@ router.post("/admin/invites", authMiddleware, requireRole("system_admin"), invit
     res.status(400).json({ error: "email" });
     return;
   }
-  // Someone who unsubscribed asked for no more mail, and typing their address here doesn't change that.
+  // Someone who unsubscribed asked for no more mail, and typing their address here doesn't change that —
+  // whether they pressed the waitlist link or the one at the foot of any other mail (email_suppressions).
   try {
     const [optedOut] = await db
       .select({ id: siteSignups.id })
       .from(siteSignups)
       .where(and(sql`lower(${siteSignups.email}) = ${email.toLowerCase()}`, isNotNull(siteSignups.unsubscribedAt)))
       .limit(1);
-    if (optedOut) {
+    if (optedOut || (await suppressedAmong([email])).size > 0) {
       res.status(409).json({ error: "unsubscribed" });
       return;
     }
@@ -818,8 +833,11 @@ router.post("/admin/broadcasts", authMiddleware, requireRole("system_admin"), br
 
     const result = await sendBroadcast(recipients, subject, html, unsubscribeUrl);
     await stampSent(result.sent, purpose).catch((err) => logger.error({ err }, "broadcast sent but not recorded"));
-    logger.info({ by: req.user!.id, purpose, sent: result.sent.length, failed: result.failed.length }, "waitlist broadcast");
-    res.json({ sent: result.sent.length, failed: result.failed.length });
+    logger.info(
+      { by: req.user!.id, purpose, sent: result.sent.length, failed: result.failed.length, skipped: result.skipped.length },
+      "waitlist broadcast",
+    );
+    res.json({ sent: result.sent.length, failed: result.failed.length, skipped: result.skipped.length });
   } catch (err) {
     logger.error({ err }, "admin broadcast failed");
     res.status(500).json({ error: "Failed to send" });
@@ -1000,14 +1018,11 @@ router.post("/site/signups", siteSignupLimiter, async (req, res) => {
  * unsubscribe everyone it scans. The button POSTs here, and so does a mail
  * client's own one-click "unsubscribe" (`List-Unsubscribe-Post`). Unsubscribing
  * is by address: every waitlist row with that email is stamped, so a second
- * signup can't put someone back on the list.
+ * signup can't put someone back on the list — and the address joins the list
+ * every other mail honours (email_suppressions), because the page promises no
+ * more mail, not just no more waitlist mail.
  */
 const unsubscribeLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 120, name: "site-unsubscribe" });
-
-const unsubscribePage = (message: string, form = "") => `<!doctype html>
-<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>إقرأ · Iqrra</title>
-<style>body{margin:0;padding:48px 20px;background:#F1F5F9;font-family:Tahoma,Arial,sans-serif;color:#0B1220;text-align:center}main{max-width:420px;margin:0 auto;background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:28px 20px;line-height:1.8}button{margin-top:12px;background:#006D65;color:#fff;border:0;border-radius:8px;padding:12px 24px;font:inherit;font-weight:bold;cursor:pointer}</style></head>
-<body><main>${message}${form}</main></body></html>`;
 
 router.get("/site/unsubscribe", unsubscribeLimiter, (req, res) => {
   const id = req.query["id"];
@@ -1019,8 +1034,8 @@ router.get("/site/unsubscribe", unsubscribeLimiter, (req, res) => {
   // `id` is a uuid and `t` the exact hex digest we just verified, so both are safe to place in the URL.
   res.type("html").send(
     unsubscribePage(
-      "<p>هل تريد إيقاف رسائل إقرأ على بريدك؟</p><p dir=\"ltr\">Stop Iqrra emails to this address?</p>",
-      `<form method="post" action="/api/site/unsubscribe?id=${id}&amp;t=${t}"><button type="submit">إلغاء الاشتراك · Unsubscribe</button></form>`,
+      "<p>هل تريد إيقاف رسائل إقرأ على بريدك؟</p><p dir=\"ltr\">Stop Iqrra emails to this address?</p>" +
+        `<form method="post" action="/api/site/unsubscribe?id=${id}&amp;t=${t}"><button type="submit">إلغاء الاشتراك · Unsubscribe</button></form>`,
     ),
   );
 });
@@ -1039,8 +1054,14 @@ router.post("/site/unsubscribe", unsubscribeLimiter, async (req, res) => {
         .update(siteSignups)
         .set({ unsubscribedAt: sql`coalesce(${siteSignups.unsubscribedAt}, now())` })
         .where(sql`lower(${siteSignups.email}) = ${row.email.toLowerCase()}`);
+      await suppressEmail(row.email, "waitlist");
     }
-    res.type("html").send(unsubscribePage("<p>تم إلغاء اشتراكك. لن تصلك رسائل أخرى.</p><p dir=\"ltr\">You're unsubscribed. We won't email you again.</p>"));
+    res.type("html").send(
+      unsubscribePage(
+        "<p>تم إلغاء اشتراكك. لن تصلك رسائل أخرى، إلا رمزًا تطلبه أنت لإنشاء حساب أو لاستعادة كلمة المرور.</p>" +
+          "<p dir=\"ltr\">You're unsubscribed. We won't email you again, except a code you ask for yourself to create an account or reset a password.</p>",
+      ),
+    );
   } catch (err) {
     logger.error({ err }, "unsubscribe failed");
     res.status(500).type("html").send(unsubscribePage("<p>تعذّر إتمام الطلب. حاول مرة أخرى لاحقًا.</p><p dir=\"ltr\">Something went wrong. Please try again later.</p>"));

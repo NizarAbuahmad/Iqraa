@@ -40,6 +40,7 @@ import { buildSystemPromptAr, CHAT_MAX_TOKENS } from "../src/lib/chatPrompts.ts"
 import { promptSlidesPromptAr, sanitizeDeckStructure } from "../src/lib/promptSlidesPrompt.ts";
 import { deckShortfalls } from "../src/lib/generationShape.ts";
 import { checkDeck } from "../src/lib/deckChecks.ts";
+import { deckEngagement, type DeckEngagement } from "../src/lib/deckEngagement.ts";
 import { answeredInArabic, arabicShare } from "../src/lib/languageCompliance.ts";
 
 // ─── The eval set ────────────────────────────────────────────────────────────
@@ -336,6 +337,8 @@ type Row = {
   /** Slides only: `checkDeck` errors (the prompt's contract broken) and the route's logged shortfalls. */
   deckErrors?: number;
   shortfalls?: string[];
+  /** Slides only: how much the deck gives the class to do (`deckEngagement`). */
+  engagement?: DeckEngagement;
   error?: string;
 };
 
@@ -415,6 +418,7 @@ for (const lesson of LESSONS) {
             ? {
               deckErrors: checkDeck(parsed).filter((i) => i.severity === "error").length,
               shortfalls: deckShortfalls(parsed),
+              engagement: deckEngagement(parsed),
             }
             : {}),
         };

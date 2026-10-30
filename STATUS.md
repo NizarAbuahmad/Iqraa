@@ -45,8 +45,11 @@ Checked 2026-10-22:
   student `0.20`; `STUDENT_ACCOUNTS=true`; `MASTERY_GATE=true`.
 - **Credentials:** 11 are Secret Manager references, 18 are plain config. Rotation:
   [`docs/deploying.md`](./docs/deploying.md), «Rotating a secret».
-- **Mobile:** `app.json` version `1.5.0`. An OTA update only reaches a binary with the same
-  version (CLAUDE.md, «`app.json`'s `version` is the OTA compatibility key»).
+- **Mobile:** `app.json` version `1.6.0` once the screen-recording PR merges (bumped 2026-10-29 for
+  PostHog session replay's native module); **the installed production binary is still `1.5.0`**, so
+  OTAs published from `main` stop reaching it until a 1.6.0 build is made and installed. An OTA
+  update only reaches a binary with the same version (CLAUDE.md, «`app.json`'s `version` is the OTA
+  compatibility key»).
 - **Every shipped build uses live AI.** `EXPO_PUBLIC_DEMO_MODE=false` is set for Android
   (`eas.json`, `mobile-update.yml`) and, since 2026-10-16, for the web build (`deploy.yml`).
   The code default in `demoMode.ts` is still demo mode; do not flip it without a decision
@@ -66,6 +69,25 @@ Checked 2026-10-22:
 
 ## Open
 
+- **Screen recording of everyone is ON for the web app (since the 2026-10-29 re-run of Deploy
+  #868) and not yet running on Android.** Web: the Contentsquare tag loads on `app.iqrra.com` (not
+  the marketing website) because the `CONTENTSQUARE_TAG_ID` repository **variable** is set; delete
+  it and re-run Deploy to switch it off. Contentsquare's own check reads «Installation
+  successful» for the app (owner's screenshot). Two layers of masking, both unverified in a real
+  replay: the project's *Data masking* is on «Full masking» with 0 page and 0 element rules
+  (owner's screenshot; do not add rules, they unmask), and the code puts `data-cs-mask` on
+  `<body>`. **Still to do: open one real recording under Replays and confirm it shows no names,
+  marks or answers.** PostHog (usage events everywhere, session replay on Android): from the merge
+  of the 2026-10-30 change the app reports to the owner's own **EU** project 326639, created
+  2026-10-30 (key and `EXPO_PUBLIC_POSTHOG_HOST` change together in four files, pinned by
+  `posthogProject.test.ts`); the older US project behind the previous key has no known owner and
+  its history is out of reach. For Android replay that project needs "Record user sessions" on
+  **and a 1.6.0 build made after that change merged** (see Mobile above); web events reach it
+  once the site redeploys. Students, parents and exam pages are recorded; the parent consent page
+  is not. The policy (`LEGAL_VERSION` 2026-10-30) was written by a model and **not reviewed by a
+  lawyer**; Contentsquare's data location was not checked (PostHog's settings say «EU Cloud»),
+  and the Contentsquare plan shows a 200K sessions a month cap.
+  Entry: «Screen recordings: Contentsquare on the web, PostHog replay on Android» in the log.
 - **`GUARDIAN_APPROVAL` is built (server and app), merged and deployed (PR #1274, 2026-10-25), and
   off; do not set it** until the app has
   reached users, the parent-consent wording has been read by a native speaker and a lawyer, and
@@ -106,8 +128,9 @@ Checked 2026-10-22:
   reply, and the chat moving up the inbox all working, and the `permission denied` / `row-level security`
   log searches run that day printed nothing **(owner's report and log searches — not re-checked by me)**.
   It had been switched off and on by mistake more than once between 2026-10-24 and 2026-10-27, so there is
-  no unbroken run of days to point to, and the full 30-minute watch (checklist D3) was not completed on this
-  switch-on. Rehearsed on 2026-10-23 on a separate empty Neon project: all migrations apply and the
+  no unbroken run of days to point to. The full 30-minute watch (`docs/rls-watch-checklist.md`, checklist D3)
+  was run by the owner on 2026-10-29 and reported **clean** **(owner's report only — which readings they took
+  and any numbers were not given to me)**. Rehearsed on 2026-10-23 on a separate empty Neon project: all migrations apply and the
   database suite passes 46/46 on both the direct and the pooled endpoint (workflow run
   39931238295). The connection ceiling checks out (20 instances, pooled endpoint, `max_connections` 225).
   **Latency (C1):** the first benchmark (2026-10-23) failed — +336 ms p95 on a 15-statement request, budget
@@ -117,8 +140,8 @@ Checked 2026-10-22:
   **+20.8 ms at p95** held (budget +100 ms: passes), against +346 ms without it. Routes not on the held list
   still pay about 22 ms per statement, so each is known and accepted or added to the list
   (`artifacts/api-server/src/lib/heldReads.ts`). Not done: deciding which more routes to hold (read
-  `held scope ended` at `LOG_LEVEL=debug` for real statement counts), a proper watch of p95 latency and push
-  volume — steps in `docs/rls-rollout-checklist.md`.
+  `held scope ended` at `LOG_LEVEL=debug` for real statement counts) — steps in
+  `docs/rls-rollout-checklist.md`.
   To turn it off: `RLS_ENFORCE=off` with `--update-env-vars` (rollback, checklist D4).
 - **Draft PR #730** (teacher visibility into English Corner practice) changes the schema,
   conflicts with `main`, and needs `pnpm --filter @workspace/db run generate` after it is updated.
@@ -140,12 +163,16 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-30 — PostHog moves to the owner's own EU project
+- 2026-10-29 — Screen recordings: Contentsquare on the web, PostHog replay on Android
+- 2026-10-28 — Grade 8 semester 2 word lists in the English corner
 - 2026-10-28 — extract-text judges an English book as English, so Grade 8 semester 2 can be extracted
 - 2026-10-25 — Grade 8 semester 1 word lists in the English corner
 - 2026-10-25 — English audio check: the first real run, and three kinds of false alarm removed
 - 2026-10-25 — Lesson games: «ما معنى المصطلح؟» from the books' printed glossary, and a draft route that stays hidden
 - 2026-10-25 — A parent signs up with an email or a teacher's code
 - 2026-10-25 — Parent approval for email students: merged and deployed, flag still off
+- 2026-10-30 — Slides: the class's turn, spot the mistake, and one point at a time (prompts untested against a live model)
 - 2026-10-24 — Parent approval for email students: the app (off)
 - 2026-10-24 — Parent approval for email students: the server (off)
 - 2026-10-24 — English audio: a speech-to-text check of every recording
@@ -167,13 +194,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-23 — Generator screens: the lesson plan
 - 2026-10-23 — Generator screens: the worksheet and homework
 - 2026-10-23 — Grade 5 grammar in the English corner — built, shown to nobody yet
-- 2026-10-23 — Generator screens: the shared pieces and the quiz
-- 2026-10-23 — The "now" amber is only for now
-- 2026-10-23 — Grammar-only hub lessons, and the last five Grade 9 grammar lessons — built, shown to nobody yet
 
 ## Finding older detail, and recording new work
 
-- The log has 416 sections. Anything cited elsewhere as
+- The log has 417 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line

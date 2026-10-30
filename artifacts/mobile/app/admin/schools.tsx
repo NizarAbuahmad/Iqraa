@@ -6,7 +6,7 @@
  * like the API (`routes/admin.ts`, SCHOOL_ADMIN_ROLES) it is `system_admin` only;
  * the check here only hides the screen, the server is what enforces it.
  */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -39,6 +39,8 @@ export default function AdminSchoolsScreen() {
   const [error, setError] = useState('');
   const [newName, setNewName] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
+  // Which school is open *now*, for a members load that finishes after the admin moved on.
+  const openRef = useRef<string | null>(null);
   const [members, setMembers] = useState<TeacherRow[]>([]);
   const [q, setQ] = useState('');
   const [found, setFound] = useState<TeacherRow[]>([]);
@@ -58,7 +60,8 @@ export default function AdminSchoolsScreen() {
       all.push(...res.items);
       if (res.items.length === 0 || all.length >= res.total) break;
     }
-    setMembers(all);
+    // Closed, or another school opened, while this was loading: its teachers do not belong here.
+    if (openRef.current === schoolId) setMembers(all);
   }, []);
 
   useEffect(() => {
@@ -74,12 +77,18 @@ export default function AdminSchoolsScreen() {
       setFound([]);
       return;
     }
+    // Cleanup also drops a request already sent: a slow answer for "ab" must not land after the
+    // box was cleared, or the list shows under an empty search.
+    let stale = false;
     const t = setTimeout(() => {
       apiJson<{ items: TeacherRow[] }>(`/admin/users?role=teacher&q=${encodeURIComponent(q.trim())}`)
-        .then(res => setFound(res.items))
-        .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
+        .then(res => { if (!stale) setFound(res.items); })
+        .catch((e: unknown) => { if (!stale) setError(e instanceof Error ? e.message : String(e)); });
     }, 300);
-    return () => clearTimeout(t);
+    return () => {
+      stale = true;
+      clearTimeout(t);
+    };
   }, [allowed, openId, q]);
 
   const run = async (fn: () => Promise<unknown>) => {
@@ -99,9 +108,11 @@ export default function AdminSchoolsScreen() {
     setFound([]);
     setMembers([]);
     if (openId === id) {
+      openRef.current = null;
       setOpenId(null);
       return;
     }
+    openRef.current = id;
     setOpenId(id);
     void run(() => loadMembers(id));
   };

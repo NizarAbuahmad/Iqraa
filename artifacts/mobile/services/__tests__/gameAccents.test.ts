@@ -20,6 +20,12 @@ const SOURCES = [
   ['components', 'publicGames', 'TermScrambleGame.tsx'],
   ['app', 'play', 'capitals.tsx'],
   ['app', 'play', 'flags.tsx'],
+  ['app', 'play', 'antonyms.tsx'],
+  ['app', 'play', 'plurals.tsx'],
+  ['app', 'play', 'numberType.tsx'],
+  ['app', 'play', 'fractions.tsx'],
+  ['app', 'play', 'matter.tsx'],
+  ['app', 'play', 'governorates.tsx'],
   ['app', 'play', 'index.tsx'],
   ['app', 'play', 'lesson', '[lessonId].tsx'],
 ];
