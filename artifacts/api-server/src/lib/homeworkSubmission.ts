@@ -19,8 +19,10 @@
  * for `removePhoto`, that the photo is already gone), and the function answers accordingly.
  */
 import {
+  classGroups,
   classMemberships,
   db,
+  homework,
   homeworkSubmissions,
   students,
   systemDb,
@@ -31,6 +33,8 @@ import { and, asc, eq, inArray, isNotNull, isNull, sql, type SQL } from "drizzle
 import { logger } from "./logger";
 import { deleteObject, presignedGetUrl } from "./r2.ts";
 import { ownHomeworkRows, tickRows } from "./homeworkDone.ts";
+import { guardianLinkedStudents } from "./familyAccess.ts";
+import { groupChildren } from "../modules/family/children.ts";
 import {
   PHOTOS_MAX,
   canSubmit,
@@ -308,6 +312,54 @@ export async function readForTeacher(
     .limit(1);
   if (!row) return null;
   return { displayName: row.displayName, submission: await viewSubmission(row.submission, hw.dueAt) };
+}
+
+/**
+ * The handed-in projects of the guardian's own children for one homework, one entry per child.
+ * The homework must ask for a project and be live, in a live class that one of the children is in.
+ * `null` is the one answer for every other case. A draft is never read: the filter is explicit
+ * (not left to row-level security), and only the guardian's own children's roster rows are asked for.
+ */
+export async function readForParent(
+  userId: string,
+  homeworkId: string,
+): Promise<Array<{ key: string; displayName: string; submission: SubmissionView }> | null> {
+  const [hw] = await db
+    .select({ classGroupId: homework.classGroupId, dueAt: homework.dueAt, requiresSubmission: homework.requiresSubmission })
+    .from(homework)
+    .innerJoin(classGroups, eq(classGroups.id, homework.classGroupId))
+    .where(and(eq(homework.id, homeworkId), isNull(homework.archivedAt), isNull(classGroups.archivedAt)))
+    .limit(1);
+  if (!hw || !hw.requiresSubmission) return null;
+
+  const children = groupChildren(await guardianLinkedStudents(userId));
+  const allRows = children.flatMap(c => c.studentIds);
+  if (allRows.length === 0) return null;
+  const inClass = await db
+    .select({ studentId: classMemberships.studentId })
+    .from(classMemberships)
+    .where(and(eq(classMemberships.classGroupId, hw.classGroupId), inArray(classMemberships.studentId, allRows)));
+  const classRows = new Set(inClass.map(m => m.studentId));
+  const mine = children.filter(c => c.studentIds.some(id => classRows.has(id)));
+  if (mine.length === 0) return null;
+
+  const subs = await db
+    .select()
+    .from(homeworkSubmissions)
+    .where(
+      and(
+        eq(homeworkSubmissions.homeworkId, homeworkId),
+        inArray(homeworkSubmissions.studentId, [...classRows]),
+        isNotNull(homeworkSubmissions.submittedAt),
+      ),
+    );
+  return Promise.all(
+    mine.map(async c => ({
+      key: c.key,
+      displayName: c.displayName,
+      submission: await viewSubmission(subs.find(s => c.studentIds.includes(s.studentId)) ?? null, hw.dueAt),
+    })),
+  );
 }
 
 /**

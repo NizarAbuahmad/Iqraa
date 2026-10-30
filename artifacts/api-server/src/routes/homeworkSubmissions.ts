@@ -1,14 +1,14 @@
 /**
- * A student's project for a homework that asks for one: the student's routes (`/student/homework`)
- * and the teacher's two reads (`/homework/:id/submissions`, and one student's). The parent's read
- * is not in this file yet.
+ * A student's project for a homework that asks for one: the student's routes (`/student/homework`),
+ * the teacher's two reads (`/homework/:id/submissions`, and one student's), and the parent's one
+ * read-only route (`/parent/homework/:id/submissions`: the handed-in projects of their own children).
  *
  * Guards are path-scoped and repeat the ones in familyHomework.ts on purpose, so moving a mount
  * cannot quietly open a route: see mountOrder.test.ts. No bare `router.use(mw)`.
  *
  * Every failure to resolve — a missing homework, one that does not ask for a project, another
- * class's, an account with no roster row in the class — is the same 404. In the student routes no
- * `studentId` is ever read from a request: the row comes from the account
+ * class's, an account with no roster row in the class, a parent with no child in it — is the same
+ * 404. In the student routes no `studentId` is ever read from a request: the row comes from the account
  * (lib/homeworkSubmission.ts). The teacher's one-student read does take `:studentId` from the URL,
  * and `readForTeacher` checks it against the homework's own class.
  */
@@ -22,6 +22,7 @@ import { deleteObject, isR2Configured, newHomeworkSubmissionKey, putObject } fro
 import {
   addPhoto,
   listForTeacher,
+  readForParent,
   readForTeacher,
   readOwnSubmission,
   removePhoto,
@@ -40,6 +41,7 @@ const router = Router();
 
 router.use("/student/homework", authMiddleware, requireRole("student"));
 router.use("/homework", authMiddleware, requireRole(...TEACHER_ROLES));
+router.use("/parent/homework", authMiddleware, requireRole("parent"));
 
 const DISABLED = {
   code: "student_accounts_disabled",
@@ -208,6 +210,25 @@ router.get("/homework/:id/submissions/:studentId", async (req: AuthenticatedRequ
   } catch (err) {
     logger.error({ err }, "teacher homework submission failed");
     res.status(500).json({ error: "Failed to load the submission" });
+  }
+});
+
+/** Read-only: a guardian sees their own children's handed-in projects, never a draft. */
+router.get("/parent/homework/:id/submissions", async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!studentAccountsEnabled()) {
+      res.status(403).json(DISABLED);
+      return;
+    }
+    const children = isUuid(String(req.params["id"])) ? await readForParent(req.user!.id, String(req.params["id"])) : null;
+    if (!children) {
+      res.status(404).json(NO_HOMEWORK);
+      return;
+    }
+    res.json({ children });
+  } catch (err) {
+    logger.error({ err }, "parent homework submissions failed");
+    res.status(500).json({ error: "Failed to load your child's project" });
   }
 });
 

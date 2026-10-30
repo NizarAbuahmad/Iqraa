@@ -715,4 +715,120 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       }
     });
   });
+
+  describe("a parent, and the family's list", () => {
+    let hwFamily: string;
+    before(async () => {
+      hwFamily = await insertHomework("project-family", "5 days", true);
+      const key = `homework-submissions/${hwFamily}/${w.students.sA1}/fam.jpg`;
+      await s3.putForTest(key, JPEG);
+      await db.pool.query(
+        `INSERT INTO homework_submissions (homework_id, student_id, note, photos, submitted_at) VALUES ($1, $2, 'للأهل', $3::jsonb, now())`,
+        [hwFamily, w.students.sA1, JSON.stringify([{ id: "f1", key, mime: "image/jpeg", sizeBytes: JPEG.length }])],
+      );
+      // a draft of the classmate's, which no parent may see
+      await db.pool.query(`INSERT INTO homework_submissions (homework_id, student_id, note) VALUES ($1, $2, 'مسودة')`, [hwFamily, sibling.row]);
+    });
+
+    it("lets a guardian read their own child's handed-in project, read-only", async () => {
+      const r = await call(server, "GET", `/parent/homework/${hwFamily}/submissions`, w.users.parentA);
+      assert.equal(r.status, 200, r.text);
+      // Both of this family's children sit in c1: Sara handed in, Adam did not. Another family's child is not here.
+      assert.deepEqual(r.json.children.map((c: any) => c.displayName).sort(), ["آدم", "سارة"]);
+      const sara = r.json.children.find((c: any) => c.displayName === "سارة");
+      const adam = r.json.children.find((c: any) => c.displayName === "آدم");
+      assert.equal(sara.submission.note, "للأهل");
+      assert.equal(sara.submission.photos.length, 1);
+      assert.equal(sara.submission.status, "submitted");
+      assert.equal(adam.submission.status, "none");
+      assert.ok(Buffer.from(await (await fetch(sara.submission.photos[0].url)).arrayBuffer()).equals(JPEG));
+      // A child's own `key` (their group id) is part of this response; a photo's object key must not be.
+      for (const c of r.json.children) {
+        for (const p of c.submission.photos) assert.deepEqual(Object.keys(p).sort(), ["id", "mime", "sizeBytes", "url"]);
+      }
+      assert.equal(JSON.stringify(r.json).replace(/"url":"[^"]*"/g, "").includes("homework-submissions/"), false);
+      // The unmatched path answers an HTML 404 page, so this is a raw fetch rather than `call` (which parses JSON).
+      const write = await fetch(`${server.base}/parent/homework/${hwFamily}/submission`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${accessToken(w.users.parentA)}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ note: "x" }),
+      });
+      assert.ok([404, 405].includes(write.status), "a parent has no write route");
+      const after = await db.pool.query(`SELECT note FROM homework_submissions WHERE homework_id = $1 AND student_id = $2`, [hwFamily, w.students.sA1]);
+      assert.equal(after.rows[0].note, "للأهل", "and the attempt changed nothing");
+    });
+
+    it("shows another family, a teacher and an anonymous caller nothing", async () => {
+      assert.equal((await call(server, "GET", `/parent/homework/${hwFamily}/submissions`, w.users.parentB)).status, 404);
+      assert.equal((await call(server, "GET", `/parent/homework/${hwFamily}/submissions`, w.users.t1)).status, 403);
+      assert.equal((await call(server, "GET", `/parent/homework/${hwFamily}/submissions`)).status, 401);
+      assert.equal((await call(server, "GET", `/parent/homework/${RANDOM_UUID}/submissions`, w.users.parentA)).status, 404);
+    });
+
+    it("never shows a parent a draft, and answers 404 for a homework that asks for no project", async () => {
+      // A guardian whose child holds only a DRAFT sees the child with nothing handed in, never the draft.
+      const hwDraft = await insertHomework("project-family-draft", "5 days", true);
+      await db.pool.query(`INSERT INTO homework_submissions (homework_id, student_id, note) VALUES ($1, $2, 'مسودة سارة')`, [hwDraft, w.students.sA1]);
+      const r = await call(server, "GET", `/parent/homework/${hwDraft}/submissions`, w.users.parentA);
+      assert.equal(r.status, 200, r.text);
+      const saraDraft = r.json.children.find((c: any) => c.displayName === "سارة");
+      assert.equal(saraDraft.submission.status, "none");
+      assert.equal(saraDraft.submission.note, "");
+      assert.equal(saraDraft.submission.photos.length, 0);
+      assert.equal(r.text.includes("مسودة"), false, "the draft's text is nowhere in the response");
+
+      const plain = await call(server, "GET", `/parent/homework/${hwPlain}/submissions`, w.users.parentA);
+      assert.equal(plain.status, 404, plain.text);
+      assert.equal(plain.json.error, "Homework not found");
+    });
+
+    it("is closed while student accounts are off", async () => {
+      const off = await startServer({ databaseUrl: db.url, env: { STUDENT_ACCOUNTS: undefined, ...s3Env(s3) } });
+      try {
+        const r = await call(off, "GET", `/parent/homework/${hwFamily}/submissions`, w.users.parentA);
+        assert.equal(r.status, 403, r.text);
+        assert.equal(r.json.code, "student_accounts_disabled");
+      } finally {
+        await off.stop();
+      }
+    });
+
+    it("carries the state in the student's and the parent's homework lists", async () => {
+      const student = await call(server, "GET", "/student/homework", w.users.studentA);
+      const mine = student.json.homework.find((h: any) => h.id === hwFamily);
+      assert.equal(mine.requiresSubmission, true);
+      assert.equal(mine.submission, "submitted");
+      const parent = await call(server, "GET", "/parent/homework", w.users.parentA);
+      const sara = parent.json.children.find((c: any) => c.displayName === "سارة");
+      assert.equal(sara.homework.find((h: any) => h.id === hwFamily).submission, "submitted");
+      // the classmate's draft is not "submitted" for them
+      const layla = await call(server, "GET", "/student/homework", sibling.user);
+      assert.equal(layla.json.homework.find((h: any) => h.id === hwFamily).submission, "none");
+    });
+
+    it("gives the same answers when row-level security is enforced", async () => {
+      const enforcing = await startServer({ databaseUrl: db.url, env: { RLS_ENFORCE: "on", ...s3Env(s3) } });
+      try {
+        const read = await call(enforcing, "GET", `/parent/homework/${hwFamily}/submissions`, w.users.parentA);
+        const plainRead = await call(server, "GET", `/parent/homework/${hwFamily}/submissions`, w.users.parentA);
+        assert.equal(read.status, 200, read.text);
+        const byName = (res: any) => Object.fromEntries(res.json.children.map((c: any) => [c.displayName, c.submission]));
+        assert.deepEqual(Object.keys(byName(read)).sort(), Object.keys(byName(plainRead)).sort());
+        assert.equal(byName(read)["سارة"].note, "للأهل");
+        assert.equal(byName(read)["سارة"].photos.length, 1);
+        assert.equal(byName(read)["آدم"].status, "none");
+        assert.equal((await call(enforcing, "GET", `/parent/homework/${hwFamily}/submissions`, w.users.parentB)).status, 404);
+
+        const parent = await call(enforcing, "GET", "/parent/homework", w.users.parentA);
+        const sara = parent.json.children.find((c: any) => c.displayName === "سارة");
+        assert.equal(sara.homework.find((h: any) => h.id === hwFamily).submission, "submitted");
+        const student = await call(enforcing, "GET", "/student/homework", w.users.studentA);
+        assert.equal(student.json.homework.find((h: any) => h.id === hwFamily).submission, "submitted");
+        const layla = await call(enforcing, "GET", "/student/homework", sibling.user);
+        assert.equal(layla.json.homework.find((h: any) => h.id === hwFamily).submission, "none");
+      } finally {
+        await enforcing.stop();
+      }
+    });
+  });
 });
