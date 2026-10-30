@@ -69,7 +69,7 @@ describe('homework project screen: the project rules', () => {
   it('uses the API client, the picker and the shared rules', () => {
     assert.match(src, /import \{ homeworkSubmissionApi \} from '@\/services\/homeworkSubmissionApi\.default'/);
     assert.match(src, /import \{ pickHomeworkPhoto/);
-    for (const name of ['canHandIn', 'canAddPhoto', 'noteChanged', 'NOTE_MAX', 'stateLabelKey']) {
+    for (const name of ['canHandIn', 'canAddPhoto', 'NOTE_MAX', 'stateLabelKey']) {
       assert.match(src, new RegExp(`\\b${name}\\b[\\s\\S]*from '@/services/homeworkSubmission'`), name);
     }
     assert.match(src, /import \{ confirm \} from '@\/services\/confirm'/);
@@ -124,12 +124,53 @@ describe('homework project screen: the project rules', () => {
 
   it('reloads after a failed upload that may have reached the server, so a retry does not duplicate a photo', () => {
     const upload = after('homeworkSubmissionApi.uploadPhoto(', 900);
-    assert.match(upload, /catch \(e\)[\s\S]*mayHaveStored\(e\)[\s\S]*await load\(/);
+    assert.match(upload, /catch \(e\)[\s\S]*uploadMayHaveStored\(e\)[\s\S]*await load\(/);
+  });
+
+  it('takes its decisions from services/homeworkProject (unit-tested there), not from copies of its own', () => {
+    for (const name of ['noteNeedsSave', 'saveAgain', 'removalWouldEmpty', 'uploadMayHaveStored', 'isStaleRefusal', 'isEmptyRefusal', 'draftAfterServer', 'celebratesHandIn', 'photoSlotSize']) {
+      assert.match(src, new RegExp(`\\b${name}\\b[\\s\\S]*from '@/services/homeworkProject'`), name);
+      assert.match(src, new RegExp(`\\b${name}\\(`), `${name} is imported but never called`);
+    }
+    assert.doesNotMatch(src, /function (mayHaveStored|isStale)\b/);
   });
 
   it('asks before removing a photo, as a destructive action', () => {
     assert.match(after('confirm({', 400), /destructive: true/);
     assert.match(src, /homeworkSubmissionApi\.removePhoto\(/);
+  });
+
+  it('saves a typed note before removing, so the removal is judged against the note on screen', () => {
+    // On a phone a tap on the trash does not blur the field (keyboardShouldPersistTaps="handled").
+    const remove = after('const removePhoto = async', 1600);
+    const save = remove.indexOf('await saveDraft()');
+    const del = remove.indexOf('homeworkSubmissionApi.removePhoto(');
+    assert.ok(save > 0 && del > save, 'removePhoto must await saveDraft() before calling the API');
+  });
+
+  it('will not offer a removal that would empty a handed-in project, and says what to do instead', () => {
+    assert.match(src, /removalWouldEmpty\(view, draft\)/);
+    assert.match(src, /projectAddNewFirst/);
+  });
+
+  it('words an `empty` refusal of a removal or a note save as such, not as the hand-in message', () => {
+    assert.match(src, /isEmptyRefusal\(e\) \? t\('projectCannotEmpty'\)/);
+  });
+
+  it('saves an edit made while a note save was in flight', () => {
+    assert.match(after('const saveDraft', 1400), /saveAgain\(/);
+  });
+
+  it('caches a photo by its id, because its signed URL changes on every reload', () => {
+    assert.match(src, /cacheKey: photo\.id/);
+  });
+
+  it('names each remove button after its photo', () => {
+    assert.match(src, /projectRemovePhotoN', i \+ 1\)/);
+  });
+
+  it('sizes the photo slots from the window', () => {
+    assert.match(src, /useWindowDimensions\(\)/);
   });
 
   it('opens a thumbnail in the shared viewer and draws a placeholder for a missing url', () => {
@@ -139,8 +180,7 @@ describe('homework project screen: the project rules', () => {
   });
 
   it('celebrates only the crossing into handed in made here, and not a late one', () => {
-    assert.match(src, /justCompleted\(/);
-    assert.match(src, /next\.status === 'submitted'/);
+    assert.match(src, /celebratesHandIn\(before\.status, next\.status\)/);
     assert.match(src, /<Celebrate\b/);
   });
 

@@ -16,7 +16,7 @@
  *   so a retry does not add a second copy of a photo they can already see.
  */
 import React, { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -29,16 +29,25 @@ import {
   NOTE_MAX,
   canAddPhoto,
   canHandIn,
-  noteChanged,
   stateLabelKey,
   type SubmissionPhoto,
   type SubmissionState,
   type SubmissionView,
 } from '@/services/homeworkSubmission';
+import {
+  celebratesHandIn,
+  draftAfterServer,
+  isEmptyRefusal,
+  isStaleRefusal,
+  noteNeedsSave,
+  photoSlotSize,
+  removalWouldEmpty,
+  saveAgain,
+  uploadMayHaveStored,
+} from '@/services/homeworkProject';
 import { formatDueDate, isValidYmd } from '@/services/homework';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { confirm } from '@/services/confirm';
-import { justCompleted } from '@/services/celebration';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { ICON } from '@/constants/icons';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
@@ -51,9 +60,6 @@ import { Toast } from '@/components/ui/Toast';
 import { ImageViewerModal } from '@/components/ui/ImageViewer';
 import { Celebrate } from '@/components/ui/Celebrate';
 
-/** A photo slot's edge. Six fit in two rows of three on a 360-point phone. */
-const SLOT = 104;
-
 const STATUS_ICON: Record<SubmissionState, keyof typeof Ionicons.glyphMap> = {
   none: 'ellipse-outline',
   submitted: 'checkmark-circle',
@@ -65,22 +71,14 @@ type Failure = { message: string; final: boolean };
 
 const statusOf = (e: unknown): unknown => (e && typeof e === 'object' ? (e as { status?: unknown }).status : undefined);
 
-/** No answer (offline, a timeout), or the server or a proxy failed after the write: the photo may be stored. */
-function mayHaveStored(e: unknown): boolean {
-  const status = statusOf(e);
-  return typeof status !== 'number' || status >= 500;
-}
-
-/** The project changed under the screen (locked, emptied, a photo already gone): read it again. */
-function isStale(e: unknown): boolean {
-  const status = statusOf(e);
-  return status === 409 || status === 404;
-}
-
 export default function HomeworkProjectScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const surface = useSurface();
+  const { width } = useWindowDimensions();
+  // The grid's width: the window (capped), less the page's and the card's padding on both sides, and a
+  // dark card's 1-point borders. Three slots to a row where that allows (photoSlotSize).
+  const slot = photoSlotSize(Math.min(width, CONTENT_MAX_WIDTH) - 4 * SPACE.lg - 2, SPACE.sm);
   const { t, isRTL } = useLanguage();
   const align = isRTL ? 'right' : 'left';
   const row = { flexDirection: isRTL ? 'row-reverse' : 'row' } as const;
@@ -101,7 +99,8 @@ export default function HomeworkProjectScreen() {
   /** The note the server holds, or null before the first load. */
   const savedNoteRef = useRef<string | null>(null);
   const busyRef = useRef<Busy>(null);
-  const noteSave = useRef<Promise<void> | null>(null);
+  /** The note save in flight, if any; resolves false when it failed (the failure was already said). */
+  const noteSave = useRef<Promise<boolean> | null>(null);
   /** A newer load, or a change made here, wins over an older load still in flight. */
   const loadSeq = useRef(0);
 
@@ -118,10 +117,10 @@ export default function HomeworkProjectScreen() {
 
   /** Take a view from the server. The draft follows it only while the student has not changed it. */
   const applyView = useCallback((next: SubmissionView) => {
-    const saved = savedNoteRef.current;
-    if (saved === null || !noteChanged(saved, draftRef.current)) {
-      draftRef.current = next.note;
-      setDraft(next.note);
+    const draftNext = draftAfterServer(savedNoteRef.current, draftRef.current, next.note);
+    if (draftNext !== draftRef.current) {
+      draftRef.current = draftNext;
+      setDraft(draftNext);
     }
     savedNoteRef.current = next.note;
     viewRef.current = next;
@@ -171,34 +170,47 @@ export default function HomeworkProjectScreen() {
     [id, t, applyView],
   );
 
-  /** Saves a changed note. One at a time; the hand-in waits for it and saves any later edit itself. */
-  const saveDraft = () => {
+  /**
+   * Saves the draft when it changed, one save at a time: a call during a save joins it, and an edit made
+   * while it was in flight is saved after it (`saveAgain`). Resolves false when a save failed (already said).
+   */
+  const saveDraft = (): Promise<boolean> => {
+    if (noteSave.current) return noteSave.current;
     const current = viewRef.current;
-    if (!id || !current || current.locked || noteSave.current || busyRef.current === 'handIn') return;
-    if (!noteChanged(savedNoteRef.current ?? '', draftRef.current)) return;
-    noteSave.current = homeworkSubmissionApi
-      .saveNote(id, draftRef.current)
-      .then(next => {
+    if (!id || !current || !noteNeedsSave(current, savedNoteRef.current, draftRef.current)) return Promise.resolve(true);
+    const sent = draftRef.current;
+    const run = homeworkSubmissionApi.saveNote(id, sent).then(
+      next => {
         // Only the note: an upload that finished meanwhile must not be dropped by an older photo list.
         savedNoteRef.current = next.note;
         patchView(v => ({ ...v, note: next.note }));
-      })
-      .catch(e => {
-        say(apiErrorMessage(e, 'projectSaveFailed', t));
-        if (isStale(e)) void load(true);
-      })
-      .finally(() => {
-        noteSave.current = null;
-      });
+        return true;
+      },
+      (e: unknown) => {
+        say(isEmptyRefusal(e) ? t('projectCannotEmpty') : apiErrorMessage(e, 'projectSaveFailed', t));
+        if (isStaleRefusal(e)) void load(true);
+        return false;
+      },
+    );
+    const chained = run.then(ok => {
+      noteSave.current = null;
+      return ok && saveAgain(sent, draftRef.current, savedNoteRef.current ?? '') ? saveDraft() : ok;
+    });
+    noteSave.current = chained;
+    return chained;
   };
-  const saveDraftRef = useRef(saveDraft);
-  saveDraftRef.current = saveDraft;
+  /** Blur and leaving. Not during a hand-in, which saves the draft itself. */
+  const saveOnLeave = () => {
+    if (busyRef.current !== 'handIn') void saveDraft();
+  };
+  const saveOnLeaveRef = useRef(saveOnLeave);
+  saveOnLeaveRef.current = saveOnLeave;
 
   // On every focus, not once: a signed photo URL lives ten minutes. Leaving saves the note.
   useFocusEffect(
     useCallback(() => {
       void load();
-      return () => saveDraftRef.current();
+      return () => saveOnLeaveRef.current();
     }, [load]),
   );
 
@@ -241,7 +253,7 @@ export default function HomeworkProjectScreen() {
     } catch (e) {
       say(apiErrorMessage(e, 'projectUploadFailed', t));
       // Read the project again before the student can retry, so a stored photo shows instead of uploading twice.
-      if (mayHaveStored(e) || isStale(e)) await load(true);
+      if (uploadMayHaveStored(e) || isStaleRefusal(e)) await load(true);
     } finally {
       setBusy(null);
     }
@@ -250,6 +262,7 @@ export default function HomeworkProjectScreen() {
   const removePhoto = async (photo: SubmissionPhoto) => {
     const current = viewRef.current;
     if (!id || !current || current.locked || busyRef.current !== null) return;
+    if (removalWouldEmpty(current, draftRef.current)) return;
     const ok = await confirm({
       title: t('projectRemoveConfirmTitle'),
       message: t('projectRemoveConfirmBody'),
@@ -260,11 +273,15 @@ export default function HomeworkProjectScreen() {
     if (!ok || busyRef.current !== null) return;
     setBusy('remove');
     try {
+      // A note typed but not saved yet (on a phone a tap on the trash does not blur the field) goes first,
+      // or the server judges the removal against the old note and may refuse it as emptying the project.
+      if (!(await saveDraft())) return;
       await homeworkSubmissionApi.removePhoto(id, photo.id);
       patchView(v => ({ ...v, photos: v.photos.filter(p => p.id !== photo.id) }));
     } catch (e) {
-      say(apiErrorMessage(e, 'projectRemoveFailed', t));
-      if (isStale(e) || mayHaveStored(e)) await load(true);
+      say(isEmptyRefusal(e) ? t('projectCannotEmpty') : apiErrorMessage(e, 'projectRemoveFailed', t));
+      // Same reading as an upload's: no answer or a 5xx may mean the removal did happen.
+      if (isStaleRefusal(e) || uploadMayHaveStored(e)) await load(true);
     } finally {
       setBusy(null);
     }
@@ -277,15 +294,15 @@ export default function HomeworkProjectScreen() {
     try {
       if (noteSave.current) await noteSave.current;
       const next = await homeworkSubmissionApi.handIn(id, savedNoteRef.current ?? '', draftRef.current);
-      const crossed = justCompleted({ key: id, complete: before.status !== 'none' }, { key: id, complete: next.status !== 'none' });
       loadSeq.current++;
       applyView(next);
       // Celebrated once, on the crossing made here; a late hand-in is acknowledged, not celebrated.
-      if (crossed && next.status === 'submitted') setCelebrate(true);
+      if (celebratesHandIn(before.status, next.status)) setCelebrate(true);
       else say(t('projectHandedIn'));
     } catch (e) {
+      // `empty` here keeps the hand-in wording (errSubmissionEmpty): «add a photo or a note first».
       say(apiErrorMessage(e, 'projectHandInFailed', t));
-      if (isStale(e)) await load(true);
+      if (isStaleRefusal(e)) await load(true);
     } finally {
       setBusy(null);
     }
@@ -310,6 +327,9 @@ export default function HomeworkProjectScreen() {
 
     const inFlight = busy !== null;
     const showNote = !view.locked || view.note.trim() !== '';
+    // The last photo of a handed-in project with a blank note cannot go: the server would refuse it.
+    const keepLast = !view.locked && removalWouldEmpty(view, draft);
+    const slotSize = { width: slot, height: slot };
     return (
       <>
         <View style={[styles.card, surface]}>
@@ -334,7 +354,7 @@ export default function HomeworkProjectScreen() {
           {view.locked && view.photos.length === 0 ? <Text style={muted}>{t('projectNoPhotos')}</Text> : null}
           <View style={[styles.grid, row]}>
             {view.photos.map((photo, i) => (
-              <View key={photo.id} style={styles.slot}>
+              <View key={photo.id} style={slotSize}>
                 <PressableScale
                   onPress={() => (photo.url ? setViewerUrl(photo.url) : undefined)}
                   disabled={!photo.url}
@@ -343,7 +363,8 @@ export default function HomeworkProjectScreen() {
                   style={[styles.thumb, { backgroundColor: colors.muted }]}
                 >
                   {photo.url ? (
-                    <Image source={{ uri: photo.url }} style={styles.thumbImage} contentFit="cover" />
+                    // The signed URL changes on every reload; the photo does not.
+                    <Image source={{ uri: photo.url, cacheKey: photo.id }} style={styles.thumbImage} contentFit="cover" />
                   ) : (
                     <Ionicons name="image-outline" size={ICON.xl} color={colors.mutedForeground} />
                   )}
@@ -351,14 +372,15 @@ export default function HomeworkProjectScreen() {
                 {view.locked ? null : (
                   <Pressable
                     onPress={() => void removePhoto(photo)}
-                    disabled={inFlight}
-                    aria-disabled={inFlight}
+                    disabled={inFlight || keepLast}
+                    aria-disabled={inFlight || keepLast}
                     accessibilityRole="button"
-                    accessibilityLabel={t('projectRemovePhoto')}
+                    accessibilityLabel={t('projectRemovePhotoN', i + 1)}
+                    accessibilityHint={keepLast ? t('projectAddNewFirst') : undefined}
                     style={[styles.remove, isRTL ? { left: 0 } : { right: 0 }]}
                   >
                     <View style={[styles.removeDot, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                      <Ionicons name="trash-outline" size={ICON.md} color={colors.destructive} />
+                      <Ionicons name="trash-outline" size={ICON.md} color={keepLast ? colors.mutedForeground : colors.destructive} />
                     </View>
                   </Pressable>
                 )}
@@ -371,7 +393,7 @@ export default function HomeworkProjectScreen() {
                 aria-disabled={inFlight}
                 aria-busy={busy === 'pick' || busy === 'upload'}
                 accessibilityLabel={busy === 'upload' ? t('projectUploading') : t('projectAddPhoto')}
-                style={[styles.slot, styles.add, { backgroundColor: colors.secondary, borderColor: colors.primary }]}
+                style={[slotSize, styles.add, { backgroundColor: colors.secondary, borderColor: colors.primary }]}
               >
                 {busy === 'upload' ? (
                   <ActivityIndicator color={colors.primary} />
@@ -384,6 +406,12 @@ export default function HomeworkProjectScreen() {
               </PressableScale>
             ) : null}
           </View>
+          {keepLast ? (
+            <View style={[styles.line, row]}>
+              <Ionicons name="information-circle" size={ICON.md} color={colors.mutedForeground} />
+              <Text style={[muted, { flex: 1 }]}>{t('projectAddNewFirst')}</Text>
+            </View>
+          ) : null}
         </View>
 
         {showNote ? (
@@ -393,7 +421,7 @@ export default function HomeworkProjectScreen() {
               isRTL={isRTL}
               value={draft}
               onChangeText={setDraftBoth}
-              onBlur={() => saveDraft()}
+              onBlur={saveOnLeave}
               multiline
               maxLength={NOTE_MAX}
               editable={!view.locked}
@@ -450,7 +478,6 @@ const styles = StyleSheet.create({
   card: { padding: SPACE.lg, gap: SPACE.md },
   line: { alignItems: 'center', gap: SPACE.sm },
   grid: { flexWrap: 'wrap', gap: SPACE.sm },
-  slot: { width: SLOT, height: SLOT },
   thumb: { flex: 1, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
   thumbImage: { width: '100%', height: '100%', borderRadius: RADIUS.md },
   // 44 points to tap, a smaller dot to see, in the slot's top corner.
