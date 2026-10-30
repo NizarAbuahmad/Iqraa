@@ -62,6 +62,12 @@ const BY_CODE = {
   not_found: 'errNotFound',
   // Homework: a due date outside the last 30 days / next year (POST and PATCH /homework).
   due_date_out_of_range: 'hwErrDueRange',
+  // A homework that is handed in as a project: ticking it done (PUT/DELETE /student/homework/:id/done) is refused.
+  // Raised by HomeworkError, not SubmissionError, so it is global.
+  submission_required: 'errSubmissionRequired',
+  // The project's photo upload (POST .../submission/photos). Both are specific to it.
+  bad_image: 'errBadImage',
+  bad_data_url: 'errBadImage',
   // Anywhere.
   rate_limited: 'errTooManyRequests',
   // The API shed the request: its hashing queue or database pool was full
@@ -70,7 +76,25 @@ const BY_CODE = {
   db_busy: 'errServerBusy',
 } as const;
 
-export type ApiErrorKey = (typeof BY_CODE)[keyof typeof BY_CODE] | 'errOffline';
+/**
+ * Codes that are ordinary words, so they are read only off the error class that owns them: another feature's
+ * `locked` or `empty` must not borrow this copy. Keyed by `err.name`, which `SubmissionError` sets
+ * (`homeworkSubmissionApi.ts`; this file imports nothing, so it cannot test `instanceof`).
+ */
+const BY_CODE_SCOPED = {
+  SubmissionError: {
+    locked: 'errSubmissionLocked',
+    empty: 'errSubmissionEmpty',
+    photo_limit: 'errPhotoLimit',
+    storage_unavailable: 'errStorageUnavailable',
+  },
+} as const;
+
+type ScopedKey = {
+  [S in keyof typeof BY_CODE_SCOPED]: (typeof BY_CODE_SCOPED)[S][keyof (typeof BY_CODE_SCOPED)[S]];
+}[keyof typeof BY_CODE_SCOPED];
+
+export type ApiErrorKey = (typeof BY_CODE)[keyof typeof BY_CODE] | ScopedKey | 'errOffline';
 
 /** The request never got an answer: offline, DNS, or a client-side timeout. */
 function neverReachedServer(err: unknown): boolean {
@@ -81,7 +105,11 @@ function neverReachedServer(err: unknown): boolean {
 
 export function apiErrorKey<K extends string>(err: unknown, fallback: K): ApiErrorKey | K {
   if (!err || typeof err !== 'object') return fallback;
-  const { code, status } = err as { code?: unknown; status?: unknown };
+  const { code, status, name } = err as { code?: unknown; status?: unknown; name?: unknown };
+  if (typeof code === 'string' && typeof name === 'string' && Object.hasOwn(BY_CODE_SCOPED, name)) {
+    const scoped: Record<string, string> = BY_CODE_SCOPED[name as keyof typeof BY_CODE_SCOPED];
+    if (Object.hasOwn(scoped, code)) return scoped[code] as ScopedKey;
+  }
   if (typeof code === 'string' && code in BY_CODE) return BY_CODE[code as keyof typeof BY_CODE];
   if (status === 429) return 'errTooManyRequests';
   if (neverReachedServer(err)) return 'errOffline';
