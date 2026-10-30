@@ -13,6 +13,8 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
+import { ICON } from '@/constants/icons';
+import { setSoundOn, useSoundOn } from '@/services/playFeedback';
 import { useLightStatusBar } from '@/hooks/useLightStatusBar';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
@@ -25,8 +27,10 @@ import { trackEvent } from '@/services/analytics';
 import { goToGames } from '@/services/navigation';
 
 export function GameShell({
-  titleKey, accent, scoreLabel, gameOver, onReplay, onBack, analytics, onFinished, footer, children,
+  titleKey, accent, scoreLabel, gameOver, onReplay, onBack, analytics, onFinished, footer, showSoundToggle, children,
 }: {
+  /** A speaker button that mutes the answer cues; only boards that make sound ask for it. */
+  showSoundToggle?: boolean;
   /** Default: back to the /play menu. */
   onBack?: () => void;
   /** Extra fields on the `game_finished` event, e.g. the lesson. */
@@ -51,6 +55,7 @@ export function GameShell({
   useLightStatusBar();
   const { t, isRTL } = useLanguage();
   const { user } = useAuth();
+  const soundOn = useSoundOn();
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   // A finished round celebrates on the crossing from playing to over, once.
@@ -95,6 +100,18 @@ export function GameShell({
           <Text style={[styles.title, { textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
             {t(titleKey)}
           </Text>
+          {showSoundToggle ? (
+            <Pressable
+              onPress={() => setSoundOn(!soundOn)}
+              style={styles.backBtn}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={t(soundOn ? 'playSoundMute' : 'playSoundUnmute')}
+              aria-pressed={!soundOn}
+            >
+              <Ionicons name={soundOn ? 'volume-high-outline' : 'volume-mute-outline'} size={ICON.xl} color="#fff" />
+            </Pressable>
+          ) : null}
           {scoreLabel ? (
             <View style={styles.scoreBadge}>
               <Text style={styles.scoreText}>{scoreLabel}</Text>

@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { GameShell } from './GameShell';
+import { answerFeedback } from '@/services/playFeedback';
 import { buildTriviaRound, flagUrl, type TriviaField, type TriviaOption, type TriviaQuestion } from '@/services/publicGames/countries';
 import type { TranslationKey } from '@/services/i18n';
 
@@ -81,6 +82,7 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
   const pick = (optionId: string) => {
     if (selected) return; // one answer per question
     setSelected(optionId);
+    answerFeedback(optionId === question.correctId);
     if (optionId === question.correctId) setScore(s => s + 1);
   };
 
@@ -112,6 +114,7 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
       analytics={analytics}
       onFinished={onFinished}
       footer={footer}
+      showSoundToggle
     >
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, padding: 20, gap: 20 }}>
         <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
