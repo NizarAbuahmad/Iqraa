@@ -171,7 +171,8 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
       showSoundToggle
     >
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, padding: 20, gap: 20 }}>
-        <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        {/* minHeight: room for the streak chip (25 px measured) so the question does not drop when it appears. */}
+        <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: ICON.md + SPACE.md }}>
           <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: TYPE.caption, textAlign: isRTL ? 'right' : 'left' }}>
             {t('playQuestionProgress', index + 1, questions.length)}
           </Text>

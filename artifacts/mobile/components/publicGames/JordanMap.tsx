@@ -26,8 +26,10 @@ export function JordanMap({ correctId, pickedId, accent }: { correctId: string; 
   const order = [...Object.keys(JORDAN_MAP.paths).filter(id => id !== wrong && id !== correctId), ...(wrong ? [wrong] : []), correctId];
   return (
     <View style={styles.wrap}>
-      <View style={styles.map}>
-        <Svg width="100%" height="100%" viewBox={JORDAN_MAP.viewBox} accessible={false}>
+      {/* Native reads the first two props, react-native-web only maps aria-hidden. They sit on the View:
+          on the Svg itself react-native-svg hands them to the DOM and React warns on every answer. */}
+      <View style={styles.map} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>
+        <Svg width="100%" height="100%" viewBox={JORDAN_MAP.viewBox}>
           {order.map(id => (
             <Path
               key={id}

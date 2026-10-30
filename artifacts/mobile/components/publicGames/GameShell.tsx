@@ -8,7 +8,7 @@
  * risking one game shipping without it.
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -122,7 +122,9 @@ export function GameShell({
         </View>
 
         {gameOver ? (
-          <View style={styles.overlay}>
+          // Scrolls when a short phone cannot hold the panel (best line + retry button made it taller);
+          // contentContainerStyle keeps it centred when it fits.
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.overlay}>
             <Ionicons name="trophy" size={48} color={accent} />
             <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 22, textAlign: 'center' }}>
               {t('playGameOverTitle')}
@@ -156,7 +158,7 @@ export function GameShell({
                 <Button label={t('playCtaButton')} onPress={() => router.push('/(auth)/register')} variant="secondary" fullWidth />
               </View>
             )}
-          </View>
+          </ScrollView>
         ) : (
           children
         )}
@@ -178,6 +180,6 @@ const styles = StyleSheet.create({
   title: { flex: 1, color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 17 },
   scoreBadge: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 },
   scoreText: { color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 },
-  overlay: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
+  overlay: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
   ctaCard: { width: '100%', borderWidth: 1, borderRadius: 14, padding: 18, gap: 10, marginTop: 24 },
 });

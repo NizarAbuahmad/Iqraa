@@ -18,7 +18,14 @@ test('the map shows only through the reveal, with the accent passed in, in the g
 
 test('the map is decorative for screen readers, takes colours from the theme and credits its source', () => {
   const map = read('components', 'publicGames', 'JordanMap.tsx');
-  assert.match(map, /accessible=\{false\}/);
+  // Native reads the first two, react-native-web only maps aria-hidden, and they sit on the View
+  // around the Svg (CalendarPicker's pattern). `accessible={false}` is not it, and neither are
+  // these on the Svg itself: react-native-svg passes them to the DOM on web, where React logs
+  // «Received `false` for a non-boolean attribute `accessible`» on every answer.
+  assert.match(map, /accessibilityElementsHidden/);
+  assert.match(map, /importantForAccessibility="no-hide-descendants"/);
+  assert.match(map, /aria-hidden/);
+  assert.doesNotMatch(map, /accessible=/);
   assert.match(map, /useColors\(\)/);
   assert.doesNotMatch(map, /palette/);
   assert.doesNotMatch(map, /fontSize:\s*\d/);
