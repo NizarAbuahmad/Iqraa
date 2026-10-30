@@ -566,7 +566,8 @@ router.delete("/homework/:id", async (req: AuthenticatedRequest, res) => {
       .set({ archivedAt: new Date(), updatedAt: new Date() })
       .where(and(eq(homework.id, existing.id), eq(homework.teacherId, teacherId)));
     // The photos are a minor's work and archiving is the teacher's "delete": remove them now.
-    // Awaited, capped by the work itself (a handful of objects), and never failing the archive.
+    // The archive waits for the purge (Cloud Run throttles work after res.json); it is bounded by the R2
+    // round trips, which run concurrently. A failure is logged and never fails the archive.
     await purgeSubmissions(existing.id).catch(err => logger.error({ err, homeworkId: existing.id }, "homework archive: could not purge submissions"));
     res.json({ archived: existing.id });
   } catch (err) {

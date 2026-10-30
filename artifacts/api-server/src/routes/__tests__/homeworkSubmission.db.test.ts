@@ -580,6 +580,10 @@ describeDb("homework project submissions over HTTP, against a real database", ()
 
   describe("the teacher's view, and what archiving removes", () => {
     let hwTeacher: string;
+    let hwControl: string;
+    let outsider: string;
+    let archived: string;
+    let leaver: string;
     const seedHandedIn = async (homeworkId: string, studentRow: string, photos: Array<{ id: string; key: string }>, submitted: boolean) => {
       for (const p of photos) await s3.putForTest(p.key, JPEG);
       await db.pool.query(
@@ -593,6 +597,27 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       hwTeacher = await insertHomework("project-teacher-view", "5 days", true);
       await seedHandedIn(hwTeacher, w.students.sA1, [{ id: "p1", key: `homework-submissions/${hwTeacher}/${w.students.sA1}/p1.jpg` }], true);
       await seedHandedIn(hwTeacher, sibling.row, [{ id: "p2", key: `homework-submissions/${hwTeacher}/${sibling.row}/p2.jpg` }], false); // a draft
+
+      // Three students who each hold a HANDED-IN row for hwTeacher but must not appear: a roster row
+      // that was never in the class, a member who is archived, and one who left the class.
+      const rosterRow = async (name: string) =>
+        (await db.pool.query(`INSERT INTO students (teacher_id, display_name) VALUES ($1, $2) RETURNING id`, [w.users.t1, name])).rows[0].id as string;
+      const join = (row: string) =>
+        db.pool.query(`INSERT INTO class_memberships (class_group_id, student_id) VALUES ($1, $2)`, [w.classes.c1, row]);
+      outsider = await rosterRow("غريب");
+      archived = await rosterRow("مؤرشف");
+      await join(archived);
+      await db.pool.query(`UPDATE students SET archived_at = now() WHERE id = $1`, [archived]);
+      leaver = await rosterRow("مغادر");
+      await join(leaver);
+      await db.pool.query(`DELETE FROM class_memberships WHERE class_group_id = $1 AND student_id = $2`, [w.classes.c1, leaver]);
+      for (const [id, row] of [["o1", outsider], ["a1", archived], ["l1", leaver]] as const) {
+        await seedHandedIn(hwTeacher, row, [{ id, key: `homework-submissions/${hwTeacher}/${row}/${id}.jpg` }], true);
+      }
+
+      // A control: another homework's photo, which archiving hwTeacher must leave alone.
+      hwControl = await insertHomework("project-control", "5 days", true);
+      await seedHandedIn(hwControl, w.students.sA1, [{ id: "c1", key: `homework-submissions/${hwControl}/${w.students.sA1}/c1.jpg` }], true);
     });
 
     it("lists every live member with their state; a draft is reported as none", async () => {
@@ -604,6 +629,9 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       assert.equal(byId.get(w.students.sA1).photoCount, 1);
       assert.equal(byId.get(sibling.row).status, "none", "the teacher never sees an unfinished upload");
       assert.equal(byId.get(sibling.row).photoCount, 0);
+      for (const [name, id] of [["a roster row outside the class", outsider], ["an archived member", archived], ["one who left", leaver]] as const) {
+        assert.equal(byId.has(id), false, `${name} is not listed`);
+      }
     });
 
     it("opens one student's project with signed URLs; a draft, a stranger's student and a bad id are one 404", async () => {
@@ -612,7 +640,8 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       assert.equal(ok.json.submission.note, "ملاحظة");
       assert.equal(ok.json.submission.photos.length, 1);
       assert.ok(Buffer.from(await (await fetch(ok.json.submission.photos[0].url)).arrayBuffer()).equals(JPEG));
-      for (const id of [sibling.row, w.students.nB1, RANDOM_UUID, "nope"]) {
+      // The outsider, the archived member and the one who left each hold a handed-in row: only the class check hides them.
+      for (const id of [sibling.row, w.students.nB1, outsider, archived, leaver, RANDOM_UUID, "nope"]) {
         const r = await call(server, "GET", `/homework/${hwTeacher}/submissions/${id}`, w.users.t1);
         assert.equal(r.status, 404, `${id}: ${r.text}`);
         assert.equal(r.json.error, "Submission not found", `${id}: ${r.text}`);
@@ -629,11 +658,16 @@ describeDb("homework project submissions over HTTP, against a real database", ()
     });
 
     it("is closed to another teacher, a student and an anonymous caller", async () => {
-      for (const [user, status] of [[w.users.t2, 404], [w.users.studentA, 403], [w.users.parentA, 403], [undefined, 401]] as const) {
+      for (const [who, user, status] of [
+        ["another teacher", w.users.t2, 404],
+        ["a student", w.users.studentA, 403],
+        ["a parent", w.users.parentA, 403],
+        ["an anonymous caller", undefined, 401],
+      ] as const) {
         const list = await call(server, "GET", `/homework/${hwTeacher}/submissions`, user);
-        assert.equal(list.status, status, `list as ${user}`);
+        assert.equal(list.status, status, `list as ${who}: ${list.text}`);
         const one = await call(server, "GET", `/homework/${hwTeacher}/submissions/${w.students.sA1}`, user);
-        assert.equal(one.status, status, `one as ${user}`);
+        assert.equal(one.status, status, `one as ${who}: ${one.text}`);
       }
     });
 
@@ -645,8 +679,40 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       assert.deepEqual(s3.keys().filter(k => k.startsWith(`homework-submissions/${hwTeacher}/`)), []);
       const left = await db.pool.query(`SELECT 1 FROM homework_submissions WHERE homework_id = $1`, [hwTeacher]);
       assert.equal(left.rowCount, 0);
-      const other = s3.keys().filter(k => k.startsWith(`homework-submissions/${hwOpen}/`));
-      assert.ok(other.length > 0, "another homework's photos are untouched");
+      const control = s3.keys().filter(k => k.startsWith(`homework-submissions/${hwControl}/`));
+      assert.equal(control.length, 1, "another homework's photo is untouched");
+      const controlRows = await db.pool.query(`SELECT 1 FROM homework_submissions WHERE homework_id = $1`, [hwControl]);
+      assert.equal(controlRows.rowCount, 1, "and so is its row");
+    });
+
+    it("removes a draft's photos and rows too when row-level security is enforced", async () => {
+      // With enforcement on, the teacher's own connection cannot see a student's draft, so only the owner
+      // connection (systemDb) can find the draft's photo. This is the case the purge exists for.
+      const hwRls = await insertHomework("project-rls-purge", "5 days", true);
+      const submittedKey = `homework-submissions/${hwRls}/${w.students.sA1}/s1.jpg`;
+      const draftKey = `homework-submissions/${hwRls}/${sibling.row}/d1.jpg`;
+      await seedHandedIn(hwRls, w.students.sA1, [{ id: "s1", key: submittedKey }], true);
+      await seedHandedIn(hwRls, sibling.row, [{ id: "d1", key: draftKey }], false);
+      const enforcing = await startServer({ databaseUrl: db.url, env: { RLS_ENFORCE: "on", ...s3Env(s3) } });
+      try {
+        const list = await call(enforcing, "GET", `/homework/${hwRls}/submissions`, w.users.t1);
+        assert.equal(list.status, 200, list.text);
+        assert.equal(list.json.submittedCount, 1);
+        const draftRow = list.json.submissions.find((s: any) => s.studentId === sibling.row);
+        assert.equal(draftRow.status, "none", "the draft is invisible to the teacher");
+        const owner = await db.pool.query(`SELECT 1 FROM homework_submissions WHERE homework_id = $1`, [hwRls]);
+        assert.equal(owner.rowCount, 2, "the owner connection sees both rows");
+        assert.ok(s3.body(draftKey) && s3.body(submittedKey), "both photos are stored");
+
+        const del = await call(enforcing, "DELETE", `/homework/${hwRls}`, w.users.t1);
+        assert.equal(del.status, 200, del.text);
+        assert.equal(del.json.archived, hwRls);
+        assert.deepEqual(s3.keys().filter(k => k.startsWith(`homework-submissions/${hwRls}/`)), [], "no photo is left, the draft's included");
+        const left = await db.pool.query(`SELECT 1 FROM homework_submissions WHERE homework_id = $1`, [hwRls]);
+        assert.equal(left.rowCount, 0, "no row is left");
+      } finally {
+        await enforcing.stop();
+      }
     });
   });
 });

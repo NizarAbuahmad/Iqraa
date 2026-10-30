@@ -7,8 +7,10 @@
  * cannot quietly open a route: see mountOrder.test.ts. No bare `router.use(mw)`.
  *
  * Every failure to resolve — a missing homework, one that does not ask for a project, another
- * class's, an account with no roster row in the class — is the same 404. No `studentId` is ever
- * read from a request: the row comes from the account (lib/homeworkSubmission.ts).
+ * class's, an account with no roster row in the class — is the same 404. In the student routes no
+ * `studentId` is ever read from a request: the row comes from the account
+ * (lib/homeworkSubmission.ts). The teacher's one-student read does take `:studentId` from the URL,
+ * and `readForTeacher` checks it against the homework's own class.
  */
 import { randomUUID } from "node:crypto";
 import { Router, type Response } from "express";

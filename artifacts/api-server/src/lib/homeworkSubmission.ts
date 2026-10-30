@@ -315,25 +315,27 @@ export async function readForTeacher(
  * the teacher's own connection cannot see a student's DRAFT (row-level security), and a draft's
  * photos are in the bucket all the same, so purging on the teacher's identity would leave them
  * behind. The caller (DELETE /homework/:id) has already proved the homework is the teacher's.
- * A failed object delete is logged, not fatal: the rows (and so the keys) are deleted either way,
- * and the object is unreachable from then on.
+ * Objects are deleted concurrently. A failed object delete is logged with its key, not fatal: the
+ * rows (and so the keys) are deleted either way, and the object is unreachable from then on.
+ * When R2 is not configured `deleteObject` is a silent no-op; no photo can exist then (an upload
+ * needs R2), so there is nothing to leave behind. `objects` counts attempted deletes, not
+ * confirmed ones.
  */
 export async function purgeSubmissions(homeworkId: string): Promise<{ rows: number; objects: number }> {
   const rows = await systemDb
     .select({ photos: homeworkSubmissions.photos })
     .from(homeworkSubmissions)
     .where(eq(homeworkSubmissions.homeworkId, homeworkId));
-  let objects = 0;
-  for (const { photos } of rows) {
-    for (const p of photos) {
-      try {
-        await deleteObject(p.key);
-        objects += 1;
-      } catch (err) {
-        logger.error({ err, homeworkId }, "homework submission purge: could not delete an object");
-      }
+  const photos = rows.flatMap(r => r.photos);
+  const results = await Promise.allSettled(photos.map(p => deleteObject(p.key)));
+  results.forEach((r, i) => {
+    if (r.status === "rejected") {
+      logger.error(
+        { err: r.reason, homeworkId, key: photos[i]!.key },
+        "homework submission purge: could not delete an object",
+      );
     }
-  }
+  });
   await systemDb.delete(homeworkSubmissions).where(eq(homeworkSubmissions.homeworkId, homeworkId));
-  return { rows: rows.length, objects };
+  return { rows: rows.length, objects: photos.length };
 }
