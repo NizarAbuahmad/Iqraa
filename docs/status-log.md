@@ -10,6 +10,22 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Admin date filter: «اليوم» and «أمس» chips — 2026-10-30
+
+**Asked:** "today" and "yesterday" alongside «الكل / ٧ أيام / ٣٠ يومًا / هذا الشهر» on the admin
+users screen.
+
+**What changed.** The presets live in the shared `DateRange` (`components/admin/DateRange.tsx`),
+so the two chips appear on every admin screen that uses it: users, signups, the dashboard's
+feedback list and AI costs. Each is one UTC day bounded at both ends (`from = to = dayAgo(0)` /
+`dayAgo(1)`); `to` is inclusive because `parseDateRange` adds a day server-side. Days are UTC like
+the other chips, so «اليوم» begins at 03:00 Amman time. AI costs drew one bar per day up to the
+API's echoed `to`, which for a bounded range is the next (exclusive) midnight — a picked `to` now
+wins, so a single day draws one bar, not an empty extra one.
+
+**Verified:** `pnpm run typecheck`. **Not verified:** the screens were not opened on a device or
+in a browser; no test covers the preset list.
+
 ## Unsubscribe in every email, and 18+ for teachers and parents — 2026-10-30
 
 **Asked:** an unsubscribe button in every email we send, and terms that say teachers and parents

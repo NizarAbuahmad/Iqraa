@@ -105,6 +105,9 @@ export function DateRange({ value, onChange, ar, isRTL, colors }: {
 }) {
   const presets: [string, string, Range][] = [
     ['الكل', 'All', EMPTY_RANGE],
+    // Single days are bounded both ends: `to` is inclusive (the API adds a day).
+    ['اليوم', 'Today', { from: dayAgo(0), to: dayAgo(0) }],
+    ['أمس', 'Yesterday', { from: dayAgo(1), to: dayAgo(1) }],
     ['٧ أيام', '7d', { from: dayAgo(6), to: '' }],
     ['٣٠ يومًا', '30d', { from: dayAgo(29), to: '' }],
     ['هذا الشهر', 'This month', { from: monthStart(), to: '' }],
