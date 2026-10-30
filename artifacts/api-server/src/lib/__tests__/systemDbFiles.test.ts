@@ -35,6 +35,7 @@ const ALLOWED: Record<string, string> = {
   "lib/familyPush.ts": "reads the recipients' device tokens (each belongs to the recipient) and prunes the dead ones; the caller is a teacher",
   "lib/homeworkMaterial.ts": "a student or parent opens the teacher's saved material attached to a homework — the teacher's row, read only after the homework, class and membership checks pass as the caller",
   "lib/homeworkReminders.ts": "the day-before reminder is run by Cloud Scheduler with no user, over every teacher's homework and every family's ticks",
+  "lib/homeworkSubmission.ts": "archiving a homework purges every photo and row of it, drafts included — a draft is invisible to the teacher's own identity (row-level security) but its photos are in the bucket all the same",
   "lib/adminNotify.ts": "notifies every system admin from a public, unauthenticated request",
   "modules/assessment/attemptGrading.ts": "server-side grading writes the grade tables, which only a teacher's identity may write directly",
 };

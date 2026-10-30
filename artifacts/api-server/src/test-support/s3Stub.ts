@@ -15,6 +15,8 @@ export interface S3Stub {
   endpoint: string;
   keys(): string[];
   body(key: string): Buffer | undefined;
+  /** Test-only: stores an object without going through the server, to seed what a route would have stored. */
+  putForTest(key: string, body: Buffer): Promise<void>;
   close(): Promise<void>;
 }
 
@@ -83,6 +85,9 @@ export async function startS3Stub(bucket = "iqraa-media"): Promise<S3Stub> {
     endpoint: `http://127.0.0.1:${port}`,
     keys: () => [...objects.keys()].sort(),
     body: key => objects.get(key),
+    putForTest: async (key, body) => {
+      objects.set(key, body);
+    },
     close: () => new Promise<void>(resolve => server.close(() => resolve())),
   };
 }

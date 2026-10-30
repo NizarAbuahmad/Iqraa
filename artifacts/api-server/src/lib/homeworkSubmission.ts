@@ -18,9 +18,18 @@
  * request sees the first one's result. Zero rows back means the rule would have been broken (or,
  * for `removePhoto`, that the photo is already gone), and the function answers accordingly.
  */
-import { db, homeworkSubmissions, type HomeworkSubmission, type SubmissionPhoto } from "@workspace/db";
-import { and, eq, inArray, sql, type SQL } from "drizzle-orm";
-import { presignedGetUrl } from "./r2.ts";
+import {
+  classMemberships,
+  db,
+  homeworkSubmissions,
+  students,
+  systemDb,
+  type HomeworkSubmission,
+  type SubmissionPhoto,
+} from "@workspace/db";
+import { and, asc, eq, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
+import { logger } from "./logger";
+import { deleteObject, presignedGetUrl } from "./r2.ts";
 import { ownHomeworkRows, tickRows } from "./homeworkDone.ts";
 import {
   PHOTOS_MAX,
@@ -224,4 +233,107 @@ export async function submit(t: SubmissionTarget, now: Date = new Date()): Promi
   if (updated.length === 0) return "empty";
   await tickRows(t.homeworkId, t.rows);
   return "ok";
+}
+
+export interface TeacherSubmissionRow {
+  studentId: string;
+  displayName: string;
+  /** A draft is `none`: the teacher never sees an unfinished upload. */
+  status: SubmissionStatus;
+  submittedAt: string | null;
+  photoCount: number;
+}
+
+interface TeacherHomeworkRef {
+  id: string;
+  classGroupId: string;
+  dueAt: Date;
+}
+
+/**
+ * Every live roster row in the homework's class, with the state of its handed-in project. Only a
+ * handed-in row is joined: row-level security would hide a draft from the teacher anyway, and the
+ * explicit filter keeps this correct if it ever ran on a connection that does not enforce it.
+ */
+export async function listForTeacher(hw: TeacherHomeworkRef): Promise<TeacherSubmissionRow[]> {
+  const rows = await db
+    .select({
+      studentId: students.id,
+      displayName: students.displayName,
+      submittedAt: homeworkSubmissions.submittedAt,
+      photos: homeworkSubmissions.photos,
+    })
+    .from(classMemberships)
+    .innerJoin(students, eq(students.id, classMemberships.studentId))
+    .leftJoin(
+      homeworkSubmissions,
+      and(
+        eq(homeworkSubmissions.studentId, students.id),
+        eq(homeworkSubmissions.homeworkId, hw.id),
+        isNotNull(homeworkSubmissions.submittedAt),
+      ),
+    )
+    .where(and(eq(classMemberships.classGroupId, hw.classGroupId), isNull(students.archivedAt)))
+    .orderBy(asc(students.displayName));
+  return rows.map(r => ({
+    studentId: r.studentId,
+    displayName: r.displayName,
+    status: submissionStatus({ submittedAt: r.submittedAt, dueAt: hw.dueAt }),
+    submittedAt: r.submittedAt ? r.submittedAt.toISOString() : null,
+    photoCount: r.photos?.length ?? 0,
+  }));
+}
+
+/** One live class member's handed-in project, or null for a draft, a missing one, or a student outside the class. */
+export async function readForTeacher(
+  hw: TeacherHomeworkRef,
+  studentId: string,
+): Promise<{ displayName: string; submission: SubmissionView } | null> {
+  const [row] = await db
+    .select({ submission: homeworkSubmissions, displayName: students.displayName })
+    .from(homeworkSubmissions)
+    .innerJoin(students, eq(students.id, homeworkSubmissions.studentId))
+    .innerJoin(
+      classMemberships,
+      and(eq(classMemberships.studentId, students.id), eq(classMemberships.classGroupId, hw.classGroupId)),
+    )
+    .where(
+      and(
+        eq(homeworkSubmissions.homeworkId, hw.id),
+        eq(homeworkSubmissions.studentId, studentId),
+        isNotNull(homeworkSubmissions.submittedAt),
+        isNull(students.archivedAt),
+      ),
+    )
+    .limit(1);
+  if (!row) return null;
+  return { displayName: row.displayName, submission: await viewSubmission(row.submission, hw.dueAt) };
+}
+
+/**
+ * Removes every photo and every row of a homework that has been archived. `systemDb` on purpose:
+ * the teacher's own connection cannot see a student's DRAFT (row-level security), and a draft's
+ * photos are in the bucket all the same, so purging on the teacher's identity would leave them
+ * behind. The caller (DELETE /homework/:id) has already proved the homework is the teacher's.
+ * A failed object delete is logged, not fatal: the rows (and so the keys) are deleted either way,
+ * and the object is unreachable from then on.
+ */
+export async function purgeSubmissions(homeworkId: string): Promise<{ rows: number; objects: number }> {
+  const rows = await systemDb
+    .select({ photos: homeworkSubmissions.photos })
+    .from(homeworkSubmissions)
+    .where(eq(homeworkSubmissions.homeworkId, homeworkId));
+  let objects = 0;
+  for (const { photos } of rows) {
+    for (const p of photos) {
+      try {
+        await deleteObject(p.key);
+        objects += 1;
+      } catch (err) {
+        logger.error({ err, homeworkId }, "homework submission purge: could not delete an object");
+      }
+    }
+  }
+  await systemDb.delete(homeworkSubmissions).where(eq(homeworkSubmissions.homeworkId, homeworkId));
+  return { rows: rows.length, objects };
 }

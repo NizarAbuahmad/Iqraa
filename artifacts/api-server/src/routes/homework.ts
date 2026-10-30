@@ -45,6 +45,7 @@ import { libraryItemSnapshot } from "../lib/librarySnapshot.ts";
 import { homeworkChatLine } from "../modules/notifications/familyPushText.ts";
 import { announceHomeworkPosted } from "../lib/familyPushEvents.ts";
 import { logger } from "../lib/logger";
+import { purgeSubmissions } from "../lib/homeworkSubmission.ts";
 import { pushWithin } from "../lib/pushWithin.ts";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { RESOURCES_MAX, dueAtToDueDate, isUuid, parseCreate, parsePatch } from "../modules/homework/rules.ts";
@@ -227,7 +228,7 @@ async function shareToChat(hw: Homework, klass: ClassGroup): Promise<boolean> {
 }
 
 /** A homework row the teacher owns, not archived, whose class is also live. */
-async function ownedHomework(id: string, teacherId: string): Promise<Homework | undefined> {
+export async function ownedHomework(id: string, teacherId: string): Promise<Homework | undefined> {
   if (!isUuid(id)) return undefined;
   const [row] = await db
     .select({ hw: homework })
@@ -564,6 +565,9 @@ router.delete("/homework/:id", async (req: AuthenticatedRequest, res) => {
       .update(homework)
       .set({ archivedAt: new Date(), updatedAt: new Date() })
       .where(and(eq(homework.id, existing.id), eq(homework.teacherId, teacherId)));
+    // The photos are a minor's work and archiving is the teacher's "delete": remove them now.
+    // Awaited, capped by the work itself (a handful of objects), and never failing the archive.
+    await purgeSubmissions(existing.id).catch(err => logger.error({ err, homeworkId: existing.id }, "homework archive: could not purge submissions"));
     res.json({ archived: existing.id });
   } catch (err) {
     failHomework(res, err, "delete homework");

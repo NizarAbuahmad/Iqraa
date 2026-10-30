@@ -1,6 +1,7 @@
 /**
- * A student's project for a homework that asks for one — the student's side. (The teacher's and
- * the parent's reads are added to this file in later tasks of the plan.)
+ * A student's project for a homework that asks for one: the student's routes (`/student/homework`)
+ * and the teacher's two reads (`/homework/:id/submissions`, and one student's). The parent's read
+ * is not in this file yet.
  *
  * Guards are path-scoped and repeat the ones in familyHomework.ts on purpose, so moving a mount
  * cannot quietly open a route: see mountOrder.test.ts. No bare `router.use(mw)`.
@@ -11,13 +12,15 @@
  */
 import { randomUUID } from "node:crypto";
 import { Router, type Response } from "express";
-import { authMiddleware, requireRole, type AuthenticatedRequest } from "../middlewares/auth.js";
+import { authMiddleware, requireRole, TEACHER_ROLES, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { studentAccountsEnabled } from "../lib/features.js";
 import { logger } from "../lib/logger";
 import { createRateLimiter } from "../lib/rateLimit.ts";
 import { deleteObject, isR2Configured, newHomeworkSubmissionKey, putObject } from "../lib/r2.js";
 import {
   addPhoto,
+  listForTeacher,
+  readForTeacher,
   readOwnSubmission,
   removePhoto,
   setNote,
@@ -27,12 +30,14 @@ import {
   viewSubmission,
   type SubmissionTarget,
 } from "../lib/homeworkSubmission.ts";
-import { dueAtToDueDate } from "../modules/homework/rules.ts";
+import { dueAtToDueDate, isUuid } from "../modules/homework/rules.ts";
+import { ownedHomework } from "./homework";
 import { parseNote, parsePhotoUpload } from "../modules/homework/submission.ts";
 
 const router = Router();
 
 router.use("/student/homework", authMiddleware, requireRole("student"));
+router.use("/homework", authMiddleware, requireRole(...TEACHER_ROLES));
 
 const DISABLED = {
   code: "student_accounts_disabled",
@@ -162,5 +167,46 @@ router.post("/student/homework/:id/submission/submit", (req: AuthenticatedReques
     res.json({ submission: await currentView(t) });
   }),
 );
+
+const NO_SUBMISSION = { error: "Submission not found" } as const;
+
+router.get("/homework/:id/submissions", async (req: AuthenticatedRequest, res) => {
+  try {
+    const hw = await ownedHomework(String(req.params["id"]), req.user!.id);
+    if (!hw || !hw.requiresSubmission) {
+      res.status(404).json(NO_HOMEWORK);
+      return;
+    }
+    const submissions = await listForTeacher(hw);
+    res.json({
+      homework: { id: hw.id, title: hw.title, dueDate: dueAtToDueDate(hw.dueAt) },
+      submittedCount: submissions.filter(s => s.status !== "none").length,
+      submissions,
+    });
+  } catch (err) {
+    logger.error({ err }, "teacher homework submissions failed");
+    res.status(500).json({ error: "Failed to load the submissions" });
+  }
+});
+
+router.get("/homework/:id/submissions/:studentId", async (req: AuthenticatedRequest, res) => {
+  try {
+    const hw = await ownedHomework(String(req.params["id"]), req.user!.id);
+    if (!hw || !hw.requiresSubmission) {
+      res.status(404).json(NO_HOMEWORK);
+      return;
+    }
+    const studentId = String(req.params["studentId"]);
+    const found = isUuid(studentId) ? await readForTeacher(hw, studentId) : null;
+    if (!found) {
+      res.status(404).json(NO_SUBMISSION);
+      return;
+    }
+    res.json({ student: { id: studentId, displayName: found.displayName }, submission: found.submission });
+  } catch (err) {
+    logger.error({ err }, "teacher homework submission failed");
+    res.status(500).json({ error: "Failed to load the submission" });
+  }
+});
 
 export default router;

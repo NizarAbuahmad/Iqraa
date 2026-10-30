@@ -577,4 +577,76 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       }
     });
   });
+
+  describe("the teacher's view, and what archiving removes", () => {
+    let hwTeacher: string;
+    const seedHandedIn = async (homeworkId: string, studentRow: string, photos: Array<{ id: string; key: string }>, submitted: boolean) => {
+      for (const p of photos) await s3.putForTest(p.key, JPEG);
+      await db.pool.query(
+        `INSERT INTO homework_submissions (homework_id, student_id, note, photos, submitted_at)
+         VALUES ($1, $2, 'ملاحظة', $3::jsonb, CASE WHEN $4::boolean THEN now() END)`,
+        [homeworkId, studentRow, JSON.stringify(photos.map(p => ({ ...p, mime: "image/jpeg", sizeBytes: JPEG.length }))), submitted],
+      );
+    };
+
+    before(async () => {
+      hwTeacher = await insertHomework("project-teacher-view", "5 days", true);
+      await seedHandedIn(hwTeacher, w.students.sA1, [{ id: "p1", key: `homework-submissions/${hwTeacher}/${w.students.sA1}/p1.jpg` }], true);
+      await seedHandedIn(hwTeacher, sibling.row, [{ id: "p2", key: `homework-submissions/${hwTeacher}/${sibling.row}/p2.jpg` }], false); // a draft
+    });
+
+    it("lists every live member with their state; a draft is reported as none", async () => {
+      const r = await call(server, "GET", `/homework/${hwTeacher}/submissions`, w.users.t1);
+      assert.equal(r.status, 200, r.text);
+      assert.equal(r.json.submittedCount, 1);
+      const byId = new Map<string, any>(r.json.submissions.map((s: any) => [s.studentId, s]));
+      assert.equal(byId.get(w.students.sA1).status, "submitted");
+      assert.equal(byId.get(w.students.sA1).photoCount, 1);
+      assert.equal(byId.get(sibling.row).status, "none", "the teacher never sees an unfinished upload");
+      assert.equal(byId.get(sibling.row).photoCount, 0);
+    });
+
+    it("opens one student's project with signed URLs; a draft, a stranger's student and a bad id are one 404", async () => {
+      const ok = await call(server, "GET", `/homework/${hwTeacher}/submissions/${w.students.sA1}`, w.users.t1);
+      assert.equal(ok.status, 200, ok.text);
+      assert.equal(ok.json.submission.note, "ملاحظة");
+      assert.equal(ok.json.submission.photos.length, 1);
+      assert.ok(Buffer.from(await (await fetch(ok.json.submission.photos[0].url)).arrayBuffer()).equals(JPEG));
+      for (const id of [sibling.row, w.students.nB1, RANDOM_UUID, "nope"]) {
+        const r = await call(server, "GET", `/homework/${hwTeacher}/submissions/${id}`, w.users.t1);
+        assert.equal(r.status, 404, `${id}: ${r.text}`);
+        assert.equal(r.json.error, "Submission not found", `${id}: ${r.text}`);
+      }
+    });
+
+    it("answers the same 404 for a homework that does not ask for a project", async () => {
+      const list = await call(server, "GET", `/homework/${hwPlain}/submissions`, w.users.t1);
+      assert.equal(list.status, 404, list.text);
+      assert.equal(list.json.error, "Homework not found");
+      const one = await call(server, "GET", `/homework/${hwPlain}/submissions/${w.students.sA1}`, w.users.t1);
+      assert.equal(one.status, 404, one.text);
+      assert.equal(one.json.error, "Homework not found");
+    });
+
+    it("is closed to another teacher, a student and an anonymous caller", async () => {
+      for (const [user, status] of [[w.users.t2, 404], [w.users.studentA, 403], [w.users.parentA, 403], [undefined, 401]] as const) {
+        const list = await call(server, "GET", `/homework/${hwTeacher}/submissions`, user);
+        assert.equal(list.status, status, `list as ${user}`);
+        const one = await call(server, "GET", `/homework/${hwTeacher}/submissions/${w.students.sA1}`, user);
+        assert.equal(one.status, status, `one as ${user}`);
+      }
+    });
+
+    it("archiving the homework removes every photo, drafts included, and the rows", async () => {
+      assert.ok(s3.keys().some(k => k.startsWith(`homework-submissions/${hwTeacher}/`)));
+      const del = await call(server, "DELETE", `/homework/${hwTeacher}`, w.users.t1);
+      assert.equal(del.status, 200, del.text);
+      assert.equal(del.json.archived, hwTeacher);
+      assert.deepEqual(s3.keys().filter(k => k.startsWith(`homework-submissions/${hwTeacher}/`)), []);
+      const left = await db.pool.query(`SELECT 1 FROM homework_submissions WHERE homework_id = $1`, [hwTeacher]);
+      assert.equal(left.rowCount, 0);
+      const other = s3.keys().filter(k => k.startsWith(`homework-submissions/${hwOpen}/`));
+      assert.ok(other.length > 0, "another homework's photos are untouched");
+    });
+  });
 });
