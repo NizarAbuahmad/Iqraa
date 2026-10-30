@@ -40,7 +40,8 @@ export function diagramBeats(l: DiagramLayout): number {
   switch (l.kind) {
     case 'cycle': return l.stages.length;
     case 'tree': return l.branches.length;
-    case 'venn': return l.sets.length + 1;
+    // One beat per set, plus one for the overlap — only when there is an overlap to show.
+    case 'venn': return l.sets.length + (l.shared.length ? 1 : 0);
     case 'mindmap': return l.nodes.length;
   }
 }
@@ -76,35 +77,50 @@ function ring(n: number, cx: number, cy: number, rx: number, ry: number, rtl: bo
   });
 }
 
+/**
+ * Every fixed size below is a fraction of the area, or of `u` — the area's width
+ * over `DIAGRAM_W` — so the same drawing comes out at 960 × 430 on the screen and
+ * at 8.9 × 3.99 inches in PowerPoint. The text boxes are sized for the longest
+ * text the gate lets through (`diagramGeometry.test.ts` wraps it at 0.55 em a
+ * glyph and checks it fits), so a short label simply leaves some air.
+ */
 export function diagramGeometry(l: DiagramLayout, width: number, height: number, rtl: boolean): DiagramGeometry {
   const W = width;
   const H = height;
+  const u = W / DIAGRAM_W;
   const pad = W * 0.025;
+  const vpad = H * 0.012;
   const gap = W * 0.006;
+  const sx = 6 * u; // text inset, sides
+  const sy = 2 * u; // text inset, top and bottom
   const shapes: DiagramShape[] = [];
   const texts: DiagramText[] = [];
   const box = (x: number, y: number, w: number, h: number, fill: Paint, stroke: Stroke, beat: number) =>
     shapes.push({ t: 'box', x, y, w, h, fill, stroke, beat });
+  const ellipse = (cx: number, cy: number, rx: number, ry: number, fill: Paint, beat: number) =>
+    shapes.push({ t: 'ellipse', cx, cy, rx, ry, fill, stroke: 'accent', beat });
   const text = (x: number, y: number, w: number, h: number, t: string, size: DiagramText['size'], bold: boolean, beat: number) =>
     texts.push({ x, y, w, h, text: t, size, bold, beat });
 
   switch (l.kind) {
     case 'cycle': {
       const n = l.stages.length;
-      const bw = W * (n >= 5 ? 0.22 : 0.26);
-      const bh = H * 0.2;
-      const centres = ring(n, W / 2, H / 2, W / 2 - bw / 2 - pad, H / 2 - bh / 2 - pad, rtl);
+      const bw = W * (n === 3 ? 0.3 : n === 4 ? 0.27 : 0.26);
+      // Tall enough for a two-line label over a three-line note.
+      const bh = H * 0.285;
+      const centres = ring(n, W / 2, H / 2, W / 2 - bw / 2 - pad, H / 2 - bh / 2 - vpad, rtl);
       const half: Half = { hw: bw / 2, hh: bh / 2, round: false };
+      const labelH = 54 * u;
       centres.forEach((c, i) => {
         const s = l.stages[i]!;
         const x = c.x - bw / 2;
         const y = c.y - bh / 2;
         box(x, y, bw, bh, 'card', 'accent', i);
         if (s.note) {
-          text(x + 6, y + 4, bw - 12, bh * 0.5, s.label, 'md', true, i);
-          text(x + 6, y + bh * 0.5, bw - 12, bh * 0.5 - 4, s.note, 'sm', false, i);
+          text(x + sx, y + sy, bw - 2 * sx, labelH, s.label, 'md', true, i);
+          text(x + sx, y + sy + labelH, bw - 2 * sx, bh - 2 * sy - labelH, s.note, 'sm', false, i);
         } else {
-          text(x + 6, y + 4, bw - 12, bh - 8, s.label, 'md', true, i);
+          text(x + sx, y + sy, bw - 2 * sx, bh - 2 * sy, s.label, 'md', true, i);
         }
         const next = centres[(i + 1) % n]!;
         shapes.push({ t: 'line', ...connect(c, half, next, half, gap), arrow: true, beat: i === n - 1 ? n - 1 : i + 1 });
@@ -117,27 +133,27 @@ export function diagramGeometry(l: DiagramLayout, width: number, height: number,
       const colGap = W * 0.02;
       const rootW = W * 0.34;
       const rootH = H * 0.17;
-      const rootY = pad * 0.5;
+      const rootY = H * 0.01;
       box((W - rootW) / 2, rootY, rootW, rootH, 'tint', 'accent', ALWAYS);
-      text((W - rootW) / 2 + 6, rootY + 4, rootW - 12, rootH - 8, l.root, 'lg', true, ALWAYS);
+      text((W - rootW) / 2 + sx, rootY + sy, rootW - 2 * sx, rootH - 2 * sy, l.root, 'lg', true, ALWAYS);
       const bw = (W - 2 * pad - colGap * (n - 1)) / n;
-      const bh = H * 0.15;
-      const by = H * 0.33;
+      const bh = H * 0.14;
+      const by = H * 0.27;
       const maxLeaves = Math.max(0, ...l.branches.map(b => b.leaves.length));
-      const leafTop = by + bh + H * 0.05;
-      const leafGap = H * 0.025;
-      const leafH = maxLeaves ? Math.min(H * 0.12, (H - pad * 0.5 - leafTop - leafGap * (maxLeaves - 1)) / maxLeaves) : 0;
+      const leafTop = by + bh + H * 0.04;
+      const leafGap = H * 0.02;
+      const leafH = maxLeaves ? Math.min(H * 0.125, (H - vpad - leafTop - leafGap * (maxLeaves - 1)) / maxLeaves) : 0;
       l.branches.forEach((b, i) => {
         const col = rtl ? n - 1 - i : i;
         const x = pad + col * (bw + colGap);
         shapes.push({ t: 'line', x1: W / 2, y1: rootY + rootH, x2: x + bw / 2, y2: by, arrow: false, beat: i });
         box(x, by, bw, bh, 'card', 'accent', i);
-        text(x + 6, by + 4, bw - 12, bh - 8, b.label, 'md', true, i);
+        text(x + sx, by + sy, bw - 2 * sx, bh - 2 * sy, b.label, 'md', true, i);
         if (b.leaves.length) shapes.push({ t: 'line', x1: x + bw / 2, y1: by + bh, x2: x + bw / 2, y2: leafTop, arrow: false, beat: i });
         b.leaves.forEach((leaf, j) => {
           const ly = leafTop + j * (leafH + leafGap);
-          box(x + bw * 0.08, ly, bw * 0.84, leafH, 'card', 'border', i);
-          text(x + bw * 0.08 + 4, ly + 2, bw * 0.84 - 8, leafH - 4, leaf, 'sm', false, i);
+          box(x + bw * 0.06, ly, bw * 0.88, leafH, 'card', 'border', i);
+          text(x + bw * 0.06 + 4 * u, ly + sy, bw * 0.88 - 8 * u, leafH - 2 * sy, leaf, 'sm', false, i);
         });
       });
       return { width: W, height: H, shapes, texts, beats: n };
@@ -145,52 +161,74 @@ export function diagramGeometry(l: DiagramLayout, width: number, height: number,
 
     case 'venn': {
       const n = l.sets.length;
-      const order = (i: number) => (rtl && n === 2 ? 1 - i : i);
+      const beats = n + (l.shared.length ? 1 : 0);
       if (n === 2) {
-        const r = Math.min(H / 2 - pad, W * 0.25);
-        const cy = H / 2;
+        // Two wide ellipses, labels in a strip above them, the words in the three regions.
+        const rx = W * 0.3125;
+        const d = W * 0.1625;
+        const cy = H * 0.55;
+        const ry = H * 0.435;
+        const labelW = W * 0.31;
+        const bodyY = cy - H * 0.2;
+        const bodyH = H * 0.4;
         l.sets.forEach((s, i) => {
-          const side = order(i) === 0 ? -1 : 1;
-          const cx = W / 2 + side * r * 0.62;
-          shapes.push({ t: 'ellipse', cx, cy, rx: r, ry: r, fill: 'none', stroke: 'accent', beat: i });
-          text(cx - r * 0.75, cy - r * 0.9, r * 1.5, r * 0.3, s.label, 'lg', true, i);
-          const ex = cx + side * r * 0.42;
-          if (s.only.length) text(ex - r * 0.4, cy - r * 0.45, r * 0.8, r * 1.0, s.only.join('\n'), 'sm', false, i);
+          const side = (rtl ? 1 - i : i) === 0 ? -1 : 1;
+          const cx = W / 2 + side * d;
+          ellipse(cx, cy, rx, ry, 'none', i);
+          const crescent = W / 2 + side * (d + rx - d); // the middle of this set's own crescent
+          text(crescent - labelW / 2, H * 0.01, labelW, H * 0.09, s.label, 'md', true, i);
+          if (s.only.length) {
+            const bx = side < 0 ? W * 0.0646 : W - W * 0.0646 - W * 0.279;
+            text(bx, bodyY, W * 0.279, bodyH, s.only.join('\n'), 'sm', false, i);
+          }
         });
-        if (l.shared.length) text(W / 2 - r * 0.3, cy - r * 0.45, r * 0.6, r * 1.0, l.shared.join('\n'), 'sm', true, n);
-        return { width: W, height: H, shapes, texts, beats: n + 1 };
+        if (l.shared.length) text(W * 0.389, bodyY, W * 0.223, bodyH, l.shared.join('\n'), 'sm', true, n);
+        return { width: W, height: H, shapes, texts, beats };
       }
-      const r = H * 0.29;
-      const cxs = [W / 2 - r * 0.6, W / 2 + r * 0.6, W / 2];
-      const cys = [H / 2 - r * 0.35, H / 2 - r * 0.35, H / 2 + r * 0.62];
+      // Three wide ellipses, set 0 and 1 on top and set 2 below. Everything is placed in
+      // 960 × 430 units and scaled by `u`: the three "only" regions and the triple overlap
+      // are small, and each box below is the largest that fits wholly inside one region
+      // (found by search, and held there by the fit test in diagramGeometry.test.ts).
+      const rx = 310 * u;
+      const ry = 135 * u;
+      const cxs = [W / 2 - 150 * u, W / 2 + 150 * u, W / 2];
+      const cys = [139 * u, 139 * u, 289 * u];
       l.sets.forEach((s, i) => {
         const at = rtl && i < 2 ? 1 - i : i;
-        const cx = cxs[at]!;
-        const cy = cys[at]!;
-        shapes.push({ t: 'ellipse', cx, cy, rx: r, ry: r, fill: 'none', stroke: 'accent', beat: i });
+        ellipse(cxs[at]!, cys[at]!, rx, ry, 'none', i);
         if (at === 2) {
-          text(cx - r * 0.45, cy + r * 0.62, r * 0.9, r * 0.28, s.label, 'md', true, i);
-          if (s.only.length) text(cx - r * 0.42, cy + r * 0.12, r * 0.84, r * 0.48, s.only.join('\n'), 'sm', false, i);
+          // The lower set has the widest room: a one-line label, then its words.
+          const x = W / 2 - 141 * u;
+          const ly = 294 * u;
+          const lh = 28 * u;
+          text(x, ly, 282 * u, lh, s.label, 'md', true, i);
+          if (s.only.length) text(x, ly + lh, 282 * u, 64 * u, s.only.join('\n'), 'sm', false, i);
         } else {
-          const side = at === 0 ? -1 : 1;
-          text(cx + side * r * 0.5 - r * 0.45, cy - r * 0.85, r * 0.9, r * 0.28, s.label, 'md', true, i);
-          if (s.only.length) text(cx + side * r * 0.45 - r * 0.4, cy - r * 0.5, r * 0.8, r * 0.6, s.only.join('\n'), 'sm', false, i);
+          // The two upper sets: a two-line label, then its words, in the outer part of the ellipse.
+          const x = at === 0 ? 106 * u : W - 106 * u - 192 * u;
+          const ly = 54 * u;
+          const lh = 54 * u;
+          text(x, ly, 192 * u, lh, s.label, 'md', true, i);
+          if (s.only.length) text(x, ly + lh, 192 * u, 64 * u, s.only.join('\n'), 'sm', false, i);
         }
       });
-      if (l.shared.length) text(W / 2 - r * 0.3, H / 2 - r * 0.15, r * 0.6, r * 0.38, l.shared.join('\n'), 'sm', true, n);
-      return { width: W, height: H, shapes, texts, beats: n + 1 };
+      if (l.shared.length) text(W / 2 - 96 * u, 168 * u, 192 * u, 44 * u, l.shared.join('\n'), 'sm', true, n);
+      return { width: W, height: H, shapes, texts, beats };
     }
 
     case 'mindmap': {
       const n = l.nodes.length;
-      const crx = W * 0.15;
-      const cry = H * 0.17;
+      const crx = W * 0.19;
+      const cry = H * 0.18;
       const centre = { x: W / 2, y: H / 2 };
-      shapes.push({ t: 'ellipse', cx: centre.x, cy: centre.y, rx: crx, ry: cry, fill: 'tint', stroke: 'accent', beat: ALWAYS });
-      text(centre.x - crx * 0.8, centre.y - cry * 0.7, crx * 1.6, cry * 1.4, l.center, 'lg', true, ALWAYS);
+      ellipse(centre.x, centre.y, crx, cry, 'tint', ALWAYS);
+      // The largest box a 40-character centre needs (three lines) that still sits inside the ellipse.
+      const tw = crx * 1.5;
+      const th = H * 0.228;
+      text(centre.x - tw / 2, centre.y - th / 2, tw, th, l.center, 'lg', true, ALWAYS);
       const nw = W * 0.22;
-      const nh = H * 0.17;
-      const pts = ring(n, centre.x, centre.y, W / 2 - nw / 2 - pad, H / 2 - nh / 2 - pad, rtl);
+      const nh = H * 0.195;
+      const pts = ring(n, centre.x, centre.y, W / 2 - nw / 2 - pad, H / 2 - nh / 2 - vpad, rtl);
       const ch: Half = { hw: crx, hh: cry, round: true };
       const nhf: Half = { hw: nw / 2, hh: nh / 2, round: false };
       pts.forEach((p, i) => {
@@ -198,7 +236,7 @@ export function diagramGeometry(l: DiagramLayout, width: number, height: number,
         const seg = node.role === 'cause' ? connect(p, nhf, centre, ch, gap) : connect(centre, ch, p, nhf, gap);
         shapes.push({ t: 'line', ...seg, arrow: !!node.role, beat: i });
         box(p.x - nw / 2, p.y - nh / 2, nw, nh, 'card', 'accent', i);
-        text(p.x - nw / 2 + 6, p.y - nh / 2 + 4, nw - 12, nh - 8, node.text, 'md', false, i);
+        text(p.x - nw / 2 + sx, p.y - nh / 2 + sy, nw - 2 * sx, nh - 2 * sy, node.text, 'md', false, i);
       });
       return { width: W, height: H, shapes, texts, beats: n };
     }
