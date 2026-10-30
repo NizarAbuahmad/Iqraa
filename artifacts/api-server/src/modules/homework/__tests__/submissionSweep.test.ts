@@ -145,6 +145,20 @@ describe("planSweep", () => {
     assert.equal(p.skippedYoung, 2);
   });
 
+  it("keeps an object whose lastModified is not a valid date: an age it cannot compute is young", () => {
+    const p = plan([{ key: key(), lastModified: new Date("not a date") }]);
+    // Lengths, not deepEqual: the TAP reporter crashes printing an Invalid Date in a failure diff.
+    assert.equal(p.toDelete.length, 0);
+    assert.equal(p.wouldDelete.length, 0);
+    assert.equal(p.skippedYoung, 1);
+  });
+
+  it("keeps everything when the grace period is NaN, rather than deleting everything", () => {
+    const p = plan([obj(key(), GRACE_MS * 100), obj(key("png"), 0)], [], { graceMs: Number.NaN });
+    assert.deepEqual(p.toDelete, []);
+    assert.equal(p.skippedYoung, 2);
+  });
+
   it("honours a grace period passed in", () => {
     assert.equal(plan([obj(key(), 1000)], [], { graceMs: 1000 }).toDelete.length, 1);
     assert.equal(plan([obj(key(), 999)], [], { graceMs: 1000 }).toDelete.length, 0);

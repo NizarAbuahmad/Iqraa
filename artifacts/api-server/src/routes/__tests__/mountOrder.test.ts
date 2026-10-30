@@ -57,6 +57,9 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
         // reason (see render.yaml).
         OPENAI_API_KEY: "sk-test-placeholder",
         INTERNAL_CRON_KEY: MOUNT_ORDER_CRON_KEY,
+        // The sweep's deploy-only switch (routes/internal.ts): without it the sweep route is a 404 even
+        // with the key, so the case below could not tell "mounted" from "switched off".
+        HOMEWORK_SUBMISSION_SWEEP: "on",
       },
       stdio: "ignore",
     });
@@ -979,9 +982,10 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
 
   it("hides the homework-submission sweep without the shared key, and opens it with the key", async () => {
     // Same posture as the reminder: Cloud Scheduler, one shared key, 404 for everyone else, and no
-    // session guard in front. With the right key it reaches the route (here the database is
-    // unreachable, so it answers 500 or 200 — anything but 404/401). `?dryRun=1` so that even a
-    // reachable database would change nothing.
+    // session guard in front. With the right key (and HOMEWORK_SUBMISSION_SWEEP=on, set above; the
+    // switch being off is tested in homeworkSubmissionSweep.db.test.ts) it reaches the route (here
+    // the database is unreachable, so it answers 500 or 200 — anything but 404/401). `?dryRun=1` so
+    // that even a reachable database would change nothing.
     const post = (headers: Record<string, string>) =>
       fetch(`${base}/internal/homework-submission-sweep?dryRun=1`, { method: "POST", headers });
     assert.equal((await post({})).status, 404, "no key");

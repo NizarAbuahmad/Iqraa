@@ -28,15 +28,21 @@ export const REFUSE_MIN_ORPHANS = 20;
 /** …and above that, refuses one whose orphans are MORE than this share of the known objects. */
 export const REFUSE_RATIO = 0.5;
 
-// Lower case only, as `randomUUID()` and Postgres write a uuid. The homework id is compared with ids
-// read back from the database as strings, so an upper-case key would never match its row anyway.
+// Lower case only. The photo's own id is a `randomUUID()` and always lower case, but the HOMEWORK
+// segment is the raw URL parameter of the upload request (`submissionTarget` passes it through, and
+// Postgres compares a uuid case-insensitively), so an upper-case id in the URL stores an upper-case
+// key. Such a key is refused here (counted in skippedBadKey) and never swept as an orphan: matching it
+// against the homework ids read back from the database (lower case) would need a case fold this
+// classifier deliberately does not do. It is still purged with its row by phase 1, which deletes the
+// keys a row names, whatever their shape.
 const HEX_UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const SUBMISSION_KEY = new RegExp(`^homework-submissions/(${HEX_UUID})/${HEX_UUID}/${HEX_UUID}\\.(?:jpg|png|webp)$`);
 
 /**
  * `homework-submissions/<homeworkId>/<studentId>/<uuid>.(jpg|png|webp)` — the shape
- * `newHomeworkSubmissionKey` writes. Nothing else is ever deleted by the sweep. All of it is lower
- * case: prefix, hex and extension. The whole key must match.
+ * `newHomeworkSubmissionKey` writes. Nothing else is ever deleted as an orphan. All of it must be
+ * lower case: prefix, hex and extension (see HEX_UUID for the upper-case keys this leaves alone).
+ * The whole key must match.
  */
 export function isSubmissionKey(key: string): boolean {
   return SUBMISSION_KEY.test(key);
@@ -132,8 +138,10 @@ export function planSweep(input: {
       referenced++;
       continue;
     }
-    // A negative age (an object dated in the future) fails this and counts as young.
-    if (nowMs - o.lastModified.getTime() < graceMs) {
+    // Written so that anything it cannot compare counts as young: a negative age (an object dated in
+    // the future), an invalid date (NaN) and a NaN grace period all fail `age >= graceMs`.
+    const age = nowMs - o.lastModified.getTime();
+    if (!(age >= graceMs)) {
       skippedYoung++;
       continue;
     }

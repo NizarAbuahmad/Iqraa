@@ -46,7 +46,11 @@ export interface SweepRun {
   objectsListed: number;
   /** Conforming objects a row refers to. */
   referenced: number;
-  /** Old, unreferenced, conforming objects under a known homework: those deleted plus those the cap kept for the next run. */
+  /**
+   * Old, unreferenced, conforming objects under a known homework, counted before the cap. When the run
+   * was not refused (and is not a dry run), `orphanObjects − capped − deleted` is the deletes that
+   * failed; a refused run deletes none of them, so the difference means nothing then.
+   */
   orphanObjects: number;
   /** Objects actually deleted in phase 2 (0 in a dry run, and 0 when refused). */
   deleted: number;

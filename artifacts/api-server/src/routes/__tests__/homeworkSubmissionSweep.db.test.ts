@@ -23,6 +23,8 @@ import { s3Env, startS3Stub, type S3Stub } from "../../test-support/s3Stub.ts";
 import { GRACE_MS } from "../../modules/homework/submissionSweep.ts";
 
 const CRON_KEY = "sweep-test-cron-key";
+/** The deploy-only switch: without it the route is a 404 whatever the key. Every server here sets it unless a case is about it. */
+const SWITCH = { HOMEWORK_SUBMISSION_SWEEP: "on" } as const;
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 0x4a, 0x46, 0x49, 0x46, 0, 1, 2, 3]);
 const DAY = 24 * 60 * 60 * 1000;
 /** Comfortably past the grace period / comfortably inside it, whatever the clock does meanwhile. */
@@ -51,7 +53,7 @@ describeDb("homework submission orphan sweep over HTTP, against a real database"
     await db.pool.query(`DELETE FROM homework_submissions`);
     s3 = await startS3Stub();
     toClose.push(() => s3.close());
-    server = await startServer({ databaseUrl: db.url, env: { INTERNAL_CRON_KEY: CRON_KEY, ...s3Env(s3) } });
+    server = await startServer({ databaseUrl: db.url, env: { INTERNAL_CRON_KEY: CRON_KEY, ...SWITCH, ...s3Env(s3) } });
     toClose.push(() => server.stop());
   });
   afterEach(async () => {
@@ -132,12 +134,53 @@ describeDb("homework submission orphan sweep over HTTP, against a real database"
     });
 
     it("answers 404 when the server has no INTERNAL_CRON_KEY at all", async () => {
-      const bare = await startServer({ databaseUrl: db.url, env: { INTERNAL_CRON_KEY: undefined, ...s3Env(s3) } });
+      const bare = await startServer({ databaseUrl: db.url, env: { INTERNAL_CRON_KEY: undefined, ...SWITCH, ...s3Env(s3) } });
       toClose.push(() => bare.stop());
       const orphan = await seedOrphan(ancientDate());
       assert.equal((await sweep("", bare, { "x-internal-key": "anything" })).status, 404);
       assert.equal((await sweep("", bare, { "x-internal-key": "" })).status, 404);
       assert.deepEqual(s3.keys(), [orphan]);
+    });
+
+    // A copy or branch of the production database (a Neon branch) knows every old homework, so photos uploaded to
+    // production since the branch point look like known orphans, below the ratio guard. The guards cannot see that, so
+    // the route stays a 404 on any server where HOMEWORK_SUBMISSION_SWEEP is not exactly "on", even with the right key.
+    it("answers 404 with the RIGHT key when HOMEWORK_SUBMISSION_SWEEP is unset or anything but exactly \"on\", and deletes nothing", async () => {
+      const archived = await mkHomework({ archived: true });
+      const student = await mkStudent();
+      const rowKey = photoKey(archived, student);
+      await seedRow(archived, student, [rowKey]);
+      const orphan = await seedOrphan(ancientDate());
+      const before = s3.keys();
+      for (const value of [undefined, "", "ON", "On", "true", "1", "yes", " on", "on "]) {
+        const off = await startServer({ databaseUrl: db.url, env: { INTERNAL_CRON_KEY: CRON_KEY, HOMEWORK_SUBMISSION_SWEEP: value, ...s3Env(s3) } });
+        try {
+          const label = value === undefined ? "(unset)" : JSON.stringify(value);
+          for (const q of ["", "?dryRun=1", "?foo=1"]) {
+            const run = await sweep(q, off);
+            assert.equal(run.status, 404, `${label} ${q || "(no query)"}: ${run.text}`);
+            assert.deepEqual(run.json, { error: "Not found" }, `${label}: the same answer as an unset key`);
+          }
+          assert.equal((await sweep("", off, {})).status, 404, `${label}, no key`);
+          // The reminder shares the key but not the switch: it still opens.
+          const reminders = await fetch(`${off.base}/internal/homework-reminders`, { method: "POST", headers: { "x-internal-key": CRON_KEY } });
+          assert.notEqual(reminders.status, 404, `${label}: the reminder is not behind the sweep's switch`);
+        } finally {
+          await off.stop();
+        }
+      }
+      assert.deepEqual(s3.keys(), before, "no object was deleted");
+      assert.ok(s3.body(orphan));
+      assert.equal(await rowsOf(archived), 1, "and phase 1 did not run either");
+    });
+
+    it("runs when HOMEWORK_SUBMISSION_SWEEP is exactly \"on\", and still 404s a wrong key", async () => {
+      const orphan = await seedOrphan(oldDate());
+      assert.equal((await sweep("", server, { "x-internal-key": "wrong" })).status, 404, "the switch does not open it to everyone");
+      const run = await sweep();
+      assert.equal(run.status, 200, run.text);
+      assert.equal(run.json.deleted, 1);
+      assert.equal(s3.body(orphan), undefined);
     });
   });
 
@@ -217,7 +260,7 @@ describeDb("homework submission orphan sweep over HTTP, against a real database"
     // Production runs RLS_ENFORCE=on. Read through the app connection with no user, homework_submissions returns NO
     // rows, so every photo would look unreferenced. The sweep reads the keys through systemDb; this pins it.
     it("keeps an old DRAFT photo of a live homework with row-level security enforced, and still deletes the orphan beside it", async () => {
-      const enforcing = await startServer({ databaseUrl: db.url, env: { INTERNAL_CRON_KEY: CRON_KEY, RLS_ENFORCE: "on", ...s3Env(s3) } });
+      const enforcing = await startServer({ databaseUrl: db.url, env: { INTERNAL_CRON_KEY: CRON_KEY, ...SWITCH, RLS_ENFORCE: "on", ...s3Env(s3) } });
       toClose.push(() => enforcing.stop());
       const hw = await mkHomework();
       const student = await mkStudent();
@@ -440,7 +483,7 @@ describeDb("homework submission orphan sweep over HTTP, against a real database"
     });
 
     it("finds a draft that a teacher's own identity cannot see, with row-level security enforced", async () => {
-      const enforcing = await startServer({ databaseUrl: db.url, env: { INTERNAL_CRON_KEY: CRON_KEY, RLS_ENFORCE: "on", ...s3Env(s3) } });
+      const enforcing = await startServer({ databaseUrl: db.url, env: { INTERNAL_CRON_KEY: CRON_KEY, ...SWITCH, RLS_ENFORCE: "on", ...s3Env(s3) } });
       toClose.push(() => enforcing.stop());
       const archived = await mkHomework({ archived: true });
       const student = await mkStudent();
@@ -588,7 +631,7 @@ describeDb("homework submission orphan sweep over HTTP, against a real database"
     // 9,000 live photos and 1,050 orphans: past 10,000 in all, and under half orphans so the ratio guard lets it run.
     it("lists them all and deletes up to the per-run cap, leaving the rest for the next run", async () => {
       const big = await startS3Stub();
-      const bigServer = await startServer({ databaseUrl: db.url, env: { INTERNAL_CRON_KEY: CRON_KEY, ...s3Env(big) } });
+      const bigServer = await startServer({ databaseUrl: db.url, env: { INTERNAL_CRON_KEY: CRON_KEY, ...SWITCH, ...s3Env(big) } });
       try {
         const live = await seedReferenced(9000, big);
         const old = oldDate();
@@ -614,7 +657,7 @@ describeDb("homework submission orphan sweep over HTTP, against a real database"
     it("skips the object phase, says so, and still purges the rows of archived homework", async () => {
       const noR2 = await startServer({
         databaseUrl: db.url,
-        env: { INTERNAL_CRON_KEY: CRON_KEY, R2_ENDPOINT: undefined, R2_ACCESS_KEY_ID: undefined, R2_SECRET_ACCESS_KEY: undefined, R2_FORCE_PATH_STYLE: undefined },
+        env: { INTERNAL_CRON_KEY: CRON_KEY, ...SWITCH, R2_ENDPOINT: undefined, R2_ACCESS_KEY_ID: undefined, R2_SECRET_ACCESS_KEY: undefined, R2_FORCE_PATH_STYLE: undefined },
       });
       toClose.push(() => noR2.stop());
       const archived = await mkHomework({ archived: true });

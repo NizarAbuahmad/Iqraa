@@ -65,12 +65,17 @@ describe("which files may use the connection that bypasses row-level security", 
   // enough: it must import systemDb and must not import the app `db` at all.
   test("the submission sweep imports systemDb and never the app db", () => {
     const text = readFileSync(path.join(src, "lib/homeworkSubmissionSweep.ts"), "utf8");
-    const imports = [...text.matchAll(/import\s*(?:type\s*)?\{([^}]*)\}\s*from\s*["']@workspace\/db["']/g)];
+    // "@workspace/db" itself or any subpath of it ("@workspace/db/…").
+    const DB_MODULE = String.raw`["']@workspace\/db(?:\/[^"']*)?["']`;
+    const imports = [...text.matchAll(new RegExp(String.raw`import\s*(?:type\s*)?\{([^}]*)\}\s*from\s*${DB_MODULE}`, "g"))];
     assert.ok(imports.length > 0, "it imports from @workspace/db");
-    const imported = imports.flatMap(m => m[1]!.split(",").map(s => s.trim().split(/\s+as\s+/)[0]!.trim()).filter(Boolean));
+    const imported = imports.flatMap(m => m[1]!.split(",").map(s => s.trim().replace(/^type\s+/, "").split(/\s+as\s+/)[0]!.trim()).filter(Boolean));
     assert.ok(imported.includes("systemDb"), `imports systemDb (got ${imported.join(", ")})`);
     assert.ok(!imported.includes("db"), "must not import the app db, which reads no submission row without a user under RLS");
-    assert.doesNotMatch(text, /import\s+\*\s+as\s+\w+\s+from\s*["']@workspace\/db["']/, "no namespace import that would reach db");
+    assert.doesNotMatch(text, new RegExp(String.raw`import\s+\*\s+as\s+\w+\s+from\s*${DB_MODULE}`), "no namespace import that would reach db");
+    assert.doesNotMatch(text, new RegExp(String.raw`import\s+\w+\s*(?:,\s*\{[^}]*\})?\s*from\s*${DB_MODULE}`), "no default import that would reach db");
+    assert.doesNotMatch(text, new RegExp(String.raw`import\s*\(\s*${DB_MODULE}\s*\)`), "no dynamic import() of it, which no named-import check can see into");
+    assert.doesNotMatch(text, new RegExp(String.raw`require\s*\(\s*${DB_MODULE}\s*\)`), "no require() of it");
   });
 
   test("the auth token tables are only ever touched from a file that may use it", () => {
