@@ -8,7 +8,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { lessonTeachingPromptAr, lessonTeachingPromptEn } from "../lessonTeachingPrompt.ts";
+import { lessonTeachingPromptAr, lessonTeachingPromptEn, teachingVisualCounts } from "../lessonTeachingPrompt.ts";
 import { assertUsableGeneration, missingFields, UnusableGenerationError } from "../generationShape.ts";
 
 const BODY = {
@@ -44,6 +44,12 @@ describe("lesson-teaching prompt", () => {
       const p = build(BODY);
       assert.match(p, lang === "ar" ? /الأردن/ : /Jordan/);
       assert.match(p, lang === "ar" ? /لا تقدّمها حقائق/ : /never as facts about/);
+    });
+
+    it(`${lang}: offers a shape, icon, chart and photo per concept, each optional`, () => {
+      const p = build(BODY);
+      for (const k of ['"shape"', '"icon"', '"chart"', '"photo"', '"cycle"', '"tree"', '"venn"', '"mindmap"']) assert.ok(p.includes(k), k);
+      assert.match(p, lang === "ar" ? /لا تخترع أرقامًا/ : /never invent figures/);
     });
 
     it(`${lang}: omits the context block when there is no book context`, () => {
@@ -92,5 +98,16 @@ describe("lesson-teaching shape", () => {
       () => assertUsableGeneration("lesson-teaching", { hook: { question: "؟" }, concepts: [] }),
       UnusableGenerationError,
     );
+  });
+});
+
+describe("teachingVisualCounts", () => {
+  it("counts the extras the model returned", () => {
+    assert.deepEqual(teachingVisualCounts({ concepts: [
+      { title: "a", points: ["x"], shape: { layout: "cycle" }, icon: "drop" },
+      { title: "b", points: ["y"], chart: { kind: "chart" }, photo: "water cycle" },
+      { title: "c", points: ["z"] },
+    ] }), { concepts: 3, shape: 1, icon: 1, chart: 1, photo: 1 });
+    assert.deepEqual(teachingVisualCounts(null), { concepts: 0, shape: 0, icon: 0, chart: 0, photo: 0 });
   });
 });

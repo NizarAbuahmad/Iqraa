@@ -792,7 +792,15 @@ export interface LessonFlowOutput {
  */
 export interface LessonTeachingOutput {
   hook?: { question?: string; teacherNote?: string };
-  concepts?: { title?: string; points?: string[]; teacherNote?: string; misconception?: string }[];
+  concepts?: {
+    title?: string; points?: string[]; teacherNote?: string; misconception?: string;
+    /** `{ layout, [layout]: payload }` — drawn instead of the points when the gate accepts it. */
+    shape?: Record<string, unknown>;
+    icon?: string;
+    chart?: unknown;
+    /** An English photo-search phrase. */
+    photo?: string;
+  }[];
   workedExample?: { problem?: string; steps?: string[]; answer?: string };
   practice?: { problem?: string; hint?: string; answer?: string };
   /** A student's wrong solution built from a real misconception, for «اكتشف الخطأ». */

@@ -33,7 +33,7 @@ import {
   promptSlidesPromptEn,
   sanitizeDeckStructure,
 } from "../lib/promptSlidesPrompt.ts";
-import { lessonTeachingPromptAr, lessonTeachingPromptEn } from "../lib/lessonTeachingPrompt.ts";
+import { lessonTeachingPromptAr, lessonTeachingPromptEn, teachingVisualCounts } from "../lib/lessonTeachingPrompt.ts";
 import {
   QUESTIONS_TOKENS,
   parseQuestions,
@@ -859,6 +859,7 @@ generateRouter.post('/generate/lesson-teaching', async (req: AuthenticatedReques
       kind: "lesson-teaching", systemPrompt: systemPrompt(isAr), userPrompt: prompt,
       maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
     });
+    logger.info({ visuals: teachingVisualCounts(result.content) }, "lesson-teaching visuals");
     res.json(withMeta(result, grounding));
   } catch (err) {
     respondAiError(err, res, "generate lesson-teaching");

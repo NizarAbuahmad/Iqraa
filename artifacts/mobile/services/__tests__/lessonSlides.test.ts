@@ -1089,6 +1089,42 @@ describe('generated explanation in the deck', () => {
     });
   });
 
+  describe('concept extras', () => {
+    const cycleShape = { layout: 'cycle', cycle: { stages: [{ label: 'تبخر' }, { label: 'تكاثف' }, { label: 'هطول' }] } };
+    const withExtras = (extra: Record<string, unknown>) => ({
+      ...TEACHING,
+      concepts: [{ ...TEACHING.concepts[0]!, ...extra }, TEACHING.concepts[1]!],
+    });
+    const first = (deck: ReturnType<typeof buildLessonDeck>) => deck.slides.find(s => s.title === TEACHING.concepts[0]!.title)!;
+
+    it('draws a concept in its shape, keeping its points as the fallback', () => {
+      const s = first(buildLessonDeck('x', true, { lesson: BARE, plan: PLAN, teaching: withExtras({ shape: cycleShape, icon: 'drop' }) }));
+      assert.equal(s.layout, 'cycle');
+      assert.deepEqual(s.cycle, cycleShape.cycle);
+      assert.equal(s.icon, 'drop');
+      assert.match(s.content, /^• /);
+    });
+    it('drops a shape the gate refuses, an unknown icon, or a shape it does not allow', () => {
+      const bad = first(buildLessonDeck('x', true, { lesson: BARE, plan: PLAN, teaching: withExtras({
+        shape: { layout: 'cycle', cycle: { stages: [{ label: 'a' }] } }, icon: 'rocket',
+      }) }));
+      assert.equal(bad.layout, undefined);
+      assert.equal(bad.icon, undefined);
+      const photo = first(buildLessonDeck('x', true, { lesson: BARE, plan: PLAN, teaching: withExtras({ shape: { layout: 'photo' } }) }));
+      assert.equal(photo.layout, undefined);
+    });
+    it('keeps a real chart only when there is no shape, and a photo only when there is neither', () => {
+      const chart = { kind: 'chart', chartType: 'bar', categories: ['أ', 'ب'], values: [3, 5] };
+      const c = first(buildLessonDeck('x', true, { lesson: BARE, plan: PLAN, teaching: withExtras({ chart, photo: 'salt crystals' }) }));
+      assert.equal(c.visual?.kind, 'chart');
+      assert.equal(c.mediaPrompt, undefined);
+      const p = first(buildLessonDeck('x', true, { lesson: BARE, plan: PLAN, teaching: withExtras({ photo: 'salt crystals' }) }));
+      assert.equal(p.mediaPrompt, 'salt crystals');
+      const ar = first(buildLessonDeck('x', true, { lesson: BARE, plan: PLAN, teaching: withExtras({ photo: 'بلورات الملح' }) }));
+      assert.equal(ar.mediaPrompt, undefined);
+    });
+  });
+
   it('flags every generated slide, and no book slide, as aiWritten', () => {
     const deck = buildLessonDeck('المول', true, { lesson: BARE, plan: PLAN, teaching: TEACHING });
     const flagged = deck.slides.filter(s => s.aiWritten).map(s => s.title);

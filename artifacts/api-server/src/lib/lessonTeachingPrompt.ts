@@ -27,9 +27,20 @@
  *    old warm-up slide had nothing to project.
  */
 
+import { DECK_ICON_NAMES } from "./promptSlidesPrompt.ts";
+
 /** Concept slides asked for. More is a lecture; fewer is not an explanation. */
 export const TEACHING_CONCEPTS_MIN = 3;
 export const TEACHING_CONCEPTS_MAX = 5;
+
+/** What the model attached to its concepts — logged per section, see routes/generate.ts. */
+export function teachingVisualCounts(content: unknown): { concepts: number; shape: number; icon: number; chart: number; photo: number } {
+  const list = content !== null && typeof content === "object" && Array.isArray((content as { concepts?: unknown }).concepts)
+    ? (content as { concepts: unknown[] }).concepts.filter((c): c is Record<string, unknown> => c !== null && typeof c === "object")
+    : [];
+  const has = (k: string) => list.filter(c => c[k] !== undefined && c[k] !== null && c[k] !== "").length;
+  return { concepts: list.length, shape: has("shape"), icon: has("icon"), chart: has("chart"), photo: has("photo") };
+}
 
 export function lessonTeachingPromptAr(b: any): string {
   return `اكتب قسم الشرح في عرض شرائح يُعرض على شاشة الصف لدرس "${b.topic}" — مادة ${b.subject}، ${b.grade}.
@@ -58,12 +69,17 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي لهذا ال�
 10. راجع إملاء المصطلحات قبل الإرجاع (المولات لا «الموغات»).
 11. "mistake" نشاط «اكتشف الخطأ»: "claim" حلّ قصير أو قول لطالب متخيَّل (سلمى، عمر…) من نوع المثال المحلول، فيه خطأ واحد فقط، وهذا الخطأ هو أحد الأخطاء التي كتبتها في "misconception" — لا خطأ حسابي عابر. لا تُشِر إلى الخطأ في "claim" — اكتشافه هو النشاط. "hint" يوجّه إلى مكان البحث دون أن يسمّي الخطأ، و"answer" يسمّي الخطوة الخاطئة ويصحّحها بالقيمة الصحيحة.
 12. حين يحتاج سؤال التمهيد أو المسألة إلى سياق، فليكن من حياة الطلبة في الأردن: الدينار الأردني، وأماكن أردنية (عمّان، العقبة، البحر الميت، إربد)، والحياة اليومية في البيت والمدرسة. لا تفرض سياقًا على فكرة لا تحتاجه. والأرقام التي تخترعها لمسألة تبقى قيم مسألة — لا تقدّمها حقائق عن مكان حقيقي.
+13. لكل فكرة في "concepts" إضافات اختيارية، فقط حين تفيد فعلًا:
+   - "shape": شكل يرسم الفكرة بدل القائمة، واحد من: "compare" {"leftTitle","left","rightTitle","right"}، "table" {"headers","rows"}، "flow" {"steps"}، "timeline" [{"label","text"}]، "stat" {"value","label"}، "cycle" {"stages":[{"label","note"}]}، "tree" {"root","branches":[{"label","leaves"}]}، "venn" {"sets":[{"label","only"}],"shared"}، "mindmap" {"center","nodes":[{"text","role"}]}. اكتبه هكذا: "shape": {"layout":"cycle","cycle":{...}}. عندها اجعل "points" سطرين يلخّصان الشكل.
+   - "icon": اسم أيقونة واحد من: ${DECK_ICON_NAMES.join(", ")}.
+   - "chart": {"kind":"chart","chartType":"bar","categories":[..],"values":[..]} فقط من أرقام واردة في محتوى الكتاب أعلاه. لا تخترع أرقامًا أبدًا، ولا تجمع "chart" مع "shape".
+   - "photo": عبارة بحث إنجليزية من ٢-٥ كلمات لمشهد حقيقي (مكان، تجربة، ظاهرة)، لا لقاعدة رياضية؛ في فكرتين على الأكثر.
 
 أعد JSON بهذا الشكل فقط:
 {
   "hook": { "question": "سؤال التمهيد", "teacherNote": "كيف يدير المعلّم النقاش حوله" },
   "concepts": [
-    { "title": "الفكرة كجملة خبرية", "points": ["سطر الشرح", "مثال قصير"], "teacherNote": "ما يؤكّد عليه المعلّم", "misconception": "الخطأ الشائع" }
+    { "title": "الفكرة كجملة خبرية", "points": ["سطر الشرح", "مثال قصير"], "teacherNote": "ما يؤكّد عليه المعلّم", "misconception": "الخطأ الشائع", "icon": "bulb" }
   ],
   "workedExample": { "problem": "نص المسألة بمعطياتها", "steps": ["الخطوة الأولى", "الخطوة الثانية"], "answer": "الإجابة النهائية" },
   "mistake": { "claim": "قالت سلمى: … (حلّ فيه خطأ واحد)", "hint": "أين تبحث", "answer": "الخطوة الخاطئة وتصحيحها" },
@@ -98,12 +114,17 @@ Mandatory rules:
 10. Check the spelling of subject terms before returning.
 11. "mistake" is a "Spot the mistake" activity: "claim" is a short solution or statement by an imaginary student (Salma, Omar…) of the same kind as the worked example, with exactly one error, and that error is one of the errors you wrote in "misconception" — not a passing arithmetic slip. Never mark the error in "claim" — finding it is the activity. "hint" says where to look without naming the error; "answer" names the wrong step and corrects it with the right value.
 12. When the hook or a problem needs a setting, set it in the students' own Jordan: Jordanian dinars (JD), Jordanian places (Amman, Aqaba, the Dead Sea, Irbid), everyday life at home and at school. Do not force a setting onto an idea that needs none. Numbers you make up for a problem stay problem values — never as facts about a real place.
+13. Each item in "concepts" may carry optional extras, only where they genuinely help:
+   - "shape": a drawing of the idea instead of a list, one of: "compare" {"leftTitle","left","rightTitle","right"}, "table" {"headers","rows"}, "flow" {"steps"}, "timeline" [{"label","text"}], "stat" {"value","label"}, "cycle" {"stages":[{"label","note"}]}, "tree" {"root","branches":[{"label","leaves"}]}, "venn" {"sets":[{"label","only"}],"shared"}, "mindmap" {"center","nodes":[{"text","role"}]}. Write it as "shape": {"layout":"cycle","cycle":{...}}. Then make "points" two lines that sum the drawing up.
+   - "icon": one icon name from: ${DECK_ICON_NAMES.join(", ")}.
+   - "chart": {"kind":"chart","chartType":"bar","categories":[..],"values":[..]} only from figures in the textbook content above; never invent figures, and never put "chart" with "shape".
+   - "photo": a 2-5 word English search phrase for a real scene (a place, an experiment, a phenomenon), never for a maths rule; on two concepts at most.
 
 Return only JSON in this shape:
 {
   "hook": { "question": "The hook question", "teacherNote": "How the teacher runs the discussion" },
   "concepts": [
-    { "title": "The idea as a claim", "points": ["An explanation line", "A short example"], "teacherNote": "What the teacher stresses", "misconception": "The common error" }
+    { "title": "The idea as a claim", "points": ["An explanation line", "A short example"], "teacherNote": "What the teacher stresses", "misconception": "The common error", "icon": "bulb" }
   ],
   "workedExample": { "problem": "The problem with its givens", "steps": ["Step one", "Step two"], "answer": "The final answer" },
   "mistake": { "claim": "Salma says: … (a solution with one error)", "hint": "Where to look", "answer": "The wrong step and its correction" },
