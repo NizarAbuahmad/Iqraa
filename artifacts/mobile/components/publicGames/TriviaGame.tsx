@@ -11,8 +11,13 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { ICON } from '@/constants/icons';
+import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 import { GameShell } from './GameShell';
+import { AnswerOption } from './AnswerOption';
 import { answerFeedback } from '@/services/playFeedback';
+import { nextStreak, showStreak } from '@/services/publicGames/answerMotion';
+import { readableOn } from '@/services/readableColor';
 import { buildTriviaRound, flagUrl, type TriviaField, type TriviaOption, type TriviaQuestion } from '@/services/publicGames/countries';
 import type { TranslationKey } from '@/services/i18n';
 
@@ -69,6 +74,7 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
   const [score, setScore] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [gameOver, setGameOver] = useState(false);
+  const [streak, setStreak] = useState(0);
 
   const questions: Q[] = useMemo(
     () => buildRound(lang),
@@ -83,6 +89,7 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
     if (selected) return; // one answer per question
     setSelected(optionId);
     answerFeedback(optionId === question.correctId);
+    setStreak(s => nextStreak(s, optionId === question.correctId));
     if (optionId === question.correctId) setScore(s => s + 1);
   };
 
@@ -99,6 +106,7 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
     setRound(r => r + 1);
     setIndex(0);
     setScore(0);
+    setStreak(0);
     setSelected(null);
     setGameOver(false);
   };
@@ -117,39 +125,31 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
       showSoundToggle
     >
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, padding: 20, gap: 20 }}>
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
-          {t('playQuestionProgress', index + 1, questions.length)}
-        </Text>
+        <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: TYPE.caption, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('playQuestionProgress', index + 1, questions.length)}
+          </Text>
+          {showStreak(streak) ? (
+            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: SPACE.xs, paddingHorizontal: SPACE.md, paddingVertical: SPACE.xs, borderRadius: RADIUS.pill, backgroundColor: `${accent}1a` }}>
+              <Ionicons name="flame" size={ICON.md} color={readableOn(accent, colors.card, 3)} />
+              <Text style={{ color: readableOn(accent, colors.card), fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{t('playStreak', streak)}</Text>
+            </View>
+          ) : null}
+        </View>
 
         {renderPrompt(question)}
 
         <View style={styles.optionsGrid}>
-          {question.options.map(o => {
-            const isCorrect = o.id === question.correctId;
-            const isPicked = o.id === selected;
-            const revealed = selected !== null;
-            const bg = !revealed
-              ? colors.card
-              : isCorrect
-                ? '#16A34A22'
-                : isPicked
-                  ? '#DC262622'
-                  : colors.card;
-            const border = !revealed ? colors.border : isCorrect ? '#16A34A' : isPicked ? '#DC2626' : colors.border;
-            return (
-              <Pressable
-                key={o.id}
-                onPress={() => pick(o.id)}
-                style={[styles.option, { backgroundColor: bg, borderColor: border }]}
-              >
-                <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: 'center' }}>
-                  {o.label}
-                </Text>
-                {revealed && isCorrect && <Ionicons name="checkmark-circle" size={20} color="#16A34A" style={styles.optionIcon} />}
-                {revealed && isPicked && !isCorrect && <Ionicons name="close-circle" size={20} color="#DC2626" style={styles.optionIcon} />}
-              </Pressable>
-            );
-          })}
+          {question.options.map(o => (
+            <AnswerOption
+              key={o.id}
+              label={o.label}
+              revealed={selected !== null}
+              isCorrect={o.id === question.correctId}
+              isPicked={o.id === selected}
+              onPress={() => pick(o.id)}
+            />
+          ))}
         </View>
 
         {selected && renderReveal ? renderReveal(question, selected) : null}
@@ -168,10 +168,5 @@ const styles = StyleSheet.create({
   flagWrap: { alignItems: 'center' },
   flag: { width: 200, height: 120, borderRadius: 10, backgroundColor: '#eee' },
   optionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  option: {
-    flexBasis: '47%', flexGrow: 1, borderWidth: 1, borderRadius: 12, paddingVertical: 16, paddingHorizontal: 10,
-    alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6,
-  },
-  optionIcon: { marginTop: -2 },
   nextBtn: { alignItems: 'center', justifyContent: 'center', borderRadius: 12, paddingVertical: 15, marginTop: 'auto' },
 });
