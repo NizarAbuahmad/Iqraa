@@ -25,7 +25,9 @@ import type { ActivitySlide, ClassroomActivity } from './ai/AIService.ts';
 import { creditSegments, type PhotoCredit } from './photoCredit.ts';
 import { hasRenderableMath, isolateForeignRuns, mathLineToHtml, MATH_HTML_STYLES, prettifySymPy } from './mathRender.ts';
 
-import { resolveDeckTheme, slideTypeAccent as deckSlideAccent } from './deckTheme.ts';
+import { diagramTint, resolveDeckTheme, slideTypeAccent as deckSlideAccent } from './deckTheme.ts';
+import { diagramGeometry, DIAGRAM_H, DIAGRAM_W, isDiagram } from './diagramGeometry.ts';
+import { diagramHtml } from './diagramHtml.ts';
 
 /** Escape only. For attribute values — above all the media and video URLs,
  *  which must not carry the directional isolates `esc` adds. */
@@ -451,11 +453,19 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
   const layoutSlide = (slide: ActivitySlide, num: number): string | null => {
     const layout = resolveSlideLayout(slide);
     // `photo` is drawn by `dividerSlide` (see the dispatch below), not here.
-    // The four diagram kinds are not drawn here yet: the ordinary layout stands in.
-    if (!layout || layout.kind === 'photo' || layout.kind === 'cycle' || layout.kind === 'tree'
-      || layout.kind === 'venn' || layout.kind === 'mindmap') return null;
+    if (!layout || layout.kind === 'photo') return null;
     const accent = deckSlideAccent(slide.type, T);
     const head = esc(splitEmoji(slide.title)[1]);
+
+    if (isDiagram(layout)) {
+      const g = diagramGeometry(layout, DIAGRAM_W, DIAGRAM_H, isAr);
+      return `<div class="deck-slide">
+      ${deckHeader(slide.title, accent, slide.icon)}
+      <div class="deck-body deck-diagram-body">
+        ${diagramHtml(g, { card: T.card, tint: diagramTint(T), accent, border: T.border, text: T.text }, isAr, esc)}
+      </div>
+      ${footer(num)}</div>`;
+    }
 
     if (layout.kind === 'statement') {
       return `<div class="deck-slide">
@@ -750,6 +760,10 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${T.border
 .deck-flow-arrow { display:flex; flex-shrink:0; }
 html[dir="rtl"] .deck-flow-arrow svg { transform:scaleX(-1); }
 .deck-flow-loop { align-self:center; display:inline-flex; align-items:center; gap:10px; margin-top:34px; padding:12px 28px; border:2px solid; border-radius:999px; font-size:22px; font-weight:700; }
+.deck-body.deck-diagram-body { align-items:center; justify-content:center; }
+.deck-diagram { position:relative; margin:0 auto; flex-shrink:0; }
+.deck-diagram svg { position:absolute; inset:0; }
+.deck-diagram-text { position:absolute; display:flex; align-items:center; justify-content:center; text-align:center; line-height:1.25; overflow:hidden; box-sizing:border-box; }
 .deck-step { display:flex; flex-direction:row; align-items:center; gap:16px; }
 .deck-step-num { flex-shrink:0; width:56px; height:56px; border-radius:50%; color:#fff; font-size:28px; font-weight:700; display:flex; align-items:center; justify-content:center; }
 .deck-step-text { font-size:28px; line-height:1.6; text-align:start; }
