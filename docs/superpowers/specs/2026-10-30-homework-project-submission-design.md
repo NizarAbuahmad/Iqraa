@@ -1,6 +1,6 @@
 # Homework project submission — design
 
-Status: draft for review, 2026-10-30. Nothing here is built.
+Status: Phase 1 (API) built 2026-10-30; the app is not.
 
 ## Why
 
@@ -200,6 +200,11 @@ RLS fails quietly: a bad policy returns fewer rows rather than an error. So
 guardian and an unrelated student each see**, not only status codes. The plan
 must add them before the routes land.
 
+*Not built in phase 1:* the `rlsDiff` cases. That suite boots its own server and
+would need the in-memory S3 wired into that boot. The policies are covered by the
+matrix test (`rlsMatrix.test.ts`) and two RLS-on server tests in
+`homeworkSubmission.db.test.ts`; see the status log.
+
 **Object access.** A signed URL is minted only after the row was read through the
 caller's own connection, so a request that RLS or the route refused never reaches
 `presignedGetUrl`. Keys are unguessable UUIDs and the bucket is private; the
@@ -246,18 +251,19 @@ bump is needed; if a permission string is missing it is a native change and the
 
 ## 7. Testing
 
-- **DB tests** (`homework.db.test.ts` style): the unique key; two accounts linked
-  to one roster row share one submission; a class the account is not in is a 404;
+- **DB tests** (`homework.db.test.ts` style): the unique key; a guardian
+  linked to the row reads the student's submission; a class the account is not in is a 404;
   a draft invisible to the teacher; replace keeps the first `submitted_at`; late
   after the due day; locked replace; photo cap; wrong mime, oversized and
   non-image bytes refused; `submission_required` on the manual tick; archiving
   the homework removes the R2 objects and deletes the rows (R2 faked in the test,
   as the chat tests do).
-- **RLS diff** (`rlsDiff.test.ts`): rows seen by owner student, another student in
-  the same class, the class teacher, another teacher, a linked parent, an
-  unlinked parent. The result for each must equal the matrix in §4.
-- **`mountOrder.test.ts`:** every new path answers 401 unauthenticated and 404 for
-  an unowned id, never 401 for an unowned path.
+- **RLS diff** (`rlsDiff.test.ts`) — *not built in phase 1, see §4*: rows seen by
+  owner student, another student in the same class, the class teacher, another
+  teacher, a linked parent, an unlinked parent. The result for each must equal the
+  matrix in §4. `rlsMatrix.test.ts` covers the policies directly instead.
+- **`mountOrder.test.ts`:** every new path answers 401 unauthenticated, and an
+  unowned path is still 404, never 401 (no bare guard installed).
 - **Pure-function tests** for the validators (`modules/homework/submission.ts`:
   data URL, mime, magic bytes, note cap, lock rule, late rule), outside the DB
   tests so `node --test` can load them without `DATABASE_URL`.
@@ -271,8 +277,8 @@ bump is needed; if a permission string is missing it is a native change and the
 ## 8. Risks and limits
 
 - **Storage cost and abuse.** Up to 6 photos × 4 MB per student per homework.
-  Uploads go through the existing rate limiter (`rate_limit_buckets`); the plan
-  sets the per-user hourly ceiling. This is not a free-for-all file host.
+  Uploads go through the existing rate limiter (`rate_limit_buckets`), at 60
+  attempts an hour per account (see §3). This is not a free-for-all file host.
 - **A wrong photo of a minor** (a face, a document) is stored. The teacher's
   delete-homework purge and the student's own remove control are the only
   removal paths in this release (a teacher cannot remove a single student's

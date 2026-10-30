@@ -16,7 +16,7 @@ A teacher asked for students to hand in their own textbook project, saved on the
 site, with no student able to touch another's. This is phase 1 of 3 and it is the
 **API only**: nothing in the app can send or show a submission yet. Spec:
 `docs/superpowers/specs/2026-10-30-homework-project-submission-design.md`; plan:
-`docs/superpowers/plans/` (same date).
+`docs/superpowers/plans/2026-10-30-homework-project-submission-foundation.md`.
 
 **What shipped**
 

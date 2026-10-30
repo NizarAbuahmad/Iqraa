@@ -796,8 +796,10 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
   });
 
   it("guards homework project submissions for the student, the parent and the teacher", async () => {
-    // Path-scoped inside homeworkSubmissions.ts: every verb is refused without a token, and the
-    // router answers for nothing outside its three prefixes.
+    // The 401s pin the end-to-end behaviour: every verb is refused without a token. The prefixes are
+    // also guarded by earlier routers (familyHomework.ts, homework.ts), so they do not by themselves
+    // prove the guards in homeworkSubmissions.ts. The unowned-path 404 below is what pins that the
+    // new router installed no bare guard.
     const id = "00000000-0000-4000-8000-000000000000";
     for (const [method, p] of [
       ["GET", `/student/homework/${id}/submission`],
