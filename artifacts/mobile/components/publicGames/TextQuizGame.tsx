@@ -15,15 +15,17 @@ import type { TextQuestion } from '@/services/publicGames/textQuiz';
 import type { TranslationKey } from '@/services/i18n';
 
 export function TextQuizGame({
-  titleKey, accent, build,
+  titleKey, accent, build, reveal,
 }: {
   titleKey: TranslationKey;
   accent: string;
+  /** Extra content under the explanation once an answer is picked, e.g. a map. */
+  reveal?: (q: TextQuestion, pickedId: string, accent: string) => React.ReactNode;
   /** Module-level (stable identity): a new function reshuffles the round. */
   build: (lang: 'ar' | 'en', count: number, rng?: () => number) => TextQuestion[];
 }) {
   const colors = useColors();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const buildRound = React.useCallback((lang: 'ar' | 'en') => build(lang, QUESTION_COUNT), [build]);
   const ink = readableOn(accent, colors.card);
 
@@ -42,10 +44,40 @@ export function TextQuizGame({
     </View>
   );
 
-  return <TriviaBoard titleKey={titleKey} accent={accent} buildRound={buildRound} renderPrompt={renderPrompt} />;
+  const renderReveal = (q: TextQuestion) =>
+    q.explanation || q.explanationLtr ? (
+      <View style={[styles.reveal, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        {q.explanation ? (
+          <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.body, textAlign: isRTL ? 'right' : 'left' }}>
+            {q.explanation}
+          </Text>
+        ) : null}
+        {q.explanationLtr ? (
+          <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.bodyLg, textAlign: 'center' }}>
+            {q.explanationLtr}
+          </Text>
+        ) : null}
+      </View>
+    ) : null;
+
+  return (
+    <TriviaBoard
+      titleKey={titleKey}
+      accent={accent}
+      buildRound={buildRound}
+      renderPrompt={renderPrompt}
+      renderReveal={(q, pickedId) => (
+        <>
+          {renderReveal(q)}
+          {reveal ? reveal(q, pickedId, accent) : null}
+        </>
+      )}
+    />
+  );
 }
 
 const styles = StyleSheet.create({
+  reveal: { borderWidth: 1, borderRadius: RADIUS.md, padding: SPACE.md, gap: SPACE.sm },
   tile: {
     minWidth: 140, minHeight: 90, paddingHorizontal: SPACE.xl, paddingVertical: SPACE.md, borderWidth: 2, borderRadius: RADIUS.lg,
     alignItems: 'center', justifyContent: 'center',
