@@ -57,12 +57,16 @@ drops `mistake` with `teacherNote`, and `pregenerate.ts`'s `reviewEntry` drops i
 reviewer approves as «the text a student would see» (the hash is taken after, so approval still
 matches). The student cards never drew it either.
 
-**Pooled teaching sections written before this have no `mistake`, and keep being served.**
-`PROMPT_VERSION` (`generationKey.ts`) was **not** bumped: it is one value for every pooled kind,
-so a bump restarts every pool, not just this one. Until it is bumped (or made per kind), the
-spot-the-mistake slide appears only for lessons whose teaching section is generated after the
-merge — so **not**, in practice, for the pregenerated Grade 10 maths and chemistry lessons. That is
-a decision for the owner, left open.
+**The lesson-teaching pool starts afresh; no other pool does.** Its sections stored before this
+have no `mistake` and would have been served forever. `PROMPT_VERSION` (`generationKey.ts`) is
+one value for every pooled kind, so instead of bumping it, a kind may now carry its own version
+(`PROMPT_VERSION_BY_KIND`, read through `promptVersionFor(kind)`, which `generationKeys` and the
+stored row both use); `lesson-teaching` is `2026-10-30.1`, every other kind keeps `2026-10-04.1`.
+The cost: the first teacher to build a Slides Maker deck for each lesson after the merge pays for
+a new teaching section (budget-capped as usual), including the lessons `pregenerate.ts` filled —
+re-run it to fill them ahead of teachers. **Students are unaffected:** their approved explanations
+are read by lesson and language (`readApprovedExplanations`), not by this key, so what an admin
+approved keeps being served; new sections need approving as before.
 
 **«نقطة بنقطة» / "One at a time" in the presenter.** A toggle in the action row (off by default,
 remembered on the device as `@iqra_paced_reveal_v1`). On, Next — the button and the clicker/keyboard

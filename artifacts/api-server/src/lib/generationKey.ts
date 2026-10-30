@@ -25,6 +25,24 @@ import { parseCoverage } from "./coverage.ts";
  */
 export const PROMPT_VERSION = "2026-10-04.1";
 
+/**
+ * A kind whose prompt changed on its own. Bumping `PROMPT_VERSION` restarts
+ * every pooled kind at once; an entry here restarts only that kind's pool.
+ *
+ * - `lesson-teaching`, 2026-10-30: the section gained `mistake` (Slides
+ *   Maker's «اكتشف الخطأ» slide). Older pooled sections have none and would
+ *   otherwise be served forever. Students are unaffected: their approved
+ *   explanations are read by lesson, not by this key (`lessonExplanationStore.ts`).
+ */
+const PROMPT_VERSION_BY_KIND: Readonly<Record<string, string>> = {
+  "lesson-teaching": "2026-10-30.1",
+};
+
+/** The version a kind's pool is keyed and stored under. */
+export function promptVersionFor(kind: string): string {
+  return Object.hasOwn(PROMPT_VERSION_BY_KIND, kind) ? PROMPT_VERSION_BY_KIND[kind]! : PROMPT_VERSION;
+}
+
 /** Parameters the plan proposes to serve by slicing one superset artifact,
  *  rather than by generating a separate artifact per combination. They are in
  *  the strict key and out of the coarse key; the gap between the two repeat
@@ -181,8 +199,8 @@ export function generationKeys(
   model: string,
   body: Record<string, unknown>,
   /** Overridable so a test can prove the version really is part of the hash.
-   *  Callers pass nothing; a prompt edit bumps the constant instead. */
-  promptVersion: string = PROMPT_VERSION,
+   *  Callers pass nothing; a prompt edit bumps the constant (or the kind's entry) instead. */
+  promptVersion: string = promptVersionFor(kind),
 ): GenerationKeys {
   const context = typeof body.additionalContext === "string" ? body.additionalContext.trim() : "";
   const hasContext = context.length > 0 && contextSourceOf(body) === "teacher";
