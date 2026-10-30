@@ -27,7 +27,7 @@
  *    old warm-up slide had nothing to project.
  */
 
-import { DECK_ICON_NAMES } from "./promptSlidesPrompt.ts";
+import { DECK_ICON_NAMES, diagramLimitsAr, diagramLimitsEn } from "./promptSlidesPrompt.ts";
 
 /** Concept slides asked for. More is a lecture; fewer is not an explanation. */
 export const TEACHING_CONCEPTS_MIN = 3;
@@ -43,6 +43,7 @@ export function teachingVisualCounts(content: unknown): { concepts: number; shap
 }
 
 export function lessonTeachingPromptAr(b: any): string {
+  const limits = diagramLimitsAr();
   return `اكتب قسم الشرح في عرض شرائح يُعرض على شاشة الصف لدرس "${b.topic}" — مادة ${b.subject}، ${b.grade}.
 ${b.additionalContext ? `\nمحتوى الكتاب المدرسي لهذا الدرس (مرجعك الوحيد):\n${b.additionalContext}\n` : ''}
 يأخذ العرض من الكتاب مباشرةً: النتاجات، والمفردات، والقواعد، والأشكال، والأمثلة المحلولة. لا تكتب شيئًا من ذلك. اكتب فقط ما ينقص: سؤال التمهيد، والشرح، ومثالًا محلولًا، وحلًّا خاطئًا يكتشف الطلبة خطأه، ومسألة تدريب.
@@ -71,6 +72,16 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي لهذا ال�
 12. حين يحتاج سؤال التمهيد أو المسألة إلى سياق، فليكن من حياة الطلبة في الأردن: الدينار الأردني، وأماكن أردنية (عمّان، العقبة، البحر الميت، إربد)، والحياة اليومية في البيت والمدرسة. لا تفرض سياقًا على فكرة لا تحتاجه. والأرقام التي تخترعها لمسألة تبقى قيم مسألة — لا تقدّمها حقائق عن مكان حقيقي.
 13. لكل فكرة في "concepts" إضافات اختيارية، فقط حين تفيد فعلًا:
    - "shape": شكل يرسم الفكرة بدل القائمة، واحد من: "compare" {"leftTitle","left","rightTitle","right"}، "table" {"headers","rows"}، "flow" {"steps"}، "timeline" [{"label","text"}]، "stat" {"value","label"}، "cycle" {"stages":[{"label","note"}]}، "tree" {"root","branches":[{"label","leaves"}]}، "venn" {"sets":[{"label","only"}],"shared"}، "mindmap" {"center","nodes":[{"text","role"}]}. اكتبه هكذا: "shape": {"layout":"cycle","cycle":{...}}. عندها اجعل "points" سطرين يلخّصان الشكل.
+     حدود كل شكل — ما يزيد عليها يُسقط الشكل كله، فالتزم بها:
+     - "compare": عنوان لكل طرف وسطر واحد على الأقل في كل طرف.
+     - "table": من ٢ إلى ٤ أعمدة ومن ٢ إلى ٦ صفوف، والعنوان حتى ٣٠ حرفًا والخلية حتى ٨٠، وفي كل صف خلية واحدة بالضبط تحت كل عنوان.
+     - "flow": من ٣ إلى ٦ مراحل، وكل مرحلة حتى ٦٠ حرفًا.
+     - "timeline": من ٣ إلى ٦ أحداث، والتسمية حتى ٢٤ حرفًا والنص حتى ١٢٠.
+     - "stat": "value" حتى ١٢ حرفًا، و"label" مكتوب.
+     - "cycle": ${limits.cycle}.
+     - "tree": ${limits.tree}.
+     - "venn": ${limits.venn}.
+     - "mindmap": ${limits.mindmap}؛ و"role" اختياري: "cause" للسبب و"effect" للنتيجة.
    - "icon": اسم أيقونة واحد من: ${DECK_ICON_NAMES.join(", ")}.
    - "chart": {"kind":"chart","chartType":"bar","categories":[..],"values":[..]} فقط من أرقام واردة في محتوى الكتاب أعلاه. لا تخترع أرقامًا أبدًا، ولا تجمع "chart" مع "shape".
    - "photo": عبارة بحث إنجليزية من ٢-٥ كلمات لمشهد حقيقي (مكان، تجربة، ظاهرة)، لا لقاعدة رياضية؛ في فكرتين على الأكثر.
@@ -79,7 +90,7 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي لهذا ال�
 {
   "hook": { "question": "سؤال التمهيد", "teacherNote": "كيف يدير المعلّم النقاش حوله" },
   "concepts": [
-    { "title": "الفكرة كجملة خبرية", "points": ["سطر الشرح", "مثال قصير"], "teacherNote": "ما يؤكّد عليه المعلّم", "misconception": "الخطأ الشائع", "icon": "bulb" }
+    { "title": "الفكرة كجملة خبرية", "points": ["سطر الشرح", "مثال قصير"], "teacherNote": "ما يؤكّد عليه المعلّم", "misconception": "الخطأ الشائع" }
   ],
   "workedExample": { "problem": "نص المسألة بمعطياتها", "steps": ["الخطوة الأولى", "الخطوة الثانية"], "answer": "الإجابة النهائية" },
   "mistake": { "claim": "قالت سلمى: … (حلّ فيه خطأ واحد)", "hint": "أين تبحث", "answer": "الخطوة الخاطئة وتصحيحها" },
@@ -88,6 +99,7 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي لهذا ال�
 }
 
 export function lessonTeachingPromptEn(b: any): string {
+  const limits = diagramLimitsEn();
   return `Write the explanation section of a slide deck projected in class for the lesson "${b.topic}" — ${b.subject}, ${b.grade}.
 ${b.additionalContext ? `\nThe textbook content for this lesson (your only source):\n${b.additionalContext}\n` : ''}
 The deck takes these straight from the book: learning outcomes, vocabulary, rules, figures and worked examples. Do not write any of them. Write only what is missing: the hook question, the explanation, one worked example, one wrong solution for the students to correct, and one practice problem.
@@ -116,6 +128,16 @@ Mandatory rules:
 12. When the hook or a problem needs a setting, set it in the students' own Jordan: Jordanian dinars (JD), Jordanian places (Amman, Aqaba, the Dead Sea, Irbid), everyday life at home and at school. Do not force a setting onto an idea that needs none. Numbers you make up for a problem stay problem values — never as facts about a real place.
 13. Each item in "concepts" may carry optional extras, only where they genuinely help:
    - "shape": a drawing of the idea instead of a list, one of: "compare" {"leftTitle","left","rightTitle","right"}, "table" {"headers","rows"}, "flow" {"steps"}, "timeline" [{"label","text"}], "stat" {"value","label"}, "cycle" {"stages":[{"label","note"}]}, "tree" {"root","branches":[{"label","leaves"}]}, "venn" {"sets":[{"label","only"}],"shared"}, "mindmap" {"center","nodes":[{"text","role"}]}. Write it as "shape": {"layout":"cycle","cycle":{...}}. Then make "points" two lines that sum the drawing up.
+     Limits for each shape — going over one drops the whole shape, so stay inside them:
+     - "compare": a title for each side and at least one line on each side.
+     - "table": 2 to 4 columns and 2 to 6 rows, a header up to 30 characters and a cell up to 80, and exactly one cell under every header in every row.
+     - "flow": 3 to 6 stages, each up to 60 characters.
+     - "timeline": 3 to 6 events, a label up to 24 characters and the text up to 120.
+     - "stat": "value" up to 12 characters, and a "label" written.
+     - "cycle": ${limits.cycle}.
+     - "tree": ${limits.tree}.
+     - "venn": ${limits.venn}.
+     - "mindmap": ${limits.mindmap}; "role" is optional: "cause" or "effect".
    - "icon": one icon name from: ${DECK_ICON_NAMES.join(", ")}.
    - "chart": {"kind":"chart","chartType":"bar","categories":[..],"values":[..]} only from figures in the textbook content above; never invent figures, and never put "chart" with "shape".
    - "photo": a 2-5 word English search phrase for a real scene (a place, an experiment, a phenomenon), never for a maths rule; on two concepts at most.
@@ -124,7 +146,7 @@ Return only JSON in this shape:
 {
   "hook": { "question": "The hook question", "teacherNote": "How the teacher runs the discussion" },
   "concepts": [
-    { "title": "The idea as a claim", "points": ["An explanation line", "A short example"], "teacherNote": "What the teacher stresses", "misconception": "The common error", "icon": "bulb" }
+    { "title": "The idea as a claim", "points": ["An explanation line", "A short example"], "teacherNote": "What the teacher stresses", "misconception": "The common error" }
   ],
   "workedExample": { "problem": "The problem with its givens", "steps": ["Step one", "Step two"], "answer": "The final answer" },
   "mistake": { "claim": "Salma says: … (a solution with one error)", "hint": "Where to look", "answer": "The wrong step and its correction" },
