@@ -1,0 +1,172 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Iqrra social covers</title>
+<!--
+  One template, four covers. Open with ?c=<cover>&guides=1 to see the safe
+  zones drawn over it; build.mjs renders each at its exact pixel size.
+  The lockup is the vector from artifacts/mobile/constants/brandMark.ts, so it
+  needs no font; the copy is IBM Plex Sans Arabic, the wordmark's own family.
+-->
+<style>
+@font-face{font-family:Plex;src:url(fonts/plex-arabic-400.ttf);font-weight:400}
+@font-face{font-family:Plex;src:url(fonts/plex-arabic-600.ttf);font-weight:600}
+@font-face{font-family:Plex;src:url(fonts/plex-arabic-700.ttf);font-weight:700}
+:root{--ink:#0B1B33;--teal:#00A99D;--aqua:#34D6C6;--deep:#006D65}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:var(--ink)}
+#cover{position:relative;overflow:hidden;font-family:Plex,sans-serif;color:#fff}
+.layer{position:absolute;inset:0}
+.content{position:absolute;display:flex;align-items:center;justify-content:center}
+.stack{flex-direction:column;text-align:center}
+.row{flex-direction:row;direction:rtl}
+.text{direction:rtl}
+.row .text{text-align:right}
+.tag{font-weight:700;line-height:1.25;letter-spacing:0}
+.sub{font-weight:400;color:rgba(255,255,255,.82);line-height:1.5}
+.en{direction:ltr;font-weight:600;color:var(--aqua);letter-spacing:.02em;white-space:nowrap}
+.url{direction:ltr;font-weight:600;color:#fff;letter-spacing:.02em}
+.meta{display:flex;align-items:center;gap:.9em}
+.row .meta{justify-content:flex-start}
+.stack .meta{justify-content:center}
+.dot{width:.32em;height:.32em;border-radius:50%;background:var(--teal);flex:none}
+.divider{align-self:stretch;width:2px;background:linear-gradient(transparent,rgba(52,214,198,.55),transparent)}
+.guide{position:absolute;border:3px dashed;font:600 18px/1.2 Plex,sans-serif;padding:6px 10px;direction:ltr}
+.guide span{background:rgba(11,27,51,.85);padding:2px 6px;border-radius:4px}
+.guide.safe{border-color:#34D6C6;color:#34D6C6;background:rgba(52,214,198,.06)}
+.guide.band{border-color:#F5B83D;color:#F5B83D}
+.guide.avoid{border-color:#FF5A5F;color:#FF5A5F;background:rgba(255,90,95,.22)}
+</style>
+<div id="cover"></div>
+<script>
+// Brand vector — keep in step with artifacts/mobile/constants/brandMark.ts.
+const LEAF='M34 12C21 12 13.500 19.500 13.500 29c0 4.500 2.500 7 6 7C30 36 35 26 34 12Z';
+const STEM='M18 33C22 26 27 20 31 16';
+const WORDMARK=window.WORDMARK_PATH; // injected by build.mjs from brandMark.ts
+
+function lockup(width){
+  // On dark: white mark ground, teal leaf, white wordmark (BrandLogo onDark).
+  return `<svg width="${width}" height="${width*58/130}" viewBox="96 4 130 58" aria-label="Iqrra">
+    <g transform="translate(176 8)">
+      <rect width="48" height="48" rx="13" fill="#fff"/>
+      <path d="${LEAF}" fill="#00A99D"/>
+      <path d="${STEM}" stroke="#fff" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+      <circle cx="33" cy="35.5" r="2.2" fill="#00A99D"/>
+    </g>
+    <path d="${WORDMARK}" fill="#fff"/>
+  </svg>`;
+}
+
+// Line-art from the two launch subjects: a parabola on axes (maths) and a
+// benzene ring (chemistry), plus an orbit. Drawn on a 100-unit box.
+const ART={
+  parabola:`<g fill="none" stroke="#34D6C6" stroke-width="1.1" stroke-linecap="round">
+    <path d="M8 92H96M50 96V4" opacity=".55"/>
+    <path d="M14 8Q50 172 86 8" stroke-width="1.6"/>
+    ${[20,30,40,50,60,70,80].map(x=>`<path d="M${x} 90.5V93.5" opacity=".55"/>`).join('')}
+    <circle cx="50" cy="90" r="2.2" fill="#34D6C6" stroke="none"/>
+    <circle cx="27" cy="54" r="1.8" fill="#00A99D" stroke="none"/><circle cx="73" cy="54" r="1.8" fill="#00A99D" stroke="none"/>
+  </g>`,
+  benzene:`<g fill="none" stroke="#34D6C6" stroke-width="1.6" stroke-linejoin="round">
+    <polygon points="50,8 86,29 86,71 50,92 14,71 14,29"/>
+    <circle cx="50" cy="50" r="22" stroke-width="1.1" opacity=".7"/>
+    <path d="M50 8V-6M86 29l12-7M86 71l12 7M50 92v14M14 71l-12 7M14 29l-12-7" opacity=".5" stroke-width="1.1"/>
+  </g>`,
+  orbit:`<g fill="none" stroke="#34D6C6" stroke-width="1.1">
+    <ellipse cx="50" cy="50" rx="46" ry="17" opacity=".7"/>
+    <ellipse cx="50" cy="50" rx="46" ry="17" transform="rotate(60 50 50)" opacity=".7"/>
+    <ellipse cx="50" cy="50" rx="46" ry="17" transform="rotate(-60 50 50)" opacity=".7"/>
+    <circle cx="50" cy="50" r="5" fill="#00A99D" stroke="none"/>
+    <circle cx="96" cy="50" r="2.4" fill="#34D6C6" stroke="none"/>
+  </g>`,
+};
+const art=(name,x,y,size,op=.5,rot=0)=>
+  `<svg style="position:absolute;left:${x}px;top:${y}px;opacity:${op};transform:rotate(${rot}deg);overflow:visible" width="${size}" height="${size}" viewBox="0 0 100 100">${ART[name]}</svg>`;
+
+const COPY={
+  tag:'ذكاء يساعدك لتعليم أفضل',
+  sub:'خطط دروس، أوراق عمل واختبارات — مبنية على المنهاج الأردني',
+  en:'AI teaching assistant for Jordanian teachers',
+  url:'iqrra.com',
+};
+
+// x,y,w,h in canvas pixels. `content` is where the copy may sit: inside every
+// safe zone and clear of every avoid zone.
+const SPECS={
+  facebook:{
+    w:1640,h:624, // 2x Facebook's 820x312 desktop display
+    grid:52, glow:[820,300,620],
+    guides:[
+      {k:'safe',x:265,y:0,w:1110,h:624,t:'Mobile view — centre 1110 px (sides cropped)'},
+      {k:'avoid',x:0,y:470,w:420,h:154,t:'Profile photo (desktop)'},
+    ],
+    content:{x:300,y:70,w:1040,h:440,layout:'stack',logo:330,tag:58,sub:27,en:19,url:24,gap:22},
+    art:[['parabola',40,90,220,.45],['benzene',1420,70,180,.5],['orbit',1430,380,150,.35]],
+  },
+  youtube:{
+    w:2560,h:1440,
+    grid:64, glow:[1280,720,900],
+    guides:[
+      {k:'band',x:0,y:0,w:2560,h:1440,t:'TV — full 2560 × 1440'},
+      {k:'band',x:0,y:508,w:2560,h:424,t:'Desktop — 2560 × 423'},
+      {k:'band',x:352,y:508,w:1856,h:424,t:'Tablet — 1855 × 423',bottom:true},
+      {k:'safe',x:507,y:508,w:1546,h:424,t:'Safe on every device — 1546 × 423'},
+    ],
+    content:{x:560,y:528,w:1440,h:384,layout:'row',logo:420,tag:76,sub:32,en:24,url:28,gap:18},
+    art:[['parabola',150,520,300,.45],['benzene',2130,530,260,.45],
+         ['orbit',2200,180,380,.22],['parabola',260,980,360,.18,180],['benzene',1100,1060,300,.14],['orbit',1150,40,320,.12]],
+  },
+  linkedin_company:{
+    w:2256,h:382, // 2x LinkedIn's 1128x191 company page banner
+    grid:38, glow:[1330,190,520],
+    guides:[
+      {k:'safe',x:228,y:30,w:1800,h:322,t:'Mobile — centre ~900 px (×2)'},
+      {k:'avoid',x:0,y:140,w:600,h:242,t:'Company logo'},
+    ],
+    content:{x:640,y:44,w:1360,h:294,layout:'row',logo:420,tag:62,sub:32,url:30,gap:14},
+    art:[['benzene',60,22,130,.45],['parabola',2080,40,150,.4]],
+  },
+  linkedin_profile:{
+    w:1584,h:396, // LinkedIn personal profile background
+    grid:44, glow:[1050,198,520],
+    guides:[
+      {k:'avoid',x:0,y:170,w:540,h:226,t:'Profile photo'},
+      {k:'safe',x:560,y:30,w:990,h:336,t:'Clear of the photo'},
+    ],
+    content:{x:590,y:46,w:940,h:304,layout:'row',logo:290,tag:46,sub:23,url:24,gap:12},
+    art:[['benzene',70,26,130,.45],['orbit',300,40,110,.3]],
+  },
+};
+
+function render(name,guides){
+  const s=SPECS[name], c=s.content, el=document.getElementById('cover');
+  el.style.width=s.w+'px'; el.style.height=s.h+'px';
+  const [gx,gy,gr]=s.glow;
+  const bg=`<div class="layer" style="background:
+      radial-gradient(${gr}px ${gr*.62}px at ${gx}px ${gy}px, rgba(52,214,198,.20), transparent 70%),
+      radial-gradient(${s.w*.5}px ${s.h*.9}px at 100% 100%, rgba(0,109,101,.55), transparent 70%),
+      linear-gradient(115deg,#0B1B33 0%,#0B2236 55%,#0A3340 100%)"></div>
+    <div class="layer" style="background-image:
+      linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+      background-size:${s.grid}px ${s.grid}px;
+      mask-image:radial-gradient(closest-side at ${gx}px ${gy}px, transparent 35%, #000 100%);
+      -webkit-mask-image:radial-gradient(${s.w*.6}px ${s.h*.9}px at ${gx}px ${gy}px, transparent 30%, #000 85%)"></div>`;
+  const deco=s.art.map(a=>art(...a)).join('');
+  // LinkedIn shows its banners at about half the upload size, so a small
+  // English line there would land near 8 px; those covers carry the URL only.
+  const en=c.en?`<span class="en" style="font-size:${c.en}px">Iqrra · ${COPY.en}</span><span class="dot"></span>`:'';
+  const meta=`<div class="meta" style="font-size:${c.url}px;margin-top:${c.gap}px">${en}<span class="url">${COPY.url}</span></div>`;
+  const text=`<div class="text">
+      <div class="tag" style="font-size:${c.tag}px">${COPY.tag}</div>
+      <div class="sub" style="font-size:${c.sub}px;margin-top:${c.gap*.5}px">${COPY.sub}</div>${meta}</div>`;
+  const body=c.layout==='stack'
+    ? `<div style="margin-bottom:${c.gap*1.4}px">${lockup(c.logo)}</div>${text}`
+    : `${lockup(c.logo)}<div class="divider" style="margin:0 ${c.gap*3}px"></div>${text}`;
+  const g=guides?s.guides.map(z=>`<div class="guide ${z.k}" style="left:${z.x}px;top:${z.y}px;width:${z.w}px;height:${z.h}px${z.bottom?';display:flex;align-items:flex-end':''}"><span>${z.t}</span></div>`).join(''):'';
+  el.innerHTML=`${bg}${deco}<div class="content ${c.layout}" style="left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px">${body}</div>${g}`;
+}
+
+const q=new URLSearchParams(location.search);
+render(q.get('c')||'facebook', q.get('guides')==='1');
+window.SPECS=SPECS;
+</script>
