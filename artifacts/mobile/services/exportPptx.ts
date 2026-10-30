@@ -358,7 +358,9 @@ export async function exportDeckAsPptx(
     // the types below are about content. `null` — no layout, or one whose data
     // was too thin — falls through untouched.
     const layout = resolveSlideLayout(slide);
-    if (layout && layout.kind !== 'photo') {
+    // The four diagram kinds are not drawn here yet: the ordinary path stands in.
+    if (layout && layout.kind !== 'photo' && layout.kind !== 'cycle' && layout.kind !== 'tree'
+      && layout.kind !== 'venn' && layout.kind !== 'mindmap') {
       if (layout.kind === 'statement') {
         s.addText(layout.text, {
           x: 0.55, y: 1.6, w: 8.9, h: 2.2, align: rtlAlign, valign: 'middle',

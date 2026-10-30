@@ -451,7 +451,9 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
   const layoutSlide = (slide: ActivitySlide, num: number): string | null => {
     const layout = resolveSlideLayout(slide);
     // `photo` is drawn by `dividerSlide` (see the dispatch below), not here.
-    if (!layout || layout.kind === 'photo') return null;
+    // The four diagram kinds are not drawn here yet: the ordinary layout stands in.
+    if (!layout || layout.kind === 'photo' || layout.kind === 'cycle' || layout.kind === 'tree'
+      || layout.kind === 'venn' || layout.kind === 'mindmap') return null;
     const accent = deckSlideAccent(slide.type, T);
     const head = esc(splitEmoji(slide.title)[1]);
 

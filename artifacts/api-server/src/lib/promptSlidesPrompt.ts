@@ -63,7 +63,7 @@ export const DECK_ICON_NAMES = [
  * `concepts` is on the list so a saved deck round-trips, but the prompt does not
  * teach it: only Slides Maker's own builders write that one.
  */
-export const DECK_LAYOUT_NAMES = ["statement", "stat", "compare", "steps", "timeline", "stats", "table", "flow", "quote", "photo", "concepts"] as const;
+export const DECK_LAYOUT_NAMES = ["statement", "stat", "compare", "steps", "timeline", "stats", "table", "flow", "quote", "photo", "concepts", "cycle", "tree", "venn", "mindmap"] as const;
 const LAYOUT_SLIDE_TYPES = ["intro", "summary", "reveal"];
 
 /** Charts the prompt asks for at most; the server keeps three before it cuts. */

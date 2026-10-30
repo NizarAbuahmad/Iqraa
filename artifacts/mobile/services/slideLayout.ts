@@ -37,6 +37,10 @@ export type ResolvedLayout =
   | { kind: 'flow'; nodes: string[]; cycle: boolean }
   | { kind: 'quote'; text: string; by?: string }
   | { kind: 'concepts'; items: string[] }
+  | { kind: 'cycle'; stages: { label: string; note?: string }[] }
+  | { kind: 'tree'; root: string; branches: { label: string; leaves: string[] }[] }
+  | { kind: 'venn'; sets: { label: string; only: string[] }[]; shared: string[] }
+  | { kind: 'mindmap'; center: string; nodes: { text: string; role?: 'cause' | 'effect' }[] }
   | { kind: 'photo'; url: string; caption: string; credit?: PhotoCredit; sentence: string };
 
 /**
@@ -92,6 +96,29 @@ export const MAX_QUOTE_BY_CHARS = 60;
 export const MIN_CONCEPTS = 2;
 export const MAX_CONCEPTS = 6;
 export const MAX_CONCEPT_CHARS = 32;
+
+export const MIN_CYCLE_STAGES = 3;
+export const MAX_CYCLE_STAGES = 6;
+export const MAX_DIAGRAM_LABEL_CHARS = 24;
+export const MAX_CYCLE_NOTE_CHARS = 60;
+export const MAX_TREE_ROOT_CHARS = 32;
+export const MIN_TREE_BRANCHES = 2;
+export const MAX_TREE_BRANCHES = 4;
+export const MAX_TREE_LEAVES = 4;
+export const MAX_VENN_ITEMS = 4;
+export const MAX_VENN_ITEM_CHARS = 32;
+/** Three circles leave a third of the room per region. */
+export const MAX_VENN3_ONLY = 3;
+export const MAX_VENN3_SHARED = 2;
+export const MAX_VENN3_ITEM_CHARS = 20;
+export const MIN_MINDMAP_NODES = 3;
+export const MAX_MINDMAP_NODES = 6;
+export const MAX_MINDMAP_CHARS = 40;
+
+/** Labels a reader tells apart: no repeats after trimming. */
+function distinct(items: string[]): boolean {
+  return new Set(items).size === items.length;
+}
 
 /** A required string: trimmed, bullet-stripped, non-empty, within `max`. Anything else is `null`. */
 function needText(v: unknown, max: number): string | null {
@@ -241,6 +268,68 @@ export function resolveSlideLayout(slide: ActivitySlide): ResolvedLayout | null 
       return { kind: 'concepts', items };
     }
 
+    case 'cycle': {
+      const raw = slide.cycle?.stages;
+      if (!Array.isArray(raw) || raw.length < MIN_CYCLE_STAGES || raw.length > MAX_CYCLE_STAGES) return null;
+      const stages: { label: string; note?: string }[] = [];
+      for (const s of raw) {
+        const label = needText(s?.label, MAX_DIAGRAM_LABEL_CHARS);
+        if (label === null) return null;
+        const rawNote = s?.note;
+        const note = rawNote === undefined || rawNote === null || rawNote === '' ? undefined : needText(rawNote, MAX_CYCLE_NOTE_CHARS);
+        if (note === null) return null;
+        stages.push({ label, ...(note ? { note } : {}) });
+      }
+      return distinct(stages.map(s => s.label)) ? { kind: 'cycle', stages } : null;
+    }
+
+    case 'tree': {
+      const root = needText(slide.tree?.root, MAX_TREE_ROOT_CHARS);
+      const raw = slide.tree?.branches;
+      if (root === null || !Array.isArray(raw) || raw.length < MIN_TREE_BRANCHES || raw.length > MAX_TREE_BRANCHES) return null;
+      const branches: { label: string; leaves: string[] }[] = [];
+      for (const b of raw) {
+        const label = needText(b?.label, MAX_DIAGRAM_LABEL_CHARS);
+        const leaves = b?.leaves === undefined ? [] : needTexts(b.leaves, MAX_DIAGRAM_LABEL_CHARS);
+        if (label === null || leaves === null || leaves.length > MAX_TREE_LEAVES || !distinct(leaves)) return null;
+        branches.push({ label, leaves });
+      }
+      return distinct(branches.map(b => b.label)) ? { kind: 'tree', root, branches } : null;
+    }
+
+    case 'venn': {
+      const raw = slide.venn?.sets;
+      if (!Array.isArray(raw) || raw.length < 2 || raw.length > 3) return null;
+      const three = raw.length === 3;
+      const itemChars = three ? MAX_VENN3_ITEM_CHARS : MAX_VENN_ITEM_CHARS;
+      const sets: { label: string; only: string[] }[] = [];
+      for (const s of raw) {
+        const label = needText(s?.label, MAX_DIAGRAM_LABEL_CHARS);
+        const only = needTexts(s?.only ?? [], itemChars);
+        if (label === null || only === null || only.length > (three ? MAX_VENN3_ONLY : MAX_VENN_ITEMS)) return null;
+        sets.push({ label, only });
+      }
+      const shared = needTexts(slide.venn?.shared ?? [], itemChars);
+      if (shared === null || shared.length > (three ? MAX_VENN3_SHARED : MAX_VENN_ITEMS)) return null;
+      if (!distinct(sets.map(s => s.label))) return null;
+      if (shared.length === 0 && sets.every(s => s.only.length === 0)) return null;
+      return { kind: 'venn', sets, shared };
+    }
+
+    case 'mindmap': {
+      const center = needText(slide.mindmap?.center, MAX_MINDMAP_CHARS);
+      const raw = slide.mindmap?.nodes;
+      if (center === null || !Array.isArray(raw) || raw.length < MIN_MINDMAP_NODES || raw.length > MAX_MINDMAP_NODES) return null;
+      const nodes: { text: string; role?: 'cause' | 'effect' }[] = [];
+      for (const n of raw) {
+        const text = needText(n?.text, MAX_MINDMAP_CHARS);
+        const role = n?.role;
+        if (text === null || (role !== undefined && role !== 'cause' && role !== 'effect')) return null;
+        nodes.push({ text, ...(role ? { role } : {}) });
+      }
+      return distinct(nodes.map(n => n.text)) ? { kind: 'mindmap', center, nodes } : null;
+    }
+
     case 'photo': {
       // Needs a real picture and one sentence to put over it. Without the
       // picture this is `null` — the ordinary layout, with the sentence as a
@@ -266,7 +355,7 @@ export function resolveSlideLayout(slide: ActivitySlide): ResolvedLayout | null 
 }
 
 /** The layouts whose data lives in a field of its own rather than in `content`. */
-export const PAYLOAD_LAYOUTS = ['stat', 'compare', 'timeline', 'stats', 'table', 'flow', 'quote', 'concepts'] as const;
+export const PAYLOAD_LAYOUTS = ['stat', 'compare', 'timeline', 'stats', 'table', 'flow', 'quote', 'concepts', 'cycle', 'tree', 'venn', 'mindmap'] as const;
 
 /**
  * A slide's own words as bullet lines, from whichever payload it carries — for
@@ -293,6 +382,19 @@ export function payloadLines(slide: ActivitySlide): string[] {
   for (const step of Array.isArray(slide.flow?.steps) ? slide.flow!.steps : []) add(step);
   if (slide.quote) add(slide.quote.text, slide.quote.by);
   for (const c of Array.isArray(slide.concepts) ? slide.concepts : []) add(c);
+  for (const s of Array.isArray(slide.cycle?.stages) ? slide.cycle!.stages : []) add(s?.label, s?.note);
+  if (slide.tree) {
+    add(slide.tree.root);
+    for (const b of Array.isArray(slide.tree.branches) ? slide.tree.branches : []) add(b?.label, ...(Array.isArray(b?.leaves) ? b.leaves : []));
+  }
+  if (slide.venn) {
+    for (const s of Array.isArray(slide.venn.sets) ? slide.venn.sets : []) add(s?.label, ...(Array.isArray(s?.only) ? s.only : []));
+    for (const x of Array.isArray(slide.venn.shared) ? slide.venn.shared : []) add(x);
+  }
+  if (slide.mindmap) {
+    add(slide.mindmap.center);
+    for (const n of Array.isArray(slide.mindmap.nodes) ? slide.mindmap.nodes : []) add(n?.text);
+  }
   return out;
 }
 
@@ -361,4 +463,4 @@ export function inlineSteps(text: string): string[] | null {
 }
 
 /** Every layout a generator may ask for — the prompt and the tests share this. */
-export const SLIDE_LAYOUTS = ['statement', 'stat', 'compare', 'steps', 'timeline', 'stats', 'table', 'flow', 'quote', 'photo', 'concepts'] as const;
+export const SLIDE_LAYOUTS = ['statement', 'stat', 'compare', 'steps', 'timeline', 'stats', 'table', 'flow', 'quote', 'photo', 'concepts', 'cycle', 'tree', 'venn', 'mindmap'] as const;

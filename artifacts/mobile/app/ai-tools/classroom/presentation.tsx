@@ -952,7 +952,9 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
   // fall through to the ordinary heading-plus-body grid below.
   const layout = resolveSlideLayout(slide);
   // `photo` never gets here: the dispatch hands it to HeroSlideView.
-  if (layout && layout.kind !== 'photo') {
+  // The four diagram kinds are not drawn here yet: the ordinary grid stands in.
+  if (layout && layout.kind !== 'photo' && layout.kind !== 'cycle' && layout.kind !== 'tree'
+    && layout.kind !== 'venn' && layout.kind !== 'mindmap') {
     return (
       <View style={slideStyles.cover}>
         {layout.kind === 'statement' && (
