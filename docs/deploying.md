@@ -589,6 +589,8 @@ gcloud run services update iqraa-api --region europe-west1 $P \
 gcloud scheduler jobs update http homework-reminders --location europe-west1 $P \
   --update-headers "x-internal-key=$KEY,Content-Type=application/json" \
   --format=none   # without this gcloud prints the job, x-internal-key included
+# If the submission sweep job exists, run its `jobs update http` line (next section) here, while
+# $KEY is still set (so before the unset below) and before the old versions are disabled.
 unset KEY
 # The service now reads the new version; disable the old one(s) so a leaked key is dead.
 gcloud secrets versions list INTERNAL_CRON_KEY $P --filter=state=enabled \
@@ -613,6 +615,161 @@ claims: a retry after a failed or timed-out run reminds only the homework not ye
 claimed and repeats none. The run is sequential, so a very large school could
 outlast the job's 300 s attempt deadline; do not rely on the handler carrying on
 after its request ends (Cloud Run throttles CPU then) — rely on the retry.
+
+### The submission sweep (Cloud Scheduler) — manual, once
+
+`POST /api/internal/homework-submission-sweep` cleans up the photos students hand
+in with a homework project (private bucket, `homework-submissions/`). It does two
+things, in this order:
+
+1. **Retries the purge** for archived homework and for homework in an archived
+   class that still has submission rows (a purge that threw, or an upload that
+   raced one). Rows and photos both go.
+2. **Deletes objects no `homework_submissions` row refers to**: a photo stored
+   by an upload whose database write then failed, or left behind by an object
+   delete that failed.
+
+**It is irreversible: it deletes objects that are a minor's work, and nothing in
+the repo can bring them back.** The code only ever errs toward keeping (see the
+limits below), but treat the first run as the dangerous one.
+
+It reuses **`INTERNAL_CRON_KEY`** and the same guard as the reminder: no new
+secret, nothing to add to `deploy.yml`, and **404 to everyone until the key is on
+the service** — so if the reminder section above is done, this route is already
+live and inert until a caller sends the key. The key value must never be echoed,
+printed or pasted into a transcript; run the commands below in **one shell
+session** with `$KEY` still set, exactly as the reminder recipe says. If you no
+longer have it, rotate (end of the reminder section) rather than read it back.
+
+**The query string decides whether it deletes.** Read it before any manual call:
+
+| Request | Result |
+| --- | --- |
+| no `dryRun` key at all | **real run (deletes)** — this is what the scheduled job sends |
+| `?dryRun=0` or `?dryRun=false` | **real run (deletes)** |
+| `dryRun` in any other form: `?dryRun`, `?dryRun=` (empty), `1`, `true`, `TRUE`, `yes`, a repeated key | dry run: reports, changes nothing |
+| any other parameter (`dryrun`, `dry-run`, `limit`, …) | `400 {"error":"Unknown query parameter"}`, nothing done |
+
+So the scheduler URI must have **no query string** (or `?dryRun=0`), and every
+manual look uses `?dryRun=1`. A typo in the safety flag is a 400, never a real
+run. The grace period and the per-run cap are constants in the code; a request
+cannot change them.
+
+**First run, in this order — do not create the job first:**
+
+```bash
+P=--project=iqraa-auth-507315   # one word, so it also works unquoted in zsh
+URL=https://iqraa-api-613126375862.europe-west1.run.app/api/internal/homework-submission-sweep
+# $KEY must be set in this shell (see above). 404 = the key is not on the service yet.
+# 1. A DRY run by hand. Deletes nothing. Read the JSON.
+curl -sS -X POST -H "x-internal-key: $KEY" "$URL?dryRun=1"
+```
+
+The answer is the run report itself (the same object that is logged), not wrapped
+in another key. The fields: `dryRun`, `archivedHomework`, `purgeFailed`,
+`rowsPurged` (phase 1); `objectsListed`, `referenced`, `orphanObjects`,
+`skippedYoung`, `skippedBadKey`, `capped`, `deleted`, `listTruncated`,
+`objectsSkipped` (phase 2); `sample` (up to 20 keys of what was, or in a dry run
+would be, deleted). Compare `orphanObjects` with what you expect — on a young
+feature, close to none. A large number is a reason to stop and look at `sample`,
+not to carry on. `objectsSkipped: true` means R2 is not configured on that server
+and phase 2 did not run at all.
+
+A dry run **does not do phase 1**: it counts the rows of archived homework
+(`archivedHomework`, `rowsPurged`) but removes none, so their rows still exist
+and their photos count as `referenced`, not as orphans. The real run purges those
+rows first and then sees their photos as orphans. So a dry run's phase-2 numbers
+are a lower bound, and can be larger after the real run by the photos of the
+`archivedHomework` it lists.
+
+```bash
+# 2. Once for real, by hand, when the dry run's numbers make sense. This DELETES.
+curl -sS -X POST -H "x-internal-key: $KEY" "$URL"
+# 3. The weekly job: Sunday 03:00 Amman. The URI carries no query string. One retry at most:
+#    a sweep that half-ran is safe to run again, and a retry would only repeat the work.
+gcloud scheduler jobs create http homework-submission-sweep $P \
+  --location europe-west1 \
+  --schedule "0 3 * * 0" --time-zone "Asia/Amman" \
+  --uri "$URL" \
+  --http-method POST \
+  --headers "x-internal-key=$KEY,Content-Type=application/json" \
+  --message-body '{}' \
+  --attempt-deadline 300s \
+  --max-retry-attempts 1 --min-backoff 60s \
+  --format=none   # without this gcloud prints the job, x-internal-key included
+# 4. Fire it once and see that it ran.
+gcloud scheduler jobs run homework-submission-sweep --location europe-west1 $P
+gcloud scheduler jobs describe homework-submission-sweep --location europe-west1 $P \
+  --format='value(lastAttemptTime,status)'
+gcloud logging read 'resource.labels.service_name="iqraa-api" AND jsonPayload.message="homework submission sweep run"' \
+  $P --limit 5 --freshness 1d
+unset KEY   # when done
+```
+
+**The key lives in this job's config too, so rotating `INTERNAL_CRON_KEY` means
+updating this job's header as well** as the reminder job's, in the same session
+as the rotation, before the old secret versions are disabled. With `$KEY`
+holding the new value, as in the reminder's rotation block:
+
+```bash
+gcloud scheduler jobs update http homework-submission-sweep --location europe-west1 $P \
+  --update-headers "x-internal-key=$KEY,Content-Type=application/json" \
+  --format=none   # without this gcloud prints the job, x-internal-key included
+```
+
+A job left on the old key gets a 404 from then on and the sweep silently stops
+running: after a rotation, check `lastAttemptTime`, `status` and the log line. The
+warning above that `gcloud scheduler jobs create|update|describe` prints the
+stored key applies to this job just as much: keep `--format=none` on every write
+and a `value(...)` format that omits `httpTarget` on reads.
+
+**Limits, all in code** (`modules/homework/submissionSweep.ts`,
+`lib/homeworkSubmissionSweep.ts`):
+
+- **24 hours of grace.** An object younger than that is never deleted, whether or
+  not a row refers to it (an upload stores the object a moment before it records
+  the row). A `lastModified` in the future counts as young. `skippedYoung` counts them.
+- **At most 1000 deletes per run**, oldest first. `capped` is how many more were
+  left for the next run. A bucket with a backlog is emptied over several weekly
+  runs; run it by hand again to hurry that along.
+- **At most 200,000 objects listed per run.** Past that, `listTruncated: true`:
+  the run only swept the first 200,000 keys in key order, and every run will see
+  the same ones, so an orphan sorting after the cut-off is never found. The code
+  logs it at warn level; it needs a person (a bigger cap, or a listing that
+  continues where the last one stopped), not another rerun.
+- **Only a key of exactly this shape is ever deleted:**
+  `homework-submissions/<uuid>/<uuid>/<uuid>.(jpg|png|webp)`, prefix and extension
+  in lower case, the hex of the ids in either case. Anything else under the prefix
+  is counted in `skippedBadKey` and left for a person to look at.
+- **An object a row refers to is kept, however old**, drafts included.
+- The order inside the run is deliberate (list the bucket first, read the rows
+  second), so a photo uploaded while the sweep runs cannot be mistaken for an
+  orphan. Do not "optimise" it.
+
+**What to watch.** One log line per run, `homework submission sweep run`, whose
+payload is the whole report above. Each deleted object also has its own line,
+`homework submission sweep: deleted an orphan object`, with its `key`,
+`lastModified` and `homeworkId` (the bucket keeps no history, so that line is the
+only record of what went). Things worth a look when they repeat:
+
+- `purgeFailed > 0`: a purge of an archived homework threw (logged at error level
+  as `could not purge an archived homework`, with its id). Its rows are kept, so
+  its photos are safe; it is retried next run. Week after week means a bad row.
+- `listTruncated: true`: see the limits.
+- `capped > 0` week after week: orphans arrive faster than 1000 a week. Find out why.
+- A real run where `orphanObjects − capped − deleted` is above zero: some object
+  deletes failed (`could not delete an orphan object`, at error level, with the key).
+- A first-ever run, or a sudden jump in `orphanObjects`: something is failing
+  between storing a photo and recording it.
+
+**Cloud Run throttles CPU once a response is sent**, so the route does all its
+work before answering, as the reminders do; nothing carries on afterwards. The job's
+`--attempt-deadline` must therefore cover a full run (a 200,000-key listing plus
+1000 deletes), and the service's own request limit is `--timeout 300` in
+`deploy.yml`, so **300 s is the real ceiling**: a longer attempt deadline on the
+job does not buy more time. The run's duration has not been measured against the
+real bucket; read it off the first manual runs. A run cut off by the timeout is
+safe to start again.
 
 ### Claude for documents (`ANTHROPIC_API_KEY`) — manual, once
 

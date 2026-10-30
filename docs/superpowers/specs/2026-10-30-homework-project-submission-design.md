@@ -306,6 +306,16 @@ bump is needed; if a permission string is missing it is a native change and the
   milliseconds, can store a photo after the purge listed the rows. They are private,
   unguessable and unreachable, but they stay. **A prefix sweep of
   `homework-submissions/` must land before phase 2 lets students upload.**
+  **The sweep now exists** (`POST /internal/homework-submission-sweep`, same
+  `INTERNAL_CRON_KEY` as the reminders; see `docs/status-log.md` «Homework submission
+  cleanup sweep»). It retries the purge of archived homework and deletes unreferenced
+  objects older than 24 hours, at most 1000 a run. **The Cloud Scheduler job still has
+  to be created by the owner** (`docs/deploying.md`, dry run first), so until then the
+  cases above stay open in production, and **it has never run against real R2**. Still
+  open: a failed object delete in the sweep is not exercised by any test; the photo
+  extension list exists twice (`modules/homework/submission.ts` and the sweep's key
+  regex) with no test tying them; and a listing past 200,000 keys is only flagged
+  (`listTruncated`), not handled.
 - **Open question: toggling `requiresSubmission` after work exists.** It is not
   specified, and `PATCH /homework/:id` accepts it today. On → off makes the stored
   photos unreadable (every student route answers 404) and lets drafts be ticked by

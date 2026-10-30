@@ -10,6 +10,114 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Homework submission cleanup sweep — 2026-10-30
+
+The orphan sweep that the entry below said "must land before phase 2 lets students
+upload". API only, no schema, no app code. Spec §8:
+`docs/superpowers/specs/2026-10-30-homework-project-submission-design.md`. **The
+Cloud Scheduler job does not exist yet and the sweep has never run against real
+R2 or production** — the owner has to create the job, and the recipe, including
+the dry-run-first order, is in `docs/deploying.md` «The submission sweep (Cloud
+Scheduler) — manual, once».
+
+**What was built**
+
+- **Part A — listing.** `listObjects(prefix, { maxKeys })` in `lib/r2.ts`:
+  ListObjectsV2 against the private bucket, paged by continuation token, capped at
+  `maxKeys` (default 10,000) with an exact `truncated` flag, and an empty prefix is
+  refused so the whole bucket cannot be listed by accident. The test S3 stub
+  (`test-support/s3Stub.ts`) can now list, and gains a way to plant an object with a
+  chosen `lastModified`.
+- **Part B — the sweep.** `POST /api/internal/homework-submission-sweep`
+  (`routes/internal.ts`), run by `sweepSubmissionOrphans`
+  (`lib/homeworkSubmissionSweep.ts`, on `systemDb`, pinned in `systemDbFiles.test.ts`)
+  with the decisions in a pure module (`modules/homework/submissionSweep.ts`).
+  Same `INTERNAL_CRON_KEY` and guard as the reminders: 404 to everyone without the key,
+  checked before the query is read; no new secret, nothing in `deploy.yml`.
+  - Phase 1 purges the rows and photos of archived homework and of homework in an
+    archived class, through `purgeSubmissions`, and carries on past one that throws
+    (`purgeFailed`, error log; its rows stay, so its photos stay referenced).
+  - Phase 2 lists `homework-submissions/` FIRST and reads every referenced key SECOND
+    (an upload stores the object and then writes the row, so this order can never hide a
+    reference to an object the listing saw), and deletes only what the classifier allows,
+    ten at a time, logging each key it deletes (`homework submission sweep: deleted an
+    orphan object`).
+  - Query: no `dryRun` key, `dryRun=0` or `dryRun=false` is a real run; `dryRun` in any
+    other form is a dry run; any other parameter is `400 Unknown query parameter`. The
+    answer is the run report, also logged as `homework submission sweep run`.
+  - Dry run does not do phase 1 (it counts the rows it would purge), so its phase-2
+    numbers are a lower bound.
+- **Decisions.** 24 h grace (an upload stores the object a moment before its row, and a
+  future `lastModified` counts as young); 1000 deletes per run, oldest first, the rest
+  next run; weekly (Sunday 03:00 Amman) with one retry at most, because a half-run is
+  safe to repeat; the same key rather than a second secret; and `dryRun` that fails
+  safe, so a preview that was meant to be one can never become a real run.
+
+**Limits, all in code.** An object a row refers to is kept however old. Only a key of
+exactly `homework-submissions/<uuid>/<uuid>/<uuid>.(jpg|png|webp)` is ever deleted
+(prefix and extension lower case, hex either case); anything else under the prefix is
+counted in `skippedBadKey` and left. At most 200,000 objects are listed per run
+(`LIST_CAP`); past that `listTruncated: true`, logged at warn level, and every run sees
+the same first 200,000 keys, so an orphan after the cut-off is never found — that needs a
+person. The request cannot change the grace period or the cap.
+
+**Verified** (local, Postgres 16, 2026-10-30)
+
+- `artifacts/api-server`, after `pnpm build`, with
+  `TEST_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/postgres node
+  --experimental-strip-types --test` on the three files of this change:
+  `modules/homework/__tests__/submissionSweep.test.ts` 19 tests,
+  `routes/__tests__/homeworkSubmissionSweep.db.test.ts` 18 tests,
+  `test-support/__tests__/s3Stub.test.ts` 9 tests: **46 passed, 0 failed, 0 skipped**.
+  The route suite runs the real server against the real database and the in-memory S3:
+  404 without or with a wrong key and for a GET; deletes an old orphan, keeps one inside
+  the grace period and a referenced one however old (drafts included); is idempotent;
+  leaves other prefixes and wrong-shaped keys alone and counts them; purges archived
+  homework and archived-class homework, with RLS enforcing and a draft present; carries
+  on past a homework that cannot be purged (`purgeFailed`); a dry run changes no object
+  and no row; the `dryRun` forms (preview for `?dryRun`, `1`, `true`, `TRUE`, `yes`,
+  `FALSE`, padded and repeated; 400 for any other parameter; real for none, `0`, `false`);
+  a bucket of 10,050 objects listed whole with 1000 deleted and 9050 left; R2 not
+  configured (phase 2 skipped, rows still purged). `mountOrder.test.ts` gained a case
+  for the new path (not run again for this entry beyond the three files above).
+- Not re-run for this entry: the whole api-server suite, `pnpm run typecheck`, the mobile
+  suite. No mobile code changed, so no OTA and no `app.json` `version` bump.
+
+**Not verified**
+
+- **Never run against real R2 or production.** The S3 stub is not R2: pagination, the
+  `LastModified` it returns and the time a 200,000-key listing and 1000 deletes take
+  there are all unmeasured. Cloud Run's request limit is 300 s (`--timeout 300` in
+  `deploy.yml`); the first dry run and the first real run are where that is learned.
+- **A failed object delete in phase 2 is not exercised.** The code logs it
+  (`could not delete an orphan object`), does not count it in `deleted`, and moves on;
+  no test makes `deleteObject` fail. Only a failing *purge* (phase 1) is tested.
+- **`listTruncated: true` through the route is not exercised.** The 200,000 ceiling is
+  not reached in any test; `listObjects` truncation is tested at the library level
+  (`maxKeys: 5`), and the route test lists 10,050 and expects `false`.
+- **The extension list exists twice.** `EXTENSION` in `modules/homework/submission.ts`
+  (what an upload may be stored as) and the sweep's key regex. No test ties them, so a
+  fourth photo type added to the upload would be stored, never swept as an orphan, and
+  counted in `skippedBadKey`. (`lib/r2.ts` takes the extension as an argument; it holds no list.)
+- **The Cloud Scheduler job does not exist.** Until the owner creates it, nothing runs
+  the sweep and the orphan sources below stay open in production.
+
+**Review history.** Part A and the first cut of Part B (`2b38f7e`, `5c5cc58`) went
+through one fix round (`935c3da`). It found: `dryRun` parsed fail-open (only the exact
+strings `1` and `true` previewed, so `?dryRun`, `TRUE` or a typo'd parameter name deleted); a listing
+ceiling of 10,000 keys that left a blind spot, because S3 lists in key order and a run
+that stopped there saw the same live photos every time and never reached an orphan
+after the cut-off (now 200,000, with a warn log when hit); a key check that accepted an
+upper-case prefix or extension (the regex was case-insensitive as a whole); and a purge failure that was only logged, so the line the owner
+watches looked clean (`purgeFailed` is now in the report).
+
+**Still open**
+
+- Create the scheduler job (dry run, then one real run, then weekly) — owner.
+- The decision on toggling `requiresSubmission` after work exists, before phase 3
+  exposes the switch (see the entry below).
+- The three untested items and the duplicated extension list above.
+
 ## Homework project submission — API foundation — 2026-10-30
 
 A teacher asked for students to hand in their own textbook project, saved on the
