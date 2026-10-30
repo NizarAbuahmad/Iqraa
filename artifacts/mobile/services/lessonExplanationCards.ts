@@ -66,9 +66,15 @@ const cleanList = (values: unknown): string[] =>
  * `usableConceptShape`); a refused one adds nothing and the card is its points.
  */
 function shapeLines(shape: unknown, title: string, points: string[]): string[] {
-  const payload = usableConceptShape(shape, title, points.map(p => `• ${p}`).join('\n'));
-  if (!payload) return [];
-  return payloadLines(payload as ActivitySlide);
+  // The student screen builds its cards in render with no boundary above it, so
+  // whatever the gate does with stored model output, it must not throw here.
+  try {
+    const payload = usableConceptShape(shape, title, points.map(p => `• ${p}`).join('\n'));
+    if (!payload) return [];
+    return payloadLines(payload as ActivitySlide);
+  } catch {
+    return [];
+  }
 }
 
 export function buildExplanationCards(content: LessonTeachingOutput | null | undefined): ExplanationCard[] {

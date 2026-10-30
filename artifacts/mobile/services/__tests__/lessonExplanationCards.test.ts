@@ -118,6 +118,33 @@ test('a refused or unknown shape adds nothing: the card is just its points', () 
   }
 });
 
+test('numbers inside a shape do not throw and are not lost', () => {
+  const card = (shape: Record<string, unknown>) =>
+    buildExplanationCards({ concepts: [{ title: 'فكرة', points: ['ملخص'], shape }] } as never)[0];
+  assert.deepEqual(card({ layout: 'stat', stat: { value: 5, label: 'قوانين' } }), { kind: 'concept', title: 'فكرة', points: ['ملخص', '5 — قوانين'] });
+  assert.deepEqual(
+    card({ layout: 'compare', compare: { leftTitle: 1, left: ['أ'], rightTitle: 2, right: ['ب'] } }),
+    { kind: 'concept', title: 'فكرة', points: ['ملخص', '1: أ', '2: ب'] },
+  );
+  assert.deepEqual(
+    card({ layout: 'table', table: { headers: ['س', 'ص'], rows: [[1, 2], [3, 4]] } }),
+    { kind: 'concept', title: 'فكرة', points: ['ملخص', 'س: 1 — ص: 2', 'س: 3 — ص: 4'] },
+  );
+  assert.deepEqual(
+    card({ layout: 'timeline', timeline: [{ label: 1948, text: 'أ' }, { label: 1967, text: 'ب' }, { label: 1994, text: 'ج' }] }),
+    { kind: 'concept', title: 'فكرة', points: ['ملخص', '1948 — أ', '1967 — ب', '1994 — ج'] },
+  );
+});
+
+test('a shape that makes the gate throw leaves the card as its points, not a crash', () => {
+  // A getter that throws stands in for any future quirk in the gate.
+  const shape = { layout: 'cycle', get cycle(): never { throw new Error('boom'); } };
+  assert.deepEqual(
+    buildExplanationCards({ concepts: [{ title: 'فكرة', points: ['ملخص'], shape }] } as never),
+    [{ kind: 'concept', title: 'فكرة', points: ['ملخص'] }],
+  );
+});
+
 test('stripMarker removes one leading bullet or dash marker', () => {
   for (const marker of ['• ', '- ', '* ', '– ', '— ']) {
     assert.equal(stripMarker(`${marker}المول وحدة عدّ`), 'المول وحدة عدّ', marker);

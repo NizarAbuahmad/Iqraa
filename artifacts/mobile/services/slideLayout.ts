@@ -152,10 +152,20 @@ function lines(content: string | undefined): string[] {
   return (content ?? '').split('\n').map(l => l.trim()).filter(Boolean);
 }
 
+/**
+ * Model output as text without ever throwing: a string as is, a finite number
+ * as the text `needText` would read it as, anything else empty. The gate's
+ * `.trim()` calls used to throw on a number (`stat.value: 5`).
+ */
+function plain(v: unknown): string {
+  if (typeof v === 'number' && Number.isFinite(v)) return String(v);
+  return typeof v === 'string' ? v.trim() : '';
+}
+
 function cleanList(items: unknown): string[] {
   if (!Array.isArray(items)) return [];
   return items
-    .map(i => (typeof i === 'string' ? stripBullet(i).trim() : ''))
+    .map(i => stripBullet(plain(i)).trim())
     .filter(Boolean);
 }
 
@@ -178,18 +188,18 @@ export function resolveSlideLayout(slide: ActivitySlide): ResolvedLayout | null 
     }
 
     case 'stat': {
-      const value = (slide.stat?.value ?? '').trim();
-      const label = (slide.stat?.label ?? '').trim();
+      const value = plain(slide.stat?.value);
+      const label = plain(slide.stat?.label);
       // A stat slide with no figure is just a heading set very large.
       if (!value || value.length > MAX_STAT_VALUE_CHARS) return null;
       if (!label) return null;
-      const source = (slide.stat?.source ?? '').trim();
+      const source = plain(slide.stat?.source);
       return { kind: 'stat', value, label, ...(source ? { source } : {}) };
     }
 
     case 'compare': {
-      const leftTitle = (slide.compare?.leftTitle ?? '').trim();
-      const rightTitle = (slide.compare?.rightTitle ?? '').trim();
+      const leftTitle = plain(slide.compare?.leftTitle);
+      const rightTitle = plain(slide.compare?.rightTitle);
       const left = cleanList(slide.compare?.left);
       const right = cleanList(slide.compare?.right);
       // Both columns must stand up. One empty side is not a comparison, and
@@ -394,7 +404,9 @@ export const PAYLOAD_LAYOUTS = ['stat', 'compare', 'timeline', 'stats', 'table',
  * doing its job.
  */
 export function payloadLines(slide: ActivitySlide): string[] {
-  const str = (v: unknown) => (typeof v === 'string' ? stripBullet(v).trim() : '');
+  // A finite number is text here as it is for the gate (`needText`): a table
+  // cell, a timeline year or a stat value of 1948 must survive as «1948».
+  const str = (v: unknown) => stripBullet(plain(v)).trim();
   const out: string[] = [];
   const add = (...parts: unknown[]) => {
     const joined = parts.map(str).filter(Boolean).join(' — ');
@@ -403,7 +415,10 @@ export function payloadLines(slide: ActivitySlide): string[] {
   if (slide.stat) add(slide.stat.value, slide.stat.label);
   if (slide.compare) {
     const side = (title: unknown, items: unknown) => {
-      for (const i of Array.isArray(items) ? items : []) add(str(title) ? `${str(title)}: ${str(i)}` : i);
+      for (const i of Array.isArray(items) ? items : []) {
+        const item = str(i);
+        if (item) add(str(title) ? `${str(title)}: ${item}` : item);
+      }
     };
     side(slide.compare.leftTitle, slide.compare.left);
     side(slide.compare.rightTitle, slide.compare.right);
@@ -413,7 +428,7 @@ export function payloadLines(slide: ActivitySlide): string[] {
   if (slide.table && Array.isArray(slide.table.rows)) {
     const headers = Array.isArray(slide.table.headers) ? slide.table.headers : [];
     for (const row of slide.table.rows) {
-      if (Array.isArray(row)) add(...row.map((c, i) => (headers[i] ? `${str(headers[i])}: ${str(c)}` : c)));
+      if (Array.isArray(row)) add(...row.map((c, i) => (headers[i] && str(c) ? `${str(headers[i])}: ${str(c)}` : c)));
     }
   }
   for (const step of Array.isArray(slide.flow?.steps) ? slide.flow!.steps : []) add(step);

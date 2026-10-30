@@ -436,8 +436,30 @@ describe('payloadLines — a refused layout still leaves the teacher the words',
     assert.deepEqual(payloadLines(slide({ compare: { leftTitle: '', left: ['أ'], rightTitle: 'ب', right: [] } })), ['أ']);
   });
 
+  it('keeps numbers: numeric table cells, timeline labels and stat values survive', () => {
+    assert.deepEqual(payloadLines(slide({ table: { headers: ['س', 'ص'], rows: [[1, 2], [3, 4]] as never } })), ['س: 1 — ص: 2', 'س: 3 — ص: 4']);
+    assert.deepEqual(payloadLines(slide({ timeline: [{ label: 1948, text: 'حدث' }] as never })), ['1948 — حدث']);
+    assert.deepEqual(payloadLines(slide({ stat: { value: 5, label: 'قوانين' } as never })), ['5 — قوانين']);
+  });
+
+  it('never leaves a dangling "title:" for an empty item', () => {
+    assert.deepEqual(
+      payloadLines(slide({ compare: { leftTitle: 'أ', left: ['', '  ', 'س'], rightTitle: 'ب', right: [null] as never } })),
+      ['أ: س'],
+    );
+  });
+
+  it('does not throw on a number where the gate expects text (stat, compare)', () => {
+    const stat = slide({ layout: 'stat', stat: { value: 5, label: 'قوانين' } as never });
+    assert.deepEqual(resolveSlideLayout(stat), { kind: 'stat', value: '5', label: 'قوانين' });
+    assert.equal(resolveSlideLayout(slide({ layout: 'stat', stat: { value: {}, label: 'x' } as never })), null);
+    const cmp = slide({ layout: 'compare', compare: { leftTitle: 1, left: ['a'], rightTitle: 2, right: [3] } as never });
+    assert.deepEqual(resolveSlideLayout(cmp), { kind: 'compare', leftTitle: '1', left: ['a'], rightTitle: '2', right: ['3'] });
+    assert.equal(resolveSlideLayout(slide({ layout: 'compare', compare: { leftTitle: null, left: ['a'], rightTitle: 'b', right: ['c'] } as never })), null);
+  });
+
   it('survives junk instead of throwing', () => {
-    assert.deepEqual(payloadLines(slide({ timeline: [null, { label: 5 }] as never, stats: 'x' as never })), []);
+    assert.deepEqual(payloadLines(slide({ timeline: [null, { label: {} }, { label: NaN }] as never, stats: 'x' as never })), []);
     assert.deepEqual(payloadLines(slide()), []);
   });
 });
