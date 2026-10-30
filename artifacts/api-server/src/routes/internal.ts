@@ -34,13 +34,15 @@ const router = Router();
 // alone and read per request. The sweep's own guards (known homework, the ratio) catch a database
 // that does not belong with the bucket, but NOT a copy or branch of the production database (a
 // Neon branch): it knows every old homework, so production photos uploaded since the branch point
-// look like known orphans. Such a server must never run the sweep, and this switch is how that is
-// enforced. It overrides no guard. Off is exactly an unset key: 404, for every caller.
+// look like known orphans. Such a server must never run the sweep; this switch keeps it off there.
+// It does NOT cover iqraa-api's own database being restored or repointed (docs/deploying.md, the
+// submission sweep: turn the switch off first). It overrides no guard. Off is exactly an unset
+// key: 404, for every caller.
 const sweepSwitchedOn = (): boolean => process.env.HOMEWORK_SUBMISSION_SWEEP === "on";
 
 router.post("/homework-submission-sweep", async (req, res) => {
   // The key guard and the switch come first: any other caller, or any other server, sees a 404
-  // whatever the query says. Both are evaluated, so the answer cannot tell which one failed.
+  // whatever the query says. A failing key and a missing switch give the same 404.
   const keyOk = siteKeyMatches(process.env.INTERNAL_CRON_KEY, req.headers["x-internal-key"]);
   const switchedOn = sweepSwitchedOn();
   if (!keyOk || !switchedOn) {

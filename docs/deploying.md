@@ -646,7 +646,11 @@ it keeps this one, as it keeps `RLS_ENFORCE`):
 ```bash
 gcloud run services update iqraa-api --region europe-west1 --project=iqraa-auth-507315 \
   --update-env-vars=HOMEWORK_SUBMISSION_SWEEP=on
-# Off again, instantly: --remove-env-vars=HOMEWORK_SUBMISSION_SWEEP
+# Off again: --remove-env-vars=HOMEWORK_SUBMISSION_SWEEP (no deploy). It is off only
+# once the new revision takes the traffic: if traffic is pinned to an older revision
+# that still has the switch on, that one keeps answering. Check the traffic block
+# («Check that the new revision actually took traffic» above) and unpin with
+# `gcloud run services update-traffic iqraa-api ... --to-latest`.
 ```
 
 **Why the switch exists: the guards do not catch a copy or branch of the
@@ -656,8 +660,32 @@ since then look like orphans under *known* homework, few enough to stay under
 the ratio guard — and phase 1 there could purge a homework that was archived only
 in the branch. **No server other than `iqraa-api` may ever hold the production R2
 credentials together with `INTERNAL_CRON_KEY`** (no staging service, preview,
-Neon-branch test, laptop), and the switch is how that is enforced: such a server
+Neon-branch test, laptop). The switch keeps the sweep off on such a server: it
 never has `HOMEWORK_SUBMISSION_SWEEP=on`, so its sweep route does not exist.
+**What the switch does not cover: `iqraa-api`'s own database being restored or
+repointed** — the rule below.
+
+**Before restoring or repointing `iqraa-api`'s database, turn the sweep off.** A
+Neon restore in place, or `DATABASE_URL` pointed at a restored branch during an
+incident, leaves `iqraa-api` with the switch on and the production bucket. Photos
+uploaded between the restore point and 24 hours before the next weekly run belong
+to homework the restored database still has, but their rows are gone, so they
+look like known orphans; if they are 20 or fewer, or under half of what the
+sweep can attribute, they are deleted — possibly the only copy of the students'
+work. So, **before** the restore or repoint:
+
+```bash
+gcloud run services update iqraa-api --region europe-west1 --project=iqraa-auth-507315 \
+  --remove-env-vars=HOMEWORK_SUBMISSION_SWEEP
+gcloud scheduler jobs pause homework-submission-sweep --location europe-west1 --project=iqraa-auth-507315
+# Then check traffic is not pinned to a revision that still has the switch (see above).
+```
+
+Turn the switch back on, and `gcloud scheduler jobs resume homework-submission-sweep
+--location europe-west1 --project=iqraa-auth-507315`, only after a dry run whose
+numbers make sense. That dry run needs the switch, so set it, run `?dryRun=1`
+straight away, and remove it again if the numbers are not right; the job stays
+paused throughout.
 
 The key value must never be echoed,
 printed or pasted into a transcript; run the commands below in **one shell
@@ -687,7 +715,9 @@ URL=https://iqraa-api-613126375862.europe-west1.run.app/api/internal/homework-su
 gcloud run services update iqraa-api --region europe-west1 $P \
   --update-env-vars=HOMEWORK_SUBMISSION_SWEEP=on
 # $KEY must be set in this shell (see above). 404 = the key is not on the service yet,
-# or the switch is not (the answer does not say which).
+# or the switch is not (the answer does not say which) — or the switch is on a revision
+# that serves nobody because traffic is pinned to an older one (see «Check that the new
+# revision actually took traffic» and `update-traffic --to-latest`).
 # 1. A DRY run by hand. Deletes nothing. Read the JSON.
 curl -sS -X POST -H "x-internal-key: $KEY" "$URL?dryRun=1"
 ```

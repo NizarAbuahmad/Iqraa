@@ -79,7 +79,12 @@ database is deleted, and a run that would delete over 20 objects (counted before
 production database** (a Neon branch knows every old homework, so production photos
 uploaded since the branch point look like known orphans, under the ratio, and phase 1
 could purge a homework archived only in the branch): no server but `iqraa-api` may hold
-the production R2 credentials with `INTERNAL_CRON_KEY`, and the switch enforces it. At most 200,000 objects are listed per run
+the production R2 credentials with `INTERNAL_CRON_KEY`, and the switch keeps the sweep
+off on any other server. **Neither the guards nor the switch cover `iqraa-api`'s own
+database being restored or repointed** (photos uploaded since the restore point belong
+to homework the restored database still has, with their rows gone, so they look like
+known orphans): before such a restore, remove the switch and pause the job
+(`docs/deploying.md`, «The submission sweep», "Before restoring or repointing"). At most 200,000 objects are listed per run
 (`LIST_CAP`); past that `listTruncated: true`, logged at warn level, and every run sees
 the same first 200,000 keys, so an orphan after the cut-off is never found — that needs a
 person. A listing page that says it is truncated but carries no continuation token also
@@ -143,7 +148,11 @@ stray photos then count as `skippedUnknownHomework` and are never deleted.
   invalid `lastModified` and a NaN grace period were both deleted by the previous `<`
   form (RED), and are kept now. The widened pin failed on a temporary dynamic
   `import("@workspace/db")` and on `import { db } from "@workspace/db/schema"` in the
-  sweep, then passed once they were removed. Not verified: that `deploy.yml`'s
+  sweep, then passed once they were removed. The pin is a text check with known gaps:
+  `import x, * as ns from "@workspace/db"` is not caught, and a commented-out import of
+  `systemDb` satisfies its "imports systemDb" half. The behavioural backstop is the
+  `RLS_ENFORCE=on` route case, which fails if the key read stops going through
+  `systemDb`. Not verified: that `deploy.yml`'s
   `--update-env-vars` keeps a hand-set plain variable is gcloud's documented behaviour
   and how `RLS_ENFORCE` is already run (`docs/deploying.md`), not observed for
   this variable, which does not exist on the service yet.
@@ -219,6 +228,19 @@ A re-review of that round found no Critical, and:
   guidance now says how to check without printing Cloud Run env or secrets, and what to do
   when they do belong together; "over 20, counted before the 1000 cap"; the
   `systemDbFiles.test.ts` pin covers `@workspace/db` subpaths and a dynamic `import()`.
+
+A third look (docs only) found no Critical and the code fine, and:
+- **Important: a restore or repoint of `iqraa-api`'s own database is the one case the
+  switch cannot catch** — it is on, the bucket is production's, and photos uploaded since
+  the restore point look like known orphans. `docs/deploying.md` now has the rule:
+  before restoring or repointing, remove the switch and pause the scheduler job; turn
+  both back only after a dry run whose numbers make sense. The "switch enforces it"
+  wording was softened everywhere to say what it does not cover.
+- Minors: "off again, instantly" was false while traffic is pinned to a revision that
+  still has the switch (the remove step and the step-0 hint now point to the traffic
+  check and `update-traffic --to-latest`); a route comment claimed more than the code
+  (now "a failing key and a missing switch give the same 404"); the pin's known gaps are
+  noted above.
 
 **Still open**
 

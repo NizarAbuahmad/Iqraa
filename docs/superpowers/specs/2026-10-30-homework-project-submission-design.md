@@ -319,7 +319,10 @@ bump is needed; if a permission string is missing it is a native change and the
   production photos uploaded since the branch point look like known orphans), so the
   route is also a 404 unless `HOMEWORK_SUBMISSION_SWEEP=on` is set on the service, by
   hand and on `iqraa-api` alone: no other server may hold the production R2
-  credentials with `INTERNAL_CRON_KEY`. **The switch and the Cloud Scheduler job still
+  credentials with `INTERNAL_CRON_KEY`. Neither the guards nor the switch cover
+  `iqraa-api`'s own database being restored or repointed, so the switch is removed and
+  the job paused before that (`docs/deploying.md`, «The submission sweep»). **The
+  switch and the Cloud Scheduler job still
   have to be set up by the owner** (`docs/deploying.md`, dry run first), so until then the
   cases above stay open in production, and **it has never run against real R2**. Still
   open: a failed object delete in the sweep is not exercised by any test; the photo
