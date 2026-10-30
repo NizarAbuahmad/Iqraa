@@ -109,7 +109,9 @@ router.post("/student/homework/:id/submission/photos", photoLimiter, (req: Authe
     const photo = { id: randomUUID(), key, mime, sizeBytes: buffer.length };
     const result = await addPhoto(t, photo);
     if (result !== "ok") {
-      await deleteObject(key).catch(err => logger.error({ err }, "student homework submission: could not remove a refused photo"));
+      await deleteObject(key).catch(err =>
+        logger.error({ err, key, homeworkId: t.homeworkId }, "student homework submission: could not remove a refused photo"),
+      );
       res.status(409).json({ error: result === "locked" ? "This project is locked" : "A project holds at most six photos", code: result });
       return;
     }
@@ -134,7 +136,9 @@ router.delete("/student/homework/:id/submission/photos/:photoId", (req: Authenti
       return;
     }
     // Best effort: the row no longer lists the photo, so a leftover object is unreachable, not exposed.
-    await deleteObject(result.key).catch(err => logger.error({ err }, "student homework submission: could not delete a removed photo"));
+    await deleteObject(result.key).catch(err =>
+      logger.error({ err, key: result.key, homeworkId: t.homeworkId }, "student homework submission: could not delete a removed photo"),
+    );
     res.json({ removed: true });
   }),
 );

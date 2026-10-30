@@ -561,14 +561,21 @@ router.delete("/homework/:id", async (req: AuthenticatedRequest, res) => {
       res.status(404).json(NO_HOMEWORK);
       return;
     }
+    // The photos are a minor's work and archiving is the teacher's "delete": remove them FIRST. An archived
+    // homework is no longer found by `ownedHomework`, so a purge that failed after the archive could never be
+    // retried and the photos would stay for good. A purge that throws answers 500 here and leaves the homework
+    // live, so the teacher can send the same DELETE again. It is awaited (Cloud Run throttles work after
+    // res.json) and bounded by the R2 round trips, which run concurrently.
+    await purgeSubmissions(existing.id);
     await db
       .update(homework)
       .set({ archivedAt: new Date(), updatedAt: new Date() })
       .where(and(eq(homework.id, existing.id), eq(homework.teacherId, teacherId)));
-    // The photos are a minor's work and archiving is the teacher's "delete": remove them now.
-    // The archive waits for the purge (Cloud Run throttles work after res.json); it is bounded by the R2
-    // round trips, which run concurrently. A failure is logged and never fails the archive.
-    await purgeSubmissions(existing.id).catch(err => logger.error({ err, homeworkId: existing.id }, "homework archive: could not purge submissions"));
+    // A student's upload that landed between the purge and the archive (milliseconds) is caught by a second,
+    // best-effort pass; a failure here is logged with the homework id and never fails the archive.
+    await purgeSubmissions(existing.id).catch(err =>
+      logger.error({ err, homeworkId: existing.id }, "homework archive: could not purge submissions after the archive"),
+    );
     res.json({ archived: existing.id });
   } catch (err) {
     failHomework(res, err, "delete homework");

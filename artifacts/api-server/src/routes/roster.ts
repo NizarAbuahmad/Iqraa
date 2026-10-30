@@ -26,6 +26,7 @@ import {
   classResources,
   evaluationAssignments,
   evaluations,
+  homework,
   libraryResources,
   parentContacts,
   rosterLinkRequests,
@@ -64,6 +65,7 @@ import {
   syncClassThreadsForStudent,
 } from "../lib/classThread.js";
 import { findLiveClass } from "../lib/classOwnership.js";
+import { purgeSubmissions } from "../lib/homeworkSubmission.ts";
 import { examVisibleTo } from "../modules/assessment/audience.ts";
 import { assignedStudentsByEvaluation } from "../lib/evaluationAudience.ts";
 import { publicUrl } from "../lib/r2.js";
@@ -606,6 +608,25 @@ router.patch("/classes/:id", async (req: AuthenticatedRequest, res) => {
 router.delete("/classes/:id", async (req: AuthenticatedRequest, res) => {
   try {
     const classId = req.params["id"] as string;
+    const [owned] = await db
+      .select({ id: classGroups.id })
+      .from(classGroups)
+      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
+      .limit(1);
+    if (!owned) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+    // Students' project photos are a minor's work. Once the class is archived neither the teacher nor a
+    // student can reach its homework any more (both lookups need a live class), so the photos are removed
+    // FIRST, for every homework of the class, drafts included. A purge that throws answers 500 and leaves the
+    // class live, so the teacher can send the same DELETE again.
+    const classHomework = await db
+      .select({ id: homework.id })
+      .from(homework)
+      .where(and(eq(homework.classGroupId, owned.id), eq(homework.teacherId, req.user!.id)));
+    for (const hw of classHomework) await purgeSubmissions(hw.id);
+
     const [row] = await db
       .update(classGroups)
       .set({ archivedAt: new Date(), updatedAt: new Date() })

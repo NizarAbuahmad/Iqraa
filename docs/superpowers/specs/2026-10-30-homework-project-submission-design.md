@@ -154,7 +154,8 @@ disagree. Playing an attached game no longer ticks such a homework either.
 | --- | --- |
 | `GET /homework/:id/submissions` | One row per live roster member of the homework's class: `{ studentId, displayName, status: "none" \| "submitted" \| "late", submittedAt, photoCount }`. A draft is reported as `none` — the teacher never sees an unfinished upload |
 | `GET /homework/:id/submissions/:studentId` | One student's `note` and photos with signed URLs. 404 for a draft or a student not in this class |
-| `DELETE /homework/:id` (existing) | That route **archives** (`archived_at`). It now also removes every stored photo (drafts included) and deletes the submission rows. The purge runs on the owner connection (`systemDb`), because a draft is invisible to the teacher's own identity; a test with `RLS_ENFORCE=on` pins it. Not recoverable, so the teacher's delete confirmation must say so |
+| `DELETE /homework/:id` (existing) | That route **archives** (`archived_at`). It now also removes every stored photo (drafts included) and deletes the submission rows. The purge runs on the owner connection (`systemDb`), because a draft is invisible to the teacher's own identity; a test with `RLS_ENFORCE=on` pins it. The purge runs **before** the archive and a purge that throws answers 500 with the homework still live (an archived homework can no longer be found, so a failure after it could never be retried); a second best-effort pass follows the archive. Not recoverable, so the teacher's delete confirmation must say so |
+| `DELETE /classes/:id` (existing) | Archiving a class makes its homework unreachable for the teacher and the students alike, so it purges every homework of the class first (a throw answers 500 and the class stays live). Deleting a teacher's account (`DELETE /auth/users/me`) reads the keys of all their homework's photos before the cascade and deletes the objects after it |
 
 `homework.teacherId = req.user.id` is checked in the route, as in every other
 `/homework` handler. This read does not rely on RLS alone (see §4).
@@ -200,15 +201,23 @@ RLS fails quietly: a bad policy returns fewer rows rather than an error. So
 guardian and an unrelated student each see**, not only status codes. The plan
 must add them before the routes land.
 
+Row-level security is **on in production** (`RLS_ENFORCE=on` on `iqraa-api`, see
+`STATUS.md`), so every route here runs under it from its first deploy; it is not
+a layer that is merely planned.
+
 *Not built in phase 1:* the `rlsDiff` cases. That suite boots its own server and
 would need the in-memory S3 wired into that boot. The policies are covered by the
-matrix test (`rlsMatrix.test.ts`) and two RLS-on server tests in
-`homeworkSubmission.db.test.ts`; see the status log.
+matrix test (`rlsMatrix.test.ts`) and by RLS-on server tests in
+`homeworkSubmission.db.test.ts` (the student journey: upload, note, hand in, remove a
+photo; the teacher's list and detail reading it back and not seeing a draft; the
+archive purge of a draft; the parent's and the student's reads); see the status log.
 
 **Object access.** A signed URL is minted only after the row was read through the
 caller's own connection, so a request that RLS or the route refused never reaches
-`presignedGetUrl`. Keys are unguessable UUIDs and the bucket is private; the
-`homework-submissions/<hw>/<student>/` prefix is never exposed to a client.
+`presignedGetUrl`. Keys are unguessable UUIDs and the bucket is private. The object
+key field is never returned to a client, but a signed URL's path carries it: the
+homework id and the roster-row id of `homework-submissions/<hw>/<student>/…` are
+visible to whoever holds the link, for the ten minutes it lives.
 
 ## 5. App
 
@@ -289,7 +298,20 @@ bump is needed; if a permission string is missing it is a native change and the
 - **The archive purge is not transactional.** Objects are deleted first; a failed
   object delete is logged with its key and the rows are deleted anyway, so an
   unreachable orphan object can remain in the bucket (private, unguessable key, no
-  row pointing to it).
+  row pointing to it). A purge that cannot run at all (it throws before deleting)
+  stops the archive instead: the homework or class stays live and the teacher retries.
+- **Orphan objects that phase 1 does not close.** (a) An exception after a photo is
+  stored but before it is recorded leaves an object no row points to. (b) A failed
+  object delete (logged with its key) leaves one too. (c) An upload racing a purge, by
+  milliseconds, can store a photo after the purge listed the rows. They are private,
+  unguessable and unreachable, but they stay. **A prefix sweep of
+  `homework-submissions/` must land before phase 2 lets students upload.**
+- **Open question: toggling `requiresSubmission` after work exists.** It is not
+  specified, and `PATCH /homework/:id` accepts it today. On → off makes the stored
+  photos unreadable (every student route answers 404) and lets drafts be ticked by
+  hand; off → on leaves students who already ticked "done" with a submission of
+  `none` and unable to untick. To be decided before the teacher's app exposes the
+  switch (phase 3), for example a 409 once any submission or completion exists.
 - **R2 not configured** (`isR2Configured()` false, e.g. a local checkout): upload
   routes answer 503 `storage_unavailable`, the same shape as media, and the app
   hides the photo control rather than failing on tap.

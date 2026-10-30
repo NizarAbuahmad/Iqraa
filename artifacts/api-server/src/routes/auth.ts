@@ -34,6 +34,7 @@ import { decideRefresh, refreshTokenTtlMs } from "../lib/refreshPolicy.js";
 import { guardianApprovalEnabled, studentAccountsEnabled } from "../lib/features.js";
 import { syncClassThreadsForStudent } from "../lib/classThread.js";
 import { audioKeysForTeacher } from "../lib/attemptAudio.ts";
+import { submissionKeysForTeacher } from "../lib/homeworkSubmission.ts";
 import {
   ROSTER_CONSENT_STATEMENT_EN,
   ROSTER_CONSENT_VERSION,
@@ -2770,6 +2771,10 @@ router.delete(
       // R2 with nothing left pointing at them.
       const recordings = await audioKeysForTeacher(userId);
 
+      // Likewise the photos of the students' handed-in projects (and drafts): the rows cascade from the
+      // teacher's homework, the objects do not.
+      const projectPhotos = await submissionKeysForTeacher(userId);
+
       await db.delete(users).where(eq(users.id, userId));
 
       // Deliberately after the row is gone: the deletion the user asked for is
@@ -2781,6 +2786,7 @@ router.delete(
         ...media.map(m => m.key),
         ...attachments.map(a => a.key as string),
         ...recordings,
+        ...projectPhotos,
       ];
       let orphaned = 0;
       for (const key of keys) {

@@ -50,7 +50,15 @@ site, with no student able to touch another's. This is phase 1 of 3 and it is th
   (note and signed photos; 404 for a draft). `requiresSubmission` is read and written
   by `POST /homework` and `PATCH /homework/:id`. `DELETE /homework/:id`, which
   archives, now also purges every photo (drafts too) and deletes the submission rows,
-  on the owner connection because a draft is invisible to the teacher's identity.
+  on the owner connection because a draft is invisible to the teacher's identity. The
+  purge runs **before** the archive: a purge that throws answers 500 and leaves the
+  homework live so the teacher can retry (an archived homework is no longer found, so a
+  failure after it could never be retried); a second best-effort purge follows the
+  archive. `DELETE /classes/:id` purges every homework of the class first, with the same
+  rule (500, class stays live), because an archived class makes its homework unreachable
+  for everyone. Deleting a teacher's account (`DELETE /auth/users/me`) collects the photo
+  keys of all their homework (drafts too, `submissionKeysForTeacher`, owner connection)
+  before the cascade and deletes the objects after it.
 - **Parent.** `GET /parent/homework/:id/submissions` (submitted work of the linked
   children in that class, read only). The family's homework list gains
   `requiresSubmission` and a per-item `submission` state.
@@ -61,10 +69,12 @@ site, with no student able to touch another's. This is phase 1 of 3 and it is th
 
 - `pnpm run typecheck` (whole monorepo): clean.
 - `artifacts/api-server`: `pnpm build` then
-  `TEST_DATABASE_URL=postgres://…/postgres pnpm test`: 3098 tests, 0 failed, 0 skipped.
+  `TEST_DATABASE_URL=postgres://…/postgres pnpm test`: 3102 tests, 0 failed, 0 skipped.
   That includes `modules/homework/__tests__/submission.test.ts` (pure rules),
   `routes/__tests__/homeworkSubmission.db.test.ts` (the HTTP routes against the real
-  database and the in-memory S3, with RLS on for the purge case), `r2.test.ts` and the
+  database and the in-memory S3, with RLS on for the student journey, the teacher's
+  reads, the purge and the parent's read; plus the purge-fails-so-nothing-is-archived
+  cases for a homework and a class, and account deletion), `r2.test.ts` and the
   new `mountOrder.test.ts` case.
 - `lib/db`: `RLS_TEST_DATABASE_URL=…/iqraa_rls_scratch pnpm test` (after
   `migrate -- --from-env`, 21 migrations applied): 74 tests, 0 failed — `rlsMatrix.test.ts`
@@ -85,8 +95,9 @@ site, with no student able to touch another's. This is phase 1 of 3 and it is th
   `artifacts/math-verifier`. Not run: the browser smoke (`e2e/`) — no app code changed.
 - **Not done:** `rlsDiff.test.ts` cases for the new routes. That suite boots its own
   server with and without `RLS_ENFORCE` and would need the S3 stub wired into that
-  boot. The policies are tested directly (`rlsMatrix`), and the purge and the
-  student routes were run with RLS enforcing in two server tests.
+  boot. The policies are tested directly (`rlsMatrix`), and the student write routes,
+  the teacher's reads, the purge and the parent's read were run with RLS enforcing in
+  server tests in `homeworkSubmission.db.test.ts`.
 
 **Not built**
 
@@ -105,11 +116,27 @@ until phase 2 and 3 ship (a teacher could set it through the API).
   route, refused ones included, so it is 60 attempts, not 60 photos.
 - The archive purge is not transactional: a failed object delete is logged with its
   key and the rows are deleted anyway, so an unreachable orphan object can remain in
-  the bucket.
-- **RLS enforcement is OFF in production by default** (`RLS_ENFORCE`). The new policies
-  were exercised with it on in `lib/db` (`rlsMatrix`) and in two server tests, but in
-  production the route-level scoping (the account's own rows, the owner check, the
-  guardian's linked children) is what actually isolates students today.
+  the bucket. Two more orphan sources are **not** closed here: an exception after a
+  photo is stored but before it is recorded, and an upload racing a purge by
+  milliseconds. **A prefix sweep of `homework-submissions/` must land before phase 2
+  lets students upload.**
+- **Open question, for phase 3:** turning `requiresSubmission` on or off after students
+  have ticked or submitted is not specified, and `PATCH /homework/:id` accepts it today.
+  On to off makes stored photos unreadable (every student route answers 404) and lets
+  drafts be ticked by hand; off to on leaves students who ticked "done" with a
+  submission of `none` and unable to untick. Decide before the teacher's app exposes the
+  switch (for example a 409 once any submission or completion exists).
+- A signed URL's path carries `homework-submissions/<homework>/<roster row>/`, so the
+  homework and roster-row ids are visible to whoever holds the link for its ten minutes;
+  the object key field itself is never in a response.
+- **RLS enforcement is ON in production** (`RLS_ENFORCE=on` on `iqraa-api`, see
+  `STATUS.md`), so these routes run under it from their first deploy. The new policies
+  were proved in `lib/db` (`rlsMatrix`, `rlsCoverage`) and by RLS-on server tests in
+  `homeworkSubmission.db.test.ts`: the whole student journey (upload, note, hand in,
+  remove a photo) with the teacher's list and detail reading it back and not seeing a
+  draft, the archive purge of a draft, and the parent's and student's reads. The
+  routes also scope by the account's own rows, the owner check and the guardian's linked
+  children, so isolation does not rest on RLS alone. `rlsDiff.test.ts` has no cases for them.
 - Migration `0020` is additive; a revert of the code leaves an unused column and an
   empty table, and drops nothing.
 - Storage is capped only by the six-photo limit and the hourly limiter.

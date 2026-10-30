@@ -215,7 +215,9 @@ export async function setNote(
       ),
     )
     .returning({ id: homeworkSubmissions.id });
-  // The row exists (ensureRow) and the lock cannot change within a request, so no row means the guard refused.
+  // The row exists (ensureRow), so no row back means the WHERE refused it: the handed-in guard above. (The lock is
+  // not in the WHERE and CAN move between our read and this UPDATE — the author's own concurrent hand-in after the
+  // due day — in which case this edit lands on a row that has just become locked, by milliseconds, the author's own.)
   return updated.length > 0 ? "ok" : "empty";
 }
 
@@ -360,6 +362,21 @@ export async function readForParent(
       submission: await viewSubmission(subs.find(s => c.studentIds.includes(s.studentId)) ?? null, hw.dueAt),
     })),
   );
+}
+
+/**
+ * The object key of every photo on every homework a teacher owns, drafts included. Read BEFORE the account
+ * delete: the rows cascade with the account, and without their keys the objects in the bucket are unreachable.
+ * `systemDb` on purpose, for the same reason as the purge below: the teacher's own connection cannot see a
+ * student's draft. The caller (account deletion) has already authenticated the account being deleted.
+ */
+export async function submissionKeysForTeacher(teacherId: string): Promise<string[]> {
+  const rows = await systemDb
+    .select({ photos: homeworkSubmissions.photos })
+    .from(homeworkSubmissions)
+    .innerJoin(homework, eq(homework.id, homeworkSubmissions.homeworkId))
+    .where(eq(homework.teacherId, teacherId));
+  return rows.flatMap(r => r.photos.map(p => p.key));
 }
 
 /**
