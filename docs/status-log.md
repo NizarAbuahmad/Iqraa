@@ -96,6 +96,30 @@ after. Also not checked: the presenter on a phone or tablet, a clicker, screen r
 native. **Not done:** the per-slide timing suggestion and the other new formats (predict-then-reveal,
 think-pair-share, fill in the blank, agree/disagree, levelled challenges).
 
+## PostHog moves to the owner's own EU project, 2026-10-30
+
+The Android recording plan (see «Screen recordings: Contentsquare on the web, PostHog replay on Android») stalled on one fact:
+the owner had no login to the PostHog project behind the key baked into every build (`phc_t7Gd3Z4L…`, US host by default), and
+nobody in the repo could say who did. The owner created a new project instead, **EU cloud, project 326639** (their screenshots:
+«This project has no events yet», Region «EU Cloud»). It is not the project the app reported to; the two keys differ.
+
+**Changed:** the new project key (`phc_scZFQcyz…`) replaces the old one in `deploy.yml` (web), `mobile-update.yml` (OTA),
+`mobile-build-gradle.yml` (Android build) and both profiles of `eas.json`, and `EXPO_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com`
+now sits beside it in each, because a key sent to the wrong cloud is dropped silently and the code default is still the US host.
+`posthogProject.test.ts` fails a file that has the key without the host, or the old key (mutation-checked: removing the host line
+from `mobile-update.yml` fails it). `render.yaml` still holds the old US key and was left alone: the Render demo services are
+suspended, and its own comment explains the host. The privacy policy (AR and EN) now says PostHog's servers are in the EU instead
+of the US (it was `LEGAL_VERSION` 2026-10-29, now 2026-10-30; the «outside Jordan and outside the EU» sentence still holds because
+OpenAI and Google Sign-In are outside it).
+
+**What this does and does not do:** from the merge, the web build sends usage events to the new project once the site
+redeploys, and Android builds made **after** the merge do too; apps already installed keep sending to the old US project (or
+nowhere) until the owner installs a new build, and the history of the old project stays behind. **Not verified:** that any event
+arrives in the new project (nothing here can reach PostHog; the first check is Activity in the project after a build); that
+Android session replay records (needs «Record user sessions» on in the new project and a 1.6.0 build); PostHog's plan limits.
+**The owner's next steps:** turn on «Record user sessions» in project 326639, run the Android Gradle build after this merges,
+install the APK, use the app, then look for events under Activity and a recording under Session replay.
+
 ## Six new /play games: opposites, plurals, which-number, compare-fractions, states of matter, governorates — 2026-10-29
 
 The public hub (`/play`, no login) had ten tiles; it now has sixteen. The six new ones are appended after the existing ten, in

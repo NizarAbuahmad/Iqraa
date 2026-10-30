@@ -9,7 +9,8 @@
  *
  * **Every factual claim below was written from the code, not from a
  * template.** The subprocessor list is `lib/r2.ts` (Cloudflare R2),
- * `lib/db` (Neon), `services/analytics.ts` (PostHog, US host by default, plus
+ * `lib/db` (Neon), `services/analytics.ts` (PostHog, EU cloud: the host is set
+ * beside the key in every build, see `posthogProject.test.ts`, plus
  * Android session replay), `services/contentsquare.ts` (Contentsquare, web only),
  * `services/pushTokens.ts` (Expo), `routes/auth.ts` (Google Sign-In) and the
  * OpenAI client in `lib/aiBudget.ts`. The data inventory is `lib/db/src/schema`.
@@ -48,7 +49,7 @@
 export const LEGAL_CONTACT_EMAIL = 'info@iqrra.com';
 
 /** Shown on both documents. Bump when the text below changes materially. */
-export const LEGAL_LAST_UPDATED = { ar: '29 تشرين الأول 2026', en: '29 October 2026' };
+export const LEGAL_LAST_UPDATED = { ar: '30 تشرين الأول 2026', en: '30 October 2026' };
 
 /**
  * The same date, as the version a new account records it accepted
@@ -57,7 +58,7 @@ export const LEGAL_LAST_UPDATED = { ar: '29 تشرين الأول 2026', en: '29
  * an acceptance record naming a version the documents never carried is a
  * record of nothing.
  */
-export const LEGAL_VERSION = '2026-10-29';
+export const LEGAL_VERSION = '2026-10-30';
 
 export type LegalSection = { heading: string; body: string[] };
 export type LegalDoc = { title: string; intro: string; sections: LegalSection[] };
@@ -101,7 +102,7 @@ const PRIVACY_AR: LegalDoc = {
     {
       heading: '4) مع من تُشارَك',
       body: [
-        'مزوّدو خدمة يعالجون البيانات نيابةً عنّا، لا أكثر: Neon لقاعدة البيانات (تُستضاف في فرانكفورت داخل الاتحاد الأوروبي)، وCloudflare R2 لتخزين الملفات والصور، وGoogle Cloud Run لتشغيل الخادم (أوروبا الغربية)، وCloudflare Pages لاستضافة نسخة الويب، وContentsquare لتسجيل الشاشة على نسخة الويب، وOpenAI لتوليد المحتوى، وExpo لإيصال الإشعارات، وPostHog لقياس الاستخدام وتسجيل الشاشة على أندرويد (خوادمها في الولايات المتحدة افتراضيًّا)، وGoogle لخدمة الدخول بحساب Google.',
+        'مزوّدو خدمة يعالجون البيانات نيابةً عنّا، لا أكثر: Neon لقاعدة البيانات (تُستضاف في فرانكفورت داخل الاتحاد الأوروبي)، وCloudflare R2 لتخزين الملفات والصور، وGoogle Cloud Run لتشغيل الخادم (أوروبا الغربية)، وCloudflare Pages لاستضافة نسخة الويب، وContentsquare لتسجيل الشاشة على نسخة الويب، وOpenAI لتوليد المحتوى، وExpo لإيصال الإشعارات، وPostHog لقياس الاستخدام وتسجيل الشاشة على أندرويد (خوادمها في الاتحاد الأوروبي)، وGoogle لخدمة الدخول بحساب Google.',
         'ويعني ذلك أنّ بعض بياناتك تُعالَج خارج الأردن وخارج الاتحاد الأوروبي.',
         'قد نُفصح عن بيانات إذا ألزمنا القانون بذلك، أو لحماية سلامة شخص ما.',
       ],
@@ -192,7 +193,7 @@ const PRIVACY_EN: LegalDoc = {
     {
       heading: '4) Who it is shared with',
       body: [
-        'Service providers that process data on our behalf, and nothing more: Neon for the database (hosted in Frankfurt, in the EU), Cloudflare R2 for file and image storage, Google Cloud Run to run the server (western Europe), Cloudflare Pages to host the web version, Contentsquare for screen recording on the web version, OpenAI for content generation, Expo to deliver notifications, PostHog for usage measurement and screen recording on Android (its servers are in the United States by default), and Google for Google Sign-In.',
+        'Service providers that process data on our behalf, and nothing more: Neon for the database (hosted in Frankfurt, in the EU), Cloudflare R2 for file and image storage, Google Cloud Run to run the server (western Europe), Cloudflare Pages to host the web version, Contentsquare for screen recording on the web version, OpenAI for content generation, Expo to deliver notifications, PostHog for usage measurement and screen recording on Android (its servers are in the European Union), and Google for Google Sign-In.',
         'This means some of your data is processed outside Jordan and outside the EU.',
         'We may disclose data where the law requires it, or to protect someone\'s safety.',
       ],
