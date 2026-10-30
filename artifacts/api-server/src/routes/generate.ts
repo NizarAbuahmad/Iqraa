@@ -859,7 +859,14 @@ generateRouter.post('/generate/lesson-teaching', async (req: AuthenticatedReques
       kind: "lesson-teaching", systemPrompt: systemPrompt(isAr), userPrompt: prompt,
       maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
     });
-    logger.info({ visuals: teachingVisualCounts(result.content) }, "lesson-teaching visuals");
+    // `variantId` / `servedReason` say whether this was a fresh generation or a
+    // pooled artifact served again (or one served because a cap refused), so
+    // counting visuals per request does not count one artifact once per teacher.
+    logger.info({
+      visuals: teachingVisualCounts(result.content),
+      variantId: result.variantId,
+      servedReason: result.servedReason,
+    }, "lesson-teaching visuals");
     res.json(withMeta(result, grounding));
   } catch (err) {
     respondAiError(err, res, "generate lesson-teaching");

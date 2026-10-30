@@ -105,13 +105,16 @@ holds: at most half the explanation slides wear a special shape. `checkDeck` gai
 
 `lessonTeachingPrompt.ts` lets each concept carry, all optional:
 
-- `shape`: `{ layout, ...payload }` for one of `steps`, `compare`, `table`, `flow`,
-  `timeline`, `stat`, `statement`, `cycle`, `tree`, `venn`, `mindmap`;
+- `shape`: `{ layout, [layout]: payload }` for one of `compare`, `table`, `flow`,
+  `timeline`, `stat`, `cycle`, `tree`, `venn`, `mindmap` (`TEACHING_SHAPES`).
+  `steps` and `statement` are deliberately not offered: both read the slide's
+  `content`, which for a concept holds the points, so they would have no payload of
+  their own to carry;
 - `icon`: one name from `DECK_ICON_NAMES`, for that concept's own idea;
 - `chart`: `{ kind: 'chart', chartType: 'bar' | 'pie', categories, values }`, only
   from figures present in the book text supplied; never invented;
 - `photo`: a 2–5 word English search phrase for a real scene (place, experiment,
-  phenomenon), never on a maths rule; the prompt asks for at most three per section.
+  phenomenon), never on a maths rule; the prompt asks for at most two per section.
 
 `usableTeaching` keeps each extra only if it passes the same gates the renderers use
 (`resolveSlideLayout` on a probe slide, `isSectionIconName`, `usableChartVisual`, a
@@ -120,17 +123,21 @@ Latin-only query); a failing extra is dropped alone and the concept's points rem
 `visual` (a chart and a layout never share a slide — the layout wins, as in
 `polishDeck`), and `mediaPrompt`.
 
-Photos: at most three per deck **including** the cover; never on a slide that
-already carries a book figure (`sideImageUrl`). They are fetched by the Prompt Slides
+Photos: at most three per deck — the cover and the two concept photos
+(`MAX_TEACHING_PHOTOS`). The cap does not count the section-break (divider) photo,
+which existed before and is fetched on its own; a concept photo never goes on a slide
+that already carries a book figure (`sideImageUrl`). They are fetched by the Prompt Slides
 path (`searchDeckMedia` / `attachSearchedMedia` in `promptSlidesMedia.ts`) after the
 deck is built, with the same Unsplash credit. A failed fetch leaves the slide without
 a photo.
 
 The pool: `PROMPT_VERSION_BY_KIND['lesson-teaching']` moves to `2026-10-31.1`
 (`generationKey.ts`); other kinds and students' approved explanations are unaffected.
-The student explanation cards (`lessonExplanationCards.ts`) ignore `shape`, `icon`,
-`chart` and `photo`: none of them is wrong content, so nothing new is stripped, and
-drawing them for students is out of scope.
+The student explanation cards (`lessonExplanationCards.ts`) draw only `points`, and
+the prompt makes `points` a two-line summary when a concept has a shape, so a card
+appends the shape's own words (`payloadLines`) when the deck would draw that shape
+(`usableConceptShape`); a refused shape adds nothing. `icon`, `chart` and `photo` are
+ignored there, and drawing a shape for students is out of scope.
 
 ### Measuring
 

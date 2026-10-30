@@ -1113,6 +1113,14 @@ describe('generated explanation in the deck', () => {
       const photo = first(buildLessonDeck('x', true, { lesson: BARE, plan: PLAN, teaching: withExtras({ shape: { layout: 'photo' } }) }));
       assert.equal(photo.layout, undefined);
     });
+    it('keeps the shape and drops the chart when a concept carries both, each valid', () => {
+      const chart = { kind: 'chart', chartType: 'bar', categories: ['أ', 'ب'], values: [3, 5] };
+      const both = first(buildLessonDeck('x', true, { lesson: BARE, plan: PLAN, teaching: withExtras({ shape: cycleShape, chart }) }));
+      assert.equal(both.layout, 'cycle');
+      assert.deepEqual(both.cycle, cycleShape.cycle);
+      assert.equal(both.visual, undefined);
+      assert.equal(both.visualOnReveal, undefined);
+    });
     it('keeps a real chart only when there is no shape, and a photo only when there is neither', () => {
       const chart = { kind: 'chart', chartType: 'bar', categories: ['أ', 'ب'], values: [3, 5] };
       const c = first(buildLessonDeck('x', true, { lesson: BARE, plan: PLAN, teaching: withExtras({ chart, photo: 'salt crystals' }) }));

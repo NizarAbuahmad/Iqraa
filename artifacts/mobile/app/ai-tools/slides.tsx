@@ -913,7 +913,10 @@ export default function SlidesScreen() {
             // Unsplash credit rides with every one (licence requirement).
             conceptTargets.forEach((target, i) => {
               const photo = conceptPhotos[i];
-              const at = slides.findIndex(s => s.title === target.title && !s.sideImageUrl && !s.layout);
+              // The query must match too: two slides can share a title, and only
+              // the one that asked for this photo should get it.
+              const at = slides.findIndex(s => s.title === target.title && s.mediaPrompt?.trim() === target.query
+                && !s.sideImageUrl && !s.layout);
               if (!photo || at < 0) return;
               slides = slides.map((s, j) => (j === at
                 ? { ...s, sideImageUrl: photo.url, sideImageCaption: photoCreditText(photo, isAr), sideImageCredit: creditFromPhoto(photo) }

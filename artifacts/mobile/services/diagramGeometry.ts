@@ -175,7 +175,7 @@ export function diagramGeometry(l: DiagramLayout, width: number, height: number,
           const side = (rtl ? 1 - i : i) === 0 ? -1 : 1;
           const cx = W / 2 + side * d;
           ellipse(cx, cy, rx, ry, 'none', i);
-          const crescent = W / 2 + side * (d + rx - d); // the middle of this set's own crescent
+          const crescent = W / 2 + side * rx; // the middle of this set's own crescent
           text(crescent - labelW / 2, H * 0.01, labelW, H * 0.09, s.label, 'md', true, i);
           if (s.only.length) {
             const bx = side < 0 ? W * 0.0646 : W - W * 0.0646 - W * 0.279;

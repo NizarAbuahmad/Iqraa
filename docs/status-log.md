@@ -110,9 +110,9 @@ scheme light and dark (no difference: see above). What was seen:
   a portrait screen, so labels come out around 7–8 px and notes around 6 px: **too small to read from
   a phone in the hand.** A portrait layout would be its own change; this one is meant for a projector.
 
-**Verified.** `pnpm run typecheck` clean; api-server `pnpm build` + `pnpm test` 2,689 tests, 2,689 pass,
-0 fail; mobile `pnpm test` 8,584 tests, 8,574 pass, 10 skipped, 0 fail (both re-run after the Venn cap
-changed). New tests: `diagramGeometry`, `diagramHtml`, `pptxDiagram`, additions to `slideLayout`,
+**Verified.** `pnpm run typecheck` clean; api-server `pnpm build` + `pnpm test` 2,696 tests, 2,696 pass,
+0 fail; mobile `pnpm test` 8,593 tests, 8,583 pass, 10 skipped, 0 fail (both re-run after the Venn cap
+changed, and again after the whole-branch review fixes). New tests: `diagramGeometry`, `diagramHtml`, `pptxDiagram`, additions to `slideLayout`,
 `pacedReveal`, `deckSlidesHtml`, `promptSlidesPrompt`, `promptSlidesPolish`, `deckChecks`,
 `lessonTeachingPrompt`, `lessonSlides`, `generationKey`. The visual checks above.
 
