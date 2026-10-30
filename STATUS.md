@@ -69,6 +69,7 @@ Checked 2026-10-22:
 
 ## Open
 
+- 2026-10-31 — Slides: cycle, tree, Venn and mind-map diagrams; curriculum slides gain shapes, icons, charts and photos (untested against a live model)
 - **Screen recording of everyone is ON for the web app (since the 2026-10-29 re-run of Deploy
   #868) and not yet running on Android.** Web: the Contentsquare tag loads on `app.iqrra.com` (not
   the marketing website) because the `CONTENTSQUARE_TAG_ID` repository **variable** is set; delete
