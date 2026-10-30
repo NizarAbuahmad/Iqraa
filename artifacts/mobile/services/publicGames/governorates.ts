@@ -78,6 +78,9 @@ function buildQuestion(place: Place, lang: 'ar' | 'en', rng: () => number): Text
     subject: lang === 'ar' ? place.ar : place.en,
     options: withDistractors(optionFor(home, lang), others, 3, rng),
     correctId: home.id,
+    explanation: lang === 'ar'
+      ? `«${place.ar}» ضمن محافظة ${home.ar}`
+      : `${place.en} is in ${home.en} Governorate`,
   };
 }
 

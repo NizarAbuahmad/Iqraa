@@ -55,6 +55,13 @@ const STATE_LABEL: Record<MatterState, { ar: string; en: string }> = {
   gas: { ar: 'غاز', en: 'Gas' },
 };
 
+/** What makes each state what it is: the "why" line under a revealed answer. */
+export const STATE_DEFINITION: Record<MatterState, { ar: string; en: string }> = {
+  solid: { ar: 'الصلب له شكل ثابت', en: 'A solid keeps its own shape' },
+  liquid: { ar: 'السائل يأخذ شكل الإناء الذي يوضع فيه', en: 'A liquid takes the shape of its container' },
+  gas: { ar: 'الغاز ينتشر ليملأ المكان الذي يوجد فيه', en: 'A gas spreads out to fill the space it is in' },
+};
+
 const STATES: MatterState[] = ['solid', 'liquid', 'gas'];
 
 function buildQuestion(s: Substance, lang: 'ar' | 'en', rng: () => number): TextQuestion {
@@ -63,6 +70,7 @@ function buildQuestion(s: Substance, lang: 'ar' | 'en', rng: () => number): Text
     subject: lang === 'ar' ? s.ar : s.en,
     options: shuffle(STATES.map(st => ({ id: st, label: STATE_LABEL[st][lang] })), rng),
     correctId: s.state,
+    explanation: `${lang === 'ar' ? s.ar : s.en}: ${STATE_LABEL[s.state][lang]}. ${STATE_DEFINITION[s.state][lang]}`,
   };
 }
 

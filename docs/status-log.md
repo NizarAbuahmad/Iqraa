@@ -10,6 +10,245 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## /play games: a why line, sound and haptics, motion, personal best with retry, and a Jordan map — 2026-10-30
+
+Five changes to the public games (`/play`, no login), built as seven commits on top of `690c2bb` (spec and plan):
+`7285def`, `f27ff80`, `5eb7a29`, `e549686`, `bb043c3`, `2dc756b`, `da085e9`; then one commit for what the browser check
+found (below), and this entry.
+
+**Built.**
+1. **A one-line «why» under every revealed answer** in the six text games (antonyms, plurals, which-number, compare
+   fractions, states of matter, governorates). For the two maths games the line is **computed** in latin and converted at
+   display time (which-number: the divisibility fact; fractions: both fractions as decimals, `=` or `≈`, printed left to
+   right through `forceLtr`). Flags, capitals and element symbols have no why line; they have nothing to say beyond the key.
+2. **Answer sound and haptics, with a mute button** (`services/playFeedback.ts`, speaker icon in the header). A right answer
+   plays the Class Challenge's existing `correct.wav`, a wrong one a new quiet two-note `wrong.wav` (made by
+   `scripts/make-wrong-cue.ts`); phones also get a light tap or a soft warning. The mute covers both and is remembered
+   (`@iqra_play_sound_off_v1` in AsyncStorage). It is on every `TriviaBoard` game: flags, capitals, elements, the six text
+   games, and the lesson games «مصطلح من الدرس» and «ما معنى المصطلح؟».
+3. **Answer motion and a streak chip** (`AnswerOption.tsx`): the right option swells once, a wrong pick shakes once, nothing
+   moves under reduced motion; from two right in a row a flame chip shows the streak.
+4. **A personal best, and «retry the ones you missed»** (`services/publicGames/bestScore.ts`). The game-over panel prints
+   «أفضل نتيجة: 6 من 8» (and «رقم قياسي جديد!» when it was beaten) and, after any miss, a button that replays only the misses.
+   (Progress, score, streak and best print Latin digits, as the existing `playScoreLabel` always has; see the known limits.)
+   **A retry round is practice**: it never records a best and is never reported to a teacher (see the deviations).
+5. **A map of Jordan after each governorates answer** (`JordanMap.tsx`, react-native-svg): the right governorate lit in the
+   game's accent, a wrong pick outlined in red, a credit line under it.
+
+**Size added.** `git diff --stat 690c2bb..HEAD` (before the fixes commit): 36 files, +1093 −56 lines, of which 399 lines are tests.
+Shipped in the app: `assets/sounds/wrong.wav` **15,040 bytes** and `services/publicGames/jordanMapData.ts` **12,362 bytes** (the
+12 simplified paths) — about 27 KB, no new dependency and no native module (`expo-audio`, `expo-haptics`,
+`react-native-svg` were already there), so `app.json`'s `version` did not move. The source GeoJSON,
+`scripts/data/jordan-adm1-geoboundaries.geojson`, is **54,979 bytes** and is **not shipped**: it lives in `scripts/`, only
+`scripts/build-jordan-map.ts` and `jordanMapData.test.ts` read it (the test fails if the committed paths differ from what the
+script makes from it).
+
+**Map data attribution.** geoBoundaries (geoboundaries.org) gbOpen, Jordan (JOR) ADM1, simplified, release commit `9469f09`
+of wmgeolab/geoBoundaries. Licence Creative Commons Attribution 2.5 Generic, derived from Wikimedia Commons. **Data year
+2006**; the 12 governorates have not changed since 2001. The game shows the credit (`playMapCredit`) and
+`scripts/data/README.md` records the source and how to regenerate.
+
+**Verified.**
+- `pnpm run typecheck` clean. Mobile suite after the fixes: **8238 tests, 8228 pass, 0 fail, 10 skipped** (the same 10
+  pre-existing `searchKB` skips; the baseline on `main` was 8196). New test files: `answerMotion`, `bestScore`,
+  `feedbackPrefs`, `gameShellOverlay`, `jordanMapData`, `jordanMapWiring`, `playBestWiring`, `playFeedbackWiring`,
+  `playGameExplanations`, `wrongCue`.
+- **A real browser** (Chromium through the `playwright` library, against `pnpm run dev:mobile:web`), 2026-10-30, driven by a
+  script that reads each option's correct flag off the React tree so it can answer right or wrong on purpose. Seven boards
+  — flags, governorates, fractions, which-number, states of matter, antonyms, capitals — each played from the first question
+  to game over (right and wrong answers, a streak of 3, six of eight right), then «retry the ones you missed» (replays exactly
+  the two misses, «سؤال 1 من 2», no best line, no «new best», the stored best unchanged), then «Play again» (a full
+  eight-question round again). 42 runs: 390×844 and 1280×800, light and dark, Arabic; English at 390 light and 1280 dark.
+  Also looked at: elements (phone, light and dark) and the lesson term-spot game (phone, light and dark; the lesson-meaning
+  game was not opened, the lesson tried has no glossary); the mute button
+  (the icon and `aria-pressed` toggle, `@iqra_play_sound_off_v1` is `1` and the button is still muted after a reload, and no
+  `.wav` is requested while muted; unmuted, `wrong.wav` and `correct.wav` are requested); 360×640 with explanation and map
+  showing (the board scrolls, «التالي» is reachable) and the game-over panel there; 320×568 for the game-over panel.
+  Fractions print «٢/٧ ≈ ٠٫٢٩» left to right, not mirrored, in Arabic. The tick and cross icons at 24 px (`ICON.xl`) sit well in
+  the options; they were left as is. The speaker sits beside the score badge in both directions. In dark mode the lit
+  governorate and the flame chip are visible. No console errors after the fixes.
+- Looking at it found three defects, fixed in the commit after those seven (see the deviations below).
+
+**Not verified.**
+- **Sound and haptics were not heard or felt.** All that was confirmed is that answering does not throw and that the browser
+  requests `correct.wav` / `wrong.wav` (and none when muted). Whether `wrong.wav` is pleasant, and its loudness next to
+  `correct.wav`, nobody has judged. The haptics code path only runs off the web, so it was not run at all.
+- **Nothing was run on a device or a native build** (iOS, Android, `expo-audio` on native, `expo-haptics`, react-native-svg
+  native, the Android keyboard and gesture behaviour of the now-scrollable board). Shake and swell were seen in code and as
+  the final frame of a screenshot, not as motion.
+- The Arabic «why» sentences of the hand-written games were read by the author and the reviewer, and the new `play…` strings
+  went through an Arabic copy review at the end (two changed: the streak chip now reads «3 على التوالي» instead of «3 متتالية»,
+  which had no noun, and a new best reads «رقم قياسي جديد!» instead of «نتيجة جديدة!»), but no teacher has read them.
+- **After the game-over panel became a `ScrollView`, these other `GameShell` games were played to their game-over panel in a
+  browser** (390×844 and 320×568, light and dark, Arabic, no console errors): memory (`/play/memory`), colours, the
+  multiplication drill (`?secs=30`), the lesson memory game on an English lesson, and the lesson letter-scramble game on a maths
+  and an English lesson. The
+  panel is centred where it fits and scrolls at 320×568, with the signup card reachable after scrolling. **Not looked at:** the
+  add, subtract and divide drills (same component as multiply), the lesson-meaning game, a game-over panel with the homework
+  «sent to the teacher» footer, and anything on a device.
+- The map's governorate shapes were checked by eye against the names (Ajloun small in the north-west, Ma'an and the east
+  large), not against a second source.
+
+**Known limits.**
+- **Sound defaults to on**, including on the web, where the first tap is what lets audio play (answering is a tap).
+- **The board is now a `ScrollView`, which changes the layout of every `TriviaBoard` game** (flags, capitals, elements, the
+  six text games and the lesson games), not only the new ones: «التالي» sits under the content and under the map, so on a
+  short phone it is reached by scrolling.
+- **The game-over panel is a `ScrollView` for every `GameShell` game**, not only the trivia boards: memory, colours, the four
+  drills, the lesson memory and scramble games (so also an English lesson's) and the trivia boards. It looks the same where it
+  fits, and scrolls where it does not (it used to be cut off); `gameShellOverlay.test.ts` pins the shape (`flexGrow`, not
+  `flex: 1`, on the content container).
+- **Progress, score, streak and best print Latin digits** («سؤال 1 من 2», «6 من 8», «3 على التوالي»): `getT` does not convert
+  digits and the new strings interpolate raw numbers, as `playScoreLabel` always has. The which-number game's options and why
+  line, and the fractions' decimals, are Arabic-Indic. The mix predates this work and was not changed.
+- **The answer cue can ring through the iOS silent switch.** `playGameCue` (`services/gameSounds.ts`) sets
+  `playsInSilentMode: true` the first time it plays: the Class Challenge's existing choice, now also used by `/play`. Not
+  checked on a device.
+- **A best is per game and per device** (`@iqra_play_best_v1:<title key>`), and per lesson for the lesson games
+  (`…:<title key>:<lessonId>`); it is compared by share right (score over total), and only a full round records one.
+  It is not synced and not shown to a teacher. A best an older build kept under another key, if any
+  game did, is not migrated.
+- **A retry replays the same questions in the same option order**, so a child can answer by position; it is practice, not a
+  test. It is never reported to a teacher (`onFinished` is not passed for it, and `game_finished` carries `retry: '1'`).
+- A perfect retry (2 of 2) does not play the «full mark» celebration (`perfect` is false for a retry round); the small
+  game-over celebration still plays.
+- The streak chip shows from two in a row and exists on `TriviaBoard` games only; the maths drills, memory, colours and
+  scramble are unchanged.
+
+**Deviations from the plan, during the build.**
+- **The retry round reported itself (found in review, fixed in `bb043c3`).** The first version of retry passed the same
+  `onFinished` as a full round, so a homework lesson game would have posted «2 من 2» for a child who had missed two of eight
+  (a perfect ratio), and the server keeps the higher ratio. A retry round now never calls `onFinished`, never records a best and sends no
+  status footer. The same commit moved the lesson games' best from one per game to one per lesson.
+- **The map was unreadable (`da085e9`).** Unlit governorates were card on card (about 1.2:1), so only the lit one showed.
+  They now take `colors.muted` with a `mutedForeground` outline, the map is sized from its viewBox ratio instead of a fixed
+  height, the wrong pick's red outline is drawn last so a shared edge cannot cover it, and the credit names Wikimedia Commons
+  as well as geoBoundaries.
+- **Two build scripts had `import.meta.url` main-guard typing errors** (`build-jordan-map.ts`, `make-wrong-cue.ts`), fixed
+  in the same commits that added them.
+- **Three things only a browser showed (the fixes commit).** (1) `JordanMap` put `accessible={false}` on the `Svg`;
+  react-native-svg passes it to the DOM on web and React logged a console error on every governorates answer. The
+  decorative flags now sit on the wrapping `View`, and `jordanMapWiring.test.ts`, which pinned `accessible={false}`, now
+  pins the three props that hide the map and rejects `accessible=` (it failed before the fix). (2) The progress row was 16 px
+  tall and 25 px with the streak chip, so the question dropped 9 px mid-game; it now has a `minHeight` that holds the chip.
+  (3) The game-over panel was a fixed `View`; with the best line and the retry button it was cut off at the top and bottom
+  on a 320×568 phone (the trophy under the header, the teacher signup card unreachable). It is now a `ScrollView`.
+  `designScale.test.ts` needed no change.
+
+## Slides: the class's turn, spot the mistake, and one point at a time — 2026-10-30
+
+A deck looked good and still ran as a lecture: Prompt Slides asked for every concept slide
+first and for its one worked example and one check «near the end», and the misconception the
+model writes for every concept slide only ever reached the teacher panel. Three changes, plus a
+way to measure them.
+
+**Measured on every live deck.** `deckEngagement` (`artifacts/api-server/src/lib/deckEngagement.ts`)
+counts a deck's activities (`question` + `challenge`), the slide number of the first one, the
+longest run of explanation (`intro`) slides after the cover (any other type ends a run, a divider
+too), laid-out and single-line content slides, and words per content slide. The prompt-slides
+route logs it at `info` for **every** deck («prompt-slides deck engagement»), and
+`scripts/provider-eval.ts` puts it on each slides row (`engagement`). `checkDeck` gains a `warn`,
+`passive_run`, named at the third explanation slide in a row (`MAX_PASSIVE_RUN = 2`), only on a
+deck with a `question` slide: the teaching arc requires one and the general arc, which has no such
+rule, usually has none. The log line carries the same flag (`hasCheck`), so before-and-after can
+compare teaching decks with teaching decks. It is a proxy, not the model's own choice of arc. The
+`deckChecks` fixture deck had three in a row and was reordered (the challenge moved up one).
+
+**Prompt Slides (`promptSlidesPrompt.ts`, Arabic and English).** The teaching arc (A) now says:
+never more than two concept slides in a row, then a slide the class acts on (a check or a
+challenge); the worked example comes after the idea it uses, not «near the end»; and in a deck of
+11 slides or more, a «اكتشف الخطأ» / "Spot the mistake" challenge — an imaginary student's
+solution with exactly one error, the error being the misconception written on a concept slide,
+never marked in `content`, the correction in `answer`. The general arc (B) is unchanged and the
+test checks the rule is not in it. A new mandatory rule for both arcs: when an example, hook or
+problem needs a setting, set it in Jordan (dinars, Amman, Aqaba, the Dead Sea…), and made-up
+numbers stay problem values, never facts about a real place.
+
+**Slides Maker.** `lessonTeachingPrompt.ts` asks for a `mistake` (`claim`, `hint`, `answer`) built
+from one of its own `misconception`s, plus the same Jordan rule. `usableTeaching` keeps it only
+with both a claim and an answer (a wrong solution with no correction teaches the mistake).
+`buildLessonDeck` projects it as a `challenge` titled «🔍 اكتشف الخطأ» right after the worked
+examples (§7a), timed like an example, only when examples are ticked; its 🔍 draws the `help`
+icon (`deckIcons.ts`), as the other check headings do. `rebuildAnswerKey` keys a
+challenge whose title says «اكتشف الخطأ» / "spot the mistake" by its own title instead of numbering
+it as «مثال 2» — matched by name (`services/spotTheMistake.ts`) so a Prompt Slides deck's
+model-titled slide counts too, and `verifyDeckExamples` never sends such a slide to SymPy (its
+content is wrong on purpose, so a proof against an equation in it would badge nonsense). A teacher
+who renames the slide turns it back into an ordinary challenge.
+
+**A student never receives `mistake`.** The same pooled teaching section is what students read
+(`GET /student/lesson-explanation/…`), so `stripTeacherNotes` (`lib/lessonExplanation.ts`) now
+drops `mistake` with `teacherNote`, and `pregenerate.ts`'s `reviewEntry` drops it from what the
+reviewer approves as «the text a student would see» (the hash is taken after, so approval still
+matches). The student cards never drew it either.
+
+**The lesson-teaching pool starts afresh; no other pool does.** Its sections stored before this
+have no `mistake` and would have been served forever. `PROMPT_VERSION` (`generationKey.ts`) is
+one value for every pooled kind, so instead of bumping it, a kind may now carry its own version
+(`PROMPT_VERSION_BY_KIND`, read through `promptVersionFor(kind)`, which `generationKeys` and the
+stored row both use); `lesson-teaching` is `2026-10-30.1`, every other kind keeps `2026-10-04.1`.
+The cost: the first teacher to build a Slides Maker deck for each lesson after the merge pays for
+a new teaching section (budget-capped as usual), including the lessons `pregenerate.ts` filled —
+re-run it to fill them ahead of teachers. **Students are unaffected:** their approved explanations
+are read by lesson and language (`readApprovedExplanations`), not by this key, so what an admin
+approved keeps being served; new sections need approving as before.
+
+**«نقطة بنقطة» / "One at a time" in the presenter.** A toggle in the action row (off by default,
+remembered on the device as `@iqra_paced_reveal_v1`). On, Next — the button and the clicker/keyboard
+path alike, both through `stepForward` — shows an explanation slide's next bullet, step, card,
+timeline event or flow box, and moves to the next slide only when all are out; the button reads
+«النقطة التالية» while one is hidden. `services/pacedReveal.ts` says which `Reveal` indices a slide
+has (`intro`/`summary` only, not the cover, at least two). If it ever disagrees with the renderer,
+`revealThreshold` shows everything once its beats run out, so a mismatch reveals early and never
+leaves a point hidden. Switching it on mid-slide and stepping back both show the whole slide;
+tapping the current slide's dot leaves it as it was. **Not on a phone** (`compactBar`, under
+600dp): that bar is budgeted for two icon buttons and «النقطة التالية» would not fit Next, so the
+toggle is hidden there and a choice remembered on a laptop does not pace a phone (`pacing =
+paced && !compactBar`). Presenter only: the PDF and PowerPoint are unchanged.
+
+**Verified.** `pnpm run typecheck` clean; api-server `pnpm build` + `pnpm test` 2,669 pass, 0 fail;
+mobile `pnpm test` 8,212 tests, 8,202 pass, 10 skipped, 0 fail (the two last fixes — the 🔍 icon
+and the toggle's storage write — were re-run in their own suites afterwards). New tests:
+`deckEngagement.test.ts`, `pacedReveal.test.ts`, and additions to `deckChecks`, `promptSlidesPrompt`,
+`lessonTeachingPrompt`, `lessonSlides` and `deckIcons` tests. The presenter was driven with
+Playwright in the built web bundle (desktop 1366, Arabic, light, stubbed API, demo-mode offline
+deck for «معادلة الدائرة»), screenshots looked at: with the toggle on, the outcomes slide opens on
+its title alone, each press adds one card, the button reads «النقطة التالية» until the last card and
+then «التالي»; a non-paced slide advances in one press; stepping back onto a paced slide shows it
+whole. The offline deck has no teaching section, so the «اكتشف الخطأ» slide was not seen on screen.
+
+**Not verified.** **No live model has seen either prompt change.** The OpenAI key in the session
+that built this lacks the `model.request` scope, so no deck was generated: whether the model keeps
+to two-in-a-row, writes a good «اكتشف الخطأ», or uses Jordanian settings well is unknown. The
+first measure is the engagement log line on production decks, or a provider-eval run before and
+after. Also not checked: the presenter on a phone or tablet, a clicker, screen readers, RTL/LTR on
+native. **Not done:** the per-slide timing suggestion and the other new formats (predict-then-reveal,
+think-pair-share, fill in the blank, agree/disagree, levelled challenges).
+
+## PostHog moves to the owner's own EU project, 2026-10-30
+
+The Android recording plan (see «Screen recordings: Contentsquare on the web, PostHog replay on Android») stalled on one fact:
+the owner had no login to the PostHog project behind the key baked into every build (`phc_t7Gd3Z4L…`, US host by default), and
+nobody in the repo could say who did. The owner created a new project instead, **EU cloud, project 326639** (their screenshots:
+«This project has no events yet», Region «EU Cloud»). It is not the project the app reported to; the two keys differ.
+
+**Changed:** the new project key (`phc_scZFQcyz…`) replaces the old one in `deploy.yml` (web), `mobile-update.yml` (OTA),
+`mobile-build-gradle.yml` (Android build) and both profiles of `eas.json`, and `EXPO_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com`
+now sits beside it in each, because a key sent to the wrong cloud is dropped silently and the code default is still the US host.
+`posthogProject.test.ts` fails a file that has the key without the host, or the old key (mutation-checked: removing the host line
+from `mobile-update.yml` fails it). `render.yaml` still holds the old US key and was left alone: the Render demo services are
+suspended, and its own comment explains the host. The privacy policy (AR and EN) now says PostHog's servers are in the EU instead
+of the US (it was `LEGAL_VERSION` 2026-10-29, now 2026-10-30; the «outside Jordan and outside the EU» sentence still holds because
+OpenAI and Google Sign-In are outside it).
+
+**What this does and does not do:** from the merge, the web build sends usage events to the new project once the site
+redeploys, and Android builds made **after** the merge do too; apps already installed keep sending to the old US project (or
+nowhere) until the owner installs a new build, and the history of the old project stays behind. **Not verified:** that any event
+arrives in the new project (nothing here can reach PostHog; the first check is Activity in the project after a build); that
+Android session replay records (needs «Record user sessions» on in the new project and a 1.6.0 build); PostHog's plan limits.
+**The owner's next steps:** turn on «Record user sessions» in project 326639, run the Android Gradle build after this merges,
+install the APK, use the app, then look for events under Activity and a recording under Session replay.
+
 ## Six new /play games: opposites, plurals, which-number, compare-fractions, states of matter, governorates — 2026-10-29
 
 The public hub (`/play`, no login) had ten tiles; it now has sixteen. The six new ones are appended after the existing ten, in
