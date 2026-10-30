@@ -23,8 +23,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  BOOK_FIGURE_MAX, BOOK_PAGE_SLIDE_MAX, bookFigureCaption, bookPageSlides, buildLessonDeck, numberedBookTitles, splitChecks, splitExample,
-  splitWarmup, usableTeaching, withoutSlide,
+  BOOK_FIGURE_MAX, BOOK_PAGE_SLIDE_MAX, MAX_TEACHING_PHOTOS, bookFigureCaption, bookPageSlides, buildLessonDeck, numberedBookTitles, splitChecks, splitExample,
+  splitWarmup, teachingPhotoTargets, usableTeaching, withoutSlide,
 } from '../lessonSlides.ts';
 import { figuresForLesson } from '../bookFigures.ts';
 import { KB_LESSONS } from '../knowledgeBase.ts';
@@ -1356,5 +1356,24 @@ describe('book pictures never make a run of slides with one title', () => {
     assert.deepEqual(numberedBookTitles([mk('من كتاب الطالب')], true).map(s => s.title), ['من كتاب الطالب']);
     assert.deepEqual(numberedBookTitles([mk('A'), mk('A'), mk('A')], true).map(s => s.title), ['A (١)', 'A (٢)', 'A (٣)']);
     assert.deepEqual(numberedBookTitles([mk('A'), mk('A')], false).map(s => s.title), ['A (1)', 'A (2)']);
+  });
+});
+
+describe('teachingPhotoTargets', () => {
+  const s = (over: Partial<ActivitySlide>): ActivitySlide => ({ slideNumber: 3, type: 'intro', title: 't', content: '• a', durationSeconds: 0, aiWritten: true, ...over });
+  it('takes AI-written slides that asked for a photo, two at most, no repeats', () => {
+    const out = teachingPhotoTargets([
+      s({ title: 'a', mediaPrompt: 'salt' }), s({ title: 'b', mediaPrompt: 'salt' }),
+      s({ title: 'c', mediaPrompt: 'river' }), s({ title: 'd', mediaPrompt: 'desert' }),
+    ]);
+    assert.equal(MAX_TEACHING_PHOTOS, 2);
+    assert.deepEqual(out, [{ title: 'a', query: 'salt' }, { title: 'c', query: 'river' }]);
+  });
+  it('skips a slide with a book figure, a layout, or no AI hand in it', () => {
+    assert.deepEqual(teachingPhotoTargets([
+      s({ title: 'a', mediaPrompt: 'x', sideImageUrl: 'book.png' }),
+      s({ title: 'b', mediaPrompt: 'y', layout: 'cycle' }),
+      s({ title: 'c', mediaPrompt: 'z', aiWritten: undefined }),
+    ]), []);
   });
 });

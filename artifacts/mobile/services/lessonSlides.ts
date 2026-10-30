@@ -1238,6 +1238,30 @@ export function rebuildAnswerKey(slides: readonly ActivitySlide[], isAr: boolean
   return key;
 }
 
+/** Explanation-slide photos per deck; with the cover photo that makes three. */
+export const MAX_TEACHING_PHOTOS = 2;
+
+/**
+ * The generated concept slides that asked for a photo (`mediaPrompt`, from the
+ * teaching section's `photo`) and can show one: written by the model, no book
+ * figure already beside the text, no layout filling the slide. First two, by
+ * distinct query, so one search never puts the same picture on two slides.
+ * Matched back by title by the caller, like the unit-break photos, because the
+ * teacher may move or delete a slide while the search runs.
+ */
+export function teachingPhotoTargets(slides: readonly ActivitySlide[]): { title: string; query: string }[] {
+  const out: { title: string; query: string }[] = [];
+  const seen = new Set<string>();
+  for (const s of slides) {
+    const query = s.mediaPrompt?.trim() ?? '';
+    if (!s.aiWritten || !query || s.sideImageUrl || s.layout || seen.has(query)) continue;
+    seen.add(query);
+    out.push({ title: s.title, query });
+    if (out.length === MAX_TEACHING_PHOTOS) break;
+  }
+  return out;
+}
+
 /**
  * Where a `givens: solution` example turns into its solution, or -1.
  *
