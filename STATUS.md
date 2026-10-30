@@ -193,8 +193,6 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-23 — Generator screens: the slides
 - 2026-10-23 — Generator screens: the activity
 - 2026-10-23 — Generator screens: the lesson plan
-- 2026-10-23 — Generator screens: the worksheet and homework
-- 2026-10-23 — Grade 5 grammar in the English corner — built, shown to nobody yet
 
 ## Finding older detail, and recording new work
 

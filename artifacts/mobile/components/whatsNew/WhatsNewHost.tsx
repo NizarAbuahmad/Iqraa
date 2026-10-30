@@ -24,12 +24,11 @@ export function WhatsNewHost() {
   const [entries, setEntries] = useState<WhatsNewEntry[] | null>(null);
   useWhatsNewAutostart(setEntries);
 
+  const count = entries?.length ?? 0;
   const close = useCallback(() => {
-    setEntries(prev => {
-      if (prev) trackEvent('whats_new_closed', { count: prev.length });
-      return null;
-    });
-  }, []);
+    trackEvent('whats_new_closed', { count });
+    setEntries(null);
+  }, [count]);
 
   const tryIt = useCallback((entry: WhatsNewEntry) => {
     trackEvent('whats_new_opened', { id: entry.id, source: 'dialog' });

@@ -17,6 +17,7 @@ import {
   type WhatsNewInput,
 } from '../whatsNew.ts';
 import { TOUR_MAX_AGE_DAYS, TOUR_SINCE, tourDoneKey } from '../tour.ts';
+import { getSessionSeen, noteSeen, resetSessionSeen, withSessionSeen } from '../whatsNewSession.ts';
 import { isNonTeacherRoute, isPublicRoute } from '../routeGating.ts';
 import translations from '../i18n.ts';
 
@@ -218,4 +219,34 @@ test('an entry’s route is a real screen that each of its roles may open', () =
 
 test('the «ما الجديد» screen itself is reachable for a student or parent', () => {
   assert.equal(isNonTeacherRoute('/whats-new'), true);
+});
+
+// ─── seen this session (whatsNewSession.ts) ─────────────────────────────────
+
+test('a note read on the Profile screen is not offered again by the dialog in the same session', () => {
+  resetSessionSeen();
+  const stored: string[] = [];
+  noteSeen('t1', ['c', 'b', 'a']);
+  const seen = withSessionSeen(stored, getSessionSeen(), 't1');
+  assert.equal(whatsNewBlocker(ok({ seen })), 'nothing-new');
+});
+
+test('the session store belongs to one account: another one signed in starts empty', () => {
+  resetSessionSeen();
+  noteSeen('t1', ['c']);
+  assert.deepEqual(withSessionSeen(['x'], getSessionSeen(), 't2'), ['x']);
+  noteSeen('t2', ['b']);
+  assert.deepEqual(getSessionSeen(), { userId: 't2', ids: ['b'] });
+});
+
+test('the session store passes unread and unreadable storage through, and keeps its snapshot stable', () => {
+  resetSessionSeen();
+  noteSeen('t1', ['a']);
+  assert.equal(withSessionSeen(null, getSessionSeen(), 't1'), null);
+  assert.equal(withSessionSeen('all', getSessionSeen(), 't1'), 'all');
+  const before = getSessionSeen();
+  noteSeen('t1', ['a']);
+  assert.equal(getSessionSeen(), before, 'nothing new seen, same snapshot');
+  const stored = ['a'];
+  assert.equal(withSessionSeen(stored, getSessionSeen(), 't1'), stored, 'nothing to add, same array');
 });

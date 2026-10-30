@@ -52,7 +52,7 @@ export const WHATS_NEW: readonly WhatsNewEntry[] = [
 
 /** An entry older than this is not shown on its own; Profile → «ما الجديد» still lists it. */
 export const WHATS_NEW_MAX_AGE_DAYS = 45;
-/** The dialog shows at most this many, newest first. The rest wait in Profile. */
+/** The dialog shows at most this many, newest first, once per session. The rest wait for the next launch, and Profile lists them all. */
 export const WHATS_NEW_MAX_SHOWN = 3;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
