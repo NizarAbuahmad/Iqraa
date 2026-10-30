@@ -7,6 +7,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { ALWAYS, diagramBeats, diagramGeometry, isDiagram, arrowHead, DIAGRAM_W, DIAGRAM_H, DIAGRAM_FONT, type DiagramGeometry, type DiagramLayout, type DiagramShape, type DiagramText } from '../diagramGeometry.ts';
 
+import { MAX_VENN3_ITEM_CHARS } from '../slideLayout.ts';
+
 const stages = (n: number) => Array.from({ length: n }, (_, i) => ({ label: `مرحلة ${i + 1}`, note: 'ملاحظة' }));
 const LAYOUTS: DiagramLayout[] = [
   ...[3, 4, 5, 6].map(n => ({ kind: 'cycle' as const, stages: stages(n) })),
@@ -142,7 +144,7 @@ const WORST: DiagramLayout[] = [
   ...[3, 4, 5, 6].map(n => ({ kind: 'cycle' as const, stages: Array.from({ length: n }, (_, i) => ({ label: fill(`س${i}`, 24), note: fill(`ن${i}`, 60) })) })),
   ...[2, 3, 4].map(n => ({ kind: 'tree' as const, root: fill('جذر', 32), branches: Array.from({ length: n }, (_, i) => ({ label: fill(`ف${i}`, 24), leaves: items(`و${i}`, 4, 24) })) })),
   { kind: 'venn', sets: [{ label: fill('مجموعة١', 24), only: items('أ', 4, 32) }, { label: fill('مجموعة٢', 24), only: items('ب', 4, 32) }], shared: items('م', 4, 32) },
-  { kind: 'venn', sets: [{ label: fill('مجموعة١', 24), only: items('أ', 3, 20) }, { label: fill('مجموعة٢', 24), only: items('ب', 3, 20) }, { label: fill('مجموعة٣', 24), only: items('ج', 3, 20) }], shared: items('م', 2, 20) },
+  { kind: 'venn', sets: [{ label: fill('مجموعة١', 24), only: items('أ', 3, MAX_VENN3_ITEM_CHARS) }, { label: fill('مجموعة٢', 24), only: items('ب', 3, MAX_VENN3_ITEM_CHARS) }, { label: fill('مجموعة٣', 24), only: items('ج', 3, MAX_VENN3_ITEM_CHARS) }], shared: items('م', 2, MAX_VENN3_ITEM_CHARS) },
   ...[3, 4, 5, 6].map(n => ({ kind: 'mindmap' as const, center: fill('مركز', 40), nodes: Array.from({ length: n }, (_, i) => ({ text: fill(`ع${i}`, 40), role: i % 3 === 0 ? undefined : i % 3 === 1 ? 'cause' as const : 'effect' as const })) })),
 ];
 

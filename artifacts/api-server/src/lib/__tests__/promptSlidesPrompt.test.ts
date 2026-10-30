@@ -212,14 +212,14 @@ describe("promptSlidesPrompt — the rules that stop empty decks", () => {
           cycle: [/من 3 إلى 6 مراحل/, /اسم المرحلة حتى 24 حرفًا/, /التوضيح حتى 60/],
           tree: [/من 2 إلى 4 فروع/, /حتى 4 أوراق/, /الأصل حتى 32 حرفًا/, /الفرع والورقة حتى 24/],
           venn: [/اسم المجموعة حتى 24 حرفًا/, /في مجموعتين حتى 4 عناصر لكل منطقة/, /كل عنصر حتى 32 حرفًا/,
-            /حتى 3 عناصر قصيرة لكل مجموعة/, /عنصران مشتركان على الأكثر/, /كل عنصر حتى 20 حرفًا/],
+            /حتى 3 عناصر قصيرة لكل مجموعة/, /عنصران مشتركان على الأكثر/, /كل عنصر حتى 16 حرفًا/],
           mindmap: [/من 3 إلى 6 عقد/, /العقدة حتى 40 حرفًا/],
         },
         en: {
           cycle: [/3 to 6 stages/, /a label up to 24 characters/, /a note up to 60/],
           tree: [/2 to 4 branches/, /up to 4 leaves/, /the root up to 32 characters/, /a branch or leaf up to 24/],
           venn: [/a set label up to 24 characters/, /up to 4 items per region/, /each item up to 32 characters/,
-            /at most 3 short items per set/, /and 2 shared/, /each up to 20 characters/],
+            /at most 3 short items per set/, /and 2 shared/, /each up to 16 characters/],
           mindmap: [/3 to 6 nodes/, /each node up to 40 characters/],
         },
       };

@@ -40,7 +40,7 @@ Added to `SLIDE_LAYOUTS` and to the API's copy `DECK_LAYOUT_NAMES`
 |---|---|---|
 | `cycle` | `cycle: { stages: { label: string; note?: string }[] }` | 3–6 stages; label 1–24 chars; note ≤ 60 chars; labels distinct |
 | `tree` | `tree: { root: string; branches: { label: string; leaves?: string[] }[] }` | root 1–32 chars; 2–4 branches; label 1–24 chars; 0–4 leaves each, 1–24 chars; no empty or repeated sibling |
-| `venn` | `venn: { sets: { label: string; only: string[] }[]; shared: string[] }` | 2 or 3 sets; set label 1–24 chars; `only` and `shared` 0–4 items each, 1–32 chars (three sets: `only` 0–3 items, `shared` 0–2, each 1–20 chars — tightened while planning, a third of a circle holds no more); at least one item somewhere |
+| `venn` | `venn: { sets: { label: string; only: string[] }[]; shared: string[] }` | 2 or 3 sets; set label 1–24 chars; `only` and `shared` 0–4 items each, 1–32 chars (three sets: `only` 0–3 items, `shared` 0–2, each 1–16 chars — tightened while planning, a third of a circle holds no more; 20 at first, lowered to 16 after the 2026-10-31 look, when an all-capitals phrase of 19–20 characters wrapped and clipped in the triple overlap); at least one item somewhere |
 | `mindmap` | `mindmap: { center: string; nodes: { text: string; role?: 'cause' \| 'effect' }[] }` | center 1–40 chars; 3–6 nodes, 1–40 chars; role, when present, one of the two |
 
 Rules shared with the existing layouts:

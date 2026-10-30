@@ -107,10 +107,16 @@ export const MAX_TREE_BRANCHES = 4;
 export const MAX_TREE_LEAVES = 4;
 export const MAX_VENN_ITEMS = 4;
 export const MAX_VENN_ITEM_CHARS = 32;
-/** Three circles leave a third of the room per region. */
+/**
+ * Three circles leave a third of the room per region. The item cap is 16, not
+ * 20: at 20 an all-capitals Latin phrase («CHLOROFLUOROCARBONS», «MITOCHONDRIA
+ * ORGANELLE») wrapped in the triple overlap and was cut off in the PDF and ran
+ * over the circle's edge in the presenter (seen 2026-10-31); at 16 a two-word
+ * capitals phrase fits in both. Ordinary Arabic and mixed-case English fit at 20.
+ */
 export const MAX_VENN3_ONLY = 3;
 export const MAX_VENN3_SHARED = 2;
-export const MAX_VENN3_ITEM_CHARS = 20;
+export const MAX_VENN3_ITEM_CHARS = 16;
 export const MIN_MINDMAP_NODES = 3;
 export const MAX_MINDMAP_NODES = 6;
 export const MAX_MINDMAP_CHARS = 40;

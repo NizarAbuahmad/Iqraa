@@ -468,7 +468,12 @@ describe('diagram layouts', () => {
     assert.equal(resolveSlideLayout(venn({ sets: [{ label: 'a', only: [] }, { label: 'b', only: [] }], shared: [] })), null);
     assert.equal(resolveSlideLayout(venn({ sets: ['a', 'b', 'c', 'd'].map(label => ({ label, only: ['x'] })), shared: [] })), null);
     assert.equal(resolveSlideLayout(venn({ sets: [{ label: 'a', only: ['1', '2', '3', '4'] }, { label: 'b', only: [] }, { label: 'c', only: [] }], shared: [] })), null);
-    assert.equal(resolveSlideLayout(venn({ sets: [{ label: 'a', only: ['x'.repeat(21)] }, { label: 'b', only: [] }, { label: 'c', only: [] }], shared: [] })), null);
+    assert.equal(resolveSlideLayout(venn({ sets: [{ label: 'a', only: ['x'.repeat(17)] }, { label: 'b', only: [] }, { label: 'c', only: [] }], shared: [] })), null);
+    assert.equal(resolveSlideLayout(venn({ sets: [{ label: 'a', only: [] }, { label: 'b', only: [] }, { label: 'c', only: [] }], shared: ['x'.repeat(17)] })), null);
+  });
+  it('allows a three-set item of exactly 16 characters, and a longer one in a two-set Venn', () => {
+    assert.ok(resolveSlideLayout(venn({ sets: [{ label: 'a', only: ['x'.repeat(16)] }, { label: 'b', only: [] }, { label: 'c', only: [] }], shared: ['y'.repeat(16)] })));
+    assert.ok(resolveSlideLayout(venn({ sets: [{ label: 'a', only: ['x'.repeat(32)] }, { label: 'b', only: [] }], shared: [] })));
   });
 
   const mind = (m: unknown) => slide({ layout: 'mindmap', mindmap: m as never });
