@@ -10,6 +10,112 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Homework project submission — API foundation — 2026-10-30
+
+A teacher asked for students to hand in their own textbook project, saved on the
+site, with no student able to touch another's. This is phase 1 of 3 and it is the
+**API only**: nothing in the app can send or show a submission yet. Spec:
+`docs/superpowers/specs/2026-10-30-homework-project-submission-design.md`; plan:
+`docs/superpowers/plans/` (same date).
+
+**What shipped**
+
+- **Schema, migration `0020_glamorous_lifeguard.sql` (additive).**
+  `homework.requires_submission boolean NOT NULL DEFAULT false`, and
+  `homework_submissions` (`homework_id`, `student_id` a roster row, `note`, `photos`
+  jsonb, nullable `submitted_at` where null is a draft, unique on
+  `(homework_id, student_id)`), with row-level security: the homework's teacher
+  reads; anyone else who sees the student reads only a submitted row; INSERT and
+  UPDATE only by the self-linked author; no DELETE policy (removal is `systemDb`'s
+  job). No `destructive-migration: ok` is needed. The table is in `PROTECTED` in
+  `rlsCoverage.test.ts`.
+- **Storage.** Photos go to the private R2 bucket under
+  `homework-submissions/<homework>/<student>/<uuid><ext>` (`newHomeworkSubmissionKey`
+  in `lib/r2.ts`, never the caller's filename); reads are signed for ten minutes and
+  only after the row was read through the caller's own connection. Tests use an
+  in-memory S3.
+- **Student routes** (`routes/homeworkSubmissions.ts`, `lib/homeworkSubmission.ts`,
+  rules in `modules/homework/submission.ts`): `GET/PUT /student/homework/:id/submission`,
+  `POST …/photos` (one `data:` URL per request; jpeg/png/webp, 4 MB, magic bytes;
+  HEIC refused; six at most), `DELETE …/photos/:photoId`, `POST …/submit`. The roster
+  row comes from the account's self-linked rows (`ownHomeworkRows`), never from the
+  request. A resubmit before the due day keeps the first `submitted_at`; after it a
+  submitted project is locked (409 `locked`) and a student with none can still submit,
+  as late (computed, never stored). A handed-in project can never be emptied: the
+  guard is in each UPDATE's WHERE, so two concurrent requests cannot do it. The manual
+  tick (`PUT` and `DELETE …/done`) and a game-play tick are refused for a homework that
+  requires a submission (409 `submission_required`).
+- **Teacher.** `GET /homework/:id/submissions` (one row per live roster member:
+  none / submitted / late; a draft reads as none) and `GET …/submissions/:studentId`
+  (note and signed photos; 404 for a draft). `requiresSubmission` is read and written
+  by `POST /homework` and `PATCH /homework/:id`. `DELETE /homework/:id`, which
+  archives, now also purges every photo (drafts too) and deletes the submission rows,
+  on the owner connection because a draft is invisible to the teacher's identity.
+- **Parent.** `GET /parent/homework/:id/submissions` (submitted work of the linked
+  children in that class, read only). The family's homework list gains
+  `requiresSubmission` and a per-item `submission` state.
+- **Mount order.** All guards are path-scoped; `mountOrder.test.ts` gained a case
+  for the eight new paths (401 without a token) and that an unowned path is still 404.
+
+**Verified** (local, Postgres 16, 2026-10-30)
+
+- `pnpm run typecheck` (whole monorepo): clean.
+- `artifacts/api-server`: `pnpm build` then
+  `TEST_DATABASE_URL=postgres://…/postgres pnpm test`: 3098 tests, 0 failed, 0 skipped.
+  That includes `modules/homework/__tests__/submission.test.ts` (pure rules),
+  `routes/__tests__/homeworkSubmission.db.test.ts` (the HTTP routes against the real
+  database and the in-memory S3, with RLS on for the purge case), `r2.test.ts` and the
+  new `mountOrder.test.ts` case.
+- `lib/db`: `RLS_TEST_DATABASE_URL=…/iqraa_rls_scratch pnpm test` (after
+  `migrate -- --from-env`, 21 migrations applied): 74 tests, 0 failed — `rlsMatrix.test.ts`
+  (author, teacher, guardian, another student, stranger, for read, insert and update)
+  and `rlsCoverage.test.ts`.
+- `artifacts/mobile`: `pnpm test`: 8264 tests, 8254 passed, 0 failed, 10 skipped (the
+  skips are not in this change).
+- `pnpm --filter @workspace/db run generate` reports "No schema changes" and leaves
+  `git status` clean (the CI "migrations match schema" check).
+- The new mount-order case was shown to be able to fail: with the parent guard in
+  `homeworkSubmissions.ts` made bare (`router.use(authMiddleware, requireRole("parent"))`)
+  the new case failed (and so did the existing unowned-path cases); restored, 68/68 pass.
+  Removing the path-scoped guard line outright did not fail it, because the earlier
+  `familyHomework.ts` / `homework.ts` routers guard the same prefixes: the 401 half of
+  the test is protected by those as well, and the unowned-404 half is the one this
+  router can break.
+- Not run, not affected: curriculum `test` / `verify`, and `test_equations.py` in
+  `artifacts/math-verifier`. Not run: the browser smoke (`e2e/`) — no app code changed.
+- **Not done:** `rlsDiff.test.ts` cases for the new routes. That suite boots its own
+  server with and without `RLS_ENFORCE` and would need the S3 stub wired into that
+  boot. The policies are tested directly (`rlsMatrix`), and the purge and the
+  student routes were run with RLS enforcing in two server tests.
+
+**Not built**
+
+The student app (submit screen, list state), the teacher's and the parent's app
+(counts, list, detail), grading and teacher comments, and supervisor access. The
+switch is not reachable from any screen yet, so no homework can require a submission
+until phase 2 and 3 ship (a teacher could set it through the API).
+
+**Known limits**
+
+- No moderation queue: a wrong photo of a minor stays until the student removes it
+  or the homework is archived.
+- The teacher cannot remove one student's photo without archiving the whole homework,
+  which deletes every submission for it, for good.
+- The upload limiter (60 an hour per account) counts every request that reaches the
+  route, refused ones included, so it is 60 attempts, not 60 photos.
+- The archive purge is not transactional: a failed object delete is logged with its
+  key and the rows are deleted anyway, so an unreachable orphan object can remain in
+  the bucket.
+- **RLS enforcement is OFF in production by default** (`RLS_ENFORCE`). The new policies
+  were exercised with it on in `lib/db` (`rlsMatrix`) and in two server tests, but in
+  production the route-level scoping (the account's own rows, the owner check, the
+  guardian's linked children) is what actually isolates students today.
+- Migration `0020` is additive; a revert of the code leaves an unused column and an
+  empty table, and drops nothing.
+- Storage is capped only by the six-photo limit and the hourly limiter.
+- No new secret: the `R2_*` secrets already exist on Cloud Run for chat attachments.
+  No mobile code changed, so no OTA and no `app.json` `version` bump.
+
 ## /play hub: filter the games by subject and by grade — 2026-10-30
 
 The hub listed all 16 games with no way to narrow them. It now has two chip rows

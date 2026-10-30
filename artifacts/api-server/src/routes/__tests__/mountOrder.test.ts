@@ -795,6 +795,28 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(teacher.status, 401, "the teacher homework route keeps its own guard");
   });
 
+  it("guards homework project submissions for the student, the parent and the teacher", async () => {
+    // Path-scoped inside homeworkSubmissions.ts: every verb is refused without a token, and the
+    // router answers for nothing outside its three prefixes.
+    const id = "00000000-0000-4000-8000-000000000000";
+    for (const [method, p] of [
+      ["GET", `/student/homework/${id}/submission`],
+      ["POST", `/student/homework/${id}/submission/photos`],
+      ["DELETE", `/student/homework/${id}/submission/photos/${id}`],
+      ["PUT", `/student/homework/${id}/submission`],
+      ["POST", `/student/homework/${id}/submission/submit`],
+      ["GET", `/parent/homework/${id}/submissions`],
+      ["GET", `/homework/${id}/submissions`],
+      ["GET", `/homework/${id}/submissions/${id}`],
+    ] as const) {
+      const res = await fetch(`${base}${p}`, { method });
+      assert.equal(res.status, 401, `${method} ${p} must require a token`);
+    }
+    // An unowned path is still a 404, not a 401: the new router must not have installed a guard for everything after it.
+    const unowned = await fetch(`${base}/no-such-homework-path/${id}`);
+    assert.equal(unowned.status, 404);
+  });
+
   it("guards Math Corner practice for the student write and the teacher read", async () => {
     const id = "00000000-0000-0000-0000-000000000000";
     for (const [method, p] of [

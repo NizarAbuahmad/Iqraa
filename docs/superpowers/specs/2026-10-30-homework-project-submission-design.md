@@ -44,7 +44,7 @@ until the homework is deleted or the student replaces it.
 | Resubmitting | A student may replace their own submission until the due day ends. After that it is locked. |
 | Late | A student with no submission may still submit after the due day. It is accepted and shown as **late**. |
 | Supervisor | No access in this release. |
-| Retention | Photos live until the student removes them, or the teacher deletes (archives) the homework, which purges the photos. No automatic expiry. |
+| Retention | Photos live until the student removes them, or the teacher deletes (archives) the homework, which purges the photos and deletes the submission rows. No automatic expiry. |
 
 ## 1. Data
 
@@ -67,8 +67,10 @@ teacher at creation or edit (`POST /homework`, `PATCH /homework/:id`).
 
 `unique (homework_id, student_id)`. Index on `student_id`.
 
-Additive only, so no `destructive-migration: ok` is needed. Two accounts linked
-to the same roster row share one submission, exactly as they share ticks.
+Additive only, so no `destructive-migration: ok` is needed. A roster row has at
+most one student account (`roster_links_one_self_idx`), so in practice one student
+account writes a submission; a guardian linked to the same row reads it. The
+submission is on the roster row, not the account, like a completion.
 
 **Which roster row.** `ownHomeworkRows` (`lib/homeworkDone.ts`) can return more
 than one row for an account in a class. The submission is stored on the first of
@@ -117,11 +119,18 @@ path.
 
 | Route | Does |
 | --- | --- |
-| `GET /student/homework/:id/submission` | The caller's own submission, draft or submitted, with signed photo URLs. 404 when there is none |
+| `GET /student/homework/:id/submission` | The caller's own submission, draft or submitted, with signed photo URLs. A student with nothing yet gets status "none", not a 404; 404 is for a homework that does not resolve |
 | `POST /student/homework/:id/submission/photos` | Body `{ photoDataUrl }`. Creates the draft row if missing, stores the object, appends to `photos`. 409 `photo_limit` past six, 409 `locked` if submitted and past due |
 | `DELETE /student/homework/:id/submission/photos/:photoId` | Removes one photo from the row **and** the object from R2. Same lock rule |
 | `PUT /student/homework/:id/submission` | Body `{ note }`. Saves the note on the draft or submitted row |
 | `POST /student/homework/:id/submission/submit` | Needs at least one photo or a non-empty note. Sets `submitted_at` (kept on a replace — see below), then ticks the homework done through `tickRows` |
+
+The photo upload is limited to 60 per account per hour. The limiter counts every
+request that reaches the route, refused ones included, so "60 photos an hour"
+really means 60 attempts. A handed-in project may not be emptied (removing its
+last photo, or clearing the note of a project with no photo): this is enforced
+inside each `UPDATE` statement's `WHERE`, not only by a read in code, so two
+concurrent requests cannot empty it.
 
 Every one resolves the row through `ownHomeworkRows(userId, homeworkId)`, so the
 rules the tick already enforces apply unchanged: a live homework in a live class,
@@ -136,7 +145,8 @@ work is never marked late. After the due day a submitted row is locked (409
 
 **The tick.** For a homework with `requires_submission`, `PUT /student/homework/:id/done`
 is refused with 409 `submission_required`. Done is set only by submitting.
-`DELETE …/done` stays allowed; it does not delete the submission.
+`DELETE …/done` is refused the same way, so the tick and the submission cannot
+disagree. Playing an attached game no longer ticks such a homework either.
 
 ### Teacher (existing `/homework` router, owner check as the siblings do)
 
@@ -144,7 +154,7 @@ is refused with 409 `submission_required`. Done is set only by submitting.
 | --- | --- |
 | `GET /homework/:id/submissions` | One row per live roster member of the homework's class: `{ studentId, displayName, status: "none" \| "submitted" \| "late", submittedAt, photoCount }`. A draft is reported as `none` — the teacher never sees an unfinished upload |
 | `GET /homework/:id/submissions/:studentId` | One student's `note` and photos with signed URLs. 404 for a draft or a student not in this class |
-| `DELETE /homework/:id` (existing) | That route **archives** (`archived_at`), it does not delete. It now also removes the stored objects under `homework-submissions/<id>/` and empties `photos`; the rows (note, timestamps) stay, as completions do. The photos are not recoverable after it, so the teacher's delete confirmation must say so |
+| `DELETE /homework/:id` (existing) | That route **archives** (`archived_at`). It now also removes every stored photo (drafts included) and deletes the submission rows. The purge runs on the owner connection (`systemDb`), because a draft is invisible to the teacher's own identity; a test with `RLS_ENFORCE=on` pins it. Not recoverable, so the teacher's delete confirmation must say so |
 
 `homework.teacherId = req.user.id` is checked in the route, as in every other
 `/homework` handler. This read does not rely on RLS alone (see §4).
@@ -178,8 +188,10 @@ state without fetching photos.
    - **Read:** the homework's teacher (`homework.teacher_id = app_uid()`), or
      `app_sees_student(student_id)` **and** `submitted_at is not null` for anyone
      else. A draft is readable only by its own self-linked author.
-   - **Write:** `INSERT`/`UPDATE`/`DELETE` only by the self-linked author of that
-     roster row, or `systemDb`. A guardian link does not grant write.
+   - **Write:** `INSERT` and `UPDATE` only by the self-linked author of that
+     roster row. There is no `DELETE` policy; removal is `systemDb`'s job (the
+     archive purge, on the owner connection, pinned by a test with `RLS_ENFORCE=on`).
+     A guardian link does not grant write.
    - Policy helpers follow `2026-10-13-row-level-security-design.md`
      (`SECURITY DEFINER`, pinned `search_path`) to avoid recursive policies.
 
@@ -239,7 +251,7 @@ bump is needed; if a permission string is missing it is a native change and the
   a draft invisible to the teacher; replace keeps the first `submitted_at`; late
   after the due day; locked replace; photo cap; wrong mime, oversized and
   non-image bytes refused; `submission_required` on the manual tick; archiving
-  the homework removes the R2 objects and empties `photos` (R2 faked in the test,
+  the homework removes the R2 objects and deletes the rows (R2 faked in the test,
   as the chat tests do).
 - **RLS diff** (`rlsDiff.test.ts`): rows seen by owner student, another student in
   the same class, the class teacher, another teacher, a linked parent, an
@@ -268,6 +280,10 @@ bump is needed; if a permission string is missing it is a native change and the
   body so it is a known gap, not a surprise.
 - **`students.id` is a roster row.** A child in two of a teacher's classes is two
   rows and two submissions. That is correct and matches homework completions.
+- **The archive purge is not transactional.** Objects are deleted first; a failed
+  object delete is logged with its key and the rows are deleted anyway, so an
+  unreachable orphan object can remain in the bucket (private, unguessable key, no
+  row pointing to it).
 - **R2 not configured** (`isR2Configured()` false, e.g. a local checkout): upload
   routes answer 503 `storage_unavailable`, the same shape as media, and the app
   hides the photo control rather than failing on tap.
