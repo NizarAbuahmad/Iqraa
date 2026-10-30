@@ -389,6 +389,64 @@ describe("row-level security matrix", { skip: !TEST_URL && "RLS_TEST_DATABASE_UR
       );
     }));
 
+  test("homework submissions: the author sees a draft, the teacher and a guardian only see a handed-in row", async () => {
+    const all = async () => col(`SELECT id FROM homework_submissions WHERE id = ANY($1) ORDER BY id`, [[ids.subA, ids.subDraftA]]);
+    const sorted = (a: string[]) => [...a].sort();
+    await as("studentUser", "student", async () => assert.deepEqual(await all(), sorted([ids.subA!, ids.subDraftA!])));
+    await as("teacherA", "teacher", async () => assert.deepEqual(await all(), [ids.subA]));
+    await as("parentA", "parent", async () => assert.deepEqual(await all(), [ids.subA]));
+  });
+
+  test("homework submissions: an unrelated teacher, parent and a student with only a pending claim see nothing", async () => {
+    for (const [key, role] of [["teacherB", "teacher"], ["parentB", "parent"], ["studentUser2", "student"]] as const) {
+      await as(key, role, async () => {
+        assert.deepEqual(await col(`SELECT id FROM homework_submissions WHERE id = ANY($1)`, [[ids.subA, ids.subDraftA]]), [], key);
+      });
+    }
+  });
+
+  test("homework submissions: nobody sees any without an identity", async () => {
+    assert.deepEqual(await col(`SELECT id FROM homework_submissions WHERE id = ANY($1)`, [[ids.subA, ids.subDraftA]]), []);
+  });
+
+  test("homework submissions: only the author writes", async () => {
+    await as("studentUser", "student", async () => {
+      assert.equal((await scoped.query(`UPDATE homework_submissions SET note = 'edited' WHERE id = $1`, [ids.subDraftA])).rowCount, 1);
+    });
+    for (const [key, role] of [["parentA", "parent"], ["teacherA", "teacher"], ["teacherB", "teacher"]] as const) {
+      await as(key, role, async () => {
+        assert.equal((await scoped.query(`UPDATE homework_submissions SET note = 'hax' WHERE id = $1`, [ids.subA])).rowCount, 0, `${key} update`);
+        assert.equal((await scoped.query(`DELETE FROM homework_submissions WHERE id = $1`, [ids.subA])).rowCount, 0, `${key} delete`);
+      });
+    }
+    // The author cannot delete it either: removal is systemDb's job.
+    await as("studentUser", "student", async () => {
+      assert.equal((await scoped.query(`DELETE FROM homework_submissions WHERE id = $1`, [ids.subA])).rowCount, 0);
+    });
+  });
+
+  test("homework submissions: a guardian and a teacher cannot create one for the child", async () => {
+    for (const [key, role] of [["parentA", "parent"], ["teacherA", "teacher"], ["studentUser2", "student"]] as const) {
+      await as(key, role, async () => {
+        await assert.rejects(
+          scoped.query(`INSERT INTO homework_submissions (homework_id, student_id) VALUES ($1, $2)`, [ids.hwA, ids.studentA]),
+          /row-level security|violates|duplicate/,
+          key,
+        );
+      });
+    }
+  });
+
+  test("homework submissions: the author may create their own, and only for their own roster row", async () => {
+    await as("studentUser", "student", async () => {
+      // studentB is not theirs
+      await assert.rejects(
+        scoped.query(`INSERT INTO homework_submissions (homework_id, student_id) VALUES ($1, $2)`, [ids.hwA2, ids.studentB]),
+        /row-level security/,
+      );
+    });
+  });
+
   test("only the student's teacher or the sender may delete a pending claim", async () => {
     await as("teacherB", "teacher", async () => {
       assert.equal((await scoped.query(`DELETE FROM roster_link_requests WHERE student_id = $1`, [ids.studentA])).rowCount, 0);
