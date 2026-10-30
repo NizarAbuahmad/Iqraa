@@ -28,6 +28,7 @@ import {
   gameResults,
   homework,
   homeworkCompletions,
+  homeworkSubmissions,
   rosterLinks,
   savedMaterials,
   students,
@@ -35,7 +36,7 @@ import {
   type Homework,
   type HomeworkResource,
 } from "@workspace/db";
-import { and, asc, count, countDistinct, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, count, countDistinct, desc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { authMiddleware, requireRole, TEACHER_ROLES, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { findLiveClass } from "../lib/classOwnership.js";
 import { parseClassResourceInput } from "../lib/classResource.js";
@@ -75,6 +76,10 @@ interface TeacherHomework {
   studentCount: number;
   /** Of studentCount, the rows with a student account — the only ones who can tick it off. */
   trackableCount: number;
+  /** Students hand in a project instead of ticking it off. */
+  requiresSubmission: boolean;
+  /** Of studentCount, the live roster rows that have handed a project in. Drafts are not counted. */
+  submittedCount: number;
 }
 
 /** The 400 body: `error` always, `code` when the rule has a machine-readable reason (a client branches on it). */
@@ -273,7 +278,7 @@ async function withCounts(rows: Homework[]): Promise<TeacherHomework[]> {
   const homeworkIds = rows.map(r => r.id);
   const examIds = [...new Set(rows.map(r => r.evaluationId).filter((v): v is string => !!v))];
 
-  const [sizes, doneCounts, exams] = await Promise.all([
+  const [sizes, doneCounts, submitted, exams] = await Promise.all([
     classSizes(classIds),
     db
       .select({ homeworkId: homeworkCompletions.homeworkId, n: count() })
@@ -289,6 +294,26 @@ async function withCounts(rows: Homework[]): Promise<TeacherHomework[]> {
       .innerJoin(students, eq(students.id, homeworkCompletions.studentId))
       .where(and(inArray(homeworkCompletions.homeworkId, homeworkIds), isNull(students.archivedAt)))
       .groupBy(homeworkCompletions.homeworkId),
+    db
+      .select({ homeworkId: homeworkSubmissions.homeworkId, n: count() })
+      .from(homeworkSubmissions)
+      .innerJoin(homework, eq(homework.id, homeworkSubmissions.homeworkId))
+      .innerJoin(
+        classMemberships,
+        and(
+          eq(classMemberships.classGroupId, homework.classGroupId),
+          eq(classMemberships.studentId, homeworkSubmissions.studentId),
+        ),
+      )
+      .innerJoin(students, eq(students.id, homeworkSubmissions.studentId))
+      .where(
+        and(
+          inArray(homeworkSubmissions.homeworkId, homeworkIds),
+          isNotNull(homeworkSubmissions.submittedAt),
+          isNull(students.archivedAt),
+        ),
+      )
+      .groupBy(homeworkSubmissions.homeworkId),
     examIds.length === 0
       ? Promise.resolve([] as Array<{ id: string; title: string; titleAr: string }>)
       : db
@@ -298,6 +323,7 @@ async function withCounts(rows: Homework[]): Promise<TeacherHomework[]> {
   ]);
 
   const done = new Map(doneCounts.map(c => [c.homeworkId, Number(c.n)]));
+  const submittedBy = new Map(submitted.map(c => [c.homeworkId, Number(c.n)]));
   const examTitle = new Map(exams.map(e => [e.id, e.titleAr || e.title]));
 
   return rows.map(r => ({
@@ -313,6 +339,8 @@ async function withCounts(rows: Homework[]): Promise<TeacherHomework[]> {
     doneCount: done.get(r.id) ?? 0,
     studentCount: sizes.get(r.classGroupId)?.students ?? 0,
     trackableCount: sizes.get(r.classGroupId)?.trackable ?? 0,
+    requiresSubmission: r.requiresSubmission,
+    submittedCount: submittedBy.get(r.id) ?? 0,
   }));
 }
 
@@ -349,6 +377,7 @@ router.post("/homework", async (req: AuthenticatedRequest, res) => {
         dueAt: input.dueAt,
         evaluationId: input.evaluationId,
         resources,
+        requiresSubmission: input.requiresSubmission,
       })
       .returning();
     const [out] = await withCounts([row!]);
@@ -443,6 +472,7 @@ router.patch("/homework/:id", async (req: AuthenticatedRequest, res) => {
         ...(patch.dueAt !== undefined && { dueAt: patch.dueAt }),
         ...(patch.evaluationId !== undefined && { evaluationId: patch.evaluationId }),
         ...(resources !== undefined && { resources }),
+        ...(patch.requiresSubmission !== undefined && { requiresSubmission: patch.requiresSubmission }),
         updatedAt: new Date(),
       })
       .where(and(eq(homework.id, existing.id), eq(homework.teacherId, teacherId), isNull(homework.archivedAt)))
