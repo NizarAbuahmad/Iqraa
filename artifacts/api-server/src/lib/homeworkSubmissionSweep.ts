@@ -10,7 +10,7 @@
  *  3. a failed object delete: the row is gone, the object stays.
  *
  * Phase 1 purges the rows (and their objects) of archived homework and of homework in an archived
- * class (cases 1). Phase 2 lists the bucket under `homework-submissions/` and deletes the objects
+ * class (case 1). Phase 2 lists the bucket under `homework-submissions/` and deletes the objects
  * no row refers to (cases 2 and 3), through the pure classifier in modules/homework/submissionSweep.ts.
  *
  * Deletion is irreversible, so the design only ever errs toward keeping: a grace period (an upload
@@ -32,6 +32,8 @@ export interface SweepRun {
   dryRun: boolean;
   /** Archived homework (or homework in an archived class) that still had rows, handled in phase 1. */
   archivedHomework: number;
+  /** Archived homework whose purge threw and was left for the next run (also logged at error level). */
+  purgeFailed: number;
   /** Rows removed in phase 1 (that would be, in a dry run). */
   rowsPurged: number;
   /** Objects `listObjects` returned under the prefix. */
@@ -53,6 +55,15 @@ export interface SweepRun {
   sample: string[];
 }
 
+/**
+ * The most objects one run lists. S3 lists in key order, so a run that stops at a ceiling sees the
+ * SAME first slice every time: those are mostly live, referenced photos, which only accumulate, so
+ * once the bucket outgrows the ceiling an orphan sorting after the cut-off is never seen, and never
+ * deleted (a photo left behind by a failed purge would stay for good). A key is ~120 bytes, so this
+ * is tens of MB in memory and about 200 list requests in the worst case, once a week. Past it the
+ * same slice is seen every run, which is why a truncated listing is logged at warn level.
+ */
+export const LIST_CAP = 200_000;
 const SAMPLE_MAX = 20;
 const DELETE_BATCH = 10;
 
@@ -68,7 +79,7 @@ function photoKeys(photos: unknown): string[] {
 }
 
 /** Phase 1: rows (and photos) of homework that is archived, or sits in an archived class. */
-async function purgeArchived(dryRun: boolean): Promise<{ archivedHomework: number; rowsPurged: number }> {
+async function purgeArchived(dryRun: boolean): Promise<{ archivedHomework: number; purgeFailed: number; rowsPurged: number }> {
   const targets = await db
     .select({ homeworkId: homeworkSubmissions.homeworkId, rows: sql<number>`count(*)::int` })
     .from(homeworkSubmissions)
@@ -78,6 +89,7 @@ async function purgeArchived(dryRun: boolean): Promise<{ archivedHomework: numbe
     .groupBy(homeworkSubmissions.homeworkId);
 
   let archivedHomework = 0;
+  let purgeFailed = 0;
   let rowsPurged = 0;
   for (const t of targets) {
     if (dryRun) {
@@ -92,10 +104,12 @@ async function purgeArchived(dryRun: boolean): Promise<{ archivedHomework: numbe
       logger.info({ homeworkId: t.homeworkId, rows: purged.rows, objects: purged.objects }, "homework submission sweep: purged an archived homework");
     } catch (err) {
       // One bad row must not stop the rest. Its rows stay, so phase 2 keeps their photos referenced.
+      // It is counted in the run report too: the log line the owner watches must not look clean.
+      purgeFailed++;
       logger.error({ err, homeworkId: t.homeworkId }, "homework submission sweep: could not purge an archived homework");
     }
   }
-  return { archivedHomework, rowsPurged };
+  return { archivedHomework, purgeFailed, rowsPurged };
 }
 
 export async function sweepSubmissionOrphans(
@@ -106,6 +120,7 @@ export async function sweepSubmissionOrphans(
   const run: SweepRun = {
     dryRun,
     archivedHomework: 0,
+    purgeFailed: 0,
     rowsPurged: 0,
     objectsListed: 0,
     referenced: 0,
@@ -121,6 +136,7 @@ export async function sweepSubmissionOrphans(
 
   const purged = await purgeArchived(dryRun);
   run.archivedHomework = purged.archivedHomework;
+  run.purgeFailed = purged.purgeFailed;
   run.rowsPurged = purged.rowsPurged;
 
   if (!isR2Configured()) {
@@ -134,7 +150,10 @@ export async function sweepSubmissionOrphans(
   // object the listing already saw, never hide a reference to one it saw as unreferenced. Reading
   // the references first would let an object listed afterwards, whose row was written after that
   // read, look like an orphan. (The grace period is the second line of defence for the same race.)
-  const listing = await listObjects(SUBMISSION_PREFIX);
+  const listing = await listObjects(SUBMISSION_PREFIX, { maxKeys: LIST_CAP });
+  if (listing.truncated) {
+    logger.warn({ listed: listing.objects.length }, "homework submission sweep: listing was truncated, orphans past the cut-off are not seen");
+  }
   const rows = await db.select({ photos: homeworkSubmissions.photos }).from(homeworkSubmissions);
   const referencedKeys = new Set<string>();
   for (const r of rows) for (const key of photoKeys(r.photos)) referencedKeys.add(key);

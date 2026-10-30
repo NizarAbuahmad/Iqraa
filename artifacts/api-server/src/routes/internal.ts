@@ -19,19 +19,27 @@ import { siteKeyMatches } from "../lib/adminMetrics.js";
 import { logger } from "../lib/logger";
 import { runHomeworkReminders } from "../lib/homeworkReminders.ts";
 import { sweepSubmissionOrphans } from "../lib/homeworkSubmissionSweep.ts";
+import { parseSweepQuery } from "../modules/homework/submissionSweep.ts";
 
 const router = Router();
 
-// The orphan sweep deletes a minor's photos for good, so a mistaken call must cost nothing:
-// `?dryRun=1` (or `true`) reports what would go and changes nothing. The limits (grace period,
-// cap per run) are constants in the sweep; the request cannot override them.
+// The orphan sweep deletes a minor's photos for good, so a mistaken call must cost nothing: it
+// previews (reports what would go, changes nothing) whenever `dryRun` is present in any form but an
+// exact `0` / `false`, and refuses any other query key, so a typo cannot become a real run
+// (parseSweepQuery). The limits (grace period, cap per run) are constants in the sweep; the
+// request cannot override them.
 router.post("/homework-submission-sweep", async (req, res) => {
+  // The key guard comes first: an unauthenticated caller sees a 404 whatever the query says.
   if (!siteKeyMatches(process.env.INTERNAL_CRON_KEY, req.headers["x-internal-key"])) {
     res.status(404).json({ error: "Not found" });
     return;
   }
-  const flag = req.query.dryRun;
-  const dryRun = flag === "1" || flag === "true";
+  const query = parseSweepQuery(req.query);
+  if (!query.ok) {
+    res.status(400).json({ error: "Unknown query parameter" });
+    return;
+  }
+  const { dryRun } = query;
   try {
     // All the work finishes before the response: Cloud Run throttles CPU once it is sent.
     const run = await sweepSubmissionOrphans({ now: new Date(), dryRun });

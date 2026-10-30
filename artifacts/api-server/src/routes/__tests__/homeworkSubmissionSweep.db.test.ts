@@ -109,6 +109,9 @@ describeDb("homework submission orphan sweep over HTTP, against a real database"
       assert.equal((await sweep("", server, {})).status, 404, "no key");
       assert.equal((await sweep("", server, { "x-internal-key": "wrong" })).status, 404, "wrong key");
       assert.equal((await sweep("", server, { "x-internal-key": CRON_KEY + "x" })).status, 404, "a key that merely starts like the real one");
+      // The key guard runs before the query is looked at: an unauthenticated caller learns nothing, not even "bad parameter".
+      assert.equal((await sweep("?foo=1", server, {})).status, 404, "no key, unknown parameter");
+      assert.equal((await sweep("?dryRun=0", server, { "x-internal-key": "wrong" })).status, 404, "wrong key, real-run flag");
       const get = await fetch(`${server.base}/internal/homework-submission-sweep`, { headers: { "x-internal-key": CRON_KEY } });
       assert.equal(get.status, 404, "GET is not a route");
       assert.deepEqual(s3.keys(), [orphan], "the old orphan is still there: a refused call deletes nothing");
@@ -139,6 +142,7 @@ describeDb("homework submission orphan sweep over HTTP, against a real database"
       assert.deepEqual(run.json, {
         dryRun: false,
         archivedHomework: 0,
+        purgeFailed: 0,
         rowsPurged: 0,
         objectsListed: 4,
         referenced: 1,
@@ -309,6 +313,7 @@ describeDb("homework submission orphan sweep over HTTP, against a real database"
       const run = await sweep();
       assert.equal(run.status, 200, run.text);
       assert.equal(run.json.archivedHomework, 1, "only the one that could be purged is counted");
+      assert.equal(run.json.purgeFailed, 1, "and the failure is in the report, not only in the log");
       assert.equal(run.json.rowsPurged, 1);
       assert.equal(await rowsOf(good), 0, "the other archived homework was purged");
       assert.equal(await rowsOf(bad), 1, "the bad one's row is still there to be retried");
@@ -335,6 +340,7 @@ describeDb("homework submission orphan sweep over HTTP, against a real database"
         assert.deepEqual(run.json, {
           dryRun: true,
           archivedHomework: 1,
+          purgeFailed: 0,
           rowsPurged: 1,
           objectsListed: 4,
           referenced: 2,
@@ -360,6 +366,84 @@ describeDb("homework submission orphan sweep over HTTP, against a real database"
       assert.equal(real.json.deleted, 1);
       assert.equal(await rowsOf(archived), 0);
       assert.equal(s3.body(orphan), undefined);
+    });
+  });
+
+  // A preview that was meant to be a preview must never become a real run. Only "no dryRun" and an exact 0 / false delete;
+  // a dryRun key in any other form previews; a key that is not dryRun (a typo of it) is refused and does nothing.
+  describe("the dryRun parameter fails safe", () => {
+    const seedWork = async () => {
+      const archived = await mkHomework({ archived: true });
+      const student = await mkStudent();
+      const rowKey = photoKey(archived, student);
+      await seedRow(archived, student, [rowKey]);
+      const orphan = await seedOrphan(oldDate());
+      return { archived, rowKey, orphan };
+    };
+
+    it("previews, and changes nothing, for ?dryRun, 1, true, TRUE, yes, FALSE, a padded value and a repeated key", async () => {
+      const { archived, orphan, rowKey } = await seedWork();
+      const before = s3.keys();
+      const queries = ["?dryRun", "?dryRun=", "?dryRun=1", "?dryRun=true", "?dryRun=TRUE", "?dryRun=yes", "?dryRun=FALSE", "?dryRun=1%20", "?dryRun=1&dryRun=1", "?dryRun=0&dryRun=0"];
+      for (const q of queries) {
+        const run = await sweep(q);
+        assert.equal(run.status, 200, `${q}: ${run.text}`);
+        assert.equal(run.json.dryRun, true, `${q} is a dry run`);
+        assert.equal(run.json.deleted, 0, q);
+        assert.deepEqual(run.json.sample, [orphan], `${q} reports what would go`);
+        assert.deepEqual(s3.keys(), before, `${q}: no object was deleted`);
+        assert.equal(await rowsOf(archived), 1, `${q}: no row was deleted`);
+        assert.ok(s3.body(orphan) && s3.body(rowKey));
+      }
+    });
+
+    it("refuses any other parameter with 400 and does nothing, however valid the dryRun beside it", async () => {
+      const { archived } = await seedWork();
+      const before = s3.keys();
+      for (const q of ["?dryrun=1", "?DryRun=1", "?dry-run=1", "?foo=1", "?limit=5", "?dryRun=0&foo=1", "?dryRun=1&limit=5", "?dryRun[]=1"]) {
+        const run = await sweep(q);
+        assert.equal(run.status, 400, `${q}: ${run.text}`);
+        assert.deepEqual(run.json, { error: "Unknown query parameter" }, q);
+        assert.deepEqual(s3.keys(), before, `${q}: no object was deleted`);
+        assert.equal(await rowsOf(archived), 1, `${q}: no row was deleted`);
+      }
+    });
+
+    it("runs for real with no query (what Cloud Scheduler sends), ?dryRun=0 and ?dryRun=false", async () => {
+      for (const q of ["", "?dryRun=0", "?dryRun=false"]) {
+        const { archived, orphan, rowKey } = await seedWork();
+        const run = await sweep(q);
+        assert.equal(run.status, 200, `${q}: ${run.text}`);
+        assert.equal(run.json.dryRun, false, `${q || "(no query)"} is a real run`);
+        assert.equal(run.json.rowsPurged, 1, q);
+        assert.equal(run.json.deleted, 1, q);
+        assert.equal(s3.body(orphan), undefined, `${q}: the old orphan went`);
+        assert.equal(s3.body(rowKey), undefined, `${q}: the archived homework's photo went`);
+        assert.equal(await rowsOf(archived), 0, q);
+      }
+    });
+  });
+
+  describe("a bucket with more than 10,000 submission objects", () => {
+    // Listing used to stop at 10,000 keys, and S3 lists in key order, so every run saw the same first 10,000 (mostly live,
+    // referenced photos) and an orphan sorting after the cut-off was never seen. The ceiling is now far above that.
+    it("lists them all and deletes up to the per-run cap, leaving the rest for the next run", async () => {
+      const big = await startS3Stub();
+      const bigServer = await startServer({ databaseUrl: db.url, env: { INTERNAL_CRON_KEY: CRON_KEY, ...s3Env(big) } });
+      try {
+        const old = oldDate();
+        for (let i = 0; i < 10_050; i++) await big.putForTest(photoKey(randomUUID(), randomUUID()), Buffer.from("x"), old);
+        const run = await sweep("", bigServer);
+        assert.equal(run.status, 200, run.text);
+        assert.ok(run.json.objectsListed >= 10_050, `listed ${run.json.objectsListed}`);
+        assert.equal(run.json.listTruncated, false);
+        assert.equal(run.json.deleted, 1000);
+        assert.equal(run.json.capped, 9050);
+        assert.equal(big.keys().length, 9050, "the rest are left for the next run");
+      } finally {
+        await bigServer.stop();
+        await big.close();
+      }
     });
   });
 

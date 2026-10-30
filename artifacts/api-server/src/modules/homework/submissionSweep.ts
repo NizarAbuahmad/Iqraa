@@ -19,17 +19,34 @@ export const GRACE_MS = 24 * 60 * 60 * 1000;
 /** The most objects one run deletes; the rest are picked up by the next run. */
 export const MAX_DELETES = 1000;
 
-const HEX_UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
-const SUBMISSION_KEY = new RegExp(`^homework-submissions/${HEX_UUID}/${HEX_UUID}/${HEX_UUID}\\.(?:jpg|png|webp)$`, "i");
+const HEX_UUID = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
+// No `i` flag: only the hex digits are case-insensitive. The prefix and the extension are exact.
+const SUBMISSION_KEY = new RegExp(`^homework-submissions/${HEX_UUID}/${HEX_UUID}/${HEX_UUID}\\.(?:jpg|png|webp)$`);
 
 /**
  * `homework-submissions/<homeworkId>/<studentId>/<uuid>.(jpg|png|webp)` — the shape
- * `newHomeworkSubmissionKey` writes. Nothing else is ever deleted by the sweep. The extension is
- * lower-case only; the hex is matched in either case. The whole key must match.
+ * `newHomeworkSubmissionKey` writes. Nothing else is ever deleted by the sweep. The prefix and the
+ * extension are lower-case only; the hex is matched in either case. The whole key must match.
  */
 export function isSubmissionKey(key: string): boolean {
-  // `i` would also fold the extension, so it is checked on its own.
-  return SUBMISSION_KEY.test(key) && /\.(?:jpg|png|webp)$/.test(key);
+  return SUBMISSION_KEY.test(key);
+}
+
+/**
+ * The query of POST /internal/homework-submission-sweep, failing SAFE in the one direction that
+ * matters: a preview that was meant to be a preview must never turn into a real run.
+ *  - no `dryRun` key at all is a real run (that is what Cloud Scheduler sends);
+ *  - `dryRun` present with a value of exactly "0" or "false" is a real run;
+ *  - `dryRun` present in ANY other form (empty, "1", "true", "TRUE", "yes", repeated, anything)
+ *    is a dry run;
+ *  - any other key (`dryrun`, `dry-run`, `limit`…) is refused, so a typo of the safety flag cannot
+ *    silently become a real run.
+ */
+export function parseSweepQuery(query: Readonly<Record<string, unknown>>): { ok: true; dryRun: boolean } | { ok: false } {
+  for (const key of Object.keys(query)) if (key !== "dryRun") return { ok: false };
+  if (!Object.hasOwn(query, "dryRun")) return { ok: true, dryRun: false };
+  const value = query.dryRun;
+  return { ok: true, dryRun: !(value === "0" || value === "false") };
 }
 
 export interface SweepObject {

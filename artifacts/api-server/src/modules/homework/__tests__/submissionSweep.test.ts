@@ -11,6 +11,7 @@ import {
   MAX_DELETES,
   SUBMISSION_PREFIX,
   isSubmissionKey,
+  parseSweepQuery,
   planSweep,
   type SweepObject,
 } from "../submissionSweep.ts";
@@ -55,6 +56,9 @@ describe("isSubmissionKey", () => {
       `${SUBMISSION_PREFIX}${HW}/../${PH}.jpg`,
       `${SUBMISSION_PREFIX}${HW}/${ST}/../${PH}.jpg`,
       `homework-submission/${HW}/${ST}/${PH}.jpg`,
+      `HOMEWORK-SUBMISSIONS/${HW}/${ST}/${PH}.jpg`,
+      `Homework-Submissions/${HW}/${ST}/${PH}.jpg`,
+      `homework-submissions/${HW}/${ST}/${PH}.Jpg`,
       `/${SUBMISSION_PREFIX}${HW}/${ST}/${PH}.jpg`,
       ` ${key("jpg")}`,
       `${key("jpg")}\n`,
@@ -66,6 +70,23 @@ describe("isSubmissionKey", () => {
       `${SUBMISSION_PREFIX}${HW}/${ST}/${PH.replace("1", "g")}.jpg`,
     ];
     for (const k of bad) assert.equal(isSubmissionKey(k), false, JSON.stringify(k));
+  });
+});
+
+describe("parseSweepQuery", () => {
+  it("is a real run only with no dryRun key at all (what Cloud Scheduler sends) or an exact 0 / false", () => {
+    assert.deepEqual(parseSweepQuery({}), { ok: true, dryRun: false });
+    assert.deepEqual(parseSweepQuery({ dryRun: "0" }), { ok: true, dryRun: false });
+    assert.deepEqual(parseSweepQuery({ dryRun: "false" }), { ok: true, dryRun: false });
+  });
+  it("is a dry run whenever the key is present in any other form", () => {
+    const forms: unknown[] = ["", "1", "true", "TRUE", "True", "yes", "on", "FALSE", "False", "00", "0 ", "1 ", " 0", ["1", "1"], ["0", "0"], ["0"], [], undefined, null, {}, 0, false, true];
+    for (const dryRun of forms) assert.deepEqual(parseSweepQuery({ dryRun }), { ok: true, dryRun: true }, JSON.stringify(dryRun) ?? String(dryRun));
+  });
+  it("refuses any other key, even next to a valid dryRun", () => {
+    for (const q of [{ dryrun: "1" }, { "dry-run": "1" }, { DRYRUN: "1" }, { limit: "5" }, { foo: "1" }, { "dryRun[]": "1" }, { dryRun: "0", foo: "1" }, { dryRun: "1", limit: "5" }]) {
+      assert.deepEqual(parseSweepQuery(q), { ok: false }, JSON.stringify(q));
+    }
   });
 });
 
