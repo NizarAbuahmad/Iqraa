@@ -309,7 +309,12 @@ bump is needed; if a permission string is missing it is a native change and the
   **The sweep now exists** (`POST /internal/homework-submission-sweep`, same
   `INTERNAL_CRON_KEY` as the reminders; see `docs/status-log.md` «Homework submission
   cleanup sweep»). It retries the purge of archived homework and deletes unreferenced
-  objects older than 24 hours, at most 1000 a run. **The Cloud Scheduler job still has
+  objects older than 24 hours, at most 1000 a run, and only under a homework that
+  exists in the service's own database; a run whose orphans are over 20 and over half
+  of what it can attribute is refused, with no override (a database and a bucket that
+  do not belong together, e.g. a local `.env` with production R2 credentials, would
+  otherwise see every photo as an orphan). Photos left under a homework row deleted
+  by cascade are therefore kept for good. **The Cloud Scheduler job still has
   to be created by the owner** (`docs/deploying.md`, dry run first), so until then the
   cases above stay open in production, and **it has never run against real R2**. Still
   open: a failed object delete in the sweep is not exercised by any test; the photo

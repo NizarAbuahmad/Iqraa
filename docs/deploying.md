@@ -668,12 +668,40 @@ curl -sS -X POST -H "x-internal-key: $KEY" "$URL?dryRun=1"
 The answer is the run report itself (the same object that is logged), not wrapped
 in another key. The fields: `dryRun`, `archivedHomework`, `purgeFailed`,
 `rowsPurged` (phase 1); `objectsListed`, `referenced`, `orphanObjects`,
-`skippedYoung`, `skippedBadKey`, `capped`, `deleted`, `listTruncated`,
+`skippedYoung`, `skippedBadKey`, `skippedUnknownHomework`, `capped`, `deleted`,
+`refused` (and `refusedReason` when it is true), `listTruncated`,
 `objectsSkipped` (phase 2); `sample` (up to 20 keys of what was, or in a dry run
 would be, deleted). Compare `orphanObjects` with what you expect — on a young
 feature, close to none. A large number is a reason to stop and look at `sample`,
 not to carry on. `objectsSkipped: true` means R2 is not configured on that server
 and phase 2 did not run at all.
+
+**Two guards against a database and a bucket that do not belong together.** A
+server whose R2 credentials point at the production bucket but whose database is
+another one (a local `.env` holding the real R2 keys, a staging or e2e service)
+sees no rows, so every photo in the bucket would look like an orphan. So:
+
+- **Known homework only.** An object is deleted only if its homework id (the
+  first segment after `homework-submissions/`) is a row in **this** service's
+  `homework` table, archived or not. An old, unreferenced object under any other
+  homework is kept and counted in `skippedUnknownHomework`. A `skippedUnknownHomework`
+  above zero in production means photos under homework that no longer exists
+  (see the known limit below), or a bucket shared with another database. If the
+  lookup itself fails, the run fails (500) before anything in phase 2 is deleted.
+- **The ratio guard.** If more than 20 objects would be deleted **and** they are
+  more than half of all the conforming objects under known homework (young, old,
+  referenced or not), the run **refuses**: phase 2 deletes nothing, the report says
+  `refused: true` with a short `refusedReason`, and the log has an error-level
+  line `homework submission sweep refused`. The answer is still 200, and a dry run
+  reports the refusal too, with the would-be deletions in `sample` (a refused
+  real run's `sample` is empty: it deleted nothing). Phase 1 has already run by
+  then; it only ever touches rows this database has.
+
+**On `refused: true`: stop.** Run the dry run (`?dryRun=1`), read `sample`, and
+check that this service's `DATABASE_URL` and its R2 bucket belong together. There
+is deliberately **no override** — no parameter, no environment variable. A
+legitimate backlog that large means something is wrong with uploads and needs a
+person, not a flag.
 
 A dry run **does not do phase 1**: it counts the rows of archived homework
 (`archivedHomework`, `rowsPurged`) but removes none, so their rows still exist
@@ -726,9 +754,11 @@ and a `value(...)` format that omits `httpTarget` on reads.
 **Limits, all in code** (`modules/homework/submissionSweep.ts`,
 `lib/homeworkSubmissionSweep.ts`):
 
-- **24 hours of grace.** An object younger than that is never deleted, whether or
-  not a row refers to it (an upload stores the object a moment before it records
-  the row). A `lastModified` in the future counts as young. `skippedYoung` counts them.
+- **24 hours of grace, for phase 2 only.** An *unreferenced* object younger than
+  that is not deleted as an orphan (an upload stores the object a moment before it
+  records the row). A `lastModified` in the future counts as young. `skippedYoung`
+  counts them. **Phase 1 ignores age:** the photos of an archived homework, or of
+  homework in an archived class, are purged at once, however new.
 - **At most 1000 deletes per run**, oldest first. `capped` is how many more were
   left for the next run. A bucket with a backlog is emptied over several weekly
   runs; run it by hand again to hurry that along.
@@ -738,13 +768,26 @@ and a `value(...)` format that omits `httpTarget` on reads.
   logs it at warn level; it needs a person (a bigger cap, or a listing that
   continues where the last one stopped), not another rerun.
 - **Only a key of exactly this shape is ever deleted:**
-  `homework-submissions/<uuid>/<uuid>/<uuid>.(jpg|png|webp)`, prefix and extension
-  in lower case, the hex of the ids in either case. Anything else under the prefix
-  is counted in `skippedBadKey` and left for a person to look at.
-- **An object a row refers to is kept, however old**, drafts included.
-- The order inside the run is deliberate (list the bucket first, read the rows
-  second), so a photo uploaded while the sweep runs cannot be mistaken for an
-  orphan. Do not "optimise" it.
+  `homework-submissions/<uuid>/<uuid>/<uuid>.(jpg|png|webp)`, all of it in lower
+  case — prefix, extension and the hex of the ids, as `randomUUID()` and Postgres
+  write them. Anything else under the prefix (an upper-case id included) is counted
+  in `skippedBadKey` and left for a person to look at.
+- **An object a row refers to is kept, however old**, drafts included. The rows are
+  read on the owner connection (`systemDb`): under `RLS_ENFORCE=on` the app
+  connection with no user would read none of them.
+- **Known homework only, and the ratio guard** — see above.
+- **The grace period, not the order of the steps, protects an upload in flight.**
+  The run lists the bucket first and reads the rows second; an upload whose object
+  lands before the listing and whose row is written after the read looks
+  unreferenced whichever way round they run, and only its age keeps it. The order
+  just narrows that window. An upload always stores a new random key and never
+  attaches an existing one, so a key cannot become referenced later.
+- **Known limit: leftovers of a hard-deleted homework are kept for good.** Archiving
+  keeps the `homework` row, so its stray photos are still swept. No route deletes a
+  homework row, but the schema cascades one away when its teacher's user row or its
+  class row is deleted, taking its submission rows with it; any photo left under
+  its id is then "unknown homework": counted in `skippedUnknownHomework`, never
+  deleted. They need a person.
 
 **What to watch.** One log line per run, `homework submission sweep run`, whose
 payload is the whole report above. Each deleted object also has its own line,
@@ -755,6 +798,10 @@ only record of what went). Things worth a look when they repeat:
 - `purgeFailed > 0`: a purge of an archived homework threw (logged at error level
   as `could not purge an archived homework`, with its id). Its rows are kept, so
   its photos are safe; it is retried next run. Week after week means a bad row.
+- `refused: true`, or a `homework submission sweep refused` line at error level:
+  stop and check, as above. It never resolves itself.
+- `skippedUnknownHomework` growing: photos under homework this database does not
+  have (see the known limit), or a bucket shared with another database.
 - `listTruncated: true`: see the limits.
 - `capped > 0` week after week: orphans arrive faster than 1000 a week. Find out why.
 - A real run where `orphanObjects − capped − deleted` is above zero: some object

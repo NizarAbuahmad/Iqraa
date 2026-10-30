@@ -37,29 +37,44 @@ Scheduler) — manual, once».
   - Phase 1 purges the rows and photos of archived homework and of homework in an
     archived class, through `purgeSubmissions`, and carries on past one that throws
     (`purgeFailed`, error log; its rows stay, so its photos stay referenced).
-  - Phase 2 lists `homework-submissions/` FIRST and reads every referenced key SECOND
-    (an upload stores the object and then writes the row, so this order can never hide a
-    reference to an object the listing saw), and deletes only what the classifier allows,
-    ten at a time, logging each key it deletes (`homework submission sweep: deleted an
-    orphan object`).
+  - Phase 2 lists `homework-submissions/` first and reads every referenced key second
+    (on `systemDb`: under `RLS_ENFORCE=on` the app connection with no user reads no
+    submission row), and deletes only what the classifier allows, ten at a time, logging
+    each key it deletes (`homework submission sweep: deleted an orphan object`). What
+    protects an upload in flight is the 24 h grace period, not that order: an object that
+    lands before the listing with its row written after the key read looks unreferenced
+    either way; the order only narrows the window.
+  - Two guards against a database and a bucket that do not belong together (added in the
+    final review, below): an object is deleted only if THIS database has its homework
+    (`skippedUnknownHomework` otherwise), and a run whose orphans are over 20 and over half
+    of the conforming objects under known homework is refused (`refused`, `refusedReason`,
+    error log `homework submission sweep refused`), with no override.
   - Query: no `dryRun` key, `dryRun=0` or `dryRun=false` is a real run; `dryRun` in any
     other form is a dry run; any other parameter is `400 Unknown query parameter`. The
     answer is the run report, also logged as `homework submission sweep run`.
   - Dry run does not do phase 1 (it counts the rows it would purge), so its phase-2
     numbers are a lower bound.
-- **Decisions.** 24 h grace (an upload stores the object a moment before its row, and a
-  future `lastModified` counts as young); 1000 deletes per run, oldest first, the rest
+- **Decisions.** 24 h grace for phase 2's orphans (an upload stores the object a moment
+  before its row, and a future `lastModified` counts as young; phase 1 purges an archived
+  homework's photos at any age); 1000 deletes per run, oldest first, the rest
   next run; weekly (Sunday 03:00 Amman) with one retry at most, because a half-run is
   safe to repeat; the same key rather than a second secret; and `dryRun` that fails
   safe, so a preview that was meant to be one can never become a real run.
 
 **Limits, all in code.** An object a row refers to is kept however old. Only a key of
-exactly `homework-submissions/<uuid>/<uuid>/<uuid>.(jpg|png|webp)` is ever deleted
-(prefix and extension lower case, hex either case); anything else under the prefix is
-counted in `skippedBadKey` and left. At most 200,000 objects are listed per run
+exactly `homework-submissions/<uuid>/<uuid>/<uuid>.(jpg|png|webp)` is ever deleted, all
+lower case (prefix, extension and hex, as `randomUUID()` and Postgres write them);
+anything else under the prefix is counted in `skippedBadKey` and left. Only an object
+whose homework row exists in this database is deleted, and a run that would delete over
+20 objects that are over half of what it can attribute is refused (`REFUSE_MIN_ORPHANS`,
+`REFUSE_RATIO`, `shouldRefuse`). At most 200,000 objects are listed per run
 (`LIST_CAP`); past that `listTruncated: true`, logged at warn level, and every run sees
 the same first 200,000 keys, so an orphan after the cut-off is never found — that needs a
-person. The request cannot change the grace period or the cap.
+person. A listing page that says it is truncated but carries no continuation token also
+ends with `listTruncated: true`. The request cannot change the grace period, the cap or
+the guards. **Leftovers of a hard-deleted homework are kept for good**: no route deletes a
+homework row, but a cascade from its teacher's user row or its class row does, and its
+stray photos then count as `skippedUnknownHomework` and are never deleted.
 
 **Verified** (local, Postgres 16, 2026-10-30)
 
@@ -82,6 +97,26 @@ person. The request cannot change the grace period or the cap.
   for the new path (not run again for this entry beyond the three files above).
 - Not re-run for this entry: the whole api-server suite, `pnpm run typecheck`, the mobile
   suite. No mobile code changed, so no OTA and no `app.json` `version` bump.
+- **Final review round** (same date, same command, after `pnpm build`), six files:
+  `submissionSweep.test.ts` 34, `homeworkSubmissionSweep.db.test.ts` 26, `s3Stub.test.ts`
+  10, `systemDbFiles.test.ts` 3, `mountOrder.test.ts` 70, `homeworkSubmission.db.test.ts`
+  41: **184 passed, 0 failed, 0 skipped**; root `pnpm run typecheck` clean; the whole
+  api-server suite (`pnpm test` with `TEST_DATABASE_URL`) **3193 passed, 0 failed, 0
+  skipped**. New route
+  cases: the wrong-database case (30 old photos under homework this database lacks, no
+  rows: all kept, `skippedUnknownHomework: 30`); a known-homework orphan deleted beside an
+  unknown one kept; an orphan under an archived homework still swept; 25 orphans beside 5
+  live photos refused with nothing deleted, 25 beside 60 deleted; a refused dry run; with
+  `RLS_ENFORCE=on`, an old draft photo of a live homework kept and the orphan beside it
+  deleted; a non-list `photos` logs a warning with the row id only. Each guard was shown
+  to matter by breaking it and watching its tests fail, then restoring: the homework
+  lookup replaced by "every listed homework is known" (the mixed case deleted the unknown
+  photo; in the wrong-database case the ratio guard alone still refused, so the two back
+  each other up); `shouldRefuse` forced false (both refusal route cases and four pure
+  cases failed); `>` → `>=` at each boundary (the 20-orphan and the exactly-50% cases
+  failed); the key read moved to the app `db` (the RLS case deleted the draft photo, and
+  the new `systemDbFiles.test.ts` pin failed); the warning removed (its test failed).
+  The new route cases were also run against the previous build first: 10 failed.
 
 **Not verified**
 
@@ -94,7 +129,14 @@ person. The request cannot change the grace period or the cap.
   no test makes `deleteObject` fail. Only a failing *purge* (phase 1) is tested.
 - **`listTruncated: true` through the route is not exercised.** The 200,000 ceiling is
   not reached in any test; `listObjects` truncation is tested at the library level
-  (`maxKeys: 5`), and the route test lists 10,050 and expects `false`.
+  (`maxKeys: 5`, and a truncated page with no continuation token), and the route test
+  lists 10,050 and expects `false`.
+- **A failing homework lookup is not exercised.** If the known-homework query throws, the
+  run throws before any phase-2 delete and the route answers 500 (phase 1 has already
+  run); no test makes that query fail.
+- **The guards' thresholds are judgement, not measurement.** 20 orphans and 50% were
+  chosen for a young bucket, where orphans should be a handful against the live photos.
+  A real backlog past them is refused for good until a person looks; there is no override.
 - **The extension list exists twice.** `EXTENSION` in `modules/homework/submission.ts`
   (what an upload may be stored as) and the sweep's key regex. No test ties them, so a
   fourth photo type added to the upload would be stored, never swept as an orphan, and
@@ -111,12 +153,31 @@ after the cut-off (now 200,000, with a warn log when hit); a key check that acce
 upper-case prefix or extension (the regex was case-insensitive as a whole); and a purge failure that was only logged, so the line the owner
 watches looked clean (`purgeFailed` is now in the report).
 
+A final review then found:
+- **Critical: the sweep trusted that its database and its bucket belong together.** A
+  developer whose local `.env` holds the production R2 credentials (as `LOCAL_SETUP.md`'s
+  R2 recipe sets up) and a local database, calling the route with no query, would have
+  seen no rows and deleted up to 1000 production photos a run; a staging or e2e service
+  with R2 credentials the same. Fixed with both guards above (known homework only, and the
+  ratio guard), and a warning on the `INTERNAL_CRON_KEY` row of `LOCAL_SETUP.md`.
+- The `RLS_ENFORCE=on` path of phase 2's key read had no test; it has one now, and
+  `systemDbFiles.test.ts` pins that the sweep imports `systemDb` and never the app `db`.
+- `docs/deploying.md` said a young photo is never deleted; phase 1 deletes an archived
+  homework's photos at any age. Corrected.
+- Minors: comments and docs credited the list-then-read order with protection that belongs
+  to the grace period (reworded; there is no re-check of references and none is needed,
+  since an upload always stores a fresh key); the key regex accepted upper-case hex, which
+  `randomUUID()` and Postgres never write and which would not match a homework id read
+  back from the database (now lower case only); `listObjects` reported a page marked
+  truncated but without a continuation token as complete (now `truncated: true`); a
+  non-list `photos` was skipped silently (now a warning with the row id).
+
 **Still open**
 
 - Create the scheduler job (dry run, then one real run, then weekly) — owner.
 - The decision on toggling `requiresSubmission` after work exists, before phase 3
   exposes the switch (see the entry below).
-- The three untested items and the duplicated extension list above.
+- The untested items and the duplicated extension list above.
 
 ## Homework project submission — API foundation — 2026-10-30
 
