@@ -425,25 +425,29 @@ describe("row-level security matrix", { skip: !TEST_URL && "RLS_TEST_DATABASE_UR
     });
   });
 
-  test("homework submissions: a guardian and a teacher cannot create one for the child", async () => {
+  test("homework submissions: a guardian, a teacher and a pending-claim student cannot create one for the child", async () => {
+    // (hwA3, studentA) has no row, so only the INSERT policy can refuse it: a unique-key error would not match.
     for (const [key, role] of [["parentA", "parent"], ["teacherA", "teacher"], ["studentUser2", "student"]] as const) {
       await as(key, role, async () => {
         await assert.rejects(
-          scoped.query(`INSERT INTO homework_submissions (homework_id, student_id) VALUES ($1, $2)`, [ids.hwA, ids.studentA]),
-          /row-level security|violates|duplicate/,
+          scoped.query(`INSERT INTO homework_submissions (homework_id, student_id) VALUES ($1, $2)`, [ids.hwA3, ids.studentA]),
+          /row-level security/,
           key,
         );
       });
     }
   });
 
-  test("homework submissions: the author may create their own, and only for their own roster row", async () => {
+  test("homework submissions: the author can create their own, and only for their own roster row", async () => {
     await as("studentUser", "student", async () => {
-      // studentB is not theirs
+      // studentB is not theirs; (hwA3, studentB) has no row, so the refusal can only be the policy.
       await assert.rejects(
-        scoped.query(`INSERT INTO homework_submissions (homework_id, student_id) VALUES ($1, $2)`, [ids.hwA2, ids.studentB]),
+        scoped.query(`INSERT INTO homework_submissions (homework_id, student_id) VALUES ($1, $2)`, [ids.hwA3, ids.studentB]),
         /row-level security/,
       );
+      // studentA is theirs; (hwA4, studentA) is free.
+      const ok = await scoped.query(`INSERT INTO homework_submissions (homework_id, student_id) VALUES ($1, $2) RETURNING id`, [ids.hwA4, ids.studentA]);
+      assert.equal(ok.rowCount, 1);
     });
   });
 
