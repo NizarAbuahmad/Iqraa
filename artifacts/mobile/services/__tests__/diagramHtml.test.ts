@@ -30,6 +30,13 @@ describe('diagramHtml', () => {
     assert.equal((out.match(/class="deck-diagram-text"/g) ?? []).length, tree.texts.length);
     assert.equal((out.match(/<rect /g) ?? []).length, tree.shapes.filter(s => s.t === 'box').length);
   });
+  it('stacks a multi-item label inside one inner block, each line escaped on its own', () => {
+    const v = diagramGeometry({ kind: 'venn', sets: [{ label: 'أ', only: ['حديد', 'نحاس <b>'] }, { label: 'ب', only: ['ماء'] }], shared: [] }, DIAGRAM_W, DIAGRAM_H, true);
+    const out = diagramHtml(v, C, true, s => `[${esc(s)}]`);
+    assert.ok(out.includes('<span class="deck-diagram-lines">[حديد]<br>[نحاس &lt;b>]</span>'));
+    // A box's text is never a bare <br> directly under the flex container.
+    assert.ok(!/class="deck-diagram-text"[^>]*>[^<]*<br>/.test(out));
+  });
   it('sets left-to-right text when the deck is not Arabic', () => {
     assert.match(diagramHtml(g, C, false, esc), /direction:ltr/);
   });

@@ -764,6 +764,7 @@ html[dir="rtl"] .deck-flow-arrow svg { transform:scaleX(-1); }
 .deck-diagram { position:relative; margin:0 auto; flex-shrink:0; }
 .deck-diagram svg { position:absolute; inset:0; }
 .deck-diagram-text { position:absolute; display:flex; align-items:center; justify-content:center; text-align:center; line-height:1.25; overflow:hidden; box-sizing:border-box; }
+.deck-diagram-lines { display:block; max-width:100%; }
 .deck-step { display:flex; flex-direction:row; align-items:center; gap:16px; }
 .deck-step-num { flex-shrink:0; width:56px; height:56px; border-radius:50%; color:#fff; font-size:28px; font-weight:700; display:flex; align-items:center; justify-content:center; }
 .deck-step-text { font-size:28px; line-height:1.6; text-align:start; }

@@ -38,6 +38,6 @@ export function diagramHtml(g: DiagramGeometry, c: DiagramColors, rtl: boolean, 
     const pts = arrowHead(s.x1 * k, s.y1 * k, s.x2 * k, s.y2 * k, 14).map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
     return `${line}<polygon points="${pts}" fill="${c.accent}"/>`;
   }).join('');
-  const labels = g.texts.map(t => `<div class="deck-diagram-text" style="left:${n(t.x)}px;top:${n(t.y)}px;width:${n(t.w)}px;height:${n(t.h)}px;font-size:${n(DIAGRAM_FONT[t.size])}px;font-weight:${t.bold ? 700 : 400};color:${c.text};direction:${rtl ? 'rtl' : 'ltr'}">${escape(t.text).replace(/\n/g, '<br>')}</div>`).join('');
+  const labels = g.texts.map(t => `<div class="deck-diagram-text" style="left:${n(t.x)}px;top:${n(t.y)}px;width:${n(t.w)}px;height:${n(t.h)}px;font-size:${n(DIAGRAM_FONT[t.size])}px;font-weight:${t.bold ? 700 : 400};color:${c.text};direction:${rtl ? 'rtl' : 'ltr'}"><span class="deck-diagram-lines">${t.text.split('\n').map(line => escape(line)).join('<br>')}</span></div>`).join('');
   return `<div class="deck-diagram" style="width:${PX_W}px;height:${pxH}px"><svg width="${PX_W}" height="${pxH}" viewBox="0 0 ${PX_W} ${pxH}">${shapes}</svg>${labels}</div>`;
 }
