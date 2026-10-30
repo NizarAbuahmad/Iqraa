@@ -151,12 +151,14 @@ export default function AdminSignupsScreen() {
     setMailing('send');
     setMailResult('');
     try {
-      const r = await apiJson<{ sent: number; failed: number }>('/admin/broadcasts', {
+      const r = await apiJson<{ sent: number; failed: number; skipped?: number }>('/admin/broadcasts', {
         method: 'POST',
         body: JSON.stringify({ purpose, subject, body: bodyText }),
         timeoutMs: 180_000,
       });
-      setMailResult(ar ? `أُرسلت ${r.sent} · فشلت ${r.failed}` : `Sent ${r.sent} · failed ${r.failed}`);
+      // `skipped`: unsubscribed from any of our mail (email_suppressions), so left out.
+      const skipped = r.skipped ? (ar ? ` · أُلغي اشتراك ${r.skipped}` : ` · unsubscribed ${r.skipped}`) : '';
+      setMailResult((ar ? `أُرسلت ${r.sent} · فشلت ${r.failed}` : `Sent ${r.sent} · failed ${r.failed}`) + skipped);
       if (r.sent > 0) {
         if (purpose !== 'invite') setBodyText('');
         void load(0).catch(() => {});

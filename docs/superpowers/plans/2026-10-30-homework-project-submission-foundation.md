@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- **Additive migration only.** No `DROP`, `RENAME`, `SET NOT NULL` or type change, so no `destructive-migration: ok` in the PR body. Migrations only: never `push`, never hand-run DDL.
+- **Additive migration only.** No `DROP`, `RENAME`, `SET NOT NULL` or type change, so no `destructive-migration: ok` in the PR body. Migrations only: never `push`, never hand-run DDL. (Numbering: this plan says `0020` throughout, which was the next number when it was written. `main` took `0020` for `email_suppressions` before this merged, so the feature's migration is `0021_blushing_blockbuster.sql`.)
 - **A new table must be classified** in `lib/db/src/__tests__/rlsCoverage.test.ts`, and a new table gets **no** grant to `iqraa_app` automatically. `homework_submissions` is `PROTECTED`, not `DEFERRED`.
 - **Guards are path-scoped.** Never a bare `router.use(mw)` in a router mounted at the root; `mountOrder.test.ts` asserts it.
 - **Every student and parent route** checks `studentAccountsEnabled()` first and answers `403 { code: "student_accounts_disabled" }` when off, like `routes/familyHomework.ts`.

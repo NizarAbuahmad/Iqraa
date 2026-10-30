@@ -19,6 +19,7 @@ import examCalendarRouter from "./examCalendar";
 import evaluationsRouter from "./evaluations";
 import attemptsRouter from "./attempts";
 import guardianConsentRouter from "./guardianConsent";
+import emailPreferencesRouter from "./emailPreferences";
 import studentAttemptRouter from "./studentAttempt";
 import studentExamsRouter from "./studentExams";
 import liveRouter from "./live";
@@ -115,6 +116,9 @@ router.use(attemptsRouter);
 // both ways: reachable without a token, and not having made anything else so.
 // The parent's approval page: public (the parent has no account), every path under /guardian-consent, rate limited.
 router.use(guardianConsentRouter);
+// The unsubscribe link in every email: public (the recipient may have no account), every path under /email/, rate
+// limited, the encrypted token is the credential. Importing it also registers the unsubscribe list with the senders.
+router.use(emailPreferencesRouter);
 router.use(studentAttemptRouter);
 // Live (Kahoot-style) games. /live/* is the players' side — public like /take,
 // token-authenticated and rate-limited inside the router, with every limiter
