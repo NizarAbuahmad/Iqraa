@@ -53,10 +53,49 @@ export function isEmptyRefusal(e: unknown): boolean {
 
 /**
  * The note's draft once a view arrives from the server: the server's note on the first load (`savedBefore`
- * null) and while the student has not changed the draft; otherwise the student's draft stays.
+ * null) and while the student has not changed the draft; otherwise the student's draft stays. A `locked`
+ * project always shows the server's note: an unsaved draft in a read-only field would claim a note the teacher
+ * never received (edited at 23:58, the save refused as locked after midnight).
  */
-export function draftAfterServer(savedBefore: string | null, draft: string, incoming: string): string {
-  return savedBefore === null || !noteChanged(savedBefore, draft) ? incoming : draft;
+export function draftAfterServer(savedBefore: string | null, draft: string, incoming: string, locked: boolean): string {
+  return locked || savedBefore === null || !noteChanged(savedBefore, draft) ? incoming : draft;
+}
+
+/**
+ * The draft after a note save failed. An `empty` refusal (clearing the only content of a handed-in project)
+ * puts the saved note back, or every later blur would send the same refused clear again. Any other failure
+ * keeps what the student typed.
+ */
+export function draftAfterSaveRefusal(e: unknown, savedNote: string, draft: string): string {
+  return isEmptyRefusal(e) ? savedNote : draft;
+}
+
+/** How a project's state is drawn on the School row and on the project screen: an icon and a colour role. */
+export type SubmissionLook = {
+  icon: 'ellipse-outline' | 'checkmark-circle' | 'time';
+  /** `colors.mutedForeground`, `colors.primary` or `colors.destructive` from `useColors()`. */
+  tone: 'muted' | 'primary' | 'destructive';
+};
+
+/**
+ * One mapping for both screens. Late is destructive, as an overdue homework is; never amber, which means
+ * «now» (CLAUDE.md). Each state has its own icon, and its label is always shown beside it.
+ */
+export function submissionLook(state: SubmissionState): SubmissionLook {
+  if (state === 'submitted') return { icon: 'checkmark-circle', tone: 'primary' };
+  if (state === 'late') return { icon: 'time', tone: 'destructive' };
+  return { icon: 'ellipse-outline', tone: 'muted' };
+}
+
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Ask before a first hand-in after the due day: the server records it late and locks it at once, so no photo
+ * can be added afterwards. The due day itself is not late. `today` is Amman's day (`ammanToday()`), the same
+ * calendar the server judges by; YYYY-MM-DD strings compare in date order.
+ */
+export function needsLateConfirm(status: SubmissionState, dueDate: string, today: string): boolean {
+  return status === 'none' && DAY.test(dueDate) && DAY.test(today) && today > dueDate;
 }
 
 /**

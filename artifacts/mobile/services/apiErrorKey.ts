@@ -65,7 +65,9 @@ const BY_CODE = {
   // A homework that is handed in as a project: ticking it done (PUT/DELETE /student/homework/:id/done) is refused.
   // Raised by HomeworkError, not SubmissionError, so it is global.
   submission_required: 'errSubmissionRequired',
-  // The project's photo upload (POST .../submission/photos). Both are specific to it.
+  // A photo that is not a usable image or data URL. Global on purpose: the project's photo upload sends both, and
+  // so do chat attachments (messaging.ts), the avatar (auth.ts), lesson media, and the exam and mark-sheet scans
+  // (attempts.ts, scanRequest.ts). The copy («تعذّرت قراءة هذه الصورة») fits all of them.
   bad_image: 'errBadImage',
   bad_data_url: 'errBadImage',
   // Anywhere.

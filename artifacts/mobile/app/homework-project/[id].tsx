@@ -1,12 +1,16 @@
 /**
  * «مشروع الواجب» — a student's project for a homework that is handed in as one: up to six photos and an
- * optional note, then «سلّم». Opened from the School tab's homework row (never for a parent, and never for
- * a homework that is not a project — the API answers both with 404, which ends here in the error state).
+ * optional note, then «سلّم». Opened from the School tab's homework row, which never links it for a parent
+ * or for a homework that is not a project. Reached anyway, the API answers 403 for any account that is not
+ * a student (`requireRole("student")`) and 404 for a homework that is not this student's project. Both end
+ * here in the error state, with no retry.
  *
  * What may change is the server's decision (api-server `routes/homeworkSubmissions.ts`): a photo is stored
- * the moment it is uploaded, a removal deletes it there too, and after the due day the project is
- * `locked` and read-only. This screen holds only the note's draft; it is saved on blur (so leaving the
- * screen does not lose it) and again by the hand-in when it changed.
+ * the moment it is uploaded, a removal deletes it there too, and once handed in after the due day the
+ * project is `locked` and read-only. This screen holds only the note's draft. It is saved on blur, again
+ * when the screen loses focus, and by the hand-in when it changed. A save that fails while the screen is
+ * still shown says so and keeps the draft. A save started by leaving (offline, say) fails after the screen
+ * has gone: its message is never seen, and the unsaved draft is lost with the screen.
  *
  * Traps this screen exists to avoid:
  * - A failed load is an error with a retry, never an empty project. The client refuses a 2xx with no
@@ -31,21 +35,24 @@ import {
   canHandIn,
   stateLabelKey,
   type SubmissionPhoto,
-  type SubmissionState,
   type SubmissionView,
 } from '@/services/homeworkSubmission';
 import {
   celebratesHandIn,
+  draftAfterSaveRefusal,
   draftAfterServer,
   isEmptyRefusal,
   isStaleRefusal,
+  needsLateConfirm,
   noteNeedsSave,
   photoSlotSize,
   removalWouldEmpty,
   saveAgain,
+  submissionLook,
   uploadMayHaveStored,
+  type SubmissionLook,
 } from '@/services/homeworkProject';
-import { formatDueDate, isValidYmd } from '@/services/homework';
+import { ammanToday, formatDueDate, isValidYmd } from '@/services/homework';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { confirm } from '@/services/confirm';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
@@ -59,12 +66,6 @@ import { useSurface } from '@/components/ui/Surface';
 import { Toast } from '@/components/ui/Toast';
 import { ImageViewerModal } from '@/components/ui/ImageViewer';
 import { Celebrate } from '@/components/ui/Celebrate';
-
-const STATUS_ICON: Record<SubmissionState, keyof typeof Ionicons.glyphMap> = {
-  none: 'ellipse-outline',
-  submitted: 'checkmark-circle',
-  late: 'time',
-};
 
 type Busy = 'pick' | 'upload' | 'remove' | 'handIn' | null;
 type Failure = { message: string; final: boolean };
@@ -98,6 +99,7 @@ export default function HomeworkProjectScreen() {
   const draftRef = useRef('');
   /** The note the server holds, or null before the first load. */
   const savedNoteRef = useRef<string | null>(null);
+  const dueDateRef = useRef('');
   const busyRef = useRef<Busy>(null);
   /** The note save in flight, if any; resolves false when it failed (the failure was already said). */
   const noteSave = useRef<Promise<boolean> | null>(null);
@@ -115,9 +117,9 @@ export default function HomeworkProjectScreen() {
     setDraft(next);
   };
 
-  /** Take a view from the server. The draft follows it only while the student has not changed it. */
+  /** Take a view from the server. The draft follows it while the student has not changed it, and always once locked. */
   const applyView = useCallback((next: SubmissionView) => {
-    const draftNext = draftAfterServer(savedNoteRef.current, draftRef.current, next.note);
+    const draftNext = draftAfterServer(savedNoteRef.current, draftRef.current, next.note, next.locked);
     if (draftNext !== draftRef.current) {
       draftRef.current = draftNext;
       setDraft(draftNext);
@@ -149,6 +151,7 @@ export default function HomeworkProjectScreen() {
         const next = await homeworkSubmissionApi.get(id);
         if (seq !== loadSeq.current) return;
         if (!isValidYmd(next.dueDate)) throw new Error('A project without a due day');
+        dueDateRef.current = next.dueDate;
         setDueDate(next.dueDate);
         applyView(next.submission);
         setFailure(null);
@@ -188,6 +191,8 @@ export default function HomeworkProjectScreen() {
       },
       (e: unknown) => {
         say(isEmptyRefusal(e) ? t('projectCannotEmpty') : apiErrorMessage(e, 'projectSaveFailed', t));
+        // A refused clear goes back to the saved note, or every later blur would send it again.
+        setDraftBoth(draftAfterSaveRefusal(e, savedNoteRef.current ?? '', draftRef.current));
         if (isStaleRefusal(e)) void load(true);
         return false;
       },
@@ -290,6 +295,16 @@ export default function HomeworkProjectScreen() {
   const handIn = async () => {
     const before = viewRef.current;
     if (!id || !before || busyRef.current !== null || !canHandIn(before, draftRef.current)) return;
+    // After the due day a first hand-in is recorded late and locked at once: no photo can follow it.
+    if (needsLateConfirm(before.status, dueDateRef.current, ammanToday())) {
+      const ok = await confirm({
+        title: t('projectLateConfirmTitle'),
+        message: t('projectLateConfirmBody'),
+        confirmLabel: t('projectLateConfirmAction'),
+        cancelLabel: t('cancel'),
+      });
+      if (!ok || busyRef.current !== null) return;
+    }
     setBusy('handIn');
     try {
       if (noteSave.current) await noteSave.current;
@@ -308,7 +323,9 @@ export default function HomeworkProjectScreen() {
     }
   };
 
-  const statusColor = (s: SubmissionState) => (s === 'submitted' ? colors.success : s === 'late' ? colors.warning : colors.mutedForeground);
+  // The same look as the School row's chip (submissionLook): late is destructive, never amber.
+  const toneColor = (tone: SubmissionLook['tone']) =>
+    tone === 'primary' ? colors.primary : tone === 'destructive' ? colors.destructive : colors.mutedForeground;
   const body = { color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.body, lineHeight: 24, textAlign: align } as const;
   const muted = { ...body, color: colors.mutedForeground, fontSize: TYPE.caption, lineHeight: 20 } as const;
   const heading = { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.bodyLg, textAlign: align } as const;
@@ -330,11 +347,12 @@ export default function HomeworkProjectScreen() {
     // The last photo of a handed-in project with a blank note cannot go: the server would refuse it.
     const keepLast = !view.locked && removalWouldEmpty(view, draft);
     const slotSize = { width: slot, height: slot };
+    const look = submissionLook(view.status);
     return (
       <>
         <View style={[styles.card, surface]}>
           <View style={[styles.line, row]}>
-            <Ionicons name={STATUS_ICON[view.status]} size={ICON.lg} color={statusColor(view.status)} />
+            <Ionicons name={look.icon} size={ICON.lg} color={toneColor(look.tone)} />
             <Text style={[heading, { flex: 1 }]}>{t(stateLabelKey(view.status))}</Text>
           </View>
           {view.status === 'late' ? <Text style={muted}>{t('projectLateNote')}</Text> : null}
@@ -450,7 +468,7 @@ export default function HomeworkProjectScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: insets.top + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <BackButton color={colors.foreground} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
-        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.title, textAlign: align }}>
+        <Text accessibilityRole="header" style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.title, textAlign: align }}>
           {t('projectTitle')}
         </Text>
         {dueDate ? <Text style={[muted, { marginTop: SPACE.xs }]}>{t('projectDue', formatDueDate(dueDate))}</Text> : null}

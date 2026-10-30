@@ -34,6 +34,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getChildSchedules, getMySchedule } from '@/services/familyScheduleApi';
 import { getChildHomework, getMyHomework, setHomeworkDone } from '@/services/homeworkApi';
 import { stateLabelKey } from '@/services/homeworkSubmission';
+import { submissionLook } from '@/services/homeworkProject';
 import { openResource } from '@/services/openResource';
 import { HOMEWORK_GAME_TITLE_KEY } from '@/services/lessonGames';
 import {
@@ -627,9 +628,10 @@ function HomeworkRow({
   const isSubmission = item.requiresSubmission;
   const showSubmission = isSubmission && !untracked;
   const showLink = !isParent && showsSubmissionLink(item);
-  const submitted = item.submission !== 'none';
   const stateLabel = t(stateLabelKey(item.submission));
-  const stateColor = item.submission === 'late' ? colors.destructive : submitted ? ACCENT : colors.mutedForeground;
+  // The same look as the project screen's status (submissionLook): late is destructive, never amber.
+  const look = submissionLook(item.submission);
+  const stateColor = look.tone === 'primary' ? colors.primary : look.tone === 'destructive' ? colors.destructive : colors.mutedForeground;
 
   return (
     <View
@@ -645,11 +647,15 @@ function HomeworkRow({
           accessibilityLabel={isSubmission ? stateLabel : t(item.done ? 'hwDone' : 'hwTodo')}
           style={styles.hwMark}
         >
-          <Ionicons
-            name={(isSubmission ? submitted : item.done) ? 'checkmark-circle' : 'ellipse-outline'}
-            size={24}
-            color={(isSubmission ? submitted : item.done) ? ACCENT : colors.mutedForeground}
-          />
+          {isSubmission ? (
+            <Ionicons name={look.icon} size={24} color={stateColor} />
+          ) : (
+            <Ionicons
+              name={item.done ? 'checkmark-circle' : 'ellipse-outline'}
+              size={24}
+              color={item.done ? ACCENT : colors.mutedForeground}
+            />
+          )}
         </View>
       ) : (
         <Pressable

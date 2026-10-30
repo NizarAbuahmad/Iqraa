@@ -128,7 +128,7 @@ describe('homework project screen: the project rules', () => {
   });
 
   it('takes its decisions from services/homeworkProject (unit-tested there), not from copies of its own', () => {
-    for (const name of ['noteNeedsSave', 'saveAgain', 'removalWouldEmpty', 'uploadMayHaveStored', 'isStaleRefusal', 'isEmptyRefusal', 'draftAfterServer', 'celebratesHandIn', 'photoSlotSize']) {
+    for (const name of ['noteNeedsSave', 'saveAgain', 'removalWouldEmpty', 'uploadMayHaveStored', 'isStaleRefusal', 'isEmptyRefusal', 'draftAfterServer', 'draftAfterSaveRefusal', 'celebratesHandIn', 'photoSlotSize', 'submissionLook', 'needsLateConfirm']) {
       assert.match(src, new RegExp(`\\b${name}\\b[\\s\\S]*from '@/services/homeworkProject'`), name);
       assert.match(src, new RegExp(`\\b${name}\\(`), `${name} is imported but never called`);
     }
@@ -159,6 +159,35 @@ describe('homework project screen: the project rules', () => {
 
   it('saves an edit made while a note save was in flight', () => {
     assert.match(after('const saveDraft', 1400), /saveAgain\(/);
+  });
+
+  it('shows the server’s note, not an unsaved draft, once a reload says the project is locked', () => {
+    assert.match(src, /draftAfterServer\(savedNoteRef\.current, draftRef\.current, next\.note, next\.locked\)/);
+  });
+
+  it('puts the saved note back after an `empty` refusal of a note save', () => {
+    assert.match(after('const saveDraft', 1600), /setDraftBoth\(draftAfterSaveRefusal\(e, savedNoteRef\.current \?\? '', draftRef\.current\)\)/);
+  });
+
+  it('asks before a first hand-in after the due day, by Amman’s calendar, and before calling the API', () => {
+    const handIn = after('const handIn = async', 1800);
+    // The whole condition, so nothing can be and-ed onto it.
+    const ask = handIn.search(/if \(needsLateConfirm\(before\.status, dueDateRef\.current, ammanToday\(\)\)\) \{/);
+    const dialog = handIn.indexOf("t('projectLateConfirmBody')");
+    const call = handIn.indexOf('homeworkSubmissionApi.handIn(');
+    assert.ok(ask > 0 && dialog > ask && call > dialog, 'needsLateConfirm, then the confirm dialog, then the API');
+  });
+
+  it('marks its title as a heading', () => {
+    assert.match(src, /accessibilityRole="header"/);
+  });
+
+  it('draws the project state from submissionLook, like the School row, and never in amber', () => {
+    assert.match(src, /submissionLook\(view\.status\)/);
+    assert.doesNotMatch(src, /colors\.warning|colors\.live/);
+    const school = readFileSync(path.resolve(here, '../../app/(tabs)/school.tsx'), 'utf8');
+    assert.match(school, /submissionLook\(item\.submission\)/);
+    assert.match(school, /import \{[^}]*\bsubmissionLook\b[^}]*\} from '@\/services\/homeworkProject'/);
   });
 
   it('caches a photo by its id, because its signed URL changes on every reload', () => {

@@ -8,11 +8,14 @@ import assert from 'node:assert/strict';
 
 import {
   celebratesHandIn,
+  draftAfterSaveRefusal,
   draftAfterServer,
   isEmptyRefusal,
   isStaleRefusal,
+  needsLateConfirm,
   noteNeedsSave,
   photoSlotSize,
+  submissionLook,
   removalWouldEmpty,
   saveAgain,
   uploadMayHaveStored,
@@ -104,14 +107,66 @@ describe('isStaleRefusal and isEmptyRefusal', () => {
 
 describe('draftAfterServer', () => {
   it('takes the server’s note on the first load', () => {
-    assert.equal(draftAfterServer(null, '', 'from server'), 'from server');
+    assert.equal(draftAfterServer(null, '', 'from server', false), 'from server');
   });
   it('follows the server while the student has not changed the draft', () => {
-    assert.equal(draftAfterServer('old', 'old', 'new'), 'new');
-    assert.equal(draftAfterServer('old', 'old ', 'new'), 'new');
+    assert.equal(draftAfterServer('old', 'old', 'new', false), 'new');
+    assert.equal(draftAfterServer('old', 'old ', 'new', false), 'new');
   });
   it('keeps a draft the student changed', () => {
-    assert.equal(draftAfterServer('old', 'typed', 'new'), 'typed');
+    assert.equal(draftAfterServer('old', 'typed', 'new', false), 'typed');
+  });
+  it('shows the server’s note once the project is locked, never an unsaved draft in the read-only field', () => {
+    // Edited at 23:58, the save refused as locked after midnight: the teacher holds «A», not «B».
+    assert.equal(draftAfterServer('A', 'B', 'A', true), 'A');
+  });
+});
+
+describe('draftAfterSaveRefusal', () => {
+  it('puts back the saved note after an `empty` refusal, so the refused clear is not retried on every blur', () => {
+    assert.equal(draftAfterSaveRefusal(new SubmissionError('x', 409, 'empty'), 'my note', ''), 'my note');
+  });
+  it('keeps the draft after any other failure, so nothing typed is lost', () => {
+    for (const e of [new SubmissionError('x', 409, 'locked'), new SubmissionError('x', 500), new TypeError('offline')]) {
+      assert.equal(draftAfterSaveRefusal(e, 'my note', 'typed'), 'typed');
+    }
+  });
+});
+
+describe('submissionLook (the School row and the project screen draw a state alike)', () => {
+  it('draws not handed in as a muted outline', () => {
+    assert.deepEqual(submissionLook('none'), { icon: 'ellipse-outline', tone: 'muted' });
+  });
+  it('draws handed in as a filled tick in the primary colour', () => {
+    assert.deepEqual(submissionLook('submitted'), { icon: 'checkmark-circle', tone: 'primary' });
+  });
+  it('draws late in the destructive colour, never amber (amber means now)', () => {
+    assert.deepEqual(submissionLook('late'), { icon: 'time', tone: 'destructive' });
+  });
+  it('gives each state its own icon, so colour is never the only difference', () => {
+    const icons = (['none', 'submitted', 'late'] as const).map(s => submissionLook(s).icon);
+    assert.equal(new Set(icons).size, 3);
+  });
+});
+
+describe('needsLateConfirm', () => {
+  it('does not ask on the due day itself: it is not late yet', () => {
+    assert.equal(needsLateConfirm('none', '2026-11-02', '2026-11-02'), false);
+  });
+  it('asks from the day after the due day, before a first hand-in', () => {
+    assert.equal(needsLateConfirm('none', '2026-11-02', '2026-11-03'), true);
+    assert.equal(needsLateConfirm('none', '2026-12-31', '2027-01-01'), true);
+  });
+  it('does not ask before the due day', () => {
+    assert.equal(needsLateConfirm('none', '2026-11-02', '2026-11-01'), false);
+  });
+  it('does not ask for a project already handed in', () => {
+    assert.equal(needsLateConfirm('submitted', '2026-11-02', '2026-11-03'), false);
+    assert.equal(needsLateConfirm('late', '2026-11-02', '2026-11-03'), false);
+  });
+  it('does not ask when either day is unreadable', () => {
+    assert.equal(needsLateConfirm('none', '', '2026-11-03'), false);
+    assert.equal(needsLateConfirm('none', '2026-11-02', 'today'), false);
   });
 });
 
