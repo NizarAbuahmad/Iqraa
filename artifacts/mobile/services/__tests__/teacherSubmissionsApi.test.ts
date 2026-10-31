@@ -32,7 +32,8 @@ async function rejection(p: Promise<unknown>): Promise<TeacherSubmissionsError> 
 const LIST = {
   homework: { id: 'h 1', title: 'مشروع', dueDate: '2026-10-31' },
   submittedCount: 1,
-  submissions: [{ studentId: 's1', displayName: 'سارة', status: 'late', submittedAt: '2026-11-01T08:00:00.000Z', photoCount: 3 }],
+  trackableCount: 7,
+  submissions: [{ studentId: 's1', displayName: 'سارة', hasAccount: false, status: 'late', submittedAt: '2026-11-01T08:00:00.000Z', photoCount: 3 }],
 };
 const DETAIL = {
   student: { id: 's 1', displayName: 'سارة' },
@@ -47,6 +48,8 @@ describe('list', () => {
     assert.ok(!calls[0]!.init?.method || calls[0]!.init.method === 'GET');
     assert.equal(out.submittedCount, 1);
     assert.equal(out.submissions[0]!.status, 'late');
+    assert.equal(out.trackableCount, 7);
+    assert.equal(out.submissions[0]!.hasAccount, false);
   });
 
   it('carries the status of a 404 (no code on it)', async () => {

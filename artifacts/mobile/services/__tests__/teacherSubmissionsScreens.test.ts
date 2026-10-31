@@ -75,14 +75,22 @@ describe('submissions list screen: the rows', () => {
   it('reads the list through the bound API client and the shared look and label', () => {
     assert.match(listSrc, /import \{ teacherSubmissionsApi \} from '@\/services\/teacherSubmissionsApi\.default'/);
     assert.match(listSrc, /teacherSubmissionsApi\.list\(/);
-    assert.match(listSrc, /submissionLook\(row\.status\)/);
-    assert.match(listSrc, /t\(stateLabelKey\(row\.status\)\)/);
+    assert.match(listSrc, /submissionLook\(state\)/);
+    assert.match(listSrc, /t\(stateLabelKey\(state\)\)/);
+  });
+
+  it('draws a record with no account as its own neutral state, from rowState, with an icon and a word', () => {
+    assert.match(listSrc, /import \{[^}]*\browState\b[^}]*\} from '@\/services\/teacherSubmissions'/);
+    assert.match(listSrc, /const state = rowState\(row\);/);
+    assert.match(listSrc, /state === 'noAccount' \? NO_ACCOUNT_LOOK : submissionLook\(state\)/);
+    assert.match(listSrc, /state === 'noAccount' \? t\('subRowNoAccount'\)/);
+    assert.match(listSrc, /NO_ACCOUNT_LOOK: ChipLook = \{ icon: '[a-z-]+', tone: 'muted' \}/);
   });
 
   it('never leaves the status to colour: an icon and the label sit side by side', () => {
-    const chip = after('const look = submissionLook(row.status)', 1800);
+    const chip = after('const state = rowState(row)', 2200);
     assert.match(chip, /<Ionicons name=\{look\.icon\}/);
-    assert.match(chip, /t\(stateLabelKey\(row\.status\)\)/);
+    assert.match(chip, /\{statusText\}/);
   });
 
   it('shows the photo count with an icon and a number, for a handed-in row', () => {
@@ -113,7 +121,8 @@ describe('submissions list screen: the rows', () => {
 
   it('names the openable row with subRowOpenA11y, and makes it a 44-point target', () => {
     const press = after('<PressableScale', 700);
-    assert.match(press, /aria-label=\{t\('subRowOpenA11y'/);
+    // The label replaces the row's children, so it carries the state and the photo count too.
+    assert.match(press, /aria-label=\{t\('subRowOpenA11y', name, statusText, row\.photoCount\)\}/);
     assert.match(press, /accessibilityRole="button"/);
     assert.match(listSrc, /row: \{[^}]*minHeight: 44/);
   });
@@ -154,8 +163,7 @@ describe('submissions list screen: loading', () => {
   });
 
   it('treats a 404 or 403 as final: its own wording and no retry that can only fail again', () => {
-    assert.match(listSrc, /status === 404/);
-    assert.match(listSrc, /status === 403/);
+    assert.match(listSrc, /const final = status === 404 \|\| status === 403;/);
     assert.match(listSrc, /errNotFound/);
     assert.match(listSrc, /failure\.final \? null/);
   });
@@ -177,7 +185,13 @@ describe('submissions list screen: loading', () => {
     assert.match(head, /t\('subListTitle'\)/);
     assert.match(listSrc, /data\.homework\.title/);
     assert.match(listSrc, /t\('subListDue', formatDueDate\(/);
-    assert.match(listSrc, /t\('hwSubmittedCount', data\.submittedCount, data\.submissions\.length\)/);
+    assert.match(listSrc, /t\('hwSubmittedCount', shown\.submitted, shown\.of\)/);
+  });
+
+  it("counts «X of Y» as the card does: projectSubmittedText over trackableCount, never the number of rows", () => {
+    assert.match(listSrc, /import \{ formatDueDate, projectSubmittedText \} from '@\/services\/homework'/);
+    assert.match(listSrc, /const shown = data \? projectSubmittedText\(data\) : null;/);
+    assert.doesNotMatch(listSrc, /submissions\.length/);
   });
 });
 
@@ -185,7 +199,7 @@ describe('submissions list screen: copy', () => {
   it('has every new key in both languages, the function ones as functions', () => {
     for (const lang of ['ar', 'en'] as const) {
       const tr = translations[lang] as Record<string, unknown>;
-      for (const k of ['subListTitle', 'subListEmpty', 'subListLoadFailed']) assert.equal(typeof tr[k], 'string', `${lang}.${k}`);
+      for (const k of ['subListTitle', 'subListEmpty', 'subListLoadFailed', 'subRowNoAccount']) assert.equal(typeof tr[k], 'string', `${lang}.${k}`);
       for (const k of ['subListDue', 'subRowOpenA11y']) assert.equal(typeof tr[k], 'function', `${lang}.${k}`);
     }
   });
@@ -202,12 +216,24 @@ describe('submissions list screen: copy', () => {
     assert.ok(translations.en.subListDue('05-11-2026').includes('05-11-2026'));
   });
 
-  it('the row name carries the student, and the status when given, in both languages', () => {
-    const ar = translations.ar.subRowOpenA11y('سارة');
-    const en = translations.en.subRowOpenA11y('Sara');
-    assert.ok(ar.includes('سارة') && !ar.includes('undefined'), ar);
-    assert.ok(en.includes('Sara') && !en.includes('undefined'), en);
-    assert.ok(translations.ar.subRowOpenA11y('سارة', 'سُلِّم متأخرًا').includes('سُلِّم متأخرًا'));
-    assert.ok(translations.en.subRowOpenA11y('Sara', 'Handed in late').includes('Handed in late'));
+  it('says the agreed things for a record with no account', () => {
+    assert.equal(translations.ar.subRowNoAccount, 'بلا حساب');
+    assert.equal(translations.en.subRowNoAccount, 'No account');
+  });
+
+  it('the row name carries the student, the state and the photos, in both languages', () => {
+    assert.equal(translations.ar.subRowOpenA11y('سارة', 'تم التسليم', 3), 'افتح مشروع سارة، تم التسليم، 3 صور');
+    assert.equal(translations.en.subRowOpenA11y('Sara', 'Handed in', 3), "Open Sara's project, Handed in, 3 photos");
+    assert.equal(translations.ar.subRowOpenA11y('سارة', 'تم التسليم', 1), 'افتح مشروع سارة، تم التسليم، صورة');
+    assert.equal(translations.ar.subRowOpenA11y('سارة', 'تم التسليم', 2), 'افتح مشروع سارة، تم التسليم، صورتان');
+    assert.equal(translations.ar.subRowOpenA11y('سارة', 'تم التسليم', 12), 'افتح مشروع سارة، تم التسليم، 12 صورة');
+    assert.equal(translations.en.subRowOpenA11y('Sara', 'Handed in', 1), "Open Sara's project, Handed in, 1 photo");
+  });
+
+  it('says nothing of photos for a project with none, and never prints undefined', () => {
+    for (const lang of ['ar', 'en'] as const) {
+      const out = translations[lang].subRowOpenA11y('X', 'S', 0);
+      assert.ok(!/undefined|0/.test(out), out);
+    }
   });
 });

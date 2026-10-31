@@ -5,9 +5,13 @@
  * is plain text. Reached from the «سلّم X من Y» button on a homework card in the class page.
  *
  * Traps this screen exists to avoid:
- * - A student who has only started (a draft) is invisible to the teacher by design: the server reports such a
- *   student as not handed in, and this screen shows no photo count and no way in for any row without a
- *   hand-in (`rowOpensDetail`), so nothing hints that work exists.
+ * - A student who has only started (a draft) is invisible to the teacher by design, and that is the SERVER's
+ *   guarantee, not this screen's: `listForTeacher` (api-server `lib/homeworkSubmission.ts`) joins only handed-in
+ *   rows and reports a draft as `none` with no photos, which `homeworkSubmission.db.test.ts` pins. The screen
+ *   adds a second layer (no photo count and no way in for a row without a hand-in, `rowOpensDetail`) but must
+ *   not be what a draft's privacy rests on.
+ * - «X of Y» is the card's: Y is `trackableCount` (the records with a student account), not the number of rows.
+ *   A record without an account cannot hand in, so it reads «no account», never «not handed in yet».
  * - A failed load is an error with a retry, never an empty class. A 404 or 403 (not this teacher's homework, or
  *   not a project) cannot be retried away, so it has no retry. A reload that fails while a list is shown keeps
  *   that list and says so.
@@ -23,10 +27,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { teacherSubmissionsApi } from '@/services/teacherSubmissionsApi.default';
-import { rowOpensDetail, type TeacherSubmissionList, type TeacherSubmissionRow } from '@/services/teacherSubmissions';
+import { rowOpensDetail, rowState, type TeacherSubmissionList, type TeacherSubmissionRow } from '@/services/teacherSubmissions';
 import { stateLabelKey } from '@/services/homeworkSubmission';
 import { submissionLook, type SubmissionLook } from '@/services/homeworkProject';
-import { formatDueDate } from '@/services/homework';
+import { formatDueDate, projectSubmittedText } from '@/services/homework';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { ICON } from '@/constants/icons';
@@ -38,6 +42,9 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { useSurface } from '@/components/ui/Surface';
 
 type Failure = { message: string; final: boolean };
+type ChipLook = { icon: React.ComponentProps<typeof Ionicons>['name']; tone: SubmissionLook['tone'] };
+/** Neutral, and its own icon: a record that cannot hand in is not a student who has not yet. */
+const NO_ACCOUNT_LOOK: ChipLook = { icon: 'person-remove-outline', tone: 'muted' };
 
 const statusOf = (e: unknown): unknown => (e && typeof e === 'object' ? (e as { status?: unknown }).status : undefined);
 
@@ -96,10 +103,11 @@ export default function HomeworkSubmissionsScreen() {
     tone === 'primary' ? colors.primary : tone === 'destructive' ? colors.destructive : colors.mutedForeground;
 
   const renderRow = ({ item: row }: { item: TeacherSubmissionRow }) => {
-    const look = submissionLook(row.status);
+    const state = rowState(row);
+    const look: ChipLook = state === 'noAccount' ? NO_ACCOUNT_LOOK : submissionLook(state);
     const opens = rowOpensDetail(row);
     const name = row.displayName || '—';
-    const statusText = t(stateLabelKey(row.status));
+    const statusText = state === 'noAccount' ? t('subRowNoAccount') : t(stateLabelKey(state));
     const content = (
       <>
         <View style={styles.info}>
@@ -128,7 +136,7 @@ export default function HomeworkSubmissionsScreen() {
         <PressableScale
           onPress={() => router.push(`/homework-submissions/${encodeURIComponent(homeworkId)}/${encodeURIComponent(row.studentId)}` as never)}
           accessibilityRole="button"
-          aria-label={t('subRowOpenA11y', name, statusText)}
+          aria-label={t('subRowOpenA11y', name, statusText, row.photoCount)}
           style={[styles.row, surface, { flexDirection: rowDir }]}
         >
           {content}
@@ -142,6 +150,9 @@ export default function HomeworkSubmissionsScreen() {
       </View>
     );
   };
+
+  // The card's own «X of Y» (clamped to Y, as the card does), so the two never disagree.
+  const shown = data ? projectSubmittedText(data) : null;
 
   const renderList = () => {
     if (failure && (failure.final || !data)) {
@@ -182,7 +193,7 @@ export default function HomeworkSubmissionsScreen() {
         <Text accessibilityRole="header" style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.title, textAlign: align }}>
           {t('subListTitle')}
         </Text>
-        {data ? (
+        {data && shown ? (
           <>
             {data.homework.title ? (
               <Text numberOfLines={2} style={[body, { marginTop: SPACE.xs }]}>
@@ -192,7 +203,7 @@ export default function HomeworkSubmissionsScreen() {
             <View style={[styles.meta, { flexDirection: rowDir }]}>
               {data.homework.dueDate ? <Text style={muted}>{t('subListDue', formatDueDate(data.homework.dueDate))}</Text> : null}
               <Text style={[muted, { fontFamily: 'ReadexPro_500Medium' }]}>
-                {t('hwSubmittedCount', data.submittedCount, data.submissions.length)}
+                {t('hwSubmittedCount', shown.submitted, shown.of)}
               </Text>
             </View>
           </>

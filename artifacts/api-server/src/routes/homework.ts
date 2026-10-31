@@ -29,14 +29,13 @@ import {
   homework,
   homeworkCompletions,
   homeworkSubmissions,
-  rosterLinks,
   savedMaterials,
   students,
   type ClassGroup,
   type Homework,
   type HomeworkResource,
 } from "@workspace/db";
-import { and, asc, count, countDistinct, desc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
+import { and, asc, count, countDistinct, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { authMiddleware, requireRole, TEACHER_ROLES, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { findLiveClass } from "../lib/classOwnership.js";
 import { parseClassResourceInput } from "../lib/classResource.js";
@@ -45,7 +44,7 @@ import { libraryItemSnapshot } from "../lib/librarySnapshot.ts";
 import { homeworkChatLine } from "../modules/notifications/familyPushText.ts";
 import { announceHomeworkPosted } from "../lib/familyPushEvents.ts";
 import { logger } from "../lib/logger";
-import { homeworkIdsWithWork, purgeSubmissions } from "../lib/homeworkSubmission.ts";
+import { hasSelfLink, homeworkIdsWithWork, purgeSubmissions } from "../lib/homeworkSubmission.ts";
 import { pushWithin } from "../lib/pushWithin.ts";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { RESOURCES_MAX, SUBMISSION_LOCKED_CODE, dueAtToDueDate, isUuid, parseCreate, parsePatch } from "../modules/homework/rules.ts";
@@ -261,16 +260,16 @@ export async function ownedHomework(id: string, teacherId: string): Promise<Home
  * ever reach — a class of children with no accounts shows 0 of N, which a
  * teacher must not read as "nobody did it".
  */
-async function classSizes(classIds: string[]): Promise<Map<string, { students: number; trackable: number }>> {
+export async function classSizes(classIds: string[]): Promise<Map<string, { students: number; trackable: number }>> {
   const rows = await db
     .select({
       classId: classMemberships.classGroupId,
       n: countDistinct(students.id),
-      t: countDistinct(rosterLinks.studentId),
+      // The same predicate as the submissions list's `hasAccount` (hasSelfLink), so the two cannot drift.
+      t: countDistinct(sql`case when ${hasSelfLink(students.id)} then ${students.id} end`),
     })
     .from(classMemberships)
     .innerJoin(students, eq(students.id, classMemberships.studentId))
-    .leftJoin(rosterLinks, and(eq(rosterLinks.studentId, students.id), eq(rosterLinks.relation, "self")))
     .where(and(inArray(classMemberships.classGroupId, classIds), isNull(students.archivedAt)))
     .groupBy(classMemberships.classGroupId);
   return new Map(rows.map(r => [r.classId, { students: Number(r.n), trackable: Number(r.t) }]));

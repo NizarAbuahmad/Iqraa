@@ -635,6 +635,81 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       }
     });
 
+    /** The card's «Y» for a homework: the class list's own `trackableCount`, read through the route the card reads. */
+    const cardTrackable = async (user: string, hw: string, srv: TestServer = server) => {
+      const klass = await call(srv, "GET", `/classes/${w.classes.c1}/homework`, user);
+      assert.equal(klass.status, 200, klass.text);
+      const item = klass.json.homework.find((h: any) => h.id === hw);
+      assert.ok(item, "the homework is on the class list");
+      assert.equal(item.trackableCount, klass.json.trackableCount, "the class and its card agree");
+      return item.trackableCount as number;
+    };
+
+    /** Live members of c1 that have a `self` link, counted straight from the tables. */
+    const accountsInC1 = async () =>
+      (
+        await db.pool.query(
+          `SELECT count(DISTINCT s.id)::int AS n FROM class_memberships m JOIN students s ON s.id = m.student_id
+           JOIN roster_links l ON l.student_id = s.id AND l.relation = 'self'
+           WHERE m.class_group_id = $1 AND s.archived_at IS NULL`,
+          [w.classes.c1],
+        )
+      ).rows[0].n as number;
+
+    it("flags which rows have an account, and its trackableCount is the card's own", async () => {
+      const r = await call(server, "GET", `/homework/${hwTeacher}/submissions`, w.users.t1);
+      assert.equal(r.status, 200, r.text);
+      const byId = new Map<string, any>(r.json.submissions.map((s: any) => [s.studentId, s]));
+      assert.equal(byId.get(w.students.sA1).hasAccount, true, "a self link");
+      assert.equal(byId.get(sibling.row).hasAccount, true);
+      assert.equal(byId.get(w.students.aA).hasAccount, false, "a guardian's link is not an account");
+      assert.ok(r.json.submissions.every((s: any) => typeof s.hasAccount === "boolean"));
+      assert.equal(r.json.trackableCount, await accountsInC1());
+      assert.ok(r.json.trackableCount >= 2 && r.json.trackableCount < r.json.submissions.length, "a mix of account and no account");
+      assert.equal(r.json.trackableCount, r.json.submissions.filter((s: any) => s.hasAccount).length);
+      assert.equal(r.json.trackableCount, await cardTrackable(w.users.t1, hwTeacher), "«X of Y»: the list's Y is the card's Y");
+      assert.equal(r.json.submittedCount, 1, "submittedCount is unchanged");
+    });
+
+    it("an unlinked account flips the row to no account, and the total moves with the card's", async () => {
+      const link = await db.pool.query(`SELECT user_id FROM roster_links WHERE student_id = $1 AND relation = 'self'`, [sibling.row]);
+      assert.equal(link.rowCount, 1);
+      const userId = link.rows[0].user_id as string;
+      const linked = await accountsInC1();
+      await db.pool.query(`DELETE FROM roster_links WHERE student_id = $1 AND relation = 'self'`, [sibling.row]);
+      try {
+        const r = await call(server, "GET", `/homework/${hwTeacher}/submissions`, w.users.t1);
+        assert.equal(r.status, 200, r.text);
+        const row = r.json.submissions.find((s: any) => s.studentId === sibling.row);
+        assert.equal(row.hasAccount, false, "the record has no account now");
+        assert.equal(r.json.trackableCount, linked - 1, "one fewer can hand in");
+        assert.equal(r.json.trackableCount, await cardTrackable(w.users.t1, hwTeacher));
+      } finally {
+        await db.pool.query(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [sibling.row, userId]);
+      }
+      const back = await call(server, "GET", `/homework/${hwTeacher}/submissions`, w.users.t1);
+      assert.equal(back.json.trackableCount, linked);
+      assert.equal(back.json.submissions.find((s: any) => s.studentId === sibling.row).hasAccount, true);
+    });
+
+    it("reports the same flags and total when row-level security is enforced", async () => {
+      const enforcing = await startServer({ databaseUrl: db.url, env: { RLS_ENFORCE: "on", ...s3Env(s3) } });
+      try {
+        const r = await call(enforcing, "GET", `/homework/${hwTeacher}/submissions`, w.users.t1);
+        assert.equal(r.status, 200, r.text);
+        const plain = await call(server, "GET", `/homework/${hwTeacher}/submissions`, w.users.t1);
+        assert.deepEqual(
+          r.json.submissions.map((s: any) => [s.studentId, s.hasAccount]),
+          plain.json.submissions.map((s: any) => [s.studentId, s.hasAccount]),
+          "RLS hides no link from the teacher's own records",
+        );
+        assert.equal(r.json.trackableCount, await accountsInC1());
+        assert.equal(r.json.trackableCount, await cardTrackable(w.users.t1, hwTeacher, enforcing));
+      } finally {
+        await enforcing.stop();
+      }
+    });
+
     it("opens one student's project with signed URLs; a draft, a stranger's student and a bad id are one 404", async () => {
       const ok = await call(server, "GET", `/homework/${hwTeacher}/submissions/${w.students.sA1}`, w.users.t1);
       assert.equal(ok.status, 200, ok.text);

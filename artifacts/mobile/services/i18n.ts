@@ -2812,7 +2812,10 @@ const translations = {
     subListDue: (d: string) => `آخر موعد للتسليم: ${d}`,
     subListEmpty: 'لا يوجد طلبة في هذا الصف بعد',
     subListLoadFailed: 'تعذّر تحميل مشاريع الطلبة',
-    subRowOpenA11y: (name: string, status?: string) => (status ? `افتح مشروع ${name}، ${status}` : `افتح مشروع ${name}`),
+    subRowNoAccount: 'بلا حساب',
+    // The row's accessible name replaces its children, so the state and the photos are said here. No photos: nothing said.
+    subRowOpenA11y: (name: string, status: string, photos: number) =>
+      [`افتح مشروع ${name}`, status, photos ? arCountPhrase(photos, 'صورة', 'صورتان', 'صور') : undefined].filter(Boolean).join('، '),
     hwTeacherEmptyTitle: 'لم تضف واجبًا بعد',
     hwTeacherEmptyDesc: 'أضف واجبًا ليراه طلبة الشعبة وأولياء أمورهم.',
     hwErrTitle: 'اكتب عنوانًا للواجب',
@@ -6362,7 +6365,9 @@ const translations = {
     subListDue: (d: string) => `Due ${d}`,
     subListEmpty: 'No students in this class yet',
     subListLoadFailed: "Couldn't load the student projects",
-    subRowOpenA11y: (name: string, status?: string) => (status ? `Open ${name}'s project, ${status}` : `Open ${name}'s project`),
+    subRowNoAccount: 'No account',
+    subRowOpenA11y: (name: string, status: string, photos: number) =>
+      [`Open ${name}'s project`, status, photos ? `${photos} ${photos === 1 ? 'photo' : 'photos'}` : undefined].filter(Boolean).join(', '),
     hwTeacherEmptyTitle: 'No homework yet',
     hwTeacherEmptyDesc: "Add homework and this section's students and parents will see it.",
     hwErrTitle: 'Enter a title',

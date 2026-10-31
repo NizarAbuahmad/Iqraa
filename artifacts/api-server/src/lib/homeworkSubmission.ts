@@ -44,7 +44,7 @@ import {
   type HomeworkSubmission,
   type SubmissionPhoto,
 } from "@workspace/db";
-import { and, asc, eq, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull, sql, type AnyColumn, type SQL } from "drizzle-orm";
 import { union } from "drizzle-orm/pg-core";
 import { logger } from "./logger";
 import { deleteObject, presignedGetUrl } from "./r2.ts";
@@ -412,9 +412,20 @@ export async function submit(t: SubmissionTarget, now: Date = new Date()): Promi
   return "ok";
 }
 
+/**
+ * SQL: this roster row has a student account (a `self` link to any user). THE definition of who can hand a
+ * project in or tick a homework off: the class homework list's `trackableCount` (routes/homework.ts `classSizes`)
+ * and this list's `hasAccount` both read it, so the card's «X of Y» and the list's cannot drift apart.
+ */
+export function hasSelfLink(studentId: AnyColumn): SQL<boolean> {
+  return sql<boolean>`exists (select 1 from ${rosterLinks} where ${rosterLinks.studentId} = ${studentId} and ${rosterLinks.relation} = 'self')`;
+}
+
 export interface TeacherSubmissionRow {
   studentId: string;
   displayName: string;
+  /** The record has a student account linked to it now (`hasSelfLink`). Without one the student cannot hand in. */
+  hasAccount: boolean;
   /** A draft is `none`: the teacher never sees an unfinished upload. */
   status: SubmissionStatus;
   submittedAt: string | null;
@@ -437,6 +448,7 @@ export async function listForTeacher(hw: TeacherHomeworkRef): Promise<TeacherSub
     .select({
       studentId: students.id,
       displayName: students.displayName,
+      hasAccount: hasSelfLink(students.id),
       submittedAt: homeworkSubmissions.submittedAt,
       photos: homeworkSubmissions.photos,
     })
@@ -455,6 +467,7 @@ export async function listForTeacher(hw: TeacherHomeworkRef): Promise<TeacherSub
   return rows.map(r => ({
     studentId: r.studentId,
     displayName: r.displayName,
+    hasAccount: r.hasAccount,
     status: submissionStatus({ submittedAt: r.submittedAt, dueAt: hw.dueAt }),
     submittedAt: r.submittedAt ? r.submittedAt.toISOString() : null,
     photoCount: r.photos?.length ?? 0,

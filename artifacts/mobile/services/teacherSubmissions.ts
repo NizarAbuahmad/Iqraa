@@ -15,6 +15,11 @@ import {
 export interface TeacherSubmissionRow {
   studentId: string;
   displayName: string;
+  /**
+   * The roster record has a student account linked now; without one the student cannot hand in. A server that
+   * does not send the flag (an older one) reads as `true`: the list then behaves as it did before the flag.
+   */
+  hasAccount: boolean;
   status: SubmissionState;
   submittedAt: string | null;
   photoCount: number;
@@ -23,6 +28,11 @@ export interface TeacherSubmissionRow {
 export interface TeacherSubmissionList {
   homework: { id: string; title: string; dueDate: string };
   submittedCount: number;
+  /**
+   * The «Y» of the card's «X of Y»: the records that have an account, the same number the class's homework list
+   * carries. Absent (an older server) reads as the number of rows.
+   */
+  trackableCount: number;
   submissions: TeacherSubmissionRow[];
 }
 
@@ -47,6 +57,8 @@ export function normalizeTeacherSubmissionList(raw: unknown): TeacherSubmissionL
       submissions.push({
         studentId,
         displayName: str(row['displayName']),
+        // Only an explicit false means «no account»: a missing flag must not turn a whole class into account-less rows.
+        hasAccount: row['hasAccount'] !== false,
         status: normalizeSubmissionState(row['status']),
         submittedAt: str(row['submittedAt']) || null,
         photoCount: count(row['photoCount']),
@@ -56,6 +68,7 @@ export function normalizeTeacherSubmissionList(raw: unknown): TeacherSubmissionL
   return {
     homework: { id: str(hw['id']), title: str(hw['title']), dueDate: str(hw['dueDate']) },
     submittedCount: count(r['submittedCount']),
+    trackableCount: typeof r['trackableCount'] === 'number' ? count(r['trackableCount']) : submissions.length,
     submissions,
   };
 }
@@ -74,4 +87,15 @@ export function normalizeTeacherSubmissionDetail(raw: unknown): TeacherSubmissio
 /** Only a handed-in row (on time or late) has a project to open. */
 export function rowOpensDetail(row: { status: SubmissionState }): boolean {
   return row.status === 'submitted' || row.status === 'late';
+}
+
+/** What a row shows: its hand-in state, or «no account» for a record that never could hand in (never one that did). */
+export type RowState = SubmissionState | 'noAccount';
+
+/**
+ * A record without an account that has not handed in is not «not handed in yet»: it cannot. A record whose account
+ * was unlinked after it handed in keeps its hand-in state, and still opens (`rowOpensDetail` reads the status alone).
+ */
+export function rowState(row: { status: SubmissionState; hasAccount: boolean }): RowState {
+  return row.status === 'none' && !row.hasAccount ? 'noAccount' : row.status;
 }

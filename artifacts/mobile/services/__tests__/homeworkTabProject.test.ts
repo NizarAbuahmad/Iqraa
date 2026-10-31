@@ -115,7 +115,8 @@ describe('HomeworkTab: the list is fresh when the class page is shown again', ()
 
   it('skips the first focus, which the mount effect already loads (no double load)', () => {
     const block = after('useFocusEffect(', 400);
-    assert.match(block, /firstFocus\.current/);
+    // The whole guard: the flag is cleared AND the callback returns, or the first focus loads a second time.
+    assert.match(block, /if \(firstFocus\.current\) \{\s*firstFocus\.current = false;\s*return;\s*\}\s*void load\(\);/);
     assert.match(src, /const firstFocus = useRef\(true\)/);
   });
 

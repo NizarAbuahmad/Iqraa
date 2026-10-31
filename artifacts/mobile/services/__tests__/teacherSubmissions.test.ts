@@ -6,6 +6,7 @@ import {
   normalizeTeacherSubmissionDetail,
   normalizeTeacherSubmissionList,
   rowOpensDetail,
+  rowState,
 } from '../teacherSubmissions.ts';
 
 const ROW = { studentId: 's1', displayName: 'سارة', status: 'submitted', submittedAt: '2026-10-30T08:00:00.000Z', photoCount: 2 };
@@ -13,11 +14,27 @@ const HW = { id: 'h1', title: 'مشروع', dueDate: '2026-10-31' };
 
 describe('normalizeTeacherSubmissionList', () => {
   it('keeps a well-formed list', () => {
-    assert.deepEqual(normalizeTeacherSubmissionList({ homework: HW, submittedCount: 1, submissions: [ROW] }), {
-      homework: HW,
-      submittedCount: 1,
-      submissions: [ROW],
-    });
+    assert.deepEqual(
+      normalizeTeacherSubmissionList({ homework: HW, submittedCount: 1, trackableCount: 3, submissions: [{ ...ROW, hasAccount: true }] }),
+      { homework: HW, submittedCount: 1, trackableCount: 3, submissions: [{ ...ROW, hasAccount: true }] },
+    );
+  });
+
+  it('reads only an explicit false as «no account»; a missing or odd flag is an account (an older server)', () => {
+    const flags = [false, true, undefined, null, 0, 'false'].map(
+      hasAccount => normalizeTeacherSubmissionList({ submissions: [{ ...ROW, hasAccount }] }).submissions[0]!.hasAccount,
+    );
+    assert.deepEqual(flags, [false, true, true, true, true, true]);
+  });
+
+  it('takes trackableCount from the server, and reads a missing or odd one as the number of rows', () => {
+    const rows = [ROW, { ...ROW, studentId: 's2' }, { ...ROW, studentId: 's3' }];
+    assert.equal(normalizeTeacherSubmissionList({ trackableCount: 2, submissions: rows }).trackableCount, 2);
+    assert.equal(normalizeTeacherSubmissionList({ trackableCount: 0, submissions: rows }).trackableCount, 0);
+    for (const odd of [undefined, null, '2', -1, NaN]) {
+      const out = normalizeTeacherSubmissionList({ trackableCount: odd, submissions: rows });
+      assert.equal(out.trackableCount, odd === -1 || Number.isNaN(odd) ? 0 : 3, String(odd));
+    }
   });
 
   it('drops a row with no student id, and reads an unknown status as none', () => {
@@ -46,6 +63,7 @@ describe('normalizeTeacherSubmissionList', () => {
       const out = normalizeTeacherSubmissionList(raw);
       assert.deepEqual(out.submissions, []);
       assert.equal(out.submittedCount, 0);
+      assert.equal(out.trackableCount, 0);
       assert.deepEqual(out.homework, { id: '', title: '', dueDate: '' });
     }
   });
@@ -87,6 +105,19 @@ describe('rowOpensDetail', () => {
   it('opens a handed-in row, on time or late, and nothing else', () => {
     assert.equal(rowOpensDetail({ status: 'none' }), false);
     assert.equal(rowOpensDetail({ status: 'submitted' }), true);
+    assert.equal(rowOpensDetail({ status: 'late' }), true);
+  });
+});
+
+describe('rowState', () => {
+  it('is «noAccount» only for a record that has not handed in and has no account', () => {
+    assert.equal(rowState({ status: 'none', hasAccount: false }), 'noAccount');
+    assert.equal(rowState({ status: 'none', hasAccount: true }), 'none');
+  });
+
+  it('keeps the hand-in state of a record whose account was unlinked afterwards', () => {
+    assert.equal(rowState({ status: 'submitted', hasAccount: false }), 'submitted');
+    assert.equal(rowState({ status: 'late', hasAccount: false }), 'late');
     assert.equal(rowOpensDetail({ status: 'late' }), true);
   });
 });
