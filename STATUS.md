@@ -69,6 +69,7 @@ Checked 2026-10-22:
 
 ## Open
 
+- 2026-10-31 — Slides: cycle, tree, Venn and mind-map diagrams; curriculum slides gain shapes, icons, charts and photos (untested against a live model)
 - **Screen recording of everyone is ON for the web app (since the 2026-10-29 re-run of Deploy
   #868) and not yet running on Android.** Web: the Contentsquare tag loads on `app.iqrra.com` (not
   the marketing website) because the `CONTENTSQUARE_TAG_ID` repository **variable** is set; delete
@@ -120,8 +121,11 @@ Checked 2026-10-22:
   and Crashlytics is enabled in the Firebase console (project `iqraa-95dd1`) **(notes — the owner
   said so; not checked)**. Not verified: which build is installed on a phone, that a crash
   actually appears in the console, and that the OTAs published since #1115 (all runtime 1.5.0)
-  reach a device. The API has no error-reporting service; it keeps its own log
-  (`/healthz/errors`, admin key) and Cloud Run logs.
+  reach a device. **API errors:** since PR #1238 (2026-10-24) the API logs in Cloud Logging's
+  shape (`severity`, `stack_trace`, `serviceContext`) and the Error Reporting API is enabled on
+  `iqraa-auth-507315`. Checked 2026-10-30: production error entries carry `stack_trace`. Not
+  checked: that the Error Reporting page groups them. `/healthz/errors` (admin key) and Cloud
+  Run logs still work.
 - **Row-level security is switched on in production** (`RLS_ENFORCE=on` on `iqraa-api`, set by the owner;
   PR #1048, migration `0008`). The last switch-on was 2026-10-27 about 21:16 on the owner's clock, revision
   `iqraa-api-00456-7md`; the owner reported the teacher inbox, a chat message, the parent's notification and
