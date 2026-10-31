@@ -211,9 +211,32 @@ plan: `docs/superpowers/plans/2026-10-30-homework-project-submission-student-app
   was broken on purpose and a case failed: no purge call, no object delete, no `self` filter, no
   shared-row check, the delete on the app connection (fails only under RLS). api-server suite
   3201/3201.
-- **Not verified:** real R2; a student whose account the teacher unlinked before deleting it keeps
-  that row's projects (no `self` link is left to find them) until the homework or class is deleted;
-  the sweep that would clean up an object whose delete failed is not set up in production yet.
+- **After review (same day, same PR).** The purge (owner pool) and the account delete (the
+  request's own pool under `RLS_ENFORCE`) cannot share a transaction, and moving the account
+  cascade onto the owner connection was judged not worth it. So if the account delete throws after
+  the purge committed, the purged photos are deleted best effort (keys logged at error level) and
+  the route answers 500 with the account intact. A second best-effort pass after the account delete
+  (`purgeSubmissionsOfRows`) catches a draft an upload stored in between. New cases, each with its
+  failure injected by a trigger in the throwaway database: account delete refused, late draft, R2
+  down (a `failDeletes` hook in `test-support/s3Stub.ts`, with its own test), purge refused. Each
+  guard was broken on purpose and caught. api-server suite 3206/3206.
+- **Policy wording after review.** §1 now says a project is kept on the student's record, not on a
+  person: the account linked to that record sees the draft; once handed in, the homework's teacher
+  and the parents linked to the record see it; a teacher who links the record to another account
+  gives that account its projects. The location sentence now says an attached image may keep the
+  metadata the device wrote, which can include where it was taken (see *Known limits*).
+- **Not verified:** real R2; the sweep that would clean up an object whose delete failed is not set
+  up in production yet.
+- **Known limits (privacy):**
+  - **Unlink.** Unlinking a student account (`DELETE /students/:id/links/:userId`) touches no
+    submission, so the next account linked to that record sees and can change what was there. A
+    student whose account the teacher unlinked before the student deleted it keeps that row's
+    projects until the homework or class is deleted. Open in STATUS.md.
+  - **Photo metadata.** The client re-encodes a photo only when it shrinks it (long edge over
+    1600 px): on the web through a canvas, whose output carries no metadata; on a phone through
+    `expo-image-manipulator`, whose output was not checked for metadata. A smaller photo, or one
+    whose resize fails, is sent as its file's own bytes and stored as received, so EXIF (possibly
+    GPS) can remain. Open in STATUS.md.
 
 ## Homework submission cleanup sweep — 2026-10-30
 

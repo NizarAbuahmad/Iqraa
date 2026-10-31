@@ -316,6 +316,12 @@ names messages and lesson materials, not homework projects; changing it is a nat
   body so it is a known gap, not a surprise.
 - **`students.id` is a roster row.** A child in two of a teacher's classes is two
   rows and two submissions. That is correct and matches homework completions.
+- **Access follows the roster-row link, not a person (found 2026-10-31).** Unlinking a
+  student account (`DELETE /students/:id/links/:userId`) touches no submission, so the
+  next account linked to that record sees, and can change, the previous account's draft
+  and handed-in work. The privacy policy §1 says so. Deleting the account removes them
+  (`purgeSubmissionsOfAuthor`); unlinking does not. Open in `STATUS.md`: an author
+  column on the submission, or a purge on unlink, is the owner's decision.
 - **The archive purge is not transactional.** Objects are deleted first; a failed
   object delete is logged with its key and the rows are deleted anyway, so an
   unreachable orphan object can remain in the bucket (private, unguessable key, no
