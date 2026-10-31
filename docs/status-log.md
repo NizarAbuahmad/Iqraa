@@ -10,6 +10,30 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Admin date filter: «اليوم» and «أمس» chips — 2026-10-30
+
+**Asked:** "today" and "yesterday" alongside «الكل / ٧ أيام / ٣٠ يومًا / هذا الشهر» on the admin
+users screen.
+
+**What changed.** The presets live in the shared `DateRange` (`components/admin/DateRange.tsx`),
+so the two chips appear on every admin screen that uses it: users, signups, the dashboard's
+feedback list and AI costs. Each is one UTC day bounded at both ends (`from = to = dayAgo(0)` /
+`dayAgo(1)`); `to` is inclusive because `parseDateRange` adds a day server-side. Days are UTC like
+the other chips, so «اليوم» begins at 03:00 Amman time. AI costs drew one bar per day up to the
+API's echoed `to`, which for a bounded range is the next (exclusive) midnight — a picked `to` now
+wins, so a single day draws one bar, not an empty extra one.
+
+**«هذا الشهر» was clipped on Android.** The chip measured wide enough for the label on one line,
+yet Android drew «هذا» alone with «الشهر» wrapped below and cut off by the chip's one-line
+height: measurement and drawing disagreed. Fonts load before first render (`_layout.tsx`), so
+it was not a late font; the remaining cause is Android's default `highQuality` line breaking,
+which can wrap inside the measured width. `FilterChip` (`components/admin/widgets.tsx`) now
+sets `textBreakStrategy="simple"` (Android-only; iOS and web ignore it).
+
+**Verified:** `pnpm run typecheck`. **Not verified:** the screens were not opened on a device or
+in a browser — in particular the clipping fix has not been seen on an Android phone; no test
+covers the preset list or native text layout.
+
 ## Content reports say what was reported — 2026-10-31
 
 **Asked:** the report email, the push and «بلاغات المحتوى» showed only `lesson-teaching` and

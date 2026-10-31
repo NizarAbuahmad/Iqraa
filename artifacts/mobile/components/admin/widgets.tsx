@@ -91,7 +91,9 @@ export function FilterChip({ label, active, onPress, colors }: { label: string; 
         borderRadius: colors.radius,
       }]}
     >
-      <Text style={{ color: active ? '#fff' : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{label}</Text>
+      {/* Android's default highQuality breaking wrapped «هذا الشهر» inside the width
+          measured for one line, clipping «الشهر»; greedy breaking keeps it on the line. */}
+      <Text textBreakStrategy="simple" style={{ color: active ? '#fff' : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{label}</Text>
     </Pressable>
   );
 }
