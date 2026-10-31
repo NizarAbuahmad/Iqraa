@@ -34,7 +34,7 @@ import { decideRefresh, refreshTokenTtlMs } from "../lib/refreshPolicy.js";
 import { guardianApprovalEnabled, studentAccountsEnabled } from "../lib/features.js";
 import { syncClassThreadsForStudent, pruneTeacherChatsAfterUnlink } from "../lib/classThread.js";
 import { audioKeysForTeacher } from "../lib/attemptAudio.ts";
-import { purgeSubmissionsOfAuthor, purgeSubmissionsOfRows, submissionKeysForTeacher } from "../lib/homeworkSubmission.ts";
+import { purgeAuthorlessDraftsOfRows, purgeSubmissionsOfAuthor, submissionKeysForTeacher } from "../lib/homeworkSubmission.ts";
 import {
   ROSTER_CONSENT_STATEMENT_EN,
   ROSTER_CONSENT_VERSION,
@@ -2694,8 +2694,9 @@ router.delete("/users/avatar", authMiddleware, async (req: AuthenticatedRequest,
 //     cascade. It is cost accounting; what survives is a spend row with no
 //     person attached to it.
 //   - A student's homework projects, which reference a roster row (kept by
-//     the teacher), not the user. They are deleted explicitly before the
-//     account (`purgeSubmissionsOfAuthor`); the privacy policy §6 says so.
+//     the teacher) and name their author with a `set null` column. The ones
+//     this account wrote are deleted explicitly before the account
+//     (`purgeSubmissionsOfAuthor`); the privacy policy §6 says so.
 //
 // Re-authentication is required. For a teacher the cascade reaches the whole
 // roster — other people's children — and a stolen access token must not be
@@ -2788,10 +2789,11 @@ router.delete(
       // teacher's homework, the objects do not.
       const projectPhotos = await submissionKeysForTeacher(userId);
 
-      // A student's own projects do NOT cascade: they sit on the roster row, which stays with the teacher. So the
-      // rows written through this account (drafts and handed-in work alike) are deleted here, before the account,
-      // and their photos go with the objects below. A row another account is also self-linked to is kept, and a
-      // guardian link deletes nothing (lib/homeworkSubmission.ts, `purgeSubmissionsOfAuthor`).
+      // A student's own projects do NOT cascade: they sit on the roster row, which stays with the teacher, and their
+      // author column is `set null`. So the rows this account wrote (drafts and handed-in work alike, on any record,
+      // linked now or not) are deleted here, before the account, and their photos go with the objects below. Work
+      // another account wrote on a record this one is linked to stays, and a parent, who writes none, deletes nothing
+      // (lib/homeworkSubmission.ts, `purgeSubmissionsOfAuthor`).
       //
       // The purge (owner pool, `systemDb`) and the account delete (the request's own, row-level-security pool under
       // RLS_ENFORCE) are on different connections, so they cannot share a transaction, and moving the account delete —
@@ -2818,8 +2820,9 @@ router.delete(
       }
 
       // Second pass, best effort, like DELETE /homework/:id: an upload already past its checks when the first pass ran
-      // can have stored a draft on one of those rows since (it references the roster row, so nothing cascaded to it).
-      const latePhotos = await purgeSubmissionsOfRows(authored.rows).catch(err => {
+      // can have stored a draft on one of those records since, and the account delete just set its author to NULL, so
+      // it is found as an authorless draft (`purgeAuthorlessDraftsOfRows`), not by author.
+      const latePhotos = await purgeAuthorlessDraftsOfRows(authored.rows).catch(err => {
         logger.error({ err, userId, rows: authored.rows }, "account deleted but the second project purge failed");
         return [] as string[];
       });
