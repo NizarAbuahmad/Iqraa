@@ -52,6 +52,15 @@
  * `purgeSubmissionsOfAuthor` deletes those of the rows the account is
  * self-linked to, and a parent's deletion touches none. §6 relies on that. If
  * any of those paths changes, §1 and §6 change with it.
+ *
+ * **Recording (§1, §3, §4, §6, since 2026-10-31).** Three places use the
+ * microphone: English speaking practice (`hooks/useSpeakingRecorder.ts`, kept on
+ * the device, never uploaded), read-aloud practice (`routes/practice.ts`,
+ * transcribed by OpenAI, nothing stored) and the exam's read-aloud question
+ * (`routes/studentAttempt.ts`: R2 plus the transcript on the answer; played back
+ * only on the teacher's marking screen, `routes/attempts.ts`). What deletes an
+ * exam recording is in `lib/attemptAudio.ts`'s callers. Change any of them and
+ * this text changes with it.
  */
 
 /**
@@ -94,10 +103,11 @@ const PRIVACY_AR: LegalDoc = {
         'سجلّات التعلّم: الاختبارات وأوراق العمل التي يُنشئها المعلّم، وإجابات الطلبة عليها، والعلامات والتقديرات الناتجة عنها.',
         'الرسائل: نحفظ نصّ الرسائل داخل التطبيق ووقتها ومَن أرسلها، والصور المرفقة بها إن وُجدت، ورمز الإشعارات الخاصّ بجهازك لإيصال التنبيهات. لا نقرأ الرسائل إلّا عند مراجعة بلاغ.',
         'الملفات: ما يرفعه المعلّم من صور أو مستندات ويربطه بدرس.',
-        'مشاريع الواجبات: حين يطلب المعلّم مشروعًا في واجب، يرفع الطالب من صور جهازه حتى ستّ صور لعمله، وملاحظة مكتوبة لا تتجاوز 2000 حرف، ويكفي أحدهما للتسليم. تُحفظ الصور في مخزن ملفات خاصّ (Cloudflare R2) لا تُفتح منه إلّا عبر روابط مؤقّتة تنتهي صلاحيتها بعد عشر دقائق، وتُحفظ الملاحظة ووقت التسليم في قاعدة البيانات. قد تُظهر الصورة وجهًا أو اسمًا أو تفاصيل شخصية أخرى، فلا يصوّر الطالب إلّا عمله. والمشروع محفوظ على سجلّ الطالب في صفّ الواجب، لا على شخص بعينه: ما دام مسودّة لم تُسلَّم فلا يراه إلّا حساب الطالب المرتبط بذلك السجلّ. فإذا سُلِّم رآه أيضًا المعلّم الذي وضع الواجب وأولياء الأمور المرتبطون بالسجلّ نفسه، ولا يراه داخل التطبيق أيّ حساب غير مرتبط بسجلّ ذلك الطالب في ذلك الصفّ. وإن ربط المعلّم السجلّ بحساب آخر، رأى ذلك الحساب المشاريع المحفوظة عليه. ويستطيع الطالب تعديل مشروعه المسلَّم حتى نهاية يوم التسليم، وما يعدّله يراه المعلّم وأولياء الأمور فورًا، ثم يصبح المشروع للقراءة فقط.',
+        'مشاريع الواجبات: حين يطلب المعلّم مشروعًا في واجب، يرفع الطالب من صور جهازه حتى ستّ صور لعمله، وملاحظة مكتوبة لا تتجاوز 2000 حرف، ويكفي أحدهما للتسليم. تُحفظ الصور في مخزن ملفات خاصّ (Cloudflare R2) لا تُفتح منه إلّا عبر روابط مؤقّتة تنتهي صلاحيتها بعد عشر دقائق، وتُحفظ الملاحظة ووقت التسليم في قاعدة البيانات. قد تُظهر الصورة وجهًا أو اسمًا أو تفاصيل شخصية أخرى، فلا يصوّر الطالب إلّا عمله. والمشروع محفوظ على سجلّ الطالب في صفّ الواجب، لا على شخص بعينه: ما دام مسودّة لم تُسلَّم فلا يراه إلّا حساب الطالب المرتبط بذلك السجلّ. فإذا سُلِّم رآه أيضًا المعلّم الذي وضع الواجب وأولياء الأمور المرتبطون بالسجلّ نفسه، ولا يراه أحد غيرهم داخل التطبيق. وإن رُبط السجلّ لاحقًا بحساب آخر، رأى ذلك الحساب المشاريع المحفوظة عليه، وأمكنه تعديل ما لا يزال منها قابلًا للتعديل. ويستطيع الطالب تعديل مشروعه المسلَّم حتى نهاية يوم التسليم، وما يعدّله يراه المعلّم وأولياء الأمور فورًا، ثم يصبح المشروع للقراءة فقط.',
         'بيانات تقنية: رمز الإشعارات الخاص بجهازك إن فعّلت الإشعارات، وأحداث استخدام مجهّلة نسبيًا (أيّ شاشة فُتحت، وأيّ أداة استُخدمت) — وهذه الأخيرة لا تُجمع إطلاقًا ما لم يكن مفتاح التحليلات مضبوطًا في النسخة التي تستخدمها.',
         'تسجيلات الشاشة: قد نسجّل ما يظهر على شاشتك وأين تلمس أو تنقر أثناء استخدامك التطبيق، لنفهم أين يتعثّر المستخدمون. يشمل ذلك المعلّمين والطلبة وأولياء الأمور، وصفحة الاختبار التي يفتحها الطالب من رابط. يتولّى ذلك على الويب Contentsquare (التي أصبحت Hotjar جزءًا منها)، وعلى أندرويد PostHog. تُحجب النصوص المعروضة وحقول الإدخال والصور في التسجيلات، فلا يظهر فيها اسم طالب ولا علامة ولا إجابة ولا رسالة. لا نسجّل صفحة موافقة وليّ الأمر لأنّ رابطها يحمل رمز الموافقة. لا يُسجَّل شيء ما لم تكن هذه الأدوات مضبوطة في النسخة التي تستخدمها.',
-        'لا نطلب موقعك الجغرافي ولا نستخدمه، ولا نصل إلى الكاميرا أو الميكروفون. التطبيق يطلب الإذن بالوصول إلى صور جهازك فقط، وفقط عند إرفاق صورة بنفسك. والصورة التي ترفقها قد تُحفظ كما أنتجها جهازك، ومعها البيانات المضمَّنة فيها، وقد تشمل مكان التقاطها إن كان هاتفك يضيفه.',
+        'لا نطلب موقعك الجغرافي ولا نستخدمه، ولا نصل إلى الكاميرا. يطلب التطبيق الإذن بالوصول إلى صور جهازك عند إرفاق صورة بنفسك فقط، والصورة التي ترفقها قد تُحفظ كما أنتجها جهازك، ومعها البيانات المضمَّنة فيها، وقد تشمل مكان التقاطها إن كان هاتفك يضيفه.',
+        'الميكروفون: يطلب التطبيق الإذن به حين يضغط الطالب زرّ التسجيل، ولا يسجّل إلّا من تلك الضغطة حتى يوقفه الطالب أو تنتهي مدّة التسجيل. تمرين النطق في ركن الإنجليزية يُبقي التسجيل على الجهاز ليسمعه الطالب، ولا يُرفع إلينا. وتمرين القراءة الجهرية في الدرس يُرسل التسجيل إلى OpenAI ليُحوَّل إلى نصّ يُقارَن بالنصّ المقروء، ولا نحفظ منه شيئًا. أمّا سؤال القراءة الجهرية في الاختبار فنحفظ تسجيله في مخزن الملفات الخاصّ (Cloudflare R2)، ومعه النصّ الذي تستخرجه OpenAI منه، ولا يستمع إليه داخل التطبيق إلّا معلّم الاختبار.',
       ],
     },
     {
@@ -115,13 +125,14 @@ const PRIVACY_AR: LegalDoc = {
       body: [
         'حين تطلب توليد خطة درس أو ورقة عمل أو اختبار، يُرسَل نصّ طلبك — ومعه ما اخترته من الدرس والمنهاج، وأيّ مادة ألصقتها بنفسك في حقل السياق — إلى مزوّد نماذج لغوية خارجي (OpenAI) لمعالجته وإعادة النتيجة.',
         'لا تُرسَل أسماء الطلبة ولا علاماتهم ولا ملاحظات المعلّم عنهم إلى هذا المزوّد ضمن طلبات التوليد.',
+        'وتُرسَل إليه تسجيلات القراءة الجهرية لتحويلها إلى نصّ فقط، كما في البند الأوّل.',
         'المحتوى المولَّد قد يكون خاطئًا. المعلّم هو من يراجعه قبل استخدامه مع الطلبة، ومفاتيح إجابات الرياضيات وحدها تمرّ على مُتحقِّق رمزيّ مستقلّ يُظهر التطبيق نتيجته صراحةً.',
       ],
     },
     {
       heading: '4) مع من تُشارَك',
       body: [
-        'مزوّدو خدمة يعالجون البيانات نيابةً عنّا، لا أكثر: Neon لقاعدة البيانات (تُستضاف في فرانكفورت داخل الاتحاد الأوروبي)، وCloudflare R2 لتخزين الملفات والصور، وGoogle Cloud Run لتشغيل الخادم (أوروبا الغربية)، وCloudflare Pages لاستضافة نسخة الويب، وContentsquare لتسجيل الشاشة على نسخة الويب، وOpenAI لتوليد المحتوى، وExpo لإيصال الإشعارات، وResend لإرسال البريد الإلكتروني، وPostHog لقياس الاستخدام وتسجيل الشاشة على أندرويد (خوادمها في الاتحاد الأوروبي)، وGoogle لخدمة الدخول بحساب Google.',
+        'مزوّدو خدمة يعالجون البيانات نيابةً عنّا، لا أكثر: Neon لقاعدة البيانات (تُستضاف في فرانكفورت داخل الاتحاد الأوروبي)، وCloudflare R2 لتخزين الملفات والصور، وGoogle Cloud Run لتشغيل الخادم (أوروبا الغربية)، وCloudflare Pages لاستضافة نسخة الويب، وContentsquare لتسجيل الشاشة على نسخة الويب، وOpenAI لتوليد المحتوى وتحويل التسجيلات الصوتية إلى نصّ، وExpo لإيصال الإشعارات، وResend لإرسال البريد الإلكتروني، وPostHog لقياس الاستخدام وتسجيل الشاشة على أندرويد (خوادمها في الاتحاد الأوروبي)، وGoogle لخدمة الدخول بحساب Google.',
         'ويعني ذلك أنّ بعض بياناتك تُعالَج خارج الأردن وخارج الاتحاد الأوروبي.',
         'قد نُفصح عن بيانات إذا ألزمنا القانون بذلك، أو لحماية سلامة شخص ما.',
       ],
@@ -146,6 +157,7 @@ const PRIVACY_AR: LegalDoc = {
         'يمكنك حذف حسابك من داخل التطبيق: الإعدادات ← حذف الحساب. الحذف نهائي ولا رجعة فيه، ويجري فورًا لا بعد مهلة.',
         'حذف حساب المعلّم يحذف معه شُعَبه وسجلّات طلبته والاختبارات والمواد المحفوظة والرسائل التي أرسلها والملفات التي رفعها. وحذف حساب وليّ الأمر أو الطالب يحذف رسائله وارتباطه بسجلّ الصفّ، ويبقى سجلّ الطالب نفسه عند معلّمه لأنّه من بيانات المعلّم.',
         'مشاريع الواجبات: حين يحذف الطالب صورة من مشروعه تُزال من التخزين. وحذف حساب الطالب يحذف معه مشاريعه، المسلَّمة منها والمسودّات، بصورها وملاحظاتها، في كلّ صفّ ما زال حسابه مرتبطًا فيه بسجلّه. وحين يحذف المعلّم الواجب، أو يحذف صفّه أو يؤرشفه، تُحذف صور كلّ المشاريع وملاحظاتها فيه، المسلَّمة منها والمسودّات، وكذلك كلّ مشروع في واجباته حين يحذف المعلّم حسابه. أمّا حذف حساب وليّ الأمر فلا يحذف شيئًا من مشاريع الطالب. وفي غير ذلك يبقى المشروع محفوظًا إلى أن يحدث أحد هذه الأمور.',
+        'تسجيلات القراءة الجهرية في الاختبارات: يُحذف التسجيل حين يعيد الطالب تسجيل السؤال نفسه، أو حين يعيد اختبارًا قصيرًا، أو حين يحذف المعلّم محاولته، أو حين يحذف المعلّم حسابه. ولا يحذفه حذف المعلّم الاختبار من قائمته ولا حذف حساب الطالب، لأنّ إجابات الطالب من سجلّه عند معلّمه.',
         'يبقى بعد الحذف سجلّ محاسبيّ لتكلفة استخدام نماذج الذكاء الاصطناعي، منزوع الارتباط بأيّ شخص.',
         'وإن ألغيت اشتراكك في رسائلنا، نحتفظ بعنوان بريدك وحده في قائمة «لا تراسل» لنلتزم بطلبك، حتى بعد حذف الحساب، إلى أن تتراجع عن الإلغاء من الرابط نفسه أو تطلب منّا حذفه.',
       ],
@@ -190,10 +202,11 @@ const PRIVACY_EN: LegalDoc = {
         'Learning records: the tests and worksheets a teacher creates, students\' answers to them, and the marks and levels that result.',
         'Messages: we store the text of in-app messages, when they were sent and by whom, any image attached to them, and your device push token so notifications can be delivered. We do not read messages except when reviewing a report.',
         'Files: images or documents a teacher uploads and attaches to a lesson.',
-        'Homework projects: when a teacher asks for a project on a homework, the student uploads up to six photos of their work from the device\'s photo library, and a written note of up to 2,000 characters; either one is enough to hand it in. The photos are kept in private file storage (Cloudflare R2) and are only ever opened through temporary links that expire after ten minutes; the note and the hand-in time are kept in the database. A photo can show a face, a name or other personal details, so a student should photograph nothing but their work. A project is stored on the student\'s record in the homework\'s class, not on a person: while it is a draft that has not been handed in, only the student account linked to that record sees it. Once it is handed in, the teacher who set the homework and the parents linked to the same record see it too, and no account in the app that is not linked to that student\'s record in that class sees it. If the teacher links the record to a different account, that account sees the projects stored on it. A student can change a handed-in project until the due day ends, and the teacher and the parents see each change at once; after that the project is read-only.',
+        'Homework projects: when a teacher asks for a project on a homework, the student uploads up to six photos of their work from the device\'s photo library, and a written note of up to 2,000 characters; either one is enough to hand it in. The photos are kept in private file storage (Cloudflare R2) and are only ever opened through temporary links that expire after ten minutes; the note and the hand-in time are kept in the database. A photo can show a face, a name or other personal details, so a student should photograph nothing but their work. A project is stored on the student\'s record in the homework\'s class, not on a person: while it is a draft that has not been handed in, only the student account linked to that record sees it. Once it is handed in, the teacher who set the homework and the parents linked to the same record see it too, and no one else in the app does. If the record is later linked to a different account, that account can see the projects stored on it, and change any that can still be changed. A student can change a handed-in project until the due day ends, and the teacher and the parents see each change at once; after that the project is read-only.',
         'Technical data: your device\'s push notification token if you enable notifications, and usage events (which screen was opened, which tool was used). Usage events are not collected at all unless an analytics key is configured in the build you are using.',
         'Screen recordings: we may record what appears on your screen and where you tap or click while you use the app, to see where people get stuck. This includes teachers, students and parents, and the exam page a student opens from a link. On the web this is done by Contentsquare (of which Hotjar is now part), on Android by PostHog. Displayed text, input fields and images are masked in the recordings, so no student name, mark, answer or message appears in them. We do not record the parent consent page, because its link carries the approval token. Nothing is recorded unless these tools are configured in the build you are using.',
-        'We do not ask for or use your location, and we do not access your camera or microphone. The app asks for photo library access only, and only when you attach an image yourself. An image you attach may be stored as your device produced it, with the metadata embedded in it, which can include where it was taken if your phone adds that.',
+        'We do not ask for or use your location, and we do not access your camera. The app asks for photo library access only when you attach an image yourself. An image you attach may be stored as your device produced it, with the metadata embedded in it, which can include where it was taken if your phone adds that.',
+        'Microphone: the app asks for it when a student presses record, and records only from that press until the student stops it or the time limit is reached. Speaking practice in the English corner keeps the recording on the device for the student to play back; it is never uploaded. Read-aloud practice in a lesson sends the recording to OpenAI to be turned into text and compared with the passage, and we keep nothing of it. For a read-aloud question in an exam we keep the recording in private file storage (Cloudflare R2), with the text OpenAI makes of it, and in the app only the exam\'s teacher can listen to it.',
       ],
     },
     {
@@ -211,13 +224,14 @@ const PRIVACY_EN: LegalDoc = {
       body: [
         'When you ask for a lesson plan, worksheet or test, the text of your request — along with the lesson and curriculum you selected, and any material you pasted into the context field yourself — is sent to an external language model provider (OpenAI) to be processed and returned.',
         'Student names, marks and teacher notes about students are not sent to that provider as part of generation requests.',
+        'Read-aloud recordings are sent to it only to be turned into text, as described in section 1.',
         'Generated content can be wrong. The teacher reviews it before using it with students. Mathematics answer keys alone are additionally checked by an independent symbolic verifier, whose result the app shows explicitly.',
       ],
     },
     {
       heading: '4) Who it is shared with',
       body: [
-        'Service providers that process data on our behalf, and nothing more: Neon for the database (hosted in Frankfurt, in the EU), Cloudflare R2 for file and image storage, Google Cloud Run to run the server (western Europe), Cloudflare Pages to host the web version, Contentsquare for screen recording on the web version, OpenAI for content generation, Expo to deliver notifications, Resend to send email, PostHog for usage measurement and screen recording on Android (its servers are in the European Union), and Google for Google Sign-In.',
+        'Service providers that process data on our behalf, and nothing more: Neon for the database (hosted in Frankfurt, in the EU), Cloudflare R2 for file and image storage, Google Cloud Run to run the server (western Europe), Cloudflare Pages to host the web version, Contentsquare for screen recording on the web version, OpenAI for content generation and speech-to-text, Expo to deliver notifications, Resend to send email, PostHog for usage measurement and screen recording on Android (its servers are in the European Union), and Google for Google Sign-In.',
         'This means some of your data is processed outside Jordan and outside the EU.',
         'We may disclose data where the law requires it, or to protect someone\'s safety.',
       ],
@@ -242,6 +256,7 @@ const PRIVACY_EN: LegalDoc = {
         'You can delete your account from inside the app: Settings → Delete account. Deletion is permanent, cannot be undone, and happens immediately rather than after a waiting period.',
         'Deleting a teacher account also deletes their classes, student records, evaluations, saved materials, messages they sent and files they uploaded. Deleting a parent or student account deletes their messages and their link to a class record; the student record itself stays with the teacher, because it is the teacher\'s data.',
         'Homework projects: when a student removes a photo from their project, it is removed from storage. Deleting a student account deletes that student\'s projects with it, handed-in and draft, photos and notes, in every class where the account is still linked to the student\'s record. When the teacher deletes the homework, or deletes or archives its class, every project photo and note in it is deleted, handed-in or draft, and so is every project on the teacher\'s homework when the teacher deletes their account. Deleting a parent account deletes none of the student\'s projects. Otherwise a project is kept until one of these happens.',
+        'Read-aloud recordings in exams: a recording is deleted when the student records the same question again, when they retake a quiz, when the teacher deletes their attempt, or when the teacher deletes their account. Removing the exam from the teacher\'s list does not delete it, and neither does deleting the student\'s account, because a student\'s answers are part of their record with the teacher.',
         'What survives deletion is an accounting row for the cost of AI usage, with no person attached to it.',
         'If you unsubscribe from our email, we keep your address alone on a do-not-email list so we can honour that, even after your account is deleted, until you undo it from the same link or ask us to remove it.',
       ],

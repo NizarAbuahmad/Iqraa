@@ -2795,7 +2795,9 @@ router.delete(
       } catch (err) {
         logger.error(
           { err, userId, keys: authored.keys },
-          "account deletion failed after its homework projects were purged; deleting their photos",
+          authored.keys.length > 0
+            ? "account deletion failed after its homework projects were purged; deleting their photos"
+            : "account deletion failed",
         );
         for (const key of authored.keys) {
           await deleteObject(key).catch(e =>

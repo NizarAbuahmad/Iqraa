@@ -86,7 +86,7 @@ Checked 2026-10-22:
   once the site redeploys. Students, parents and exam pages are recorded; the parent consent page
   is not. The homework project screen (`/homework-project`, students' photos of their work) is left
   out of screen-view tracking (`shouldTrackScreen`), which does not stop a recording already
-  running, and whether masking hides its photos is unverified, like every other screen. The policy (`LEGAL_VERSION` 2026-10-30) was written by a model and **not reviewed by a
+  running, and whether masking hides its photos is unverified, like every other screen. The policy (`LEGAL_VERSION` 2026-10-31 now; its recording text dates from 2026-10-30) was written by a model and **not reviewed by a
   lawyer**; Contentsquare's data location was not checked (PostHog's settings say «EU Cloud»),
   and the Contentsquare plan shows a 200K sessions a month cap.
   Entry: «Screen recordings: Contentsquare on the web, PostHog replay on Android» in the log.
@@ -100,7 +100,7 @@ Checked 2026-10-22:
   «Parent approval for email students — server (PR A)».
 - **A student can sign up with an email and no teacher's code (PR #1226, merged 2026-10-24) — the
   legal wording still needs a person to read it.** The privacy policy §5 and terms §1
-  (`constants/legal.ts`, `LEGAL_VERSION` 2026-10-23) say a student may join with an email after
+  (`constants/legal.ts`, since `LEGAL_VERSION` 2026-10-23; 2026-10-31 now) say a student may join with an email after
   confirming they are an adult or have a guardian's agreement. They were drafted, not reviewed by
   a lawyer, and nothing in the repo records a review since. Merging deploys, and from then new
   sign-ups record that version; existing accounts are not asked again (there is no re-acceptance
@@ -116,6 +116,11 @@ Checked 2026-10-22:
   previous account made (privacy §1 says so). Deleting the account itself removes them (since
   2026-10-31). To decide: an author column on the submission, or a purge on unlink. Entry:
   «Homework project submission — student app» in the log.
+- **An exam's read-aloud recordings outlive the exam's removal and the student's account.**
+  Removing an exam (`DELETE /evaluations/:id`) archives it, and attempts reference the roster row, so
+  neither that nor the student deleting their account deletes the recordings in R2 (privacy §6
+  says so). They go only with a re-take, a quiz retake, the teacher deleting the attempt, or the
+  teacher's account. To decide: purge them on archive and/or with the student's account.
 - **Uploaded images keep the metadata the device wrote, which can include where a photo was
   taken.** The client re-encodes a photo only when it shrinks it (long edge over 1600 px): on the
   web through a canvas, which writes no metadata; on a phone through `expo-image-manipulator`,

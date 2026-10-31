@@ -225,6 +225,14 @@ plan: `docs/superpowers/plans/2026-10-30-homework-project-submission-student-app
   and the parents linked to the record see it; a teacher who links the record to another account
   gives that account its projects. The location sentence now says an attached image may keep the
   metadata the device wrote, which can include where it was taken (see *Known limits*).
+- **Microphone (same day).** The policy said the app never uses the microphone, which was false:
+  English speaking practice records on the device only (`useSpeakingRecorder`, never uploaded);
+  read-aloud practice in a lesson is transcribed by OpenAI and nothing is kept (`routes/practice.ts`);
+  an exam's read-aloud answer is stored in R2 with its transcript and played back only on the
+  exam teacher's marking screen. Privacy §1, §3, §4 and §6 now say so. The exam recording is
+  deleted by a re-take of the question, a quiz retake, the teacher deleting the attempt or their
+  account. It is **not** deleted when the exam is removed from the list (an archive) or when the
+  student's account is deleted.
 - **Not verified:** real R2; the sweep that would clean up an object whose delete failed is not set
   up in production yet.
 - **Known limits (privacy):**
