@@ -444,3 +444,56 @@ nothing else, with its own expiry and a revoke — the same shape as the exam li
 spec: that route is the first one that reads minors' work with no signed-in user.
 A logged-in `supervisor` role is the alternative and needs the `schools` membership
 that `schools.ts` says today grants nothing beyond one calendar read.
+
+## 10. Phase 3 — the teacher's screens (design approved 2026-10-31)
+
+Scope: the teacher's side of §5 only. The parents' read-only view, a push to the
+teacher on hand-in, marks or comments, and a count on the class tab are **not** in
+this phase.
+
+**The switch rule (owner decision).** `requiresSubmission` may be changed freely only
+while nobody has started. Once any student has a completion tick for the homework or
+any `homework_submissions` row for it (a draft counts, although the teacher cannot
+see drafts), `PATCH /homework/:id` with a *different* `requiresSubmission` answers
+409 `submission_locked`. Setting the same value again is always allowed. To change it
+later the teacher deletes the homework and posts a new one. The class homework list
+carries `requiresSubmissionLocked` per item, computed on the server on the owner
+connection (a draft is invisible to the teacher's own identity under RLS), so the
+screen disables the switch instead of letting the teacher hit the error.
+
+**Screens.**
+1. *Homework form* (`components/classes/HomeworkTab.tsx`): a «يتطلب تسليم مشروع»
+   switch with a helper line, saved by create and by edit; disabled with the reason
+   «لا يمكن تغييره بعد أن بدأ الطلبة» when `requiresSubmissionLocked`.
+2. *Homework card*: for a project homework, a «سلّم X من Y» button next to the existing
+   results button (X = `submittedCount`, Y = `trackableCount`, as "done" counts); it
+   opens the list screen.
+3. *List screen* `/homework-submissions/[homeworkId]`: one row per live roster member
+   with a status chip (not handed in / handed in / late) and a photo count; a handed-in
+   or late row opens the detail screen; a "not handed in" row does nothing (a draft is
+   invisible to the teacher by design). Retry on a failed load; reload on focus (photo
+   links last 10 minutes).
+4. *Detail screen* `/homework-submissions/[homeworkId]/[studentId]`: name, hand-in time,
+   the photo grid (tap to enlarge), the note, and a «حذف المشروع» button. Its
+   confirmation says the photos and note are deleted for good, that the student's done
+   tick is removed and that the student can start again; on success it goes back to the
+   list.
+5. *Delete-homework confirmation*: for a project homework the text says the students'
+   photos and notes are deleted too and cannot be recovered (§3 already required this).
+
+**Design choices.**
+- The new screens live under a top-level path, not `/classes/...`, so the analytics
+  exclusion by path prefix (`services/screenTracking.ts`) can cover them with
+  `/homework-submissions`; they show a minor's photos.
+- Teacher routes need no `NON_TEACHER_ROUTES` entry (anything not listed is teacher-only).
+- The API client is a small injected module like phase 2's (`makeTeacherSubmissionsApi`),
+  with pure helpers and tests; teacher failures carry no `code` except the new
+  `submission_locked`, so screens branch on `status`.
+- The detail screen copies the student screen's photo grid and viewer wiring instead of
+  extracting a shared component (the student screen is not touched).
+
+**Testing.** API tests for the lock (a draft counts, a tick counts, same value allowed,
+other teacher 404, RLS-on); pure and source-reading tests for the screens; the ratchets
+(design scale, aria, icons, i18n parity) stay green; a real-stack browser run: a teacher
+creates a project homework, a student hands in, the teacher reviews it, clears it, the
+student starts again.
