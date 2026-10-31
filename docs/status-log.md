@@ -10,6 +10,42 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## The exam screen says why generating was refused — 2026-10-31
+
+**Asked:** fix the app's message when generating questions into an exam is refused with a 409, the
+open item in «Generating into an exam draft is one locked transaction».
+
+**What was wrong.** `POST /evaluations/:id/generate` answers 409 when the exam is no longer a draft:
+published, closed or deleted, either before the model is asked (no `code`) or while it is writing
+(`no_longer_draft`). The exam screen (`app/evaluations/[id]/index.tsx`, `onRegenerate`) caught every
+error the same way and showed «تعذّر توليد الأسئلة.», the line for a model outage, and left the
+screen showing a draft with a regenerate button, so every further tap got the same refusal.
+
+**The fix.** A small pure helper, `services/evaluationGenerateError.ts` (`generateFailure`), reads the
+error's `status`: a 409 gives a new line, `evaluationGenerateNoLongerDraft` («نُشر هذا الاختبار أو حُذف
+أثناء توليد الأسئلة، فلم يتغيّر شيء.» / "This exam was published or deleted while its questions were
+being generated. Nothing was changed."), and asks the screen to reload the exam (`refetch`) so it
+shows what the exam now is. It keys on the 409 itself, not on `no_longer_draft`, because the early
+refusal carries no code and means the same. Anything else keeps the old line and no reload, so a
+generator that did not answer is still worth another try. The helper is separate from the screen
+because the mobile test runner cannot load React Native.
+
+**Verified:** typecheck clean; `evaluationGenerateError.test.ts` (9 tests): the helper's four cases
+(both 409s, a 502, and a 429 / 500 / plain error / non-error), both locales have the new line and it
+differs from the generic one, and a source-level check that the screen imports the helper, shows its
+line and reloads on its say-so (the pattern `paperOrder.test.ts` uses for the quiz picker). Each
+was seen failing when its behaviour was broken: with the helper ignoring 409, and with the screen
+back on the fixed line. The full mobile suite result is in the PR. **Not verified:** the screen was
+not opened in a browser or on a device, so the layout of the longer line and the reload were not
+seen; the Arabic was not read by a native speaker.
+
+**Limits.** Only the exam screen's regenerate button. `app/evaluations/new.tsx` also calls generate,
+right after it creates the draft, so it cannot realistically meet a 409 and was left alone. A spend
+cap (429) and a server error still show the generic line on this screen, as before. **Where it
+reaches:** the web app on the next deploy; Android phones only on a binary with the same `app.json`
+version (1.6.0, while STATUS.md says the installed production binary is 1.5.0), so the line reaches
+no installed phone until a 1.6.0 build is installed.
+
 ## «ردّ بالبريد» on idea and contact messages in «البريد المجمّع», 2026-10-30
 
 The owner asked whether they could answer the ideas listed in the admin's «البريد المجمّع» (`app/admin/signups.tsx`). Most of
