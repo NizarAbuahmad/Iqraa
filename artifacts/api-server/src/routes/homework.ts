@@ -45,10 +45,10 @@ import { libraryItemSnapshot } from "../lib/librarySnapshot.ts";
 import { homeworkChatLine } from "../modules/notifications/familyPushText.ts";
 import { announceHomeworkPosted } from "../lib/familyPushEvents.ts";
 import { logger } from "../lib/logger";
-import { purgeSubmissions } from "../lib/homeworkSubmission.ts";
+import { homeworkIdsWithWork, purgeSubmissions } from "../lib/homeworkSubmission.ts";
 import { pushWithin } from "../lib/pushWithin.ts";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
-import { RESOURCES_MAX, dueAtToDueDate, isUuid, parseCreate, parsePatch } from "../modules/homework/rules.ts";
+import { RESOURCES_MAX, SUBMISSION_LOCKED_CODE, dueAtToDueDate, isUuid, parseCreate, parsePatch } from "../modules/homework/rules.ts";
 import { GAME_TITLE_MAX, GAMES_TEXT, attachedGames, carryOverGames, gameResourceKey, isGame, knownGamesOf, type GameKind } from "../modules/homework/game.ts";
 import { isMathsLesson } from "../modules/mathPractice/practice.ts";
 import { getLessonById } from "@workspace/curriculum";
@@ -60,6 +60,10 @@ router.use("/homework", authMiddleware, requireRole(...TEACHER_ROLES));
 const NO_CLASS = { error: "Class not found" } as const;
 const NO_HOMEWORK = { error: "Homework not found" } as const;
 const BAD_EXAM = { error: "That exam is not attached to this class" } as const;
+const SUBMISSION_LOCKED = {
+  error: "Students have already started this homework, so whether it asks for a project can no longer be changed",
+  code: SUBMISSION_LOCKED_CODE,
+} as const;
 const LIST_LIMIT = 100;
 type Fail = { error: string };
 
@@ -79,6 +83,11 @@ interface TeacherHomework {
   trackableCount: number;
   /** Students hand in a project instead of ticking it off. */
   requiresSubmission: boolean;
+  /**
+   * True once any student has a completion tick or a submission row (a draft counts) on this homework: the
+   * `requiresSubmission` switch can no longer be changed (PATCH answers 409 `submission_locked`).
+   */
+  requiresSubmissionLocked: boolean;
   /** Of studentCount, the live roster rows that have handed a project in. Drafts are not counted. */
   submittedCount: number;
 }
@@ -279,7 +288,7 @@ async function withCounts(rows: Homework[]): Promise<TeacherHomework[]> {
   const homeworkIds = rows.map(r => r.id);
   const examIds = [...new Set(rows.map(r => r.evaluationId).filter((v): v is string => !!v))];
 
-  const [sizes, doneCounts, submitted, exams] = await Promise.all([
+  const [sizes, doneCounts, submitted, exams, started] = await Promise.all([
     classSizes(classIds),
     db
       .select({ homeworkId: homeworkCompletions.homeworkId, n: count() })
@@ -321,6 +330,8 @@ async function withCounts(rows: Homework[]): Promise<TeacherHomework[]> {
           .select({ id: evaluations.id, title: evaluations.title, titleAr: evaluations.titleAr })
           .from(evaluations)
           .where(inArray(evaluations.id, examIds)),
+    // One query for the whole list, on the owner connection (drafts are invisible to the teacher's own).
+    homeworkIdsWithWork(homeworkIds),
   ]);
 
   const done = new Map(doneCounts.map(c => [c.homeworkId, Number(c.n)]));
@@ -341,6 +352,7 @@ async function withCounts(rows: Homework[]): Promise<TeacherHomework[]> {
     studentCount: sizes.get(r.classGroupId)?.students ?? 0,
     trackableCount: sizes.get(r.classGroupId)?.trackable ?? 0,
     requiresSubmission: r.requiresSubmission,
+    requiresSubmissionLocked: started.has(r.id),
     submittedCount: submittedBy.get(r.id) ?? 0,
   }));
 }
@@ -462,6 +474,16 @@ router.patch("/homework/:id", async (req: AuthenticatedRequest, res) => {
         r, existing.resources, RESOURCES_MAX,
         req.body?.gamesIncluded === true ? knownGamesOf(req.body?.knownGames) : undefined,
       );
+    }
+    // The project switch locks once a student has started: any completion tick or any submission row, a draft
+    // included (hence the owner connection inside — the teacher cannot see a draft). Only a CHANGE is refused;
+    // the same value is always fine. Checked before the update, so a PATCH that also edits other fields and flips
+    // the locked flag is refused as a whole and applies none of them.
+    if (patch.requiresSubmission !== undefined && patch.requiresSubmission !== existing.requiresSubmission) {
+      if ((await homeworkIdsWithWork([existing.id])).has(existing.id)) {
+        res.status(409).json(SUBMISSION_LOCKED);
+        return;
+      }
     }
     // Only fields parsePatch produced, never `...req.body`: the class and the
     // teacher are not editable, whatever the client sends.

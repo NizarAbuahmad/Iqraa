@@ -45,6 +45,7 @@ import {
   type SubmissionPhoto,
 } from "@workspace/db";
 import { and, asc, eq, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
+import { union } from "drizzle-orm/pg-core";
 import { logger } from "./logger";
 import { deleteObject, presignedGetUrl } from "./r2.ts";
 import { ownHomeworkRows, tickRows } from "./homeworkDone.ts";
@@ -613,6 +614,33 @@ export async function readForParent(
       submission: await viewSubmission(subs.find(s => c.studentIds.includes(s.studentId)) ?? null, hw.dueAt),
     })),
   );
+}
+
+/**
+ * Which of these homework have anything a student started: a completion tick, or a submission row of any kind — a
+ * DRAFT counts. This is what locks the teacher's "project" switch (PATCH /homework/:id, and the list's
+ * `requiresSubmissionLocked`): flipping it under work already done would strand that work or hand a student a
+ * tick that means something else.
+ *
+ * One query for the whole list (a union of the two tables, not a query per homework). `systemDb` on purpose: the
+ * teacher's identity cannot see a student's draft (row-level security), and a draft that the teacher cannot see is
+ * exactly the one that must still lock, so reading on the teacher's own connection would let the switch flip under it.
+ * The callers have already proved the homework are this teacher's (`ownedHomework`, or the teacher's own class list);
+ * nothing of a row is returned, only the ids that have one.
+ */
+export async function homeworkIdsWithWork(homeworkIds: string[]): Promise<Set<string>> {
+  if (homeworkIds.length === 0) return new Set();
+  const rows = await union(
+    systemDb
+      .select({ id: homeworkCompletions.homeworkId })
+      .from(homeworkCompletions)
+      .where(inArray(homeworkCompletions.homeworkId, homeworkIds)),
+    systemDb
+      .select({ id: homeworkSubmissions.homeworkId })
+      .from(homeworkSubmissions)
+      .where(inArray(homeworkSubmissions.homeworkId, homeworkIds)),
+  );
+  return new Set(rows.map(r => r.id));
 }
 
 /**
