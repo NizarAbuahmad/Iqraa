@@ -63,6 +63,428 @@ how a long lesson title wraps in the heading, and how the labelled «+» sits be
 are from the code, not the screen. The phone layout and the open-canvas layout are untouched by
 construction (`emptyDesktop` is false for both) but also unseen.
 
+## «ردّ بالبريد» on idea and contact messages in «البريد المجمّع», 2026-10-30
+
+The owner asked whether they could answer the ideas listed in the admin's «البريد المجمّع» (`app/admin/signups.tsx`). Most of
+them they could not, and still cannot: a signed-out visitor's «اقترح ميزة» stores only the message, an optional email and name,
+and `context` (`app:android` / `app:web`); no account, IP or device. The three on their screen had left the email blank, which
+is what the card's «—» means. For the ones that did leave an email, the screen had no way to answer except copying the address.
+
+**Changed:** an idea or contact card with an email now has «ردّ بالبريد», which opens the admin's own mail app on a `mailto:`
+draft (`services/adminReplyMail.ts`): subject «بخصوص اقتراحك لتطبيق «إقرأ»» (or «رسالتك» for a contact message), a greeting
+by name when one was given, room to write, and the sender's message quoted under «اقتراحك:», cut at 600 characters so the link
+stays short enough for mail apps. The draft is in the **sender's** language, read off their message (any Arabic letter makes
+it Arabic), not the dashboard's. Nothing goes through the server and nothing is recorded: the screen does not know whether a
+reply was sent. Waitlist rows keep the invite button and get no reply button. On web the link is assigned to
+`window.location` rather than opened in a tab (a `mailto:` in a new tab leaves an empty one behind); on native it is
+`Linking.openURL`, and when no mail app takes it the screen says so and names the address to copy.
+
+**Verified:** `adminReplyMail.test.ts` (12 tests: who gets a button, an address carrying `?`/`&` refused, Arabic vs English
+draft, contact wording, multi-line quoting, the 600-character cut, `%20`/`%0D%0A` encoding rather than `+`); the full mobile
+suite and the monorepo typecheck. **Not verified:** the button on a running admin screen, or the draft as Gmail, Outlook or
+the Android/iOS mail apps open it (an RTL subject, the quoted lines); ideas from **signed-in** users, in the dashboard's
+feedback list, have no reply button — this change is the signups screen only.
+
+## Admin date filter: «اليوم» and «أمس» chips — 2026-10-30
+
+**Asked:** "today" and "yesterday" alongside «الكل / ٧ أيام / ٣٠ يومًا / هذا الشهر» on the admin
+users screen.
+
+**What changed.** The presets live in the shared `DateRange` (`components/admin/DateRange.tsx`),
+so the two chips appear on every admin screen that uses it: users, signups, the dashboard's
+feedback list and AI costs. Each is one UTC day bounded at both ends (`from = to = dayAgo(0)` /
+`dayAgo(1)`); `to` is inclusive because `parseDateRange` adds a day server-side. Days are UTC like
+the other chips, so «اليوم» begins at 03:00 Amman time. AI costs drew one bar per day up to the
+API's echoed `to`, which for a bounded range is the next (exclusive) midnight — a picked `to` now
+wins, so a single day draws one bar, not an empty extra one.
+
+**«هذا الشهر» was clipped on Android.** The chip measured wide enough for the label on one line,
+yet Android drew «هذا» alone with «الشهر» wrapped below and cut off by the chip's one-line
+height: measurement and drawing disagreed. Fonts load before first render (`_layout.tsx`), so
+it was not a late font; the remaining cause is Android's default `highQuality` line breaking,
+which can wrap inside the measured width. `FilterChip` (`components/admin/widgets.tsx`) now
+sets `textBreakStrategy="simple"` (Android-only; iOS and web ignore it).
+
+**Verified:** `pnpm run typecheck`. **Not verified:** the screens were not opened on a device or
+in a browser — in particular the clipping fix has not been seen on an Android phone; no test
+covers the preset list or native text layout.
+
+## Content reports say what was reported — 2026-10-31
+
+**Asked:** the report email, the push and «بلاغات المحتوى» showed only `lesson-teaching` and
+`kbl-g4-islamic-s2-nccd-u7_l2`; "where is the details".
+
+**Changed.** `lib/artifactReportLabel.ts` turns a report's kind and lesson id into words (شرح
+الدرس, the lesson's catalog title, «الصف الرابع · التربية الإسلامية»); a free topic passes through.
+The email, the admin push body and `GET /moderation/artifact-reports` (new `label`) all use it. The
+list also returns the artifact's `content`, and the screen has «عرض المحتوى المُبلَّغ عنه», which
+lists every text in it (`services/artifactText.ts`) — one generic reader, not a renderer per kind.
+The email links to `https://app.iqrra.com/admin/artifact-reports`.
+
+**Verified:** typecheck; new tests for both helpers (the label test uses the real id above); API
+suite 2801/0. **Not verified:** the screen in a browser or on a phone; a real email or push.
+**Not done:** the report carries no teacher comment (`ai_artifact_reports.reason` exists, nothing
+fills it). The push already opens this screen on tap (since 2026-09-30); a cold-start tap racing the
+boot redirect to the tabs was suspected, not reproduced, and left alone.
+
+## Publishing an exam reads and writes it under a lock — 2026-10-31
+
+**Asked:** fix the publish race listed as open in «Generating into an exam draft is one locked
+transaction» below.
+
+**What was wrong.** `POST /evaluations/:id/publish` read the live questions and the total with no
+lock, checked them for blockers, and then ran a plain `UPDATE`. A generation committing between the
+read and the `UPDATE` (it locks the same row) left the exam published with the OLD total, or with no
+questions at all, and the blocker checks had been run on a paper that no longer existed. Reproduced
+with the new test, each before the fix: an exam published with a stored total of 10 over questions
+that add up to 20, and a draft whose questions had all gone away published anyway (200 instead of
+the «add at least one question» refusal).
+
+**The fix** (`routes/evaluations.ts`). Publish is one `db.transaction`: lock the evaluation row
+(`FOR UPDATE`), re-check it is not archived, read the questions, total and validate them under the
+lock, then the `UPDATE`. The share-code collision retry runs each attempt in a **savepoint**
+(`tx.transaction`), because a unique violation aborts a Postgres transaction and a plain retry
+would only have been refused («current transaction is aborted»); the retry is pinned by a test that
+simulates a collision on the first attempt. The push for a dated exam is sent after the commit, so
+the lock is not held across a call to Expo. Publish and generate now lock the same row the same way,
+so one is wholly before or wholly after the other.
+
+**Also changed, deliberately:** the date announcement (`publishNotice`) is decided from the row as
+it was under the lock, not the one read before it. The old comment called two publishes of one
+dated draft both announcing «a known gap, left out by choice»; a double tap on Publish would tell
+the families twice. Reproduced before the fix: 10 push messages for 5 distinct (device, title)
+pairs, every device told twice. Now once. A re-publish of an already published or closed exam never
+announced and still does not.
+
+**Verified:** typecheck clean; API suite against a throwaway local Postgres (result in the PR). The
+new `evaluationPublishRace.db.test.ts` (4 tests) was seen failing before the fix on the stale total
+and the empty exam; its control (a plain publish) and the collision retry passed before and after.
+`evaluationPublishAnnounce.db.test.ts` (1 test) was seen failing before the fix on the double
+announcement. The races are made deterministic by holding the row from the test, waiting until the
+request is queued behind it, and changing the paper as a committed generation would. **Not
+verified:** nothing was run against production; the locked read was not run under row-level security
+(CI does not set `RLS_ENFORCE`; the policies were read).
+
+**Flaky tests seen locally, not caused by this change:** in full local runs a different, unrelated
+test file failed each time with «terminating connection due to administrator command» from a `before`
+hook (`guardianApproval`, then `familyExams` and `homeworkShare`, then `familySchedule`). That is
+`DROP DATABASE … WITH (FORCE)` in the harness's teardown killing a connection that file's own
+database still held; every one passes alone. It is more likely on a loaded machine.
+
+**Found in review and recorded, not fixed:** the «wholly before or wholly after» guarantee holds
+against generate and publish only. Question add, patch and delete, the paper-grid PUT and
+`recomputeTotal` still check the status and then write without the row lock (deleting the last
+question as a publish reads the paper can publish an exam with no questions and a total of 0), and
+`DELETE /evaluations/:id` (archive) passes its draft check and then writes `archivedAt` after a
+publish commits, which leaves an exam both published and archived. The lock is `FOR UPDATE`, which
+also blocks the child-table inserts that take `FOR KEY SHARE` on the row (a student starting an
+attempt) for the length of the transaction; `FOR NO KEY UPDATE` would not, and is optional polish for
+generate and publish alike (short, DB-only transactions, so the wait is milliseconds).
+
+**Also fixed from the review:** the new tests (and generate's) released the held lock only after
+waiting on the queued request, so a failing assertion would have hung until the fetch timed out
+instead of failing; they now roll back and close the holder first.
+
+**Still open:** the app shows the «published or removed» refusal from generate as a generic «could not
+generate» (needs an Arabic and English line), a second tap still starts a second model call, and the
+paper-grid and question add/edit/delete routes keep the read-then-write shape.
+
+## Generating into an exam draft is one locked transaction — 2026-10-31
+
+**Asked:** fix the exam-generation doubling found in «Review of messaging and exams» (the
+review's «Found and not fixed» list).
+
+**What was wrong.** The write half of `POST /evaluations/:id/generate` was separate statements
+(read the live questions, soft-delete the generated ones, insert the new paper, update the
+evaluation, recompute the total), and "is it still a draft" was checked once at the top, before a
+model call that can take a minute. Reproduced against a real database with the new test, each
+before the fix:
+- **Two overlapping requests for one draft doubled the paper** (8 questions where 4 were asked
+  for). Both read an empty paper, both inserted. In the test the overlap is forced by a trigger
+  that slows the insert; in production the two requests (the app gives up at 45 s and the teacher
+  taps again) normally finish seconds apart, so they rarely overlap. The mechanism is real, the
+  frequency was never measured and is probably low.
+- **A draft published while the model was still writing had its questions replaced** (the request
+  answered 200 and rewrote a published exam).
+- **A failed insert left no paper.** The old questions were soft-deleted first, so the paper was
+  empty afterwards, under an error that says «Nothing was changed».
+
+**The fix** (`routes/evaluations.ts`). The write is a single `db.transaction` that first locks the
+evaluation row (`FOR UPDATE`) and re-checks it under the lock (`status = 'draft'` and not
+archived: «Delete» archives and leaves the status, so a removed draft is still `draft`), then does
+the read, replace, insert, total and generator metadata. A second request waits for the first and
+replaces its paper (one paper, not two); a draft that is no longer a draft, or was removed,
+answers **409 `no_longer_draft`** and nothing is written; any failure rolls back, so the previous
+paper stays and «Nothing was changed» is true. The total is computed inside the transaction from
+the live rows. Nothing slow is inside the transaction (the model call, the top-up and the SymPy
+key check all finish before it opens).
+
+**Found in review and fixed:** the published-meanwhile test could pass without reaching the lock
+(a slow runner would let the early draft check answer 409 first), so it now waits until the request
+is queued behind the lock and asserts the `no_longer_draft` code; an archived draft was still
+written into (new test, seen failing, then fixed); the test file now pins live mode off, spreads
+its calls over two teachers (the route allows 10 a minute per teacher), and compares the doubling
+case to the requested count instead of a second generation.
+
+**Verified:** typecheck clean; API suite against a throwaway local Postgres (count in the PR).
+The new `evaluationGenerateWrite.db.test.ts` (5 tests; no model, live mode off) was seen failing
+before the fix on the doubling, the published-meanwhile, the failed-write and the archived case,
+and passing after; its control (a plain regeneration replaces, never appends) passed before and
+after. **Not verified:** nothing was run against production; the live (model) path was not
+exercised (the test goes through the mock generator, but the write is the same code); the locked
+read was not run under row-level security (CI does not set `RLS_ENFORCE`; the policies were read,
+and the owner can lock and update their own row).
+
+**Not fixed, still open:**
+- **Publish can still go out on the old paper.** `POST /evaluations/:id/publish` reads the
+  questions and the total without a lock, then updates. If it reads, a generation commits, and
+  then its update runs, the exam is published with the old total and its checks were run on
+  questions that are gone. The window is milliseconds; the published-meanwhile case is closed only
+  when the publish commits first. Fixing it means locking the row in publish too.
+- **The app shows the new 409 as «could not generate».** The screen
+  (`artifacts/mobile/app/evaluations/[id]/index.tsx`) catches every error the same way and does not
+  refetch, so after a 409 it still shows a draft with a regenerate button. The error's `code` is
+  available to it; the screen does not use it. It needs a specific Arabic and English line.
+- A second tap still starts a second model call (and its cost) before it reaches the lock; the
+  result is now correct, the spend is not saved. The app's 45 s timeout is unchanged.
+- The model's `marks` are checked only for being above 0; a value over 999.99 now fails the
+  insert, rolls back and answers 502 with the old paper intact, but is not rejected up front.
+- A database error during the write still gets the generic «The question generator did not
+  respond» message.
+- `PUT /evaluations/:id/questions/paper` and the question add/edit/delete routes have the same
+  read-then-write shape and were not touched.
+
+## Teacher can clear one student's project — 2026-10-31
+
+Follow-up to «Homework submissions record their author» (below), which left a dead end open: a record
+whose project another account handed in (a mis-claim the teacher has since unlinked) blocks the account
+linked now (reads `otherAuthor: true`, every write 409 `other_author`), the record's parents keep seeing
+the wrong child's photos, and the only exit was archiving the homework (everyone's work). API only; the
+teacher's screen is phase 3. No schema change, no migration. Spec §3, §8.
+
+**What changed**
+
+- **`DELETE /homework/:id/submissions/:studentId`** (`routes/homeworkSubmissions.ts`, teacher router,
+  path-scoped guard). Clears one roster record's project for one homework, draft or handed-in, and
+  answers `{ cleared: true }`. Same owner check (`ownedHomework`: `homework.teacherId = req.user.id`) and
+  the same 404s as the two teacher reads: `Homework not found` for another teacher's homework or one
+  that asks for no project; `Submission not found` for a bad id, a student who is not a live member of
+  the class (outside it, or archived), or nothing to clear — so a second call is a 404. Logs one info
+  line, `homework submission cleared by teacher`, with the homework, student and teacher ids and the
+  photo count. No rate limit: the other teacher writes on `/homework` have none.
+- **`clearForTeacher`** (`lib/homeworkSubmission.ts`), on `systemDb`, with **no lock or transaction
+  held while R2 is called** (review round 1; the first version deleted the objects inside the locked
+  transaction, so an R2 brownout would have queued every request on that row behind the lock, each
+  holding a pool connection). (1) Read the row's photos without a lock (class-membership and archived
+  checks in the query) and delete those objects concurrently; any failure throws (500) with the
+  **database untouched** — row, photo list and tick kept — and the same request clears it, because
+  deleting a key that is already gone succeeds; photos deleted before the failure stay deleted, so
+  until the retry the row can list a photo whose link no longer loads. (2) A short transaction: lock the
+  row (`FOR UPDATE`), delete that record's completion for that homework (the hand-in ticked it) and the
+  row, and keep the photo list as of the lock; a row gone by then is the same 404. (3) After the commit,
+  delete any photo in that list that (1) did not read (an upload in between), best effort and logged
+  with its key; the orphan sweep backstops it. `systemDb` because a draft is invisible to the teacher
+  under row-level security, the table has no `DELETE` policy, and `SELECT … FOR UPDATE` needs an
+  `UPDATE` policy the teacher does not have (checked: on the app connection with `RLS_ENFORCE=on` both
+  RLS cases answer 404). The pin in `systemDbFiles.test.ts` names the new reason (same file, no new
+  entry). Nothing else ticks a submission homework: only `submit` calls `tickRows` for one
+  (`homeworkGame.ts` skips it, `setHomeworkDone` refuses it).
+- **The R2 client is bounded** (`lib/r2.ts`, every caller: chat, lesson media, library, avatars, exam
+  audio, projects, the sweep): `maxAttempts: 2` (was the SDK's 3) and `requestHandler: {
+  connectionTimeout: 5 s, socketTimeout: 10 s }` (the SDK's defaults have no timeout). `socketTimeout`
+  is an inactivity bound, so an upload that keeps sending bytes is not cut; `requestTimeout` was left
+  unset because in this handler version (`@smithy/node-http-handler` 4.11) it is a wall clock that only
+  logs a warning unless `throwOnRequestTimeout`. Nothing streams an R2 body to a client (downloads are
+  signed URLs), so a silent socket is a stuck request. Worst case per call: about 2 × (5 s + 10 s).
+- **A hand-in's `UPDATE` and its tick are one transaction** (`submit`, `db.transaction`; `tickRows`
+  takes an optional executor). Before, they were two statements, and a clear landing between them left
+  a tick with no project. Now the clear's `FOR UPDATE` waits for the tick and removes it with the row.
+  Under row-level security this is the student's own scoped transaction, and both statements are ones
+  that identity already ran.
+- **`submissionTarget`** orders a row the caller wrote first (`author_user_id IS NOT DISTINCT FROM
+  caller DESC`, then the roster id). An account self-linked to two records in one class whose
+  first-sorted record held another account's (or an authorless) handed-in project could not reach its
+  own draft on the other record; `=` would not do, because an authorless row's NULL sorts first in DESC.
+- **409 `changed`** for an upload, a note or a hand-in whose row is gone by the time its `UPDATE` runs
+  (the teacher cleared it, or it vanished during a takeover). It used to answer `photo_limit` (on a first
+  photo) or `empty`. The refused photo's object is removed as before; the app reads any 409 as stale and reloads,
+  and shows its generic upload-failed toast (no copy of its own for `changed`).
+- **App:** `isOtherAuthorRefusal` (`services/homeworkProject.ts`) removed with its test: nothing called
+  it, and `isStaleRefusal` already makes every handler reload on a 409. The stale-refusal test now
+  names `other_author` and `changed`.
+- **Privacy policy** (`constants/legal.ts`, both languages; `LEGAL_VERSION` `2026-10-31.d`, same date):
+  §6 says the teacher who set a homework can delete one student's project, handed-in or draft, which
+  deletes its photos and note, and the homework then shows as not handed in on that student's record in
+  the class; §1 says the new account cannot hand in another project for that homework
+  «unless the teacher deletes it». Written by a model, **not reviewed by a lawyer**.
+- **`docs/deploying.md`**, «Reverting the API past migration 0022»: a code revert to before the author
+  column also needs a migration restoring `0021`'s three policies (with `RLS_ENFORCE=on` the old API
+  inserts authorless rows and the 0022 `INSERT` policy refuses them; with it off, they get a NULL author,
+  so rolling forward again needs the 0022 backfill re-run).
+
+**Verified** (local, 2026-10-31, Postgres 16, in-memory S3 stub)
+
+- `homeworkSubmission.db.test.ts`, new blocks: a handed-in project cleared (row, object and that
+  record's tick gone; another record's tick on the same homework, and the same record's project, object
+  and tick on another homework untouched; teacher list, student list — `submission: none`, `done: false`
+  — parent read and the student's own read all say not handed in; a second call 404). **The dead end
+  end to end with `RLS_ENFORCE=on`:** A hands in, the teacher unlinks A through the route, B is linked
+  and blocked (`otherAuthor`, 409 `other_author`), the record's parent still sees A's photo; the teacher
+  clears; the parent sees nothing, B starts clean, uploads, notes and hands in, and the record is ticked
+  again. A draft the teacher cannot read cleared under `RLS_ENFORCE=on`. Another teacher, a roster row
+  outside the class, an archived member, a random id, a non-uuid and a homework with no project: 404,
+  and rows, objects and ticks unchanged. Student and parent 403, anonymous 401. `failDeletes` on: 500,
+  row with both photos, both objects and the tick kept, the teacher's list still says submitted; the
+  retry clears it. `failDeletesAfter(1)` (a new stub mode: the first delete succeeds, every later one
+  fails, retries included): 500, the row exactly as before with both photos listed, the tick kept, one
+  object gone; the retry clears it. A stub hook (`onDelete`, awaited before each delete is answered)
+  reads `pg_stat_activity` during the storage call and finds **no connection idle in a transaction**.
+  The same hook appends a photo to the row mid-clear (an upload between the read and the lock): the
+  row goes and that photo's object is deleted after the commit. The hook deleting the row mid-clear: 404
+  and the tick untouched. **A hand-in and a clear that meet:** an uncommitted completion holds the
+  hand-in between its `UPDATE` and its tick, the clear is sent, the test waits until it either finished
+  or queued on a lock (no timing), then rolls back: the project and the tick are both gone. Two records,
+  one account: its own draft is served over another account's, then over
+  an authorless, handed-in project, RLS off and on, and a note lands on its own record only. The row
+  removed under an upload, a note and a hand-in: the test holds the row lock, waits in `pg_stat_activity`
+  until the server's `UPDATE` queues behind it, deletes the row and commits (no timing) — 409 `changed`,
+  no object left.
+- **Each guard broken on purpose, one at a time, and a case failed each time, then restored:** the owner
+  check in `ownedHomework`; the class-membership join; the archived-student filter; object-delete errors
+  swallowed; the row deleted and committed before the objects; the tick delete widened to the whole
+  homework, widened to the whole record, and left out; the clear on the app `db` instead of `systemDb`;
+  `submissionTarget` with `=` instead of `IS NOT DISTINCT FROM`. The 2a and 2c tests were red before
+  their fixes (`otherAuthor: true`; `photo_limit` / `empty`). **Review round 1, same way:** the
+  after-commit delete skipped (the mid-clear upload's object stays); the storage calls moved back inside
+  the locked transaction (the no-open-transaction check, the mid-clear upload and the mid-clear removal
+  all fail); storage failures swallowed (both outage cases answer 200); the database changed before the
+  storage calls (the row is gone after a 500); the class join dropped from the shared query; the tick
+  moved back out of the hand-in's transaction (a tick is left with no project). The new no-lock,
+  mid-clear and hand-in-meets-clear cases, and `changed` for a hand-in, were red before the change.
+- `test-support/__tests__/s3Stub.test.ts`, through the real `r2.ts`: `failDeletesAfter`, `onDelete`, a
+  failing request is sent exactly twice (was 3: red before the bound), and a request R2 never answers
+  (`stallDeletes`) is given up after about 20 s (it hung until the test's 90 s timeout before the bound).
+- `mountOrder.test.ts` lists the new `DELETE` (401 without a token; the unowned path stays 404).
+- api-server `pnpm build && pnpm test` against a local Postgres: **3279 / 3279**, 0 skipped, after
+  review round 1 (3269 before it). One earlier full run failed once in `paperTotals.db.test.ts` («terminating
+  connection due to administrator command»: its own test database dropped at teardown while one of its
+  connections was still open); that file passed alone twice and in the rerun. Mobile
+  `pnpm test`: **8825 tests, 8815 passed, 0 failed, 10 skipped**, exit 0. Root `pnpm run typecheck`:
+  clean. The two greps of ci.yml's «Brand is «إقرأ»» step: no match.
+
+**Not verified**
+
+- Real R2; the CI `rls` job's own run; production. No lock or transaction is held while R2 is called,
+  and each R2 call gives up after two attempts of at most about 5 s to connect and 10 s of silence (the
+  stub's hung delete gave up after about 20 s). Against real R2 in an outage the teacher's request
+  waits up to that bound and then answers 500; that was not tried.
+- The mid-clear upload case is driven by writing the row directly from the stub hook, not by a real
+  upload request racing the clear.
+- No app screen calls the route, so nothing was tried in a browser or on a phone.
+
+**Known limits**
+
+- The teacher's control is phase 3; until then the dead end stays open in the app (STATUS.md).
+- Only that record's tick is removed. An account self-linked to two records in the class had both
+  ticked by its hand-in; the other record's tick stays.
+- A homework whose `requiresSubmission` was switched off after work exists cannot be cleared (404, as
+  the reads); its photos go with the homework's archive.
+- Photos deleted before a storage failure stay deleted: until the retry the row can list a photo
+  that no longer loads.
+- A record that is archived, or no longer in the homework's class, cannot be cleared (404, like the
+  teacher's reads): its project stays until the homework or the class is archived, or its author
+  deletes their account.
+- A photo uploaded during a clear whose after-commit delete fails stays in the bucket, unreferenced,
+  until the orphan sweep (which still has to be switched on in production, spec §8).
+- The bound on the R2 client applies to every R2 call in the API, not only this route.
+- The task described `DELETE /homework/:id` as failing closed on an object-delete failure. It does not:
+  `purgeSubmissions` logs a failed object delete and deletes the rows anyway (spec §8, «The archive purge
+  is not transactional»); only a purge that throws before deleting stops the archive. Unchanged here.
+
+## Grade 6 unit word lists in the English corner, 2026-10-31
+
+Grade 6 joins the English corner's word games: eight lessons, 319 words (units 1–4 from semester 1, 5–8 from semester 2), each unit's
+list on that unit's lesson 1 («Magazine and Vocabulary»). Grade 6's books are *Jordan Team Together*, © Pearson / York Press, registered
+`third-party`, and `g6EnglishSem1.ts` records leaving their vocabulary out of the catalog as a rights decision. Grades 8–10, the
+same publisher and the same class, already ship word lists, so the owner asked for this on 2026-10-31 and chose the narrower form:
+**the headword and its part of speech, our own Arabic, and nothing else from the book.** No definition (the Activity Book prints one
+for every entry), no sentence (so no gap-fill for Grade 6, only the pick-the-word and listening games), no transcription (the book
+prints none). Grades 8–10 are not narrowed to match: they keep their verbatim sentences, which is the open question the owner may want
+to answer for them.
+
+- **Source.** The two Activity Books' «Wordlist» (`g6-eng-s{1,2}-activity-book`, PDF pages 52–57, already extracted and registered).
+  It is per unit, not per lesson, so the words cannot be placed on the lesson that teaches them; lesson 1 is the one lesson the catalog
+  can name. A unit therefore holds 25–52 words, long beside Grade 8's lessons (up to 29). The «Welcome» revision list (12 and 21
+  entries) has no lesson and is skipped.
+- **Reader.** `activityWordsFrom` in `extract-english-vocabulary.ts`: a page is a Wordlist page when it holds five or more
+  `headword (pos) – definition` lines; the unit heading sets the lesson. Two named repairs, not guessed ones: `offi ce building`
+  (pdf-parse drops the «ffi» ligature) and `first-aid kit` → `first aid kit`, because recordings are keyed by the letters of a word
+  and an earlier grade already spells it without the hyphen (`englishHub.test.ts` failed the shared slug). Every other book's rows are
+  unchanged: 0 removed, 0 added.
+- **A row with no transcription.** `ipa` is `''` for Grade 6. `validateEnglishVocabulary` now accepts that and
+  `VocabularyPracticePanel.tsx` draws the transcription line only when there is one.
+- **Glosses.** 235 new Arabic glosses, **drafted by Claude, not reviewed by a teacher.** Five existing glosses had the other sense
+  and a word has one gloss, so both senses are in it: `empty`, `water` (a verb in unit 4), `smart` (well-dressed), `light` (sunlight)
+  and `keep` (stay). I read the book's printed definitions only to pick a sense; none is copied. `robot` is not in Grade 6.
+- **Hub.** `ENGLISH_HUB_GRADES` is `[1, 2, 3, 4, 5, 6, 8, 9, 10]`; `VOCAB_BOOKS` gains both Grade 6 books. The Grade 5, 9 and 10
+  teacher forms were regenerated: only each unit's «words outside the vocabulary lists» note changed.
+- **Grade 7 is not here.** There is no extraction, no manifest row and no PDF on the build container, and where Grade 7 prints a
+  Wordlist is not known (Grade 6's is in the Activity Book; Grade 7's catalog lists a student book and a teacher guide). `localSources.ts`
+  now names `g7-english-s{1,2}-student-book` so the owner can extract them; nothing is registered.
+
+**Verified:** `lib/curriculum` tests 896 of 897 (the one failure, «R2 helpers are inert, not broken, when unconfigured», fails on `main`
+too); the mobile suite 8,796 tests, 0 failures (its corpus pin is now 1,838 words / 150 lessons / 499 sentences); `pnpm run typecheck`
+clean on the whole monorepo.
+
+**Not verified:**
+- **Looked at in a browser** (web build, Playwright/Chromium, 2026-10-31): the Grade 6 tab in English on desktop (eight unit cards with word
+  counts and previews, the books and free-sites shelves), a Grade 6 lesson in English and one in Arabic on a phone (the six word games
+  are offered), and the Arabic tab on a phone in dark mode loaded with no page errors. Not done: a real phone, and playing a game through.
+- **Recordings: 223 of the 308 distinct Grade 6 words have no MP3** (`HEAD` against the public bucket, 2026-10-31). On the web the
+  word is spoken in the browser's voice; in the Android app it is silent until `english-audio` is run with the OpenAI and R2 keys.
+- The extraction against the PDF text: I read the parser's output per unit, and the printed definitions for the ambiguous words,
+  but did not compare every headword with the page. The PDFs themselves are not on the build container.
+- The glosses (above), and the Grade 6 screens on a phone.
+- Not done: Grade 7, Grade 10 semester 2, an Android OTA.
+
+## A student can carry an Arabic name, and Arabic letters use it — 2026-10-31
+
+**Asked:** after the roster-row message button shipped (#1357), the parent letter still greeted
+«ولي أمر الطالب ahmad» when the roster was typed in Latin letters.
+
+**What changed.**
+- **Schema (migration 0023, additive):** `students.display_name_ar text NOT NULL DEFAULT ''`. `''`
+  means "not recorded", the same convention as `gender` and `teacher_note`; it is never filled from
+  `display_name` — transliterating a real child's name would be a guess.
+- **API (`routes/roster.ts`):** the class roster read and both `/students` reads return
+  `displayNameAr`; `PATCH /students/:id` takes it. `lib/studentNameAr.ts` refuses anything that is
+  not Arabic script (a Latin name, digits, Arabic-Indic digits, a string with no letter) with
+  `student_name_ar_invalid`, and over 100 characters with `student_name_ar_too_long`. An empty value
+  clears it. The linked-account rename (`syncLinkedAccountNames`) is untouched: accounts follow
+  `display_name`, not the Arabic spelling.
+- **App:** the edit-student sheet has a «الاسم بالعربية» field (always right-to-left, and the two
+  refusals are translated). `services/studentName.ts` decides which spelling a letter carries: an
+  Arabic letter uses the Arabic name if there is one, else the roster name; an English letter always
+  the roster name. The parent-letter screen applies it when a student is picked, when it opens from
+  a class card (it reads the roster row, as it already did for gender), and when the letter's
+  language is flipped — and never overwrites a name the teacher has typed over it.
+
+**Verified:** `pnpm run typecheck`; api-server `pnpm build` + `pnpm test` against a local Postgres
+(3254 pass, 0 skipped, incl. six new `PATCH /students/:id` cases in `rosterEdit.db.test.ts` and
+`studentNameAr.test.ts`); mobile `pnpm test` (8806 pass, 0 fail, 10 skipped as before; new
+`studentName.test.ts`, `studentEdit.test.ts` cases). In Chromium against a local API: a Latin name in
+the Arabic box is refused with the translated message and nothing is saved; «أحمد» saves; the letter
+opened in English greets "ahmad" and, after the language flip, «أحمد».
+
+**Not verified:** a phone-width layout or dark mode for the new field; the migration against the
+production database (it is a single `ADD COLUMN … DEFAULT ''`, and `deploy.yml` applies it before the
+new API revision takes traffic); the Arabic name anywhere beyond the letter (class list, exams and
+the student record still show the roster name).
+
+**Known limits.** Names are entered one student at a time in the edit sheet — the bulk «add
+students» box has no place for a second name. A teacher who writes the Arabic name after a letter
+is already open must reopen it.
+
 ## Homework submissions record their author — 2026-10-31
 
 Closes the open item «Unlinking a student account leaves its homework projects on the roster record
@@ -104,7 +526,8 @@ unlink. Spec: `docs/superpowers/specs/2026-10-30-homework-project-submission-des
   delete cannot write at all (its author would reference a deleted user). The rest of the failure handling
   (purge before the account delete; purged keys deleted if the account delete throws) is unchanged.
 - **App** (`artifacts/mobile`). `SubmissionView.otherAuthor` (strictly `=== true`; absent is false);
-  `projectMode` and `isOtherAuthorRefusal` in `services/homeworkProject.ts`; `canAddPhoto` / `canHandIn`
+  `projectMode` in `services/homeworkProject.ts` (an `isOtherAuthorRefusal` helper was also added, but
+  nothing called it; removed on 2026-10-31 by «Teacher can clear one student's project»); `canAddPhoto` / `canHandIn`
   and `noteNeedsSave` refuse such a view. The project screen shows only «سُلِّم مشروع لهذا السجلّ من حساب
   آخر. إن كان هذا خطأً فاطلب من معلّمك المساعدة.» / "A project was already handed in for this record from
   another account. If that is a mistake, ask your teacher for help." with no photos, note or controls.
@@ -174,7 +597,6 @@ unlink. Spec: `docs/superpowers/specs/2026-10-30-homework-project-submission-des
 - A record that changed hands before `0022` ran is credited to the account linked at migration time.
 - The second pass also removes an authorless draft that predates the column on those records (nobody's,
   shown to nobody).
-
 
 ## Homework project submission — student app — 2026-10-30
 
@@ -1286,7 +1708,6 @@ of wmgeolab/geoBoundaries. Licence Creative Commons Attribution 2.5 Generic, der
   (3) The game-over panel was a fixed `View`; with the best line and the retry button it was cut off at the top and bottom
   on a 320×568 phone (the trophy under the header, the teacher signup card unreachable). It is now a `ScrollView`.
   `designScale.test.ts` needed no change.
-
 
 ## Slides: the class's turn, spot the mistake, and one point at a time — 2026-10-30
 

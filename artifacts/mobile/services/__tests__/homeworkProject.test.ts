@@ -11,7 +11,6 @@ import {
   draftAfterSaveRefusal,
   draftAfterServer,
   isEmptyRefusal,
-  isOtherAuthorRefusal,
   isStaleRefusal,
   needsLateConfirm,
   noteNeedsSave,
@@ -41,18 +40,6 @@ describe('noteNeedsSave', () => {
   it('never saves into a project another account handed in (the server would refuse it as other_author)', () => {
     assert.equal(noteNeedsSave({ locked: false, otherAuthor: true }, '', 'b'), false);
     assert.equal(noteNeedsSave({ locked: false, otherAuthor: false }, '', 'b'), true);
-  });
-});
-
-describe('isOtherAuthorRefusal', () => {
-  it('recognises the project route’s own other_author, and no other feature’s', () => {
-    assert.equal(isOtherAuthorRefusal(new SubmissionError('x', 409, 'other_author')), true);
-    assert.equal(isOtherAuthorRefusal(new SubmissionError('x', 409, 'locked')), false);
-    assert.equal(isOtherAuthorRefusal(Object.assign(new Error('x'), { status: 409, code: 'other_author' })), false);
-    assert.equal(isOtherAuthorRefusal(undefined), false);
-  });
-  it('is a stale refusal, so every handler reads the project again and shows the notice', () => {
-    assert.equal(isStaleRefusal(new SubmissionError('x', 409, 'other_author')), true);
   });
 });
 
@@ -126,6 +113,10 @@ describe('isStaleRefusal and isEmptyRefusal', () => {
     assert.equal(isStaleRefusal(new SubmissionError('x', 404)), true);
     assert.equal(isStaleRefusal(new SubmissionError('x', 500)), false);
     assert.equal(isStaleRefusal(new TypeError('offline')), false);
+  });
+  it('reads other_author and changed as stale too: the screen reads the project again (the notice, or a fresh project)', () => {
+    assert.equal(isStaleRefusal(new SubmissionError('x', 409, 'other_author')), true);
+    assert.equal(isStaleRefusal(new SubmissionError('x', 409, 'changed')), true);
   });
   it('recognises the project route’s own `empty`, and no other feature’s', () => {
     assert.equal(isEmptyRefusal(new SubmissionError('x', 409, 'empty')), true);

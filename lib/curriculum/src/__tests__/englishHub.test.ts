@@ -72,7 +72,28 @@ test('grades 9 and 10 have hub lessons, built from the vocabulary list', () => {
 });
 
 test('grade tabs are in grade order — the selected grade is a URL param carried by value, not position', () => {
-  assert.deepEqual([...ENGLISH_HUB_GRADES], [1, 2, 3, 4, 5, 8, 9, 10]);
+  assert.deepEqual([...ENGLISH_HUB_GRADES], [1, 2, 3, 4, 5, 6, 8, 9, 10]);
+});
+
+// Grade 6 (*Jordan Team Together*, third-party text) comes from the ACTIVITY book's Wordlist, which is per unit: the
+// headword and our own Arabic only, on each unit's lesson 1. No transcription, no sentence, none of the book's definitions.
+test('grade 6 offers its eight units as one word list each, on lesson 1, with no sentence and no transcription', () => {
+  const lessons = hubLessonsForGrade(6);
+  assert.deepEqual(lessons.map(l => l.id).sort(), [1, 2, 3, 4].map(u => `kbl-g6-eng-s1-nccd-u${u}_l1`).concat([5, 6, 7, 8].map(u => `kbl-g6-eng-s2-nccd-u${u}_l1`)).sort());
+  assert.deepEqual(lessons.map(l => l.semester).sort(), [1, 1, 1, 1, 2, 2, 2, 2]);
+  for (const l of lessons) assert.ok(l.words.length >= 20 && l.unitTitle && l.unitTitleAr, `${l.id}: ${l.words.length} words`);
+  const g6 = ENGLISH_VOCABULARY.filter(w => w.lessonId.startsWith('kbl-g6-eng-'));
+  assert.ok(g6.length > 300, `${g6.length} Grade 6 words`);
+  for (const w of g6) {
+    assert.equal(w.ipa, '', `${w.word}: a transcription the book does not print`);
+    assert.equal(w.sentence, undefined, `${w.word}: a sentence — Grade 6 carries none`);
+    assert.doesNotMatch(w.word, /\(|\)|–/, `${w.word}: looks like a definition leaked into the headword`);
+  }
+  // pdf-parse drops the «ffi» ligature of one headword; it is named in the extractor, not guessed.
+  assert.ok(g6.some(w => w.word === 'office building'));
+  assert.ok(!g6.some(w => /\b(fi|fl|ff|ffi)\s[a-z]/.test(w.word)));
+  // Recordings are keyed by the letters of a word: one spelling, one entry.
+  assert.ok(g6.some(w => w.word === 'first aid kit') && !g6.some(w => w.word === 'first-aid kit'));
 });
 
 // Grade 8 comes from the same Word List pass as Grade 9 (`extract-english-vocabulary.ts`). Semester 2 joined on
@@ -150,6 +171,12 @@ test('a word Grade 8 uses in a second sense carries both', () => {
   assert.match(GLOSSES.hand!, /يناول/);
   assert.match(GLOSSES.degree!, /درجة/);
   assert.match(GLOSSES.degree!, /شهادة/);
+  // Grade 6 ("empty the bin", "water the plants", a smart outfit, the light of the sun, keep warm).
+  assert.match(GLOSSES.empty!, /يُفرغ/);
+  assert.match(GLOSSES.water!, /يسقي/);
+  assert.match(GLOSSES.smart!, /أنيق/);
+  assert.match(GLOSSES.light!, /ضوء/);
+  assert.match(GLOSSES.keep!, /يبقى/);
 });
 
 test('every drillable 9–10 word has a gloss, and every gloss names a real word', () => {

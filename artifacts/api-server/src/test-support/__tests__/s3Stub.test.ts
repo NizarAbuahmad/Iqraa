@@ -147,4 +147,60 @@ describe("the S3 stub, driven by the real r2.ts", () => {
     await r2.deleteObject("fail-test/a.png");
     assert.equal(stub.body("fail-test/a.png"), undefined, "deleted once deletes work again");
   });
+
+  it("failDeletesAfter lets the first deletes through and fails every later one, retries included, until cleared", async () => {
+    await stub.putForTest("after-test/a.png", PNG);
+    await stub.putForTest("after-test/b.png", PNG);
+    stub.failDeletesAfter(1);
+    try {
+      await r2.deleteObject("after-test/a.png");
+      assert.equal(stub.body("after-test/a.png"), undefined, "the first delete went through");
+      await assert.rejects(() => r2.deleteObject("after-test/b.png"), "the second fails, and so does the SDK's retry of it");
+      assert.ok(stub.body("after-test/b.png"), "the second object is still there");
+    } finally {
+      stub.failDeletesAfter(null);
+    }
+    await r2.deleteObject("after-test/b.png");
+    assert.equal(stub.body("after-test/b.png"), undefined);
+  });
+
+  it("awaits onDelete before it answers, with the object still there", async () => {
+    await stub.putForTest("hook-test/a.png", PNG);
+    const seen: Array<[string, boolean]> = [];
+    stub.onDelete(async key => {
+      seen.push([key, stub.body(key) !== undefined]);
+    });
+    try {
+      await r2.deleteObject("hook-test/a.png");
+    } finally {
+      stub.onDelete(null);
+    }
+    assert.deepEqual(seen, [["hook-test/a.png", true]]);
+    assert.equal(stub.body("hook-test/a.png"), undefined);
+  });
+
+  // r2.ts bounds every request (lib/r2.ts, the client options): two attempts at most, and a request that gets no
+  // answer is abandoned. A caller that waits on R2 (a teacher clearing a project) must not wait forever in an outage.
+  it("tries a failing request twice, not three times", async () => {
+    stub.failDeletes(true);
+    const before = stub.deleteRequests();
+    try {
+      await assert.rejects(() => r2.deleteObject("attempts-test/a.png"));
+    } finally {
+      stub.failDeletes(false);
+    }
+    assert.equal(stub.deleteRequests() - before, 2);
+  });
+
+  it("gives up on a request R2 never answers, instead of hanging", { timeout: 90_000 }, async () => {
+    stub.stallDeletes(true);
+    const started = Date.now();
+    try {
+      await assert.rejects(() => r2.deleteObject("stall-test/a.png"));
+    } finally {
+      stub.stallDeletes(false);
+    }
+    const took = Date.now() - started;
+    assert.ok(took < 45_000, `gave up after ${took} ms`);
+  });
 });

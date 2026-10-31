@@ -17,6 +17,8 @@ import { apiJson } from '@/services/apiClient';
 import { confirm } from '@/services/confirm';
 import { goBack } from '@/services/navigation';
 import { BackButton } from '@/components/ui/BackButton';
+import { artifactText } from '@/services/artifactText';
+import { readableOn } from '@/services/readableColor';
 
 const ACCENT = '#4F46E5';
 const ADMIN_ROLES = ['system_admin'];
@@ -32,6 +34,9 @@ type Report = {
   artifactRetiredAt: string | null;
   reporterId: string;
   reporterName: string;
+  content?: unknown;
+  /** Readable kind / lesson / grade·subject, from the API's artifactReportLabel. */
+  label?: { kindAr: string; kindEn: string; lessonAr: string; lessonEn: string; contextAr: string; contextEn: string };
 };
 
 type StatusFilter = 'open' | 'approved' | 'dismissed' | 'all';
@@ -204,15 +209,23 @@ function ReportCard({
 }) {
   const align = isRTL ? 'right' : 'left';
   const open = report.status === 'open';
+  const [showContent, setShowContent] = useState(false);
+  const l = report.label;
+  const kind = l ? (ar ? l.kindAr : l.kindEn) : report.kind;
+  const lesson = (l ? (ar ? l.lessonAr : l.lessonEn) : report.lessonRef) || (ar ? '— بلا درس محدد —' : '— no lesson —');
+  const context = l ? (ar ? l.contextAr : l.contextEn) : '';
+  const lines = showContent ? artifactText(report.content) : [];
 
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-      <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
-        {report.kind}
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
-          {'  '}{report.lessonRef || (ar ? '— بلا درس محدد —' : '— no lesson —')} · {report.language}
-        </Text>
+      <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: align }}>
+        {kind}: {lesson}
       </Text>
+      {context ? (
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 2, textAlign: align }}>
+          {context}
+        </Text>
+      ) : null}
 
       <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 4, textAlign: align }}>
         {ar ? 'أبلغ عنه: ' : 'Reported by '}{report.reporterName}
@@ -223,6 +236,39 @@ function ReportCard({
         <Badge text={statusLabel(report.status, ar)} color={open ? colors.warning : colors.mutedForeground} colors={colors} />
         {report.artifactRetiredAt ? <Badge text={ar ? 'مسحوبة' : 'Retired'} color={colors.info} colors={colors} /> : null}
       </View>
+
+      {report.content !== undefined ? (
+        <Pressable
+          onPress={() => setShowContent((v) => !v)}
+          accessibilityRole="button"
+          aria-expanded={showContent}
+          hitSlop={8}
+          style={{ marginTop: 12, alignSelf: isRTL ? 'flex-end' : 'flex-start', minHeight: 44, justifyContent: 'center' }}
+        >
+          <Text style={{ color: readableOn(ACCENT, colors.card), fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
+            {showContent ? (ar ? 'إخفاء المحتوى' : 'Hide content') : ar ? 'عرض المحتوى المُبلَّغ عنه' : 'Show reported content'}
+          </Text>
+        </Pressable>
+      ) : null}
+      {showContent ? (
+        <View style={{ marginTop: 4, padding: 12, borderRadius: colors.radius, backgroundColor: colors.background }}>
+          {lines.length === 0 ? (
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
+              {ar ? 'لا يوجد نص.' : 'No text.'}
+            </Text>
+          ) : (
+            lines.map((line, i) => (
+              <Text
+                key={i}
+                selectable
+                style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 22, marginBottom: 6, textAlign: align }}
+              >
+                {line}
+              </Text>
+            ))
+          )}
+        </View>
+      ) : null}
 
       {busy ? (
         <ActivityIndicator color={ACCENT} style={{ marginTop: 14 }} />

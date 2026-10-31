@@ -42,6 +42,15 @@ function r2Client(): S3Client | null {
     // Real R2 uses virtual-hosted style. The DB tests point R2_ENDPOINT at a local stub that has
     // no wildcard DNS, so they set this; production never does.
     forcePathStyle: process.env.R2_FORCE_PATH_STYLE === "true",
+    // Bounded, so an R2 brownout cannot hold a request (and whatever the caller holds meanwhile) for
+    // ever: the SDK's defaults have no timeout at all and three attempts. `socketTimeout` is an
+    // INACTIVITY bound (no byte either way for that long), not a wall clock, so a large upload that
+    // keeps sending is not cut; `requestTimeout` is left unset because in this handler it is a wall
+    // clock that only warns unless `throwOnRequestTimeout`. Nothing here streams a body to a slow
+    // client (downloads are signed URLs), so an idle socket really is a stuck request. Worst case per
+    // call: about two attempts of 5 s to connect plus 10 s of silence. Pinned by s3Stub.test.ts.
+    maxAttempts: 2,
+    requestHandler: { connectionTimeout: 5_000, socketTimeout: 10_000 },
   });
   return cachedClient;
 }

@@ -55,9 +55,12 @@ export async function ownHomeworkRows(userId: string, homeworkId: string): Promi
   return { rows, resources: target.resources, requiresSubmission: target.requiresSubmission, dueAt: target.dueAt };
 }
 
-/** Idempotent: a row already ticked keeps its original `doneAt`. */
-export async function tickRows(homeworkId: string, rows: string[]): Promise<void> {
-  await db
+/**
+ * Idempotent: a row already ticked keeps its original `doneAt`. `executor` lets a caller tick inside its own
+ * transaction (a hand-in, lib/homeworkSubmission.ts).
+ */
+export async function tickRows(homeworkId: string, rows: string[], executor: Pick<typeof db, "insert"> = db): Promise<void> {
+  await executor
     .insert(homeworkCompletions)
     .values(rows.map(studentId => ({ homeworkId, studentId })))
     .onConflictDoNothing();

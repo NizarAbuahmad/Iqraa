@@ -26,6 +26,18 @@ export interface S3Stub {
   omitContinuationToken(on: boolean): void;
   /** Test-only: while on, every DeleteObject answers 500 InternalError and deletes nothing — an R2 outage. */
   failDeletes(on: boolean): void;
+  /**
+   * Test-only: the next `n` DeleteObject requests succeed, and every one after them fails as `failDeletes` does,
+   * until this is called with `null` — an outage that starts mid-way (the first photo goes, the second does not).
+   * Counted per request, so an SDK retry of a failed delete fails too.
+   */
+  failDeletesAfter(n: number | null): void;
+  /** Test-only: awaited before each DeleteObject is answered (and before it deletes), with the key. `null` removes it. */
+  onDelete(hook: ((key: string) => Promise<void>) | null): void;
+  /** Test-only: while on, DeleteObject requests are never answered — a hung R2. Turning it off answers none of them. */
+  stallDeletes(on: boolean): void;
+  /** How many DeleteObject requests reached the stub, retries included. */
+  deleteRequests(): number;
   close(): Promise<void>;
 }
 
@@ -63,6 +75,11 @@ export async function startS3Stub(bucket = "iqraa-media", options: S3StubOptions
   let listCount = 0;
   let omitToken = false;
   let deletesFail = false;
+  let deletesLeft: number | null = null;
+  let deleteHook: ((key: string) => Promise<void>) | null = null;
+  let deletesStall = false;
+  let deleteCount = 0;
+  const stalled: http.ServerResponse[] = [];
 
   /** ListObjectsV2: `GET /<bucket>?list-type=2&prefix=&max-keys=&continuation-token=`. */
   function listObjectsV2(url: URL, res: http.ServerResponse): void {
@@ -116,7 +133,7 @@ export async function startS3Stub(bucket = "iqraa-media", options: S3StubOptions
     const key = decodeURIComponent(url.pathname.slice(prefix.length));
     const chunks: Buffer[] = [];
     req.on("data", c => chunks.push(c as Buffer));
-    req.on("end", () => {
+    req.on("end", async () => {
       if (req.method === "PUT") {
         let body: Buffer = Buffer.concat(chunks);
         const encoding = String(req.headers["content-encoding"] ?? "");
@@ -138,7 +155,28 @@ export async function startS3Stub(bucket = "iqraa-media", options: S3StubOptions
         res.setHeader("Content-Length", String(body.length));
         res.end(body);
       } else if (req.method === "DELETE") {
-        if (deletesFail) {
+        deleteCount++;
+        if (deletesStall) {
+          stalled.push(res);
+          return;
+        }
+        if (deleteHook) {
+          try {
+            await deleteHook(key);
+          } catch (err) {
+            // A failing hook is a failing test: answer 500 so the caller sees it, and keep the object.
+            console.error("s3Stub onDelete hook failed:", err);
+            res.statusCode = 500;
+            res.end();
+            return;
+          }
+        }
+        let fail = deletesFail;
+        if (deletesLeft !== null) {
+          if (deletesLeft > 0) deletesLeft--;
+          else fail = true;
+        }
+        if (fail) {
           res.statusCode = 500;
           res.setHeader("Content-Type", "application/xml");
           res.end("<Error><Code>InternalError</Code><Message>stub: deletes are failing</Message></Error>");
@@ -170,7 +208,23 @@ export async function startS3Stub(bucket = "iqraa-media", options: S3StubOptions
     failDeletes: on => {
       deletesFail = on;
     },
-    close: () => new Promise<void>(resolve => server.close(() => resolve())),
+    failDeletesAfter: n => {
+      deletesLeft = n;
+    },
+    onDelete: hook => {
+      deleteHook = hook;
+    },
+    stallDeletes: on => {
+      deletesStall = on;
+      if (!on) for (const r of stalled.splice(0)) r.destroy();
+    },
+    deleteRequests: () => deleteCount,
+    close: () =>
+      new Promise<void>(resolve => {
+        for (const r of stalled.splice(0)) r.destroy();
+        server.closeAllConnections?.();
+        server.close(() => resolve());
+      }),
   };
 }
 

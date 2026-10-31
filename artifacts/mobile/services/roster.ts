@@ -36,6 +36,8 @@ export interface ClassGroup {
 export interface RosterStudent {
   id: string;
   displayName: string;
+  /** The name in Arabic script, '' when not recorded. Optional: a server older than this field omits it. */
+  displayNameAr?: string;
   externalRef: string | null;
   gradeId: string;
   /** The teacher's running note on this child. Empty string, never null. */
@@ -283,6 +285,7 @@ export async function removeClassResource(classId: string, resourceId: string): 
 
 export interface StudentChanges {
   displayName?: string;
+  displayNameAr?: string;
   externalRef?: string;
   teacherNote?: string;
   gender?: '' | 'male' | 'female';

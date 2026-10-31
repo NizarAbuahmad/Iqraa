@@ -49,7 +49,10 @@ export function uploadMayHaveStored(e: unknown): boolean {
   return typeof status !== 'number' || (status >= 200 && status < 300) || status >= 500;
 }
 
-/** The project changed under the screen (locked, emptied, a photo already gone): read it again. */
+/**
+ * The project changed under the screen (locked, emptied, a photo already gone, handed in from another account —
+ * `other_author` — or cleared by the teacher while a write was on its way — `changed`): read it again.
+ */
 export function isStaleRefusal(e: unknown): boolean {
   const status = statusOf(e);
   return status === 409 || status === 404;
@@ -60,17 +63,6 @@ export function isEmptyRefusal(e: unknown): boolean {
   if (!e || typeof e !== 'object') return false;
   const { name, code } = e as { name?: unknown; code?: unknown };
   return name === 'SubmissionError' && code === 'empty';
-}
-
-/**
- * The project routes' `other_author` refusal: the record's project was handed in from another account since the
- * screen loaded. A 409, so `isStaleRefusal` already makes every handler read the project again, which then shows
- * the notice; this names the case for anything that must tell it apart.
- */
-export function isOtherAuthorRefusal(e: unknown): boolean {
-  if (!e || typeof e !== 'object') return false;
-  const { name, code } = e as { name?: unknown; code?: unknown };
-  return name === 'SubmissionError' && code === 'other_author';
 }
 
 /**

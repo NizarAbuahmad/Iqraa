@@ -41,6 +41,7 @@ import {
   summarizeContacts,
   type Gender, type ManualEdit, type MessageKind, type Strength, type Tone,
 } from '@/services/parentMessage';
+import { letterStudentName, nameAfterLanguageChange, type NamedStudent } from '@/services/studentName';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
 import { dateLocale } from '@/services/dateLabels';
@@ -144,6 +145,8 @@ export default function ParentMessageScreen() {
    * the guardian behind, so that path stays share-only.
    */
   const [pickedStudentId, setPickedStudentId] = useState<string | null>(params.studentId ?? null);
+  /** Both spellings of the picked student, so flipping the letter's language can swap the name. */
+  const [pickedNames, setPickedNames] = useState<NamedStudent | null>(null);
   /** What the roster already says about the picked student's gender; null = not recorded. */
   const [pickedGender, setPickedGender] = useState<Gender | null>(null);
   const [guardians, setGuardians] = useState<ContactStudent['contacts']>([]);
@@ -190,7 +193,8 @@ export default function ParentMessageScreen() {
    * comes from the class the student was picked from, unless already typed.
    */
   const adoptStudent = (student: RosterStudent, fromClass?: ClassGroup) => {
-    setStudentName(student.displayName);
+    setStudentName(letterStudentName(student, isAr));
+    setPickedNames({ displayName: student.displayName, displayNameAr: student.displayNameAr });
     setPickedStudentId(student.id);
     setPickedGender(rosterGender(student.gender));
     const known = rosterGender(student.gender);
@@ -251,6 +255,10 @@ export default function ParentMessageScreen() {
         if (cancelled) return;
         const row = rows.find(r => r.id === id);
         if (!row) return;
+        // The class screen passed the roster name; an Arabic letter wants the
+        // Arabic one if the teacher recorded it — unless they have already typed.
+        setPickedNames({ displayName: row.displayName, displayNameAr: row.displayNameAr });
+        setStudentName(cur => (cur === params.studentName ? letterStudentName(row, isAr) : cur));
         const known = rosterGender(row.gender);
         setPickedGender(known);
         if (known) setStudentGender(known);
@@ -262,6 +270,13 @@ export default function ParentMessageScreen() {
     // through onPickStudent, which already carries the row.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Flipping the letter between Arabic and English swaps the child's name to
+  // the matching spelling — but only while the field still holds one of ours.
+  useEffect(() => {
+    if (!pickedNames) return;
+    setStudentName(cur => nameAfterLanguageChange(cur, pickedNames, isAr));
+  }, [isAr, pickedNames]);
 
   // The class the card was on names the subject, unless one was already typed.
   useEffect(() => {
@@ -510,7 +525,7 @@ export default function ParentMessageScreen() {
               // the in-app send. Picking «أحمد» and typing over the name must
               // never leave the note pointed at Ahmad's parent — fail back to
               // sharing rather than deliver to a guardian nobody chose.
-              onChangeText={(v) => { setStudentName(v); setPickedStudentId(null); }}
+              onChangeText={(v) => { setStudentName(v); setPickedStudentId(null); setPickedNames(null); }}
               placeholder={t('parentMsgStudentNamePlaceholder')}
               placeholderTextColor={colors.mutedForeground}
               style={inputStyle(colors, isRTL)}

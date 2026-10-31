@@ -120,4 +120,50 @@ describeDb("editing a roster row over HTTP, against a real database", () => {
       assert.equal(res.status, 400);
     });
   });
+
+  describe("PATCH /students/:id — the Arabic name", () => {
+    const arabicName = async (id: string) =>
+      (await user(`SELECT display_name, display_name_ar FROM students WHERE id = $1`, [id]));
+
+    it("starts empty: 'not recorded', never null", async () => {
+      const row = await arabicName(w.students.sA1);
+      assert.equal(row.display_name_ar, "");
+    });
+
+    it("saves it, tidied, and leaves the roster name alone", async () => {
+      const before = await arabicName(w.students.sA1);
+      const res = await call(on, "PATCH", `/students/${w.students.sA1}`, w.users.t1, { displayNameAr: "  أحمد   علي " });
+      assert.equal(res.status, 200);
+      assert.equal(res.json.student.displayNameAr, "أحمد علي");
+      const after = await arabicName(w.students.sA1);
+      assert.equal(after.display_name_ar, "أحمد علي");
+      assert.equal(after.display_name, before.display_name);
+    });
+
+    it("comes back on the class roster read", async () => {
+      const res = await call(on, "GET", `/classes/${w.classes.c1}`, w.users.t1);
+      assert.equal(res.status, 200);
+      const row = res.json.students.find((s: { id: string }) => s.id === w.students.sA1);
+      assert.equal(row?.displayNameAr, "أحمد علي");
+    });
+
+    it("refuses a Latin name and keeps what was there", async () => {
+      const res = await call(on, "PATCH", `/students/${w.students.sA1}`, w.users.t1, { displayNameAr: "ahmad" });
+      assert.equal(res.status, 400);
+      assert.equal(res.json.code, "student_name_ar_invalid");
+      assert.equal((await arabicName(w.students.sA1)).display_name_ar, "أحمد علي");
+    });
+
+    it("an empty value clears it", async () => {
+      const res = await call(on, "PATCH", `/students/${w.students.sA1}`, w.users.t1, { displayNameAr: "" });
+      assert.equal(res.status, 200);
+      assert.equal((await arabicName(w.students.sA1)).display_name_ar, "");
+    });
+
+    it("is another teacher's student: 404, and nothing changes", async () => {
+      const res = await call(on, "PATCH", `/students/${w.students.sA1}`, w.users.t2, { displayNameAr: "خالد" });
+      assert.equal(res.status, 404);
+      assert.equal((await arabicName(w.students.sA1)).display_name_ar, "");
+    });
+  });
 });

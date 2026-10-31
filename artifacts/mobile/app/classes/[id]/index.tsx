@@ -240,6 +240,8 @@ export default function ClassDetailScreen() {
       if (err instanceof RosterError) {
         if (err.isStorageUnavailable) return t('rosterStorageUnavailable');
         if (err.code === 'student_name_taken') return t('studentNameTaken');
+        if (err.code === 'student_name_ar_invalid') return t('studentNameArInvalid');
+        if (err.code === 'student_name_ar_too_long') return t('studentNameArTooLong');
         if (err.status === 0 || err.status >= 500) return t('rosterLoadFailed');
         return err.message;
       }
