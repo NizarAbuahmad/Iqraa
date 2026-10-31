@@ -1694,81 +1694,119 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
       res.status(409).json({ error: "This evaluation was removed from your list", code: "archived" });
       return;
     }
-    const questions = await liveQuestions(evaluation.id);
-    const total = questions.reduce((s, q) => s + Number(q.marks), 0);
 
-    // Publishing is the point of no return for in-flight attempts, so the
-    // blocking checks live here rather than being advisory.
-    const blockers: string[] = [];
-    if (questions.length === 0) blockers.push("Add at least one question before publishing");
-    if (total <= 0) blockers.push("Total marks must be greater than zero");
-    for (const q of questions) {
-      // A paper exam's questions are on paper. There is no body to validate,
-      // and demanding one would make a paper exam unpublishable.
-      if (isPaperQuestion(q)) continue;
-      const problems = QUESTION_TYPES[q.type].validate({
-        type: q.type,
-        body: q.body,
-        expectedAnswer: q.expectedAnswer,
-        rubric: q.rubric,
-      });
-      if (problems.length > 0) blockers.push(`Question ${q.orderIndex + 1}: ${problems[0]}`);
-    }
+    // Everything that decides whether and how to publish happens behind a lock on
+    // the evaluation row, in one transaction: the questions are read, checked and
+    // totalled under it, and the UPDATE is made under it. Without that, a
+    // generation committing between the read and the UPDATE (it locks the same
+    // row) left the exam published with the OLD total, or with no questions at
+    // all, and the checks below had been run on a paper that no longer existed.
+    // The push for a dated exam is sent after the commit, so the lock is not
+    // held across a call to Expo.
+    const outcome = await db.transaction(async tx => {
+      const [locked] = await tx
+        .select()
+        .from(evaluations)
+        .where(eq(evaluations.id, evaluation.id))
+        .for("update");
+      // Read again under the lock: it may have been removed, or published by a
+      // request ahead of this one, since the check above.
+      if (!locked) return { kind: "gone" as const };
+      if (locked.archivedAt) return { kind: "archived" as const };
 
-    if (blockers.length > 0) {
-      res.status(400).json({ error: "Evaluation is not ready to publish", blockers });
+      const questions = await tx
+        .select()
+        .from(evaluationQuestions)
+        .where(and(eq(evaluationQuestions.evaluationId, evaluation.id), isNull(evaluationQuestions.deletedAt)))
+        .orderBy(asc(evaluationQuestions.orderIndex));
+      const total = questions.reduce((s, q) => s + Number(q.marks), 0);
+
+      // Publishing is the point of no return for in-flight attempts, so the
+      // blocking checks live here rather than being advisory.
+      const blockers: string[] = [];
+      if (questions.length === 0) blockers.push("Add at least one question before publishing");
+      if (total <= 0) blockers.push("Total marks must be greater than zero");
+      for (const q of questions) {
+        // A paper exam's questions are on paper. There is no body to validate,
+        // and demanding one would make a paper exam unpublishable.
+        if (isPaperQuestion(q)) continue;
+        const problems = QUESTION_TYPES[q.type].validate({
+          type: q.type,
+          body: q.body,
+          expectedAnswer: q.expectedAnswer,
+          rubric: q.rubric,
+        });
+        if (problems.length > 0) blockers.push(`Question ${q.orderIndex + 1}: ${problems[0]}`);
+      }
+      if (blockers.length > 0) return { kind: "blockers" as const, blockers };
+
+      // The share code is issued once and kept. Re-publishing after an edit must
+      // not invalidate a link a teacher has already written on the board.
+      //
+      // The retry is for the unique index, not for luck: 31^6 codes make a
+      // collision vanishingly rare, and silently failing a publish because of one
+      // would be a bug nobody could reproduce. Each attempt runs in a savepoint:
+      // a unique violation aborts a Postgres transaction, and without one the
+      // retry would only be refused with "current transaction is aborted".
+      let updated;
+      for (let attempt = 0; attempt < 5 && !updated; attempt++) {
+        try {
+          [updated] = await tx.transaction(sp =>
+            sp
+              .update(evaluations)
+              .set({
+                status: "published",
+                publishedAt: new Date(),
+                // Re-publishing reopens a closed exam; it is no longer closed.
+                closedAt: null,
+                // And it is being sat again, so its answers go back out of view
+                // (`modules/assessment/answerReview.ts`).
+                showSolutionsToStudent: false,
+                updatedAt: new Date(),
+                totalMarks: total.toFixed(2),
+                shareCode: locked.shareCode ?? generateShareCode(),
+                // Refreshed on every publish, unlike the code itself, which is
+                // kept. A teacher who edits a paper the day before a sitting must
+                // not find the link they already wrote on the board has a week
+                // less life than they think. See the column's own note for why an
+                // expiry exists at all: the link hands a class list of minors to
+                // anyone holding it, and that used to be true forever.
+                shareCodeExpiresAt: new Date(Date.now() + SHARE_CODE_TTL_MS),
+              })
+              .where(eq(evaluations.id, evaluation.id))
+              .returning(),
+          );
+        } catch (err) {
+          if (!isUniqueViolation(err) || locked.shareCode) throw err;
+          logger.warn({ evaluationId: evaluation.id }, "share code collision, retrying");
+        }
+      }
+      if (!updated) return { kind: "failed" as const };
+      // From the row as it was under the lock, not the one read before it: a
+      // publish ahead of this one has already moved the exam out of draft, so a
+      // second publish of the same dated draft no longer announces it twice.
+      return { kind: "published" as const, updated, notice: publishNotice(locked) };
+    });
+
+    if (outcome.kind === "gone") {
+      res.status(404).json({ error: "Evaluation not found" });
       return;
     }
-
-    // The share code is issued once and kept. Re-publishing after an edit must
-    // not invalidate a link a teacher has already written on the board.
-    //
-    // The retry is for the unique index, not for luck: 31^6 codes make a
-    // collision vanishingly rare, and silently failing a publish because of one
-    // would be a bug nobody could reproduce.
-    let updated;
-    for (let attempt = 0; attempt < 5 && !updated; attempt++) {
-      try {
-        [updated] = await db
-          .update(evaluations)
-          .set({
-            status: "published",
-            publishedAt: new Date(),
-            // Re-publishing reopens a closed exam; it is no longer closed.
-            closedAt: null,
-            // And it is being sat again, so its answers go back out of view
-            // (`modules/assessment/answerReview.ts`).
-            showSolutionsToStudent: false,
-            updatedAt: new Date(),
-            totalMarks: total.toFixed(2),
-            shareCode: evaluation.shareCode ?? generateShareCode(),
-            // Refreshed on every publish, unlike the code itself, which is
-            // kept. A teacher who edits a paper the day before a sitting must
-            // not find the link they already wrote on the board has a week
-            // less life than they think. See the column's own note for why an
-            // expiry exists at all: the link hands a class list of minors to
-            // anyone holding it, and that used to be true forever.
-            shareCodeExpiresAt: new Date(Date.now() + SHARE_CODE_TTL_MS),
-          })
-          .where(eq(evaluations.id, evaluation.id))
-          .returning();
-      } catch (err) {
-        if (!isUniqueViolation(err) || evaluation.shareCode) throw err;
-        logger.warn({ evaluationId: evaluation.id }, "share code collision, retrying");
-      }
+    if (outcome.kind === "archived") {
+      res.status(409).json({ error: "This evaluation was removed from your list", code: "archived" });
+      return;
     }
-    if (!updated) {
+    if (outcome.kind === "blockers") {
+      res.status(400).json({ error: "Evaluation is not ready to publish", blockers: outcome.blockers });
+      return;
+    }
+    if (outcome.kind === "failed") {
       res.status(500).json({ error: "Failed to publish" });
       return;
     }
 
     // A dated draft leaving draft is the moment its date reaches families.
-    // Not made race-safe, by choice (a known gap): two publishes of one draft
-    // racing each other can both announce. A conditional write is possible inside
-    // the share-code retry loop (first attempt `status = draft`, a zero-row result
-    // is not an exception so the retry stays intact) but it was left out of this
-    // part to keep the publish path unchanged.
-    const notice = publishNotice(evaluation);
+    const { updated, notice } = outcome;
     if (notice) await pushWithin("exam published with a date", () => announceExamDate(updated, notice));
     res.json({ evaluation: updated });
   } catch (err) {
