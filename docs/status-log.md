@@ -202,6 +202,197 @@ the `preview` OTA channel. Spec: `docs/superpowers/specs/2026-10-30-homework-pro
 - Not in this phase: the parents' view (the API route exists), a push to the teacher on hand-in, marks or
   comments, a count on the class tab, removing one photo and keeping the rest.
 
+## «ردّ بالبريد» on idea and contact messages in «البريد المجمّع», 2026-10-30
+
+The owner asked whether they could answer the ideas listed in the admin's «البريد المجمّع» (`app/admin/signups.tsx`). Most of
+them they could not, and still cannot: a signed-out visitor's «اقترح ميزة» stores only the message, an optional email and name,
+and `context` (`app:android` / `app:web`); no account, IP or device. The three on their screen had left the email blank, which
+is what the card's «—» means. For the ones that did leave an email, the screen had no way to answer except copying the address.
+
+**Changed:** an idea or contact card with an email now has «ردّ بالبريد», which opens the admin's own mail app on a `mailto:`
+draft (`services/adminReplyMail.ts`): subject «بخصوص اقتراحك لتطبيق «إقرأ»» (or «رسالتك» for a contact message), a greeting
+by name when one was given, room to write, and the sender's message quoted under «اقتراحك:», cut at 600 characters so the link
+stays short enough for mail apps. The draft is in the **sender's** language, read off their message (any Arabic letter makes
+it Arabic), not the dashboard's. Nothing goes through the server and nothing is recorded: the screen does not know whether a
+reply was sent. Waitlist rows keep the invite button and get no reply button. On web the link is assigned to
+`window.location` rather than opened in a tab (a `mailto:` in a new tab leaves an empty one behind); on native it is
+`Linking.openURL`, and when no mail app takes it the screen says so and names the address to copy.
+
+**Verified:** `adminReplyMail.test.ts` (12 tests: who gets a button, an address carrying `?`/`&` refused, Arabic vs English
+draft, contact wording, multi-line quoting, the 600-character cut, `%20`/`%0D%0A` encoding rather than `+`); the full mobile
+suite and the monorepo typecheck. **Not verified:** the button on a running admin screen, or the draft as Gmail, Outlook or
+the Android/iOS mail apps open it (an RTL subject, the quoted lines); ideas from **signed-in** users, in the dashboard's
+feedback list, have no reply button — this change is the signups screen only.
+
+## Admin date filter: «اليوم» and «أمس» chips — 2026-10-30
+
+**Asked:** "today" and "yesterday" alongside «الكل / ٧ أيام / ٣٠ يومًا / هذا الشهر» on the admin
+users screen.
+
+**What changed.** The presets live in the shared `DateRange` (`components/admin/DateRange.tsx`),
+so the two chips appear on every admin screen that uses it: users, signups, the dashboard's
+feedback list and AI costs. Each is one UTC day bounded at both ends (`from = to = dayAgo(0)` /
+`dayAgo(1)`); `to` is inclusive because `parseDateRange` adds a day server-side. Days are UTC like
+the other chips, so «اليوم» begins at 03:00 Amman time. AI costs drew one bar per day up to the
+API's echoed `to`, which for a bounded range is the next (exclusive) midnight — a picked `to` now
+wins, so a single day draws one bar, not an empty extra one.
+
+**«هذا الشهر» was clipped on Android.** The chip measured wide enough for the label on one line,
+yet Android drew «هذا» alone with «الشهر» wrapped below and cut off by the chip's one-line
+height: measurement and drawing disagreed. Fonts load before first render (`_layout.tsx`), so
+it was not a late font; the remaining cause is Android's default `highQuality` line breaking,
+which can wrap inside the measured width. `FilterChip` (`components/admin/widgets.tsx`) now
+sets `textBreakStrategy="simple"` (Android-only; iOS and web ignore it).
+
+**Verified:** `pnpm run typecheck`. **Not verified:** the screens were not opened on a device or
+in a browser — in particular the clipping fix has not been seen on an Android phone; no test
+covers the preset list or native text layout.
+
+## Content reports say what was reported — 2026-10-31
+
+**Asked:** the report email, the push and «بلاغات المحتوى» showed only `lesson-teaching` and
+`kbl-g4-islamic-s2-nccd-u7_l2`; "where is the details".
+
+**Changed.** `lib/artifactReportLabel.ts` turns a report's kind and lesson id into words (شرح
+الدرس, the lesson's catalog title, «الصف الرابع · التربية الإسلامية»); a free topic passes through.
+The email, the admin push body and `GET /moderation/artifact-reports` (new `label`) all use it. The
+list also returns the artifact's `content`, and the screen has «عرض المحتوى المُبلَّغ عنه», which
+lists every text in it (`services/artifactText.ts`) — one generic reader, not a renderer per kind.
+The email links to `https://app.iqrra.com/admin/artifact-reports`.
+
+**Verified:** typecheck; new tests for both helpers (the label test uses the real id above); API
+suite 2801/0. **Not verified:** the screen in a browser or on a phone; a real email or push.
+**Not done:** the report carries no teacher comment (`ai_artifact_reports.reason` exists, nothing
+fills it). The push already opens this screen on tap (since 2026-09-30); a cold-start tap racing the
+boot redirect to the tabs was suspected, not reproduced, and left alone.
+
+## Publishing an exam reads and writes it under a lock — 2026-10-31
+
+**Asked:** fix the publish race listed as open in «Generating into an exam draft is one locked
+transaction» below.
+
+**What was wrong.** `POST /evaluations/:id/publish` read the live questions and the total with no
+lock, checked them for blockers, and then ran a plain `UPDATE`. A generation committing between the
+read and the `UPDATE` (it locks the same row) left the exam published with the OLD total, or with no
+questions at all, and the blocker checks had been run on a paper that no longer existed. Reproduced
+with the new test, each before the fix: an exam published with a stored total of 10 over questions
+that add up to 20, and a draft whose questions had all gone away published anyway (200 instead of
+the «add at least one question» refusal).
+
+**The fix** (`routes/evaluations.ts`). Publish is one `db.transaction`: lock the evaluation row
+(`FOR UPDATE`), re-check it is not archived, read the questions, total and validate them under the
+lock, then the `UPDATE`. The share-code collision retry runs each attempt in a **savepoint**
+(`tx.transaction`), because a unique violation aborts a Postgres transaction and a plain retry
+would only have been refused («current transaction is aborted»); the retry is pinned by a test that
+simulates a collision on the first attempt. The push for a dated exam is sent after the commit, so
+the lock is not held across a call to Expo. Publish and generate now lock the same row the same way,
+so one is wholly before or wholly after the other.
+
+**Also changed, deliberately:** the date announcement (`publishNotice`) is decided from the row as
+it was under the lock, not the one read before it. The old comment called two publishes of one
+dated draft both announcing «a known gap, left out by choice»; a double tap on Publish would tell
+the families twice. Reproduced before the fix: 10 push messages for 5 distinct (device, title)
+pairs, every device told twice. Now once. A re-publish of an already published or closed exam never
+announced and still does not.
+
+**Verified:** typecheck clean; API suite against a throwaway local Postgres (result in the PR). The
+new `evaluationPublishRace.db.test.ts` (4 tests) was seen failing before the fix on the stale total
+and the empty exam; its control (a plain publish) and the collision retry passed before and after.
+`evaluationPublishAnnounce.db.test.ts` (1 test) was seen failing before the fix on the double
+announcement. The races are made deterministic by holding the row from the test, waiting until the
+request is queued behind it, and changing the paper as a committed generation would. **Not
+verified:** nothing was run against production; the locked read was not run under row-level security
+(CI does not set `RLS_ENFORCE`; the policies were read).
+
+**Flaky tests seen locally, not caused by this change:** in full local runs a different, unrelated
+test file failed each time with «terminating connection due to administrator command» from a `before`
+hook (`guardianApproval`, then `familyExams` and `homeworkShare`, then `familySchedule`). That is
+`DROP DATABASE … WITH (FORCE)` in the harness's teardown killing a connection that file's own
+database still held; every one passes alone. It is more likely on a loaded machine.
+
+**Found in review and recorded, not fixed:** the «wholly before or wholly after» guarantee holds
+against generate and publish only. Question add, patch and delete, the paper-grid PUT and
+`recomputeTotal` still check the status and then write without the row lock (deleting the last
+question as a publish reads the paper can publish an exam with no questions and a total of 0), and
+`DELETE /evaluations/:id` (archive) passes its draft check and then writes `archivedAt` after a
+publish commits, which leaves an exam both published and archived. The lock is `FOR UPDATE`, which
+also blocks the child-table inserts that take `FOR KEY SHARE` on the row (a student starting an
+attempt) for the length of the transaction; `FOR NO KEY UPDATE` would not, and is optional polish for
+generate and publish alike (short, DB-only transactions, so the wait is milliseconds).
+
+**Also fixed from the review:** the new tests (and generate's) released the held lock only after
+waiting on the queued request, so a failing assertion would have hung until the fetch timed out
+instead of failing; they now roll back and close the holder first.
+
+**Still open:** the app shows the «published or removed» refusal from generate as a generic «could not
+generate» (needs an Arabic and English line), a second tap still starts a second model call, and the
+paper-grid and question add/edit/delete routes keep the read-then-write shape.
+
+## Generating into an exam draft is one locked transaction — 2026-10-31
+
+**Asked:** fix the exam-generation doubling found in «Review of messaging and exams» (the
+review's «Found and not fixed» list).
+
+**What was wrong.** The write half of `POST /evaluations/:id/generate` was separate statements
+(read the live questions, soft-delete the generated ones, insert the new paper, update the
+evaluation, recompute the total), and "is it still a draft" was checked once at the top, before a
+model call that can take a minute. Reproduced against a real database with the new test, each
+before the fix:
+- **Two overlapping requests for one draft doubled the paper** (8 questions where 4 were asked
+  for). Both read an empty paper, both inserted. In the test the overlap is forced by a trigger
+  that slows the insert; in production the two requests (the app gives up at 45 s and the teacher
+  taps again) normally finish seconds apart, so they rarely overlap. The mechanism is real, the
+  frequency was never measured and is probably low.
+- **A draft published while the model was still writing had its questions replaced** (the request
+  answered 200 and rewrote a published exam).
+- **A failed insert left no paper.** The old questions were soft-deleted first, so the paper was
+  empty afterwards, under an error that says «Nothing was changed».
+
+**The fix** (`routes/evaluations.ts`). The write is a single `db.transaction` that first locks the
+evaluation row (`FOR UPDATE`) and re-checks it under the lock (`status = 'draft'` and not
+archived: «Delete» archives and leaves the status, so a removed draft is still `draft`), then does
+the read, replace, insert, total and generator metadata. A second request waits for the first and
+replaces its paper (one paper, not two); a draft that is no longer a draft, or was removed,
+answers **409 `no_longer_draft`** and nothing is written; any failure rolls back, so the previous
+paper stays and «Nothing was changed» is true. The total is computed inside the transaction from
+the live rows. Nothing slow is inside the transaction (the model call, the top-up and the SymPy
+key check all finish before it opens).
+
+**Found in review and fixed:** the published-meanwhile test could pass without reaching the lock
+(a slow runner would let the early draft check answer 409 first), so it now waits until the request
+is queued behind the lock and asserts the `no_longer_draft` code; an archived draft was still
+written into (new test, seen failing, then fixed); the test file now pins live mode off, spreads
+its calls over two teachers (the route allows 10 a minute per teacher), and compares the doubling
+case to the requested count instead of a second generation.
+
+**Verified:** typecheck clean; API suite against a throwaway local Postgres (count in the PR).
+The new `evaluationGenerateWrite.db.test.ts` (5 tests; no model, live mode off) was seen failing
+before the fix on the doubling, the published-meanwhile, the failed-write and the archived case,
+and passing after; its control (a plain regeneration replaces, never appends) passed before and
+after. **Not verified:** nothing was run against production; the live (model) path was not
+exercised (the test goes through the mock generator, but the write is the same code); the locked
+read was not run under row-level security (CI does not set `RLS_ENFORCE`; the policies were read,
+and the owner can lock and update their own row).
+
+**Not fixed, still open:**
+- **Publish can still go out on the old paper.** `POST /evaluations/:id/publish` reads the
+  questions and the total without a lock, then updates. If it reads, a generation commits, and
+  then its update runs, the exam is published with the old total and its checks were run on
+  questions that are gone. The window is milliseconds; the published-meanwhile case is closed only
+  when the publish commits first. Fixing it means locking the row in publish too.
+- **The app shows the new 409 as «could not generate».** The screen
+  (`artifacts/mobile/app/evaluations/[id]/index.tsx`) catches every error the same way and does not
+  refetch, so after a 409 it still shows a draft with a regenerate button. The error's `code` is
+  available to it; the screen does not use it. It needs a specific Arabic and English line.
+- A second tap still starts a second model call (and its cost) before it reaches the lock; the
+  result is now correct, the spend is not saved. The app's 45 s timeout is unchanged.
+- The model's `marks` are checked only for being above 0; a value over 999.99 now fails the
+  insert, rolls back and answers 502 with the old paper intact, but is not rejected up front.
+- A database error during the write still gets the generic «The question generator did not
+  respond» message.
+- `PUT /evaluations/:id/questions/paper` and the question add/edit/delete routes have the same
+  read-then-write shape and were not touched.
+
 ## Teacher can clear one student's project — 2026-10-31
 
 Follow-up to «Homework submissions record their author» (below), which left a dead end open: a record

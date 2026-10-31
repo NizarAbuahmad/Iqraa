@@ -6,6 +6,7 @@ import { sendExpoPush, deadTokensFrom, PUSH_CHANNEL } from "./pushNotifications.
 import { sendArtifactReportedEmail } from "./email.ts";
 import { logger } from "./logger.ts";
 import { waitlistPush } from "./waitlistPush.ts";
+import { artifactReportLabel } from "./artifactReportLabel.ts";
 
 /**
  * Pushes every `system_admin` when someone joins the website waitlist. Push
@@ -57,7 +58,8 @@ export async function notifyAdminsOfArtifactReport(args: {
       .from(devicePushTokens)
       .where(inArray(devicePushTokens.userId, adminIds));
 
-    const body = `${args.kind} — ${args.lessonRef || "بدون درس محدد"}`;
+    const label = artifactReportLabel(args.kind, args.lessonRef);
+    const body = [label.kindAr, label.lessonAr || "بدون درس محدد", label.contextAr].filter(Boolean).join(" — ");
     const results = await sendExpoPush(
       tokenRows.map((t) => ({
         to: t.expoPushToken,
