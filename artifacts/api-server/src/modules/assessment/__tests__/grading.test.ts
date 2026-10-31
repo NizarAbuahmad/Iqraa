@@ -80,6 +80,24 @@ describe("Arabic normalisation", () => {
     assert.ok(!answersMatch("1009.5", "1000.5"));
   });
 
+  it("never accepts a whole number against a decimal key, or a decimal against a whole key", () => {
+    // A plain integer is not a rounding of anything: with no decimal places on
+    // one side the "coarser precision" was 0, so the tolerance became half a
+    // unit and a key of 0.5 accepted 0 and 1, a key of 3 accepted 3.4.
+    assert.ok(!answersMatch("0", "0.3"));
+    assert.ok(!answersMatch("1", "0.5"));
+    assert.ok(!answersMatch("0", "0.5"));
+    assert.ok(!answersMatch("3", "3.14159"));
+    assert.ok(!answersMatch("2", "2.5"));
+    assert.ok(!answersMatch("3", "2.5"));
+    assert.ok(!answersMatch("10", "10.5"));
+    assert.ok(!answersMatch("3.4", "3"));
+    assert.ok(!answersMatch("1", "0.75"));
+    // Written the same value two ways is still the same answer.
+    assert.ok(answersMatch("3.0", "3"));
+    assert.ok(answersMatch("2.50", "2.5"));
+  });
+
   it("still forgives the rounding a student legitimately writes", () => {
     // The reason a tolerance exists at all: a repeating decimal, written to
     // fewer places than the key. Judged at the coarser of the two precisions.

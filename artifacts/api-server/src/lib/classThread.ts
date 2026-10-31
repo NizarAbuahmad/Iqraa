@@ -161,8 +161,9 @@ export async function archiveClassThread(classGroupId: string): Promise<void> {
  * One line in a class's group chat, in the teacher's name, sent by the server
  * for something the teacher did (results released, homework shared). Not
  * pushed: each caller has already pushed the families it concerns. Bumps the
- * thread so it rises in the inbox, and marks it read for the teacher — they
- * pressed the button, their own line is not news to them.
+ * thread so it rises in the inbox. The teacher's read mark is NOT moved: their
+ * own line is never counted as unread, and moving it would bury any family
+ * reply they have not opened.
  */
 export async function postToClassThread(
   group: { id: string; teacherId: string; name: string; nameAr: string },
@@ -175,8 +176,4 @@ export async function postToClassThread(
     .returning({ createdAt: chatMessages.createdAt });
   const at = line?.createdAt ?? new Date();
   await db.update(chatThreads).set({ updatedAt: at }).where(eq(chatThreads.id, thread.id));
-  await db
-    .update(chatParticipants)
-    .set({ lastReadAt: at })
-    .where(and(eq(chatParticipants.threadId, thread.id), eq(chatParticipants.userId, group.teacherId)));
 }
