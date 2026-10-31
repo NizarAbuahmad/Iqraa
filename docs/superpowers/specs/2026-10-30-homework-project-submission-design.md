@@ -46,7 +46,7 @@ until the homework is deleted or the student replaces it.
 | Resubmitting | A student may replace their own submission until the due day ends. After that it is locked. |
 | Late | A student with no submission may still submit after the due day. It is accepted and shown as **late**. |
 | Supervisor | No access in this release. |
-| Retention | Photos live until the student removes them, or the teacher deletes (archives) the homework, which purges the photos and deletes the submission rows. No automatic expiry. |
+| Retention | Photos live until the student removes them, or the teacher deletes (archives) the homework, which purges the photos and deletes the submission rows. No automatic expiry. Also removed: archiving the class, deleting the teacher's account, and (added 2026-10-31) deleting the student's own account, which deletes the submissions of every roster row it is `self`-linked to (`purgeSubmissionsOfAuthor`); a parent's deletion removes none. The privacy policy §1/§6 (`constants/legal.ts`, `LEGAL_VERSION` 2026-10-31) describes this. |
 
 ## 1. Data
 

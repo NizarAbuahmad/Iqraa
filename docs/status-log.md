@@ -183,6 +183,38 @@ plan: `docs/superpowers/plans/2026-10-30-homework-project-submission-student-app
 - Not built here: the teacher's switch, list and detail, and the parent's view (phase 3);
   the `e2e/` journey step the spec describes (§7).
 
+**The privacy policy, the terms, and a student's account deletion (2026-10-31, same PR)**
+
+- **Policy and terms** (`constants/legal.ts`, both languages; `LEGAL_LAST_UPDATED` 31 October
+  2026, `LEGAL_VERSION` `2026-10-31`). Privacy §1 describes the project: up to six photos from the
+  photo library and a note of up to 2000 characters, in private R2 behind ten-minute links;
+  photograph only the work; a draft is the student's alone; once handed in, the homework's teacher
+  and a parent linked to the student's record in that class see it, and nobody else in the app;
+  editable until the due day ends, with changes seen at once. §5 lists what a student account
+  reaches (it said "two things": messaging and the curriculum, already untrue for homework and
+  exams before this feature). §6 says what deletes a project. Terms §1 widened the same way, and
+  §3 gained one line on what a student may upload. The camera sentence stays true (library only).
+  The owner decided the wording should ship; it was **not reviewed by a lawyer**.
+- **A student's account deletion now deletes their projects.** Before, `DELETE /auth/users/me`
+  left them: `homework_submissions.student_id` references the roster row, which stays with the
+  teacher, so the rows (drafts included) and their R2 photos outlived the account.
+  `purgeSubmissionsOfAuthor` (`lib/homeworkSubmission.ts`) now deletes, on `systemDb` and before
+  the account row, the submissions of every roster row the account is `self`-linked to; the route
+  then deletes their objects best effort, like the teacher's (a failed object delete is logged
+  with its key and the deletion still succeeds). A guardian link deletes nothing. A row another
+  account is also `self`-linked to is kept, a backstop only: `roster_links_one_self_idx` allows one
+  `self` link per row today. The tick (`homework_completions`) is not touched.
+- **Verified:** four new cases in `routes/__tests__/homeworkSubmission.db.test.ts` (both kinds of
+  project gone in two classes with another student's untouched; the same with `RLS_ENFORCE=on`; a
+  parent's deletion keeps the child's work, including a row whose student account the teacher
+  unlinked; the shared-row backstop, with the index dropped in the throwaway database). Each guard
+  was broken on purpose and a case failed: no purge call, no object delete, no `self` filter, no
+  shared-row check, the delete on the app connection (fails only under RLS). api-server suite
+  3201/3201.
+- **Not verified:** real R2; a student whose account the teacher unlinked before deleting it keeps
+  that row's projects (no `self` link is left to find them) until the homework or class is deleted;
+  the sweep that would clean up an object whose delete failed is not set up in production yet.
+
 ## Homework submission cleanup sweep — 2026-10-30
 
 The orphan sweep that the entry below said "must land before phase 2 lets students

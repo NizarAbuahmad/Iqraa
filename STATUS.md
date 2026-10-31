@@ -100,23 +100,13 @@ Checked 2026-10-22:
   legal wording still needs a person to read it.** The privacy policy §5 and terms §1
   (`constants/legal.ts`, `LEGAL_VERSION` 2026-10-23) say a student may join with an email after
   confirming they are an adult or have a guardian's agreement. They were drafted, not reviewed by
-  a lawyer, and nothing in the repo records a review since. Merging deploys, so every user is
-  asked to accept that version. The code comment on the store declaration
+  a lawyer, and nothing in the repo records a review since. Merging deploys, and from then new
+  sign-ups record that version; existing accounts are not asked again (there is no re-acceptance
+  flow, checked 2026-10-31: only the three sign-up calls in `context/AuthContext.tsx` send it). The code comment on the store declaration
   (`artifacts/api-server/src/lib/features.ts`) now describes both ways in; **the store declaration
   itself (Play Console) was not checked** and may still say accounts are made only through a class.
   Becoming a student by switching role asks for the same confirmation as signing up as one. Entry:
   «Students choose an email or a teacher's code» in the log.
-- **Homework projects let a student upload photos and a note (phase 1 API and phase 2 app, PR
-  #1356); the privacy policy does not say so yet.** `constants/legal.ts` (§5, both languages,
-  `LEGAL_VERSION` 2026-10-30.b) still says a student account only messages its teacher and browses
-  the curriculum. Its own header asks for that text to change with what a student can reach. **Before
-  phase 3 ships the teacher's `requiresSubmission` switch** (until then no screen can make a homework
-  need a project, so no student uploads), the policy and the terms in both languages must cover
-  these uploads: what is stored (photos in R2, the note), who sees it (the class's teacher, and the
-  student's own guardians once handed in), how long it is kept and how it is deleted. `LEGAL_VERSION`
-  must be bumped with it. The wording and the bump are the owner's decision. The screen is kept out of analytics screen
-  tracking (`shouldTrackScreen`); whether replay masking hides its photos is unverified, like every
-  other screen. Entry: «Homework project submission — student app» in the log.
 - **Neon is on Launch (applied 2026-10-23 by the owner); two checks remain.** Autoscaling 0.25-0.5
   CU, scale to zero on: about $10 a month expected, about $39 at most (estimates; read Neon's
   Usage page weekly for a month). Check `pooled` on `GET /api/healthz/pool` (admin key) once this

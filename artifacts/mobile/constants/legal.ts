@@ -34,12 +34,24 @@
  * (`users.guardian_confirmed_at`). §5 and terms §1 say so; if that path closes,
  * they are wrong until rewritten. A parent still needs a teacher's code.
  *
- * What the student surface actually is, and what §5 below relies on: messaging
- * and the curriculum tab. iQra and the AI tools are hidden from these roles and
- * refused server-side. A direct thread always has exactly one teacher and one
- * non-teacher, and a group is announcement-only until its owning teacher
- * enables student posting — so no student-to-student channel exists. If any of
- * that changes, §5 and the conduct rules are wrong until they are rewritten.
+ * What the student surface actually is, and what §5 below relies on: messaging,
+ * the curriculum tab, and the student's own homework and exams in a teacher's
+ * class (the School tab, `my-exams`), including the homework project upload.
+ * iQra and the AI tools are hidden from these roles and refused server-side. A
+ * direct thread always has exactly one teacher and one non-teacher, and a group
+ * is announcement-only until its owning teacher enables student posting — so no
+ * student-to-student channel exists. If any of that changes, §5 and the conduct
+ * rules are wrong until they are rewritten.
+ *
+ * **A homework project (since 2026-10-31 in this text)** is up to six photos
+ * and a note a student hands in (`api-server/src/lib/homeworkSubmission.ts`).
+ * §1 says who sees it and §6 what deletes it, both read from that file, the
+ * archive routes (`routes/homework.ts`, `routes/roster.ts`) and the account
+ * delete (`routes/auth.ts`). The projects sit on the roster row, which stays
+ * with the teacher, so nothing cascades from a student's account to them:
+ * `purgeSubmissionsOfAuthor` deletes those of the rows the account is
+ * self-linked to, and a parent's deletion touches none. §6 relies on that. If
+ * any of those paths changes, §1 and §6 change with it.
  */
 
 /**
@@ -49,7 +61,7 @@
 export const LEGAL_CONTACT_EMAIL = 'info@iqrra.com';
 
 /** Shown on both documents. Bump when the text below changes materially. */
-export const LEGAL_LAST_UPDATED = { ar: '30 تشرين الأول 2026', en: '30 October 2026' };
+export const LEGAL_LAST_UPDATED = { ar: '31 تشرين الأول 2026', en: '31 October 2026' };
 
 /**
  * The same date, as the version a new account records it accepted
@@ -57,8 +69,13 @@ export const LEGAL_LAST_UPDATED = { ar: '30 تشرين الأول 2026', en: '30
  * the two together — `legalVersion.test.ts` fails if they disagree, because
  * an acceptance record naming a version the documents never carried is a
  * record of nothing.
+ *
+ * Only a NEW account sends it (the three sign-up calls in
+ * `context/AuthContext.tsx`). Nothing asks an existing account to accept a
+ * new version: there is no re-acceptance flow, so a bump changes what the
+ * next sign-ups record and nothing else.
  */
-export const LEGAL_VERSION = '2026-10-30.b';
+export const LEGAL_VERSION = '2026-10-31';
 
 export type LegalSection = { heading: string; body: string[] };
 export type LegalDoc = { title: string; intro: string; sections: LegalSection[] };
@@ -77,6 +94,7 @@ const PRIVACY_AR: LegalDoc = {
         'سجلّات التعلّم: الاختبارات وأوراق العمل التي يُنشئها المعلّم، وإجابات الطلبة عليها، والعلامات والتقديرات الناتجة عنها.',
         'الرسائل: نحفظ نصّ الرسائل داخل التطبيق ووقتها ومَن أرسلها، والصور المرفقة بها إن وُجدت، ورمز الإشعارات الخاصّ بجهازك لإيصال التنبيهات. لا نقرأ الرسائل إلّا عند مراجعة بلاغ.',
         'الملفات: ما يرفعه المعلّم من صور أو مستندات ويربطه بدرس.',
+        'مشاريع الواجبات: حين يطلب المعلّم مشروعًا في واجب، يرفع الطالب من صور جهازه حتى ست صور لعمله، وملاحظة مكتوبة لا تتجاوز 2000 حرف، ويكفي أحدهما للتسليم. تُحفظ الصور في مخزن ملفات خاصّ (Cloudflare R2) لا تُفتح منه إلّا عبر روابط مؤقّتة تنتهي بعد عشر دقائق، وتُحفظ الملاحظة ووقت التسليم في قاعدة البيانات. قد تُظهر الصورة وجهًا أو اسمًا أو تفاصيل شخصية أخرى، فليصوّر الطالب عمله وحده. ما دام المشروع مسودّة لم تُسلَّم فلا يراه إلّا الطالب نفسه. فإذا سلّمه رآه المعلّم الذي وضع الواجب، ووليّ الأمر المرتبط بسجلّ الطالب في صفّ ذلك الواجب، ولا يراه أحد غيرهما داخل التطبيق، لا طالب آخر ولا وليّ أمر آخر. ويستطيع الطالب تعديل مشروعه المسلَّم حتى نهاية يوم التسليم، وما يعدّله يراه المعلّم ووليّ الأمر فورًا، ثم يصبح المشروع للقراءة فقط.',
         'بيانات تقنية: رمز الإشعارات الخاص بجهازك إن فعّلت الإشعارات، وأحداث استخدام مجهّلة نسبيًا (أيّ شاشة فُتحت، وأيّ أداة استُخدمت) — وهذه الأخيرة لا تُجمع إطلاقًا ما لم يكن مفتاح التحليلات مضبوطًا في النسخة التي تستخدمها.',
         'تسجيلات الشاشة: قد نسجّل ما يظهر على شاشتك وأين تلمس أو تنقر أثناء استخدامك التطبيق، لنفهم أين يتعثّر المستخدمون. يشمل ذلك المعلّمين والطلبة وأولياء الأمور، وصفحة الاختبار التي يفتحها الطالب من رابط. يتولّى ذلك على الويب Contentsquare (التي أصبحت Hotjar جزءًا منها)، وعلى أندرويد PostHog. تُحجب النصوص المعروضة وحقول الإدخال والصور في التسجيلات، فلا يظهر فيها اسم طالب ولا علامة ولا إجابة ولا رسالة. لا نسجّل صفحة موافقة وليّ الأمر لأنّ رابطها يحمل رمز الموافقة. لا يُسجَّل شيء ما لم تكن هذه الأدوات مضبوطة في النسخة التي تستخدمها.',
         'لا نجمع موقعك الجغرافي، ولا نصل إلى الكاميرا أو الميكروفون. التطبيق يطلب الإذن بالوصول إلى صور جهازك فقط، وفقط عند إرفاق صورة بنفسك.',
@@ -112,7 +130,7 @@ const PRIVACY_AR: LegalDoc = {
       heading: '5) الطلبة والقاصرون',
       body: [
         'يستطيع الطالب ووليّ الأمر إنشاء حساب في هذا الإصدار. فوليّ الأمر لا ينشئ حسابه إلّا برمز يمنحه المعلّم من قائمة صفّه، أمّا الطالب فينشئ حسابه بإحدى طريقتين: برمز المعلّم، أو ببريد إلكتروني دون رمز — وفي هذه الحالة الثانية يُقرّ بأنّه بالغ أو بأنّ وليّ أمره موافق على الحساب، ونحفظ وقت هذا الإقرار. وهذا يعني أنّ قاصرين يحملون حسابات هنا ويسجّلون الدخول إليها، وأنّ بعض الحسابات يُنشأ دون أن يعلم معلّم بوجوده.',
-        'ما يصل إليه حساب الطالب محصور في أمرين: مراسلة معلّمه، وتصفّح المنهاج. ولا يصل إلى أدوات المعلّم ولا إلى التوليد بالذكاء الاصطناعيّ. والحساب الذي أُنشئ ببريد إلكتروني لا يرى واجبات ولا اختبارات ولا رسائل حتى يدخل رمز صفّ معلّمه.',
+        'لا يصل حساب الطالب إلى أدوات المعلّم ولا إلى التوليد بالذكاء الاصطناعيّ. وما يصل إليه: مراسلة معلّمه، وتصفّح المنهاج، وواجباته واختباراته في صفّ معلّمه، ومنها تسليم مشروع الواجب (صور وملاحظة) حين يطلبه المعلّم، كما في البند الأوّل. والحساب الذي أُنشئ ببريد إلكتروني لا يرى واجبات ولا اختبارات ولا رسائل حتى يدخل رمز صفّ معلّمه.',
         'كلّ محادثة فرديّة تضمّ معلّمًا واحدًا وطرفًا واحدًا غير معلّم، ومحادثة المجموعة للإعلانات فقط ما لم يسمح معلّمها بالكتابة. فلا توجد قناة بين طالب وطالب.',
         'ومع ذلك يُدخل المعلّم بيانات عن طلبته: أسماءهم، ورقم القيد إن أضافه، وملاحظته عن الطالب. هذه بيانات شخصية تخصّ قاصرين وإن لم يكن لهم حساب.',
         'قبل أن يُدخل المعلّم أيّ اسم، يُقرّ داخل التطبيق بأنّ مدرسته حصلت على موافقة وليّ الأمر اللازمة. نحفظ وقت الإقرار ونصّه، ونمنع إدخال بيانات الطلبة قبله.',
@@ -127,6 +145,7 @@ const PRIVACY_AR: LegalDoc = {
         'نحتفظ ببياناتك ما دام حسابك قائمًا.',
         'يمكنك حذف حسابك من داخل التطبيق: الإعدادات ← حذف الحساب. الحذف نهائي ولا رجعة فيه، ويجري فورًا لا بعد مهلة.',
         'حذف حساب المعلّم يحذف معه شُعَبه وسجلّات طلبته والاختبارات والمواد المحفوظة والرسائل التي أرسلها والملفات التي رفعها. وحذف حساب وليّ الأمر أو الطالب يحذف رسائله وارتباطه بسجلّ الصفّ، ويبقى سجلّ الطالب نفسه عند معلّمه لأنّه من بيانات المعلّم.',
+        'مشاريع الواجبات: حين يحذف الطالب صورة من مشروعه تُحذف من التخزين فورًا. وحذف حساب الطالب يحذف معه مشاريعه، المسلَّمة منها والمسودّات، بصورها وملاحظاتها، في كلّ صفّ ما زال حسابه مرتبطًا فيه بسجلّه. وحين يحذف المعلّم الواجب، أو يحذف صفّه أو يؤرشفه، تُحذف صور كلّ المشاريع وملاحظاتها فيه، المسلَّمة منها والمسودّات، وكذلك كلّ ما في واجباته حين يحذف المعلّم حسابه. أمّا حذف حساب وليّ الأمر فلا يحذف شيئًا من مشاريع ابنه. وفي غير ذلك يبقى المشروع محفوظًا إلى أن يحدث أحد هذه الأمور.',
         'يبقى بعد الحذف سجلّ محاسبيّ لتكلفة استخدام نماذج الذكاء الاصطناعي، منزوع الارتباط بأيّ شخص.',
         'وإن ألغيت اشتراكك في رسائلنا، نحتفظ بعنوان بريدك وحده في قائمة «لا تراسل» لنلتزم بطلبك، حتى بعد حذف الحساب، إلى أن تتراجع عن الإلغاء من الرابط نفسه أو تطلب منّا حذفه.',
       ],
@@ -171,6 +190,7 @@ const PRIVACY_EN: LegalDoc = {
         'Learning records: the tests and worksheets a teacher creates, students\' answers to them, and the marks and levels that result.',
         'Messages: we store the text of in-app messages, when they were sent and by whom, any image attached to them, and your device push token so notifications can be delivered. We do not read messages except when reviewing a report.',
         'Files: images or documents a teacher uploads and attaches to a lesson.',
+        'Homework projects: when a teacher asks for a project on a homework, the student uploads up to six photos of their work from the device\'s photo library, and a written note of up to 2,000 characters; either one is enough to hand it in. The photos are kept in private file storage (Cloudflare R2) and are only ever opened through temporary links that expire after ten minutes; the note and the hand-in time are kept in the database. A photo can show a face, a name or other personal details, so a student should photograph their work and nothing else. While a project is a draft that has not been handed in, only the student sees it. Once it is handed in, it is seen by the teacher who set the homework and by a parent linked to the student\'s record in that homework\'s class, and by no one else in the app: no other student and no other parent. A student can change a handed-in project until the due day ends, and the teacher and the parent see each change at once; after that the project is read-only.',
         'Technical data: your device\'s push notification token if you enable notifications, and usage events (which screen was opened, which tool was used). Usage events are not collected at all unless an analytics key is configured in the build you are using.',
         'Screen recordings: we may record what appears on your screen and where you tap or click while you use the app, to see where people get stuck. This includes teachers, students and parents, and the exam page a student opens from a link. On the web this is done by Contentsquare (of which Hotjar is now part), on Android by PostHog. Displayed text, input fields and images are masked in the recordings, so no student name, mark, answer or message appears in them. We do not record the parent consent page, because its link carries the approval token. Nothing is recorded unless these tools are configured in the build you are using.',
         'We do not collect your location, and we do not access your camera or microphone. The app asks for photo library access only, and only when you attach an image yourself.',
@@ -206,7 +226,7 @@ const PRIVACY_EN: LegalDoc = {
       heading: '5) Students and minors',
       body: [
         'Students and parents can hold an account in this release. A parent creates one only with a code the teacher issues from their own class list. A student creates one either with that code, or with an email and no code — in which case they confirm that they are an adult or that a parent or guardian agrees to the account, and we record when. This does mean minors hold accounts here and sign in to them, and that some accounts are created without any teacher knowing.',
-        'A student account reaches two things and no more: messaging their teacher, and browsing the curriculum. It does not reach the teacher tools or any AI generation. An account created with an email sees no homework, exams or messages until it enters its teacher\'s class code.',
+        'A student account does not reach the teacher tools or any AI generation. What it reaches: messaging their teacher, browsing the curriculum, and their own homework and exams in their teacher\'s class, including handing in a homework project (photos and a note) when the teacher asks for one, as described in section 1. An account created with an email sees no homework, exams or messages until it enters its teacher\'s class code.',
         'Every direct conversation has exactly one teacher and one non-teacher, and a group is announcement-only unless its owning teacher allows students to post. There is no student-to-student channel.',
         'Teachers do, however, enter data about their students: names, a register number if they add one, and the teacher\'s note. That is personal data about a minor whether or not the child has an account.',
         'Before a teacher can enter any name, they confirm in the app that their school has obtained the parental consent required. We record when they confirmed and the wording they were shown, and we block student data from being entered until they do.',
@@ -221,6 +241,7 @@ const PRIVACY_EN: LegalDoc = {
         'We keep your data for as long as your account exists.',
         'You can delete your account from inside the app: Settings → Delete account. Deletion is permanent, cannot be undone, and happens immediately rather than after a waiting period.',
         'Deleting a teacher account also deletes their classes, student records, evaluations, saved materials, messages they sent and files they uploaded. Deleting a parent or student account deletes their messages and their link to a class record; the student record itself stays with the teacher, because it is the teacher\'s data.',
+        'Homework projects: when a student removes a photo from their project, it is deleted from storage at once. Deleting a student account deletes that student\'s projects with it, handed-in and draft, photos and notes, in every class where the account is still linked to the student\'s record. When the teacher deletes the homework, or deletes or archives its class, every project photo and note in it is deleted, handed-in or draft, and so is everything on the teacher\'s homework when the teacher deletes their account. Deleting a parent account deletes nothing of their child\'s projects. Otherwise a project is kept until one of these happens.',
         'What survives deletion is an accounting row for the cost of AI usage, with no person attached to it.',
         'If you unsubscribe from our email, we keep your address alone on a do-not-email list so we can honour that, even after your account is deleted, until you undo it from the same link or ask us to remove it.',
       ],
@@ -260,7 +281,7 @@ const TERMS_AR: LegalDoc = {
     {
       heading: '1) من يستطيع استخدام التطبيق',
       body: [
-        'التطبيق لمعلّمي المنهاج الوطني الأردني، ولطلبتهم وأولياء أمورهم. ينضمّ وليّ الأمر برمز من المعلّم، وينضمّ الطالب برمز من المعلّم أو ببريد إلكتروني. حساب الطالب ووليّ الأمر للمراسلة وتصفّح المنهاج فقط.',
+        'التطبيق لمعلّمي المنهاج الوطني الأردني، ولطلبتهم وأولياء أمورهم. ينضمّ وليّ الأمر برمز من المعلّم، وينضمّ الطالب برمز من المعلّم أو ببريد إلكتروني. حساب الطالب ووليّ الأمر للمراسلة، ومتابعة واجبات الطالب واختباراته في صفّ معلّمه (ومنها مشروع الواجب الذي يسلّمه الطالب)، وتصفّح المنهاج، لا لأدوات المعلّم.',
         'يجب أن يكون عمر المعلّم ووليّ الأمر 18 سنة أو أكثر لإنشاء حساب، ويُقرّ بذلك عند التسجيل. وإن تبيّن لنا أنّ حساب معلّم أو وليّ أمر لشخص دون 18 سنة، فلنا أن نوقفه أو نحذفه.',
         'وللطالب دون 18 سنة أن يستخدم حسابًا أُنشئ برمز من معلّمه، أو أنشأه بموافقة وليّ أمره.',
         'أنت مسؤول عن سرّية كلمة مرورك وعن كلّ ما يجري عبر حسابك.',
@@ -278,6 +299,7 @@ const TERMS_AR: LegalDoc = {
       heading: '3) قواعد السلوك',
       body: [
         'يُمنع نشر ما هو مسيء أو تهديديّ أو مخلّ أو غير قانونيّ، ويُمنع التحرّش بأيّ مستخدم، ويُمنع انتحال صفة غيرك.',
+        'في مشروع الواجب يرفع الطالب صور عمله وحده، لا صور أشخاص ولا وثائق شخصية ولا شيئًا تمنعه هذه القواعد.',
         'المراسلة في هذا الإصدار بين المعلّم وطلبته وأولياء أمورهم فقط، ولا توجد قناة بين طالب وطالب: كلّ محادثة فرديّة تضمّ معلّمًا واحدًا، والمجموعة للإعلانات ما لم يسمح معلّمها بالكتابة.',
         'في كلّ محادثة زرّان «حظر» و«إبلاغ»، ونراجع البلاغات، ولنا أن نحذف المحتوى المخالف وأن نوقف الحساب المخالف أو نحذفه. ويبقى معلّم المجموعة مطّلعًا على ما يُكتب فيها.',
       ],
@@ -336,7 +358,7 @@ const TERMS_EN: LegalDoc = {
     {
       heading: '1) Who may use the app',
       body: [
-        'The app is for teachers of the Jordanian national curriculum, and for their students and parents. A parent joins with a code from their teacher; a student joins with a code from their teacher or with an email. A student or parent account is for messaging and browsing the curriculum only.',
+        'The app is for teachers of the Jordanian national curriculum, and for their students and parents. A parent joins with a code from their teacher; a student joins with a code from their teacher or with an email. A student or parent account is for messaging, following the student\'s homework and exams in their teacher\'s class (including a homework project the student hands in), and browsing the curriculum, not for the teacher tools.',
         'A teacher or a parent must be 18 or older to create an account, and confirms it when signing up. If we learn that a teacher or parent account belongs to someone under 18, we may suspend or delete it.',
         'A student under 18 may use an account created with a code from their teacher, or created with the agreement of their parent or guardian.',
         'You are responsible for keeping your password confidential and for everything done through your account.',
@@ -354,6 +376,7 @@ const TERMS_EN: LegalDoc = {
       heading: '3) Rules of conduct',
       body: [
         'Do not post anything abusive, threatening, obscene or unlawful, do not harass any user, and do not impersonate anyone.',
+        'In a homework project a student uploads photos of their own work and nothing else: not photos of people, not personal documents, nothing these rules forbid.',
         'Messaging in this release is between a teacher and their students and parents only, and there is no student-to-student channel: every direct conversation has exactly one teacher, and a group is announcement-only unless its owning teacher allows posting.',
         'Every conversation has Block and Report, we review reports, and we may remove offending content and suspend or delete an offending account. A group\'s owning teacher always sees what is posted in it.',
       ],
