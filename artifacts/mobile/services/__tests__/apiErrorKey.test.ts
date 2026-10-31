@@ -127,9 +127,13 @@ describe('homework project submission codes', () => {
     assert.equal(apiErrorKey(sub('invalid', 400), 'errGeneric'), 'errGeneric');
   });
 
+  it('says a project handed in from another account is the teacher’s to sort out, for the project calls only', () => {
+    assert.equal(apiErrorKey(sub('other_author', 409), 'errGeneric'), 'errSubmissionOtherAuthor');
+  });
+
   it('keeps the generic words private to the project calls', () => {
-    // Another feature’s `locked` / `empty` / `photo_limit` / `storage_unavailable` must not borrow this copy.
-    for (const code of ['locked', 'empty', 'photo_limit', 'storage_unavailable']) {
+    // Another feature’s `locked` / `empty` / `photo_limit` / `storage_unavailable` / `other_author` must not borrow this copy.
+    for (const code of ['locked', 'empty', 'photo_limit', 'storage_unavailable', 'other_author']) {
       assert.equal(apiErrorKey(err(code, 409), 'fb'), 'fb', code);
     }
   });

@@ -130,13 +130,24 @@ export interface SubmissionPhoto {
  * a completion: a roster row is a name a teacher wrote down, not an account, and
  * the account that is self-linked to it is the only one that may write here.
  *
+ * `author_user_id` is the account that wrote the row (set when the row is made,
+ * and when another account takes over a draft — lib/homeworkSubmission.ts). The
+ * link to the record can change hands (a teacher unlinks a mis-claimed account and
+ * links another), so the author, not the link alone, decides what a student sees:
+ * another account's draft is shown as nothing and is replaced on the first write,
+ * another account's handed-in project is shown as "handed in from another account"
+ * and cannot be changed. Deleting an account deletes the rows it authored; the
+ * column is `set null` so a row is never kept from that delete by its own FK.
+ * NULL is a row whose author is unknown (written before the column existed with no
+ * single self link to attribute it to) or was deleted: nobody owns it.
+ *
  * `submitted_at` null is a DRAFT — photos uploaded, not handed in. Only the
  * author sees a draft. The first hand-in time is kept when the student replaces
  * their work before the due day, so improving a project never makes it late;
  * `late` is computed from it against `homework.due_at` and is not a column.
  *
  * Row-level security protects this table (policies in the migration that
- * created it): it holds a minor's work.
+ * created it, narrowed to the author in 0022): it holds a minor's work.
  */
 export const homeworkSubmissions = pgTable(
   "homework_submissions",
@@ -148,6 +159,7 @@ export const homeworkSubmissions = pgTable(
     studentId: uuid("student_id")
       .notNull()
       .references(() => students.id, { onDelete: "cascade" }),
+    authorUserId: uuid("author_user_id").references(() => users.id, { onDelete: "set null" }),
     note: text("note").notNull().default(""),
     photos: jsonb("photos").$type<SubmissionPhoto[]>().notNull().default([]),
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
@@ -157,6 +169,7 @@ export const homeworkSubmissions = pgTable(
   t => [
     unique("homework_submissions_unique").on(t.homeworkId, t.studentId),
     index("homework_submissions_student_idx").on(t.studentId),
+    index("homework_submissions_author_idx").on(t.authorUserId),
   ],
 );
 

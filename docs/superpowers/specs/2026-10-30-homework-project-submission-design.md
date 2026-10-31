@@ -46,7 +46,7 @@ until the homework is deleted or the student replaces it.
 | Resubmitting | A student may replace their own submission until the due day ends. After that it is locked. |
 | Late | A student with no submission may still submit after the due day. It is accepted and shown as **late**. |
 | Supervisor | No access in this release. |
-| Retention | Photos live until the student removes them, or the teacher deletes (archives) the homework, which purges the photos and deletes the submission rows. No automatic expiry. Also removed: archiving the class, deleting the teacher's account, and (added 2026-10-31) deleting the student's own account, which deletes the submissions of every roster row it is `self`-linked to (`purgeSubmissionsOfAuthor`); a parent's deletion removes none. The privacy policy §1/§6 (`constants/legal.ts`, `LEGAL_VERSION` 2026-10-31) describes this. |
+| Retention | Photos live until the student removes them, or the teacher deletes (archives) the homework, which purges the photos and deletes the submission rows. No automatic expiry. Also removed: archiving the class, deleting the teacher's account, and (added 2026-10-31) deleting the student's own account, which deletes the submissions that account authored, on any record (`purgeSubmissionsOfAuthor`, by `author_user_id` since migration 0022); a parent's deletion removes none. Another account's draft on a record is replaced when the account linked now writes its first photo or note (§3). The privacy policy §1/§6 (`constants/legal.ts`, `LEGAL_VERSION` 2026-10-31.b) describes this. |
 
 ## 1. Data
 
@@ -62,6 +62,7 @@ teacher at creation or edit (`POST /homework`, `PATCH /homework/:id`).
 | `id` | uuid pk | |
 | `homework_id` | uuid → `homework.id`, `ON DELETE CASCADE` | |
 | `student_id` | uuid → `students.id`, `ON DELETE CASCADE` | A **roster row**, not a user — same rule as `homework_completions` |
+| `author_user_id` | uuid → `users.id`, `ON DELETE SET NULL`, nullable, indexed | Added 2026-10-31 (migration `0022`). The account that wrote the row; it decides what a student sees and may change (§3). NULL: author unknown (a row from before the column with no single `self` link to credit) or deleted |
 | `note` | text, default `''` | Capped at 2000 characters by the route |
 | `photos` | jsonb `{ id, key, mime, sizeBytes }[]`, default `[]` | `key` is the R2 object key. Max 6 |
 | `submitted_at` | timestamptz, **nullable** | `null` = a draft: photos uploaded, not handed in. Only a submitted row is visible to anyone but its author |
@@ -139,6 +140,22 @@ rules the tick already enforces apply unchanged: a live homework in a live class
 and a roster row **this account is self-linked to, in that class**. Every failure
 to resolve is the same 404 `not_found`, as in the existing student routes.
 
+**Whose it is (added 2026-10-31).** A self link to the record is necessary, not enough: the row's
+`author_user_id` must be the caller. A teacher can unlink a mis-claimed account and link another,
+and the record keeps its rows. For the account linked now:
+
+| The record's row | GET | Writes |
+| --- | --- | --- |
+| none | `none` | as before; the first upload or note creates it with the caller as author |
+| written by the caller | as before | as before |
+| another account's (or authorless) **draft** | `none`, no photos, no note | the first upload or note **takes it over**: its photos and note are dropped and the caller becomes the author, in one locked transaction on `systemDb` (the policies refuse an author change to the app role), and the old objects are deleted after it commits. A remove answers 404 and a hand-in `empty`; neither takes anything over |
+| another account's (or authorless) **handed-in** project | `none` with `otherAuthor: true`, no photos, no note | every write is 409 `other_author` |
+
+Every write's `UPDATE` also carries `author_user_id = caller`, so a write that passed its checks
+just before a takeover writes nothing. The teacher's and the parent's reads do not look at the
+author: a handed-in project is the record's work. A previous author who is no longer linked gets
+the usual 404 (`ownHomeworkRows` needs a current `self` link); linked again, it sees its own work.
+
 **Replace.** Before the due day ends, a submitted row can be edited again (photos
 added or removed, note changed) and submitted again; `submitted_at` keeps the
 **first** submit time, so a student who submitted on time and then improved the
@@ -195,6 +212,17 @@ state without fetching photos.
      roster row. There is no `DELETE` policy; removal is `systemDb`'s job (the
      archive purge, on the owner connection, pinned by a test with `RLS_ENFORCE=on`).
      A guardian link does not grant write.
+   - **Since migration 0022 (2026-10-31)** the policies are altered in place to
+     follow `author_user_id`: the first branch of the read is
+     `app_is_student_self(student_id) AND author_user_id = app_uid()` (a
+     self-linked student no longer reads another account's draft; a handed-in
+     row is still read by everyone linked to the record), and `INSERT` / `UPDATE`
+     (`USING` and `WITH CHECK`) require `app_is_student_self(student_id) AND
+     author_user_id = app_uid()`. So the app role can neither write another
+     account's row nor change a row's author; the takeover of a draft (§3) runs on
+     `systemDb` and re-checks the caller's `self` link inside its transaction.
+     `rlsMatrix.test.ts` pins each of the three policies (each one, reverted
+     alone, fails its own case).
    - Policy helpers follow `2026-10-13-row-level-security-design.md`
      (`SECURITY DEFINER`, pinned `search_path`) to avoid recursive policies.
 
@@ -316,12 +344,25 @@ names messages and lesson materials, not homework projects; changing it is a nat
   body so it is a known gap, not a surprise.
 - **`students.id` is a roster row.** A child in two of a teacher's classes is two
   rows and two submissions. That is correct and matches homework completions.
-- **Access follows the roster-row link, not a person (found 2026-10-31).** Unlinking a
-  student account (`DELETE /students/:id/links/:userId`) touches no submission, so the
-  next account linked to that record sees, and can change, the previous account's draft
-  and handed-in work. The privacy policy §1 says so. Deleting the account removes them
-  (`purgeSubmissionsOfAuthor`); unlinking does not. Open in `STATUS.md`: an author
-  column on the submission, or a purge on unlink, is the owner's decision.
+- **Access followed the roster-row link, not a person (found 2026-10-31; fixed the same
+  day with an author column, §1 and §3).** Unlinking a student account touched no
+  submission, so the next account linked to that record saw, and could change, the
+  previous account's work. Now the new account sees none of a previous account's draft
+  (and replaces it on its first write) and only a notice for a handed-in project.
+  **Left open (STATUS.md):** that notice is a dead end. A student whose record already
+  holds a project handed in from another account cannot hand in their own for that
+  homework, and the teacher has no tool to clear one student's submission; the ways
+  out are the old account deleting itself or the teacher archiving the homework (which
+  deletes every student's work in it). The family list (`/student/homework`) still says
+  «تم التسليم» for that homework, because a completion and a handed-in project are the
+  record's.
+- **Account deletion and a racing upload.** Deleting an account deletes the rows it
+  authored, then the account; `author_user_id` is `ON DELETE SET NULL`, so a draft an
+  upload wrote between the two loses its author. The second pass therefore deletes
+  authorless **drafts** on the records the account wrote on or was linked to (an
+  authorless draft is shown to nobody and replaced by the next writer, so nothing visible
+  is lost); an authorless handed-in project is kept. A hand-in landing in the same
+  milliseconds would leave an authorless handed-in project behind; not handled.
 - **The archive purge is not transactional.** Objects are deleted first; a failed
   object delete is logged with its key and the rows are deleted anyway, so an
   unreachable orphan object can remain in the bucket (private, unguessable key, no
