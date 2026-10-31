@@ -38,7 +38,9 @@ describeDb("generating into a draft evaluation, against a real database", () => 
     db = await setupTestDb();
     w = await seedFamilyWorld(db.pool);
     await db.pool.query(`INSERT INTO level_scales (name, is_default) VALUES ('test scale', true)`);
-    server = await startServer({ databaseUrl: db.url });
+    // Live mode off whatever the developer's shell says: the mock writes the paper,
+    // and a shell with AI_LIVE_MODE=true would otherwise send these to a model.
+    server = await startServer({ databaseUrl: db.url, env: { AI_LIVE_MODE: undefined } });
 
     // A real book and objectives from the curriculum, asked of the app itself.
     const meta = await call(server, "GET", "/evaluations/meta/evaluable", w.users.t1);
@@ -55,18 +57,31 @@ describeDb("generating into a draft evaluation, against a real database", () => 
     await db?.drop();
   });
 
-  const makeDraft = async (): Promise<string> => {
-    const r = await call(server, "POST", "/evaluations", w.users.t1, {
+  const REQUESTED = 4;
+  // The generate route allows 10 calls a minute per teacher. The tests spread their
+  // calls over two teachers (t1 makes 7, t2 makes 3) so one more call here does not
+  // turn into a 429 that reads as a wrong status.
+  const makeDraft = async (teacher = w.users.t1): Promise<string> => {
+    const r = await call(server, "POST", "/evaluations", teacher, {
       bookId,
       objectiveIds,
       assessmentTypes: ["open_ended"],
-      targetQuestionCount: 4,
+      targetQuestionCount: REQUESTED,
       title: "generate-write",
     });
     assert.equal(r.status, 201, r.text);
     return r.json.evaluation.id;
   };
-  const generate = (id: string) => call(server, "POST", `/evaluations/${id}/generate`, w.users.t1);
+  const generate = (id: string, teacher = w.users.t1) =>
+    call(server, "POST", `/evaluations/${id}/generate`, teacher);
+  const waitUntil = async (check: () => Promise<boolean>, timeoutMs = 10_000): Promise<void> => {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      if (await check()) return;
+      await new Promise(r => setTimeout(r, 50));
+    }
+    assert.fail("timed out waiting for the request to queue behind the lock");
+  };
   const live = async (id: string): Promise<string[]> =>
     (
       await db.pool.query<{ id: string }>(
@@ -107,10 +122,9 @@ describeDb("generating into a draft evaluation, against a real database", () => 
     } finally {
       await db.pool.query(`DROP TRIGGER slow_question_insert ON evaluation_questions`);
     }
-    // One paper's worth. The reference length comes from a lone generation.
-    const lone = await makeDraft();
-    assert.equal((await generate(lone)).status, 200);
-    assert.equal((await live(id)).length, (await live(lone)).length, "one paper, not two");
+    // One paper's worth: at most what was asked for (the bug left twice that).
+    const n = (await live(id)).length;
+    assert.ok(n > 0 && n <= REQUESTED, `${n} questions for a request of ${REQUESTED}`);
   });
 
   it("does not replace the questions of a draft that was published while it was generating", async () => {
@@ -127,20 +141,49 @@ describeDb("generating into a draft evaluation, against a real database", () => 
       await holder.query("BEGIN");
       await holder.query(`SELECT id FROM evaluations WHERE id = $1 FOR UPDATE`, [id]);
       const pending = generate(id);
-      await new Promise(r => setTimeout(r, 700));
-      await holder.query(`UPDATE evaluations SET status = 'published' WHERE id = $1`, [id]);
-      await holder.query("COMMIT");
-      const res = await pending;
-      assert.equal(res.status, 409, res.text);
+      try {
+        // Wait until the request is really queued behind our lock, not for a fixed time:
+        // on a slow runner it could still be before its early draft check, which also
+        // answers 409 and would let this test pass without reaching the lock at all.
+        await waitUntil(async () => {
+          const r = await db.pool.query<{ n: number }>(
+            `SELECT count(*)::int AS n FROM pg_stat_activity
+              WHERE wait_event_type = 'Lock' AND query ILIKE '%from "evaluations"%for update%'`,
+          );
+          return r.rows[0].n > 0;
+        });
+        await holder.query(`UPDATE evaluations SET status = 'published' WHERE id = $1`, [id]);
+        await holder.query("COMMIT");
+        const res = await pending;
+        assert.equal(res.status, 409, res.text);
+        assert.equal(res.json.code, "no_longer_draft", "refused by the lock check, not the early one");
+      } finally {
+        await pending.catch(() => undefined);
+      }
     } finally {
       await holder.end();
     }
     assert.deepEqual(await live(id), before, "the published paper is untouched");
   });
 
+  it("does not write a paper into a draft that was removed while it was generating", async () => {
+    // «Delete» on an evaluation archives it and leaves status = 'draft', so the
+    // locked check has to look at archived_at too, as publish does.
+    const id = await makeDraft(w.users.t2);
+    assert.equal((await generate(id, w.users.t2)).status, 200);
+    const before = await live(id);
+    assert.ok(before.length > 0);
+    await db.pool.query(`UPDATE evaluations SET archived_at = now() WHERE id = $1`, [id]);
+
+    const res = await generate(id, w.users.t2);
+    assert.equal(res.status, 409, res.text);
+    assert.equal(res.json.code, "no_longer_draft");
+    assert.deepEqual(await live(id), before, "nothing was written into the removed draft");
+  });
+
   it("leaves the previous paper in place when the new one cannot be written", async () => {
-    const id = await makeDraft();
-    assert.equal((await generate(id)).status, 200);
+    const id = await makeDraft(w.users.t2);
+    assert.equal((await generate(id, w.users.t2)).status, 200);
     const before = await live(id);
     assert.ok(before.length > 0);
 
@@ -151,7 +194,7 @@ describeDb("generating into a draft evaluation, against a real database", () => 
       CREATE TRIGGER refuse_question_insert BEFORE INSERT ON evaluation_questions
       FOR EACH STATEMENT EXECUTE FUNCTION refuse_question_insert()`);
     try {
-      const res = await generate(id);
+      const res = await generate(id, w.users.t2);
       assert.equal(res.status, 502, res.text);
       assert.equal(res.json.code, "generator_unavailable");
     } finally {

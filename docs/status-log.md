@@ -31,20 +31,41 @@ before the fix:
   empty afterwards, under an error that says «Nothing was changed».
 
 **The fix** (`routes/evaluations.ts`). The write is a single `db.transaction` that first locks the
-evaluation row (`FOR UPDATE`) and re-checks `status = 'draft'` under the lock, then does the
-read, replace, insert, total and generator metadata. A second request waits for the first and
-replaces its paper (one paper, not two); a draft that is no longer a draft answers
-**409 `no_longer_draft`** and nothing is written; any failure rolls back, so the previous paper
-stays and «Nothing was changed» is true. The total is computed inside the transaction from the
-live rows.
+evaluation row (`FOR UPDATE`) and re-checks it under the lock (`status = 'draft'` and not
+archived: «Delete» archives and leaves the status, so a removed draft is still `draft`), then does
+the read, replace, insert, total and generator metadata. A second request waits for the first and
+replaces its paper (one paper, not two); a draft that is no longer a draft, or was removed,
+answers **409 `no_longer_draft`** and nothing is written; any failure rolls back, so the previous
+paper stays and «Nothing was changed» is true. The total is computed inside the transaction from
+the live rows. Nothing slow is inside the transaction (the model call, the top-up and the SymPy
+key check all finish before it opens).
 
-**Verified:** typecheck clean; API suite 3098/3098 against a throwaway local Postgres. The new
-`evaluationGenerateWrite.db.test.ts` (4 tests; no model, live mode off) was seen failing three ways
-before the fix and passing after; its control (a plain regeneration replaces, never appends)
-passed before and after. **Not verified:** nothing was run against production, and the live (model)
-path was not exercised: the test goes through the mock generator, but the write is the same code.
+**Found in review and fixed:** the published-meanwhile test could pass without reaching the lock
+(a slow runner would let the early draft check answer 409 first), so it now waits until the request
+is queued behind the lock and asserts the `no_longer_draft` code; an archived draft was still
+written into (new test, seen failing, then fixed); the test file now pins live mode off, spreads
+its calls over two teachers (the route allows 10 a minute per teacher), and compares the doubling
+case to the requested count instead of a second generation.
+
+**Verified:** typecheck clean; API suite against a throwaway local Postgres (count in the PR).
+The new `evaluationGenerateWrite.db.test.ts` (5 tests; no model, live mode off) was seen failing
+before the fix on the doubling, the published-meanwhile, the failed-write and the archived case,
+and passing after; its control (a plain regeneration replaces, never appends) passed before and
+after. **Not verified:** nothing was run against production; the live (model) path was not
+exercised (the test goes through the mock generator, but the write is the same code); the locked
+read was not run under row-level security (CI does not set `RLS_ENFORCE`; the policies were read,
+and the owner can lock and update their own row).
 
 **Not fixed, still open:**
+- **Publish can still go out on the old paper.** `POST /evaluations/:id/publish` reads the
+  questions and the total without a lock, then updates. If it reads, a generation commits, and
+  then its update runs, the exam is published with the old total and its checks were run on
+  questions that are gone. The window is milliseconds; the published-meanwhile case is closed only
+  when the publish commits first. Fixing it means locking the row in publish too.
+- **The app shows the new 409 as «could not generate».** The screen
+  (`artifacts/mobile/app/evaluations/[id]/index.tsx`) catches every error the same way and does not
+  refetch, so after a 409 it still shows a draft with a regenerate button. The error's `code` is
+  available to it; the screen does not use it. It needs a specific Arabic and English line.
 - A second tap still starts a second model call (and its cost) before it reaches the lock; the
   result is now correct, the spend is not saved. The app's 45 s timeout is unchanged.
 - The model's `marks` are checked only for being above 0; a value over 999.99 now fails the

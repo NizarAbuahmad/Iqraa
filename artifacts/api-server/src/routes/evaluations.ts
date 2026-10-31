@@ -1142,11 +1142,13 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
     // whole write back, which makes that sentence true.
     const totalMarks = await db.transaction(async tx => {
       const [locked] = await tx
-        .select({ status: evaluations.status })
+        .select({ status: evaluations.status, archivedAt: evaluations.archivedAt })
         .from(evaluations)
         .where(eq(evaluations.id, evaluation.id))
         .for("update");
-      if (!locked || locked.status !== "draft") return null;
+      // «Delete» archives an evaluation and leaves its status as it was, so a removed
+      // draft is still status = 'draft'; publish refuses archived ones for the same reason.
+      if (!locked || locked.status !== "draft" || locked.archivedAt) return null;
 
       const { keep, replace } = partitionForRegeneration(
         await tx
