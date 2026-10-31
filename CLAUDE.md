@@ -707,12 +707,15 @@ sweep in your staged files.
   `services/subjectTheme.ts`): a corner subject borrows its corner, any other its
   catalog colour deepened for white text; each prep row has its own hue
   (`PREP_ROWS[].color`).
-  Progress is celebrated by `Celebrate` (`components/ui/Celebrate.tsx`) at four
+  Progress is celebrated by `Celebrate` (`components/ui/Celebrate.tsx`) at five
   moments only — exam handed in, game over, last homework ticked, prep checklist
-  all ready. The exam fires on a successful hand-in the student made (never the
-  forced one when time runs out or the exam closes); the other three fire only
+  all ready, a homework project handed in on time (since 2026-10-30). The exam fires on a successful hand-in the student made (never the
+  forced one when time runs out or the exam closes); the project fires only on
+  its first hand-in made on that screen, and never for a late one or a second
+  hand-in (`celebratesHandIn` in `services/homeworkProject.ts`); the other three fire only
   on the crossing into done (`justCompleted` / `prepCrossing` in
   `services/celebration.ts`), never on opening a screen that is already done.
+  `celebrateMoments.test.ts` lists the five; a sixth needs an entry there.
   A load that failed or fell back to the device list is never the baseline:
   `getItems` does not reject, so the prep board reads `getAllItemsChecked()` and
   drops its baseline on a degraded read, or the next good read at 5 of 5 would

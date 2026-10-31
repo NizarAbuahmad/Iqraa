@@ -33,6 +33,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { getChildSchedules, getMySchedule } from '@/services/familyScheduleApi';
 import { getChildHomework, getMyHomework, setHomeworkDone } from '@/services/homeworkApi';
+import { stateLabelKey } from '@/services/homeworkSubmission';
+import { submissionLook } from '@/services/homeworkProject';
 import { openResource } from '@/services/openResource';
 import { HOMEWORK_GAME_TITLE_KEY } from '@/services/lessonGames';
 import {
@@ -45,6 +47,7 @@ import {
   homeworkSections,
   resourceKey,
   resultForGame,
+  showsSubmissionLink,
   untrackedMode,
   type ChildHomework,
   type FamilyHomework,
@@ -70,9 +73,11 @@ import { apiErrorMessage } from '@/services/apiErrorKey';
 import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
+import { ICON } from '@/constants/icons';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { NoClassPrompt } from '@/components/NoClassPrompt';
 import { Celebrate } from '@/components/ui/Celebrate';
+import { PressableScale } from '@/components/ui/PressableScale';
 import { justCompleted } from '@/services/celebration';
 
 const ACCENT = palette.primary;
@@ -175,6 +180,9 @@ export default function SchoolScreen() {
 
   const toggleDone = useCallback(
     async (childKey: string, item: FamilyHomework) => {
+      // A project homework is never ticked by hand: the server answers 409
+      // `submission_required`, and ticks it itself when the project is handed in.
+      if (item.requiresSubmission) return;
       if (hwInFlight.current.has(item.id)) return;
       const next = !item.done;
       hwInFlight.current.add(item.id);
@@ -613,6 +621,17 @@ function HomeworkRow({
   const done = item.done && !untracked;
   const meta = [item.className, item.teacherName].filter(Boolean).join(' · ');
   const hasInstructions = item.instructions.trim() !== '';
+  // A project homework has no tick: the hand-in screen ticks it. Its state is a
+  // text chip as well as an icon. An untracked item shows neither (nobody can
+  // hand in, so «لم يُسلَّم بعد» would be a claim the system cannot back), and a
+  // parent only reads it, so the link is the student's alone.
+  const isSubmission = item.requiresSubmission;
+  const showSubmission = isSubmission && !untracked;
+  const showLink = !isParent && showsSubmissionLink(item);
+  const stateLabel = t(stateLabelKey(item.submission));
+  // The same look as the project screen's status (submissionLook): late is destructive, never amber.
+  const look = submissionLook(item.submission);
+  const stateColor = look.tone === 'primary' ? colors.primary : look.tone === 'destructive' ? colors.destructive : colors.mutedForeground;
 
   return (
     <View
@@ -621,18 +640,22 @@ function HomeworkRow({
         { backgroundColor: colors.card, borderColor: item.state === 'overdue' && !untracked ? colors.destructive + '55' : colors.border, borderRadius: colors.radius, flexDirection: rowDir },
       ]}
     >
-      {untracked ? null : isParent ? (
+      {untracked ? null : isParent || isSubmission ? (
         <View
           accessible
           accessibilityRole="image"
-          accessibilityLabel={t(item.done ? 'hwDone' : 'hwTodo')}
+          accessibilityLabel={isSubmission ? stateLabel : t(item.done ? 'hwDone' : 'hwTodo')}
           style={styles.hwMark}
         >
-          <Ionicons
-            name={item.done ? 'checkmark-circle' : 'ellipse-outline'}
-            size={24}
-            color={item.done ? ACCENT : colors.mutedForeground}
-          />
+          {isSubmission ? (
+            <Ionicons name={look.icon} size={24} color={stateColor} />
+          ) : (
+            <Ionicons
+              name={item.done ? 'checkmark-circle' : 'ellipse-outline'}
+              size={24}
+              color={item.done ? ACCENT : colors.mutedForeground}
+            />
+          )}
         </View>
       ) : (
         <Pressable
@@ -677,7 +700,7 @@ function HomeworkRow({
               {meta}
             </Text>
           ) : null}
-          <View style={{ flexDirection: rowDir }}>
+          <View style={{ flexDirection: rowDir, flexWrap: 'wrap', alignItems: 'center', gap: SPACE.xs }}>
             {done ? (
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
                 {t('hwDueOn', formatDueDate(item.dueDate))}
@@ -687,6 +710,11 @@ function HomeworkRow({
                 <Text style={{ color: badgeColor, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{badgeText}</Text>
               </View>
             )}
+            {showSubmission ? (
+              <View style={[styles.hwBadge, { backgroundColor: stateColor + '1A' }]}>
+                <Text style={{ color: stateColor, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{stateLabel}</Text>
+              </View>
+            ) : null}
           </View>
           {hasInstructions ? (
             <Text
@@ -708,6 +736,19 @@ function HomeworkRow({
               {`${t('hwOpenExam')}: ${item.examTitle}`}
             </Text>
           </Pressable>
+        ) : null}
+        {showLink ? (
+          <PressableScale
+            accessibilityRole="link"
+            aria-label={t('submissionOpenA11y', item.title)}
+            onPress={() => router.push(`/homework-project/${encodeURIComponent(item.id)}` as never)}
+            style={{ flexDirection: rowDir, alignItems: 'center', gap: SPACE.xs, minHeight: TOUCH }}
+          >
+            <Ionicons name="images-outline" size={ICON.md} color={ACCENT} />
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textAlign: align }}>
+              {t('submissionOpen')}
+            </Text>
+          </PressableScale>
         ) : null}
         {item.resources.map(r => {
           const isGame = r.kind === 'game';

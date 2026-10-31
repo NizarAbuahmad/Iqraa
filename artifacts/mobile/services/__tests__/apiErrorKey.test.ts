@@ -8,6 +8,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { apiErrorKey, apiErrorMessage } from '../apiErrorKey.ts';
+import { SubmissionError } from '../homeworkSubmissionApi.ts';
 
 const err = (code?: string, status?: number, message = 'English sentence from the server') =>
   Object.assign(new Error(message), { code, status });
@@ -90,6 +91,47 @@ describe('apiErrorMessage', () => {
       apiErrorMessage(err('account_suspended', 403, 'This account has been suspended.'), 'fb', t),
       '<errAccountSuspended>',
     );
+  });
+});
+
+describe('homework project submission codes', () => {
+  const sub = (code: string | undefined, status: number) => new SubmissionError('x', status, code);
+
+  it('maps each refusal of the project routes to its own key', () => {
+    assert.equal(apiErrorKey(sub('locked', 409), 'errGeneric'), 'errSubmissionLocked');
+    assert.equal(apiErrorKey(sub('photo_limit', 409), 'errGeneric'), 'errPhotoLimit');
+    assert.equal(apiErrorKey(sub('empty', 409), 'errGeneric'), 'errSubmissionEmpty');
+    assert.equal(apiErrorKey(sub('storage_unavailable', 503), 'errGeneric'), 'errStorageUnavailable');
+    assert.equal(apiErrorKey(sub('bad_image', 400), 'errGeneric'), 'errBadImage');
+    assert.equal(apiErrorKey(sub('bad_data_url', 400), 'errGeneric'), 'errBadImage');
+  });
+
+  it('maps the tick route’s submission_required for any error class that carries it', () => {
+    // familyHomework.ts answers this on PUT/DELETE .../done, which throws HomeworkError, not SubmissionError.
+    assert.equal(apiErrorKey(sub('submission_required', 409), 'fb'), 'errSubmissionRequired');
+    assert.equal(apiErrorKey(err('submission_required', 409), 'fb'), 'errSubmissionRequired');
+  });
+
+  it('still maps the codes it shares with messaging, and a 429, as before', () => {
+    assert.equal(apiErrorKey(sub('file_too_large', 413), 'fb'), 'errFileTooLarge');
+    assert.equal(apiErrorKey(sub('unsupported_type', 400), 'fb'), 'errUnsupportedType');
+    assert.equal(apiErrorKey(sub(undefined, 429), 'fb'), 'errTooManyRequests');
+  });
+
+  it('says «note», not «message», for a project note that is too long; messaging keeps its own copy', () => {
+    assert.equal(apiErrorKey(sub('too_long', 400), 'fb'), 'errNoteTooLong');
+    assert.equal(apiErrorKey(err('too_long', 400), 'fb'), 'errTooLong');
+  });
+
+  it('leaves `invalid` to the screen’s own key: no existing copy fits, and none is invented', () => {
+    assert.equal(apiErrorKey(sub('invalid', 400), 'errGeneric'), 'errGeneric');
+  });
+
+  it('keeps the generic words private to the project calls', () => {
+    // Another feature’s `locked` / `empty` / `photo_limit` / `storage_unavailable` must not borrow this copy.
+    for (const code of ['locked', 'empty', 'photo_limit', 'storage_unavailable']) {
+      assert.equal(apiErrorKey(err(code, 409), 'fb'), 'fb', code);
+    }
   });
 });
 
