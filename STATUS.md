@@ -89,7 +89,7 @@ Checked 2026-10-22:
   once the site redeploys. Students, parents and exam pages are recorded; the parent consent page
   is not. The homework project screen (`/homework-project`, students' photos of their work) is left
   out of screen-view tracking (`shouldTrackScreen`), which does not stop a recording already
-  running, and whether masking hides its photos is unverified, like every other screen. The policy (`LEGAL_VERSION` 2026-10-31.c now; its recording text dates from 2026-10-30) was written by a model and **not reviewed by a
+  running, and whether masking hides its photos is unverified, like every other screen. The policy (`LEGAL_VERSION` 2026-10-31.d now; its recording text dates from 2026-10-30) was written by a model and **not reviewed by a
   lawyer**; Contentsquare's data location was not checked (PostHog's settings say «EU Cloud»),
   and the Contentsquare plan shows a 200K sessions a month cap.
   Entry: «Screen recordings: Contentsquare on the web, PostHog replay on Android» in the log.
@@ -103,7 +103,7 @@ Checked 2026-10-22:
   «Parent approval for email students — server (PR A)».
 - **A student can sign up with an email and no teacher's code (PR #1226, merged 2026-10-24) — the
   legal wording still needs a person to read it.** The privacy policy §5 and terms §1
-  (`constants/legal.ts`, since `LEGAL_VERSION` 2026-10-23; 2026-10-31.c now) say a student may join with an email after
+  (`constants/legal.ts`, since `LEGAL_VERSION` 2026-10-23; 2026-10-31.d now) say a student may join with an email after
   confirming they are an adult or have a guardian's agreement. They were drafted, not reviewed by
   a lawyer, and nothing in the repo records a review since. Merging deploys, and from then new
   sign-ups record that version; existing accounts are not asked again (there is no re-acceptance
@@ -229,7 +229,7 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 
 ## Finding older detail, and recording new work
 
-- The log has 418 sections. Anything cited elsewhere as
+- The log has 419 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line

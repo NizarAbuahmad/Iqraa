@@ -210,6 +210,10 @@ router.post("/student/homework/:id/submission/submit", (req: AuthenticatedReques
       refuseOtherAuthor(res);
       return;
     }
+    if (result === "changed") {
+      refuseChanged(res);
+      return;
+    }
     if (result !== "ok") {
       res.status(409).json({
         error: result === "locked" ? "This project is locked" : "Add a photo or a note first",
@@ -267,8 +271,9 @@ router.get("/homework/:id/submissions/:studentId", async (req: AuthenticatedRequ
  * (lib/homeworkSubmission.ts `clearForTeacher`). The way out when a record's project was handed in from another
  * account (a mis-claim the teacher has since unlinked): the account linked now then starts clean. The same owner check
  * and the same 404s as the two reads above. Nothing to clear is a 404, so a repeated call is a 404, not a second 200.
- * A storage failure is a 500 with everything kept, and the same request can be sent again. No rate limit, like the
- * other teacher writes on `/homework`.
+ * A storage failure is a 500 with the database untouched (photos deleted before it stay deleted), and the same request
+ * can be sent again. No lock is held while storage is called. No rate limit, like the other teacher writes on
+ * `/homework`.
  */
 router.delete("/homework/:id/submissions/:studentId", async (req: AuthenticatedRequest, res) => {
   try {

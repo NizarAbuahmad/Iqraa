@@ -1723,6 +1723,158 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       assert.deepEqual(keysUnder(hw, s.row), []);
       assert.equal(await ticked(hw, s.row), false);
     });
+
+    it("an outage after the first photo: 500, the database untouched, the first photo gone, and a retry clears the rest", async () => {
+      const s = await freshStudent();
+      const hw = await insertHomework("clear-r2-half", "5 days", true);
+      await writeProject(server, s.user, hw);
+      assert.equal((await call(server, "POST", `/student/homework/${hw}/submission/photos`, s.user, photoBody("image/png", PNG))).status, 201);
+      const before = await subRow(hw, s.row);
+      assert.equal(keysUnder(hw, s.row).length, 2);
+
+      s3.failDeletesAfter(1);
+      try {
+        const failed = await clear(server, hw, s.row);
+        assert.equal(failed.status, 500, failed.text);
+      } finally {
+        s3.failDeletesAfter(null);
+      }
+      assert.deepEqual(await subRow(hw, s.row), before, "the row is exactly as it was, both photos still listed");
+      assert.equal(await ticked(hw, s.row), true, "and the tick is kept");
+      assert.equal(keysUnder(hw, s.row).length, 1, "one photo was deleted before the outage, and stays deleted");
+
+      const retried = await clear(server, hw, s.row);
+      assert.equal(retried.status, 200, retried.text);
+      assert.equal(await subRow(hw, s.row), undefined);
+      assert.deepEqual(keysUnder(hw, s.row), [], "deleting the already-deleted key succeeds, so the retry finishes");
+      assert.equal(await ticked(hw, s.row), false);
+    });
+
+    it("holds no transaction (and so no row lock) while it waits on storage", async () => {
+      const s = await freshStudent();
+      const hw = await insertHomework("clear-no-lock", "5 days", true);
+      await writeProject(server, s.user, hw);
+      const open: number[] = [];
+      s3.onDelete(async () => {
+        const r = await db.pool.query(
+          `SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname = current_database() AND state LIKE 'idle in transaction%'`,
+        );
+        open.push(r.rows[0].n);
+      });
+      try {
+        const r = await clear(server, hw, s.row);
+        assert.equal(r.status, 200, r.text);
+      } finally {
+        s3.onDelete(null);
+      }
+      assert.deepEqual(open, [0], "no connection sat in an open transaction during the storage call");
+    });
+
+    it("deletes, after it commits, a photo that was uploaded while it was deleting the others", async () => {
+      const s = await freshStudent();
+      const hw = await insertHomework("clear-late-photo", "5 days", true);
+      await writeProject(server, s.user, hw, true);
+      const lateKey = `homework-submissions/${hw}/${s.row}/late.jpg`;
+      let fired = false;
+      s3.onDelete(async () => {
+        if (fired) return;
+        fired = true;
+        // A student upload landing between the clear's first read and its lock: the object, then the row's list.
+        // lock_timeout so that a clear holding the row lock here fails this hook (and the test) instead of hanging.
+        await s3.putForTest(lateKey, JPEG);
+        const c = await db.pool.connect();
+        try {
+          await c.query("BEGIN");
+          await c.query("SET LOCAL lock_timeout = '2s'");
+          await c.query(
+            `UPDATE homework_submissions SET photos = photos || $3::jsonb WHERE homework_id = $1 AND student_id = $2`,
+            [hw, s.row, JSON.stringify([{ id: "late", key: lateKey, mime: "image/jpeg", sizeBytes: JPEG.length }])],
+          );
+          await c.query("COMMIT");
+        } catch (err) {
+          await c.query("ROLLBACK");
+          throw err;
+        } finally {
+          c.release();
+        }
+      });
+      try {
+        const r = await clear(server, hw, s.row);
+        assert.equal(r.status, 200, r.text);
+      } finally {
+        s3.onDelete(null);
+      }
+      assert.ok(fired);
+      assert.equal(await subRow(hw, s.row), undefined, "the row, with the late photo in its list, is gone");
+      assert.equal(s3.body(lateKey), undefined, "and the late photo's object was deleted after the commit");
+      assert.deepEqual(keysUnder(hw, s.row), []);
+    });
+
+    it("answers 404 when the row is gone by the time it takes the lock (cleared or archived meanwhile)", async () => {
+      const s = await freshStudent();
+      const hw = await insertHomework("clear-gone", "5 days", true);
+      await writeProject(server, s.user, hw);
+      s3.onDelete(async () => {
+        await db.pool.query(`DELETE FROM homework_submissions WHERE homework_id = $1 AND student_id = $2`, [hw, s.row]);
+      });
+      try {
+        const r = await clear(server, hw, s.row);
+        assert.equal(r.status, 404, r.text);
+        assert.equal(r.json.error, "Submission not found");
+      } finally {
+        s3.onDelete(null);
+      }
+      assert.equal(await ticked(hw, s.row), true, "a clear that found nothing to lock removed no tick");
+    });
+
+    it("a hand-in and a clear that meet: the clear waits for the hand-in's tick, so no tick is left without a project", async () => {
+      const s = await freshStudent();
+      const hw = await insertHomework("clear-vs-submit", "5 days", true);
+      await writeProject(server, s.user, hw, true);
+      // An uncommitted completion for the same record makes the hand-in's tick insert wait, which holds the hand-in
+      // between its UPDATE and its tick. Then the clear is sent, and the completion rolled back.
+      const holder = await db.pool.connect();
+      const waitFor = async (pattern: string) => {
+        const deadline = Date.now() + 10_000;
+        for (;;) {
+          const r = await db.pool.query(
+            `SELECT 1 FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock' AND query ILIKE $1`,
+            [pattern],
+          );
+          if (r.rowCount) return;
+          assert.ok(Date.now() < deadline, `nothing waited on a lock for ${pattern}`);
+          await new Promise(res => setTimeout(res, 20));
+        }
+      };
+      try {
+        await holder.query("BEGIN");
+        await holder.query(`INSERT INTO homework_completions (homework_id, student_id) VALUES ($1, $2)`, [hw, s.row]);
+        const submitting = call(server, "POST", `/student/homework/${hw}/submission/submit`, s.user);
+        await waitFor(`insert into "homework_completions"%`);
+        let clearDone = false;
+        const clearing = clear(server, hw, s.row).then(r => ((clearDone = true), r));
+        // Either the clear finishes now (the hand-in's UPDATE was already committed: the old order), or it queues
+        // behind the hand-in's row lock (one transaction). Wait for one of the two, no timing.
+        const deadline = Date.now() + 10_000;
+        for (;;) {
+          if (clearDone) break;
+          const r = await db.pool.query(
+            `SELECT 1 FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock' AND query ILIKE '%for update%'`,
+          );
+          if (r.rowCount) break;
+          assert.ok(Date.now() < deadline, "the clear neither finished nor waited");
+          await new Promise(res => setTimeout(res, 20));
+        }
+        await holder.query("ROLLBACK");
+        const [sub, cl] = await Promise.all([submitting, clearing]);
+        assert.equal(sub.status, 200, sub.text);
+        assert.equal(cl.status, 200, cl.text);
+      } finally {
+        holder.release();
+      }
+      assert.equal(await subRow(hw, s.row), undefined, "the project is cleared");
+      assert.equal(await ticked(hw, s.row), false, "and so is the tick the hand-in wrote");
+    });
   });
 
   describe("an account self-linked to two records in one class", () => {
@@ -1779,6 +1931,7 @@ describeDb("homework project submissions over HTTP, against a real database", ()
     for (const [what, method, suffix, body] of [
       ["a photo upload", "POST", "/photos", photoBody("image/jpeg", JPEG)],
       ["a note", "PUT", "", { note: "late note" }],
+      ["a hand-in", "POST", "/submit", undefined],
     ] as const) {
       it(`${what} answers 409 changed and leaves no photo behind`, async () => {
         const user = (await db.pool.query(`INSERT INTO users (first_name, last_name, role) VALUES ('Race', 'R', 'student') RETURNING id`)).rows[0].id as string;
