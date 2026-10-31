@@ -155,6 +155,13 @@
       "when": 1793366152557,
       "tag": "0021_blushing_blockbuster",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793433202198,
+      "tag": "0022_medical_thundra",
+      "breakpoints": true
     }
   ]
 }

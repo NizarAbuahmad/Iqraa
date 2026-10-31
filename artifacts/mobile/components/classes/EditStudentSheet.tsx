@@ -78,6 +78,18 @@ export function EditStudentSheet({ student, saving, error, onSave, onClose }: Pr
               </Text>
             ) : null}
 
+            <Text style={labelStyle}>{t('studentNameArLabel')}</Text>
+            <TextInput
+              value={draft.displayNameAr}
+              onChangeText={v => set('displayNameAr', v)}
+              // An Arabic name is typed right-to-left whatever the app language is.
+              style={[...inputStyle, { textAlign: 'right', writingDirection: 'rtl' }]}
+              accessibilityLabel={t('studentNameArLabel')}
+            />
+            <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+              {t('studentNameArHint')}
+            </Text>
+
             <Text style={labelStyle}>{t('studentRefLabel')}</Text>
             <TextInput
               value={draft.externalRef}
