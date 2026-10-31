@@ -28,6 +28,48 @@ console). **First thing it showed:** 79 of those stacks were an OpenAI `429`
 `credit_balance_exhausted` between 2026-10-28 18:30Z and 2026-10-29 23:51Z (`classroom-activity`,
 `chat`, `lesson-teaching`, `activity`, `evaluation` generation) — none since.
 
+## Review of messaging and exams: whole-number marking, broadcast unread, report length — 2026-10-30
+
+**Asked:** review messaging with parents and students, and exams and evaluations, now that the app
+has real users. Two read-only reviews of the code plus the full test suites; this PR fixes the
+three findings that were small, confirmed and safe to change. The rest are listed below, unfixed.
+
+**Fixed.**
+- **A decimal key accepted a whole number, and a whole key a decimal** (`answersMatch`,
+  `modules/assessment/normalize.ts`). With no decimal places on one side the rounding tolerance
+  became half a unit: key `0.5` marked `0` and `1` correct, key `2.5` marked `2` and `3`, key `3`
+  marked `3.4`. `fill_blank` grades this with no teacher in the loop. A side with no decimals is
+  now matched only when numerically equal; decimal-against-decimal rounding (`0.3333` vs `0.333`)
+  is unchanged. Papers already marked are **not** re-marked: a teacher's re-submit re-grades the
+  machine marks, and nobody has measured how many past marks were affected.
+- **A broadcast, and a results or homework line in the class chat, marked the teacher's thread
+  read** (`routes/messaging.ts`, `lib/classThread.ts`). A parent's reply the teacher had not opened
+  dropped out of the unread count and the app-icon badge. Unread already skips the viewer's own
+  messages, so the read mark was never needed.
+- **A chat report's `reason` had no length limit** (now 1000 characters, 400 `too_long`). The app
+  sends only preset reason keys, so no client change.
+
+**Verified:** typecheck clean; API suite 3064/3064 against a throwaway local Postgres (new tests:
+`grading.test.ts`, `broadcastUnread.db.test.ts`, `reportReasonLimit.db.test.ts`, each seen to fail
+before the fix). Mobile suite 8254 pass, 10 skipped, 0 fail (not re-run after this change; it
+touches no mobile file). **Not verified:** nothing was run against production.
+
+**Found and not fixed (from the reviews; read from the code, not all reproduced):**
+- Unlinking a parent or student removes them from class chats only; direct chats and custom groups
+  stay open (documented in `routes/roster.ts`, but the unlink dialog does not say so).
+- Large broadcasts: pushes go one at a time under a 4 s cap, and a retry after a timeout re-sends
+  to everyone already reached (no idempotency key).
+- Question generation into an exam is not atomic: an app timeout and a second tap can double the
+  paper; a model `marks` over 999.99 fails after the old questions were already removed.
+- Shared device: the next student opening the same exam link resumes the previous student's sitting.
+- `evaluations.timeLimitMin` is never set by any route or screen, so every exam is untimed, and
+  `examDate` gates nothing; the share link expires 7 days after publishing.
+- A published exam's questions cannot be edited, so a wrong key can only be corrected by hand-marking.
+- Share codes are about 30 bits; matching-question ids may reveal the pairing; a student can see
+  marking progress through `/take/attempt/state`; a teacher answer write can overwrite a submitted
+  answer; non-UUID ids return 500 instead of 400 on several routes.
+- A block does not stop the blocked person posting to a teacher, though the dialog says it does.
+
 ## Unsubscribe in every email, and 18+ for teachers and parents — 2026-10-30
 
 **Asked:** an unsubscribe button in every email we send, and terms that say teachers and parents

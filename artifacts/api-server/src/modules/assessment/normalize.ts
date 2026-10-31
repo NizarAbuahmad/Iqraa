@@ -82,6 +82,10 @@ export function answersMatch(studentRaw: unknown, keyRaw: unknown): boolean {
   // finer precision instead would reject `0.3333` against a key of `0.333`,
   // which is the case this tolerance exists for.
   const dp = Math.min(decimalPlaces(student), decimalPlaces(key));
+  // A side with no decimal places is a plain integer, not a rounding of the
+  // other: at dp 0 the tolerance was half a unit, so a key of 0.5 accepted 0
+  // and 1 and a key of 3 accepted 3.4. Equal values already returned above.
+  if (dp === 0) return false;
   return Math.abs(a - b) <= 0.5 * 10 ** -dp;
 }
 
