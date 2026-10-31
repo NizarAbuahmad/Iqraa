@@ -10,8 +10,8 @@
  * Completions are fetched for the family's own roster rows only, so one
  * family's ticks are never in memory while another's list is being built.
  */
-import { db, classGroups, classMemberships, evaluations, gameResults, homework, homeworkCompletions, users } from "@workspace/db";
-import { and, asc, gte, inArray, isNull, eq } from "drizzle-orm";
+import { db, classGroups, classMemberships, evaluations, gameResults, homework, homeworkCompletions, homeworkSubmissions, users } from "@workspace/db";
+import { and, asc, gte, inArray, isNotNull, isNull, eq } from "drizzle-orm";
 import {
   buildFamilyHomework,
   type CompletionRow,
@@ -20,6 +20,7 @@ import {
   type GameResultRow,
   type HomeworkRow,
   type MembershipRow,
+  type SubmissionRow,
   type TeacherRow,
 } from "../modules/homework/familyHomework.ts";
 import { FAMILY_LIMIT, familyCutoff } from "../modules/homework/rules.ts";
@@ -59,6 +60,7 @@ export async function loadFamilyHomework(
       dueAt: homework.dueAt,
       evaluationId: homework.evaluationId,
       resources: homework.resources,
+      requiresSubmission: homework.requiresSubmission,
     })
     .from(homework)
     .where(
@@ -76,7 +78,7 @@ export async function loadFamilyHomework(
   const teacherIds = [...new Set(memberships.map(m => m.teacherId))];
   const examIds = [...new Set(homeworkRows.flatMap(h => (h.evaluationId ? [h.evaluationId] : [])))];
   const hwIds = homeworkRows.map(h => h.id);
-  const [completions, gameRows, teachers, exams] = await Promise.all([
+  const [completions, gameRows, teachers, exams, submissionRows] = await Promise.all([
     db
       .select({
         homeworkId: homeworkCompletions.homeworkId,
@@ -120,7 +122,22 @@ export async function loadFamilyHomework(
           })
           .from(evaluations)
           .where(inArray(evaluations.id, examIds)) as Promise<ExamRow[]>),
+    // Like completions: the family's own roster rows only, and only a handed-in project — a draft is the author's alone.
+    db
+      .select({
+        homeworkId: homeworkSubmissions.homeworkId,
+        studentId: homeworkSubmissions.studentId,
+        submittedAt: homeworkSubmissions.submittedAt,
+      })
+      .from(homeworkSubmissions)
+      .where(
+        and(
+          inArray(homeworkSubmissions.homeworkId, hwIds),
+          inArray(homeworkSubmissions.studentId, studentIds),
+          isNotNull(homeworkSubmissions.submittedAt),
+        ),
+      ) as Promise<SubmissionRow[]>,
   ]);
 
-  return buildFamilyHomework({ homework: homeworkRows, memberships, completions, gameResults: gameRows, teachers, exams, now, withAccount: accounts });
+  return buildFamilyHomework({ homework: homeworkRows, memberships, completions, gameResults: gameRows, teachers, exams, submissions: submissionRows, now, withAccount: accounts });
 }

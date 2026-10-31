@@ -43,7 +43,8 @@ export async function recordGameResult(
     })
     .returning({ studentId: gameResults.studentId, score: gameResults.score, total: gameResults.total, attempts: gameResults.attempts });
 
-  await tickRows(homeworkId, own.rows);
+  // A homework that asks for a project is done by submitting it, not by playing a game.
+  if (!own.requiresSubmission) await tickRows(homeworkId, own.rows);
 
   const first = saved.find(r => r.studentId === own.rows[0]) ?? saved[0]!;
   return { best: { score: first.score, total: first.total }, attempts: first.attempts };

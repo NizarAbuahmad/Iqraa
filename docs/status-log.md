@@ -75,6 +75,616 @@ and the owner can lock and update their own row).
 - `PUT /evaluations/:id/questions/paper` and the question add/edit/delete routes have the same
   read-then-write shape and were not touched.
 
+## Homework project submission — student app — 2026-10-30
+
+Phase 2 of 3: a student whose homework needs a project can open it from the School tab,
+add one to six photos from the phone's library and a note, hand it in, change it until the
+due day ends, and see it read-only after that. It runs on the phase 1 API (the two entries
+below). Phase 2 itself is app code only (`artifacts/mobile`), with no `app.json` change. But it
+merges in the same PR (#1356) as phase 1, so **a merge of that PR deploys three surfaces**
+(`deploy.yml`'s `what changed` job, which reads the whole push):
+- **The API.** Phase 1, the sweep and migration `0021_blushing_blockbuster` reach Cloud Run.
+  They are under `artifacts/api-server/` and `lib/`, so the schema job migrates first and the
+  new API revision takes traffic after it.
+- **The web bundle.** The app changes go to production on Cloudflare Pages (`iqraa-web`).
+  That is the live web app, not a preview.
+- **The over-the-air update.** It goes to the `preview` channel (`mobile-update.yml` on push to
+  `main`). The `production` channel stays manual
+  (`gh workflow run mobile-update.yml -f branch=production`).
+
+The verifier is skipped. An update only reaches a binary with the same `app.json` `version`
+(1.6.0 on this branch; see *Mobile* in `STATUS.md` for which binary is installed). **No
+screen can yet switch a homework to need a project**: that is the teacher's app, phase 3.
+Until then only the API (`requiresSubmission` on `POST`/`PATCH /homework`) can, so in
+practice no student sees this yet. Spec:
+`docs/superpowers/specs/2026-10-30-homework-project-submission-design.md` (§5, §6, §8);
+plan: `docs/superpowers/plans/2026-10-30-homework-project-submission-student-app.md`.
+
+**What was built** (commits `889426b`…`b56c93a`)
+
+- **Rules in pure modules**, loaded by bare `node --test`: `services/homeworkSubmission.ts`
+  (types, the normaliser, `canAddPhoto`/`canHandIn`, the data-URL check, the limits
+  `PHOTOS_MAX = 6`, `NOTE_MAX = 2000`) and `services/homeworkProject.ts` (the screen's
+  decisions: when to save the note, when a removal would empty a handed-in project, which
+  upload errors may have stored the photo, when to celebrate).
+- **API client** `services/homeworkSubmissionApi.ts` (injected `apiFetch`, the
+  `guardianApi.ts` pattern; uploads with a 45 s timeout) and error mapping in
+  `services/apiErrorKey.ts` for `locked`, `photo_limit`, `empty`, `submission_required`,
+  `storage_unavailable`, `bad_image`, `bad_data_url` and a note that is too long.
+- **The School tab** (`app/(tabs)/school.tsx`, `HomeworkRow`): a homework that needs a
+  project shows a state chip («لم يُسلَّم بعد» / «تم التسليم» / «سُلِّم متأخرًا») and a
+  «افتح المشروع» link instead of the tick. The status icon beside it is not pressable.
+  Parents get no link (their read-only view is phase 3), and an item the account cannot
+  track gets none either.
+- **The picker** `services/homeworkPhotoPick.ts`: the library only, through
+  `expo-image-picker`, shrunk to 1600 px on the long edge by the existing
+  `pickedPhotoToDataUrl`. A result the server would refuse (not jpeg/png/webp, or a data URL
+  over 6,000,000 characters) is refused on the device with «تعذّرت قراءة هذه الصورة، جرّب
+  صورة أخرى» rather than sent.
+- **The screen** `app/homework-project/[id].tsx`: status card, photo grid (thumbnail opens
+  the existing image viewer; a remove control per photo behind a confirm), the add slot,
+  the note with a counter, «سلّم» / «سلّم من جديد». It reloads on every focus (signed photo
+  URLs live ten minutes), shows a retry when a load fails, saves the note on blur and on
+  leaving, and saves a typed note before a removal. Removing the last photo of a handed-in
+  project with no note is disabled, with the hint «أضف الصورة الجديدة أولًا ثم احذف
+  القديمة». Past the due day a handed-in project is read-only with «انتهى موعد التسليم،
+  المشروع للقراءة فقط». Only an on-time first hand-in made on the screen is celebrated; a late
+  one gets a toast.
+- **After the final review** (same PR):
+  - **Late first hand-in.** It asks first: «سيُسجَّل التسليم متأخرًا ولن تتمكن من تعديله بعد
+    ذلك», because the server locks it at once.
+  - **State look.** Late is drawn in the destructive colour on both the School row and the
+    screen (`submissionLook`, never amber).
+  - **Locked note.** A locked project shows the teacher's note, never an unsaved draft.
+  - **Refused clear.** A note clear refused as `empty` goes back to the saved note.
+  - **Analytics.** The screen is not reported as a screen view (`shouldTrackScreen`).
+  - **Celebrations.** The project hand-in is the fifth celebration moment (CLAUDE.md, the
+    celebrations spec and `celebrateMoments.test.ts`).
+  - **Not checked in a browser.** None of these was re-run against the real stack; they are
+    covered by unit and source-reading tests.
+
+**Decisions**
+
+- **Library only, no camera.** `app.json` has `cameraPermission: false`; a camera is a
+  native change (`version` bump and a new build). A student photographs the work with the
+  phone's camera app and picks it. `git diff origin/main --stat -- artifacts/mobile/app.json
+  artifacts/mobile/package.json artifacts/mobile/eas.json artifacts/mobile/android` is empty.
+- **A thin screen over pure services**, so the rules are unit-tested and the screen is
+  pinned by a source-reading test (`homeworkProjectScreen.test.ts`).
+- **Parents get no link** in this phase.
+
+**Verified** (local, 2026-10-30)
+
+- `cd artifacts/mobile && pnpm test`: **8402 tests, 8392 passed, 0 failed, 0 cancelled, 10
+  skipped**, exit 0. Root `pnpm run typecheck`: clean. The two greps of ci.yml's «Brand is
+  «إقرأ»» step, run by hand: no match. Not run: the api-server suite (no API code changed in
+  this phase; `git diff 721946e..b56c93a --stat` lists only `artifacts/mobile` files),
+  curriculum, math-verifier, and the `e2e/` journey (it does not reach student accounts).
+- **Against the real stack, driven in a browser.** Postgres 16, a throwaway database
+  migrated with `migrate -- --from-env` (22 migrations) and `seed:assessment`, dropped
+  afterwards. The built API bundle with `RLS_ENFORCE=on` (as production), `STUDENT_ACCOUNTS=true`,
+  `AI_LIVE_MODE=false`, pointed at the in-memory S3 stub of the API tests
+  (`test-support/s3Stub.ts`), so uploads, deletes and signed URLs went through the real code
+  but **not to R2**. The web bundle built with `expo export` (`EXPO_PUBLIC_DEMO_MODE=true`),
+  served by `e2e/serve.mjs`, driven by Playwright scripts in headless Chromium. The teacher,
+  class, two roster students, their codes and three homework were made through the API (no
+  teacher screen sets the flag); each student signed up with `POST /auth/redeem` and signed
+  in through the app's own login-code screen. Each result below was read off the screen and
+  checked against the API or the database:
+  - **School row**: the chip «لم يُسلَّم بعد» and the link, and no checkbox (the page's only
+    checkbox was the ordinary homework's). Tapping the project row's status circle sent no
+    request; a direct `PUT …/done` answers 409 `submission_required`.
+  - **Photos**: an 800×600 JPEG, a 500×500 PNG and a 14 MB 4000×3000 JPEG were each one
+    `POST …/photos` → 201. The large one was stored as a 1600×1200 JPEG of 488 KB. Each
+    thumbnail loaded from a signed URL on the stub's host with `X-Amz-Expires=600`. A 6.7 MB
+    1500×1500 PNG (small enough to pass through unshrunk, too big to send) and a GIF were
+    refused on the device with the message above, and no request was sent. Removing a
+    photo: Cancel sent nothing; confirming sent one `DELETE` and the object left the stub.
+  - **Hand in**: with a typed note, «سلّم» sent `PUT …/submission` (the note) then
+    `POST …/submit`. The status read «تم التسليم» with the celebration. The list item came
+    back `done: true, submission: "submitted"`, and the School row moved to «تم إنجازه» with
+    the chip «تم التسليم».
+  - **Replace**: on reopening, a photo was added and the first one removed, then «سلّم من
+    جديد». `submitted_at` in the database kept the first hand-in's time.
+  - **Last photo** (English, dark): on a handed-in project with one photo and no note, the
+    remove control was `aria-disabled` (44×44) and the hint showed; tapping it opened
+    nothing. After typing a note it was enabled, and confirming sent `PUT` (the note) then
+    `DELETE`; the project kept the note, no photo, and its `submitted_at`.
+  - **Due day passed** (`homework.due_at` moved to yesterday, Amman, in the database): a
+    project handed in before it showed «تم التسليم» and the lock line, with no add, remove
+    or hand-in control and a read-only note; the API refused a photo with 409 `locked`.
+    The other student, with nothing handed in, could add a photo and hand in once. That
+    showed «سُلِّم متأخرًا», «سُلِّم بعد الموعد» and the lock line, with a toast and no
+    celebration. A second hand-in through the API: 409 `locked`. The School row read
+    «سُلِّم متأخرًا».
+  - **Another student**: with the second student's own token, `GET` on the first student's
+    homework returned his own empty project; `DELETE` of the first student's photo id was a
+    404; `?studentId=<her roster row>` was ignored. The first student's row was unchanged in
+    the database. Opening the same URL in the app as him showed his own empty project. A
+    teacher's token on the student route: 403.
+  - **Errors**: an ordinary homework id and an unknown id both showed «لم يعد هذا متاحًا.»
+    with no retry button. With the API started **without R2**, stored photos showed the
+    placeholder (their URLs are `null`), and an upload was a 503 shown as «تعذّر حفظ الصورة
+    الآن، حاول بعد قليل».
+  - **Sizes and themes**: phone 390×844 and desktop 1280×800, Arabic (RTL) and English,
+    light and dark (the system colour scheme, which the app reads at start). No horizontal
+    overflow at either width. Every screenshot was looked at.
+
+**Not verified**
+
+- **A real phone**: the Android and iOS photo pickers, their permission prompts, HEIC
+  photos (the device converts on a resize; a small HEIC that is not resized is refused on
+  the device as unsupported, by design), the on-device resize, the keyboard over the note,
+  and the image viewer's gestures. The browser's file input stands in for the picker, and
+  the web path shrinks through a canvas, not `expo-image-manipulator`.
+- **Real R2.** Only the in-memory stub; the bucket, its latency and real signed URLs were
+  not exercised.
+- **TalkBack / VoiceOver.** Only the `aria-*` attributes and labels were read in the browser.
+- **The camera**: deliberately absent (above).
+- **An expired signed URL**: what a thumbnail looks like after ten minutes on an open
+  screen was not checked.
+
+**Known limits**
+
+- Library only, no camera. The iOS photo-permission wording in `app.json` names messages and
+  lesson materials, not homework projects; changing it is a native change.
+- No offline queue: an upload needs a connection at that moment. Photo URLs are re-read on
+  focus only, not on a timer.
+- Before the due day, every change to a handed-in project is stored on the handed-in row at
+  once and is what the teacher reads. «سلّم من جديد» does not hold changes back; it only
+  re-checks the project and keeps the first `submitted_at`. It is enabled even when nothing
+  changed.
+- With R2 not configured the add slot is still shown and fails on use. The spec said it
+  would be hidden (§8, now corrected); the GET does not tell the app whether storage exists.
+- The project screen's header has no homework title.
+- Nothing warns that a late first hand-in is final and locks the project at once.
+- Clearing the note of a handed-in project that has no photo is refused with «لا يمكن أن
+  يبقى مشروع مُسلَّم فارغًا». The field then stays blank on screen while the server keeps the
+  old note, and every blur tries the save again.
+- Colour: the project screen marks «late» with `colors.warning` (an amber in dark mode); the
+  School row's late chip is red.
+- The School section's subtitle still says to tap a homework to mark it done, above project
+  rows that cannot be ticked, and their status circle looks like a tick box.
+- Not built here: the teacher's switch, list and detail, and the parent's view (phase 3);
+  the `e2e/` journey step the spec describes (§7).
+
+**The privacy policy, the terms, and a student's account deletion (2026-10-31, same PR)**
+
+- **Policy and terms** (`constants/legal.ts`, both languages; `LEGAL_LAST_UPDATED` 31 October
+  2026, `LEGAL_VERSION` `2026-10-31`). Privacy §1 describes the project: up to six photos from the
+  photo library and a note of up to 2000 characters, in private R2 behind ten-minute links;
+  photograph only the work; a draft is the student's alone; once handed in, the homework's teacher
+  and a parent linked to the student's record in that class see it, and nobody else in the app;
+  editable until the due day ends, with changes seen at once. §5 lists what a student account
+  reaches (it said "two things": messaging and the curriculum, already untrue for homework and
+  exams before this feature). §6 says what deletes a project. Terms §1 widened the same way, and
+  §3 gained one line on what a student may upload. The camera sentence stays true (library only).
+  The owner decided the wording should ship; it was **not reviewed by a lawyer**.
+- **A student's account deletion now deletes their projects.** Before, `DELETE /auth/users/me`
+  left them: `homework_submissions.student_id` references the roster row, which stays with the
+  teacher, so the rows (drafts included) and their R2 photos outlived the account.
+  `purgeSubmissionsOfAuthor` (`lib/homeworkSubmission.ts`) now deletes, on `systemDb` and before
+  the account row, the submissions of every roster row the account is `self`-linked to; the route
+  then deletes their objects best effort, like the teacher's (a failed object delete is logged
+  with its key and the deletion still succeeds). A guardian link deletes nothing. A row another
+  account is also `self`-linked to is kept, a backstop only: `roster_links_one_self_idx` allows one
+  `self` link per row today. The tick (`homework_completions`) is not touched.
+- **Verified:** four new cases in `routes/__tests__/homeworkSubmission.db.test.ts` (both kinds of
+  project gone in two classes with another student's untouched; the same with `RLS_ENFORCE=on`; a
+  parent's deletion keeps the child's work, including a row whose student account the teacher
+  unlinked; the shared-row backstop, with the index dropped in the throwaway database). Each guard
+  was broken on purpose and a case failed: no purge call, no object delete, no `self` filter, no
+  shared-row check, the delete on the app connection (fails only under RLS). api-server suite
+  3201/3201.
+- **After review (same day, same PR).** The purge (owner pool) and the account delete (the
+  request's own pool under `RLS_ENFORCE`) cannot share a transaction, and moving the account
+  cascade onto the owner connection was judged not worth it. So if the account delete throws after
+  the purge committed, the purged photos are deleted best effort (keys logged at error level) and
+  the route answers 500 with the account intact. A second best-effort pass after the account delete
+  (`purgeSubmissionsOfRows`) catches a draft an upload stored in between. New cases, each with its
+  failure injected by a trigger in the throwaway database: account delete refused, late draft, R2
+  down (a `failDeletes` hook in `test-support/s3Stub.ts`, with its own test), purge refused. Each
+  guard was broken on purpose and caught. api-server suite 3206/3206.
+- **Policy wording after review.** §1 now says a project is kept on the student's record, not on a
+  person: the account linked to that record sees the draft; once handed in, the homework's teacher
+  and the parents linked to the record see it; a teacher who links the record to another account
+  gives that account its projects. The location sentence now says an attached image may keep the
+  metadata the device wrote, which can include where it was taken (see *Known limits*).
+- **Microphone (same day).** The policy said the app never uses the microphone, which was false:
+  English speaking practice records on the device only (`useSpeakingRecorder`, never uploaded);
+  read-aloud practice in a lesson is transcribed by OpenAI and nothing is kept (`routes/practice.ts`);
+  an exam's read-aloud answer is stored in R2 with its transcript and played back only on the
+  exam teacher's marking screen. Privacy §1, §3, §4 and §6 now say so. The exam recording is
+  deleted by a re-take of the question, a quiz retake, the teacher deleting the attempt or their
+  account. It is **not** deleted when the exam is removed from the list (an archive) or when the
+  student's account is deleted.
+- **Not verified:** real R2; the sweep that would clean up an object whose delete failed is not set
+  up in production yet.
+- **Known limits (privacy):**
+  - **Unlink.** Unlinking a student account (`DELETE /students/:id/links/:userId`) touches no
+    submission, so the next account linked to that record sees and can change what was there. A
+    student whose account the teacher unlinked before the student deleted it keeps that row's
+    projects until the homework or class is deleted. Open in STATUS.md.
+  - **Photo metadata.** The client re-encodes a photo only when it shrinks it (long edge over
+    1600 px): on the web through a canvas, whose output carries no metadata; on a phone through
+    `expo-image-manipulator`, whose output was not checked for metadata. A smaller photo, or one
+    whose resize fails, is sent as its file's own bytes and stored as received, so EXIF (possibly
+    GPS) can remain. Open in STATUS.md.
+
+## Homework submission cleanup sweep — 2026-10-30
+
+The orphan sweep that the entry below said "must land before phase 2 lets students
+upload". API only, no schema, no app code. Spec §8:
+`docs/superpowers/specs/2026-10-30-homework-project-submission-design.md`. **The
+Cloud Scheduler job does not exist yet and the sweep has never run against real
+R2 or production** — the owner has to set `HOMEWORK_SUBMISSION_SWEEP=on` on
+`iqraa-api` and create the job, and the recipe, starting with that switch and then
+the dry-run-first order, is in `docs/deploying.md` «The submission sweep (Cloud
+Scheduler) — manual, once».
+
+**What was built**
+
+- **Part A — listing.** `listObjects(prefix, { maxKeys })` in `lib/r2.ts`:
+  ListObjectsV2 against the private bucket, paged by continuation token, capped at
+  `maxKeys` (default 10,000) with an exact `truncated` flag, and an empty prefix is
+  refused so the whole bucket cannot be listed by accident. The test S3 stub
+  (`test-support/s3Stub.ts`) can now list, and gains a way to plant an object with a
+  chosen `lastModified`.
+- **Part B — the sweep.** `POST /api/internal/homework-submission-sweep`
+  (`routes/internal.ts`), run by `sweepSubmissionOrphans`
+  (`lib/homeworkSubmissionSweep.ts`, on `systemDb`, pinned in `systemDbFiles.test.ts`)
+  with the decisions in a pure module (`modules/homework/submissionSweep.ts`).
+  Same `INTERNAL_CRON_KEY` and guard as the reminders, plus a deploy-only switch: 404
+  to everyone unless the key matches AND the service has `HOMEWORK_SUBMISSION_SWEEP`
+  equal to exactly `on` (read per request; a plain env var set by hand on `iqraa-api`
+  alone, not in `deploy.yml`; it overrides no guard), both checked before the query is
+  read; no new secret.
+  - Phase 1 purges the rows and photos of archived homework and of homework in an
+    archived class, through `purgeSubmissions`, and carries on past one that throws
+    (`purgeFailed`, error log; its rows stay, so its photos stay referenced).
+  - Phase 2 lists `homework-submissions/` first and reads every referenced key second
+    (on `systemDb`: under `RLS_ENFORCE=on` the app connection with no user reads no
+    submission row), and deletes only what the classifier allows, ten at a time, logging
+    each key it deletes (`homework submission sweep: deleted an orphan object`). What
+    protects an upload in flight is the 24 h grace period, not that order: an object that
+    lands before the listing with its row written after the key read looks unreferenced
+    either way; the order only narrows the window.
+  - Two guards against a database and a bucket that do not belong together (added in the
+    final review, below): an object is deleted only if THIS database has its homework
+    (`skippedUnknownHomework` otherwise), and a run whose orphans are over 20 and over half
+    of the conforming objects under known homework is refused (`refused`, `refusedReason`,
+    error log `homework submission sweep refused`), with no override.
+  - Query: no `dryRun` key, `dryRun=0` or `dryRun=false` is a real run; `dryRun` in any
+    other form is a dry run; any other parameter is `400 Unknown query parameter`. The
+    answer is the run report, also logged as `homework submission sweep run`.
+  - Dry run does not do phase 1 (it counts the rows it would purge), so its phase-2
+    numbers are a lower bound.
+- **Decisions.** 24 h grace for phase 2's orphans (an upload stores the object a moment
+  before its row, and a future `lastModified` counts as young; phase 1 purges an archived
+  homework's photos at any age); 1000 deletes per run, oldest first, the rest
+  next run; weekly (Sunday 03:00 Amman) with one retry at most, because a half-run is
+  safe to repeat; the same key rather than a second secret; and `dryRun` that fails
+  safe, so a preview that was meant to be one can never become a real run.
+
+**Limits, all in code.** An object a row refers to is kept however old. Only a key of
+exactly `homework-submissions/<uuid>/<uuid>/<uuid>.(jpg|png|webp)` is ever deleted as
+an orphan, all lower case (prefix, extension and hex); anything else under the prefix
+is counted in `skippedBadKey` and left. That includes an upper-case homework id, which
+can be stored, because the homework segment is the raw id from the upload URL (the
+photo id is a lower-case `randomUUID()`): it is purged with its row by phase 1 but
+never swept as an orphan. An age it cannot compute (an invalid `lastModified`, a NaN
+grace period) counts as young. Only an object whose homework row exists in this
+database is deleted, and a run that would delete over 20 objects (counted before the
+1000 cap) that are over half of what it can attribute is refused (`REFUSE_MIN_ORPHANS`,
+`REFUSE_RATIO`, `shouldRefuse`). **The guards do not catch a copy or branch of the
+production database** (a Neon branch knows every old homework, so production photos
+uploaded since the branch point look like known orphans, under the ratio, and phase 1
+could purge a homework archived only in the branch): no server but `iqraa-api` may hold
+the production R2 credentials with `INTERNAL_CRON_KEY`, and the switch keeps the sweep
+off on any other server. **Neither the guards nor the switch cover `iqraa-api`'s own
+database being restored or repointed** (photos uploaded since the restore point belong
+to homework the restored database still has, with their rows gone, so they look like
+known orphans): before such a restore, remove the switch and pause the job
+(`docs/deploying.md`, «The submission sweep», "Before restoring or repointing"). At most 200,000 objects are listed per run
+(`LIST_CAP`); past that `listTruncated: true`, logged at warn level, and every run sees
+the same first 200,000 keys, so an orphan after the cut-off is never found — that needs a
+person. A listing page that says it is truncated but carries no continuation token also
+ends with `listTruncated: true`. The request cannot change the grace period, the cap or
+the guards. **Leftovers of a hard-deleted homework are kept for good**: no route deletes a
+homework row, but a cascade from its teacher's user row or its class row does, and its
+stray photos then count as `skippedUnknownHomework` and are never deleted.
+
+**Verified** (local, Postgres 16, 2026-10-30)
+
+- `artifacts/api-server`, after `pnpm build`, with
+  `TEST_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/postgres node
+  --experimental-strip-types --test` on the three files of this change:
+  `modules/homework/__tests__/submissionSweep.test.ts` 19 tests,
+  `routes/__tests__/homeworkSubmissionSweep.db.test.ts` 18 tests,
+  `test-support/__tests__/s3Stub.test.ts` 9 tests: **46 passed, 0 failed, 0 skipped**.
+  The route suite runs the real server against the real database and the in-memory S3:
+  404 without or with a wrong key and for a GET; deletes an old orphan, keeps one inside
+  the grace period and a referenced one however old (drafts included); is idempotent;
+  leaves other prefixes and wrong-shaped keys alone and counts them; purges archived
+  homework and archived-class homework, with RLS enforcing and a draft present; carries
+  on past a homework that cannot be purged (`purgeFailed`); a dry run changes no object
+  and no row; the `dryRun` forms (preview for `?dryRun`, `1`, `true`, `TRUE`, `yes`,
+  `FALSE`, padded and repeated; 400 for any other parameter; real for none, `0`, `false`);
+  a bucket of 10,050 objects listed whole with 1000 deleted and 9050 left; R2 not
+  configured (phase 2 skipped, rows still purged). `mountOrder.test.ts` gained a case
+  for the new path (not run again for this entry beyond the three files above).
+- Not re-run for this entry: the whole api-server suite, `pnpm run typecheck`, the mobile
+  suite. No mobile code changed, so no OTA and no `app.json` `version` bump.
+- **Final review round** (same date, same command, after `pnpm build`), six files:
+  `submissionSweep.test.ts` 34, `homeworkSubmissionSweep.db.test.ts` 26, `s3Stub.test.ts`
+  10, `systemDbFiles.test.ts` 3, `mountOrder.test.ts` 70, `homeworkSubmission.db.test.ts`
+  41: **184 passed, 0 failed, 0 skipped**; root `pnpm run typecheck` clean; the whole
+  api-server suite (`pnpm test` with `TEST_DATABASE_URL`) **3193 passed, 0 failed, 0
+  skipped**. New route
+  cases: the wrong-database case (30 old photos under homework this database lacks, no
+  rows: all kept, `skippedUnknownHomework: 30`); a known-homework orphan deleted beside an
+  unknown one kept; an orphan under an archived homework still swept; 25 orphans beside 5
+  live photos refused with nothing deleted, 25 beside 60 deleted; a refused dry run; with
+  `RLS_ENFORCE=on`, an old draft photo of a live homework kept and the orphan beside it
+  deleted; a non-list `photos` logs a warning with the row id only. Each guard was shown
+  to matter by breaking it and watching its tests fail, then restoring: the homework
+  lookup replaced by "every listed homework is known" (the mixed case deleted the unknown
+  photo; in the wrong-database case the ratio guard alone still refused, so the two back
+  each other up); `shouldRefuse` forced false (both refusal route cases and four pure
+  cases failed); `>` → `>=` at each boundary (the 20-orphan and the exactly-50% cases
+  failed); the key read moved to the app `db` (the RLS case deleted the draft photo, and
+  the new `systemDbFiles.test.ts` pin failed); the warning removed (its test failed).
+  The new route cases were also run against the previous build first: 10 failed.
+- **Re-review round** (same date and command, after `pnpm build`), the same six files:
+  `submissionSweep.test.ts` 36, `homeworkSubmissionSweep.db.test.ts` 28, `s3Stub.test.ts`
+  10, `systemDbFiles.test.ts` 3, `mountOrder.test.ts` 70, `homeworkSubmission.db.test.ts`
+  41: **188 passed, 0 failed, 0 skipped**; the whole api-server suite **3197 passed, 0
+  failed, 0 skipped**; root `pnpm run typecheck` clean. The switch: with the right key,
+  a 404 (body `{"error":"Not found"}`, as for an unset key) for `HOMEWORK_SUBMISSION_SWEEP`
+  unset, empty, `ON`, `On`, `true`, `1`, `yes`, ` on`, `on `, on a real run, a dry run and
+  an unknown parameter alike, with no object or row removed (phase 1 did not run either),
+  while the reminder on the same server still opens; exactly `on` runs, and a wrong key
+  is still a 404. Shown RED against the previous build (unset: the run deleted) and
+  against a case-folding, trimming mutant (`ON` deleted). The fail-safe age check: an
+  invalid `lastModified` and a NaN grace period were both deleted by the previous `<`
+  form (RED), and are kept now. The widened pin failed on a temporary dynamic
+  `import("@workspace/db")` and on `import { db } from "@workspace/db/schema"` in the
+  sweep, then passed once they were removed. The pin is a text check with known gaps:
+  `import x, * as ns from "@workspace/db"` is not caught, and a commented-out import of
+  `systemDb` satisfies its "imports systemDb" half. The behavioural backstop is the
+  `RLS_ENFORCE=on` route case, which fails if the key read stops going through
+  `systemDb`. Not verified: that `deploy.yml`'s
+  `--update-env-vars` keeps a hand-set plain variable is gcloud's documented behaviour
+  and how `RLS_ENFORCE` is already run (`docs/deploying.md`), not observed for
+  this variable, which does not exist on the service yet.
+
+**Not verified**
+
+- **Never run against real R2 or production.** The S3 stub is not R2: pagination, the
+  `LastModified` it returns and the time a 200,000-key listing and 1000 deletes take
+  there are all unmeasured. Cloud Run's request limit is 300 s (`--timeout 300` in
+  `deploy.yml`); the first dry run and the first real run are where that is learned.
+- **A failed object delete in phase 2 is not exercised.** The code logs it
+  (`could not delete an orphan object`), does not count it in `deleted`, and moves on;
+  no test makes `deleteObject` fail. Only a failing *purge* (phase 1) is tested.
+- **`listTruncated: true` through the route is not exercised.** The 200,000 ceiling is
+  not reached in any test; `listObjects` truncation is tested at the library level
+  (`maxKeys: 5`, and a truncated page with no continuation token), and the route test
+  lists 10,050 and expects `false`.
+- **A failing homework lookup is not exercised.** If the known-homework query throws, the
+  run throws before any phase-2 delete and the route answers 500 (phase 1 has already
+  run); no test makes that query fail.
+- **The guards' thresholds are judgement, not measurement.** 20 orphans and 50% were
+  chosen for a young bucket, where orphans should be a handful against the live photos.
+  A real backlog past them is refused for good until a person looks; there is no override.
+- **The extension list exists twice.** `EXTENSION` in `modules/homework/submission.ts`
+  (what an upload may be stored as) and the sweep's key regex. No test ties them, so a
+  fourth photo type added to the upload would be stored, never swept as an orphan, and
+  counted in `skippedBadKey`. (`lib/r2.ts` takes the extension as an argument; it holds no list.)
+- **The Cloud Scheduler job does not exist.** Until the owner creates it, nothing runs
+  the sweep and the orphan sources below stay open in production.
+
+**Review history.** Part A and the first cut of Part B (`2b38f7e`, `5c5cc58`) went
+through one fix round (`935c3da`). It found: `dryRun` parsed fail-open (only the exact
+strings `1` and `true` previewed, so `?dryRun`, `TRUE` or a typo'd parameter name deleted); a listing
+ceiling of 10,000 keys that left a blind spot, because S3 lists in key order and a run
+that stopped there saw the same live photos every time and never reached an orphan
+after the cut-off (now 200,000, with a warn log when hit); a key check that accepted an
+upper-case prefix or extension (the regex was case-insensitive as a whole); and a purge failure that was only logged, so the line the owner
+watches looked clean (`purgeFailed` is now in the report).
+
+A final review then found:
+- **Critical: the sweep trusted that its database and its bucket belong together.** A
+  developer whose local `.env` holds the production R2 credentials (as `LOCAL_SETUP.md`'s
+  R2 recipe sets up) and a local database, calling the route with no query, would have
+  seen no rows and deleted up to 1000 production photos a run; a staging or e2e service
+  with R2 credentials the same. Fixed with both guards above (known homework only, and the
+  ratio guard), and a warning on the `INTERNAL_CRON_KEY` row of `LOCAL_SETUP.md`.
+- The `RLS_ENFORCE=on` path of phase 2's key read had no test; it has one now, and
+  `systemDbFiles.test.ts` pins that the sweep imports `systemDb` and never the app `db`.
+- `docs/deploying.md` said a young photo is never deleted; phase 1 deletes an archived
+  homework's photos at any age. Corrected.
+- Minors: comments and docs credited the list-then-read order with protection that belongs
+  to the grace period (reworded; there is no re-check of references and none is needed,
+  since an upload always stores a fresh key); the key regex accepted upper-case hex,
+  which would not match a homework id read back from the database (now lower case only;
+  the re-review corrected this round's claim that no upper-case key is ever written —
+  see below); `listObjects` reported a page marked truncated but without a continuation
+  token as complete (now `truncated: true`); a non-list `photos` was skipped silently
+  (now a warning with the row id).
+
+A re-review of that round found no Critical, and:
+- **Important: a copy or branch of the production database passes both guards.** A Neon
+  branch knows every homework of the branch point, so production photos uploaded since
+  look like orphans under known homework, under the 50% ratio; and phase 1 there could
+  purge a homework archived only in the branch. Fixed with a deploy-only switch, not a
+  guard: the route is a 404 unless `HOMEWORK_SUBMISSION_SWEEP` is exactly `on` on the
+  service, set by hand on `iqraa-api` only. Docs name the case and say no other server
+  may hold the production R2 credentials with `INTERNAL_CRON_KEY`.
+- Minors: the age check is fail-safe again (`!(age >= graceMs)`: an invalid date or a NaN
+  grace period is young; the previous `<` form let both through as old); the upper-case
+  justification was wrong (the homework segment is the raw URL id, so an upper-case key
+  can be stored; it is kept and only never swept as an orphan); `orphanObjects − capped −
+  deleted` means failed deletes only when `refused` is false; the `refused: true`
+  guidance now says how to check without printing Cloud Run env or secrets, and what to do
+  when they do belong together; "over 20, counted before the 1000 cap"; the
+  `systemDbFiles.test.ts` pin covers `@workspace/db` subpaths and a dynamic `import()`.
+
+A third look (docs only) found no Critical and the code fine, and:
+- **Important: a restore or repoint of `iqraa-api`'s own database is the one case the
+  switch cannot catch** — it is on, the bucket is production's, and photos uploaded since
+  the restore point look like known orphans. `docs/deploying.md` now has the rule:
+  before restoring or repointing, remove the switch and pause the scheduler job; turn
+  both back only after a dry run whose numbers make sense. The "switch enforces it"
+  wording was softened everywhere to say what it does not cover.
+- Minors: "off again, instantly" was false while traffic is pinned to a revision that
+  still has the switch (the remove step and the step-0 hint now point to the traffic
+  check and `update-traffic --to-latest`); a route comment claimed more than the code
+  (now "a failing key and a missing switch give the same 404"); the pin's known gaps are
+  noted above.
+
+**Still open**
+
+- Set `HOMEWORK_SUBMISSION_SWEEP=on` on `iqraa-api`, then create the scheduler job (dry
+  run, then one real run, then weekly) — owner.
+- The decision on toggling `requiresSubmission` after work exists, before phase 3
+  exposes the switch (see the entry below).
+- The untested items and the duplicated extension list above.
+
+## Homework project submission — API foundation — 2026-10-30
+
+A teacher asked for students to hand in their own textbook project, saved on the
+site, with no student able to touch another's. This is phase 1 of 3 and it is the
+**API only**: nothing in the app can send or show a submission yet. Spec:
+`docs/superpowers/specs/2026-10-30-homework-project-submission-design.md`; plan:
+`docs/superpowers/plans/2026-10-30-homework-project-submission-foundation.md`.
+
+**What shipped**
+
+- **Schema, migration `0021_blushing_blockbuster.sql` (additive; it was 0020 until `main`
+  took that number for `email_suppressions`, and was regenerated on top of it).**
+  `homework.requires_submission boolean NOT NULL DEFAULT false`, and
+  `homework_submissions` (`homework_id`, `student_id` a roster row, `note`, `photos`
+  jsonb, nullable `submitted_at` where null is a draft, unique on
+  `(homework_id, student_id)`), with row-level security: the homework's teacher
+  reads; anyone else who sees the student reads only a submitted row; INSERT and
+  UPDATE only by the self-linked author; no DELETE policy (removal is `systemDb`'s
+  job). No `destructive-migration: ok` is needed. The table is in `PROTECTED` in
+  `rlsCoverage.test.ts`.
+- **Storage.** Photos go to the private R2 bucket under
+  `homework-submissions/<homework>/<student>/<uuid><ext>` (`newHomeworkSubmissionKey`
+  in `lib/r2.ts`, never the caller's filename); reads are signed for ten minutes and
+  only after the row was read through the caller's own connection. Tests use an
+  in-memory S3.
+- **Student routes** (`routes/homeworkSubmissions.ts`, `lib/homeworkSubmission.ts`,
+  rules in `modules/homework/submission.ts`): `GET/PUT /student/homework/:id/submission`,
+  `POST …/photos` (one `data:` URL per request; jpeg/png/webp, 4 MB, magic bytes;
+  HEIC refused; six at most), `DELETE …/photos/:photoId`, `POST …/submit`. The roster
+  row comes from the account's self-linked rows (`ownHomeworkRows`), never from the
+  request. A resubmit before the due day keeps the first `submitted_at`; after it a
+  submitted project is locked (409 `locked`) and a student with none can still submit,
+  as late (computed, never stored). A handed-in project can never be emptied: the
+  guard is in each UPDATE's WHERE, so two concurrent requests cannot do it. The manual
+  tick (`PUT` and `DELETE …/done`) and a game-play tick are refused for a homework that
+  requires a submission (409 `submission_required`).
+- **Teacher.** `GET /homework/:id/submissions` (one row per live roster member:
+  none / submitted / late; a draft reads as none) and `GET …/submissions/:studentId`
+  (note and signed photos; 404 for a draft). `requiresSubmission` is read and written
+  by `POST /homework` and `PATCH /homework/:id`. `DELETE /homework/:id`, which
+  archives, now also purges every photo (drafts too) and deletes the submission rows,
+  on the owner connection because a draft is invisible to the teacher's identity. The
+  purge runs **before** the archive: a purge that throws answers 500 and leaves the
+  homework live so the teacher can retry (an archived homework is no longer found, so a
+  failure after it could never be retried); a second best-effort purge follows the
+  archive. `DELETE /classes/:id` purges every homework of the class first, with the same
+  rule (500, class stays live), because an archived class makes its homework unreachable
+  for everyone. Deleting a teacher's account (`DELETE /auth/users/me`) collects the photo
+  keys of all their homework (drafts too, `submissionKeysForTeacher`, owner connection)
+  before the cascade and deletes the objects after it.
+- **Parent.** `GET /parent/homework/:id/submissions` (submitted work of the linked
+  children in that class, read only). The family's homework list gains
+  `requiresSubmission` and a per-item `submission` state.
+- **Mount order.** All guards are path-scoped; `mountOrder.test.ts` gained a case
+  for the eight new paths (401 without a token) and that an unowned path is still 404.
+
+**Verified** (local, Postgres 16, 2026-10-30)
+
+- `pnpm run typecheck` (whole monorepo): clean.
+- `artifacts/api-server`: `pnpm build` then
+  `TEST_DATABASE_URL=postgres://…/postgres pnpm test`: 3102 tests, 0 failed, 0 skipped.
+  That includes `modules/homework/__tests__/submission.test.ts` (pure rules),
+  `routes/__tests__/homeworkSubmission.db.test.ts` (the HTTP routes against the real
+  database and the in-memory S3, with RLS on for the student journey, the teacher's
+  reads, the purge and the parent's read; plus the purge-fails-so-nothing-is-archived
+  cases for a homework and a class, and account deletion), `r2.test.ts` and the
+  new `mountOrder.test.ts` case.
+- `lib/db`: `RLS_TEST_DATABASE_URL=…/iqraa_rls_scratch pnpm test` (after
+  `migrate -- --from-env`, 21 migrations applied): 74 tests, 0 failed — `rlsMatrix.test.ts`
+  (author, teacher, guardian, another student, stranger, for read, insert and update)
+  and `rlsCoverage.test.ts`.
+- `artifacts/mobile`: `pnpm test`: 8264 tests, 8254 passed, 0 failed, 10 skipped (the
+  skips are not in this change).
+- `pnpm --filter @workspace/db run generate` reports "No schema changes" and leaves
+  `git status` clean (the CI "migrations match schema" check).
+- The new mount-order case was shown to be able to fail: with the parent guard in
+  `homeworkSubmissions.ts` made bare (`router.use(authMiddleware, requireRole("parent"))`)
+  the new case failed (and so did the existing unowned-path cases); restored, 68/68 pass.
+  Removing the path-scoped guard line outright did not fail it, because the earlier
+  `familyHomework.ts` / `homework.ts` routers guard the same prefixes: the 401 half of
+  the test is protected by those as well, and the unowned-404 half is the one this
+  router can break.
+- Not run, not affected: curriculum `test` / `verify`, and `test_equations.py` in
+  `artifacts/math-verifier`. Not run: the browser smoke (`e2e/`) — no app code changed.
+- **Not done:** `rlsDiff.test.ts` cases for the new routes. That suite boots its own
+  server with and without `RLS_ENFORCE` and would need the S3 stub wired into that
+  boot. The policies are tested directly (`rlsMatrix`), and the student write routes,
+  the teacher's reads, the purge and the parent's read were run with RLS enforcing in
+  server tests in `homeworkSubmission.db.test.ts`.
+
+**Not built**
+
+The student app (submit screen, list state), the teacher's and the parent's app
+(counts, list, detail), grading and teacher comments, and supervisor access. The
+switch is not reachable from any screen yet, so no homework can require a submission
+until phase 2 and 3 ship (a teacher could set it through the API).
+
+**Known limits**
+
+- No moderation queue: a wrong photo of a minor stays until the student removes it
+  or the homework is archived.
+- The teacher cannot remove one student's photo without archiving the whole homework,
+  which deletes every submission for it, for good.
+- The upload limiter (60 an hour per account) counts every request that reaches the
+  route, refused ones included, so it is 60 attempts, not 60 photos.
+- The archive purge is not transactional: a failed object delete is logged with its
+  key and the rows are deleted anyway, so an unreachable orphan object can remain in
+  the bucket. Two more orphan sources are **not** closed here: an exception after a
+  photo is stored but before it is recorded, and an upload racing a purge by
+  milliseconds. **A prefix sweep of `homework-submissions/` must land before phase 2
+  lets students upload.**
+- **Open question, for phase 3:** turning `requiresSubmission` on or off after students
+  have ticked or submitted is not specified, and `PATCH /homework/:id` accepts it today.
+  On to off makes stored photos unreadable (every student route answers 404) and lets
+  drafts be ticked by hand; off to on leaves students who ticked "done" with a
+  submission of `none` and unable to untick. Decide before the teacher's app exposes the
+  switch (for example a 409 once any submission or completion exists).
+- A signed URL's path carries `homework-submissions/<homework>/<roster row>/`, so the
+  homework and roster-row ids are visible to whoever holds the link for its ten minutes;
+  the object key field itself is never in a response.
+- **RLS enforcement is ON in production** (`RLS_ENFORCE=on` on `iqraa-api`, see
+  `STATUS.md`), so these routes run under it from their first deploy. The new policies
+  were proved in `lib/db` (`rlsMatrix`, `rlsCoverage`) and by RLS-on server tests in
+  `homeworkSubmission.db.test.ts`: the whole student journey (upload, note, hand in,
+  remove a photo) with the teacher's list and detail reading it back and not seeing a
+  draft, the archive purge of a draft, and the parent's and student's reads. The
+  routes also scope by the account's own rows, the owner check and the guardian's linked
+  children, so isolation does not rest on RLS alone. `rlsDiff.test.ts` has no cases for them.
+- Migration `0021` is additive; a revert of the code leaves an unused column and an
+  empty table, and drops nothing.
+- Storage is capped only by the six-photo limit and the hourly limiter.
+- No new secret: the `R2_*` secrets already exist on Cloud Run for chat attachments.
+  No mobile code changed, so no OTA and no `app.json` `version` bump.
+
 ## A teacher can message a family from the roster, and sees the letter before it goes — 2026-10-30
 
 **Asked:** a teacher with a parent linked could only find the AI letter screen from the class page;

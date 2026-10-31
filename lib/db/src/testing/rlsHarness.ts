@@ -24,6 +24,9 @@ export async function seed(owner: pg.Pool): Promise<Fixture> {
     classA: id("classA"), evalA: id("evalA"), questionA: id("questionA"), attemptA: id("attemptA"),
     threadDirect: id("threadDirect"), threadOther: id("threadOther"), threadClass: id("threadClass"),
     msgDirect: id("msgDirect"), msgOther: id("msgOther"),
+    // hwA3 and hwA4 deliberately have NO submission: the INSERT cases need a free (homework, student) pair, or a
+    // unique-key error could stand in for a policy refusal.
+    hwA: id("hwA"), hwA2: id("hwA2"), hwA3: id("hwA3"), hwA4: id("hwA4"), subA: id("subA"), subDraftA: id("subDraftA"),
   };
   const q = (text: string, values: unknown[] = []) => owner.query(text, values);
 
@@ -43,6 +46,14 @@ export async function seed(owner: pg.Pool): Promise<Fixture> {
     [ids.studentA, ids.studentUser2]);
   await q(`INSERT INTO class_groups (id, teacher_id, name) VALUES ($1,$2,'Class A')`, [ids.classA, ids.teacherA]);
   await q(`INSERT INTO class_memberships (class_group_id, student_id) VALUES ($1,$2)`, [ids.classA, ids.studentA]);
+  await q(`INSERT INTO homework (id, teacher_id, class_group_id, title, due_at, requires_submission)
+           VALUES ($1,$2,$3,'hw-a', now() + interval '3 days', true), ($4,$2,$3,'hw-a2', now() + interval '3 days', true),
+                  ($5,$2,$3,'hw-a3', now() + interval '3 days', true), ($6,$2,$3,'hw-a4', now() + interval '3 days', true)`,
+    [ids.hwA, ids.teacherA, ids.classA, ids.hwA2, ids.hwA3, ids.hwA4]);
+  await q(`INSERT INTO homework_submissions (id, homework_id, student_id, note, submitted_at) VALUES ($1,$2,$3,'done', now())`,
+    [ids.subA, ids.hwA, ids.studentA]);
+  await q(`INSERT INTO homework_submissions (id, homework_id, student_id, note) VALUES ($1,$2,$3,'unfinished')`,
+    [ids.subDraftA, ids.hwA2, ids.studentA]);
   await q(`INSERT INTO parent_contacts (teacher_id, student_id, kind, channel) VALUES ($1,$2,'note','copy')`,
     [ids.teacherA, ids.studentA]);
 
