@@ -26,11 +26,24 @@ another keeps everything. Messages are kept; the teacher's side of the emptied d
 hidden (`hiddenAt`) so the inbox does not keep a chat with nobody in it, and a re-link plus the
 teacher opening the chat again brings the same thread back (`openDirectThread`).
 
-**Called from the three places that delete a link:** `DELETE /students/:id/links/:userId` (the
-teacher's unlink), `DELETE /auth/claim` (the account withdrawing its own links), and the branch of
-`POST /auth/claim` where the later of two racing claimers withdraws (which also now rebuilds the
-class chats, so the loser no longer stays in the class chat until someone opens it). The unlink
-dialog now says what it does (`unlinkAccountConfirm`, Arabic and English).
+**Called from the two places a link is deleted that can leave a stranger in a chat:**
+`DELETE /students/:id/links/:userId` (the teacher's unlink) and `DELETE /auth/claim` (the account
+withdrawing its own links). The third `delete(rosterLinks)`, the "later of two racing claimers
+withdraws" branch of `POST /auth/claim`, is left alone: since the claim runs in a transaction and
+`roster_links_one_self_idx` is unique per student, a second self-link can no longer exist, so that
+branch is dead code (an earlier draft of this PR added a cleanup there; it was removed as
+unreachable and untested). The unlink dialog now says what it does (`unlinkAccountConfirm`,
+Arabic and English).
+
+**Two things found in review and fixed.** (1) The link delete commits on its own, so if the cleanup
+threw, the teacher's retry found no link (404) and never ran it: the unlink route now runs the
+cleanup on that path too, and the helper is safe to repeat. `DELETE /auth/claim` logs a cleanup
+failure instead of answering 500, because a retry there has no link to name the teachers from.
+(2) Hiding the emptied direct chat from the teacher could bury a message the account had sent
+that the teacher had not read, and left it in the app-icon badge with no inbox row to clear it.
+The chat is now hidden and marked read only when nothing unread from the account is in it;
+otherwise it stays visible with its unread count. The helper also never touches the teacher's own
+seat in their groups.
 
 **Cost, decided on purpose:** a teacher who unlinks a parent from the wrong child *before* linking
 them to the right one has removed them from the groups; the direct chat returns when the teacher
@@ -38,11 +51,15 @@ opens it again, a group needs the parent adding again. The old comment on the ro
 opposite (never touch groups) to avoid exactly this; the rule above only fires when no link to
 that teacher remains, which is the case the old comment did not distinguish.
 
-**Verified:** typecheck clean; API suite 3070/3070 and mobile suite 8291 pass / 10 skipped / 0 fail,
-against a throwaway local Postgres. `unlinkChatAccess.db.test.ts` (6 tests) was seen failing before
-the change (the control "still linked through another child" passes before and after). The
-race-loser branch has **no** test of its own (it needs two simultaneous claims). **Not verified:**
-nothing was run against production; the dialog wording was not read by a native speaker; the
+**Verified:** typecheck clean; API suite and mobile suite (8291 pass / 10 skipped / 0 fail) against
+a throwaway local Postgres. `unlinkChatAccess.db.test.ts` (7 tests) was seen failing before the
+change (the control "still linked through another child" passes before and after), and the retry
+and keep-unread tests were each seen failing when their behaviour was removed. **Known gap:** the
+cleanup is several writes that are not one transaction, and a link created in the same instant for
+another of the teacher's students can leave an account linked but out of the groups (the direct
+chat returns when opened; a group needs adding again); nothing tests that race. A link to an
+*archived* student of the teacher still counts as a connection, as in `isConnected`; no route
+archives students today. **Not verified:** nothing was run against production; the dialog wording was not read by a native speaker; the
 mobile string change is JS-only, but `app.json` is 1.6.0 while STATUS.md says the installed
 production binary is 1.5.0, so **the new dialog text reaches no phone until a 1.6.0 build is
 installed**. The server change is live on deploy and does not wait for that: until then the dialog

@@ -26,7 +26,7 @@ const ALLOWED: Record<string, string> = {
   "routes/roster.ts": "reissuing a login code revokes that account's refresh tokens, and a rename re-derives a linked account's name — both write another user's row, which the app role cannot",
   "lib/evaluationAudience.ts": "read for link-based exams (no identity); an empty read means 'everyone', so it must not be filtered",
   "lib/inboxSummary.ts": "unreadTotals counts each recipient's whole inbox and honours their blocks for the push badge, run under the sender's identity, who cannot see either",
-  "lib/classThread.ts": "reconciles who is in a class thread: a student claiming cannot see the thread or the other members' links",
+  "lib/classThread.ts": "reconciles who is in a class thread (a student claiming cannot see the thread or the other members' links) and, after an unlink, removes the unlinked account from the teacher's direct chat and groups, which are the account's own participant rows",
   "lib/rosterLinkState.ts": "the auth middleware asks whether a student has a teacher link before any identity is set, to decide if a parent must approve",
   "lib/guardianRequests.ts": "the parent's approval link has no user, and sign-up and verification queue and mail the request before one exists; the table has no app-role grant",
   "lib/rosterClaim.ts": "resolves a claim code before any roster link for the claimer exists",

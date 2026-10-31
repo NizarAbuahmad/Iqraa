@@ -1745,19 +1745,27 @@ router.delete("/students/:id/links/:userId", async (req: AuthenticatedRequest, r
       .delete(rosterLinks)
       .where(and(eq(rosterLinks.studentId, studentId), eq(rosterLinks.userId, linkedUserId)))
       .returning({ id: rosterLinks.id });
-    if (!removed) {
-      res.status(404).json({ error: "That account is not linked to this student" });
-      return;
-    }
-
+    // The link delete commits on its own, so a request that failed after it
+    // (the cleanup below threw) is retried against a link that is already gone.
+    // The cleanup is idempotent, so the retry runs it here too before saying
+    // "not linked", rather than leaving the account in the chats for good.
     // Rebuild every existing class thread this student sits in, so the
     // unlinked account loses its place in them now. One derivation rule, one
     // implementation — and it is a no-op where no chat exists yet, so an
     // unlink does not conjure empty class chats into the teacher's inbox.
-    await syncClassThreadsForStudent(studentId);
-    // And out of this teacher's direct chat and groups, unless another of their
-    // students still links the account to them.
-    await pruneTeacherChatsAfterUnlink(linkedUserId, [studentId]);
+    // Then out of this teacher's direct chat and groups, unless another of
+    // their students still links the account to them.
+    const cleanUp = async () => {
+      await syncClassThreadsForStudent(studentId);
+      await pruneTeacherChatsAfterUnlink(linkedUserId, [studentId]);
+    };
+    if (!removed) {
+      await cleanUp();
+      res.status(404).json({ error: "That account is not linked to this student" });
+      return;
+    }
+
+    await cleanUp();
 
     res.json({ removedUserId: linkedUserId });
   } catch (err) {

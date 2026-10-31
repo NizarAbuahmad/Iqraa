@@ -19,7 +19,7 @@ import {
   students,
   rosterLinks,
 } from "@workspace/db";
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull } from "drizzle-orm";
 
 /**
  * Get-or-create the one thread for a class, then reconcile membership to
@@ -161,8 +161,16 @@ export async function syncClassThreadsForStudent(studentId: string): Promise<voi
  *
  * Messages stay (moderation reads them, and a re-link brings the thread back
  * through `openDirectThread`). The teacher's side of the emptied direct thread
- * is hidden, so the inbox does not keep a chat with nobody in it; opening it
- * again un-hides it.
+ * is hidden and marked read, so the inbox and the badge do not keep a chat with
+ * nobody in it — unless the account left something the teacher has not read, in
+ * which case the thread stays visible (the teacher cannot reopen it: the pair
+ * is no longer connected) until they have.
+ *
+ * Safe to repeat, and callers rely on it: it acts only on the state it finds, so
+ * a retry after a failure part-way (the link delete commits on its own) finishes
+ * the job. Not atomic with a link created in the same instant for another of the
+ * teacher's students: the account could end up linked but out of the groups
+ * (the direct chat returns when opened; a group needs adding again).
  */
 export async function pruneTeacherChatsAfterUnlink(userId: string, studentIds: string[]): Promise<void> {
   if (studentIds.length === 0) return;
@@ -171,6 +179,8 @@ export async function pruneTeacherChatsAfterUnlink(userId: string, studentIds: s
     .from(students)
     .where(inArray(students.id, studentIds));
   for (const { teacherId } of teachers) {
+    // Never the teacher's own seat in their own chats (reconcileClassThreadMembers has the same guard).
+    if (teacherId === userId) continue;
     const [stillConnected] = await db
       .select({ id: rosterLinks.id })
       .from(rosterLinks)
@@ -189,10 +199,30 @@ export async function pruneTeacherChatsAfterUnlink(userId: string, studentIds: s
       await db
         .delete(chatParticipants)
         .where(and(eq(chatParticipants.threadId, direct.id), eq(chatParticipants.userId, userId)));
-      await db
-        .update(chatParticipants)
-        .set({ hiddenAt: new Date() })
-        .where(and(eq(chatParticipants.threadId, direct.id), eq(chatParticipants.userId, teacherId)));
+      const [mine] = await db
+        .select({ lastReadAt: chatParticipants.lastReadAt })
+        .from(chatParticipants)
+        .where(and(eq(chatParticipants.threadId, direct.id), eq(chatParticipants.userId, teacherId)))
+        .limit(1);
+      const [unread] = await db
+        .select({ id: chatMessages.id })
+        .from(chatMessages)
+        .where(
+          and(
+            eq(chatMessages.threadId, direct.id),
+            eq(chatMessages.senderId, userId),
+            isNull(chatMessages.archivedAt),
+            mine?.lastReadAt ? gt(chatMessages.createdAt, mine.lastReadAt) : undefined,
+          ),
+        )
+        .limit(1);
+      if (!unread) {
+        const now = new Date();
+        await db
+          .update(chatParticipants)
+          .set({ hiddenAt: now, lastReadAt: now })
+          .where(and(eq(chatParticipants.threadId, direct.id), eq(chatParticipants.userId, teacherId)));
+      }
     }
 
     const groups = await db

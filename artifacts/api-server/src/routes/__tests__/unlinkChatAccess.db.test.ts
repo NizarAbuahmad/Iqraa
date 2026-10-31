@@ -29,6 +29,8 @@ describeDb("unlinking an account and the teacher's direct chats and groups, agai
   let dmStudent: string;
   let dmParentOfT2: string;
   let group: string;
+  // A custom group owned by the OTHER teacher, which holds the same parent.
+  let groupOfT2: string;
 
   before(async () => {
     db = await setupTestDb();
@@ -57,6 +59,13 @@ describeDb("unlinking an account and the teacher's direct chats and groups, agai
     });
     assert.equal(made.status, 201, made.text);
     group = made.json.thread.id;
+
+    const madeByT2 = await call(server, "POST", "/messaging/threads/custom", w.users.t2, {
+      title: "Physics parents",
+      participantUserIds: [w.users.parentA],
+    });
+    assert.equal(madeByT2.status, 201, madeByT2.text);
+    groupOfT2 = madeByT2.json.thread.id;
   });
   after(async () => {
     await server?.stop();
@@ -86,11 +95,13 @@ describeDb("unlinking an account and the teacher's direct chats and groups, agai
     assert.equal(post.status, 404, "cannot post either");
     // Someone else in the group, and the teacher, are untouched.
     assert.equal(await canRead(w.users.parentB, group), true);
+    assert.equal(await canRead(w.users.studentA, group), true, "another member of the group is untouched");
     assert.equal(await canRead(w.users.t1, group), true);
   });
 
-  it("leaves that parent's chat with another teacher alone", async () => {
+  it("leaves that parent's chat and groups with another teacher alone", async () => {
     assert.equal(await canRead(w.users.parentA, dmParentOfT2), true);
+    assert.equal(await canRead(w.users.parentA, groupOfT2), true, "a group t1 does not own");
   });
 
   it("drops the emptied direct chat from the teacher's inbox but keeps its messages", async () => {
@@ -101,11 +112,23 @@ describeDb("unlinking an account and the teacher's direct chats and groups, agai
     assert.equal(kept.rows[0].n, 1, "history stays for moderation and for a later re-link");
   });
 
-  it("removes a student who withdraws their own link", async () => {
+  it("removes a student who withdraws their own link, and keeps what they left unread in the teacher's inbox", async () => {
     assert.equal(await canRead(w.users.studentA, dmStudent), true);
+    const left = await call(server, "POST", `/messaging/threads/${dmStudent}/messages`, w.users.studentA, {
+      body: "I picked the wrong name",
+    });
+    assert.equal(left.status, 201, left.text);
+
     assert.equal((await call(server, "DELETE", "/auth/claim", w.users.studentA)).status, 200);
     assert.equal(await canRead(w.users.studentA, dmStudent), false, "direct chat");
     assert.equal(await canRead(w.users.studentA, group), false, "custom group");
+
+    // The teacher has not read it and cannot reopen the chat (no longer connected),
+    // so it must stay in the inbox with its unread count rather than vanish.
+    const inbox = await call(server, "GET", "/messaging/threads", w.users.t1);
+    const row = inbox.json.threads.find((t: { id: string }) => t.id === dmStudent);
+    assert.ok(row, "still listed");
+    assert.equal(row.unreadCount, 1);
   });
 
   it("brings the parent back, with the old messages, when they are linked and the teacher opens the chat again", async () => {
@@ -120,5 +143,20 @@ describeDb("unlinking an account and the teacher's direct chats and groups, agai
     const msgs = await call(server, "GET", `/messaging/threads/${dmParent}/messages`, w.users.parentA);
     assert.equal(msgs.status, 200, msgs.text);
     assert.equal(msgs.json.messages.length, 1);
+    const inbox = await call(server, "GET", "/messaging/threads", w.users.t1);
+    assert.ok(inbox.json.threads.some((t: { id: string }) => t.id === dmParent), "back in the teacher's inbox");
+  });
+
+  it("finishes a cleanup that failed part-way when the unlink is retried", async () => {
+    // parentB is in t1's group through Noor (nB1). Take the link away the way a
+    // request that died after its delete committed would have left things: link
+    // gone, chats untouched.
+    assert.equal(await canRead(w.users.parentB, group), true);
+    await db.pool.query(`DELETE FROM roster_links WHERE student_id = $1 AND user_id = $2`, [w.students.nB1, w.users.parentB]);
+    assert.equal(await canRead(w.users.parentB, group), true, "the half-done state really leaves access");
+
+    const retry = await unlink(w.students.nB1, w.users.parentB);
+    assert.equal(retry.status, 404, "the link is already gone");
+    assert.equal(await canRead(w.users.parentB, group), false, "but the retry finished the cleanup");
   });
 });
