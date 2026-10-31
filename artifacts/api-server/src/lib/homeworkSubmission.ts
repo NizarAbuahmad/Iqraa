@@ -24,12 +24,13 @@ import {
   db,
   homework,
   homeworkSubmissions,
+  rosterLinks,
   students,
   systemDb,
   type HomeworkSubmission,
   type SubmissionPhoto,
 } from "@workspace/db";
-import { and, asc, eq, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull, ne, sql, type SQL } from "drizzle-orm";
 import { logger } from "./logger";
 import { deleteObject, presignedGetUrl } from "./r2.ts";
 import { ownHomeworkRows, tickRows } from "./homeworkDone.ts";
@@ -377,6 +378,53 @@ export async function submissionKeysForTeacher(teacherId: string): Promise<strin
     .innerJoin(homework, eq(homework.id, homeworkSubmissions.homeworkId))
     .where(eq(homework.teacherId, teacherId));
   return rows.flatMap(r => r.photos.map(p => p.key));
+}
+
+/**
+ * Deletes the submissions written through an account that is being deleted, and returns their photos' object
+ * keys for the caller to delete AFTER the account row is gone (best effort, as for the teacher's).
+ *
+ * A submission belongs to a roster row, not to a user, and the row stays with the teacher when a student
+ * deletes their account — so without this the rows (drafts included) and their photos outlived the account
+ * that wrote them. The author is the account `self`-linked to the row (the only one whose routes can write
+ * it, `submissionTarget`). Keyed on the link, not on `users.role`, so a guardian link never counts: a parent
+ * deleting their account deletes nothing of their child's. A teacher has no `self` links; their homework's
+ * photos are `submissionKeysForTeacher`'s job.
+ *
+ * A row that another account is ALSO `self`-linked to is kept, with its submissions: that account can still
+ * open, change and hand in the same work, and deleting one account must not delete another's. Today that
+ * cannot happen — `roster_links_one_self_idx` allows one `self` link per row — so the check is a backstop for
+ * the day that index goes (the DB test lifts it to prove the check). The check and the DELETE are two
+ * statements, so a second link made between them (milliseconds) would not be seen.
+ *
+ * Archived roster rows are included: the account wrote them, and nobody can reach them any more.
+ *
+ * `systemDb` on purpose: the account's own connection cannot read another user's `self` link (the shared-row
+ * check) under row-level security, and `homework_submissions` has no DELETE policy for the app role. The
+ * caller (account deletion) has already re-authenticated the account. Rows are deleted BEFORE the account so
+ * a failure here answers 500 with the account intact and the request can be sent again.
+ */
+export async function purgeSubmissionsOfAuthor(userId: string): Promise<string[]> {
+  const own = await systemDb
+    .select({ studentId: rosterLinks.studentId })
+    .from(rosterLinks)
+    .where(and(eq(rosterLinks.userId, userId), eq(rosterLinks.relation, "self")));
+  const ownRows = [...new Set(own.map(r => r.studentId))];
+  if (ownRows.length === 0) return [];
+  const shared = await systemDb
+    .select({ studentId: rosterLinks.studentId })
+    .from(rosterLinks)
+    .where(
+      and(inArray(rosterLinks.studentId, ownRows), eq(rosterLinks.relation, "self"), ne(rosterLinks.userId, userId)),
+    );
+  const sharedRows = new Set(shared.map(s => s.studentId));
+  const rows = ownRows.filter(r => !sharedRows.has(r));
+  if (rows.length === 0) return [];
+  const deleted = await systemDb
+    .delete(homeworkSubmissions)
+    .where(inArray(homeworkSubmissions.studentId, rows))
+    .returning({ photos: homeworkSubmissions.photos });
+  return deleted.flatMap(r => r.photos.map(p => p.key));
 }
 
 /**

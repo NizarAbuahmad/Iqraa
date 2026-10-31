@@ -34,7 +34,7 @@ import { decideRefresh, refreshTokenTtlMs } from "../lib/refreshPolicy.js";
 import { guardianApprovalEnabled, studentAccountsEnabled } from "../lib/features.js";
 import { syncClassThreadsForStudent } from "../lib/classThread.js";
 import { audioKeysForTeacher } from "../lib/attemptAudio.ts";
-import { submissionKeysForTeacher } from "../lib/homeworkSubmission.ts";
+import { purgeSubmissionsOfAuthor, submissionKeysForTeacher } from "../lib/homeworkSubmission.ts";
 import {
   ROSTER_CONSENT_STATEMENT_EN,
   ROSTER_CONSENT_VERSION,
@@ -2683,6 +2683,9 @@ router.delete("/users/avatar", authMiddleware, async (req: AuthenticatedRequest,
 //   - `aiGenerations.userId`, which is `set null` by design rather than
 //     cascade. It is cost accounting; what survives is a spend row with no
 //     person attached to it.
+//   - A student's homework projects, which reference a roster row (kept by
+//     the teacher), not the user. They are deleted explicitly before the
+//     account (`purgeSubmissionsOfAuthor`); the privacy policy §6 says so.
 //
 // Re-authentication is required. For a teacher the cascade reaches the whole
 // roster — other people's children — and a stolen access token must not be
@@ -2775,6 +2778,12 @@ router.delete(
       // teacher's homework, the objects do not.
       const projectPhotos = await submissionKeysForTeacher(userId);
 
+      // A student's own projects do NOT cascade: they sit on the roster row, which stays with the teacher. So the
+      // rows written through this account (drafts and handed-in work alike) are deleted here, before the account,
+      // and their photos go with the objects below. A row another account is also self-linked to is kept, and a
+      // guardian link deletes nothing (lib/homeworkSubmission.ts, `purgeSubmissionsOfAuthor`).
+      const authoredPhotos = await purgeSubmissionsOfAuthor(userId);
+
       await db.delete(users).where(eq(users.id, userId));
 
       // Deliberately after the row is gone: the deletion the user asked for is
@@ -2787,6 +2796,7 @@ router.delete(
         ...attachments.map(a => a.key as string),
         ...recordings,
         ...projectPhotos,
+        ...authoredPhotos,
       ];
       let orphaned = 0;
       for (const key of keys) {

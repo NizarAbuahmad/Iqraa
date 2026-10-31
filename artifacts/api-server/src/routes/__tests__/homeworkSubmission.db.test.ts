@@ -924,6 +924,149 @@ describeDb("homework project submissions over HTTP, against a real database", ()
     });
   });
 
+  describe("deleting a student's or a parent's account", () => {
+    // A submission references a roster row, which stays with the teacher, so nothing cascades from the
+    // student's `users` row to it. The privacy policy (§6) promises that deleting a student account deletes what
+    // was handed in through it, drafts included; these cases hold the route to that, and to the two things it
+    // must NOT delete: a parent's child's work, and a row another student account is also self-linked to.
+    const codeUser = async (role: "student" | "parent", first: string) => {
+      const code = generateLoginCode();
+      const id = (
+        await db.pool.query(
+          `INSERT INTO users (first_name, last_name, role, login_code_hash) VALUES ($1, 'X', $2, $3) RETURNING id`,
+          [first, role, hashLoginCode(code)],
+        )
+      ).rows[0].id as string;
+      return { id, code };
+    };
+    const newClass = async (name: string) =>
+      (
+        await db.pool.query(
+          `INSERT INTO class_groups (teacher_id, name, subject_id, subject_ids) VALUES ($1, $2, 'mathematics', '["mathematics"]'::jsonb) RETURNING id`,
+          [w.users.t1, name],
+        )
+      ).rows[0].id as string;
+    const rosterRow = async (klass: string, name: string) => {
+      const id = (await db.pool.query(`INSERT INTO students (teacher_id, display_name) VALUES ($1, $2) RETURNING id`, [w.users.t1, name])).rows[0].id as string;
+      await db.pool.query(`INSERT INTO class_memberships (class_group_id, student_id) VALUES ($1, $2)`, [klass, id]);
+      return id;
+    };
+    const link = (row: string, user: string, relation: "self" | "guardian") =>
+      db.pool.query(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, $3)`, [row, user, relation]);
+    const projectHomework = async (klass: string, title: string) =>
+      (
+        await db.pool.query(
+          `INSERT INTO homework (teacher_id, class_group_id, title, due_at, requires_submission) VALUES ($1, $2, $3, now() + interval '5 days', true) RETURNING id`,
+          [w.users.t1, klass, title],
+        )
+      ).rows[0].id as string;
+    const seed = async (hw: string, row: string, photoId: string, submitted: boolean) => {
+      const key = `homework-submissions/${hw}/${row}/${photoId}.jpg`;
+      await s3.putForTest(key, JPEG);
+      await db.pool.query(
+        `INSERT INTO homework_submissions (homework_id, student_id, note, photos, submitted_at) VALUES ($1, $2, 'n', $3::jsonb, CASE WHEN $4::boolean THEN now() END)`,
+        [hw, row, JSON.stringify([{ id: photoId, key, mime: "image/jpeg", sizeBytes: JPEG.length }]), submitted],
+      );
+      return key;
+    };
+    const rowsOf = async (row: string) =>
+      (await db.pool.query(`SELECT 1 FROM homework_submissions WHERE student_id = $1`, [row])).rowCount;
+
+    /** One student account self-linked to a row in each of two classes: a handed-in project in one, a draft in the other. */
+    const studentWithTwoProjects = async (tag: string) => {
+      const student = await codeUser("student", `S-${tag}`);
+      const classA = await newClass(`صف ${tag} أ`);
+      const classB = await newClass(`صف ${tag} ب`);
+      const rowA = await rosterRow(classA, `طالب ${tag} أ`);
+      const rowB = await rosterRow(classB, `طالب ${tag} ب`);
+      await link(rowA, student.id, "self");
+      await link(rowB, student.id, "self");
+      const hwA = await projectHomework(classA, `project-${tag}-a`);
+      const hwB = await projectHomework(classB, `project-${tag}-b`);
+      const handedKey = await seed(hwA, rowA, `h-${tag}`, true);
+      const draftKey = await seed(hwB, rowB, `d-${tag}`, false);
+      return { student, rowA, rowB, handedKey, draftKey };
+    };
+
+    it("removes the student's handed-in project and draft, rows and photos, in every class, and nobody else's", async () => {
+      const s = await studentWithTwoProjects("del");
+      // Another student's project in the same homework as the handed-in one: same class, a row this account is not linked to.
+      const hwA = (await db.pool.query(`SELECT homework_id FROM homework_submissions WHERE student_id = $1`, [s.rowA])).rows[0].homework_id as string;
+      const classA = (await db.pool.query(`SELECT class_group_id FROM homework WHERE id = $1`, [hwA])).rows[0].class_group_id as string;
+      const otherRow = await rosterRow(classA, "طالب آخر");
+      const otherKey = await seed(hwA, otherRow, "someone-else", true);
+      assert.ok(s3.body(s.handedKey) && s3.body(s.draftKey) && s3.body(otherKey), "all three photos are stored");
+
+      const del = await call(server, "DELETE", "/auth/users/me", s.student.id, { loginCode: s.student.code });
+      assert.equal(del.status, 200, del.text);
+      assert.equal((await db.pool.query(`SELECT 1 FROM users WHERE id = $1`, [s.student.id])).rowCount, 0, "the account is gone");
+      assert.equal(await rowsOf(s.rowA), 0, "the handed-in submission row is gone");
+      assert.equal(await rowsOf(s.rowB), 0, "and the draft's");
+      assert.equal(s3.body(s.handedKey), undefined, "the handed-in photo is gone from the bucket");
+      assert.equal(s3.body(s.draftKey), undefined, "and so is the draft's");
+      assert.equal((await db.pool.query(`SELECT 1 FROM students WHERE id = ANY($1::uuid[])`, [[s.rowA, s.rowB]])).rowCount, 2, "the roster rows stay with the teacher");
+      assert.ok(s3.body(otherKey), "another student's photo is untouched");
+      assert.equal(await rowsOf(otherRow), 1, "and so is their row");
+    });
+
+    it("does the same with row-level security enforced", async () => {
+      const s = await studentWithTwoProjects("rls");
+      const enforcing = await startServer({ databaseUrl: db.url, env: { RLS_ENFORCE: "on", ...s3Env(s3) } });
+      try {
+        const del = await call(enforcing, "DELETE", "/auth/users/me", s.student.id, { loginCode: s.student.code });
+        assert.equal(del.status, 200, del.text);
+        assert.equal(await rowsOf(s.rowA), 0, "the handed-in submission row is gone");
+        assert.equal(await rowsOf(s.rowB), 0, "and the draft's");
+        assert.equal(s3.body(s.handedKey), undefined, "the handed-in photo is gone");
+        assert.equal(s3.body(s.draftKey), undefined, "and the draft's");
+      } finally {
+        await enforcing.stop();
+      }
+    });
+
+    it("deletes nothing of the child's when a parent deletes their account", async () => {
+      const s = await studentWithTwoProjects("parent");
+      const parent = await codeUser("parent", "P-parent");
+      await link(s.rowA, parent.id, "guardian");
+      await link(s.rowB, parent.id, "guardian");
+      // The teacher unlinked the child's account from row B (DELETE /students/:id/links/:userId): its work stays on
+      // the row with no self link left, so only the relation filter — not the shared-row check — protects it here.
+      await db.pool.query(`DELETE FROM roster_links WHERE student_id = $1 AND relation = 'self'`, [s.rowB]);
+
+      const del = await call(server, "DELETE", "/auth/users/me", parent.id, { loginCode: parent.code });
+      assert.equal(del.status, 200, del.text);
+      assert.equal((await db.pool.query(`SELECT 1 FROM users WHERE id = $1`, [parent.id])).rowCount, 0, "the parent's account is gone");
+      assert.equal(await rowsOf(s.rowA), 1, "the child's handed-in project stays");
+      assert.equal(await rowsOf(s.rowB), 1, "and the child's draft");
+      assert.ok(s3.body(s.handedKey) && s3.body(s.draftKey), "and both photos");
+    });
+
+    it("keeps a row that another student account is also self-linked to, and still removes the rest", async () => {
+      const s = await studentWithTwoProjects("shared");
+      const second = await codeUser("student", "S-second");
+      // Today the schema allows one `self` link per roster row (`roster_links_one_self_idx`), so a shared row cannot
+      // exist and the purge's shared-row guard is a backstop. Pin the invariant first; then lift the index in this
+      // throwaway database to show the guard still holds if it is ever dropped.
+      await assert.rejects(link(s.rowA, second.id, "self"), /roster_links_one_self_idx/, "a second self link is refused today");
+      await db.pool.query(`DROP INDEX roster_links_one_self_idx`);
+      try {
+        await link(s.rowA, second.id, "self");
+
+        const del = await call(server, "DELETE", "/auth/users/me", s.student.id, { loginCode: s.student.code });
+        assert.equal(del.status, 200, del.text);
+        assert.equal(await rowsOf(s.rowA), 1, "the shared row keeps its project: the other account can still open it");
+        assert.ok(s3.body(s.handedKey), "and its photo");
+        assert.equal(await rowsOf(s.rowB), 0, "the row only the deleted account was linked to loses its draft");
+        assert.equal(s3.body(s.draftKey), undefined, "and its photo");
+      } finally {
+        // The deleted account's link went with it, so the row is back to one self link and the index can return.
+        await db.pool.query(
+          `CREATE UNIQUE INDEX roster_links_one_self_idx ON roster_links USING btree (student_id) WHERE relation = 'self'`,
+        );
+      }
+    });
+  });
+
   describe("a parent, and the family's list", () => {
     let hwFamily: string;
     before(async () => {
