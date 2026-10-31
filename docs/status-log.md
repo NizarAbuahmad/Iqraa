@@ -10,6 +10,121 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Slides: cycle, tree, Venn and mind-map diagrams, and visuals on curriculum slides — 2026-10-31
+
+A deck could say «a cycle», «a classification», «what two things share» or «one idea and what
+connects to it» only as bullets, and the Slides Maker (curriculum) decks carried a picture only on
+the slide the book had a figure for. Two changes: four drawn diagram layouts, and shapes, icons,
+charts and photos on curriculum slides.
+
+**Four layouts, one gate.** `layout: 'cycle' | 'tree' | 'venn' | 'mindmap'` with a payload field of
+the same name; `resolveSlideLayout` (`services/slideLayout.ts`) refuses anything past its limits and
+the slide is then drawn the ordinary way, as every layout before. Limits: **cycle** 3–6 stages, label
+≤ 24, optional note ≤ 60, labels all different. **Tree** root ≤ 32, 2–4 branches ≤ 24, 0–4 leaves per
+branch ≤ 24, all different. **Venn** 2 or 3 sets, set label ≤ 24, all different, at least one item
+somewhere; two sets: ≤ 4 items per region, each ≤ 32; three sets: ≤ 3 items per set and ≤ 2 shared,
+each **≤ 16** (it was 20 when planned; see below). **Mind map** centre ≤ 40, 3–6 nodes ≤ 40, all
+different, a node may carry `role: 'cause' | 'effect'` (an arrow into the centre, or out of it; no role
+is a plain line).
+
+**One geometry, three renderers.** `services/diagramGeometry.ts` places every box, ellipse, line and
+text box once, in 960 × 430 units scaled by the area, mirrored for RTL (a cycle runs
+counter-clockwise, a tree's first branch and a Venn's first set sit on the right), and groups them
+into beats. `diagramHtml.ts` draws it as inline SVG with HTML text for the PDF (every beat at once);
+`pptxDiagram.ts` writes it as editable PowerPoint shapes (`roundRect`, `ellipse`, `line` with a
+triangle arrowhead only where the geometry says, one text box per label with no extra insets);
+`DiagramView` in `app/ai-tools/classroom/presentation.tsx` draws it with react-native-svg, one `Reveal`
+layer per beat, so «نقطة بنقطة» brings a stage, a branch, a set or a node in on each press (a tree's
+root and a mind map's centre are there from the start; `pacedReveal.ts` asks `diagramBeats`). The
+text boxes are sized for the longest text the gate allows, tested by wrapping at 0.55 em a glyph
+(`diagramGeometry.test.ts`); several Venn items are one text box joined by line breaks.
+
+**Prompt Slides** (`promptSlidesPrompt.ts`, both languages) describes the four shapes, when each fits,
+their JSON and their limits, and says names must differ; `deckChecks` warns `cycle_incomplete`,
+`tree_incomplete`, `venn_incomplete`, `mindmap_incomplete`; the polish step turns a refused diagram's
+words back into bullets; the blank-slide check counts the four payloads as content.
+
+**Slides Maker.** A curriculum concept may carry a `shape` (one of nine — compare, table, flow, timeline, stat and the four diagrams — through the same gate), an
+`icon`, a `chart` (only when it has no shape) or a `photo` phrase (only when it has none of those),
+all optional (`conceptExtras` in `lessonSlides.ts`, rule 13 in `lessonTeachingPrompt.ts`; the route logs
+`lesson-teaching visuals`). Up to **two** concept photos per deck (`teachingPhotoTargets`,
+`MAX_TEACHING_PHOTOS`), not on a wide-scope deck, each with its Unsplash credit, found through the
+existing media path in `app/ai-tools/slides.tsx`; each costs one call on the shared Unsplash quota.
+
+**The `lesson-teaching` pool starts afresh again.** Its version is now `2026-10-31.1`
+(`PROMPT_VERSION_BY_KIND`, `generationKey.ts`; every other kind keeps `2026-10-04.1`), so sections
+stored before this carry none of the new fields and are not served. The first teacher to build a
+Slides Maker deck for each lesson after the merge pays for a new teaching section (budget-capped as
+usual), including the lessons `pregenerate.ts` filled — **re-run
+`artifacts/mobile/scripts/pregenerate.ts` to fill them ahead of teachers.** Existing approved student
+explanations are read by lesson and language, not by this key, so they keep being served; new sections
+need approving as before.
+
+**What students see.** The student explanation cards draw only a concept's `points`, and rule 13 tells
+the model to make `points` a two-line summary when a concept has a `shape`. So `buildExplanationCards`
+(`lessonExplanationCards.ts`) now appends the shape's own words after the points, when the deck would
+draw that shape (`usableConceptShape`, the same gate; `payloadLines` for the words): a «دورة الماء»
+card shows its summary and then its stages, one per line (with the note after « — »); a comparison
+shows `title: item` lines; a table `header: cell — header: cell`. A shape the gate refuses adds
+nothing, so the card is its points, as before. Students still see no drawing, no icon, chart or photo
+— only the words. Cards already approved were built from an older section and are unchanged.
+
+**Looked at, and what changed because of it.** A fixture deck of the four diagrams at the gate's
+maximum sizes (6-stage cycle with notes of 60 characters, 4 × 4 tree, 2- and 3-set Venn, 6-node mind
+map with causes and effects), in Arabic and English, was built with the real HTML builder, printed to
+PDF in Chromium (A4 landscape, 7 pages each, Arabic and English × the Iqrra and Graphite themes —
+every deck theme is light, and the deck ignores the OS dark mode) and shot page by page; the same deck
+was opened in the built web bundle through the saved-material view and presented at 1366 × 860 and
+390 × 844, «نقطة بنقطة» off and on, Arabic and English, in the Iqrra and Graphite themes, with the OS
+scheme light and dark (no difference: see above). What was seen:
+- **Cycle.** Labels and notes sit inside their boxes at the maximum; each arrow runs from one box edge
+  to the next box's edge in reading order — clockwise in English, counter-clockwise in Arabic — and
+  closes back to the first. Between vertically stacked boxes the arrow is a head with almost no shaft.
+  Paced: nothing, then one stage per press, each arrow arriving with the stage it points at.
+- **Tree.** Root, four branches and sixteen leaves are inside their boxes, first branch on the right
+  in Arabic. A branch label of 24 characters wraps to two lines and fills its box (touching, not
+  clipped) in the PDF and the presenter. Paced: the root, then a branch with its leaves per press.
+- **Venn, two sets.** Set names above the circles, items stacked in the crescents and the lens. Items
+  are separated only by line breaks, so an item that wraps (32 characters in the narrow lens) reads
+  like another item: **no gap or mark between items — left as is.**
+- **Venn, three sets.** The tightest fit, as flagged. Ordinary Arabic and mixed-case English of 20
+  characters fit in both renderers (150 random real-word trials in the PDF at the cap: no box
+  overflowed; in English the widest bold shared line was 97 % of its box). **An all-capitals phrase did not**
+  («CHLOROFLUOROCARBONS» and «MITOCHONDRIA ORGANEL» in the triple overlap): three lines in a two-line
+  box, cut off in the PDF and over the circle's edge in the presenter. So the cap went from 20 to 16
+  (gate, both prompts, their tests); re-looked at 16: Arabic, mixed case and two-word capitals
+  («SODIUM HYDROXIDE») fit in both. **Still not fitting:** a single unbroken run of 16 wide capitals
+  (16 W's) is clipped in the PDF and wraps in the presenter; no real word is that wide.
+- **Mind map.** Six nodes of 40 characters sit inside their boxes (a three-line English node touches
+  the box's top and bottom); the centre's three-line text is inside the ellipse. A cause's arrow ends
+  at the centre, an effect's at the node, a node with no role has a plain line, in both directions of
+  writing. Paced: the centre, then one node per press with its line.
+- **PowerPoint**, the real `exportDeckAsPptx` run with the native modules stubbed, Arabic and English,
+  both themes, 7 slides, the .pptx unzipped: cycle 6 `roundRect` + 6 `line` with 6 `tailEnd` triangles;
+  tree 21 `roundRect` + 8 lines, none with an arrowhead; Venn 2 and 3 their set `ellipse`s (2 and 3
+  beyond the two background blobs) and no `roundRect`, the right number of paragraphs (items one per
+  paragraph); mind map 6 `roundRect`, 1 centre `ellipse`, 6 lines with 4 arrowheads; no connector
+  objects; arrowhead ends checked against the box positions (cause at the centre, effect at the node,
+  cycle in reading order, mirrored between Arabic and English); every paragraph `rtl` in Arabic and none in English.
+- **Phone (390 × 844).** Nothing is clipped, but the drawing keeps its 960 × 430 landscape shape across
+  a portrait screen, so labels come out around 7–8 px and notes around 6 px: **too small to read from
+  a phone in the hand.** A portrait layout would be its own change; this one is meant for a projector.
+
+**Verified.** `pnpm run typecheck` clean; api-server `pnpm build` + `pnpm test` 2,696 tests, 2,696 pass,
+0 fail; mobile `pnpm test` 8,593 tests, 8,583 pass, 10 skipped, 0 fail (both re-run after the Venn cap
+changed, and again after the whole-branch review fixes). New tests: `diagramGeometry`, `diagramHtml`, `pptxDiagram`, additions to `slideLayout`,
+`pacedReveal`, `deckSlidesHtml`, `promptSlidesPrompt`, `promptSlidesPolish`, `deckChecks`,
+`lessonTeachingPrompt`, `lessonSlides`, `generationKey`. The visual checks above.
+
+**Not verified.** **No live model has chosen or filled any of this.** The OpenAI key in the session that
+built it lacks the `model.request` scope, so no deck was generated: whether the model picks a cycle
+where it fits, keeps to the limits, uses the Slides Maker extras well (or whether a Unsplash phrase
+finds a good photo) is unknown; the first measure is a Prompt Slides run and the `lesson-teaching
+visuals` log line. PowerPoint's own rendering: the XML was read, never opened in PowerPoint, Keynote
+or Google Slides (the Venn set ellipses rely on having no fill element to be transparent outlines).
+Native devices, a clicker and screen readers. The presenter's labels and arrows were looked at in
+Chromium only, with the Almarai and Readex Pro fonts installed on the machine for the PDF.
+
 ## Review of messaging and exams: whole-number marking, broadcast unread, report length — 2026-10-30
 
 **Asked:** review messaging with parents and students, and exams and evaluations, now that the app
