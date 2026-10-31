@@ -13,7 +13,7 @@
  * Role-gated client-side like `admin/dashboard.tsx`; enforcement is server-side.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,6 +29,7 @@ import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
 import { BackButton } from '@/components/ui/BackButton';
 import { parseSignupKind, type SignupKind } from '@/services/adminSignupKind';
+import { replyMailto } from '@/services/adminReplyMail';
 
 const ACCENT = '#4F46E5';
 const SUCCESS = '#15803D';
@@ -191,6 +192,22 @@ export default function AdminSignupsScreen() {
         : (ar ? `تعذّر إرسال الدعوة إلى ${email}` : `Could not send the invite to ${email}`));
     } finally {
       setInviting('');
+    }
+  };
+
+  // Opens the admin's own mail app on a reply; nothing goes through the server.
+  // On web the link is assigned, not window.open'd: a mailto opened in a new tab
+  // leaves an empty tab behind, and assigning it hands it to the mail app
+  // without leaving the page.
+  const openReply = async (s: Signup) => {
+    const link = replyMailto(s);
+    if (!link) return;
+    setError('');
+    try {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') window.location.href = link;
+      else await Linking.openURL(link);
+    } catch {
+      setError(ar ? `لا يوجد تطبيق بريد لفتح الرد — انسخ العنوان: ${s.email}` : `No mail app to open the reply — copy the address: ${s.email}`);
     }
   };
 
@@ -452,6 +469,18 @@ export default function AdminSignupsScreen() {
                       : s.invitedAt
                         ? (ar ? 'أعد إرسال الدعوة' : 'Send the invite again')
                         : (ar ? 'أرسل دعوة التطبيق' : 'Send app invite')}
+                  </Text>
+                </Pressable>
+              )}
+              {!!replyMailto(s) && (
+                <Pressable
+                  onPress={() => { void openReply(s); }}
+                  accessibilityRole="link"
+                  style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, paddingVertical: 4 }}
+                >
+                  <Ionicons name="arrow-undo-outline" size={16} color={ACCENT} />
+                  <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
+                    {ar ? 'ردّ بالبريد' : 'Reply by email'}
                   </Text>
                 </Pressable>
               )}
