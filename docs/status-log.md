@@ -10,6 +10,59 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat on desktop: the composer joins the intro, one column width, an up arrow, a lesson heading, a labelled «+» — 2026-10-30
+
+A design review of the desktop chat's empty state (`app/(tabs)/iqra.tsx`) found three things
+cheap enough to fix at once. Layout and one icon only; no copy, state or data changed.
+
+**The composer sits under the intro.** An empty desktop thread centred its intro in the list while
+the composer stayed welded to the window's bottom — about 250px of nothing between the offer and
+the box that answers it. With `emptyDesktop` (`isDesktop && messages.length <= 1`) the list stops
+growing (`flexGrow: 0`) and two spacers (`flex: 1` above, `flex: 1.4` below) centre intro, chips
+and composer as one group a little above the middle. The spacers are `null` once there is a
+thread, so every other sibling keeps its slot: it is the same `TextInput` before and after the
+first send, which is why the composer was not moved into the list's footer (that would remount it
+and drop focus on the first Enter).
+
+**One column width.** The lesson strip and the thread pad *inside* the 820px column (788px of
+content); the composer padded *outside* it (820px), a 16px step each side. Desktop now pads inside
+the column for the composer too.
+
+**Send is an up arrow.** `arrow-back` in RTL is a bare left arrow in a grey disc and reads as
+"back". The arrow is direction-neutral now.
+
+**The heading asks about the lesson.** The desktop intro's title was the product's name
+(«مساعد إقرأ»), which the nav rail already shows three times over. With a lesson picked it now
+reads «ماذا تريد أن تجهّز لدرس «…»؟» (`iqraAgentAsk`, both languages), clamped to two lines;
+with none it is the old name. Desktop only: the phone's intro is the pitch alone.
+
+**«+» says «الأدوات» on desktop.** It is the only way into the tool catalogue and was a bare
+34px circle. A mouse has room for the word; a phone keeps the circle.
+
+**Not changed, on purpose.**
+- All five prep chips: the empty state offers the next two missing steps by design
+  (`buildLessonSuggestions`, `.slice(0, 2)`), and on desktop the readiness board is not shown
+  at all (`introPrepBoard` returns null for `isDesktop`, the workspace home carries it).
+- The sidebar's current-lesson card on the chat tab. `(tabs)/_layout.tsx` keeps it there on
+  purpose («a nav rail whose top block vanishes on one tab reads as a bug»), and it is not the
+  same control as the chat strip: the card is the app-wide lesson switch; the strip carries
+  Start class (the FAQ points teachers at it), the unpin, upload and failure notices. Removing
+  either loses something; only the lesson name repeats.
+- The unpin ✕ spacing was already fixed (hairline divider, gap, own hit area).
+- Start class's colour: `CurrentLessonCard.tsx` says brand teal on purpose, not amber; only
+  `PhoneToday` follows the «amber means now» line in CLAUDE.md. The two notes disagree; the
+  code was left as it is.
+- A subject colour tint on the strip and hero: a visual call to make with the screen in front of
+  you, not from the code.
+
+**Verified:** `pnpm run typecheck` exit 0; `artifacts/mobile` `pnpm test` 8212 pass, 0 fail,
+10 skipped (the heading has its own test in `chatEmptyStateCopy.test.ts`).
+**Not verified:** nothing was looked at in a browser (the chat needs a signed-in teacher, and
+this was done without a running API), so the centring, the spacer ratio, the 788px alignment,
+how a long lesson title wraps in the heading, and how the labelled «+» sits beside the field
+are from the code, not the screen. The phone layout and the open-canvas layout are untouched by
+construction (`emptyDesktop` is false for both) but also unseen.
+
 ## Homework project submission — student app — 2026-10-30
 
 Phase 2 of 3: a student whose homework needs a project can open it from the School tab,
@@ -1120,6 +1173,7 @@ of wmgeolab/geoBoundaries. Licence Creative Commons Attribution 2.5 Generic, der
   (3) The game-over panel was a fixed `View`; with the best line and the retry button it was cut off at the top and bottom
   on a 320×568 phone (the trophy under the header, the teacher signup card unreachable). It is now a `ScrollView`.
   `designScale.test.ts` needed no change.
+
 
 ## Slides: the class's turn, spot the mistake, and one point at a time — 2026-10-30
 

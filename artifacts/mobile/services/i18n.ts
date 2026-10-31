@@ -978,6 +978,9 @@ const translations = {
     // the product is careful elsewhere to separate what is verified from what
     // is judged; the front door should not oversell what the rest labels.
     iqraAgentName: 'مساعد إقرأ',
+    // The desktop intro's heading once a lesson is picked: a question about the
+    // lesson instead of the product's name, which the nav rail already shows.
+    iqraAgentAsk: (topic: string) => `ماذا تريد أن تجهّز لدرس «${topic}»؟`,
     // Names the things that can be asked for (the chips under it are two of
     // them) instead of a generic «كيف أدعمك اليوم؟». Still no «الذكي»: it says
     // what Iqrra prepares, not how clever it is.
@@ -4558,6 +4561,7 @@ const translations = {
     iqraChatSubtitle: 'Your prep companion',
     iqraWelcome: "Hi — I'm Iqrra, your lesson-prep companion.",
     iqraAgentName: 'Iqrra assistant',
+    iqraAgentAsk: (topic: string) => `What do you want to prepare for “${topic}”?`,
     iqraAgentPitch: "Ask for a lesson plan, worksheet, short quiz or class activity, and I'll prepare it from the Jordanian curriculum.",
     groundedInCurriculum: (lesson: string) => `Based on the Jordanian curriculum — ${lesson}`,
     notGroundedTitle: 'General content, not tied to a curriculum lesson',

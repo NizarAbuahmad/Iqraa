@@ -41,6 +41,26 @@ describe('the chat pitch names what can be asked', () => {
   }
 });
 
+describe('the desktop heading asks about the picked lesson', () => {
+  // A lesson title is the one thing the sentence cannot be built without, and a
+  // heading that is a question must end like one.
+  const TOPIC = 'الأنظمة النجمية والكواكب';
+  const ENDS: Record<Lang, RegExp> = { ar: /؟$/, en: /\?$/ } as Record<Lang, RegExp>;
+
+  for (const lang of LANGS) {
+    const heading = getT(lang)('iqraAgentAsk', TOPIC);
+
+    it(`${lang}: carries the lesson and reads as a question`, () => {
+      assert.ok(heading.includes(TOPIC), heading);
+      assert.match(heading, ENDS[lang]);
+    });
+
+    it(`${lang}: the no-lesson fallback is still the assistant's name`, () => {
+      assert.ok(getT(lang)('iqraAgentName').length > 0);
+    });
+  }
+});
+
 describe('the composer placeholder teaches a request the chat understands', () => {
   const EXAMPLE: Record<Lang, RegExp> = {
     ar: /مثل:\s*(.+)$/,
