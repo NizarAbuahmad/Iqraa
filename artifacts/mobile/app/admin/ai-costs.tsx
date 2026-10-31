@@ -73,7 +73,8 @@ export default function AdminAiCostsScreen() {
   const costOfDay = new Map((data?.byDay ?? []).map(d => [d.day, d.costUsd]));
   const callsOfDay = new Map((data?.byDay ?? []).map(d => [d.day, d.calls]));
   const fromDay = data ? data.from.slice(0, 10) : range.from;
-  const toDay = data ? data.to.slice(0, 10) : new Date().toISOString().slice(0, 10);
+  // A picked `to` is inclusive; the API echoes it as the next midnight (exclusive).
+  const toDay = range.to || (data ? data.to.slice(0, 10) : new Date().toISOString().slice(0, 10));
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
