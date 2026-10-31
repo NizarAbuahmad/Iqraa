@@ -32,7 +32,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -153,6 +153,20 @@ export function HomeworkTab({
       loadSeq.current++;
     };
   }, [load]);
+
+  // The «سلّم X من Y» count changes on the screens a card opens (a student's project cleared, a hand-in), so the
+  // list is read again each time the class page is shown after leaving it. The first focus is the mount effect's
+  // load above, not a second one. The same loadSeq drops a response that an older load would overwrite.
+  const firstFocus = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (firstFocus.current) {
+        firstFocus.current = false;
+        return;
+      }
+      void load();
+    }, [load]),
+  );
 
   // A game's stored title is the lesson's; the teacher's lists say which game it is too.
   const resourceLabel = (r: HomeworkResource) => (r.kind === 'game' ? `${t(HOMEWORK_GAME_TITLE_KEY[r.game])}: ${r.title}` : r.title);

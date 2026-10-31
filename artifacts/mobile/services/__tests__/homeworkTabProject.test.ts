@@ -107,6 +107,24 @@ describe('HomeworkTab: the handed-in button on the card', () => {
   });
 });
 
+describe('HomeworkTab: the list is fresh when the class page is shown again', () => {
+  it('reloads on focus through useFocusEffect, because the handed-in count changes on the screens it opens', () => {
+    assert.match(src, /import \{ router, useFocusEffect \} from 'expo-router'/);
+    assert.match(after('useFocusEffect(', 400), /void load\(\)/);
+  });
+
+  it('skips the first focus, which the mount effect already loads (no double load)', () => {
+    const block = after('useFocusEffect(', 400);
+    assert.match(block, /firstFocus\.current/);
+    assert.match(src, /const firstFocus = useRef\(true\)/);
+  });
+
+  it('still drops a stale response: the same loadSeq guards every load', () => {
+    assert.match(after('const load = useCallback', 400), /const seq = \+\+loadSeq\.current/);
+    assert.equal((src.match(/seq !== loadSeq\.current/g) ?? []).length, 2);
+  });
+});
+
 describe('HomeworkTab: deleting', () => {
   it('words the confirmation by deleteConfirmKey, so a project homework warns about the photos', () => {
     assert.match(after('const onDelete', 500), /message: t\(deleteConfirmKey\(target\)\)/);
