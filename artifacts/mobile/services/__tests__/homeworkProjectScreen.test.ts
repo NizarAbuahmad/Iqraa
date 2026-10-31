@@ -161,8 +161,9 @@ describe('homework project screen: the project rules', () => {
     assert.match(after('const saveDraft', 1400), /saveAgain\(/);
   });
 
-  it('shows the server’s note, not an unsaved draft, once a reload says the project is locked', () => {
-    assert.match(src, /draftAfterServer\(savedNoteRef\.current, draftRef\.current, next\.note, next\.locked\)/);
+  it('shows the server’s note, not an unsaved draft, once a reload says the project is locked (or another account’s)', () => {
+    // projectMode is 'locked' for a locked view (homeworkProject.test.ts), so a locked reload still wins over the draft.
+    assert.match(src, /draftAfterServer\(savedNoteRef\.current, draftRef\.current, next\.note, projectMode\(next\) !== 'edit'\)/);
   });
 
   it('puts the saved note back after an `empty` refusal of a note save', () => {
@@ -222,5 +223,22 @@ describe('homework project screen: the project rules', () => {
   it('keeps a locked project read-only and says why', () => {
     assert.match(src, /projectLocked/);
     assert.match(src, /editable=\{!view\.locked\}/);
+  });
+
+  it('shows a project another account handed in as a notice alone: no photos, note or controls', () => {
+    assert.match(src, /import \{[^}]*\bprojectMode\b[^}]*\} from '@\/services\/homeworkProject'/);
+    const branch = after("projectMode(view) === 'otherAuthor'", 900);
+    assert.match(branch, /t\('projectOtherAuthor'\)/);
+    // The branch returns before the photo grid, the note and the hand-in are drawn.
+    const returned = branch.slice(0, branch.indexOf('\n    }\n'));
+    assert.ok(returned.length > 0, 'the otherAuthor branch should end with its own closing brace');
+    for (const control of ['addPhoto', 'removePhoto', 'handIn', '<Input', 'view.photos', 'projectHandIn']) {
+      assert.equal(returned.includes(control), false, `the notice must not draw ${control}`);
+    }
+  });
+
+  it('refuses a removal and follows the server’s note whenever the project is not editable, not only when locked', () => {
+    assert.match(after('const removePhoto = async', 300), /projectMode\(current\) !== 'edit'/);
+    assert.match(after('const applyView = useCallback', 300), /projectMode\(next\) !== 'edit'/);
   });
 });

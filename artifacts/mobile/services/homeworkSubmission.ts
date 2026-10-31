@@ -7,6 +7,12 @@ export interface SubmissionPhoto { id: string; url: string | null; mime: string;
 export interface SubmissionView {
   status: SubmissionState; locked: boolean; note: string;
   photos: SubmissionPhoto[]; submittedAt: string | null;
+  /**
+   * The record's project was handed in from another account (the teacher re-linked the record). The server then
+   * sends nothing of it (status `none`, no photos, no note) and refuses every write with `other_author`; the screen
+   * shows a notice and no controls. False when absent, so an older API reads as before.
+   */
+  otherAuthor: boolean;
 }
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
@@ -17,7 +23,7 @@ export function normalizeSubmissionState(v: unknown): SubmissionState {
 }
 
 export function emptySubmission(): SubmissionView {
-  return { status: 'none', locked: false, note: '', photos: [], submittedAt: null };
+  return { status: 'none', locked: false, note: '', photos: [], submittedAt: null, otherAuthor: false };
 }
 
 export function normalizeSubmission(raw: unknown): SubmissionView {
@@ -40,6 +46,7 @@ export function normalizeSubmission(raw: unknown): SubmissionView {
     note: typeof raw['note'] === 'string' ? raw['note'] : '',
     photos,
     submittedAt: typeof raw['submittedAt'] === 'string' ? raw['submittedAt'] : null,
+    otherAuthor: raw['otherAuthor'] === true,
   };
 }
 
@@ -47,12 +54,14 @@ export function slotsLeft(photoCount: number): number {
   return Math.max(0, PHOTOS_MAX - photoCount);
 }
 
-export function canAddPhoto(v: { photos: unknown[]; locked: boolean }): boolean {
-  return !v.locked && v.photos.length < PHOTOS_MAX;
+type Openness = { photos: unknown[]; locked: boolean; otherAuthor?: boolean };
+
+export function canAddPhoto(v: Openness): boolean {
+  return !v.locked && v.otherAuthor !== true && v.photos.length < PHOTOS_MAX;
 }
 
-export function canHandIn(v: { photos: unknown[]; locked: boolean }, note: string): boolean {
-  return !v.locked && (v.photos.length > 0 || note.trim() !== '');
+export function canHandIn(v: Openness, note: string): boolean {
+  return !v.locked && v.otherAuthor !== true && (v.photos.length > 0 || note.trim() !== '');
 }
 
 export function noteChanged(saved: string, draft: string): boolean {

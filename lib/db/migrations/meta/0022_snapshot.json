@@ -1,5 +1,5 @@
 {
-  "id": "8e5d9c97-d2ca-438c-a264-09b5558b55b7",
+  "id": "ef89a6cc-db48-44f4-9baf-a8f91abc9b1e",
   "prevId": "1d8f5c33-2439-4eed-82b3-eb0a26a15905",
   "version": "7",
   "dialect": "postgresql",
@@ -1118,13 +1118,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "display_name_ar": {
-          "name": "display_name_ar",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
         "external_ref": {
           "name": "external_ref",
           "type": "text",
@@ -2119,6 +2112,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "author_user_id": {
+          "name": "author_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "note": {
           "name": "note",
           "type": "text",
@@ -2169,6 +2168,21 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "homework_submissions_author_idx": {
+          "name": "homework_submissions_author_idx",
+          "columns": [
+            {
+              "expression": "author_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -2196,6 +2210,19 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "homework_submissions_author_user_id_users_id_fk": {
+          "name": "homework_submissions_author_user_id_users_id_fk",
+          "tableFrom": "homework_submissions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "author_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
