@@ -10,7 +10,7 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## Chat on desktop: the composer joins the intro, one column width, an up arrow — 2026-10-30
+## Chat on desktop: the composer joins the intro, one column width, an up arrow, a lesson heading, a labelled «+» — 2026-10-30
 
 A design review of the desktop chat's empty state (`app/(tabs)/iqra.tsx`) found three things
 cheap enough to fix at once. Layout and one icon only; no copy, state or data changed.
@@ -31,16 +31,35 @@ the column for the composer too.
 **Send is an up arrow.** `arrow-back` in RTL is a bare left arrow in a grey disc and reads as
 "back". The arrow is direction-neutral now.
 
-**Not changed, on purpose.** The review also suggested showing all five prep chips. The empty
-state offers the next two missing steps by design (`buildLessonSuggestions`, `.slice(0, 2)`), and
-on desktop the readiness board is not shown at all (`introPrepBoard` returns null for
-`isDesktop`, the workspace home carries it) — so the two chips are the whole offer. Left alone.
-Also left: the duplicate current-lesson card in the sidebar, lesson-specific H1, labelled «+»,
-subject tint, and the unpin ✕ spacing (see the review).
+**The heading asks about the lesson.** The desktop intro's title was the product's name
+(«مساعد إقرأ»), which the nav rail already shows three times over. With a lesson picked it now
+reads «ماذا تريد أن تجهّز لدرس «…»؟» (`iqraAgentAsk`, both languages), clamped to two lines;
+with none it is the old name. Desktop only: the phone's intro is the pitch alone.
 
-**Verified:** `pnpm run typecheck` exit 0; `artifacts/mobile` `pnpm test` 8208 pass, 0 fail.
+**«+» says «الأدوات» on desktop.** It is the only way into the tool catalogue and was a bare
+34px circle. A mouse has room for the word; a phone keeps the circle.
+
+**Not changed, on purpose.**
+- All five prep chips: the empty state offers the next two missing steps by design
+  (`buildLessonSuggestions`, `.slice(0, 2)`), and on desktop the readiness board is not shown
+  at all (`introPrepBoard` returns null for `isDesktop`, the workspace home carries it).
+- The sidebar's current-lesson card on the chat tab. `(tabs)/_layout.tsx` keeps it there on
+  purpose («a nav rail whose top block vanishes on one tab reads as a bug»), and it is not the
+  same control as the chat strip: the card is the app-wide lesson switch; the strip carries
+  Start class (the FAQ points teachers at it), the unpin, upload and failure notices. Removing
+  either loses something; only the lesson name repeats.
+- The unpin ✕ spacing was already fixed (hairline divider, gap, own hit area).
+- Start class's colour: `CurrentLessonCard.tsx` says brand teal on purpose, not amber; only
+  `PhoneToday` follows the «amber means now» line in CLAUDE.md. The two notes disagree; the
+  code was left as it is.
+- A subject colour tint on the strip and hero: a visual call to make with the screen in front of
+  you, not from the code.
+
+**Verified:** `pnpm run typecheck` exit 0; `artifacts/mobile` `pnpm test` 8212 pass, 0 fail,
+10 skipped (the heading has its own test in `chatEmptyStateCopy.test.ts`).
 **Not verified:** nothing was looked at in a browser (the chat needs a signed-in teacher, and
-this was done without a running API), so the centring, the spacer ratio and the 788px alignment
+this was done without a running API), so the centring, the spacer ratio, the 788px alignment,
+how a long lesson title wraps in the heading, and how the labelled «+» sits beside the field
 are from the code, not the screen. The phone layout and the open-canvas layout are untouched by
 construction (`emptyDesktop` is false for both) but also unseen.
 
