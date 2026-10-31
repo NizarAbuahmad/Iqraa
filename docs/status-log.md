@@ -63,6 +63,1118 @@ how a long lesson title wraps in the heading, and how the labelled «+» sits be
 are from the code, not the screen. The phone layout and the open-canvas layout are untouched by
 construction (`emptyDesktop` is false for both) but also unseen.
 
+## Homework project submission — student app — 2026-10-30
+
+Phase 2 of 3: a student whose homework needs a project can open it from the School tab,
+add one to six photos from the phone's library and a note, hand it in, change it until the
+due day ends, and see it read-only after that. It runs on the phase 1 API (the two entries
+below). Phase 2 itself is app code only (`artifacts/mobile`), with no `app.json` change. But it
+merges in the same PR (#1356) as phase 1, so **a merge of that PR deploys three surfaces**
+(`deploy.yml`'s `what changed` job, which reads the whole push):
+- **The API.** Phase 1, the sweep and migration `0021_blushing_blockbuster` reach Cloud Run.
+  They are under `artifacts/api-server/` and `lib/`, so the schema job migrates first and the
+  new API revision takes traffic after it.
+- **The web bundle.** The app changes go to production on Cloudflare Pages (`iqraa-web`).
+  That is the live web app, not a preview.
+- **The over-the-air update.** It goes to the `preview` channel (`mobile-update.yml` on push to
+  `main`). The `production` channel stays manual
+  (`gh workflow run mobile-update.yml -f branch=production`).
+
+The verifier is skipped. An update only reaches a binary with the same `app.json` `version`
+(1.6.0 on this branch; see *Mobile* in `STATUS.md` for which binary is installed). **No
+screen can yet switch a homework to need a project**: that is the teacher's app, phase 3.
+Until then only the API (`requiresSubmission` on `POST`/`PATCH /homework`) can, so in
+practice no student sees this yet. Spec:
+`docs/superpowers/specs/2026-10-30-homework-project-submission-design.md` (§5, §6, §8);
+plan: `docs/superpowers/plans/2026-10-30-homework-project-submission-student-app.md`.
+
+**What was built** (commits `889426b`…`b56c93a`)
+
+- **Rules in pure modules**, loaded by bare `node --test`: `services/homeworkSubmission.ts`
+  (types, the normaliser, `canAddPhoto`/`canHandIn`, the data-URL check, the limits
+  `PHOTOS_MAX = 6`, `NOTE_MAX = 2000`) and `services/homeworkProject.ts` (the screen's
+  decisions: when to save the note, when a removal would empty a handed-in project, which
+  upload errors may have stored the photo, when to celebrate).
+- **API client** `services/homeworkSubmissionApi.ts` (injected `apiFetch`, the
+  `guardianApi.ts` pattern; uploads with a 45 s timeout) and error mapping in
+  `services/apiErrorKey.ts` for `locked`, `photo_limit`, `empty`, `submission_required`,
+  `storage_unavailable`, `bad_image`, `bad_data_url` and a note that is too long.
+- **The School tab** (`app/(tabs)/school.tsx`, `HomeworkRow`): a homework that needs a
+  project shows a state chip («لم يُسلَّم بعد» / «تم التسليم» / «سُلِّم متأخرًا») and a
+  «افتح المشروع» link instead of the tick. The status icon beside it is not pressable.
+  Parents get no link (their read-only view is phase 3), and an item the account cannot
+  track gets none either.
+- **The picker** `services/homeworkPhotoPick.ts`: the library only, through
+  `expo-image-picker`, shrunk to 1600 px on the long edge by the existing
+  `pickedPhotoToDataUrl`. A result the server would refuse (not jpeg/png/webp, or a data URL
+  over 6,000,000 characters) is refused on the device with «تعذّرت قراءة هذه الصورة، جرّب
+  صورة أخرى» rather than sent.
+- **The screen** `app/homework-project/[id].tsx`: status card, photo grid (thumbnail opens
+  the existing image viewer; a remove control per photo behind a confirm), the add slot,
+  the note with a counter, «سلّم» / «سلّم من جديد». It reloads on every focus (signed photo
+  URLs live ten minutes), shows a retry when a load fails, saves the note on blur and on
+  leaving, and saves a typed note before a removal. Removing the last photo of a handed-in
+  project with no note is disabled, with the hint «أضف الصورة الجديدة أولًا ثم احذف
+  القديمة». Past the due day a handed-in project is read-only with «انتهى موعد التسليم،
+  المشروع للقراءة فقط». Only an on-time first hand-in made on the screen is celebrated; a late
+  one gets a toast.
+- **After the final review** (same PR):
+  - **Late first hand-in.** It asks first: «سيُسجَّل التسليم متأخرًا ولن تتمكن من تعديله بعد
+    ذلك», because the server locks it at once.
+  - **State look.** Late is drawn in the destructive colour on both the School row and the
+    screen (`submissionLook`, never amber).
+  - **Locked note.** A locked project shows the teacher's note, never an unsaved draft.
+  - **Refused clear.** A note clear refused as `empty` goes back to the saved note.
+  - **Analytics.** The screen is not reported as a screen view (`shouldTrackScreen`).
+  - **Celebrations.** The project hand-in is the fifth celebration moment (CLAUDE.md, the
+    celebrations spec and `celebrateMoments.test.ts`).
+  - **Not checked in a browser.** None of these was re-run against the real stack; they are
+    covered by unit and source-reading tests.
+
+**Decisions**
+
+- **Library only, no camera.** `app.json` has `cameraPermission: false`; a camera is a
+  native change (`version` bump and a new build). A student photographs the work with the
+  phone's camera app and picks it. `git diff origin/main --stat -- artifacts/mobile/app.json
+  artifacts/mobile/package.json artifacts/mobile/eas.json artifacts/mobile/android` is empty.
+- **A thin screen over pure services**, so the rules are unit-tested and the screen is
+  pinned by a source-reading test (`homeworkProjectScreen.test.ts`).
+- **Parents get no link** in this phase.
+
+**Verified** (local, 2026-10-30)
+
+- `cd artifacts/mobile && pnpm test`: **8402 tests, 8392 passed, 0 failed, 0 cancelled, 10
+  skipped**, exit 0. Root `pnpm run typecheck`: clean. The two greps of ci.yml's «Brand is
+  «إقرأ»» step, run by hand: no match. Not run: the api-server suite (no API code changed in
+  this phase; `git diff 721946e..b56c93a --stat` lists only `artifacts/mobile` files),
+  curriculum, math-verifier, and the `e2e/` journey (it does not reach student accounts).
+- **Against the real stack, driven in a browser.** Postgres 16, a throwaway database
+  migrated with `migrate -- --from-env` (22 migrations) and `seed:assessment`, dropped
+  afterwards. The built API bundle with `RLS_ENFORCE=on` (as production), `STUDENT_ACCOUNTS=true`,
+  `AI_LIVE_MODE=false`, pointed at the in-memory S3 stub of the API tests
+  (`test-support/s3Stub.ts`), so uploads, deletes and signed URLs went through the real code
+  but **not to R2**. The web bundle built with `expo export` (`EXPO_PUBLIC_DEMO_MODE=true`),
+  served by `e2e/serve.mjs`, driven by Playwright scripts in headless Chromium. The teacher,
+  class, two roster students, their codes and three homework were made through the API (no
+  teacher screen sets the flag); each student signed up with `POST /auth/redeem` and signed
+  in through the app's own login-code screen. Each result below was read off the screen and
+  checked against the API or the database:
+  - **School row**: the chip «لم يُسلَّم بعد» and the link, and no checkbox (the page's only
+    checkbox was the ordinary homework's). Tapping the project row's status circle sent no
+    request; a direct `PUT …/done` answers 409 `submission_required`.
+  - **Photos**: an 800×600 JPEG, a 500×500 PNG and a 14 MB 4000×3000 JPEG were each one
+    `POST …/photos` → 201. The large one was stored as a 1600×1200 JPEG of 488 KB. Each
+    thumbnail loaded from a signed URL on the stub's host with `X-Amz-Expires=600`. A 6.7 MB
+    1500×1500 PNG (small enough to pass through unshrunk, too big to send) and a GIF were
+    refused on the device with the message above, and no request was sent. Removing a
+    photo: Cancel sent nothing; confirming sent one `DELETE` and the object left the stub.
+  - **Hand in**: with a typed note, «سلّم» sent `PUT …/submission` (the note) then
+    `POST …/submit`. The status read «تم التسليم» with the celebration. The list item came
+    back `done: true, submission: "submitted"`, and the School row moved to «تم إنجازه» with
+    the chip «تم التسليم».
+  - **Replace**: on reopening, a photo was added and the first one removed, then «سلّم من
+    جديد». `submitted_at` in the database kept the first hand-in's time.
+  - **Last photo** (English, dark): on a handed-in project with one photo and no note, the
+    remove control was `aria-disabled` (44×44) and the hint showed; tapping it opened
+    nothing. After typing a note it was enabled, and confirming sent `PUT` (the note) then
+    `DELETE`; the project kept the note, no photo, and its `submitted_at`.
+  - **Due day passed** (`homework.due_at` moved to yesterday, Amman, in the database): a
+    project handed in before it showed «تم التسليم» and the lock line, with no add, remove
+    or hand-in control and a read-only note; the API refused a photo with 409 `locked`.
+    The other student, with nothing handed in, could add a photo and hand in once. That
+    showed «سُلِّم متأخرًا», «سُلِّم بعد الموعد» and the lock line, with a toast and no
+    celebration. A second hand-in through the API: 409 `locked`. The School row read
+    «سُلِّم متأخرًا».
+  - **Another student**: with the second student's own token, `GET` on the first student's
+    homework returned his own empty project; `DELETE` of the first student's photo id was a
+    404; `?studentId=<her roster row>` was ignored. The first student's row was unchanged in
+    the database. Opening the same URL in the app as him showed his own empty project. A
+    teacher's token on the student route: 403.
+  - **Errors**: an ordinary homework id and an unknown id both showed «لم يعد هذا متاحًا.»
+    with no retry button. With the API started **without R2**, stored photos showed the
+    placeholder (their URLs are `null`), and an upload was a 503 shown as «تعذّر حفظ الصورة
+    الآن، حاول بعد قليل».
+  - **Sizes and themes**: phone 390×844 and desktop 1280×800, Arabic (RTL) and English,
+    light and dark (the system colour scheme, which the app reads at start). No horizontal
+    overflow at either width. Every screenshot was looked at.
+
+**Not verified**
+
+- **A real phone**: the Android and iOS photo pickers, their permission prompts, HEIC
+  photos (the device converts on a resize; a small HEIC that is not resized is refused on
+  the device as unsupported, by design), the on-device resize, the keyboard over the note,
+  and the image viewer's gestures. The browser's file input stands in for the picker, and
+  the web path shrinks through a canvas, not `expo-image-manipulator`.
+- **Real R2.** Only the in-memory stub; the bucket, its latency and real signed URLs were
+  not exercised.
+- **TalkBack / VoiceOver.** Only the `aria-*` attributes and labels were read in the browser.
+- **The camera**: deliberately absent (above).
+- **An expired signed URL**: what a thumbnail looks like after ten minutes on an open
+  screen was not checked.
+
+**Known limits**
+
+- Library only, no camera. The iOS photo-permission wording in `app.json` names messages and
+  lesson materials, not homework projects; changing it is a native change.
+- No offline queue: an upload needs a connection at that moment. Photo URLs are re-read on
+  focus only, not on a timer.
+- Before the due day, every change to a handed-in project is stored on the handed-in row at
+  once and is what the teacher reads. «سلّم من جديد» does not hold changes back; it only
+  re-checks the project and keeps the first `submitted_at`. It is enabled even when nothing
+  changed.
+- With R2 not configured the add slot is still shown and fails on use. The spec said it
+  would be hidden (§8, now corrected); the GET does not tell the app whether storage exists.
+- The project screen's header has no homework title.
+- Nothing warns that a late first hand-in is final and locks the project at once.
+- Clearing the note of a handed-in project that has no photo is refused with «لا يمكن أن
+  يبقى مشروع مُسلَّم فارغًا». The field then stays blank on screen while the server keeps the
+  old note, and every blur tries the save again.
+- Colour: the project screen marks «late» with `colors.warning` (an amber in dark mode); the
+  School row's late chip is red.
+- The School section's subtitle still says to tap a homework to mark it done, above project
+  rows that cannot be ticked, and their status circle looks like a tick box.
+- Not built here: the teacher's switch, list and detail, and the parent's view (phase 3);
+  the `e2e/` journey step the spec describes (§7).
+
+**The privacy policy, the terms, and a student's account deletion (2026-10-31, same PR)**
+
+- **Policy and terms** (`constants/legal.ts`, both languages; `LEGAL_LAST_UPDATED` 31 October
+  2026, `LEGAL_VERSION` `2026-10-31`). Privacy §1 describes the project: up to six photos from the
+  photo library and a note of up to 2000 characters, in private R2 behind ten-minute links;
+  photograph only the work; a draft is the student's alone; once handed in, the homework's teacher
+  and a parent linked to the student's record in that class see it, and nobody else in the app;
+  editable until the due day ends, with changes seen at once. §5 lists what a student account
+  reaches (it said "two things": messaging and the curriculum, already untrue for homework and
+  exams before this feature). §6 says what deletes a project. Terms §1 widened the same way, and
+  §3 gained one line on what a student may upload. The camera sentence stays true (library only).
+  The owner decided the wording should ship; it was **not reviewed by a lawyer**.
+- **A student's account deletion now deletes their projects.** Before, `DELETE /auth/users/me`
+  left them: `homework_submissions.student_id` references the roster row, which stays with the
+  teacher, so the rows (drafts included) and their R2 photos outlived the account.
+  `purgeSubmissionsOfAuthor` (`lib/homeworkSubmission.ts`) now deletes, on `systemDb` and before
+  the account row, the submissions of every roster row the account is `self`-linked to; the route
+  then deletes their objects best effort, like the teacher's (a failed object delete is logged
+  with its key and the deletion still succeeds). A guardian link deletes nothing. A row another
+  account is also `self`-linked to is kept, a backstop only: `roster_links_one_self_idx` allows one
+  `self` link per row today. The tick (`homework_completions`) is not touched.
+- **Verified:** four new cases in `routes/__tests__/homeworkSubmission.db.test.ts` (both kinds of
+  project gone in two classes with another student's untouched; the same with `RLS_ENFORCE=on`; a
+  parent's deletion keeps the child's work, including a row whose student account the teacher
+  unlinked; the shared-row backstop, with the index dropped in the throwaway database). Each guard
+  was broken on purpose and a case failed: no purge call, no object delete, no `self` filter, no
+  shared-row check, the delete on the app connection (fails only under RLS). api-server suite
+  3201/3201.
+- **After review (same day, same PR).** The purge (owner pool) and the account delete (the
+  request's own pool under `RLS_ENFORCE`) cannot share a transaction, and moving the account
+  cascade onto the owner connection was judged not worth it. So if the account delete throws after
+  the purge committed, the purged photos are deleted best effort (keys logged at error level) and
+  the route answers 500 with the account intact. A second best-effort pass after the account delete
+  (`purgeSubmissionsOfRows`) catches a draft an upload stored in between. New cases, each with its
+  failure injected by a trigger in the throwaway database: account delete refused, late draft, R2
+  down (a `failDeletes` hook in `test-support/s3Stub.ts`, with its own test), purge refused. Each
+  guard was broken on purpose and caught. api-server suite 3206/3206.
+- **Policy wording after review.** §1 now says a project is kept on the student's record, not on a
+  person: the account linked to that record sees the draft; once handed in, the homework's teacher
+  and the parents linked to the record see it; a teacher who links the record to another account
+  gives that account its projects. The location sentence now says an attached image may keep the
+  metadata the device wrote, which can include where it was taken (see *Known limits*).
+- **Microphone (same day).** The policy said the app never uses the microphone, which was false:
+  English speaking practice records on the device only (`useSpeakingRecorder`, never uploaded);
+  read-aloud practice in a lesson is transcribed by OpenAI and nothing is kept (`routes/practice.ts`);
+  an exam's read-aloud answer is stored in R2 with its transcript and played back only on the
+  exam teacher's marking screen. Privacy §1, §3, §4 and §6 now say so. The exam recording is
+  deleted by a re-take of the question, a quiz retake, the teacher deleting the attempt or their
+  account. It is **not** deleted when the exam is removed from the list (an archive) or when the
+  student's account is deleted.
+- **Not verified:** real R2; the sweep that would clean up an object whose delete failed is not set
+  up in production yet.
+- **Known limits (privacy):**
+  - **Unlink.** Unlinking a student account (`DELETE /students/:id/links/:userId`) touches no
+    submission, so the next account linked to that record sees and can change what was there. A
+    student whose account the teacher unlinked before the student deleted it keeps that row's
+    projects until the homework or class is deleted. Open in STATUS.md.
+  - **Photo metadata.** The client re-encodes a photo only when it shrinks it (long edge over
+    1600 px): on the web through a canvas, whose output carries no metadata; on a phone through
+    `expo-image-manipulator`, whose output was not checked for metadata. A smaller photo, or one
+    whose resize fails, is sent as its file's own bytes and stored as received, so EXIF (possibly
+    GPS) can remain. Open in STATUS.md.
+
+## Homework submission cleanup sweep — 2026-10-30
+
+The orphan sweep that the entry below said "must land before phase 2 lets students
+upload". API only, no schema, no app code. Spec §8:
+`docs/superpowers/specs/2026-10-30-homework-project-submission-design.md`. **The
+Cloud Scheduler job does not exist yet and the sweep has never run against real
+R2 or production** — the owner has to set `HOMEWORK_SUBMISSION_SWEEP=on` on
+`iqraa-api` and create the job, and the recipe, starting with that switch and then
+the dry-run-first order, is in `docs/deploying.md` «The submission sweep (Cloud
+Scheduler) — manual, once».
+
+**What was built**
+
+- **Part A — listing.** `listObjects(prefix, { maxKeys })` in `lib/r2.ts`:
+  ListObjectsV2 against the private bucket, paged by continuation token, capped at
+  `maxKeys` (default 10,000) with an exact `truncated` flag, and an empty prefix is
+  refused so the whole bucket cannot be listed by accident. The test S3 stub
+  (`test-support/s3Stub.ts`) can now list, and gains a way to plant an object with a
+  chosen `lastModified`.
+- **Part B — the sweep.** `POST /api/internal/homework-submission-sweep`
+  (`routes/internal.ts`), run by `sweepSubmissionOrphans`
+  (`lib/homeworkSubmissionSweep.ts`, on `systemDb`, pinned in `systemDbFiles.test.ts`)
+  with the decisions in a pure module (`modules/homework/submissionSweep.ts`).
+  Same `INTERNAL_CRON_KEY` and guard as the reminders, plus a deploy-only switch: 404
+  to everyone unless the key matches AND the service has `HOMEWORK_SUBMISSION_SWEEP`
+  equal to exactly `on` (read per request; a plain env var set by hand on `iqraa-api`
+  alone, not in `deploy.yml`; it overrides no guard), both checked before the query is
+  read; no new secret.
+  - Phase 1 purges the rows and photos of archived homework and of homework in an
+    archived class, through `purgeSubmissions`, and carries on past one that throws
+    (`purgeFailed`, error log; its rows stay, so its photos stay referenced).
+  - Phase 2 lists `homework-submissions/` first and reads every referenced key second
+    (on `systemDb`: under `RLS_ENFORCE=on` the app connection with no user reads no
+    submission row), and deletes only what the classifier allows, ten at a time, logging
+    each key it deletes (`homework submission sweep: deleted an orphan object`). What
+    protects an upload in flight is the 24 h grace period, not that order: an object that
+    lands before the listing with its row written after the key read looks unreferenced
+    either way; the order only narrows the window.
+  - Two guards against a database and a bucket that do not belong together (added in the
+    final review, below): an object is deleted only if THIS database has its homework
+    (`skippedUnknownHomework` otherwise), and a run whose orphans are over 20 and over half
+    of the conforming objects under known homework is refused (`refused`, `refusedReason`,
+    error log `homework submission sweep refused`), with no override.
+  - Query: no `dryRun` key, `dryRun=0` or `dryRun=false` is a real run; `dryRun` in any
+    other form is a dry run; any other parameter is `400 Unknown query parameter`. The
+    answer is the run report, also logged as `homework submission sweep run`.
+  - Dry run does not do phase 1 (it counts the rows it would purge), so its phase-2
+    numbers are a lower bound.
+- **Decisions.** 24 h grace for phase 2's orphans (an upload stores the object a moment
+  before its row, and a future `lastModified` counts as young; phase 1 purges an archived
+  homework's photos at any age); 1000 deletes per run, oldest first, the rest
+  next run; weekly (Sunday 03:00 Amman) with one retry at most, because a half-run is
+  safe to repeat; the same key rather than a second secret; and `dryRun` that fails
+  safe, so a preview that was meant to be one can never become a real run.
+
+**Limits, all in code.** An object a row refers to is kept however old. Only a key of
+exactly `homework-submissions/<uuid>/<uuid>/<uuid>.(jpg|png|webp)` is ever deleted as
+an orphan, all lower case (prefix, extension and hex); anything else under the prefix
+is counted in `skippedBadKey` and left. That includes an upper-case homework id, which
+can be stored, because the homework segment is the raw id from the upload URL (the
+photo id is a lower-case `randomUUID()`): it is purged with its row by phase 1 but
+never swept as an orphan. An age it cannot compute (an invalid `lastModified`, a NaN
+grace period) counts as young. Only an object whose homework row exists in this
+database is deleted, and a run that would delete over 20 objects (counted before the
+1000 cap) that are over half of what it can attribute is refused (`REFUSE_MIN_ORPHANS`,
+`REFUSE_RATIO`, `shouldRefuse`). **The guards do not catch a copy or branch of the
+production database** (a Neon branch knows every old homework, so production photos
+uploaded since the branch point look like known orphans, under the ratio, and phase 1
+could purge a homework archived only in the branch): no server but `iqraa-api` may hold
+the production R2 credentials with `INTERNAL_CRON_KEY`, and the switch keeps the sweep
+off on any other server. **Neither the guards nor the switch cover `iqraa-api`'s own
+database being restored or repointed** (photos uploaded since the restore point belong
+to homework the restored database still has, with their rows gone, so they look like
+known orphans): before such a restore, remove the switch and pause the job
+(`docs/deploying.md`, «The submission sweep», "Before restoring or repointing"). At most 200,000 objects are listed per run
+(`LIST_CAP`); past that `listTruncated: true`, logged at warn level, and every run sees
+the same first 200,000 keys, so an orphan after the cut-off is never found — that needs a
+person. A listing page that says it is truncated but carries no continuation token also
+ends with `listTruncated: true`. The request cannot change the grace period, the cap or
+the guards. **Leftovers of a hard-deleted homework are kept for good**: no route deletes a
+homework row, but a cascade from its teacher's user row or its class row does, and its
+stray photos then count as `skippedUnknownHomework` and are never deleted.
+
+**Verified** (local, Postgres 16, 2026-10-30)
+
+- `artifacts/api-server`, after `pnpm build`, with
+  `TEST_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/postgres node
+  --experimental-strip-types --test` on the three files of this change:
+  `modules/homework/__tests__/submissionSweep.test.ts` 19 tests,
+  `routes/__tests__/homeworkSubmissionSweep.db.test.ts` 18 tests,
+  `test-support/__tests__/s3Stub.test.ts` 9 tests: **46 passed, 0 failed, 0 skipped**.
+  The route suite runs the real server against the real database and the in-memory S3:
+  404 without or with a wrong key and for a GET; deletes an old orphan, keeps one inside
+  the grace period and a referenced one however old (drafts included); is idempotent;
+  leaves other prefixes and wrong-shaped keys alone and counts them; purges archived
+  homework and archived-class homework, with RLS enforcing and a draft present; carries
+  on past a homework that cannot be purged (`purgeFailed`); a dry run changes no object
+  and no row; the `dryRun` forms (preview for `?dryRun`, `1`, `true`, `TRUE`, `yes`,
+  `FALSE`, padded and repeated; 400 for any other parameter; real for none, `0`, `false`);
+  a bucket of 10,050 objects listed whole with 1000 deleted and 9050 left; R2 not
+  configured (phase 2 skipped, rows still purged). `mountOrder.test.ts` gained a case
+  for the new path (not run again for this entry beyond the three files above).
+- Not re-run for this entry: the whole api-server suite, `pnpm run typecheck`, the mobile
+  suite. No mobile code changed, so no OTA and no `app.json` `version` bump.
+- **Final review round** (same date, same command, after `pnpm build`), six files:
+  `submissionSweep.test.ts` 34, `homeworkSubmissionSweep.db.test.ts` 26, `s3Stub.test.ts`
+  10, `systemDbFiles.test.ts` 3, `mountOrder.test.ts` 70, `homeworkSubmission.db.test.ts`
+  41: **184 passed, 0 failed, 0 skipped**; root `pnpm run typecheck` clean; the whole
+  api-server suite (`pnpm test` with `TEST_DATABASE_URL`) **3193 passed, 0 failed, 0
+  skipped**. New route
+  cases: the wrong-database case (30 old photos under homework this database lacks, no
+  rows: all kept, `skippedUnknownHomework: 30`); a known-homework orphan deleted beside an
+  unknown one kept; an orphan under an archived homework still swept; 25 orphans beside 5
+  live photos refused with nothing deleted, 25 beside 60 deleted; a refused dry run; with
+  `RLS_ENFORCE=on`, an old draft photo of a live homework kept and the orphan beside it
+  deleted; a non-list `photos` logs a warning with the row id only. Each guard was shown
+  to matter by breaking it and watching its tests fail, then restoring: the homework
+  lookup replaced by "every listed homework is known" (the mixed case deleted the unknown
+  photo; in the wrong-database case the ratio guard alone still refused, so the two back
+  each other up); `shouldRefuse` forced false (both refusal route cases and four pure
+  cases failed); `>` → `>=` at each boundary (the 20-orphan and the exactly-50% cases
+  failed); the key read moved to the app `db` (the RLS case deleted the draft photo, and
+  the new `systemDbFiles.test.ts` pin failed); the warning removed (its test failed).
+  The new route cases were also run against the previous build first: 10 failed.
+- **Re-review round** (same date and command, after `pnpm build`), the same six files:
+  `submissionSweep.test.ts` 36, `homeworkSubmissionSweep.db.test.ts` 28, `s3Stub.test.ts`
+  10, `systemDbFiles.test.ts` 3, `mountOrder.test.ts` 70, `homeworkSubmission.db.test.ts`
+  41: **188 passed, 0 failed, 0 skipped**; the whole api-server suite **3197 passed, 0
+  failed, 0 skipped**; root `pnpm run typecheck` clean. The switch: with the right key,
+  a 404 (body `{"error":"Not found"}`, as for an unset key) for `HOMEWORK_SUBMISSION_SWEEP`
+  unset, empty, `ON`, `On`, `true`, `1`, `yes`, ` on`, `on `, on a real run, a dry run and
+  an unknown parameter alike, with no object or row removed (phase 1 did not run either),
+  while the reminder on the same server still opens; exactly `on` runs, and a wrong key
+  is still a 404. Shown RED against the previous build (unset: the run deleted) and
+  against a case-folding, trimming mutant (`ON` deleted). The fail-safe age check: an
+  invalid `lastModified` and a NaN grace period were both deleted by the previous `<`
+  form (RED), and are kept now. The widened pin failed on a temporary dynamic
+  `import("@workspace/db")` and on `import { db } from "@workspace/db/schema"` in the
+  sweep, then passed once they were removed. The pin is a text check with known gaps:
+  `import x, * as ns from "@workspace/db"` is not caught, and a commented-out import of
+  `systemDb` satisfies its "imports systemDb" half. The behavioural backstop is the
+  `RLS_ENFORCE=on` route case, which fails if the key read stops going through
+  `systemDb`. Not verified: that `deploy.yml`'s
+  `--update-env-vars` keeps a hand-set plain variable is gcloud's documented behaviour
+  and how `RLS_ENFORCE` is already run (`docs/deploying.md`), not observed for
+  this variable, which does not exist on the service yet.
+
+**Not verified**
+
+- **Never run against real R2 or production.** The S3 stub is not R2: pagination, the
+  `LastModified` it returns and the time a 200,000-key listing and 1000 deletes take
+  there are all unmeasured. Cloud Run's request limit is 300 s (`--timeout 300` in
+  `deploy.yml`); the first dry run and the first real run are where that is learned.
+- **A failed object delete in phase 2 is not exercised.** The code logs it
+  (`could not delete an orphan object`), does not count it in `deleted`, and moves on;
+  no test makes `deleteObject` fail. Only a failing *purge* (phase 1) is tested.
+- **`listTruncated: true` through the route is not exercised.** The 200,000 ceiling is
+  not reached in any test; `listObjects` truncation is tested at the library level
+  (`maxKeys: 5`, and a truncated page with no continuation token), and the route test
+  lists 10,050 and expects `false`.
+- **A failing homework lookup is not exercised.** If the known-homework query throws, the
+  run throws before any phase-2 delete and the route answers 500 (phase 1 has already
+  run); no test makes that query fail.
+- **The guards' thresholds are judgement, not measurement.** 20 orphans and 50% were
+  chosen for a young bucket, where orphans should be a handful against the live photos.
+  A real backlog past them is refused for good until a person looks; there is no override.
+- **The extension list exists twice.** `EXTENSION` in `modules/homework/submission.ts`
+  (what an upload may be stored as) and the sweep's key regex. No test ties them, so a
+  fourth photo type added to the upload would be stored, never swept as an orphan, and
+  counted in `skippedBadKey`. (`lib/r2.ts` takes the extension as an argument; it holds no list.)
+- **The Cloud Scheduler job does not exist.** Until the owner creates it, nothing runs
+  the sweep and the orphan sources below stay open in production.
+
+**Review history.** Part A and the first cut of Part B (`2b38f7e`, `5c5cc58`) went
+through one fix round (`935c3da`). It found: `dryRun` parsed fail-open (only the exact
+strings `1` and `true` previewed, so `?dryRun`, `TRUE` or a typo'd parameter name deleted); a listing
+ceiling of 10,000 keys that left a blind spot, because S3 lists in key order and a run
+that stopped there saw the same live photos every time and never reached an orphan
+after the cut-off (now 200,000, with a warn log when hit); a key check that accepted an
+upper-case prefix or extension (the regex was case-insensitive as a whole); and a purge failure that was only logged, so the line the owner
+watches looked clean (`purgeFailed` is now in the report).
+
+A final review then found:
+- **Critical: the sweep trusted that its database and its bucket belong together.** A
+  developer whose local `.env` holds the production R2 credentials (as `LOCAL_SETUP.md`'s
+  R2 recipe sets up) and a local database, calling the route with no query, would have
+  seen no rows and deleted up to 1000 production photos a run; a staging or e2e service
+  with R2 credentials the same. Fixed with both guards above (known homework only, and the
+  ratio guard), and a warning on the `INTERNAL_CRON_KEY` row of `LOCAL_SETUP.md`.
+- The `RLS_ENFORCE=on` path of phase 2's key read had no test; it has one now, and
+  `systemDbFiles.test.ts` pins that the sweep imports `systemDb` and never the app `db`.
+- `docs/deploying.md` said a young photo is never deleted; phase 1 deletes an archived
+  homework's photos at any age. Corrected.
+- Minors: comments and docs credited the list-then-read order with protection that belongs
+  to the grace period (reworded; there is no re-check of references and none is needed,
+  since an upload always stores a fresh key); the key regex accepted upper-case hex,
+  which would not match a homework id read back from the database (now lower case only;
+  the re-review corrected this round's claim that no upper-case key is ever written —
+  see below); `listObjects` reported a page marked truncated but without a continuation
+  token as complete (now `truncated: true`); a non-list `photos` was skipped silently
+  (now a warning with the row id).
+
+A re-review of that round found no Critical, and:
+- **Important: a copy or branch of the production database passes both guards.** A Neon
+  branch knows every homework of the branch point, so production photos uploaded since
+  look like orphans under known homework, under the 50% ratio; and phase 1 there could
+  purge a homework archived only in the branch. Fixed with a deploy-only switch, not a
+  guard: the route is a 404 unless `HOMEWORK_SUBMISSION_SWEEP` is exactly `on` on the
+  service, set by hand on `iqraa-api` only. Docs name the case and say no other server
+  may hold the production R2 credentials with `INTERNAL_CRON_KEY`.
+- Minors: the age check is fail-safe again (`!(age >= graceMs)`: an invalid date or a NaN
+  grace period is young; the previous `<` form let both through as old); the upper-case
+  justification was wrong (the homework segment is the raw URL id, so an upper-case key
+  can be stored; it is kept and only never swept as an orphan); `orphanObjects − capped −
+  deleted` means failed deletes only when `refused` is false; the `refused: true`
+  guidance now says how to check without printing Cloud Run env or secrets, and what to do
+  when they do belong together; "over 20, counted before the 1000 cap"; the
+  `systemDbFiles.test.ts` pin covers `@workspace/db` subpaths and a dynamic `import()`.
+
+A third look (docs only) found no Critical and the code fine, and:
+- **Important: a restore or repoint of `iqraa-api`'s own database is the one case the
+  switch cannot catch** — it is on, the bucket is production's, and photos uploaded since
+  the restore point look like known orphans. `docs/deploying.md` now has the rule:
+  before restoring or repointing, remove the switch and pause the scheduler job; turn
+  both back only after a dry run whose numbers make sense. The "switch enforces it"
+  wording was softened everywhere to say what it does not cover.
+- Minors: "off again, instantly" was false while traffic is pinned to a revision that
+  still has the switch (the remove step and the step-0 hint now point to the traffic
+  check and `update-traffic --to-latest`); a route comment claimed more than the code
+  (now "a failing key and a missing switch give the same 404"); the pin's known gaps are
+  noted above.
+
+**Still open**
+
+- Set `HOMEWORK_SUBMISSION_SWEEP=on` on `iqraa-api`, then create the scheduler job (dry
+  run, then one real run, then weekly) — owner.
+- The decision on toggling `requiresSubmission` after work exists, before phase 3
+  exposes the switch (see the entry below).
+- The untested items and the duplicated extension list above.
+
+## Homework project submission — API foundation — 2026-10-30
+
+A teacher asked for students to hand in their own textbook project, saved on the
+site, with no student able to touch another's. This is phase 1 of 3 and it is the
+**API only**: nothing in the app can send or show a submission yet. Spec:
+`docs/superpowers/specs/2026-10-30-homework-project-submission-design.md`; plan:
+`docs/superpowers/plans/2026-10-30-homework-project-submission-foundation.md`.
+
+**What shipped**
+
+- **Schema, migration `0021_blushing_blockbuster.sql` (additive; it was 0020 until `main`
+  took that number for `email_suppressions`, and was regenerated on top of it).**
+  `homework.requires_submission boolean NOT NULL DEFAULT false`, and
+  `homework_submissions` (`homework_id`, `student_id` a roster row, `note`, `photos`
+  jsonb, nullable `submitted_at` where null is a draft, unique on
+  `(homework_id, student_id)`), with row-level security: the homework's teacher
+  reads; anyone else who sees the student reads only a submitted row; INSERT and
+  UPDATE only by the self-linked author; no DELETE policy (removal is `systemDb`'s
+  job). No `destructive-migration: ok` is needed. The table is in `PROTECTED` in
+  `rlsCoverage.test.ts`.
+- **Storage.** Photos go to the private R2 bucket under
+  `homework-submissions/<homework>/<student>/<uuid><ext>` (`newHomeworkSubmissionKey`
+  in `lib/r2.ts`, never the caller's filename); reads are signed for ten minutes and
+  only after the row was read through the caller's own connection. Tests use an
+  in-memory S3.
+- **Student routes** (`routes/homeworkSubmissions.ts`, `lib/homeworkSubmission.ts`,
+  rules in `modules/homework/submission.ts`): `GET/PUT /student/homework/:id/submission`,
+  `POST …/photos` (one `data:` URL per request; jpeg/png/webp, 4 MB, magic bytes;
+  HEIC refused; six at most), `DELETE …/photos/:photoId`, `POST …/submit`. The roster
+  row comes from the account's self-linked rows (`ownHomeworkRows`), never from the
+  request. A resubmit before the due day keeps the first `submitted_at`; after it a
+  submitted project is locked (409 `locked`) and a student with none can still submit,
+  as late (computed, never stored). A handed-in project can never be emptied: the
+  guard is in each UPDATE's WHERE, so two concurrent requests cannot do it. The manual
+  tick (`PUT` and `DELETE …/done`) and a game-play tick are refused for a homework that
+  requires a submission (409 `submission_required`).
+- **Teacher.** `GET /homework/:id/submissions` (one row per live roster member:
+  none / submitted / late; a draft reads as none) and `GET …/submissions/:studentId`
+  (note and signed photos; 404 for a draft). `requiresSubmission` is read and written
+  by `POST /homework` and `PATCH /homework/:id`. `DELETE /homework/:id`, which
+  archives, now also purges every photo (drafts too) and deletes the submission rows,
+  on the owner connection because a draft is invisible to the teacher's identity. The
+  purge runs **before** the archive: a purge that throws answers 500 and leaves the
+  homework live so the teacher can retry (an archived homework is no longer found, so a
+  failure after it could never be retried); a second best-effort purge follows the
+  archive. `DELETE /classes/:id` purges every homework of the class first, with the same
+  rule (500, class stays live), because an archived class makes its homework unreachable
+  for everyone. Deleting a teacher's account (`DELETE /auth/users/me`) collects the photo
+  keys of all their homework (drafts too, `submissionKeysForTeacher`, owner connection)
+  before the cascade and deletes the objects after it.
+- **Parent.** `GET /parent/homework/:id/submissions` (submitted work of the linked
+  children in that class, read only). The family's homework list gains
+  `requiresSubmission` and a per-item `submission` state.
+- **Mount order.** All guards are path-scoped; `mountOrder.test.ts` gained a case
+  for the eight new paths (401 without a token) and that an unowned path is still 404.
+
+**Verified** (local, Postgres 16, 2026-10-30)
+
+- `pnpm run typecheck` (whole monorepo): clean.
+- `artifacts/api-server`: `pnpm build` then
+  `TEST_DATABASE_URL=postgres://…/postgres pnpm test`: 3102 tests, 0 failed, 0 skipped.
+  That includes `modules/homework/__tests__/submission.test.ts` (pure rules),
+  `routes/__tests__/homeworkSubmission.db.test.ts` (the HTTP routes against the real
+  database and the in-memory S3, with RLS on for the student journey, the teacher's
+  reads, the purge and the parent's read; plus the purge-fails-so-nothing-is-archived
+  cases for a homework and a class, and account deletion), `r2.test.ts` and the
+  new `mountOrder.test.ts` case.
+- `lib/db`: `RLS_TEST_DATABASE_URL=…/iqraa_rls_scratch pnpm test` (after
+  `migrate -- --from-env`, 21 migrations applied): 74 tests, 0 failed — `rlsMatrix.test.ts`
+  (author, teacher, guardian, another student, stranger, for read, insert and update)
+  and `rlsCoverage.test.ts`.
+- `artifacts/mobile`: `pnpm test`: 8264 tests, 8254 passed, 0 failed, 10 skipped (the
+  skips are not in this change).
+- `pnpm --filter @workspace/db run generate` reports "No schema changes" and leaves
+  `git status` clean (the CI "migrations match schema" check).
+- The new mount-order case was shown to be able to fail: with the parent guard in
+  `homeworkSubmissions.ts` made bare (`router.use(authMiddleware, requireRole("parent"))`)
+  the new case failed (and so did the existing unowned-path cases); restored, 68/68 pass.
+  Removing the path-scoped guard line outright did not fail it, because the earlier
+  `familyHomework.ts` / `homework.ts` routers guard the same prefixes: the 401 half of
+  the test is protected by those as well, and the unowned-404 half is the one this
+  router can break.
+- Not run, not affected: curriculum `test` / `verify`, and `test_equations.py` in
+  `artifacts/math-verifier`. Not run: the browser smoke (`e2e/`) — no app code changed.
+- **Not done:** `rlsDiff.test.ts` cases for the new routes. That suite boots its own
+  server with and without `RLS_ENFORCE` and would need the S3 stub wired into that
+  boot. The policies are tested directly (`rlsMatrix`), and the student write routes,
+  the teacher's reads, the purge and the parent's read were run with RLS enforcing in
+  server tests in `homeworkSubmission.db.test.ts`.
+
+**Not built**
+
+The student app (submit screen, list state), the teacher's and the parent's app
+(counts, list, detail), grading and teacher comments, and supervisor access. The
+switch is not reachable from any screen yet, so no homework can require a submission
+until phase 2 and 3 ship (a teacher could set it through the API).
+
+**Known limits**
+
+- No moderation queue: a wrong photo of a minor stays until the student removes it
+  or the homework is archived.
+- The teacher cannot remove one student's photo without archiving the whole homework,
+  which deletes every submission for it, for good.
+- The upload limiter (60 an hour per account) counts every request that reaches the
+  route, refused ones included, so it is 60 attempts, not 60 photos.
+- The archive purge is not transactional: a failed object delete is logged with its
+  key and the rows are deleted anyway, so an unreachable orphan object can remain in
+  the bucket. Two more orphan sources are **not** closed here: an exception after a
+  photo is stored but before it is recorded, and an upload racing a purge by
+  milliseconds. **A prefix sweep of `homework-submissions/` must land before phase 2
+  lets students upload.**
+- **Open question, for phase 3:** turning `requiresSubmission` on or off after students
+  have ticked or submitted is not specified, and `PATCH /homework/:id` accepts it today.
+  On to off makes stored photos unreadable (every student route answers 404) and lets
+  drafts be ticked by hand; off to on leaves students who ticked "done" with a
+  submission of `none` and unable to untick. Decide before the teacher's app exposes the
+  switch (for example a 409 once any submission or completion exists).
+- A signed URL's path carries `homework-submissions/<homework>/<roster row>/`, so the
+  homework and roster-row ids are visible to whoever holds the link for its ten minutes;
+  the object key field itself is never in a response.
+- **RLS enforcement is ON in production** (`RLS_ENFORCE=on` on `iqraa-api`, see
+  `STATUS.md`), so these routes run under it from their first deploy. The new policies
+  were proved in `lib/db` (`rlsMatrix`, `rlsCoverage`) and by RLS-on server tests in
+  `homeworkSubmission.db.test.ts`: the whole student journey (upload, note, hand in,
+  remove a photo) with the teacher's list and detail reading it back and not seeing a
+  draft, the archive purge of a draft, and the parent's and student's reads. The
+  routes also scope by the account's own rows, the owner check and the guardian's linked
+  children, so isolation does not rest on RLS alone. `rlsDiff.test.ts` has no cases for them.
+- Migration `0021` is additive; a revert of the code leaves an unused column and an
+  empty table, and drops nothing.
+- Storage is capped only by the six-photo limit and the hourly limiter.
+- No new secret: the `R2_*` secrets already exist on Cloud Run for chat attachments.
+  No mobile code changed, so no OTA and no `app.json` `version` bump.
+
+## A teacher can message a family from the roster, and sees the letter before it goes — 2026-10-30
+
+**Asked:** a teacher with a parent linked could only find the AI letter screen from the class page;
+the plain chat was three screens away in «الرسائل». A letter also reached the parent with a stray line
+of free text and a typo'd signature, because the send confirmation named the recipients and nothing else.
+
+**What changed (mobile only, no API or schema change).**
+- A «رسالة» pill on each joined student's row in `classes/[id]` opens a chat with that family at once
+  (`startThread`, the same call «رسالة جديدة» makes). The pill shows only when someone is linked
+  (`chatTarget` in `services/rosterLinks.ts`, tested). One linked account opens directly; **several
+  go to the Messages tab instead of the app choosing** — a message to the wrong family cannot be
+  unsent. The «محادثة الشعبة» class chat still excludes parents (`GET /messaging/threads/class/:id`);
+  this does not change that.
+- The parent-letter «أرسل في التطبيق» confirmation now shows the full letter in a bounded, scrollable
+  box (`ConfirmOptions.preview`, `ConfirmDialog`), and its buttons read «أرسل الرسالة» / «عدّل الرسالة»
+  instead of «أرسل» / «إلغاء». The `confirm()` fallbacks (web `window.confirm`, `Alert`) print the
+  preview inside the message.
+
+**Verified:** `pnpm run typecheck`; mobile `pnpm test` (8258 pass, 0 fail, 10 skipped as before);
+the new `chatTarget` cases. Driven in Chromium against a local API with `STUDENT_ACCOUNTS=true`, a
+teacher, a class of two students and one parent linked by claim code, at a 1280-wide window: the
+pill shows on the joined student only (English and Arabic/RTL), a tap opens the chat with the
+parent («Parent · ahmad»), and the letter's confirmation shows the recipient, the "cannot be undone"
+note and the full letter in the scrollable box. **Not verified:** a phone-width layout, dark mode, a
+real device, the several-linked-accounts branch (it goes to the inbox) and a letter long enough to
+scroll the box, in the browser. In English the «Send the message» button wraps to two lines in a
+380-wide dialog. The signature field was already editable
+(`parentMsgSignature`); a wrong signature comes from the saved or typed name, not a missing field.
+
+**Known limits.** A student with a self account and a parent counts as two links, so the pill sends
+the teacher to the inbox picker rather than opening one chat. Direct chat needs a linked account;
+a student with nobody joined shows no pill.
+
+## Unlinking an account also removes it from the teacher's direct chat — 2026-10-31
+
+**Asked:** the first item on the list left unfixed by «Review of messaging and exams» below:
+unlinking a parent or student removed them from class chats only. **Decided by the owner
+(2026-10-31):** cut only the direct chat; groups stay unless the teacher removes someone in the
+group's member list, or the parent or student withdraws their own link.
+
+**The rule.** A direct thread is created only for someone connected to the teacher (`isConnected`:
+a roster link to one of that teacher's students), and sending and reading check participation
+alone. So once the link was deleted the account kept reading the teacher's earlier messages about a
+child and could keep posting. `pruneTeacherChatsAfterUnlink` (`lib/classThread.ts`, on `systemDb`)
+now runs after a link is deleted and, **only if the account has no link left to any of that
+teacher's students**, removes it from that teacher's direct thread. A parent unlinked from one
+child but still linked to another keeps it. Custom groups are a list the teacher built on purpose
+and an unlink is often a roster correction (wrong child, linked again a minute later), so **the
+teacher's unlink does not touch them** (`alsoGroups: false`); an account withdrawing its OWN claim
+has chosen to leave, so `DELETE /auth/claim` also removes it from the groups that teacher owns
+(`alsoGroups: true`). Messages are kept; the teacher's side of the emptied direct thread is hidden
+(`hiddenAt`) so the inbox does not keep a chat with nobody in it, and a re-link plus the teacher
+opening the chat again brings the same thread back (`openDirectThread`). The option is required, so
+a new caller must choose.
+
+**Called from the two places a link is deleted that can leave a stranger in a chat:**
+`DELETE /students/:id/links/:userId` (the teacher's unlink) and `DELETE /auth/claim` (the account
+withdrawing its own links). The third `delete(rosterLinks)`, the "later of two racing claimers
+withdraws" branch of `POST /auth/claim`, is left alone: since the claim runs in a transaction and
+`roster_links_one_self_idx` is unique per student, a second self-link can no longer exist, so that
+branch is dead code (an earlier draft of this PR added a cleanup there; it was removed as
+unreachable and untested). The unlink dialog now says what it does (`unlinkAccountConfirm`,
+Arabic and English).
+
+**Two things found in review and fixed.** (1) The link delete commits on its own, so if the cleanup
+threw, the teacher's retry found no link (404) and never ran it: the unlink route now runs the
+cleanup on that path too, and the helper is safe to repeat. `DELETE /auth/claim` logs a cleanup
+failure instead of answering 500, because a retry there has no link to name the teachers from.
+(2) Hiding the emptied direct chat from the teacher could bury a message the account had sent
+that the teacher had not read, and left it in the app-icon badge with no inbox row to clear it.
+The chat is now hidden and marked read only when nothing unread from the account is in it;
+otherwise it stays visible with its unread count. The helper also never touches the teacher's own
+seat in their chats.
+
+**Consequence to know:** because a teacher's unlink leaves groups alone, an unlinked stranger who
+is already in one of the teacher's custom groups **stays in it** until the teacher removes them in
+the group's member list. That is the owner's choice, made over the safer default; the dialog says
+"your groups do not change". The direct chat, where the private messages about the child are, is
+closed.
+
+**Verified:** typecheck clean; API suite and mobile suite against a throwaway local Postgres (counts
+in the PR). `unlinkChatAccess.db.test.ts` (8 tests) was seen failing before the change (the control
+"still linked through another child" passes before and after); the retry and keep-unread tests were
+each seen failing when their behaviour was removed, and flipping either `alsoGroups` value fails
+the group tests. **Known gap:** the cleanup is several writes that are not one transaction, and a
+link created in the same instant for another of the teacher's students can leave an account linked
+but out of the direct chat (or, on withdrawal, the groups); nothing tests that race. A link to an
+*archived* student of the teacher still counts as a connection, as in `isConnected`; no route
+archives students today. **Not verified:** nothing was run against production; the dialog wording
+was not read by a native speaker; the mobile string change is JS-only, but `app.json` is 1.6.0
+while STATUS.md says the installed production binary is 1.5.0, so **the new dialog text reaches no
+phone until a 1.6.0 build is installed**. The server change is live on deploy and does not wait for
+that: until then the dialog still says only «removed from class chats» although the account now
+also leaves the direct chat.
+
+**Still open from the review:** direct chats whose other side was deleted show a composer that
+goes nowhere; a block does not stop the blocked person posting to a teacher.
+
+## API errors reach Cloud Error Reporting (PR #1238, merged 2026-10-24) — 2026-10-30
+
+In production the logger wrote pino's default JSON (`level: 50`, `msg`, no stack field), which
+Cloud Run reads as an unleveled entry, so Error Reporting never saw anything the API logged.
+`lib/cloudLogging.ts` + `lib/logger.ts` now write `severity` (`error` → ERROR, `fatal` →
+CRITICAL), `message`, `stack_trace` (copied from `err.stack`; 155 of ~190 error call sites log
+`{ err }`), `serviceContext` (`iqraa-api`, `K_REVISION`) and an ISO `time`. Production only;
+`/healthz/errors` and the dev transport are unchanged. `clouderrorreporting.googleapis.com` was
+enabled on `iqraa-auth-507315` by the owner on 2026-10-24.
+
+**Verified (2026-10-30, `gcloud logging read` on `iqraa-api`, 5 days):** 177 entries at ERROR; 84
+carry `stack_trace` and `serviceContext` (the rest are `logger.error` calls with no `err`). Four
+unit tests in `cloudLogging.test.ts`. **Not verified:** that the Error Reporting page groups
+them (the `gcloud beta` group is not installed here; look at the Error Reporting page in the
+console). **First thing it showed:** 79 of those stacks were an OpenAI `429`
+`credit_balance_exhausted` between 2026-10-28 18:30Z and 2026-10-29 23:51Z (`classroom-activity`,
+`chat`, `lesson-teaching`, `activity`, `evaluation` generation) — none since.
+
+## Slides: cycle, tree, Venn and mind-map diagrams, and visuals on curriculum slides — 2026-10-31
+
+A deck could say «a cycle», «a classification», «what two things share» or «one idea and what
+connects to it» only as bullets, and the Slides Maker (curriculum) decks carried a picture only on
+the slide the book had a figure for. Two changes: four drawn diagram layouts, and shapes, icons,
+charts and photos on curriculum slides.
+
+**Four layouts, one gate.** `layout: 'cycle' | 'tree' | 'venn' | 'mindmap'` with a payload field of
+the same name; `resolveSlideLayout` (`services/slideLayout.ts`) refuses anything past its limits and
+the slide is then drawn the ordinary way, as every layout before. Limits: **cycle** 3–6 stages, label
+≤ 24, optional note ≤ 60, labels all different. **Tree** root ≤ 32, 2–4 branches ≤ 24, 0–4 leaves per
+branch ≤ 24, all different. **Venn** 2 or 3 sets, set label ≤ 24, all different, at least one item
+somewhere; two sets: ≤ 4 items per region, each ≤ 32; three sets: ≤ 3 items per set and ≤ 2 shared,
+each **≤ 16** (it was 20 when planned; see below). **Mind map** centre ≤ 40, 3–6 nodes ≤ 40, all
+different, a node may carry `role: 'cause' | 'effect'` (an arrow into the centre, or out of it; no role
+is a plain line).
+
+**One geometry, three renderers.** `services/diagramGeometry.ts` places every box, ellipse, line and
+text box once, in 960 × 430 units scaled by the area, mirrored for RTL (a cycle runs
+counter-clockwise, a tree's first branch and a Venn's first set sit on the right), and groups them
+into beats. `diagramHtml.ts` draws it as inline SVG with HTML text for the PDF (every beat at once);
+`pptxDiagram.ts` writes it as editable PowerPoint shapes (`roundRect`, `ellipse`, `line` with a
+triangle arrowhead only where the geometry says, one text box per label with no extra insets);
+`DiagramView` in `app/ai-tools/classroom/presentation.tsx` draws it with react-native-svg, one `Reveal`
+layer per beat, so «نقطة بنقطة» brings a stage, a branch, a set or a node in on each press (a tree's
+root and a mind map's centre are there from the start; `pacedReveal.ts` asks `diagramBeats`). The
+text boxes are sized for the longest text the gate allows, tested by wrapping at 0.55 em a glyph
+(`diagramGeometry.test.ts`); several Venn items are one text box joined by line breaks.
+
+**Prompt Slides** (`promptSlidesPrompt.ts`, both languages) describes the four shapes, when each fits,
+their JSON and their limits, and says names must differ; `deckChecks` warns `cycle_incomplete`,
+`tree_incomplete`, `venn_incomplete`, `mindmap_incomplete`; the polish step turns a refused diagram's
+words back into bullets; the blank-slide check counts the four payloads as content.
+
+**Slides Maker.** A curriculum concept may carry a `shape` (one of nine — compare, table, flow, timeline, stat and the four diagrams — through the same gate), an
+`icon`, a `chart` (only when it has no shape) or a `photo` phrase (only when it has none of those),
+all optional (`conceptExtras` in `lessonSlides.ts`, rule 13 in `lessonTeachingPrompt.ts`; the route logs
+`lesson-teaching visuals`). Up to **two** concept photos per deck (`teachingPhotoTargets`,
+`MAX_TEACHING_PHOTOS`), not on a wide-scope deck, each with its Unsplash credit, found through the
+existing media path in `app/ai-tools/slides.tsx`; each costs one call on the shared Unsplash quota.
+
+**The `lesson-teaching` pool starts afresh again.** Its version is now `2026-10-31.1`
+(`PROMPT_VERSION_BY_KIND`, `generationKey.ts`; every other kind keeps `2026-10-04.1`), so sections
+stored before this carry none of the new fields and are not served. The first teacher to build a
+Slides Maker deck for each lesson after the merge pays for a new teaching section (budget-capped as
+usual), including the lessons `pregenerate.ts` filled — **re-run
+`artifacts/mobile/scripts/pregenerate.ts` to fill them ahead of teachers.** Existing approved student
+explanations are read by lesson and language, not by this key, so they keep being served; new sections
+need approving as before.
+
+**What students see.** The student explanation cards draw only a concept's `points`, and rule 13 tells
+the model to make `points` a two-line summary when a concept has a `shape`. So `buildExplanationCards`
+(`lessonExplanationCards.ts`) now appends the shape's own words after the points, when the deck would
+draw that shape (`usableConceptShape`, the same gate; `payloadLines` for the words): a «دورة الماء»
+card shows its summary and then its stages, one per line (with the note after « — »); a comparison
+shows `title: item` lines; a table `header: cell — header: cell`. A shape the gate refuses adds
+nothing, so the card is its points, as before. Students still see no drawing, no icon, chart or photo
+— only the words. Cards already approved were built from an older section and are unchanged.
+
+**Looked at, and what changed because of it.** A fixture deck of the four diagrams at the gate's
+maximum sizes (6-stage cycle with notes of 60 characters, 4 × 4 tree, 2- and 3-set Venn, 6-node mind
+map with causes and effects), in Arabic and English, was built with the real HTML builder, printed to
+PDF in Chromium (A4 landscape, 7 pages each, Arabic and English × the Iqrra and Graphite themes —
+every deck theme is light, and the deck ignores the OS dark mode) and shot page by page; the same deck
+was opened in the built web bundle through the saved-material view and presented at 1366 × 860 and
+390 × 844, «نقطة بنقطة» off and on, Arabic and English, in the Iqrra and Graphite themes, with the OS
+scheme light and dark (no difference: see above). What was seen:
+- **Cycle.** Labels and notes sit inside their boxes at the maximum; each arrow runs from one box edge
+  to the next box's edge in reading order — clockwise in English, counter-clockwise in Arabic — and
+  closes back to the first. Between vertically stacked boxes the arrow is a head with almost no shaft.
+  Paced: nothing, then one stage per press, each arrow arriving with the stage it points at.
+- **Tree.** Root, four branches and sixteen leaves are inside their boxes, first branch on the right
+  in Arabic. A branch label of 24 characters wraps to two lines and fills its box (touching, not
+  clipped) in the PDF and the presenter. Paced: the root, then a branch with its leaves per press.
+- **Venn, two sets.** Set names above the circles, items stacked in the crescents and the lens. Items
+  are separated only by line breaks, so an item that wraps (32 characters in the narrow lens) reads
+  like another item: **no gap or mark between items — left as is.**
+- **Venn, three sets.** The tightest fit, as flagged. Ordinary Arabic and mixed-case English of 20
+  characters fit in both renderers (150 random real-word trials in the PDF at the cap: no box
+  overflowed; in English the widest bold shared line was 97 % of its box). **An all-capitals phrase did not**
+  («CHLOROFLUOROCARBONS» and «MITOCHONDRIA ORGANEL» in the triple overlap): three lines in a two-line
+  box, cut off in the PDF and over the circle's edge in the presenter. So the cap went from 20 to 16
+  (gate, both prompts, their tests); re-looked at 16: Arabic, mixed case and two-word capitals
+  («SODIUM HYDROXIDE») fit in both. **Still not fitting:** a single unbroken run of 16 wide capitals
+  (16 W's) is clipped in the PDF and wraps in the presenter; no real word is that wide.
+- **Mind map.** Six nodes of 40 characters sit inside their boxes (a three-line English node touches
+  the box's top and bottom); the centre's three-line text is inside the ellipse. A cause's arrow ends
+  at the centre, an effect's at the node, a node with no role has a plain line, in both directions of
+  writing. Paced: the centre, then one node per press with its line.
+- **PowerPoint**, the real `exportDeckAsPptx` run with the native modules stubbed, Arabic and English,
+  both themes, 7 slides, the .pptx unzipped: cycle 6 `roundRect` + 6 `line` with 6 `tailEnd` triangles;
+  tree 21 `roundRect` + 8 lines, none with an arrowhead; Venn 2 and 3 their set `ellipse`s (2 and 3
+  beyond the two background blobs) and no `roundRect`, the right number of paragraphs (items one per
+  paragraph); mind map 6 `roundRect`, 1 centre `ellipse`, 6 lines with 4 arrowheads; no connector
+  objects; arrowhead ends checked against the box positions (cause at the centre, effect at the node,
+  cycle in reading order, mirrored between Arabic and English); every paragraph `rtl` in Arabic and none in English.
+- **Phone (390 × 844).** Nothing is clipped, but the drawing keeps its 960 × 430 landscape shape across
+  a portrait screen, so labels come out around 7–8 px and notes around 6 px: **too small to read from
+  a phone in the hand.** A portrait layout would be its own change; this one is meant for a projector.
+
+**Verified.** `pnpm run typecheck` clean; api-server `pnpm build` + `pnpm test` 2,696 tests, 2,696 pass,
+0 fail; mobile `pnpm test` 8,593 tests, 8,583 pass, 10 skipped, 0 fail (both re-run after the Venn cap
+changed, and again after the whole-branch review fixes). New tests: `diagramGeometry`, `diagramHtml`, `pptxDiagram`, additions to `slideLayout`,
+`pacedReveal`, `deckSlidesHtml`, `promptSlidesPrompt`, `promptSlidesPolish`, `deckChecks`,
+`lessonTeachingPrompt`, `lessonSlides`, `generationKey`. The visual checks above.
+
+**Not verified.** **No live model has chosen or filled any of this.** The OpenAI key in the session that
+built it lacks the `model.request` scope, so no deck was generated: whether the model picks a cycle
+where it fits, keeps to the limits, uses the Slides Maker extras well (or whether a Unsplash phrase
+finds a good photo) is unknown; the first measure is a Prompt Slides run and the `lesson-teaching
+visuals` log line. PowerPoint's own rendering: the XML was read, never opened in PowerPoint, Keynote
+or Google Slides (the Venn set ellipses rely on having no fill element to be transparent outlines).
+Native devices, a clicker and screen readers. The presenter's labels and arrows were looked at in
+Chromium only, with the Almarai and Readex Pro fonts installed on the machine for the PDF.
+
+## Review of messaging and exams: whole-number marking, broadcast unread, report length — 2026-10-30
+
+**Asked:** review messaging with parents and students, and exams and evaluations, now that the app
+has real users. Two read-only reviews of the code plus the full test suites; this PR fixes the
+three findings that were small, confirmed and safe to change. The rest are listed below, unfixed.
+
+**Fixed.**
+- **A decimal key accepted a whole number, and a whole key a decimal** (`answersMatch`,
+  `modules/assessment/normalize.ts`). With no decimal places on one side the rounding tolerance
+  became half a unit: key `0.5` marked `0` and `1` correct, key `2.5` marked `2` and `3`, key `3`
+  marked `3.4`. `fill_blank` grades this with no teacher in the loop. A side with no decimals is
+  now matched only when numerically equal; decimal-against-decimal rounding (`0.3333` vs `0.333`)
+  is unchanged. Papers already marked are **not** re-marked: a teacher's re-submit re-grades the
+  machine marks, and nobody has measured how many past marks were affected.
+- **A broadcast, and a results or homework line in the class chat, marked the teacher's thread
+  read** (`routes/messaging.ts`, `lib/classThread.ts`). A parent's reply the teacher had not opened
+  dropped out of the unread count and the app-icon badge. Unread already skips the viewer's own
+  messages, so the read mark was never needed.
+- **A chat report's `reason` had no length limit** (now 1000 characters, 400 `too_long`). The app
+  sends only preset reason keys, so no client change.
+
+**Verified:** typecheck clean; API suite 3064/3064 against a throwaway local Postgres (new tests:
+`grading.test.ts`, `broadcastUnread.db.test.ts`, `reportReasonLimit.db.test.ts`, each seen to fail
+before the fix). Mobile suite 8254 pass, 10 skipped, 0 fail (not re-run after this change; it
+touches no mobile file). **Not verified:** nothing was run against production.
+
+**Found and not fixed (from the reviews; read from the code, not all reproduced):**
+- Unlinking a parent or student removes them from class chats only; direct chats and custom groups
+  stay open (documented in `routes/roster.ts`, but the unlink dialog does not say so).
+- Large broadcasts: pushes go one at a time under a 4 s cap, and a retry after a timeout re-sends
+  to everyone already reached (no idempotency key).
+- Question generation into an exam is not atomic: an app timeout and a second tap can double the
+  paper; a model `marks` over 999.99 fails after the old questions were already removed.
+- Shared device: the next student opening the same exam link resumes the previous student's sitting.
+- `evaluations.timeLimitMin` is never set by any route or screen, so every exam is untimed, and
+  `examDate` gates nothing; the share link expires 7 days after publishing.
+- A published exam's questions cannot be edited, so a wrong key can only be corrected by hand-marking.
+- Share codes are about 30 bits; matching-question ids may reveal the pairing; a student can see
+  marking progress through `/take/attempt/state`; a teacher answer write can overwrite a submitted
+  answer; non-UUID ids return 500 instead of 400 on several routes.
+- A block does not stop the blocked person posting to a teacher, though the dialog says it does.
+
+## Unsubscribe in every email, and 18+ for teachers and parents — 2026-10-30
+
+**Asked:** an unsubscribe button in every email we send, and terms that say teachers and parents
+are 18 or older, with a review of the legal obligations around both.
+
+**Every mail has an unsubscribe link.** All seven senders in `artifacts/api-server/src/lib/email.ts`
+(sign-up code, password-reset code, Google sign-in notice, admin content-report notice, app invite,
+parent-approval request, waitlist broadcast) now leave through one `deliver` path that adds a
+bilingual footer link and the RFC 2369 / RFC 8058 headers (`List-Unsubscribe`,
+`List-Unsubscribe-Post`), so Gmail's and Outlook's own button works too. The broadcast keeps its
+per-row waitlist link. The link is `GET|POST /api/email/unsubscribe?t=` (`routes/emailPreferences.ts`):
+GET asks, POST unsubscribes (a mail scanner pre-fetching links unsubscribes nobody), and the
+confirmation offers an undo (`POST /api/email/resubscribe`). The token is the address
+**encrypted** (AES-256-GCM under a key derived from `SESSION_SECRET`), not `?email=…&sig=…`,
+because the query string lands in Cloud Run's request log; GCM makes it unforgeable. With no
+secret (tests, scripts) the footer and header fall back to `mailto:info@iqrra.com?subject=unsubscribe`.
+
+**What unsubscribing stops.** A new table, `email_suppressions` (migration 0020, one row per
+lowercased address, owner connection only — RLS on, no policy, no `iqraa_app` grant, LOCKED in
+`rlsCoverage.test.ts`; `lib/emailSuppression.ts` is on the systemDb list). It stops every
+`general` mail: app invite, parent-approval request, admin notices, and the broadcast (left out
+and counted as `skipped`; the admin screen shows it). It does **not** stop the three `security`
+mails — a code someone just asked for on that address — because withholding them locks a person
+out of their own account with nothing on screen saying why; their footer says so instead of
+promising what the button does not do. Transactional mail of that kind is outside CAN-SPAM's
+and GDPR/ePrivacy's opt-out rules. **This is a product choice, not a legal necessity: if you want
+an unsubscribed address to get no sign-up codes either, it is the `kind` on three calls.** The
+waitlist link (`/site/unsubscribe`) now also adds the address to the list, because its page
+promised «لن تصلك رسائل أخرى», and the admin invite refuses an address on either list (409).
+Fails closed: an unreadable list sends no general mail, and a production server whose list was
+never registered refuses general mail (`email.ts` cannot import the database and stay loadable
+under `node --test`, so the check is handed in by `lib/emailSuppression.ts`, which the router
+imports).
+
+**18+ for teachers and parents.** Terms §1 (both languages) said «age of majority where you
+live»; it now says a teacher or a parent must be 18 or older, confirms it at sign-up, and an
+under-18 teacher/parent account may be suspended or deleted. Students keep the existing rule
+(code from a teacher, or a parent's agreement). The sign-up checkbox for a teacher or a parent —
+and with no role picked, which the server treats as a teacher — now reads «أُقرّ بأنّ عمري 18 سنة
+أو أكثر، وأوافق على شروط الخدمة وسياسة الخصوصية» (`registerAdultAgreePrefix`); a parent signing
+up with a teacher's code sees the same box (`CodeSignupForm` renders `agreements`). The login
+screen's Google notice adds «وتُقرّ إن كنت معلّمًا أو وليّ أمر بأنّ عمرك 18 سنة أو أكثر».
+`LEGAL_VERSION` is `2026-10-30.b`, so an account made from now on records that it accepted the
+wording with the 18+ clause; no new column — the version names the wording.
+
+**Privacy policy, from the same review.** §2 says what we email and how to stop it; §4 lists
+**Resend** (it sends every mail and was missing from the processors); §5 says teachers and parents
+confirm 18+; §6 says an unsubscribed address is kept, alone, on a do-not-email list even after the
+account is deleted, until undone or removed on request.
+
+**Verified:** `pnpm run typecheck`; api-server `pnpm build` + `pnpm test` (2,695 pass, including
+the new `emailUnsubscribe.test.ts` — every sender carries a link that reads back as its
+recipient, general mail stops and security mail does not, an unreadable list and an unregistered
+production list send nothing — and `mountOrder.test.ts`, the route answers 400 to a forged token
+with no session); mobile `pnpm test` (8,208 pass). The verification and parent-approval mails
+were rendered to HTML and looked at in Chromium. **Not verified:** a real send through Resend, a
+real one-click unsubscribe from Gmail, the migration against Neon (CI applies it to an empty
+Postgres), and the RLS suite locally (no database here). **Not legal advice** — `legal.ts`'s own
+caveat stands.
+
+**Not done, for a decision:** existing accounts accepted the old «age of majority» wording and are
+not asked again (re-acceptance is a separate flow, `termsAcceptance.ts`); and the Site_Iqra
+waitlist form is a separate repo, untouched.
+
+## /play hub: filter the games by subject and by grade — 2026-10-30
+
+The hub listed all 16 games with no way to narrow them. It now has two chip rows
+above the cards, **Subject** (All, Maths, Arabic, English, Science, Geography,
+Focus & memory) and **Grade** (All, 1–10), one choice in each, combined with AND,
+with a count line («لعبتان» / "2 games") and, when nothing matches, a card with
+«إزالة التصفية».
+
+- **Where it lives.** `services/publicGames/hubFilter.ts` (pure): `PLAY_GAME_SUBJECT`
+  is a `Record<PlayGameId, PlaySubject>`, so a new game without a subject fails
+  typecheck; `filterGames` keeps the hub's own order; a grade matches when it falls
+  inside any of the game's ranges from `PLAY_GAME_GRADES` (English is Grades 1–4
+  and 9–10, so Grade 5 does not show it). The screen reuses the generator's
+  `ChipGroup` in `single` mode with an «All» chip, so the chips are a radio group
+  (`role=radio`, `aria-checked`) and the tick means the state is not colour alone.
+- **The URL carries it.** `/play?subject=math&grade=6` opens filtered, every chip
+  press mirrors back with `router.setParams`, and «All» removes the param. The
+  filter is read from the URL once, at mount. A subject or grade that is not on the
+  chip list (`?subject=history`, `?grade=11`, `?grade=5.5`) is dropped, never
+  trusted, so an old or edited link shows the whole hub rather than an empty one.
+- **Subject choices** (a judgement, not measured): Maths — multiply, divide, add,
+  subtract, which number, compare fractions; Arabic — opposites, plurals; English —
+  the English corner; Science — elements, states of matter; Geography — flags,
+  capitals, governorates; Focus & memory — memory, colours.
+- **Verified:** `playHubFilter.test.ts` (8 tests: every game has a subject, every
+  subject chip and every grade 1–10 chip shows at least one game, the grade rule
+  checked against the ranges, AND, bad URL params, a round trip through the
+  params); typecheck; the mobile suite. In Chromium against the dev server:
+  deep link, choosing and clearing chips (the URL followed each one and a reload
+  restored it), the empty state, Arabic and English, light and dark, 390 px and
+  1280 px, no console errors.
+- **Not verified / limits.** Nothing was run on a native build, so
+  `router.setParams` on a phone binary is untested (it is the same call the maths
+  exercises screen makes). On a phone the two rows take about 280 px before the
+  first card; a collapsed «filter» button would be tighter, and was left out to keep
+  the first version plain. The count line is announced politely (`aria-live`) but
+  was not heard with a screen reader. The hub's analytics are unchanged: choosing a
+  filter is not tracked.
+
+## /play games: a why line, sound and haptics, motion, personal best with retry, and a Jordan map — 2026-10-30
+
+Five changes to the public games (`/play`, no login), built as seven commits on top of `690c2bb` (spec and plan):
+`7285def`, `f27ff80`, `5eb7a29`, `e549686`, `bb043c3`, `2dc756b`, `da085e9`; then one commit for what the browser check
+found (below), and this entry.
+
+**Built.**
+1. **A one-line «why» under every revealed answer** in the six text games (antonyms, plurals, which-number, compare
+   fractions, states of matter, governorates). For the two maths games the line is **computed** in latin and converted at
+   display time (which-number: the divisibility fact; fractions: both fractions as decimals, `=` or `≈`, printed left to
+   right through `forceLtr`). Flags, capitals and element symbols have no why line; they have nothing to say beyond the key.
+2. **Answer sound and haptics, with a mute button** (`services/playFeedback.ts`, speaker icon in the header). A right answer
+   plays the Class Challenge's existing `correct.wav`, a wrong one a new quiet two-note `wrong.wav` (made by
+   `scripts/make-wrong-cue.ts`); phones also get a light tap or a soft warning. The mute covers both and is remembered
+   (`@iqra_play_sound_off_v1` in AsyncStorage). It is on every `TriviaBoard` game: flags, capitals, elements, the six text
+   games, and the lesson games «مصطلح من الدرس» and «ما معنى المصطلح؟».
+3. **Answer motion and a streak chip** (`AnswerOption.tsx`): the right option swells once, a wrong pick shakes once, nothing
+   moves under reduced motion; from two right in a row a flame chip shows the streak.
+4. **A personal best, and «retry the ones you missed»** (`services/publicGames/bestScore.ts`). The game-over panel prints
+   «أفضل نتيجة: 6 من 8» (and «رقم قياسي جديد!» when it was beaten) and, after any miss, a button that replays only the misses.
+   (Progress, score, streak and best print Latin digits, as the existing `playScoreLabel` always has; see the known limits.)
+   **A retry round is practice**: it never records a best and is never reported to a teacher (see the deviations).
+5. **A map of Jordan after each governorates answer** (`JordanMap.tsx`, react-native-svg): the right governorate lit in the
+   game's accent, a wrong pick outlined in red, a credit line under it.
+
+**Size added.** `git diff --stat 690c2bb..HEAD` (before the fixes commit): 36 files, +1093 −56 lines, of which 399 lines are tests.
+Shipped in the app: `assets/sounds/wrong.wav` **15,040 bytes** and `services/publicGames/jordanMapData.ts` **12,362 bytes** (the
+12 simplified paths) — about 27 KB, no new dependency and no native module (`expo-audio`, `expo-haptics`,
+`react-native-svg` were already there), so `app.json`'s `version` did not move. The source GeoJSON,
+`scripts/data/jordan-adm1-geoboundaries.geojson`, is **54,979 bytes** and is **not shipped**: it lives in `scripts/`, only
+`scripts/build-jordan-map.ts` and `jordanMapData.test.ts` read it (the test fails if the committed paths differ from what the
+script makes from it).
+
+**Map data attribution.** geoBoundaries (geoboundaries.org) gbOpen, Jordan (JOR) ADM1, simplified, release commit `9469f09`
+of wmgeolab/geoBoundaries. Licence Creative Commons Attribution 2.5 Generic, derived from Wikimedia Commons. **Data year
+2006**; the 12 governorates have not changed since 2001. The game shows the credit (`playMapCredit`) and
+`scripts/data/README.md` records the source and how to regenerate.
+
+**Verified.**
+- `pnpm run typecheck` clean. Mobile suite after the fixes: **8238 tests, 8228 pass, 0 fail, 10 skipped** (the same 10
+  pre-existing `searchKB` skips; the baseline on `main` was 8196). New test files: `answerMotion`, `bestScore`,
+  `feedbackPrefs`, `gameShellOverlay`, `jordanMapData`, `jordanMapWiring`, `playBestWiring`, `playFeedbackWiring`,
+  `playGameExplanations`, `wrongCue`.
+- **A real browser** (Chromium through the `playwright` library, against `pnpm run dev:mobile:web`), 2026-10-30, driven by a
+  script that reads each option's correct flag off the React tree so it can answer right or wrong on purpose. Seven boards
+  — flags, governorates, fractions, which-number, states of matter, antonyms, capitals — each played from the first question
+  to game over (right and wrong answers, a streak of 3, six of eight right), then «retry the ones you missed» (replays exactly
+  the two misses, «سؤال 1 من 2», no best line, no «new best», the stored best unchanged), then «Play again» (a full
+  eight-question round again). 42 runs: 390×844 and 1280×800, light and dark, Arabic; English at 390 light and 1280 dark.
+  Also looked at: elements (phone, light and dark) and the lesson term-spot game (phone, light and dark; the lesson-meaning
+  game was not opened, the lesson tried has no glossary); the mute button
+  (the icon and `aria-pressed` toggle, `@iqra_play_sound_off_v1` is `1` and the button is still muted after a reload, and no
+  `.wav` is requested while muted; unmuted, `wrong.wav` and `correct.wav` are requested); 360×640 with explanation and map
+  showing (the board scrolls, «التالي» is reachable) and the game-over panel there; 320×568 for the game-over panel.
+  Fractions print «٢/٧ ≈ ٠٫٢٩» left to right, not mirrored, in Arabic. The tick and cross icons at 24 px (`ICON.xl`) sit well in
+  the options; they were left as is. The speaker sits beside the score badge in both directions. In dark mode the lit
+  governorate and the flame chip are visible. No console errors after the fixes.
+- Looking at it found three defects, fixed in the commit after those seven (see the deviations below).
+
+**Not verified.**
+- **Sound and haptics were not heard or felt.** All that was confirmed is that answering does not throw and that the browser
+  requests `correct.wav` / `wrong.wav` (and none when muted). Whether `wrong.wav` is pleasant, and its loudness next to
+  `correct.wav`, nobody has judged. The haptics code path only runs off the web, so it was not run at all.
+- **Nothing was run on a device or a native build** (iOS, Android, `expo-audio` on native, `expo-haptics`, react-native-svg
+  native, the Android keyboard and gesture behaviour of the now-scrollable board). Shake and swell were seen in code and as
+  the final frame of a screenshot, not as motion.
+- The Arabic «why» sentences of the hand-written games were read by the author and the reviewer, and the new `play…` strings
+  went through an Arabic copy review at the end (two changed: the streak chip now reads «3 على التوالي» instead of «3 متتالية»,
+  which had no noun, and a new best reads «رقم قياسي جديد!» instead of «نتيجة جديدة!»), but no teacher has read them.
+- **After the game-over panel became a `ScrollView`, these other `GameShell` games were played to their game-over panel in a
+  browser** (390×844 and 320×568, light and dark, Arabic, no console errors): memory (`/play/memory`), colours, the
+  multiplication drill (`?secs=30`), the lesson memory game on an English lesson, and the lesson letter-scramble game on a maths
+  and an English lesson. The
+  panel is centred where it fits and scrolls at 320×568, with the signup card reachable after scrolling. **Not looked at:** the
+  add, subtract and divide drills (same component as multiply), the lesson-meaning game, a game-over panel with the homework
+  «sent to the teacher» footer, and anything on a device.
+- The map's governorate shapes were checked by eye against the names (Ajloun small in the north-west, Ma'an and the east
+  large), not against a second source.
+
+**Known limits.**
+- **Sound defaults to on**, including on the web, where the first tap is what lets audio play (answering is a tap).
+- **The board is now a `ScrollView`, which changes the layout of every `TriviaBoard` game** (flags, capitals, elements, the
+  six text games and the lesson games), not only the new ones: «التالي» sits under the content and under the map, so on a
+  short phone it is reached by scrolling.
+- **The game-over panel is a `ScrollView` for every `GameShell` game**, not only the trivia boards: memory, colours, the four
+  drills, the lesson memory and scramble games (so also an English lesson's) and the trivia boards. It looks the same where it
+  fits, and scrolls where it does not (it used to be cut off); `gameShellOverlay.test.ts` pins the shape (`flexGrow`, not
+  `flex: 1`, on the content container).
+- **Progress, score, streak and best print Latin digits** («سؤال 1 من 2», «6 من 8», «3 على التوالي»): `getT` does not convert
+  digits and the new strings interpolate raw numbers, as `playScoreLabel` always has. The which-number game's options and why
+  line, and the fractions' decimals, are Arabic-Indic. The mix predates this work and was not changed.
+- **The answer cue can ring through the iOS silent switch.** `playGameCue` (`services/gameSounds.ts`) sets
+  `playsInSilentMode: true` the first time it plays: the Class Challenge's existing choice, now also used by `/play`. Not
+  checked on a device.
+- **A best is per game and per device** (`@iqra_play_best_v1:<title key>`), and per lesson for the lesson games
+  (`…:<title key>:<lessonId>`); it is compared by share right (score over total), and only a full round records one.
+  It is not synced and not shown to a teacher. A best an older build kept under another key, if any
+  game did, is not migrated.
+- **A retry replays the same questions in the same option order**, so a child can answer by position; it is practice, not a
+  test. It is never reported to a teacher (`onFinished` is not passed for it, and `game_finished` carries `retry: '1'`).
+- A perfect retry (2 of 2) does not play the «full mark» celebration (`perfect` is false for a retry round); the small
+  game-over celebration still plays.
+- The streak chip shows from two in a row and exists on `TriviaBoard` games only; the maths drills, memory, colours and
+  scramble are unchanged.
+
+**Deviations from the plan, during the build.**
+- **The retry round reported itself (found in review, fixed in `bb043c3`).** The first version of retry passed the same
+  `onFinished` as a full round, so a homework lesson game would have posted «2 من 2» for a child who had missed two of eight
+  (a perfect ratio), and the server keeps the higher ratio. A retry round now never calls `onFinished`, never records a best and sends no
+  status footer. The same commit moved the lesson games' best from one per game to one per lesson.
+- **The map was unreadable (`da085e9`).** Unlit governorates were card on card (about 1.2:1), so only the lit one showed.
+  They now take `colors.muted` with a `mutedForeground` outline, the map is sized from its viewBox ratio instead of a fixed
+  height, the wrong pick's red outline is drawn last so a shared edge cannot cover it, and the credit names Wikimedia Commons
+  as well as geoBoundaries.
+- **Two build scripts had `import.meta.url` main-guard typing errors** (`build-jordan-map.ts`, `make-wrong-cue.ts`), fixed
+  in the same commits that added them.
+- **Three things only a browser showed (the fixes commit).** (1) `JordanMap` put `accessible={false}` on the `Svg`;
+  react-native-svg passes it to the DOM on web and React logged a console error on every governorates answer. The
+  decorative flags now sit on the wrapping `View`, and `jordanMapWiring.test.ts`, which pinned `accessible={false}`, now
+  pins the three props that hide the map and rejects `accessible=` (it failed before the fix). (2) The progress row was 16 px
+  tall and 25 px with the streak chip, so the question dropped 9 px mid-game; it now has a `minHeight` that holds the chip.
+  (3) The game-over panel was a fixed `View`; with the best line and the retry button it was cut off at the top and bottom
+  on a 320×568 phone (the trophy under the header, the teacher signup card unreachable). It is now a `ScrollView`.
+  `designScale.test.ts` needed no change.
+
+
 ## Slides: the class's turn, spot the mistake, and one point at a time — 2026-10-30
 
 A deck looked good and still ran as a lecture: Prompt Slides asked for every concept slide
@@ -1384,6 +2496,38 @@ CORS allows only `www.iqrra.com` and `iqrra.com`, so a preview only ever shows t
 - Rollback: delete the `<link href="/ask.css">` and `<script src="/ask.js">` lines from
   `Site_Iqra`'s `index.html` (or revert the merge); the API is unaffected. To keep the API but stop
   AI spend, set `SITE_BOT_BUDGET_USD_DAILY=0` (fixed answers keep working).
+
+## Thirty-sixth live pass: wordings of answers that existed, 2026-10-28
+
+**Why.** A 36-question pass on app.iqrra.com of what a teacher asks while using the app got 14 in-app answers, 5 of
+them wrong («which subject?» for «كيف أحسب معدل الطالب», «Can a student retake an exam», «Can I schedule an exam for
+later», «هل يوجد أسئلة للطلاب المتفوقين», and «which lesson?» for how long a lesson plan takes), and 22 sent to the
+model. **Almost none needed a new answer:** 17 of the 22 already had one (`howAttendance`, `howExamRetake`,
+`howExamTime`, `howQuranAbout`, `howLabAbout`, `howGamesList`, `howRemedial`, `howReissueLoginCode`…); the question
+was phrased as a yes/no («هل يوجد…»), which the keyword places only answer behind a how/where word. Check
+`i18n.ts` for an existing `how*` before writing one.
+
+**Built.** Anchored wordings (ar + en) on 16 existing places, and two new answers that say what the app does not do:
+
+- `howExamCheat` — nothing prevents or watches for cheating. Checked by absence: no `visibilitychange` / `AppState` /
+  fullscreen / selection lock anywhere in `app/`, `services/` or `components/`, no shuffle (`howExamShuffle`), and no
+  server timer (below).
+- `howExamSchedule` — no scheduled publish. `evaluations` has no opens-at column; `examDate` is selected into the
+  student rows for display and gates nothing; the PATCH takes only `classGroupId` / `examDate` / `examTime`.
+
+**A schema column that looks like a feature.** `evaluations.time_limit_min` exists and the student exam path reads it
+(`examDeadline`), but **nothing writes it**: the create and PATCH routes never set it, so `howExamTime` («no exam
+duration setting») is right and this pass kept it.
+
+**Left with the model on purpose.** «كيف أحدد مدة الامتحان» and «كيف أمنع الطلاب من الغش» stay pedagogy questions
+(an existing test pins them); only the yes/no and feature forms («هل يمكن تحديد مدة للاختبار», «هل يمنع التطبيق
+الغش») reach the answers. Not answered: «send students a homework reminder» (a day-before push exists, but its
+Cloud Scheduler job is a manual one-time setup I cannot see from here, so I cannot say it is on), «does it support
+maths equations» and «how long does a lesson plan take» (nothing specific to say).
+
+**Verified.** `appHelp.test.ts`: 28 phrasings, 6 near-misses and the wording of the two new answers. The 813 historic
+questions answer identically (0 changed). Not yet seen live; re-run the 36 after the deploy (the allowance is still
+spent, so only the app path can be seen).
 
 ## Thirty-fifth live pass: «only Jordan», 2026-10-28
 

@@ -50,17 +50,20 @@ export const PLURAL_PAIRS: PluralPair[] = [
 
 const ALL_PLURALS = PLURAL_PAIRS.map(p => ({ id: p.pluralAr, label: p.pluralAr }));
 
-function buildQuestion(pair: PluralPair, rng: () => number): TextQuestion {
+function buildQuestion(pair: PluralPair, lang: 'ar' | 'en', rng: () => number): TextQuestion {
   const correct = { id: pair.pluralAr, label: pair.pluralAr };
   return {
     promptKey: 'playPluralsPrompt',
     subject: pair.ar,
     options: withDistractors(correct, ALL_PLURALS.filter(o => o.id !== pair.pluralAr), 3, rng),
     correctId: correct.id,
+    explanation: lang === 'ar'
+      ? `جمع «${pair.ar}» هو «${pair.pluralAr}»`
+      : `The plural of «${pair.ar}» is «${pair.pluralAr}»`,
   };
 }
 
-/** `count` questions, each on a different word. `lang` is accepted for the shared game signature; the content is always Arabic. */
-export function buildPluralRound(_lang: 'ar' | 'en', count: number, rng: () => number = Math.random): TextQuestion[] {
-  return shuffle(sample(PLURAL_PAIRS, count, rng), rng).map(p => buildQuestion(p, rng));
+/** `count` questions, each on a different word. The word and options are always Arabic; `lang` only localises the explanation line. */
+export function buildPluralRound(lang: 'ar' | 'en', count: number, rng: () => number = Math.random): TextQuestion[] {
+  return shuffle(sample(PLURAL_PAIRS, count, rng), rng).map(p => buildQuestion(p, lang, rng));
 }

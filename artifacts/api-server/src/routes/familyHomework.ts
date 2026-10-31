@@ -90,6 +90,10 @@ async function mark(req: AuthenticatedRequest, res: Response, done: boolean): Pr
       res.status(404).json(NO_HOMEWORK);
       return;
     }
+    if (result === "submission_required") {
+      res.status(409).json({ error: "This homework is done by handing in the project", code: "submission_required" });
+      return;
+    }
     res.json({ done });
   } catch (err) {
     logger.error({ err }, "student homework done failed");

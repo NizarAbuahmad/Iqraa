@@ -63,7 +63,7 @@ export const DECK_ICON_NAMES = [
  * `concepts` is on the list so a saved deck round-trips, but the prompt does not
  * teach it: only Slides Maker's own builders write that one.
  */
-export const DECK_LAYOUT_NAMES = ["statement", "stat", "compare", "steps", "timeline", "stats", "table", "flow", "quote", "photo", "concepts"] as const;
+export const DECK_LAYOUT_NAMES = ["statement", "stat", "compare", "steps", "timeline", "stats", "table", "flow", "quote", "photo", "concepts", "cycle", "tree", "venn", "mindmap"] as const;
 const LAYOUT_SLIDE_TYPES = ["intro", "summary", "reveal"];
 
 /** Charts the prompt asks for at most; the server keeps three before it cuts. */
@@ -172,7 +172,40 @@ export function scopeLine(b: any, isAr: boolean): string {
     : `\nThis teacher usually teaches: ${both}. Use that to pitch the language and examples, but if the description names a different grade or subject, the description wins.`;
 }
 
+/** The four drawn-diagram shapes whose limits both slide prompts state. */
+export type DiagramShape = "cycle" | "tree" | "venn" | "mindmap";
+
+/**
+ * The limit sentences for the four diagram shapes, in Arabic: what the app's
+ * gate (`resolveSlideLayout` in the app's `slideLayout.ts`) accepts, written once.
+ *
+ * Prompt Slides and the Slides Maker explanation prompt both print these, so a
+ * limit changed here moves in both. The app drops, without a word, any drawing
+ * over a limit, so a prompt that does not say the limit gets its drawings thrown
+ * away. Each sentence is the tail of its shape's bullet (the shape's name and
+ * JSON come before it), so it carries no leading label.
+ */
+export function diagramLimitsAr(): Record<DiagramShape, string> {
+  return {
+    cycle: "من ٣ إلى ٦ مراحل، واسم المرحلة حتى ٢٤ حرفًا والتوضيح حتى ٦٠؛ أسماء المراحل كلها مختلفة (التكرار يُرفض)",
+    tree: "من ٢ إلى ٤ فروع، ولكل فرع حتى ٤ أوراق؛ الأصل حتى ٣٢ حرفًا والفرع والورقة حتى ٢٤؛ أسماء الفروع كلها مختلفة وأوراق الفرع الواحد مختلفة (التكرار يُرفض)",
+    venn: "اسم المجموعة حتى ٢٤ حرفًا. في مجموعتين حتى ٤ عناصر لكل منطقة وكل عنصر حتى ٣٢ حرفًا، وفي ثلاث مجموعات حتى ٣ عناصر قصيرة لكل مجموعة وعنصران مشتركان على الأكثر، وكل عنصر حتى ١٦ حرفًا. أسماء المجموعات مختلفة (التكرار يُرفض)، ولا بدّ من عنصر واحد على الأقل في مكان ما",
+    mindmap: "من ٣ إلى ٦ عقد، والفكرة والعقدة حتى ٤٠ حرفًا، ونصوص العقد كلها مختلفة (التكرار يُرفض)",
+  };
+}
+
+/** The same limits as `diagramLimitsAr`, in English. */
+export function diagramLimitsEn(): Record<DiagramShape, string> {
+  return {
+    cycle: "3 to 6 stages; a label up to 24 characters, a note up to 60; all stage labels different (repeats are refused)",
+    tree: "2 to 4 branches, up to 4 leaves each; the root up to 32 characters, a branch or leaf up to 24; all branch labels different, and the leaves within one branch different (repeats are refused)",
+    venn: "a set label up to 24 characters. With two sets, up to 4 items per region and each item up to 32 characters; with three sets, at most 3 short items per set and 2 shared, each up to 16 characters. Set labels must all be different (repeats are refused), and at least one item must be given somewhere",
+    mindmap: "3 to 6 nodes, the centre and each node up to 40 characters, all node texts different (repeats are refused)",
+  };
+}
+
 export function promptSlidesPromptAr(b: any): string {
+  const limits = diagramLimitsAr();
   return `أنت مصمّم عروض تعليمية خبير. معلّم طلب عرضًا شرائحيًا ووصفه بكلماته:
 
 "${b.additionalContext ?? ''}"
@@ -295,8 +328,13 @@ ${slideCountLine(b, true)}
 - "stats": ٢ إلى ٤ أرقام حقيقية تُعرض معًا. أضف "stats": [{"value":"الرقم، قصير","label":"ماذا يعني"}, ...]. لا تخترع أرقامًا أبدًا. (رقم واحد فقط؟ استخدم "stat".)
 - "table": مقارنة منظّمة بين عدة عناصر على عدة صفات. أضف "table": {"headers":["..",".."],"rows":[["..",".."],["..",".."]]}: من ٢ إلى ٤ أعمدة ومن ٢ إلى ٦ صفوف، وفي كل صف خلية واحدة بالضبط تحت كل عنوان، وكل خلية قصيرة.
 - "flow": عملية أو دورة تُرسم صناديقَ وأسهمًا، من ٣ إلى ٦ مراحل. أضف "flow": {"steps":["..","..",".."],"cycle":false}، واجعل "cycle": true حين تعود العملية إلى بدايتها (دورة الماء، دورة الخلية).
-الأشكال الأربعة الأخيرة: "content" فيها جملة واحدة تلخّص الشريحة (تُستعمل إن تعذّر الرسم)، و"type" يبقى "intro" أو "summary"، ولا يُضاف "mediaPrompt" ولا "visual".
-- "quote": عبارة أو تعريف أو قاعدة تستحقّ أن تُعرض بخط كبير. أضف "quote": {"text":"العبارة، حتى ٢٠٠ حرف","by":"قائلها أو مصدرها، اختياري"}. لا تنسب كلامًا إلى أحد ما لم يرد في الموضوع. "content" و"type" كما في الأشكال الأربعة السابقة.
+الأشكال الأربعة الأخيرة (timeline وstats وtable وflow): "content" فيها جملة واحدة تلخّص الشريحة (تُستعمل إن تعذّر الرسم)، و"type" يبقى "intro" أو "summary"، ولا يُضاف "mediaPrompt" ولا "visual".
+- "cycle": مراحل تعود إلى بدايتها (دورة الماء، دورة الصخور، دورة الخلية). أضف "cycle": {"stages":[{"label":"اسم المرحلة، قصير","note":"توضيح اختياري"}, ...]} ${limits.cycle}.
+- "tree": تصنيف أو تفرّع (أنواع المادة، مجموعات الأعداد، سلطات الدولة). أضف "tree": {"root":"الأصل","branches":[{"label":"فرع","leaves":["..",".."]}, ...]}: ${limits.tree}.
+- "venn": ما تشترك فيه مجموعتان أو ثلاث وما تنفرد به كل منها. أضف "venn": {"sets":[{"label":"..","only":[".."]},{"label":"..","only":[".."]}],"shared":[".."]}؛ ${limits.venn}.
+- "mindmap": فكرة في الوسط تحيط بها أسباب أو نتائج أو أفكار فرعية. أضف "mindmap": {"center":"..","nodes":[{"text":"..","role":"cause"},{"text":"..","role":"effect"},{"text":".."}]} ${limits.mindmap}؛ و"role" اختياري: "cause" للسبب و"effect" للنتيجة.
+هذه الأشكال الأربعة (cycle وtree وvenn وmindmap) كالتي قبلها: "content" جملة واحدة، و"type" يبقى "intro" أو "summary"، ولا "mediaPrompt" ولا "visual". استعملها فقط حين يكون للمحتوى هذا الشكل فعلًا، وما يزيد على الحدّ أعلاه يُرفض الرسم كله.
+- "quote": عبارة أو تعريف أو قاعدة تستحقّ أن تُعرض بخط كبير. أضف "quote": {"text":"العبارة، حتى ٢٠٠ حرف","by":"قائلها أو مصدرها، اختياري"}. لا تنسب كلامًا إلى أحد ما لم يرد في الموضوع. "content" و"type" كما في cycle وtree وvenn وmindmap.
 - "photo": صورة تملأ الشاشة ويعلوها العنوان وجملة واحدة، لشريحة يكون المشهد نفسه فيها هو الفكرة (مكان، ظاهرة، تجربة). "content" جملة واحدة قصيرة، و"type" يبقى "intro" أو "summary"، وأضف "mediaPrompt": عبارة إنجليزية قصيرة للبحث عن الصورة. شريحة أو شريحتان على الأكثر في العرض كله، ولا "visual".
 لا تُلبس أكثر من نصف شرائح الشرح شكلًا خاصًا — التنويع هو المقصود، لا الفوضى.
 
@@ -306,7 +344,7 @@ ${slideCountLine(b, true)}
 
 قواعد إلزامية:
 - كل شريحة بلا استثناء تحمل كائن "teacher" غير فارغ. الشريحة بلا teacher تظهر للمعلّم بزرّ ملاحظات لا يفتح شيئًا.
-- "content" متعدّد الأسطر: افصل بـ \\n وابدأ أسطر القوائم بـ "• ". لا تكتب فقرة واحدة متّصلة، ولا تقلّ أي شريحة عن سطرين — إلا شريحة "statement" وشريحة الغلاف وكل شريحة بشكل "timeline" أو "stats" أو "table" أو "flow" أو "quote" أو "photo"، فهذه سطر واحد عمدًا.
+- "content" متعدّد الأسطر: افصل بـ \\n وابدأ أسطر القوائم بـ "• ". لا تكتب فقرة واحدة متّصلة، ولا تقلّ أي شريحة عن سطرين — إلا شريحة "statement" وشريحة الغلاف وكل شريحة بشكل "timeline" أو "stats" أو "table" أو "flow" أو "quote" أو "photo"، فهذه سطر واحد عمدًا، وكذلك كل شريحة بشكل "cycle" أو "tree" أو "venn" أو "mindmap".
   الشريحة ذات السطر الواحد مرفوضة. إن لم تجد ما تقوله في سطرين فادمج الشريحة مع التي تليها واجعل العرض أقصر — ست شرائح ممتلئة أفضل من عشر أنصاف فارغة.
 - لا تضع "mediaPrompt" على شريحة تحمل "layout" إلا إن كان "photo": تلك الشرائح تملأ الشاشة بشكلها الخاص ولا مكان فيها للصورة.
 - شريحة الشرح فكرة واحدة فقط. إن كان لديك فكرتان فاجعلهما شريحتين.
@@ -322,6 +360,7 @@ ${slideCountLine(b, true)}
 }
 
 export function promptSlidesPromptEn(b: any): string {
+  const limits = diagramLimitsEn();
   return `You are an expert instructional slide designer. A teacher asked for a deck and described it in their own words:
 
 "${b.additionalContext ?? ''}"
@@ -444,8 +483,13 @@ Add a "layout" field to a concept slide when its shape fits; otherwise leave it 
 - "stats": 2 to 4 real figures shown together. Add "stats": [{"value":"the figure, short","label":"what it means"}, ...]. Never invent a figure. (Only one figure? Use "stat".)
 - "table": a structured comparison of several things across several attributes. Add "table": {"headers":["..",".."],"rows":[["..",".."],["..",".."]]}: 2 to 4 columns and 2 to 6 rows, exactly one cell under every header in every row, every cell short.
 - "flow": a process or cycle drawn as boxes and arrows, 3 to 6 stages. Add "flow": {"steps":["..","..",".."],"cycle":false}, and set "cycle": true when the process returns to its start (the water cycle, the cell cycle).
-For the last four shapes: "content" is ONE sentence that sums the slide up (it is what shows if the shape cannot be drawn), "type" stays "intro" or "summary", and there is no "mediaPrompt" and no "visual".
-- "quote": a phrase, definition or rule worth setting in large type. Add "quote": {"text":"the phrase, up to 200 characters","by":"who said it or where it is from, optional"}. Never attribute words to someone the topic does not name. "content" and "type" as for the four shapes above.
+For the last four shapes (timeline, stats, table, flow): "content" is ONE sentence that sums the slide up (it is what shows if the shape cannot be drawn), "type" stays "intro" or "summary", and there is no "mediaPrompt" and no "visual".
+- "cycle": stages that return to the start (the water cycle, the rock cycle, the cell cycle). Add "cycle": {"stages":[{"label":"stage name, short","note":"optional one-line note"}, ...]}, ${limits.cycle}.
+- "tree": a classification or breakdown (types of matter, number sets, branches of government). Add "tree": {"root":"..","branches":[{"label":"..","leaves":["..",".."]}, ...]}: ${limits.tree}.
+- "venn": what two or three sets share and what each has alone. Add "venn": {"sets":[{"label":"..","only":[".."]},{"label":"..","only":[".."]}],"shared":[".."]}; ${limits.venn}.
+- "mindmap": one idea in the middle with causes, effects or sub-ideas around it. Add "mindmap": {"center":"..","nodes":[{"text":"..","role":"cause"},{"text":"..","role":"effect"},{"text":".."}]}, ${limits.mindmap}; "role" is optional: "cause" or "effect".
+These four (cycle, tree, venn, mindmap) work like the ones above: "content" is one sentence, "type" stays "intro" or "summary", no "mediaPrompt" and no "visual". Use one only when the content really has that shape; going over a limit above gets the whole drawing refused.
+- "quote": a phrase, definition or rule worth setting in large type. Add "quote": {"text":"the phrase, up to 200 characters","by":"who said it or where it is from, optional"}. Never attribute words to someone the topic does not name. "content" and "type" as for cycle, tree, venn and mindmap.
 - "photo": a full-screen picture with the title and ONE sentence over it, for a slide whose scene is the idea (a place, a phenomenon, an experiment). "content" is one short sentence, "type" stays "intro" or "summary", and add "mediaPrompt": a short English phrase to search the picture by. One or two in the whole deck, and no "visual".
 Give a special shape to no more than half the concept slides — the point is variety, not chaos.
 
@@ -455,7 +499,7 @@ Icons and charts — structure the deck chooses for itself, not one template for
 
 Mandatory rules:
 - Every slide without exception carries a non-empty "teacher" object. A slide without one shows the teacher a notes button that opens nothing.
-- "content" is multi-line: separate with \\n and start list lines with "• ". Never one unbroken paragraph, and never fewer than two lines on any slide — except a "statement" slide, the cover, and a slide shaped "timeline", "stats", "table", "flow", "quote" or "photo", which are one line on purpose.
+- "content" is multi-line: separate with \\n and start list lines with "• ". Never one unbroken paragraph, and never fewer than two lines on any slide — except a "statement" slide, the cover, and a slide shaped "timeline", "stats", "table", "flow", "quote" or "photo", which are one line on purpose, as is a slide shaped "cycle", "tree", "venn" or "mindmap".
   A one-line slide is rejected. If you cannot find two lines worth saying, merge that slide into the next one and make the deck shorter — six full slides beat ten half-empty ones.
 - Never put "mediaPrompt" on a slide that carries a "layout" unless it is "photo": any other shape fills the screen with its own drawing and has nowhere to put a picture.
 - A concept slide carries exactly one idea. If you have two ideas, make two slides.

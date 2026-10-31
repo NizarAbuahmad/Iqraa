@@ -174,6 +174,8 @@ describe('isNonTeacherRoute', () => {
       '/exam-review/e1',
       '/school',
       '/school/anything',
+      // A homework's project hand-in, opened from a row of «المدرسة».
+      '/homework-project/h1',
       '/profile',
       '/join-class',
       '/claim-required',

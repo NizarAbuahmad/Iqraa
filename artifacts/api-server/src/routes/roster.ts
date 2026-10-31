@@ -26,6 +26,7 @@ import {
   classResources,
   evaluationAssignments,
   evaluations,
+  homework,
   libraryResources,
   parentContacts,
   rosterLinkRequests,
@@ -62,8 +63,10 @@ import {
   renameClassGroupThread,
   resyncClassGroupThreadIfExists,
   syncClassThreadsForStudent,
+  pruneTeacherChatsAfterUnlink,
 } from "../lib/classThread.js";
 import { findLiveClass } from "../lib/classOwnership.js";
+import { purgeSubmissions } from "../lib/homeworkSubmission.ts";
 import { examVisibleTo } from "../modules/assessment/audience.ts";
 import { assignedStudentsByEvaluation } from "../lib/evaluationAudience.ts";
 import { publicUrl } from "../lib/r2.js";
@@ -606,6 +609,25 @@ router.patch("/classes/:id", async (req: AuthenticatedRequest, res) => {
 router.delete("/classes/:id", async (req: AuthenticatedRequest, res) => {
   try {
     const classId = req.params["id"] as string;
+    const [owned] = await db
+      .select({ id: classGroups.id })
+      .from(classGroups)
+      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
+      .limit(1);
+    if (!owned) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+    // Students' project photos are a minor's work. Once the class is archived neither the teacher nor a
+    // student can reach its homework any more (both lookups need a live class), so the photos are removed
+    // FIRST, for every homework of the class, drafts included. A purge that throws answers 500 and leaves the
+    // class live, so the teacher can send the same DELETE again.
+    const classHomework = await db
+      .select({ id: homework.id })
+      .from(homework)
+      .where(and(eq(homework.classGroupId, owned.id), eq(homework.teacherId, req.user!.id)));
+    for (const hw of classHomework) await purgeSubmissions(hw.id);
+
     const [row] = await db
       .update(classGroups)
       .set({ archivedAt: new Date(), updatedAt: new Date() })
@@ -1713,11 +1735,18 @@ router.post("/classes/:id/join-code", async (req: AuthenticatedRequest, res) => 
  *     syncClassThreadsForStudent is called below to rebuild it now rather than
  *     leaving the wrong adult in a thread full of children until the next time
  *     somebody happens to open it.
- *   - Custom groups and any existing direct thread are NOT touched. Those
- *     memberships were a teacher's explicit choice, not a derivation, and
- *     cascading them would silently drop a parent out of "أولياء أمور ١٠-أ"
- *     over a roster correction. Removing them stays a deliberate act, in the
- *     group's own member list.
+ *   - The teacher's direct thread with the account is cut only when this was
+ *     the account's LAST link to any of this teacher's students
+ *     (pruneTeacherChatsAfterUnlink). It exists only for someone connected to
+ *     the teacher and sending checks participation alone, so leaving it let an
+ *     unlinked stranger keep reading and posting. A parent unlinked from one
+ *     child but still linked to another stays in it. If the teacher links them
+ *     again and opens the chat, the same thread comes back.
+ *   - Custom groups are NOT touched here. A group is a list the teacher built
+ *     on purpose, and an unlink is often a roster correction, so cascading
+ *     would silently drop a parent out of "أولياء أمور ١٠-أ". The teacher
+ *     removes someone from a group in the group's own member list. (An account
+ *     withdrawing its own claim, DELETE /auth/claim, does leave the groups.)
  */
 router.delete("/students/:id/links/:userId", async (req: AuthenticatedRequest, res) => {
   try {
@@ -1740,16 +1769,29 @@ router.delete("/students/:id/links/:userId", async (req: AuthenticatedRequest, r
       .delete(rosterLinks)
       .where(and(eq(rosterLinks.studentId, studentId), eq(rosterLinks.userId, linkedUserId)))
       .returning({ id: rosterLinks.id });
-    if (!removed) {
-      res.status(404).json({ error: "That account is not linked to this student" });
-      return;
-    }
-
+    // The link delete commits on its own, so a request that failed after it
+    // (the cleanup below threw) is retried against a link that is already gone.
+    // The cleanup is idempotent, so the retry runs it here too before saying
+    // "not linked", rather than leaving the account in the chats for good.
     // Rebuild every existing class thread this student sits in, so the
     // unlinked account loses its place in them now. One derivation rule, one
     // implementation — and it is a no-op where no chat exists yet, so an
     // unlink does not conjure empty class chats into the teacher's inbox.
-    await syncClassThreadsForStudent(studentId);
+    // Then out of this teacher's direct chat, unless another of their students
+    // still links the account to them. Groups stay: they are the teacher's own
+    // list, edited in the group's member list, and an unlink is often a roster
+    // correction (see pruneTeacherChatsAfterUnlink).
+    const cleanUp = async () => {
+      await syncClassThreadsForStudent(studentId);
+      await pruneTeacherChatsAfterUnlink(linkedUserId, [studentId], { alsoGroups: false });
+    };
+    if (!removed) {
+      await cleanUp();
+      res.status(404).json({ error: "That account is not linked to this student" });
+      return;
+    }
+
+    await cleanUp();
 
     res.json({ removedUserId: linkedUserId });
   } catch (err) {

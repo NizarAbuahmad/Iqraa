@@ -69,6 +69,7 @@ Checked 2026-10-22:
 
 ## Open
 
+- 2026-10-31 — Slides: cycle, tree, Venn and mind-map diagrams; curriculum slides gain shapes, icons, charts and photos (untested against a live model)
 - **Screen recording of everyone is ON for the web app (since the 2026-10-29 re-run of Deploy
   #868) and not yet running on Android.** Web: the Contentsquare tag loads on `app.iqrra.com` (not
   the marketing website) because the `CONTENTSQUARE_TAG_ID` repository **variable** is set; delete
@@ -84,7 +85,9 @@ Checked 2026-10-22:
   its history is out of reach. For Android replay that project needs "Record user sessions" on
   **and a 1.6.0 build made after that change merged** (see Mobile above); web events reach it
   once the site redeploys. Students, parents and exam pages are recorded; the parent consent page
-  is not. The policy (`LEGAL_VERSION` 2026-10-30) was written by a model and **not reviewed by a
+  is not. The homework project screen (`/homework-project`, students' photos of their work) is left
+  out of screen-view tracking (`shouldTrackScreen`), which does not stop a recording already
+  running, and whether masking hides its photos is unverified, like every other screen. The policy (`LEGAL_VERSION` 2026-10-31 now; its recording text dates from 2026-10-30) was written by a model and **not reviewed by a
   lawyer**; Contentsquare's data location was not checked (PostHog's settings say «EU Cloud»),
   and the Contentsquare plan shows a 200K sessions a month cap.
   Entry: «Screen recordings: Contentsquare on the web, PostHog replay on Android» in the log.
@@ -98,14 +101,34 @@ Checked 2026-10-22:
   «Parent approval for email students — server (PR A)».
 - **A student can sign up with an email and no teacher's code (PR #1226, merged 2026-10-24) — the
   legal wording still needs a person to read it.** The privacy policy §5 and terms §1
-  (`constants/legal.ts`, `LEGAL_VERSION` 2026-10-23) say a student may join with an email after
+  (`constants/legal.ts`, since `LEGAL_VERSION` 2026-10-23; 2026-10-31 now) say a student may join with an email after
   confirming they are an adult or have a guardian's agreement. They were drafted, not reviewed by
-  a lawyer, and nothing in the repo records a review since. Merging deploys, so every user is
-  asked to accept that version. The code comment on the store declaration
+  a lawyer, and nothing in the repo records a review since. Merging deploys, and from then new
+  sign-ups record that version; existing accounts are not asked again (there is no re-acceptance
+  flow, checked 2026-10-31: only the three sign-up calls in `context/AuthContext.tsx` send it). The code comment on the store declaration
   (`artifacts/api-server/src/lib/features.ts`) now describes both ways in; **the store declaration
   itself (Play Console) was not checked** and may still say accounts are made only through a class.
   Becoming a student by switching role asks for the same confirmation as signing up as one. Entry:
   «Students choose an email or a teacher's code» in the log.
+- **Unlinking a student account leaves its homework projects on the roster record for whoever is
+  linked next.** A submission belongs to the roster row (`homework_submissions.student_id`), not to
+  an account, and `DELETE /students/:id/links/:userId` (`routes/roster.ts`) touches no submission,
+  so the next account linked to that record sees, and can change, a draft or a handed-in project the
+  previous account made (privacy §1 says so). Deleting the account itself removes them (since
+  2026-10-31). To decide: an author column on the submission, or a purge on unlink. Entry:
+  «Homework project submission — student app» in the log.
+- **An exam's read-aloud recordings outlive the exam's removal and the student's account.**
+  Removing an exam (`DELETE /evaluations/:id`) archives it, and attempts reference the roster row, so
+  neither that nor the student deleting their account deletes the recordings in R2 (privacy §6
+  says so). They go only with a re-take, a quiz retake, the teacher deleting the attempt, or the
+  teacher's account. To decide: purge them on archive and/or with the student's account.
+- **Uploaded images keep the metadata the device wrote, which can include where a photo was
+  taken.** The client re-encodes a photo only when it shrinks it (long edge over 1600 px): on the
+  web through a canvas, which writes no metadata; on a phone through `expo-image-manipulator`,
+  whose output was not checked for metadata. A smaller photo, or one whose resize fails, is sent as
+  its file's own bytes, and the server stores them as received. That covers
+  project photos, chat images and lesson media. Privacy §1 now says an attached image may carry its
+  own metadata. To do: strip EXIF/GPS on the server, or always re-encode on the client.
 - **Neon is on Launch (applied 2026-10-23 by the owner); two checks remain.** Autoscaling 0.25-0.5
   CU, scale to zero on: about $10 a month expected, about $39 at most (estimates; read Neon's
   Usage page weekly for a month). Check `pooled` on `GET /api/healthz/pool` (admin key) once this
@@ -120,8 +143,11 @@ Checked 2026-10-22:
   and Crashlytics is enabled in the Firebase console (project `iqraa-95dd1`) **(notes — the owner
   said so; not checked)**. Not verified: which build is installed on a phone, that a crash
   actually appears in the console, and that the OTAs published since #1115 (all runtime 1.5.0)
-  reach a device. The API has no error-reporting service; it keeps its own log
-  (`/healthz/errors`, admin key) and Cloud Run logs.
+  reach a device. **API errors:** since PR #1238 (2026-10-24) the API logs in Cloud Logging's
+  shape (`severity`, `stack_trace`, `serviceContext`) and the Error Reporting API is enabled on
+  `iqraa-auth-507315`. Checked 2026-10-30: production error entries carry `stack_trace`. Not
+  checked: that the Error Reporting page groups them. `/healthz/errors` (admin key) and Cloud
+  Run logs still work.
 - **Row-level security is switched on in production** (`RLS_ENFORCE=on` on `iqraa-api`, set by the owner;
   PR #1048, migration `0008`). The last switch-on was 2026-10-27 about 21:16 on the owner's clock, revision
   `iqraa-api-00456-7md`; the owner reported the teacher inbox, a chat message, the parent's notification and

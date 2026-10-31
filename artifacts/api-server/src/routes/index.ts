@@ -19,12 +19,14 @@ import examCalendarRouter from "./examCalendar";
 import evaluationsRouter from "./evaluations";
 import attemptsRouter from "./attempts";
 import guardianConsentRouter from "./guardianConsent";
+import emailPreferencesRouter from "./emailPreferences";
 import studentAttemptRouter from "./studentAttempt";
 import studentExamsRouter from "./studentExams";
 import liveRouter from "./live";
 import liveHostRouter from "./liveHost";
 import familyScheduleRouter from "./familySchedule";
 import familyHomeworkRouter from "./familyHomework";
+import homeworkSubmissionsRouter from "./homeworkSubmissions";
 import mathPracticeRouter from "./mathPractice";
 import studentLessonExplanationRouter from "./studentLessonExplanation";
 import mediaRouter from "./media";
@@ -114,6 +116,9 @@ router.use(attemptsRouter);
 // both ways: reachable without a token, and not having made anything else so.
 // The parent's approval page: public (the parent has no account), every path under /guardian-consent, rate limited.
 router.use(guardianConsentRouter);
+// The unsubscribe link in every email: public (the recipient may have no account), every path under /email/, rate
+// limited, the encrypted token is the credential. Importing it also registers the unsubscribe list with the senders.
+router.use(emailPreferencesRouter);
 router.use(studentAttemptRouter);
 // Live (Kahoot-style) games. /live/* is the players' side — public like /take,
 // token-authenticated and rate-limited inside the router, with every limiter
@@ -131,6 +136,9 @@ router.use(familyScheduleRouter);
 // «الواجبات» for students and parents — path-scoped to /student/homework and
 // /parent/homework; students may tick off, parents only read.
 router.use(familyHomeworkRouter);
+// A student's project for a homework that asks for one; teacher and parent reads are added to
+// the same router. Path-scoped guards inside (/student/homework, /parent/homework, /homework).
+router.use(homeworkSubmissionsRouter);
 // Math Corner practice — path-scoped to /student/math-practice (students save
 // their best score) and /classes/:id/math-practice (the teacher reads it).
 router.use(mathPracticeRouter);

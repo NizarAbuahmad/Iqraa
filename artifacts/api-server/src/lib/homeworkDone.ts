@@ -22,6 +22,9 @@ export interface OwnHomeworkRows {
   /** The account's `self`-linked roster rows in the homework's class, sorted (so "the first" is stable). */
   rows: string[];
   resources: HomeworkResource[];
+  /** The teacher asked for a project: this homework is done by handing it in, not by a tick. */
+  requiresSubmission: boolean;
+  dueAt: Date;
 }
 
 /**
@@ -36,7 +39,7 @@ export async function ownHomeworkRows(userId: string, homeworkId: string): Promi
   if (own.length === 0) return null;
 
   const [target] = await db
-    .select({ classGroupId: homework.classGroupId, resources: homework.resources })
+    .select({ classGroupId: homework.classGroupId, resources: homework.resources, requiresSubmission: homework.requiresSubmission, dueAt: homework.dueAt })
     .from(homework)
     .innerJoin(classGroups, eq(classGroups.id, homework.classGroupId))
     .where(and(eq(homework.id, homeworkId), isNull(homework.archivedAt), isNull(classGroups.archivedAt)))
@@ -49,7 +52,7 @@ export async function ownHomeworkRows(userId: string, homeworkId: string): Promi
     .where(and(eq(classMemberships.classGroupId, target.classGroupId), inArray(classMemberships.studentId, own)));
   const rows = [...new Set(members.map(m => m.studentId))].sort();
   if (rows.length === 0) return null;
-  return { rows, resources: target.resources };
+  return { rows, resources: target.resources, requiresSubmission: target.requiresSubmission, dueAt: target.dueAt };
 }
 
 /** Idempotent: a row already ticked keeps its original `doneAt`. */
@@ -60,9 +63,19 @@ export async function tickRows(homeworkId: string, rows: string[]): Promise<void
     .onConflictDoNothing();
 }
 
-export async function setHomeworkDone(userId: string, homeworkId: string, done: boolean): Promise<"ok" | "not_found"> {
+/**
+ * A homework that asks for a project is done by handing the project in, and by nothing else —
+ * lib/homeworkSubmission.ts ticks it. Tapping "done" (or taking the tick back) on such a
+ * homework is refused so the tick and the submission can never disagree.
+ */
+export async function setHomeworkDone(
+  userId: string,
+  homeworkId: string,
+  done: boolean,
+): Promise<"ok" | "not_found" | "submission_required"> {
   const own = await ownHomeworkRows(userId, homeworkId);
   if (!own) return "not_found";
+  if (own.requiresSubmission) return "submission_required";
 
   if (done) {
     await tickRows(homeworkId, own.rows);

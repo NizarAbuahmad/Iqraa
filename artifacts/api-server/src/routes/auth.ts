@@ -32,8 +32,9 @@ import { googleClientIds } from "../lib/googleClients.js";
 import { decideGoogleLink, googleRoleConflict } from "../lib/googleLink.js";
 import { decideRefresh, refreshTokenTtlMs } from "../lib/refreshPolicy.js";
 import { guardianApprovalEnabled, studentAccountsEnabled } from "../lib/features.js";
-import { syncClassThreadsForStudent } from "../lib/classThread.js";
+import { syncClassThreadsForStudent, pruneTeacherChatsAfterUnlink } from "../lib/classThread.js";
 import { audioKeysForTeacher } from "../lib/attemptAudio.ts";
+import { purgeSubmissionsOfAuthor, purgeSubmissionsOfRows, submissionKeysForTeacher } from "../lib/homeworkSubmission.ts";
 import {
   ROSTER_CONSENT_STATEMENT_EN,
   ROSTER_CONSENT_VERSION,
@@ -1241,8 +1242,18 @@ router.delete("/claim", authMiddleware, async (req: AuthenticatedRequest, res) =
       .delete(rosterLinks)
       .where(eq(rosterLinks.userId, req.user!.id))
       .returning({ studentId: rosterLinks.studentId });
-    for (const studentId of new Set(removed.map(r => r.studentId))) {
+    const removedStudentIds = [...new Set(removed.map(r => r.studentId))];
+    for (const studentId of removedStudentIds) {
       await syncClassThreadsForStudent(studentId);
+    }
+    // Leaving a teacher's roster by one's own choice leaves their direct chat
+    // and their groups too (the teacher's unlink leaves groups alone). The
+    // links are already gone and a retry would find none to name the teachers
+    // from, so a failure here is logged, not turned into a 500 that invites one.
+    try {
+      await pruneTeacherChatsAfterUnlink(req.user!.id, removedStudentIds, { alsoGroups: true });
+    } catch (err) {
+      logger.error({ err, userId: req.user!.id }, "chat cleanup after withdrawing a claim failed");
     }
     res.json({ hasRosterLink: false });
   } catch (err) {
@@ -2675,13 +2686,16 @@ router.delete("/users/avatar", authMiddleware, async (req: AuthenticatedRequest,
 // The schema does almost all of the work: every table referencing `users.id`
 // declares `onDelete: "cascade"`, so removing one row takes the roster,
 // classes, evaluations, saved materials, chat participation, blocks, reports
-// and push tokens with it. Two things a cascade cannot reach:
+// and push tokens with it. Three things a cascade cannot reach:
 //
 //   - R2 objects, which are not rows. Their keys are read *before* the delete,
 //     because a key read afterwards is a key that no longer exists.
 //   - `aiGenerations.userId`, which is `set null` by design rather than
 //     cascade. It is cost accounting; what survives is a spend row with no
 //     person attached to it.
+//   - A student's homework projects, which reference a roster row (kept by
+//     the teacher), not the user. They are deleted explicitly before the
+//     account (`purgeSubmissionsOfAuthor`); the privacy policy §6 says so.
 //
 // Re-authentication is required. For a teacher the cascade reaches the whole
 // roster — other people's children — and a stolen access token must not be
@@ -2770,7 +2784,45 @@ router.delete(
       // R2 with nothing left pointing at them.
       const recordings = await audioKeysForTeacher(userId);
 
-      await db.delete(users).where(eq(users.id, userId));
+      // Likewise the photos of the students' handed-in projects (and drafts): the rows cascade from the
+      // teacher's homework, the objects do not.
+      const projectPhotos = await submissionKeysForTeacher(userId);
+
+      // A student's own projects do NOT cascade: they sit on the roster row, which stays with the teacher. So the
+      // rows written through this account (drafts and handed-in work alike) are deleted here, before the account,
+      // and their photos go with the objects below. A row another account is also self-linked to is kept, and a
+      // guardian link deletes nothing (lib/homeworkSubmission.ts, `purgeSubmissionsOfAuthor`).
+      //
+      // The purge (owner pool, `systemDb`) and the account delete (the request's own, row-level-security pool under
+      // RLS_ENFORCE) are on different connections, so they cannot share a transaction, and moving the account delete —
+      // the cascade over a teacher's whole roster — onto the owner connection to make them share one is not worth it.
+      // So if the account delete fails after the purge has committed, the rows are already gone and nothing refers to
+      // their photos: delete those objects now (best effort, every key logged on failure), then answer 500 as before.
+      const authored = await purgeSubmissionsOfAuthor(userId);
+
+      try {
+        await db.delete(users).where(eq(users.id, userId));
+      } catch (err) {
+        logger.error(
+          { err, userId, keys: authored.keys },
+          authored.keys.length > 0
+            ? "account deletion failed after its homework projects were purged; deleting their photos"
+            : "account deletion failed",
+        );
+        for (const key of authored.keys) {
+          await deleteObject(key).catch(e =>
+            logger.error({ err: e, key, userId }, "account deletion failed and a purged project photo remains"),
+          );
+        }
+        throw err;
+      }
+
+      // Second pass, best effort, like DELETE /homework/:id: an upload already past its checks when the first pass ran
+      // can have stored a draft on one of those rows since (it references the roster row, so nothing cascaded to it).
+      const latePhotos = await purgeSubmissionsOfRows(authored.rows).catch(err => {
+        logger.error({ err, userId, rows: authored.rows }, "account deleted but the second project purge failed");
+        return [] as string[];
+      });
 
       // Deliberately after the row is gone: the deletion the user asked for is
       // the database one, and it must not fail because object storage is
@@ -2781,6 +2833,9 @@ router.delete(
         ...media.map(m => m.key),
         ...attachments.map(a => a.key as string),
         ...recordings,
+        ...projectPhotos,
+        ...authored.keys,
+        ...latePhotos,
       ];
       let orphaned = 0;
       for (const key of keys) {

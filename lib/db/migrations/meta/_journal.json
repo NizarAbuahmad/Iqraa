@@ -141,6 +141,20 @@
       "when": 1792924418820,
       "tag": "0019_bizarre_stone_men",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793345642515,
+      "tag": "0020_parched_zaladane",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793366152557,
+      "tag": "0021_blushing_blockbuster",
+      "breakpoints": true
     }
   ]
 }

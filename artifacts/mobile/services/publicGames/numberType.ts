@@ -52,10 +52,19 @@ export function buildNumberQuestion(
   const answer = pickOne(fresh.length > 0 ? fresh : ANSWERS[kind], rng);
   used.add(answer);
   const wrong = sample(WRONG[kind], 3, rng);
+  const shown = label(answer, lang);
+  const explanation = {
+    even: lang === 'ar' ? `${shown} عدد زوجي لأنه يقبل القسمة على ${label(2, 'ar')}` : `${shown} is even because it divides by 2`,
+    odd: lang === 'ar' ? `${shown} عدد فردي: إذا قُسم على ${label(2, 'ar')} بقي ${label(1, 'ar')}` : `${shown} is odd: dividing it by 2 leaves 1`,
+    prime: lang === 'ar'
+      ? `${shown} عدد أولي: لا يقبل القسمة إلا على ${label(1, 'ar')} وعلى نفسه`
+      : `${shown} is prime: only 1 and ${shown} divide it`,
+  }[kind];
   return {
     promptKey: PROMPT[kind],
     options: shuffle([answer, ...wrong].map(n => ({ id: String(n), label: label(n, lang) })), rng),
     correctId: String(answer),
+    explanation,
   };
 }
 

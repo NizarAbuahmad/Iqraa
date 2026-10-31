@@ -57,6 +57,9 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
         // reason (see render.yaml).
         OPENAI_API_KEY: "sk-test-placeholder",
         INTERNAL_CRON_KEY: MOUNT_ORDER_CRON_KEY,
+        // The sweep's deploy-only switch (routes/internal.ts): without it the sweep route is a 404 even
+        // with the key, so the case below could not tell "mounted" from "switched off".
+        HOMEWORK_SUBMISSION_SWEEP: "on",
       },
       stdio: "ignore",
     });
@@ -795,6 +798,30 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(teacher.status, 401, "the teacher homework route keeps its own guard");
   });
 
+  it("guards homework project submissions for the student, the parent and the teacher", async () => {
+    // The 401s pin the end-to-end behaviour: every verb is refused without a token. The prefixes are
+    // also guarded by earlier routers (familyHomework.ts, homework.ts), so they do not by themselves
+    // prove the guards in homeworkSubmissions.ts. The unowned-path 404 below is what pins that the
+    // new router installed no bare guard.
+    const id = "00000000-0000-4000-8000-000000000000";
+    for (const [method, p] of [
+      ["GET", `/student/homework/${id}/submission`],
+      ["POST", `/student/homework/${id}/submission/photos`],
+      ["DELETE", `/student/homework/${id}/submission/photos/${id}`],
+      ["PUT", `/student/homework/${id}/submission`],
+      ["POST", `/student/homework/${id}/submission/submit`],
+      ["GET", `/parent/homework/${id}/submissions`],
+      ["GET", `/homework/${id}/submissions`],
+      ["GET", `/homework/${id}/submissions/${id}`],
+    ] as const) {
+      const res = await fetch(`${base}${p}`, { method });
+      assert.equal(res.status, 401, `${method} ${p} must require a token`);
+    }
+    // An unowned path is still a 404, not a 401: the new router must not have installed a guard for everything after it.
+    const unowned = await fetch(`${base}/no-such-homework-path/${id}`);
+    assert.equal(unowned.status, 404);
+  });
+
   it("guards Math Corner practice for the student write and the teacher read", async () => {
     const id = "00000000-0000-0000-0000-000000000000";
     for (const [method, p] of [
@@ -918,6 +945,17 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(post.status, 400, "a forged link must not unsubscribe anyone");
   });
 
+  it("serves the unsubscribe page in every email without a session, and refuses a forged link", async () => {
+    // Same reasoning as the waitlist page above: 400 means mounted and unguarded, and the token is the check.
+    const get = await fetch(`${base}/email/unsubscribe?t=forged`);
+    assert.equal(get.status, 400);
+    assert.match(await get.text(), /not valid/);
+    for (const path of ["unsubscribe", "resubscribe"]) {
+      const post = await fetch(`${base}/email/${path}?t=forged`, { method: "POST" });
+      assert.equal(post.status, 400, `a forged link must not ${path} anyone`);
+    }
+  });
+
   it("hides the site-signup ingest without the shared key", async () => {
     // Server-to-server only (iqrra.com's Vercel functions). Without the key
     // it must look like no route at all, not like a guarded one.
@@ -937,6 +975,22 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal((await post({})).status, 404, "no key");
     assert.equal((await post({ "x-internal-key": "wrong" })).status, 404, "wrong key");
     assert.equal((await fetch(`${base}/internal/homework-reminders`)).status, 404, "GET is not a route");
+    const right = await post({ "x-internal-key": MOUNT_ORDER_CRON_KEY });
+    assert.notEqual(right.status, 404, "the right key reaches the route");
+    assert.notEqual(right.status, 401, "no session guard in front of it");
+  });
+
+  it("hides the homework-submission sweep without the shared key, and opens it with the key", async () => {
+    // Same posture as the reminder: Cloud Scheduler, one shared key, 404 for everyone else, and no
+    // session guard in front. With the right key (and HOMEWORK_SUBMISSION_SWEEP=on, set above; the
+    // switch being off is tested in homeworkSubmissionSweep.db.test.ts) it reaches the route (here
+    // the database is unreachable, so it answers 500 or 200 — anything but 404/401). `?dryRun=1` so
+    // that even a reachable database would change nothing.
+    const post = (headers: Record<string, string>) =>
+      fetch(`${base}/internal/homework-submission-sweep?dryRun=1`, { method: "POST", headers });
+    assert.equal((await post({})).status, 404, "no key");
+    assert.equal((await post({ "x-internal-key": "wrong" })).status, 404, "wrong key");
+    assert.equal((await fetch(`${base}/internal/homework-submission-sweep`)).status, 404, "GET is not a route");
     const right = await post({ "x-internal-key": MOUNT_ORDER_CRON_KEY });
     assert.notEqual(right.status, 404, "the right key reaches the route");
     assert.notEqual(right.status, 401, "no session guard in front of it");
