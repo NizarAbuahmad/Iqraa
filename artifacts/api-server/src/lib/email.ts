@@ -300,7 +300,7 @@ function artifactReportedBodyHtml(info: { kind: string; lessonRef: string }): st
       <p><strong>النوع:</strong> ${escapeHtml(label.kindAr)}</p>
       <p><strong>الدرس:</strong> ${lessonAr}</p>
       ${contextAr}
-      <p><a href="${link}">افتح البلاغ واقرأ المحتوى</a></p>
+      <p><a href="${link}">افتح البلاغ وراجع المحتوى</a></p>
     </div>
     <hr style="border:none;border-top:1px solid #E2E8F0;" />
     <div dir="ltr" style="font-family:Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-top:24px;">
