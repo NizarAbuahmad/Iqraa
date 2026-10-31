@@ -10,6 +10,153 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Teacher can clear one student's project — 2026-10-31
+
+Follow-up to «Homework submissions record their author» (below), which left a dead end open: a record
+whose project another account handed in (a mis-claim the teacher has since unlinked) blocks the account
+linked now (reads `otherAuthor: true`, every write 409 `other_author`), the record's parents keep seeing
+the wrong child's photos, and the only exit was archiving the homework (everyone's work). API only; the
+teacher's screen is phase 3. No schema change, no migration. Spec §3, §8.
+
+**What changed**
+
+- **`DELETE /homework/:id/submissions/:studentId`** (`routes/homeworkSubmissions.ts`, teacher router,
+  path-scoped guard). Clears one roster record's project for one homework, draft or handed-in, and
+  answers `{ cleared: true }`. Same owner check (`ownedHomework`: `homework.teacherId = req.user.id`) and
+  the same 404s as the two teacher reads: `Homework not found` for another teacher's homework or one
+  that asks for no project; `Submission not found` for a bad id, a student who is not a live member of
+  the class (outside it, or archived), or nothing to clear — so a second call is a 404. Logs one info
+  line, `homework submission cleared by teacher`, with the homework, student and teacher ids and the
+  photo count. No rate limit: the other teacher writes on `/homework` have none.
+- **`clearForTeacher`** (`lib/homeworkSubmission.ts`), on `systemDb`, with **no lock or transaction
+  held while R2 is called** (review round 1; the first version deleted the objects inside the locked
+  transaction, so an R2 brownout would have queued every request on that row behind the lock, each
+  holding a pool connection). (1) Read the row's photos without a lock (class-membership and archived
+  checks in the query) and delete those objects concurrently; any failure throws (500) with the
+  **database untouched** — row, photo list and tick kept — and the same request clears it, because
+  deleting a key that is already gone succeeds; photos deleted before the failure stay deleted, so
+  until the retry the row can list a photo whose link no longer loads. (2) A short transaction: lock the
+  row (`FOR UPDATE`), delete that record's completion for that homework (the hand-in ticked it) and the
+  row, and keep the photo list as of the lock; a row gone by then is the same 404. (3) After the commit,
+  delete any photo in that list that (1) did not read (an upload in between), best effort and logged
+  with its key; the orphan sweep backstops it. `systemDb` because a draft is invisible to the teacher
+  under row-level security, the table has no `DELETE` policy, and `SELECT … FOR UPDATE` needs an
+  `UPDATE` policy the teacher does not have (checked: on the app connection with `RLS_ENFORCE=on` both
+  RLS cases answer 404). The pin in `systemDbFiles.test.ts` names the new reason (same file, no new
+  entry). Nothing else ticks a submission homework: only `submit` calls `tickRows` for one
+  (`homeworkGame.ts` skips it, `setHomeworkDone` refuses it).
+- **The R2 client is bounded** (`lib/r2.ts`, every caller: chat, lesson media, library, avatars, exam
+  audio, projects, the sweep): `maxAttempts: 2` (was the SDK's 3) and `requestHandler: {
+  connectionTimeout: 5 s, socketTimeout: 10 s }` (the SDK's defaults have no timeout). `socketTimeout`
+  is an inactivity bound, so an upload that keeps sending bytes is not cut; `requestTimeout` was left
+  unset because in this handler version (`@smithy/node-http-handler` 4.11) it is a wall clock that only
+  logs a warning unless `throwOnRequestTimeout`. Nothing streams an R2 body to a client (downloads are
+  signed URLs), so a silent socket is a stuck request. Worst case per call: about 2 × (5 s + 10 s).
+- **A hand-in's `UPDATE` and its tick are one transaction** (`submit`, `db.transaction`; `tickRows`
+  takes an optional executor). Before, they were two statements, and a clear landing between them left
+  a tick with no project. Now the clear's `FOR UPDATE` waits for the tick and removes it with the row.
+  Under row-level security this is the student's own scoped transaction, and both statements are ones
+  that identity already ran.
+- **`submissionTarget`** orders a row the caller wrote first (`author_user_id IS NOT DISTINCT FROM
+  caller DESC`, then the roster id). An account self-linked to two records in one class whose
+  first-sorted record held another account's (or an authorless) handed-in project could not reach its
+  own draft on the other record; `=` would not do, because an authorless row's NULL sorts first in DESC.
+- **409 `changed`** for an upload, a note or a hand-in whose row is gone by the time its `UPDATE` runs
+  (the teacher cleared it, or it vanished during a takeover). It used to answer `photo_limit` (on a first
+  photo) or `empty`. The refused photo's object is removed as before; the app reads any 409 as stale and reloads,
+  and shows its generic upload-failed toast (no copy of its own for `changed`).
+- **App:** `isOtherAuthorRefusal` (`services/homeworkProject.ts`) removed with its test: nothing called
+  it, and `isStaleRefusal` already makes every handler reload on a 409. The stale-refusal test now
+  names `other_author` and `changed`.
+- **Privacy policy** (`constants/legal.ts`, both languages; `LEGAL_VERSION` `2026-10-31.d`, same date):
+  §6 says the teacher who set a homework can delete one student's project, handed-in or draft, which
+  deletes its photos and note, and the homework then shows as not handed in on that student's record in
+  the class; §1 says the new account cannot hand in another project for that homework
+  «unless the teacher deletes it». Written by a model, **not reviewed by a lawyer**.
+- **`docs/deploying.md`**, «Reverting the API past migration 0022»: a code revert to before the author
+  column also needs a migration restoring `0021`'s three policies (with `RLS_ENFORCE=on` the old API
+  inserts authorless rows and the 0022 `INSERT` policy refuses them; with it off, they get a NULL author,
+  so rolling forward again needs the 0022 backfill re-run).
+
+**Verified** (local, 2026-10-31, Postgres 16, in-memory S3 stub)
+
+- `homeworkSubmission.db.test.ts`, new blocks: a handed-in project cleared (row, object and that
+  record's tick gone; another record's tick on the same homework, and the same record's project, object
+  and tick on another homework untouched; teacher list, student list — `submission: none`, `done: false`
+  — parent read and the student's own read all say not handed in; a second call 404). **The dead end
+  end to end with `RLS_ENFORCE=on`:** A hands in, the teacher unlinks A through the route, B is linked
+  and blocked (`otherAuthor`, 409 `other_author`), the record's parent still sees A's photo; the teacher
+  clears; the parent sees nothing, B starts clean, uploads, notes and hands in, and the record is ticked
+  again. A draft the teacher cannot read cleared under `RLS_ENFORCE=on`. Another teacher, a roster row
+  outside the class, an archived member, a random id, a non-uuid and a homework with no project: 404,
+  and rows, objects and ticks unchanged. Student and parent 403, anonymous 401. `failDeletes` on: 500,
+  row with both photos, both objects and the tick kept, the teacher's list still says submitted; the
+  retry clears it. `failDeletesAfter(1)` (a new stub mode: the first delete succeeds, every later one
+  fails, retries included): 500, the row exactly as before with both photos listed, the tick kept, one
+  object gone; the retry clears it. A stub hook (`onDelete`, awaited before each delete is answered)
+  reads `pg_stat_activity` during the storage call and finds **no connection idle in a transaction**.
+  The same hook appends a photo to the row mid-clear (an upload between the read and the lock): the
+  row goes and that photo's object is deleted after the commit. The hook deleting the row mid-clear: 404
+  and the tick untouched. **A hand-in and a clear that meet:** an uncommitted completion holds the
+  hand-in between its `UPDATE` and its tick, the clear is sent, the test waits until it either finished
+  or queued on a lock (no timing), then rolls back: the project and the tick are both gone. Two records,
+  one account: its own draft is served over another account's, then over
+  an authorless, handed-in project, RLS off and on, and a note lands on its own record only. The row
+  removed under an upload, a note and a hand-in: the test holds the row lock, waits in `pg_stat_activity`
+  until the server's `UPDATE` queues behind it, deletes the row and commits (no timing) — 409 `changed`,
+  no object left.
+- **Each guard broken on purpose, one at a time, and a case failed each time, then restored:** the owner
+  check in `ownedHomework`; the class-membership join; the archived-student filter; object-delete errors
+  swallowed; the row deleted and committed before the objects; the tick delete widened to the whole
+  homework, widened to the whole record, and left out; the clear on the app `db` instead of `systemDb`;
+  `submissionTarget` with `=` instead of `IS NOT DISTINCT FROM`. The 2a and 2c tests were red before
+  their fixes (`otherAuthor: true`; `photo_limit` / `empty`). **Review round 1, same way:** the
+  after-commit delete skipped (the mid-clear upload's object stays); the storage calls moved back inside
+  the locked transaction (the no-open-transaction check, the mid-clear upload and the mid-clear removal
+  all fail); storage failures swallowed (both outage cases answer 200); the database changed before the
+  storage calls (the row is gone after a 500); the class join dropped from the shared query; the tick
+  moved back out of the hand-in's transaction (a tick is left with no project). The new no-lock,
+  mid-clear and hand-in-meets-clear cases, and `changed` for a hand-in, were red before the change.
+- `test-support/__tests__/s3Stub.test.ts`, through the real `r2.ts`: `failDeletesAfter`, `onDelete`, a
+  failing request is sent exactly twice (was 3: red before the bound), and a request R2 never answers
+  (`stallDeletes`) is given up after about 20 s (it hung until the test's 90 s timeout before the bound).
+- `mountOrder.test.ts` lists the new `DELETE` (401 without a token; the unowned path stays 404).
+- api-server `pnpm build && pnpm test` against a local Postgres: **3279 / 3279**, 0 skipped, after
+  review round 1 (3269 before it). One earlier full run failed once in `paperTotals.db.test.ts` («terminating
+  connection due to administrator command»: its own test database dropped at teardown while one of its
+  connections was still open); that file passed alone twice and in the rerun. Mobile
+  `pnpm test`: **8825 tests, 8815 passed, 0 failed, 10 skipped**, exit 0. Root `pnpm run typecheck`:
+  clean. The two greps of ci.yml's «Brand is «إقرأ»» step: no match.
+
+**Not verified**
+
+- Real R2; the CI `rls` job's own run; production. No lock or transaction is held while R2 is called,
+  and each R2 call gives up after two attempts of at most about 5 s to connect and 10 s of silence (the
+  stub's hung delete gave up after about 20 s). Against real R2 in an outage the teacher's request
+  waits up to that bound and then answers 500; that was not tried.
+- The mid-clear upload case is driven by writing the row directly from the stub hook, not by a real
+  upload request racing the clear.
+- No app screen calls the route, so nothing was tried in a browser or on a phone.
+
+**Known limits**
+
+- The teacher's control is phase 3; until then the dead end stays open in the app (STATUS.md).
+- Only that record's tick is removed. An account self-linked to two records in the class had both
+  ticked by its hand-in; the other record's tick stays.
+- A homework whose `requiresSubmission` was switched off after work exists cannot be cleared (404, as
+  the reads); its photos go with the homework's archive.
+- Photos deleted before a storage failure stay deleted: until the retry the row can list a photo
+  that no longer loads.
+- A record that is archived, or no longer in the homework's class, cannot be cleared (404, like the
+  teacher's reads): its project stays until the homework or the class is archived, or its author
+  deletes their account.
+- A photo uploaded during a clear whose after-commit delete fails stays in the bucket, unreferenced,
+  until the orphan sweep (which still has to be switched on in production, spec §8).
+- The bound on the R2 client applies to every R2 call in the API, not only this route.
+- The task described `DELETE /homework/:id` as failing closed on an object-delete failure. It does not:
+  `purgeSubmissions` logs a failed object delete and deletes the rows anyway (spec §8, «The archive purge
+  is not transactional»); only a purge that throws before deleting stops the archive. Unchanged here.
+
 ## Grade 6 unit word lists in the English corner, 2026-10-31
 
 Grade 6 joins the English corner's word games: eight lessons, 319 words (units 1–4 from semester 1, 5–8 from semester 2), each unit's
@@ -135,7 +282,8 @@ unlink. Spec: `docs/superpowers/specs/2026-10-30-homework-project-submission-des
   delete cannot write at all (its author would reference a deleted user). The rest of the failure handling
   (purge before the account delete; purged keys deleted if the account delete throws) is unchanged.
 - **App** (`artifacts/mobile`). `SubmissionView.otherAuthor` (strictly `=== true`; absent is false);
-  `projectMode` and `isOtherAuthorRefusal` in `services/homeworkProject.ts`; `canAddPhoto` / `canHandIn`
+  `projectMode` in `services/homeworkProject.ts` (an `isOtherAuthorRefusal` helper was also added, but
+  nothing called it; removed on 2026-10-31 by «Teacher can clear one student's project»); `canAddPhoto` / `canHandIn`
   and `noteNeedsSave` refuse such a view. The project screen shows only «سُلِّم مشروع لهذا السجلّ من حساب
   آخر. إن كان هذا خطأً فاطلب من معلّمك المساعدة.» / "A project was already handed in for this record from
   another account. If that is a mistake, ask your teacher for help." with no photos, note or controls.

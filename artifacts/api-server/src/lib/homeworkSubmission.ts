@@ -36,6 +36,7 @@ import {
   classMemberships,
   db,
   homework,
+  homeworkCompletions,
   homeworkSubmissions,
   rosterLinks,
   students,
@@ -100,11 +101,14 @@ export const SIGNED_URL_SECONDS = 600;
 export async function submissionTarget(userId: string, homeworkId: string): Promise<SubmissionTarget | null> {
   const own = await ownHomeworkRows(userId, homeworkId);
   if (!own || !own.requiresSubmission) return null;
+  // One account can be self-linked to two records in one class. A row the caller wrote comes first, so another
+  // account's handed-in project on one record never hides the caller's own work on the other. `IS NOT DISTINCT FROM`,
+  // not `=`: an authorless row gives NULL under `=`, and DESC puts NULLs first.
   const [held] = await db
     .select({ studentId: homeworkSubmissions.studentId })
     .from(homeworkSubmissions)
     .where(and(eq(homeworkSubmissions.homeworkId, homeworkId), inArray(homeworkSubmissions.studentId, own.rows)))
-    .orderBy(homeworkSubmissions.studentId)
+    .orderBy(sql`(${homeworkSubmissions.authorUserId} IS NOT DISTINCT FROM ${userId}::uuid) DESC`, homeworkSubmissions.studentId)
     .limit(1);
   return { userId, homeworkId, studentId: held?.studentId ?? own.rows[0]!, rows: own.rows, dueAt: own.dueAt };
 }
@@ -259,11 +263,17 @@ async function afterMiss(t: SubmissionTarget): Promise<{ own: HomeworkSubmission
   return "own" in read ? read : "other_author";
 }
 
+/**
+ * The row a write had just made sure of is gone: the teacher cleared the project (`clearForTeacher`) between the
+ * write's checks and its UPDATE. Nothing was written; sent again, the write starts a fresh project.
+ */
+export type Changed = "changed";
+
 export async function addPhoto(
   t: SubmissionTarget,
   photo: SubmissionPhoto,
   now: Date = new Date(),
-): Promise<"ok" | "locked" | "photo_limit" | OtherAuthor> {
+): Promise<"ok" | "locked" | "photo_limit" | Changed | OtherAuthor> {
   const read = await readAsAuthor(t);
   if ("otherSubmitted" in read && read.otherSubmitted) return "other_author";
   const existing = "own" in read ? read.own : null;
@@ -277,7 +287,8 @@ export async function addPhoto(
     .returning({ id: homeworkSubmissions.id });
   if (updated.length > 0) return "ok";
   const miss = await afterMiss(t);
-  return miss === "other_author" ? miss : "photo_limit";
+  if (miss === "other_author") return miss;
+  return miss.own ? "photo_limit" : "changed";
 }
 
 export async function removePhoto(
@@ -326,7 +337,7 @@ export async function setNote(
   t: SubmissionTarget,
   note: string,
   now: Date = new Date(),
-): Promise<"ok" | "locked" | "empty" | OtherAuthor> {
+): Promise<"ok" | "locked" | "empty" | Changed | OtherAuthor> {
   const read = await readAsAuthor(t);
   if ("otherSubmitted" in read && read.otherSubmitted) return "other_author";
   const existing = "own" in read ? read.own : null;
@@ -349,17 +360,24 @@ export async function setNote(
   // The caller's row exists (ensureOwnRow), so no row back means the WHERE refused it: the handed-in guard above, or
   // another account took the row over since. (The lock is not in the WHERE and CAN move between our read and this
   // UPDATE — the author's own concurrent hand-in after the due day — in which case this edit lands on a row that has
-  // just become locked, by milliseconds, the author's own.)
+  // just become locked, by milliseconds, the author's own.) No row at all: it was removed since (`changed`).
   const miss = await afterMiss(t);
-  return miss === "other_author" ? miss : "empty";
+  if (miss === "other_author") return miss;
+  return miss.own ? "empty" : "changed";
 }
 
 /**
  * Hands the project in. `submitted_at` keeps the FIRST hand-in time (`coalesce`), so replacing a
  * project before the due day never makes it late. The tick is written before this returns — the
  * route answers afterwards (Cloud Run throttles work after `res.json`).
+ *
+ * The UPDATE and the tick are one transaction, so the row lock the UPDATE takes is held until the tick is written:
+ * a teacher's clear (`clearForTeacher`, which locks the row before it removes the tick) either runs first, and the
+ * UPDATE then matches nothing (`changed`), or waits and removes the tick with the row. Two statements would leave a
+ * tick with no project when a clear landed between them. Under row-level security this is the caller's own scoped
+ * transaction (`db.transaction`), and both statements are ones the student's identity may run.
  */
-export async function submit(t: SubmissionTarget, now: Date = new Date()): Promise<"ok" | "empty" | "locked" | OtherAuthor> {
+export async function submit(t: SubmissionTarget, now: Date = new Date()): Promise<"ok" | "empty" | "locked" | Changed | OtherAuthor> {
   const read = await readAsAuthor(t);
   // Another account's draft is nothing the caller wrote: there is nothing of theirs to hand in (and a hand-in adds no
   // work, so it takes nothing over).
@@ -367,23 +385,29 @@ export async function submit(t: SubmissionTarget, now: Date = new Date()): Promi
   const row = read.own;
   if (row && isLocked({ submittedAt: row.submittedAt, dueAt: t.dueAt, now })) return "locked";
   if (!row || !canSubmit({ photoCount: row.photos.length, note: row.note })) return "empty";
-  const updated = await db
-    .update(homeworkSubmissions)
-    .set({ submittedAt: sql`coalesce(${homeworkSubmissions.submittedAt}, now())`, updatedAt: now })
-    // Re-checked at write time: a photo removed since our read leaves the draft empty, and an empty one is never stamped.
-    .where(
-      and(
-        eq(homeworkSubmissions.id, row.id),
-        eq(homeworkSubmissions.authorUserId, t.userId),
-        holdsWork(photoCount, sql`${homeworkSubmissions.note}`),
-      ),
-    )
-    .returning({ id: homeworkSubmissions.id });
-  if (updated.length === 0) {
+  const stamped = await db.transaction(async tx => {
+    const updated = await tx
+      .update(homeworkSubmissions)
+      .set({ submittedAt: sql`coalesce(${homeworkSubmissions.submittedAt}, now())`, updatedAt: now })
+      // Re-checked at write time: a photo removed since our read leaves the draft empty, and an empty one is never stamped.
+      .where(
+        and(
+          eq(homeworkSubmissions.id, row.id),
+          eq(homeworkSubmissions.authorUserId, t.userId),
+          holdsWork(photoCount, sql`${homeworkSubmissions.note}`),
+        ),
+      )
+      .returning({ id: homeworkSubmissions.id });
+    if (updated.length === 0) return false;
+    await tickRows(t.homeworkId, t.rows, tx);
+    return true;
+  });
+  if (!stamped) {
+    // Nothing was written: another account owns the row now, it was emptied since our read, or it is gone (`changed`).
     const miss = await afterMiss(t);
-    return miss === "other_author" ? miss : "empty";
+    if (miss === "other_author") return miss;
+    return miss.own ? "empty" : "changed";
   }
-  await tickRows(t.homeworkId, t.rows);
   return "ok";
 }
 
@@ -460,6 +484,87 @@ export async function readForTeacher(
     .limit(1);
   if (!row) return null;
   return { displayName: row.displayName, submission: await viewSubmission(row.submission, hw.dueAt) };
+}
+
+/**
+ * The one record's row a teacher may clear, read on `systemDb` (or inside its transaction): the homework's, the
+ * record's, and only while the record is a live member of the homework's class, as for `readForTeacher`.
+ */
+function clearableRow(executor: Pick<typeof systemDb, "select">, hw: TeacherHomeworkRef, studentId: string) {
+  return executor
+    .select({ id: homeworkSubmissions.id, photos: homeworkSubmissions.photos })
+    .from(homeworkSubmissions)
+    .innerJoin(students, eq(students.id, homeworkSubmissions.studentId))
+    .innerJoin(
+      classMemberships,
+      and(eq(classMemberships.studentId, students.id), eq(classMemberships.classGroupId, hw.classGroupId)),
+    )
+    .where(
+      and(
+        eq(homeworkSubmissions.homeworkId, hw.id),
+        eq(homeworkSubmissions.studentId, studentId),
+        isNull(students.archivedAt),
+      ),
+    );
+}
+
+/**
+ * The teacher clears ONE roster record's project for one homework, draft or handed-in: its photos, its row, and that
+ * record's tick for that homework (a hand-in ticked it; left alone, the family list would still say done). `null`
+ * (nothing to clear) is the one answer for a record that is not a live member of the class, for no row, and for a
+ * second call — the clear is idempotent in effect, and the repeat is a 404, not a 200.
+ *
+ * No database lock or transaction is held while R2 is called (an R2 brownout must not queue every request on the row
+ * behind a lock, each holding a pool connection). In three steps:
+ *   1. Read the row's photos WITHOUT a lock and delete those objects, concurrently. If any delete fails, throw (the
+ *      route answers 500) with the DATABASE UNTOUCHED: the row, its photo list and the tick are kept, and the same
+ *      request can be sent again — deleting a key that is already gone succeeds. Photos deleted before the failure
+ *      stay deleted, so until the retry the row can list a photo whose URL no longer loads.
+ *   2. A short transaction: lock the row, delete the record's tick for this homework and the row, and keep the row's
+ *      photo list as it was under the lock. A row that is gone by then (cleared or archived meanwhile) is `null`.
+ *   3. After the commit, delete any photo in that list that was not in step 1's read (an upload that landed between
+ *      the read and the lock). Best effort, logged with the key: the row is gone, so a leftover is unreferenced and
+ *      the orphan sweep's (lib/homeworkSubmissionSweep.ts).
+ * A student write that reaches the row after the commit matches nothing and answers `changed` (its object is removed
+ * by the route). The R2 client's own bounds (lib/r2.ts) keep step 1 from waiting for ever.
+ *
+ * On `systemDb`: a draft is invisible to the teacher's identity under row-level security, the table has no DELETE
+ * policy for the app role, `SELECT … FOR UPDATE` needs an UPDATE policy the teacher does not have, and a completion
+ * belongs to the student's rows. The caller (the route) has already proved the homework is this teacher's
+ * (`ownedHomework`); the class check is in both reads here.
+ */
+export async function clearForTeacher(hw: TeacherHomeworkRef, studentId: string): Promise<{ photoCount: number } | null> {
+  const [seen] = await clearableRow(systemDb, hw, studentId).limit(1);
+  if (!seen) return null;
+  const firstKeys = new Set(seen.photos.map(p => p.key));
+  const results = await Promise.allSettled([...firstKeys].map(key => deleteObject(key)));
+  const failed = [...firstKeys].filter((_, i) => results[i]!.status === "rejected");
+  if (failed.length > 0) {
+    logger.error(
+      { homeworkId: hw.id, studentId, keys: failed, err: (results.find(r => r.status === "rejected") as PromiseRejectedResult).reason },
+      "homework submission clear: could not delete a photo; nothing in the database was changed",
+    );
+    throw new Error(`homework submission clear: ${failed.length} photo(s) could not be deleted`);
+  }
+
+  const locked = await systemDb.transaction(async tx => {
+    const [row] = await clearableRow(tx, hw, studentId).for("update", { of: homeworkSubmissions }).limit(1);
+    if (!row) return null;
+    await tx
+      .delete(homeworkCompletions)
+      .where(and(eq(homeworkCompletions.homeworkId, hw.id), eq(homeworkCompletions.studentId, studentId)));
+    await tx.delete(homeworkSubmissions).where(eq(homeworkSubmissions.id, row.id));
+    return row.photos;
+  });
+  if (!locked) return null;
+
+  const late = locked.filter(p => !firstKeys.has(p.key));
+  for (const p of late) {
+    await deleteObject(p.key).catch(err =>
+      logger.error({ err, key: p.key, homeworkId: hw.id, studentId }, "homework submission clear: could not delete a photo uploaded during the clear"),
+    );
+  }
+  return { photoCount: firstKeys.size + late.length };
 }
 
 /**

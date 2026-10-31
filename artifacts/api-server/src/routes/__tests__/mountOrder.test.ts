@@ -813,6 +813,7 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       ["GET", `/parent/homework/${id}/submissions`],
       ["GET", `/homework/${id}/submissions`],
       ["GET", `/homework/${id}/submissions/${id}`],
+      ["DELETE", `/homework/${id}/submissions/${id}`],
     ] as const) {
       const res = await fetch(`${base}${p}`, { method });
       assert.equal(res.status, 401, `${method} ${p} must require a token`);
