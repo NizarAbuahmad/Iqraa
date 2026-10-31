@@ -1130,54 +1130,99 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
     // Replace rather than append: generating twice should not silently double
     // the length of the evaluation. Questions the teacher wrote survive — see
     // `partitionForRegeneration` — and move after the new generated ones.
-    const { keep, replace } = partitionForRegeneration(await liveQuestions(evaluation.id));
-    if (replace.length > 0) {
-      await db
-        .update(evaluationQuestions)
-        .set({ deletedAt: new Date() })
-        .where(inArray(evaluationQuestions.id, replace.map(q => q.id)));
-    }
-    for (const [i, q] of keep.entries()) {
-      await db
-        .update(evaluationQuestions)
-        .set({ orderIndex: keyCheck.kept.length + i })
-        .where(eq(evaluationQuestions.id, q.id));
-    }
+    //
+    // One transaction behind a lock on the evaluation row, because the draft
+    // check at the top of this route was made before a model call that can take
+    // a minute. Without the lock two requests for one draft (the app gives up
+    // after 45 s and the teacher taps again) could both read an empty paper and
+    // both insert it; without the status check under the lock a draft published
+    // meanwhile had its questions replaced; and without the transaction an
+    // insert that failed after the old questions were soft-deleted left no paper
+    // under an error that says "Nothing was changed". Any throw below rolls the
+    // whole write back, which makes that sentence true.
+    const totalMarks = await db.transaction(async tx => {
+      const [locked] = await tx
+        .select({ status: evaluations.status, archivedAt: evaluations.archivedAt })
+        .from(evaluations)
+        .where(eq(evaluations.id, evaluation.id))
+        .for("update");
+      // «Delete» archives an evaluation and leaves its status as it was, so a removed
+      // draft is still status = 'draft'; publish refuses archived ones for the same reason.
+      if (!locked || locked.status !== "draft" || locked.archivedAt) return null;
 
-    if (keyCheck.kept.length > 0) {
-      await db.insert(evaluationQuestions).values(
-        keyCheck.kept.map(({ question: q, verification }, i) => ({
-          evaluationId: evaluation.id,
-          orderIndex: i,
-          type: q.type,
-          body: q.body,
-          expectedAnswer: q.expectedAnswer,
-          rubric: q.rubric,
-          objectiveId: q.objectiveId,
-          competencyKey: q.competencyKey,
-          skill: q.skill,
-          difficulty: q.difficulty,
-          marks: q.marks.toFixed(2),
-          gradingMode: q.gradingMode as never,
-          source: "ai" as const,
-          // The column the schema has described since Phase 3 and nothing
-          // wrote. `verified` is the verifier's own word or false — never an
-          // inference from the question having looked fine.
-          verification,
-          aiMetadata: q.aiMetadata,
-        })),
+      const { keep, replace } = partitionForRegeneration(
+        await tx
+          .select()
+          .from(evaluationQuestions)
+          .where(and(eq(evaluationQuestions.evaluationId, evaluation.id), isNull(evaluationQuestions.deletedAt)))
+          .orderBy(asc(evaluationQuestions.orderIndex)),
       );
+      if (replace.length > 0) {
+        await tx
+          .update(evaluationQuestions)
+          .set({ deletedAt: new Date() })
+          .where(inArray(evaluationQuestions.id, replace.map(q => q.id)));
+      }
+      for (const [i, q] of keep.entries()) {
+        await tx
+          .update(evaluationQuestions)
+          .set({ orderIndex: keyCheck.kept.length + i })
+          .where(eq(evaluationQuestions.id, q.id));
+      }
+
+      if (keyCheck.kept.length > 0) {
+        await tx.insert(evaluationQuestions).values(
+          keyCheck.kept.map(({ question: q, verification }, i) => ({
+            evaluationId: evaluation.id,
+            orderIndex: i,
+            type: q.type,
+            body: q.body,
+            expectedAnswer: q.expectedAnswer,
+            rubric: q.rubric,
+            objectiveId: q.objectiveId,
+            competencyKey: q.competencyKey,
+            skill: q.skill,
+            difficulty: q.difficulty,
+            marks: q.marks.toFixed(2),
+            gradingMode: q.gradingMode as never,
+            source: "ai" as const,
+            // The column the schema has described since Phase 3 and nothing
+            // wrote. `verified` is the verifier's own word or false — never an
+            // inference from the question having looked fine.
+            verification,
+            aiMetadata: q.aiMetadata,
+          })),
+        );
+      }
+
+      // The total from what is live now, in this transaction: the kept
+      // teacher-written questions plus the new paper.
+      const marks = await tx
+        .select({ marks: evaluationQuestions.marks })
+        .from(evaluationQuestions)
+        .where(and(eq(evaluationQuestions.evaluationId, evaluation.id), isNull(evaluationQuestions.deletedAt)));
+      const total = marks.reduce((sum, q) => sum + Number(q.marks), 0);
+
+      // Recorded on the evaluation, not just in each question's aiMetadata, so
+      // "was this paper written by a model or by four templates?" is answerable
+      // without opening a question.
+      await tx
+        .update(evaluations)
+        .set({ generator, modelId, generationParams, totalMarks: total.toFixed(2), updatedAt: new Date() })
+        .where(eq(evaluations.id, evaluation.id));
+      return total;
+    });
+    if (totalMarks === null) {
+      // Published, closed or removed while the questions were being written.
+      // The model's paper is dropped rather than put under students.
+      res.status(409).json({
+        error:
+          "This evaluation was published or removed while its questions were being generated. "
+          + "Nothing was changed.",
+        code: "no_longer_draft",
+      });
+      return;
     }
-
-    // Recorded on the evaluation, not just in each question's aiMetadata, so
-    // "was this paper written by a model or by four templates?" is answerable
-    // without opening a question.
-    await db
-      .update(evaluations)
-      .set({ generator, modelId, generationParams, updatedAt: new Date() })
-      .where(eq(evaluations.id, evaluation.id));
-
-    const totalMarks = await recomputeTotal(evaluation.id);
 
     res.json({
       questions: await liveQuestions(evaluation.id),
