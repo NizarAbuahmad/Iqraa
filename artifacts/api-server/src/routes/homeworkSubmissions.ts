@@ -1,6 +1,7 @@
 /**
  * A student's project for a homework that asks for one: the student's routes (`/student/homework`),
- * the teacher's two reads (`/homework/:id/submissions`, and one student's), and the parent's one
+ * the teacher's two reads (`/homework/:id/submissions`, and one student's) and one write (clearing one
+ * student's project: `DELETE /homework/:id/submissions/:studentId`), and the parent's one
  * read-only route (`/parent/homework/:id/submissions`: the handed-in projects of their own children).
  *
  * Guards are path-scoped and repeat the ones in familyHomework.ts on purpose, so moving a mount
@@ -26,6 +27,7 @@ import { createRateLimiter } from "../lib/rateLimit.ts";
 import { deleteObject, isR2Configured, newHomeworkSubmissionKey, putObject } from "../lib/r2.js";
 import {
   addPhoto,
+  clearForTeacher,
   listForTeacher,
   readForParent,
   readForTeacher,
@@ -99,6 +101,11 @@ function refuseOtherAuthor(res: Response): void {
   res.status(409).json({ code: "other_author", error: "A project was already handed in for this record from another account" });
 }
 
+/** The project was removed (the teacher cleared it) while this write was on its way. Nothing was written; send it again. */
+function refuseChanged(res: Response): void {
+  res.status(409).json({ code: "changed", error: "The project changed while saving; send it again" });
+}
+
 router.get("/student/homework/:id/submission", (req: AuthenticatedRequest, res) =>
   withTarget(req, res, "load your project", async t => {
     res.json({ submission: await currentView(t), dueDate: dueAtToDueDate(t.dueAt) });
@@ -128,6 +135,10 @@ router.post("/student/homework/:id/submission/photos", photoLimiter, (req: Authe
       );
       if (result === "other_author") {
         refuseOtherAuthor(res);
+        return;
+      }
+      if (result === "changed") {
+        refuseChanged(res);
         return;
       }
       res.status(409).json({ error: result === "locked" ? "This project is locked" : "A project holds at most six photos", code: result });
@@ -175,6 +186,10 @@ router.put("/student/homework/:id/submission", (req: AuthenticatedRequest, res) 
     const result = await setNote(t, parsed.value);
     if (result === "other_author") {
       refuseOtherAuthor(res);
+      return;
+    }
+    if (result === "changed") {
+      refuseChanged(res);
       return;
     }
     if (result !== "ok") {
@@ -244,6 +259,36 @@ router.get("/homework/:id/submissions/:studentId", async (req: AuthenticatedRequ
   } catch (err) {
     logger.error({ err }, "teacher homework submission failed");
     res.status(500).json({ error: "Failed to load the submission" });
+  }
+});
+
+/**
+ * Clears one student's project for this homework, draft or handed-in: its photos, its row and that record's tick
+ * (lib/homeworkSubmission.ts `clearForTeacher`). The way out when a record's project was handed in from another
+ * account (a mis-claim the teacher has since unlinked): the account linked now then starts clean. The same owner check
+ * and the same 404s as the two reads above. Nothing to clear is a 404, so a repeated call is a 404, not a second 200.
+ * A storage failure is a 500 with everything kept, and the same request can be sent again. No rate limit, like the
+ * other teacher writes on `/homework`.
+ */
+router.delete("/homework/:id/submissions/:studentId", async (req: AuthenticatedRequest, res) => {
+  try {
+    const teacherId = req.user!.id;
+    const hw = await ownedHomework(String(req.params["id"]), teacherId);
+    if (!hw || !hw.requiresSubmission) {
+      res.status(404).json(NO_HOMEWORK);
+      return;
+    }
+    const studentId = String(req.params["studentId"]);
+    const cleared = isUuid(studentId) ? await clearForTeacher(hw, studentId) : null;
+    if (!cleared) {
+      res.status(404).json(NO_SUBMISSION);
+      return;
+    }
+    logger.info({ homeworkId: hw.id, studentId, teacherId, photoCount: cleared.photoCount }, "homework submission cleared by teacher");
+    res.json({ cleared: true });
+  } catch (err) {
+    logger.error({ err, homeworkId: String(req.params["id"]) }, "teacher homework submission clear failed");
+    res.status(500).json({ error: "Failed to clear the submission" });
   }
 });
 
