@@ -2365,6 +2365,10 @@ const translations = {
     studentGenderFemale: 'طالبة',
     saveChanges: 'احفظ التعديلات',
     studentNameRequired: 'اكتب اسم الطالب.',
+    studentNameArLabel: 'الاسم بالعربية',
+    studentNameArHint: 'يظهر في الرسائل العربية إلى ولي الأمر. اتركه فارغًا إن لم تكتبه.',
+    studentNameArInvalid: 'اكتب الاسم بأحرف عربية فقط.',
+    studentNameArTooLong: 'الاسم طويل جدًا.',
     studentNameTaken: 'يوجد طالب بهذا الاسم في الصف. أضف ما يميّزه، مثل اسم العائلة.',
     rosterClaimedByLabel: 'الحساب:',
 
@@ -5907,6 +5911,10 @@ const translations = {
     studentGenderFemale: 'Girl',
     saveChanges: 'Save changes',
     studentNameRequired: "Enter the student's name.",
+    studentNameArLabel: 'Name in Arabic',
+    studentNameArHint: 'Used in Arabic letters to the parent. Leave empty if you have not written it.',
+    studentNameArInvalid: 'Write the name in Arabic letters only.',
+    studentNameArTooLong: 'The name is too long.',
     studentNameTaken: 'A student with this name is already in the class. Add something that tells them apart, such as a family name.',
     rosterClaimedByLabel: 'Account:',
 
