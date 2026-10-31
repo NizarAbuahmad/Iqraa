@@ -25,7 +25,7 @@ export interface VocabularyWord {
   word: string;
   /** Part of speech where the book prints one — 545 of 730 do. */
   pos: string | null;
-  /** IPA as printed, slashes included. */
+  /** IPA as printed, slashes included; '' where the book prints none (Grade 6). */
   ipa: string;
   /** Verbatim book prose containing the word. Absent for two thirds of them. */
   sentence?: string;
@@ -77,7 +77,8 @@ export function validateEnglishVocabulary(
     seen.add(key);
 
     if (!w.word.trim()) errors.push(`${w.lessonId}: a word is empty`);
-    if (!w.ipa.startsWith('/') || !w.ipa.endsWith('/')) {
+    // '' is allowed: Grade 6's activity-book Wordlist prints no transcription, and none is invented.
+    if (w.ipa !== '' && (!w.ipa.startsWith('/') || !w.ipa.endsWith('/'))) {
       errors.push(`${w.word}: ipa is not a /…/ transcription`);
     }
     if (w.sentence) {

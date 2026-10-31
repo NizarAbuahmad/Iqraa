@@ -31,7 +31,7 @@ import type { ActivitySlide, ClassroomActivity, LessonPlanOutput, LessonTeaching
 import { resolveGeneratorGrounding, type GeneratorGrounding } from '@/services/kbContext';
 import { usePickedLesson } from '@/hooks/usePickedLesson';
 import { carriedLessonTopic } from '@/services/pickedLesson';
-import { buildLessonDeck, buildRevisionDeck } from '@/services/lessonSlides';
+import { buildLessonDeck, buildRevisionDeck, teachingPhotoTargets } from '@/services/lessonSlides';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import {
   extractGraphCommands, insertLabSlides, insertLessonResources, nextVideoSuggestion,
@@ -866,7 +866,11 @@ export default function SlidesScreen() {
           // at most four, one call each on the shared photo quota; a unit the
           // titles do not name keeps the flat break rather than a stranger's photo.
           const unitTargets = unitPhotoTargets(built.slides);
-          const [titlePhoto, dividerPhoto, videos, unitPhotos] = await Promise.all([
+          // Up to two photos for the explanation slides that asked for one
+          // (`mediaPrompt`). A one-lesson deck only: a unit or semester deck
+          // has no single concept to picture.
+          const conceptTargets = wide ? [] : teachingPhotoTargets(built.slides);
+          const [titlePhoto, dividerPhoto, videos, unitPhotos, conceptPhotos] = await Promise.all([
             searchDeckPhoto(titleQuery),
             // The generic «subject classroom» picture belongs to a one-lesson deck's
             // single break. A revision deck's breaks are units, and that picture on
@@ -875,6 +879,7 @@ export default function SlidesScreen() {
             wide ? Promise.resolve(null) : searchDeckPhoto(dividerQuery),
             wantVideo ? searchDeckVideos(videoQuery, isAr ? 'ar' : 'en') : Promise.resolve([]),
             Promise.all(unitTargets.map(t => searchDeckPhoto(t.query))),
+            Promise.all(conceptTargets.map(t => searchDeckPhoto(t.query))),
           ]);
           const video = videos[0] ?? null;
           // A regenerate (or the grade/subject reset) since this search began
@@ -883,7 +888,7 @@ export default function SlidesScreen() {
           // Keep the rest for the editor's "another suggestion" control. They
           // cost nothing extra — one search returned all of them.
           setVideoOptions(videos);
-          if (!titlePhoto && !dividerPhoto && !video && !unitPhotos.some(Boolean)) return;
+          if (!titlePhoto && !dividerPhoto && !video && !unitPhotos.some(Boolean) && !conceptPhotos.some(Boolean)) return;
 
           setDeck(cur => {
             // Guard against a stale fetch landing on a deck the teacher has
@@ -902,6 +907,20 @@ export default function SlidesScreen() {
               const photo = unitPhotos[i];
               const at = slides.findIndex(s => s.type === 'divider' && s.title === target.title);
               if (photo && at >= 0) slides = attachBackgroundImage(slides, at, photo.url, photoCreditText(photo, isAr), creditFromPhoto(photo));
+            });
+            // Concept photos sit beside the text, found by title for the same
+            // reason, and only on a slide still free of a figure or layout. The
+            // Unsplash credit rides with every one (licence requirement).
+            conceptTargets.forEach((target, i) => {
+              const photo = conceptPhotos[i];
+              // The query must match too: two slides can share a title, and only
+              // the one that asked for this photo should get it.
+              const at = slides.findIndex(s => s.title === target.title && s.mediaPrompt?.trim() === target.query
+                && !s.sideImageUrl && !s.layout);
+              if (!photo || at < 0) return;
+              slides = slides.map((s, j) => (j === at
+                ? { ...s, sideImageUrl: photo.url, sideImageCaption: photoCreditText(photo, isAr), sideImageCredit: creditFromPhoto(photo) }
+                : s));
             });
             if (video) {
               // Two different jobs, so two different fields. `mediaCaption`

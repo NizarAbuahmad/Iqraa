@@ -112,3 +112,27 @@ describe('the presenter uses it', () => {
     assert.match(src, /const restore = idx < slideIndex \? Infinity : idx === slideIndex \? shown : null;/);
   });
 });
+
+describe('paced diagrams', () => {
+  it('reveals a cycle stage by stage, a Venn set by set then the shared part', () => {
+    const cyc = slide({ layout: 'cycle', cycle: { stages: [{ label: 'a' }, { label: 'b' }, { label: 'c' }] } });
+    assert.deepEqual(pacedBeats(cyc), [0, 1, 2]);
+    const venn = slide({ layout: 'venn', venn: { sets: [{ label: 'a', only: ['x'] }, { label: 'b', only: [] }], shared: ['s'] } });
+    assert.deepEqual(pacedBeats(venn), [0, 1, 2]);
+  });
+});
+
+describe('the presenter draws diagrams', () => {
+  const src = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'app', 'ai-tools', 'classroom', 'presentation.tsx'),
+    'utf8',
+  );
+  it('from the shared geometry, each beat inside a Reveal, labels as Text', () => {
+    const view = src.slice(src.indexOf('function DiagramView('), src.indexOf('function LayoutHeading('));
+    assert.ok(view.length > 200, 'DiagramView not found before LayoutHeading');
+    assert.match(view, /diagramGeometry\(/);
+    assert.match(view, /<Reveal key=\{b\} index=\{b\}/);
+    assert.match(view, /isolateForeignRuns\(/);
+    assert.match(src, /isDiagram\(layout\) && <DiagramView/);
+  });
+});

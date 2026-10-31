@@ -1,7 +1,8 @@
 /**
  * «الواجبات» — pure types and helpers shared by the student, parent and
  * teacher screens. No imports on purpose: this file is loaded by bare
- * `node --test`, so nothing here may touch react-native, expo or `apiClient`.
+ * `node --test`, so nothing here may touch react-native, expo or `apiClient`
+ * (the one import is `homeworkSubmission.ts`, itself import-free).
  * The fetchers live in `homeworkApi.ts`.
  *
  * A due date is a calendar day (`YYYY-MM-DD`) in Asia/Amman, never a
@@ -12,6 +13,8 @@
  * Compare dates as strings or through `Date.UTC` — never `new Date('YYYY-MM-DD')`
  * in local time, which shifts the day in any zone west of UTC.
  */
+
+import { normalizeSubmissionState, type SubmissionState } from './homeworkSubmission.ts';
 
 export type HomeworkState = 'done' | 'overdue' | 'open';
 
@@ -119,6 +122,23 @@ export interface FamilyHomework {
   canTrack: boolean;
   /** Best round per attached game; absent on the wire (an older server) reads as none. */
   gameResults: FamilyGameResult[];
+  /**
+   * The teacher asked for a project hand-in (photos / a note). Such an item is
+   * never ticked by hand — the server answers 409 `submission_required` — it
+   * turns `done` when the project is handed in. Absent on the wire (an older
+   * server) reads as false.
+   */
+  requiresSubmission: boolean;
+  /** Where the project stands; absent or unknown on the wire reads as 'none'. */
+  submission: SubmissionState;
+}
+
+/**
+ * Whether the row offers «افتح المشروع». Needs the same per-item `canTrack` as
+ * a tick: with no student account in this item's class nobody can hand in.
+ */
+export function showsSubmissionLink(hw: Pick<FamilyHomework, 'requiresSubmission' | 'canTrack'>): boolean {
+  return hw.requiresSubmission && hw.canTrack;
 }
 
 export interface ChildHomework {
@@ -268,6 +288,8 @@ export function normalizeFamilyHomework(raw: unknown): FamilyHomework[] {
         resources: normalizeResources(r['resources']),
         canTrack: r['canTrack'] !== false,
         gameResults: normalizeGameResults(r['gameResults']),
+        requiresSubmission: r['requiresSubmission'] === true,
+        submission: normalizeSubmissionState(r['submission']),
       },
     ];
   });

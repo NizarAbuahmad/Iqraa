@@ -359,6 +359,10 @@ export const LOCAL_FILES: Record<string, string> = {
   // `extract-text` only needs this map, and registering them means a rights decision (see g6-eng-*).
   'g8-english-s1-student-book': 'knowledge-base/grade-8-english/support-pdfs/g8-english-s1-student-book.pdf',
   'g8-english-s2-student-book': 'knowledge-base/grade-8-english/support-pdfs/g8-english-s2-student-book.pdf',
+  // grade-7 English student books (Jordan Team Together, the series Grade 6 uses). Named by source id like Grade 8's,
+  // for the same reason; unregistered until a word list is built from them and the rights question is answered.
+  'g7-english-s1-student-book': 'knowledge-base/grade-7-english/support-pdfs/g7-english-s1-student-book.pdf',
+  'g7-english-s2-student-book': 'knowledge-base/grade-7-english/support-pdfs/g7-english-s2-student-book.pdf',
   'g6-digital-s1-activity-book': 'knowledge-base/grade-6-digital-literacy/support-pdfs/كتاب الأنشطة لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf',
   'g6-digital-s1-teacher-guide': 'knowledge-base/grade-6-digital-literacy/support-pdfs/دليل المعلم لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf',
   'g6-math-s1-exercise-book': 'knowledge-base/grade-6-math/support-pdfs/كتاب التمارين لمادة الرياضيات الصف السادس الفصل الأول.pdf',

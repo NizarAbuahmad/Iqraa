@@ -36,6 +36,24 @@ function goodDeck() {
 const codes = (deck: unknown, source = "") => checkDeck(deck, source).map(i => i.code);
 
 describe("checkDeck", () => {
+  it("flags diagrams too thin to draw", () => {
+    const d = goodDeck();
+    Object.assign(d.slides[3]!, { layout: "cycle", mediaPrompt: "", cycle: { stages: [{ label: "a" }] } });
+    Object.assign(d.slides[4]!, { layout: "mindmap", mediaPrompt: "", mindmap: { center: "c", nodes: [{ text: "a" }] } });
+    const c = codes(d);
+    assert.ok(c.includes("cycle_incomplete"));
+    assert.ok(c.includes("mindmap_incomplete"));
+  });
+
+  it("flags a tree and a Venn too thin to draw", () => {
+    const d = goodDeck();
+    Object.assign(d.slides[3]!, { layout: "tree", mediaPrompt: "", tree: { root: "r", branches: [{ label: "a" }] } });
+    Object.assign(d.slides[4]!, { layout: "venn", mediaPrompt: "", venn: { sets: [{ label: "a", only: [] }] } });
+    const c = codes(d);
+    assert.ok(c.includes("tree_incomplete"));
+    assert.ok(c.includes("venn_incomplete"));
+  });
+
   it("passes a deck that keeps the whole contract", () => {
     assert.deepEqual(checkDeck(goodDeck(), BOOK), []);
   });

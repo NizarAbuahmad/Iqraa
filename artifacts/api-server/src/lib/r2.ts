@@ -12,7 +12,13 @@
  * already uses for a missing DB schema — not a 500, since this is a known,
  * expected state (R2 is optional), not a bug.
  */
-import { GetObjectCommand, PutObjectCommand, DeleteObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  ListObjectsV2Command,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "node:crypto";
 
@@ -33,6 +39,18 @@ function r2Client(): S3Client | null {
     region: "auto",
     endpoint,
     credentials: { accessKeyId, secretAccessKey },
+    // Real R2 uses virtual-hosted style. The DB tests point R2_ENDPOINT at a local stub that has
+    // no wildcard DNS, so they set this; production never does.
+    forcePathStyle: process.env.R2_FORCE_PATH_STYLE === "true",
+    // Bounded, so an R2 brownout cannot hold a request (and whatever the caller holds meanwhile) for
+    // ever: the SDK's defaults have no timeout at all and three attempts. `socketTimeout` is an
+    // INACTIVITY bound (no byte either way for that long), not a wall clock, so a large upload that
+    // keeps sending is not cut; `requestTimeout` is left unset because in this handler it is a wall
+    // clock that only warns unless `throwOnRequestTimeout`. Nothing here streams a body to a slow
+    // client (downloads are signed URLs), so an idle socket really is a stuck request. Worst case per
+    // call: about two attempts of 5 s to connect plus 10 s of silence. Pinned by s3Stub.test.ts.
+    maxAttempts: 2,
+    requestHandler: { connectionTimeout: 5_000, socketTimeout: 10_000 },
   });
   return cachedClient;
 }
@@ -102,6 +120,16 @@ export function newAttemptAudioKey(extension: string): string {
   return `attempt-audio/${randomUUID()}${extension}`;
 }
 
+/**
+ * A student's project photo. A prefix of its own, with the homework and the roster row in the
+ * path: this is a minor's work, so "delete everything for this homework" or "for this child" is
+ * a prefix operation rather than a query someone has to get right. The filename is never the
+ * caller's, and the UUID makes the key unguessable even if the bucket's public toggle is left on.
+ */
+export function newHomeworkSubmissionKey(homeworkId: string, studentId: string, extension: string): string {
+  return `homework-submissions/${homeworkId}/${studentId}/${randomUUID()}${extension}`;
+}
+
 export async function putObject(key: string, body: Buffer, contentType: string): Promise<void> {
   const client = r2Client();
   if (!client) throw new Error("R2 is not configured");
@@ -155,6 +183,54 @@ export async function deleteObject(key: string): Promise<void> {
   const client = r2Client();
   if (!client) return;
   await client.send(new DeleteObjectCommand({ Bucket: bucket(), Key: key }));
+}
+
+export interface ListedObject {
+  key: string;
+  lastModified: Date;
+}
+
+const LIST_PAGE_SIZE = 1000;
+
+/**
+ * Every object under `prefix` in the PRIVATE bucket, in key order as S3 returns it. It exists for the
+ * homework-submission orphan sweep, which has to find stored photos that no database row refers to.
+ * Listing is bucket-wide by prefix, so a caller must pass a non-empty one: an empty prefix is refused
+ * rather than listing the whole bucket by accident. Pages through ListObjectsV2 with a continuation
+ * token; `maxKeys` caps the TOTAL returned (default 10_000) so a runaway prefix cannot exhaust memory,
+ * and `truncated` is true only when objects beyond what was returned really exist (the cap was hit,
+ * or a page said it was truncated but carried no continuation token). The caller checks
+ * `isR2Configured()` first — unconfigured throws, like `putObject`.
+ */
+export async function listObjects(
+  prefix: string,
+  opts: { maxKeys?: number } = {},
+): Promise<{ objects: ListedObject[]; truncated: boolean }> {
+  if (!prefix) throw new Error("listObjects needs a prefix");
+  const client = r2Client();
+  if (!client) throw new Error("R2 is not configured");
+  const cap = opts.maxKeys ?? 10_000;
+  const objects: ListedObject[] = [];
+  let token: string | undefined;
+  for (;;) {
+    const page = await client.send(
+      new ListObjectsV2Command({
+        Bucket: bucket(),
+        Prefix: prefix,
+        MaxKeys: Math.max(1, Math.min(LIST_PAGE_SIZE, cap - objects.length)),
+        ContinuationToken: token,
+      }),
+    );
+    for (const o of page.Contents ?? []) {
+      if (!o.Key || !o.LastModified) continue;
+      objects.push({ key: o.Key, lastModified: o.LastModified });
+    }
+    if (page.IsTruncated !== true) return { objects, truncated: false };
+    // More exists. Stop at the cap, or when the bucket gave no token to ask for it with: either way
+    // the listing is incomplete, and a caller must not read it as "this is everything".
+    if (objects.length >= cap || !page.NextContinuationToken) return { objects, truncated: true };
+    token = page.NextContinuationToken;
+  }
 }
 
 /** Like `deleteObject`, but from the public bucket. */

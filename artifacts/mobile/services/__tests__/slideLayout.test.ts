@@ -165,6 +165,10 @@ describe('SLIDE_LAYOUTS', () => {
       quote: slide({ layout: 'quote', quote: { text: 'العلم نور' } }),
       photo: slide({ layout: 'photo', content: 'جملة', sideImageUrl: 'https://img.example/a.jpg' }),
       concepts: slide({ layout: 'concepts', concepts: ['سكون', 'حركة'] }),
+      cycle: slide({ layout: 'cycle', cycle: { stages: [{ label: 'أ' }, { label: 'ب' }, { label: 'ج' }] } }),
+      tree: slide({ layout: 'tree', tree: { root: 'ر', branches: [{ label: 'أ' }, { label: 'ب' }] } }),
+      venn: slide({ layout: 'venn', venn: { sets: [{ label: 'أ', only: ['١'] }, { label: 'ب', only: [] }], shared: [] } }),
+      mindmap: slide({ layout: 'mindmap', mindmap: { center: 'م', nodes: [{ text: 'أ' }, { text: 'ب' }, { text: 'ج' }] } }),
     };
     for (const name of SLIDE_LAYOUTS) {
       assert.equal(resolveSlideLayout(samples[name])?.kind, name, `${name} should resolve`);
@@ -423,8 +427,132 @@ describe('payloadLines — a refused layout still leaves the teacher the words',
     );
   });
 
+  it('gives a comparison and a statistic their words too', () => {
+    assert.deepEqual(
+      payloadLines(slide({ compare: { leftTitle: 'ذرة', left: ['متعادلة', '• محايدة'], rightTitle: 'أيون', right: ['مشحون'] } })),
+      ['ذرة: متعادلة', 'ذرة: محايدة', 'أيون: مشحون'],
+    );
+    assert.deepEqual(payloadLines(slide({ stat: { value: '40%', label: 'سكن' } })), ['40% — سكن']);
+    assert.deepEqual(payloadLines(slide({ compare: { leftTitle: '', left: ['أ'], rightTitle: 'ب', right: [] } })), ['أ']);
+  });
+
+  it('keeps numbers: numeric table cells, timeline labels and stat values survive', () => {
+    assert.deepEqual(payloadLines(slide({ table: { headers: ['س', 'ص'], rows: [[1, 2], [3, 4]] as never } })), ['س: 1 — ص: 2', 'س: 3 — ص: 4']);
+    assert.deepEqual(payloadLines(slide({ timeline: [{ label: 1948, text: 'حدث' }] as never })), ['1948 — حدث']);
+    assert.deepEqual(payloadLines(slide({ stat: { value: 5, label: 'قوانين' } as never })), ['5 — قوانين']);
+  });
+
+  it('never leaves a dangling "title:" for an empty item', () => {
+    assert.deepEqual(
+      payloadLines(slide({ compare: { leftTitle: 'أ', left: ['', '  ', 'س'], rightTitle: 'ب', right: [null] as never } })),
+      ['أ: س'],
+    );
+  });
+
+  it('does not throw on a number where the gate expects text (stat, compare)', () => {
+    const stat = slide({ layout: 'stat', stat: { value: 5, label: 'قوانين' } as never });
+    assert.deepEqual(resolveSlideLayout(stat), { kind: 'stat', value: '5', label: 'قوانين' });
+    assert.equal(resolveSlideLayout(slide({ layout: 'stat', stat: { value: {}, label: 'x' } as never })), null);
+    const cmp = slide({ layout: 'compare', compare: { leftTitle: 1, left: ['a'], rightTitle: 2, right: [3] } as never });
+    assert.deepEqual(resolveSlideLayout(cmp), { kind: 'compare', leftTitle: '1', left: ['a'], rightTitle: '2', right: ['3'] });
+    assert.equal(resolveSlideLayout(slide({ layout: 'compare', compare: { leftTitle: null, left: ['a'], rightTitle: 'b', right: ['c'] } as never })), null);
+  });
+
   it('survives junk instead of throwing', () => {
-    assert.deepEqual(payloadLines(slide({ timeline: [null, { label: 5 }] as never, stats: 'x' as never })), []);
+    assert.deepEqual(payloadLines(slide({ timeline: [null, { label: {} }, { label: NaN }] as never, stats: 'x' as never })), []);
     assert.deepEqual(payloadLines(slide()), []);
+  });
+});
+
+describe('diagram layouts', () => {
+  const cyc = (stages: unknown) => slide({ layout: 'cycle', cycle: { stages } as never });
+  it('draws a cycle of 3 to 6 named stages', () => {
+    const r = resolveSlideLayout(cyc([{ label: 'تبخر' }, { label: 'تكاثف', note: 'تبرد' }, { label: 'هطول' }]));
+    assert.deepEqual(r, { kind: 'cycle', stages: [{ label: 'تبخر' }, { label: 'تكاثف', note: 'تبرد' }, { label: 'هطول' }] });
+  });
+  it('refuses a cycle that is too short, too long, repeated or over-long', () => {
+    assert.equal(resolveSlideLayout(cyc([{ label: 'a' }, { label: 'b' }])), null);
+    assert.equal(resolveSlideLayout(cyc(Array.from({ length: 7 }, (_, i) => ({ label: `s${i}` })))), null);
+    assert.equal(resolveSlideLayout(cyc([{ label: 'a' }, { label: 'a' }, { label: 'b' }])), null);
+    assert.equal(resolveSlideLayout(cyc([{ label: 'x'.repeat(25) }, { label: 'b' }, { label: 'c' }])), null);
+    assert.equal(resolveSlideLayout(cyc([{ label: 'a', note: 'n'.repeat(61) }, { label: 'b' }, { label: 'c' }])), null);
+  });
+
+  const tree = (t: unknown) => slide({ layout: 'tree', tree: t as never });
+  it('draws a tree of 2 to 4 branches with up to 4 leaves each', () => {
+    const r = resolveSlideLayout(tree({ root: 'المادة', branches: [{ label: 'نقية', leaves: ['عنصر', 'مركب'] }, { label: 'مخلوط' }] }));
+    assert.deepEqual(r, { kind: 'tree', root: 'المادة', branches: [{ label: 'نقية', leaves: ['عنصر', 'مركب'] }, { label: 'مخلوط', leaves: [] }] });
+  });
+  it('refuses a tree with one branch, five leaves, or a repeated sibling', () => {
+    assert.equal(resolveSlideLayout(tree({ root: 'r', branches: [{ label: 'a' }] })), null);
+    assert.equal(resolveSlideLayout(tree({ root: 'r', branches: [{ label: 'a', leaves: ['1', '2', '3', '4', '5'] }, { label: 'b' }] })), null);
+    assert.equal(resolveSlideLayout(tree({ root: 'r', branches: [{ label: 'a' }, { label: 'a' }] })), null);
+    assert.equal(resolveSlideLayout(tree({ root: '', branches: [{ label: 'a' }, { label: 'b' }] })), null);
+  });
+
+  const venn = (v: unknown) => slide({ layout: 'venn', venn: v as never });
+  it('draws a two-set Venn and a three-set one within the tighter limits', () => {
+    assert.ok(resolveSlideLayout(venn({ sets: [{ label: 'فلزات', only: ['موصلة'] }, { label: 'لافلزات', only: [] }], shared: ['عناصر'] })));
+    assert.ok(resolveSlideLayout(venn({ sets: [{ label: 'a', only: ['x'] }, { label: 'b', only: [] }, { label: 'c', only: [] }], shared: [] })));
+  });
+  it('refuses an empty Venn, a fourth set, and three-set items past the tighter limit', () => {
+    assert.equal(resolveSlideLayout(venn({ sets: [{ label: 'a', only: [] }, { label: 'b', only: [] }], shared: [] })), null);
+    assert.equal(resolveSlideLayout(venn({ sets: ['a', 'b', 'c', 'd'].map(label => ({ label, only: ['x'] })), shared: [] })), null);
+    assert.equal(resolveSlideLayout(venn({ sets: [{ label: 'a', only: ['1', '2', '3', '4'] }, { label: 'b', only: [] }, { label: 'c', only: [] }], shared: [] })), null);
+    assert.equal(resolveSlideLayout(venn({ sets: [{ label: 'a', only: ['x'.repeat(17)] }, { label: 'b', only: [] }, { label: 'c', only: [] }], shared: [] })), null);
+    assert.equal(resolveSlideLayout(venn({ sets: [{ label: 'a', only: [] }, { label: 'b', only: [] }, { label: 'c', only: [] }], shared: ['x'.repeat(17)] })), null);
+  });
+  it('allows a three-set item of exactly 16 characters, and a longer one in a two-set Venn', () => {
+    assert.ok(resolveSlideLayout(venn({ sets: [{ label: 'a', only: ['x'.repeat(16)] }, { label: 'b', only: [] }, { label: 'c', only: [] }], shared: ['y'.repeat(16)] })));
+    assert.ok(resolveSlideLayout(venn({ sets: [{ label: 'a', only: ['x'.repeat(32)] }, { label: 'b', only: [] }], shared: [] })));
+  });
+
+  const mind = (m: unknown) => slide({ layout: 'mindmap', mindmap: m as never });
+  it('draws a mind map of 3 to 6 nodes, roles optional', () => {
+    const r = resolveSlideLayout(mind({ center: 'التلوث', nodes: [{ text: 'المصانع', role: 'cause' }, { text: 'أمراض', role: 'effect' }, { text: 'حلول' }] }));
+    assert.deepEqual(r, { kind: 'mindmap', center: 'التلوث', nodes: [{ text: 'المصانع', role: 'cause' }, { text: 'أمراض', role: 'effect' }, { text: 'حلول' }] });
+  });
+  it('refuses a mind map with two nodes or an unknown role', () => {
+    assert.equal(resolveSlideLayout(mind({ center: 'c', nodes: [{ text: 'a' }, { text: 'b' }] })), null);
+    assert.equal(resolveSlideLayout(mind({ center: 'c', nodes: [{ text: 'a', role: 'reason' }, { text: 'b' }, { text: 'c' }] })), null);
+  });
+
+  // A model writes `"role": null` or `"leaves": null` for "none" as readily as it
+  // leaves the key out; refusing the whole drawing over an empty optional field
+  // is the same mistake the gate already avoids for a cycle's `note` and a Venn's
+  // `only` / `shared`.
+  it('reads a mind-map role of null or "" as absent, not as a reason to refuse', () => {
+    const r = resolveSlideLayout(mind({ center: 'c', nodes: [{ text: 'a', role: null }, { text: 'b', role: '' }, { text: 'c', role: 'cause' }] }));
+    assert.deepEqual(r, { kind: 'mindmap', center: 'c', nodes: [{ text: 'a' }, { text: 'b' }, { text: 'c', role: 'cause' }] });
+  });
+  it('reads tree leaves of null as none', () => {
+    const r = resolveSlideLayout(tree({ root: 'r', branches: [{ label: 'a', leaves: null }, { label: 'b', leaves: ['x'] }] }));
+    assert.deepEqual(r, { kind: 'tree', root: 'r', branches: [{ label: 'a', leaves: [] }, { label: 'b', leaves: ['x'] }] });
+  });
+  it('reads a cycle note of "" or null as absent', () => {
+    const r = resolveSlideLayout(cyc([{ label: 'a', note: '' }, { label: 'b', note: null }, { label: 'c' }]));
+    assert.deepEqual(r, { kind: 'cycle', stages: [{ label: 'a' }, { label: 'b' }, { label: 'c' }] });
+  });
+
+  it('refuses over-long roots and centres, repeated nodes and leaves, and a crowded three-set shared region', () => {
+    assert.equal(resolveSlideLayout(tree({ root: 'r'.repeat(33), branches: [{ label: 'a' }, { label: 'b' }] })), null);
+    assert.ok(resolveSlideLayout(tree({ root: 'r'.repeat(32), branches: [{ label: 'a' }, { label: 'b' }] })));
+    assert.equal(resolveSlideLayout(mind({ center: 'c'.repeat(41), nodes: [{ text: 'a' }, { text: 'b' }, { text: 'c' }] })), null);
+    assert.ok(resolveSlideLayout(mind({ center: 'c'.repeat(40), nodes: [{ text: 'a' }, { text: 'b' }, { text: 'c' }] })));
+    assert.equal(resolveSlideLayout(mind({ center: 'c', nodes: [{ text: 'a' }, { text: 'b' }, { text: 'a', role: 'cause' }] })), null);
+    assert.equal(resolveSlideLayout(tree({ root: 'r', branches: [{ label: 'a', leaves: ['x', 'x'] }, { label: 'b' }] })), null);
+    assert.equal(resolveSlideLayout(venn({ sets: [{ label: 'a', only: [] }, { label: 'b', only: [] }, { label: 'c', only: [] }], shared: ['1', '2', '3'] })), null);
+    assert.ok(resolveSlideLayout(venn({ sets: [{ label: 'a', only: [] }, { label: 'b', only: [] }, { label: 'c', only: [] }], shared: ['1', '2'] })));
+  });
+
+  it('lists the four in SLIDE_LAYOUTS and falls back to their words', () => {
+    for (const l of ['cycle', 'tree', 'venn', 'mindmap']) assert.ok((SLIDE_LAYOUTS as readonly string[]).includes(l), l);
+    const lines = payloadLines(slide({
+      cycle: { stages: [{ label: 'تبخر', note: 'حرارة' }] },
+      tree: { root: 'المادة', branches: [{ label: 'نقية', leaves: ['عنصر'] }] },
+      venn: { sets: [{ label: 'فلزات', only: ['موصلة'] }], shared: ['عناصر'] },
+      mindmap: { center: 'التلوث', nodes: [{ text: 'المصانع' }] },
+    }));
+    assert.deepEqual(lines, ['تبخر — حرارة', 'المادة', 'نقية — عنصر', 'فلزات — موصلة', 'عناصر', 'التلوث', 'المصانع']);
   });
 });
