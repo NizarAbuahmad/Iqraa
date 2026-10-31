@@ -82,7 +82,7 @@ function DrillCard({ drill, accent }: { drill: VocabularyDrill; accent: string }
           </Text>
           {/* The pronunciation is the part of the Word List a student cannot get
               from the sentence, so it is shown once the answer is settled. */}
-          <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>{drill.ipa}</Text>
+          {drill.ipa ? <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>{drill.ipa}</Text> : null}
           <Pressable onPress={() => setPicked(null)} style={{ marginInlineStart: 'auto' }}>
             <Text style={{ color: accent, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
               {t('practiceTryAgain')}
@@ -146,7 +146,7 @@ export function VocabularyPracticePanel({ lessonId, accent }: { lessonId: string
                   {w.word}
                   {w.pos ? <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{`  (${w.pos})`}</Text> : null}
                 </Text>
-                <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>{w.ipa}</Text>
+                {w.ipa ? <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>{w.ipa}</Text> : null}
               </View>
             ))}
           </View>
