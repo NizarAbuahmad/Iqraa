@@ -69,6 +69,7 @@ Checked 2026-10-22:
 
 ## Open
 
+- 2026-10-31 — Homework submissions record their author (migration `0022`; what is left open is the item «A student whose record already holds a project…» below)
 - 2026-10-31 — Slides: cycle, tree, Venn and mind-map diagrams; curriculum slides gain shapes, icons, charts and photos (untested against a live model)
 - **Screen recording of everyone is ON for the web app (since the 2026-10-29 re-run of Deploy
   #868) and not yet running on Android.** Web: the Contentsquare tag loads on `app.iqrra.com` (not
@@ -87,7 +88,7 @@ Checked 2026-10-22:
   once the site redeploys. Students, parents and exam pages are recorded; the parent consent page
   is not. The homework project screen (`/homework-project`, students' photos of their work) is left
   out of screen-view tracking (`shouldTrackScreen`), which does not stop a recording already
-  running, and whether masking hides its photos is unverified, like every other screen. The policy (`LEGAL_VERSION` 2026-10-31 now; its recording text dates from 2026-10-30) was written by a model and **not reviewed by a
+  running, and whether masking hides its photos is unverified, like every other screen. The policy (`LEGAL_VERSION` 2026-10-31.b now; its recording text dates from 2026-10-30) was written by a model and **not reviewed by a
   lawyer**; Contentsquare's data location was not checked (PostHog's settings say «EU Cloud»),
   and the Contentsquare plan shows a 200K sessions a month cap.
   Entry: «Screen recordings: Contentsquare on the web, PostHog replay on Android» in the log.
@@ -101,7 +102,7 @@ Checked 2026-10-22:
   «Parent approval for email students — server (PR A)».
 - **A student can sign up with an email and no teacher's code (PR #1226, merged 2026-10-24) — the
   legal wording still needs a person to read it.** The privacy policy §5 and terms §1
-  (`constants/legal.ts`, since `LEGAL_VERSION` 2026-10-23; 2026-10-31 now) say a student may join with an email after
+  (`constants/legal.ts`, since `LEGAL_VERSION` 2026-10-23; 2026-10-31.b now) say a student may join with an email after
   confirming they are an adult or have a guardian's agreement. They were drafted, not reviewed by
   a lawyer, and nothing in the repo records a review since. Merging deploys, and from then new
   sign-ups record that version; existing accounts are not asked again (there is no re-acceptance
@@ -110,13 +111,15 @@ Checked 2026-10-22:
   itself (Play Console) was not checked** and may still say accounts are made only through a class.
   Becoming a student by switching role asks for the same confirmation as signing up as one. Entry:
   «Students choose an email or a teacher's code» in the log.
-- **Unlinking a student account leaves its homework projects on the roster record for whoever is
-  linked next.** A submission belongs to the roster row (`homework_submissions.student_id`), not to
-  an account, and `DELETE /students/:id/links/:userId` (`routes/roster.ts`) touches no submission,
-  so the next account linked to that record sees, and can change, a draft or a handed-in project the
-  previous account made (privacy §1 says so). Deleting the account itself removes them (since
-  2026-10-31). To decide: an author column on the submission, or a purge on unlink. Entry:
-  «Homework project submission — student app» in the log.
+- **A student whose record already holds a project handed in from another account is stuck on that
+  homework, and the teacher has no tool to clear it.** Since migration `0022_light_stellaris` (adds
+  `homework_submissions.author_user_id`; it ships with the merge that carries it, before the API) a
+  submission belongs to the account that wrote it: after a teacher unlinks a mis-claimed account and
+  links the right one, the new account sees «سُلِّم مشروع لهذا السجلّ من حساب آخر» and every write is
+  409 `other_author`, while the teacher and the parents still see the old work. The only ways out
+  today: the old account deletes itself (its work goes), or the teacher archives the whole homework
+  (everyone's work goes). To decide: a teacher action that clears one student's submission. Entry:
+  «Homework submissions record their author» in the log.
 - **An exam's read-aloud recordings outlive the exam's removal and the student's account.**
   Removing an exam (`DELETE /evaluations/:id`) archives it, and attempts reference the roster row, so
   neither that nor the student deleting their account deletes the recordings in R2 (privacy §6

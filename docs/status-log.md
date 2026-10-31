@@ -56,6 +56,118 @@ clean on the whole monorepo.
 - The glosses (above), and the Grade 6 screens on a phone.
 - Not done: Grade 7, Grade 10 semester 2, an Android OTA.
 
+## Homework submissions record their author — 2026-10-31
+
+Closes the open item «Unlinking a student account leaves its homework projects on the roster record
+for whoever is linked next». A submission hung off the roster record (`homework_submissions.student_id`),
+so after a teacher unlinked a mis-claimed student account (`DELETE /students/:id/links/:userId`) the next
+account linked to that record saw, and could change, the previous account's draft and handed-in work, and
+deleting the new account deleted the old account's work. The owner chose an author column over a purge on
+unlink. Spec: `docs/superpowers/specs/2026-10-30-homework-project-submission-design.md` (§1, §3, §4, §8).
+
+**What changed**
+
+- **Migration `0022_light_stellaris`** (additive): `homework_submissions.author_user_id uuid NULL →
+  users(id) ON DELETE SET NULL`, index `homework_submissions_author_idx`, and a backfill: a row's author is
+  the user of its record's `self` link when exactly one exists, else NULL. The three row-level-security
+  policies from `0021` are changed with `ALTER POLICY` (nothing dropped): a student reads a row only if they
+  wrote it (`app_is_student_self(student_id) AND author_user_id = app_uid()`, plus the unchanged
+  handed-in branch for everyone linked to the record and the homework's teacher), and `INSERT` / `UPDATE`
+  (`USING` and `WITH CHECK`) need `app_is_student_self(student_id) AND author_user_id = app_uid()`. So the
+  app role can neither write another account's row nor change a row's author. **No `destructive-migration:
+  ok` is needed:** the file matches none of `DROP (TABLE|COLUMN)|RENAME|SET NOT NULL|SET DATA TYPE` (checked
+  with the workflow's own `grep`); `ALTER POLICY` runs inside the migrator's single transaction.
+- **API** (`lib/homeworkSubmission.ts`, `routes/homeworkSubmissions.ts`). A new row records the caller as
+  author. For the account linked to the record now: its own row behaves as before; another account's (or an
+  authorless) draft reads as `none` with no photos or note, and the first upload or note **takes it over** —
+  photos and note dropped, author set to the caller, in one transaction on `systemDb` holding the row lock
+  and re-checking the caller's `self` link, old objects deleted after the commit (best effort, logged). A
+  remove of one of its photos is 404 and a hand-in is `empty`; neither takes over. Another account's (or an
+  authorless) handed-in project reads as `none` with the new `otherAuthor: true` and none of its content,
+  and every write (upload, remove, note, hand-in) is 409 `other_author`. Every write's `UPDATE` also carries
+  `author_user_id = caller`. Under row-level security another account's draft is invisible to the caller,
+  so the takeover is triggered by the insert's conflict, not by the caller's own read. The teacher's and the
+  parent's routes, the family list and the sweep are unchanged.
+- **Account deletion** (`DELETE /auth/users/me`). The first pass deletes the rows the account **authored**,
+  on any record, linked now or not (it was: every row on the records it was `self`-linked to, with a
+  shared-row backstop, now gone). Work another account wrote on a record this one is linked to stays. The
+  second pass, after the account delete, cannot find a racing upload's draft by author (the delete set it
+  to NULL), so it deletes the **authorless drafts** on the records the account wrote on or was linked to
+  (`purgeAuthorlessDraftsOfRows`); an authorless handed-in project is kept. An upload after the account
+  delete cannot write at all (its author would reference a deleted user). The rest of the failure handling
+  (purge before the account delete; purged keys deleted if the account delete throws) is unchanged.
+- **App** (`artifacts/mobile`). `SubmissionView.otherAuthor` (strictly `=== true`; absent is false);
+  `projectMode` and `isOtherAuthorRefusal` in `services/homeworkProject.ts`; `canAddPhoto` / `canHandIn`
+  and `noteNeedsSave` refuse such a view. The project screen shows only «سُلِّم مشروع لهذا السجلّ من حساب
+  آخر. إن كان هذا خطأً فاطلب من معلّمك المساعدة.» / "A project was already handed in for this record from
+  another account. If that is a mistake, ask your teacher for help." with no photos, note or controls.
+  `other_author` maps to `errSubmissionOtherAuthor` (scoped to `SubmissionError`); as a 409 it already
+  makes every handler reload, which then shows the notice. No `app.json`, `package.json` or `eas.json`
+  change.
+- **Privacy policy** (`constants/legal.ts`, both languages, §1 and §6; `LEGAL_VERSION` `2026-10-31.b`, same
+  `LEGAL_LAST_UPDATED`): the sentence that a re-linked record gives the new account its projects is gone. It
+  now says a project is kept under the account that wrote it; after an unlink a handed-in project stays on
+  the record for the teacher and the parents, is not shown to the new account, which cannot change it or
+  hand in another for that homework, and an unfinished draft is deleted when the new account starts its own;
+  deleting a student account deletes what it wrote, including on a record it was unlinked from, and nothing
+  another account wrote. Written by a model, **not reviewed by a lawyer**.
+
+**Verified** (local, 2026-10-31, Postgres 16)
+
+- `routes/__tests__/homeworkSubmission.db.test.ts`, new block «a record that changes hands» (in-memory S3):
+  the full switch with `RLS_ENFORCE=on` — account A writes a draft and hands in a project, the teacher
+  unlinks A through the route and B is linked; B's reads are exactly `{status:none, note:'', photos:[],
+  otherAuthor:false|true}` with none of A's text; all four writes on the handed-in project are 409
+  `other_author` and change nothing (row and bucket compared); the teacher and the record's parent still read
+  A's project; A gets 404; two uploads by B sent at once on A's draft both land, the row is B's with only
+  B's two photos and A's object is deleted (asserted on the end state, not on timing); A's deletion removes
+  A's handed-in project and nothing of B's; B's deletion removes B's. Without RLS: a note alone takes a
+  draft over and B hands in its own; a remove or hand-in on A's draft changes nothing; re-linking A gives A
+  its work back; authorless rows block (handed in) and are taken over (draft); deleting the account linked
+  now keeps a previous account's work. The deletion block now seeds authors and adds: work authored on a
+  record the account was unlinked from is deleted while a previous author's work on its current record
+  stays; the racing-upload case inserts the late draft WITH the account as author (as the route does) and
+  the second pass removes it while an authorless handed-in project stays; a parent's deletion leaves an
+  authorless draft alone.
+- **Each guard broken on purpose, one at a time, and a case failed each time**, then restored: the author
+  check on reads and writes (`isOwn`); the read filter alone; the handed-in block (its three layers
+  together — one alone is caught by the next); the takeover keeping the old photos and note; the takeover
+  not deleting the old objects; deletion by record instead of author; the second pass's `self` filter
+  (parent exclusion); the second pass deleting handed-in rows; the second pass skipped.
+- `lib/db` `rlsMatrix.test.ts`: two new cases and two widened ones, on a freshly migrated database; each of
+  the three policies reverted alone to its `0021` form fails exactly its own case (select, insert, update).
+- The backfill `UPDATE` run by hand on sample rows: a record with one `self` link gets that user, one with
+  only a guardian link stays NULL.
+- api-server `pnpm build && pnpm test`: **3246 / 3246**. `lib/db` `pnpm test` with
+  `RLS_TEST_DATABASE_URL` (fresh database, `migrate -- --from-env`, `verify-schema`): **76 / 76**. Mobile
+  `pnpm test`: **8816 tests, 8806 passed, 0 failed, 10 skipped**, exit 0. Root `pnpm run typecheck`: clean. `drizzle-kit generate` afterwards: «No
+  schema changes». The two greps of ci.yml's «Brand is «إقرأ»» step: no match.
+
+**Not verified**
+
+- The app screen in a browser or on a phone: the notice is pinned by unit and source-reading tests only.
+- Real R2; the CI `rls` job's own run; the migration against a copy of production (its table is empty
+  there, so the backfill updates nothing).
+- The `author_user_id = caller` guard inside each `UPDATE`'s `WHERE` is a race guard (a write that passed
+  its checks just before another account took the row over). No test reaches it: the early checks answer
+  first, and races are not asserted by timing. Under `RLS_ENFORCE=on` the `UPDATE` policy refuses the same
+  write. Likewise the takeover's in-transaction `self`-link re-check is not reached by any test.
+
+**Known limits**
+
+- **A dead end, open in STATUS.md:** a student whose record already holds a project handed in from another
+  account is blocked on that homework, and the teacher has no tool to clear one student's submission. The
+  ways out are the old account deleting itself, or the teacher archiving the homework (every student's work
+  in it goes).
+- The student's homework list (`/student/homework`) still says «تم التسليم» and done for that homework: a
+  completion and a handed-in project belong to the record.
+- The takeover runs on the owner connection (`systemDb`), pinned in `systemDbFiles.test.ts` with its reason.
+- A hand-in landing between the account deletion's first pass and the account delete (milliseconds after
+  an upload in the same window) would leave an authorless handed-in project; not handled.
+- A record that changed hands before `0022` ran is credited to the account linked at migration time.
+- The second pass also removes an authorless draft that predates the column on those records (nobody's,
+  shown to nobody).
+
 ## Homework project submission — student app — 2026-10-30
 
 Phase 2 of 3: a student whose homework needs a project can open it from the School tab,

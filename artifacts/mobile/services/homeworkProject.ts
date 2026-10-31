@@ -7,9 +7,20 @@ import { noteChanged, type SubmissionState } from './homeworkSubmission.ts';
 
 const statusOf = (e: unknown): unknown => (e && typeof e === 'object' ? (e as { status?: unknown }).status : undefined);
 
+/**
+ * What the screen draws: `edit`, `locked` (handed in and the due day has passed: read-only with the lock line), or
+ * `otherAuthor` (another account handed the record's project in: a notice and nothing else — the server sends none
+ * of that project and refuses every write).
+ */
+export type ProjectMode = 'edit' | 'locked' | 'otherAuthor';
+export function projectMode(view: { locked: boolean; otherAuthor?: boolean }): ProjectMode {
+  if (view.otherAuthor === true) return 'otherAuthor';
+  return view.locked ? 'locked' : 'edit';
+}
+
 /** The draft must be saved: it differs from the note the server holds, and the project can still change. */
-export function noteNeedsSave(view: { locked: boolean }, savedNote: string | null, draft: string): boolean {
-  return !view.locked && savedNote !== null && noteChanged(savedNote, draft);
+export function noteNeedsSave(view: { locked: boolean; otherAuthor?: boolean }, savedNote: string | null, draft: string): boolean {
+  return projectMode(view) === 'edit' && savedNote !== null && noteChanged(savedNote, draft);
 }
 
 /**
@@ -49,6 +60,17 @@ export function isEmptyRefusal(e: unknown): boolean {
   if (!e || typeof e !== 'object') return false;
   const { name, code } = e as { name?: unknown; code?: unknown };
   return name === 'SubmissionError' && code === 'empty';
+}
+
+/**
+ * The project routes' `other_author` refusal: the record's project was handed in from another account since the
+ * screen loaded. A 409, so `isStaleRefusal` already makes every handler read the project again, which then shows
+ * the notice; this names the case for anything that must tell it apart.
+ */
+export function isOtherAuthorRefusal(e: unknown): boolean {
+  if (!e || typeof e !== 'object') return false;
+  const { name, code } = e as { name?: unknown; code?: unknown };
+  return name === 'SubmissionError' && code === 'other_author';
 }
 
 /**
