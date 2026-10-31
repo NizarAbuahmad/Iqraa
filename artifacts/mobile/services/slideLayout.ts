@@ -37,6 +37,10 @@ export type ResolvedLayout =
   | { kind: 'flow'; nodes: string[]; cycle: boolean }
   | { kind: 'quote'; text: string; by?: string }
   | { kind: 'concepts'; items: string[] }
+  | { kind: 'cycle'; stages: { label: string; note?: string }[] }
+  | { kind: 'tree'; root: string; branches: { label: string; leaves: string[] }[] }
+  | { kind: 'venn'; sets: { label: string; only: string[] }[]; shared: string[] }
+  | { kind: 'mindmap'; center: string; nodes: { text: string; role?: 'cause' | 'effect' }[] }
   | { kind: 'photo'; url: string; caption: string; credit?: PhotoCredit; sentence: string };
 
 /**
@@ -93,6 +97,35 @@ export const MIN_CONCEPTS = 2;
 export const MAX_CONCEPTS = 6;
 export const MAX_CONCEPT_CHARS = 32;
 
+export const MIN_CYCLE_STAGES = 3;
+export const MAX_CYCLE_STAGES = 6;
+export const MAX_DIAGRAM_LABEL_CHARS = 24;
+export const MAX_CYCLE_NOTE_CHARS = 60;
+export const MAX_TREE_ROOT_CHARS = 32;
+export const MIN_TREE_BRANCHES = 2;
+export const MAX_TREE_BRANCHES = 4;
+export const MAX_TREE_LEAVES = 4;
+export const MAX_VENN_ITEMS = 4;
+export const MAX_VENN_ITEM_CHARS = 32;
+/**
+ * Three circles leave a third of the room per region. The item cap is 16, not
+ * 20: at 20 an all-capitals Latin phrase («CHLOROFLUOROCARBONS», «MITOCHONDRIA
+ * ORGANELLE») wrapped in the triple overlap and was cut off in the PDF and ran
+ * over the circle's edge in the presenter (seen 2026-10-31); at 16 a two-word
+ * capitals phrase fits in both. Ordinary Arabic and mixed-case English fit at 20.
+ */
+export const MAX_VENN3_ONLY = 3;
+export const MAX_VENN3_SHARED = 2;
+export const MAX_VENN3_ITEM_CHARS = 16;
+export const MIN_MINDMAP_NODES = 3;
+export const MAX_MINDMAP_NODES = 6;
+export const MAX_MINDMAP_CHARS = 40;
+
+/** Labels a reader tells apart: no repeats after trimming. */
+function distinct(items: string[]): boolean {
+  return new Set(items).size === items.length;
+}
+
 /** A required string: trimmed, bullet-stripped, non-empty, within `max`. Anything else is `null`. */
 function needText(v: unknown, max: number): string | null {
   // A bare number is a normal thing for a model to put in a table cell or a
@@ -119,10 +152,20 @@ function lines(content: string | undefined): string[] {
   return (content ?? '').split('\n').map(l => l.trim()).filter(Boolean);
 }
 
+/**
+ * Model output as text without ever throwing: a string as is, a finite number
+ * as the text `needText` would read it as, anything else empty. The gate's
+ * `.trim()` calls used to throw on a number (`stat.value: 5`).
+ */
+function plain(v: unknown): string {
+  if (typeof v === 'number' && Number.isFinite(v)) return String(v);
+  return typeof v === 'string' ? v.trim() : '';
+}
+
 function cleanList(items: unknown): string[] {
   if (!Array.isArray(items)) return [];
   return items
-    .map(i => (typeof i === 'string' ? stripBullet(i).trim() : ''))
+    .map(i => stripBullet(plain(i)).trim())
     .filter(Boolean);
 }
 
@@ -145,18 +188,18 @@ export function resolveSlideLayout(slide: ActivitySlide): ResolvedLayout | null 
     }
 
     case 'stat': {
-      const value = (slide.stat?.value ?? '').trim();
-      const label = (slide.stat?.label ?? '').trim();
+      const value = plain(slide.stat?.value);
+      const label = plain(slide.stat?.label);
       // A stat slide with no figure is just a heading set very large.
       if (!value || value.length > MAX_STAT_VALUE_CHARS) return null;
       if (!label) return null;
-      const source = (slide.stat?.source ?? '').trim();
+      const source = plain(slide.stat?.source);
       return { kind: 'stat', value, label, ...(source ? { source } : {}) };
     }
 
     case 'compare': {
-      const leftTitle = (slide.compare?.leftTitle ?? '').trim();
-      const rightTitle = (slide.compare?.rightTitle ?? '').trim();
+      const leftTitle = plain(slide.compare?.leftTitle);
+      const rightTitle = plain(slide.compare?.rightTitle);
       const left = cleanList(slide.compare?.left);
       const right = cleanList(slide.compare?.right);
       // Both columns must stand up. One empty side is not a comparison, and
@@ -241,6 +284,72 @@ export function resolveSlideLayout(slide: ActivitySlide): ResolvedLayout | null 
       return { kind: 'concepts', items };
     }
 
+    case 'cycle': {
+      const raw = slide.cycle?.stages;
+      if (!Array.isArray(raw) || raw.length < MIN_CYCLE_STAGES || raw.length > MAX_CYCLE_STAGES) return null;
+      const stages: { label: string; note?: string }[] = [];
+      for (const s of raw) {
+        const label = needText(s?.label, MAX_DIAGRAM_LABEL_CHARS);
+        if (label === null) return null;
+        const rawNote = s?.note;
+        const note = rawNote === undefined || rawNote === null || rawNote === '' ? undefined : needText(rawNote, MAX_CYCLE_NOTE_CHARS);
+        if (note === null) return null;
+        stages.push({ label, ...(note ? { note } : {}) });
+      }
+      return distinct(stages.map(s => s.label)) ? { kind: 'cycle', stages } : null;
+    }
+
+    case 'tree': {
+      const root = needText(slide.tree?.root, MAX_TREE_ROOT_CHARS);
+      const raw = slide.tree?.branches;
+      if (root === null || !Array.isArray(raw) || raw.length < MIN_TREE_BRANCHES || raw.length > MAX_TREE_BRANCHES) return null;
+      const branches: { label: string; leaves: string[] }[] = [];
+      for (const b of raw) {
+        const label = needText(b?.label, MAX_DIAGRAM_LABEL_CHARS);
+        // `null` is how a model says "no leaves", as readily as leaving the key out.
+        const leaves = b?.leaves === undefined || b.leaves === null ? [] : needTexts(b.leaves, MAX_DIAGRAM_LABEL_CHARS);
+        if (label === null || leaves === null || leaves.length > MAX_TREE_LEAVES || !distinct(leaves)) return null;
+        branches.push({ label, leaves });
+      }
+      return distinct(branches.map(b => b.label)) ? { kind: 'tree', root, branches } : null;
+    }
+
+    case 'venn': {
+      const raw = slide.venn?.sets;
+      if (!Array.isArray(raw) || raw.length < 2 || raw.length > 3) return null;
+      const three = raw.length === 3;
+      const itemChars = three ? MAX_VENN3_ITEM_CHARS : MAX_VENN_ITEM_CHARS;
+      const sets: { label: string; only: string[] }[] = [];
+      for (const s of raw) {
+        const label = needText(s?.label, MAX_DIAGRAM_LABEL_CHARS);
+        const only = needTexts(s?.only ?? [], itemChars);
+        if (label === null || only === null || only.length > (three ? MAX_VENN3_ONLY : MAX_VENN_ITEMS)) return null;
+        sets.push({ label, only });
+      }
+      const shared = needTexts(slide.venn?.shared ?? [], itemChars);
+      if (shared === null || shared.length > (three ? MAX_VENN3_SHARED : MAX_VENN_ITEMS)) return null;
+      if (!distinct(sets.map(s => s.label))) return null;
+      if (shared.length === 0 && sets.every(s => s.only.length === 0)) return null;
+      return { kind: 'venn', sets, shared };
+    }
+
+    case 'mindmap': {
+      const center = needText(slide.mindmap?.center, MAX_MINDMAP_CHARS);
+      const raw = slide.mindmap?.nodes;
+      if (center === null || !Array.isArray(raw) || raw.length < MIN_MINDMAP_NODES || raw.length > MAX_MINDMAP_NODES) return null;
+      const nodes: { text: string; role?: 'cause' | 'effect' }[] = [];
+      for (const n of raw) {
+        const text = needText(n?.text, MAX_MINDMAP_CHARS);
+        // A null or empty role is "no role", as an absent one is; only a role
+        // that is present and not one of the two is refused.
+        const rawRole = n?.role as unknown;
+        const role = rawRole === undefined || rawRole === null || rawRole === '' ? undefined : rawRole;
+        if (text === null || (role !== undefined && role !== 'cause' && role !== 'effect')) return null;
+        nodes.push({ text, ...(role ? { role } : {}) });
+      }
+      return distinct(nodes.map(n => n.text)) ? { kind: 'mindmap', center, nodes } : null;
+    }
+
     case 'photo': {
       // Needs a real picture and one sentence to put over it. Without the
       // picture this is `null` — the ordinary layout, with the sentence as a
@@ -265,8 +374,27 @@ export function resolveSlideLayout(slide: ActivitySlide): ResolvedLayout | null 
   }
 }
 
+/** Shapes a Slides Maker concept may take: each carries its data in a field of the same name. */
+export const TEACHING_SHAPES: ReadonlySet<string> = new Set(['compare', 'table', 'flow', 'timeline', 'stat', 'cycle', 'tree', 'venn', 'mindmap']);
+
+/**
+ * The payload of a generated concept's `shape` (`{ layout, [layout]: payload }`)
+ * as a slide field set (`{ layout, [layout]: payload }`), or `null` when the
+ * layout is not one a concept may take or the gate refuses its data. The one
+ * place that decides it, so the deck slide and the student card cannot disagree
+ * about whether a concept has a drawing.
+ */
+export function usableConceptShape(shape: unknown, title: string, content: string): Partial<ActivitySlide> | null {
+  if (shape === null || typeof shape !== 'object') return null;
+  const layout = (shape as Record<string, unknown>).layout;
+  if (typeof layout !== 'string' || !TEACHING_SHAPES.has(layout)) return null;
+  const payload = { layout, [layout]: (shape as Record<string, unknown>)[layout] } as Partial<ActivitySlide>;
+  const probe = { slideNumber: 2, type: 'intro', title, content, durationSeconds: 0, ...payload } as ActivitySlide;
+  return resolveSlideLayout(probe) ? payload : null;
+}
+
 /** The layouts whose data lives in a field of its own rather than in `content`. */
-export const PAYLOAD_LAYOUTS = ['stat', 'compare', 'timeline', 'stats', 'table', 'flow', 'quote', 'concepts'] as const;
+export const PAYLOAD_LAYOUTS = ['stat', 'compare', 'timeline', 'stats', 'table', 'flow', 'quote', 'concepts', 'cycle', 'tree', 'venn', 'mindmap'] as const;
 
 /**
  * A slide's own words as bullet lines, from whichever payload it carries — for
@@ -276,23 +404,49 @@ export const PAYLOAD_LAYOUTS = ['stat', 'compare', 'timeline', 'stats', 'table',
  * doing its job.
  */
 export function payloadLines(slide: ActivitySlide): string[] {
-  const str = (v: unknown) => (typeof v === 'string' ? stripBullet(v).trim() : '');
+  // A finite number is text here as it is for the gate (`needText`): a table
+  // cell, a timeline year or a stat value of 1948 must survive as «1948».
+  const str = (v: unknown) => stripBullet(plain(v)).trim();
   const out: string[] = [];
   const add = (...parts: unknown[]) => {
     const joined = parts.map(str).filter(Boolean).join(' — ');
     if (joined) out.push(joined);
   };
+  if (slide.stat) add(slide.stat.value, slide.stat.label);
+  if (slide.compare) {
+    const side = (title: unknown, items: unknown) => {
+      for (const i of Array.isArray(items) ? items : []) {
+        const item = str(i);
+        if (item) add(str(title) ? `${str(title)}: ${item}` : item);
+      }
+    };
+    side(slide.compare.leftTitle, slide.compare.left);
+    side(slide.compare.rightTitle, slide.compare.right);
+  }
   for (const e of Array.isArray(slide.timeline) ? slide.timeline : []) add(e?.label, e?.text);
   for (const st of Array.isArray(slide.stats) ? slide.stats : []) add(st?.value, st?.label);
   if (slide.table && Array.isArray(slide.table.rows)) {
     const headers = Array.isArray(slide.table.headers) ? slide.table.headers : [];
     for (const row of slide.table.rows) {
-      if (Array.isArray(row)) add(...row.map((c, i) => (headers[i] ? `${str(headers[i])}: ${str(c)}` : c)));
+      if (Array.isArray(row)) add(...row.map((c, i) => (headers[i] && str(c) ? `${str(headers[i])}: ${str(c)}` : c)));
     }
   }
   for (const step of Array.isArray(slide.flow?.steps) ? slide.flow!.steps : []) add(step);
   if (slide.quote) add(slide.quote.text, slide.quote.by);
   for (const c of Array.isArray(slide.concepts) ? slide.concepts : []) add(c);
+  for (const s of Array.isArray(slide.cycle?.stages) ? slide.cycle!.stages : []) add(s?.label, s?.note);
+  if (slide.tree) {
+    add(slide.tree.root);
+    for (const b of Array.isArray(slide.tree.branches) ? slide.tree.branches : []) add(b?.label, ...(Array.isArray(b?.leaves) ? b.leaves : []));
+  }
+  if (slide.venn) {
+    for (const s of Array.isArray(slide.venn.sets) ? slide.venn.sets : []) add(s?.label, ...(Array.isArray(s?.only) ? s.only : []));
+    for (const x of Array.isArray(slide.venn.shared) ? slide.venn.shared : []) add(x);
+  }
+  if (slide.mindmap) {
+    add(slide.mindmap.center);
+    for (const n of Array.isArray(slide.mindmap.nodes) ? slide.mindmap.nodes : []) add(n?.text);
+  }
   return out;
 }
 
@@ -361,4 +515,4 @@ export function inlineSteps(text: string): string[] | null {
 }
 
 /** Every layout a generator may ask for — the prompt and the tests share this. */
-export const SLIDE_LAYOUTS = ['statement', 'stat', 'compare', 'steps', 'timeline', 'stats', 'table', 'flow', 'quote', 'photo', 'concepts'] as const;
+export const SLIDE_LAYOUTS = ['statement', 'stat', 'compare', 'steps', 'timeline', 'stats', 'table', 'flow', 'quote', 'photo', 'concepts', 'cycle', 'tree', 'venn', 'mindmap'] as const;
