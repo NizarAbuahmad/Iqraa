@@ -32,9 +32,10 @@ describe('the extracted corpus', () => {
 
   it('holds what the four usable books yielded', () => {
     // Grade 10 S1, Grade 9 S1 and S2, Grade 8 S1 (since 2026-10-25) and Grade 8 S2 (since 2026-10-28):
-    // 730 + 390 + 399 words, 72 + 35 + 35 lessons, 237 + 147 + 115 sentences.
-    assert.equal(ENGLISH_VOCABULARY.length, 1519);
-    assert.equal(new Set(ENGLISH_VOCABULARY.map(w => w.lessonId)).size, 142);
+    // 730 + 390 + 399 words, 72 + 35 + 35 lessons, 237 + 147 + 115 sentences. Grade 6 (since 2026-10-31) adds 319
+    // words on 8 lessons — the activity book's unit Wordlists, no sentences.
+    assert.equal(ENGLISH_VOCABULARY.length, 1838);
+    assert.equal(new Set(ENGLISH_VOCABULARY.map(w => w.lessonId)).size, 150);
     assert.equal(ENGLISH_VOCABULARY.filter(w => w.sentence).length, 499);
   });
 

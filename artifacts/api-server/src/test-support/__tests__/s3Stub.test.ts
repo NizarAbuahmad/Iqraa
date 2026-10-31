@@ -1,0 +1,206 @@
+import { after, before, describe, it } from "node:test";
+import assert from "node:assert/strict";
+
+import { s3Env, startS3Stub, type S3Stub } from "../s3Stub.ts";
+
+const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4, 5, 6, 7, 8]);
+
+describe("the S3 stub, driven by the real r2.ts", () => {
+  let stub: S3Stub;
+  let r2: typeof import("../../lib/r2.ts");
+
+  before(async () => {
+    // A page size of 3 so a handful of objects is enough to force several list requests.
+    stub = await startS3Stub("iqraa-media", { pageSize: 3 });
+    // r2.ts caches its client on first use, so the env must be in place before the first call.
+    Object.assign(process.env, s3Env(stub));
+    r2 = await import("../../lib/r2.ts");
+  });
+  after(async () => {
+    await stub.close();
+  });
+
+  it("builds an unguessable key under the homework-submissions prefix", () => {
+    const key = r2.newHomeworkSubmissionKey("11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222", ".png");
+    assert.match(
+      key,
+      /^homework-submissions\/11111111-1111-4111-8111-111111111111\/22222222-2222-4222-8222-222222222222\/[0-9a-f-]{36}\.png$/,
+    );
+    assert.notEqual(key, r2.newHomeworkSubmissionKey("11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222", ".png"));
+  });
+
+  it("stores exactly the bytes it was given, signs a readable URL, and deletes", async () => {
+    assert.equal(r2.isR2Configured(), true);
+    await r2.putObject("homework-submissions/t/s/a.png", PNG, "image/png");
+    assert.deepEqual(stub.keys(), ["homework-submissions/t/s/a.png"]);
+    assert.ok(stub.body("homework-submissions/t/s/a.png")!.equals(PNG), "stored bytes must equal the upload");
+
+    const url = await r2.presignedGetUrl("homework-submissions/t/s/a.png", 600);
+    assert.ok(url, "a signed URL");
+    assert.match(url!, /X-Amz-Expires=600/);
+    const res = await fetch(url!);
+    assert.equal(res.status, 200);
+    assert.ok(Buffer.from(await res.arrayBuffer()).equals(PNG));
+
+    await r2.deleteObject("homework-submissions/t/s/a.png");
+    assert.deepEqual(stub.keys(), []);
+  });
+
+  describe("listObjects", () => {
+    const T0 = new Date("2026-01-02T03:04:05.000Z");
+    const keyOf = (i: number) => `list-test/p/${String(i).padStart(2, "0")}.png`;
+
+    it("returns only keys under the prefix, in key order, with the lastModified that was set", async () => {
+      await stub.putForTest("list-test/other/x.png", PNG, T0);
+      for (let i = 0; i < 3; i++) await stub.putForTest(keyOf(i), PNG, new Date(T0.getTime() + i * 1000));
+      const { objects, truncated } = await r2.listObjects("list-test/p/");
+      assert.equal(truncated, false);
+      assert.deepEqual(
+        objects.map(o => o.key),
+        [keyOf(0), keyOf(1), keyOf(2)],
+      );
+      assert.deepEqual(
+        objects.map(o => o.lastModified.toISOString()),
+        [0, 1, 2].map(i => new Date(T0.getTime() + i * 1000).toISOString()),
+      );
+      assert.equal(stub.lastModified(keyOf(1))?.getTime(), T0.getTime() + 1000);
+      assert.deepEqual((await r2.listObjects("list-test/nothing/")).objects, []);
+    });
+
+    it("stamps a normal PUT with the current time", async () => {
+      const before = Date.now();
+      await r2.putObject("list-test/now/a.png", PNG, "image/png");
+      const { objects } = await r2.listObjects("list-test/now/");
+      assert.equal(objects.length, 1);
+      // S3 timestamps carry whole seconds only.
+      assert.ok(objects[0]!.lastModified.getTime() >= before - 1000);
+      assert.ok(objects[0]!.lastModified.getTime() <= Date.now() + 1000);
+    });
+
+    it("pages through every object when the bucket answers a few at a time", async () => {
+      for (let i = 3; i < 7; i++) await stub.putForTest(keyOf(i), PNG, T0);
+      const requestsBefore = stub.listRequests();
+      const { objects, truncated } = await r2.listObjects("list-test/p/");
+      assert.equal(truncated, false);
+      assert.deepEqual(
+        objects.map(o => o.key),
+        [0, 1, 2, 3, 4, 5, 6].map(keyOf),
+      );
+      // 7 objects, 3 per page: pages of 3, 3 and 1.
+      assert.equal(stub.listRequests() - requestsBefore, 3);
+    });
+
+    it("stops at maxKeys and says it truncated", async () => {
+      const { objects, truncated } = await r2.listObjects("list-test/p/", { maxKeys: 5 });
+      assert.equal(truncated, true);
+      assert.deepEqual(
+        objects.map(o => o.key),
+        [0, 1, 2, 3, 4].map(keyOf),
+      );
+    });
+
+    it("does not call it truncated when maxKeys equals what exists", async () => {
+      const { objects, truncated } = await r2.listObjects("list-test/p/", { maxKeys: 7 });
+      assert.equal(objects.length, 7);
+      assert.equal(truncated, false);
+    });
+
+    // A page that says "there is more" but gives no token to fetch it: the listing cannot go on, and it must not
+    // claim it saw everything — the sweep reads `truncated: false` as "every orphan was seen".
+    it("calls it truncated when a page is truncated but carries no continuation token", async () => {
+      for (let i = 0; i < 5; i++) await stub.putForTest(`list-test/notoken/${i}.png`, PNG, T0);
+      stub.omitContinuationToken(true);
+      try {
+        const requestsBefore = stub.listRequests();
+        const { objects, truncated } = await r2.listObjects("list-test/notoken/");
+        assert.equal(truncated, true);
+        assert.equal(objects.length, 3, "the one page it got");
+        assert.equal(stub.listRequests() - requestsBefore, 1, "it stopped: there was no token to ask with");
+      } finally {
+        stub.omitContinuationToken(false);
+      }
+    });
+
+    it("refuses an empty prefix, so the whole bucket cannot be listed by accident", async () => {
+      const requestsBefore = stub.listRequests();
+      await assert.rejects(() => r2.listObjects(""), /listObjects needs a prefix/);
+      assert.equal(stub.listRequests(), requestsBefore, "must refuse before asking the bucket");
+    });
+
+    it("round-trips keys that need XML escaping", async () => {
+      const keys = ["list-test/x/a&b.png", "list-test/x/c<d>.png", 'list-test/x/q"\'.png'];
+      for (const k of keys) await stub.putForTest(k, PNG, T0);
+      const { objects } = await r2.listObjects("list-test/x/");
+      assert.deepEqual(objects.map(o => o.key), [...keys].sort());
+    });
+  });
+
+  it("fails every delete while failDeletes is on, keeping the object, and deletes again once it is off", async () => {
+    await stub.putForTest("fail-test/a.png", PNG);
+    stub.failDeletes(true);
+    try {
+      await assert.rejects(() => r2.deleteObject("fail-test/a.png"));
+      assert.ok(stub.body("fail-test/a.png"), "the object is still there");
+    } finally {
+      stub.failDeletes(false);
+    }
+    await r2.deleteObject("fail-test/a.png");
+    assert.equal(stub.body("fail-test/a.png"), undefined, "deleted once deletes work again");
+  });
+
+  it("failDeletesAfter lets the first deletes through and fails every later one, retries included, until cleared", async () => {
+    await stub.putForTest("after-test/a.png", PNG);
+    await stub.putForTest("after-test/b.png", PNG);
+    stub.failDeletesAfter(1);
+    try {
+      await r2.deleteObject("after-test/a.png");
+      assert.equal(stub.body("after-test/a.png"), undefined, "the first delete went through");
+      await assert.rejects(() => r2.deleteObject("after-test/b.png"), "the second fails, and so does the SDK's retry of it");
+      assert.ok(stub.body("after-test/b.png"), "the second object is still there");
+    } finally {
+      stub.failDeletesAfter(null);
+    }
+    await r2.deleteObject("after-test/b.png");
+    assert.equal(stub.body("after-test/b.png"), undefined);
+  });
+
+  it("awaits onDelete before it answers, with the object still there", async () => {
+    await stub.putForTest("hook-test/a.png", PNG);
+    const seen: Array<[string, boolean]> = [];
+    stub.onDelete(async key => {
+      seen.push([key, stub.body(key) !== undefined]);
+    });
+    try {
+      await r2.deleteObject("hook-test/a.png");
+    } finally {
+      stub.onDelete(null);
+    }
+    assert.deepEqual(seen, [["hook-test/a.png", true]]);
+    assert.equal(stub.body("hook-test/a.png"), undefined);
+  });
+
+  // r2.ts bounds every request (lib/r2.ts, the client options): two attempts at most, and a request that gets no
+  // answer is abandoned. A caller that waits on R2 (a teacher clearing a project) must not wait forever in an outage.
+  it("tries a failing request twice, not three times", async () => {
+    stub.failDeletes(true);
+    const before = stub.deleteRequests();
+    try {
+      await assert.rejects(() => r2.deleteObject("attempts-test/a.png"));
+    } finally {
+      stub.failDeletes(false);
+    }
+    assert.equal(stub.deleteRequests() - before, 2);
+  });
+
+  it("gives up on a request R2 never answers, instead of hanging", { timeout: 90_000 }, async () => {
+    stub.stallDeletes(true);
+    const started = Date.now();
+    try {
+      await assert.rejects(() => r2.deleteObject("stall-test/a.png"));
+    } finally {
+      stub.stallDeletes(false);
+    }
+    const took = Date.now() - started;
+    assert.ok(took < 45_000, `gave up after ${took} ms`);
+  });
+});

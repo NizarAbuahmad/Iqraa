@@ -33,9 +33,10 @@ export const PROMPT_VERSION = "2026-10-04.1";
  *   Maker's «اكتشف الخطأ» slide). Older pooled sections have none and would
  *   otherwise be served forever. Students are unaffected: their approved
  *   explanations are read by lesson, not by this key (`lessonExplanationStore.ts`).
+ *   2026-10-31: concepts gained optional `shape`, `icon`, `chart` and `photo`.
  */
 const PROMPT_VERSION_BY_KIND: Readonly<Record<string, string>> = {
-  "lesson-teaching": "2026-10-30.1",
+  "lesson-teaching": "2026-10-31.1",
 };
 
 /** The version a kind's pool is keyed and stored under. */

@@ -62,6 +62,8 @@ import {
   type RosterStudent,
   type StudentChanges,
 } from '@/services/roster';
+import { startThread } from '@/services/messaging';
+import { chatTarget } from '@/services/rosterLinks';
 import { SUBJECTS, getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { narrowSubjectsForGrade } from '@/services/teacherCatalogFilter';
 import { classSubjectIds, filterBySubject, inOptionOrder, subjectIdFromName, subjectLabel, toggleId } from '@/services/classSubjects';
@@ -80,6 +82,7 @@ import { countMaterials, countStudents } from '@/services/i18n';
 import { confirm } from '@/services/confirm';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
+import { ICON } from '@/constants/icons';
 import { ClassResourceRow } from '@/components/classes/ClassResourceRow';
 import { LibraryPickerSheet } from '@/components/classes/LibraryPickerSheet';
 import { LabPickerSheet } from '@/components/classes/LabPickerSheet';
@@ -237,6 +240,8 @@ export default function ClassDetailScreen() {
       if (err instanceof RosterError) {
         if (err.isStorageUnavailable) return t('rosterStorageUnavailable');
         if (err.code === 'student_name_taken') return t('studentNameTaken');
+        if (err.code === 'student_name_ar_invalid') return t('studentNameArInvalid');
+        if (err.code === 'student_name_ar_too_long') return t('studentNameArTooLong');
         if (err.status === 0 || err.status >= 500) return t('rosterLoadFailed');
         return err.message;
       }
@@ -482,6 +487,30 @@ export default function ClassDetailScreen() {
       void queryClient.invalidateQueries({ queryKey: CLASSES_QUERY_KEY });
     } catch (err) {
       setError(describe(err));
+    }
+  };
+
+  /**
+   * «رسالة» on a joined student's row: straight into a chat with their family.
+   * Several linked accounts go to the inbox's own picker instead, because a
+   * message to the wrong family cannot be unsent (see `chatTarget`).
+   */
+  const [chatBusyId, setChatBusyId] = useState<string | null>(null);
+  const openChat = async (student: RosterStudent) => {
+    const target = chatTarget(student.links);
+    if (!target || chatBusyId) return;
+    if (target.kind === 'choose') {
+      router.push('/(tabs)/notifications');
+      return;
+    }
+    setChatBusyId(student.id);
+    try {
+      const thread = await startThread(target.userId);
+      router.push(`/messaging/${thread.id}`);
+    } catch (err) {
+      setError(describe(err));
+    } finally {
+      setChatBusyId(null);
     }
   };
 
@@ -1058,6 +1087,21 @@ export default function ClassDetailScreen() {
                     {t('rosterLinked')}
                   </Text>
                 </View>
+              ) : null}
+              {chatTarget(item.links) ? (
+                <Pressable
+                  onPress={() => { void openChat(item); }}
+                  disabled={chatBusyId !== null}
+                  hitSlop={10}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('rosterMessageA11y', item.displayName)}
+                  style={[styles.linkedPill, { backgroundColor: ACCENT + '18', flexDirection: 'row', alignItems: 'center', gap: 4, opacity: chatBusyId === item.id ? 0.5 : 1 }]}
+                >
+                  <Ionicons name="chatbubble-ellipses-outline" size={ICON.sm} color={ACCENT} />
+                  <Text style={[styles.linkedPillText, { color: ACCENT, fontFamily: 'ReadexPro_500Medium' }]}>
+                    {t('rosterMessage')}
+                  </Text>
+                </Pressable>
               ) : null}
               {/* Hidden, not disabled, when nothing can redeem a code: a greyed
                   key on every one of thirty rows is more confusion, not less.

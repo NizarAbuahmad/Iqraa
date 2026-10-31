@@ -589,6 +589,8 @@ gcloud run services update iqraa-api --region europe-west1 $P \
 gcloud scheduler jobs update http homework-reminders --location europe-west1 $P \
   --update-headers "x-internal-key=$KEY,Content-Type=application/json" \
   --format=none   # without this gcloud prints the job, x-internal-key included
+# If the submission sweep job exists, run its `jobs update http` line (next section) here, while
+# $KEY is still set (so before the unset below) and before the old versions are disabled.
 unset KEY
 # The service now reads the new version; disable the old one(s) so a leaked key is dead.
 gcloud secrets versions list INTERNAL_CRON_KEY $P --filter=state=enabled \
@@ -613,6 +615,293 @@ claims: a retry after a failed or timed-out run reminds only the homework not ye
 claimed and repeats none. The run is sequential, so a very large school could
 outlast the job's 300 s attempt deadline; do not rely on the handler carrying on
 after its request ends (Cloud Run throttles CPU then) — rely on the retry.
+
+### The submission sweep (Cloud Scheduler) — manual, once
+
+`POST /api/internal/homework-submission-sweep` cleans up the photos students hand
+in with a homework project (private bucket, `homework-submissions/`). It does two
+things, in this order:
+
+1. **Retries the purge** for archived homework and for homework in an archived
+   class that still has submission rows (a purge that threw, or an upload that
+   raced one). Rows and photos both go.
+2. **Deletes objects no `homework_submissions` row refers to**: a photo stored
+   by an upload whose database write then failed, or left behind by an object
+   delete that failed.
+
+**It is irreversible: it deletes objects that are a minor's work, and nothing in
+the repo can bring them back.** The code only ever errs toward keeping (see the
+limits below), but treat the first run as the dangerous one.
+
+It reuses **`INTERNAL_CRON_KEY`** and the same guard as the reminder (no new
+secret), and it needs one more thing the reminder does not: the plain env var
+**`HOMEWORK_SUBMISSION_SWEEP=on`** on the service. **The route answers 404 to
+everyone — the right key included — unless both are there**: the key, and that
+variable equal to exactly `on` (`ON`, `true`, `1` are all off). The variable is
+read on every request, is not a secret, and overrides none of the guards below.
+It is set **by hand, once, on `iqraa-api` only**, and deliberately not in
+`deploy.yml` (whose `--update-env-vars` changes only the variables it names, so
+it keeps this one, as it keeps `RLS_ENFORCE`):
+
+```bash
+gcloud run services update iqraa-api --region europe-west1 --project=iqraa-auth-507315 \
+  --update-env-vars=HOMEWORK_SUBMISSION_SWEEP=on
+# Off again: --remove-env-vars=HOMEWORK_SUBMISSION_SWEEP (no deploy). It is off only
+# once the new revision takes the traffic: if traffic is pinned to an older revision
+# that still has the switch on, that one keeps answering. Check the traffic block
+# («Check that the new revision actually took traffic» above) and unpin with
+# `gcloud run services update-traffic iqraa-api ... --to-latest`.
+```
+
+**Why the switch exists: the guards do not catch a copy or branch of the
+production database.** A Neon branch (or a restored copy) of production knows
+every homework that existed at the branch point, so production photos uploaded
+since then look like orphans under *known* homework, few enough to stay under
+the ratio guard — and phase 1 there could purge a homework that was archived only
+in the branch. **No server other than `iqraa-api` may ever hold the production R2
+credentials together with `INTERNAL_CRON_KEY`** (no staging service, preview,
+Neon-branch test, laptop). The switch keeps the sweep off on such a server: it
+never has `HOMEWORK_SUBMISSION_SWEEP=on`, so its sweep route does not exist.
+**What the switch does not cover: `iqraa-api`'s own database being restored or
+repointed** — the rule below.
+
+**Before restoring or repointing `iqraa-api`'s database, turn the sweep off.** A
+Neon restore in place, or `DATABASE_URL` pointed at a restored branch during an
+incident, leaves `iqraa-api` with the switch on and the production bucket. Photos
+uploaded between the restore point and 24 hours before the next weekly run belong
+to homework the restored database still has, but their rows are gone, so they
+look like known orphans; if they are 20 or fewer, or under half of what the
+sweep can attribute, they are deleted — possibly the only copy of the students'
+work. So, **before** the restore or repoint:
+
+```bash
+gcloud run services update iqraa-api --region europe-west1 --project=iqraa-auth-507315 \
+  --remove-env-vars=HOMEWORK_SUBMISSION_SWEEP
+gcloud scheduler jobs pause homework-submission-sweep --location europe-west1 --project=iqraa-auth-507315
+# Then check traffic is not pinned to a revision that still has the switch (see above).
+```
+
+Turn the switch back on, and `gcloud scheduler jobs resume homework-submission-sweep
+--location europe-west1 --project=iqraa-auth-507315`, only after a dry run whose
+numbers make sense. That dry run needs the switch, so set it, run `?dryRun=1`
+straight away, and remove it again if the numbers are not right; the job stays
+paused throughout.
+
+The key value must never be echoed,
+printed or pasted into a transcript; run the commands below in **one shell
+session** with `$KEY` still set, exactly as the reminder recipe says. If you no
+longer have it, rotate (end of the reminder section) rather than read it back.
+
+**The query string decides whether it deletes.** Read it before any manual call:
+
+| Request | Result |
+| --- | --- |
+| no `dryRun` key at all | **real run (deletes)** — this is what the scheduled job sends |
+| `?dryRun=0` or `?dryRun=false` | **real run (deletes)** |
+| `dryRun` in any other form: `?dryRun`, `?dryRun=` (empty), `1`, `true`, `TRUE`, `yes`, a repeated key | dry run: reports, changes nothing |
+| any other parameter (`dryrun`, `dry-run`, `limit`, …) | `400 {"error":"Unknown query parameter"}`, nothing done |
+
+So the scheduler URI must have **no query string** (or `?dryRun=0`), and every
+manual look uses `?dryRun=1`. A typo in the safety flag is a 400, never a real
+run. The grace period and the per-run cap are constants in the code; a request
+cannot change them.
+
+**First run, in this order — do not create the job first:**
+
+```bash
+P=--project=iqraa-auth-507315   # one word, so it also works unquoted in zsh
+URL=https://iqraa-api-613126375862.europe-west1.run.app/api/internal/homework-submission-sweep
+# 0. Turn the route on, on iqraa-api only (above). Without it every call below is a 404.
+gcloud run services update iqraa-api --region europe-west1 $P \
+  --update-env-vars=HOMEWORK_SUBMISSION_SWEEP=on
+# $KEY must be set in this shell (see above). 404 = the key is not on the service yet,
+# or the switch is not (the answer does not say which) — or the switch is on a revision
+# that serves nobody because traffic is pinned to an older one (see «Check that the new
+# revision actually took traffic» and `update-traffic --to-latest`).
+# 1. A DRY run by hand. Deletes nothing. Read the JSON.
+curl -sS -X POST -H "x-internal-key: $KEY" "$URL?dryRun=1"
+```
+
+The answer is the run report itself (the same object that is logged), not wrapped
+in another key. The fields: `dryRun`, `archivedHomework`, `purgeFailed`,
+`rowsPurged` (phase 1); `objectsListed`, `referenced`, `orphanObjects`,
+`skippedYoung`, `skippedBadKey`, `skippedUnknownHomework`, `capped`, `deleted`,
+`refused` (and `refusedReason` when it is true), `listTruncated`,
+`objectsSkipped` (phase 2); `sample` (up to 20 keys of what was, or in a dry run
+would be, deleted). Compare `orphanObjects` with what you expect — on a young
+feature, close to none. A large number is a reason to stop and look at `sample`,
+not to carry on. `objectsSkipped: true` means R2 is not configured on that server
+and phase 2 did not run at all.
+
+**Two guards against a database and a bucket that do not belong together.** A
+server whose R2 credentials point at the production bucket but whose database is
+another one (a local `.env` holding the real R2 keys, a staging or e2e service)
+sees no rows, so every photo in the bucket would look like an orphan. These two
+catch that. **They do not catch a copy or branch of the production database**
+(see the switch above), which is why the switch exists.
+
+- **Known homework only.** An object is deleted only if its homework id (the
+  first segment after `homework-submissions/`) is a row in **this** service's
+  `homework` table, archived or not. An old, unreferenced object under any other
+  homework is kept and counted in `skippedUnknownHomework`. A `skippedUnknownHomework`
+  above zero in production means photos under homework that no longer exists
+  (see the known limit below), or a bucket shared with another database. If the
+  lookup itself fails, the run fails (500) before anything in phase 2 is deleted.
+- **The ratio guard.** If more than 20 objects would be deleted (counted before
+  the 1000-per-run cap) **and** they are
+  more than half of all the conforming objects under known homework (young, old,
+  referenced or not), the run **refuses**: phase 2 deletes nothing, the report says
+  `refused: true` with a short `refusedReason`, and the log has an error-level
+  line `homework submission sweep refused`. The answer is still 200, and a dry run
+  reports the refusal too, with the would-be deletions in `sample` (a refused
+  real run's `sample` is empty: it deleted nothing). Phase 1 has already run by
+  then; it only ever touches rows this database has.
+
+**On `refused: true`: stop.** Nothing was deleted in phase 2, and nothing will be
+until a person acts. To decide whether this service's database and bucket belong
+together, **do not print the service's env or secrets** (`CLAUDE.md` forbids
+`gcloud run services describe` and friends for this reason). Read the run instead:
+
+1. Run the dry run (`?dryRun=1`) and read its numbers. A large
+   `skippedUnknownHomework` next to few `referenced` means this database does not
+   know the bucket's homework: the wrong database. `sample` lists keys that would
+   go; their homework ids can be looked up in the `homework` table of the database
+   you believe is production.
+2. Ask the person who runs the service which database and bucket it points at, if
+   the numbers do not settle it.
+
+If they **do** belong together, the orphans are real and there are many of them.
+Causes: deletes that failed on earlier runs (error-level `could not delete an
+orphan object` lines, with the key — investigate those first), or uploads that
+store a photo and then fail to record it (a backlog building since the last
+run). The remedy is a person deleting the listed keys by hand, or a PR that
+changes the thresholds in `modules/homework/submissionSweep.ts`. There is
+deliberately **no override** — no parameter, no environment variable
+(`HOMEWORK_SUBMISSION_SWEEP` only turns the route on): a run that large needs a
+person, not a flag.
+
+A dry run **does not do phase 1**: it counts the rows of archived homework
+(`archivedHomework`, `rowsPurged`) but removes none, so their rows still exist
+and their photos count as `referenced`, not as orphans. The real run purges those
+rows first and then sees their photos as orphans. So a dry run's phase-2 numbers
+are a lower bound, and can be larger after the real run by the photos of the
+`archivedHomework` it lists.
+
+```bash
+# 2. Once for real, by hand, when the dry run's numbers make sense. This DELETES.
+curl -sS -X POST -H "x-internal-key: $KEY" "$URL"
+# 3. The weekly job: Sunday 03:00 Amman. The URI carries no query string. One retry at most:
+#    a sweep that half-ran is safe to run again, and a retry would only repeat the work.
+gcloud scheduler jobs create http homework-submission-sweep $P \
+  --location europe-west1 \
+  --schedule "0 3 * * 0" --time-zone "Asia/Amman" \
+  --uri "$URL" \
+  --http-method POST \
+  --headers "x-internal-key=$KEY,Content-Type=application/json" \
+  --message-body '{}' \
+  --attempt-deadline 300s \
+  --max-retry-attempts 1 --min-backoff 60s \
+  --format=none   # without this gcloud prints the job, x-internal-key included
+# 4. Fire it once and see that it ran.
+gcloud scheduler jobs run homework-submission-sweep --location europe-west1 $P
+gcloud scheduler jobs describe homework-submission-sweep --location europe-west1 $P \
+  --format='value(lastAttemptTime,status)'
+gcloud logging read 'resource.labels.service_name="iqraa-api" AND jsonPayload.message="homework submission sweep run"' \
+  $P --limit 5 --freshness 1d
+unset KEY   # when done
+```
+
+**The key lives in this job's config too, so rotating `INTERNAL_CRON_KEY` means
+updating this job's header as well** as the reminder job's, in the same session
+as the rotation, before the old secret versions are disabled. With `$KEY`
+holding the new value, as in the reminder's rotation block:
+
+```bash
+gcloud scheduler jobs update http homework-submission-sweep --location europe-west1 $P \
+  --update-headers "x-internal-key=$KEY,Content-Type=application/json" \
+  --format=none   # without this gcloud prints the job, x-internal-key included
+```
+
+A job left on the old key gets a 404 from then on and the sweep silently stops
+running — and so does one whose service has lost `HOMEWORK_SUBMISSION_SWEEP=on`
+(a `--set-env-vars`, which replaces the whole environment, would do that): after a
+rotation or any env change on `iqraa-api`, check `lastAttemptTime`, `status` and the log line. The
+warning above that `gcloud scheduler jobs create|update|describe` prints the
+stored key applies to this job just as much: keep `--format=none` on every write
+and a `value(...)` format that omits `httpTarget` on reads.
+
+**Limits, all in code** (`modules/homework/submissionSweep.ts`,
+`lib/homeworkSubmissionSweep.ts`):
+
+- **24 hours of grace, for phase 2 only.** An *unreferenced* object younger than
+  that is not deleted as an orphan (an upload stores the object a moment before it
+  records the row). A `lastModified` in the future counts as young. `skippedYoung`
+  counts them. **Phase 1 ignores age:** the photos of an archived homework, or of
+  homework in an archived class, are purged at once, however new.
+- **At most 1000 deletes per run**, oldest first. `capped` is how many more were
+  left for the next run. A bucket with a backlog is emptied over several weekly
+  runs; run it by hand again to hurry that along.
+- **At most 200,000 objects listed per run.** Past that, `listTruncated: true`:
+  the run only swept the first 200,000 keys in key order, and every run will see
+  the same ones, so an orphan sorting after the cut-off is never found. The code
+  logs it at warn level; it needs a person (a bigger cap, or a listing that
+  continues where the last one stopped), not another rerun.
+- **Only a key of exactly this shape is ever deleted as an orphan:**
+  `homework-submissions/<uuid>/<uuid>/<uuid>.(jpg|png|webp)`, all of it in lower
+  case — prefix, extension and the hex of the ids. Anything else under the prefix
+  is counted in `skippedBadKey` and left for a person to look at. That includes an
+  upper-case homework id, which **can** be stored: the photo's own id is a
+  lower-case `randomUUID()`, but the homework segment is the raw id from the upload
+  request's URL, and Postgres matches a uuid in either case. Such a photo is kept
+  while its row names it, and purged with its row when the homework is archived
+  (the purge deletes every key a row names); only as an orphan is it never swept.
+- **An object a row refers to is kept, however old**, drafts included. The rows are
+  read on the owner connection (`systemDb`): under `RLS_ENFORCE=on` the app
+  connection with no user would read none of them.
+- **Known homework only, and the ratio guard** — see above.
+- **The grace period, not the order of the steps, protects an upload in flight.**
+  The run lists the bucket first and reads the rows second; an upload whose object
+  lands before the listing and whose row is written after the read looks
+  unreferenced whichever way round they run, and only its age keeps it. The order
+  just narrows that window. An upload always stores a new random key and never
+  attaches an existing one, so a key cannot become referenced later.
+- **Known limit: leftovers of a hard-deleted homework are kept for good.** Archiving
+  keeps the `homework` row, so its stray photos are still swept. No route deletes a
+  homework row, but the schema cascades one away when its teacher's user row or its
+  class row is deleted, taking its submission rows with it; any photo left under
+  its id is then "unknown homework": counted in `skippedUnknownHomework`, never
+  deleted. They need a person.
+
+**What to watch.** One log line per run, `homework submission sweep run`, whose
+payload is the whole report above. Each deleted object also has its own line,
+`homework submission sweep: deleted an orphan object`, with its `key`,
+`lastModified` and `homeworkId` (the bucket keeps no history, so that line is the
+only record of what went). Things worth a look when they repeat:
+
+- `purgeFailed > 0`: a purge of an archived homework threw (logged at error level
+  as `could not purge an archived homework`, with its id). Its rows are kept, so
+  its photos are safe; it is retried next run. Week after week means a bad row.
+- `refused: true`, or a `homework submission sweep refused` line at error level:
+  stop and check, as above. It never resolves itself.
+- `skippedUnknownHomework` growing: photos under homework this database does not
+  have (see the known limit), or a bucket shared with another database.
+- `listTruncated: true`: see the limits.
+- `capped > 0` week after week: orphans arrive faster than 1000 a week. Find out why.
+- A real run with `refused: false` where `orphanObjects − capped − deleted` is above
+  zero: some object deletes failed (`could not delete an orphan object`, at error
+  level, with the key). In a refused run the difference is every orphan and means
+  nothing.
+- A first-ever run, or a sudden jump in `orphanObjects`: something is failing
+  between storing a photo and recording it.
+
+**Cloud Run throttles CPU once a response is sent**, so the route does all its
+work before answering, as the reminders do; nothing carries on afterwards. The job's
+`--attempt-deadline` must therefore cover a full run (a 200,000-key listing plus
+1000 deletes), and the service's own request limit is `--timeout 300` in
+`deploy.yml`, so **300 s is the real ceiling**: a longer attempt deadline on the
+job does not buy more time. The run's duration has not been measured against the
+real bucket; read it off the first manual runs. A run cut off by the timeout is
+safe to start again.
 
 ### Claude for documents (`ANTHROPIC_API_KEY`) — manual, once
 
@@ -945,6 +1234,24 @@ grant — only `systemDb` reads it), or *deferred* (named in `DEFERRED` — stil
 `iqraa_app`, with the grant a new migration must add by hand, since there are no default
 privileges on purpose). **Adding a `systemDb` use** means editing `systemDbFiles.test.ts`
 and writing the reason.
+
+### Reverting the API past migration 0022
+
+A migration is never rolled back by a code revert: reverting a merge redeploys older API code
+against the schema as it stands. That is usually harmless (columns are additive), but
+`0022_light_stellaris` also **changed three row-level-security policies** on
+`homework_submissions` (`ALTER POLICY` on `_select`, `_insert` and `_update`), and code from
+before it (before 2026-10-31's «Homework submissions record their author») does not know the
+`author_user_id` column. So reverting the API to such a commit **also needs a new migration that
+restores 0021's three policies** (copy them from `0021_blushing_blockbuster.sql`, as `ALTER
+POLICY`, which keeps the column): with `RLS_ENFORCE=on` the old API inserts rows without an
+author, the 0022 `INSERT` policy (`author_user_id = app_uid()`) refuses every one, and a
+student's first photo or note on a homework fails with a 500. With `RLS_ENFORCE=off` the old code works, but every row it writes has a NULL author,
+and once the newer code is deployed again those rows are nobody's: a draft is shown to no one
+and replaced on the next write, and a handed-in project blocks the student who wrote it (409
+`other_author`) until the teacher clears it. So rolling forward again after such a revert needs
+0022's backfill `UPDATE` re-run (by a migration) before the new API takes traffic. The same holds
+for any later migration that alters a policy: say in its PR what a code revert then needs.
 
 ## Point-of-no-return changes go up as drafts
 

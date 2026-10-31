@@ -173,6 +173,64 @@ describe("promptSlidesPrompt — the rules that stop empty decks", () => {
     });
   }
 
+  for (const [label, build] of BOTH) {
+    const prompt = build(baseBody);
+    it(`${label}: describes cycle, tree, venn and mindmap with their JSON`, () => {
+      for (const k of ['"cycle"', '"tree"', '"venn"', '"mindmap"', '"stages"', '"branches"', '"shared"', '"nodes"']) {
+        assert.ok(prompt.includes(k), k);
+      }
+    });
+    it(`${label}: says when each fits`, () => {
+      assert.match(prompt, label === "ar" ? /تعود إلى بدايتها/ : /return to the start/);
+      assert.match(prompt, label === "ar" ? /تصنيف/ : /classification/);
+    });
+    it(`${label}: says names must differ, and a Venn needs an item`, () => {
+      const differ: Record<"ar" | "en", Record<string, RegExp[]>> = {
+        ar: { cycle: [/أسماء المراحل كلها مختلفة/], tree: [/أسماء الفروع كلها مختلفة/, /أوراق الفرع الواحد مختلفة/],
+          venn: [/أسماء المجموعات مختلفة/], mindmap: [/نصوص العقد كلها مختلفة/] },
+        en: { cycle: [/all stage labels different/], tree: [/all branch labels different/, /leaves within one branch different/],
+          venn: [/Set labels must all be different/], mindmap: [/all node texts different/] },
+      };
+      for (const [k, res] of Object.entries(differ[label])) {
+        const line = prompt.split("\n").find(l => l.startsWith(`- "${k}"`))!;
+        for (const re of res) assert.match(line, re, `${k}: ${re}`);
+      }
+      const venn = prompt.split("\n").find(l => l.startsWith('- "venn"'))!;
+      assert.match(venn, label === "ar" ? /عنصر واحد على الأقل/ : /at least one item/);
+    });
+    it(`${label}: states the gate's character caps and one-line content for the diagrams`, () => {
+      const ascii = prompt.replace(/[\u0660-\u0669]/g, d => String(d.charCodeAt(0) - 0x660));
+      const bullet = (k: string) => {
+        const line = ascii.split("\n").find(l => l.startsWith(`- "${k}"`));
+        assert.ok(line, k);
+        return line!;
+      };
+      // Each cap is asserted as its own phrase, inside its own shape's bullet, so
+      // deleting one cap (not just a digit that happens to repeat) fails here.
+      const caps: Record<"ar" | "en", Record<string, RegExp[]>> = {
+        ar: {
+          cycle: [/من 3 إلى 6 مراحل/, /اسم المرحلة حتى 24 حرفًا/, /التوضيح حتى 60/],
+          tree: [/من 2 إلى 4 فروع/, /حتى 4 أوراق/, /الأصل حتى 32 حرفًا/, /الفرع والورقة حتى 24/],
+          venn: [/اسم المجموعة حتى 24 حرفًا/, /في مجموعتين حتى 4 عناصر لكل منطقة/, /كل عنصر حتى 32 حرفًا/,
+            /حتى 3 عناصر قصيرة لكل مجموعة/, /عنصران مشتركان على الأكثر/, /كل عنصر حتى 16 حرفًا/],
+          mindmap: [/من 3 إلى 6 عقد/, /العقدة حتى 40 حرفًا/],
+        },
+        en: {
+          cycle: [/3 to 6 stages/, /a label up to 24 characters/, /a note up to 60/],
+          tree: [/2 to 4 branches/, /up to 4 leaves/, /the root up to 32 characters/, /a branch or leaf up to 24/],
+          venn: [/a set label up to 24 characters/, /up to 4 items per region/, /each item up to 32 characters/,
+            /at most 3 short items per set/, /and 2 shared/, /each up to 16 characters/],
+          mindmap: [/3 to 6 nodes/, /each node up to 40 characters/],
+        },
+      };
+      for (const [k, res] of Object.entries(caps[label])) {
+        const line = bullet(k);
+        for (const re of res) assert.match(line, re, `${k}: ${re}`);
+      }
+      assert.match(prompt, label === "ar" ? /سطر واحد عمدًا، وكذلك كل شريحة بشكل "cycle" أو "tree" أو "venn" أو "mindmap"/ : /one line on purpose, as is a slide shaped "cycle", "tree", "venn" or "mindmap"/);
+    });
+  }
+
   it("no longer tells the model to withhold content the teacher did not ask for", () => {
     // This single line capped every deck's richness at the teacher's own
     // terseness — a two-line description bought a two-line deck.

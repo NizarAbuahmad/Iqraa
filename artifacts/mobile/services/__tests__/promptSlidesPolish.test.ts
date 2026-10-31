@@ -225,6 +225,34 @@ describe('polishDeck — a procedure written on one line', () => {
 describe('polishDeck — the structure a model chose', () => {
   const chart: VisualBlock = { kind: 'chart', chartType: 'pie', categories: ['سكن', 'طعام', 'نقل'], values: [50, 30, 20] };
 
+  it('turns a refused cycle back into its words', () => {
+    const out = polishDeck(deck([
+      slide(),
+      slide({ title: 'دورة', content: 'الماء يدور', layout: 'cycle', cycle: { stages: [{ label: 'تبخر' }] } }),
+      ...padding(4),
+    ]));
+    const s = out.slides.find(x => x.title === 'دورة')!;
+    assert.equal(s.layout, undefined);
+    assert.equal('cycle' in s, false);
+    assert.match(s.content, /• تبخر/);
+  });
+
+  it('turns a refused tree, Venn and mind map back into their words', () => {
+    const out = polishDeck(deck([
+      slide(),
+      slide({ title: 'شجرة', content: 'تنقسم المادة إلى أنواع كثيرة', layout: 'tree', tree: { root: 'المادة', branches: [{ label: 'نقية', leaves: [] }] } }),
+      slide({ title: 'فن', content: 'نقارن بين المجموعتين هنا', layout: 'venn', venn: { sets: [{ label: 'أ', only: ['س'] }], shared: [] } }),
+      slide({ title: 'خريطة', content: 'فكرة مركزية تحيط بها أسباب', layout: 'mindmap', mindmap: { center: 'الفكرة', nodes: [{ text: 'سبب' }] } }),
+      ...padding(3),
+    ]));
+    const by = (t: string) => out.slides.find(x => x.title === t)!;
+    for (const [t, key, word] of [['شجرة', 'tree', 'المادة'], ['فن', 'venn', 'س'], ['خريطة', 'mindmap', 'سبب']] as const) {
+      assert.equal(by(t).layout, undefined, t);
+      assert.equal(key in by(t), false, t);
+      assert.match(by(t).content, new RegExp(`• .*${word}`), t);
+    }
+  });
+
   it('keeps an icon the app can draw and deletes one it cannot', () => {
     const out = polishDeck(deck([
       slide(),
