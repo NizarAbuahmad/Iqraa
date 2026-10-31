@@ -260,8 +260,29 @@ test('normalizeTeacherHomework keeps a well-formed row and ignores extra fields'
       doneCount: 3,
       studentCount: 20,
       trackableCount: 20,
+      requiresSubmission: false,
+      submittedCount: 0,
+      requiresSubmissionLocked: false,
     },
   ]);
+});
+
+test('normalizeTeacherHomework keeps the project fields the server sends', () => {
+  const [row] = normalizeTeacherHomework([
+    { ...rawTeacher, requiresSubmission: true, submittedCount: 4, requiresSubmissionLocked: true },
+  ]);
+  assert.equal(row!.requiresSubmission, true);
+  assert.equal(row!.submittedCount, 4);
+  assert.equal(row!.requiresSubmissionLocked, true);
+});
+
+test('normalizeTeacherHomework reads a bad submittedCount as 0 and only a literal true as a flag', () => {
+  const [row] = normalizeTeacherHomework([
+    { ...rawTeacher, requiresSubmission: 'true', submittedCount: -2, requiresSubmissionLocked: 1 },
+  ]);
+  assert.equal(row!.requiresSubmission, false);
+  assert.equal(row!.submittedCount, 0);
+  assert.equal(row!.requiresSubmissionLocked, false);
 });
 
 test('normalizeTeacherHomework defaults missing counts to 0 and exam fields to null', () => {

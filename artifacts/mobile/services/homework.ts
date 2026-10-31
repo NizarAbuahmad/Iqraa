@@ -168,6 +168,15 @@ export interface TeacherHomework {
    * can only ever reach this, so it — not `studentCount` — is the denominator.
    */
   trackableCount: number;
+  /** Handed in as a project, not ticked. False when absent (an older server). */
+  requiresSubmission: boolean;
+  /** Students who have handed the project in (on time or late). 0 when absent. */
+  submittedCount: number;
+  /**
+   * The switch can no longer be changed: some student has already ticked it or saved project work. That work may be
+   * a tick or a draft the teacher cannot see, so say «a student has started», never «N have handed in». False when absent.
+   */
+  requiresSubmissionLocked: boolean;
 }
 
 export interface TeacherHomeworkList {
@@ -422,6 +431,9 @@ export function normalizeTeacherHomework(raw: unknown): TeacherHomework[] {
         doneCount: count(r['doneCount']),
         studentCount,
         trackableCount: trackable(r['trackableCount'], studentCount),
+        requiresSubmission: r['requiresSubmission'] === true,
+        submittedCount: count(r['submittedCount']),
+        requiresSubmissionLocked: r['requiresSubmissionLocked'] === true,
       },
     ];
   });
