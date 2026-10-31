@@ -46,7 +46,7 @@ until the homework is deleted or the student replaces it.
 | Resubmitting | A student may replace their own submission until the due day ends. After that it is locked. |
 | Late | A student with no submission may still submit after the due day. It is accepted and shown as **late**. |
 | Supervisor | No access in this release. |
-| Retention | Photos live until the student removes them, or the teacher deletes (archives) the homework, which purges the photos and deletes the submission rows. No automatic expiry. Also removed: archiving the class, deleting the teacher's account, and (added 2026-10-31) deleting the student's own account, which deletes the submissions that account authored, on any record (`purgeSubmissionsOfAuthor`, by `author_user_id` since migration 0022); a parent's deletion removes none. Another account's draft on a record is replaced when the account linked now writes its first photo or note (§3). The privacy policy §1/§6 (`constants/legal.ts`, `LEGAL_VERSION` 2026-10-31.b) describes this. |
+| Retention | Photos live until the student removes them, or the teacher deletes (archives) the homework, which purges the photos and deletes the submission rows. No automatic expiry. Also removed: archiving the class, deleting the teacher's account, and (added 2026-10-31) deleting the student's own account, which deletes the submissions that account authored, on any record (`purgeSubmissionsOfAuthor`, by `author_user_id` since migration 0022); a parent's deletion removes none. Another account's draft on a record is replaced when the account linked now writes its first photo or note (§3). And (added 2026-10-31) the teacher can clear one student's project, draft or handed-in, with its photos and its tick (`DELETE /homework/:id/submissions/:studentId`, §3). The privacy policy §1/§6 (`constants/legal.ts`, `LEGAL_VERSION` 2026-10-31.c) describes this. |
 
 ## 1. Data
 
@@ -152,7 +152,11 @@ and the record keeps its rows. For the account linked now:
 | another account's (or authorless) **handed-in** project | `none` with `otherAuthor: true`, no photos, no note | every write is 409 `other_author` |
 
 Every write's `UPDATE` also carries `author_user_id = caller`, so a write that passed its checks
-just before a takeover writes nothing. The teacher's and the parent's reads do not look at the
+just before a takeover writes nothing. An upload or a note whose row is gone by the time its `UPDATE`
+runs (the teacher cleared the project meanwhile) answers 409 `changed` and stores nothing; sent
+again, it starts a fresh project. An account self-linked to two records in the class is served the
+record holding a row it wrote first, so another account's project on one record never hides its own
+on the other. The teacher's and the parent's reads do not look at the
 author: a handed-in project is the record's work. A previous author who is no longer linked gets
 the usual 404 (`ownHomeworkRows` needs a current `self` link); linked again, it sees its own work.
 
@@ -173,6 +177,7 @@ disagree. Playing an attached game no longer ticks such a homework either.
 | --- | --- |
 | `GET /homework/:id/submissions` | One row per live roster member of the homework's class: `{ studentId, displayName, status: "none" \| "submitted" \| "late", submittedAt, photoCount }`. A draft is reported as `none` — the teacher never sees an unfinished upload |
 | `GET /homework/:id/submissions/:studentId` | One student's `note` and photos with signed URLs. 404 for a draft or a student not in this class |
+| `DELETE /homework/:id/submissions/:studentId` (added 2026-10-31) | Clears **one** roster record's project for this homework, draft or handed-in: deletes its photos from R2, then that record's completion for this homework, then the row, and answers `{ cleared: true }`. The same owner check and 404s as the read above (`Homework not found` for another teacher's homework or one that asks for no project; `Submission not found` for a student who is not a live member of the class, a bad id, or nothing to clear, so a repeat is a 404). **Fail closed:** one transaction on `systemDb` holds the row lock and deletes the objects first; an object delete that throws rolls it back and answers 500 with the row, its keys and the tick kept, and the same request clears it (objects deleted before the failure stay deleted, so until the retry the row may list a photo that no longer loads). `systemDb` because a draft is invisible to the teacher under RLS and the table has no `DELETE` policy. Logs one info line (`homework submission cleared by teacher`: ids and the photo count, no content). No rate limit, like the other teacher writes. This is the way out when a record's project was handed in from another account: the account linked now then starts clean. The teacher's screen for it is phase 3 |
 | `DELETE /homework/:id` (existing) | That route **archives** (`archived_at`). It now also removes every stored photo (drafts included) and deletes the submission rows. The purge runs on the owner connection (`systemDb`), because a draft is invisible to the teacher's own identity; a test with `RLS_ENFORCE=on` pins it. The purge runs **before** the archive and a purge that throws answers 500 with the homework still live (an archived homework can no longer be found, so a failure after it could never be retried); a second best-effort pass follows the archive. Not recoverable, so the teacher's delete confirmation must say so |
 | `DELETE /classes/:id` (existing) | Archiving a class makes its homework unreachable for the teacher and the students alike, so it purges every homework of the class first (a throw answers 500 and the class stays live). Deleting a teacher's account (`DELETE /auth/users/me`) reads the keys of all their homework's photos before the cascade and deletes the objects after it |
 
@@ -337,11 +342,12 @@ names messages and lesson materials, not homework projects; changing it is a nat
 - **Storage cost and abuse.** Up to 6 photos × 4 MB per student per homework.
   Uploads go through the existing rate limiter (`rate_limit_buckets`), at 60
   attempts an hour per account (see §3). This is not a free-for-all file host.
-- **A wrong photo of a minor** (a face, a document) is stored. The teacher's
-  delete-homework purge and the student's own remove control are the only
-  removal paths in this release (a teacher cannot remove a single student's
-  photo without deleting the whole homework). There is no moderation queue; note it in the PR
-  body so it is a known gap, not a surprise.
+- **A wrong photo of a minor** (a face, a document) is stored. The removal paths are the
+  student's own remove control, the teacher's delete-homework purge and, since 2026-10-31, the
+  teacher clearing one student's whole project (`DELETE /homework/:id/submissions/:studentId`, §3;
+  API only until the teacher's screen in phase 3). A teacher still cannot remove a single photo and
+  keep the rest. There is no moderation queue; note it in the PR body so it is a known gap, not a
+  surprise.
 - **`students.id` is a roster row.** A child in two of a teacher's classes is two
   rows and two submissions. That is correct and matches homework completions.
 - **Access followed the roster-row link, not a person (found 2026-10-31; fixed the same
@@ -349,13 +355,17 @@ names messages and lesson materials, not homework projects; changing it is a nat
   submission, so the next account linked to that record saw, and could change, the
   previous account's work. Now the new account sees none of a previous account's draft
   (and replaces it on its first write) and only a notice for a handed-in project.
-  **Left open (STATUS.md):** that notice is a dead end. A student whose record already
-  holds a project handed in from another account cannot hand in their own for that
-  homework, and the teacher has no tool to clear one student's submission; the ways
-  out are the old account deleting itself or the teacher archiving the homework (which
-  deletes every student's work in it). The family list (`/student/homework`) still says
-  «تم التسليم» for that homework, because a completion and a handed-in project are the
-  record's.
+  That notice was a dead end: a student whose record already holds a project handed in
+  from another account cannot hand in their own for that homework. **Since 2026-10-31 the
+  teacher can clear that one record's project** (§3), after which the account linked now
+  starts clean and the record's parents no longer see the wrong child's work. **Left open
+  (STATUS.md):** the teacher's app has no control for it until phase 3, so in the app the
+  ways out are still the old account deleting itself or archiving the homework (which
+  deletes every student's work in it). Until it is cleared, the family list
+  (`/student/homework`) still says «تم التسليم» for that homework, because a completion and
+  a handed-in project are the record's. The clear removes only that record's tick: an account
+  self-linked to two records in the class had both ticked by its hand-in, and the other
+  record's tick stays.
 - **Account deletion and a racing upload.** Deleting an account deletes the rows it
   authored, then the account; `author_user_id` is `ON DELETE SET NULL`, so a draft an
   upload wrote between the two loses its author. The second pass therefore deletes

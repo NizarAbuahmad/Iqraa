@@ -10,6 +10,101 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Teacher can clear one student's project — 2026-10-31
+
+Follow-up to «Homework submissions record their author» (below), which left a dead end open: a record
+whose project another account handed in (a mis-claim the teacher has since unlinked) blocks the account
+linked now (reads `otherAuthor: true`, every write 409 `other_author`), the record's parents keep seeing
+the wrong child's photos, and the only exit was archiving the homework (everyone's work). API only; the
+teacher's screen is phase 3. No schema change, no migration. Spec §3, §8.
+
+**What changed**
+
+- **`DELETE /homework/:id/submissions/:studentId`** (`routes/homeworkSubmissions.ts`, teacher router,
+  path-scoped guard). Clears one roster record's project for one homework, draft or handed-in, and
+  answers `{ cleared: true }`. Same owner check (`ownedHomework`: `homework.teacherId = req.user.id`) and
+  the same 404s as the two teacher reads: `Homework not found` for another teacher's homework or one
+  that asks for no project; `Submission not found` for a bad id, a student who is not a live member of
+  the class (outside it, or archived), or nothing to clear — so a second call is a 404. Logs one info
+  line, `homework submission cleared by teacher`, with the homework, student and teacher ids and the
+  photo count. No rate limit: the other teacher writes on `/homework` have none.
+- **`clearForTeacher`** (`lib/homeworkSubmission.ts`). One `systemDb` transaction: select the row
+  `FOR UPDATE` (with the class-membership and archived checks), delete every photo object, then that
+  record's completion for that homework (the hand-in ticked it), then the row. An object delete that
+  throws rolls everything back: 500, row, keys and tick kept, the same request clears it. `systemDb`
+  because a draft is invisible to the teacher under row-level security, the table has no `DELETE`
+  policy, and `SELECT … FOR UPDATE` needs an `UPDATE` policy the teacher does not have (checked: on the
+  app connection with `RLS_ENFORCE=on` both RLS cases answer 404). The pin in `systemDbFiles.test.ts`
+  names the new reason (same file, no new entry). Nothing else ticks a submission homework: only
+  `submit` calls `tickRows` for one (`homeworkGame.ts` skips it, `setHomeworkDone` refuses it).
+- **`submissionTarget`** orders a row the caller wrote first (`author_user_id IS NOT DISTINCT FROM
+  caller DESC`, then the roster id). An account self-linked to two records in one class whose
+  first-sorted record held another account's (or an authorless) handed-in project could not reach its
+  own draft on the other record; `=` would not do, because an authorless row's NULL sorts first in DESC.
+- **409 `changed`** for an upload or a note whose row is gone by the time its `UPDATE` runs (the teacher
+  cleared it, or it vanished during a takeover). It used to answer `photo_limit` (on a first photo) or
+  `empty`. The refused photo's object is removed as before; the app reads any 409 as stale and reloads,
+  and shows its generic upload-failed toast (no copy of its own for `changed`).
+- **App:** `isOtherAuthorRefusal` (`services/homeworkProject.ts`) removed with its test: nothing called
+  it, and `isStaleRefusal` already makes every handler reload on a 409. The stale-refusal test now
+  names `other_author` and `changed`.
+- **Privacy policy** (`constants/legal.ts`, both languages; `LEGAL_VERSION` `2026-10-31.c`, same date):
+  §6 says the teacher who set a homework can delete one student's project, handed-in or draft, which
+  deletes its photos and note; §1 says the new account cannot hand in another project for that homework
+  «unless the teacher deletes it». Written by a model, **not reviewed by a lawyer**.
+- **`docs/deploying.md`**, «Reverting the API past migration 0022»: a code revert to before the author
+  column also needs a migration restoring `0021`'s three policies (with `RLS_ENFORCE=on` the old API
+  inserts authorless rows and the 0022 `INSERT` policy refuses them; with it off, they get a NULL author,
+  so rolling forward again needs the 0022 backfill re-run).
+
+**Verified** (local, 2026-10-31, Postgres 16, in-memory S3 stub)
+
+- `homeworkSubmission.db.test.ts`, new blocks: a handed-in project cleared (row, object and that
+  record's tick gone; another record's tick on the same homework, and the same record's project, object
+  and tick on another homework untouched; teacher list, student list — `submission: none`, `done: false`
+  — parent read and the student's own read all say not handed in; a second call 404). **The dead end
+  end to end with `RLS_ENFORCE=on`:** A hands in, the teacher unlinks A through the route, B is linked
+  and blocked (`otherAuthor`, 409 `other_author`), the record's parent still sees A's photo; the teacher
+  clears; the parent sees nothing, B starts clean, uploads, notes and hands in, and the record is ticked
+  again. A draft the teacher cannot read cleared under `RLS_ENFORCE=on`. Another teacher, a roster row
+  outside the class, an archived member, a random id, a non-uuid and a homework with no project: 404,
+  and rows, objects and ticks unchanged. Student and parent 403, anonymous 401. `failDeletes` on: 500,
+  row with both photos, both objects and the tick kept, the teacher's list still says submitted; the
+  retry clears it. Two records, one account: its own draft is served over another account's, then over
+  an authorless, handed-in project, RLS off and on, and a note lands on its own record only. The row
+  removed under an upload and under a note: the test holds the row lock, waits in `pg_stat_activity`
+  until the server's `UPDATE` queues behind it, deletes the row and commits (no timing) — 409 `changed`,
+  no object left.
+- **Each guard broken on purpose, one at a time, and a case failed each time, then restored:** the owner
+  check in `ownedHomework`; the class-membership join; the archived-student filter; object-delete errors
+  swallowed; the row deleted and committed before the objects; the tick delete widened to the whole
+  homework, widened to the whole record, and left out; the clear on the app `db` instead of `systemDb`;
+  `submissionTarget` with `=` instead of `IS NOT DISTINCT FROM`. The 2a and 2c tests were red before
+  their fixes (`otherAuthor: true`; `photo_limit` / `empty`).
+- `mountOrder.test.ts` lists the new `DELETE` (401 without a token; the unowned path stays 404).
+- api-server `pnpm build && pnpm test` against a local Postgres: **3269 / 3269**, 0 skipped. Mobile
+  `pnpm test`: **8825 tests, 8815 passed, 0 failed, 10 skipped**, exit 0. Root `pnpm run typecheck`:
+  clean. The two greps of ci.yml's «Brand is «إقرأ»» step: no match.
+
+**Not verified**
+
+- Real R2; the CI `rls` job's own run; production. The AWS SDK retries a failing delete before it throws,
+  so a real outage makes the 500 slower (seconds) while the row lock is held; not measured.
+- No app screen calls the route, so nothing was tried in a browser or on a phone.
+
+**Known limits**
+
+- The teacher's control is phase 3; until then the dead end stays open in the app (STATUS.md).
+- Only that record's tick is removed. An account self-linked to two records in the class had both
+  ticked by its hand-in; the other record's tick stays.
+- A homework whose `requiresSubmission` was switched off after work exists cannot be cleared (404, as
+  the reads); its photos go with the homework's archive.
+- Objects deleted before the one that failed stay deleted: until the retry the row can list a photo
+  that no longer loads.
+- The task described `DELETE /homework/:id` as failing closed on an object-delete failure. It does not:
+  `purgeSubmissions` logs a failed object delete and deletes the rows anyway (spec §8, «The archive purge
+  is not transactional»); only a purge that throws before deleting stops the archive. Unchanged here.
+
 ## A student can carry an Arabic name, and Arabic letters use it — 2026-10-31
 
 **Asked:** after the roster-row message button shipped (#1357), the parent letter still greeted
@@ -89,7 +184,8 @@ unlink. Spec: `docs/superpowers/specs/2026-10-30-homework-project-submission-des
   delete cannot write at all (its author would reference a deleted user). The rest of the failure handling
   (purge before the account delete; purged keys deleted if the account delete throws) is unchanged.
 - **App** (`artifacts/mobile`). `SubmissionView.otherAuthor` (strictly `=== true`; absent is false);
-  `projectMode` and `isOtherAuthorRefusal` in `services/homeworkProject.ts`; `canAddPhoto` / `canHandIn`
+  `projectMode` in `services/homeworkProject.ts` (an `isOtherAuthorRefusal` helper was also added, but
+  nothing called it; removed on 2026-10-31 by «Teacher can clear one student's project»); `canAddPhoto` / `canHandIn`
   and `noteNeedsSave` refuse such a view. The project screen shows only «سُلِّم مشروع لهذا السجلّ من حساب
   آخر. إن كان هذا خطأً فاطلب من معلّمك المساعدة.» / "A project was already handed in for this record from
   another account. If that is a mistake, ask your teacher for help." with no photos, note or controls.
