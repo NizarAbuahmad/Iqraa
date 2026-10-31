@@ -83,9 +83,13 @@ describeDb("publishing a dated draft, against a real database", () => {
       assert.equal(a.status, 200, a.text);
       assert.equal(b.status, 200, b.text);
     } finally {
+      // Let go of the row BEFORE waiting on the requests: if an assertion above threw, they
+      // are still queued behind our lock, and waiting on them first would hang the test
+      // until the fetch timed out instead of showing the real failure.
+      await holder.query("ROLLBACK").catch(() => undefined);
+      await holder.end();
       await first?.catch(() => undefined);
       await second?.catch(() => undefined);
-      await holder.end();
     }
 
     const msgs = stub.messages();

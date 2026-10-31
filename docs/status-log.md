@@ -54,6 +54,20 @@ hook (`guardianApproval`, then `familyExams` and `homeworkShare`, then `familySc
 `DROP DATABASE … WITH (FORCE)` in the harness's teardown killing a connection that file's own
 database still held; every one passes alone. It is more likely on a loaded machine.
 
+**Found in review and recorded, not fixed:** the «wholly before or wholly after» guarantee holds
+against generate and publish only. Question add, patch and delete, the paper-grid PUT and
+`recomputeTotal` still check the status and then write without the row lock (deleting the last
+question as a publish reads the paper can publish an exam with no questions and a total of 0), and
+`DELETE /evaluations/:id` (archive) passes its draft check and then writes `archivedAt` after a
+publish commits, which leaves an exam both published and archived. The lock is `FOR UPDATE`, which
+also blocks the child-table inserts that take `FOR KEY SHARE` on the row (a student starting an
+attempt) for the length of the transaction; `FOR NO KEY UPDATE` would not, and is optional polish for
+generate and publish alike (short, DB-only transactions, so the wait is milliseconds).
+
+**Also fixed from the review:** the new tests (and generate's) released the held lock only after
+waiting on the queued request, so a failing assertion would have hung until the fetch timed out
+instead of failing; they now roll back and close the holder first.
+
 **Still open:** the app shows the «published or removed» refusal from generate as a generic «could not
 generate» (needs an Arabic and English line), a second tap still starts a second model call, and the
 paper-grid and question add/edit/delete routes keep the read-then-write shape.

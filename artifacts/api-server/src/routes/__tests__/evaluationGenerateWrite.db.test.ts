@@ -137,31 +137,33 @@ describeDb("generating into a draft evaluation, against a real database", () => 
     // that has to wait for the row is, by the time it gets it, looking at a published exam.
     const holder = new pg.Client({ connectionString: db.url });
     await holder.connect();
+    let pending: ReturnType<typeof generate> | undefined;
     try {
       await holder.query("BEGIN");
       await holder.query(`SELECT id FROM evaluations WHERE id = $1 FOR UPDATE`, [id]);
-      const pending = generate(id);
-      try {
-        // Wait until the request is really queued behind our lock, not for a fixed time:
-        // on a slow runner it could still be before its early draft check, which also
-        // answers 409 and would let this test pass without reaching the lock at all.
-        await waitUntil(async () => {
-          const r = await db.pool.query<{ n: number }>(
-            `SELECT count(*)::int AS n FROM pg_stat_activity
-              WHERE wait_event_type = 'Lock' AND query ILIKE '%from "evaluations"%for update%'`,
-          );
-          return r.rows[0].n > 0;
-        });
-        await holder.query(`UPDATE evaluations SET status = 'published' WHERE id = $1`, [id]);
-        await holder.query("COMMIT");
-        const res = await pending;
-        assert.equal(res.status, 409, res.text);
-        assert.equal(res.json.code, "no_longer_draft", "refused by the lock check, not the early one");
-      } finally {
-        await pending.catch(() => undefined);
-      }
+      pending = generate(id);
+      // Wait until the request is really queued behind our lock, not for a fixed time:
+      // on a slow runner it could still be before its early draft check, which also
+      // answers 409 and would let this test pass without reaching the lock at all.
+      await waitUntil(async () => {
+        const r = await db.pool.query<{ n: number }>(
+          `SELECT count(*)::int AS n FROM pg_stat_activity
+            WHERE wait_event_type = 'Lock' AND query ILIKE '%from "evaluations"%for update%'`,
+        );
+        return r.rows[0].n > 0;
+      });
+      await holder.query(`UPDATE evaluations SET status = 'published' WHERE id = $1`, [id]);
+      await holder.query("COMMIT");
+      const res = await pending;
+      assert.equal(res.status, 409, res.text);
+      assert.equal(res.json.code, "no_longer_draft", "refused by the lock check, not the early one");
     } finally {
+      // Let go of the row BEFORE waiting on the request: if anything above threw, the
+      // request is still queued behind our lock, and waiting on it first would hang the
+      // test until the fetch timed out instead of showing the real failure.
+      await holder.query("ROLLBACK").catch(() => undefined);
       await holder.end();
+      await pending?.catch(() => undefined);
     }
     assert.deepEqual(await live(id), before, "the published paper is untouched");
   });

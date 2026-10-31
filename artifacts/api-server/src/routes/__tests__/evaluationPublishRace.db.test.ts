@@ -104,20 +104,22 @@ describeDb("publishing an evaluation, against a real database", () => {
   const publishWhileHeld = async (id: string, change: (c: pg.Client) => Promise<void>) => {
     const holder = new pg.Client({ connectionString: db.url });
     await holder.connect();
+    let pending: ReturnType<typeof publish> | undefined;
     try {
       await holder.query("BEGIN");
       await holder.query(`SELECT id FROM evaluations WHERE id = $1 FOR UPDATE`, [id]);
-      const pending = publish(id);
-      try {
-        await waitUntilQueued();
-        await change(holder);
-        await holder.query("COMMIT");
-        return await pending;
-      } finally {
-        await pending.catch(() => undefined);
-      }
+      pending = publish(id);
+      await waitUntilQueued();
+      await change(holder);
+      await holder.query("COMMIT");
+      return await pending;
     } finally {
+      // Let go of the row BEFORE waiting on the request: if anything above threw, the
+      // request is still queued behind our lock, and waiting on it first would hang the
+      // test until the fetch timed out instead of showing the real failure.
+      await holder.query("ROLLBACK").catch(() => undefined);
       await holder.end();
+      await pending?.catch(() => undefined);
     }
   };
 
