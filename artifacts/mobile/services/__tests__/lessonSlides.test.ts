@@ -23,8 +23,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  BOOK_FIGURE_MAX, BOOK_PAGE_SLIDE_MAX, bookFigureCaption, bookPageSlides, buildLessonDeck, numberedBookTitles, splitChecks, splitExample,
-  splitWarmup, usableTeaching, withoutSlide,
+  BOOK_FIGURE_MAX, BOOK_PAGE_SLIDE_MAX, MAX_TEACHING_PHOTOS, bookFigureCaption, bookPageSlides, buildLessonDeck, numberedBookTitles, splitChecks, splitExample,
+  splitWarmup, teachingPhotoTargets, usableTeaching, withoutSlide,
 } from '../lessonSlides.ts';
 import { figuresForLesson } from '../bookFigures.ts';
 import { KB_LESSONS } from '../knowledgeBase.ts';
@@ -1089,6 +1089,50 @@ describe('generated explanation in the deck', () => {
     });
   });
 
+  describe('concept extras', () => {
+    const cycleShape = { layout: 'cycle', cycle: { stages: [{ label: 'تبخر' }, { label: 'تكاثف' }, { label: 'هطول' }] } };
+    const withExtras = (extra: Record<string, unknown>) => ({
+      ...TEACHING,
+      concepts: [{ ...TEACHING.concepts[0]!, ...extra }, TEACHING.concepts[1]!],
+    });
+    const first = (deck: ReturnType<typeof buildLessonDeck>) => deck.slides.find(s => s.title === TEACHING.concepts[0]!.title)!;
+
+    it('draws a concept in its shape, keeping its points as the fallback', () => {
+      const s = first(buildLessonDeck('x', true, { lesson: BARE, plan: PLAN, teaching: withExtras({ shape: cycleShape, icon: 'drop' }) }));
+      assert.equal(s.layout, 'cycle');
+      assert.deepEqual(s.cycle, cycleShape.cycle);
+      assert.equal(s.icon, 'drop');
+      assert.match(s.content, /^• /);
+    });
+    it('drops a shape the gate refuses, an unknown icon, or a shape it does not allow', () => {
+      const bad = first(buildLessonDeck('x', true, { lesson: BARE, plan: PLAN, teaching: withExtras({
+        shape: { layout: 'cycle', cycle: { stages: [{ label: 'a' }] } }, icon: 'rocket',
+      }) }));
+      assert.equal(bad.layout, undefined);
+      assert.equal(bad.icon, undefined);
+      const photo = first(buildLessonDeck('x', true, { lesson: BARE, plan: PLAN, teaching: withExtras({ shape: { layout: 'photo' } }) }));
+      assert.equal(photo.layout, undefined);
+    });
+    it('keeps the shape and drops the chart when a concept carries both, each valid', () => {
+      const chart = { kind: 'chart', chartType: 'bar', categories: ['أ', 'ب'], values: [3, 5] };
+      const both = first(buildLessonDeck('x', true, { lesson: BARE, plan: PLAN, teaching: withExtras({ shape: cycleShape, chart }) }));
+      assert.equal(both.layout, 'cycle');
+      assert.deepEqual(both.cycle, cycleShape.cycle);
+      assert.equal(both.visual, undefined);
+      assert.equal(both.visualOnReveal, undefined);
+    });
+    it('keeps a real chart only when there is no shape, and a photo only when there is neither', () => {
+      const chart = { kind: 'chart', chartType: 'bar', categories: ['أ', 'ب'], values: [3, 5] };
+      const c = first(buildLessonDeck('x', true, { lesson: BARE, plan: PLAN, teaching: withExtras({ chart, photo: 'salt crystals' }) }));
+      assert.equal(c.visual?.kind, 'chart');
+      assert.equal(c.mediaPrompt, undefined);
+      const p = first(buildLessonDeck('x', true, { lesson: BARE, plan: PLAN, teaching: withExtras({ photo: 'salt crystals' }) }));
+      assert.equal(p.mediaPrompt, 'salt crystals');
+      const ar = first(buildLessonDeck('x', true, { lesson: BARE, plan: PLAN, teaching: withExtras({ photo: 'بلورات الملح' }) }));
+      assert.equal(ar.mediaPrompt, undefined);
+    });
+  });
+
   it('flags every generated slide, and no book slide, as aiWritten', () => {
     const deck = buildLessonDeck('المول', true, { lesson: BARE, plan: PLAN, teaching: TEACHING });
     const flagged = deck.slides.filter(s => s.aiWritten).map(s => s.title);
@@ -1320,5 +1364,24 @@ describe('book pictures never make a run of slides with one title', () => {
     assert.deepEqual(numberedBookTitles([mk('من كتاب الطالب')], true).map(s => s.title), ['من كتاب الطالب']);
     assert.deepEqual(numberedBookTitles([mk('A'), mk('A'), mk('A')], true).map(s => s.title), ['A (١)', 'A (٢)', 'A (٣)']);
     assert.deepEqual(numberedBookTitles([mk('A'), mk('A')], false).map(s => s.title), ['A (1)', 'A (2)']);
+  });
+});
+
+describe('teachingPhotoTargets', () => {
+  const s = (over: Partial<ActivitySlide>): ActivitySlide => ({ slideNumber: 3, type: 'intro', title: 't', content: '• a', durationSeconds: 0, aiWritten: true, ...over });
+  it('takes AI-written slides that asked for a photo, two at most, no repeats', () => {
+    const out = teachingPhotoTargets([
+      s({ title: 'a', mediaPrompt: 'salt' }), s({ title: 'b', mediaPrompt: 'salt' }),
+      s({ title: 'c', mediaPrompt: 'river' }), s({ title: 'd', mediaPrompt: 'desert' }),
+    ]);
+    assert.equal(MAX_TEACHING_PHOTOS, 2);
+    assert.deepEqual(out, [{ title: 'a', query: 'salt' }, { title: 'c', query: 'river' }]);
+  });
+  it('skips a slide with a book figure, a layout, or no AI hand in it', () => {
+    assert.deepEqual(teachingPhotoTargets([
+      s({ title: 'a', mediaPrompt: 'x', sideImageUrl: 'book.png' }),
+      s({ title: 'b', mediaPrompt: 'y', layout: 'cycle' }),
+      s({ title: 'c', mediaPrompt: 'z', aiWritten: undefined }),
+    ]), []);
   });
 });
