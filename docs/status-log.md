@@ -10,6 +10,68 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Publishing an exam reads and writes it under a lock — 2026-10-31
+
+**Asked:** fix the publish race listed as open in «Generating into an exam draft is one locked
+transaction» below.
+
+**What was wrong.** `POST /evaluations/:id/publish` read the live questions and the total with no
+lock, checked them for blockers, and then ran a plain `UPDATE`. A generation committing between the
+read and the `UPDATE` (it locks the same row) left the exam published with the OLD total, or with no
+questions at all, and the blocker checks had been run on a paper that no longer existed. Reproduced
+with the new test, each before the fix: an exam published with a stored total of 10 over questions
+that add up to 20, and a draft whose questions had all gone away published anyway (200 instead of
+the «add at least one question» refusal).
+
+**The fix** (`routes/evaluations.ts`). Publish is one `db.transaction`: lock the evaluation row
+(`FOR UPDATE`), re-check it is not archived, read the questions, total and validate them under the
+lock, then the `UPDATE`. The share-code collision retry runs each attempt in a **savepoint**
+(`tx.transaction`), because a unique violation aborts a Postgres transaction and a plain retry
+would only have been refused («current transaction is aborted»); the retry is pinned by a test that
+simulates a collision on the first attempt. The push for a dated exam is sent after the commit, so
+the lock is not held across a call to Expo. Publish and generate now lock the same row the same way,
+so one is wholly before or wholly after the other.
+
+**Also changed, deliberately:** the date announcement (`publishNotice`) is decided from the row as
+it was under the lock, not the one read before it. The old comment called two publishes of one
+dated draft both announcing «a known gap, left out by choice»; a double tap on Publish would tell
+the families twice. Reproduced before the fix: 10 push messages for 5 distinct (device, title)
+pairs, every device told twice. Now once. A re-publish of an already published or closed exam never
+announced and still does not.
+
+**Verified:** typecheck clean; API suite against a throwaway local Postgres (result in the PR). The
+new `evaluationPublishRace.db.test.ts` (4 tests) was seen failing before the fix on the stale total
+and the empty exam; its control (a plain publish) and the collision retry passed before and after.
+`evaluationPublishAnnounce.db.test.ts` (1 test) was seen failing before the fix on the double
+announcement. The races are made deterministic by holding the row from the test, waiting until the
+request is queued behind it, and changing the paper as a committed generation would. **Not
+verified:** nothing was run against production; the locked read was not run under row-level security
+(CI does not set `RLS_ENFORCE`; the policies were read).
+
+**Flaky tests seen locally, not caused by this change:** in full local runs a different, unrelated
+test file failed each time with «terminating connection due to administrator command» from a `before`
+hook (`guardianApproval`, then `familyExams` and `homeworkShare`, then `familySchedule`). That is
+`DROP DATABASE … WITH (FORCE)` in the harness's teardown killing a connection that file's own
+database still held; every one passes alone. It is more likely on a loaded machine.
+
+**Found in review and recorded, not fixed:** the «wholly before or wholly after» guarantee holds
+against generate and publish only. Question add, patch and delete, the paper-grid PUT and
+`recomputeTotal` still check the status and then write without the row lock (deleting the last
+question as a publish reads the paper can publish an exam with no questions and a total of 0), and
+`DELETE /evaluations/:id` (archive) passes its draft check and then writes `archivedAt` after a
+publish commits, which leaves an exam both published and archived. The lock is `FOR UPDATE`, which
+also blocks the child-table inserts that take `FOR KEY SHARE` on the row (a student starting an
+attempt) for the length of the transaction; `FOR NO KEY UPDATE` would not, and is optional polish for
+generate and publish alike (short, DB-only transactions, so the wait is milliseconds).
+
+**Also fixed from the review:** the new tests (and generate's) released the held lock only after
+waiting on the queued request, so a failing assertion would have hung until the fetch timed out
+instead of failing; they now roll back and close the holder first.
+
+**Still open:** the app shows the «published or removed» refusal from generate as a generic «could not
+generate» (needs an Arabic and English line), a second tap still starts a second model call, and the
+paper-grid and question add/edit/delete routes keep the read-then-write shape.
+
 ## Generating into an exam draft is one locked transaction — 2026-10-31
 
 **Asked:** fix the exam-generation doubling found in «Review of messaging and exams» (the
