@@ -23,8 +23,16 @@ the other chips, so «اليوم» begins at 03:00 Amman time. AI costs drew one
 API's echoed `to`, which for a bounded range is the next (exclusive) midnight — a picked `to` now
 wins, so a single day draws one bar, not an empty extra one.
 
+**«هذا الشهر» was clipped on Android.** The chip measured wide enough for the label on one line,
+yet Android drew «هذا» alone with «الشهر» wrapped below and cut off by the chip's one-line
+height: measurement and drawing disagreed. Fonts load before first render (`_layout.tsx`), so
+it was not a late font; the remaining cause is Android's default `highQuality` line breaking,
+which can wrap inside the measured width. `FilterChip` (`components/admin/widgets.tsx`) now
+sets `textBreakStrategy="simple"` (Android-only; iOS and web ignore it).
+
 **Verified:** `pnpm run typecheck`. **Not verified:** the screens were not opened on a device or
-in a browser; no test covers the preset list.
+in a browser — in particular the clipping fix has not been seen on an Android phone; no test
+covers the preset list or native text layout.
 
 ## Publishing an exam reads and writes it under a lock — 2026-10-31
 
