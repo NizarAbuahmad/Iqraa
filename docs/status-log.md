@@ -56,6 +56,44 @@ clean on the whole monorepo.
 - The glosses (above), and the Grade 6 screens on a phone.
 - Not done: Grade 7, Grade 10 semester 2, an Android OTA.
 
+## A student can carry an Arabic name, and Arabic letters use it — 2026-10-31
+
+**Asked:** after the roster-row message button shipped (#1357), the parent letter still greeted
+«ولي أمر الطالب ahmad» when the roster was typed in Latin letters.
+
+**What changed.**
+- **Schema (migration 0023, additive):** `students.display_name_ar text NOT NULL DEFAULT ''`. `''`
+  means "not recorded", the same convention as `gender` and `teacher_note`; it is never filled from
+  `display_name` — transliterating a real child's name would be a guess.
+- **API (`routes/roster.ts`):** the class roster read and both `/students` reads return
+  `displayNameAr`; `PATCH /students/:id` takes it. `lib/studentNameAr.ts` refuses anything that is
+  not Arabic script (a Latin name, digits, Arabic-Indic digits, a string with no letter) with
+  `student_name_ar_invalid`, and over 100 characters with `student_name_ar_too_long`. An empty value
+  clears it. The linked-account rename (`syncLinkedAccountNames`) is untouched: accounts follow
+  `display_name`, not the Arabic spelling.
+- **App:** the edit-student sheet has a «الاسم بالعربية» field (always right-to-left, and the two
+  refusals are translated). `services/studentName.ts` decides which spelling a letter carries: an
+  Arabic letter uses the Arabic name if there is one, else the roster name; an English letter always
+  the roster name. The parent-letter screen applies it when a student is picked, when it opens from
+  a class card (it reads the roster row, as it already did for gender), and when the letter's
+  language is flipped — and never overwrites a name the teacher has typed over it.
+
+**Verified:** `pnpm run typecheck`; api-server `pnpm build` + `pnpm test` against a local Postgres
+(3254 pass, 0 skipped, incl. six new `PATCH /students/:id` cases in `rosterEdit.db.test.ts` and
+`studentNameAr.test.ts`); mobile `pnpm test` (8806 pass, 0 fail, 10 skipped as before; new
+`studentName.test.ts`, `studentEdit.test.ts` cases). In Chromium against a local API: a Latin name in
+the Arabic box is refused with the translated message and nothing is saved; «أحمد» saves; the letter
+opened in English greets "ahmad" and, after the language flip, «أحمد».
+
+**Not verified:** a phone-width layout or dark mode for the new field; the migration against the
+production database (it is a single `ADD COLUMN … DEFAULT ''`, and `deploy.yml` applies it before the
+new API revision takes traffic); the Arabic name anywhere beyond the letter (class list, exams and
+the student record still show the roster name).
+
+**Known limits.** Names are entered one student at a time in the edit sheet — the bulk «add
+students» box has no place for a second name. A teacher who writes the Arabic name after a letter
+is already open must reopen it.
+
 ## Homework submissions record their author — 2026-10-31
 
 Closes the open item «Unlinking a student account leaves its homework projects on the roster record

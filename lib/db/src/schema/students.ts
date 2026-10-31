@@ -95,6 +95,14 @@ export const students = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     displayName: text("display_name").notNull(),
+    /**
+     * The name in Arabic script, or '' when the teacher hasn't written it.
+     * Rosters are often typed in Latin letters, and an Arabic parent letter
+     * that greets «ولي أمر الطالب ahmad» reads as a mistake; the letter uses
+     * this when it is Arabic and falls back to `displayName`. Never derived
+     * from `displayName` — transliterating a real child's name would guess it.
+     */
+    displayNameAr: text("display_name_ar").notNull().default(""),
     /** School register number or similar. Optional, teacher's own reference. */
     externalRef: text("external_ref"),
     gradeId: text("grade_id").notNull().default(""),
