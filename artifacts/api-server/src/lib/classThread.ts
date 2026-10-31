@@ -146,6 +146,73 @@ export async function syncClassThreadsForStudent(studentId: string): Promise<voi
 }
 
 /**
+ * After an account's links to some roster rows were deleted: take it out of the
+ * chats that only existed because of those links.
+ *
+ * A direct thread and a custom group are created only for someone connected to
+ * the teacher (a roster link to one of their students), and sending and reading
+ * check participation alone, so removing the link left the account reading and
+ * posting in them. For each teacher whose students it was just unlinked from,
+ * and only if it now has no link left to ANY of that teacher's students (a
+ * parent unlinked from one child but still linked to another keeps everything),
+ * remove it from that teacher's direct thread and from the custom groups that
+ * teacher owns. Class chats are not handled here: they are re-derived from the
+ * roster by `syncClassThreadsForStudent`.
+ *
+ * Messages stay (moderation reads them, and a re-link brings the thread back
+ * through `openDirectThread`). The teacher's side of the emptied direct thread
+ * is hidden, so the inbox does not keep a chat with nobody in it; opening it
+ * again un-hides it.
+ */
+export async function pruneTeacherChatsAfterUnlink(userId: string, studentIds: string[]): Promise<void> {
+  if (studentIds.length === 0) return;
+  const teachers = await db
+    .selectDistinct({ teacherId: students.teacherId })
+    .from(students)
+    .where(inArray(students.id, studentIds));
+  for (const { teacherId } of teachers) {
+    const [stillConnected] = await db
+      .select({ id: rosterLinks.id })
+      .from(rosterLinks)
+      .innerJoin(students, eq(students.id, rosterLinks.studentId))
+      .where(and(eq(students.teacherId, teacherId), eq(rosterLinks.userId, userId)))
+      .limit(1);
+    if (stillConnected) continue;
+
+    const directKey = [teacherId, userId].sort().join(":");
+    const [direct] = await db
+      .select({ id: chatThreads.id })
+      .from(chatThreads)
+      .where(eq(chatThreads.directKey, directKey))
+      .limit(1);
+    if (direct) {
+      await db
+        .delete(chatParticipants)
+        .where(and(eq(chatParticipants.threadId, direct.id), eq(chatParticipants.userId, userId)));
+      await db
+        .update(chatParticipants)
+        .set({ hiddenAt: new Date() })
+        .where(and(eq(chatParticipants.threadId, direct.id), eq(chatParticipants.userId, teacherId)));
+    }
+
+    const groups = await db
+      .select({ id: chatThreads.id })
+      .from(chatThreads)
+      .where(and(eq(chatThreads.type, "custom_group"), eq(chatThreads.createdBy, teacherId)));
+    if (groups.length > 0) {
+      await db
+        .delete(chatParticipants)
+        .where(
+          and(
+            inArray(chatParticipants.threadId, groups.map(g => g.id)),
+            eq(chatParticipants.userId, userId),
+          ),
+        );
+    }
+  }
+}
+
+/**
  * An archived class's thread goes with it. `chatThreads.archivedAt` existed
  * and the inbox already filtered on it; nothing ever set it, so archiving a
  * class left its chat live for every member.

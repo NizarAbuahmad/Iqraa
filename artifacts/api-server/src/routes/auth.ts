@@ -32,7 +32,7 @@ import { googleClientIds } from "../lib/googleClients.js";
 import { decideGoogleLink, googleRoleConflict } from "../lib/googleLink.js";
 import { decideRefresh, refreshTokenTtlMs } from "../lib/refreshPolicy.js";
 import { guardianApprovalEnabled, studentAccountsEnabled } from "../lib/features.js";
-import { syncClassThreadsForStudent } from "../lib/classThread.js";
+import { syncClassThreadsForStudent, pruneTeacherChatsAfterUnlink } from "../lib/classThread.js";
 import { audioKeysForTeacher } from "../lib/attemptAudio.ts";
 import {
   ROSTER_CONSENT_STATEMENT_EN,
@@ -1151,6 +1151,9 @@ router.post("/claim", authMiddleware, claimLimiter, async (req: AuthenticatedReq
         await db
           .delete(rosterLinks)
           .where(and(eq(rosterLinks.studentId, resolved.studentId), eq(rosterLinks.userId, req.user!.id)));
+        // The class-chat sync above already added this loser; take it back out.
+        await resyncClassThreadsOfStudent(resolved.studentId);
+        await pruneTeacherChatsAfterUnlink(req.user!.id, [resolved.studentId]);
         res.status(409).json({ error: "This student is already linked to an account", code: "claim_already_linked" });
         return;
       }
@@ -1241,9 +1244,12 @@ router.delete("/claim", authMiddleware, async (req: AuthenticatedRequest, res) =
       .delete(rosterLinks)
       .where(eq(rosterLinks.userId, req.user!.id))
       .returning({ studentId: rosterLinks.studentId });
-    for (const studentId of new Set(removed.map(r => r.studentId))) {
+    const removedStudentIds = [...new Set(removed.map(r => r.studentId))];
+    for (const studentId of removedStudentIds) {
       await syncClassThreadsForStudent(studentId);
     }
+    // Leaving a teacher's roster leaves their direct chat and groups too.
+    await pruneTeacherChatsAfterUnlink(req.user!.id, removedStudentIds);
     res.json({ hasRosterLink: false });
   } catch (err) {
     logger.error({ err }, "unclaim failed");

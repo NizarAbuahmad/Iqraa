@@ -62,6 +62,7 @@ import {
   renameClassGroupThread,
   resyncClassGroupThreadIfExists,
   syncClassThreadsForStudent,
+  pruneTeacherChatsAfterUnlink,
 } from "../lib/classThread.js";
 import { findLiveClass } from "../lib/classOwnership.js";
 import { examVisibleTo } from "../modules/assessment/audience.ts";
@@ -1713,11 +1714,15 @@ router.post("/classes/:id/join-code", async (req: AuthenticatedRequest, res) => 
  *     syncClassThreadsForStudent is called below to rebuild it now rather than
  *     leaving the wrong adult in a thread full of children until the next time
  *     somebody happens to open it.
- *   - Custom groups and any existing direct thread are NOT touched. Those
- *     memberships were a teacher's explicit choice, not a derivation, and
- *     cascading them would silently drop a parent out of "أولياء أمور ١٠-أ"
- *     over a roster correction. Removing them stays a deliberate act, in the
- *     group's own member list.
+ *   - The teacher's direct thread with the account and the custom groups they
+ *     own are cut only when this was the account's LAST link to any of this
+ *     teacher's students (pruneTeacherChatsAfterUnlink). Both exist only for
+ *     someone connected to the teacher and sending checks participation alone,
+ *     so leaving them let an unlinked stranger keep reading and posting. A
+ *     parent unlinked from one child but still linked to another stays in
+ *     everything. The cost: unlink a parent from the wrong child before linking
+ *     them to the right one and they have left the groups (the direct chat
+ *     comes back when the teacher opens it again; a group needs adding again).
  */
 router.delete("/students/:id/links/:userId", async (req: AuthenticatedRequest, res) => {
   try {
@@ -1750,6 +1755,9 @@ router.delete("/students/:id/links/:userId", async (req: AuthenticatedRequest, r
     // implementation — and it is a no-op where no chat exists yet, so an
     // unlink does not conjure empty class chats into the teacher's inbox.
     await syncClassThreadsForStudent(studentId);
+    // And out of this teacher's direct chat and groups, unless another of their
+    // students still links the account to them.
+    await pruneTeacherChatsAfterUnlink(linkedUserId, [studentId]);
 
     res.json({ removedUserId: linkedUserId });
   } catch (err) {

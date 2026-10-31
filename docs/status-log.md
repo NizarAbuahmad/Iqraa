@@ -10,6 +10,48 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Unlinking an account also removes it from the teacher's direct chat and groups — 2026-10-31
+
+**Asked:** the first item on the list left unfixed by «Review of messaging and exams» below:
+unlinking a parent or student removed them from class chats only.
+
+**The rule.** A direct thread and a custom group are created only for someone connected to the
+teacher (`isConnected`: a roster link to one of that teacher's students), and sending and reading
+check participation alone. So once the link was deleted the account kept reading the teacher's
+earlier messages about a child and could keep posting. `pruneTeacherChatsAfterUnlink`
+(`lib/classThread.ts`, on `systemDb`) now runs after a link is deleted and, **only if the account
+has no link left to any of that teacher's students**, removes it from that teacher's direct thread
+and from the custom groups that teacher owns. A parent unlinked from one child but still linked to
+another keeps everything. Messages are kept; the teacher's side of the emptied direct thread is
+hidden (`hiddenAt`) so the inbox does not keep a chat with nobody in it, and a re-link plus the
+teacher opening the chat again brings the same thread back (`openDirectThread`).
+
+**Called from the three places that delete a link:** `DELETE /students/:id/links/:userId` (the
+teacher's unlink), `DELETE /auth/claim` (the account withdrawing its own links), and the branch of
+`POST /auth/claim` where the later of two racing claimers withdraws (which also now rebuilds the
+class chats, so the loser no longer stays in the class chat until someone opens it). The unlink
+dialog now says what it does (`unlinkAccountConfirm`, Arabic and English).
+
+**Cost, decided on purpose:** a teacher who unlinks a parent from the wrong child *before* linking
+them to the right one has removed them from the groups; the direct chat returns when the teacher
+opens it again, a group needs the parent adding again. The old comment on the route chose the
+opposite (never touch groups) to avoid exactly this; the rule above only fires when no link to
+that teacher remains, which is the case the old comment did not distinguish.
+
+**Verified:** typecheck clean; API suite 3070/3070 and mobile suite 8291 pass / 10 skipped / 0 fail,
+against a throwaway local Postgres. `unlinkChatAccess.db.test.ts` (6 tests) was seen failing before
+the change (the control "still linked through another child" passes before and after). The
+race-loser branch has **no** test of its own (it needs two simultaneous claims). **Not verified:**
+nothing was run against production; the dialog wording was not read by a native speaker; the
+mobile string change is JS-only, but `app.json` is 1.6.0 while STATUS.md says the installed
+production binary is 1.5.0, so **the new dialog text reaches no phone until a 1.6.0 build is
+installed**. The server change is live on deploy and does not wait for that: until then the dialog
+still says only «removed from class chats» although the account now also leaves the direct chat
+and groups.
+
+**Still open from the review:** direct chats whose other side was deleted show a composer that
+goes nowhere; a block does not stop the blocked person posting to a teacher.
+
 ## Review of messaging and exams: whole-number marking, broadcast unread, report length — 2026-10-30
 
 **Asked:** review messaging with parents and students, and exams and evaluations, now that the app
