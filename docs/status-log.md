@@ -43,6 +43,204 @@ scroll the box, in the browser. In English the «Send the message» button wraps
 the teacher to the inbox picker rather than opening one chat. Direct chat needs a linked account;
 a student with nobody joined shows no pill.
 
+## Unlinking an account also removes it from the teacher's direct chat — 2026-10-31
+
+**Asked:** the first item on the list left unfixed by «Review of messaging and exams» below:
+unlinking a parent or student removed them from class chats only. **Decided by the owner
+(2026-10-31):** cut only the direct chat; groups stay unless the teacher removes someone in the
+group's member list, or the parent or student withdraws their own link.
+
+**The rule.** A direct thread is created only for someone connected to the teacher (`isConnected`:
+a roster link to one of that teacher's students), and sending and reading check participation
+alone. So once the link was deleted the account kept reading the teacher's earlier messages about a
+child and could keep posting. `pruneTeacherChatsAfterUnlink` (`lib/classThread.ts`, on `systemDb`)
+now runs after a link is deleted and, **only if the account has no link left to any of that
+teacher's students**, removes it from that teacher's direct thread. A parent unlinked from one
+child but still linked to another keeps it. Custom groups are a list the teacher built on purpose
+and an unlink is often a roster correction (wrong child, linked again a minute later), so **the
+teacher's unlink does not touch them** (`alsoGroups: false`); an account withdrawing its OWN claim
+has chosen to leave, so `DELETE /auth/claim` also removes it from the groups that teacher owns
+(`alsoGroups: true`). Messages are kept; the teacher's side of the emptied direct thread is hidden
+(`hiddenAt`) so the inbox does not keep a chat with nobody in it, and a re-link plus the teacher
+opening the chat again brings the same thread back (`openDirectThread`). The option is required, so
+a new caller must choose.
+
+**Called from the two places a link is deleted that can leave a stranger in a chat:**
+`DELETE /students/:id/links/:userId` (the teacher's unlink) and `DELETE /auth/claim` (the account
+withdrawing its own links). The third `delete(rosterLinks)`, the "later of two racing claimers
+withdraws" branch of `POST /auth/claim`, is left alone: since the claim runs in a transaction and
+`roster_links_one_self_idx` is unique per student, a second self-link can no longer exist, so that
+branch is dead code (an earlier draft of this PR added a cleanup there; it was removed as
+unreachable and untested). The unlink dialog now says what it does (`unlinkAccountConfirm`,
+Arabic and English).
+
+**Two things found in review and fixed.** (1) The link delete commits on its own, so if the cleanup
+threw, the teacher's retry found no link (404) and never ran it: the unlink route now runs the
+cleanup on that path too, and the helper is safe to repeat. `DELETE /auth/claim` logs a cleanup
+failure instead of answering 500, because a retry there has no link to name the teachers from.
+(2) Hiding the emptied direct chat from the teacher could bury a message the account had sent
+that the teacher had not read, and left it in the app-icon badge with no inbox row to clear it.
+The chat is now hidden and marked read only when nothing unread from the account is in it;
+otherwise it stays visible with its unread count. The helper also never touches the teacher's own
+seat in their chats.
+
+**Consequence to know:** because a teacher's unlink leaves groups alone, an unlinked stranger who
+is already in one of the teacher's custom groups **stays in it** until the teacher removes them in
+the group's member list. That is the owner's choice, made over the safer default; the dialog says
+"your groups do not change". The direct chat, where the private messages about the child are, is
+closed.
+
+**Verified:** typecheck clean; API suite and mobile suite against a throwaway local Postgres (counts
+in the PR). `unlinkChatAccess.db.test.ts` (8 tests) was seen failing before the change (the control
+"still linked through another child" passes before and after); the retry and keep-unread tests were
+each seen failing when their behaviour was removed, and flipping either `alsoGroups` value fails
+the group tests. **Known gap:** the cleanup is several writes that are not one transaction, and a
+link created in the same instant for another of the teacher's students can leave an account linked
+but out of the direct chat (or, on withdrawal, the groups); nothing tests that race. A link to an
+*archived* student of the teacher still counts as a connection, as in `isConnected`; no route
+archives students today. **Not verified:** nothing was run against production; the dialog wording
+was not read by a native speaker; the mobile string change is JS-only, but `app.json` is 1.6.0
+while STATUS.md says the installed production binary is 1.5.0, so **the new dialog text reaches no
+phone until a 1.6.0 build is installed**. The server change is live on deploy and does not wait for
+that: until then the dialog still says only «removed from class chats» although the account now
+also leaves the direct chat.
+
+**Still open from the review:** direct chats whose other side was deleted show a composer that
+goes nowhere; a block does not stop the blocked person posting to a teacher.
+
+## API errors reach Cloud Error Reporting (PR #1238, merged 2026-10-24) — 2026-10-30
+
+In production the logger wrote pino's default JSON (`level: 50`, `msg`, no stack field), which
+Cloud Run reads as an unleveled entry, so Error Reporting never saw anything the API logged.
+`lib/cloudLogging.ts` + `lib/logger.ts` now write `severity` (`error` → ERROR, `fatal` →
+CRITICAL), `message`, `stack_trace` (copied from `err.stack`; 155 of ~190 error call sites log
+`{ err }`), `serviceContext` (`iqraa-api`, `K_REVISION`) and an ISO `time`. Production only;
+`/healthz/errors` and the dev transport are unchanged. `clouderrorreporting.googleapis.com` was
+enabled on `iqraa-auth-507315` by the owner on 2026-10-24.
+
+**Verified (2026-10-30, `gcloud logging read` on `iqraa-api`, 5 days):** 177 entries at ERROR; 84
+carry `stack_trace` and `serviceContext` (the rest are `logger.error` calls with no `err`). Four
+unit tests in `cloudLogging.test.ts`. **Not verified:** that the Error Reporting page groups
+them (the `gcloud beta` group is not installed here; look at the Error Reporting page in the
+console). **First thing it showed:** 79 of those stacks were an OpenAI `429`
+`credit_balance_exhausted` between 2026-10-28 18:30Z and 2026-10-29 23:51Z (`classroom-activity`,
+`chat`, `lesson-teaching`, `activity`, `evaluation` generation) — none since.
+
+## Slides: cycle, tree, Venn and mind-map diagrams, and visuals on curriculum slides — 2026-10-31
+
+A deck could say «a cycle», «a classification», «what two things share» or «one idea and what
+connects to it» only as bullets, and the Slides Maker (curriculum) decks carried a picture only on
+the slide the book had a figure for. Two changes: four drawn diagram layouts, and shapes, icons,
+charts and photos on curriculum slides.
+
+**Four layouts, one gate.** `layout: 'cycle' | 'tree' | 'venn' | 'mindmap'` with a payload field of
+the same name; `resolveSlideLayout` (`services/slideLayout.ts`) refuses anything past its limits and
+the slide is then drawn the ordinary way, as every layout before. Limits: **cycle** 3–6 stages, label
+≤ 24, optional note ≤ 60, labels all different. **Tree** root ≤ 32, 2–4 branches ≤ 24, 0–4 leaves per
+branch ≤ 24, all different. **Venn** 2 or 3 sets, set label ≤ 24, all different, at least one item
+somewhere; two sets: ≤ 4 items per region, each ≤ 32; three sets: ≤ 3 items per set and ≤ 2 shared,
+each **≤ 16** (it was 20 when planned; see below). **Mind map** centre ≤ 40, 3–6 nodes ≤ 40, all
+different, a node may carry `role: 'cause' | 'effect'` (an arrow into the centre, or out of it; no role
+is a plain line).
+
+**One geometry, three renderers.** `services/diagramGeometry.ts` places every box, ellipse, line and
+text box once, in 960 × 430 units scaled by the area, mirrored for RTL (a cycle runs
+counter-clockwise, a tree's first branch and a Venn's first set sit on the right), and groups them
+into beats. `diagramHtml.ts` draws it as inline SVG with HTML text for the PDF (every beat at once);
+`pptxDiagram.ts` writes it as editable PowerPoint shapes (`roundRect`, `ellipse`, `line` with a
+triangle arrowhead only where the geometry says, one text box per label with no extra insets);
+`DiagramView` in `app/ai-tools/classroom/presentation.tsx` draws it with react-native-svg, one `Reveal`
+layer per beat, so «نقطة بنقطة» brings a stage, a branch, a set or a node in on each press (a tree's
+root and a mind map's centre are there from the start; `pacedReveal.ts` asks `diagramBeats`). The
+text boxes are sized for the longest text the gate allows, tested by wrapping at 0.55 em a glyph
+(`diagramGeometry.test.ts`); several Venn items are one text box joined by line breaks.
+
+**Prompt Slides** (`promptSlidesPrompt.ts`, both languages) describes the four shapes, when each fits,
+their JSON and their limits, and says names must differ; `deckChecks` warns `cycle_incomplete`,
+`tree_incomplete`, `venn_incomplete`, `mindmap_incomplete`; the polish step turns a refused diagram's
+words back into bullets; the blank-slide check counts the four payloads as content.
+
+**Slides Maker.** A curriculum concept may carry a `shape` (one of nine — compare, table, flow, timeline, stat and the four diagrams — through the same gate), an
+`icon`, a `chart` (only when it has no shape) or a `photo` phrase (only when it has none of those),
+all optional (`conceptExtras` in `lessonSlides.ts`, rule 13 in `lessonTeachingPrompt.ts`; the route logs
+`lesson-teaching visuals`). Up to **two** concept photos per deck (`teachingPhotoTargets`,
+`MAX_TEACHING_PHOTOS`), not on a wide-scope deck, each with its Unsplash credit, found through the
+existing media path in `app/ai-tools/slides.tsx`; each costs one call on the shared Unsplash quota.
+
+**The `lesson-teaching` pool starts afresh again.** Its version is now `2026-10-31.1`
+(`PROMPT_VERSION_BY_KIND`, `generationKey.ts`; every other kind keeps `2026-10-04.1`), so sections
+stored before this carry none of the new fields and are not served. The first teacher to build a
+Slides Maker deck for each lesson after the merge pays for a new teaching section (budget-capped as
+usual), including the lessons `pregenerate.ts` filled — **re-run
+`artifacts/mobile/scripts/pregenerate.ts` to fill them ahead of teachers.** Existing approved student
+explanations are read by lesson and language, not by this key, so they keep being served; new sections
+need approving as before.
+
+**What students see.** The student explanation cards draw only a concept's `points`, and rule 13 tells
+the model to make `points` a two-line summary when a concept has a `shape`. So `buildExplanationCards`
+(`lessonExplanationCards.ts`) now appends the shape's own words after the points, when the deck would
+draw that shape (`usableConceptShape`, the same gate; `payloadLines` for the words): a «دورة الماء»
+card shows its summary and then its stages, one per line (with the note after « — »); a comparison
+shows `title: item` lines; a table `header: cell — header: cell`. A shape the gate refuses adds
+nothing, so the card is its points, as before. Students still see no drawing, no icon, chart or photo
+— only the words. Cards already approved were built from an older section and are unchanged.
+
+**Looked at, and what changed because of it.** A fixture deck of the four diagrams at the gate's
+maximum sizes (6-stage cycle with notes of 60 characters, 4 × 4 tree, 2- and 3-set Venn, 6-node mind
+map with causes and effects), in Arabic and English, was built with the real HTML builder, printed to
+PDF in Chromium (A4 landscape, 7 pages each, Arabic and English × the Iqrra and Graphite themes —
+every deck theme is light, and the deck ignores the OS dark mode) and shot page by page; the same deck
+was opened in the built web bundle through the saved-material view and presented at 1366 × 860 and
+390 × 844, «نقطة بنقطة» off and on, Arabic and English, in the Iqrra and Graphite themes, with the OS
+scheme light and dark (no difference: see above). What was seen:
+- **Cycle.** Labels and notes sit inside their boxes at the maximum; each arrow runs from one box edge
+  to the next box's edge in reading order — clockwise in English, counter-clockwise in Arabic — and
+  closes back to the first. Between vertically stacked boxes the arrow is a head with almost no shaft.
+  Paced: nothing, then one stage per press, each arrow arriving with the stage it points at.
+- **Tree.** Root, four branches and sixteen leaves are inside their boxes, first branch on the right
+  in Arabic. A branch label of 24 characters wraps to two lines and fills its box (touching, not
+  clipped) in the PDF and the presenter. Paced: the root, then a branch with its leaves per press.
+- **Venn, two sets.** Set names above the circles, items stacked in the crescents and the lens. Items
+  are separated only by line breaks, so an item that wraps (32 characters in the narrow lens) reads
+  like another item: **no gap or mark between items — left as is.**
+- **Venn, three sets.** The tightest fit, as flagged. Ordinary Arabic and mixed-case English of 20
+  characters fit in both renderers (150 random real-word trials in the PDF at the cap: no box
+  overflowed; in English the widest bold shared line was 97 % of its box). **An all-capitals phrase did not**
+  («CHLOROFLUOROCARBONS» and «MITOCHONDRIA ORGANEL» in the triple overlap): three lines in a two-line
+  box, cut off in the PDF and over the circle's edge in the presenter. So the cap went from 20 to 16
+  (gate, both prompts, their tests); re-looked at 16: Arabic, mixed case and two-word capitals
+  («SODIUM HYDROXIDE») fit in both. **Still not fitting:** a single unbroken run of 16 wide capitals
+  (16 W's) is clipped in the PDF and wraps in the presenter; no real word is that wide.
+- **Mind map.** Six nodes of 40 characters sit inside their boxes (a three-line English node touches
+  the box's top and bottom); the centre's three-line text is inside the ellipse. A cause's arrow ends
+  at the centre, an effect's at the node, a node with no role has a plain line, in both directions of
+  writing. Paced: the centre, then one node per press with its line.
+- **PowerPoint**, the real `exportDeckAsPptx` run with the native modules stubbed, Arabic and English,
+  both themes, 7 slides, the .pptx unzipped: cycle 6 `roundRect` + 6 `line` with 6 `tailEnd` triangles;
+  tree 21 `roundRect` + 8 lines, none with an arrowhead; Venn 2 and 3 their set `ellipse`s (2 and 3
+  beyond the two background blobs) and no `roundRect`, the right number of paragraphs (items one per
+  paragraph); mind map 6 `roundRect`, 1 centre `ellipse`, 6 lines with 4 arrowheads; no connector
+  objects; arrowhead ends checked against the box positions (cause at the centre, effect at the node,
+  cycle in reading order, mirrored between Arabic and English); every paragraph `rtl` in Arabic and none in English.
+- **Phone (390 × 844).** Nothing is clipped, but the drawing keeps its 960 × 430 landscape shape across
+  a portrait screen, so labels come out around 7–8 px and notes around 6 px: **too small to read from
+  a phone in the hand.** A portrait layout would be its own change; this one is meant for a projector.
+
+**Verified.** `pnpm run typecheck` clean; api-server `pnpm build` + `pnpm test` 2,696 tests, 2,696 pass,
+0 fail; mobile `pnpm test` 8,593 tests, 8,583 pass, 10 skipped, 0 fail (both re-run after the Venn cap
+changed, and again after the whole-branch review fixes). New tests: `diagramGeometry`, `diagramHtml`, `pptxDiagram`, additions to `slideLayout`,
+`pacedReveal`, `deckSlidesHtml`, `promptSlidesPrompt`, `promptSlidesPolish`, `deckChecks`,
+`lessonTeachingPrompt`, `lessonSlides`, `generationKey`. The visual checks above.
+
+**Not verified.** **No live model has chosen or filled any of this.** The OpenAI key in the session that
+built it lacks the `model.request` scope, so no deck was generated: whether the model picks a cycle
+where it fits, keeps to the limits, uses the Slides Maker extras well (or whether a Unsplash phrase
+finds a good photo) is unknown; the first measure is a Prompt Slides run and the `lesson-teaching
+visuals` log line. PowerPoint's own rendering: the XML was read, never opened in PowerPoint, Keynote
+or Google Slides (the Venn set ellipses rely on having no fill element to be transparent outlines).
+Native devices, a clicker and screen readers. The presenter's labels and arrows were looked at in
+Chromium only, with the Almarai and Readex Pro fonts installed on the machine for the PDF.
+
 ## Review of messaging and exams: whole-number marking, broadcast unread, report length — 2026-10-30
 
 **Asked:** review messaging with parents and students, and exams and evaluations, now that the app

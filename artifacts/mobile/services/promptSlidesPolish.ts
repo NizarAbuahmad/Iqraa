@@ -117,15 +117,15 @@ function inferLayout(slide: ActivitySlide, index: number): InferredLayout | unde
   return undefined;
 }
 
-const STRUCTURE_LAYOUTS = new Set<NonNullable<ActivitySlide['layout']>>(['timeline', 'stats', 'table', 'flow', 'quote']);
+const STRUCTURE_LAYOUTS = new Set<NonNullable<ActivitySlide['layout']>>(['timeline', 'stats', 'table', 'flow', 'quote', 'cycle', 'tree', 'venn', 'mindmap']);
 
 /** A refused layout's words come back as a list; past this it is a wall of text, so the rest is cut. */
 const MAX_FALLBACK_LINES = 6;
 
 /**
  * The structure a model may add to a slide — an `icon`, a chart `visual`, and
- * the four structure layouts (timeline, stats, table, flow) — reduced to what a
- * renderer can draw.
+ * the payload layouts in `STRUCTURE_LAYOUTS` (timeline, stats, table, flow,
+ * quote, cycle, tree, venn, mindmap) — reduced to what a renderer can draw.
  *
  * The server strips the same things, and this runs again because a deck reaches
  * the screen from places the server never saw (a saved copy, an older build's
@@ -140,15 +140,15 @@ const MAX_FALLBACK_LINES = 6;
  */
 function cleanStructure(slide: ActivitySlide): ActivitySlide {
   let next = slide;
-  // The four structure layouts (timeline, stats, table, flow) carry their words in
-  // a payload of their own, so a refusal must not leave the slide empty. The slide
+  // The layouts in `STRUCTURE_LAYOUTS` (timeline, stats, table, flow, quote, cycle,
+  // tree, venn, mindmap) carry their words in a payload of their own, so a refusal must not leave the slide empty. The slide
   // keeps its one-sentence `content` and gains the payload as bullet lines: the
   // teacher sees what the model wrote as an ordinary list, not nothing. Refused
   // means: the data failed `resolveSlideLayout`, or the slide is not a prose slide
   // — a layout on a question or a challenge would hide its options or its answer.
   if (next.layout && STRUCTURE_LAYOUTS.has(next.layout)) {
     if (!PROSE_TYPES.has(next.type) || !resolveSlideLayout(next)) {
-      const { layout: _l, timeline: _t, stats: _s, table: _b, flow: _f, quote: _q, ...rest } = next;
+      const { layout: _l, timeline: _t, stats: _s, table: _b, flow: _f, quote: _q, cycle: _c, tree: _r, venn: _v, mindmap: _m, ...rest } = next;
       const lines = payloadLines(next).slice(0, MAX_FALLBACK_LINES).map(l => `• ${l}`);
       next = { ...rest, content: [(rest.content ?? '').trim(), ...lines].filter(Boolean).join('\n') };
     }
