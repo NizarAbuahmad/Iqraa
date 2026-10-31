@@ -970,7 +970,21 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       return key;
     };
     const rowsOf = async (row: string) =>
-      (await db.pool.query(`SELECT 1 FROM homework_submissions WHERE student_id = $1`, [row])).rowCount;
+      (await db.pool.query(`SELECT 1 FROM homework_submissions WHERE student_id = $1`, [row])).rowCount ?? 0;
+    /**
+     * DELETE /auth/users/me as `user`. The route allows five an hour per caller and this block deletes more
+     * accounts than that from one address, so its bucket is cleared first: the limiter is not what is under test.
+     */
+    const deleteAccount = async (on: TestServer, user: { id: string; code: string }) => {
+      await db.pool.query(`DELETE FROM rate_limit_buckets WHERE key LIKE 'delete-account:%'`);
+      return call(on, "DELETE", "/auth/users/me", user.id, { loginCode: user.code });
+    };
+    /** The dev logger is a pino-pretty worker thread, so a line can land after the response: wait for it, briefly. */
+    const waitForLog = async (on: TestServer, needle: string) => {
+      const deadline = Date.now() + 5000;
+      while (!on.logs().includes(needle) && Date.now() < deadline) await new Promise(r => setTimeout(r, 50));
+      return on.logs().includes(needle);
+    };
 
     /** One student account self-linked to a row in each of two classes: a handed-in project in one, a draft in the other. */
     const studentWithTwoProjects = async (tag: string) => {
@@ -997,7 +1011,7 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       const otherKey = await seed(hwA, otherRow, "someone-else", true);
       assert.ok(s3.body(s.handedKey) && s3.body(s.draftKey) && s3.body(otherKey), "all three photos are stored");
 
-      const del = await call(server, "DELETE", "/auth/users/me", s.student.id, { loginCode: s.student.code });
+      const del = await deleteAccount(server, s.student);
       assert.equal(del.status, 200, del.text);
       assert.equal((await db.pool.query(`SELECT 1 FROM users WHERE id = $1`, [s.student.id])).rowCount, 0, "the account is gone");
       assert.equal(await rowsOf(s.rowA), 0, "the handed-in submission row is gone");
@@ -1013,7 +1027,7 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       const s = await studentWithTwoProjects("rls");
       const enforcing = await startServer({ databaseUrl: db.url, env: { RLS_ENFORCE: "on", ...s3Env(s3) } });
       try {
-        const del = await call(enforcing, "DELETE", "/auth/users/me", s.student.id, { loginCode: s.student.code });
+        const del = await deleteAccount(enforcing, s.student);
         assert.equal(del.status, 200, del.text);
         assert.equal(await rowsOf(s.rowA), 0, "the handed-in submission row is gone");
         assert.equal(await rowsOf(s.rowB), 0, "and the draft's");
@@ -1033,7 +1047,7 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       // the row with no self link left, so only the relation filter — not the shared-row check — protects it here.
       await db.pool.query(`DELETE FROM roster_links WHERE student_id = $1 AND relation = 'self'`, [s.rowB]);
 
-      const del = await call(server, "DELETE", "/auth/users/me", parent.id, { loginCode: parent.code });
+      const del = await deleteAccount(server, parent);
       assert.equal(del.status, 200, del.text);
       assert.equal((await db.pool.query(`SELECT 1 FROM users WHERE id = $1`, [parent.id])).rowCount, 0, "the parent's account is gone");
       assert.equal(await rowsOf(s.rowA), 1, "the child's handed-in project stays");
@@ -1052,18 +1066,111 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       try {
         await link(s.rowA, second.id, "self");
 
-        const del = await call(server, "DELETE", "/auth/users/me", s.student.id, { loginCode: s.student.code });
+        const del = await deleteAccount(server, s.student);
         assert.equal(del.status, 200, del.text);
         assert.equal(await rowsOf(s.rowA), 1, "the shared row keeps its project: the other account can still open it");
         assert.ok(s3.body(s.handedKey), "and its photo");
         assert.equal(await rowsOf(s.rowB), 0, "the row only the deleted account was linked to loses its draft");
         assert.equal(s3.body(s.draftKey), undefined, "and its photo");
       } finally {
-        // The deleted account's link went with it, so the row is back to one self link and the index can return.
+        // Remove the second link first: if the case failed before the deletion, both links are still there and the
+        // index could not come back, which would hide the real failure behind a CREATE INDEX error.
+        await db.pool.query(`DELETE FROM roster_links WHERE user_id = $1`, [second.id]);
         await db.pool.query(
           `CREATE UNIQUE INDEX roster_links_one_self_idx ON roster_links USING btree (student_id) WHERE relation = 'self'`,
         );
       }
+    });
+
+    // The failure cases below inject the failure with a trigger in this throwaway database, keyed on the test
+    // account's name so no other case can trip it, and drop it afterwards. No seam in the production code.
+    const withTrigger = async (table: string, name: string, body: string, run: () => Promise<void>) => {
+      await db.pool.query(`CREATE FUNCTION ${name}() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN ${body} RETURN OLD; END $$`);
+      await db.pool.query(`CREATE TRIGGER ${name} BEFORE DELETE ON ${table} FOR EACH ROW EXECUTE FUNCTION ${name}()`);
+      try {
+        await run();
+      } finally {
+        await db.pool.query(`DROP TRIGGER IF EXISTS ${name} ON ${table}`);
+        await db.pool.query(`DROP FUNCTION IF EXISTS ${name}()`);
+      }
+    };
+    const accountExists = async (id: string) => (await db.pool.query(`SELECT 1 FROM users WHERE id = $1`, [id])).rowCount === 1;
+
+    it("deletes the purged photos when the account delete itself fails, and answers 500 with the account intact", async () => {
+      const s = await studentWithTwoProjects("refuse");
+      await withTrigger(
+        "users",
+        "test_refuse_account_delete",
+        `IF OLD.first_name = 'S-refuse' THEN RAISE EXCEPTION 'test: account delete refused'; END IF;`,
+        async () => {
+          const del = await deleteAccount(server, s.student);
+          assert.equal(del.status, 500, del.text);
+          assert.equal(await accountExists(s.student.id), true, "the account is intact");
+          assert.equal(await rowsOf(s.rowA) + (await rowsOf(s.rowB)), 0, "the purge had committed: the rows are gone");
+          assert.equal(s3.body(s.handedKey), undefined, "so the handed-in photo is deleted, not orphaned");
+          assert.equal(s3.body(s.draftKey), undefined, "and the draft's");
+          assert.ok(await waitForLog(server, "deleting their photos"), "the failure is logged");
+          assert.ok(await waitForLog(server, s.handedKey), "with the keys");
+        },
+      );
+    });
+
+    it("removes a draft an upload stored between the purge and the account delete", async () => {
+      const s = await studentWithTwoProjects("race");
+      const hwB = (await db.pool.query(`SELECT homework_id FROM homework_submissions WHERE student_id = $1`, [s.rowB])).rows[0].homework_id as string;
+      // The racing upload: its object is in the bucket and its row lands just before the account row is deleted,
+      // i.e. after the first purge pass. Ids are uuids this test made, so interpolating them is safe.
+      const lateKey = `homework-submissions/${hwB}/${s.rowB}/late.jpg`;
+      await s3.putForTest(lateKey, JPEG);
+      const latePhotos = JSON.stringify([{ id: "late", key: lateKey, mime: "image/jpeg", sizeBytes: JPEG.length }]);
+      await withTrigger(
+        "users",
+        "test_late_upload",
+        `IF OLD.first_name = 'S-race' THEN
+           INSERT INTO homework_submissions (homework_id, student_id, photos) VALUES ('${hwB}', '${s.rowB}', '${latePhotos}'::jsonb);
+         END IF;`,
+        async () => {
+          const del = await deleteAccount(server, s.student);
+          assert.equal(del.status, 200, del.text);
+          assert.equal(await accountExists(s.student.id), false, "the account is gone");
+          assert.equal(await rowsOf(s.rowB), 0, "the late draft's row is gone too");
+          assert.equal(s3.body(lateKey), undefined, "and its photo");
+        },
+      );
+    });
+
+    it("still deletes the account when storage is down, and logs every photo it could not delete", async () => {
+      const s = await studentWithTwoProjects("r2down");
+      s3.failDeletes(true);
+      try {
+        const del = await deleteAccount(server, s.student);
+        assert.equal(del.status, 200, del.text);
+        assert.equal(await accountExists(s.student.id), false, "the account is gone");
+        assert.equal(await rowsOf(s.rowA) + (await rowsOf(s.rowB)), 0, "and the rows");
+        assert.ok(s3.body(s.handedKey) && s3.body(s.draftKey), "the photos are still in the bucket (the sweep's job now)");
+        assert.ok(await waitForLog(server, "account deleted but R2 object remains"), "the failed delete is logged");
+        assert.ok((await waitForLog(server, s.handedKey)) && (await waitForLog(server, s.draftKey)), "each key is logged");
+      } finally {
+        s3.failDeletes(false);
+      }
+    });
+
+    it("answers 500 with the account and the projects intact when the purge itself fails", async () => {
+      const s = await studentWithTwoProjects("purgefail");
+      await db.pool.query(`UPDATE homework_submissions SET note = 'test-refuse-purge' WHERE student_id = $1`, [s.rowA]);
+      await withTrigger(
+        "homework_submissions",
+        "test_refuse_purge",
+        `IF OLD.note = 'test-refuse-purge' THEN RAISE EXCEPTION 'test: purge refused'; END IF;`,
+        async () => {
+          const del = await deleteAccount(server, s.student);
+          assert.equal(del.status, 500, del.text);
+          assert.equal(await accountExists(s.student.id), true, "the account is intact");
+          assert.equal(await rowsOf(s.rowA), 1, "the handed-in project is intact");
+          assert.equal(await rowsOf(s.rowB), 1, "and the draft (one statement, rolled back together)");
+          assert.ok(s3.body(s.handedKey) && s3.body(s.draftKey), "and both photos");
+        },
+      );
     });
   });
 

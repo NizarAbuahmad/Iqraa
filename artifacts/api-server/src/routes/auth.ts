@@ -34,7 +34,7 @@ import { decideRefresh, refreshTokenTtlMs } from "../lib/refreshPolicy.js";
 import { guardianApprovalEnabled, studentAccountsEnabled } from "../lib/features.js";
 import { syncClassThreadsForStudent } from "../lib/classThread.js";
 import { audioKeysForTeacher } from "../lib/attemptAudio.ts";
-import { purgeSubmissionsOfAuthor, submissionKeysForTeacher } from "../lib/homeworkSubmission.ts";
+import { purgeSubmissionsOfAuthor, purgeSubmissionsOfRows, submissionKeysForTeacher } from "../lib/homeworkSubmission.ts";
 import {
   ROSTER_CONSENT_STATEMENT_EN,
   ROSTER_CONSENT_VERSION,
@@ -2676,7 +2676,7 @@ router.delete("/users/avatar", authMiddleware, async (req: AuthenticatedRequest,
 // The schema does almost all of the work: every table referencing `users.id`
 // declares `onDelete: "cascade"`, so removing one row takes the roster,
 // classes, evaluations, saved materials, chat participation, blocks, reports
-// and push tokens with it. Two things a cascade cannot reach:
+// and push tokens with it. Three things a cascade cannot reach:
 //
 //   - R2 objects, which are not rows. Their keys are read *before* the delete,
 //     because a key read afterwards is a key that no longer exists.
@@ -2782,9 +2782,35 @@ router.delete(
       // rows written through this account (drafts and handed-in work alike) are deleted here, before the account,
       // and their photos go with the objects below. A row another account is also self-linked to is kept, and a
       // guardian link deletes nothing (lib/homeworkSubmission.ts, `purgeSubmissionsOfAuthor`).
-      const authoredPhotos = await purgeSubmissionsOfAuthor(userId);
+      //
+      // The purge (owner pool, `systemDb`) and the account delete (the request's own, row-level-security pool under
+      // RLS_ENFORCE) are on different connections, so they cannot share a transaction, and moving the account delete —
+      // the cascade over a teacher's whole roster — onto the owner connection to make them share one is not worth it.
+      // So if the account delete fails after the purge has committed, the rows are already gone and nothing refers to
+      // their photos: delete those objects now (best effort, every key logged on failure), then answer 500 as before.
+      const authored = await purgeSubmissionsOfAuthor(userId);
 
-      await db.delete(users).where(eq(users.id, userId));
+      try {
+        await db.delete(users).where(eq(users.id, userId));
+      } catch (err) {
+        logger.error(
+          { err, userId, keys: authored.keys },
+          "account deletion failed after its homework projects were purged; deleting their photos",
+        );
+        for (const key of authored.keys) {
+          await deleteObject(key).catch(e =>
+            logger.error({ err: e, key, userId }, "account deletion failed and a purged project photo remains"),
+          );
+        }
+        throw err;
+      }
+
+      // Second pass, best effort, like DELETE /homework/:id: an upload already past its checks when the first pass ran
+      // can have stored a draft on one of those rows since (it references the roster row, so nothing cascaded to it).
+      const latePhotos = await purgeSubmissionsOfRows(authored.rows).catch(err => {
+        logger.error({ err, userId, rows: authored.rows }, "account deleted but the second project purge failed");
+        return [] as string[];
+      });
 
       // Deliberately after the row is gone: the deletion the user asked for is
       // the database one, and it must not fail because object storage is
@@ -2796,7 +2822,8 @@ router.delete(
         ...attachments.map(a => a.key as string),
         ...recordings,
         ...projectPhotos,
-        ...authoredPhotos,
+        ...authored.keys,
+        ...latePhotos,
       ];
       let orphaned = 0;
       for (const key of keys) {

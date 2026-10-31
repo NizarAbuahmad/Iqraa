@@ -403,14 +403,17 @@ export async function submissionKeysForTeacher(teacherId: string): Promise<strin
  * check) under row-level security, and `homework_submissions` has no DELETE policy for the app role. The
  * caller (account deletion) has already re-authenticated the account. Rows are deleted BEFORE the account so
  * a failure here answers 500 with the account intact and the request can be sent again.
+ *
+ * Returns the roster rows it purged (`rows`, for the caller's second pass: `purgeSubmissionsOfRows`) and the
+ * object keys of the photos it removed (`keys`).
  */
-export async function purgeSubmissionsOfAuthor(userId: string): Promise<string[]> {
+export async function purgeSubmissionsOfAuthor(userId: string): Promise<{ rows: string[]; keys: string[] }> {
   const own = await systemDb
     .select({ studentId: rosterLinks.studentId })
     .from(rosterLinks)
     .where(and(eq(rosterLinks.userId, userId), eq(rosterLinks.relation, "self")));
   const ownRows = [...new Set(own.map(r => r.studentId))];
-  if (ownRows.length === 0) return [];
+  if (ownRows.length === 0) return { rows: [], keys: [] };
   const shared = await systemDb
     .select({ studentId: rosterLinks.studentId })
     .from(rosterLinks)
@@ -419,10 +422,20 @@ export async function purgeSubmissionsOfAuthor(userId: string): Promise<string[]
     );
   const sharedRows = new Set(shared.map(s => s.studentId));
   const rows = ownRows.filter(r => !sharedRows.has(r));
+  return { rows, keys: await purgeSubmissionsOfRows(rows) };
+}
+
+/**
+ * Deletes every submission on these roster rows (on `systemDb`, as above) and returns their photos' keys.
+ * Account deletion calls it a second time, after the account is gone, for the rows the first pass purged: an
+ * upload already past `submissionTarget` when the first pass ran can still insert a draft holding a photo (its
+ * row references `students`, not `users`, so the account's delete does not cascade to it).
+ */
+export async function purgeSubmissionsOfRows(rows: readonly string[]): Promise<string[]> {
   if (rows.length === 0) return [];
   const deleted = await systemDb
     .delete(homeworkSubmissions)
-    .where(inArray(homeworkSubmissions.studentId, rows))
+    .where(inArray(homeworkSubmissions.studentId, [...rows]))
     .returning({ photos: homeworkSubmissions.photos });
   return deleted.flatMap(r => r.photos.map(p => p.key));
 }

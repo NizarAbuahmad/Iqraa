@@ -134,4 +134,17 @@ describe("the S3 stub, driven by the real r2.ts", () => {
       assert.deepEqual(objects.map(o => o.key), [...keys].sort());
     });
   });
+
+  it("fails every delete while failDeletes is on, keeping the object, and deletes again once it is off", async () => {
+    await stub.putForTest("fail-test/a.png", PNG);
+    stub.failDeletes(true);
+    try {
+      await assert.rejects(() => r2.deleteObject("fail-test/a.png"));
+      assert.ok(stub.body("fail-test/a.png"), "the object is still there");
+    } finally {
+      stub.failDeletes(false);
+    }
+    await r2.deleteObject("fail-test/a.png");
+    assert.equal(stub.body("fail-test/a.png"), undefined, "deleted once deletes work again");
+  });
 });

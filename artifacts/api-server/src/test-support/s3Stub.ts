@@ -24,6 +24,8 @@ export interface S3Stub {
   listRequests(): number;
   /** Test-only: while on, a truncated ListObjectsV2 page says `IsTruncated` but carries no `NextContinuationToken`. */
   omitContinuationToken(on: boolean): void;
+  /** Test-only: while on, every DeleteObject answers 500 InternalError and deletes nothing — an R2 outage. */
+  failDeletes(on: boolean): void;
   close(): Promise<void>;
 }
 
@@ -60,6 +62,7 @@ export async function startS3Stub(bucket = "iqraa-media", options: S3StubOptions
   const objects = new Map<string, { body: Buffer; lastModified: Date }>();
   let listCount = 0;
   let omitToken = false;
+  let deletesFail = false;
 
   /** ListObjectsV2: `GET /<bucket>?list-type=2&prefix=&max-keys=&continuation-token=`. */
   function listObjectsV2(url: URL, res: http.ServerResponse): void {
@@ -135,6 +138,12 @@ export async function startS3Stub(bucket = "iqraa-media", options: S3StubOptions
         res.setHeader("Content-Length", String(body.length));
         res.end(body);
       } else if (req.method === "DELETE") {
+        if (deletesFail) {
+          res.statusCode = 500;
+          res.setHeader("Content-Type", "application/xml");
+          res.end("<Error><Code>InternalError</Code><Message>stub: deletes are failing</Message></Error>");
+          return;
+        }
         objects.delete(key);
         res.statusCode = 204;
         res.end();
@@ -157,6 +166,9 @@ export async function startS3Stub(bucket = "iqraa-media", options: S3StubOptions
     listRequests: () => listCount,
     omitContinuationToken: on => {
       omitToken = on;
+    },
+    failDeletes: on => {
+      deletesFail = on;
     },
     close: () => new Promise<void>(resolve => server.close(() => resolve())),
   };
