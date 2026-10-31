@@ -10,6 +10,39 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## A teacher can message a family from the roster, and sees the letter before it goes — 2026-10-30
+
+**Asked:** a teacher with a parent linked could only find the AI letter screen from the class page;
+the plain chat was three screens away in «الرسائل». A letter also reached the parent with a stray line
+of free text and a typo'd signature, because the send confirmation named the recipients and nothing else.
+
+**What changed (mobile only, no API or schema change).**
+- A «رسالة» pill on each joined student's row in `classes/[id]` opens a chat with that family at once
+  (`startThread`, the same call «رسالة جديدة» makes). The pill shows only when someone is linked
+  (`chatTarget` in `services/rosterLinks.ts`, tested). One linked account opens directly; **several
+  go to the Messages tab instead of the app choosing** — a message to the wrong family cannot be
+  unsent. The «محادثة الشعبة» class chat still excludes parents (`GET /messaging/threads/class/:id`);
+  this does not change that.
+- The parent-letter «أرسل في التطبيق» confirmation now shows the full letter in a bounded, scrollable
+  box (`ConfirmOptions.preview`, `ConfirmDialog`), and its buttons read «أرسل الرسالة» / «عدّل الرسالة»
+  instead of «أرسل» / «إلغاء». The `confirm()` fallbacks (web `window.confirm`, `Alert`) print the
+  preview inside the message.
+
+**Verified:** `pnpm run typecheck`; mobile `pnpm test` (8258 pass, 0 fail, 10 skipped as before);
+the new `chatTarget` cases. Driven in Chromium against a local API with `STUDENT_ACCOUNTS=true`, a
+teacher, a class of two students and one parent linked by claim code, at a 1280-wide window: the
+pill shows on the joined student only (English and Arabic/RTL), a tap opens the chat with the
+parent («Parent · ahmad»), and the letter's confirmation shows the recipient, the "cannot be undone"
+note and the full letter in the scrollable box. **Not verified:** a phone-width layout, dark mode, a
+real device, the several-linked-accounts branch (it goes to the inbox) and a letter long enough to
+scroll the box, in the browser. In English the «Send the message» button wraps to two lines in a
+380-wide dialog. The signature field was already editable
+(`parentMsgSignature`); a wrong signature comes from the saved or typed name, not a missing field.
+
+**Known limits.** A student with a self account and a parent counts as two links, so the pill sends
+the teacher to the inbox picker rather than opening one chat. Direct chat needs a linked account;
+a student with nobody joined shows no pill.
+
 ## Unlinking an account also removes it from the teacher's direct chat — 2026-10-31
 
 **Asked:** the first item on the list left unfixed by «Review of messaging and exams» below:
