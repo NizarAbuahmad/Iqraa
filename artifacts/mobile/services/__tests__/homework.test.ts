@@ -32,6 +32,7 @@ import {
   projectSubmittedText,
   deleteConfirmKey,
   requiresSubmissionPatch,
+  isSwitchLockedError,
   type FamilyHomework,
 } from '../homework.ts';
 
@@ -716,4 +717,13 @@ test('requiresSubmissionPatch sends the switch on an edit only when it differs f
   // A locked homework saved unchanged must never carry a flag (the server would 409 a different value).
   assert.deepEqual(requiresSubmissionPatch(true, true), {});
   assert.deepEqual(requiresSubmissionPatch(false, false), {});
+});
+
+test('isSwitchLockedError recognises the 409 submission_locked refusal and nothing else', () => {
+  assert.equal(isSwitchLockedError(Object.assign(new Error('x'), { status: 409, code: 'submission_locked' })), true);
+  assert.equal(isSwitchLockedError(Object.assign(new Error('x'), { status: 409, code: 'other' })), false);
+  assert.equal(isSwitchLockedError(Object.assign(new Error('x'), { status: 400, code: 'submission_locked' })), false);
+  assert.equal(isSwitchLockedError(new Error('x')), false);
+  assert.equal(isSwitchLockedError(null), false);
+  assert.equal(isSwitchLockedError('submission_locked'), false);
 });

@@ -60,6 +60,7 @@ import {
   dueDatePresets,
   formatDueDate,
   homeworkDraftError,
+  isSwitchLockedError,
   maskYmd,
   projectSubmittedText,
   requiresSubmissionPatch,
@@ -282,6 +283,13 @@ export function HomeworkTab({
         });
       }
     } catch (e) {
+      // Someone started after the list loaded: the server now refuses a changed switch. Put the switch back, show it
+      // locked, and refresh the list, or every later save of this form would be refused the same way.
+      if (isSwitchLockedError(e)) {
+        setDraft(d => ({ ...d, requiresSubmission: editing?.requiresSubmission ?? d.requiresSubmission }));
+        setEditing(prev => prev && { ...prev, requiresSubmissionLocked: true });
+        void load();
+      }
       setModalError(apiErrorMessage(e, 'hwSaveFailed', t));
       setSaving(false);
       return;
@@ -389,7 +397,9 @@ export function HomeworkTab({
               const noAccount = Math.max(0, item.studentCount - item.trackableCount);
               // A completion is kept after a link is removed, so doneCount can outrun the
               // denominator; clamp it for the text as well as the bar.
-              const doneShown = clampedDone(item.doneCount, item.trackableCount);
+              // A project homework is ticked only by a hand-in, so its bar and its button are one number from one source.
+              const project = item.requiresSubmission ? projectSubmittedText(item) : null;
+              const doneShown = project ? project.submitted : clampedDone(item.doneCount, item.trackableCount);
               const pct = item.trackableCount > 0 ? Math.round((doneShown / item.trackableCount) * 100) : 0;
               return (
                 <Pressable
@@ -432,9 +442,11 @@ export function HomeworkTab({
                       <View style={[styles.track, { backgroundColor: colors.border, flexDirection: rowDir }]}>
                         <View style={[styles.fill, { width: `${pct}%`, backgroundColor: ACCENT }]} />
                       </View>
-                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
-                        {t('hwDoneCount', doneShown, item.trackableCount)}
-                      </Text>
+                      {project ? null : (
+                        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
+                          {t('hwDoneCount', doneShown, item.trackableCount)}
+                        </Text>
+                      )}
                     </>
                   ) : null}
                   {noAccount > 0 ? (
@@ -453,15 +465,15 @@ export function HomeworkTab({
                       <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{t('hwGameResults')}</Text>
                     </Pressable>
                   ) : null}
-                  {item.requiresSubmission ? (
+                  {project ? (
                     <PressableScale
                       onPress={() => router.push(`/homework-submissions/${encodeURIComponent(item.id)}` as never)}
-                      aria-label={t('hwSubmissionsOpenA11y', item.title)}
+                      aria-label={t('hwSubmissionsOpenA11y', item.title, project.submitted, project.of)}
                       style={[styles.submissionsBtn, { borderColor: ACCENT, flexDirection: rowDir, alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
                     >
                       <Ionicons name="images-outline" size={16} color={ACCENT} />
                       <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>
-                        {t('hwSubmittedCount', projectSubmittedText(item).submitted, projectSubmittedText(item).of)}
+                        {t('hwSubmittedCount', project.submitted, project.of)}
                       </Text>
                     </PressableScale>
                   ) : null}
@@ -565,6 +577,7 @@ export function HomeworkTab({
                       onValueChange={on => patch({ requiresSubmission: on })}
                       disabled={locked}
                       accessibilityLabel={t('hwRequiresProject')}
+                      accessibilityHint={locked ? t('hwRequiresProjectLocked') : t('hwRequiresProjectHint')}
                       aria-checked={draft.requiresSubmission}
                       aria-disabled={locked}
                       trackColor={{ true: ACCENT_FILL, false: colors.border }}

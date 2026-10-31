@@ -461,6 +461,16 @@ export function projectSubmittedText(hw: Pick<TeacherHomework, 'submittedCount' 
   return { submitted: clampedDone(hw.submittedCount, hw.trackableCount), of: Math.max(0, hw.trackableCount) };
 }
 
+/**
+ * The server's refusal of a changed project switch (409 `submission_locked`): some student started after the list
+ * was loaded. Duck-typed so it holds for an `ApiError` and a `HomeworkError` alike, and loads without the API module.
+ */
+export function isSwitchLockedError(e: unknown): boolean {
+  if (!e || typeof e !== 'object') return false;
+  const { status, code } = e as { status?: unknown; code?: unknown };
+  return status === 409 && code === 'submission_locked';
+}
+
 /** A project homework's photos and notes go with it, so its delete confirmation says so. */
 export function deleteConfirmKey(hw: Pick<TeacherHomework, 'requiresSubmission'>): 'hwDeleteConfirm' | 'hwDeleteConfirmProject' {
   return hw.requiresSubmission ? 'hwDeleteConfirmProject' : 'hwDeleteConfirm';

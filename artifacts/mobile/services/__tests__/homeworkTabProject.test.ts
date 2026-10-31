@@ -55,18 +55,51 @@ describe('HomeworkTab: the project switch', () => {
   it('shows the server refusal through apiErrorMessage (submission_locked has its own key)', () => {
     assert.match(src, /apiErrorMessage\(e, 'hwSaveFailed', t\)/);
   });
+
+  it('recovers from a 409 submission_locked: reverts the switch, locks the item and reloads the list', () => {
+    const at = src.indexOf('if (isSwitchLockedError(e))');
+    assert.ok(at >= 0, 'onSave must branch on isSwitchLockedError(e)');
+    const block = src.slice(at, at + 500);
+    assert.match(block, /requiresSubmission: editing\?\.requiresSubmission \?\? d\.requiresSubmission/);
+    assert.match(block, /setEditing\(prev => prev && \{ \.\.\.prev, requiresSubmissionLocked: true \}\)/);
+    assert.match(block, /void load\(\)/);
+    // …and still shows the error text.
+    assert.match(src.slice(at, at + 800), /setModalError\(apiErrorMessage\(e, 'hwSaveFailed', t\)\)/);
+  });
+
+  it('announces the locked reason on the control itself', () => {
+    assert.match(after('<Switch', 900), /accessibilityHint=\{locked \? t\('hwRequiresProjectLocked'\) : t\('hwRequiresProjectHint'\)\}/);
+  });
 });
 
 describe('HomeworkTab: the handed-in button on the card', () => {
   it('only exists for a project homework and opens the list screen', () => {
-    const at = src.indexOf('item.requiresSubmission ? (');
-    assert.ok(at >= 0, 'the card button must be guarded by item.requiresSubmission');
+    const at = src.indexOf('{project ? (');
+    assert.ok(at >= 0, 'the card button must be guarded by `project` (null unless item.requiresSubmission)');
     const block = src.slice(at, at + 1400);
     assert.match(block, /<PressableScale/);
     assert.match(block, /router\.push\(`\/homework-submissions\/\$\{encodeURIComponent\(item\.id\)\}` as never\)/);
-    assert.match(block, /aria-label=\{t\('hwSubmissionsOpenA11y', item\.title\)\}/);
-    assert.match(block, /projectSubmittedText\(item\)/);
-    assert.match(block, /t\('hwSubmittedCount', /);
+    // The accessible name carries the visible count as well as the title (voice control says what it sees).
+    assert.match(block, /aria-label=\{t\('hwSubmissionsOpenA11y', item\.title, project\.submitted, project\.of\)\}/);
+    assert.match(block, /t\('hwSubmittedCount', project\.submitted, project\.of\)/);
+    assert.doesNotMatch(block, /projectSubmittedText\(/);
+  });
+
+  it('computes projectSubmittedText once per card', () => {
+    assert.equal((src.match(/projectSubmittedText\(item\)/g) ?? []).length, 1);
+  });
+
+  it('shows one count for a project homework: no done-count line, and the bar follows the hand-ins', () => {
+    const at = src.indexOf('const project = ');
+    assert.ok(at >= 0, 'the card must compute `project` from projectSubmittedText');
+    assert.match(src.slice(at, at + 200), /item\.requiresSubmission \? projectSubmittedText\(item\) : null/);
+    assert.match(after('const doneShown', 160), /project \? project\.submitted : clampedDone\(item\.doneCount, item\.trackableCount\)/);
+    // The «أنجزه X من Y» line is rendered only when this is not a project homework.
+    const doneAt = src.indexOf("t('hwDoneCount'");
+    assert.ok(doneAt >= 0, 'the done-count line is gone for everyone — it must stay for a plain homework');
+    assert.match(src.slice(doneAt - 400, doneAt), /project \? null/);
+    // The «بلا حساب» line still applies.
+    assert.match(src, /t\('hwNoAccountCount', noAccount\)/);
   });
 
   it('is at least 44 points tall', () => {
@@ -97,6 +130,18 @@ describe('HomeworkTab: copy', () => {
       assert.equal(typeof tr['hwSubmittedCount'], 'function', `${lang}.hwSubmittedCount`);
       assert.equal(typeof tr['hwSubmissionsOpenA11y'], 'function', `${lang}.hwSubmissionsOpenA11y`);
     }
+  });
+
+  it('the Arabic helper line addresses the teacher, like the English one', () => {
+    assert.doesNotMatch(translations.ar.hwRequiresProjectHint, /ويراها المعلّم/);
+    assert.match(translations.ar.hwRequiresProjectHint, /وتطّلع عليها/);
+  });
+
+  it('the card button name carries the title and the visible count in both languages', () => {
+    const ar = translations.ar.hwSubmissionsOpenA11y('مشروع', 7, 20);
+    const en = translations.en.hwSubmissionsOpenA11y('Project', 7, 20);
+    assert.ok(ar.includes('مشروع') && ar.includes(translations.ar.hwSubmittedCount(7, 20)), ar);
+    assert.ok(en.includes('Project') && en.includes(translations.en.hwSubmittedCount(7, 20)), en);
   });
 
   it('the locked line says students have STARTED, not that work is visible', () => {
