@@ -453,6 +453,28 @@ export function clampedDone(done: number, trackable: number): number {
   return Math.max(0, Math.min(done, trackable));
 }
 
+/**
+ * «سلّم X من Y» on a project homework's card. `submittedCount` keeps a hand-in after the student's roster link is
+ * removed, so — like `clampedDone` — it is clamped to the denominator rather than showing «5 of 4».
+ */
+export function projectSubmittedText(hw: Pick<TeacherHomework, 'submittedCount' | 'trackableCount'>): { submitted: number; of: number } {
+  return { submitted: clampedDone(hw.submittedCount, hw.trackableCount), of: Math.max(0, hw.trackableCount) };
+}
+
+/** A project homework's photos and notes go with it, so its delete confirmation says so. */
+export function deleteConfirmKey(hw: Pick<TeacherHomework, 'requiresSubmission'>): 'hwDeleteConfirm' | 'hwDeleteConfirmProject' {
+  return hw.requiresSubmission ? 'hwDeleteConfirmProject' : 'hwDeleteConfirm';
+}
+
+/**
+ * What an EDIT sends for the project switch: the new value only when it differs from the stored one. The server
+ * refuses a different value once any student has started (409 `submission_locked`), so a save that did not touch
+ * the switch must never carry it — a locked homework stays editable.
+ */
+export function requiresSubmissionPatch(stored: boolean, draft: boolean): { requiresSubmission?: boolean } {
+  return draft === stored ? {} : { requiresSubmission: draft };
+}
+
 /** The whole body of `GET /classes/:id/homework`. Never throws. */
 export function normalizeTeacherList(raw: unknown): TeacherHomeworkList {
   const r = isRecord(raw) ? raw : {};

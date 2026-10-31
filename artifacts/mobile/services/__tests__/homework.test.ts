@@ -29,6 +29,9 @@ import {
   normalizeTeacherList,
   splitHomework,
   untrackedMode,
+  projectSubmittedText,
+  deleteConfirmKey,
+  requiresSubmissionPatch,
   type FamilyHomework,
 } from '../homework.ts';
 
@@ -692,4 +695,25 @@ test('an untracked submission item is never ranked as overdue', () => {
   assert.deepEqual(todo.map(h => h.id), ['t', 'u']); // by date, not pulled to the front as late
   const late = hw({ id: 'l', requiresSubmission: true, canTrack: true, state: 'overdue', dueDate: '2026-10-18' });
   assert.equal(splitHomework([tracked, untracked, late]).todo[0]!.id, 'l');
+});
+
+test('projectSubmittedText clamps the handed-in count into [0, trackable]', () => {
+  assert.deepEqual(projectSubmittedText({ submittedCount: 3, trackableCount: 10 }), { submitted: 3, of: 10 });
+  // A submission is kept after a roster link is removed, so the numerator can outrun the denominator.
+  assert.deepEqual(projectSubmittedText({ submittedCount: 5, trackableCount: 4 }), { submitted: 4, of: 4 });
+  assert.deepEqual(projectSubmittedText({ submittedCount: -2, trackableCount: 4 }), { submitted: 0, of: 4 });
+  assert.deepEqual(projectSubmittedText({ submittedCount: 2, trackableCount: 0 }), { submitted: 0, of: 0 });
+});
+
+test('deleteConfirmKey warns about the photos only for a project homework', () => {
+  assert.equal(deleteConfirmKey({ requiresSubmission: true }), 'hwDeleteConfirmProject');
+  assert.equal(deleteConfirmKey({ requiresSubmission: false }), 'hwDeleteConfirm');
+});
+
+test('requiresSubmissionPatch sends the switch on an edit only when it differs from the stored value', () => {
+  assert.deepEqual(requiresSubmissionPatch(false, true), { requiresSubmission: true });
+  assert.deepEqual(requiresSubmissionPatch(true, false), { requiresSubmission: false });
+  // A locked homework saved unchanged must never carry a flag (the server would 409 a different value).
+  assert.deepEqual(requiresSubmissionPatch(true, true), {});
+  assert.deepEqual(requiresSubmissionPatch(false, false), {});
 });
