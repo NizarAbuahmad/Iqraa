@@ -18,6 +18,9 @@
  * - Signed photo URLs live ten minutes, so the project is read again on every focus.
  * - An upload that timed out may have been stored: the view is read again before the student can retry,
  *   so a retry does not add a second copy of a photo they can already see.
+ * - A project another account handed in for this record (`otherAuthor`, after the teacher re-linked it) is a
+ *   notice and nothing else: no photos, note or controls. A write refused as `other_author` is a 409, so the
+ *   handler reads the project again and the notice replaces the form.
  */
 import React, { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
@@ -46,6 +49,7 @@ import {
   needsLateConfirm,
   noteNeedsSave,
   photoSlotSize,
+  projectMode,
   removalWouldEmpty,
   saveAgain,
   submissionLook,
@@ -117,9 +121,12 @@ export default function HomeworkProjectScreen() {
     setDraft(next);
   };
 
-  /** Take a view from the server. The draft follows it while the student has not changed it, and always once locked. */
+  /**
+   * Take a view from the server. The draft follows it while the student has not changed it, and always once the
+   * project cannot change (locked, or handed in from another account).
+   */
   const applyView = useCallback((next: SubmissionView) => {
-    const draftNext = draftAfterServer(savedNoteRef.current, draftRef.current, next.note, next.locked);
+    const draftNext = draftAfterServer(savedNoteRef.current, draftRef.current, next.note, projectMode(next) !== 'edit');
     if (draftNext !== draftRef.current) {
       draftRef.current = draftNext;
       setDraft(draftNext);
@@ -266,7 +273,7 @@ export default function HomeworkProjectScreen() {
 
   const removePhoto = async (photo: SubmissionPhoto) => {
     const current = viewRef.current;
-    if (!id || !current || current.locked || busyRef.current !== null) return;
+    if (!id || !current || projectMode(current) !== 'edit' || busyRef.current !== null) return;
     if (removalWouldEmpty(current, draftRef.current)) return;
     const ok = await confirm({
       title: t('projectRemoveConfirmTitle'),
@@ -341,6 +348,19 @@ export default function HomeworkProjectScreen() {
       );
     }
     if (!view) return <ActivityIndicator color={colors.primary} style={{ marginTop: SPACE.page }} />;
+
+    // Another account handed in this record's project (the teacher re-linked the record): the server sent none of
+    // it and refuses every write, so the notice is all there is. The way out is the teacher.
+    if (projectMode(view) === 'otherAuthor') {
+      return (
+        <View style={[styles.card, surface]} accessibilityRole="alert">
+          <View style={[styles.line, row]}>
+            <Ionicons name="information-circle" size={ICON.lg} color={colors.mutedForeground} />
+            <Text style={[body, { flex: 1 }]}>{t('projectOtherAuthor')}</Text>
+          </View>
+        </View>
+      );
+    }
 
     const inFlight = busy !== null;
     const showNote = !view.locked || view.note.trim() !== '';
