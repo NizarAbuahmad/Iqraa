@@ -10,6 +10,50 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Generating into an exam draft is one locked transaction — 2026-10-31
+
+**Asked:** fix the exam-generation doubling found in «Review of messaging and exams» (the
+review's «Found and not fixed» list).
+
+**What was wrong.** The write half of `POST /evaluations/:id/generate` was separate statements
+(read the live questions, soft-delete the generated ones, insert the new paper, update the
+evaluation, recompute the total), and "is it still a draft" was checked once at the top, before a
+model call that can take a minute. Reproduced against a real database with the new test, each
+before the fix:
+- **Two overlapping requests for one draft doubled the paper** (8 questions where 4 were asked
+  for). Both read an empty paper, both inserted. In the test the overlap is forced by a trigger
+  that slows the insert; in production the two requests (the app gives up at 45 s and the teacher
+  taps again) normally finish seconds apart, so they rarely overlap. The mechanism is real, the
+  frequency was never measured and is probably low.
+- **A draft published while the model was still writing had its questions replaced** (the request
+  answered 200 and rewrote a published exam).
+- **A failed insert left no paper.** The old questions were soft-deleted first, so the paper was
+  empty afterwards, under an error that says «Nothing was changed».
+
+**The fix** (`routes/evaluations.ts`). The write is a single `db.transaction` that first locks the
+evaluation row (`FOR UPDATE`) and re-checks `status = 'draft'` under the lock, then does the
+read, replace, insert, total and generator metadata. A second request waits for the first and
+replaces its paper (one paper, not two); a draft that is no longer a draft answers
+**409 `no_longer_draft`** and nothing is written; any failure rolls back, so the previous paper
+stays and «Nothing was changed» is true. The total is computed inside the transaction from the
+live rows.
+
+**Verified:** typecheck clean; API suite 3098/3098 against a throwaway local Postgres. The new
+`evaluationGenerateWrite.db.test.ts` (4 tests; no model, live mode off) was seen failing three ways
+before the fix and passing after; its control (a plain regeneration replaces, never appends)
+passed before and after. **Not verified:** nothing was run against production, and the live (model)
+path was not exercised: the test goes through the mock generator, but the write is the same code.
+
+**Not fixed, still open:**
+- A second tap still starts a second model call (and its cost) before it reaches the lock; the
+  result is now correct, the spend is not saved. The app's 45 s timeout is unchanged.
+- The model's `marks` are checked only for being above 0; a value over 999.99 now fails the
+  insert, rolls back and answers 502 with the old paper intact, but is not rejected up front.
+- A database error during the write still gets the generic «The question generator did not
+  respond» message.
+- `PUT /evaluations/:id/questions/paper` and the question add/edit/delete routes have the same
+  read-then-write shape and were not touched.
+
 ## Unlinking an account also removes it from the teacher's direct chat — 2026-10-31
 
 **Asked:** the first item on the list left unfixed by «Review of messaging and exams» below:
