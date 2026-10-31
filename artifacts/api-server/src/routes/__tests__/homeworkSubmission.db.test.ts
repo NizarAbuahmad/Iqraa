@@ -1953,8 +1953,9 @@ describeDb("homework project submissions over HTTP, against a real database", ()
   });
 
   describe("the project switch locks once any student has started (PATCH /homework/:id)", () => {
-    // The owner's rule: once any completion tick or any submission row exists for the homework, a PATCH that CHANGES
-    // requiresSubmission answers 409 submission_locked. A DRAFT counts, and the teacher cannot see a draft (row-level
+    // The owner's rule, as refined by the Ruling block below: once any completion tick or any submission that HOLDS
+    // WORK (a photo or a note) exists for the homework, a PATCH that CHANGES
+    // requiresSubmission answers 409 submission_locked. A DRAFT with work counts, and the teacher cannot see a draft (row-level
     // security), so the check reads on the owner connection. The same value is always allowed; a PATCH that also
     // changes other fields is refused as a whole.
     const patch = (on: TestServer, id: string, body: unknown, user: string = w.users.t1) => call(on, "PATCH", `/homework/${id}`, user, body);

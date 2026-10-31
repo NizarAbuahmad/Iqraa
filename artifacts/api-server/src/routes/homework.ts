@@ -83,7 +83,8 @@ interface TeacherHomework {
   /** Students hand in a project instead of ticking it off. */
   requiresSubmission: boolean;
   /**
-   * True once any student has a completion tick or a submission row (a draft counts) on this homework: the
+   * True once any student has a completion tick or a submission that holds a photo or a note (a draft with
+   * work counts, an emptied one does not) on this homework: the
    * `requiresSubmission` switch can no longer be changed (PATCH answers 409 `submission_locked`).
    */
   requiresSubmissionLocked: boolean;
@@ -481,7 +482,7 @@ router.patch("/homework/:id", async (req: AuthenticatedRequest, res) => {
     // NOT ATOMIC with the UPDATE below: a student's first upload or tick in the milliseconds between this check and
     // the write can slip through, and the flag then flips under that work. Closing it cheaply is not possible (the
     // existence check runs on the owner connection, the update on the teacher's; one transaction would hold a lock
-    // across both). Follow-up that limits the damage: the sweep's archived-homework phase also purging submission
+    // across both). Possible follow-up (not built) that would limit the damage: the sweep's archived-homework phase also purging submission
     // rows of requires_submission=false homework, so a stranded row is cleaned up rather than kept.
     if (patch.requiresSubmission !== undefined && patch.requiresSubmission !== existing.requiresSubmission) {
       if ((await homeworkIdsWithWork([existing.id])).has(existing.id)) {

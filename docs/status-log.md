@@ -82,8 +82,8 @@ the `preview` OTA channel. Spec: `docs/superpowers/specs/2026-10-30-homework-pro
 
 **Decisions**
 
-- **The lock rule is the owner's:** free while nobody has started, locked once any tick or any project row
-  (a draft included) exists; to change it later the teacher deletes the homework and posts it again.
+- **The lock rule is the owner's (refined by the Ruling below):** free while nobody has started, locked once any
+  tick or any project row (a draft included) exists; to change it later the teacher deletes the homework and posts it again.
 - **Ruling (final-review fix wave, refines the owner's rule; the owner can revert it).** A submission row
   counts toward the lock only if it HOLDS WORK, the same `holdsWork(photoCount, note)` the file's SQL guards
   use: a photo, or a note with a non-space character. Ticks still count. Reason: a draft whose student
