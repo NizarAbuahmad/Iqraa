@@ -22,6 +22,7 @@
  * developer specifically.
  */
 import { Router } from "express";
+import { artifactReportLabel } from "../lib/artifactReportLabel.ts";
 import {
   aiArtifacts,
   aiArtifactReports,
@@ -322,6 +323,9 @@ router.get(
           lessonRef: aiArtifacts.lessonRef,
           language: aiArtifacts.language,
           artifactRetiredAt: aiArtifacts.retiredAt,
+          // The admin judges the report by reading what was served, so the
+          // artifact itself rides along (a page is at most 200 rows).
+          content: aiArtifacts.content,
           reporterId: artifactReporter.id,
           reporterName: sql<string>`${artifactReporter.firstName} || ' ' || ${artifactReporter.lastName}`,
         })
@@ -342,7 +346,11 @@ router.get(
         .from(aiArtifactReports)
         .where(eq(aiArtifactReports.status, "open"));
 
-      res.json({ reports: rows, total, openCount });
+      res.json({
+        reports: rows.map((r) => ({ ...r, label: artifactReportLabel(r.kind, r.lessonRef) })),
+        total,
+        openCount,
+      });
     } catch (err) {
       logger.error({ err }, "list artifact reports failed");
       res.status(500).json({ error: "Failed to load reports" });

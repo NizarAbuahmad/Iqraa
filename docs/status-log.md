@@ -34,6 +34,24 @@ sets `textBreakStrategy="simple"` (Android-only; iOS and web ignore it).
 in a browser — in particular the clipping fix has not been seen on an Android phone; no test
 covers the preset list or native text layout.
 
+## Content reports say what was reported — 2026-10-31
+
+**Asked:** the report email, the push and «بلاغات المحتوى» showed only `lesson-teaching` and
+`kbl-g4-islamic-s2-nccd-u7_l2`; "where is the details".
+
+**Changed.** `lib/artifactReportLabel.ts` turns a report's kind and lesson id into words (شرح
+الدرس, the lesson's catalog title, «الصف الرابع · التربية الإسلامية»); a free topic passes through.
+The email, the admin push body and `GET /moderation/artifact-reports` (new `label`) all use it. The
+list also returns the artifact's `content`, and the screen has «عرض المحتوى المُبلَّغ عنه», which
+lists every text in it (`services/artifactText.ts`) — one generic reader, not a renderer per kind.
+The email links to `https://app.iqrra.com/admin/artifact-reports`.
+
+**Verified:** typecheck; new tests for both helpers (the label test uses the real id above); API
+suite 2801/0. **Not verified:** the screen in a browser or on a phone; a real email or push.
+**Not done:** the report carries no teacher comment (`ai_artifact_reports.reason` exists, nothing
+fills it). The push already opens this screen on tap (since 2026-09-30); a cold-start tap racing the
+boot redirect to the tabs was suspected, not reproduced, and left alone.
+
 ## Publishing an exam reads and writes it under a lock — 2026-10-31
 
 **Asked:** fix the publish race listed as open in «Generating into an exam draft is one locked
