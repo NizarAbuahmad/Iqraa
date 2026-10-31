@@ -1714,15 +1714,18 @@ router.post("/classes/:id/join-code", async (req: AuthenticatedRequest, res) => 
  *     syncClassThreadsForStudent is called below to rebuild it now rather than
  *     leaving the wrong adult in a thread full of children until the next time
  *     somebody happens to open it.
- *   - The teacher's direct thread with the account and the custom groups they
- *     own are cut only when this was the account's LAST link to any of this
- *     teacher's students (pruneTeacherChatsAfterUnlink). Both exist only for
- *     someone connected to the teacher and sending checks participation alone,
- *     so leaving them let an unlinked stranger keep reading and posting. A
- *     parent unlinked from one child but still linked to another stays in
- *     everything. The cost: unlink a parent from the wrong child before linking
- *     them to the right one and they have left the groups (the direct chat
- *     comes back when the teacher opens it again; a group needs adding again).
+ *   - The teacher's direct thread with the account is cut only when this was
+ *     the account's LAST link to any of this teacher's students
+ *     (pruneTeacherChatsAfterUnlink). It exists only for someone connected to
+ *     the teacher and sending checks participation alone, so leaving it let an
+ *     unlinked stranger keep reading and posting. A parent unlinked from one
+ *     child but still linked to another stays in it. If the teacher links them
+ *     again and opens the chat, the same thread comes back.
+ *   - Custom groups are NOT touched here. A group is a list the teacher built
+ *     on purpose, and an unlink is often a roster correction, so cascading
+ *     would silently drop a parent out of "أولياء أمور ١٠-أ". The teacher
+ *     removes someone from a group in the group's own member list. (An account
+ *     withdrawing its own claim, DELETE /auth/claim, does leave the groups.)
  */
 router.delete("/students/:id/links/:userId", async (req: AuthenticatedRequest, res) => {
   try {
@@ -1753,11 +1756,13 @@ router.delete("/students/:id/links/:userId", async (req: AuthenticatedRequest, r
     // unlinked account loses its place in them now. One derivation rule, one
     // implementation — and it is a no-op where no chat exists yet, so an
     // unlink does not conjure empty class chats into the teacher's inbox.
-    // Then out of this teacher's direct chat and groups, unless another of
-    // their students still links the account to them.
+    // Then out of this teacher's direct chat, unless another of their students
+    // still links the account to them. Groups stay: they are the teacher's own
+    // list, edited in the group's member list, and an unlink is often a roster
+    // correction (see pruneTeacherChatsAfterUnlink).
     const cleanUp = async () => {
       await syncClassThreadsForStudent(studentId);
-      await pruneTeacherChatsAfterUnlink(linkedUserId, [studentId]);
+      await pruneTeacherChatsAfterUnlink(linkedUserId, [studentId], { alsoGroups: false });
     };
     if (!removed) {
       await cleanUp();

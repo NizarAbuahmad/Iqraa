@@ -155,9 +155,16 @@ export async function syncClassThreadsForStudent(studentId: string): Promise<voi
  * posting in them. For each teacher whose students it was just unlinked from,
  * and only if it now has no link left to ANY of that teacher's students (a
  * parent unlinked from one child but still linked to another keeps everything),
- * remove it from that teacher's direct thread and from the custom groups that
- * teacher owns. Class chats are not handled here: they are re-derived from the
- * roster by `syncClassThreadsForStudent`.
+ * remove it from that teacher's direct thread, and, only when `alsoGroups`, from
+ * the custom groups that teacher owns. Class chats are not handled here: they
+ * are re-derived from the roster by `syncClassThreadsForStudent`.
+ *
+ * `alsoGroups` is the caller's decision, and it is required so nobody gets it by
+ * default. A teacher unlinking an account is often correcting a roster (wrong
+ * child, linked again a minute later), and a group is a deliberate list the
+ * teacher built, so that route passes false and takes someone out of a group
+ * through the group's own member list. An account withdrawing its OWN claim has
+ * chosen to leave, so that route passes true.
  *
  * Messages stay (moderation reads them, and a re-link brings the thread back
  * through `openDirectThread`). The teacher's side of the emptied direct thread
@@ -169,10 +176,15 @@ export async function syncClassThreadsForStudent(studentId: string): Promise<voi
  * Safe to repeat, and callers rely on it: it acts only on the state it finds, so
  * a retry after a failure part-way (the link delete commits on its own) finishes
  * the job. Not atomic with a link created in the same instant for another of the
- * teacher's students: the account could end up linked but out of the groups
- * (the direct chat returns when opened; a group needs adding again).
+ * teacher's students: the account could end up linked but out of the direct
+ * chat or, with `alsoGroups`, the groups (the direct chat returns when the
+ * teacher opens it; a group needs adding again).
  */
-export async function pruneTeacherChatsAfterUnlink(userId: string, studentIds: string[]): Promise<void> {
+export async function pruneTeacherChatsAfterUnlink(
+  userId: string,
+  studentIds: string[],
+  opts: { alsoGroups: boolean },
+): Promise<void> {
   if (studentIds.length === 0) return;
   const teachers = await db
     .selectDistinct({ teacherId: students.teacherId })
@@ -225,6 +237,7 @@ export async function pruneTeacherChatsAfterUnlink(userId: string, studentIds: s
       }
     }
 
+    if (!opts.alsoGroups) continue;
     const groups = await db
       .select({ id: chatThreads.id })
       .from(chatThreads)

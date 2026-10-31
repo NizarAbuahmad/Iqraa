@@ -1,14 +1,18 @@
 /**
  * What this guards: unlinking an account from a teacher's roster takes it out
- * of that teacher's direct chat and custom groups, not only the class chats.
+ * of that teacher's direct chat, not only the class chats; the custom groups
+ * are left to the teacher unless the account withdrew its OWN link.
  *
- * Direct threads and custom groups are only ever created between a teacher and
- * someone `isConnected` to them (a roster link to one of their students), and
- * sending or reading checks participation alone. So when the last link went,
- * the account kept reading the teacher's earlier messages about a child and
- * could keep posting, while the teacher believed they had cut it off. The
- * tests run in order and share state: each one builds on the links the last
- * one removed, and says which.
+ * A direct thread is only ever created between a teacher and someone
+ * `isConnected` to them (a roster link to one of their students), and sending
+ * or reading checks participation alone. So when the last link went, the
+ * account kept reading the teacher's earlier messages about a child and could
+ * keep posting, while the teacher believed they had cut it off. A group is a
+ * list the teacher built on purpose and a teacher's unlink is often a roster
+ * correction, so that route leaves groups alone (the teacher removes someone
+ * in the group's member list); an account leaving by its own choice leaves
+ * them too. The tests run in order and share state: each one builds on the
+ * links the last one removed, and says which.
  */
 import { after, before, it } from "node:test";
 import assert from "node:assert/strict";
@@ -87,16 +91,23 @@ describeDb("unlinking an account and the teacher's direct chats and groups, agai
     assert.equal(await canRead(w.users.parentA, group), true);
   });
 
-  it("removes a parent from the teacher's direct chat and groups once their last link to that teacher goes", async () => {
+  it("removes a parent from the teacher's direct chat, but not the groups, once their last link to that teacher goes", async () => {
     assert.equal((await unlink(w.students.aA, w.users.parentA)).status, 200);
     assert.equal(await canRead(w.users.parentA, dmParent), false, "direct chat");
-    assert.equal(await canRead(w.users.parentA, group), false, "custom group");
     const post = await call(server, "POST", `/messaging/threads/${dmParent}/messages`, w.users.parentA, { body: "still here?" });
     assert.equal(post.status, 404, "cannot post either");
-    // Someone else in the group, and the teacher, are untouched.
+    // The group is the teacher's own list: an unlink does not edit it.
+    assert.equal(await canRead(w.users.parentA, group), true, "custom group stays");
     assert.equal(await canRead(w.users.parentB, group), true);
-    assert.equal(await canRead(w.users.studentA, group), true, "another member of the group is untouched");
+    assert.equal(await canRead(w.users.studentA, group), true);
     assert.equal(await canRead(w.users.t1, group), true);
+  });
+
+  it("lets the teacher take that parent out of the group themselves, in the group's member list", async () => {
+    const removed = await call(server, "DELETE", `/messaging/threads/${group}/participants/${w.users.parentA}`, w.users.t1);
+    assert.equal(removed.status, 200, removed.text);
+    assert.equal(await canRead(w.users.parentA, group), false);
+    assert.equal(await canRead(w.users.parentB, group), true, "only that member");
   });
 
   it("leaves that parent's chat and groups with another teacher alone", async () => {
@@ -112,8 +123,9 @@ describeDb("unlinking an account and the teacher's direct chats and groups, agai
     assert.equal(kept.rows[0].n, 1, "history stays for moderation and for a later re-link");
   });
 
-  it("removes a student who withdraws their own link, and keeps what they left unread in the teacher's inbox", async () => {
+  it("removes a student who withdraws their own link from the direct chat AND the groups, and keeps what they left unread in the teacher's inbox", async () => {
     assert.equal(await canRead(w.users.studentA, dmStudent), true);
+    assert.equal(await canRead(w.users.studentA, group), true, "still in the group before leaving");
     const left = await call(server, "POST", `/messaging/threads/${dmStudent}/messages`, w.users.studentA, {
       body: "I picked the wrong name",
     });
@@ -148,15 +160,18 @@ describeDb("unlinking an account and the teacher's direct chats and groups, agai
   });
 
   it("finishes a cleanup that failed part-way when the unlink is retried", async () => {
-    // parentB is in t1's group through Noor (nB1). Take the link away the way a
+    // parentB is linked to t1 through Noor (nB1). Take the link away the way a
     // request that died after its delete committed would have left things: link
     // gone, chats untouched.
-    assert.equal(await canRead(w.users.parentB, group), true);
+    const opened = await call(server, "POST", "/messaging/threads", w.users.t1, { counterpartUserId: w.users.parentB });
+    assert.equal(opened.status, 201, opened.text);
+    const dmParentB: string = opened.json.thread.id;
+    assert.equal(await canRead(w.users.parentB, dmParentB), true);
     await db.pool.query(`DELETE FROM roster_links WHERE student_id = $1 AND user_id = $2`, [w.students.nB1, w.users.parentB]);
-    assert.equal(await canRead(w.users.parentB, group), true, "the half-done state really leaves access");
+    assert.equal(await canRead(w.users.parentB, dmParentB), true, "the half-done state really leaves access");
 
     const retry = await unlink(w.students.nB1, w.users.parentB);
     assert.equal(retry.status, 404, "the link is already gone");
-    assert.equal(await canRead(w.users.parentB, group), false, "but the retry finished the cleanup");
+    assert.equal(await canRead(w.users.parentB, dmParentB), false, "but the retry finished the cleanup");
   });
 });

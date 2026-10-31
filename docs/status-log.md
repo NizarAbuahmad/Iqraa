@@ -10,21 +10,27 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## Unlinking an account also removes it from the teacher's direct chat and groups — 2026-10-31
+## Unlinking an account also removes it from the teacher's direct chat — 2026-10-31
 
 **Asked:** the first item on the list left unfixed by «Review of messaging and exams» below:
-unlinking a parent or student removed them from class chats only.
+unlinking a parent or student removed them from class chats only. **Decided by the owner
+(2026-10-31):** cut only the direct chat; groups stay unless the teacher removes someone in the
+group's member list, or the parent or student withdraws their own link.
 
-**The rule.** A direct thread and a custom group are created only for someone connected to the
-teacher (`isConnected`: a roster link to one of that teacher's students), and sending and reading
-check participation alone. So once the link was deleted the account kept reading the teacher's
-earlier messages about a child and could keep posting. `pruneTeacherChatsAfterUnlink`
-(`lib/classThread.ts`, on `systemDb`) now runs after a link is deleted and, **only if the account
-has no link left to any of that teacher's students**, removes it from that teacher's direct thread
-and from the custom groups that teacher owns. A parent unlinked from one child but still linked to
-another keeps everything. Messages are kept; the teacher's side of the emptied direct thread is
-hidden (`hiddenAt`) so the inbox does not keep a chat with nobody in it, and a re-link plus the
-teacher opening the chat again brings the same thread back (`openDirectThread`).
+**The rule.** A direct thread is created only for someone connected to the teacher (`isConnected`:
+a roster link to one of that teacher's students), and sending and reading check participation
+alone. So once the link was deleted the account kept reading the teacher's earlier messages about a
+child and could keep posting. `pruneTeacherChatsAfterUnlink` (`lib/classThread.ts`, on `systemDb`)
+now runs after a link is deleted and, **only if the account has no link left to any of that
+teacher's students**, removes it from that teacher's direct thread. A parent unlinked from one
+child but still linked to another keeps it. Custom groups are a list the teacher built on purpose
+and an unlink is often a roster correction (wrong child, linked again a minute later), so **the
+teacher's unlink does not touch them** (`alsoGroups: false`); an account withdrawing its OWN claim
+has chosen to leave, so `DELETE /auth/claim` also removes it from the groups that teacher owns
+(`alsoGroups: true`). Messages are kept; the teacher's side of the emptied direct thread is hidden
+(`hiddenAt`) so the inbox does not keep a chat with nobody in it, and a re-link plus the teacher
+opening the chat again brings the same thread back (`openDirectThread`). The option is required, so
+a new caller must choose.
 
 **Called from the two places a link is deleted that can leave a stranger in a chat:**
 `DELETE /students/:id/links/:userId` (the teacher's unlink) and `DELETE /auth/claim` (the account
@@ -43,28 +49,28 @@ failure instead of answering 500, because a retry there has no link to name the 
 that the teacher had not read, and left it in the app-icon badge with no inbox row to clear it.
 The chat is now hidden and marked read only when nothing unread from the account is in it;
 otherwise it stays visible with its unread count. The helper also never touches the teacher's own
-seat in their groups.
+seat in their chats.
 
-**Cost, decided on purpose:** a teacher who unlinks a parent from the wrong child *before* linking
-them to the right one has removed them from the groups; the direct chat returns when the teacher
-opens it again, a group needs the parent adding again. The old comment on the route chose the
-opposite (never touch groups) to avoid exactly this; the rule above only fires when no link to
-that teacher remains, which is the case the old comment did not distinguish.
+**Consequence to know:** because a teacher's unlink leaves groups alone, an unlinked stranger who
+is already in one of the teacher's custom groups **stays in it** until the teacher removes them in
+the group's member list. That is the owner's choice, made over the safer default; the dialog says
+"your groups do not change". The direct chat, where the private messages about the child are, is
+closed.
 
-**Verified:** typecheck clean; API suite and mobile suite (8291 pass / 10 skipped / 0 fail) against
-a throwaway local Postgres. `unlinkChatAccess.db.test.ts` (7 tests) was seen failing before the
-change (the control "still linked through another child" passes before and after), and the retry
-and keep-unread tests were each seen failing when their behaviour was removed. **Known gap:** the
-cleanup is several writes that are not one transaction, and a link created in the same instant for
-another of the teacher's students can leave an account linked but out of the groups (the direct
-chat returns when opened; a group needs adding again); nothing tests that race. A link to an
+**Verified:** typecheck clean; API suite and mobile suite against a throwaway local Postgres (counts
+in the PR). `unlinkChatAccess.db.test.ts` (8 tests) was seen failing before the change (the control
+"still linked through another child" passes before and after); the retry and keep-unread tests were
+each seen failing when their behaviour was removed, and flipping either `alsoGroups` value fails
+the group tests. **Known gap:** the cleanup is several writes that are not one transaction, and a
+link created in the same instant for another of the teacher's students can leave an account linked
+but out of the direct chat (or, on withdrawal, the groups); nothing tests that race. A link to an
 *archived* student of the teacher still counts as a connection, as in `isConnected`; no route
-archives students today. **Not verified:** nothing was run against production; the dialog wording was not read by a native speaker; the
-mobile string change is JS-only, but `app.json` is 1.6.0 while STATUS.md says the installed
-production binary is 1.5.0, so **the new dialog text reaches no phone until a 1.6.0 build is
-installed**. The server change is live on deploy and does not wait for that: until then the dialog
-still says only «removed from class chats» although the account now also leaves the direct chat
-and groups.
+archives students today. **Not verified:** nothing was run against production; the dialog wording
+was not read by a native speaker; the mobile string change is JS-only, but `app.json` is 1.6.0
+while STATUS.md says the installed production binary is 1.5.0, so **the new dialog text reaches no
+phone until a 1.6.0 build is installed**. The server change is live on deploy and does not wait for
+that: until then the dialog still says only «removed from class chats» although the account now
+also leaves the direct chat.
 
 **Still open from the review:** direct chats whose other side was deleted show a composer that
 goes nowhere; a block does not stop the blocked person posting to a teacher.
