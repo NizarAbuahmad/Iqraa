@@ -1,6 +1,9 @@
 /** The teacher's reading of the class's project submissions: tolerant normalizers and the one rule for opening a row. */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import {
   firstParam,
@@ -136,6 +139,19 @@ describe('formatHandedInAt', () => {
     }
   });
 
+  it('never writes the first minutes of the day as «24:05» (hour12:false does on some ICU builds)', () => {
+    // 21:05 UTC is 00:05 the next day in Amman (UTC+3).
+    for (const lang of ['ar', 'en'] as const) {
+      const out = formatHandedInAt('2026-10-30T21:05:00.000Z', lang);
+      assert.ok(out, lang);
+      assert.match(out, /\b00:05\b/, `${lang}: got ${out}`);
+      assert.doesNotMatch(out, /24:05/, `${lang}: got ${out}`);
+    }
+    const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'teacherSubmissions.ts'), 'utf8');
+    assert.match(src, /hourCycle: 'h23'/);
+    assert.doesNotMatch(src, /hour12/);
+  });
+
   it('is null for nothing, or a string that is not a moment', () => {
     for (const bad of [null, undefined, '', 'yesterday']) assert.equal(formatHandedInAt(bad, 'ar'), null, String(bad));
   });
@@ -143,17 +159,23 @@ describe('formatHandedInAt', () => {
 
 describe('the note that survives a navigation', () => {
   it('is handed over once, then gone', () => {
-    takeSubmissionsFlash();
-    assert.equal(takeSubmissionsFlash(), null);
-    rememberSubmissionsFlash('subDeleted');
-    assert.equal(takeSubmissionsFlash(), 'subDeleted');
-    assert.equal(takeSubmissionsFlash(), null);
+    takeSubmissionsFlash('h1');
+    assert.equal(takeSubmissionsFlash('h1'), null);
+    rememberSubmissionsFlash('subDeleted', 'h1');
+    assert.equal(takeSubmissionsFlash('h1'), 'subDeleted');
+    assert.equal(takeSubmissionsFlash('h1'), null);
   });
 
   it('keeps the newest when two are left', () => {
-    rememberSubmissionsFlash('subDeleted');
-    rememberSubmissionsFlash('subAlreadyGone');
-    assert.equal(takeSubmissionsFlash(), 'subAlreadyGone');
+    rememberSubmissionsFlash('subDeleted', 'h1');
+    rememberSubmissionsFlash('subAlreadyGone', 'h1');
+    assert.equal(takeSubmissionsFlash('h1'), 'subAlreadyGone');
+  });
+
+  it("is for one homework's list only: another homework's list gets nothing, and the note is dropped, not kept for later", () => {
+    rememberSubmissionsFlash('subDeleted', 'h1');
+    assert.equal(takeSubmissionsFlash('h2'), null);
+    assert.equal(takeSubmissionsFlash('h1'), null, 'a list that was not the target still consumes it');
   });
 });
 

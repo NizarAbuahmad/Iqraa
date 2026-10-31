@@ -98,9 +98,9 @@ export default function HomeworkSubmissionsScreen() {
     useCallback(() => {
       void load();
       // The detail screen's «deleted» note, said here once, where it went back to.
-      const flash = takeSubmissionsFlash();
+      const flash = takeSubmissionsFlash(homeworkId);
       if (flash) setToast(t(flash));
-    }, [load, t]),
+    }, [load, t, homeworkId]),
   );
 
   const retry = () => {

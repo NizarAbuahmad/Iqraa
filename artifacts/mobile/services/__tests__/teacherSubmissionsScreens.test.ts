@@ -431,22 +431,40 @@ describe('submissions detail screen: what it shows', () => {
     assert.match(src, /import \{[^}]*\bphotoSlotSize\b[^}]*\} from '@\/services\/homeworkProject'/);
     assert.match(src, /const slot = photoSlotSize\(Math\.min\(width, CONTENT_MAX_WIDTH\) - 4 \* SPACE\.lg - 2, SPACE\.sm\);/);
     assert.match(src, /import \{ Image \} from 'expo-image'/);
-    assert.match(src, /source=\{\{ uri: photo\.url, cacheKey: photo\.id \}\}/);
+    assert.match(src, /source=\{\{ uri: url, cacheKey: photo\.id \}\}/);
     assert.match(src, /key=\{photo\.id\}/);
   });
 
-  it('opens a photo in the viewer, by a name that says which one', () => {
+  it('opens a photo in the viewer, by a name that says which one, only when it has a usable link', () => {
     const src = detailSrc();
     assert.match(src, /import \{ ImageViewerModal \} from '@\/components\/ui\/ImageViewer'/);
     assert.match(src, /<ImageViewerModal url=\{viewerUrl\} onClose=\{\(\) => setViewerUrl\(null\)\} \/>/);
-    const thumb = dAfter('onPress={() => (photo.url ? setViewerUrl(photo.url) : undefined)}', 420);
-    assert.match(thumb, /disabled=\{!photo\.url\}/);
-    assert.match(thumb, /aria-disabled=\{!photo\.url\}/);
-    assert.match(thumb, /photo\.url \? t\('projectOpenPhoto', i \+ 1\) : t\('projectPhotoUnavailable'\)/);
+    const thumb = dAfter('onPress={() => (url ? setViewerUrl(url) : undefined)}', 420);
+    assert.match(thumb, /disabled=\{!url\}/);
+    assert.match(thumb, /aria-disabled=\{!url\}/);
+    assert.match(thumb, /url \? t\('projectOpenPhoto', i \+ 1\) : t\('projectPhotoUnavailable'\)/);
   });
 
   it('draws a photo with no link (null url) as a placeholder, not a broken image', () => {
-    assert.match(dAfter('{photo.url ? (', 520), /\) : \(\s*<Ionicons name="image-outline" size=\{ICON\.xl\}/);
+    assert.match(dAfter('{url ? (', 700), /\) : \(\s*<Ionicons name="image-outline" size=\{ICON\.xl\}/);
+  });
+
+  it('draws a photo whose link FAILED to load as the same placeholder, unopenable: failedPhotos from onError', () => {
+    const src = detailSrc();
+    // The usable link is the photo's own, unless its id is in the failed set.
+    assert.match(src, /const url = photo\.url && !failedPhotos\.has\(photo\.id\) \? photo\.url : null;/);
+    assert.match(src, /const \[failedPhotos, setFailedPhotos\] = useState<ReadonlySet<string>>\(NO_FAILED_PHOTOS\);/);
+    // The image fills the set by id, and adds nothing twice.
+    assert.match(src, /onError=\{\(\) => setFailedPhotos\(prev => \(prev\.has\(photo\.id\) \? prev : new Set\(prev\)\.add\(photo\.id\)\)\)\}/);
+    // Every successful read starts the set again: a fresh link may work.
+    assert.match(loadBody(), /setDetail\(next\);\s*setFailure\(null\);\s*setFailedPhotos\(NO_FAILED_PHOTOS\);/);
+    assert.match(handler('recheck'), /setFailure\(null\);\s*setFailedPhotos\(NO_FAILED_PHOTOS\);/);
+  });
+
+  it('does not claim a fallback it has not got: the header comment names failedPhotos and onError', () => {
+    const head = detailSrc().slice(0, detailSrc().indexOf('import React'));
+    assert.match(head, /failedPhotos/);
+    assert.match(head, /onError/);
   });
 
   it('is read-only: no way to add, remove or pick a photo, no input', () => {
@@ -494,7 +512,8 @@ describe('submissions detail screen: deleting the project', () => {
     const askAt = at(body, 'await confirm({');
     const clearAt = at(body, 'await teacherSubmissionsApi.clear(homeworkId, studentId)');
     assert.ok(askAt < clearAt, 'confirm before clear');
-    assert.ok(at(body, 'if (!ok) return;') > askAt && at(body, 'if (!ok) return;') < clearAt, 'a refusal returns before clear');
+    const refuse = at(body, 'if (!ok || !aliveRef.current) return;');
+    assert.ok(refuse > askAt && refuse < clearAt, 'a refusal, or a screen already left, returns before clear');
     const options = body.slice(askAt, body.indexOf('});', askAt));
     assert.match(options, /title: t\('subDeleteTitle'\)/);
     assert.match(options, /message: t\('subDeleteBody'\)/);
@@ -512,18 +531,21 @@ describe('submissions detail screen: deleting the project', () => {
     assert.ok(guard < set && set < at(body, 'await confirm({'), 'guard, then claim, then ask');
     const fin = at(body, 'finally {');
     assert.match(body.slice(fin), /clearingRef\.current = false;/);
-    assert.match(body.slice(fin), /setClearing\(false\);/);
+    assert.match(body.slice(fin), /setSending\(false\);/);
     assert.match(detailSrc(), /const clearingRef = useRef\(false\);/);
     // The spinner shows only for the call, after the dialog said yes.
-    assert.ok(at(body, 'setClearing(true);') > at(body, 'if (!ok) return;'));
+    assert.ok(at(body, 'setSending(true);') > at(body, 'if (!ok || !aliveRef.current) return;'));
+    assert.match(detailSrc(), /const setSending = \(next: boolean\) => \{\s*sendingRef\.current = next;\s*setClearing\(next\);\s*\};/);
   });
 
-  it('on success remembers the «deleted» note and leaves for the list', () => {
+  it('on success checks the screen is still in front, then remembers the «deleted» note and leaves', () => {
     const body = handler('clearProject');
     const clearAt = at(body, 'await teacherSubmissionsApi.clear(homeworkId, studentId)');
     const done = at(body, "leaveWith('subDeleted')");
     assert.ok(done > clearAt, 'only after clear resolved');
-    assert.ok(done < at(body, 'catch (e)'), 'on the success path, not in the catch');
+    const innerCatch = at(body, 'catch (e)');
+    assert.ok(done > innerCatch, 'after the try/catch that holds the call, so only the success path reaches it');
+    assert.match(body.slice(innerCatch, done + 30), /\n      if \(!aliveRef\.current\) return;\n      leaveWith\('subDeleted'\);/);
   });
 
   it('reads a 404 from clear as «already gone»: neutral note, back to the list, no failure message', () => {
@@ -537,16 +559,58 @@ describe('submissions detail screen: deleting the project', () => {
     assert.ok(at(caught, "say(t('subDeleteFailed'))") > gone, 'any other failure says it failed, after the 404 branch');
   });
 
-  it('on any other failure says it failed, stays, and looks again to see whether it was cleared after all', () => {
+  it('on any other failure LOOKS FIRST, then says: gone -> «already gone», never «couldn\'t delete» before it', () => {
     const body = handler('clearProject');
     const caught = body.slice(at(body, 'catch (e)'), at(body, 'finally {'));
-    assert.match(caught, /say\(t\('subDeleteFailed'\)\);\s*await recheck\(\);/);
+    const look = at(caught, 'const found = await recheck();');
+    const gone = at(caught, "if (found === 'gone') {");
+    const say = at(caught, "say(t('subDeleteFailed'))");
+    assert.ok(at(caught, 'if (statusOf(e) === 404) {') < look, 'a server 404 is settled before any look');
+    assert.ok(look < gone && gone < say, 'look, then gone, then (only if not gone) the failure message');
+    assert.match(caught.slice(gone, say), /leaveWith\('subAlreadyGone'\);\s*return;/);
+    assert.equal((caught.match(/subDeleteFailed/g) ?? []).length, 1, 'one place says it failed');
+    assert.match(caught, /if \(aliveRef\.current\) say\(t\('subDeleteFailed'\)\);/);
     assert.doesNotMatch(caught, /leave\(\)/, 'a failure does not leave');
+  });
+
+  it('recheck reports gone / there / unknown, shows what it found only while it owns the state, and never navigates', () => {
     const re = handler('recheck');
     assert.match(re, /await teacherSubmissionsApi\.detail\(homeworkId, studentId\)/);
-    assert.match(re, /if \(statusOf\(e\) === 404\) leaveWith\('subAlreadyGone'\);/);
-    assert.equal((re.match(/seq !== loadSeq\.current/g) ?? []).length, 2);
-    assert.match(re, /setDetail\(next\)/);
+    assert.match(re, /if \(seq === loadSeq\.current && aliveRef\.current\) \{\s*hasDetail\.current = true;\s*setDetail\(next\);\s*setFailure\(null\);/);
+    assert.match(re, /return 'there';/);
+    assert.match(re, /return statusOf\(e\) === 404 \? 'gone' : 'unknown';/);
+    assert.doesNotMatch(re, /leaveWith|leave\(|router\./, 'the caller decides what to do with the answer');
+  });
+
+  it('a late answer never navigates a teacher who already left: every answer checks aliveRef first', () => {
+    const src = detailSrc();
+    assert.match(src, /const aliveRef = useRef\(false\);/);
+    // leaveWith does nothing at all, note included, once the screen is not the one in front.
+    const lw = handler('leaveWith');
+    assert.ok(at(lw, 'if (!aliveRef.current) return;') < at(lw, 'rememberSubmissionsFlash('), 'check before the note');
+    assert.ok(at(lw, 'if (!aliveRef.current) return;') < at(lw, 'leave();'), 'check before the navigation');
+    // The flag follows focus: true on focus, false on blur and on unmount (the cleanup of the same effect).
+    const effect = dAfter('aliveRef.current = true;', 400);
+    assert.match(effect, /return \(\) => \{\s*aliveRef\.current = false;\s*sub\.remove\(\);/);
+    // Every await in the delete flow is followed by a check before anything is shown or navigated.
+    const body = handler('clearProject');
+    assert.ok(at(body, 'if (!ok || !aliveRef.current) return;') > at(body, 'await confirm({'));
+    assert.match(body, /const found = await recheck\(\);\s*if \(found === 'gone'\) \{\s*leaveWith/);
+    assert.match(body, /if \(aliveRef\.current\) say\(/);
+  });
+
+  it('holds the back buttons while the delete is in flight: BackButton disabled, Android back blocked', () => {
+    const src = detailSrc();
+    assert.match(src, /<BackButton\b[^>]*onPress=\{leave\} disabled=\{clearing\}/);
+    assert.match(src, /import \{[^}]*\bBackHandler\b[^}]*\} from 'react-native'/);
+    assert.match(src, /BackHandler\.addEventListener\('hardwareBackPress', \(\) => sendingRef\.current\)/);
+    // sendingRef is true exactly while the call is out: set with the spinner, released in finally.
+    assert.match(src, /const sendingRef = useRef\(false\);/);
+  });
+
+  it('is scoped to this homework: the note is remembered with the homework id, and the list asks for its own', () => {
+    assert.match(handler('leaveWith'), /rememberSubmissionsFlash\(key, homeworkId\);/);
+    assert.match(listSrc, /takeSubmissionsFlash\(homeworkId\)/);
   });
 
   it('leaves by going back, or to the list when there is nothing to go back to (a refreshed web tab)', () => {
@@ -559,13 +623,13 @@ describe('submissions detail screen: deleting the project', () => {
 
   it('leaves WITH a note: remembered first, then the navigation', () => {
     const body = handler('leaveWith');
-    assert.ok(at(body, 'rememberSubmissionsFlash(key);') < at(body, 'leave();'));
+    assert.ok(at(body, 'rememberSubmissionsFlash(key, homeworkId);') < at(body, 'leave();'));
   });
 
   it('the list shows that note on its next focus, in a Toast', () => {
     assert.match(listSrc, /import \{[^}]*\btakeSubmissionsFlash\b[^}]*\} from '@\/services\/teacherSubmissions'/);
     assert.match(listSrc, /import \{ Toast \} from '@\/components\/ui\/Toast'/);
-    assert.match(after('useFocusEffect(', 330), /const flash = takeSubmissionsFlash\(\);\s*if \(flash\) setToast\(t\(flash\)\);/);
+    assert.match(after('useFocusEffect(', 330), /const flash = takeSubmissionsFlash\(homeworkId\);\s*if \(flash\) setToast\(t\(flash\)\);/);
     assert.match(listSrc, /<Toast visible=\{!!toast\} message=\{toast\} onHide=\{\(\) => setToast\(''\)\} \/>/);
   });
 
@@ -594,9 +658,14 @@ describe('submissions detail screen: copy', () => {
     assert.equal(translations.en.subDeleteFailed, "Couldn't delete the project. Try again.");
   });
 
-  it('the warning says: photos and note deleted for good, the done tick removed, the student can start again', () => {
-    assert.equal(translations.ar.subDeleteBody, 'ستُحذف صور المشروع والملاحظة نهائيًا، وتُزال علامة «تم» عن الطالب، ويستطيع الطالب أن يبدأ من جديد.');
-    assert.equal(translations.en.subDeleteBody, "The photos and note are deleted for good, the student's done tick is removed, and the student can start again.");
+  it("the warning says: photos and note deleted for good, the «Done» mark removed, the student can start again", () => {
+    assert.equal(translations.ar.subDeleteBody, 'ستُحذف صور المشروع والملاحظة نهائيًا، وتُزال علامة «تم إنجازه» عن الطالب، ويستطيع الطالب أن يبدأ من جديد.');
+    assert.equal(translations.en.subDeleteBody, "The photos and note are deleted for good, the student's “Done” mark is removed, and the student can start again.");
+  });
+
+  it("names the mark as the student's own homework row does (hwDone), so a teacher recognises it", () => {
+    assert.ok(translations.ar.subDeleteBody.includes(`«${translations.ar.hwDone}»`), translations.ar.hwDone);
+    assert.ok(translations.en.subDeleteBody.includes(`“${translations.en.hwDone}”`), translations.en.hwDone);
   });
 
   it('the date line carries the date it is given, in both languages', () => {

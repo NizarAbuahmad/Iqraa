@@ -9,25 +9,37 @@
  *
  * Deleting is the server's `DELETE /homework/:id/submissions/:studentId` (teacherSubmissionsApi `clear`, whose doc
  * comment states the outcomes this screen branches on). It asks first, says the photos and note go for good, that the
- * student's done tick is removed and that the student can start again, and only then calls the server:
+ * student's «Done» mark is removed and that the student can start again, and only then calls the server:
  * - success: back to the list, which reloads on focus, with a «deleted» note the list shows (the Toast outlives the
  *   navigation through `rememberSubmissionsFlash`, because this screen is gone by the time a Toast would draw);
  * - 404: the project is already gone (a repeat of a clear that went through, a clear from another device). That is
  *   not a failure: back to the list with a neutral note;
- * - anything else (a 5xx, no network, a 2xx that does not say it cleared): «couldn't delete», stay, and read the
- *   project again, which shows what is really there (a clear that did go through ends as «already gone», a half
- *   clear shows photos that no longer load as placeholders). The same button sends the delete again.
+ * - anything else (a 5xx, a timeout, no network, a 2xx that does not say it cleared) is UNCERTAIN: the server may
+ *   have committed. The project is read again FIRST, and only then is anything said: gone (404) is «already gone»,
+ *   never «couldn't delete»; still there, or the read failing too, is «couldn't delete», and the screen stays with
+ *   what is really there. The same button sends the delete again.
  *
  * Traps this screen exists to avoid:
  * - A failed load is an error with a retry, never an empty project. A 404 or 403 cannot be retried away: a neutral
  *   «no longer available» with a way back (the project may have been cleared meanwhile), and no loop.
- * - Signed photo URLs live ten minutes, so the project is read again on every focus.
+ * - A delete outlives the teacher's patience: it can finish after they went back, or opened another project. A late
+ *   answer must not navigate (`router.back()` would pop the screen they are on now), so every answer checks
+ *   `aliveRef` (this screen is the one in front) first. The normal Back and Android's back button are held while
+ *   the call is in flight; a swipe-back cannot be, and lands on the same check. A screen that is no longer in front
+ *   leaves NO note: the list the teacher went back to reloads at its next focus (a stale row opens to the neutral
+ *   404 state), and a note left now would show up at some later focus. The note that is left is scoped to this
+ *   homework's list.
+ * - Signed photo URLs live ten minutes, so the project is read again on every focus. A photo whose link fails
+ *   while the screen stays open (an expired link, or a photo a half-finished delete already removed from storage)
+ *   is drawn as the «not available» placeholder and cannot be opened: `failedPhotos`, filled by the image's
+ *   `onError` and emptied by every successful read. The enlarged viewer is shared (`ImageViewerModal`, no cache
+ *   key) and only ever opens a photo that has just loaded here.
  * - A double tap on the button must not open two dialogs or send two deletes: a ref claims the handler before the
  *   dialog opens and releases it when everything is over.
  * - The path carries a homework id and a minor's id: both stay out of analytics (`screenTracking.ts`).
  */
 import React, { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, BackHandler, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -59,6 +71,11 @@ import { ImageViewerModal } from '@/components/ui/ImageViewer';
 /** `neutral`: not an error but a project that is no longer there (a 404). */
 type Failure = { message: string; final: boolean; neutral: boolean };
 
+/** What a look-again found: the project is gone (404), is still there, or could not be told. */
+type Looked = 'gone' | 'there' | 'unknown';
+/** No photo has failed to load. One shared set, so resetting to it is not a render when nothing failed. */
+const NO_FAILED_PHOTOS: ReadonlySet<string> = new Set();
+
 const statusOf = (e: unknown): unknown => (e && typeof e === 'object' ? (e as { status?: unknown }).status : undefined);
 
 export default function HomeworkSubmissionDetailScreen() {
@@ -81,6 +98,8 @@ export default function HomeworkSubmissionDetailScreen() {
   const [clearing, setClearing] = useState(false);
   const [toast, setToast] = useState('');
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+  /** Photos whose link failed to load, by id; emptied by every successful read. */
+  const [failedPhotos, setFailedPhotos] = useState<ReadonlySet<string>>(NO_FAILED_PHOTOS);
 
   /** A newer load wins over an older one still in flight. */
   const loadSeq = useRef(0);
@@ -88,8 +107,16 @@ export default function HomeworkSubmissionDetailScreen() {
   const hasDetail = useRef(false);
   /** The delete handler is running, from the tap to the end: a second tap does nothing. */
   const clearingRef = useRef(false);
+  /** The delete call itself is in flight (after the dialog said yes): the back button is held. */
+  const sendingRef = useRef(false);
+  /** This screen is the one in front. False after the teacher left it (back, another project, a tab). */
+  const aliveRef = useRef(false);
 
   const say = (message: string) => setToast(message);
+  const setSending = (next: boolean) => {
+    sendingRef.current = next;
+    setClearing(next);
+  };
 
   const load = useCallback(async () => {
     if (!homeworkId || !studentId) {
@@ -103,6 +130,7 @@ export default function HomeworkSubmissionDetailScreen() {
       hasDetail.current = true;
       setDetail(next);
       setFailure(null);
+      setFailedPhotos(NO_FAILED_PHOTOS);
     } catch (e) {
       if (seq !== loadSeq.current) return;
       const status = statusOf(e);
@@ -127,6 +155,19 @@ export default function HomeworkSubmissionDetailScreen() {
     }, [load]),
   );
 
+  // While this screen is the one in front: a late answer checks it before it navigates or speaks, and Android's back
+  // button does nothing while a delete is in flight (the same listener pattern as the whiteboard and live-host screens).
+  useFocusEffect(
+    useCallback(() => {
+      aliveRef.current = true;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => sendingRef.current);
+      return () => {
+        aliveRef.current = false;
+        sub.remove();
+      };
+    }, []),
+  );
+
   const retry = () => {
     setFailure(null);
     void load();
@@ -138,26 +179,35 @@ export default function HomeworkSubmissionDetailScreen() {
     else router.replace((homeworkId ? `/homework-submissions/${encodeURIComponent(homeworkId)}` : '/') as never);
   };
 
-  /** Leave a note for the list to show, then leave: this screen is gone before a Toast of its own could draw. */
+  /**
+   * Leave a note for this homework's list to show, then leave: this screen is gone before a Toast of its own could
+   * draw. Does nothing at all once the teacher has left (no navigation, no note): `router.back()` would pop whatever
+   * screen they are on now.
+   */
   const leaveWith = (key: SubmissionsFlash) => {
-    rememberSubmissionsFlash(key);
+    if (!aliveRef.current) return;
+    rememberSubmissionsFlash(key, homeworkId);
     leave();
   };
 
   /**
-   * After a delete that did not end cleanly: read the project again. Nothing there (404) means the delete went
-   * through after all, so it is «already gone»; a project still there is shown as it is now.
+   * After a delete that did not end cleanly: read the project again, and say what was found. A 404 means the delete
+   * went through after all. A project still there is shown as it is now (fresh photo links, and no failed-photo
+   * marks), unless a newer load or a screen that is no longer in front owns the state: the answer is still true.
    */
-  const recheck = async () => {
+  const recheck = async (): Promise<Looked> => {
     const seq = ++loadSeq.current;
     try {
       const next = await teacherSubmissionsApi.detail(homeworkId, studentId);
-      if (seq !== loadSeq.current) return;
-      hasDetail.current = true;
-      setDetail(next);
+      if (seq === loadSeq.current && aliveRef.current) {
+        hasDetail.current = true;
+        setDetail(next);
+        setFailure(null);
+        setFailedPhotos(NO_FAILED_PHOTOS);
+      }
+      return 'there';
     } catch (e) {
-      if (seq !== loadSeq.current) return;
-      if (statusOf(e) === 404) leaveWith('subAlreadyGone');
+      return statusOf(e) === 404 ? 'gone' : 'unknown';
     }
   };
 
@@ -172,21 +222,32 @@ export default function HomeworkSubmissionDetailScreen() {
         cancelLabel: t('cancel'),
         destructive: true,
       });
-      if (!ok) return;
-      setClearing(true);
-      await teacherSubmissionsApi.clear(homeworkId, studentId);
-      leaveWith('subDeleted');
-    } catch (e) {
-      // Nothing left to clear: it is already gone, which is what the teacher wanted, not a failure.
-      if (statusOf(e) === 404) {
-        leaveWith('subAlreadyGone');
+      // Said no, or went back while the dialog was open.
+      if (!ok || !aliveRef.current) return;
+      setSending(true);
+      try {
+        await teacherSubmissionsApi.clear(homeworkId, studentId);
+      } catch (e) {
+        // Nothing left to clear: it is already gone, which is what the teacher wanted, not a failure.
+        if (statusOf(e) === 404) {
+          leaveWith('subAlreadyGone');
+          return;
+        }
+        // Anything else is uncertain (a timeout may have committed): look first, say after, so «couldn't delete»
+        // is never followed by «already gone».
+        const found = await recheck();
+        if (found === 'gone') {
+          leaveWith('subAlreadyGone');
+          return;
+        }
+        if (aliveRef.current) say(t('subDeleteFailed'));
         return;
       }
-      say(t('subDeleteFailed'));
-      await recheck();
+      if (!aliveRef.current) return;
+      leaveWith('subDeleted');
     } finally {
       clearingRef.current = false;
-      setClearing(false);
+      setSending(false);
     }
   };
 
@@ -238,24 +299,33 @@ export default function HomeworkSubmissionDetailScreen() {
           </View>
           {detail.submission.photos.length === 0 ? <Text style={muted}>{t('projectNoPhotos')}</Text> : null}
           <View style={[styles.grid, row]}>
-            {detail.submission.photos.map((photo, i) => (
-              <View key={photo.id} style={slotSize}>
-                <PressableScale
-                  onPress={() => (photo.url ? setViewerUrl(photo.url) : undefined)}
-                  disabled={!photo.url}
-                  aria-disabled={!photo.url}
-                  accessibilityLabel={photo.url ? t('projectOpenPhoto', i + 1) : t('projectPhotoUnavailable')}
-                  style={[styles.thumb, { backgroundColor: colors.muted }]}
-                >
-                  {photo.url ? (
-                    // The signed URL changes on every reload; the photo does not.
-                    <Image source={{ uri: photo.url, cacheKey: photo.id }} style={styles.thumbImage} contentFit="cover" />
-                  ) : (
-                    <Ionicons name="image-outline" size={ICON.xl} color={colors.mutedForeground} />
-                  )}
-                </PressableScale>
-              </View>
-            ))}
+            {detail.submission.photos.map((photo, i) => {
+              // No link, or a link that failed to load: the placeholder, and nothing to open.
+              const url = photo.url && !failedPhotos.has(photo.id) ? photo.url : null;
+              return (
+                <View key={photo.id} style={slotSize}>
+                  <PressableScale
+                    onPress={() => (url ? setViewerUrl(url) : undefined)}
+                    disabled={!url}
+                    aria-disabled={!url}
+                    accessibilityLabel={url ? t('projectOpenPhoto', i + 1) : t('projectPhotoUnavailable')}
+                    style={[styles.thumb, { backgroundColor: colors.muted }]}
+                  >
+                    {url ? (
+                      // The signed URL changes on every reload; the photo does not.
+                      <Image
+                        source={{ uri: url, cacheKey: photo.id }}
+                        onError={() => setFailedPhotos(prev => (prev.has(photo.id) ? prev : new Set(prev).add(photo.id)))}
+                        style={styles.thumbImage}
+                        contentFit="cover"
+                      />
+                    ) : (
+                      <Ionicons name="image-outline" size={ICON.xl} color={colors.mutedForeground} />
+                    )}
+                  </PressableScale>
+                </View>
+              );
+            })}
           </View>
         </View>
 
@@ -284,7 +354,7 @@ export default function HomeworkSubmissionDetailScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: insets.top + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <BackButton color={colors.foreground} onPress={leave} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
+        <BackButton color={colors.foreground} onPress={leave} disabled={clearing} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
         <Text accessibilityRole="header" numberOfLines={2} style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.title, textAlign: align }}>
           {detail?.student.displayName || t('subDetailTitle')}
         </Text>

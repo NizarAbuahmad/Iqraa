@@ -116,6 +116,9 @@ describe('the contract a screen can rely on for clear()', () => {
     assert.match(comment, /2xx/);
     assert.match(comment, /uncertain|may have/i);
     assert.match(comment, /5xx|500/);
+    // A timeout or a dropped connection is NOT «database untouched»: the server may have committed.
+    assert.match(comment, /timeout|dropped/i);
+    assert.match(comment, /only a server 500|only a 500/i);
   });
 });
 

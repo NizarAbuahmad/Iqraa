@@ -103,7 +103,7 @@ export function formatHandedInAt(iso: string | null | undefined, lang: 'ar' | 'e
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false };
+  const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' };
   try {
     return d.toLocaleString(dateLocale(lang), { ...opts, timeZone: 'Asia/Amman' });
   } catch {
@@ -118,18 +118,21 @@ export function formatHandedInAt(iso: string | null | undefined, lang: 'ar' | 'e
 
 /** The note a screen leaves for the one it goes back to (a Toast that outlives the navigation). */
 export type SubmissionsFlash = 'subDeleted' | 'subAlreadyGone';
-let pendingFlash: SubmissionsFlash | null = null;
+let pendingFlash: { key: SubmissionsFlash; homeworkId: string } | null = null;
 
-/** Leave a note for the list screen's next focus. The newest wins. */
-export function rememberSubmissionsFlash(key: SubmissionsFlash): void {
-  pendingFlash = key;
+/** Leave a note for the NEXT focus of one homework's list screen. The newest wins. */
+export function rememberSubmissionsFlash(key: SubmissionsFlash, homeworkId: string): void {
+  pendingFlash = { key, homeworkId };
 }
 
-/** The note left for this screen, once: reading it clears it. */
-export function takeSubmissionsFlash(): SubmissionsFlash | null {
-  const key = pendingFlash;
+/**
+ * The note left for this homework's list, once: reading it clears it. A list of another homework gets nothing, and
+ * the note is dropped rather than kept for a later focus: it was about a project that list does not show.
+ */
+export function takeSubmissionsFlash(homeworkId: string): SubmissionsFlash | null {
+  const flash = pendingFlash;
   pendingFlash = null;
-  return key;
+  return flash && flash.homeworkId === homeworkId ? flash.key : null;
 }
 
 /** Only a handed-in row (on time or late) has a project to open. */
