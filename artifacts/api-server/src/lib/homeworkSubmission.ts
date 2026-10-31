@@ -17,6 +17,19 @@
  * re-evaluates that WHERE against the committed row after waiting on the row lock, so the second
  * request sees the first one's result. Zero rows back means the rule would have been broken (or,
  * for `removePhoto`, that the photo is already gone), and the function answers accordingly.
+ *
+ * WHO WROTE IT. A row records its author (`author_user_id`), because the record's link can change hands: a
+ * teacher unlinks a mis-claimed account and links another. For the account linked now:
+ *   - its own row (author = caller) behaves as always;
+ *   - another account's DRAFT (or one with no author) is shown as nothing, and the first write TAKES IT OVER
+ *     (`takeOver`): the old photos and note are dropped and the caller becomes the author, in one locked
+ *     transaction on the owner connection, and the old objects are deleted after it commits;
+ *   - another account's HANDED-IN project (or one with no author) is shown as `otherAuthor: true` with none of
+ *     its content, and every write answers `other_author`. The teacher and the parents still read it: it is
+ *     the record's work.
+ * Every UPDATE below also carries `author_user_id = caller` in its WHERE, so a request that passed its checks
+ * just before another account took the row over writes nothing (zero rows, re-read, `other_author`).
+ * The previous author is refused before any of this: `ownHomeworkRows` needs a current self link.
  */
 import {
   classGroups,
@@ -30,7 +43,7 @@ import {
   type HomeworkSubmission,
   type SubmissionPhoto,
 } from "@workspace/db";
-import { and, asc, eq, inArray, isNotNull, isNull, ne, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
 import { logger } from "./logger";
 import { deleteObject, presignedGetUrl } from "./r2.ts";
 import { ownHomeworkRows, tickRows } from "./homeworkDone.ts";
@@ -45,6 +58,8 @@ import {
 } from "../modules/homework/submission.ts";
 
 export interface SubmissionTarget {
+  /** The calling account: the author of anything this target writes. */
+  userId: string;
   homeworkId: string;
   /** The roster row the submission is stored on: the one that already holds it, else the first (sorted) own row. */
   studentId: string;
@@ -68,7 +83,16 @@ export interface SubmissionView {
   note: string;
   photos: SubmissionPhotoView[];
   submittedAt: string | null;
+  /**
+   * True only on a student's own read, when the record holds a project another account (or no known account)
+   * handed in: the view then carries none of it (status `none`, no note, no photos) and every write is refused
+   * with `other_author`. Always false for the teacher's and the parent's reads.
+   */
+  otherAuthor: boolean;
 }
+
+/** The answer a write gives when the record's project was handed in by another account. */
+export type OtherAuthor = "other_author";
 
 /** Ten minutes: long enough to open a photo, short enough that a copied link dies quickly. */
 export const SIGNED_URL_SECONDS = 600;
@@ -82,7 +106,7 @@ export async function submissionTarget(userId: string, homeworkId: string): Prom
     .where(and(eq(homeworkSubmissions.homeworkId, homeworkId), inArray(homeworkSubmissions.studentId, own.rows)))
     .orderBy(homeworkSubmissions.studentId)
     .limit(1);
-  return { homeworkId, studentId: held?.studentId ?? own.rows[0]!, rows: own.rows, dueAt: own.dueAt };
+  return { userId, homeworkId, studentId: held?.studentId ?? own.rows[0]!, rows: own.rows, dueAt: own.dueAt };
 }
 
 export async function readOwnSubmission(t: SubmissionTarget): Promise<HomeworkSubmission | null> {
@@ -105,20 +129,109 @@ export async function signPhotos(photos: readonly SubmissionPhoto[]): Promise<Su
   );
 }
 
-/** A row (or none) as a client sees it. The object key is never in it. */
+const NOTHING: SubmissionView = { status: "none", locked: false, note: "", photos: [], submittedAt: null, otherAuthor: false };
+
+/** A row (or none) as a client sees it. The object key is never in it. The teacher's and the parent's form: no author check. */
 export async function viewSubmission(
   row: HomeworkSubmission | null,
   dueAt: Date,
   now: Date = new Date(),
 ): Promise<SubmissionView> {
-  if (!row) return { status: "none", locked: false, note: "", photos: [], submittedAt: null };
+  if (!row) return { ...NOTHING };
   return {
     status: submissionStatus({ submittedAt: row.submittedAt, dueAt }),
     locked: isLocked({ submittedAt: row.submittedAt, dueAt, now }),
     note: row.note,
     photos: await signPhotos(row.photos),
     submittedAt: row.submittedAt ? row.submittedAt.toISOString() : null,
+    otherAuthor: false,
   };
+}
+
+/**
+ * The student's own view of the record's row. Only a row the caller wrote is shown; another account's draft is
+ * nothing (it is replaced on the first write), another account's handed-in project is only `otherAuthor: true`.
+ * Nothing of a row the caller did not write — note, photos, times — is in the answer, and no URL is signed for it.
+ */
+export async function viewOwnSubmission(
+  row: HomeworkSubmission | null,
+  t: SubmissionTarget,
+  now: Date = new Date(),
+): Promise<SubmissionView> {
+  if (row && row.authorUserId !== t.userId) return { ...NOTHING, otherAuthor: row.submittedAt !== null };
+  return viewSubmission(row, t.dueAt, now);
+}
+
+const isOwn = (row: HomeworkSubmission, t: SubmissionTarget) => row.authorUserId === t.userId;
+
+/**
+ * Takes over another account's (or an authorless) DRAFT on the target's record: drops its photos and note and
+ * makes the caller its author, then deletes the dropped objects (best effort, logged; a leftover is unreferenced
+ * and the sweep's). Answers `other_author` if the row turns out to be handed in (or the caller's link to the record
+ * went in the meantime: the write is refused either way), `ok` otherwise — including when there is nothing to take
+ * over (no row, or already the caller's).
+ *
+ * On `systemDb` in one transaction holding the row lock, because changing a row's author is exactly what the
+ * row-level-security policies refuse the app role (migration 0022): a student may write only a row they wrote.
+ * The lock makes a concurrent takeover by the same caller see the first one's result and do nothing, and a
+ * concurrent write by the previous author (whose UPDATE carries `author_user_id = previous`) match no row.
+ * Because the owner connection bypasses the policies, the transaction re-checks the caller's `self` link to the
+ * record itself; `submissionTarget` checked it too, but not inside this transaction.
+ */
+async function takeOver(t: SubmissionTarget, now: Date): Promise<"ok" | OtherAuthor> {
+  const dropped = await systemDb.transaction(async tx => {
+    const [link] = await tx
+      .select({ id: rosterLinks.id })
+      .from(rosterLinks)
+      .where(and(eq(rosterLinks.studentId, t.studentId), eq(rosterLinks.userId, t.userId), eq(rosterLinks.relation, "self")))
+      .limit(1);
+    if (!link) return null;
+    const [row] = await tx
+      .select({ id: homeworkSubmissions.id, authorUserId: homeworkSubmissions.authorUserId, submittedAt: homeworkSubmissions.submittedAt, photos: homeworkSubmissions.photos })
+      .from(homeworkSubmissions)
+      .where(and(eq(homeworkSubmissions.homeworkId, t.homeworkId), eq(homeworkSubmissions.studentId, t.studentId)))
+      .for("update");
+    if (!row || row.authorUserId === t.userId) return [];
+    if (row.submittedAt) return null;
+    await tx
+      .update(homeworkSubmissions)
+      .set({ authorUserId: t.userId, photos: [], note: "", updatedAt: now })
+      .where(eq(homeworkSubmissions.id, row.id));
+    return row.photos;
+  });
+  if (dropped === null) return "other_author";
+  for (const p of dropped) {
+    await deleteObject(p.key).catch(err =>
+      logger.error({ err, key: p.key, homeworkId: t.homeworkId }, "homework submission takeover: could not delete a previous author's photo"),
+    );
+  }
+  return "ok";
+}
+
+/**
+ * Makes sure the record holds a row the caller wrote, for a write that adds work (a photo, a note): inserts one
+ * with the caller as author, or, when a row is already there and is not the caller's, takes a draft over and
+ * answers `other_author` for a handed-in project. The insert conflict is the signal, not the caller's own read:
+ * with row-level security on, another account's draft is invisible to the caller (migration 0022).
+ */
+async function ensureOwnRow(t: SubmissionTarget, now: Date): Promise<"ok" | OtherAuthor> {
+  const inserted = await db
+    .insert(homeworkSubmissions)
+    .values({ homeworkId: t.homeworkId, studentId: t.studentId, authorUserId: t.userId })
+    .onConflictDoNothing()
+    .returning({ id: homeworkSubmissions.id });
+  if (inserted.length > 0) return "ok";
+  const row = await readOwnSubmission(t);
+  if (row && isOwn(row, t)) return "ok";
+  if (row?.submittedAt) return "other_author";
+  return takeOver(t, now);
+}
+
+/** The caller's read, split by author: their own row (or none), or another account's (`submitted` says which kind). */
+async function readAsAuthor(t: SubmissionTarget): Promise<{ own: HomeworkSubmission | null } | { otherSubmitted: boolean }> {
+  const row = await readOwnSubmission(t);
+  if (row && !isOwn(row, t)) return { otherSubmitted: row.submittedAt !== null };
+  return { own: row };
 }
 
 /**
@@ -132,41 +245,51 @@ function holdsWork(photosAfter: SQL, noteAfter: SQL | string): SQL {
 
 const photoCount = sql`jsonb_array_length(${homeworkSubmissions.photos})`;
 
-async function ensureRow(t: SubmissionTarget): Promise<void> {
-  await db
-    .insert(homeworkSubmissions)
-    .values({ homeworkId: t.homeworkId, studentId: t.studentId })
-    .onConflictDoNothing();
+/** The WHERE every write shares: the target's row, and only while the caller is its author. */
+const ownRowWhere = (t: SubmissionTarget) =>
+  and(
+    eq(homeworkSubmissions.homeworkId, t.homeworkId),
+    eq(homeworkSubmissions.studentId, t.studentId),
+    eq(homeworkSubmissions.authorUserId, t.userId),
+  );
+
+/** After a guarded UPDATE matched nothing: `other_author` if the row is (now) another account's, else the caller's row. */
+async function afterMiss(t: SubmissionTarget): Promise<{ own: HomeworkSubmission | null } | OtherAuthor> {
+  const read = await readAsAuthor(t);
+  return "own" in read ? read : "other_author";
 }
 
 export async function addPhoto(
   t: SubmissionTarget,
   photo: SubmissionPhoto,
   now: Date = new Date(),
-): Promise<"ok" | "locked" | "photo_limit"> {
-  const existing = await readOwnSubmission(t);
+): Promise<"ok" | "locked" | "photo_limit" | OtherAuthor> {
+  const read = await readAsAuthor(t);
+  if ("otherSubmitted" in read && read.otherSubmitted) return "other_author";
+  const existing = "own" in read ? read.own : null;
   if (existing && isLocked({ submittedAt: existing.submittedAt, dueAt: t.dueAt, now })) return "locked";
-  await ensureRow(t);
+  const ensured = await ensureOwnRow(t, now);
+  if (ensured !== "ok") return ensured;
   const updated = await db
     .update(homeworkSubmissions)
     .set({ photos: sql`${homeworkSubmissions.photos} || ${JSON.stringify([photo])}::jsonb`, updatedAt: now })
-    .where(
-      and(
-        eq(homeworkSubmissions.homeworkId, t.homeworkId),
-        eq(homeworkSubmissions.studentId, t.studentId),
-        sql`jsonb_array_length(${homeworkSubmissions.photos}) < ${PHOTOS_MAX}`,
-      ),
-    )
+    .where(and(ownRowWhere(t), sql`jsonb_array_length(${homeworkSubmissions.photos}) < ${PHOTOS_MAX}`))
     .returning({ id: homeworkSubmissions.id });
-  return updated.length > 0 ? "ok" : "photo_limit";
+  if (updated.length > 0) return "ok";
+  const miss = await afterMiss(t);
+  return miss === "other_author" ? miss : "photo_limit";
 }
 
 export async function removePhoto(
   t: SubmissionTarget,
   photoId: string,
   now: Date = new Date(),
-): Promise<{ key: string } | "locked" | "empty" | "not_found"> {
-  const row = await readOwnSubmission(t);
+): Promise<{ key: string } | "locked" | "empty" | "not_found" | OtherAuthor> {
+  const read = await readAsAuthor(t);
+  // Another account's handed-in project is refused as such; nothing of another account's draft is the caller's to
+  // remove (they were never shown its photos), and a remove adds no work, so it takes nothing over.
+  if ("otherSubmitted" in read) return read.otherSubmitted ? "other_author" : "not_found";
+  const row = read.own;
   const photo = row?.photos.find(p => p.id === photoId);
   if (!row || !photo) return "not_found";
   if (isLocked({ submittedAt: row.submittedAt, dueAt: t.dueAt, now })) return "locked";
@@ -181,6 +304,7 @@ export async function removePhoto(
     .where(
       and(
         eq(homeworkSubmissions.id, row.id),
+        eq(homeworkSubmissions.authorUserId, t.userId),
         // The photo must still be there, or a second tap on the same delete would answer "ok" twice.
         sql`${homeworkSubmissions.photos} @> ${JSON.stringify([{ id: photoId }])}::jsonb`,
         // A draft may lose its last photo; a handed-in project must keep something (re-checked at write time).
@@ -190,7 +314,10 @@ export async function removePhoto(
     .returning({ id: homeworkSubmissions.id });
   if (updated.length > 0) return { key: photo.key };
   // Nothing was written: a concurrent request changed the row after our read. Say which way.
-  const current = await readOwnSubmission(t);
+  const after = await readAsAuthor(t);
+  // Taken over by another account since: a draft (the photo is gone from the caller's view) or a handed-in project.
+  if ("otherSubmitted" in after) return after.otherSubmitted ? "other_author" : "not_found";
+  const current = after.own;
   if (!current || !current.photos.some(p => p.id === photoId)) return "not_found";
   return "empty";
 }
@@ -199,27 +326,32 @@ export async function setNote(
   t: SubmissionTarget,
   note: string,
   now: Date = new Date(),
-): Promise<"ok" | "locked" | "empty"> {
-  const existing = await readOwnSubmission(t);
+): Promise<"ok" | "locked" | "empty" | OtherAuthor> {
+  const read = await readAsAuthor(t);
+  if ("otherSubmitted" in read && read.otherSubmitted) return "other_author";
+  const existing = "own" in read ? read.own : null;
   if (existing && isLocked({ submittedAt: existing.submittedAt, dueAt: t.dueAt, now })) return "locked";
   if (existing?.submittedAt && !canSubmit({ photoCount: existing.photos.length, note })) return "empty";
-  await ensureRow(t);
+  const ensured = await ensureOwnRow(t, now);
+  if (ensured !== "ok") return ensured;
   const updated = await db
     .update(homeworkSubmissions)
     .set({ note, updatedAt: now })
     .where(
       and(
-        eq(homeworkSubmissions.homeworkId, t.homeworkId),
-        eq(homeworkSubmissions.studentId, t.studentId),
+        ownRowWhere(t),
         // A handed-in project must keep a photo or the new note (re-checked at write time).
         sql`(${homeworkSubmissions.submittedAt} IS NULL OR ${holdsWork(photoCount, note)})`,
       ),
     )
     .returning({ id: homeworkSubmissions.id });
-  // The row exists (ensureRow), so no row back means the WHERE refused it: the handed-in guard above. (The lock is
-  // not in the WHERE and CAN move between our read and this UPDATE — the author's own concurrent hand-in after the
-  // due day — in which case this edit lands on a row that has just become locked, by milliseconds, the author's own.)
-  return updated.length > 0 ? "ok" : "empty";
+  if (updated.length > 0) return "ok";
+  // The caller's row exists (ensureOwnRow), so no row back means the WHERE refused it: the handed-in guard above, or
+  // another account took the row over since. (The lock is not in the WHERE and CAN move between our read and this
+  // UPDATE — the author's own concurrent hand-in after the due day — in which case this edit lands on a row that has
+  // just become locked, by milliseconds, the author's own.)
+  const miss = await afterMiss(t);
+  return miss === "other_author" ? miss : "empty";
 }
 
 /**
@@ -227,17 +359,30 @@ export async function setNote(
  * project before the due day never makes it late. The tick is written before this returns — the
  * route answers afterwards (Cloud Run throttles work after `res.json`).
  */
-export async function submit(t: SubmissionTarget, now: Date = new Date()): Promise<"ok" | "empty" | "locked"> {
-  const row = await readOwnSubmission(t);
+export async function submit(t: SubmissionTarget, now: Date = new Date()): Promise<"ok" | "empty" | "locked" | OtherAuthor> {
+  const read = await readAsAuthor(t);
+  // Another account's draft is nothing the caller wrote: there is nothing of theirs to hand in (and a hand-in adds no
+  // work, so it takes nothing over).
+  if ("otherSubmitted" in read) return read.otherSubmitted ? "other_author" : "empty";
+  const row = read.own;
   if (row && isLocked({ submittedAt: row.submittedAt, dueAt: t.dueAt, now })) return "locked";
   if (!row || !canSubmit({ photoCount: row.photos.length, note: row.note })) return "empty";
   const updated = await db
     .update(homeworkSubmissions)
     .set({ submittedAt: sql`coalesce(${homeworkSubmissions.submittedAt}, now())`, updatedAt: now })
     // Re-checked at write time: a photo removed since our read leaves the draft empty, and an empty one is never stamped.
-    .where(and(eq(homeworkSubmissions.id, row.id), holdsWork(photoCount, sql`${homeworkSubmissions.note}`)))
+    .where(
+      and(
+        eq(homeworkSubmissions.id, row.id),
+        eq(homeworkSubmissions.authorUserId, t.userId),
+        holdsWork(photoCount, sql`${homeworkSubmissions.note}`),
+      ),
+    )
     .returning({ id: homeworkSubmissions.id });
-  if (updated.length === 0) return "empty";
+  if (updated.length === 0) {
+    const miss = await afterMiss(t);
+    return miss === "other_author" ? miss : "empty";
+  }
   await tickRows(t.homeworkId, t.rows);
   return "ok";
 }
@@ -381,61 +526,57 @@ export async function submissionKeysForTeacher(teacherId: string): Promise<strin
 }
 
 /**
- * Deletes the submissions written through an account that is being deleted, and returns their photos' object
- * keys for the caller to delete AFTER the account row is gone (best effort, as for the teacher's).
+ * Deletes the submissions an account that is being deleted WROTE (`author_user_id`), drafts and handed-in work
+ * alike, on every record — including one the teacher has since unlinked it from — and returns their photos'
+ * object keys for the caller to delete AFTER the account row is gone (best effort, as for the teacher's).
  *
- * A submission belongs to a roster row, not to a user, and the row stays with the teacher when a student
- * deletes their account — so without this the rows (drafts included) and their photos outlived the account
- * that wrote them. The author is the account `self`-linked to the row (the only one whose routes can write
- * it, `submissionTarget`). Keyed on the link, not on `users.role`, so a guardian link never counts: a parent
- * deleting their account deletes nothing of their child's. A teacher has no `self` links; their homework's
- * photos are `submissionKeysForTeacher`'s job.
+ * A submission references a roster row, which stays with the teacher, and its author column is `set null`, so
+ * without this the rows and their photos would outlive the account that wrote them. Keyed on the author, not on
+ * the account's links: work another account wrote on a record this account is linked to now is that other
+ * account's and stays, and a parent (who never writes) deletes nothing of their child's. A teacher writes none
+ * either; their homework's photos are `submissionKeysForTeacher`'s job. Archived roster rows are included.
  *
- * A row that another account is ALSO `self`-linked to is kept, with its submissions: that account can still
- * open, change and hand in the same work, and deleting one account must not delete another's. Today that
- * cannot happen — `roster_links_one_self_idx` allows one `self` link per row — so the check is a backstop for
- * the day that index goes (the DB test lifts it to prove the check). The check and the DELETE are two
- * statements, so a second link made between them (milliseconds) would not be seen.
+ * `systemDb` on purpose: `homework_submissions` has no DELETE policy for the app role. The caller (account
+ * deletion) has already re-authenticated the account. Rows are deleted BEFORE the account so a failure here
+ * answers 500 with the account intact and the request can be sent again.
  *
- * Archived roster rows are included: the account wrote them, and nobody can reach them any more.
- *
- * `systemDb` on purpose: the account's own connection cannot read another user's `self` link (the shared-row
- * check) under row-level security, and `homework_submissions` has no DELETE policy for the app role. The
- * caller (account deletion) has already re-authenticated the account. Rows are deleted BEFORE the account so
- * a failure here answers 500 with the account intact and the request can be sent again.
- *
- * Returns the roster rows it purged (`rows`, for the caller's second pass: `purgeSubmissionsOfRows`) and the
- * object keys of the photos it removed (`keys`).
+ * Returns the records for the caller's second pass (`rows`: those the account is self-linked to, and those it
+ * wrote on) and the object keys of the photos it removed (`keys`).
  */
 export async function purgeSubmissionsOfAuthor(userId: string): Promise<{ rows: string[]; keys: string[] }> {
-  const own = await systemDb
+  const linked = await systemDb
     .select({ studentId: rosterLinks.studentId })
     .from(rosterLinks)
     .where(and(eq(rosterLinks.userId, userId), eq(rosterLinks.relation, "self")));
-  const ownRows = [...new Set(own.map(r => r.studentId))];
-  if (ownRows.length === 0) return { rows: [], keys: [] };
-  const shared = await systemDb
-    .select({ studentId: rosterLinks.studentId })
-    .from(rosterLinks)
-    .where(
-      and(inArray(rosterLinks.studentId, ownRows), eq(rosterLinks.relation, "self"), ne(rosterLinks.userId, userId)),
-    );
-  const sharedRows = new Set(shared.map(s => s.studentId));
-  const rows = ownRows.filter(r => !sharedRows.has(r));
-  return { rows, keys: await purgeSubmissionsOfRows(rows) };
+  const deleted = await systemDb
+    .delete(homeworkSubmissions)
+    .where(eq(homeworkSubmissions.authorUserId, userId))
+    .returning({ studentId: homeworkSubmissions.studentId, photos: homeworkSubmissions.photos });
+  const rows = [...new Set([...linked.map(r => r.studentId), ...deleted.map(r => r.studentId)])];
+  return { rows, keys: deleted.flatMap(r => r.photos.map(p => p.key)) };
 }
 
 /**
- * Deletes every submission on these roster rows (on `systemDb`, as above) and returns their photos' keys.
- * Account deletion calls it a second time, after the account is gone, for the rows the first pass purged: an
- * upload already past `submissionTarget` when the first pass ran can still insert a draft holding a photo (its
- * row references `students`, not `users`, so the account's delete does not cascade to it).
+ * Account deletion's second pass, after the account row is gone: deletes the DRAFTS with no author on these
+ * records (on `systemDb`, as above) and returns their photos' keys. An upload already past `submissionTarget`
+ * when the first pass ran can still have written a draft between that pass and the account delete; the delete
+ * then set its author to NULL (`set null`), so the author can no longer find it. An authorless draft is nobody's
+ * — it is shown to no one and the next account to write on the record replaces it — so removing every one on
+ * the records the account wrote on or was linked to loses nothing anyone can see. A handed-in project with no
+ * author is kept: the teacher and the parents read it. (An upload landing after the account delete cannot write
+ * at all: its author would reference a user that no longer exists.)
  */
-export async function purgeSubmissionsOfRows(rows: readonly string[]): Promise<string[]> {
+export async function purgeAuthorlessDraftsOfRows(rows: readonly string[]): Promise<string[]> {
   if (rows.length === 0) return [];
   const deleted = await systemDb
     .delete(homeworkSubmissions)
-    .where(inArray(homeworkSubmissions.studentId, [...rows]))
+    .where(
+      and(
+        inArray(homeworkSubmissions.studentId, [...rows]),
+        isNull(homeworkSubmissions.authorUserId),
+        isNull(homeworkSubmissions.submittedAt),
+      ),
+    )
     .returning({ photos: homeworkSubmissions.photos });
   return deleted.flatMap(r => r.photos.map(p => p.key));
 }
