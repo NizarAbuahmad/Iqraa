@@ -447,9 +447,12 @@ export default function ParentMessageScreen() {
     // A letter to a parent can't be unsent, so say who it reaches before it goes.
     const ok = await confirm({
       title: t('parentMsgConfirmTitle'),
-      message: t('parentMsgRecipients', names.join(nameSeparator)),
-      confirmLabel: t('parentMsgConfirmSend'),
-      cancelLabel: t('cancel'),
+      message: `${t('parentMsgRecipients', names.join(nameSeparator))}\n${t('parentMsgConfirmNote')}`,
+      // The exact words that will land in the parent's inbox: a stray line of
+      // free text used to reach a family because only the recipients were shown.
+      preview: letter.text,
+      confirmLabel: t('parentMsgConfirmSendLetter'),
+      cancelLabel: t('parentMsgConfirmEdit'),
     });
     if (!ok) return;
     setSending(true);

@@ -20,6 +20,22 @@ export function selfLink(links: readonly RosterLink[] | undefined): RosterLink |
   return links?.find(l => l.relation === 'self') ?? null;
 }
 
+/**
+ * Who a «رسالة» tap on a roster row should open a chat with. One linked account
+ * is unambiguous. With several (a student and two parents) the app must not
+ * pick for the teacher — a message to the wrong family cannot be unsent — so it
+ * says "choose" and the screen sends them to the inbox's picker. `null` when
+ * nobody has joined, where there is nobody to write to.
+ */
+export type ChatTarget = { kind: 'direct'; userId: string } | { kind: 'choose' } | null;
+
+export function chatTarget(links: readonly RosterLink[] | undefined): ChatTarget {
+  const accounts = [...new Set((links ?? []).map(l => l.userId))];
+  if (accounts.length === 0) return null;
+  if (accounts.length === 1) return { kind: 'direct', userId: accounts[0] };
+  return { kind: 'choose' };
+}
+
 export function linkDisplayName(link: Pick<RosterLink, 'firstName' | 'lastName'>): string {
   return `${link.firstName} ${link.lastName}`.replace(/\s+/g, ' ').trim();
 }
