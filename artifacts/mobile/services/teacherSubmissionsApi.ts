@@ -67,6 +67,11 @@ export function makeTeacherSubmissionsApi(deps: TeacherSubmissionsApiDeps) {
       return normalizeTeacherSubmissionList(json);
     },
 
+    /**
+     * One student's handed-in project. A 404 means «no such project for this teacher»: a draft, nothing, another
+     * class, or a project cleared meanwhile. A 2xx with no student or no `submission` object throws too (the
+     * normalizer returns null): it is not an empty project.
+     */
     async detail(homeworkId: string, studentId: string): Promise<TeacherSubmissionDetail> {
       const res = await deps.apiFetch(`${base(homeworkId)}/${encodeURIComponent(studentId)}`);
       const detail = normalizeTeacherSubmissionDetail(await readJson(res, 'Loading the project'));
@@ -74,6 +79,18 @@ export function makeTeacherSubmissionsApi(deps: TeacherSubmissionsApiDeps) {
       return detail;
     },
 
+    /**
+     * Deletes one student's project (photos, note, the done tick). What a caller may rely on:
+     * - Resolves only for a 2xx that says `cleared: true`. That is the one clean success.
+     * - A 404 means there was nothing to clear: the project is already gone (a repeat of a clear that succeeded, a
+     *   clear from another device, a homework that is no longer a project). The server answers a repeat with 404,
+     *   never a second 200. A screen reads it as «already gone», not as a failure.
+     * - A 2xx WITHOUT `cleared: true` throws `TeacherSubmissionsError` with that 2xx status. The outcome is
+     *   uncertain: the server may have cleared it. Read the project again before saying either.
+     * - A 5xx or a network error means the database is untouched but photos already deleted from storage stay
+     *   deleted, so the same call can be sent again (a retry that finds nothing left answers 404, see above), and a
+     *   project shown meanwhile may have photos that no longer load.
+     */
     async clear(homeworkId: string, studentId: string): Promise<void> {
       const res = await deps.apiFetch(`${base(homeworkId)}/${encodeURIComponent(studentId)}`, { method: 'DELETE' });
       const json = await readJson(res, 'Clearing the project');

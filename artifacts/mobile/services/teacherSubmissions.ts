@@ -5,6 +5,7 @@
  * The normalizers are tolerant on purpose: a row the server could not name (no student id) is dropped rather than
  * rendered as a blank line a teacher might open, and an unknown `status` reads as «not handed in», never as handed in.
  */
+import { dateLocale } from './dateLabels.ts';
 import {
   normalizeSubmission,
   normalizeSubmissionState,
@@ -73,15 +74,62 @@ export function normalizeTeacherSubmissionList(raw: unknown): TeacherSubmissionL
   };
 }
 
-/** Null when the student is missing: there is nobody to show a project of. */
+/**
+ * Null when the student is missing (there is nobody to show a project of) or when the reply carries no `submission`
+ * object. The server always sends one, an empty `{}` included; a 2xx without it is a proxy's page or a broken reply,
+ * and reading that as an empty project would show a teacher «nothing handed in» for a project that exists.
+ */
 export function normalizeTeacherSubmissionDetail(raw: unknown): TeacherSubmissionDetail | null {
-  if (!isRecord(raw) || !isRecord(raw['student'])) return null;
+  if (!isRecord(raw) || !isRecord(raw['student']) || !isRecord(raw['submission'])) return null;
   const id = str(raw['student']['id']);
   if (!id) return null;
   return {
     student: { id, displayName: str(raw['student']['displayName']) },
     submission: normalizeSubmission(raw['submission']),
   };
+}
+
+/** A route param as one string: expo-router types a param `string | string[]`, and a repeated one arrives as an array. */
+export function firstParam(v: string | string[] | undefined): string {
+  return (Array.isArray(v) ? v[0] : v) ?? '';
+}
+
+/**
+ * «30 Oct 2026, 11:05» — when a project was handed in, for the detail screen. The calendar day and the clock are
+ * Amman's, the same calendar the server judges «late» by, so a project marked late never shows a day that is not.
+ * Latin digits (`dateLocale`, services/dateLabels.ts). Null when there is no moment to show. Display only.
+ */
+export function formatHandedInAt(iso: string | null | undefined, lang: 'ar' | 'en'): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false };
+  try {
+    return d.toLocaleString(dateLocale(lang), { ...opts, timeZone: 'Asia/Amman' });
+  } catch {
+    // A runtime without time-zone data: the device's own zone is better than no time.
+    try {
+      return d.toLocaleString(dateLocale(lang), opts);
+    } catch {
+      return null;
+    }
+  }
+}
+
+/** The note a screen leaves for the one it goes back to (a Toast that outlives the navigation). */
+export type SubmissionsFlash = 'subDeleted' | 'subAlreadyGone';
+let pendingFlash: SubmissionsFlash | null = null;
+
+/** Leave a note for the list screen's next focus. The newest wins. */
+export function rememberSubmissionsFlash(key: SubmissionsFlash): void {
+  pendingFlash = key;
+}
+
+/** The note left for this screen, once: reading it clears it. */
+export function takeSubmissionsFlash(): SubmissionsFlash | null {
+  const key = pendingFlash;
+  pendingFlash = null;
+  return key;
 }
 
 /** Only a handed-in row (on time or late) has a project to open. */

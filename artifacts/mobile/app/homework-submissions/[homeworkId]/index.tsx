@@ -27,7 +27,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { teacherSubmissionsApi } from '@/services/teacherSubmissionsApi.default';
-import { rowOpensDetail, rowState, type TeacherSubmissionList, type TeacherSubmissionRow } from '@/services/teacherSubmissions';
+import {
+  rowOpensDetail,
+  rowState,
+  takeSubmissionsFlash,
+  type TeacherSubmissionList,
+  type TeacherSubmissionRow,
+} from '@/services/teacherSubmissions';
 import { stateLabelKey } from '@/services/homeworkSubmission';
 import { submissionLook, type SubmissionLook } from '@/services/homeworkProject';
 import { formatDueDate, projectSubmittedText } from '@/services/homework';
@@ -40,6 +46,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { useSurface } from '@/components/ui/Surface';
+import { Toast } from '@/components/ui/Toast';
 
 type Failure = { message: string; final: boolean };
 type ChipLook = { icon: React.ComponentProps<typeof Ionicons>['name']; tone: SubmissionLook['tone'] };
@@ -59,6 +66,7 @@ export default function HomeworkSubmissionsScreen() {
 
   const [data, setData] = useState<TeacherSubmissionList | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
+  const [toast, setToast] = useState('');
   /** A newer load wins over an older one still in flight. */
   const loadSeq = useRef(0);
 
@@ -89,7 +97,10 @@ export default function HomeworkSubmissionsScreen() {
   useFocusEffect(
     useCallback(() => {
       void load();
-    }, [load]),
+      // The detail screen's «deleted» note, said here once, where it went back to.
+      const flash = takeSubmissionsFlash();
+      if (flash) setToast(t(flash));
+    }, [load, t]),
   );
 
   const retry = () => {
@@ -210,6 +221,7 @@ export default function HomeworkSubmissionsScreen() {
         ) : null}
       </View>
       {renderList()}
+      <Toast visible={!!toast} message={toast} onHide={() => setToast('')} />
     </View>
   );
 }

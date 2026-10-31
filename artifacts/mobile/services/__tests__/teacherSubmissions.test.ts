@@ -3,10 +3,14 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  firstParam,
+  formatHandedInAt,
   normalizeTeacherSubmissionDetail,
   normalizeTeacherSubmissionList,
+  rememberSubmissionsFlash,
   rowOpensDetail,
   rowState,
+  takeSubmissionsFlash,
 } from '../teacherSubmissions.ts';
 
 const ROW = { studentId: 's1', displayName: 'سارة', status: 'submitted', submittedAt: '2026-10-30T08:00:00.000Z', photoCount: 2 };
@@ -94,10 +98,62 @@ describe('normalizeTeacherSubmissionDetail', () => {
     assert.equal(normalizeTeacherSubmissionDetail(null), null);
   });
 
-  it('reads a missing submission as an empty one', () => {
-    const out = normalizeTeacherSubmissionDetail({ student: { id: 's1', displayName: 'سارة' } });
+  it('is null when the submission is missing or not an object: a reply without a project is not an empty project', () => {
+    const student = { id: 's1', displayName: 'سارة' };
+    assert.equal(normalizeTeacherSubmissionDetail({ student }), null);
+    for (const submission of [null, 'x', 7, [], undefined]) {
+      assert.equal(normalizeTeacherSubmissionDetail({ student, submission }), null, JSON.stringify(submission));
+    }
+  });
+
+  it('still reads an empty object as an empty project (the server sent one)', () => {
+    const out = normalizeTeacherSubmissionDetail({ student: { id: 's1', displayName: 'سارة' }, submission: {} });
     assert.equal(out?.submission.status, 'none');
     assert.deepEqual(out?.submission.photos, []);
+  });
+});
+
+describe('firstParam', () => {
+  it('takes a route param as one string: the first of an array, empty for nothing', () => {
+    assert.equal(firstParam('h1'), 'h1');
+    assert.equal(firstParam(['h1', 'h2']), 'h1');
+    assert.equal(firstParam([]), '');
+    assert.equal(firstParam(undefined), '');
+  });
+});
+
+describe('formatHandedInAt', () => {
+  const AT = '2026-10-30T08:05:00.000Z';
+  const ARABIC_INDIC = /[٠-٩]/;
+
+  it('writes a date and a time, in Latin digits in Arabic and in English', () => {
+    for (const lang of ['ar', 'en'] as const) {
+      const out = formatHandedInAt(AT, lang);
+      assert.ok(out, lang);
+      assert.ok(!ARABIC_INDIC.test(out), out);
+      assert.match(out, /2026/, out);
+      assert.match(out, /\b11:05\b|\b11.05\b/, `${lang}: the time of day in Amman (UTC+3), got ${out}`);
+    }
+  });
+
+  it('is null for nothing, or a string that is not a moment', () => {
+    for (const bad of [null, undefined, '', 'yesterday']) assert.equal(formatHandedInAt(bad, 'ar'), null, String(bad));
+  });
+});
+
+describe('the note that survives a navigation', () => {
+  it('is handed over once, then gone', () => {
+    takeSubmissionsFlash();
+    assert.equal(takeSubmissionsFlash(), null);
+    rememberSubmissionsFlash('subDeleted');
+    assert.equal(takeSubmissionsFlash(), 'subDeleted');
+    assert.equal(takeSubmissionsFlash(), null);
+  });
+
+  it('keeps the newest when two are left', () => {
+    rememberSubmissionsFlash('subDeleted');
+    rememberSubmissionsFlash('subAlreadyGone');
+    assert.equal(takeSubmissionsFlash(), 'subAlreadyGone');
   });
 });
 

@@ -1,6 +1,9 @@
 /** The teacher's three calls over `/homework/:id/submissions`. A fake `apiFetch` records what went out. */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { makeTeacherSubmissionsApi, TeacherSubmissionsError } from '../teacherSubmissionsApi.ts';
 
@@ -86,6 +89,33 @@ describe('detail', () => {
   it('carries the status of a 404', async () => {
     const { api } = harness(() => ({ status: 404, body: { error: 'Not found' } }));
     assert.equal((await rejection(api.detail('h1', 's1'))).status, 404);
+  });
+
+  it('throws on a 2xx without a submission: a reply with no project is not an empty project', async () => {
+    const student = { id: 's1', displayName: 'سارة' };
+    for (const body of [{ student }, { student, submission: null }, { student, submission: 'x' }, { student, submission: [] }]) {
+      const { api } = harness(() => ({ status: 201, body }));
+      const e = await rejection(api.detail('h1', 's1'));
+      assert.equal(e.status, 201, JSON.stringify(body));
+    }
+  });
+
+  it('still reads {} as an empty project when the server sent a submission object', async () => {
+    const { api } = harness(() => ({ body: { student: { id: 's1', displayName: 'x' }, submission: {} } }));
+    assert.equal((await api.detail('h1', 's1')).submission.status, 'none');
+  });
+});
+
+describe('the contract a screen can rely on for clear()', () => {
+  it('is written down on clear(): a 404 is «already gone», an odd 2xx is uncertain, a 5xx can be retried', () => {
+    const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'teacherSubmissionsApi.ts'), 'utf8');
+    const doc = src.slice(0, src.indexOf('async clear('));
+    const comment = doc.slice(doc.lastIndexOf('/**'));
+    assert.match(comment, /404/);
+    assert.match(comment, /already gone/i);
+    assert.match(comment, /2xx/);
+    assert.match(comment, /uncertain|may have/i);
+    assert.match(comment, /5xx|500/);
   });
 });
 
