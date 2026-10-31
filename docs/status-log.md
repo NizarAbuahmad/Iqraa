@@ -10,6 +10,52 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 6 unit word lists in the English corner, 2026-10-31
+
+Grade 6 joins the English corner's word games: eight lessons, 319 words (units 1–4 from semester 1, 5–8 from semester 2), each unit's
+list on that unit's lesson 1 («Magazine and Vocabulary»). Grade 6's books are *Jordan Team Together*, © Pearson / York Press, registered
+`third-party`, and `g6EnglishSem1.ts` records leaving their vocabulary out of the catalog as a rights decision. Grades 8–10, the
+same publisher and the same class, already ship word lists, so the owner asked for this on 2026-10-31 and chose the narrower form:
+**the headword and its part of speech, our own Arabic, and nothing else from the book.** No definition (the Activity Book prints one
+for every entry), no sentence (so no gap-fill for Grade 6, only the pick-the-word and listening games), no transcription (the book
+prints none). Grades 8–10 are not narrowed to match: they keep their verbatim sentences, which is the open question the owner may want
+to answer for them.
+
+- **Source.** The two Activity Books' «Wordlist» (`g6-eng-s{1,2}-activity-book`, PDF pages 52–57, already extracted and registered).
+  It is per unit, not per lesson, so the words cannot be placed on the lesson that teaches them; lesson 1 is the one lesson the catalog
+  can name. A unit therefore holds 25–52 words, long beside Grade 8's lessons (up to 29). The «Welcome» revision list (12 and 21
+  entries) has no lesson and is skipped.
+- **Reader.** `activityWordsFrom` in `extract-english-vocabulary.ts`: a page is a Wordlist page when it holds five or more
+  `headword (pos) – definition` lines; the unit heading sets the lesson. Two named repairs, not guessed ones: `offi ce building`
+  (pdf-parse drops the «ffi» ligature) and `first-aid kit` → `first aid kit`, because recordings are keyed by the letters of a word
+  and an earlier grade already spells it without the hyphen (`englishHub.test.ts` failed the shared slug). Every other book's rows are
+  unchanged: 0 removed, 0 added.
+- **A row with no transcription.** `ipa` is `''` for Grade 6. `validateEnglishVocabulary` now accepts that and
+  `VocabularyPracticePanel.tsx` draws the transcription line only when there is one.
+- **Glosses.** 235 new Arabic glosses, **drafted by Claude, not reviewed by a teacher.** Five existing glosses had the other sense
+  and a word has one gloss, so both senses are in it: `empty`, `water` (a verb in unit 4), `smart` (well-dressed), `light` (sunlight)
+  and `keep` (stay). I read the book's printed definitions only to pick a sense; none is copied. `robot` is not in Grade 6.
+- **Hub.** `ENGLISH_HUB_GRADES` is `[1, 2, 3, 4, 5, 6, 8, 9, 10]`; `VOCAB_BOOKS` gains both Grade 6 books. The Grade 5, 9 and 10
+  teacher forms were regenerated: only each unit's «words outside the vocabulary lists» note changed.
+- **Grade 7 is not here.** There is no extraction, no manifest row and no PDF on the build container, and where Grade 7 prints a
+  Wordlist is not known (Grade 6's is in the Activity Book; Grade 7's catalog lists a student book and a teacher guide). `localSources.ts`
+  now names `g7-english-s{1,2}-student-book` so the owner can extract them; nothing is registered.
+
+**Verified:** `lib/curriculum` tests 896 of 897 (the one failure, «R2 helpers are inert, not broken, when unconfigured», fails on `main`
+too); the mobile suite 8,796 tests, 0 failures (its corpus pin is now 1,838 words / 150 lessons / 499 sentences); `pnpm run typecheck`
+clean on the whole monorepo.
+
+**Not verified:**
+- **Looked at in a browser** (web build, Playwright/Chromium, 2026-10-31): the Grade 6 tab in English on desktop (eight unit cards with word
+  counts and previews, the books and free-sites shelves), a Grade 6 lesson in English and one in Arabic on a phone (the six word games
+  are offered), and the Arabic tab on a phone in dark mode loaded with no page errors. Not done: a real phone, and playing a game through.
+- **Recordings: 223 of the 308 distinct Grade 6 words have no MP3** (`HEAD` against the public bucket, 2026-10-31). On the web the
+  word is spoken in the browser's voice; in the Android app it is silent until `english-audio` is run with the OpenAI and R2 keys.
+- The extraction against the PDF text: I read the parser's output per unit, and the printed definitions for the ambiguous words,
+  but did not compare every headword with the page. The PDFs themselves are not on the build container.
+- The glosses (above), and the Grade 6 screens on a phone.
+- Not done: Grade 7, Grade 10 semester 2, an Android OTA.
+
 ## Homework project submission — student app — 2026-10-30
 
 Phase 2 of 3: a student whose homework needs a project can open it from the School tab,
