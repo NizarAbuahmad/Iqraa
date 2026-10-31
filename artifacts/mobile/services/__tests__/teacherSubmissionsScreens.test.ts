@@ -128,6 +128,19 @@ describe('submissions list screen: the rows', () => {
     assert.match(listSrc, /row: \{[^}]*minHeight: 44/);
   });
 
+  it('reads its route param through firstParam, as the detail screen does', () => {
+    assert.match(listSrc, /const homeworkId = firstParam\(params\.homeworkId\);/);
+    assert.match(listSrc, /import \{[^}]*\bfirstParam\b[^}]*\} from '@\/services\/teacherSubmissions'/);
+  });
+
+  it('draws a 404 (no longer there) as a neutral state, and keeps the error look for real failures', () => {
+    assert.match(listSrc, /neutral: status === 404/);
+    const panel = after('failure && (failure.final', 1100);
+    assert.match(panel, /failure\.neutral \? 'information-circle' : 'cloud-offline-outline'/);
+    assert.match(panel, /failure\.neutral \? colors\.mutedForeground : colors\.destructive/);
+    assert.match(panel, /failure\.neutral \? colors\.foreground : colors\.destructive/);
+  });
+
   it('flips the chevron for RTL', () => {
     assert.match(listSrc, /isRTL \? 'chevron-back' : 'chevron-forward'/);
   });
@@ -225,7 +238,7 @@ describe('submissions list screen: copy', () => {
   it('the row name carries the student, the state and the photos, in both languages', () => {
     assert.equal(translations.ar.subRowOpenA11y('سارة', 'تم التسليم', 3), 'افتح مشروع سارة، تم التسليم، 3 صور');
     assert.equal(translations.en.subRowOpenA11y('Sara', 'Handed in', 3), "Open Sara's project, Handed in, 3 photos");
-    assert.equal(translations.ar.subRowOpenA11y('سارة', 'تم التسليم', 1), 'افتح مشروع سارة، تم التسليم، صورة');
+    assert.equal(translations.ar.subRowOpenA11y('سارة', 'تم التسليم', 1), 'افتح مشروع سارة، تم التسليم، صورة واحدة');
     assert.equal(translations.ar.subRowOpenA11y('سارة', 'تم التسليم', 2), 'افتح مشروع سارة، تم التسليم، صورتان');
     assert.equal(translations.ar.subRowOpenA11y('سارة', 'تم التسليم', 12), 'افتح مشروع سارة، تم التسليم، 12 صورة');
     assert.equal(translations.en.subRowOpenA11y('Sara', 'Handed in', 1), "Open Sara's project, Handed in, 1 photo");
@@ -597,6 +610,11 @@ describe('submissions detail screen: deleting the project', () => {
     assert.ok(at(body, 'if (!ok || !aliveRef.current) return;') > at(body, 'await confirm({'));
     assert.match(body, /const found = await recheck\(\);\s*if \(found === 'gone'\) \{\s*leaveWith/);
     assert.match(body, /if \(aliveRef\.current\) say\(/);
+  });
+
+  it('dims a disabled BackButton', () => {
+    const src = readFileSync(path.resolve(here, '../../components/ui/BackButton.tsx'), 'utf8');
+    assert.match(src, /style=\{\[style, disabled \? \{ opacity: 0\.4 \} : null\]\}/);
   });
 
   it('holds the back buttons while the delete is in flight: BackButton disabled, Android back blocked', () => {

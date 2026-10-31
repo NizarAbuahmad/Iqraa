@@ -25,7 +25,8 @@
  * - A delete outlives the teacher's patience: it can finish after they went back, or opened another project. A late
  *   answer must not navigate (`router.back()` would pop the screen they are on now), so every answer checks
  *   `aliveRef` (this screen is the one in front) first. The normal Back and Android's back button are held while
- *   the call is in flight; a swipe-back cannot be, and lands on the same check. A screen that is no longer in front
+ *   the call is in flight (the Back arrow is dimmed meanwhile); a swipe-back is not held, and the `aliveRef` check
+ *   above is what covers it: an answer that arrives after it neither navigates nor leaves a note. A screen that is no longer in front
  *   leaves NO note: the list the teacher went back to reloads at its next focus (a stale row opens to the neutral
  *   404 state), and a note left now would show up at some later focus. The note that is left is scoped to this
  *   homework's list.

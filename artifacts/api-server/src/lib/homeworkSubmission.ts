@@ -630,16 +630,20 @@ export async function readForParent(
 }
 
 /**
- * Which of these homework have anything a student started: a completion tick, or a submission row of any kind — a
- * DRAFT counts. This is what locks the teacher's "project" switch (PATCH /homework/:id, and the list's
- * `requiresSubmissionLocked`): flipping it under work already done would strand that work or hand a student a
- * tick that means something else.
+ * Which of these homework have anything a student started: a completion tick, or a submission row that HOLDS WORK
+ * (a photo, or a note with some non-space character: `holdsWork`) — a DRAFT with content counts. This is what locks
+ * the teacher's "project" switch (PATCH /homework/:id, and the list's `requiresSubmissionLocked`): flipping it under
+ * work already done would strand that work or hand a student a tick that means something else.
+ *
+ * RULING (refines the owner's rule "any tick or any submission row", and the owner can revert it by deleting the
+ * `holdsWork` condition below): a row whose student removed every photo and cleared the note holds nothing, is
+ * invisible to everyone, and strands no work, so it must not keep the switch locked for good. Ticks always count.
  *
  * One query for the whole list (a union of the two tables, not a query per homework). `systemDb` on purpose: the
- * teacher's identity cannot see a student's draft (row-level security), and a draft that the teacher cannot see is
- * exactly the one that must still lock, so reading on the teacher's own connection would let the switch flip under it.
- * The callers have already proved the homework are this teacher's (`ownedHomework`, or the teacher's own class list);
- * nothing of a row is returned, only the ids that have one.
+ * teacher's identity cannot see a student's draft (row-level security), and a draft with content that the teacher
+ * cannot see is exactly the one that must still lock, so reading on the teacher's own connection would let the
+ * switch flip under it. The callers have already proved the homework are this teacher's (`ownedHomework`, or the
+ * teacher's own class list); only the ids of homework that have such a row are returned, never a row's content.
  */
 export async function homeworkIdsWithWork(homeworkIds: string[]): Promise<Set<string>> {
   if (homeworkIds.length === 0) return new Set();
@@ -651,7 +655,7 @@ export async function homeworkIdsWithWork(homeworkIds: string[]): Promise<Set<st
     systemDb
       .select({ id: homeworkSubmissions.homeworkId })
       .from(homeworkSubmissions)
-      .where(inArray(homeworkSubmissions.homeworkId, homeworkIds)),
+      .where(and(inArray(homeworkSubmissions.homeworkId, homeworkIds), holdsWork(photoCount, sql`${homeworkSubmissions.note}`))),
   );
   return new Set(rows.map(r => r.id));
 }

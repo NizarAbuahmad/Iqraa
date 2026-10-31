@@ -28,6 +28,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { teacherSubmissionsApi } from '@/services/teacherSubmissionsApi.default';
 import {
+  firstParam,
   rowOpensDetail,
   rowState,
   takeSubmissionsFlash,
@@ -48,7 +49,8 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { useSurface } from '@/components/ui/Surface';
 import { Toast } from '@/components/ui/Toast';
 
-type Failure = { message: string; final: boolean };
+/** `neutral`: not an error but a homework that is no longer there to list (a 404). */
+type Failure = { message: string; final: boolean; neutral: boolean };
 type ChipLook = { icon: React.ComponentProps<typeof Ionicons>['name']; tone: SubmissionLook['tone'] };
 /** Neutral, and its own icon: a record that cannot hand in is not a student who has not yet. */
 const NO_ACCOUNT_LOOK: ChipLook = { icon: 'person-remove-outline', tone: 'muted' };
@@ -62,7 +64,8 @@ export default function HomeworkSubmissionsScreen() {
   const { t, isRTL } = useLanguage();
   const align = isRTL ? 'right' : 'left';
   const rowDir = isRTL ? 'row-reverse' : 'row';
-  const { homeworkId } = useLocalSearchParams<{ homeworkId: string }>();
+  const params = useLocalSearchParams<{ homeworkId: string | string[] }>();
+  const homeworkId = firstParam(params.homeworkId);
 
   const [data, setData] = useState<TeacherSubmissionList | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
@@ -72,7 +75,7 @@ export default function HomeworkSubmissionsScreen() {
 
   const load = useCallback(async () => {
     if (!homeworkId) {
-      setFailure({ message: t('errNotFound'), final: true });
+      setFailure({ message: t('errNotFound'), final: true, neutral: true });
       return;
     }
     const seq = ++loadSeq.current;
@@ -89,7 +92,7 @@ export default function HomeworkSubmissionsScreen() {
       const message = status === 404 ? t('errNotFound') : apiErrorMessage(e, 'subListLoadFailed', t);
       // A final answer drops the list; a reload that fails otherwise keeps the one already shown, with the reason above it.
       if (final) setData(null);
-      setFailure({ message, final });
+      setFailure({ message, final, neutral: status === 404 });
     }
   }, [homeworkId, t]);
 
@@ -169,8 +172,12 @@ export default function HomeworkSubmissionsScreen() {
     if (failure && (failure.final || !data)) {
       return (
         <View style={styles.center} accessibilityRole="alert">
-          <Ionicons name="cloud-offline-outline" size={ICON.xl} color={colors.destructive} />
-          <Text style={[body, { color: colors.destructive, textAlign: 'center' }]}>{failure.message}</Text>
+          <Ionicons
+            name={failure.neutral ? 'information-circle' : 'cloud-offline-outline'}
+            size={ICON.xl}
+            color={failure.neutral ? colors.mutedForeground : colors.destructive}
+          />
+          <Text style={[body, { color: failure.neutral ? colors.foreground : colors.destructive, textAlign: 'center' }]}>{failure.message}</Text>
           {failure.final ? null : <Button label={t('retry')} onPress={retry} variant="secondary" />}
         </View>
       );

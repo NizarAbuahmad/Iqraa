@@ -2815,7 +2815,8 @@ const translations = {
     subRowNoAccount: 'بلا حساب',
     // The row's accessible name replaces its children, so the state and the photos are said here. No photos: nothing said.
     subRowOpenA11y: (name: string, status: string, photos: number) =>
-      [`افتح مشروع ${name}`, status, photos ? arCountPhrase(photos, 'صورة', 'صورتان', 'صور') : undefined].filter(Boolean).join('، '),
+      // One photo reads «صورة واحدة»: a bare «صورة» is a noun with no count, and a screen reader says it flatly.
+      [`افتح مشروع ${name}`, status, photos === 1 ? 'صورة واحدة' : photos ? arCountPhrase(photos, 'صورة', 'صورتان', 'صور') : undefined].filter(Boolean).join('، '),
     // One student's project, as the teacher reads it, and the button that deletes it.
     subDetailTitle: 'مشروع الطالب',
     subDetailLoadFailed: 'تعذّر تحميل المشروع',

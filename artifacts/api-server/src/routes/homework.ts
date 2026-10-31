@@ -474,10 +474,15 @@ router.patch("/homework/:id", async (req: AuthenticatedRequest, res) => {
         req.body?.gamesIncluded === true ? knownGamesOf(req.body?.knownGames) : undefined,
       );
     }
-    // The project switch locks once a student has started: any completion tick or any submission row, a draft
-    // included (hence the owner connection inside — the teacher cannot see a draft). Only a CHANGE is refused;
-    // the same value is always fine. Checked before the update, so a PATCH that also edits other fields and flips
-    // the locked flag is refused as a whole and applies none of them.
+    // The project switch locks once a student has started: any completion tick, or any submission that holds a
+    // photo or a note, a draft included (hence the owner connection inside — the teacher cannot see a draft). Only a
+    // CHANGE is refused; the same value is always fine. Checked before the update, so a PATCH that also edits other
+    // fields and flips the locked flag is refused as a whole and applies none of them.
+    // NOT ATOMIC with the UPDATE below: a student's first upload or tick in the milliseconds between this check and
+    // the write can slip through, and the flag then flips under that work. Closing it cheaply is not possible (the
+    // existence check runs on the owner connection, the update on the teacher's; one transaction would hold a lock
+    // across both). Follow-up that limits the damage: the sweep's archived-homework phase also purging submission
+    // rows of requires_submission=false homework, so a stranded row is cleaned up rather than kept.
     if (patch.requiresSubmission !== undefined && patch.requiresSubmission !== existing.requiresSubmission) {
       if ((await homeworkIdsWithWork([existing.id])).has(existing.id)) {
         res.status(409).json(SUBMISSION_LOCKED);

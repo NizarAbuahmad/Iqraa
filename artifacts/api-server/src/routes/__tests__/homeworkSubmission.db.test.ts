@@ -2060,6 +2060,85 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       assert.equal(off.json.homework.requiresSubmission, false);
     });
 
+    // Ruling (refines the owner's rule): a submission row counts only if it HOLDS WORK — a photo or a non-blank note.
+    // A draft the student emptied again is invisible to everyone and strands nothing, so it must not keep the switch
+    // locked for good. A tick still locks (see above).
+    describe("an emptied draft does not lock; a draft that holds a photo or a note does", () => {
+      const putNote = (on: TestServer, user: string, hw: string, note: string) =>
+        call(on, "PUT", `/student/homework/${hw}/submission`, user, { note });
+      const rowCount = async (hw: string) => (await db.pool.query(`SELECT 1 FROM homework_submissions WHERE homework_id = $1`, [hw])).rowCount;
+
+      it("a photo uploaded and then deleted leaves an empty row that does not lock", async () => {
+        const hw = await insertHomework("lock-emptied-photo", "5 days", true);
+        const up = await uploadOne(server, w.users.studentA, hw);
+        assert.equal(up.status, 201, up.text);
+        assert.equal((await listItem(server, hw)).requiresSubmissionLocked, true, "while the photo is there");
+        const del = await call(server, "DELETE", `/student/homework/${hw}/submission/photos/${up.json.photo.id}`, w.users.studentA);
+        assert.equal(del.status, 200, del.text);
+        assert.equal(await rowCount(hw), 1, "the empty row is still there");
+        assert.equal((await listItem(server, hw)).requiresSubmissionLocked, false);
+        const off = await patch(server, hw, { requiresSubmission: false });
+        assert.equal(off.status, 200, off.text);
+        assert.equal(off.json.homework.requiresSubmission, false);
+      });
+
+      it("a note-only draft locks", async () => {
+        const hw = await insertHomework("lock-note-only", "5 days", true);
+        assert.equal((await putNote(server, w.users.studentA, hw, "ملاحظة")).status, 200);
+        assert.equal((await listItem(server, hw)).requiresSubmissionLocked, true);
+        const off = await patch(server, hw, { requiresSubmission: false });
+        assert.equal(off.status, 409, off.text);
+        assert.equal(off.json.code, "submission_locked");
+      });
+
+      it("a note saved and then cleared (no photos) does not lock", async () => {
+        const hw = await insertHomework("lock-note-cleared", "5 days", true);
+        assert.equal((await putNote(server, w.users.studentA, hw, "ملاحظة")).status, 200);
+        const cleared = await putNote(server, w.users.studentA, hw, "   ");
+        assert.equal(cleared.status, 200, cleared.text);
+        assert.equal(await rowCount(hw), 1);
+        assert.equal((await listItem(server, hw)).requiresSubmissionLocked, false);
+        assert.equal((await patch(server, hw, { requiresSubmission: false })).status, 200);
+      });
+
+      it("a draft that still holds a photo locks, even with a blank note", async () => {
+        const hw = await insertHomework("lock-photo-kept", "5 days", true);
+        const a = await uploadOne(server, w.users.studentA, hw);
+        const b = await uploadOne(server, w.users.studentA, hw);
+        assert.equal(a.status, 201);
+        assert.equal(b.status, 201);
+        assert.equal((await call(server, "DELETE", `/student/homework/${hw}/submission/photos/${a.json.photo.id}`, w.users.studentA)).status, 200);
+        assert.equal((await listItem(server, hw)).requiresSubmissionLocked, true);
+        assert.equal((await patch(server, hw, { requiresSubmission: false })).status, 409);
+      });
+
+      it("a tick still locks next to an empty row", async () => {
+        const hw = await insertHomework("lock-empty-plus-tick", "5 days", true);
+        await db.pool.query(`INSERT INTO homework_submissions (homework_id, student_id, author_user_id) VALUES ($1, $2, $3)`, [hw, w.students.sA1, w.users.studentA]);
+        await db.pool.query(`INSERT INTO homework_completions (homework_id, student_id) VALUES ($1, $2)`, [hw, w.students.sA1]);
+        assert.equal((await listItem(server, hw)).requiresSubmissionLocked, true);
+        assert.equal((await patch(server, hw, { requiresSubmission: false })).status, 409);
+      });
+
+      it("holds with row-level security enforced", async () => {
+        const hwEmpty = await insertHomework("lock-rls-emptied", "5 days", true);
+        const hwNote = await insertHomework("lock-rls-note", "5 days", true);
+        const enforcing = await startServer({ databaseUrl: db.url, env: { RLS_ENFORCE: "on", ...s3Env(s3) } });
+        try {
+          const up = await uploadOne(enforcing, w.users.studentA, hwEmpty);
+          assert.equal(up.status, 201, up.text);
+          assert.equal((await call(enforcing, "DELETE", `/student/homework/${hwEmpty}/submission/photos/${up.json.photo.id}`, w.users.studentA)).status, 200);
+          assert.equal((await putNote(enforcing, w.users.studentA, hwNote, "ملاحظة")).status, 200);
+          assert.equal((await listItem(enforcing, hwEmpty)).requiresSubmissionLocked, false);
+          assert.equal((await listItem(enforcing, hwNote)).requiresSubmissionLocked, true);
+          assert.equal((await patch(enforcing, hwEmpty, { requiresSubmission: false })).status, 200);
+          assert.equal((await patch(enforcing, hwNote, { requiresSubmission: false })).status, 409);
+        } finally {
+          await enforcing.stop();
+        }
+      });
+    });
+
     it("the list computes the lock for every item at once, each from its own homework", async () => {
       const none = await insertHomework("lock-list-none", "5 days", true);
       const ticked = await insertHomework("lock-list-ticked", "5 days", false);
