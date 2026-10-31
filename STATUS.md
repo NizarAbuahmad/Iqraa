@@ -70,7 +70,8 @@ Checked 2026-10-22:
 ## Open
 
 - 2026-10-31 — Homework submissions record their author (migration `0022`)
-- 2026-10-31 — Teacher can clear one student's project (API only; what is left open is the item «A teacher can clear one student's project…» below)
+- 2026-10-31 — Homework project submission — teacher screens (phase 3: the switch, the handed-in list, one project, «حذف المشروع»; what is left open is the item «Homework projects: what the teacher's app still cannot do…» below)
+- 2026-10-31 — Teacher can clear one student's project (the API; the app's button is the teacher-screens entry above)
 - 2026-10-31 — Slides: cycle, tree, Venn and mind-map diagrams; curriculum slides gain shapes, icons, charts and photos (untested against a live model)
 - **Screen recording of everyone is ON for the web app (since the 2026-10-29 re-run of Deploy
   #868) and not yet running on Android.** Web: the Contentsquare tag loads on `app.iqrra.com` (not
@@ -112,18 +113,21 @@ Checked 2026-10-22:
   itself (Play Console) was not checked** and may still say accounts are made only through a class.
   Becoming a student by switching role asks for the same confirmation as signing up as one. Entry:
   «Students choose an email or a teacher's code» in the log.
-- **A teacher can clear one student's project, but only through the API: the app has no button for it
-  yet (phase 3).** Since migration `0022_light_stellaris` a submission belongs to the account that
-  wrote it: after a teacher unlinks a mis-claimed account and links the right one, the new account sees
-  «سُلِّم مشروع لهذا السجلّ من حساب آخر» and every write is 409 `other_author`, while the teacher and the
-  record's parents still see the wrong child's handed-in photos and note. `DELETE
-  /homework/:id/submissions/:studentId` (since 2026-10-31) clears that record's project for that
-  homework, draft or handed-in, with its photos and its tick, and the account linked now starts clean.
-  Until the teacher's screen calls it, the ways out in the app are still the old account deleting
-  itself or the teacher archiving the whole homework (everyone's work goes). Until it is cleared, the
-  blocked student's own homework list (`/student/homework`) still says «تم التسليم» for that homework
-  (a completion and a handed-in project belong to the record). Entries: «Teacher can clear one
-  student's project» and «Homework submissions record their author» in the log.
+- **Homework projects: what the teacher's app still cannot do (phase 3, the teacher's screens, is
+  built; checked against a local stack with an S3 stub, never against real R2 or on a phone).** The
+  teacher now turns a homework into a project with a switch, sees «سلّم X من Y» on its card, a list of
+  who handed in, each handed-in project (photos, note, time), and deletes one with «حذف المشروع» (which
+  also ends the mis-claim dead end: after unlinking, the teacher deletes the wrong child's project and
+  the account linked now starts clean). Still open: (1) **a hidden draft locks the switch for good** —
+  once any tick or any project row exists the switch is disabled (409 `submission_locked`, the owner's
+  rule), a draft is never shown to the teacher and the app has no control to clear one, even a draft
+  whose author removed every photo; the way out is deleting the homework and posting it again (or the
+  API's `DELETE /homework/:id/submissions/:studentId`). The lock check is not atomic with the write.
+  (2) **Parents have no view** of their child's project (the API route exists; no screen). (3) **No
+  push to the teacher** when a project is handed in. (4) The privacy-policy text on projects
+  (`constants/legal.ts` §1 and §6) was written by a model and **not reviewed by a lawyer**. Entries:
+  «Homework project submission — teacher screens», «Teacher can clear one student's project» and
+  «Homework submissions record their author» in the log.
 - **An exam's read-aloud recordings outlive the exam's removal and the student's account.**
   Removing an exam (`DELETE /evaluations/:id`) archives it, and attempts reference the roster row, so
   neither that nor the student deleting their account deletes the recordings in R2 (privacy §6
