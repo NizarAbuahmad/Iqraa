@@ -869,6 +869,209 @@ describeDb("homework project submissions over HTTP, against a real database", ()
     });
   });
 
+  describe("a record that changes hands: a submission belongs to the account that wrote it", () => {
+    // A teacher unlinks a mis-claimed account (DELETE /students/:id/links/:userId) and links the right one. The
+    // submission stays on the roster row for the teacher and the parents; it must not become the new account's.
+    const codeStudent = async (first: string) => {
+      const code = generateLoginCode();
+      const id = (
+        await db.pool.query(
+          `INSERT INTO users (first_name, last_name, role, login_code_hash) VALUES ($1, 'H', 'student', $2) RETURNING id`,
+          [first, hashLoginCode(code)],
+        )
+      ).rows[0].id as string;
+      return { id, code };
+    };
+    const rowOf = async (hw: string, row: string) =>
+      (await db.pool.query(`SELECT author_user_id, note, photos, submitted_at FROM homework_submissions WHERE homework_id = $1 AND student_id = $2`, [hw, row])).rows[0];
+    const deleteAccount = async (on: TestServer, user: { id: string; code: string }) => {
+      await db.pool.query(`DELETE FROM rate_limit_buckets WHERE key LIKE 'delete-account:%'`);
+      return call(on, "DELETE", "/auth/users/me", user.id, { loginCode: user.code });
+    };
+    /**
+     * A roster row in c1 with a guardian, written to by account A — a draft (one photo and a note) on `hwDraft`, a
+     * handed-in project on `hwHanded` — then A unlinked by the teacher through the route and B linked in its place.
+     */
+    const handOver = async (on: TestServer, tag: string) => {
+      await db.pool.query(`UPDATE users SET roster_consent_at = now() WHERE id = $1`, [w.users.t1]);
+      const a = await codeStudent(`A-${tag}`);
+      const b = await codeStudent(`B-${tag}`);
+      const row = (await db.pool.query(`INSERT INTO students (teacher_id, display_name) VALUES ($1, $2) RETURNING id`, [w.users.t1, `سجل ${tag}`])).rows[0].id as string;
+      await db.pool.query(`INSERT INTO class_memberships (class_group_id, student_id) VALUES ($1, $2)`, [w.classes.c1, row]);
+      // A parent of this record only: one of the world's parents would gain a child in c1 and change other cases.
+      const parent = (await db.pool.query(`INSERT INTO users (first_name, last_name, role) VALUES ($1, 'P', 'parent') RETURNING id`, [`P-${tag}`])).rows[0].id as string;
+      await db.pool.query(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'self'), ($1, $3, 'guardian')`, [row, a.id, parent]);
+      const hwDraft = await insertHomework(`handover-draft-${tag}`, "5 days", true);
+      const hwHanded = await insertHomework(`handover-handed-${tag}`, "5 days", true);
+
+      const draftPhoto = await call(on, "POST", `/student/homework/${hwDraft}/submission/photos`, a.id, photoBody("image/jpeg", JPEG));
+      assert.equal(draftPhoto.status, 201, draftPhoto.text);
+      assert.equal((await call(on, "PUT", `/student/homework/${hwDraft}/submission`, a.id, { note: `مسودة ${tag}` })).status, 200);
+      const handedPhoto = await call(on, "POST", `/student/homework/${hwHanded}/submission/photos`, a.id, photoBody("image/png", PNG));
+      assert.equal(handedPhoto.status, 201, handedPhoto.text);
+      assert.equal((await call(on, "PUT", `/student/homework/${hwHanded}/submission`, a.id, { note: `مشروع ${tag}` })).status, 200);
+      assert.equal((await call(on, "POST", `/student/homework/${hwHanded}/submission/submit`, a.id)).status, 200);
+      const draftKey = (await rowOf(hwDraft, row)).photos[0].key as string;
+      const handedKey = (await rowOf(hwHanded, row)).photos[0].key as string;
+      assert.equal((await rowOf(hwDraft, row)).author_user_id, a.id, "a new row records its author");
+
+      const unlink = await call(on, "DELETE", `/students/${row}/links/${a.id}`, w.users.t1);
+      assert.equal(unlink.status, 200, unlink.text);
+      await db.pool.query(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [row, b.id]);
+      return { a, b, parent, row, hwDraft, hwHanded, draftKey, handedKey, handedPhotoId: handedPhoto.json.photo.id as string, tag };
+    };
+
+    it("the new account, with row-level security enforced: sees nothing of the old draft, is told about the handed-in project, cannot change it, and takes the draft over on its first write", async () => {
+      const enforcing = await startServer({ databaseUrl: db.url, env: { RLS_ENFORCE: "on", ...s3Env(s3) } });
+      try {
+        const h = await handOver(enforcing, "rls");
+
+        // Reads: the draft is nothing, the handed-in project is a notice with nothing of its content.
+        const draftRead = await call(enforcing, "GET", `/student/homework/${h.hwDraft}/submission`, h.b.id);
+        assert.equal(draftRead.status, 200, draftRead.text);
+        assert.deepEqual(
+          draftRead.json.submission,
+          { status: "none", locked: false, note: "", photos: [], submittedAt: null, otherAuthor: false },
+        );
+        const handedRead = await call(enforcing, "GET", `/student/homework/${h.hwHanded}/submission`, h.b.id);
+        assert.equal(handedRead.status, 200, handedRead.text);
+        assert.deepEqual(
+          handedRead.json.submission,
+          { status: "none", locked: false, note: "", photos: [], submittedAt: null, otherAuthor: true },
+        );
+        for (const text of [draftRead.text, handedRead.text]) assert.equal(text.includes(h.tag) || text.includes("homework-submissions/"), false);
+
+        // Writes on the handed-in project: every one is 409 other_author and changes nothing.
+        const before = await rowOf(h.hwHanded, h.row);
+        const keysBefore = s3.keys().length;
+        for (const [method, path, body] of [
+          ["PUT", `/student/homework/${h.hwHanded}/submission`, { note: "ليس لي" }],
+          ["POST", `/student/homework/${h.hwHanded}/submission/photos`, photoBody("image/jpeg", JPEG)],
+          ["DELETE", `/student/homework/${h.hwHanded}/submission/photos/${h.handedPhotoId}`, undefined],
+          ["POST", `/student/homework/${h.hwHanded}/submission/submit`, undefined],
+        ] as const) {
+          const r = await call(enforcing, method, path, h.b.id, body);
+          assert.equal(r.status, 409, `${method} ${path}: ${r.text}`);
+          assert.equal(r.json.code, "other_author", `${method} ${path}`);
+        }
+        assert.deepEqual(await rowOf(h.hwHanded, h.row), before, "the handed-in project is unchanged");
+        assert.equal(s3.keys().length, keysBefore, "the refused photo was not left in the bucket");
+        assert.ok(s3.body(h.handedKey), "and the old photo is still stored");
+
+        // The teacher and the parent still see the handed-in work: it belongs to the record.
+        const teacher = await call(enforcing, "GET", `/homework/${h.hwHanded}/submissions/${h.row}`, w.users.t1);
+        assert.equal(teacher.status, 200, teacher.text);
+        assert.equal(teacher.json.submission.note, `مشروع ${h.tag}`);
+        assert.equal(teacher.json.submission.photos.length, 1);
+        const parent = await call(enforcing, "GET", `/parent/homework/${h.hwHanded}/submissions`, h.parent);
+        assert.equal(parent.status, 200, parent.text);
+        assert.equal(parent.json.children.find((c: any) => c.displayName === `سجل ${h.tag}`).submission.note, `مشروع ${h.tag}`);
+
+        // The old account is no longer linked: one 404, whatever it wrote.
+        assert.equal((await call(enforcing, "GET", `/student/homework/${h.hwHanded}/submission`, h.a.id)).status, 404);
+
+        // Two uploads at once on the old draft: both land, both are the new account's, and the old photo and note are gone.
+        const [u1, u2] = await Promise.all([1, 2].map(() =>
+          call(enforcing, "POST", `/student/homework/${h.hwDraft}/submission/photos`, h.b.id, photoBody("image/jpeg", JPEG))));
+        assert.deepEqual([u1!.status, u2!.status], [201, 201], `${u1!.text} / ${u2!.text}`);
+        const taken = await rowOf(h.hwDraft, h.row);
+        assert.equal(taken.author_user_id, h.b.id, "the draft is the new account's now");
+        assert.equal(taken.note, "", "the old note is gone");
+        assert.deepEqual(taken.photos.map((p: any) => p.id).sort(), [u1!.json.photo.id, u2!.json.photo.id].sort(), "only the new photos");
+        assert.equal(s3.body(h.draftKey), undefined, "the old draft's photo is deleted from the bucket");
+        const mine = await call(enforcing, "GET", `/student/homework/${h.hwDraft}/submission`, h.b.id);
+        assert.equal(mine.json.submission.photos.length, 2);
+        assert.equal(mine.json.submission.otherAuthor, false);
+
+        // Deleting the old account removes what it wrote (the handed-in project) and nothing of the new account's.
+        const delA = await deleteAccount(enforcing, h.a);
+        assert.equal(delA.status, 200, delA.text);
+        assert.equal(await rowOf(h.hwHanded, h.row), undefined, "the old account's handed-in project is gone");
+        assert.equal(s3.body(h.handedKey), undefined, "with its photo");
+        assert.equal((await rowOf(h.hwDraft, h.row)).author_user_id, h.b.id, "the new account's draft is untouched");
+        const bKeys = taken.photos.map((p: any) => p.key as string);
+        assert.ok(bKeys.every((k: string) => s3.body(k)), "and so are its photos");
+
+        // Deleting the new account removes its own.
+        const delB = await deleteAccount(enforcing, h.b);
+        assert.equal(delB.status, 200, delB.text);
+        assert.equal(await rowOf(h.hwDraft, h.row), undefined);
+        assert.ok(bKeys.every((k: string) => s3.body(k) === undefined), "with its photos");
+      } finally {
+        await enforcing.stop();
+      }
+    });
+
+    it("hands in the new account's own work once it has taken a draft over, and a note alone takes it over too", async () => {
+      const h = await handOver(server, "note");
+      const note = await call(server, "PUT", `/student/homework/${h.hwDraft}/submission`, h.b.id, { note: "عملي أنا" });
+      assert.equal(note.status, 200, note.text);
+      assert.equal(note.json.submission.note, "عملي أنا");
+      assert.deepEqual(note.json.submission.photos, [], "the old photo is not carried over");
+      assert.equal(s3.body(h.draftKey), undefined, "and is deleted");
+      const done = await call(server, "POST", `/student/homework/${h.hwDraft}/submission/submit`, h.b.id);
+      assert.equal(done.status, 200, done.text);
+      assert.equal(done.json.submission.status, "submitted");
+      assert.equal((await rowOf(h.hwDraft, h.row)).author_user_id, h.b.id);
+    });
+
+    it("a hand-in or a remove on another account's draft adds no work: empty and not found, and the draft is left alone", async () => {
+      const h = await handOver(server, "submit");
+      const oldPhotoId = (await rowOf(h.hwDraft, h.row)).photos[0].id as string;
+      const del = await call(server, "DELETE", `/student/homework/${h.hwDraft}/submission/photos/${oldPhotoId}`, h.b.id);
+      assert.equal(del.status, 404, del.text);
+      assert.ok(s3.body(h.draftKey), "a remove of a photo the account never saw deletes nothing");
+      const submit = await call(server, "POST", `/student/homework/${h.hwDraft}/submission/submit`, h.b.id);
+      assert.equal(submit.status, 409, submit.text);
+      assert.equal(submit.json.code, "empty", "the old draft's photo does not count as the new account's work");
+      assert.equal((await rowOf(h.hwDraft, h.row)).submitted_at, null, "nothing was handed in");
+      assert.equal((await db.pool.query(`SELECT 1 FROM homework_completions WHERE homework_id = $1`, [h.hwDraft])).rowCount, 0, "nothing was ticked");
+      assert.equal((await rowOf(h.hwDraft, h.row)).author_user_id, h.a.id, "the draft was not taken over by a hand-in");
+      assert.ok(s3.body(h.draftKey), "and its photo is still stored");
+    });
+
+    it("gives the old account its own work back when the teacher links it again", async () => {
+      const h = await handOver(server, "relink");
+      await db.pool.query(`DELETE FROM roster_links WHERE student_id = $1 AND user_id = $2`, [h.row, h.b.id]);
+      await db.pool.query(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [h.row, h.a.id]);
+      const handed = await call(server, "GET", `/student/homework/${h.hwHanded}/submission`, h.a.id);
+      assert.equal(handed.status, 200, handed.text);
+      assert.equal(handed.json.submission.otherAuthor, false);
+      assert.equal(handed.json.submission.status, "submitted");
+      assert.equal(handed.json.submission.note, `مشروع ${h.tag}`);
+      const draft = await call(server, "GET", `/student/homework/${h.hwDraft}/submission`, h.a.id);
+      assert.equal(draft.json.submission.photos.length, 1, "its draft is still its own");
+    });
+
+    it("treats a row with no author as nobody's: a handed-in one blocks, a draft is taken over", async () => {
+      const h = await handOver(server, "orphan");
+      await db.pool.query(`UPDATE homework_submissions SET author_user_id = NULL WHERE student_id = $1`, [h.row]);
+      const handed = await call(server, "GET", `/student/homework/${h.hwHanded}/submission`, h.b.id);
+      assert.equal(handed.json.submission.otherAuthor, true);
+      const note = await call(server, "PUT", `/student/homework/${h.hwHanded}/submission`, h.b.id, { note: "x" });
+      assert.equal(note.status, 409, note.text);
+      assert.equal(note.json.code, "other_author");
+      const draft = await call(server, "GET", `/student/homework/${h.hwDraft}/submission`, h.b.id);
+      assert.equal(draft.json.submission.photos.length, 0, "an authorless draft is shown to nobody");
+      const up = await call(server, "POST", `/student/homework/${h.hwDraft}/submission/photos`, h.b.id, photoBody("image/jpeg", JPEG));
+      assert.equal(up.status, 201, up.text);
+      assert.equal(up.json.photoCount, 1);
+      assert.equal(s3.body(h.draftKey), undefined);
+      assert.equal((await rowOf(h.hwDraft, h.row)).author_user_id, h.b.id);
+    });
+
+    it("deleting the account linked NOW leaves a project a previous account handed in on the same record", async () => {
+      const h = await handOver(server, "keep");
+      const delB = await deleteAccount(server, h.b);
+      assert.equal(delB.status, 200, delB.text);
+      const kept = await rowOf(h.hwHanded, h.row);
+      assert.equal(kept.author_user_id, h.a.id, "the previous account's handed-in project stays");
+      assert.ok(s3.body(h.handedKey), "with its photo");
+      assert.equal((await rowOf(h.hwDraft, h.row)).author_user_id, h.a.id, "and so does its draft");
+      assert.ok(s3.body(h.draftKey));
+    });
+  });
+
   describe("deleting a teacher's account", () => {
     // `users` cascades to the teacher's homework and roster, and both to homework_submissions, so the rows go with
     // the account. The photos do not: they are objects in R2, and only the keys read BEFORE the delete can find them.
@@ -925,10 +1128,10 @@ describeDb("homework project submissions over HTTP, against a real database", ()
   });
 
   describe("deleting a student's or a parent's account", () => {
-    // A submission references a roster row, which stays with the teacher, so nothing cascades from the
-    // student's `users` row to it. The privacy policy (§6) promises that deleting a student account deletes what
-    // was handed in through it, drafts included; these cases hold the route to that, and to the two things it
-    // must NOT delete: a parent's child's work, and a row another student account is also self-linked to.
+    // A submission references a roster row, which stays with the teacher, and its author column is `set null`, so
+    // nothing cascades from the student's `users` row to it. The privacy policy (§6) promises that deleting a
+    // student account deletes what it wrote, drafts included; these cases hold the route to that, and to what it
+    // must NOT delete: a parent's child's work, and work another account wrote on the same record (the block above).
     const codeUser = async (role: "student" | "parent", first: string) => {
       const code = generateLoginCode();
       const id = (
@@ -960,12 +1163,13 @@ describeDb("homework project submissions over HTTP, against a real database", ()
           [w.users.t1, klass, title],
         )
       ).rows[0].id as string;
-    const seed = async (hw: string, row: string, photoId: string, submitted: boolean) => {
+    const seed = async (hw: string, row: string, photoId: string, submitted: boolean, author: string | null) => {
       const key = `homework-submissions/${hw}/${row}/${photoId}.jpg`;
       await s3.putForTest(key, JPEG);
       await db.pool.query(
-        `INSERT INTO homework_submissions (homework_id, student_id, note, photos, submitted_at) VALUES ($1, $2, 'n', $3::jsonb, CASE WHEN $4::boolean THEN now() END)`,
-        [hw, row, JSON.stringify([{ id: photoId, key, mime: "image/jpeg", sizeBytes: JPEG.length }]), submitted],
+        `INSERT INTO homework_submissions (homework_id, student_id, author_user_id, note, photos, submitted_at)
+         VALUES ($1, $2, $5, 'n', $3::jsonb, CASE WHEN $4::boolean THEN now() END)`,
+        [hw, row, JSON.stringify([{ id: photoId, key, mime: "image/jpeg", sizeBytes: JPEG.length }]), submitted, author],
       );
       return key;
     };
@@ -997,9 +1201,9 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       await link(rowB, student.id, "self");
       const hwA = await projectHomework(classA, `project-${tag}-a`);
       const hwB = await projectHomework(classB, `project-${tag}-b`);
-      const handedKey = await seed(hwA, rowA, `h-${tag}`, true);
-      const draftKey = await seed(hwB, rowB, `d-${tag}`, false);
-      return { student, rowA, rowB, handedKey, draftKey };
+      const handedKey = await seed(hwA, rowA, `h-${tag}`, true, student.id);
+      const draftKey = await seed(hwB, rowB, `d-${tag}`, false, student.id);
+      return { student, rowA, rowB, hwA, hwB, handedKey, draftKey };
     };
 
     it("removes the student's handed-in project and draft, rows and photos, in every class, and nobody else's", async () => {
@@ -1008,7 +1212,7 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       const hwA = (await db.pool.query(`SELECT homework_id FROM homework_submissions WHERE student_id = $1`, [s.rowA])).rows[0].homework_id as string;
       const classA = (await db.pool.query(`SELECT class_group_id FROM homework WHERE id = $1`, [hwA])).rows[0].class_group_id as string;
       const otherRow = await rosterRow(classA, "طالب آخر");
-      const otherKey = await seed(hwA, otherRow, "someone-else", true);
+      const otherKey = await seed(hwA, otherRow, "someone-else", true, null);
       assert.ok(s3.body(s.handedKey) && s3.body(s.draftKey) && s3.body(otherKey), "all three photos are stored");
 
       const del = await deleteAccount(server, s.student);
@@ -1044,42 +1248,40 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       await link(s.rowA, parent.id, "guardian");
       await link(s.rowB, parent.id, "guardian");
       // The teacher unlinked the child's account from row B (DELETE /students/:id/links/:userId): its work stays on
-      // the row with no self link left, so only the relation filter — not the shared-row check — protects it here.
+      // the row with no self link left, and the parent is now the only account linked to it.
       await db.pool.query(`DELETE FROM roster_links WHERE student_id = $1 AND relation = 'self'`, [s.rowB]);
+      // And a draft with no author on row A, which the second pass removes for a STUDENT's deletion — never a parent's.
+      const orphanHw = await projectHomework((await db.pool.query(`SELECT class_group_id FROM class_memberships WHERE student_id = $1`, [s.rowA])).rows[0].class_group_id, "project-parent-orphan");
+      const orphanKey = await seed(orphanHw, s.rowA, "orphan-parent", false, null);
 
       const del = await deleteAccount(server, parent);
       assert.equal(del.status, 200, del.text);
       assert.equal((await db.pool.query(`SELECT 1 FROM users WHERE id = $1`, [parent.id])).rowCount, 0, "the parent's account is gone");
-      assert.equal(await rowsOf(s.rowA), 1, "the child's handed-in project stays");
+      assert.equal(await rowsOf(s.rowA), 2, "the child's handed-in project stays, and the authorless draft");
       assert.equal(await rowsOf(s.rowB), 1, "and the child's draft");
-      assert.ok(s3.body(s.handedKey) && s3.body(s.draftKey), "and both photos");
+      assert.ok(s3.body(s.handedKey) && s3.body(s.draftKey) && s3.body(orphanKey), "and every photo");
     });
 
-    it("keeps a row that another student account is also self-linked to, and still removes the rest", async () => {
-      const s = await studentWithTwoProjects("shared");
-      const second = await codeUser("student", "S-second");
-      // Today the schema allows one `self` link per roster row (`roster_links_one_self_idx`), so a shared row cannot
-      // exist and the purge's shared-row guard is a backstop. Pin the invariant first; then lift the index in this
-      // throwaway database to show the guard still holds if it is ever dropped.
-      await assert.rejects(link(s.rowA, second.id, "self"), /roster_links_one_self_idx/, "a second self link is refused today");
-      await db.pool.query(`DROP INDEX roster_links_one_self_idx`);
-      try {
-        await link(s.rowA, second.id, "self");
+    it("removes the work it wrote on a record it was unlinked from, and nothing on a record it is linked to that it did not write", async () => {
+      const s = await studentWithTwoProjects("authored");
+      // Row A: the teacher unlinked this account and linked another. What this account handed in there is still its own.
+      const next = await codeUser("student", "S-next");
+      await db.pool.query(`DELETE FROM roster_links WHERE student_id = $1 AND relation = 'self'`, [s.rowA]);
+      await link(s.rowA, next.id, "self");
+      // Row B: the account is linked now, but a previous account handed in another homework there.
+      const previous = await codeUser("student", "S-previous");
+      const classB = (await db.pool.query(`SELECT class_group_id FROM class_memberships WHERE student_id = $1`, [s.rowB])).rows[0].class_group_id as string;
+      const hwPrev = await projectHomework(classB, "project-authored-previous");
+      const previousKey = await seed(hwPrev, s.rowB, "by-previous", true, previous.id);
 
-        const del = await deleteAccount(server, s.student);
-        assert.equal(del.status, 200, del.text);
-        assert.equal(await rowsOf(s.rowA), 1, "the shared row keeps its project: the other account can still open it");
-        assert.ok(s3.body(s.handedKey), "and its photo");
-        assert.equal(await rowsOf(s.rowB), 0, "the row only the deleted account was linked to loses its draft");
-        assert.equal(s3.body(s.draftKey), undefined, "and its photo");
-      } finally {
-        // Remove the second link first: if the case failed before the deletion, both links are still there and the
-        // index could not come back, which would hide the real failure behind a CREATE INDEX error.
-        await db.pool.query(`DELETE FROM roster_links WHERE user_id = $1`, [second.id]);
-        await db.pool.query(
-          `CREATE UNIQUE INDEX roster_links_one_self_idx ON roster_links USING btree (student_id) WHERE relation = 'self'`,
-        );
-      }
+      const del = await deleteAccount(server, s.student);
+      assert.equal(del.status, 200, del.text);
+      assert.equal(await rowsOf(s.rowA), 0, "its handed-in project on the record it was unlinked from is gone");
+      assert.equal(s3.body(s.handedKey), undefined, "with the photo");
+      const left = await db.pool.query(`SELECT author_user_id FROM homework_submissions WHERE student_id = $1`, [s.rowB]);
+      assert.deepEqual(left.rows.map(r => r.author_user_id), [previous.id], "on row B only the previous account's project is left");
+      assert.ok(s3.body(previousKey), "with its photo");
+      assert.equal(s3.body(s.draftKey), undefined, "its own draft on row B is gone");
     });
 
     // The failure cases below inject the failure with a trigger in this throwaway database, keyed on the test
@@ -1115,26 +1317,34 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       );
     });
 
-    it("removes a draft an upload stored between the purge and the account delete", async () => {
+    it("removes a draft an upload stored between the purge and the account delete, and keeps an authorless handed-in project", async () => {
       const s = await studentWithTwoProjects("race");
-      const hwB = (await db.pool.query(`SELECT homework_id FROM homework_submissions WHERE student_id = $1`, [s.rowB])).rows[0].homework_id as string;
-      // The racing upload: its object is in the bucket and its row lands just before the account row is deleted,
-      // i.e. after the first purge pass. Ids are uuids this test made, so interpolating them is safe.
-      const lateKey = `homework-submissions/${hwB}/${s.rowB}/late.jpg`;
+      // The racing upload: its object is in the bucket and its row — written by this account, as ensureRow writes
+      // it — lands just before the account row is deleted, i.e. after the first purge pass. The account's delete then
+      // sets its author to NULL (`set null`), so the second pass cannot find it by author: it removes the authorless
+      // DRAFTS on the records the account was linked to. Ids are uuids this test made, so interpolating them is safe.
+      const lateKey = `homework-submissions/${s.hwB}/${s.rowB}/late.jpg`;
       await s3.putForTest(lateKey, JPEG);
       const latePhotos = JSON.stringify([{ id: "late", key: lateKey, mime: "image/jpeg", sizeBytes: JPEG.length }]);
+      // A handed-in project with no author on the same record must survive: the teacher and the parents still read it.
+      const classB = (await db.pool.query(`SELECT class_group_id FROM class_memberships WHERE student_id = $1`, [s.rowB])).rows[0].class_group_id as string;
+      const hwKept = await projectHomework(classB, "project-race-kept");
+      const keptKey = await seed(hwKept, s.rowB, "kept", true, null);
       await withTrigger(
         "users",
         "test_late_upload",
         `IF OLD.first_name = 'S-race' THEN
-           INSERT INTO homework_submissions (homework_id, student_id, photos) VALUES ('${hwB}', '${s.rowB}', '${latePhotos}'::jsonb);
+           INSERT INTO homework_submissions (homework_id, student_id, author_user_id, photos)
+           VALUES ('${s.hwB}', '${s.rowB}', '${s.student.id}', '${latePhotos}'::jsonb);
          END IF;`,
         async () => {
           const del = await deleteAccount(server, s.student);
           assert.equal(del.status, 200, del.text);
           assert.equal(await accountExists(s.student.id), false, "the account is gone");
-          assert.equal(await rowsOf(s.rowB), 0, "the late draft's row is gone too");
-          assert.equal(s3.body(lateKey), undefined, "and its photo");
+          const left = await db.pool.query(`SELECT homework_id FROM homework_submissions WHERE student_id = $1`, [s.rowB]);
+          assert.deepEqual(left.rows.map(r => r.homework_id), [hwKept], "the late draft's row is gone, the authorless handed-in one stays");
+          assert.equal(s3.body(lateKey), undefined, "the late photo is deleted");
+          assert.ok(s3.body(keptKey), "the handed-in project's photo is not");
         },
       );
     });
@@ -1288,5 +1498,473 @@ describeDb("homework project submissions over HTTP, against a real database", ()
         await enforcing.stop();
       }
     });
+  });
+
+  describe("the teacher clears one student's project (DELETE /homework/:id/submissions/:studentId)", () => {
+    // The way out of the dead end the author column left: a record whose project another account handed in blocks the
+    // account linked now (reads otherAuthor, writes 409 other_author), and the only other exit deletes everyone's work.
+    let n = 0;
+    /** A fresh student account, self-linked to a fresh roster row in c1, with a guardian of its own. */
+    const freshStudent = async () => {
+      n += 1;
+      const code = generateLoginCode();
+      const user = (
+        await db.pool.query(
+          `INSERT INTO users (first_name, last_name, role, login_code_hash) VALUES ($1, 'K', 'student', $2) RETURNING id`,
+          [`Clear-${n}`, hashLoginCode(code)],
+        )
+      ).rows[0].id as string;
+      const row = (await db.pool.query(`INSERT INTO students (teacher_id, display_name) VALUES ($1, $2) RETURNING id`, [w.users.t1, `مسح ${n}`])).rows[0].id as string;
+      await db.pool.query(`INSERT INTO class_memberships (class_group_id, student_id) VALUES ($1, $2)`, [w.classes.c1, row]);
+      const parent = (await db.pool.query(`INSERT INTO users (first_name, last_name, role) VALUES ($1, 'P', 'parent') RETURNING id`, [`CP-${n}`])).rows[0].id as string;
+      await db.pool.query(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'self'), ($1, $3, 'guardian')`, [row, user, parent]);
+      return { user, row, parent, name: `مسح ${n}` };
+    };
+    /** The account uploads one photo, writes a note and (unless `draft`) hands it in, through the real routes. */
+    const writeProject = async (on: TestServer, user: string, hw: string, draft = false) => {
+      const up = await call(on, "POST", `/student/homework/${hw}/submission/photos`, user, photoBody("image/jpeg", JPEG));
+      assert.equal(up.status, 201, up.text);
+      assert.equal((await call(on, "PUT", `/student/homework/${hw}/submission`, user, { note: "عملي" })).status, 200);
+      if (!draft) assert.equal((await call(on, "POST", `/student/homework/${hw}/submission/submit`, user)).status, 200);
+    };
+    const subRow = async (hw: string, row: string) =>
+      (await db.pool.query(`SELECT author_user_id, note, photos, submitted_at FROM homework_submissions WHERE homework_id = $1 AND student_id = $2`, [hw, row])).rows[0];
+    const ticked = async (hw: string, row: string) =>
+      (await db.pool.query(`SELECT 1 FROM homework_completions WHERE homework_id = $1 AND student_id = $2`, [hw, row])).rowCount === 1;
+    const keysUnder = (hw: string, row: string) => s3.keys().filter(k => k.startsWith(`homework-submissions/${hw}/${row}/`));
+    /** As the class's teacher unless `user` says otherwise; `null` is an anonymous call (undefined would take the default). */
+    const clear = (on: TestServer, hw: string, row: string, user: string | null = w.users.t1) =>
+      call(on, "DELETE", `/homework/${hw}/submissions/${row}`, user ?? undefined);
+
+    it("clears a handed-in project: its row, its photos and that record's tick go, and nothing else", async () => {
+      const s = await freshStudent();
+      const hw = await insertHomework("clear-handed", "5 days", true);
+      const hwOther = await insertHomework("clear-other", "5 days", true);
+      await writeProject(server, s.user, hw);
+      await writeProject(server, s.user, hwOther);
+      // Another record's tick on the same homework, however it got there: the clear must not touch it.
+      await db.pool.query(`INSERT INTO homework_completions (homework_id, student_id) VALUES ($1, $2)`, [hw, w.students.sA1]);
+      assert.equal(await ticked(hw, s.row), true, "the hand-in ticked the record");
+      assert.equal(keysUnder(hw, s.row).length, 1);
+
+      const r = await clear(server, hw, s.row);
+      assert.equal(r.status, 200, r.text);
+      assert.deepEqual(r.json, { cleared: true });
+
+      assert.equal(await subRow(hw, s.row), undefined, "the row is gone");
+      assert.deepEqual(keysUnder(hw, s.row), [], "and its photo, from the bucket");
+      assert.equal(await ticked(hw, s.row), false, "and the record's tick for this homework");
+      assert.equal(await ticked(hw, w.students.sA1), true, "another record's tick on the same homework stays");
+      assert.ok(await subRow(hwOther, s.row), "the same record's project on another homework stays");
+      assert.equal(keysUnder(hwOther, s.row).length, 1, "with its photo");
+      assert.equal(await ticked(hwOther, s.row), true, "and its tick");
+
+      // Everyone reads "not handed in" now.
+      const list = await call(server, "GET", `/homework/${hw}/submissions`, w.users.t1);
+      assert.equal(list.json.submissions.find((x: any) => x.studentId === s.row).status, "none");
+      const own = await call(server, "GET", "/student/homework", s.user);
+      const item = own.json.homework.find((h: any) => h.id === hw);
+      assert.equal(item.submission, "none");
+      assert.equal(item.done, false);
+      const parent = await call(server, "GET", `/parent/homework/${hw}/submissions`, s.parent);
+      assert.equal(parent.json.children.find((c: any) => c.displayName === s.name).submission.status, "none");
+      const mine = await call(server, "GET", `/student/homework/${hw}/submission`, s.user);
+      assert.equal(mine.json.submission.status, "none");
+      assert.deepEqual(mine.json.submission.photos, []);
+
+      // Nothing is left to clear: a second call is a 404, not a second 200.
+      const again = await clear(server, hw, s.row);
+      assert.equal(again.status, 404, again.text);
+      assert.equal(again.json.error, "Submission not found");
+    });
+
+    it("ends the dead end, with row-level security enforced: A hands in, the teacher unlinks A, B is blocked, the teacher clears, B hands in", async () => {
+      const enforcing = await startServer({ databaseUrl: db.url, env: { RLS_ENFORCE: "on", ...s3Env(s3) } });
+      try {
+        await db.pool.query(`UPDATE users SET roster_consent_at = now() WHERE id = $1`, [w.users.t1]);
+        const a = await freshStudent();
+        const hw = await insertHomework("clear-dead-end", "5 days", true);
+        await writeProject(enforcing, a.user, hw);
+        const oldKeys = keysUnder(hw, a.row);
+        assert.equal(oldKeys.length, 1);
+
+        const unlink = await call(enforcing, "DELETE", `/students/${a.row}/links/${a.user}`, w.users.t1);
+        assert.equal(unlink.status, 200, unlink.text);
+        const b = (await db.pool.query(`INSERT INTO users (first_name, last_name, role) VALUES ('B-clear', 'K', 'student') RETURNING id`)).rows[0].id as string;
+        await db.pool.query(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [a.row, b]);
+
+        const blocked = await call(enforcing, "GET", `/student/homework/${hw}/submission`, b);
+        assert.equal(blocked.json.submission.otherAuthor, true, "B is blocked by A's handed-in project");
+        const refused = await call(enforcing, "POST", `/student/homework/${hw}/submission/photos`, b, photoBody("image/png", PNG));
+        assert.equal(refused.status, 409, refused.text);
+        assert.equal(refused.json.code, "other_author");
+        // The record's guardian still sees A's work: the mis-claim exposure the clear removes.
+        const parentBefore = await call(enforcing, "GET", `/parent/homework/${hw}/submissions`, a.parent);
+        assert.equal(parentBefore.json.children.find((c: any) => c.displayName === a.name).submission.photos.length, 1);
+
+        const r = await clear(enforcing, hw, a.row);
+        assert.equal(r.status, 200, r.text);
+        assert.equal(await subRow(hw, a.row), undefined);
+        assert.ok(oldKeys.every(k => s3.body(k) === undefined), "A's photo is deleted");
+        assert.equal(await ticked(hw, a.row), false);
+        const parentAfter = await call(enforcing, "GET", `/parent/homework/${hw}/submissions`, a.parent);
+        assert.equal(parentAfter.json.children.find((c: any) => c.displayName === a.name).submission.status, "none");
+
+        const fresh = await call(enforcing, "GET", `/student/homework/${hw}/submission`, b);
+        assert.equal(fresh.json.submission.otherAuthor, false, "B starts clean");
+        assert.equal(fresh.json.submission.status, "none");
+        await writeProject(enforcing, b, hw);
+        const handed = await subRow(hw, a.row);
+        assert.equal(handed.author_user_id, b, "the record's project is B's now");
+        assert.notEqual(handed.submitted_at, null);
+        assert.equal(await ticked(hw, a.row), true, "and B's hand-in ticked the record again");
+      } finally {
+        await enforcing.stop();
+      }
+    });
+
+    it("clears a draft the teacher cannot read, with row-level security enforced", async () => {
+      const enforcing = await startServer({ databaseUrl: db.url, env: { RLS_ENFORCE: "on", ...s3Env(s3) } });
+      try {
+        const s = await freshStudent();
+        const hw = await insertHomework("clear-draft", "5 days", true);
+        await writeProject(enforcing, s.user, hw, true);
+        assert.equal((await call(enforcing, "GET", `/homework/${hw}/submissions/${s.row}`, w.users.t1)).status, 404, "a draft is invisible to the teacher's own reads");
+        assert.equal(keysUnder(hw, s.row).length, 1);
+
+        const r = await clear(enforcing, hw, s.row);
+        assert.equal(r.status, 200, r.text);
+        assert.equal(await subRow(hw, s.row), undefined, "the draft's row is gone");
+        assert.deepEqual(keysUnder(hw, s.row), [], "and its photo");
+        const mine = await call(enforcing, "GET", `/student/homework/${hw}/submission`, s.user);
+        assert.equal(mine.json.submission.photos.length, 0, "the student starts clean");
+      } finally {
+        await enforcing.stop();
+      }
+    });
+
+    it("is one 404 for another teacher's homework, a student outside the class, a bad id and a homework with no project, and changes nothing", async () => {
+      const s = await freshStudent();
+      const hw = await insertHomework("clear-guards", "5 days", true);
+      await writeProject(server, s.user, hw);
+      // Roster rows of t1's that hold a handed-in row for hw but are not live members of its class.
+      const outsider = (await db.pool.query(`INSERT INTO students (teacher_id, display_name) VALUES ($1, 'خارج الصف') RETURNING id`, [w.users.t1])).rows[0].id as string;
+      const archived = (await db.pool.query(`INSERT INTO students (teacher_id, display_name) VALUES ($1, 'مؤرشف') RETURNING id`, [w.users.t1])).rows[0].id as string;
+      await db.pool.query(`INSERT INTO class_memberships (class_group_id, student_id) VALUES ($1, $2)`, [w.classes.c1, archived]);
+      await db.pool.query(`UPDATE students SET archived_at = now() WHERE id = $1`, [archived]);
+      for (const row of [outsider, archived]) {
+        await db.pool.query(`INSERT INTO homework_submissions (homework_id, student_id, note, submitted_at) VALUES ($1, $2, 'x', now())`, [hw, row]);
+        await db.pool.query(`INSERT INTO homework_completions (homework_id, student_id) VALUES ($1, $2)`, [hw, row]);
+      }
+      const before = await db.pool.query(`SELECT student_id, note FROM homework_submissions WHERE homework_id = $1 ORDER BY student_id`, [hw]);
+      const keysBefore = s3.keys();
+
+      const other = await clear(server, hw, s.row, w.users.t2);
+      assert.equal(other.status, 404, other.text);
+      assert.equal(other.json.error, "Homework not found", "another teacher's homework");
+      for (const id of [outsider, archived, RANDOM_UUID, "nope"]) {
+        const r = await clear(server, hw, id);
+        assert.equal(r.status, 404, `${id}: ${r.text}`);
+        assert.equal(r.json.error, "Submission not found", id);
+      }
+      const plain = await clear(server, hwPlain, w.students.sA1);
+      assert.equal(plain.status, 404, plain.text);
+      assert.equal(plain.json.error, "Homework not found", "a homework that asks for no project");
+
+      const after = await db.pool.query(`SELECT student_id, note FROM homework_submissions WHERE homework_id = $1 ORDER BY student_id`, [hw]);
+      assert.deepEqual(after.rows, before.rows, "no row was deleted");
+      assert.deepEqual(s3.keys(), keysBefore, "no photo was deleted");
+      for (const row of [s.row, outsider, archived]) assert.equal(await ticked(hw, row), true, "no tick was removed");
+    });
+
+    it("is closed to a student, a parent and an anonymous caller", async () => {
+      const s = await freshStudent();
+      const hw = await insertHomework("clear-roles", "5 days", true);
+      await writeProject(server, s.user, hw);
+      for (const [who, user, status] of [
+        ["the student whose project it is", s.user, 403],
+        ["the record's parent", s.parent, 403],
+        ["an anonymous caller", null, 401],
+      ] as const) {
+        const r = await clear(server, hw, s.row, user);
+        assert.equal(r.status, status, `${who}: ${r.text}`);
+      }
+      assert.ok(await subRow(hw, s.row), "the project is still there");
+      assert.equal(keysUnder(hw, s.row).length, 1);
+    });
+
+    it("fails closed when storage cannot delete: 500 with the row, the photos and the tick kept, and a retry clears it", async () => {
+      const s = await freshStudent();
+      const hw = await insertHomework("clear-r2-down", "5 days", true);
+      await writeProject(server, s.user, hw);
+      const second = await call(server, "POST", `/student/homework/${hw}/submission/photos`, s.user, photoBody("image/png", PNG));
+      assert.equal(second.status, 201, second.text);
+      const keys = keysUnder(hw, s.row);
+      assert.equal(keys.length, 2);
+
+      s3.failDeletes(true);
+      try {
+        const failed = await clear(server, hw, s.row);
+        assert.equal(failed.status, 500, failed.text);
+      } finally {
+        s3.failDeletes(false);
+      }
+      const kept = await subRow(hw, s.row);
+      assert.ok(kept, "the row is kept, so the teacher can try again");
+      assert.equal(kept.photos.length, 2, "with every photo still listed");
+      assert.deepEqual(keysUnder(hw, s.row), keys, "and every object still stored");
+      assert.equal(await ticked(hw, s.row), true, "and the tick");
+      const list = await call(server, "GET", `/homework/${hw}/submissions`, w.users.t1);
+      assert.equal(list.json.submissions.find((x: any) => x.studentId === s.row).status, "submitted");
+
+      const retried = await clear(server, hw, s.row);
+      assert.equal(retried.status, 200, retried.text);
+      assert.equal(await subRow(hw, s.row), undefined);
+      assert.deepEqual(keysUnder(hw, s.row), []);
+      assert.equal(await ticked(hw, s.row), false);
+    });
+
+    it("an outage after the first photo: 500, the database untouched, the first photo gone, and a retry clears the rest", async () => {
+      const s = await freshStudent();
+      const hw = await insertHomework("clear-r2-half", "5 days", true);
+      await writeProject(server, s.user, hw);
+      assert.equal((await call(server, "POST", `/student/homework/${hw}/submission/photos`, s.user, photoBody("image/png", PNG))).status, 201);
+      const before = await subRow(hw, s.row);
+      assert.equal(keysUnder(hw, s.row).length, 2);
+
+      s3.failDeletesAfter(1);
+      try {
+        const failed = await clear(server, hw, s.row);
+        assert.equal(failed.status, 500, failed.text);
+      } finally {
+        s3.failDeletesAfter(null);
+      }
+      assert.deepEqual(await subRow(hw, s.row), before, "the row is exactly as it was, both photos still listed");
+      assert.equal(await ticked(hw, s.row), true, "and the tick is kept");
+      assert.equal(keysUnder(hw, s.row).length, 1, "one photo was deleted before the outage, and stays deleted");
+
+      const retried = await clear(server, hw, s.row);
+      assert.equal(retried.status, 200, retried.text);
+      assert.equal(await subRow(hw, s.row), undefined);
+      assert.deepEqual(keysUnder(hw, s.row), [], "deleting the already-deleted key succeeds, so the retry finishes");
+      assert.equal(await ticked(hw, s.row), false);
+    });
+
+    it("holds no transaction (and so no row lock) while it waits on storage", async () => {
+      const s = await freshStudent();
+      const hw = await insertHomework("clear-no-lock", "5 days", true);
+      await writeProject(server, s.user, hw);
+      const open: number[] = [];
+      s3.onDelete(async () => {
+        const r = await db.pool.query(
+          `SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname = current_database() AND state LIKE 'idle in transaction%'`,
+        );
+        open.push(r.rows[0].n);
+      });
+      try {
+        const r = await clear(server, hw, s.row);
+        assert.equal(r.status, 200, r.text);
+      } finally {
+        s3.onDelete(null);
+      }
+      assert.deepEqual(open, [0], "no connection sat in an open transaction during the storage call");
+    });
+
+    it("deletes, after it commits, a photo that was uploaded while it was deleting the others", async () => {
+      const s = await freshStudent();
+      const hw = await insertHomework("clear-late-photo", "5 days", true);
+      await writeProject(server, s.user, hw, true);
+      const lateKey = `homework-submissions/${hw}/${s.row}/late.jpg`;
+      let fired = false;
+      s3.onDelete(async () => {
+        if (fired) return;
+        fired = true;
+        // A student upload landing between the clear's first read and its lock: the object, then the row's list.
+        // lock_timeout so that a clear holding the row lock here fails this hook (and the test) instead of hanging.
+        await s3.putForTest(lateKey, JPEG);
+        const c = await db.pool.connect();
+        try {
+          await c.query("BEGIN");
+          await c.query("SET LOCAL lock_timeout = '2s'");
+          await c.query(
+            `UPDATE homework_submissions SET photos = photos || $3::jsonb WHERE homework_id = $1 AND student_id = $2`,
+            [hw, s.row, JSON.stringify([{ id: "late", key: lateKey, mime: "image/jpeg", sizeBytes: JPEG.length }])],
+          );
+          await c.query("COMMIT");
+        } catch (err) {
+          await c.query("ROLLBACK");
+          throw err;
+        } finally {
+          c.release();
+        }
+      });
+      try {
+        const r = await clear(server, hw, s.row);
+        assert.equal(r.status, 200, r.text);
+      } finally {
+        s3.onDelete(null);
+      }
+      assert.ok(fired);
+      assert.equal(await subRow(hw, s.row), undefined, "the row, with the late photo in its list, is gone");
+      assert.equal(s3.body(lateKey), undefined, "and the late photo's object was deleted after the commit");
+      assert.deepEqual(keysUnder(hw, s.row), []);
+    });
+
+    it("answers 404 when the row is gone by the time it takes the lock (cleared or archived meanwhile)", async () => {
+      const s = await freshStudent();
+      const hw = await insertHomework("clear-gone", "5 days", true);
+      await writeProject(server, s.user, hw);
+      s3.onDelete(async () => {
+        await db.pool.query(`DELETE FROM homework_submissions WHERE homework_id = $1 AND student_id = $2`, [hw, s.row]);
+      });
+      try {
+        const r = await clear(server, hw, s.row);
+        assert.equal(r.status, 404, r.text);
+        assert.equal(r.json.error, "Submission not found");
+      } finally {
+        s3.onDelete(null);
+      }
+      assert.equal(await ticked(hw, s.row), true, "a clear that found nothing to lock removed no tick");
+    });
+
+    it("a hand-in and a clear that meet: the clear waits for the hand-in's tick, so no tick is left without a project", async () => {
+      const s = await freshStudent();
+      const hw = await insertHomework("clear-vs-submit", "5 days", true);
+      await writeProject(server, s.user, hw, true);
+      // An uncommitted completion for the same record makes the hand-in's tick insert wait, which holds the hand-in
+      // between its UPDATE and its tick. Then the clear is sent, and the completion rolled back.
+      const holder = await db.pool.connect();
+      const waitFor = async (pattern: string) => {
+        const deadline = Date.now() + 10_000;
+        for (;;) {
+          const r = await db.pool.query(
+            `SELECT 1 FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock' AND query ILIKE $1`,
+            [pattern],
+          );
+          if (r.rowCount) return;
+          assert.ok(Date.now() < deadline, `nothing waited on a lock for ${pattern}`);
+          await new Promise(res => setTimeout(res, 20));
+        }
+      };
+      try {
+        await holder.query("BEGIN");
+        await holder.query(`INSERT INTO homework_completions (homework_id, student_id) VALUES ($1, $2)`, [hw, s.row]);
+        const submitting = call(server, "POST", `/student/homework/${hw}/submission/submit`, s.user);
+        await waitFor(`insert into "homework_completions"%`);
+        let clearDone = false;
+        const clearing = clear(server, hw, s.row).then(r => ((clearDone = true), r));
+        // Either the clear finishes now (the hand-in's UPDATE was already committed: the old order), or it queues
+        // behind the hand-in's row lock (one transaction). Wait for one of the two, no timing.
+        const deadline = Date.now() + 10_000;
+        for (;;) {
+          if (clearDone) break;
+          const r = await db.pool.query(
+            `SELECT 1 FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock' AND query ILIKE '%for update%'`,
+          );
+          if (r.rowCount) break;
+          assert.ok(Date.now() < deadline, "the clear neither finished nor waited");
+          await new Promise(res => setTimeout(res, 20));
+        }
+        await holder.query("ROLLBACK");
+        const [sub, cl] = await Promise.all([submitting, clearing]);
+        assert.equal(sub.status, 200, sub.text);
+        assert.equal(cl.status, 200, cl.text);
+      } finally {
+        holder.release();
+      }
+      assert.equal(await subRow(hw, s.row), undefined, "the project is cleared");
+      assert.equal(await ticked(hw, s.row), false, "and so is the tick the hand-in wrote");
+    });
+  });
+
+  describe("an account self-linked to two records in one class", () => {
+    it("reaches its own draft even when the record that sorts first holds another account's handed-in project", async () => {
+      const user = (await db.pool.query(`INSERT INTO users (first_name, last_name, role) VALUES ('Two', 'R', 'student') RETURNING id`)).rows[0].id as string;
+      const other = (await db.pool.query(`INSERT INTO users (first_name, last_name, role) VALUES ('Prev', 'R', 'student') RETURNING id`)).rows[0].id as string;
+      const mk = async (name: string) =>
+        (await db.pool.query(`INSERT INTO students (teacher_id, display_name) VALUES ($1, $2) RETURNING id`, [w.users.t1, name])).rows[0].id as string;
+      // `submissionTarget` used to pick the first record (by id) that holds any row, so the ids are put in that order.
+      const [first, second] = [await mk("سجل أول"), await mk("سجل ثان")].sort();
+      for (const row of [first!, second!]) {
+        await db.pool.query(`INSERT INTO class_memberships (class_group_id, student_id) VALUES ($1, $2)`, [w.classes.c1, row]);
+        await db.pool.query(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [row, user]);
+      }
+      const hw = await insertHomework("two-records", "5 days", true);
+      await db.pool.query(
+        `INSERT INTO homework_submissions (homework_id, student_id, author_user_id, note, submitted_at) VALUES ($1, $2, $3, 'not mine', now())`,
+        [hw, first, other],
+      );
+      await db.pool.query(
+        `INSERT INTO homework_submissions (homework_id, student_id, author_user_id, note) VALUES ($1, $2, $3, 'my draft')`,
+        [hw, second, user],
+      );
+      const readsOwn = async (what: string) => {
+        for (const on of ["off", "on"] as const) {
+          const srv = on === "on" ? await startServer({ databaseUrl: db.url, env: { RLS_ENFORCE: "on", ...s3Env(s3) } }) : server;
+          try {
+            const r = await call(srv, "GET", `/student/homework/${hw}/submission`, user);
+            assert.equal(r.status, 200, r.text);
+            assert.equal(r.json.submission.otherAuthor, false, `${what}, RLS ${on}: the caller's own draft wins`);
+            assert.equal(r.json.submission.note, "my draft", `${what}, RLS ${on}`);
+          } finally {
+            if (srv !== server) await srv.stop();
+          }
+        }
+      };
+      await readsOwn("another account's project");
+      // An authorless handed-in project (its author deleted their account) must not win either: under `=` its NULL
+      // would sort first in a DESC order.
+      await db.pool.query(`UPDATE homework_submissions SET author_user_id = NULL WHERE homework_id = $1 AND student_id = $2`, [hw, first]);
+      await readsOwn("an authorless project");
+      const note = await call(server, "PUT", `/student/homework/${hw}/submission`, user, { note: "edited" });
+      assert.equal(note.status, 200, note.text);
+      const rows = await db.pool.query(`SELECT student_id, note FROM homework_submissions WHERE homework_id = $1 ORDER BY note`, [hw]);
+      assert.deepEqual(rows.rows.map(x => [x.student_id, x.note]), [[second, "edited"], [first, "not mine"]], "the edit landed on the caller's own record only");
+    });
+  });
+
+  describe("a write whose row is removed under it", () => {
+    // The teacher's clear (or a takeover) can delete the row between the write's checks and its UPDATE. The UPDATE then
+    // matches nothing; the answer must say the project changed, not invent a reason (`photo_limit` on a first photo,
+    // `empty` on a note). The test holds the row lock, waits until the server's UPDATE is queued behind it, then
+    // deletes the row and commits: deterministic, no timing.
+    for (const [what, method, suffix, body] of [
+      ["a photo upload", "POST", "/photos", photoBody("image/jpeg", JPEG)],
+      ["a note", "PUT", "", { note: "late note" }],
+      ["a hand-in", "POST", "/submit", undefined],
+    ] as const) {
+      it(`${what} answers 409 changed and leaves no photo behind`, async () => {
+        const user = (await db.pool.query(`INSERT INTO users (first_name, last_name, role) VALUES ('Race', 'R', 'student') RETURNING id`)).rows[0].id as string;
+        const row = (await db.pool.query(`INSERT INTO students (teacher_id, display_name) VALUES ($1, 'سباق') RETURNING id`, [w.users.t1])).rows[0].id as string;
+        await db.pool.query(`INSERT INTO class_memberships (class_group_id, student_id) VALUES ($1, $2)`, [w.classes.c1, row]);
+        await db.pool.query(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [row, user]);
+        const hw = await insertHomework(`race-${method}`, "5 days", true);
+        await db.pool.query(`INSERT INTO homework_submissions (homework_id, student_id, author_user_id, note) VALUES ($1, $2, $3, 'draft')`, [hw, row, user]);
+
+        const holder = await db.pool.connect();
+        try {
+          await holder.query("BEGIN");
+          await holder.query(`SELECT 1 FROM homework_submissions WHERE homework_id = $1 AND student_id = $2 FOR UPDATE`, [hw, row]);
+          const pending = call(server, method, `/student/homework/${hw}/submission${suffix}`, user, body);
+          const deadline = Date.now() + 10_000;
+          for (;;) {
+            const waiting = await db.pool.query(
+              `SELECT 1 FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock' AND query ILIKE 'update "homework_submissions"%'`,
+            );
+            if (waiting.rowCount) break;
+            assert.ok(Date.now() < deadline, "the server's UPDATE never queued behind the lock");
+            await new Promise(r => setTimeout(r, 20));
+          }
+          await holder.query(`DELETE FROM homework_submissions WHERE homework_id = $1 AND student_id = $2`, [hw, row]);
+          await holder.query("COMMIT");
+          const r = await pending;
+          assert.equal(r.status, 409, r.text);
+          assert.equal(r.json.code, "changed", r.text);
+        } finally {
+          holder.release();
+        }
+        assert.deepEqual(s3.keys().filter(k => k.startsWith(`homework-submissions/${hw}/`)), [], "the refused photo is not left in the bucket");
+      });
+    }
   });
 });

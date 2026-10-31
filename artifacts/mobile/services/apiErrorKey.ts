@@ -89,6 +89,8 @@ const BY_CODE_SCOPED = {
     empty: 'errSubmissionEmpty',
     photo_limit: 'errPhotoLimit',
     storage_unavailable: 'errStorageUnavailable',
+    // Any project write: the record's project was handed in from another account (the teacher re-linked it).
+    other_author: 'errSubmissionOtherAuthor',
     // PUT .../submission: the project's note. Messaging's `too_long` keeps «الرسالة طويلة جدًا».
     too_long: 'errNoteTooLong',
   },

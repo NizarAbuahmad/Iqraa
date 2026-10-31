@@ -22,6 +22,7 @@ describe('draftOf', () => {
   it('copies the editable fields, with empty strings for the optional ones', () => {
     assert.deepEqual(draftOf({ ...student, externalRef: null, gender: undefined }), {
       displayName: 'خالد التيس',
+      displayNameAr: '',
       externalRef: '',
       gender: '',
       teacherNote: 'يستعجل',
@@ -47,6 +48,28 @@ describe('studentChanges', () => {
   it('treats whitespace-only edits to the note as no change when the note was empty', () => {
     const empty = { ...student, teacherNote: '' };
     assert.deepEqual(studentChanges(empty, { ...draftOf(empty), teacherNote: '  ' }), {});
+  });
+});
+
+describe('the Arabic name', () => {
+  it('is sent when written, trimmed', () => {
+    const draft = { ...draftOf(student), displayNameAr: '  خالد التيس ' };
+    assert.deepEqual(studentChanges(student, draft), { displayNameAr: 'خالد التيس' });
+  });
+
+  it('is not sent when untouched, whether the server sent the field or not', () => {
+    assert.deepEqual(studentChanges(student, draftOf(student)), {});
+    const known = { ...student, displayNameAr: 'خالد التيس' };
+    assert.deepEqual(studentChanges(known, draftOf(known)), {});
+  });
+
+  it('an empty string clears it', () => {
+    const known = { ...student, displayNameAr: 'خالد التيس' };
+    assert.deepEqual(studentChanges(known, { ...draftOf(known), displayNameAr: '  ' }), { displayNameAr: '' });
+  });
+
+  it('is enough on its own to enable Save', () => {
+    assert.equal(canSaveStudent(student, { ...draftOf(student), displayNameAr: 'خالد' }), true);
   });
 });
 

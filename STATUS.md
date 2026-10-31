@@ -69,6 +69,8 @@ Checked 2026-10-22:
 
 ## Open
 
+- 2026-10-31 — Homework submissions record their author (migration `0022`)
+- 2026-10-31 — Teacher can clear one student's project (API only; what is left open is the item «A teacher can clear one student's project…» below)
 - 2026-10-31 — Slides: cycle, tree, Venn and mind-map diagrams; curriculum slides gain shapes, icons, charts and photos (untested against a live model)
 - **Screen recording of everyone is ON for the web app (since the 2026-10-29 re-run of Deploy
   #868) and not yet running on Android.** Web: the Contentsquare tag loads on `app.iqrra.com` (not
@@ -87,7 +89,7 @@ Checked 2026-10-22:
   once the site redeploys. Students, parents and exam pages are recorded; the parent consent page
   is not. The homework project screen (`/homework-project`, students' photos of their work) is left
   out of screen-view tracking (`shouldTrackScreen`), which does not stop a recording already
-  running, and whether masking hides its photos is unverified, like every other screen. The policy (`LEGAL_VERSION` 2026-10-31 now; its recording text dates from 2026-10-30) was written by a model and **not reviewed by a
+  running, and whether masking hides its photos is unverified, like every other screen. The policy (`LEGAL_VERSION` 2026-10-31.d now; its recording text dates from 2026-10-30) was written by a model and **not reviewed by a
   lawyer**; Contentsquare's data location was not checked (PostHog's settings say «EU Cloud»),
   and the Contentsquare plan shows a 200K sessions a month cap.
   Entry: «Screen recordings: Contentsquare on the web, PostHog replay on Android» in the log.
@@ -101,7 +103,7 @@ Checked 2026-10-22:
   «Parent approval for email students — server (PR A)».
 - **A student can sign up with an email and no teacher's code (PR #1226, merged 2026-10-24) — the
   legal wording still needs a person to read it.** The privacy policy §5 and terms §1
-  (`constants/legal.ts`, since `LEGAL_VERSION` 2026-10-23; 2026-10-31 now) say a student may join with an email after
+  (`constants/legal.ts`, since `LEGAL_VERSION` 2026-10-23; 2026-10-31.d now) say a student may join with an email after
   confirming they are an adult or have a guardian's agreement. They were drafted, not reviewed by
   a lawyer, and nothing in the repo records a review since. Merging deploys, and from then new
   sign-ups record that version; existing accounts are not asked again (there is no re-acceptance
@@ -110,13 +112,18 @@ Checked 2026-10-22:
   itself (Play Console) was not checked** and may still say accounts are made only through a class.
   Becoming a student by switching role asks for the same confirmation as signing up as one. Entry:
   «Students choose an email or a teacher's code» in the log.
-- **Unlinking a student account leaves its homework projects on the roster record for whoever is
-  linked next.** A submission belongs to the roster row (`homework_submissions.student_id`), not to
-  an account, and `DELETE /students/:id/links/:userId` (`routes/roster.ts`) touches no submission,
-  so the next account linked to that record sees, and can change, a draft or a handed-in project the
-  previous account made (privacy §1 says so). Deleting the account itself removes them (since
-  2026-10-31). To decide: an author column on the submission, or a purge on unlink. Entry:
-  «Homework project submission — student app» in the log.
+- **A teacher can clear one student's project, but only through the API: the app has no button for it
+  yet (phase 3).** Since migration `0022_light_stellaris` a submission belongs to the account that
+  wrote it: after a teacher unlinks a mis-claimed account and links the right one, the new account sees
+  «سُلِّم مشروع لهذا السجلّ من حساب آخر» and every write is 409 `other_author`, while the teacher and the
+  record's parents still see the wrong child's handed-in photos and note. `DELETE
+  /homework/:id/submissions/:studentId` (since 2026-10-31) clears that record's project for that
+  homework, draft or handed-in, with its photos and its tick, and the account linked now starts clean.
+  Until the teacher's screen calls it, the ways out in the app are still the old account deleting
+  itself or the teacher archiving the whole homework (everyone's work goes). Until it is cleared, the
+  blocked student's own homework list (`/student/homework`) still says «تم التسليم» for that homework
+  (a completion and a handed-in project belong to the record). Entries: «Teacher can clear one
+  student's project» and «Homework submissions record their author» in the log.
 - **An exam's read-aloud recordings outlive the exam's removal and the student's account.**
   Removing an exam (`DELETE /evaluations/:id`) archives it, and attempts reference the roster row, so
   neither that nor the student deleting their account deletes the recordings in R2 (privacy §6
@@ -189,6 +196,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-31 — Grade 6 unit word lists in the English corner
 - 2026-10-30 — PostHog moves to the owner's own EU project
 - 2026-10-29 — Screen recordings: Contentsquare on the web, PostHog replay on Android
 - 2026-10-28 — Grade 8 semester 2 word lists in the English corner
@@ -218,12 +226,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-23 — Generator screens: the slides
 - 2026-10-23 — Generator screens: the activity
 - 2026-10-23 — Generator screens: the lesson plan
-- 2026-10-23 — Generator screens: the worksheet and homework
-- 2026-10-23 — Grade 5 grammar in the English corner — built, shown to nobody yet
 
 ## Finding older detail, and recording new work
 
-- The log has 417 sections. Anything cited elsewhere as
+- The log has 419 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line

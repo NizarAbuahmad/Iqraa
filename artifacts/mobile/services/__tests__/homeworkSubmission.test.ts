@@ -41,6 +41,25 @@ test('locked defaults to false and a non-boolean is false', () => {
   assert.equal(normalizeSubmission({ locked: 'yes' }).locked, false);
 });
 
+test('otherAuthor is true only for a literal true; absent (an older API) is false', () => {
+  assert.equal(normalizeSubmission({ otherAuthor: true }).otherAuthor, true);
+  for (const v of [undefined, false, 'true', 1, null, {}]) {
+    assert.equal(normalizeSubmission({ otherAuthor: v }).otherAuthor, false, String(v));
+  }
+  assert.equal(normalizeSubmission({ status: 'none' }).otherAuthor, false);
+  assert.equal(emptySubmission().otherAuthor, false);
+});
+
+test('nothing can be added to, or handed in on, a project another account handed in', () => {
+  const other = { photos: [], locked: false, otherAuthor: true };
+  assert.equal(canAddPhoto(other), false);
+  assert.equal(canHandIn(other, 'x'), false);
+  assert.equal(canHandIn({ ...other, photos: [1] }, ''), false);
+  // The same view without the flag stays open.
+  assert.equal(canAddPhoto({ ...other, otherAuthor: false }), true);
+  assert.equal(canHandIn({ ...other, otherAuthor: false }, 'x'), true);
+});
+
 test('slots and add rule', () => {
   assert.equal(slotsLeft(0), 6);
   assert.equal(slotsLeft(6), 0);

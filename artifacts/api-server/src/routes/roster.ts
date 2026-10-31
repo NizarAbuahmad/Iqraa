@@ -80,6 +80,7 @@ import {
 import { labClassResourceSnapshot, parseLabClassResourceInput } from "../lib/labClassResource.js";
 import { subjectColumns, withSubjectIds } from "../lib/classSubjects.js";
 import { nameKey, nameTakenBy, renamedAccountNames } from "../lib/rosterRename.ts";
+import { checkNameAr, MAX_NAME_AR_LENGTH } from "../lib/studentNameAr.ts";
 
 const router = Router();
 
@@ -199,6 +200,7 @@ router.get("/classes/:id", async (req: AuthenticatedRequest, res) => {
       .select({
         id: students.id,
         displayName: students.displayName,
+        displayNameAr: students.displayNameAr,
         externalRef: students.externalRef,
         gradeId: students.gradeId,
         teacherNote: students.teacherNote,
@@ -666,6 +668,7 @@ router.get("/students", async (req: AuthenticatedRequest, res) => {
         .select({
           id: students.id,
           displayName: students.displayName,
+          displayNameAr: students.displayNameAr,
           externalRef: students.externalRef,
           gradeId: students.gradeId,
           createdAt: students.createdAt,
@@ -683,6 +686,7 @@ router.get("/students", async (req: AuthenticatedRequest, res) => {
       .select({
         id: students.id,
         displayName: students.displayName,
+        displayNameAr: students.displayNameAr,
         externalRef: students.externalRef,
         gradeId: students.gradeId,
         teacherNote: students.teacherNote,
@@ -1362,6 +1366,22 @@ router.patch("/students/:id", async (req: AuthenticatedRequest, res) => {
         renamedFrom = current.displayName;
       }
       patch["displayName"] = displayName;
+    }
+    // Empty clears it (the column is NOT NULL, '' = not recorded). Anything else
+    // must be Arabic script: a Latin name here would be printed into an Arabic
+    // letter as if it were the Arabic one.
+    if (req.body?.displayNameAr !== undefined) {
+      const checked = checkNameAr(req.body.displayNameAr);
+      if (!checked.ok) {
+        res.status(400).json({
+          error: checked.code === "student_name_ar_too_long"
+            ? `displayNameAr must be at most ${MAX_NAME_AR_LENGTH} characters`
+            : "displayNameAr must be written in Arabic letters",
+          code: checked.code,
+        });
+        return;
+      }
+      patch["displayNameAr"] = checked.value;
     }
     if (req.body?.externalRef !== undefined) {
       patch["externalRef"] = trimmed(req.body.externalRef) || null;

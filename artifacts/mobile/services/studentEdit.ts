@@ -6,6 +6,7 @@ import type { RosterStudent, StudentChanges } from './roster.ts';
 
 export interface StudentDraft {
   displayName: string;
+  displayNameAr: string;
   externalRef: string;
   gender: '' | 'male' | 'female';
   teacherNote: string;
@@ -14,6 +15,7 @@ export interface StudentDraft {
 export function draftOf(s: RosterStudent): StudentDraft {
   return {
     displayName: s.displayName,
+    displayNameAr: s.displayNameAr ?? '',
     externalRef: s.externalRef ?? '',
     gender: s.gender ?? '',
     teacherNote: s.teacherNote,
@@ -25,6 +27,8 @@ export function studentChanges(s: RosterStudent, d: StudentDraft): StudentChange
   const changes: StudentChanges = {};
   const name = d.displayName.trim();
   if (name !== s.displayName) changes.displayName = name;
+  const nameAr = d.displayNameAr.trim();
+  if (nameAr !== (s.displayNameAr ?? '')) changes.displayNameAr = nameAr;
   const ref = d.externalRef.trim();
   if (ref !== (s.externalRef ?? '')) changes.externalRef = ref;
   if (d.gender !== (s.gender ?? '')) changes.gender = d.gender;

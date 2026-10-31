@@ -7,9 +7,20 @@ import { noteChanged, type SubmissionState } from './homeworkSubmission.ts';
 
 const statusOf = (e: unknown): unknown => (e && typeof e === 'object' ? (e as { status?: unknown }).status : undefined);
 
+/**
+ * What the screen draws: `edit`, `locked` (handed in and the due day has passed: read-only with the lock line), or
+ * `otherAuthor` (another account handed the record's project in: a notice and nothing else — the server sends none
+ * of that project and refuses every write).
+ */
+export type ProjectMode = 'edit' | 'locked' | 'otherAuthor';
+export function projectMode(view: { locked: boolean; otherAuthor?: boolean }): ProjectMode {
+  if (view.otherAuthor === true) return 'otherAuthor';
+  return view.locked ? 'locked' : 'edit';
+}
+
 /** The draft must be saved: it differs from the note the server holds, and the project can still change. */
-export function noteNeedsSave(view: { locked: boolean }, savedNote: string | null, draft: string): boolean {
-  return !view.locked && savedNote !== null && noteChanged(savedNote, draft);
+export function noteNeedsSave(view: { locked: boolean; otherAuthor?: boolean }, savedNote: string | null, draft: string): boolean {
+  return projectMode(view) === 'edit' && savedNote !== null && noteChanged(savedNote, draft);
 }
 
 /**
@@ -38,7 +49,10 @@ export function uploadMayHaveStored(e: unknown): boolean {
   return typeof status !== 'number' || (status >= 200 && status < 300) || status >= 500;
 }
 
-/** The project changed under the screen (locked, emptied, a photo already gone): read it again. */
+/**
+ * The project changed under the screen (locked, emptied, a photo already gone, handed in from another account —
+ * `other_author` — or cleared by the teacher while a write was on its way — `changed`): read it again.
+ */
 export function isStaleRefusal(e: unknown): boolean {
   const status = statusOf(e);
   return status === 409 || status === 404;

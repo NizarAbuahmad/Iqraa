@@ -1,6 +1,7 @@
 /**
  * A student's project for a homework that asks for one: the student's routes (`/student/homework`),
- * the teacher's two reads (`/homework/:id/submissions`, and one student's), and the parent's one
+ * the teacher's two reads (`/homework/:id/submissions`, and one student's) and one write (clearing one
+ * student's project: `DELETE /homework/:id/submissions/:studentId`), and the parent's one
  * read-only route (`/parent/homework/:id/submissions`: the handed-in projects of their own children).
  *
  * Guards are path-scoped and repeat the ones in familyHomework.ts on purpose, so moving a mount
@@ -11,6 +12,11 @@
  * 404. In the student routes no `studentId` is ever read from a request: the row comes from the account
  * (lib/homeworkSubmission.ts). The teacher's one-student read does take `:studentId` from the URL,
  * and `readForTeacher` checks it against the homework's own class.
+ *
+ * A student sees and changes only what their own account wrote: when the record's project was handed in by
+ * another account (the teacher re-linked the record), the GET says `otherAuthor: true` with none of its content
+ * and every write is 409 `other_author`; another account's draft reads as nothing and is replaced on the first
+ * upload or note. The teacher's and the parent's reads are the record's and do not look at the author.
  */
 import { randomUUID } from "node:crypto";
 import { Router, type Response } from "express";
@@ -21,6 +27,7 @@ import { createRateLimiter } from "../lib/rateLimit.ts";
 import { deleteObject, isR2Configured, newHomeworkSubmissionKey, putObject } from "../lib/r2.js";
 import {
   addPhoto,
+  clearForTeacher,
   listForTeacher,
   readForParent,
   readForTeacher,
@@ -30,7 +37,7 @@ import {
   signPhotos,
   submissionTarget,
   submit,
-  viewSubmission,
+  viewOwnSubmission,
   type SubmissionTarget,
 } from "../lib/homeworkSubmission.ts";
 import { dueAtToDueDate, isUuid } from "../modules/homework/rules.ts";
@@ -81,8 +88,22 @@ async function withTarget(
   }
 }
 
+/** The caller's own view: another account's work on the record is never in it (lib/homeworkSubmission.ts). */
 async function currentView(t: SubmissionTarget) {
-  return viewSubmission(await readOwnSubmission(t), t.dueAt);
+  return viewOwnSubmission(await readOwnSubmission(t), t);
+}
+
+/**
+ * The record's project was handed in by another account (the teacher unlinked it and linked this one). Nothing of
+ * it may change; the app shows a notice and the way out is the teacher. One shape for every write.
+ */
+function refuseOtherAuthor(res: Response): void {
+  res.status(409).json({ code: "other_author", error: "A project was already handed in for this record from another account" });
+}
+
+/** The project was removed (the teacher cleared it) while this write was on its way. Nothing was written; send it again. */
+function refuseChanged(res: Response): void {
+  res.status(409).json({ code: "changed", error: "The project changed while saving; send it again" });
 }
 
 router.get("/student/homework/:id/submission", (req: AuthenticatedRequest, res) =>
@@ -112,6 +133,14 @@ router.post("/student/homework/:id/submission/photos", photoLimiter, (req: Authe
       await deleteObject(key).catch(err =>
         logger.error({ err, key, homeworkId: t.homeworkId }, "student homework submission: could not remove a refused photo"),
       );
+      if (result === "other_author") {
+        refuseOtherAuthor(res);
+        return;
+      }
+      if (result === "changed") {
+        refuseChanged(res);
+        return;
+      }
       res.status(409).json({ error: result === "locked" ? "This project is locked" : "A project holds at most six photos", code: result });
       return;
     }
@@ -126,6 +155,10 @@ router.delete("/student/homework/:id/submission/photos/:photoId", (req: Authenti
     const result = await removePhoto(t, String(req.params["photoId"]));
     if (result === "not_found") {
       res.status(404).json({ error: "Photo not found" });
+      return;
+    }
+    if (result === "other_author") {
+      refuseOtherAuthor(res);
       return;
     }
     if (result === "locked" || result === "empty") {
@@ -151,6 +184,14 @@ router.put("/student/homework/:id/submission", (req: AuthenticatedRequest, res) 
       return;
     }
     const result = await setNote(t, parsed.value);
+    if (result === "other_author") {
+      refuseOtherAuthor(res);
+      return;
+    }
+    if (result === "changed") {
+      refuseChanged(res);
+      return;
+    }
     if (result !== "ok") {
       res.status(409).json({
         error: result === "locked" ? "This project is locked" : "A handed-in project cannot be emptied",
@@ -165,6 +206,14 @@ router.put("/student/homework/:id/submission", (req: AuthenticatedRequest, res) 
 router.post("/student/homework/:id/submission/submit", (req: AuthenticatedRequest, res) =>
   withTarget(req, res, "hand in your project", async t => {
     const result = await submit(t);
+    if (result === "other_author") {
+      refuseOtherAuthor(res);
+      return;
+    }
+    if (result === "changed") {
+      refuseChanged(res);
+      return;
+    }
     if (result !== "ok") {
       res.status(409).json({
         error: result === "locked" ? "This project is locked" : "Add a photo or a note first",
@@ -214,6 +263,37 @@ router.get("/homework/:id/submissions/:studentId", async (req: AuthenticatedRequ
   } catch (err) {
     logger.error({ err }, "teacher homework submission failed");
     res.status(500).json({ error: "Failed to load the submission" });
+  }
+});
+
+/**
+ * Clears one student's project for this homework, draft or handed-in: its photos, its row and that record's tick
+ * (lib/homeworkSubmission.ts `clearForTeacher`). The way out when a record's project was handed in from another
+ * account (a mis-claim the teacher has since unlinked): the account linked now then starts clean. The same owner check
+ * and the same 404s as the two reads above. Nothing to clear is a 404, so a repeated call is a 404, not a second 200.
+ * A storage failure is a 500 with the database untouched (photos deleted before it stay deleted), and the same request
+ * can be sent again. No lock is held while storage is called. No rate limit, like the other teacher writes on
+ * `/homework`.
+ */
+router.delete("/homework/:id/submissions/:studentId", async (req: AuthenticatedRequest, res) => {
+  try {
+    const teacherId = req.user!.id;
+    const hw = await ownedHomework(String(req.params["id"]), teacherId);
+    if (!hw || !hw.requiresSubmission) {
+      res.status(404).json(NO_HOMEWORK);
+      return;
+    }
+    const studentId = String(req.params["studentId"]);
+    const cleared = isUuid(studentId) ? await clearForTeacher(hw, studentId) : null;
+    if (!cleared) {
+      res.status(404).json(NO_SUBMISSION);
+      return;
+    }
+    logger.info({ homeworkId: hw.id, studentId, teacherId, photoCount: cleared.photoCount }, "homework submission cleared by teacher");
+    res.json({ cleared: true });
+  } catch (err) {
+    logger.error({ err, homeworkId: String(req.params["id"]) }, "teacher homework submission clear failed");
+    res.status(500).json({ error: "Failed to clear the submission" });
   }
 });
 

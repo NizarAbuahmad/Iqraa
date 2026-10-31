@@ -1235,6 +1235,24 @@ grant — only `systemDb` reads it), or *deferred* (named in `DEFERRED` — stil
 privileges on purpose). **Adding a `systemDb` use** means editing `systemDbFiles.test.ts`
 and writing the reason.
 
+### Reverting the API past migration 0022
+
+A migration is never rolled back by a code revert: reverting a merge redeploys older API code
+against the schema as it stands. That is usually harmless (columns are additive), but
+`0022_light_stellaris` also **changed three row-level-security policies** on
+`homework_submissions` (`ALTER POLICY` on `_select`, `_insert` and `_update`), and code from
+before it (before 2026-10-31's «Homework submissions record their author») does not know the
+`author_user_id` column. So reverting the API to such a commit **also needs a new migration that
+restores 0021's three policies** (copy them from `0021_blushing_blockbuster.sql`, as `ALTER
+POLICY`, which keeps the column): with `RLS_ENFORCE=on` the old API inserts rows without an
+author, the 0022 `INSERT` policy (`author_user_id = app_uid()`) refuses every one, and a
+student's first photo or note on a homework fails with a 500. With `RLS_ENFORCE=off` the old code works, but every row it writes has a NULL author,
+and once the newer code is deployed again those rows are nobody's: a draft is shown to no one
+and replaced on the next write, and a handed-in project blocks the student who wrote it (409
+`other_author`) until the teacher clears it. So rolling forward again after such a revert needs
+0022's backfill `UPDATE` re-run (by a migration) before the new API takes traffic. The same holds
+for any later migration that alters a policy: say in its PR what a code revert then needs.
+
 ## Point-of-no-return changes go up as drafts
 
 Some changes cannot be undone by reverting the commit — removing a service

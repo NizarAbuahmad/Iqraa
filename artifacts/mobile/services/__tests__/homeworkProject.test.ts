@@ -15,6 +15,7 @@ import {
   needsLateConfirm,
   noteNeedsSave,
   photoSlotSize,
+  projectMode,
   submissionLook,
   removalWouldEmpty,
   saveAgain,
@@ -35,6 +36,22 @@ describe('noteNeedsSave', () => {
   it('never saves into a locked project, nor before the first load', () => {
     assert.equal(noteNeedsSave({ locked: true }, 'a', 'b'), false);
     assert.equal(noteNeedsSave({ locked: false }, null, 'b'), false);
+  });
+  it('never saves into a project another account handed in (the server would refuse it as other_author)', () => {
+    assert.equal(noteNeedsSave({ locked: false, otherAuthor: true }, '', 'b'), false);
+    assert.equal(noteNeedsSave({ locked: false, otherAuthor: false }, '', 'b'), true);
+  });
+});
+
+describe('projectMode', () => {
+  const view = (locked: boolean, otherAuthor: boolean) => ({ locked, otherAuthor });
+  it('is read-only with the notice when another account handed the project in, locked or not', () => {
+    assert.equal(projectMode(view(false, true)), 'otherAuthor');
+    assert.equal(projectMode(view(true, true)), 'otherAuthor');
+  });
+  it('is locked after the due day, and editable otherwise', () => {
+    assert.equal(projectMode(view(true, false)), 'locked');
+    assert.equal(projectMode(view(false, false)), 'edit');
   });
 });
 
@@ -96,6 +113,10 @@ describe('isStaleRefusal and isEmptyRefusal', () => {
     assert.equal(isStaleRefusal(new SubmissionError('x', 404)), true);
     assert.equal(isStaleRefusal(new SubmissionError('x', 500)), false);
     assert.equal(isStaleRefusal(new TypeError('offline')), false);
+  });
+  it('reads other_author and changed as stale too: the screen reads the project again (the notice, or a fresh project)', () => {
+    assert.equal(isStaleRefusal(new SubmissionError('x', 409, 'other_author')), true);
+    assert.equal(isStaleRefusal(new SubmissionError('x', 409, 'changed')), true);
   });
   it('recognises the project route’s own `empty`, and no other feature’s', () => {
     assert.equal(isEmptyRefusal(new SubmissionError('x', 409, 'empty')), true);
