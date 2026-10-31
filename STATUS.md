@@ -88,9 +88,13 @@ Checked 2026-10-22:
   its history is out of reach. For Android replay that project needs "Record user sessions" on
   **and a 1.6.0 build made after that change merged** (see Mobile above); web events reach it
   once the site redeploys. Students, parents and exam pages are recorded; the parent consent page
-  is not. The homework project screen (`/homework-project`, students' photos of their work) is left
+  is not. The homework project screen (`/homework-project`, students' photos of their work) and the
+  teacher's two screens that show the same photos (`/homework-submissions`) are left
   out of screen-view tracking (`shouldTrackScreen`), which does not stop a recording already
-  running, and whether masking hides its photos is unverified, like every other screen. The policy (`LEGAL_VERSION` 2026-10-31.d now; its recording text dates from 2026-10-30) was written by a model and **not reviewed by a
+  running, and whether masking hides their photos is unverified, like every other screen. The
+  teacher's screens are reached from the tracked class page, so on the web a Contentsquare
+  recording is usually already running when they open and only the body-level mask protects the
+  photos; Android replay has `maskAllImages` true. The policy (`LEGAL_VERSION` 2026-10-31.d now; its recording text dates from 2026-10-30) was written by a model and **not reviewed by a
   lawyer**; Contentsquare's data location was not checked (PostHog's settings say «EU Cloud»),
   and the Contentsquare plan shows a 200K sessions a month cap.
   Entry: «Screen recordings: Contentsquare on the web, PostHog replay on Android» in the log.
@@ -118,11 +122,14 @@ Checked 2026-10-22:
   teacher now turns a homework into a project with a switch, sees «سلّم X من Y» on its card, a list of
   who handed in, each handed-in project (photos, note, time), and deletes one with «حذف المشروع» (which
   also ends the mis-claim dead end: after unlinking, the teacher deletes the wrong child's project and
-  the account linked now starts clean). Still open: (1) **a hidden draft locks the switch for good** —
-  once any tick or any project row exists the switch is disabled (409 `submission_locked`, the owner's
-  rule), a draft is never shown to the teacher and the app has no control to clear one, even a draft
-  whose author removed every photo; the way out is deleting the homework and posting it again (or the
-  API's `DELETE /homework/:id/submissions/:studentId`). The lock check is not atomic with the write.
+  the account linked now starts clean). Still open: (1) **a hidden draft with content locks the switch** —
+  once any tick, or any project that holds a photo or a note, exists the switch is disabled (409
+  `submission_locked`). A draft is never shown to the teacher and the app has no control to clear one;
+  the way out is deleting the homework and posting it again (or the API's `DELETE
+  /homework/:id/submissions/:studentId`). **Ruling that refines the owner's rule («any tick or any
+  row»), which the owner can revert:** a draft whose student removed every photo and cleared the note
+  holds nothing and no longer locks; revert by dropping `holdsWork` in `homeworkIdsWithWork`. The lock
+  check is not atomic with the write.
   (2) **Parents have no view** of their child's project (the API route exists; no screen). (3) **No
   push to the teacher** when a project is handed in. (4) The privacy-policy text on projects
   (`constants/legal.ts` §1 and §6) was written by a model and **not reviewed by a lawyer**. Entries:

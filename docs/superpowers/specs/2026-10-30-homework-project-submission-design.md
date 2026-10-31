@@ -414,9 +414,13 @@ names messages and lesson materials, not homework projects; changing it is a nat
 - **Toggling `requiresSubmission` after work exists (decided 2026-10-31, built in phase 3,
   §10).** On → off would make the stored photos unreadable (every student route answers
   404) and let drafts be ticked by hand; off → on would leave students who already ticked
-  "done" with a submission of `none` and unable to untick. So once any completion tick or
-  any `homework_submissions` row exists, a `PATCH /homework/:id` that changes the flag is
-  409 `submission_locked`, and the form's switch is disabled with the reason. Left as they
+  "done" with a submission of `none` and unable to untick. So once any completion tick, or
+  any submission that holds a photo or a note, exists, a `PATCH /homework/:id` that changes the flag is
+  409 `submission_locked`, and the form's switch is disabled with the reason. (**Ruling,
+  2026-10-31, refining the owner's "any tick or any submission row", which the owner can
+  revert:** a row whose student removed every photo and cleared the note holds nothing,
+  is invisible to everyone and strands no work, so it does not lock. To revert, delete the
+  `holdsWork` condition in `homeworkIdsWithWork`.) Left as they
   are: (a) the check and the write are not atomic, so a student's very first upload or tick
   in the milliseconds between them can slip through (on → off then leaves a draft nobody can
   read or clear in the app; off → on leaves a tick); closing it needs a lock across the
@@ -424,10 +428,11 @@ names messages and lesson materials, not homework projects; changing it is a nat
   archived-homework phase could also purge the submission rows of a homework whose
   `requires_submission` is false. (b) **A hidden draft keeps the switch locked**, and the
   teacher cannot clear it in the app (a draft is never shown; the list row does not open, the
-  detail read is 404). That includes a draft whose author removed every photo: the row stays
-  with no photos and no note and still locks (seen in the phase 3 real-stack run). Only the
-  API route (`DELETE /homework/:id/submissions/:studentId`, which clears drafts too) or
-  deleting the homework gets the teacher out. (c) An old tick on a plain homework locks it
+  detail read is 404). Under the ruling above this narrows to a draft with real content (a
+  photo or a note): one whose author removed every photo and cleared the note holds nothing
+  and no longer locks (it did before the ruling, seen in the phase 3 real-stack run). For a
+  draft with content, only the API route (`DELETE /homework/:id/submissions/:studentId`,
+  which clears drafts too) or deleting the homework gets the teacher out. (c) An old tick on a plain homework locks it
   the same way, so a plain homework someone has ticked cannot become a project.
 - **R2 not configured** (`isR2Configured()` false, e.g. a local checkout): upload
   routes answer 503 `storage_unavailable`, the same shape as media, and the app
@@ -475,8 +480,10 @@ this phase.
 
 **The switch rule (owner decision).** `requiresSubmission` may be changed freely only
 while nobody has started. Once any student has a completion tick for the homework or
-any `homework_submissions` row for it (a draft counts, although the teacher cannot
-see drafts), `PATCH /homework/:id` with a *different* `requiresSubmission` answers
+any `homework_submissions` row for it that holds a photo or a non-blank note (a draft
+counts, although the teacher cannot see drafts; an emptied draft does not, a ruling that
+refines the owner's wording and can be reverted by dropping the `holdsWork` condition in
+`homeworkIdsWithWork`), `PATCH /homework/:id` with a *different* `requiresSubmission` answers
 409 `submission_locked`. Setting the same value again is always allowed. To change it
 later the teacher deletes the homework and posts a new one. The class homework list
 carries `requiresSubmissionLocked` per item, computed on the server on the owner

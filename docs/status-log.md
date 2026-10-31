@@ -26,9 +26,11 @@ the `preview` OTA channel. Spec: `docs/superpowers/specs/2026-10-30-homework-pro
 
 **What was built** (commits `8604811`…`a748c12`)
 
-- **Task 1, the switch lock (API), `8604811`.** `homeworkIdsWithWork(ids)` (`lib/homeworkSubmission.ts`,
+- **Task 1, the switch lock (API), `8604811`, refined in the final-review fix wave.**
+  `homeworkIdsWithWork(ids)` (`lib/homeworkSubmission.ts`,
   on `systemDb`, one `union` of homework ids from `homework_completions` and `homework_submissions`; a
-  draft counts, because under RLS a draft is invisible to the teacher). `PATCH /homework/:id` with a
+  draft counts, because under RLS a draft is invisible to the teacher — but only a submission that holds a
+  photo or a non-blank note, see the Ruling below). `PATCH /homework/:id` with a
   *different* `requiresSubmission` on a homework with work answers 409 `{ code: "submission_locked" }`
   (`SUBMISSION_LOCKED_CODE`, `modules/homework/rules.ts`); the check sits right before the `UPDATE`, so a
   PATCH that also changes the title is refused as a whole. The same value is always allowed. The class
@@ -68,11 +70,27 @@ the `preview` OTA channel. Spec: `docs/superpowers/specs/2026-10-30-homework-pro
   arrives after the teacher left the screen neither navigates nor leaves a note; Back and Android
   hardware back are held while the request is in flight; a photo whose link fails to load becomes the
   «not available» placeholder.
+- **Final-review fix wave, `606b921`.** The Ruling below (an emptied draft does not lock); the PATCH comment
+  says the lock check is not atomic; the list screen reads its param with `firstParam` and draws a 404 as the
+  neutral state the detail screen uses (real failures keep the error look); one photo reads «صورة واحدة» in a
+  row's accessible name; a disabled `BackButton` is dimmed (opacity 0.4; the detail screen is its only caller
+  that passes `disabled`); the detail's header comment no longer says a swipe-back "cannot be" held (it is
+  not; the `aliveRef` check covers it — `gestureEnabled` through `navigation.setOptions` was not tried, as it
+  cannot be checked off a phone). Re-run after it: api-server **3297 of 3297**, mobile **8973 tests, 8963
+  passed, 0 failed, 10 skipped**, root typecheck clean. The new "emptied draft" tests failed with the old
+  query (3 of 6) and with a photo-only condition (2 of 6, the note-only draft) before they passed.
 
 **Decisions**
 
 - **The lock rule is the owner's:** free while nobody has started, locked once any tick or any project row
   (a draft included) exists; to change it later the teacher deletes the homework and posts it again.
+- **Ruling (final-review fix wave, refines the owner's rule; the owner can revert it).** A submission row
+  counts toward the lock only if it HOLDS WORK, the same `holdsWork(photoCount, note)` the file's SQL guards
+  use: a photo, or a note with a non-space character. Ticks still count. Reason: a draft whose student
+  removed every photo (or cleared the note) leaves an empty row that nobody can see and that strands no
+  work, and under the owner's literal rule it kept the switch locked for good (seen in the real-stack run
+  below, before this). **To revert:** delete the `holdsWork(...)` condition from the submissions half of the
+  union in `homeworkIdsWithWork` (and the "emptied draft" tests in `homeworkSubmission.db.test.ts`).
 - **A new top-level route** (`/homework-submissions/...`, not under `/classes/...`) so the analytics
   exclusion by path prefix covers both screens; they show a minor's photos and the detail path carries
   the student id.
@@ -162,14 +180,15 @@ the `preview` OTA channel. Spec: `docs/superpowers/specs/2026-10-30-homework-pro
 
 **Known limits**
 
-- **The lock check is not atomic.** A student's very first upload or tick in the milliseconds between the
+- **The lock check is not atomic** (the PATCH's comment in `routes/homework.ts` now says so). A student's very first upload or tick in the milliseconds between the
   check and the `UPDATE` can slip through (on → off leaves a draft nobody can read or clear in the app;
   off → on leaves a tick). Closing it needs a lock across the owner and app connections. Follow-up idea:
   the sweep's archived-homework phase also purges the submission rows of homework with
   `requires_submission = false`.
-- **A hidden draft, or an old tick, keeps the switch locked**, and the teacher cannot clear a draft in the
-  app: it is never shown (the row does not open, the detail is 404). A draft whose author removed every
-  photo still counts (seen above). The ways out are deleting the homework, or the API route.
+- **A hidden draft with content, or an old tick, keeps the switch locked**, and the teacher cannot clear a
+  draft in the app: it is never shown (the row does not open, the detail is 404). Since the Ruling above, a
+  draft whose author removed every photo and cleared the note no longer counts (the real-stack run above
+  predates it and saw such a draft lock). The ways out are deleting the homework, or the API route.
 - **X can exceed Y** when a handed-in record is unlinked later; the card and list clamp to Y, so they agree
   but show one fewer than the handed-in rows (seen above).
 - **Account-less records** are listed («بلا حساب») but never counted or opened; a class with none with
