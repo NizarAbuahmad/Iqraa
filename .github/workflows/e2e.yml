@@ -5,8 +5,10 @@
 #
 # It is its own workflow, not a job in ci.yml, on purpose: it builds the web
 # bundle (several minutes) and should not delay the typecheck + tests result
-# that gates merging. It is NOT a required check yet — watch it for a week of
-# flakes before making it one.
+# that gates merging. It became a required check on 2026-11-01 (job name
+# "teacher to student smoke test" — renaming the job un-requires it, and a
+# required check that never reports blocks every merge, so change the branch rule
+# first).
 name: E2E
 
 on:
