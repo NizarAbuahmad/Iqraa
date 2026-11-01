@@ -305,7 +305,19 @@ export function reattachMarks(text: string): string {
  * occurrences at the time of writing. A word neither list has seen is left
  * alone, which is the right way for this to fail.
  */
-const LIGATURE_CORRECT: ReadonlySet<string> = new Set(wordlists.correct);
+/**
+ * Correct لا spellings the OCR books never used twice, added by hand.
+ *
+ * The generated list only knows what the OCR extractions happen to say, and a
+ * subject term can be missing from all of them while the pdf-parse side of the
+ * same subject is full of its broken form. Each entry here must be a real word
+ * whose ال spelling is not one (`attested` still blocks it if a book ever says
+ * otherwise). «مولات», moles: chem-s2 carried «موالت» 50+ times and a model
+ * given those pages wrote «موالت» to students (2026-11-01).
+ */
+const CURATED_CORRECT = ['مولات', 'المولات', 'مولاته', 'مولاتها'];
+
+const LIGATURE_CORRECT: ReadonlySet<string> = new Set([...wordlists.correct, ...CURATED_CORRECT]);
 const LIGATURE_ATTESTED: ReadonlySet<string> = new Set(wordlists.attested);
 
 /** Indexes of an internal «ال». Index 0 is the article, repaired elsewhere. */

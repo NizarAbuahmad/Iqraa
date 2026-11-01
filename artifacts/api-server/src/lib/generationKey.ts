@@ -34,9 +34,12 @@ export const PROMPT_VERSION = "2026-10-04.1";
  *   otherwise be served forever. Students are unaffected: their approved
  *   explanations are read by lesson, not by this key (`lessonExplanationStore.ts`).
  *   2026-10-31: concepts gained optional `shape`, `icon`, `chart` and `photo`.
+ *   2026-11-01: rule 14 (accuracy). The first student review of 50 pooled
+ *   sections rejected 17 for wrong or missing answers and false rules, and
+ *   the rejected ones would otherwise be served again on every prefill rerun.
  */
 const PROMPT_VERSION_BY_KIND: Readonly<Record<string, string>> = {
-  "lesson-teaching": "2026-10-31.1",
+  "lesson-teaching": "2026-11-01.1",
 };
 
 /** The version a kind's pool is keyed and stored under. */

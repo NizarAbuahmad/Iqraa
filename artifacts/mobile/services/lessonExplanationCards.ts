@@ -20,6 +20,16 @@ export type ExplanationCard =
 
 const clean = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
 
+/**
+ * An answer, or '' when the model wrote only a placeholder. A practice answer
+ * of «—» reached the first student review (2026-11-01); shown on a card it
+ * reads as the answer. Only punctuation counts as a placeholder, so «-3» stays.
+ */
+export const realAnswer = (value: unknown): string => {
+  const answer = clean(value);
+  return /^[\s\-–—_.…؟?]*$/u.test(answer) ? '' : answer;
+};
+
 // A leading list marker: a bullet or dash followed by a space, or a number in
 // Latin or Arabic-Indic digits written «1.» «1)» «(1)» followed by a space (or
 // by nothing, for a line that is only a marker). The space is required, so
@@ -99,12 +109,14 @@ export function buildExplanationCards(content: LessonTeachingOutput | null | und
 
   const example = content.workedExample;
   const exampleProblem = clean(example?.problem);
-  if (exampleProblem) {
+  const exampleAnswer = realAnswer(example?.answer);
+  // A worked example without its answer teaches nothing on its own.
+  if (exampleProblem && exampleAnswer) {
     cards.push({
       kind: 'example',
       problem: exampleProblem,
       steps: cleanList(example?.steps),
-      answer: clean(example?.answer),
+      answer: exampleAnswer,
     });
   }
 
@@ -112,7 +124,7 @@ export function buildExplanationCards(content: LessonTeachingOutput | null | und
   const practiceProblem = clean(practice?.problem);
   if (practiceProblem) {
     const hint = clean(practice?.hint);
-    const answer = clean(practice?.answer);
+    const answer = realAnswer(practice?.answer);
     cards.push({
       kind: 'practice',
       problem: practiceProblem,
