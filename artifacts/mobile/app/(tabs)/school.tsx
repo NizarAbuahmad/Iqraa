@@ -60,11 +60,11 @@ import {
   type FamilyPeriod,
 } from '@/services/familySchedule';
 import { getChildExams, getMyExams } from '@/services/studentExam';
-import { MY_EXAM_STATE_KEY, myExamTitle, subjectLabel, type MyExam } from '@/services/myExams';
+import { examDayParts, myExamTitle, subjectLabel, type MyExam } from '@/services/myExams';
+import { readableOn } from '@/services/readableColor';
+import { ExamStatusChip } from '@/components/ExamStatusChip';
 import {
-  examDayKind,
   formatExamTime,
-  formatExamWhen,
   groupChildExams,
   upcomingExams,
   type ExamGroup,
@@ -324,9 +324,14 @@ export default function SchoolScreen() {
               {t(isParent ? 'hwDescParent' : 'hwDescStudent')}
             </Text>
             {untrackedKind !== 'none' ? (
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.label, lineHeight: 22, textAlign: align }}>
-                {t(untrackedKind === 'all' ? 'hwParentNoAccount' : 'hwParentNoAccountSome', hwChild?.displayName ?? '')}
-              </Text>
+              // A boxed note, not another grey line under the description: it is an
+              // explanation of why the rows below carry no tick, not part of the intro.
+              <View style={[styles.note, { backgroundColor: colors.info + '14', flexDirection: rowDir }]}>
+                <Ionicons name="information-circle" size={ICON.lg} color={colors.info} />
+                <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.label, lineHeight: 22, textAlign: align }}>
+                  {t(untrackedKind === 'all' ? 'hwParentNoAccount' : 'hwParentNoAccountSome', hwChild?.displayName ?? '')}
+                </Text>
+              </View>
             ) : null}
           </View>
 
@@ -419,7 +424,7 @@ export default function SchoolScreen() {
           ) : null}
 
           {upcoming.map(exam => (
-            <UpcomingExamRow key={exam.evaluationId} exam={exam} today={hwToday} colors={colors} isRTL={isRTL} lang={lang} t={t} />
+            <UpcomingExamRow key={exam.evaluationId} exam={exam} today={hwToday} parent={isParent} colors={colors} isRTL={isRTL} lang={lang} t={t} />
           ))}
         </View>
 
@@ -543,44 +548,67 @@ function PeriodRow({
 }
 
 function UpcomingExamRow({
-  exam, today, colors, isRTL, lang, t,
+  exam, today, parent, colors, isRTL, lang, t,
 }: {
   exam: MyExam;
   today: string;
+  /** A parent reads «سُلِّم — بانتظار تصحيح المعلّم»; a student, the short label. */
+  parent: boolean;
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
   lang: 'ar' | 'en';
   t: ReturnType<typeof useLanguage>['t'];
 }) {
   const align = isRTL ? 'right' : 'left';
+  const rowDir = isRTL ? 'row-reverse' : 'row';
   // `upcomingExams` only returns rows with a valid day.
-  const kind = examDayKind(exam.examDate!, today);
-  const dayColor = kind === 'later' ? colors.mutedForeground : palette.warning;
-  const dayText = kind === 'today' ? t('examDayToday') : kind === 'tomorrow' ? t('examDayTomorrow') : formatExamWhen(exam.examDate!, null);
+  const badge = dueBadge(exam.examDate!, today);
+  const parts = examDayParts(exam.examDate, lang);
+  // Only an exam that can still be sat is urgent: one already handed in, or
+  // over, is just a date, so a calendar tile that turned amber for it would cry
+  // wolf at a family whose child has done their part.
+  const live = exam.state === 'available' || exam.state === 'in_progress';
+  const tileColor = live && (badge.kind === 'today' || badge.kind === 'tomorrow') ? palette.warning : colors.mutedForeground;
+  const tileText = readableOn(tileColor, colors.card);
+  const relative =
+    badge.kind === 'today' ? t('examDayToday') : badge.kind === 'tomorrow' ? t('examDayTomorrow') : t('examInDays', badge.days);
   const subject = subjectLabel(exam.subjectId, lang);
-  // A state a newer server adds degrades to «مُغلق» rather than a blank.
-  const meta = [subject, formatExamTime(exam.examTime), t(MY_EXAM_STATE_KEY[exam.state] ?? 'myExamsStateClosed')]
-    .filter(Boolean)
-    .join(' · ');
+  const title = myExamTitle(exam, lang) || t('myExamsUntitled', subject ?? '');
+  // «اختبار الكيمياء» already says «الكيمياء».
+  const showSubject = Boolean(subject) && !title.includes(subject!);
+  const time = formatExamTime(exam.examTime);
   return (
     <Pressable
       accessibilityRole="link"
       onPress={() => router.push('/my-exams' as never)}
       style={({ pressed }) => [
         styles.examRow,
-        { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.85 : 1 },
+        { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: rowDir, opacity: pressed ? 0.85 : 1 },
       ]}
     >
-      <View style={[styles.hwBadge, { backgroundColor: dayColor + '1A' }]}>
-        <Text style={{ color: dayColor, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{dayText}</Text>
+      {/* A calendar tile: the day number and the month are the first thing a parent looks for. */}
+      <View style={[styles.dayTile, { backgroundColor: tileColor + '1A' }]}>
+        <Text style={{ color: tileText, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.title, lineHeight: 26 }}>{parts?.day ?? ''}</Text>
+        <Text style={{ color: tileText, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.micro, textAlign: 'center' }}>{parts?.month ?? ''}</Text>
       </View>
       <View style={{ flex: 1, gap: SPACE.xs }}>
-        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.body, textAlign: align }}>
-          {myExamTitle(exam, lang) || t('myExamsUntitled', subject ?? '')}
-        </Text>
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 21, textAlign: align }}>
-          {meta}
-        </Text>
+        {showSubject ? (
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textAlign: align }}>{subject}</Text>
+        ) : null}
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.body, textAlign: align }}>{title}</Text>
+        <View style={{ flexDirection: rowDir, alignItems: 'center', flexWrap: 'wrap', columnGap: SPACE.md, rowGap: SPACE.xs }}>
+          <Text style={{ color: live ? tileText : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{relative}</Text>
+          {time ? (
+            <View style={{ flexDirection: rowDir, alignItems: 'center', gap: SPACE.xs }}>
+              <Ionicons name="time-outline" size={ICON.md} color={colors.mutedForeground} />
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption }}>{time}</Text>
+            </View>
+          ) : null}
+        </View>
+        {/* In a row of its own: this app mirrors with row-reverse, not I18nManager, so a lone child would sit on the wrong edge. */}
+        <View style={{ flexDirection: rowDir }}>
+          <ExamStatusChip state={exam.state} parent={parent} />
+        </View>
       </View>
     </Pressable>
   );
@@ -604,10 +632,12 @@ function HomeworkRow({
   // instructions is simply tappable to show them all.
   const [expanded, setExpanded] = useState(false);
   // Nobody can tick an untracked item (no row of the child in its class has a
-  // student account), so "late" would be a claim the system cannot back: the
-  // neutral date badge stands in for every kind.
+  // student account), so "late" would be a claim the system cannot back: a
+  // neutral date badge stands in for it. «اليوم» and «غدًا» are plain facts
+  // about the calendar, not about the child, so those stay.
   const untracked = !item.canTrack;
-  const badge = untracked ? { kind: 'later' as const, days: 0 } : dueBadge(item.dueDate, today);
+  const rawBadge = dueBadge(item.dueDate, today);
+  const badge = untracked && rawBadge.kind === 'overdue' ? { kind: 'later' as const, days: 0 } : rawBadge;
   const badgeColor =
     badge.kind === 'overdue' ? colors.destructive : badge.kind === 'today' || badge.kind === 'tomorrow' ? palette.warning : colors.mutedForeground;
   const badgeText =
@@ -750,25 +780,34 @@ function HomeworkRow({
             </Text>
           </PressableScale>
         ) : null}
+        {/* The links used to be bare teal text, indistinguishable from a heading. Now a labelled group of rows that look pressable. */}
+        {item.resources.length > 0 ? (
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textAlign: align, marginTop: SPACE.xs }}>
+            {t('hwResourcesLabel')}
+          </Text>
+        ) : null}
         {item.resources.map(r => {
           const isGame = r.kind === 'game';
           const result = isGame ? resultForGame(item.gameResults, r.lessonId, r.game) : null;
           return (
-            <View key={resourceKey(r)}>
+            <View key={resourceKey(r)} style={{ gap: SPACE.xs }}>
               <Pressable
                 accessibilityRole="link"
-                hitSlop={8}
                 onPress={() => openResource(r, { teacher: false, isAr: isRTL, homeworkId: item.id })}
-                style={{ flexDirection: rowDir, alignItems: 'center', gap: SPACE.xs, paddingVertical: SPACE.xs }}
+                style={({ pressed }) => [
+                  styles.resource,
+                  { flexDirection: rowDir, borderColor: colors.border, backgroundColor: colors.background, opacity: pressed ? 0.85 : 1 },
+                ]}
               >
-                {isGame ? (
-                  <Ionicons name={r.game === 'exercises' ? 'calculator-outline' : 'game-controller-outline'} size={16} color={ACCENT} />
-                ) : (
-                  <Ionicons name="attach-outline" size={16} color={ACCENT} />
-                )}
-                <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textAlign: align }}>
+                <Ionicons
+                  name={isGame ? (r.game === 'exercises' ? 'calculator-outline' : 'game-controller-outline') : 'attach-outline'}
+                  size={ICON.lg}
+                  color={readableOn(ACCENT, colors.background, 3)}
+                />
+                <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.label, lineHeight: 22, textAlign: align }}>
                   {isGame ? `${t(HOMEWORK_GAME_TITLE_KEY[r.game])}: ${r.title}` : r.title}
                 </Text>
+                <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={ICON.md} color={colors.mutedForeground} />
               </Pressable>
               {result ? (
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
@@ -796,6 +835,9 @@ const styles = StyleSheet.create({
   hwRow: { alignItems: 'flex-start', gap: SPACE.md, borderWidth: 1, padding: SPACE.md },
   hwMark: { width: TOUCH, height: TOUCH, alignItems: 'center', justifyContent: 'center' },
   hwBadge: { borderRadius: RADIUS.pill, paddingHorizontal: SPACE.md, paddingVertical: SPACE.xxs },
-  examRow: { alignItems: 'center', gap: SPACE.md, borderWidth: 1, padding: SPACE.md },
+  examRow: { alignItems: 'flex-start', gap: SPACE.md, borderWidth: 1, padding: SPACE.md },
+  dayTile: { minWidth: 80, alignSelf: 'flex-start', borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center', paddingVertical: SPACE.sm, paddingHorizontal: SPACE.xs },
+  resource: { alignItems: 'center', gap: SPACE.sm, borderWidth: 1, borderRadius: RADIUS.md, paddingVertical: SPACE.sm, paddingHorizontal: SPACE.md, minHeight: TOUCH },
+  note: { alignItems: 'flex-start', gap: SPACE.sm, borderRadius: RADIUS.md, padding: SPACE.md },
   examsRow: { alignItems: 'center', gap: 12, borderWidth: 1, padding: SPACE.lg, marginTop: 4 },
 });

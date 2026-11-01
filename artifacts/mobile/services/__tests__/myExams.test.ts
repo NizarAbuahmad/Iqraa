@@ -4,7 +4,13 @@ import assert from 'node:assert/strict';
 import {
   MY_EXAM_STATE_KEY,
   actionableCount,
+  EXAM_STATE_TONE,
+  PARENT_EXAM_STATE_KEY,
   canRetakeExam,
+  childExamCounts,
+  childSummaryLine,
+  examDayParts,
+  formatExamDay,
   myExamAction,
   metaSegments,
   myExamTitle,
@@ -170,5 +176,58 @@ describe('progressSummary', () => {
       { subjectId: 'mathematics', percent: 80, count: 2 },
       { subjectId: 'chemistry', percent: 50, count: 1 },
     ]);
+  });
+});
+
+describe('exam day text', () => {
+  it('reads the day from the text, in either language', () => {
+    assert.deepEqual(examDayParts('2026-11-01', 'ar'), { day: '1', month: 'تشرين الثاني', year: '2026' });
+    assert.equal(formatExamDay('2026-11-11', 'ar'), '11 تشرين الثاني 2026');
+    assert.equal(formatExamDay('2026-01-05', 'en'), '5 January 2026');
+  });
+
+  it('refuses anything that is not a real day', () => {
+    for (const bad of [null, undefined, '', '2026-13-01', '2026-00-10', '2026-11-00', '11-11-2026', '2026-11-1']) {
+      assert.equal(examDayParts(bad, 'ar'), null, String(bad));
+    }
+  });
+});
+
+describe('parent wording', () => {
+  it('has a label and a tone for every state', () => {
+    for (const state of Object.keys(MY_EXAM_STATE_KEY) as (keyof typeof MY_EXAM_STATE_KEY)[]) {
+      assert.ok(PARENT_EXAM_STATE_KEY[state], state);
+      assert.ok(EXAM_STATE_TONE[state], state);
+    }
+  });
+
+  it('never says a parent-visible exam is merely «locked»', () => {
+    assert.notEqual(PARENT_EXAM_STATE_KEY.closed, MY_EXAM_STATE_KEY.closed);
+  });
+});
+
+describe('childSummaryLine', () => {
+  const of = (...states: MyExam['state'][]) => states.map(state => ({ state }));
+
+  it('counts each kind once, and paper counts as waiting', () => {
+    assert.deepEqual(childExamCounts(of('result', 'submitted', 'paper', 'available', 'in_progress', 'closed')), {
+      ready: 1, waiting: 2, open: 2, missed: 1,
+    });
+  });
+
+  it('is empty for a child with no exams', () => {
+    assert.equal(childSummaryLine([], 'ar'), '');
+    assert.equal(childSummaryLine([], 'en'), '');
+  });
+
+  it('puts what is ready first and joins the rest with a dot', () => {
+    assert.equal(childSummaryLine(of('submitted', 'result'), 'ar'), 'نتيجة واحدة جاهزة · اختبار واحد بانتظار المعلّم');
+    assert.equal(childSummaryLine(of('submitted', 'result'), 'en'), '1 result ready · 1 exam waiting for the teacher');
+  });
+
+  it('uses the Arabic dual, few and many forms', () => {
+    assert.equal(childSummaryLine(of('closed', 'closed'), 'ar'), 'اختباران لم يُسلَّما');
+    assert.equal(childSummaryLine(of('result', 'result', 'result'), 'ar'), '3 نتائج جاهزة');
+    assert.equal(childSummaryLine(Array.from({ length: 11 }, () => ({ state: 'available' as const })), 'ar'), '11 اختبارًا مفتوحًا');
   });
 });

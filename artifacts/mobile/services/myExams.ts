@@ -169,3 +169,107 @@ export function actionableCount(exams: readonly MyExam[]): number {
 export function metaSegments(parts: readonly (string | null | undefined | false)[]): string[] {
   return parts.filter((p): p is string => typeof p === 'string' && p.trim() !== '');
 }
+
+/**
+ * How a state is coloured, by meaning rather than by hex: the screens map a
+ * tone onto the live palette (`colors[tone]`, `mutedForeground` for `muted`) so
+ * dark mode follows. «waiting» is blue, a released result green, an exam that
+ * ended unsent red, and amber is left to «now» (see CLAUDE.md, *Amber*).
+ */
+export type ExamTone = 'primary' | 'warning' | 'info' | 'success' | 'destructive' | 'muted';
+
+export const EXAM_STATE_TONE: Record<MyExamState, ExamTone> = {
+  available: 'primary',
+  in_progress: 'warning',
+  submitted: 'info',
+  result: 'success',
+  closed: 'destructive',
+  paper: 'muted',
+};
+
+/**
+ * What each state says to a parent. «مُغلق» alone read as "locked"; the server's
+ * `closed` is "the exam is over and nothing was handed in" (it cannot tell a
+ * missed paper from one the teacher closed early), so the label says exactly
+ * that and no more. Gender-neutral: the child may be a son or a daughter.
+ */
+export const PARENT_EXAM_STATE_KEY = {
+  available: 'childResultsStateAvailable',
+  in_progress: 'childResultsStateInProgress',
+  submitted: 'childResultsStateSubmitted',
+  result: 'myExamsStateResult',
+  closed: 'childResultsStateClosed',
+  paper: 'myExamsStatePaper',
+} as const satisfies Record<MyExamState, string>;
+
+const MONTHS_AR = ['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول'];
+const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+/**
+ * An exam day's parts, read from the text — never through `Date`, which moves
+ * a plain calendar day in any zone west of UTC. Null for anything that is not
+ * a real 'YYYY-MM-DD'.
+ */
+export function examDayParts(ymd: string | null | undefined, lang: 'ar' | 'en'): { day: string; month: string; year: string } | null {
+  const m = typeof ymd === 'string' ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd) : null;
+  if (!m) return null;
+  const month = Number(m[2]);
+  const day = Number(m[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  return { day: String(day), month: (lang === 'ar' ? MONTHS_AR : MONTHS_EN)[month - 1]!, year: m[1]! };
+}
+
+/** «11 تشرين الثاني 2026» — the one date style the family screens use for an exam day. */
+export function formatExamDay(ymd: string | null | undefined, lang: 'ar' | 'en'): string | null {
+  const p = examDayParts(ymd, lang);
+  return p ? `${p.day} ${p.month} ${p.year}` : null;
+}
+
+export interface ChildExamCounts {
+  /** Result released. */
+  ready: number;
+  /** Handed in, or sat on paper, and the teacher has not released a mark. */
+  waiting: number;
+  /** Still open to sit (not started, or started and not handed in). */
+  open: number;
+  /** Over, and nothing was handed in. */
+  missed: number;
+}
+
+export function childExamCounts(exams: readonly Pick<MyExam, 'state'>[]): ChildExamCounts {
+  const c: ChildExamCounts = { ready: 0, waiting: 0, open: 0, missed: 0 };
+  for (const e of exams) {
+    if (e.state === 'result') c.ready++;
+    else if (e.state === 'submitted' || e.state === 'paper') c.waiting++;
+    else if (e.state === 'available' || e.state === 'in_progress') c.open++;
+    else c.missed++;
+  }
+  return c;
+}
+
+/** n × noun, with Arabic's one / two / 3–10 / 11+ forms. */
+function arForms(n: number, one: string, two: string, few: (n: number) => string, many: (n: number) => string): string {
+  return n === 1 ? one : n === 2 ? two : n <= 10 ? few(n) : many(n);
+}
+
+/**
+ * One line under a child's name: what needs a parent's eye first. Empty for a
+ * child with no exams (the screen says «لا اختبارات بعد» itself).
+ */
+export function childSummaryLine(exams: readonly Pick<MyExam, 'state'>[], lang: 'ar' | 'en'): string {
+  const c = childExamCounts(exams);
+  const parts: string[] = [];
+  if (lang === 'ar') {
+    if (c.ready) parts.push(arForms(c.ready, 'نتيجة واحدة جاهزة', 'نتيجتان جاهزتان', n => `${n} نتائج جاهزة`, n => `${n} نتيجة جاهزة`));
+    if (c.waiting) parts.push(arForms(c.waiting, 'اختبار واحد بانتظار المعلّم', 'اختباران بانتظار المعلّم', n => `${n} اختبارات بانتظار المعلّم`, n => `${n} اختبارًا بانتظار المعلّم`));
+    if (c.open) parts.push(arForms(c.open, 'اختبار واحد مفتوح', 'اختباران مفتوحان', n => `${n} اختبارات مفتوحة`, n => `${n} اختبارًا مفتوحًا`));
+    if (c.missed) parts.push(arForms(c.missed, 'اختبار واحد لم يُسلَّم', 'اختباران لم يُسلَّما', n => `${n} اختبارات لم تُسلَّم`, n => `${n} اختبارًا لم يُسلَّم`));
+  } else {
+    const exam = (n: number) => (n === 1 ? 'exam' : 'exams');
+    if (c.ready) parts.push(`${c.ready} ${c.ready === 1 ? 'result' : 'results'} ready`);
+    if (c.waiting) parts.push(`${c.waiting} ${exam(c.waiting)} waiting for the teacher`);
+    if (c.open) parts.push(`${c.open} open ${exam(c.open)}`);
+    if (c.missed) parts.push(`${c.missed} ${exam(c.missed)} not handed in`);
+  }
+  return parts.join(' · ');
+}
