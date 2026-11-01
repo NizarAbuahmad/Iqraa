@@ -40,6 +40,39 @@ answer before and after (0 changed). Typecheck clean. Not seen live yet.
 the model's wording, not a matcher. «جهّز نشاطا جماعيا عن الأعداد النسبية» offers three grade 7 lessons to a grade 10 teacher; it is
 asking which lesson, which is acceptable.
 
+## Student «اختباراتي» gets the parent screen's card — 2026-11-01
+
+The parent redesign (see «Parent screens: «نتائج أبنائي» and the school tab's exams and
+homework say what they mean») left the student's own list on the old card on purpose, so a
+student on the updated app still saw an hourglass beside a chip saying the same thing, a
+padlock beside a bare «مُغلق», the subject twice and the exam day in two date styles. A
+screenshot from a student's phone showed exactly that.
+
+What changed (`app/my-exams.tsx`, student view only in wording; the layout is now one for both roles):
+
+- One card for student and parent: subject, title, one status pill (`ExamStatusChip`), labelled
+  facts with one icon each (planned day, handed in, sent, time limit, marks), then — for an exam
+  that can be sat — a full-width «ابدأ» / «تابع» button at the 44-point touch height. The retake
+  bar, «راجع إجاباتك والحلول» and the tap-to-open result are unchanged.
+- The student's status wording is the existing one («جديد», «لم يُسلَّم بعد», «سُلِّم — بانتظار
+  النتيجة», «النتيجة متاحة», «امتحان ورقي»); `myExamsStateClosed` is now «مُغلق — لم يُسلَّم»
+  («Closed — not handed in») for both roles, since a bare «مُغلق» next to a padlock read as locked.
+- An empty «القادمة» heading is dropped for everyone: «لا توجد اختبارات قادمة الآن» stands alone.
+- `STATE_COLOR`, `STATE_ICON`, the old row styles and `metaSegments` (and its two tests) are
+  removed: nothing used them any more.
+- A «ما الجديد» entry (`exams-clearer-cards`, students and parents, route `/my-exams`) announces
+  both exam-screen changes, this one and the parent's, as the repo's convention asks for a visible
+  change. Existing student and parent accounts see it once on their home screen.
+
+**Verified:** `tsc` clean; `myExams`, `upcomingExams`, `designScale`, `iconSystem` and
+`celebrateMoments` green; the student's «اختباراتي» and the school tab rendered in a browser at
+phone width, light and dark, RTL, against a stub student (new, in-progress, handed-in, result with
+review, closed, paper exams).
+
+**Not verified:** a real student account or phone; the English layout; the start / continue button
+through to `/take/:code`; long titles beyond two lines. A device only shows this after the over-the-air
+update has downloaded and the app has been restarted (the app opens the saved version first).
+
 ## Lesson explanations: accuracy rule, placeholder answers, and «مولات» in the chemistry book — 2026-11-01
 
 **Why.** The first live prefill of student lesson explanations (`pregenerate.ts --go --only=lesson-teaching`,
