@@ -1067,3 +1067,59 @@ describe('checkClips: an unreachable host stops the run', () => {
     assert.match(out.stopReason ?? '', /401: bad key/);
   });
 });
+
+describe('checkClips: clips a person has listened to', () => {
+  const heardBad = async () => 'Bald.';
+  it('a mismatch on a clip whose current ETag a person accepted counts as a match, and says so', async () => {
+    const { results } = await checkClips(
+      [mk('ball')],
+      deps({ transcribe: heardBad, fetchClip: async () => clip(100, '"v1"'), reviewed: { ball: '"v1"' } }),
+    );
+    assert.equal(results[0]!.verdict, 'match');
+    assert.equal(results[0]!.reviewed, true);
+    assert.equal(results[0]!.heard, 'Bald.');
+  });
+  it('a re-voiced clip (another ETag) is checked again and stays a mismatch', async () => {
+    const { results } = await checkClips(
+      [mk('ball')],
+      deps({ transcribe: heardBad, fetchClip: async () => clip(100, '"v2"'), reviewed: { ball: '"v1"' } }),
+    );
+    assert.equal(results[0]!.verdict, 'mismatch');
+    assert.equal(results[0]!.reviewed, undefined);
+  });
+  it('a clip that already matches is not marked as reviewed', async () => {
+    const { results } = await checkClips(
+      [mk('ball')],
+      deps({ fetchClip: async () => clip(100, '"v1"'), reviewed: { ball: '"v1"' } }),
+    );
+    assert.equal(results[0]!.verdict, 'match');
+    assert.equal(results[0]!.reviewed, undefined);
+  });
+  it('a silent clip is accepted only with a matching ETag too', async () => {
+    const ok = await checkClips(
+      [mk('ball')],
+      deps({ transcribe: async () => '', fetchClip: async () => clip(100, '"v1"'), reviewed: { ball: '"v1"' } }),
+    );
+    assert.equal(ok.results[0]!.verdict, 'match');
+    const changed = await checkClips(
+      [mk('ball')],
+      deps({ transcribe: async () => '', fetchClip: async () => clip(100, '"v9"'), reviewed: { ball: '"v1"' } }),
+    );
+    assert.equal(changed.results[0]!.verdict, 'silent');
+  });
+  it('the list is read by own property: a clip named like an object method is not accepted', async () => {
+    const { results } = await checkClips(
+      [mk('constructor')],
+      deps({ transcribe: heardBad, fetchClip: async () => clip(100, '"v1"'), reviewed: {} }),
+    );
+    assert.equal(results[0]!.verdict, 'mismatch');
+  });
+  it('the report says how many matches rest on a person listening, and names them', () => {
+    const accepted: CheckResult = { item: mk('ball', 'ball'), heard: 'Bald.', verdict: 'match', reviewed: true };
+    const plain: CheckResult = { item: mk('cat', 'cat'), heard: 'Cat.', verdict: 'match' };
+    const out = renderReportMarkdown([accepted, plain], { model: 'm', date: 'd' });
+    assert.match(out, /1 counted as a match because a person listened/);
+    assert.match(out, /ball/);
+    assert.ok(!renderReportMarkdown([plain], { model: 'm', date: 'd' }).includes('a person listened'));
+  });
+});

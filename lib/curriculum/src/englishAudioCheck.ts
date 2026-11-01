@@ -83,8 +83,7 @@ const RE_ENDING = /(centre|theatre|metre|litre)(s?)$/;
 const ISE_SUFFIX = /^(.{2,})is(e|es|ed|ing|ation|ations)$/;
 
 function americanSpelling(token: string): string {
-  const direct = SPELLING[token];
-  if (direct !== undefined) return direct;
+  if (Object.hasOwn(SPELLING, token)) return SPELLING[token] as string;
   for (const stem of OUR_STEMS) {
     if (token.startsWith(stem)) return stem.slice(0, -3) + 'or' + token.slice(stem.length);
   }
@@ -375,6 +374,8 @@ export interface CheckResult {
   heard: string;
   verdict: SpokenVerdict | 'missing' | 'error';
   detail?: string;
+  /** True when the check disagreed and a person has since listened to this exact clip and accepted it (`CheckDeps.reviewed`). `verdict` is then `match`. */
+  reviewed?: boolean;
 }
 
 export interface CheckDeps {
@@ -384,6 +385,13 @@ export interface CheckDeps {
   transcribe(bytes: Uint8Array, item: AudioItem): Promise<string>;
   /** Read and updated in place. */
   cache: SpeechCache;
+  /**
+   * Clips a person listened to and found right, slug → the ETag of the clip they heard. A
+   * `mismatch`, `close` or `silent` verdict on a clip whose current ETag equals the stored
+   * one becomes `match` with `reviewed: true`; a re-voiced clip has another ETag and is
+   * judged afresh. Read by own property.
+   */
+  reviewed?: Record<string, string>;
   concurrency: number;
   onProgress?(done: number, total: number): void;
 }
@@ -461,7 +469,11 @@ export async function checkClips(
         }
         if (normalizeSpoken(heard) !== '') deps.cache[item.slug] = { size: clip.size, etag: clip.etag, heard };
       }
-      return { item, heard, verdict: compareSpoken(item.text, heard).verdict };
+      const verdict = compareSpoken(item.text, heard).verdict;
+      if (verdict !== 'match' && deps.reviewed && Object.hasOwn(deps.reviewed, item.slug) && deps.reviewed[item.slug] === clip.etag) {
+        return { item, heard, verdict: 'match', reviewed: true };
+      }
+      return { item, heard, verdict };
     } catch (e) {
       if (e instanceof StopRun) return e;
       return { item, heard: '', verdict: 'error', detail: describeError(e) };
@@ -583,6 +595,15 @@ export function renderReportMarkdown(
     ...summarizeResults(results),
     '',
   ];
+
+  const accepted = results.filter(r => r.reviewed);
+  if (accepted.length > 0) {
+    lines.push(
+      `${accepted.length} counted as a match because a person listened and found the clip right (the check had disagreed): ` +
+        `${accepted.map(r => cell(r.item.slug)).join(', ')}. A re-voiced clip is checked again.`,
+      '',
+    );
+  }
 
   lines.push('## To listen to (mismatch and silent)', '');
   if (problems.length === 0) {
