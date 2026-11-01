@@ -683,6 +683,14 @@ const locateAr = (noun: string) =>
 const RULE_PLACES: { id: string; res: RegExp[] }[] = [
   { id: 'add-student', res: ADD_STUDENT },
   {
+    // The forty-third live pass: «How do I create a class?» got invented steps. An
+    // anchored rule, not a keyword: «create a class plan» is a lesson plan.
+    id: 'classes',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:create|make|set\s+up|open)\s+(?:an?\s+|my\s+)?(?:new\s+)?(?:school\s+)?class(?:es)?` + EN_RULE_TAIL),
+    ],
+  },
+  {
     id: 'archive-class',
     res: [
       new RegExp(EN_RULE_LEAD + String.raw`delete\s+(?:a\s+|the\s+|my\s+)?class\s+(?:whose|that\s+(?:has\s+)?(?:ended|finished))\s+\w+(?:\s+\w+)?` + EN_RULE_TAIL),
@@ -1025,6 +1033,15 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       // The twenty-eighth live pass: «My files» named as the place.
       new RegExp(EN_RULE_LEAD + String.raw`(?:upload|import|add)\s+(?:an?\s+|my\s+)?(?:files?|documents?|pdfs?)\s+(?:to|into|in)\s+(?:my\s+)?(?:files|workspace)` + EN_RULE_TAIL),
       new RegExp(AR_RULE_LEAD + String.raw`(?:ارفع|رفع|احمل|اضيف|اضافه)\s+(?:ال)?(?:ملف|ملفا|ملفات|مستند|مستندا)\s+(?:الي|ل|في)\s*(?:ملفاتي|مساحه\s+عملي)` + AR_RULE_TAIL),
+      // The forty-third live pass: «هل يمكن رفع ملف PDF للدرس» was answered «نعم،
+      // بالتأكيد» by the model. Upload is off (`DOCUMENT_UPLOAD_ENABLED`), so the
+      // yes/no question about a file going to the lesson or the chat is claimed.
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:upload|attach|add|send|import)\s+(?:(?:a|an|the|my|this|some)\s+)*(?:pdfs?|word\s+files?|files?|documents?)(?:\s+(?:pdf|word))?\s+(?:for|to|into|in|with)\s+(?:the\s+|this\s+|a\s+|my\s+)?(?:lesson|chat|conversation|assistant|app|iqrra)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:رفع|ارفع|تحميل|احمل|ارسال|ارسل|ارفاق|ارفق)\s+(?:(?:ال)?(?:ملف|ملفا|ملفات|مستند|مستندا|مستندات)(?:\s+(?:pdf|بي\s+دي\s+اف|وورد|word))?|(?:pdf|بي\s+دي\s+اف|وورد|word))\s+(?:(?:الي|علي|في)\s+(?:ال)?|لل?)(?:درس|محادثه|دردشه|شات|مساعد|تطبيق|اقرا|منهاج)` + AR_RULE_TAIL,
+      ),
       // «أرفق ملفًا» is left out: a class page attaches a file from My files under that very label.
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:ارفع|رفع)\s+(?:(?:ال)?(?:ملف|ملفات|مستند|مستندات)(?:\s+(?:pdf|بي\s+دي\s+اف|وورد|word))?(?:\s+(?:من|عن)\s+(?:ال)?(?:كتاب|منهاج))?|(?:ال)?كتاب)` + AR_RULE_TAIL,
@@ -1279,6 +1296,16 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       ),
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:ارسل|ابعث|ابعت|اكتب|اجهز|احضر|اعمل|اصيغ|اراسل)\s+رساله\s+(?:رسميه\s+|مكتوبه\s+)?(?:ل|الي|لل)\s*(?:ال)?ولي\s+(?:ال)?امر(?:\s+(?:ال)?طالب\S*)?` + AR_RULE_TAIL,
+      ),
+      // The forty-third live pass: «كيف أرسل رسالة لأولياء الأمور» was answered
+      // with a sample letter written by the model. The plural without «جماعية»
+      // is the letter tool (its answer also points to «الرسائل»); a group
+      // message keeps `parent-group`.
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:ارسل|ابعث|ابعت|اكتب|اجهز|احضر|اعمل|اصيغ|اراسل)\s+رساله\s+(?:رسميه\s+|مكتوبه\s+)?(?:ل|الي|لل)\s*(?:ال)?(?:اولياء\s+(?:ال)?امور|اهالي(?:\s+(?:ال)?(?:طلاب|طلبه))?)` + AR_RULE_TAIL,
+      ),
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:write|send|draft|compose|prepare|make|create|text|email)\s+(?:an?\s+|the\s+)?(?:(?:short\s+|formal\s+|warm\s+)?(?:message|letter|note|email)\s+(?:to|for)\s+)(?:(?:the|my)\s+)?(?:students['’]?\s+)?(?:parents|guardians)` + EN_RULE_TAIL,
       ),
     ],
   },
@@ -1739,6 +1766,11 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       new RegExp(AR_RULE_LEAD + String.raw`(?:احذف|حذف|امسح|مسح|اورشف|ارشف|اؤرشف)\s+(?:ال)?(?:امتحان|اختبار|تقييم)(?:\s+(?:قديم|منشور|مغلق))?` + AR_RULE_TAIL),
       // The thirty-first live pass: «وين زر حذف الامتحان».
       new RegExp(AR_RULE_LEAD + String.raw`(?:زر\s+)?(?:حذف|ارشفه|ارشفة)\s+(?:ال)?(?:امتحان|اختبار|تقييم)` + AR_RULE_TAIL),
+      // The forty-third live pass: «كيف أحذف اختبارا نشرته» got invented steps.
+      // A published exam is the case `howDeleteExam` answers («أغلقه أولًا»).
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:احذف|حذف|امسح|مسح)\s+(?:ال)?(?:امتحان|اختبار|تقييم)ا?\s+(?:(?:ال)?(?:ذي|لي|اللي)\s+)?(?:نشرته|نشرتو|انشاته|انشأته|عملته|ارسلته|رفعته|اعطيته)` + AR_RULE_TAIL,
+      ),
     ],
   },
   {
