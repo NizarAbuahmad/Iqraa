@@ -120,7 +120,11 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   none. Existing accounts get it once, as a dialog on their home screen; Profile →
   «ما الجديد» lists them all. Never change a shipped entry's `id` — devices remember
   it as seen. `whatsNew.test.ts` checks the keys, the date and that the route is
-  one every named role may open.
+  one every named role may open. **A new tool's entry also names it** (`toolId`,
+  a `toolCatalog.ts` id, roles including `teacher`): its card on the Tools tab and
+  in the chat "+" menu then wears «جديد» until the teacher first opens the tool —
+  by any way in, since the root watches the path (`useClearNewToolOnVisit`) — or
+  30 days pass (`NEW_TOOL_DAYS`). A tool's fixed `badgeKey` wins over it.
 - Arabic is the product language; the UI is RTL-first. Compute maths in latin
   `x` and convert to `س` / Arabic digits **only at display time**.
 - `DEMO_MODE = true` in `artifacts/mobile/services/ai/demoMode.ts` mocks all

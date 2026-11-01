@@ -15,7 +15,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 import { useSurface } from '@/components/ui/Surface';
 import { IconTile } from '@/components/ui/IconTile';
-import { useWhatsNewAutostart } from '@/hooks/useWhatsNew';
+import { useClearNewToolOnVisit, useWhatsNewAutostart } from '@/hooks/useWhatsNew';
 import { trackEvent } from '@/services/analytics';
 import type { WhatsNewEntry } from '@/services/whatsNew';
 import { WhatsNewItem } from './WhatsNewItem';
@@ -23,6 +23,8 @@ import { WhatsNewItem } from './WhatsNewItem';
 export function WhatsNewHost() {
   const [entries, setEntries] = useState<WhatsNewEntry[] | null>(null);
   useWhatsNewAutostart(setEntries);
+  // A new tool's «جديد» clears however its screen is reached; mounted here because this host is mounted once.
+  useClearNewToolOnVisit();
 
   const count = entries?.length ?? 0;
   const close = useCallback(() => {

@@ -96,6 +96,8 @@ import { RADIUS } from '@/constants/theme';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
 import { usePrintStyle } from '@/hooks/usePrintStyle';
+import { useNewTools } from '@/hooks/useWhatsNew';
+import { toolBadgeKey } from '@/services/whatsNew';
 import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { MaterialCanvas } from '@/components/ui/MaterialCanvas';
@@ -1493,6 +1495,7 @@ export default function IqraScreen() {
     router.navigate(to as never);
   }, []);
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
+  const newTools = useNewTools();
   /**
    * The message whose material is on the canvas, or null for a plain thread.
    * A message id rather than a copy of the material: the message is the single
@@ -4365,7 +4368,10 @@ export default function IqraScreen() {
         sections={toolsMenuSections}
         labelFor={(tool) => t(tool.titleKey as any)}
         descFor={(tool) => t(tool.descKey as any)}
-        badgeFor={(tool) => (tool.badgeKey ? t(tool.badgeKey as any) : null)}
+        badgeFor={(tool) => {
+          const key = toolBadgeKey(tool, newTools);
+          return key ? t(key as any) : null;
+        }}
         onSelectTool={handleToolSelect}
       />
       <ExportMenu
