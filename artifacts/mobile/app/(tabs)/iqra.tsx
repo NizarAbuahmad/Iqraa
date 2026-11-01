@@ -57,6 +57,7 @@ import {
   filterResultsByGrade,
   filterResultsBySubject,
   isConfidentSingleSubjectHit,
+  lessonsTheTeacherTeaches,
   liveChatGrounding,
 } from '@/services/kbContext';
 import { KB_SUGGEST_SCORE, namedLessonBeatsGrade, shouldAskWhichLesson } from '@/services/kbSuggestion';
@@ -1405,6 +1406,7 @@ export default function IqraScreen() {
   const keyboardVisible = useKeyboardVisible();
   const { t, lang, isRTL } = useLanguage();
   const { user } = useAuth();
+  const { isSubjectShown } = useTeacherScope();
   const params = useLocalSearchParams<{
     initialMessage?: string;
     lessonId?: string;
@@ -2465,7 +2467,10 @@ export default function IqraScreen() {
       // A confident single-subject hit has already settled the subject: a weak
       // other-subject lesson further down `results` is not a second reading.
       if (!hasHardContext && !liveTeaching && !confidentHit && results.length > 0) {
-        const ambiguousSubjects = detectSubjectAmbiguity(results);
+        // Only subjects this teacher teaches are worth asking about.
+        const askable = lessonsTheTeacherTeaches(results, isSubjectShown);
+        const ambiguousSubjects = detectSubjectAmbiguity(askable);
+        if (!ambiguousSubjects && askable.length < results.length) results = askable;
         if (ambiguousSubjects) {
           const clarifyMsg: Message = {
             id: (Date.now() + 1).toString(),
@@ -3083,7 +3088,7 @@ export default function IqraScreen() {
         setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
       }
     },
-    [deepLinkColor, deepLinkLessonId, lang, messages, mode, sessionMemory, t, teachingCtx, teachingCtxLessonId, teachingCtxScope],
+    [deepLinkColor, deepLinkLessonId, isSubjectShown, lang, messages, mode, sessionMemory, t, teachingCtx, teachingCtxLessonId, teachingCtxScope],
   );
 
   /**
