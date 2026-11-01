@@ -44,7 +44,8 @@ import {
   type HomeworkSubmission,
   type SubmissionPhoto,
 } from "@workspace/db";
-import { and, asc, eq, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull, sql, type AnyColumn, type SQL } from "drizzle-orm";
+import { union } from "drizzle-orm/pg-core";
 import { logger } from "./logger";
 import { deleteObject, presignedGetUrl } from "./r2.ts";
 import { ownHomeworkRows, tickRows } from "./homeworkDone.ts";
@@ -411,9 +412,20 @@ export async function submit(t: SubmissionTarget, now: Date = new Date()): Promi
   return "ok";
 }
 
+/**
+ * SQL: this roster row has a student account (a `self` link to any user). THE definition of who can hand a
+ * project in or tick a homework off: the class homework list's `trackableCount` (routes/homework.ts `classSizes`)
+ * and this list's `hasAccount` both read it, so the card's «X of Y» and the list's cannot drift apart.
+ */
+export function hasSelfLink(studentId: AnyColumn): SQL<boolean> {
+  return sql<boolean>`exists (select 1 from ${rosterLinks} where ${rosterLinks.studentId} = ${studentId} and ${rosterLinks.relation} = 'self')`;
+}
+
 export interface TeacherSubmissionRow {
   studentId: string;
   displayName: string;
+  /** The record has a student account linked to it now (`hasSelfLink`). Without one the student cannot hand in. */
+  hasAccount: boolean;
   /** A draft is `none`: the teacher never sees an unfinished upload. */
   status: SubmissionStatus;
   submittedAt: string | null;
@@ -436,6 +448,7 @@ export async function listForTeacher(hw: TeacherHomeworkRef): Promise<TeacherSub
     .select({
       studentId: students.id,
       displayName: students.displayName,
+      hasAccount: hasSelfLink(students.id),
       submittedAt: homeworkSubmissions.submittedAt,
       photos: homeworkSubmissions.photos,
     })
@@ -454,6 +467,7 @@ export async function listForTeacher(hw: TeacherHomeworkRef): Promise<TeacherSub
   return rows.map(r => ({
     studentId: r.studentId,
     displayName: r.displayName,
+    hasAccount: r.hasAccount,
     status: submissionStatus({ submittedAt: r.submittedAt, dueAt: hw.dueAt }),
     submittedAt: r.submittedAt ? r.submittedAt.toISOString() : null,
     photoCount: r.photos?.length ?? 0,
@@ -613,6 +627,37 @@ export async function readForParent(
       submission: await viewSubmission(subs.find(s => c.studentIds.includes(s.studentId)) ?? null, hw.dueAt),
     })),
   );
+}
+
+/**
+ * Which of these homework have anything a student started: a completion tick, or a submission row that HOLDS WORK
+ * (a photo, or a note with some non-space character: `holdsWork`) — a DRAFT with content counts. This is what locks
+ * the teacher's "project" switch (PATCH /homework/:id, and the list's `requiresSubmissionLocked`): flipping it under
+ * work already done would strand that work or hand a student a tick that means something else.
+ *
+ * RULING (refines the owner's rule "any tick or any submission row", and the owner can revert it by deleting the
+ * `holdsWork` condition below): a row whose student removed every photo and cleared the note holds nothing, is
+ * invisible to everyone, and strands no work, so it must not keep the switch locked for good. Ticks always count.
+ *
+ * One query for the whole list (a union of the two tables, not a query per homework). `systemDb` on purpose: the
+ * teacher's identity cannot see a student's draft (row-level security), and a draft with content that the teacher
+ * cannot see is exactly the one that must still lock, so reading on the teacher's own connection would let the
+ * switch flip under it. The callers have already proved the homework are this teacher's (`ownedHomework`, or the
+ * teacher's own class list); only the ids of homework that have such a row are returned, never a row's content.
+ */
+export async function homeworkIdsWithWork(homeworkIds: string[]): Promise<Set<string>> {
+  if (homeworkIds.length === 0) return new Set();
+  const rows = await union(
+    systemDb
+      .select({ id: homeworkCompletions.homeworkId })
+      .from(homeworkCompletions)
+      .where(inArray(homeworkCompletions.homeworkId, homeworkIds)),
+    systemDb
+      .select({ id: homeworkSubmissions.homeworkId })
+      .from(homeworkSubmissions)
+      .where(and(inArray(homeworkSubmissions.homeworkId, homeworkIds), holdsWork(photoCount, sql`${homeworkSubmissions.note}`))),
+  );
+  return new Set(rows.map(r => r.id));
 }
 
 /**

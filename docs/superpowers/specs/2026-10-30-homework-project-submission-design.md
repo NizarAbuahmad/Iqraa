@@ -177,7 +177,7 @@ disagree. Playing an attached game no longer ticks such a homework either.
 
 | Route | Does |
 | --- | --- |
-| `GET /homework/:id/submissions` | One row per live roster member of the homework's class: `{ studentId, displayName, status: "none" \| "submitted" \| "late", submittedAt, photoCount }`. A draft is reported as `none` — the teacher never sees an unfinished upload |
+| `GET /homework/:id/submissions` | One row per live roster member of the homework's class: `{ studentId, displayName, status: "none" \| "submitted" \| "late", submittedAt, photoCount, hasAccount }`, plus `trackableCount` (the card's «Y», the same number `GET /classes/:id/homework` sends; `hasAccount` is the same predicate, a `self` roster link, `hasSelfLink` in `lib/homeworkSubmission.ts`). A draft is reported as `none` — the teacher never sees an unfinished upload. The class list's `submittedCount` can exceed `trackableCount` when a record whose account handed in is unlinked later (its row stays handed in, with `hasAccount: false`, and opens); the card and the list both clamp X to Y (`projectSubmittedText`), so they agree but can show one fewer than the handed-in rows |
 | `GET /homework/:id/submissions/:studentId` | One student's `note` and photos with signed URLs. 404 for a draft or a student not in this class |
 | `DELETE /homework/:id/submissions/:studentId` (added 2026-10-31) | Clears **one** roster record's project for this homework, draft or handed-in: deletes its photos from R2, then that record's completion for this homework, then the row, and answers `{ cleared: true }`. The same owner check and 404s as the read above (`Homework not found` for another teacher's homework or one that asks for no project; `Submission not found` for a student who is not a live member of the class, a bad id, or nothing to clear, so a repeat is a 404). **Fail closed, with no lock held while R2 is called:** (1) the row's photos are read without a lock and their objects deleted, concurrently; if any delete fails the answer is 500 with the database untouched (row, photo list and tick kept) and the same request clears it, since deleting a key that is already gone succeeds; photos deleted before the failure stay deleted, so until the retry the row may list a photo that no longer loads. (2) A short transaction locks the row, deletes that record's tick and the row, and keeps the row's photo list as of the lock; a row gone by then is the same 404. (3) After the commit, any photo in that list that (1) did not read (uploaded in between) is deleted, best effort and logged; the orphan sweep backstops it. The R2 client is bounded (two attempts, 5 s to connect, 10 s of socket silence; `lib/r2.ts`). `systemDb` because a draft is invisible to the teacher under RLS, the table has no `DELETE` policy, and `FOR UPDATE` needs an `UPDATE` policy the teacher lacks. Logs one info line (`homework submission cleared by teacher`: ids and the photo count, no content). No rate limit, like the other teacher writes. This is the way out when a record's project was handed in from another account: the account linked now then starts clean. The teacher's screen for it is phase 3 |
 | `DELETE /homework/:id` (existing) | That route **archives** (`archived_at`). It now also removes every stored photo (drafts included) and deletes the submission rows. The purge runs on the owner connection (`systemDb`), because a draft is invisible to the teacher's own identity; a test with `RLS_ENFORCE=on` pins it. The purge runs **before** the archive and a purge that throws answers 500 with the homework still live (an archived homework can no longer be found, so a failure after it could never be retried); a second best-effort pass follows the archive. Not recoverable, so the teacher's delete confirmation must say so |
@@ -347,8 +347,9 @@ names messages and lesson materials, not homework projects; changing it is a nat
 - **A wrong photo of a minor** (a face, a document) is stored. The removal paths are the
   student's own remove control, the teacher's delete-homework purge and, since 2026-10-31, the
   teacher clearing one student's whole project (`DELETE /homework/:id/submissions/:studentId`, §3;
-  API only until the teacher's screen in phase 3). A teacher still cannot remove a single photo and
-  keep the rest. A record that is archived, or no longer in the homework's class, cannot be cleared
+  since phase 3 the «حذف المشروع» button on the teacher's detail screen, §10, for a handed-in
+  project; a draft is not shown to the teacher, so the app offers no control for one). A teacher
+  still cannot remove a single photo and keep the rest. A record that is archived, or no longer in the homework's class, cannot be cleared
   either (404, like the teacher's reads, which do not show it): its project stays until the homework
   or the class is archived (both purge it) or its author deletes their account. There is no
   moderation queue; note it in the PR body so it is a known gap, not a surprise.
@@ -362,10 +363,9 @@ names messages and lesson materials, not homework projects; changing it is a nat
   That notice was a dead end: a student whose record already holds a project handed in
   from another account cannot hand in their own for that homework. **Since 2026-10-31 the
   teacher can clear that one record's project** (§3), after which the account linked now
-  starts clean and the record's parents no longer see the wrong child's work. **Left open
-  (STATUS.md):** the teacher's app has no control for it until phase 3, so in the app the
-  ways out are still the old account deleting itself or archiving the homework (which
-  deletes every student's work in it). Until it is cleared, the family list
+  starts clean and the record's parents no longer see the wrong child's work. **Since phase 3
+  (§10) the teacher's app has the control:** the record's row on the list screen opens its
+  handed-in project, and «حذف المشروع» clears it. Until it is cleared, the family list
   (`/student/homework`) still says «تم التسليم» for that homework, because a completion and
   a handed-in project are the record's. The clear removes only that record's tick: an account
   self-linked to two records in the class had both ticked by its hand-in, and the other
@@ -411,12 +411,29 @@ names messages and lesson materials, not homework projects; changing it is a nat
   extension list exists twice (`modules/homework/submission.ts` and the sweep's key
   regex) with no test tying them; and a listing past 200,000 keys is only flagged
   (`listTruncated`), not handled.
-- **Open question: toggling `requiresSubmission` after work exists.** It is not
-  specified, and `PATCH /homework/:id` accepts it today. On → off makes the stored
-  photos unreadable (every student route answers 404) and lets drafts be ticked by
-  hand; off → on leaves students who already ticked "done" with a submission of
-  `none` and unable to untick. To be decided before the teacher's app exposes the
-  switch (phase 3), for example a 409 once any submission or completion exists.
+- **Toggling `requiresSubmission` after work exists (decided 2026-10-31, built in phase 3,
+  §10).** On → off would make the stored photos unreadable (every student route answers
+  404) and let drafts be ticked by hand; off → on would leave students who already ticked
+  "done" with a submission of `none` and unable to untick. So once any completion tick, or
+  any submission that holds a photo or a note, exists, a `PATCH /homework/:id` that changes the flag is
+  409 `submission_locked`, and the form's switch is disabled with the reason. (**Ruling,
+  2026-10-31, refining the owner's "any tick or any submission row", which the owner can
+  revert:** a row whose student removed every photo and cleared the note holds nothing,
+  is invisible to everyone and strands no work, so it does not lock. To revert, delete the
+  `holdsWork` condition in `homeworkIdsWithWork`.) Left as they
+  are: (a) the check and the write are not atomic, so a student's very first upload or tick
+  in the milliseconds between them can slip through (on → off then leaves a draft nobody can
+  read or clear in the app; off → on leaves a tick); closing it needs a lock across the
+  owner and app connections, judged not worth it. A follow-up idea: the sweep's
+  archived-homework phase could also purge the submission rows of a homework whose
+  `requires_submission` is false. (b) **A hidden draft keeps the switch locked**, and the
+  teacher cannot clear it in the app (a draft is never shown; the list row does not open, the
+  detail read is 404). Under the ruling above this narrows to a draft with real content (a
+  photo or a note): one whose author removed every photo and cleared the note holds nothing
+  and no longer locks (it did before the ruling, seen in the phase 3 real-stack run). For a
+  draft with content, only the API route (`DELETE /homework/:id/submissions/:studentId`,
+  which clears drafts too) or deleting the homework gets the teacher out. (c) An old tick on a plain homework locks it
+  the same way, so a plain homework someone has ticked cannot become a project.
 - **R2 not configured** (`isR2Configured()` false, e.g. a local checkout): upload
   routes answer 503 `storage_unavailable`, the same shape as media, and the app
   hides the photo control rather than failing on tap. **Phase 2 does not hide it**
@@ -444,3 +461,68 @@ nothing else, with its own expiry and a revoke — the same shape as the exam li
 spec: that route is the first one that reads minors' work with no signed-in user.
 A logged-in `supervisor` role is the alternative and needs the `schools` membership
 that `schools.ts` says today grants nothing beyond one calendar read.
+
+## 10. Phase 3 — the teacher's screens (design approved 2026-10-31; delivered 2026-10-31)
+
+**Delivered** on `claude/awesome-fermi-rzvca7` (commits `8604811`…`a748c12`) as described
+below, and run against the real stack (local Postgres, built API, in-memory S3 stub, web
+bundle in headless Chromium). What was and was not verified, and the known limits: the log
+entry «Homework project submission — teacher screens» (`docs/status-log.md`). Three changes
+from the text below: the list and the card count Y the same way (`trackableCount`, roster
+records with a `self` link; an account-less record shows «بلا حساب» and does not open); the
+photo count is shown only on a row that opens, so a «not handed in» row never hints at a
+draft; and the detail screen's delete leaves a neutral toast on the list (also when the
+project was already gone).
+
+Scope: the teacher's side of §5 only. The parents' read-only view, a push to the
+teacher on hand-in, marks or comments, and a count on the class tab are **not** in
+this phase.
+
+**The switch rule (owner decision).** `requiresSubmission` may be changed freely only
+while nobody has started. Once any student has a completion tick for the homework or
+any `homework_submissions` row for it that holds a photo or a non-blank note (a draft
+counts, although the teacher cannot see drafts; an emptied draft does not, a ruling that
+refines the owner's wording and can be reverted by dropping the `holdsWork` condition in
+`homeworkIdsWithWork`), `PATCH /homework/:id` with a *different* `requiresSubmission` answers
+409 `submission_locked`. Setting the same value again is always allowed. To change it
+later the teacher deletes the homework and posts a new one. The class homework list
+carries `requiresSubmissionLocked` per item, computed on the server on the owner
+connection (a draft is invisible to the teacher's own identity under RLS), so the
+screen disables the switch instead of letting the teacher hit the error.
+
+**Screens.**
+1. *Homework form* (`components/classes/HomeworkTab.tsx`): a «يتطلب تسليم مشروع»
+   switch with a helper line, saved by create and by edit; disabled with the reason
+   «لا يمكن تغييره بعد أن بدأ الطلبة» when `requiresSubmissionLocked`.
+2. *Homework card*: for a project homework, a «سلّم X من Y» button next to the existing
+   results button (X = `submittedCount`, Y = `trackableCount`, as "done" counts); it
+   opens the list screen.
+3. *List screen* `/homework-submissions/[homeworkId]`: one row per live roster member
+   with a status chip (not handed in / handed in / late) and a photo count; a handed-in
+   or late row opens the detail screen; a "not handed in" row does nothing (a draft is
+   invisible to the teacher by design). Retry on a failed load; reload on focus (photo
+   links last 10 minutes).
+4. *Detail screen* `/homework-submissions/[homeworkId]/[studentId]`: name, hand-in time,
+   the photo grid (tap to enlarge), the note, and a «حذف المشروع» button. Its
+   confirmation says the photos and note are deleted for good, that the student's done
+   tick is removed and that the student can start again; on success it goes back to the
+   list.
+5. *Delete-homework confirmation*: for a project homework the text says the students'
+   photos and notes are deleted too and cannot be recovered (§3 already required this).
+
+**Design choices.**
+- The new screens live under a top-level path, not `/classes/...`, so the analytics
+  exclusion by path prefix (`services/screenTracking.ts`) can cover them with
+  `/homework-submissions`; they show a minor's photos.
+- Teacher routes need no `NON_TEACHER_ROUTES` entry (anything not listed is teacher-only).
+- The API client is a small injected module like phase 2's (`makeTeacherSubmissionsApi`),
+  with pure helpers and tests; teacher failures carry no `code` except the new
+  `submission_locked`, so screens branch on `status`.
+- The detail screen copies the student screen's photo grid and viewer wiring instead of
+  extracting a shared component (the student screen is not touched).
+
+**Testing.** API tests for the lock (a draft counts, a tick counts, same value allowed,
+other teacher 404, RLS-on); pure and source-reading tests for the screens; the ratchets
+(design scale, aria, icons, i18n parity) stay green; a real-stack browser run: a teacher
+creates a project homework, a student hands in, the teacher reviews it, clears it, the
+student starts again.
