@@ -2851,7 +2851,7 @@ const translations = {
     myExamsStateInProgress: 'لم يُسلَّم بعد',
     myExamsStateSubmitted: 'سُلِّم — بانتظار النتيجة',
     myExamsStateResult: 'النتيجة متاحة',
-    myExamsStateClosed: 'مُغلق',
+    myExamsStateClosed: 'مُغلق — لم يُسلَّم',
     myExamsStatePaper: 'امتحان ورقي',
     // A parent's wording for the same states — see PARENT_EXAM_STATE_KEY in myExams.ts.
     childResultsStateAvailable: 'لم يبدأ بعد',
@@ -6445,7 +6445,7 @@ const translations = {
     myExamsStateInProgress: 'Not handed in yet',
     myExamsStateSubmitted: 'Handed in — waiting for the result',
     myExamsStateResult: 'Result available',
-    myExamsStateClosed: 'Closed',
+    myExamsStateClosed: 'Closed — not handed in',
     myExamsStatePaper: 'Paper exam',
     childResultsStateAvailable: 'Not started yet',
     childResultsStateInProgress: 'In progress — not handed in yet',
