@@ -18,6 +18,13 @@
  * list as kind `idea`. That endpoint is rate-limited per IP and carries a
  * honeypot field — `website`, rendered off-screen on web only, where form bots
  * crawl the DOM. The route is in PUBLIC_ROUTES (services/routeGating.ts).
+ * The line above the email field says what it is for: the admin can only answer
+ * an idea that left one (`site_signups` ideas carry nothing else to reply to),
+ * and broadcasts reach waitlist rows only (`lib/siteMail.ts`), so "we don't use
+ * it for anything else" is true.
+ *
+ * An idea for something «إقرأ» already does is still sent, and the thank-you
+ * then says how to do it now (services/existingFeature.ts — strict on purpose).
  */
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -30,6 +37,7 @@ import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/services/apiClient';
 import { trackEvent } from '@/services/analytics';
 import { loadSuggestionDraft, saveSuggestionDraft } from '@/services/suggestionDraft';
+import { existingFeatureFor, type ExistingFeature } from '@/services/existingFeature';
 import { BackButton } from '@/components/ui/BackButton';
 
 const MAX_LENGTH = 2000;
@@ -41,6 +49,8 @@ export default function SuggestFeatureScreen() {
   const [idea, setIdea] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  // What the sent idea asked for that already exists, if anything; shown on the thank-you.
+  const [already, setAlready] = useState<ExistingFeature | null>(null);
   const [failed, setFailed] = useState<null | 'network' | 'session' | 'email' | 'tooMany'>(null);
   const { user } = useAuth();
   const signedOut = !user;
@@ -87,6 +97,7 @@ export default function SuggestFeatureScreen() {
       if (!res.ok) throw new Error(`suggestion failed: ${res.status}`);
       trackEvent('feature_suggested', { length: idea.trim().length, signedIn: !signedOut });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      setAlready(existingFeatureFor(idea));
       setSent(true);
       setIdea('');
       void saveSuggestionDraft('');
@@ -131,8 +142,17 @@ export default function SuggestFeatureScreen() {
               <Ionicons name="bulb" size={32} color={colors.primary} />
               <Text style={[styles.thanksTitle, { color: colors.foreground }]}>{t('suggestFeatureThanksTitle')}</Text>
               <Text style={[styles.thanksBody, { color: colors.mutedForeground }]}>{t('suggestFeatureThanks')}</Text>
+              {already && (
+                <View style={[styles.alreadyBox, { borderColor: colors.border, borderRadius: colors.radius, backgroundColor: colors.background }]}>
+                  <View style={{ flexDirection: rowDir, alignItems: 'center', gap: 6 }}>
+                    <Ionicons name="information-circle" size={20} color={colors.primary} />
+                    <Text style={[styles.alreadyTitle, { color: colors.foreground, textAlign: align, flex: 1 }]}>{t('suggestFeatureAlreadyTitle')}</Text>
+                  </View>
+                  <Text style={[styles.alreadyBody, { color: colors.foreground, textAlign: align }]}>{t(already.howKey)}</Text>
+                </View>
+              )}
               <Pressable
-                onPress={() => setSent(false)}
+                onPress={() => { setSent(false); setAlready(null); }}
                 accessibilityRole="button"
                 style={({ pressed }) => [styles.secondaryBtn, { borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.7 : 1 }]}
               >
@@ -157,6 +177,11 @@ export default function SuggestFeatureScreen() {
                   textAlign: align,
                 }]}
               />
+              {signedOut && (
+                <Text style={[styles.emailHint, { color: colors.mutedForeground, textAlign: align }]}>
+                  {t('suggestFeatureEmailHint')}
+                </Text>
+              )}
               {signedOut && (
                 <TextInput
                   value={email}
@@ -243,6 +268,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Almarai_400Regular',
   },
   failed: { fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 21 },
+  emailHint: { fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 21, marginBottom: -4 },
+  alreadyBox: { borderWidth: 1, padding: 12, gap: 6, alignSelf: 'stretch' },
+  alreadyTitle: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 },
+  alreadyBody: { fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 },
   emailInput: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, fontFamily: 'Almarai_400Regular' },
   // Off-screen rather than display:none — some bots skip fields that are not rendered.
   honeypot: { position: 'absolute', left: -10000, top: 0, width: 1, height: 1, opacity: 0 },

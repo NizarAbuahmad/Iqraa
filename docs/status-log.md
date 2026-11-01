@@ -10,6 +10,33 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## «اقترح ميزة» asks for an email with a reason, and answers ideas that already exist — 2026-11-01
+
+Follows «ردّ بالبريد» (2026-10-30, #1351): most signed-out ideas in «البريد المجمّع» had no email, so the admin
+cannot answer them, and one of them — «اريد تصدسر ورقة الى وورد» — asked for Word export, which exists. The form's
+own placeholder was «مثال: أريد تصدير ورقة العمل إلى Word…», an example of a feature already there.
+
+**Changed (`app/suggest-feature.tsx`, `services/i18n.ts`):** the placeholder is now a question with no example
+(«ما الذي تحتاجه، ومتى تحتاجه في يومك؟»). A signed-out visitor sees one line above the email field: «اترك بريدك
+لنردّ عليك ونخبرك إن أضفنا فكرتك. لا نستخدمه لشيء آخر.» — true because broadcasts reach waitlist rows only
+(`pickRecipients` in `lib/siteMail.ts` skips every other kind). After sending, an idea for something «إقرأ» already
+does gets a box under the thank-you, «يمكنك فعل هذا الآن», with the existing answer text (`faqA4` for Word/PDF,
+`howDarkMode` for dark mode). The idea is still sent either way.
+
+**The matcher (`services/existingFeature.ts`) is strict on purpose.** `findAppPlaces` (`appHelp.ts`) was tried
+first and is wrong for ideas: it read «تحضير كل شيء» as the lesson-plan tool and «أريد لعبة عن الكسور» as the games,
+so every idea would have been told it exists. The rules match «وورد» with its clitics («بالوورد», «كوورد»), «Word»
+inside an Arabic message, PDF/docx, English that names Word as a file, and named dark-mode phrases. English "word"
+alone ("word search", "word problems") and Arabic words containing «ورد» («موارد», «ورود», «الوردة») do not match.
+Append a rule when real ideas keep asking for something that exists.
+
+**Verified:** `existingFeature.test.ts` (10 tests: the real idea with its typo, prefixes, Latin Word, PDF/docx,
+English, the "word" and «ورد» misses, dark mode, and ideas that only name a tool); the mobile suite (9,101 pass) and
+the monorepo typecheck; the signed-out screen in a production web build at phone width, in Arabic, light and dark,
+with `/site/ideas` stubbed — the form, the hint, the post body, and the thank-you with the export box. **Not
+verified:** a signed-in teacher's thank-you (same code path after `res.ok`), native Android/iOS layout, and whether
+the hint actually raises the share of ideas with an email — watch «البريد المجمّع» for that.
+
 ## Forty-first pass: a lesson named by its whole title now wins the knowledge-base search, 2026-11-01
 
 **Why.** The fortieth pass found `searchKBRanked` ranking the wrong lesson first and left it for its own PR. «جهّز ورقة عمل من 4
