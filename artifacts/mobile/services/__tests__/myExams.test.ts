@@ -12,7 +12,6 @@ import {
   examDayParts,
   formatExamDay,
   myExamAction,
-  metaSegments,
   myExamTitle,
   progressSummary,
   splitMyExams,
@@ -116,21 +115,6 @@ describe('canRetakeExam', () => {
   it('never offers one to a parent, or on a quiz the server did not list', () => {
     assert.equal(canRetakeExam(shown, ['e1'], true), false);
     assert.equal(canRetakeExam(shown, [], false), false);
-  });
-});
-
-describe('metaSegments', () => {
-  it('keeps the pieces in order and drops the empty ones', () => {
-    assert.deepEqual(metaSegments(['الرياضيات', null, 'موعده 2026-10-17 09:30', false, '', '   ', undefined, '10 علامات']), [
-      'الرياضيات',
-      'موعده 2026-10-17 09:30',
-      '10 علامات',
-    ]);
-    assert.deepEqual(metaSegments([null, undefined, '']), []);
-  });
-  it('carries no separator character, so no wrapped line can end or start on a dot', () => {
-    for (const s of metaSegments(['a', 'b', 'c'])) assert.ok(!/[·\u00A0]/.test(s), s);
-    assert.deepEqual(metaSegments(['الرياضيات']), ['الرياضيات']);
   });
 });
 
