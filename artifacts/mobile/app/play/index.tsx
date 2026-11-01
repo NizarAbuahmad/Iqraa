@@ -69,6 +69,7 @@ const GAMES: Array<{
   { id: 'fractions', route: '/play/fractions', icon: 'contrast-outline', color: '#B91C1C', titleKey: 'playFractionsTitle', descKey: 'playFractionsDesc' },
   { id: 'matter', route: '/play/matter', icon: 'water-outline', color: '#0E7490', titleKey: 'playMatterTitle', descKey: 'playMatterDesc' },
   { id: 'governorates', route: '/play/governorates', icon: 'map-outline', color: '#1E3A8A', titleKey: 'playGovernoratesTitle', descKey: 'playGovernoratesDesc' },
+  { id: 'spelling', route: '/play/spelling', icon: 'pencil-outline', color: '#78350F', titleKey: 'playSpellingTitle', descKey: 'playSpellingDesc' },
 ];
 
 export default function PlayHubScreen() {

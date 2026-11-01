@@ -57,6 +57,84 @@ beside it, both colours read on the dark card).
 chart (the bars carry one summary label, not a label per day); the Arabic wording was not reviewed by a native
 reader.
 
+## /play: «كيف تُكتب؟» — a spelling game built on the existing spelling bank — 2026-11-01
+
+A seventeenth /play game (route `/play/spelling`, "Spell It Right", card says
+Grades 2–7, subject Arabic in the hub filter, accent `#78350F`). The tile names a
+spelling rule, e.g. «التاء المربوطة والهاء في آخر الكلمة»; the player picks the
+correct spelling of one word among three or four, and the reveal shows the
+vowelled word and the rule.
+
+- **No spelling is written for this game.** Every key comes from
+  `lib/arabic-spelling` (`SPELLING_RULES`, hand-written words with the
+  misspellings pupils really write, anchored to the Arabic books' writing
+  lessons). `services/publicGames/spelling.ts` asks the bank's own
+  `takeSpellingItems(rule, 3, { kinds: ['choose'] })` for the choice questions, so
+  the distractors and the rule-specific swaps are the bank's. The bank is unchanged
+  (a `lib/` edit would also deploy the API).
+- **Only five of the bank's 19 rules are served** (`SPELLING_GAME_RULE_IDS`):
+  التاء المربوطة والهاء، اللام الشمسية والقمرية، اتصال الحروف بـ«ال»، الأسماء
+  المبدوءة بـ«ال»، هذا وهذه وهؤلاء. **That is 40 distinct questions**, a small
+  game. The reason is the design, found by an independent review and then
+  measured: the tile shows a rule name and the options are bare words, so nothing
+  says which word is meant. An audit of the 135 questions the full bank can serve
+  (every option against every word of the Arabic books' extracted text, then read by
+  hand) found about half offering a real word as a wrong option: قلم beside قلمًا،
+  كتاب beside كتابًا، رمي beside رمى، أبني beside ابني، أستمع beside استمع، ضوء beside
+  ضوءًا، ذاهب beside ذهب، إله beside الله، تساءل beside تساؤل. A child who reads the
+  other word is marked wrong. The five rules offer only non-words (مدرسه، ألشمس،
+  بإلكتاب، هاذا); the one exception found by reading them, «دلك» (a verb) beside
+  «ذلك», is handled by never asking «ذلك» (`SPELLING_DROPPED_ANSWERS`). The remaining
+  corpus hits in those rules (1–5 occurrences: هذة، هذن، لكنن، زهره) are the bank's own
+  misspellings appearing in the extracted text, not words.
+- **How the other 14 rules come back:** when the bank can say which word is meant (a
+  sentence or a gloss per word; only 28 of 174 words have `sentenceAr` now), or a
+  word-list check on the options exists.
+- **A cross-rule ambiguity in the bank, also handled here, not fixed.** The bank
+  checks a wrong option against its own rule's words only. «دفء» is a listed
+  misspelling of «دُفْئًا» (`hamza-mutarrafa-tanwin-fath`) and also the correct
+  «دُفْء» of `hamza-mutarrafa`. The game drops any question offering a spelling that
+  is correct anywhere in the bank. **The assessment generator (worksheets and
+  evaluations use the same `takeSpellingItems`) has the ambiguous questions above**,
+  with no sentence to settle them. Not fixed here: it is data in the bank, and a
+  change deploys the API. It deserves its own PR.
+- **A content question in the bank, for you to check against the book.** Rule
+  `alif-tathniya-baad-hamza` marks شيآن / هواآن / ضوآن correct and شيئان / هواءان /
+  ضوءان wrong, while keeping بدءان / جزءان / داءان correct. By standard orthography
+  the "wrong" ones are the usual forms and the rule contradicts itself. I could not
+  check what the Ministry book prints. The game does not serve that rule; worksheets
+  do. Marks: `takeSpellingItems` already hands options over bare (its `bare()` covers
+  U+064B–0652 and U+0670); `stripMarks` here covers the rest of U+064B–065F and
+  matches an option back to its word. (An earlier draft of this entry said the bank
+  stores misspellings bare and the correct form vowelled; true of the stored data,
+  moot once `takeSpellingItems` has run.)
+- **Rounds:** 8 words, no word twice, at most 3 from one rule
+  (`SPELLING_PER_RULE`). `takeSpellingItems` is called without a grade, so a Grade 2
+  player can meet a Grade 7 word; the hub card's band is the game's, not a filter.
+- **Wiring:** `gradeBands` (ids, [[2, 7]]), `hubFilter` subject, AR + EN strings,
+  route, hub card, `gameAccents` / `gameAmber` source lists, `routeGating`, the
+  app-help `tool:games` phrases («الإملاء», «كيف تكتب», "arabic spelling", "spell it
+  right" — not bare "spelling", which would also catch the English corner).
+- **Verified:** `playGameSpelling.test.ts` (10 tests over seeded rounds in both
+  languages: one correct option and 3–4 unique Arabic options, the marked answer is a
+  bank word of the named rule and no other option is a bank-correct spelling, no
+  option carries a mark, distinct words and the per-rule cap, only the five rules
+  are served and all five are reachable, «ذلك» is never asked and rounds stay full,
+  determinism); the accent, amber, routing, help, design-scale, corner-theme and
+  hub-filter tests; typecheck; the mobile suite. In Chromium against the dev server
+  (with the earlier, wider rule set; the screens do not depend on which rules are
+  served): the question, a right and a wrong answer and the reveal at 390 px, 320 px
+  and 1280 px, Arabic and English, light and dark, no console errors; the hub filter
+  shows it under Arabic and hides it for Grade 1 and Grade 8.
+- **Not verified / limits.** The short Arabic strings (title, description, prompt,
+  explanation lead-in) were read by me, not run through the `arabic-copy-reviewer`
+  skill. A teacher has not read the questions: the five rules' options were read by
+  me, which is not a teacher's check. The rule-name tile is large and wraps to two
+  lines on a phone for the longer names; its text in dark mode is the shared
+  `TextQuizGame` ink, dimmer than the other tiles for a brown accent. Nothing was
+  run on a native build. ض/ظ is not in the game: the curriculum rules do not teach it
+  and the bank has no key for it.
+
 ## English audio check: a person listened to the 24 flagged words — 2026-11-01
 
 After the first real run of the speech check (see «English audio check: the first real run, and three kinds of false alarm

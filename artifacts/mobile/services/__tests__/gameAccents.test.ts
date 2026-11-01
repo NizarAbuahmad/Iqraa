@@ -26,6 +26,7 @@ const SOURCES = [
   ['app', 'play', 'fractions.tsx'],
   ['app', 'play', 'matter.tsx'],
   ['app', 'play', 'governorates.tsx'],
+  ['app', 'play', 'spelling.tsx'],
   ['app', 'play', 'index.tsx'],
   ['app', 'play', 'lesson', '[lessonId].tsx'],
 ];
