@@ -40,6 +40,37 @@ answer before and after (0 changed). Typecheck clean. Not seen live yet.
 the model's wording, not a matcher. «جهّز نشاطا جماعيا عن الأعداد النسبية» offers three grade 7 lessons to a grade 10 teacher; it is
 asking which lesson, which is acceptable.
 
+## «ما الجديد»: entries for the games upgrades and the spelling game — 2026-11-01
+
+The /play changes of 2026-10-30 and 2026-11-01 merged before the «ما الجديد» rule
+existed, so existing users were told only about the six new games and the filter
+(`play-hub-filters`). Two entries added to `WHATS_NEW`, both for every role, both
+opening a public screen:
+
+- `play-games-upgrade` (dated 2026-10-30, the day the upgrades merged and reached
+  the web and the Android `production` channel): the one-line explanation after an
+  answer, the sounds and light vibration (the speaker button mutes them), the saved
+  best score with «retry the ones you missed», and the Jordan map in the governorates
+  game. Route `/play`.
+- `play-spelling-game` (dated 2026-11-01): «كيف تُكتب؟», Grades 2 to 7, names the
+  rule after each answer. Route `/play/spelling`.
+- **One existing entry's text changed, its id did not:** `play-hub-filters` said
+  "sixteen games", which was one short once the spelling game shipped. It no longer
+  states a count. A device that already saw it is unaffected (the id is what is
+  remembered).
+- **Who sees them:** an account made after an entry's day is not told (it met the
+  feature already); the dialog shows at most three entries a session, newest first,
+  and Profile → «ما الجديد» lists all. So an older account can now meet three game
+  notes in a row, then the tour note on the next launch.
+- **Verified:** `whatsNew.test.ts` (23 tests: keys exist in both languages, dates are
+  valid, each route is a real screen every named role may open), typecheck, the mobile
+  suite.
+- **Not verified / limits.** The Arabic is mine, read, not run through the
+  `arabic-copy-reviewer` skill, and the English is a plain translation. The upgrades
+  entry says explanations appear "in many" of the question games: they exist in the
+  seven text games (the six new ones and spelling) and not in flags, capitals or
+  elements. Nothing was seen on a device.
+
 ## Chat: the lesson's subject colour on the strip and the heading — 2026-11-01
 
 The chat was the one lesson screen with no subject in it: Today's band wears the lesson's
