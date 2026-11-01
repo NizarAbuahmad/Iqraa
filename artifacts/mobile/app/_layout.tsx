@@ -10,6 +10,7 @@ import { AppSplash } from '@/components/ui/AppSplash';
 import { ConfirmHost } from '@/components/ui/ConfirmDialog';
 import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { TourHost, useTourActive } from '@/components/tour/TourHost';
+import { WhatsNewHost } from '@/components/whatsNew/WhatsNewHost';
 /**
  * Arabic type. Inter has no Arabic glyphs, so every Arabic string — which is
  * nearly the whole product — was being drawn by whatever fallback each device
@@ -263,6 +264,7 @@ function RootLayoutNav() {
       <Stack.Screen name="settings" options={{ headerShown: false }} />
       <Stack.Screen name="faq" options={{ headerShown: false }} />
       <Stack.Screen name="suggest-feature" options={{ headerShown: false }} />
+      <Stack.Screen name="whats-new" options={{ headerShown: false }} />
       <Stack.Screen name="join-class" options={{ headerShown: false }} />
       <Stack.Screen name="add-email" options={{ headerShown: false }} />
       <Stack.Screen name="claim-required" options={{ headerShown: false, gestureEnabled: false }} />
@@ -273,6 +275,7 @@ function RootLayoutNav() {
     </View>
     <AppSplash visible={isLoading} onLayout={() => SplashScreen.hideAsync().catch(() => {})} />
     <TourHost />
+    <WhatsNewHost />
     <ConfirmHost />
     </>
   );
