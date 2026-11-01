@@ -66,7 +66,7 @@ import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { ImageViewerModal } from '@/components/ui/ImageViewer';
 import { goBack } from '@/services/navigation';
-import { isHomeworkChatLine } from '@/services/homework';
+import { homeworkChatTarget } from '@/services/homework';
 import { confirm } from '@/services/confirm';
 import { BackButton } from '@/components/ui/BackButton';
 
@@ -530,14 +530,19 @@ export default function ThreadScreen() {
               Haptics.selectionAsync();
               setSheetMessageId(item.id);
             };
+            // A shared homework's line carries no link (a chat message cannot), so the
+            // app knows it by its opening: a student's tap opens «المدرسة», where the
+            // homework and its attachments are; the teacher's own line opens the class's
+            // homework tab. The bubble says so, or nothing about it looks tappable.
+            const hwTarget = homeworkChatTarget({ body: item.body, isOwn, classGroupId: thread?.classGroupId ?? null });
             return (
               <Pressable
+                accessibilityRole={hwTarget ? 'link' : undefined}
                 onPress={() => {
                   if (item.attachmentKind === 'image' && item.attachmentUrl) {
                     setViewerUrl(item.attachmentUrl);
-                  } else if (!isOwn && isHomeworkChatLine(item.body)) {
-                    // A shared homework's line: the homework itself is in «المدرسة».
-                    router.push('/school');
+                  } else if (hwTarget) {
+                    router.push(hwTarget as never);
                   }
                 }}
                 onLongPress={openSheet}
@@ -560,6 +565,7 @@ export default function ThreadScreen() {
                   onReactionPress={emoji => void reactTo(item.id, emoji)}
                   onReactionLongPress={openSheet}
                   reactionLabel={r => t('messageReactionChipLabel', r.emoji, r.count, r.mine)}
+                  actionLabel={hwTarget ? t(isOwn ? 'hwChatOpenTeacher' : 'hwChatOpenStudent') : undefined}
                 />
               </Pressable>
             );

@@ -222,6 +222,18 @@ export function isHomeworkChatLine(body: string): boolean {
 }
 
 /**
+ * Where a tap on a message goes, when the message is a shared-homework line.
+ * The sender (the teacher) lands on the class's homework tab; anyone else on
+ * «المدرسة». Null for any other message, and for the teacher's line in a
+ * thread that has no class to open.
+ */
+export function homeworkChatTarget(m: { body: string; isOwn: boolean; classGroupId: string | null }): string | null {
+  if (!isHomeworkChatLine(m.body)) return null;
+  if (!m.isOwn) return '/school';
+  return m.classGroupId ? `/classes/${encodeURIComponent(m.classGroupId)}?tab=homework` : null;
+}
+
+/**
  * What a teacher typed into the due-date box, laid out as YYYY-MM-DD. Only the
  * digits are kept (Arabic-Indic ones folded), so the dashes are not typed or
  * deleted by hand: «20261019», «2026/10/19» and «٢٠٢٦-١٠-١٩» all come out as
