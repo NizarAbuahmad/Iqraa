@@ -37,6 +37,7 @@ import { bookItemNote } from '@/services/bookItemNote';
 import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { questionText as questionTextFor } from '@/services/evaluationQuestionText';
 import { generateFailure } from '@/services/evaluationGenerateError';
+import { archiveFailure, editRefusedAsNotDraft } from '@/services/evaluationEditError';
 import { copyToClipboard } from '@/services/share';
 import { AddReadAloudModal } from '@/components/AddReadAloudModal';
 import { AddDictationModal } from '@/components/AddDictationModal';
@@ -192,7 +193,14 @@ export default function EvaluationDetailScreen() {
       );
       setTotal(totalMarks);
     } catch (err) {
-      setError(t('questionSaveFailed'));
+      if (editRefusedAsNotDraft(err)) {
+        // Published or removed meanwhile: nothing was changed, and the question list
+        // on screen is stale until the exam is reloaded.
+        setError(t('evaluationEditNoLongerDraft'));
+        await refetch();
+      } else {
+        setError(t('questionSaveFailed'));
+      }
     }
   };
 
@@ -272,7 +280,11 @@ export default function EvaluationDetailScreen() {
       queryClient.removeQueries({ queryKey: evaluationQueryKey(id) });
       goBack();
     } catch (err) {
-      setError(t('archiveEvaluationFailed'));
+      const failure = archiveFailure(err);
+      setError(t(failure.messageKey));
+      // Published meanwhile: the screen still shows a draft or closed exam with a
+      // delete button that can only be refused again.
+      if (failure.refetch) await refetch();
     } finally {
       setBusy(null);
     }
@@ -900,6 +912,7 @@ export default function EvaluationDetailScreen() {
       <AddReadAloudModal
         visible={addingReadAloud}
         onClose={() => setAddingReadAloud(false)}
+        onStale={refetch}
         evaluationId={id}
         objectiveIds={evaluation?.objectiveIds ?? []}
         onAdded={(question, totalMarks) => {
@@ -913,6 +926,7 @@ export default function EvaluationDetailScreen() {
       {editing && (
         <EditQuestionModal
           onClose={() => setEditing(null)}
+          onStale={refetch}
           evaluationId={id}
           objectiveIds={evaluation?.objectiveIds ?? []}
           question={editing === 'new' ? undefined : editing}
@@ -935,6 +949,7 @@ export default function EvaluationDetailScreen() {
       <AddDictationModal
         visible={addingDictation}
         onClose={() => setAddingDictation(false)}
+        onStale={refetch}
         evaluationId={id}
         gradeId={evaluation?.gradeId}
         objectiveIds={evaluation?.objectiveIds ?? []}
