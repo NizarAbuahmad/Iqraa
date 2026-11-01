@@ -157,20 +157,6 @@ export function actionableCount(exams: readonly MyExam[]): number {
 }
 
 /**
- * The facts under a row's title — subject, the exam day, when it was sent, the
- * limit, the marks — as separate pieces for a wrapping row, in order, with the
- * empty ones dropped. The row spaces them with a gap and draws no separator
- * character: a joined string under `numberOfLines` was cut mid-text («· 10 …»)
- * once the exam day joined it, and a « ·» glued to the end of each piece left a
- * line ending in a dangling dot wherever the row wrapped. With spacing only, no
- * line can begin or end on punctuation, and a piece wider than the row still
- * wraps inside itself.
- */
-export function metaSegments(parts: readonly (string | null | undefined | false)[]): string[] {
-  return parts.filter((p): p is string => typeof p === 'string' && p.trim() !== '');
-}
-
-/**
  * How a state is coloured, by meaning rather than by hex: the screens map a
  * tone onto the live palette (`colors[tone]`, `mutedForeground` for `muted`) so
  * dark mode follows. «waiting» is blue, a released result green, an exam that
