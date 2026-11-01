@@ -22,13 +22,18 @@ it is non-empty. The named lesson is in grade 9, so the grade-10 search returned
 That rule is deliberate («a quiz on fractions» with grade 7 picked means grade 7's fractions); it just had no exception for a
 lesson the message names whole.
 
-**Built.** `namedLessonBeatsGrade(inGrade, all)` in `kbSuggestion.ts`: the whole-KB search is decided by a title no other lesson
-shares (`titleDecides`), and the grade's own search is not decided by one and does not lead with the same lesson. Then the
-whole-KB result is used. A title that also exists in the picked grade makes the whole-KB search contested, so the grade keeps
-it. Only the artifact path changed (the subject-scoped search filters by the named subject already).
+**Built.** `namedLessonBeatsGrade(inGrade, all, subjectOf)` in `kbSuggestion.ts`: the whole-KB search is decided by a title no
+other lesson shares (`titleDecides`), the grade's own search is not decided by one, and the grade's best hit is in a **different
+subject** from the named lesson (or there is none). Then the whole-KB result is used. It deliberately does not move a request
+to another grade of the *same* subject: a second live check found that «جهّز واجبا عن محيط الدائرة» with grade 10 picked is
+grade 10 maths, and the only lesson of that name is grade 7's. The first version of this change would have switched it; the
+picked grade is the teacher's class, and only a subject it cannot answer in is overruled. A title that also exists in the picked
+grade makes the whole-KB search contested, so the grade keeps it. Only the artifact path changed (the subject-scoped search
+filters by the named subject already).
 
 **Verified.** `kbTitleCoverage.test.ts` (16 tests, five new): the grade-10 search alone picks Digital Skills; the named grade 9
-maths lesson beats it; grade 9 itself is unchanged; «تحليل» alone never overrides a grade. Typecheck clean. On the live
+maths lesson beats it; grade 9 itself is unchanged; the grade 7 «محيط الدائرة» does not take a grade 10 maths request;
+«تحليل» alone never overrides a grade. Typecheck clean. On the live
 build before this change, the sine-law quiz and the three teaching answers (circle circumference, angle sum, chemical reaction)
 were right. Not seen live after this change yet.
 

@@ -67,18 +67,29 @@ export function titleDecides(ranked: KBScoredLesson[]): boolean {
 }
 
 /**
- * The teacher's picked grade narrows a search, but not past a lesson they named.
- * «ورقة عمل عن حل المعادلة التربيعية بالتحليل» with grade 10 picked searched
- * grade 10 alone, found «تحليل البيانات» (Digital Skills, a shared word), and
- * made a Digital Skills worksheet; the lesson named whole is in grade 9. When the
- * whole-KB search is decided by a title no other lesson shares and the grade's
- * own search is not decided by one, the named lesson wins. The same title in the
- * picked grade makes the whole-KB search contested, so the grade keeps it.
+ * The teacher's picked grade narrows a search, but not past a lesson they named
+ * in another SUBJECT. «ورقة عمل عن حل المعادلة التربيعية بالتحليل» with grade 10
+ * picked searched grade 10 alone, found «تحليل البيانات» (Digital Skills, a
+ * shared word), and made a Digital Skills worksheet; the lesson named whole is
+ * Maths, grade 9. So when the whole-KB search is decided by a title no other
+ * lesson shares, and the grade's own best hit is in a different subject (or
+ * there is none), the named lesson wins.
+ *
+ * It does NOT move a request to another grade of the same subject: «واجب عن
+ * محيط الدائرة» with grade 10 picked stays grade 10 maths, not the grade 7
+ * lesson of that name. The picked grade is the teacher's class; only a subject
+ * the grade cannot answer in is overruled. The same title in the picked grade
+ * makes the whole-KB search contested, so the grade keeps it.
  */
-export function namedLessonBeatsGrade(inGrade: KBScoredLesson[], all: KBScoredLesson[]): boolean {
+export function namedLessonBeatsGrade(
+  inGrade: KBScoredLesson[],
+  all: KBScoredLesson[],
+  subjectOf: (lesson: KBLesson) => string | undefined,
+): boolean {
   if (!titleDecides(all)) return false;
   if (inGrade.length === 0) return true;
-  return !titleDecides(inGrade) && inGrade[0]!.lesson.id !== all[0]!.lesson.id;
+  if (titleDecides(inGrade)) return false;
+  return subjectOf(inGrade[0]!.lesson) !== subjectOf(all[0]!.lesson);
 }
 
 /** True when the top ranked hit clears the confidence bar vs the runner-up. */

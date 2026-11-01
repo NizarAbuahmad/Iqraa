@@ -101,33 +101,38 @@ describe('a longer title named whole is not shadowed by a shorter one inside it'
 // worksheet. The lesson named whole is in grade 9.
 describe('a lesson named whole is not lost to the picked grade', () => {
   const ASK = '4 أسئلة حل المعادلة التربيعية بالتحليل';
+  const subjectOf = (l: Parameters<typeof getBookForLesson>[0]) => getBookForLesson(l)?.subjectId;
   const all = searchKBRanked(ASK, 'ar');
   const inGrade10 = searchKBRanked(ASK, 'ar', { gradeId: 'grade-10' });
 
   it('the picked grade alone would have chosen Digital Skills', () => {
-    assert.equal(getBookForLesson(inGrade10[0]!.lesson)?.subjectId, 'digital-literacy');
+    assert.equal(subjectOf(inGrade10[0]!.lesson), 'digital-literacy');
   });
 
-  it('the named grade 9 maths lesson beats the grade 10 pick', () => {
-    assert.equal(namedLessonBeatsGrade(inGrade10, all), true);
+  it('the named grade 9 maths lesson beats a grade 10 pick that can only answer in another subject', () => {
+    assert.equal(namedLessonBeatsGrade(inGrade10, all, subjectOf), true);
     assert.equal(getBookForLesson(all[0]!.lesson)?.gradeId, 'grade-9');
   });
 
   it('the picked grade keeps its own lesson when that one is the named lesson', () => {
     const inGrade9 = searchKBRanked(ASK, 'ar', { gradeId: 'grade-9' });
-    assert.equal(namedLessonBeatsGrade(inGrade9, all), false);
+    assert.equal(namedLessonBeatsGrade(inGrade9, all, subjectOf), false);
+  });
+
+  // Found live 2026-11-01: «جهّز واجبا عن محيط الدائرة» with grade 10 picked is
+  // grade 10 maths. The only lesson of that name is grade 7's; moving the
+  // request to another grade of the same subject is not this rule's job.
+  it('a same-subject lesson of another grade does not take the request from the picked grade', () => {
+    const q = 'واجبا عن محيط الدائرة';
+    const a = searchKBRanked(q, 'ar');
+    const g10 = searchKBRanked(q, 'ar', { gradeId: 'grade-10' });
+    assert.equal(subjectOf(a[0]!.lesson), 'mathematics');
+    assert.equal(subjectOf(g10[0]!.lesson), 'mathematics');
+    assert.equal(namedLessonBeatsGrade(g10, a, subjectOf), false);
   });
 
   it('a topic that names no lesson whole never overrides the grade', () => {
     const q = 'تحليل';
-    assert.equal(namedLessonBeatsGrade(searchKBRanked(q, 'ar', { gradeId: 'grade-10' }), searchKBRanked(q, 'ar')), false);
-  });
-
-  it('a title shared with another grade stays with the picked grade', () => {
-    // «قانون الجيوب» exists once, but a title repeated across grades is contested.
-    const q = 'الجمع والطرح';
-    const a = searchKBRanked(q, 'ar');
-    assert.equal(namedLessonBeatsGrade(searchKBRanked(q, 'ar', { gradeId: 'grade-2' }), a), false);
+    assert.equal(namedLessonBeatsGrade(searchKBRanked(q, 'ar', { gradeId: 'grade-10' }), searchKBRanked(q, 'ar'), subjectOf), false);
   });
 });
-
