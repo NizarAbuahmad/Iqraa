@@ -106,6 +106,7 @@ import { MathParagraph } from '@/components/ui/MathParagraph';
 import { hasRenderableMath, isLatinProseLine, isolateForeignRuns } from '@/services/mathRender';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { CurrentLessonCard } from '@/components/ui/CurrentLessonCard';
+import { subjectChipColor } from '@/services/subjectTheme';
 import { NotificationBell } from '@/components/ui/NotificationBell';
 import { DocumentAttachmentBar } from '@/components/ui/DocumentAttachmentBar';
 import { DOCUMENT_UPLOAD_ENABLED } from '@/services/features';
@@ -870,7 +871,7 @@ const prepStyles = StyleSheet.create({
 
 function MessageBubble({
   message, colors, isRTL, onLongPress, onClarifySubject, onClarifyLesson, onPedagogicalClarify, onPlacePress, prepProgress,
-  introName, introPitch, introActions, introBoard, onEditArtifact, onCopy, onExport,
+  introName, introColor, introPitch, introActions, introBoard, onEditArtifact, onCopy, onExport,
   onSaveMaterial, onAddToClass, onPresentMaterial, onOpenCanvas, onCanvas, busyMaterial,
   copyLabel, exportLabel, t,
 }: {
@@ -884,6 +885,8 @@ function MessageBubble({
   prepProgress?: PrepProgressView | null;
   /** Assistant identity, shown on the opening turn only. */
   introName?: string;
+  /** The heading's colour: the lesson's subject, already readable on the page. Brand teal when absent. */
+  introColor?: string;
   introPitch?: string;
   /** Starting actions, rendered under the pitch on the opening turn only. */
   introActions?: React.ReactNode;
@@ -1018,7 +1021,7 @@ function MessageBubble({
     return (
       <View style={[styles.intro, isWide && styles.introWide]}>
         <IqraaMark size={isWide ? 84 : 64} tone="soft" />
-        <Text numberOfLines={2} style={[styles.introName, isWide && styles.introNameWide, { color: colors.primary, fontFamily: 'ReadexPro_700Bold' }]}>
+        <Text numberOfLines={2} style={[styles.introName, isWide && styles.introNameWide, { color: introColor ?? colors.primary, fontFamily: 'ReadexPro_700Bold' }]}>
           {introName}
         </Text>
         <Text
@@ -3846,6 +3849,8 @@ export default function IqraScreen() {
           // «0/5» alone does not say five of what; the window has room to.
           readyLabel={(done, total) => t('homeReady', done, total)}
           readyInline={isDesktop}
+          // The lesson's subject, as an edge bar — Today's band does the same job.
+          accent={subjectChipColor(currentLessonView.subjectId, colors.card)}
           // A band welded to both window edges on desktop; a card over the
           // thread it describes here.
           containerStyle={
@@ -3984,6 +3989,9 @@ export default function IqraScreen() {
             onPedagogicalClarify={handlePedagogicalClarify}
             onPlacePress={handleEphemeralPress}
             introName={currentLessonView?.topic?.trim() ? t('iqraAgentAsk', currentLessonView.topic.trim()) : t('iqraAgentName')}
+            // The heading names the lesson, so it wears the lesson's subject —
+            // on the page ground, not on a card. No lesson, no subject: brand teal.
+            introColor={currentLessonView?.topic?.trim() ? subjectChipColor(currentLessonView.subjectId, colors.background) : undefined}
             introPitch={t('iqraAgentPitch')}
             // Only while the thread is still just the intro — otherwise the
             // same three chips appear twice on one screen.
