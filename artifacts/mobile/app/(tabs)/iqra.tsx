@@ -1017,7 +1017,7 @@ function MessageBubble({
     return (
       <View style={[styles.intro, isWide && styles.introWide]}>
         <IqraaMark size={isWide ? 84 : 64} tone="soft" />
-        <Text style={[styles.introName, isWide && styles.introNameWide, { color: colors.primary, fontFamily: 'ReadexPro_700Bold' }]}>
+        <Text numberOfLines={2} style={[styles.introName, isWide && styles.introNameWide, { color: colors.primary, fontFamily: 'ReadexPro_700Bold' }]}>
           {introName}
         </Text>
         <Text
@@ -3720,6 +3720,8 @@ export default function IqraScreen() {
   /** Narrowed once here so the canvas's edit callback needs no cast. */
   const canvasPlan =
     canvasMessage?.artifactData?.kind === 'lesson-plan' ? canvasMessage.artifactData : null;
+  /** Desktop and nothing said yet — the intro and the composer are centred together. */
+  const emptyDesktop = isDesktop && messages.length <= 1;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -3918,22 +3920,31 @@ export default function IqraScreen() {
       )}
 
       {/* ─── Messages ──────────────────────────────────────────────── */}
+      {/*
+        Desktop, nothing said yet: the intro, its chips and the composer are one
+        offer, so they are centred as a group between two spacers. The list
+        stops growing, and the composer stays where it was in the tree — it is
+        the same TextInput before and after the first send, so focus survives.
+        The spacers are `null` once there is a thread, which keeps every other
+        sibling in its slot.
+      */}
+      {emptyDesktop ? <View style={{ flex: 1 }} /> : null}
       <FlatList
         ref={listRef}
         data={messages}
         keyExtractor={m => m.id}
         extraData={streamingId}
-        style={{ flex: 1 }}
+        style={emptyDesktop ? { flexGrow: 0, flexShrink: 1 } : { flex: 1 }}
         /*
           An empty thread used to pin its intro to the top of a 900px-tall
           window with the composer welded to the bottom, and nothing in
-          between. Centred, the opening turn and the chips under it read as
-          one offer rather than two pieces of furniture at opposite edges.
+          between: ~250px of nothing separated the offer from the box that
+          answers it. Now the composer sits right under the chips.
         */
         contentContainerStyle={[
           styles.messageList,
           centered,
-          isDesktop && messages.length <= 1 && styles.messageListEmpty,
+          emptyDesktop && styles.messageListEmpty,
         ]}
         showsVerticalScrollIndicator={false}
         onScroll={(e) => {
@@ -3962,7 +3973,7 @@ export default function IqraScreen() {
             onClarifyLesson={handleClarifyLesson}
             onPedagogicalClarify={handlePedagogicalClarify}
             onPlacePress={handleEphemeralPress}
-            introName={t('iqraAgentName')}
+            introName={currentLessonView?.topic?.trim() ? t('iqraAgentAsk', currentLessonView.topic.trim()) : t('iqraAgentName')}
             introPitch={t('iqraAgentPitch')}
             // Only while the thread is still just the intro — otherwise the
             // same three chips appear twice on one screen.
@@ -4109,11 +4120,15 @@ export default function IqraScreen() {
             // at the keyboard's top edge, so neither the tab bar's height nor
             // the home-indicator inset belongs under the composer any more.
             paddingBottom: isDesktop ? 22 : keyboardVisible ? 8 : tabBarHeight + Math.max(insets.bottom, 8),
-            paddingHorizontal: isDesktop ? 16 : 12,
+            // Desktop pads INSIDE the column below, as the lesson strip and the
+            // thread do. Padding out here made the composer 820px against their
+            // 788px — a 16px step on each side.
+            paddingHorizontal: isDesktop ? 0 : 12,
+            paddingTop: emptyDesktop ? 18 : 10,
           },
         ]}
       >
-        <View style={centered}>
+        <View style={[centered, isDesktop && { paddingHorizontal: 16 }]}>
         {DOCUMENT_UPLOAD_ENABLED ? (
           <DocumentAttachmentBar
             isRTL={isRTL}
@@ -4161,6 +4176,10 @@ export default function IqraScreen() {
             }}
             style={({ pressed }) => [
               styles.plusBtn,
+              // A bare «+» is the only door to the whole tool catalogue; a
+              // mouse has room to say so. A phone keeps the 34px circle.
+              isDesktop && styles.plusBtnLabelled,
+              isDesktop && { flexDirection: isRTL ? 'row-reverse' : 'row' },
               { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
             ]}
             accessibilityRole="button"
@@ -4168,6 +4187,11 @@ export default function IqraScreen() {
             hitSlop={5}
           >
             <Ionicons name="add" size={20} color={colors.primary} />
+            {isDesktop ? (
+              <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
+                {t('chatToolsTitle')}
+              </Text>
+            ) : null}
           </Pressable>
           <TextInput
             ref={composerRef}
@@ -4242,8 +4266,10 @@ export default function IqraScreen() {
                 },
               ]}
             >
+              {/* Up, not a mirrored arrow: in RTL a bare left arrow in a disc
+                  reads as "back", and it sat beside the browser's own. */}
               <Ionicons
-                name={isRTL ? 'arrow-back' : 'arrow-forward'}
+                name="arrow-up"
                 size={20}
                 color={input.trim() ? colors.primaryForeground : colors.mutedForeground}
               />
@@ -4252,6 +4278,8 @@ export default function IqraScreen() {
         </View>
         </View>
       </View>
+      {/* Heavier than the one above, so the group sits a little above centre. */}
+      {emptyDesktop ? <View style={{ flex: 1.4 }} /> : null}
       </View>
 
       {canvasMessage ? (
@@ -4417,7 +4445,7 @@ const styles = StyleSheet.create({
   },
 
   messageList: { padding: 16, gap: 12, paddingBottom: 8, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
-  messageListEmpty: { flexGrow: 1, justifyContent: 'center', paddingBottom: 48 },
+  messageListEmpty: { paddingBottom: 4 },
 
   // Physical trailing edge (right). Do not flip for language RTL — that pinned bubbles left.
   rowUser: { width: '100%', flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 4 },
@@ -4482,6 +4510,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     marginBottom: 1,
   },
+  plusBtnLabelled: { width: 'auto', paddingHorizontal: 12, gap: 4 },
   sendBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
 });
 
