@@ -36,6 +36,7 @@ import { summariseKeyChecks, type KeyCheckSummary } from '@/services/keyCheckSum
 import { bookItemNote } from '@/services/bookItemNote';
 import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { questionText as questionTextFor } from '@/services/evaluationQuestionText';
+import { generateFailure } from '@/services/evaluationGenerateError';
 import { copyToClipboard } from '@/services/share';
 import { AddReadAloudModal } from '@/components/AddReadAloudModal';
 import { AddDictationModal } from '@/components/AddDictationModal';
@@ -216,7 +217,11 @@ export default function EvaluationDetailScreen() {
       setGenWarnings(gen.warnings ?? []);
       await refetch();
     } catch (err) {
-      setError(t('evaluationGenerateFailed'));
+      const failure = generateFailure(err);
+      setError(t(failure.messageKey));
+      // An exam that stopped being a draft stays a draft on this screen until it is
+      // reloaded, with a regenerate button that can only be refused again.
+      if (failure.refetch) await refetch();
     } finally {
       setBusy(null);
     }

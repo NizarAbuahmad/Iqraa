@@ -32,6 +32,7 @@ export const PLAY_GAME_SUBJECT: Record<PlayGameId, PlaySubject> = {
   fractions: 'math',
   matter: 'science',
   governorates: 'geography',
+  spelling: 'arabic',
 };
 
 export interface HubFilter {
