@@ -208,6 +208,7 @@ From session notes **(notes)**:
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
 - 2026-11-01 — Admin daily activity — new vs returning
+- 2026-11-01 — English audio check: a person listened to the 24 flagged words
 - 2026-10-31 — Grade 6 unit word lists in the English corner
 - 2026-10-30 — PostHog moves to the owner's own EU project
 - 2026-10-29 — Screen recordings: Contentsquare on the web, PostHog replay on Android
@@ -233,15 +234,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-24 — Grade 10 grammar (Semester 1) in the English corner — built, shown to nobody yet
 - 2026-10-24 — Generator screens: Retry repeats the run, and the evaluations picker row
 - 2026-10-24 — Generator screens: the toast clears the docked bar
-- 2026-10-23 — Students choose an email or a teacher's code
-- 2026-10-23 — Generator screens: Cancel then a refusal, and the banner contrast
-- 2026-10-23 — Generator screens: the slides
-- 2026-10-23 — Generator screens: the activity
-- 2026-10-23 — Generator screens: the lesson plan
 
 ## Finding older detail, and recording new work
 
-- The log has 419 sections. Anything cited elsewhere as
+- The log has 421 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line
