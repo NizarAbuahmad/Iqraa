@@ -207,6 +207,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-11-01 — Grammar sheets stop mentioning pictures in the grades that have none
 - 2026-11-01 — Admin daily activity — new vs returning
 - 2026-11-01 — English audio check: a person listened to the 24 flagged words
 - 2026-10-31 — Grade 6 unit word lists in the English corner
@@ -232,12 +233,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-24 — Tests for the code-only account routes
 - 2026-10-24 — Printed grammar forms fit the page, sign-off no longer covers rows, and True or false says right or wrong without pictures
 - 2026-10-24 — Grade 10 grammar (Semester 1) in the English corner — built, shown to nobody yet
-- 2026-10-24 — Generator screens: Retry repeats the run, and the evaluations picker row
-- 2026-10-24 — Generator screens: the toast clears the docked bar
 
 ## Finding older detail, and recording new work
 
-- The log has 421 sections. Anything cited elsewhere as
+- The log has 422 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line
