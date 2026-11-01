@@ -207,6 +207,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-11-01 — Admin daily activity — new vs returning
 - 2026-11-01 — English audio check: a person listened to the 24 flagged words
 - 2026-10-31 — Grade 6 unit word lists in the English corner
 - 2026-10-30 — PostHog moves to the owner's own EU project

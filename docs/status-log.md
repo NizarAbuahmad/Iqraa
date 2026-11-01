@@ -10,6 +10,53 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Admin daily activity — new vs returning — 2026-11-01
+
+`GET /admin/daily-activity?days=30` (1–90, default 30): for each day, how many people were active, how
+many of those were new and how many returning, plus accounts created that day. System admin only (the
+numbers span every school); a school admin gets 403. Oldest day first, quiet days zero-filled. The admin
+dashboard (`app/admin/dashboard.tsx`) draws it as «النشاط اليومي — آخر ٣٠ يومًا» / "Daily activity — last
+30 days" under the signups chart: one stacked bar per day (returning below, new above, so the bar is that
+day's active people), the first and last date, and the average, the busiest day, new / returning summed
+over the window and signups. **No schema change, no migration, no native change** (`artifacts/mobile/app.json`,
+`package.json`, `eas.json` and `android/` untouched, so an OTA reaches a binary of the same `version`). A
+merge touches `artifacts/api-server/` and `artifacts/mobile/`, so it deploys the API first, then the web
+bundle, and publishes to the `preview` OTA channel. Only a system admin's dashboard asks for it and shows
+the section; a school admin sees nothing new, and a failed request prints one line in the section instead
+of blanking the screen (it is a request of its own, not part of the dashboard's `load`).
+
+**Definitions (the limits worth knowing)**
+
+- *Active* is the same as `activeUsers7d/30d` in `/admin/usage-summary`: the person generated something
+  with AI (`ai_generations`, cache hits included, rows with no user excluded) or saved a material
+  (`saved_materials`). **Opening the app or signing in is not counted** — nothing durable records it
+  (`users.last_login` is only stamped at sign-in, so a person who stays signed in never moves it). For
+  "opened the app" use PostHog (Trends «unique users», Lifecycle for new/returning).
+- *New* = the account was created on that same day; *returning* = created on an earlier day. So a person
+  who signed up on Monday and first used the tool on Wednesday is *returning* on Wednesday. `signups` is
+  accounts created that day, active or not, to make that gap visible.
+- A person is counted once a day however much they did. A day is an Asia/Amman calendar day (fixed UTC+3),
+  not UTC, unlike `signupsByDay` in `/usage-summary`, which is UTC; the two will not line up near midnight.
+
+**Verified:** `src/lib/__tests__/dailyActivity.test.ts` (window parsing, the Amman day, zero-fill, month and
+year boundaries) and `src/routes/__tests__/adminDailyActivity.db.test.ts` against a real Postgres through
+the built bundle (once per person per day across both sources, new vs returning, a null-user generation
+ignored, a signup with no activity shows in `signups` only, 400 on a bad window, 401 and 403). Each was
+seen failing first. Typecheck clean; the whole api-server suite (3319 tests) passes.
+The chart's heights and sums are `services/adminDailyActivity.ts`, pinned by
+`services/__tests__/adminDailyActivity.test.ts` (seen failing first); the mobile suite passes (9008 tests)
+after the new text was moved onto `TYPE` steps, which `designScale.test.ts` had refused. **Seen in a
+browser:** the real API against a throwaway Postgres seeded with 60 teachers and 30 days of activity, signed
+in as a system admin through the web build: English on a 1100 px desktop in light mode and Arabic on a
+390 px phone in dark mode (bars stack, the day runs with the reading direction like the signups chart
+beside it, both colours read on the dark card).
+**Not verified:** the query's speed on production volumes (it scans the last `days` days of
+`ai_generations` and `saved_materials`; `ai_generations_created_at_idx` exists, `saved_materials` has no
+`created_at` index); nothing was run against production data; a school admin's dashboard was not opened
+(that it shows nothing new is from the `system_admin` check in the code); a screen reader's reading of the
+chart (the bars carry one summary label, not a label per day); the Arabic wording was not reviewed by a native
+reader.
+
 ## /play: «كيف تُكتب؟» — a spelling game built on the existing spelling bank — 2026-11-01
 
 A seventeenth /play game (route `/play/spelling`, "Spell It Right", card says
