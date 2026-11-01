@@ -2,7 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SPELLING_RULES } from '@workspace/arabic-spelling';
 import { makeRng } from '../publicGames/rng.ts';
-import { SPELLING_PER_RULE, buildSpellingRound, stripMarks } from '../publicGames/spelling.ts';
+import {
+  SPELLING_DROPPED_ANSWERS, SPELLING_GAME_RULE_IDS, SPELLING_PER_RULE, buildSpellingRound, stripMarks,
+} from '../publicGames/spelling.ts';
 import { assertWellFormed } from './playQuizAsserts.ts';
 
 const ARABIC = /^[\p{Script=Arabic}\p{M}\s]+$/u;
@@ -88,9 +90,34 @@ test('the round is deterministic for a seed and varies between seeds', () => {
   assert.ok(firsts.size > 10, 'rounds barely vary');
 });
 
-test('every rule that can make a choice question is reachable, and the pool is big enough to fill a round', () => {
+test('only the allowed rules are served, every one of them is reachable, and none is renamed away', () => {
+  const ids = new Set(SPELLING_RULES.map(r => r.id));
+  for (const id of SPELLING_GAME_RULE_IDS) assert.ok(ids.has(id), `${id} is no longer a bank rule`);
+  const allowedNames = new Set(SPELLING_RULES.filter(r => (SPELLING_GAME_RULE_IDS as readonly string[]).includes(r.id)).map(r => r.nameAr));
   const seen = new Set<string>();
-  for (const round of rounds('ar', 400)) for (const q of round) seen.add(q.subject!);
-  // الألف الفارقة words admit one plausible misspelling each, so the bank makes no choice question for it.
-  assert.ok(seen.size >= 15, `only ${seen.size} rules were ever drawn`);
+  for (const round of rounds('ar', 300)) for (const q of round) {
+    assert.ok(allowedNames.has(q.subject!), `${q.subject} is not an allowed rule`);
+    seen.add(q.subject!);
+  }
+  assert.equal(seen.size, SPELLING_GAME_RULE_IDS.length, 'a rule is never drawn');
+});
+
+test('a dropped answer is never asked, and the round is still full without it', () => {
+  for (const round of rounds('ar', 300)) {
+    assert.equal(round.length, 8);
+    for (const q of round) assert.ok(!SPELLING_DROPPED_ANSWERS.includes(q.correctId), q.correctId);
+  }
+});
+
+test('no wrong option is a word of its own: the options of the served rules, read once by hand', () => {
+  // The audit behind SPELLING_GAME_RULE_IDS found «دلك» (a verb) offered beside «ذلك». These are the
+  // non-words the five rules offer; a new one in the bank has to be read before it joins this list.
+  const KNOWN_REAL_WORDS = ['دلك'];
+  for (const round of rounds('ar', 300)) {
+    for (const q of round) {
+      for (const o of q.options) {
+        if (o.id !== q.correctId) assert.ok(!KNOWN_REAL_WORDS.includes(o.label), `${o.label} offered beside ${q.correctId}`);
+      }
+    }
+  }
 });

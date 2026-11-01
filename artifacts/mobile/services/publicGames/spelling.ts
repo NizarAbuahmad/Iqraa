@@ -13,16 +13,48 @@
  * words and the options are Arabic whatever the UI language is; only the prompt
  * and the explanation's lead-in are localised.
  *
- * Options are shown without vowel marks. The bank stores the correct spelling
- * fully vowelled and its misspellings bare, so showing them as stored would let
- * a child pick the one with the marks. The explanation shows the vowelled form.
+ * ## Only five rules, on purpose
+ *
+ * The tile shows a rule name and the options are bare words, so nothing tells the
+ * child WHICH word is meant. That is only safe where a wrong option is never a
+ * word of its own. An audit of 135 questions the full bank can serve (the
+ * options against every word of the Arabic books, then read by hand) found about
+ * half offering a real word as a wrong option: قلم beside قلمًا, رمي beside رمى,
+ * أبني beside ابني, أستمع beside استمع, ضوء beside ضوءًا, ذاهب beside ذهب, إله
+ * beside الله. A child who reads the other word is marked wrong. The five rules
+ * below offer only non-words (مدرسه, ألشمس, بإلكتاب, هاذا) apart from one word,
+ * «ذلك» (its derived option «دلك» is a verb), which is dropped.
+ * Excluded rules come back when the bank can say which word is meant (a
+ * sentence per word) or a word-list check exists. `alif-tathniya-baad-hamza` is
+ * also out for its content: it marks شيآن / هواآن as correct and شيئان / هواءان
+ * as wrong, against its own بدءان / جزءان — check it against the book first.
+ *
+ * ## Marks
+ *
+ * `takeSpellingItems` already hands the options over bare (its own `bare()` covers
+ * U+064B–0652 and U+0670), so showing them is safe; `stripMarks` here covers the
+ * rest of the mark range, and matches an option back to its word. The
+ * explanation shows the vowelled form.
  */
 import { SPELLING_RULES, takeSpellingItems, type SpellingItem, type SpellingRule } from '@workspace/arabic-spelling';
 import { shuffle } from './rng.ts';
 import type { TextQuestion } from './textQuiz.ts';
 
+/** The rules this game serves; see the header for why the other fourteen are not. */
+export const SPELLING_GAME_RULE_IDS = [
+  'taa-marbuta-haa',
+  'lam-shamsiya-qamariya',
+  'ittissal-huruf-bi-al',
+  'asma-mabdua-bi-al',
+  'hatha-hathihi',
+] as const;
+const GAME_RULES = SPELLING_RULES.filter(r => (SPELLING_GAME_RULE_IDS as readonly string[]).includes(r.id));
+
+/** Answers never asked: a derived wrong option is itself a word («دلك», to rub). */
+export const SPELLING_DROPPED_ANSWERS: readonly string[] = ['ذلك'];
+
 /** At most this many questions from one rule in a round, so a round is not one lesson. */
-export const SPELLING_PER_RULE = 2;
+export const SPELLING_PER_RULE = 3;
 
 /** Harakat, shadda and the dagger alif: what separates a vowelled word from the bare spelling. */
 export function stripMarks(word: string): string {
@@ -55,17 +87,17 @@ function toQuestion(rule: SpellingRule, item: SpellingItem, lang: 'ar' | 'en'): 
 
 /**
  * `count` questions on different words, at most `SPELLING_PER_RULE` from any one
- * rule. A rule whose words admit only one plausible misspelling (الألف الفارقة)
- * makes no choice question in the bank and so never appears — by design.
+ * rule, from `SPELLING_GAME_RULE_IDS` only. A word with fewer than two wrong
+ * options (وجه / وجة) makes no choice question in the bank and is skipped.
  */
 export function buildSpellingRound(lang: 'ar' | 'en', count: number, rng: () => number = Math.random): TextQuestion[] {
   const drawn: TextQuestion[] = [];
   const seen = new Set<string>();
-  for (const rule of shuffle([...SPELLING_RULES], rng)) {
+  for (const rule of shuffle([...GAME_RULES], rng)) {
     const seed = Math.floor(rng() * 0x7fffffff) + 1;
     for (const item of takeSpellingItems(rule, SPELLING_PER_RULE, { kinds: ['choose'], seed })) {
       const q = toQuestion(rule, item, lang);
-      if (!q || seen.has(q.correctId)) continue;
+      if (!q || seen.has(q.correctId) || SPELLING_DROPPED_ANSWERS.includes(q.correctId)) continue;
       seen.add(q.correctId);
       drawn.push(q);
     }
