@@ -72,7 +72,8 @@ Checked 2026-10-22:
 - 2026-10-31 — Homework submissions record their author (migration `0022`)
 - 2026-10-31 — Homework project submission — teacher screens (phase 3: the switch, the handed-in list, one project, «حذف المشروع»; what is left open is the item «Homework projects: what the teacher's app still cannot do…» below)
 - 2026-10-31 — Teacher can clear one student's project (the API; the app's button is the teacher-screens entry above)
-- 2026-10-31 — Slides: cycle, tree, Venn and mind-map diagrams; curriculum slides gain shapes, icons, charts and photos (untested against a live model)
+- 2026-10-31 — Slides: cycle, tree, Venn and mind-map diagrams; curriculum slides gain shapes, icons, charts and photos (Prompt Slides still untested against a live model)
+- 2026-11-01 — Student lesson explanations: 30 of 50 from the 2026-11-01 prefill reviewed and approved (live for students); the 20 rejected need a prefill rerun once «Lesson explanations: accuracy rule…» is deployed (see the log)
 - **Screen recording of everyone is ON for the web app (since the 2026-10-29 re-run of Deploy
   #868) and not yet running on Android.** Web: the Contentsquare tag loads on `app.iqrra.com` (not
   the marketing website) because the `CONTENTSQUARE_TAG_ID` repository **variable** is set; delete
