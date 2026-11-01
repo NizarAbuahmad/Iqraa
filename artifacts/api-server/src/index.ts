@@ -1,3 +1,4 @@
+import type { AddressInfo } from "node:net";
 import app from "./app";
 import { logger } from "./lib/logger";
 import { hydrateSpendFromStore } from "./lib/aiBudget.ts";
@@ -12,7 +13,14 @@ if (!rawPort) {
 
 const port = Number(rawPort);
 
-if (Number.isNaN(port) || port <= 0) {
+// PORT=0 (the OS picks a free port) only for a parent that started us with an IPC
+// channel and is told the port below: the DB tests' harness (test-support/startServer.ts).
+// A port the harness picked and then let go could be taken by another test file's
+// server first, and every request would reach that server's database. Never in
+// production: Cloud Run passes a real PORT and no IPC channel.
+const reportsPort = typeof process.send === "function";
+
+if (Number.isNaN(port) || port < 0 || (port === 0 && !reportsPort)) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
@@ -58,11 +66,13 @@ if (sessionSecret.length < MIN_SESSION_SECRET_LENGTH) {
 // logs and leaves the guard counting from zero for this process.
 await hydrateSpendFromStore();
 
-app.listen(port, (err) => {
+const server = app.listen(port, (err) => {
   if (err) {
     logger.error({ err }, "Error listening on port");
     process.exit(1);
   }
 
-  logger.info({ port }, "Server listening");
+  const bound = (server.address() as AddressInfo | null)?.port ?? port;
+  logger.info({ port: bound }, "Server listening");
+  if (reportsPort) process.send?.({ listening: bound });
 });

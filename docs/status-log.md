@@ -10,6 +10,30 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## A DB test's server can no longer answer from another test file's port — 2026-11-01
+
+Also on PR #1387, after the lock-probe fix below: «ends the dead end, with row-level security enforced»
+(`homeworkSubmission.db.test.ts`) got a 401 «User not found» on its first upload, for a student it had inserted a
+moment before. The auth lookup uses `systemDb`, so RLS was not it: the request had reached a server that did not
+have that row.
+
+**Cause:** `startServer` (`test-support/startServer.ts`) picked a port by opening and closing a socket, then started
+the API on it, and called the server ready when `/healthz` answered. The DB test files run in parallel, each with
+its own database; in the gap another file's server could take the same port. This file's server then died on
+"address in use", `/healthz` answered from the other one, and every request reached the other file's database.
+
+**Changed:** the API may take `PORT=0` (the OS picks) only when its parent opened an IPC channel, and it then sends
+`{ listening: port }` (`src/index.ts`). Without a channel `PORT=0` is still refused, as before — Cloud Run never has
+one. `startServer` starts the child with `PORT=0` and the channel, waits for that message (or fails on exit), and
+builds its URL from the port the child reports. Nothing can answer in its place.
+
+**Verified:** the full api-server suite against a local Postgres 16, DB tests included: 3,332 tests, 0 failures, and
+the run exits (the channel is closed after the message). A demonstration against the built bundle: with another
+server already on a port, the old way's `/healthz` answered "ok" while the API exited with code 1; the new way
+reported its own port and answered 200 there; `PORT=0` with no IPC channel exits with «Invalid PORT value».
+**Not verified:** that CI never flakes on these again — it was seen once. `mountOrder.test.ts` keeps its own fixed
+port ranges (8100–8899, outside the OS's ephemeral range) and was left alone.
+
 ## The evaluation race tests wait for their own lock, not any database's — 2026-11-01
 
 `typecheck + tests` failed once on PR #1387, which touched only the app: «does not replace the questions of a
