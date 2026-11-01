@@ -83,6 +83,16 @@ export interface SpellingWord {
   grade: number;
   /** A short sentence putting the word in context, for sentence dictation. */
   sentenceAr?: string;
+  /**
+   * Why this word may only be dictated, never built into a choose, judge or tap
+   * question. A choice shows the spelling beside its misspellings and no
+   * sentence, so a misspelling that is itself a word (`قلم` beside `قلمًا`,
+   * `أمن` beside `آمن`) is a second defensible answer, and the child who picks it
+   * is marked wrong. The teacher reads a dictated word aloud, so nothing is
+   * ambiguous there. Set by a person reading the options; absent means the
+   * options were read and are not words. See `choiceSafety.test.ts`.
+   */
+  dictationOnly?: string;
 }
 
 export interface SpellingRule {
@@ -182,9 +192,9 @@ const hamzaWaslQat: SpellingRule = {
     { grade: 2, correct: "اِبْن", wrong: ["أبن", "إبن"] },
     { grade: 3, correct: "اِثْنَانِ", wrong: ["أثنان", "إثنان"] },
     { grade: 4, correct: "اِمْرَأَة", wrong: ["إمرأة", "أمرأة"] },
-    { grade: 4, correct: "اِسْتَمَعَ", wrong: ["إستمع", "أستمع"], sentenceAr: "اِسْتَمَعَ الطَّالِبُ لِلْمُعَلِّمِ" },
-    { grade: 5, correct: "اِنْطَلَقَ", wrong: ["إنطلق", "أنطلق"] },
-    { grade: 5, correct: "اِجْتَمَعَ", wrong: ["إجتمع", "أجتمع"] },
+    { grade: 4, correct: "اِسْتَمَعَ", wrong: ["إستمع", "أستمع"], sentenceAr: "اِسْتَمَعَ الطَّالِبُ لِلْمُعَلِّمِ", dictationOnly: "«أستمع» (I listen) is a verb" },
+    { grade: 5, correct: "اِنْطَلَقَ", wrong: ["إنطلق", "أنطلق"], dictationOnly: "«أنطلق» (I set off) is a verb" },
+    { grade: 5, correct: "اِجْتَمَعَ", wrong: ["إجتمع", "أجتمع"], dictationOnly: "«أجتمع» (I meet) is a verb" },
   ],
 };
 
@@ -224,11 +234,11 @@ const alifFariqa: SpellingRule = {
     { grade: 4, correct: "فَرِحُوا", wrong: ["فرحو"] },
     // الواو الأصلية: no alif. The mirror half, which the books introduce a year
     // after the plural waw.
-    { grade: 4, correct: "يَدْعُو", wrong: ["يدعوا"], sentenceAr: "يَدْعُو المُسْلِمُ رَبَّهُ" },
-    { grade: 4, correct: "يَنْمُو", wrong: ["ينموا"] },
-    { grade: 5, correct: "يَشْكُو", wrong: ["يشكوا"] },
-    { grade: 5, correct: "يَرْجُو", wrong: ["يرجوا"] },
-    { grade: 5, correct: "يَبْدُو", wrong: ["يبدوا"] },
+    { grade: 4, correct: "يَدْعُو", wrong: ["يدعوا"], sentenceAr: "يَدْعُو المُسْلِمُ رَبَّهُ", dictationOnly: "«يدعوا» is a real plural (لن يدعوا)" },
+    { grade: 4, correct: "يَنْمُو", wrong: ["ينموا"], dictationOnly: "«ينموا» is a real plural (لن ينموا)" },
+    { grade: 5, correct: "يَشْكُو", wrong: ["يشكوا"], dictationOnly: "«يشكوا» is a real plural (لن يشكوا)" },
+    { grade: 5, correct: "يَرْجُو", wrong: ["يرجوا"], dictationOnly: "«يرجوا» is a real plural (لن يرجوا)" },
+    { grade: 5, correct: "يَبْدُو", wrong: ["يبدوا"], dictationOnly: "«يبدوا» is a real plural (لن يبدوا)" },
   ],
 };
 
@@ -277,7 +287,7 @@ const hathaHathihi: SpellingRule = {
     { grade: 3, correct: "هَذِهِ", wrong: ["هذة", "هاذه"], sentenceAr: "هَذِهِ مَدْرَسَتِي" },
     // "هؤلاء" bare = same as correct bare; replace with "هاؤلاء" and "هولاء".
     { grade: 3, correct: "هَؤُلَاء", wrong: ["هاؤلاء", "هولاء"] },
-    { grade: 3, correct: "ذَلِك", wrong: ["زلك", "دلك"] },
+    { grade: 3, correct: "ذَلِك", wrong: ["زلك", "ذالك"] },
     { grade: 3, correct: "أُولَئِك", wrong: ["أولائك", "أولأئك"] },
     { grade: 3, correct: "لَكِن", wrong: ["لاكن", "لكنن"] },
     { grade: 3, correct: "هَذَانِ", wrong: ["هاذان", "هذن"], sentenceAr: "هَذَانِ طَالِبَانِ" },
@@ -297,14 +307,14 @@ const hamzatAlMadd: SpellingRule = {
     + "ومثلُها: كلُّ مكانٍ تجتمعُ فيه همزتانِ — الأولى متحرِّكةٌ والثانيةُ ساكنةٌ.",
   words: [
     { grade: 3, correct: "آدَم", wrong: ["أادم", "اادم"], sentenceAr: "آدَمُ أَبُو البَشَرِ" },
-    { grade: 3, correct: "آمَن", wrong: ["أأمن", "امن"] },
-    { grade: 3, correct: "آكَل", wrong: ["أأكل", "اكل"] },
-    { grade: 3, correct: "آخَر", wrong: ["أاخر", "اخر"] },
+    { grade: 3, correct: "آمَن", wrong: ["أأمن", "امن"], dictationOnly: "«أمن» (security) is a word" },
+    { grade: 3, correct: "آكَل", wrong: ["أأكل", "اكل"], dictationOnly: "«أكل» (he ate) is a word" },
+    { grade: 3, correct: "آخَر", wrong: ["أاخر", "اخر"], dictationOnly: "«أخر» (he delayed) is a word" },
     // "آنية" bare = same as correct bare; replace with "آنيه" (ة→ه error).
     { grade: 3, correct: "آنِيَة", wrong: ["أانية", "آنيه"] },
-    { grade: 5, correct: "آفَاق", wrong: ["أأفاق", "أافاق"] },
-    { grade: 5, correct: "آلَام", wrong: ["أألام", "الام"] },
-    { grade: 5, correct: "آثَار", wrong: ["أأثار", "اثار"] },
+    { grade: 5, correct: "آفَاق", wrong: ["أأفاق", "أافاق"], dictationOnly: "«أفاق» (he woke up) is a word" },
+    { grade: 5, correct: "آلَام", wrong: ["أألام", "الام"], dictationOnly: "«الام» and «ألام» are words" },
+    { grade: 5, correct: "آثَار", wrong: ["أأثار", "اثار"], dictationOnly: "«أثار» (he stirred up) is a word" },
   ],
 };
 
@@ -330,8 +340,8 @@ const hamzaMutawassita: SpellingRule = {
     { grade: 4, correct: "يَسْأَل", wrong: ["يسال", "يسئل"], sentenceAr: "يَسْأَلُ الطَّالِبُ مُعَلِّمَهُ" },
     // "رئيس" bare = same as correct bare; replace with real errors.
     { grade: 4, correct: "رَئِيس", wrong: ["رايس", "رأيس"] },
-    { grade: 5, correct: "مَسْؤُول", wrong: ["مسول", "مسئول"] },
-    { grade: 5, correct: "تَسَاؤُل", wrong: ["تساول", "تساءل"] },
+    { grade: 5, correct: "مَسْؤُول", wrong: ["مسول", "مسئول"], dictationOnly: "«مسئول» is an accepted variant spelling" },
+    { grade: 5, correct: "تَسَاؤُل", wrong: ["تساول", "تساءل"], dictationOnly: "«تساءل» (he wondered) is a verb" },
     { grade: 5, correct: "فُؤَاد", wrong: ["فواد", "فئاد"] },
   ],
 };
@@ -352,18 +362,18 @@ const hurufTuntaqLaTuktab: SpellingRule = {
     // The sentence must not quote «الله», a grade-5 word of this same rule:
     // the grade filter is on the word pool, and a grade-4 dictation sentence
     // carrying a grade-5 word served it to grade 4 anyway.
-    { grade: 4, correct: "الرَّحْمَن", wrong: ["الرحمان", "الرحمون"], sentenceAr: "الرَّحْمَنُ عَلَّمَ القُرْآنَ" },
+    { grade: 4, correct: "الرَّحْمَن", wrong: ["الرحمان", "الرحمون"], sentenceAr: "الرَّحْمَنُ عَلَّمَ القُرْآنَ", dictationOnly: "«الرحمان» is an accepted variant in names and old texts" },
     { grade: 4, correct: "لَكِن", wrong: ["لاكن", "لكنن"] },
     { grade: 4, correct: "ذَلِك", wrong: ["ذالك", "زلك"] },
     // "هذا" has only 1 listed wrong. Add "هده" as a second distractor.
     { grade: 4, correct: "هَذَا", wrong: ["هاذا", "هده"] },
     // "ذهب" has only 1 listed wrong. Add "دهب" (ذ→د error) as second.
-    { grade: 4, correct: "ذَهَب", wrong: ["ذاهب", "دهب"] },
+    { grade: 4, correct: "ذَهَب", wrong: ["ذاهب", "دهب"], dictationOnly: "«ذاهب» (going) is a word" },
     // "إبراهيم" bare = "إبراهيم" = same as wrong[0]; fix: wrong[0] adds extra letter.
     { grade: 5, correct: "إِبْرَاهِيم", wrong: ["إبراهييم", "إبرهيم"] },
     { grade: 5, correct: "إِسْمَاعِيل", wrong: ["إسمعيل", "اسماعيل"] },
     // "الله" bare = same as correct; use "اللاه" (adds alif) as second distractor.
-    { grade: 5, correct: "اللَّه", wrong: ["إله", "اللاه"] },
+    { grade: 5, correct: "اللَّه", wrong: ["إله", "اللاه"], dictationOnly: "«إله» (a god) is a word" },
   ],
 };
 
@@ -382,13 +392,13 @@ const nunSakinaTanwin: SpellingRule = {
     + "في الكتابةِ: النونُ والتنوينُ يُكتبانِ كما هما دائمًا.",
   words: [
     // الإقلاب: ن before ب is pronounced م but WRITTEN ن. Error: writing م.
-    { grade: 4, correct: "يَنْبُع", wrong: ["يمبع", "ينبوع"] },
+    { grade: 4, correct: "يَنْبُع", wrong: ["يمبع", "ينبوع"], dictationOnly: "«ينبوع» (a spring) is a word" },
     { grade: 4, correct: "مَنْبَع", wrong: ["ممبع", "منبوع"] },
     { grade: 4, correct: "يَنْبُت", wrong: ["يمبت", "ينبوت"] },
     { grade: 4, correct: "مُنْبَسِط", wrong: ["ممبسط", "منبساط"] },
-    { grade: 4, correct: "اِنْبَهَر", wrong: ["إمبهر", "انباهر"] },
-    { grade: 7, correct: "عَنْبَر", wrong: ["عمبر", "عنابر"] },
-    { grade: 7, correct: "إِنْبَاء", wrong: ["إمباء", "انباء"] },
+    { grade: 4, correct: "اِنْبَهَر", wrong: ["إمبهر", "انباهر"], dictationOnly: "«أنبهر» (I am amazed) is a verb" },
+    { grade: 7, correct: "عَنْبَر", wrong: ["عمبر", "عنابر"], dictationOnly: "«عنابر» (warehouses) is a word" },
+    { grade: 7, correct: "إِنْبَاء", wrong: ["إمباء", "انباء"], dictationOnly: "«أنباء» (news) is a word" },
     { grade: 7, correct: "مُنْبَثِق", wrong: ["ممبثق", "منبثاق"] },
   ],
 };
@@ -411,7 +421,7 @@ const hamzaMutarrafa: SpellingRule = {
     { grade: 4, correct: "يَقْرَأ", wrong: ["يقرا", "يقراء"] },
     { grade: 4, correct: "شَيْء", wrong: ["شيئ", "شئ"] },
     // "دفء" bare = same as correct bare; replace with "دفأ" (أ vs ء) and "دفيء".
-    { grade: 4, correct: "دُفْء", wrong: ["دفأ", "دفيء"] },
+    { grade: 4, correct: "دُفْء", wrong: ["دفأ", "دفيء"], dictationOnly: "«دفيء» (warm) and «دفأ» are words; «دفء» is also the correct word of another rule" },
     // "جزء" bare = same as correct bare; replace with "جزأ".
     { grade: 4, correct: "جُزْء", wrong: ["جزأ", "جزي"] },
     // "ملجأ" bare = same as correct bare; replace second with "ملجاء".
@@ -437,9 +447,9 @@ const tanwinAlFath: SpellingRule = {
     // For regular words ending in ا after tanwin: bare("كِتَابًا") = "كتابا".
     // Wrong 1: missing the alif — bare("كِتَابً") = "كتاب" ≠ "كتابا" ✓
     // Wrong 2: using ى instead of ا — bare("كِتَابًى") = "كتابى" ≠ "كتابا" ✓
-    { grade: 5, correct: "كِتَابًا", wrong: ["كِتَابً", "كِتَابًى"], sentenceAr: "قَرَأْتُ كِتَابًا مُفِيدًا" },
-    { grade: 5, correct: "قَلَمًا", wrong: ["قَلَمً", "قَلَمًى"] },
-    { grade: 5, correct: "وَلَدًا", wrong: ["وَلَدً", "وَلَدًى"] },
+    { grade: 5, correct: "كِتَابًا", wrong: ["كِتَابً", "كِتَابًى"], sentenceAr: "قَرَأْتُ كِتَابًا مُفِيدًا", dictationOnly: "«كتاب» is a word; the lesson is which spelling takes tanwin al-fath" },
+    { grade: 5, correct: "قَلَمًا", wrong: ["قَلَمً", "قَلَمًى"], dictationOnly: "«قلم» is a word; the lesson is which spelling takes tanwin al-fath" },
+    { grade: 5, correct: "وَلَدًا", wrong: ["وَلَدً", "وَلَدًى"], dictationOnly: "«ولد» is a word; the lesson is which spelling takes tanwin al-fath" },
     // ة-ending words: NO alif added (rule exception). Error: adding alif anyway.
     // bare("مَدْرَسَةً") = "مدرسة". Wrong: "مدرسةا" (adds alif) → bare = "مدرسةا" ✓
     { grade: 5, correct: "مَدْرَسَةً", wrong: ["مدرسةا", "مدرستا"] },
@@ -447,7 +457,7 @@ const tanwinAlFath: SpellingRule = {
     // ء after ا: bare("سَمَاءً") = "سماء". Wrong: "سماءا" → bare = "سماءا" ≠ "سماء" ✓
     { grade: 5, correct: "سَمَاءً", wrong: ["سماءا", "سمائا"] },
     { grade: 5, correct: "مَاءً", wrong: ["ماءا", "مائا"] },
-    { grade: 5, correct: "رَجُلًا", wrong: ["رَجُلً", "رَجُلًى"], sentenceAr: "رَأَيْتُ رَجُلًا كَرِيمًا" },
+    { grade: 5, correct: "رَجُلًا", wrong: ["رَجُلً", "رَجُلًى"], sentenceAr: "رَأَيْتُ رَجُلًا كَرِيمًا", dictationOnly: "«رجل» is a word; the lesson is which spelling takes tanwin al-fath" },
   ],
 };
 
@@ -463,9 +473,9 @@ const alifLayyinaFawqThulathiya: SpellingRule = {
     + "وتُكتبُ ألفًا مقصورةً (ى) إنْ كانَ أصلُها ياءً. "
     + "لا تُوجدُ قاعدةٌ تنطقيَّةٌ للتمييزِ — تُحفظُ بالقراءةِ.",
   words: [
-    { grade: 5, correct: "أَعْطَى", wrong: ["أعطا"] },
-    { grade: 5, correct: "اشْتَرَى", wrong: ["اشترا"] },
-    { grade: 5, correct: "تَمَنَّى", wrong: ["تمنا"] },
+    { grade: 5, correct: "أَعْطَى", wrong: ["أعطا"], dictationOnly: "«أعطي» is a word (passive, and the imperative of the feminine)" },
+    { grade: 5, correct: "اشْتَرَى", wrong: ["اشترا"], dictationOnly: "«اشتري» (buy, feminine) is a word" },
+    { grade: 5, correct: "تَمَنَّى", wrong: ["تمنا"], dictationOnly: "«تمني» (a wish) is a word" },
     { grade: 5, correct: "يُصَلِّي", wrong: ["يصلى"] },
     { grade: 5, correct: "الدُّنْيَا", wrong: ["الدنيى"] },
     // "مستشفى" bare = same as correct bare; replace with "مستشفا" (ى→ا error).
@@ -512,12 +522,12 @@ const alifNihayatAfal: SpellingRule = {
     + "للتمييزِ: طابقْ مضارعَهُ — (يَدْعُو → دَعَا)، (يَرْمِي → رَمَى).",
   words: [
     { grade: 5, correct: "دَعَا", wrong: ["دعى"] },
-    { grade: 5, correct: "مَشَى", wrong: ["مشا"] },
-    { grade: 5, correct: "رَمَى", wrong: ["رما"] },
-    { grade: 5, correct: "هَدَى", wrong: ["هدا"] },
+    { grade: 5, correct: "مَشَى", wrong: ["مشا"], dictationOnly: "«مشي» (walking) is a word" },
+    { grade: 5, correct: "رَمَى", wrong: ["رما"], dictationOnly: "«رمي» (throwing) is a word" },
+    { grade: 5, correct: "هَدَى", wrong: ["هدا"], dictationOnly: "«هدي» (guidance) is a word" },
     { grade: 5, correct: "نَجَا", wrong: ["نجى"] },
-    { grade: 5, correct: "سَعَى", wrong: ["سعا"] },
-    { grade: 5, correct: "بَكَى", wrong: ["بكا"] },
+    { grade: 5, correct: "سَعَى", wrong: ["سعا"], dictationOnly: "«سعي» (striving) is a word" },
+    { grade: 5, correct: "بَكَى", wrong: ["بكا"], dictationOnly: "«بكي» is a word (passive)" },
     { grade: 5, correct: "تَلَا", wrong: ["تلى"], sentenceAr: "تَلَا الإمامُ القرآنَ" },
   ],
 };
@@ -542,11 +552,11 @@ const hamzaMutarrrafaTanwinFath: SpellingRule = {
     // bare("شَيْئًا") = "شيئا". Wrong: "شيئ" → bare = "شيئ" ≠ "شيئا" ✓; "شيءا" → "شيءا" ≠ "شيئا" ✓
     { grade: 6, correct: "شَيْئًا", wrong: ["شيئ", "شيءا"] },
     // bare("جُزْءًا") = "جزءا". Wrong: "جزء" → bare = "جزء" ≠ "جزءا" ✓; "جزئا" → "جزئا" ≠ "جزءا" ✓
-    { grade: 6, correct: "جُزْءًا", wrong: ["جزء", "جزئا"] },
-    { grade: 6, correct: "دُفْئًا", wrong: ["دفء", "دفأ"] },
-    { grade: 6, correct: "ضَوْءًا", wrong: ["ضوء", "ضوئا"] },
-    { grade: 6, correct: "عِبْئًا", wrong: ["عبء", "عبئ"] },
-    { grade: 6, correct: "بَدْءًا", wrong: ["بدء", "بدئا"] },
+    { grade: 6, correct: "جُزْءًا", wrong: ["جزء", "جزئا"], dictationOnly: "«جزء» is a word; the lesson is which spelling takes tanwin al-fath" },
+    { grade: 6, correct: "دُفْئًا", wrong: ["دفء", "دفأ"], dictationOnly: "«دفء» is a word and the correct spelling of another bank word" },
+    { grade: 6, correct: "ضَوْءًا", wrong: ["ضوء", "ضوئا"], dictationOnly: "«ضوء» is a word; the lesson is which spelling takes tanwin al-fath" },
+    { grade: 6, correct: "عِبْئًا", wrong: ["عبء", "عبئ"], dictationOnly: "«عبء» is a word; the lesson is which spelling takes tanwin al-fath" },
+    { grade: 6, correct: "بَدْءًا", wrong: ["بدء", "بدئا"], dictationOnly: "«بدء» is a word; the lesson is which spelling takes tanwin al-fath" },
   ],
 };
 
@@ -599,7 +609,7 @@ const hathfHamzatIbn: SpellingRule = {
     // "محمد بن علي" phrase gave partial credit (2/3 words ok). Single word instead.
     // bare("إبن") = "إبن" ≠ bare("بن") = "بن" ✓; not in taken (taken has "ابن" not "إبن")
     { grade: 6, correct: "بْن", wrong: ["إبن"], sentenceAr: "مُحَمَّد بْن عَلِي" },
-    { grade: 6, correct: "اِبنِي", wrong: ["أبني", "إبني"], sentenceAr: "اِبْنِي يُحِبُّ القِرَاءَةَ" },
+    { grade: 6, correct: "اِبنِي", wrong: ["أبني", "إبني"], sentenceAr: "اِبْنِي يُحِبُّ القِرَاءَةَ", dictationOnly: "«أبني» (I build) is a verb" },
     { grade: 6, correct: "اِبنَكَ", wrong: ["أبنك", "إبنك"] },
   ],
 };
@@ -643,14 +653,14 @@ const hamzatIstifhamAlaWasl: SpellingRule = {
     + "أَسْتَاذٌ؟ (همزة قطع) — أَسَّاذٌ؟ (لا تُكتب هكذا). "
     + "مثلُ: أَاسْتَقَامَ → أَاسْتَقَامَ (تُحذفُ همزةُ الوصلِ): آسْتَقَامَ.",
   words: [
-    { grade: 7, correct: "آسْتَأْذَنتَ", wrong: ["أأستأذنت", "اأستأذنت"] },
-    { grade: 7, correct: "آسْتَقَامَ", wrong: ["أأستقام", "اأستقام"], sentenceAr: "آسْتَقَامَ الوَلَدُ عَلى الصِّدقِ؟" },
-    { grade: 7, correct: "آنْقَطَعَ", wrong: ["أأنقطع", "اأنقطع"] },
-    { grade: 7, correct: "آتَّفَقَ", wrong: ["أأتفق", "اأتفق"] },
-    { grade: 7, correct: "آصْطَفَّ", wrong: ["أأصطف", "اأصطف"] },
-    { grade: 7, correct: "آنْتَصَرَ", wrong: ["أأنتصر", "اأنتصر"] },
-    { grade: 7, correct: "آجْتَمَعَ", wrong: ["أأجتمع", "اأجتمع"] },
-    { grade: 7, correct: "آسْتَمَعَ", wrong: ["أأستمع", "اأستمع"], sentenceAr: "آسْتَمَعَ الطَّالِبُ إِلَى المُعَلِّمِ؟" },
+    { grade: 7, correct: "آسْتَأْذَنتَ", wrong: ["أأستأذنت", "اأستأذنت"], dictationOnly: "«استأذنت» and «أستأذنت» are verbs; only a question sentence picks «آ»" },
+    { grade: 7, correct: "آسْتَقَامَ", wrong: ["أأستقام", "اأستقام"], sentenceAr: "آسْتَقَامَ الوَلَدُ عَلى الصِّدقِ؟", dictationOnly: "«استقام» and «أستقام» are verbs; only a question sentence picks «آ»" },
+    { grade: 7, correct: "آنْقَطَعَ", wrong: ["أأنقطع", "اأنقطع"], dictationOnly: "«انقطع» and «أنقطع» are verbs; only a question sentence picks «آ»" },
+    { grade: 7, correct: "آتَّفَقَ", wrong: ["أأتفق", "اأتفق"], dictationOnly: "«اتفق» and «أتفق» are verbs; only a question sentence picks «آ»" },
+    { grade: 7, correct: "آصْطَفَّ", wrong: ["أأصطف", "اأصطف"], dictationOnly: "«اصطف» and «أصطف» are verbs; only a question sentence picks «آ»" },
+    { grade: 7, correct: "آنْتَصَرَ", wrong: ["أأنتصر", "اأنتصر"], dictationOnly: "«انتصر» and «أنتصر» are verbs; only a question sentence picks «آ»" },
+    { grade: 7, correct: "آجْتَمَعَ", wrong: ["أأجتمع", "اأجتمع"], dictationOnly: "«اجتمع» and «أجتمع» are verbs; only a question sentence picks «آ»" },
+    { grade: 7, correct: "آسْتَمَعَ", wrong: ["أأستمع", "اأستمع"], sentenceAr: "آسْتَمَعَ الطَّالِبُ إِلَى المُعَلِّمِ؟", dictationOnly: "«استمع» and «أستمع» are verbs; only a question sentence picks «آ»" },
   ],
 };
 
