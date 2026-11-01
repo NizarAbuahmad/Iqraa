@@ -178,7 +178,7 @@ export default function EnglishHubScreen() {
         })}
       </CornerGrid>
 
-      {/* A grade with no word lists (6–8) or only one semester of them (10) must not look finished. */}
+      {/* A grade with no word lists (7) or only one semester of them (10) must not look finished. */}
       {lessons.length === 0 ? (
         <View style={[styles.notice, surface, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.body, textAlign: align }}>{t('hubNoWordsTitle')}</Text>
