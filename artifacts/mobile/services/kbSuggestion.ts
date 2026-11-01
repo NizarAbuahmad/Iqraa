@@ -66,6 +66,21 @@ export function titleDecides(ranked: KBScoredLesson[]): boolean {
   return !ranked.slice(1).some(r => r.titleCovered);
 }
 
+/**
+ * The teacher's picked grade narrows a search, but not past a lesson they named.
+ * «ورقة عمل عن حل المعادلة التربيعية بالتحليل» with grade 10 picked searched
+ * grade 10 alone, found «تحليل البيانات» (Digital Skills, a shared word), and
+ * made a Digital Skills worksheet; the lesson named whole is in grade 9. When the
+ * whole-KB search is decided by a title no other lesson shares and the grade's
+ * own search is not decided by one, the named lesson wins. The same title in the
+ * picked grade makes the whole-KB search contested, so the grade keeps it.
+ */
+export function namedLessonBeatsGrade(inGrade: KBScoredLesson[], all: KBScoredLesson[]): boolean {
+  if (!titleDecides(all)) return false;
+  if (inGrade.length === 0) return true;
+  return !titleDecides(inGrade) && inGrade[0]!.lesson.id !== all[0]!.lesson.id;
+}
+
 /** True when the top ranked hit clears the confidence bar vs the runner-up. */
 export function isConfidentKbHit(ranked: KBScoredLesson[]): boolean {
   const top = ranked[0];

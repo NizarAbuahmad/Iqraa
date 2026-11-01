@@ -10,6 +10,28 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Forty-second pass: a lesson named whole is no longer lost to the picked grade, 2026-11-01
+
+**Found live, on the build that shipped the forty-first pass.** «جهّز ورقة عمل من 4 أسئلة عن حل المعادلة التربيعية بالتحليل» no
+longer asked «أيّ مادة تقصد؟», but made a **Digital Skills, grade 10** worksheet with a note that the topic is not in that book.
+The quiz on «قانون الجيوب» was right (maths). So the bonus turned a clarifying question into a silently wrong paper for this
+ask: it made the hit confident, and the chat's artifact path then did what it always did with a confident hit.
+
+**Cause.** `iqra.tsx` searches the picked grade first (`teachingCtxScope`, the account's grade 10) and uses that result whenever
+it is non-empty. The named lesson is in grade 9, so the grade-10 search returned «تحليل البيانات» (66, one shared word) and won.
+That rule is deliberate («a quiz on fractions» with grade 7 picked means grade 7's fractions); it just had no exception for a
+lesson the message names whole.
+
+**Built.** `namedLessonBeatsGrade(inGrade, all)` in `kbSuggestion.ts`: the whole-KB search is decided by a title no other lesson
+shares (`titleDecides`), and the grade's own search is not decided by one and does not lead with the same lesson. Then the
+whole-KB result is used. A title that also exists in the picked grade makes the whole-KB search contested, so the grade keeps
+it. Only the artifact path changed (the subject-scoped search filters by the named subject already).
+
+**Verified.** `kbTitleCoverage.test.ts` (16 tests, five new): the grade-10 search alone picks Digital Skills; the named grade 9
+maths lesson beats it; grade 9 itself is unchanged; «تحليل» alone never overrides a grade. Typecheck clean. On the live
+build before this change, the sine-law quiz and the three teaching answers (circle circumference, angle sum, chemical reaction)
+were right. Not seen live after this change yet.
+
 ## Forty-first pass: a lesson named by its whole title now wins the knowledge-base search, 2026-11-01
 
 **Why.** The fortieth pass found `searchKBRanked` ranking the wrong lesson first and left it for its own PR. «جهّز ورقة عمل من 4

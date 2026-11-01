@@ -13,7 +13,7 @@ import assert from 'node:assert/strict';
 
 import { getBookForLesson, getLessonById, searchKBRanked, titleDecides } from '../knowledgeBase.ts';
 import { isConfidentSingleSubjectHit, liveChatGrounding } from '../kbContext.ts';
-import { isConfidentKbHit } from '../kbSuggestion.ts';
+import { isConfidentKbHit, namedLessonBeatsGrade } from '../kbSuggestion.ts';
 
 const T = /[ً-ٰٟـ]/g;
 const plain = (s: string) => s.replace(T, '');
@@ -92,6 +92,42 @@ describe('a longer title named whole is not shadowed by a shorter one inside it'
   it('the shorter title still decides when only it is named', () => {
     const ranked = searchKBRanked('حوار الفريق', 'ar');
     assert.equal(ranked[0]!.score >= 10, true);
+  });
+});
+
+// Found live 2026-11-01, after the bonus shipped: with the account's grade 10
+// picked, the chat searched grade 10 alone for «4 أسئلة حل المعادلة التربيعية
+// بالتحليل», found «تحليل البيانات» (Digital Skills) and made a Digital Skills
+// worksheet. The lesson named whole is in grade 9.
+describe('a lesson named whole is not lost to the picked grade', () => {
+  const ASK = '4 أسئلة حل المعادلة التربيعية بالتحليل';
+  const all = searchKBRanked(ASK, 'ar');
+  const inGrade10 = searchKBRanked(ASK, 'ar', { gradeId: 'grade-10' });
+
+  it('the picked grade alone would have chosen Digital Skills', () => {
+    assert.equal(getBookForLesson(inGrade10[0]!.lesson)?.subjectId, 'digital-literacy');
+  });
+
+  it('the named grade 9 maths lesson beats the grade 10 pick', () => {
+    assert.equal(namedLessonBeatsGrade(inGrade10, all), true);
+    assert.equal(getBookForLesson(all[0]!.lesson)?.gradeId, 'grade-9');
+  });
+
+  it('the picked grade keeps its own lesson when that one is the named lesson', () => {
+    const inGrade9 = searchKBRanked(ASK, 'ar', { gradeId: 'grade-9' });
+    assert.equal(namedLessonBeatsGrade(inGrade9, all), false);
+  });
+
+  it('a topic that names no lesson whole never overrides the grade', () => {
+    const q = 'تحليل';
+    assert.equal(namedLessonBeatsGrade(searchKBRanked(q, 'ar', { gradeId: 'grade-10' }), searchKBRanked(q, 'ar')), false);
+  });
+
+  it('a title shared with another grade stays with the picked grade', () => {
+    // «قانون الجيوب» exists once, but a title repeated across grades is contested.
+    const q = 'الجمع والطرح';
+    const a = searchKBRanked(q, 'ar');
+    assert.equal(namedLessonBeatsGrade(searchKBRanked(q, 'ar', { gradeId: 'grade-2' }), a), false);
   });
 });
 
