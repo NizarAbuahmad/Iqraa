@@ -17,7 +17,7 @@ import { BOOKS } from './catalog.ts';
 
 /**
  * Grades the corner shows a tab for. Wider than `ENGLISH_HUB_GRADES` (englishHub.ts),
- * which is the grades with word lists to play: Grades 6–8 have no vocabulary
+ * which is the grades with word lists to play: Grade 7 has no vocabulary
  * extracted yet, but a student in Grade 7 should still find the corner, their book
  * and somewhere to listen and read.
  */
