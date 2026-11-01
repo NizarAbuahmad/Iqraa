@@ -41,7 +41,7 @@ import {
   type SubmissionTarget,
 } from "../lib/homeworkSubmission.ts";
 import { dueAtToDueDate, isUuid } from "../modules/homework/rules.ts";
-import { ownedHomework } from "./homework";
+import { classSizes, ownedHomework } from "./homework";
 import { parseNote, parsePhotoUpload } from "../modules/homework/submission.ts";
 
 const router = Router();
@@ -234,10 +234,12 @@ router.get("/homework/:id/submissions", async (req: AuthenticatedRequest, res) =
       res.status(404).json(NO_HOMEWORK);
       return;
     }
-    const submissions = await listForTeacher(hw);
+    const [submissions, sizes] = await Promise.all([listForTeacher(hw), classSizes([hw.classGroupId])]);
     res.json({
       homework: { id: hw.id, title: hw.title, dueDate: dueAtToDueDate(hw.dueAt) },
       submittedCount: submissions.filter(s => s.status !== "none").length,
+      // The «Y» of the card's «X of Y»: the very number `GET /classes/:id/homework` sends, from the same function.
+      trackableCount: sizes.get(hw.classGroupId)?.trackable ?? 0,
       submissions,
     });
   } catch (err) {

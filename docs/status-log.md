@@ -10,6 +10,198 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Homework project submission — teacher screens — 2026-10-31
+
+Phase 3 of 3: the teacher's side of homework projects. A teacher can now make a homework a project with a
+switch in the homework form, see «سلّم X من Y» on its card, open the list of who handed in, open one
+student's project (photos, note, hand-in time) and delete it with «حذف المشروع». The switch locks once any
+student has started. Before this, only the API could set the flag (phase 2), so in practice no student saw
+a project yet. Branch `claude/awesome-fermi-rzvca7`. **No schema change, no migration** (`git diff
+origin/main --stat -- lib/db/migrations lib/db/src/schema` is empty), **no native change** (`git diff
+origin/main --stat -- artifacts/mobile/app.json artifacts/mobile/package.json artifacts/mobile/eas.json
+artifacts/mobile/android` is empty, so an OTA reaches a binary of the same `version`). A merge touches
+`artifacts/api-server/` and `artifacts/mobile/`, so it deploys the API and the web bundle and publishes to
+the `preview` OTA channel. Spec: `docs/superpowers/specs/2026-10-30-homework-project-submission-design.md`
+§10 (and §3, §8); plan: `docs/superpowers/plans/2026-10-31-homework-project-submission-teacher-screens.md`.
+
+**What was built** (commits `8604811`…`a748c12`)
+
+- **Task 1, the switch lock (API), `8604811`, refined in the final-review fix wave.**
+  `homeworkIdsWithWork(ids)` (`lib/homeworkSubmission.ts`,
+  on `systemDb`, one `union` of homework ids from `homework_completions` and `homework_submissions`; a
+  draft counts, because under RLS a draft is invisible to the teacher — but only a submission that holds a
+  photo or a non-blank note, see the Ruling below). `PATCH /homework/:id` with a
+  *different* `requiresSubmission` on a homework with work answers 409 `{ code: "submission_locked" }`
+  (`SUBMISSION_LOCKED_CODE`, `modules/homework/rules.ts`); the check sits right before the `UPDATE`, so a
+  PATCH that also changes the title is refused as a whole. The same value is always allowed. The class
+  list (`withCounts`, also on the POST/PATCH responses) carries `requiresSubmissionLocked`, from one call
+  for the whole list.
+- **Task 2, the app's types and client, `75e3890`.** `TeacherHomework` gains `requiresSubmission`,
+  `submittedCount`, `requiresSubmissionLocked`; `NewHomework`/`HomeworkPatch` carry the flag;
+  `services/teacherSubmissions.ts` (normalisers, `rowOpensDetail`) and `services/teacherSubmissionsApi.ts`
+  (`makeTeacherSubmissionsApi`: `list`, `detail`, `clear`; `clear` needs `cleared: true`); `submission_locked`
+  maps to `errSubmissionSwitchLocked` («لا يمكن تغيير هذا الإعداد بعد أن بدأ أحد الطلبة»: a student "has
+  started", never a count of hand-ins, because a draft the teacher cannot see also locks it).
+- **Task 3, the form, the card and the delete warning, `3422d0f`, fix round `dd96f2d`.**
+  `components/classes/HomeworkTab.tsx`: a «يتطلب تسليم مشروع» `Switch` (`aria-checked`, `aria-disabled`),
+  with the helper line, or with «لا يمكن تغييره بعد أن بدأ الطلبة» and disabled when locked. Create always
+  sends the flag; edit sends it only when it changed (`requiresSubmissionPatch`), so saving a locked
+  homework never sends it. A 409 `submission_locked` on save puts the switch back, marks it locked and
+  reloads (`isSwitchLockedError`). A project card shows ONE count: the bar is the hand-ins, the
+  «أنجزه X من Y» line is not drawn, and a «سلّم X من Y» button (accessible name «مشاريع الطلبة: <title>،
+  سلّم X من Y») opens the list. The delete-homework confirmation for a project says the students' photos
+  and notes are deleted for good (`deleteConfirmKey`).
+- **Task 4, the list screen, `bd578b4`, fix round `7e32742`.** `app/homework-submissions/[homeworkId]/index.tsx`:
+  header (title, due day, «سلّم X من Y»), one row per live roster member with a state chip; a handed-in or
+  late row is a button (photo count, chevron) to the detail; a «not handed in» row is a plain
+  `aria-disabled` view with no count (a draft is never hinted at); a record with no student account reads
+  «بلا حساب». Retry on failure, 404/403 final, reload on focus; `HomeworkTab` reloads on focus too.
+  `/homework-submissions` is added to the analytics exclusion (`services/screenTracking.ts`). Fix round:
+  the card's and the list's Y were different numbers (card: records with an account; list: all rows); now
+  both are `trackableCount` from one predicate, `hasSelfLink` (`lib/homeworkSubmission.ts`), which
+  `classSizes` and the list route share; the list route returns `trackableCount` and `hasAccount` per row.
+- **Task 5, the detail screen and «حذف المشروع», `a141ac3`, fix round `a748c12`.**
+  `app/homework-submissions/[homeworkId]/[studentId].tsx`: name, status and hand-in time (Amman clock,
+  `formatHandedInAt`, `h23`), the photo grid and viewer (copied from the student screen without its
+  controls), the note, and a destructive «حذف المشروع» behind a confirmation («ستُحذف صور المشروع والملاحظة
+  نهائيًا، وتُزال علامة «تم إنجازه» عن الطالب، ويستطيع الطالب أن يبدأ من جديد.»). Success goes back to the
+  list with «حُذف المشروع»; a 404 reads as «لم يعد هذا المشروع موجودًا» (already gone), not a failure; any
+  other failure re-reads the project first and only then says «تعذّر حذف المشروع». Fix round: an answer that
+  arrives after the teacher left the screen neither navigates nor leaves a note; Back and Android
+  hardware back are held while the request is in flight; a photo whose link fails to load becomes the
+  «not available» placeholder.
+- **Final-review fix wave, `606b921`.** The Ruling below (an emptied draft does not lock); the PATCH comment
+  says the lock check is not atomic; the list screen reads its param with `firstParam` and draws a 404 as the
+  neutral state the detail screen uses (real failures keep the error look); one photo reads «صورة واحدة» in a
+  row's accessible name; a disabled `BackButton` is dimmed (opacity 0.4; the detail screen is its only caller
+  that passes `disabled`); the detail's header comment no longer says a swipe-back "cannot be" held (it is
+  not; the `aliveRef` check covers it — `gestureEnabled` through `navigation.setOptions` was not tried, as it
+  cannot be checked off a phone). Re-run after it: api-server **3297 of 3297**, mobile **8973 tests, 8963
+  passed, 0 failed, 10 skipped**, root typecheck clean. The new "emptied draft" tests failed with the old
+  query (3 of 6) and with a photo-only condition (2 of 6, the note-only draft) before they passed.
+
+**Decisions**
+
+- **The lock rule is the owner's (refined by the Ruling below):** free while nobody has started, locked once any
+  tick or any project row (a draft included) exists; to change it later the teacher deletes the homework and posts it again.
+- **Ruling (final-review fix wave, refines the owner's rule; the owner can revert it).** A submission row
+  counts toward the lock only if it HOLDS WORK, the same `holdsWork(photoCount, note)` the file's SQL guards
+  use: a photo, or a note with a non-space character. Ticks still count. Reason: a draft whose student
+  removed every photo (or cleared the note) leaves an empty row that nobody can see and that strands no
+  work, and under the owner's literal rule it kept the switch locked for good (seen in the real-stack run
+  below, before this). **To revert:** delete the `holdsWork(...)` condition from the submissions half of the
+  union in `homeworkIdsWithWork` (and the "emptied draft" tests in `homeworkSubmission.db.test.ts`).
+- **A new top-level route** (`/homework-submissions/...`, not under `/classes/...`) so the analytics
+  exclusion by path prefix covers both screens; they show a minor's photos and the detail path carries
+  the student id.
+- **The photo grid is a copy**, not a component extracted from the student screen, so the student
+  screen is untouched.
+- The detail screen's 404 on delete means "already gone", although the server also answers 404 for a
+  homework that is no longer a project.
+
+**Verified** (local, 2026-10-31)
+
+- `cd artifacts/mobile && pnpm test`: **8970 tests, 8960 passed, 0 failed, 0 cancelled, 10 skipped**
+  (2151 top-level). api-server `pnpm build && pnpm test` against a local Postgres 16: **3291 tests, 3291 passed, 0 failed,
+  0 skipped**. Root `pnpm run typecheck`: clean (api-server, mobile, scripts). The two greps of ci.yml's «Brand is «إقرأ»» step, run by hand:
+  no match. Not run: curriculum, math-verifier, the `e2e/` journey (it does not reach projects).
+- **Each task's guards were broken on purpose and a test failed each time** (task reports): the draft
+  excluded from the lock, the same-value allowance removed, the check moved after the `UPDATE`; the raw
+  flag sent on edit, `aria-disabled` dropped, the old delete text; `rowOpensDetail` forced true, the
+  analytics prefix removed, the focus reload removed; the `self` predicate widened, the route's
+  `trackableCount` taken from the row count, `hasAccount` constant; the confirm skipped, the 404 branch
+  changed, the double-tap guard dropped, the after-leaving checks dropped, `onError` dropped, «failed»
+  said before the re-read.
+- **Against the real stack, in a browser.** Postgres 16, a throwaway database migrated with `migrate --
+  --from-env` (24 migrations) and `seed:assessment`, dropped afterwards. The built API with
+  `RLS_ENFORCE=on`, `STUDENT_ACCOUNTS=true`, `AI_LIVE_MODE=false`, pointed at the in-memory S3 stub of
+  the API tests (`test-support/s3Stub.ts`) — so uploads, deletes and signed URLs ran through the real
+  code, **not to R2**. The web bundle built from this tree with `expo export`
+  (`EXPO_PUBLIC_DEMO_MODE=true`), served by `e2e/serve.mjs`, driven by Playwright in headless Chromium.
+  Each result was read off the screen and checked against the API or the database:
+  - **Set-up through the UI:** a teacher signed up on the real sign-up screen (the role picker that
+    `STUDENT_ACCOUNTS=true` shows, then the verification code planted in Postgres as e2e does), chose
+    grade 10 maths, confirmed roster consent, created a class and added four students on the real
+    screens. Three got accounts by per-student code (`POST /students/:id/claim-code`, then
+    `POST /auth/redeem` — **through the API, not the sign-up screen**); one stayed roster-only.
+  - **The form:** a homework created in the real form with the switch on sent `requiresSubmission: true`
+    (201); the card read «0 of 3 handed in» and «1 student without an account».
+  - **Students:** student A (the student app from phase 2, signed in through the login-code screen)
+    opened the project from School, added a photo, typed a note and handed in; student B uploaded one
+    photo and stopped (a draft). Database: A handed in with its tick, B a draft with no tick.
+  - **Card and list:** the card read «سلّم 1 من 3» (accessible name «مشاريع الطلبة: Solar system model،
+    سلّم 1 من 3»), the list header the same. Exactly one row was a button («افتح مشروع Sara Ahmad، تم
+    التسليم، صورة»); B and the other student read «لم يُسلَّم بعد» as plain rows with no count, and
+    tapping B's row did nothing; the roster-only student read «بلا حساب». The teacher's `GET` of B's
+    detail is 404, and a deep link to it in the app shows the neutral «لم يعد هذا متاحًا» with Back.
+  - **Detail:** A's photo loaded (800 px) from a signed URL on the stub's host, `X-Amz-Expires=600`; the
+    note; «وقت التسليم: 1 تشرين الثاني 2026، 02:09» (handed in 23:09 UTC, so Amman's clock); the viewer
+    opened on tap.
+  - **The lock:** the edit form showed the switch on and disabled (`input.disabled`, wrapper
+    `aria-checked="true" aria-disabled="true"`) with the reason; a forced click changed nothing; Save sent a
+    PATCH with no `requiresSubmission` key (200). A direct PATCH flipping it answered 409
+    `submission_locked`, and one flipping it with a new title the same; the row was unchanged
+    byte for byte; the same value answered 200.
+  - **Delete:** the confirmation showed the agreed text; Cancel sent nothing; confirming sent one `DELETE`
+    (200), landed on the list with «حُذف المشروع», A's row read «لم يُسلَّم بعد», the header and, after Back,
+    the card read «سلّم 0 من 3». Database: A's row and tick gone, its object gone from the stub, B's draft
+    identical. A's own School row read «لم يُسلَّم بعد» again (`done: false, submission: none`), and A
+    opened an empty project and uploaded a new photo (201).
+  - **The hidden draft (known limit, below):** with only B's draft left, the class list said
+    `requiresSubmissionLocked: true` and the form stayed disabled. B then removed its only photo: the row
+    stayed (0 photos, no note) and still locked; the same for A's new draft emptied. Only after both were
+    cleared through the API route (200 each; the app has no control for a draft) did the lock read false;
+    the form's switch was then enabled with the helper line, turned off through the form (PATCH
+    `requiresSubmission: false`, 200, the card lost its button) and back on (200, «0 of 3 handed in»).
+  - **Delete-homework warning:** shown in Arabic and English, light and dark, phone and desktop; Cancel
+    sent no `DELETE` and the homework stayed.
+  - **Isolation (API):** another teacher's token got 404 `Homework not found` on the list, the detail, the
+    clear and the PATCH of this homework; the student's and a parent's tokens (parent by `/auth/redeem`)
+    got 403 on all four; no token 401; the database unchanged.
+  - **X above Y:** all three accounts handed in, then the teacher unlinked one (`DELETE
+    /students/:id/links/:userId`): the API said `submittedCount: 3, trackableCount: 2`, the card read
+    «2 of 2 handed in» (clamped) and the list still had three openable handed-in rows.
+  - **Looks:** card, list and detail at 390×844 and 1280×800, Arabic and English, light and dark (five
+    combinations; the form and the confirmations in four). RTL rows mirrored (name and chip on the right,
+    count and a back-pointing chevron on the left), no horizontal scroll on any, dark chips and the
+    destructive button readable.
+
+**Not verified**
+
+- A real phone (touch targets, the native `Switch`, the native image viewer), **Android hardware back**
+  and **iOS swipe-back** during a delete, **VoiceOver/TalkBack** (only the accessible names were read from
+  the DOM), any browser but headless Chromium, and real R2.
+- The mis-claim dead end through the new screens (deleting a project handed in from an unlinked account
+  so the new one starts clean) — covered by the API tests of «Teacher can clear one student's project»,
+  not run in the browser.
+- The analytics exclusion in the built bundle: `shouldTrackScreen` is pinned by `screenTracking.test.ts`
+  only; finding it in the minified bundle was not cheap, so it was skipped.
+- The CI `rls` job's own run and production.
+
+**Known limits**
+
+- **The lock check is not atomic** (the PATCH's comment in `routes/homework.ts` now says so). A student's very first upload or tick in the milliseconds between the
+  check and the `UPDATE` can slip through (on → off leaves a draft nobody can read or clear in the app;
+  off → on leaves a tick). Closing it needs a lock across the owner and app connections. Follow-up idea:
+  the sweep's archived-homework phase also purges the submission rows of homework with
+  `requires_submission = false`.
+- **A hidden draft with content, or an old tick, keeps the switch locked**, and the teacher cannot clear a
+  draft in the app: it is never shown (the row does not open, the detail is 404). Since the Ruling above, a
+  draft whose author removed every photo and cleared the note no longer counts (the real-stack run above
+  predates it and saw such a draft lock). The ways out are deleting the homework, or the API route.
+- **X can exceed Y** when a handed-in record is unlinked later; the card and list clamp to Y, so they agree
+  but show one fewer than the handed-in rows (seen above).
+- **Account-less records** are listed («بلا حساب») but never counted or opened; a class with none with
+  accounts reads «سلّم 0 من 0».
+- The detail's photo header reads «1 من 6» (copied from the student screen: the student's upload limit,
+  not something the teacher acts on). The disabled switch is barely dimmed on the web; the reason line
+  carries the meaning.
+- Opening either screen cold in English loads it twice (the load depends on `t`); harmless.
+- `ConfirmHost` leaves the page's buttons in the accessibility tree while a dialog is open (shared
+  component, unchanged).
+- Not in this phase: the parents' view (the API route exists), a push to the teacher on hand-in, marks or
+  comments, a count on the class tab, removing one photo and keeping the rest.
+
 ## «ردّ بالبريد» on idea and contact messages in «البريد المجمّع», 2026-10-30
 
 The owner asked whether they could answer the ideas listed in the admin's «البريد المجمّع» (`app/admin/signups.tsx`). Most of

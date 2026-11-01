@@ -112,6 +112,13 @@ describe('homework project submission codes', () => {
     assert.equal(apiErrorKey(err('submission_required', 409), 'fb'), 'errSubmissionRequired');
   });
 
+  it('maps the project switch being locked, off HomeworkError, without borrowing the student’s «locked»', () => {
+    // PATCH /homework/:id answers 409 submission_locked once any student has a tick or a project.
+    assert.equal(apiErrorKey(err('submission_locked', 409), 'fb'), 'errSubmissionSwitchLocked');
+    assert.equal(apiErrorKey(sub('locked', 409), 'fb'), 'errSubmissionLocked');
+    assert.equal(apiErrorKey(err('locked', 409), 'fb'), 'fb');
+  });
+
   it('still maps the codes it shares with messaging, and a 429, as before', () => {
     assert.equal(apiErrorKey(sub('file_too_large', 413), 'fb'), 'errFileTooLarge');
     assert.equal(apiErrorKey(sub('unsupported_type', 400), 'fb'), 'errUnsupportedType');

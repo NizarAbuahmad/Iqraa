@@ -39,7 +39,8 @@ export function BackButton({
       hitSlop={10}
       accessibilityRole="button"
       accessibilityLabel={t('back')}
-      style={style}
+      // Dimmed while disabled (a screen holds Back during a request); no other caller passes `disabled`.
+      style={[style, disabled ? { opacity: 0.4 } : null]}
     >
       <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={size} color={color} />
     </Pressable>
