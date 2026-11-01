@@ -10,6 +10,43 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Exam screen: say why when a delete or a question change is refused — 2026-11-01
+
+The API now answers 409 when an exam was published, closed or removed while a
+question was being added, changed or deleted (`no_longer_draft`), and when an exam
+was published while it was being deleted (`still_published`). The app did not
+tell the teacher either: the exam screen showed «تعذّر حفظ السؤال.» /
+«تعذّر حذف الاختبار.» for every failure and kept showing a draft, and the three
+question modals (`EditQuestionModal`, `AddReadAloudModal`, `AddDictationModal`) printed
+the server's **English** `err.message` to an Arabic teacher («Only a draft can be edited»).
+
+- `services/evaluationEditError.ts` (pure, testable): `editRefusedAsNotDraft(err)` is a
+  409 on a question change; `archiveFailure(err)` is `still_published` on a delete.
+- Two new lines, both locales: `evaluationEditNoLongerDraft` («نُشر هذا الاختبار أو حُذف
+  أثناء التعديل، فلم يتغيّر شيء.») and `archiveEvaluationStillPublished` («نُشر هذا الاختبار
+  قبل لحظات، فلا يمكن حذفه. أغلِقه أولًا ثم احذفه.»).
+- The exam screen shows them and **reloads the exam** (`refetch`), so the delete button
+  and the question list match the exam as it now is. The three modals show the
+  translated line and call a new optional `onStale`, which the screen passes as `refetch`.
+  Dictation, which adds several questions in a row, keeps its «added N of M» line when some
+  went in, and reloads either way. Every other failure keeps the line it had.
+
+**Verified:** `services/__tests__/evaluationEditError.test.ts` (14 tests): the helper's cases,
+both locales' lines, and source-level checks that the screen and each modal are wired (the
+screens import React Native and cannot be loaded by the runner, as for
+`evaluationGenerateError.test.ts`). Two mutations (an `onStale` prop removed; a modal's catch
+put back) each failed the test, then were restored. Monorepo typecheck clean. Full mobile
+suite: 9059 tests, 9049 passed, 0 failed, 10 skipped (the skips are not from this change; I
+did not look into them).
+
+**Not verified:** the screens were never opened in a browser or on a device, so what a
+refused change looks like on screen (the error row, the reload) is read from the code, not
+seen; the Arabic lines were not read by a native speaker. `PUT …/questions/paper` (the paper
+grid) is unchanged: its only caller, `app/evaluations/new.tsx`, saves it straight after the
+draft is created. **Android:** `app.json` is 1.6.0 and the installed production binary 1.5.0,
+so a JS-only change reaches the web on deploy but no installed Android phone until a 1.6.0
+build is installed.
+
 ## «ما الجديد»: entries for the games upgrades and the spelling game — 2026-11-01
 
 The /play changes of 2026-10-30 and 2026-11-01 merged before the «ما الجديد» rule
