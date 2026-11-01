@@ -14,9 +14,16 @@ Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
 `GET /admin/daily-activity?days=30` (1–90, default 30): for each day, how many people were active, how
 many of those were new and how many returning, plus accounts created that day. System admin only (the
-numbers span every school); a school admin gets 403. Oldest day first, quiet days zero-filled.
-**No schema change, no migration, no native change; API only** — a merge deploys `iqraa-api` and nothing
-else. No screen reads it yet: the admin dashboard is not wired to it.
+numbers span every school); a school admin gets 403. Oldest day first, quiet days zero-filled. The admin
+dashboard (`app/admin/dashboard.tsx`) draws it as «النشاط اليومي — آخر ٣٠ يومًا» / "Daily activity — last
+30 days" under the signups chart: one stacked bar per day (returning below, new above, so the bar is that
+day's active people), the first and last date, and the average, the busiest day, new / returning summed
+over the window and signups. **No schema change, no migration, no native change** (`artifacts/mobile/app.json`,
+`package.json`, `eas.json` and `android/` untouched, so an OTA reaches a binary of the same `version`). A
+merge touches `artifacts/api-server/` and `artifacts/mobile/`, so it deploys the API first, then the web
+bundle, and publishes to the `preview` OTA channel. Only a system admin's dashboard asks for it and shows
+the section; a school admin sees nothing new, and a failed request prints one line in the section instead
+of blanking the screen (it is a request of its own, not part of the dashboard's `load`).
 
 **Definitions (the limits worth knowing)**
 
@@ -36,9 +43,19 @@ year boundaries) and `src/routes/__tests__/adminDailyActivity.db.test.ts` agains
 the built bundle (once per person per day across both sources, new vs returning, a null-user generation
 ignored, a signup with no activity shows in `signups` only, 400 on a bad window, 401 and 403). Each was
 seen failing first. Typecheck clean; the whole api-server suite (3319 tests) passes.
+The chart's heights and sums are `services/adminDailyActivity.ts`, pinned by
+`services/__tests__/adminDailyActivity.test.ts` (seen failing first); the mobile suite passes (9008 tests)
+after the new text was moved onto `TYPE` steps, which `designScale.test.ts` had refused. **Seen in a
+browser:** the real API against a throwaway Postgres seeded with 60 teachers and 30 days of activity, signed
+in as a system admin through the web build: English on a 1100 px desktop in light mode and Arabic on a
+390 px phone in dark mode (bars stack, the day runs with the reading direction like the signups chart
+beside it, both colours read on the dark card).
 **Not verified:** the query's speed on production volumes (it scans the last `days` days of
 `ai_generations` and `saved_materials`; `ai_generations_created_at_idx` exists, `saved_materials` has no
-`created_at` index), and nothing was run against production data.
+`created_at` index); nothing was run against production data; a school admin's dashboard was not opened
+(that it shows nothing new is from the `system_admin` check in the code); a screen reader's reading of the
+chart (the bars carry one summary label, not a label per day); the Arabic wording was not reviewed by a native
+reader.
 
 ## English audio check: a person listened to the 24 flagged words — 2026-11-01
 
