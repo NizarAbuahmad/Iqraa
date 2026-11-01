@@ -12,6 +12,7 @@
  */
 import { normalize } from './commandPalette.ts';
 import { isPurposeQuestion } from './appHelp.ts';
+import { isHowToAdvice } from './ai/askVocabulary.ts';
 
 export type ToolAsk = 'game' | 'slides' | 'test' | 'dictation';
 
@@ -52,6 +53,9 @@ const REQUEST_CUE =
 export function toolAskFromQuery(query: string): ToolAsk | null {
   // «how do i make my slides more engaging» asks for advice, not for the builder.
   if (isPurposeQuestion(query)) return null;
+  // «how can I prepare students for the exam» is advice about preparing, not a
+  // request for the test builder: "prepare" is the teacher's own verb there.
+  if (isHowToAdvice(query)) return null;
   const q = normalize(query.replace(/[؟?!.,،]/g, ' '));
   const kind = PATTERNS.find(([, re]) => re.test(q))?.[0] ?? null;
   if (!kind) return null;

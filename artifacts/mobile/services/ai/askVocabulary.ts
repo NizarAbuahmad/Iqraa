@@ -94,6 +94,17 @@ const ASKS_THE_ASSISTANT = new RegExp(
 );
 
 /**
+ * Is this a how-to question the teacher asks for themselves — advice about
+ * doing something — rather than a request to the assistant? The chat's other
+ * "did they ask for a thing" readers (`toolAskFromQuery`) share the answer, so
+ * «How can I prepare students for the exam» opens advice, not the test builder.
+ */
+export function isHowToAdvice(query: string): boolean {
+  const q = normaliseAsk(query.trim());
+  return HOW_TO.test(q) && !ASKS_THE_ASSISTANT.test(q);
+}
+
+/**
  * The material the message asks for, or null. When a message names two
  * («خطة درس مع اختبار»), the first in this order wins: homework, worksheet,
  * quiz, activity, then a plan — the plan words are the loosest.
