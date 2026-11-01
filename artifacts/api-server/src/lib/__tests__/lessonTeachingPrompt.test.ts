@@ -131,6 +131,27 @@ describe("lesson-teaching prompt", () => {
     });
   }
 
+  // From the first review of 50 pre-generated explanations (2026-11-01): 17
+  // were unfit for students on content (3 more for a misspelling the book
+  // text carried). Answers given as «—», as a description of the
+  // method, or as «63 × sin 30°»; answers that did not satisfy the problem
+  // ((1, -1) for a system it does not solve, 5 cm for 10/√3); a quadrant rule
+  // stated for every k that holds only for k > 0; the law of cosines written
+  // with cos A; a lab that used derivatives two lessons early; and calculation
+  // lessons whose example calculated nothing.
+  for (const [lang, build] of [["ar", lessonTeachingPromptAr], ["en", lessonTeachingPromptEn]] as const) {
+    it(`${lang}: pins the accuracy rules from the first student review`, () => {
+      const p = build(BODY);
+      const res = lang === "ar"
+        ? [/الناتج النهائي محسوبًا ومبسّطًا/, /«—»/, /«63 × sin 30°»/, /عوّضها في المسألة/, /فغيّر أرقام المسألة لا الإجابة/,
+          /ومنها القيم السالبة/, /2ab cos C/, /لا مهارة من درس لاحق/, /لا سؤال وصفي/]
+        : [/the final result, worked out and simplified/, /"—"/, /"63 × sin 30°"/, /substitute it back into the problem/,
+          /change the problem's numbers, not the answer/, /including negative values/, /2ab cos C/,
+          /never a skill from a later lesson/, /not a descriptive question/];
+      for (const re of res) assert.match(p, re, String(re));
+    });
+  }
+
   it("en: pins the rules each earlier deck broke", () => {
     const p = lessonTeachingPromptEn(BODY);
     assert.match(p, /Stay inside this lesson/);

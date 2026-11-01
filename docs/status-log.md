@@ -43,6 +43,53 @@ review, closed, paper exams).
 through to `/take/:code`; long titles beyond two lines. A device only shows this after the over-the-air
 update has downloaded and the app has been restarted (the app opens the saved version first).
 
+## Lesson explanations: accuracy rule, placeholder answers, and «مولات» in the chemistry book — 2026-11-01
+
+**Why.** The first live prefill of student lesson explanations (`pregenerate.ts --go --only=lesson-teaching`,
+grade 10 maths + chemistry, 50 lessons, prompt `2026-10-31.1`) was reviewed entry by entry before approval: every
+number recomputed, every rule checked, each entry compared with its lesson's objectives. **20 of 50 were unfit for
+students** and were left out of the approval file:
+
+- wrong answers: a linear-quadratic system answered with (1, -1) and (4, 5), which satisfy neither equation; law of
+  sines a = 5 cm (it is 10√3/3 ≈ 5.77); a grouped mean of 54.5 (it is 53.5);
+- no answer: «—», «الحل هو نقطتا التقاطع…» (the method, not the points), «63 × sin 30° cm²» left unevaluated;
+- false rules: the sin/cos/tan quadrant rule stated for every k (it holds for k > 0); «the diameter is one arm of the
+  angle ⇒ right angle»; a hook calling «slope increases then decreases» a max/min test; atomic radius growing down a
+  group «sometimes»; the law of cosines as c² = a² + b² − 2ab cos A, contradicting the same entry's cos A formula;
+- a "tangent" through two points that lie on the curve (a secant), the error the entry itself warned about;
+- wrong lesson: a GeoGebra lab that precedes derivatives using derivatives; «الطاقة الممتصة والطاقة المنبعثة» teaching
+  the ΔH sign instead of specific heat; «حسابات الطاقة» with no calculation;
+- «موالت» / «موات» for «مولات» in three chemistry lessons — copied from the book text the model was given.
+
+**Changed.**
+
+- `lessonTeachingPrompt.ts`, rule 14 in both languages: the answer is the final result worked out and simplified (no
+  «—», no method description, no unevaluated expression); substitute every answer back and, if it fails, change the
+  problem's numbers, not the answer; a general rule holds for negative values or states its condition; the book's
+  triangle notation (c² = … − 2ab cos C); a lab uses only what the lab does; a calculation lesson calculates.
+  `lesson-teaching` moves to `2026-11-01.1` (`generationKey.ts`), so the next prefill regenerates instead of serving
+  the rejected rows again. Approved rows are read by lesson, not by version, so nothing students see changes.
+- `realAnswer` (`lessonExplanationCards.ts`): an answer made only of punctuation («—», «…», «؟») is no answer. The
+  student cards drop a worked example without a real answer and show a practice without one; `usableTeaching`
+  (`lessonSlides.ts`) does the same for the deck. «-3» is still an answer.
+- `untranspose.ts`: `CURATED_CORRECT` adds «مولات», «المولات», «مولاته», «مولاتها» to the ligature repair's evidence.
+  No OCR book uses the word twice, so the generated `repair-wordlists.json` never licensed the repair. The four
+  extracted chem-s2 files (student book, activity book, two packs) were corrected in place for those forms only —
+  67 words, every one checked in the diff. Re-running the whole ligature repair over the corpus was tried and not
+  kept: it rewrites ~75 unrelated words, some wrongly («غَالٍ» → «غَلٍا»), and regenerating the wordlists changes
+  thousands of entries (54 OCR books now, 22 then). Both are their own change.
+
+**Verified.** Typecheck clean. api-server 2,809/2,809. mobile 9,131 pass, 10 skipped, 0 fail. curriculum 906/907 —
+the one failure is `r2.test.ts`, which asserts R2 is unconfigured and this cloud container has R2 set; unrelated, and
+CI runs without it. `verify` 0 errors. New tests: the curated repair (`untranspose.test.ts`), the prompt's rule-14
+sentences (`lessonTeachingPrompt.test.ts`), placeholder answers on cards and in the deck.
+
+**Not verified.** That rule 14 lowers the error rate: only a new prefill and a second review can show that. The
+math verifier was not run here (no SymPy in this container); nothing in it changed.
+
+**Still to do after deploy.** Re-run the prefill with a fresh token and `--force`, review the new file, approve.
+The 30 entries that passed were approved on 2026-11-01 (`--approve`, «approved 30 of 30»); the 20 rejected were never approved, so those lessons keep whatever was approved before (the 2026-10-18 run) or show «قريبًا».
+
 ## Exam screen: say why when a delete or a question change is refused — 2026-11-01
 
 The API now answers 409 when an exam was published, closed or removed while a
