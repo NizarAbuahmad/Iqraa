@@ -55,6 +55,35 @@ teacher closed early, so it says only «مُغلق — لم يُسلَّم». Ho
 numerically (`formatDueDate`, per the bidi rule in CLAUDE.md), so on the school tab they sit
 beside month-name exam days.
 
+## Removing an exam decides «is it published?» under the row lock — 2026-11-01
+
+`DELETE /evaluations/:id` (soft delete, `archived_at`) may remove only a draft or a
+closed exam, because a published exam has a live student link and hiding it from its
+teacher leaves an exam nobody can close (`lib/evaluationArchive.ts`). The route made
+that decision from a read taken before it wrote, with no lock, while publish locks
+the same row and flips the status. A publish that committed between the two (a
+draft, or a closed exam re-published) ended as a published exam with `archived_at`
+set: gone from the teacher's lists, link still admitting students.
+
+Now the status and `archived_at` are read under `FOR UPDATE` in one transaction and
+`archiveDecision` runs on that row, so the loser of the race sees the winner: a
+publish that got the lock first makes the removal answer `409 still_published`;
+a removal that got it first makes publish answer its existing `archived` 409.
+Archiving twice is still not an error.
+
+**Verified:** `routes/__tests__/evaluationArchiveRace.db.test.ts`, 4 tests against a
+real Postgres (two controls; the two races hold the row from the test, wait until the
+removal is queued on it, publish as a committed writer, and let go). Run red first (both
+races failed by never queueing behind a lock), green after. Full api-server suite and
+typecheck green.
+
+**Not verified / still open:** nothing was done in the app. The exam screen does not
+read `still_published` (or any code) from this route: every failure of the delete shows
+«تعذّر حذف الاختبار.» (`archiveEvaluationFailed`), so a teacher whose exam was published
+meanwhile is told the delete failed, not why, and the screen is not refreshed. A second
+tap on Generate still starts a second model call. The four question-edit routes' 409
+still shows the app's generic line.
+
 ## A shared homework in the class chat can be tapped, and says so — 2026-11-01
 
 A teacher shared a homework to the class chat and reported that the message «is not clickable» and that students could not
