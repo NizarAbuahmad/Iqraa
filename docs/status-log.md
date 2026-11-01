@@ -55,7 +55,7 @@ sentences (`lessonTeachingPrompt.test.ts`), placeholder answers on cards and in 
 math verifier was not run here (no SymPy in this container); nothing in it changed.
 
 **Still to do after deploy.** Re-run the prefill with a fresh token and `--force`, review the new file, approve.
-The 30 entries that passed (`pregen-review-approved.json`, kept by the owner) can be approved before or after.
+The 30 entries that passed were approved on 2026-11-01 (`--approve`, «approved 30 of 30»); the 20 rejected were never approved, so those lessons keep whatever was approved before (the 2026-10-18 run) or show «قريبًا».
 
 ## A DB test's server can no longer answer from another test file's port — 2026-11-01
 
