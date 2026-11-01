@@ -30,6 +30,9 @@ What changed (`app/my-exams.tsx`, student view only in wording; the layout is no
 - An empty «القادمة» heading is dropped for everyone: «لا توجد اختبارات قادمة الآن» stands alone.
 - `STATE_COLOR`, `STATE_ICON`, the old row styles and `metaSegments` (and its two tests) are
   removed: nothing used them any more.
+- A «ما الجديد» entry (`exams-clearer-cards`, students and parents, route `/my-exams`) announces
+  both exam-screen changes, this one and the parent's, as the repo's convention asks for a visible
+  change. Existing student and parent accounts see it once on their home screen.
 
 **Verified:** `tsc` clean; `myExams`, `upcomingExams`, `designScale`, `iconSystem` and
 `celebrateMoments` green; the student's «اختباراتي» and the school tab rendered in a browser at
@@ -39,6 +42,37 @@ review, closed, paper exams).
 **Not verified:** a real student account or phone; the English layout; the start / continue button
 through to `/take/:code`; long titles beyond two lines. A device only shows this after the over-the-air
 update has downloaded and the app has been restarted (the app opens the saved version first).
+
+## «ما الجديد»: entries for the games upgrades and the spelling game — 2026-11-01
+
+The /play changes of 2026-10-30 and 2026-11-01 merged before the «ما الجديد» rule
+existed, so existing users were told only about the six new games and the filter
+(`play-hub-filters`). Two entries added to `WHATS_NEW`, both for every role, both
+opening a public screen:
+
+- `play-games-upgrade` (dated 2026-10-30, the day the upgrades merged and reached
+  the web and the Android `production` channel): the one-line explanation after an
+  answer, the sounds and light vibration (the speaker button mutes them), the saved
+  best score with «retry the ones you missed», and the Jordan map in the governorates
+  game. Route `/play`.
+- `play-spelling-game` (dated 2026-11-01): «كيف تُكتب؟», Grades 2 to 7, names the
+  rule after each answer. Route `/play/spelling`.
+- **One existing entry's text changed, its id did not:** `play-hub-filters` said
+  "sixteen games", which was one short once the spelling game shipped. It no longer
+  states a count. A device that already saw it is unaffected (the id is what is
+  remembered).
+- **Who sees them:** an account made after an entry's day is not told (it met the
+  feature already); the dialog shows at most three entries a session, newest first,
+  and Profile → «ما الجديد» lists all. So an older account can now meet three game
+  notes in a row, then the tour note on the next launch.
+- **Verified:** `whatsNew.test.ts` (23 tests: keys exist in both languages, dates are
+  valid, each route is a real screen every named role may open), typecheck, the mobile
+  suite.
+- **Not verified / limits.** The Arabic is mine, read, not run through the
+  `arabic-copy-reviewer` skill, and the English is a plain translation. The upgrades
+  entry says explanations appear "in many" of the question games: they exist in the
+  seven text games (the six new ones and spelling) and not in flags, capitals or
+  elements. Nothing was seen on a device.
 
 ## Chat: the lesson's subject colour on the strip and the heading — 2026-11-01
 
