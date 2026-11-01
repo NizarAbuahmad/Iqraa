@@ -34,6 +34,18 @@ test('an artifact with no worked example simply has no example card', () => {
   assert.deepEqual(cards.map(c => c.kind), ['hook', 'concept', 'concept', 'practice']);
 });
 
+test('an answer that is only a placeholder is no answer (pregen review, 2026-11-01)', () => {
+  // A model returned «—» as a practice answer; a student would have read the
+  // dash as the answer. No card shows it, and no example stands on one.
+  for (const answer of ['—', ' - ', '…', '؟', '...']) {
+    const cards = buildExplanationCards({ practice: { problem: 'مسألة', answer }, workedExample: { problem: 'م', steps: ['خطوة'], answer } });
+    assert.deepEqual(cards, [{ kind: 'practice', problem: 'مسألة' }], answer);
+  }
+  // A real answer that happens to start with a dash is still an answer.
+  const [card] = buildExplanationCards({ practice: { problem: 'مسألة', answer: '-3' } });
+  assert.equal(card!.kind === 'practice' && card!.answer, '-3');
+});
+
 test('practice keeps hint and answer only when they exist', () => {
   const cards = buildExplanationCards({ practice: { problem: 'مسألة', hint: '  ', answer: undefined } });
   assert.deepEqual(cards, [{ kind: 'practice', problem: 'مسألة' }]);
