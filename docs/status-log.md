@@ -40,6 +40,38 @@ review, closed, paper exams).
 through to `/take/:code`; long titles beyond two lines. A device only shows this after the over-the-air
 update has downloaded and the app has been restarted (the app opens the saved version first).
 
+## Chat: the lesson's subject colour on the strip and the heading — 2026-11-01
+
+The chat was the one lesson screen with no subject in it: Today's band wears the lesson's
+subject (`subjectTheme`), the generator screens' lesson card leads with its drawing
+(`subjectTile`), and the chat stayed brand teal and white whatever the lesson. Item #7 of the
+desktop chat review (see the entry below, «Chat on desktop: the composer joins the intro…»).
+
+**What changed.** Two marks, both from `subjectChipColor` (the existing helper that makes a
+subject's catalog colour readable on a given surface), so the chat borrows rather than invents:
+- **The lesson strip** (`CurrentLessonCard`, new optional `accent` prop) gets a 4px bar on its
+  start edge, in both its collapsed and expanded states, coloured against `colors.card`. The bar
+  is placed from the `isRTL` flag like the row direction, not with `start`, which follows
+  I18nManager and this app does not use that to lay out Arabic.
+- **The desktop intro heading** (`introColor` on `MessageBubble`) takes the subject colour when a
+  lesson is picked, coloured against `colors.background`: it sits on the page ground, not a card.
+  With no lesson it stays brand teal, as before.
+
+**Left alone, on purpose.** The Iqrra mark keeps its brand colour (it is the logo, not chrome),
+the chat is still not a corner (no `CornerThemeProvider`; a corner subject's colour comes from the
+same table Today reads, but the chat's buttons, chips and composer stay brand teal), and the strip's
+Start class button stays teal.
+
+**Pinned** (`subjectTheme.test.ts`): every subject's colour reads at 4.5:1 on the light and dark
+page ground (the helper was only tested on the cards), and the two call sites in `iqra.tsx` pass
+the right surface (`colors.background` for the heading, `colors.card` for the strip) — a wrong
+surface keeps compiling and silently loses contrast. The second test reads the source; the
+pattern was checked to fail on a swapped surface.
+
+**Verified:** `pnpm run typecheck` exit 0; `artifacts/mobile` `pnpm test` 8983 pass, 0 fail,
+10 skipped. **Not verified:** nothing was looked at in a browser, so how strong the bar and the
+heading read for each subject, in light and dark, is from the numbers (contrast), not the screen.
+
 ## A DB test's server can no longer answer from another test file's port — 2026-11-01
 
 Also on PR #1387, after the lock-probe fix below: «ends the dead end, with row-level security enforced»
