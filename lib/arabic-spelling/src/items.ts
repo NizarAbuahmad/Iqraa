@@ -11,7 +11,7 @@
  * on different papers is not the same test. The seed is what varies them on
  * purpose — by lesson, by class, by attempt — rather than by luck.
  */
-import { wordsForGrade, type SpellingRule, type SpellingWord, type VariantClass } from "./rules.ts";
+import { SPELLING_RULES, wordsForGrade, type SpellingRule, type SpellingWord, type VariantClass } from "./rules.ts";
 
 /**
  * The shape the assessment layer stores, mirrored rather than imported.
@@ -66,6 +66,13 @@ function shuffled<T>(items: readonly T[], seed: number): T[] {
 /** Strips harakat for display where the child must supply the letters, not the marks. */
 function bare(word: string): string {
   return word.normalize("NFKC").replace(/[ً-ْٰ]/g, "");
+}
+
+let bankCorrect: ReadonlySet<string> | undefined;
+/** Every correct spelling in the whole bank, bare. Built once: the bank is static data. */
+function bankCorrectSpellings(): ReadonlySet<string> {
+  bankCorrect ??= new Set(SPELLING_RULES.flatMap(r => r.words.map(w => bare(w.correct))));
+  return bankCorrect;
 }
 
 /**
@@ -258,10 +265,14 @@ export function takeSpellingItems(
   // four years holds words a seven-year-old has never met, and before this a
   // Grade 2 worksheet could draw «اِجْتَمَعَ».
   const pool = wordsForGrade(rule, opts.grade);
-  // Every correct spelling in the rule — including the ones this grade is not
-  // being asked about — so a derived distractor can never be another word's
-  // answer.
-  const taken = new Set(rule.words.map(w => bare(w.correct)));
+  // Every correct spelling in the BANK — including the ones this grade is not
+  // being asked about, and the other rules' — so a distractor can never be
+  // another word's answer. It was the rule's words only, and «دفء» (a
+  // misspelling of «دُفْئًا» in one rule) is the correct «دُفْء» of another.
+  const taken = new Set([...bankCorrectSpellings(), ...rule.words.map(w => bare(w.correct))]);
+  // A word whose misspelling is itself a word cannot be shown beside it without
+  // a sentence, so it is only ever dictated (see `SpellingWord.dictationOnly`).
+  const choicePool = pool.filter(w => w.dictationOnly === undefined);
 
   /**
    * Drop kinds no word in this pool can produce, before drawing anything.
@@ -275,9 +286,9 @@ export function takeSpellingItems(
    */
   const usableKinds = kinds.filter(kind => {
     if (kind === "write") return true;
-    if (kind === "judge") return pool.some(w => w.wrong.length > 0);
+    if (kind === "judge") return choicePool.some(w => w.wrong.length > 0);
     const max = kind === "choose" ? 4 : 3;
-    return pool.some(w => optionsFor(w, seed, max, taken, rule.variantClass) !== null);
+    return choicePool.some(w => optionsFor(w, seed, max, taken, rule.variantClass) !== null);
   });
   if (usableKinds.length === 0) return [];
 
@@ -287,6 +298,14 @@ export function takeSpellingItems(
     if (items.length >= Math.max(0, count)) break;
     const kind = usableKinds[kindIndex % usableKinds.length]!;
     const wordSeed = seed + items.length * 7919;
+
+    // Dictated instead, when dictation was asked for, so a rule whose words are
+    // mostly flagged still fills a worksheet. The rotation does not move: the
+    // other words keep the mix the teacher chose. Not asked for, not built.
+    if (word.dictationOnly !== undefined && kind !== "write") {
+      if (usableKinds.includes("write")) items.push(writeItem(word));
+      continue;
+    }
 
     let item: SpellingItem | null;
     switch (kind) {
