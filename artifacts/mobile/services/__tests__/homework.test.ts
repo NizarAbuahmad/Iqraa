@@ -29,6 +29,10 @@ import {
   normalizeTeacherList,
   splitHomework,
   untrackedMode,
+  projectSubmittedText,
+  deleteConfirmKey,
+  requiresSubmissionPatch,
+  isSwitchLockedError,
   type FamilyHomework,
 } from '../homework.ts';
 
@@ -260,8 +264,29 @@ test('normalizeTeacherHomework keeps a well-formed row and ignores extra fields'
       doneCount: 3,
       studentCount: 20,
       trackableCount: 20,
+      requiresSubmission: false,
+      submittedCount: 0,
+      requiresSubmissionLocked: false,
     },
   ]);
+});
+
+test('normalizeTeacherHomework keeps the project fields the server sends', () => {
+  const [row] = normalizeTeacherHomework([
+    { ...rawTeacher, requiresSubmission: true, submittedCount: 4, requiresSubmissionLocked: true },
+  ]);
+  assert.equal(row!.requiresSubmission, true);
+  assert.equal(row!.submittedCount, 4);
+  assert.equal(row!.requiresSubmissionLocked, true);
+});
+
+test('normalizeTeacherHomework reads a bad submittedCount as 0 and only a literal true as a flag', () => {
+  const [row] = normalizeTeacherHomework([
+    { ...rawTeacher, requiresSubmission: 'true', submittedCount: -2, requiresSubmissionLocked: 1 },
+  ]);
+  assert.equal(row!.requiresSubmission, false);
+  assert.equal(row!.submittedCount, 0);
+  assert.equal(row!.requiresSubmissionLocked, false);
 });
 
 test('normalizeTeacherHomework defaults missing counts to 0 and exam fields to null', () => {
@@ -671,4 +696,34 @@ test('an untracked submission item is never ranked as overdue', () => {
   assert.deepEqual(todo.map(h => h.id), ['t', 'u']); // by date, not pulled to the front as late
   const late = hw({ id: 'l', requiresSubmission: true, canTrack: true, state: 'overdue', dueDate: '2026-10-18' });
   assert.equal(splitHomework([tracked, untracked, late]).todo[0]!.id, 'l');
+});
+
+test('projectSubmittedText clamps the handed-in count into [0, trackable]', () => {
+  assert.deepEqual(projectSubmittedText({ submittedCount: 3, trackableCount: 10 }), { submitted: 3, of: 10 });
+  // A submission is kept after a roster link is removed, so the numerator can outrun the denominator.
+  assert.deepEqual(projectSubmittedText({ submittedCount: 5, trackableCount: 4 }), { submitted: 4, of: 4 });
+  assert.deepEqual(projectSubmittedText({ submittedCount: -2, trackableCount: 4 }), { submitted: 0, of: 4 });
+  assert.deepEqual(projectSubmittedText({ submittedCount: 2, trackableCount: 0 }), { submitted: 0, of: 0 });
+});
+
+test('deleteConfirmKey warns about the photos only for a project homework', () => {
+  assert.equal(deleteConfirmKey({ requiresSubmission: true }), 'hwDeleteConfirmProject');
+  assert.equal(deleteConfirmKey({ requiresSubmission: false }), 'hwDeleteConfirm');
+});
+
+test('requiresSubmissionPatch sends the switch on an edit only when it differs from the stored value', () => {
+  assert.deepEqual(requiresSubmissionPatch(false, true), { requiresSubmission: true });
+  assert.deepEqual(requiresSubmissionPatch(true, false), { requiresSubmission: false });
+  // A locked homework saved unchanged must never carry a flag (the server would 409 a different value).
+  assert.deepEqual(requiresSubmissionPatch(true, true), {});
+  assert.deepEqual(requiresSubmissionPatch(false, false), {});
+});
+
+test('isSwitchLockedError recognises the 409 submission_locked refusal and nothing else', () => {
+  assert.equal(isSwitchLockedError(Object.assign(new Error('x'), { status: 409, code: 'submission_locked' })), true);
+  assert.equal(isSwitchLockedError(Object.assign(new Error('x'), { status: 409, code: 'other' })), false);
+  assert.equal(isSwitchLockedError(Object.assign(new Error('x'), { status: 400, code: 'submission_locked' })), false);
+  assert.equal(isSwitchLockedError(new Error('x')), false);
+  assert.equal(isSwitchLockedError(null), false);
+  assert.equal(isSwitchLockedError('submission_locked'), false);
 });

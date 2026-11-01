@@ -98,6 +98,9 @@ type Parsed<T> = { ok: true; value: T } | { ok: false; error: string; code?: str
 
 /** Machine code for a due date outside the allowed window (POST and PATCH 400 bodies carry it next to `error`). */
 export const DUE_RANGE_CODE = "due_date_out_of_range";
+
+/** Machine code of the 409 a PATCH gets when it flips `requiresSubmission` on a homework a student has already started. */
+export const SUBMISSION_LOCKED_CODE = "submission_locked";
 const DUE_RANGE_FAIL = { ok: false, error: DUE_RANGE_ERROR, code: DUE_RANGE_CODE } as const;
 
 function record(body: unknown): Record<string, unknown> | null {

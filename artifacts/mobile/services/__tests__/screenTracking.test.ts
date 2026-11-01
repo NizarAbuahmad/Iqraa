@@ -12,8 +12,29 @@ describe('shouldTrackScreen', () => {
       assert.equal(shouldTrackScreen(p), false, p);
     }
   });
+  it('never reports a teacher’s view of the class’s projects (list or one student’s photos)', () => {
+    for (const p of [
+      '/homework-submissions',
+      '/homework-submissions/',
+      '/homework-submissions/h1',
+      '/homework-submissions/h1/s1',
+      '/homework-submissions/a%20b/c%20d',
+    ]) {
+      assert.equal(shouldTrackScreen(p), false, p);
+    }
+  });
   it('reports every other screen, including a lookalike', () => {
-    for (const p of ['/', '/(tabs)', '/guardian-waiting', '/guardians', '/take/ABC234', '/live', '/homework-projects', '/school']) {
+    for (const p of [
+      '/',
+      '/(tabs)',
+      '/guardian-waiting',
+      '/guardians',
+      '/take/ABC234',
+      '/live',
+      '/homework-projects',
+      '/homework-submissionsX',
+      '/school',
+    ]) {
       assert.equal(shouldTrackScreen(p), true, p);
     }
   });

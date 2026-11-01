@@ -27,10 +27,12 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -38,6 +40,7 @@ import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
+import { PressableScale } from '@/components/ui/PressableScale';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LibraryPickerSheet } from '@/components/classes/LibraryPickerSheet';
 import { MaterialPickerSheet } from '@/components/classes/MaterialPickerSheet';
@@ -52,11 +55,15 @@ import type { Evaluation } from '@/services/evaluations';
 import {
   ammanToday,
   clampedDone,
+  deleteConfirmKey,
   dueBadge,
   dueDatePresets,
   formatDueDate,
   homeworkDraftError,
+  isSwitchLockedError,
   maskYmd,
+  projectSubmittedText,
+  requiresSubmissionPatch,
   resourceBody,
   resourceKey,
   type HomeworkGameResource,
@@ -73,8 +80,16 @@ const TOUCH = 44;
 
 /** `key` is `resourceKey`: `<source>:<nativeId>` (the Library picker's own "already added" key) or `material:<id>`. */
 type DraftResource = { key: string; title: string; body: object };
-type Draft = { title: string; instructions: string; dueDate: string; evaluationId: string | null; resources: DraftResource[] };
-const EMPTY_DRAFT: Draft = { title: '', instructions: '', dueDate: '', evaluationId: null, resources: [] };
+type Draft = {
+  title: string;
+  instructions: string;
+  dueDate: string;
+  evaluationId: string | null;
+  resources: DraftResource[];
+  /** Students hand it in as a project. Locked once any student has started (`TeacherHomework.requiresSubmissionLocked`). */
+  requiresSubmission: boolean;
+};
+const EMPTY_DRAFT: Draft = { title: '', instructions: '', dueDate: '', evaluationId: null, resources: [], requiresSubmission: false };
 /** The server's cap (RESOURCES_MAX in the API's homework rules). */
 const MAX_RESOURCES = 10;
 
@@ -139,11 +154,27 @@ export function HomeworkTab({
     };
   }, [load]);
 
+  // The «سلّم X من Y» count changes on the screens a card opens (a student's project cleared, a hand-in), so the
+  // list is read again each time the class page is shown after leaving it. The first focus is the mount effect's
+  // load above, not a second one. The same loadSeq drops a response that an older load would overwrite.
+  const firstFocus = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (firstFocus.current) {
+        firstFocus.current = false;
+        return;
+      }
+      void load();
+    }, [load]),
+  );
+
   // A game's stored title is the lesson's; the teacher's lists say which game it is too.
   const resourceLabel = (r: HomeworkResource) => (r.kind === 'game' ? `${t(HOMEWORK_GAME_TITLE_KEY[r.game])}: ${r.title}` : r.title);
 
   const today = ammanToday();
   const published = exams.filter(e => e.status === 'published');
+  // Once any student has ticked it or saved project work, the switch cannot change (the server answers 409).
+  const locked = editing?.requiresSubmissionLocked === true;
   const examTitle = (e: Evaluation) => (lang === 'ar' ? e.titleAr : e.title) || e.title || t('newEvaluation');
   // The exam rows of the picker; plus the current link when it is not offered.
   const linkedMissing =
@@ -169,6 +200,7 @@ export function HomeworkTab({
       dueDate: item.dueDate,
       evaluationId: item.evaluationId,
       resources: item.resources.map(r => ({ key: resourceKey(r), title: resourceLabel(r), body: resourceBody(r) })),
+      requiresSubmission: item.requiresSubmission,
     });
     setFieldError(null);
     setModalError('');
@@ -249,6 +281,8 @@ export function HomeworkTab({
           dueDate,
           evaluationId: draft.evaluationId,
           resources: draft.resources.map(r => r.body),
+          // Only when it changed: a locked homework's save must never carry a flag change (409 submission_locked).
+          ...requiresSubmissionPatch(editing.requiresSubmission, draft.requiresSubmission),
         });
       } else {
         await createHomework({
@@ -258,10 +292,18 @@ export function HomeworkTab({
           dueDate,
           ...(draft.evaluationId ? { evaluationId: draft.evaluationId } : {}),
           ...(draft.resources.length > 0 ? { resources: draft.resources.map(r => r.body) } : {}),
+          requiresSubmission: draft.requiresSubmission,
           shareToChat,
         });
       }
     } catch (e) {
+      // Someone started after the list loaded: the server now refuses a changed switch. Put the switch back, show it
+      // locked, and refresh the list, or every later save of this form would be refused the same way.
+      if (isSwitchLockedError(e)) {
+        setDraft(d => ({ ...d, requiresSubmission: editing?.requiresSubmission ?? d.requiresSubmission }));
+        setEditing(prev => prev && { ...prev, requiresSubmissionLocked: true });
+        void load();
+      }
       setModalError(apiErrorMessage(e, 'hwSaveFailed', t));
       setSaving(false);
       return;
@@ -276,7 +318,8 @@ export function HomeworkTab({
     const target = editing;
     const ok = await confirm({
       title: t('hwDelete'),
-      message: t('hwDeleteConfirm'),
+      // A project homework also deletes the students' photos and notes, and says so.
+      message: t(deleteConfirmKey(target)),
       confirmLabel: t('hwDelete'),
       cancelLabel: t('cancel'),
       destructive: true,
@@ -368,7 +411,9 @@ export function HomeworkTab({
               const noAccount = Math.max(0, item.studentCount - item.trackableCount);
               // A completion is kept after a link is removed, so doneCount can outrun the
               // denominator; clamp it for the text as well as the bar.
-              const doneShown = clampedDone(item.doneCount, item.trackableCount);
+              // A project homework is ticked only by a hand-in, so its bar and its button are one number from one source.
+              const project = item.requiresSubmission ? projectSubmittedText(item) : null;
+              const doneShown = project ? project.submitted : clampedDone(item.doneCount, item.trackableCount);
               const pct = item.trackableCount > 0 ? Math.round((doneShown / item.trackableCount) * 100) : 0;
               return (
                 <Pressable
@@ -411,9 +456,11 @@ export function HomeworkTab({
                       <View style={[styles.track, { backgroundColor: colors.border, flexDirection: rowDir }]}>
                         <View style={[styles.fill, { width: `${pct}%`, backgroundColor: ACCENT }]} />
                       </View>
-                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
-                        {t('hwDoneCount', doneShown, item.trackableCount)}
-                      </Text>
+                      {project ? null : (
+                        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
+                          {t('hwDoneCount', doneShown, item.trackableCount)}
+                        </Text>
+                      )}
                     </>
                   ) : null}
                   {noAccount > 0 ? (
@@ -431,6 +478,18 @@ export function HomeworkTab({
                       <Ionicons name="trophy-outline" size={16} color={ACCENT} />
                       <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{t('hwGameResults')}</Text>
                     </Pressable>
+                  ) : null}
+                  {project ? (
+                    <PressableScale
+                      onPress={() => router.push(`/homework-submissions/${encodeURIComponent(item.id)}` as never)}
+                      aria-label={t('hwSubmissionsOpenA11y', item.title, project.submitted, project.of)}
+                      style={[styles.submissionsBtn, { borderColor: ACCENT, flexDirection: rowDir, alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
+                    >
+                      <Ionicons name="images-outline" size={16} color={ACCENT} />
+                      <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>
+                        {t('hwSubmittedCount', project.submitted, project.of)}
+                      </Text>
+                    </PressableScale>
                   ) : null}
                 </Pressable>
               );
@@ -520,6 +579,27 @@ export function HomeworkTab({
                       );
                     })}
                   </View>
+                </View>
+
+                <View style={{ gap: SPACE.xs }}>
+                  <View style={[styles.switchRow, { flexDirection: rowDir }]}>
+                    <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: TYPE.label, textAlign: align }}>
+                      {t('hwRequiresProject')}
+                    </Text>
+                    <Switch
+                      value={draft.requiresSubmission}
+                      onValueChange={on => patch({ requiresSubmission: on })}
+                      disabled={locked}
+                      accessibilityLabel={t('hwRequiresProject')}
+                      accessibilityHint={locked ? t('hwRequiresProjectLocked') : t('hwRequiresProjectHint')}
+                      aria-checked={draft.requiresSubmission}
+                      aria-disabled={locked}
+                      trackColor={{ true: ACCENT_FILL, false: colors.border }}
+                    />
+                  </View>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 20, textAlign: align }}>
+                    {locked ? t('hwRequiresProjectLocked') : t('hwRequiresProjectHint')}
+                  </Text>
                 </View>
 
                 <View style={{ gap: SPACE.xs }}>
@@ -759,6 +839,15 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.pill,
     borderWidth: 1.5,
   },
+  submissionsBtn: {
+    alignItems: 'center',
+    gap: SPACE.xs,
+    minHeight: TOUCH,
+    paddingHorizontal: SPACE.md,
+    borderRadius: RADIUS.pill,
+    borderWidth: 1.5,
+  },
+  switchRow: { alignItems: 'center', gap: SPACE.md, minHeight: TOUCH },
   track: { height: 6, borderRadius: RADIUS.pill, overflow: 'hidden' },
   fill: { height: 6, borderRadius: RADIUS.pill },
   errorBox: { alignItems: 'center', gap: SPACE.sm, padding: SPACE.md, borderWidth: 1, borderRadius: RADIUS.md },

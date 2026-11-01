@@ -635,6 +635,81 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       }
     });
 
+    /** The card's «Y» for a homework: the class list's own `trackableCount`, read through the route the card reads. */
+    const cardTrackable = async (user: string, hw: string, srv: TestServer = server) => {
+      const klass = await call(srv, "GET", `/classes/${w.classes.c1}/homework`, user);
+      assert.equal(klass.status, 200, klass.text);
+      const item = klass.json.homework.find((h: any) => h.id === hw);
+      assert.ok(item, "the homework is on the class list");
+      assert.equal(item.trackableCount, klass.json.trackableCount, "the class and its card agree");
+      return item.trackableCount as number;
+    };
+
+    /** Live members of c1 that have a `self` link, counted straight from the tables. */
+    const accountsInC1 = async () =>
+      (
+        await db.pool.query(
+          `SELECT count(DISTINCT s.id)::int AS n FROM class_memberships m JOIN students s ON s.id = m.student_id
+           JOIN roster_links l ON l.student_id = s.id AND l.relation = 'self'
+           WHERE m.class_group_id = $1 AND s.archived_at IS NULL`,
+          [w.classes.c1],
+        )
+      ).rows[0].n as number;
+
+    it("flags which rows have an account, and its trackableCount is the card's own", async () => {
+      const r = await call(server, "GET", `/homework/${hwTeacher}/submissions`, w.users.t1);
+      assert.equal(r.status, 200, r.text);
+      const byId = new Map<string, any>(r.json.submissions.map((s: any) => [s.studentId, s]));
+      assert.equal(byId.get(w.students.sA1).hasAccount, true, "a self link");
+      assert.equal(byId.get(sibling.row).hasAccount, true);
+      assert.equal(byId.get(w.students.aA).hasAccount, false, "a guardian's link is not an account");
+      assert.ok(r.json.submissions.every((s: any) => typeof s.hasAccount === "boolean"));
+      assert.equal(r.json.trackableCount, await accountsInC1());
+      assert.ok(r.json.trackableCount >= 2 && r.json.trackableCount < r.json.submissions.length, "a mix of account and no account");
+      assert.equal(r.json.trackableCount, r.json.submissions.filter((s: any) => s.hasAccount).length);
+      assert.equal(r.json.trackableCount, await cardTrackable(w.users.t1, hwTeacher), "«X of Y»: the list's Y is the card's Y");
+      assert.equal(r.json.submittedCount, 1, "submittedCount is unchanged");
+    });
+
+    it("an unlinked account flips the row to no account, and the total moves with the card's", async () => {
+      const link = await db.pool.query(`SELECT user_id FROM roster_links WHERE student_id = $1 AND relation = 'self'`, [sibling.row]);
+      assert.equal(link.rowCount, 1);
+      const userId = link.rows[0].user_id as string;
+      const linked = await accountsInC1();
+      await db.pool.query(`DELETE FROM roster_links WHERE student_id = $1 AND relation = 'self'`, [sibling.row]);
+      try {
+        const r = await call(server, "GET", `/homework/${hwTeacher}/submissions`, w.users.t1);
+        assert.equal(r.status, 200, r.text);
+        const row = r.json.submissions.find((s: any) => s.studentId === sibling.row);
+        assert.equal(row.hasAccount, false, "the record has no account now");
+        assert.equal(r.json.trackableCount, linked - 1, "one fewer can hand in");
+        assert.equal(r.json.trackableCount, await cardTrackable(w.users.t1, hwTeacher));
+      } finally {
+        await db.pool.query(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [sibling.row, userId]);
+      }
+      const back = await call(server, "GET", `/homework/${hwTeacher}/submissions`, w.users.t1);
+      assert.equal(back.json.trackableCount, linked);
+      assert.equal(back.json.submissions.find((s: any) => s.studentId === sibling.row).hasAccount, true);
+    });
+
+    it("reports the same flags and total when row-level security is enforced", async () => {
+      const enforcing = await startServer({ databaseUrl: db.url, env: { RLS_ENFORCE: "on", ...s3Env(s3) } });
+      try {
+        const r = await call(enforcing, "GET", `/homework/${hwTeacher}/submissions`, w.users.t1);
+        assert.equal(r.status, 200, r.text);
+        const plain = await call(server, "GET", `/homework/${hwTeacher}/submissions`, w.users.t1);
+        assert.deepEqual(
+          r.json.submissions.map((s: any) => [s.studentId, s.hasAccount]),
+          plain.json.submissions.map((s: any) => [s.studentId, s.hasAccount]),
+          "RLS hides no link from the teacher's own records",
+        );
+        assert.equal(r.json.trackableCount, await accountsInC1());
+        assert.equal(r.json.trackableCount, await cardTrackable(w.users.t1, hwTeacher, enforcing));
+      } finally {
+        await enforcing.stop();
+      }
+    });
+
     it("opens one student's project with signed URLs; a draft, a stranger's student and a bad id are one 404", async () => {
       const ok = await call(server, "GET", `/homework/${hwTeacher}/submissions/${w.students.sA1}`, w.users.t1);
       assert.equal(ok.status, 200, ok.text);
@@ -1874,6 +1949,243 @@ describeDb("homework project submissions over HTTP, against a real database", ()
       }
       assert.equal(await subRow(hw, s.row), undefined, "the project is cleared");
       assert.equal(await ticked(hw, s.row), false, "and so is the tick the hand-in wrote");
+    });
+  });
+
+  describe("the project switch locks once any student has started (PATCH /homework/:id)", () => {
+    // The owner's rule, as refined by the Ruling block below: once any completion tick or any submission that HOLDS
+    // WORK (a photo or a note) exists for the homework, a PATCH that CHANGES
+    // requiresSubmission answers 409 submission_locked. A DRAFT with work counts, and the teacher cannot see a draft (row-level
+    // security), so the check reads on the owner connection. The same value is always allowed; a PATCH that also
+    // changes other fields is refused as a whole.
+    const patch = (on: TestServer, id: string, body: unknown, user: string = w.users.t1) => call(on, "PATCH", `/homework/${id}`, user, body);
+    const listItem = async (on: TestServer, id: string) => {
+      const r = await call(on, "GET", `/classes/${w.classes.c1}/homework`, w.users.t1);
+      assert.equal(r.status, 200, r.text);
+      const item = (r.json.homework as any[]).find(x => x.id === id);
+      assert.ok(item, "the homework is listed");
+      return item;
+    };
+    const stored = async (id: string) =>
+      (await db.pool.query(`SELECT title, requires_submission FROM homework WHERE id = $1`, [id])).rows[0] as { title: string; requires_submission: boolean };
+    const uploadOne = (on: TestServer, user: string, hw: string) =>
+      call(on, "POST", `/student/homework/${hw}/submission/photos`, user, photoBody("image/jpeg", JPEG));
+
+    it("a fresh homework flips freely, and says it is not locked", async () => {
+      const hw = await insertHomework("lock-fresh", "5 days", false);
+      for (const value of [true, false, true]) {
+        const r = await patch(server, hw, { requiresSubmission: value });
+        assert.equal(r.status, 200, r.text);
+        assert.equal(r.json.homework.requiresSubmission, value);
+        assert.equal(r.json.homework.requiresSubmissionLocked, false);
+        assert.equal((await listItem(server, hw)).requiresSubmissionLocked, false);
+      }
+    });
+
+    it("a completion tick locks it: 409 submission_locked, the row is unchanged, and the list says locked", async () => {
+      const hw = await insertHomework("lock-ticked", "5 days", false);
+      const tick = await call(server, "PUT", `/student/homework/${hw}/done`, w.users.studentA);
+      assert.equal(tick.status, 200, tick.text);
+      const r = await patch(server, hw, { requiresSubmission: true });
+      assert.equal(r.status, 409, r.text);
+      assert.equal(r.json.code, "submission_locked");
+      assert.equal(typeof r.json.error, "string");
+      assert.equal((await stored(hw)).requires_submission, false, "nothing was written");
+      const item = await listItem(server, hw);
+      assert.equal(item.requiresSubmission, false);
+      assert.equal(item.requiresSubmissionLocked, true);
+    });
+
+    it("a DRAFT locks it, though the teacher cannot see one", async () => {
+      const hw = await insertHomework("lock-draft", "5 days", true);
+      assert.equal((await listItem(server, hw)).requiresSubmissionLocked, false, "nothing started yet");
+      const up = await uploadOne(server, w.users.studentA, hw);
+      assert.equal(up.status, 201, up.text);
+      const row = await db.pool.query(`SELECT submitted_at FROM homework_submissions WHERE homework_id = $1`, [hw]);
+      assert.equal(row.rowCount, 1);
+      assert.equal(row.rows[0].submitted_at, null, "it is a draft");
+      assert.equal((await call(server, "GET", `/homework/${hw}/submissions`, w.users.t1)).json.submittedCount, 0, "and the teacher counts none");
+
+      const r = await patch(server, hw, { requiresSubmission: false });
+      assert.equal(r.status, 409, r.text);
+      assert.equal(r.json.code, "submission_locked");
+      assert.equal((await stored(hw)).requires_submission, true);
+      assert.equal((await listItem(server, hw)).requiresSubmissionLocked, true);
+    });
+
+    it("the same value is always allowed, locked or not", async () => {
+      const hw = await insertHomework("lock-same", "5 days", true);
+      assert.equal((await uploadOne(server, w.users.studentA, hw)).status, 201);
+      const same = await patch(server, hw, { requiresSubmission: true });
+      assert.equal(same.status, 200, same.text);
+      assert.equal(same.json.homework.requiresSubmission, true);
+      assert.equal(same.json.homework.requiresSubmissionLocked, true, "the answer still says it is locked");
+      // The same value together with another field is just that field's edit.
+      const withTitle = await patch(server, hw, { requiresSubmission: true, title: "lock-same-renamed" });
+      assert.equal(withTitle.status, 200, withTitle.text);
+      assert.equal((await stored(hw)).title, "lock-same-renamed");
+      // Other fields alone are never blocked by the lock.
+      const titleOnly = await patch(server, hw, { title: "lock-same-again" });
+      assert.equal(titleOnly.status, 200, titleOnly.text);
+    });
+
+    it("a PATCH that changes another field AND flips the locked flag is refused as a whole", async () => {
+      const hw = await insertHomework("lock-whole", "5 days", false);
+      assert.equal((await call(server, "PUT", `/student/homework/${hw}/done`, w.users.studentA)).status, 200);
+      const r = await patch(server, hw, { title: "should-not-apply", instructions: "nor this", requiresSubmission: true });
+      assert.equal(r.status, 409, r.text);
+      assert.equal(r.json.code, "submission_locked");
+      const row = (await db.pool.query(`SELECT title, instructions, requires_submission FROM homework WHERE id = $1`, [hw])).rows[0];
+      assert.equal(row.title, "lock-whole", "the title was not applied");
+      assert.equal(row.instructions, "", "nor the instructions");
+      assert.equal(row.requires_submission, false);
+    });
+
+    it("another teacher's homework is the existing 404, never a 409", async () => {
+      const hw = await insertHomework("lock-foreign", "5 days", false);
+      assert.equal((await call(server, "PUT", `/student/homework/${hw}/done`, w.users.studentA)).status, 200);
+      const r = await patch(server, hw, { requiresSubmission: true }, w.users.t2);
+      assert.equal(r.status, 404, r.text);
+      assert.equal(r.json.code, undefined);
+    });
+
+    it("the teacher clearing the only submission opens the lock again", async () => {
+      const hw = await insertHomework("lock-clear", "5 days", true);
+      assert.equal((await uploadOne(server, w.users.studentA, hw)).status, 201);
+      assert.equal((await patch(server, hw, { requiresSubmission: false })).status, 409);
+      const cleared = await call(server, "DELETE", `/homework/${hw}/submissions/${w.students.sA1}`, w.users.t1);
+      assert.equal(cleared.status, 200, cleared.text);
+      assert.equal((await listItem(server, hw)).requiresSubmissionLocked, false);
+      const off = await patch(server, hw, { requiresSubmission: false });
+      assert.equal(off.status, 200, off.text);
+      assert.equal(off.json.homework.requiresSubmission, false);
+    });
+
+    // Ruling (refines the owner's rule): a submission row counts only if it HOLDS WORK — a photo or a non-blank note.
+    // A draft the student emptied again is invisible to everyone and strands nothing, so it must not keep the switch
+    // locked for good. A tick still locks (see above).
+    describe("an emptied draft does not lock; a draft that holds a photo or a note does", () => {
+      const putNote = (on: TestServer, user: string, hw: string, note: string) =>
+        call(on, "PUT", `/student/homework/${hw}/submission`, user, { note });
+      const rowCount = async (hw: string) => (await db.pool.query(`SELECT 1 FROM homework_submissions WHERE homework_id = $1`, [hw])).rowCount;
+
+      it("a photo uploaded and then deleted leaves an empty row that does not lock", async () => {
+        const hw = await insertHomework("lock-emptied-photo", "5 days", true);
+        const up = await uploadOne(server, w.users.studentA, hw);
+        assert.equal(up.status, 201, up.text);
+        assert.equal((await listItem(server, hw)).requiresSubmissionLocked, true, "while the photo is there");
+        const del = await call(server, "DELETE", `/student/homework/${hw}/submission/photos/${up.json.photo.id}`, w.users.studentA);
+        assert.equal(del.status, 200, del.text);
+        assert.equal(await rowCount(hw), 1, "the empty row is still there");
+        assert.equal((await listItem(server, hw)).requiresSubmissionLocked, false);
+        const off = await patch(server, hw, { requiresSubmission: false });
+        assert.equal(off.status, 200, off.text);
+        assert.equal(off.json.homework.requiresSubmission, false);
+      });
+
+      it("a note-only draft locks", async () => {
+        const hw = await insertHomework("lock-note-only", "5 days", true);
+        assert.equal((await putNote(server, w.users.studentA, hw, "ملاحظة")).status, 200);
+        assert.equal((await listItem(server, hw)).requiresSubmissionLocked, true);
+        const off = await patch(server, hw, { requiresSubmission: false });
+        assert.equal(off.status, 409, off.text);
+        assert.equal(off.json.code, "submission_locked");
+      });
+
+      it("a note saved and then cleared (no photos) does not lock", async () => {
+        const hw = await insertHomework("lock-note-cleared", "5 days", true);
+        assert.equal((await putNote(server, w.users.studentA, hw, "ملاحظة")).status, 200);
+        const cleared = await putNote(server, w.users.studentA, hw, "   ");
+        assert.equal(cleared.status, 200, cleared.text);
+        assert.equal(await rowCount(hw), 1);
+        assert.equal((await listItem(server, hw)).requiresSubmissionLocked, false);
+        assert.equal((await patch(server, hw, { requiresSubmission: false })).status, 200);
+      });
+
+      it("a draft that still holds a photo locks, even with a blank note", async () => {
+        const hw = await insertHomework("lock-photo-kept", "5 days", true);
+        const a = await uploadOne(server, w.users.studentA, hw);
+        const b = await uploadOne(server, w.users.studentA, hw);
+        assert.equal(a.status, 201);
+        assert.equal(b.status, 201);
+        assert.equal((await call(server, "DELETE", `/student/homework/${hw}/submission/photos/${a.json.photo.id}`, w.users.studentA)).status, 200);
+        assert.equal((await listItem(server, hw)).requiresSubmissionLocked, true);
+        assert.equal((await patch(server, hw, { requiresSubmission: false })).status, 409);
+      });
+
+      it("a tick still locks next to an empty row", async () => {
+        const hw = await insertHomework("lock-empty-plus-tick", "5 days", true);
+        await db.pool.query(`INSERT INTO homework_submissions (homework_id, student_id, author_user_id) VALUES ($1, $2, $3)`, [hw, w.students.sA1, w.users.studentA]);
+        await db.pool.query(`INSERT INTO homework_completions (homework_id, student_id) VALUES ($1, $2)`, [hw, w.students.sA1]);
+        assert.equal((await listItem(server, hw)).requiresSubmissionLocked, true);
+        assert.equal((await patch(server, hw, { requiresSubmission: false })).status, 409);
+      });
+
+      it("holds with row-level security enforced", async () => {
+        const hwEmpty = await insertHomework("lock-rls-emptied", "5 days", true);
+        const hwNote = await insertHomework("lock-rls-note", "5 days", true);
+        const enforcing = await startServer({ databaseUrl: db.url, env: { RLS_ENFORCE: "on", ...s3Env(s3) } });
+        try {
+          const up = await uploadOne(enforcing, w.users.studentA, hwEmpty);
+          assert.equal(up.status, 201, up.text);
+          assert.equal((await call(enforcing, "DELETE", `/student/homework/${hwEmpty}/submission/photos/${up.json.photo.id}`, w.users.studentA)).status, 200);
+          assert.equal((await putNote(enforcing, w.users.studentA, hwNote, "ملاحظة")).status, 200);
+          assert.equal((await listItem(enforcing, hwEmpty)).requiresSubmissionLocked, false);
+          assert.equal((await listItem(enforcing, hwNote)).requiresSubmissionLocked, true);
+          assert.equal((await patch(enforcing, hwEmpty, { requiresSubmission: false })).status, 200);
+          assert.equal((await patch(enforcing, hwNote, { requiresSubmission: false })).status, 409);
+        } finally {
+          await enforcing.stop();
+        }
+      });
+    });
+
+    it("the list computes the lock for every item at once, each from its own homework", async () => {
+      const none = await insertHomework("lock-list-none", "5 days", true);
+      const ticked = await insertHomework("lock-list-ticked", "5 days", false);
+      const drafted = await insertHomework("lock-list-drafted", "5 days", true);
+      await db.pool.query(`INSERT INTO homework_completions (homework_id, student_id) VALUES ($1, $2)`, [ticked, w.students.sA1]);
+      assert.equal((await uploadOne(server, w.users.studentA, drafted)).status, 201);
+      const r = await call(server, "GET", `/classes/${w.classes.c1}/homework`, w.users.t1);
+      assert.equal(r.status, 200, r.text);
+      const lockOf = (id: string) => (r.json.homework as any[]).find(x => x.id === id).requiresSubmissionLocked;
+      assert.deepEqual([lockOf(none), lockOf(ticked), lockOf(drafted)], [false, true, true]);
+      for (const item of r.json.homework as any[]) assert.equal(typeof item.requiresSubmissionLocked, "boolean");
+    });
+
+    it("holds with row-level security enforced: a draft the teacher cannot read still locks, and nothing is half-applied", async () => {
+      const user = (await db.pool.query(`INSERT INTO users (first_name, last_name, role) VALUES ('Lock', 'R', 'student') RETURNING id`)).rows[0].id as string;
+      const row = (await db.pool.query(`INSERT INTO students (teacher_id, display_name) VALUES ($1, 'قفل') RETURNING id`, [w.users.t1])).rows[0].id as string;
+      await db.pool.query(`INSERT INTO class_memberships (class_group_id, student_id) VALUES ($1, $2)`, [w.classes.c1, row]);
+      await db.pool.query(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [row, user]);
+      const hwDraft = await insertHomework("lock-rls-draft", "5 days", true);
+      const hwTick = await insertHomework("lock-rls-tick", "5 days", false);
+      const hwFresh = await insertHomework("lock-rls-fresh", "5 days", false);
+      const enforcing = await startServer({ databaseUrl: db.url, env: { RLS_ENFORCE: "on", ...s3Env(s3) } });
+      try {
+        assert.equal((await uploadOne(enforcing, user, hwDraft)).status, 201);
+        assert.equal((await call(enforcing, "PUT", `/student/homework/${hwTick}/done`, user)).status, 200);
+
+        const seen = await call(enforcing, "GET", `/homework/${hwDraft}/submissions`, w.users.t1);
+        assert.equal(seen.json.submissions.find((s: any) => s.studentId === row).status, "none", "the teacher sees no draft");
+
+        const off = await patch(enforcing, hwDraft, { requiresSubmission: false });
+        assert.equal(off.status, 409, off.text);
+        assert.equal(off.json.code, "submission_locked");
+        assert.equal((await stored(hwDraft)).requires_submission, true);
+        const on = await patch(enforcing, hwTick, { title: "no", requiresSubmission: true });
+        assert.equal(on.status, 409, on.text);
+        assert.equal((await stored(hwTick)).title, "lock-rls-tick");
+        assert.equal((await listItem(enforcing, hwDraft)).requiresSubmissionLocked, true);
+        assert.equal((await listItem(enforcing, hwTick)).requiresSubmissionLocked, true);
+        assert.equal((await listItem(enforcing, hwFresh)).requiresSubmissionLocked, false);
+
+        const free = await patch(enforcing, hwFresh, { requiresSubmission: true });
+        assert.equal(free.status, 200, free.text);
+        assert.equal(free.json.homework.requiresSubmissionLocked, false);
+      } finally {
+        await enforcing.stop();
+      }
     });
   });
 
