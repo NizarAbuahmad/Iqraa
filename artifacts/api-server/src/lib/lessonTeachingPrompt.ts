@@ -85,6 +85,13 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي لهذا ال�
    - "icon": اسم أيقونة واحد من: ${DECK_ICON_NAMES.join(", ")}.
    - "chart": {"kind":"chart","chartType":"bar","categories":[..],"values":[..]} فقط من أرقام واردة في محتوى الكتاب أعلاه. لا تخترع أرقامًا أبدًا، ولا تجمع "chart" مع "shape".
    - "photo": عبارة بحث إنجليزية من ٢-٥ كلمات لمشهد حقيقي (مكان، تجربة، ظاهرة)، لا لقاعدة رياضية؛ في فكرتين على الأكثر.
+14. الدقة قبل الإرجاع — يقرأ هذا الشرحَ طالبٌ وحده، فلا أحد يصحّح خطأه:
+   - "answer" في المثال والتدريب هو الناتج النهائي محسوبًا ومبسّطًا: عدد بوحدته، أو الأزواج المرتبة نفسها، أو العبارة بعد التبسيط. لا شرطة «—»، ولا وصف للطريقة («الحل هو نقطتا التقاطع»)، ولا عبارة لم تُحسب («63 × sin 30°» بل «31.5 cm²»).
+   - تحقّق من كل إجابة: عوّضها في المسألة (في كل معادلة من النظام) وأعد كل عملية حسابية. إن لم تتحقق فغيّر أرقام المسألة لا الإجابة، واختر أرقامًا تعطي ناتجًا نظيفًا (عددًا صحيحًا أو كسرًا بسيطًا).
+   - كل قاعدة عامة في "points" تصحّ في كل الحالات، ومنها القيم السالبة؛ وإن كانت تصحّ بشرط فاذكر الشرط.
+   - استعمل رموز الكتاب: في المثلث ABC الضلع a يقابل الزاوية A، فقانون جيب التمام c^2 = a^2 + b^2 - 2ab cos C.
+   - «معمل» أو «تجربة استهلالية» يسبق الدروس التي يمهّد لها: مثاله وتدريبه مما يفعله النشاط نفسه، لا مهارة من درس لاحق.
+   - إن طلبت نتاجات الدرس حسابًا فالمثال والتدريب حساب من هذا النوع، لا سؤال وصفي.
 
 أعد JSON بهذا الشكل فقط:
 {
@@ -141,6 +148,13 @@ Mandatory rules:
    - "icon": one icon name from: ${DECK_ICON_NAMES.join(", ")}.
    - "chart": {"kind":"chart","chartType":"bar","categories":[..],"values":[..]} only from figures in the textbook content above; never invent figures, and never put "chart" with "shape".
    - "photo": a 2-5 word English search phrase for a real scene (a place, an experiment, a phenomenon), never for a maths rule; on two concepts at most.
+14. Accuracy before you return — a student reads this explanation alone, with nobody to catch a mistake:
+   - "answer" in the worked example and the practice is the final result, worked out and simplified: a number with its unit, the ordered pairs themselves, or the simplified expression. Never a dash "—", never a description of the method ("the solution is the intersection points"), never an unevaluated expression (not "63 × sin 30°" but "31.5 cm²").
+   - Check every answer: substitute it back into the problem (into every equation of a system) and redo every calculation. If it does not check, change the problem's numbers, not the answer, and pick numbers that give a clean result (a whole number or a simple fraction).
+   - Every general rule in "points" holds in every case, including negative values; if it holds only under a condition, state the condition.
+   - Use the book's notation: in triangle ABC side a is opposite angle A, so the law of cosines is c^2 = a^2 + b^2 - 2ab cos C.
+   - A lab or an opening experiment comes before the lessons it leads into: its example and practice use what the activity itself does, never a skill from a later lesson.
+   - If the lesson's outcomes ask for a calculation, the example and the practice are calculations of that kind, not a descriptive question.
 
 Return only JSON in this shape:
 {

@@ -920,6 +920,12 @@ describe('usableTeaching', () => {
     assert.ok(t.hook && t.workedExample && t.practice);
   });
 
+  it('treats a placeholder answer as no answer (pregen review, 2026-11-01)', () => {
+    const t = usableTeaching({ ...TEACHING, workedExample: { ...TEACHING.workedExample, answer: '—' }, practice: { ...TEACHING.practice, answer: '…' } });
+    assert.equal(t.workedExample, null);
+    assert.equal(t.practice?.answer, '');
+  });
+
   it('drops a concept with no title or no points', () => {
     const t = usableTeaching({ concepts: [{ title: '', points: ['x'] }, { title: 'فكرة', points: [' '] }] });
     assert.deepEqual(t.concepts, []);

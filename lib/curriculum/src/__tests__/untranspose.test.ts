@@ -229,6 +229,20 @@ describe('repairLigatureWord', () => {
     assert.equal(repairLigatureWord('العالقة'), 'العالقة');
   });
 
+  it('repairs a curriculum term the OCR books never spelled, from the curated list', () => {
+    // «مولات» (moles) is the core term of the chemistry calculations unit. No
+    // OCR book uses it twice, so the generated list never licensed the repair:
+    // chem-s2 carried «موالت» 50+ times, and a model given those pages wrote
+    // «موالت» to students (pregen review, 2026-11-01).
+    assert.equal(repairLigatureWord('موالت'), 'مولات');
+    assert.equal(repairLigatureWord('الموالت'), 'المولات');
+    assert.equal(repairLigatureWord('بالموالت'), 'بالمولات');
+    assert.equal(repairLigatureWord('موالته'), 'مولاته');
+    assert.equal(repairLigatureWord('موالتها'), 'مولاتها');
+    // A tatweel is a mark and travels with its letter.
+    assert.equal(repairLigatureWord('موالتـه'), 'مولاتـه');
+  });
+
   it('leaves a word the OCR books also spell that way', () => {
     // The block half of the rule. Every one of these is a word the books
     // meant; without it «مثال» alone is corrupted 651 times.
