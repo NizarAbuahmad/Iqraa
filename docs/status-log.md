@@ -10,6 +10,65 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## /play: «كيف تُكتب؟» — a spelling game built on the existing spelling bank — 2026-11-01
+
+A seventeenth /play game (route `/play/spelling`, "Spell It Right", Grades 2–7,
+subject Arabic in the hub filter, accent `#78350F`). The tile names a spelling
+rule, e.g. «التاء المربوطة والهاء في آخر الكلمة»; the player picks the correct
+spelling of one word among three or four, and the revealed answer shows the
+vowelled word and the rule.
+
+- **No spelling is written for this game.** Every key comes from
+  `lib/arabic-spelling` (`SPELLING_RULES`, 19 rules, 174 hand-written words with
+  the misspellings pupils really write, anchored to the Arabic books' writing
+  lessons). `services/publicGames/spelling.ts` asks the bank's own
+  `takeSpellingItems(rule, 2, { kinds: ['choose'] })` for the choice questions, so
+  the distractors and the rule-specific swaps are the bank's, not a copy. The bank
+  is unchanged (a `lib/` edit would also deploy the API).
+- **Options are shown without vowel marks** (`stripMarks`: U+064B–065F and U+0670,
+  a test pins that the Arabic-Indic digits are untouched). The bank stores the
+  correct spelling vowelled and its misspellings bare, so showing them as stored
+  would let a child pick the one with the marks. The explanation shows the
+  vowelled form.
+- **A cross-rule ambiguity in the bank, worked around here, not fixed.** The bank
+  checks a wrong option against its own rule's words only. «دفء» is a listed
+  misspelling of «دُفْئًا» (rule `hamza-mutarrafa-tanwin-fath`) and is also the
+  correct «دُفْء» of rule `hamza-mutarrafa`, so a child could rightly choose it and
+  be marked wrong. The game drops any question that offers a spelling that is
+  correct anywhere in the bank. **The assessment generator
+  (`takeSpellingItems` used by worksheets and evaluations) has the same latent
+  problem** — a choice question for «دُفْئًا» offers «دفء» with no sentence to
+  settle it. Not fixed here; it is a data change in the bank and deserves its own
+  PR (it deploys the API).
+- **Rounds:** 8 words, no word twice, at most 2 from one rule
+  (`SPELLING_PER_RULE`). الألف الفارقة makes no choice question in the bank (one
+  plausible misspelling per word), so it never appears; at least 15 of the 19 rules
+  do in 400 seeded rounds.
+- **Wiring:** `gradeBands` (ids, [[2, 7]]), `hubFilter` subject, AR + EN strings,
+  route, hub card, `gameAccents` / `gameAmber` source lists, `routeGating`, the
+  app-help `tool:games` phrases («الإملاء», «كيف تكتب», "arabic spelling", "spell it
+  right" — not bare "spelling", which would also catch the English corner).
+- **Verified:** `playGameSpelling.test.ts` (8 tests over 150 seeded rounds per
+  language: one correct option and 3–4 unique Arabic options, the marked answer is
+  a bank word of the named rule and no other option is a bank-correct spelling, no
+  option carries a mark, distinct words and the per-rule cap, the explanation
+  carries the vowelled word and the rule name, determinism, rule coverage); the
+  accent, amber, routing, help, design-scale, corner-theme and hub-filter tests;
+  typecheck; the mobile suite. In Chromium against the dev server: the question, a
+  right and a wrong answer, and the reveal at 390 px, 320 px and 1280 px, Arabic
+  and English, light and dark, no console errors; the hub filter shows it under
+  Arabic (3 games) and hides it for Grade 1 and Grade 8.
+- **Not verified / limits.** The short Arabic strings (title, description, prompt,
+  explanation lead-in) were read by me, not run through the `arabic-copy-reviewer`
+  skill. A teacher has not read the questions: the keys are the bank's, whose own
+  tests check its structure but a human read of 174 words is still the real check.
+  The rule-name tile is large and wraps to two lines on a phone for the longer
+  names. The tile text in dark mode is the shared `TextQuizGame` ink
+  (`readableOn(accent, card)`), dimmer than the other tiles for a brown accent.
+  Nothing was run on a native build. ض/ظ is not in the game: the curriculum rules
+  do not teach it and the bank has no key for it; it would be added to the bank
+  first, by hand.
+
 ## Homework project submission — teacher screens — 2026-10-31
 
 Phase 3 of 3: the teacher's side of homework projects. A teacher can now make a homework a project with a
