@@ -10,6 +10,36 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Admin daily activity — new vs returning — 2026-11-01
+
+`GET /admin/daily-activity?days=30` (1–90, default 30): for each day, how many people were active, how
+many of those were new and how many returning, plus accounts created that day. System admin only (the
+numbers span every school); a school admin gets 403. Oldest day first, quiet days zero-filled.
+**No schema change, no migration, no native change; API only** — a merge deploys `iqraa-api` and nothing
+else. No screen reads it yet: the admin dashboard is not wired to it.
+
+**Definitions (the limits worth knowing)**
+
+- *Active* is the same as `activeUsers7d/30d` in `/admin/usage-summary`: the person generated something
+  with AI (`ai_generations`, cache hits included, rows with no user excluded) or saved a material
+  (`saved_materials`). **Opening the app or signing in is not counted** — nothing durable records it
+  (`users.last_login` is only stamped at sign-in, so a person who stays signed in never moves it). For
+  "opened the app" use PostHog (Trends «unique users», Lifecycle for new/returning).
+- *New* = the account was created on that same day; *returning* = created on an earlier day. So a person
+  who signed up on Monday and first used the tool on Wednesday is *returning* on Wednesday. `signups` is
+  accounts created that day, active or not, to make that gap visible.
+- A person is counted once a day however much they did. A day is an Asia/Amman calendar day (fixed UTC+3),
+  not UTC, unlike `signupsByDay` in `/usage-summary`, which is UTC; the two will not line up near midnight.
+
+**Verified:** `src/lib/__tests__/dailyActivity.test.ts` (window parsing, the Amman day, zero-fill, month and
+year boundaries) and `src/routes/__tests__/adminDailyActivity.db.test.ts` against a real Postgres through
+the built bundle (once per person per day across both sources, new vs returning, a null-user generation
+ignored, a signup with no activity shows in `signups` only, 400 on a bad window, 401 and 403). Each was
+seen failing first. Typecheck clean; the whole api-server suite (3319 tests) passes.
+**Not verified:** the query's speed on production volumes (it scans the last `days` days of
+`ai_generations` and `saved_materials`; `ai_generations_created_at_idx` exists, `saved_materials` has no
+`created_at` index), and nothing was run against production data.
+
 ## Homework project submission — teacher screens — 2026-10-31
 
 Phase 3 of 3: the teacher's side of homework projects. A teacher can now make a homework a project with a
