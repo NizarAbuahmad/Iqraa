@@ -10,6 +10,28 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## English audio check: a person listened to the 24 flagged words — 2026-11-01
+
+After the first real run of the speech check (see «English audio check: the first real run, and three kinds of false alarm
+removed»), 24 of the 1,248 word recordings were still flagged. On 2026-10-31 a person listened to all 24, one by one, on a
+listening page (the clips played from the public bucket), and found **every one right: no word recording needs re-voicing.**
+The recogniser had misheard single words (`ball` as «Bald», `shell` as «Show», `a cough` as profanity, `been` as «bin», and so
+on). The guess that the trimming was cutting off first sounds is not supported: those clips were fine.
+
+- **A list of what a person heard.** `lib/curriculum/src/englishAudioReviewed.ts` holds `REVIEWED_BY_EAR`: slug → the ETag of
+  the exact file that was heard (the bucket's MD5, quotes included). In `checkClips`, a `mismatch`, `close` or `silent` verdict on a
+  clip whose current ETag equals the stored one becomes `match` with `reviewed: true`; the report and the console say how many
+  matches rest on a person listening and name them, and the JSON marks each row. A clip that is re-voiced has another ETag, so the entry
+  stops applying and it is judged afresh. Read by own property. Add an entry only after listening to the current file, never to quiet a run.
+- **A small bug fixed on the way:** the British → American spelling lookup read the object's own methods, so a word spelled
+  `constructor` made that clip an `error` row («spelt.split is not a function»). It now checks own properties.
+- **Verified:** `englishAudioCheck.test.ts` and the new `englishAudioReviewed.test.ts` pass (130); `tsc --noEmit` is clean. A real run
+  of the command over the 24 slugs, answered from the cache (0 clips sent to the transcriber, nothing billed), reports 24 matches, all
+  marked as heard by a person, and «nothing needs a listen». The ETags were read from the bucket and equal the MD5 of the files that were listened to.
+- **Not verified / limits:** the check cannot hear accent or stress, so «fine» here means «the right word, clearly said», which is
+  what the listener judged. `been` was judged on whether it sounded like another word (a British weak form is fine). The 3,383 grammar
+  sentences are not voiced yet and were not checked; sentences are easier for a recogniser than single words, so fewer false alarms are
+  expected, but that is a guess.
 ## The exam screen says why generating was refused — 2026-10-31
 
 **Asked:** fix the app's message when generating questions into an exam is refused with a 409, the
