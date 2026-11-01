@@ -71,8 +71,11 @@ describeDb("publishing a dated draft, against a real database", () => {
       // Both queued behind the row we hold, so neither has decided anything yet.
       const deadline = Date.now() + 10_000;
       for (;;) {
+        // Only this file's database: pg_stat_activity lists the whole server, where other
+        // test files run the same query in parallel.
         const r = await db.pool.query<{ n: number }>(
-          `SELECT count(*)::int AS n FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND query ILIKE '%"evaluations"%'`,
+          `SELECT count(*)::int AS n FROM pg_stat_activity
+            WHERE datname = current_database() AND wait_event_type = 'Lock' AND query ILIKE '%"evaluations"%'`,
         );
         if (r.rows[0].n >= 2) break;
         assert.ok(Date.now() < deadline, "timed out waiting for both publishes to queue behind the lock");

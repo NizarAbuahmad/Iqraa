@@ -10,6 +10,25 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## The evaluation race tests wait for their own lock, not any database's — 2026-11-01
+
+`typecheck + tests` failed once on PR #1387, which touched only the app: «does not replace the questions of a
+draft that was published while it was generating» (`evaluationGenerateWrite.db.test.ts`) got the early draft
+check's 409 instead of the locked one's `no_longer_draft`. `main` passed on the same base.
+
+**Cause:** five race tests (`evaluationGenerateWrite`, `evaluationArchiveRace`, `evaluationPublishRace`,
+`evaluationPublishAnnounce`, `evaluationQuestionEditRace` `.db.test.ts`) wait until a session is blocked on
+`"evaluations" … for update` by polling `pg_stat_activity` — which lists the whole Postgres server. Each test file
+has its own database (`testDb.ts`), but the files run in parallel on one server, and the others queue on the same
+query in theirs. So a wait could end on another file's request, and the test would publish before its own request
+reached the lock. `homeworkSubmission.db.test.ts` already filtered by `datname = current_database()`.
+
+**Changed:** all five probes add `datname = current_database()` (run on `db.pool`, i.e. the file's own database,
+whose tests run one at a time). **Verified** against a local Postgres 16: the five files run together in parallel,
+23 tests, 5 runs out of 5 green; and directly — with a `FOR UPDATE` waiter queued in database A, the old probe run
+from database B counted it (1), the new one did not (0), and the new one run from A still did (1). **Not verified:**
+that CI never flakes on these again; the failure was seen once.
+
 ## «اقترح ميزة» asks for an email with a reason, and answers ideas that already exist — 2026-11-01
 
 Follows «ردّ بالبريد» (2026-10-30, #1351): most signed-out ideas in «البريد المجمّع» had no email, so the admin
