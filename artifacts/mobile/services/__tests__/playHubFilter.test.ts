@@ -23,7 +23,7 @@ test('no filter keeps every game in the hub order', () => {
 });
 
 test('subject filter keeps only that subject', () => {
-  assert.deepEqual(ids({ subject: 'arabic', grade: null }), ['antonyms', 'plurals']);
+  assert.deepEqual(ids({ subject: 'arabic', grade: null }), ['antonyms', 'plurals', 'spelling']);
   assert.deepEqual(ids({ subject: 'english', grade: null }), ['english']);
 });
 
