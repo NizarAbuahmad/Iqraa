@@ -4,6 +4,9 @@
 // white band text reads on it.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { SUBJECTS } from '@workspace/curriculum';
 import { CORNERS } from '../../constants/corners.ts';
 import { contrast } from '../readableColor.ts';
@@ -41,6 +44,25 @@ test('a class chip colour reads as text on the light and the dark card', () => {
       assert.ok(contrast(c, card) >= 4.5, `${s.id} on ${card}: ${c} is ${contrast(c, card).toFixed(2)}:1`);
     }
   }
+});
+
+// The chat names the lesson in its heading, on the page ground rather than a
+// card, and marks the lesson strip with an edge bar on the card. Both go through
+// `subjectChipColor`, which only guarantees contrast against the surface it is
+// given — so the surface at each call site is pinned, not just the helper.
+test('a subject colour reads on the page ground in both themes (the chat heading)', () => {
+  for (const s of SUBJECTS) {
+    for (const ground of ['#F6F5F1', '#0A1628']) {
+      const c = subjectChipColor(s.id, ground);
+      assert.ok(contrast(c, ground) >= 4.5, `${s.id} on ${ground}: ${c} is ${contrast(c, ground).toFixed(2)}:1`);
+    }
+  }
+});
+
+test('the chat tints its heading on the page ground and its strip on the card', () => {
+  const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'app', '(tabs)', 'iqra.tsx'), 'utf8');
+  assert.match(src, /introColor=\{[^}]*subjectChipColor\(currentLessonView\.subjectId, colors\.background\)/, 'heading is not coloured against the page ground');
+  assert.match(src, /accent=\{subjectChipColor\(currentLessonView\.subjectId, colors\.card\)\}/, 'strip accent is not coloured against the card');
 });
 
 // The generator screens' lesson card leads with the subject's own drawing.
