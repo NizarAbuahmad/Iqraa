@@ -1337,6 +1337,25 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
   // goes on the slides (not the lesson plan), a student can always go back, and
   // Messages has no voice notes. The nouns end each message, so «كيف أضيف رابط
   // يوتيوب إلى الشريحة» and «كيف أمنع الطلبة من الغش» stay with the model.
+  // The thirty-eighth live pass: the two questions the model answered without the app's own answer.
+  {
+    id: 'class-chat',
+    res: [
+      new RegExp(AR_RULE_LEAD + String.raw`(?:ارسل|ابعث|اكتب|اعمل)\s+(?:تذكير|تنبيه)\s+(?:لل|ل)\s*(?:ال)?(?:طلاب|طلبه)\s+(?:ب|عن)\s*(?:ال)?واجب(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اذكر|ذكر|انبه)\s+(?:ال)?(?:طلاب|طلبه)\s+(?:ب|عن)\s*(?:ال)?واجب(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`(?:send|give|post)\s+(?:the\s+)?(?:students?|class)\s+(?:a\s+)?reminder\s+(?:about|of|for)\s+(?:the\s+)?homework` + EN_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`(?:remind|notify)\s+(?:the\s+)?students\s+(?:about|of)\s+(?:the\s+)?homework` + EN_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`send\s+(?:a\s+)?homework\s+reminder(?:\s+to\s+(?:the\s+)?(?:students|class))?` + EN_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'math-tools',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+)?(?:يدعم|يوجد|فيه|في|يتوفر|متوفر)\s+(?:(?:ال)?تطبيق\s+)?(?:ال)?(?:معادلات|حاسبه|رسم\s+(?:ال)?(?:اقترانات|منحنيات|بياني)|اداه\s+(?:ال)?رياضيات|ادوات\s+(?:ال)?رياضيات)(?:\s+(?:ال)?(?:رياضيه|علميه))?(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:does|can)\s+(?:the\s+)?(?:app|iqrra|iqraa|it)\s+(?:support|have|show|handle|draw|plot)\s+(?:math(?:s|ematical)?\s+)?(?:equations?|formulas?|graphs?|graphing|calculator)(?:\s+\w+){0,2}` + EN_RULE_TAIL),
+      new RegExp(String.raw`^(?:is\s+there|do\s+you\s+have)\s+(?:an?\s+)?(?:math(?:s)?\s+)?(?:calculator|graphing\s+tool|equation\s+(?:editor|support))` + EN_RULE_TAIL),
+    ],
+  },
   // The thirty-sixth live pass: wordings of answers that existed, and two that say what the app does not do.
   {
     id: 'attendance',
