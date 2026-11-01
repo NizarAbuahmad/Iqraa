@@ -39,6 +39,26 @@ meanwhile is told the delete failed, not why, and the screen is not refreshed. A
 tap on Generate still starts a second model call. The four question-edit routes' 409
 still shows the app's generic line.
 
+## A shared homework in the class chat can be tapped, and says so — 2026-11-01
+
+A teacher shared a homework to the class chat and reported that the message «is not clickable» and that students could not
+tell how to see the details. Cause, read from the code (not reproduced on a device): the line is plain text — a chat message
+carries no link or homework id — and the app recognises it by its opening (`isHomeworkChatLine`). The tap that opens it was wired for
+`!isOwn` only, so the teacher's own line did nothing; and for a student the bubble looked like any other message, with no sign it
+opens «المدرسة».
+
+- **Fixed in the app only** (no API, schema or migration change): `homeworkChatTarget` (`services/homework.ts`) says where a homework line
+  goes — the teacher's own line opens the class's homework tab (`/classes/<id>?tab=homework`, which the class screen now reads), a student's
+  opens `/school`. The bubble draws a link row inside it («افتح الواجب» / «عرض الواجب في الشعبة», `MessageBubble`'s `actionLabel`) and the
+  row is `accessibilityRole="link"`.
+- **Pinned** by a new test in `homework.test.ts` (both directions, a thread with no class, an ordinary message).
+- **Verified:** `pnpm run typecheck`, and the mobile suite (9,012 passed, 10 skipped, 0 failed).
+- **Not verified:** the bubble on a device or in the browser (phone, RTL, light and dark) — nobody has looked at it yet.
+- **Known limits:** a student's tap opens the School tab's list, not the one homework (the line carries no id, so it cannot be
+  highlighted; the line itself already prints the title, due date, instructions up to 300 characters and the attachment names). Opening one
+  homework from the chat would need the message to carry its id — a `chat_messages` column, i.e. a migration — and was left out on purpose.
+  The same homework can also appear twice in the chat (the «share» action is repeatable, and it was shared again at 9:47 in the report); not changed.
+
 ## Thirty-eighth live pass: the first run with the model on, 2026-11-01
 
 **Why.** The demo account's $1.00 monthly allowance reset on 2026-11-01 (`ai-usage`: spent $0), so for the first
