@@ -10,6 +10,36 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Thirty-eighth live pass: the first run with the model on, 2026-11-01
+
+**Why.** The demo account's $1.00 monthly allowance reset on 2026-11-01 (`ai-usage`: spent $0), so for the first
+time since the 28th pass the questions the matcher leaves to the model could be seen answered. Eight were run.
+
+**What the model did.** Six were fine: the exam-length question got length advice and invented no timer; the cheating
+question got classroom advice; a cell question and Newton's second law were accurate and short; «how many students in
+Jordan» was politely declined as out of scope. Three were not:
+
+- **A how-to question became a quiz (fixed).** «How do I give students more time for an exam» came back as a Grade 3
+  maths quiz titled «students more time an exam». `artifactFromAsk` (`services/ai/askVocabulary.ts`) lets a question
+  that starts with «how» / «كيف» through when it contains a request verb, and the list included «give», «write» and
+  «prepare», so any how-to sentence with the word *exam* was read as «make me a quiz»: «How do I write good exam
+  questions», «How can I prepare students for the exam» and «كيف أكتب أسئلة امتحان جيدة» did the same. A how-to
+  question is now advice unless it speaks to the assistant («can you», «ممكن», «من فضلك», «please»). Imperatives
+  («give me a quiz on fractions», «give students a quiz…») are unchanged.
+- **«كيف أرسل تذكير للطلاب بالواجب»** got a reminder-text template and no mention of where to send it; it now gets
+  `howClassChat` (post it in the class chat), which is a way to do it that exists. The system's day-before reminder
+  push is **not** claimed: its Cloud Scheduler job is a one-time manual setup this session cannot see.
+- **«هل يدعم التطبيق المعادلات الرياضية»** got «نعم، يدعم التطبيق…» followed by what the *assistant* can write; it now
+  gets `howMathTools` (the maths corner: scientific calculator, function plotter, geometry board, formulas).
+
+**Known and left.** «كيف أعد الطلاب للاختبار» still reads as a quiz request: the verb «أعد» + «اختبار» is also matched by
+`isArtifact`'s own verb-and-noun pattern, and «كيف أعد اختبارا قصيرا» (how do I prepare a short quiz) is a fair request
+for one. Telling the two apart needs the object («الطلاب» vs «اختبارا»), not a keyword.
+
+**Verified.** `askVocabulary.test.ts` (5 how-to questions stay advice, 6 requests stay requests) and `appHelp.test.ts`
+(8 phrasings, 4 near-misses). The 813 historic questions give the same app-help answers (0 changed) and the same
+intent (0 changed). Not seen live yet: re-run the 8 after the deploy, now that the model path can be seen.
+
 ## Grammar sheets stop mentioning pictures in the grades that have none — 2026-11-01
 
 The teacher's sheets `docs/english-grammar-g{N}-sheet.md` (made by `renderGrammarSheet`) told every grade that «True or false»
