@@ -11,6 +11,7 @@ import { artifactFromQuery } from '../ai/teachingAssistant.ts';
 import { buildLessonSuggestions, mergeScopeReply, ordinalChoice, pinLesson } from '../lessonCopilot.ts';
 import { emptyChatSessionMemory } from '../ai/teachingAssistant.ts';
 import { getLessonById } from '../knowledgeBase.ts';
+import { isHowToAdvice } from '../ai/askVocabulary.ts';
 
 const ASKS: Record<string, string[]> = {
   'lesson-plan': [
@@ -185,4 +186,17 @@ describe('a how-to question is advice, not a request for a material', () => {
       assert.equal(artifactFromQuery(q), want);
     });
   }
+});
+
+describe('isHowToAdvice — the one reading of a how-to question the chat shares', () => {
+  it('a how-to question for oneself is advice', () => {
+    for (const q of ['How can I prepare students for the exam', 'How do I give students more time', 'كيف أعد الطلاب للاختبار']) {
+      assert.equal(isHowToAdvice(q), true, q);
+    }
+  });
+  it('a request, or a question that speaks to the assistant, is not', () => {
+    for (const q of ['prepare an exam', 'give me a quiz on fractions', 'How can you make me a quiz please', 'جهّز اختبارا قصيرا']) {
+      assert.equal(isHowToAdvice(q), false, q);
+    }
+  });
 });
