@@ -10,7 +10,6 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-<<<<<<< HEAD
 ## Thirty-eighth live pass: the first run with the model on, 2026-11-01
 
 **Why.** The demo account's $1.00 monthly allowance reset on 2026-11-01 (`ai-usage`: spent $0), so for the first
@@ -40,7 +39,7 @@ for one. Telling the two apart needs the object («الطلاب» vs «اختب�
 **Verified.** `askVocabulary.test.ts` (5 how-to questions stay advice, 6 requests stay requests) and `appHelp.test.ts`
 (8 phrasings, 4 near-misses). The 813 historic questions give the same app-help answers (0 changed) and the same
 intent (0 changed). Not seen live yet: re-run the 8 after the deploy, now that the model path can be seen.
-=======
+
 ## Exam question edits: add, change, remove and the paper grid take the evaluation lock — 2026-11-01
 
 `POST /evaluations/:id/questions`, `PATCH` and `DELETE …/questions/:qid` and
@@ -79,7 +78,6 @@ from these four routes (only the exam screen's Generate button has the dedicated
 «نُشر هذا الاختبار أو حُذف…» line). Archiving (`DELETE /evaluations/:id`) still
 reads then writes without the lock, so it can race a publish. A second tap on
 Generate still starts a second model call. `FOR UPDATE` could be `FOR NO KEY UPDATE`.
->>>>>>> origin/main
 
 ## Grammar sheets stop mentioning pictures in the grades that have none — 2026-11-01
 
