@@ -47,6 +47,276 @@ draft is created. **Android:** `app.json` is 1.6.0 and the installed production 
 so a JS-only change reaches the web on deploy but no installed Android phone until a 1.6.0
 build is installed.
 
+## A DB test's server can no longer answer from another test file's port — 2026-11-01
+
+Also on PR #1387, after the lock-probe fix below: «ends the dead end, with row-level security enforced»
+(`homeworkSubmission.db.test.ts`) got a 401 «User not found» on its first upload, for a student it had inserted a
+moment before. The auth lookup uses `systemDb`, so RLS was not it: the request had reached a server that did not
+have that row.
+
+**Cause:** `startServer` (`test-support/startServer.ts`) picked a port by opening and closing a socket, then started
+the API on it, and called the server ready when `/healthz` answered. The DB test files run in parallel, each with
+its own database; in the gap another file's server could take the same port. This file's server then died on
+"address in use", `/healthz` answered from the other one, and every request reached the other file's database.
+
+**Changed:** the API may take `PORT=0` (the OS picks) only when its parent opened an IPC channel, and it then sends
+`{ listening: port }` (`src/index.ts`). Without a channel `PORT=0` is still refused, as before — Cloud Run never has
+one. `startServer` starts the child with `PORT=0` and the channel, waits for that message (or fails on exit), and
+builds its URL from the port the child reports. Nothing can answer in its place.
+
+**Verified:** the full api-server suite against a local Postgres 16, DB tests included: 3,332 tests, 0 failures, and
+the run exits (the channel is closed after the message). A demonstration against the built bundle: with another
+server already on a port, the old way's `/healthz` answered "ok" while the API exited with code 1; the new way
+reported its own port and answered 200 there; `PORT=0` with no IPC channel exits with «Invalid PORT value».
+**Not verified:** that CI never flakes on these again — it was seen once. `mountOrder.test.ts` keeps its own fixed
+port ranges (8100–8899, outside the OS's ephemeral range) and was left alone.
+
+## The evaluation race tests wait for their own lock, not any database's — 2026-11-01
+
+`typecheck + tests` failed once on PR #1387, which touched only the app: «does not replace the questions of a
+draft that was published while it was generating» (`evaluationGenerateWrite.db.test.ts`) got the early draft
+check's 409 instead of the locked one's `no_longer_draft`. `main` passed on the same base.
+
+**Cause:** five race tests (`evaluationGenerateWrite`, `evaluationArchiveRace`, `evaluationPublishRace`,
+`evaluationPublishAnnounce`, `evaluationQuestionEditRace` `.db.test.ts`) wait until a session is blocked on
+`"evaluations" … for update` by polling `pg_stat_activity` — which lists the whole Postgres server. Each test file
+has its own database (`testDb.ts`), but the files run in parallel on one server, and the others queue on the same
+query in theirs. So a wait could end on another file's request, and the test would publish before its own request
+reached the lock. `homeworkSubmission.db.test.ts` already filtered by `datname = current_database()`.
+
+**Changed:** all five probes add `datname = current_database()` (run on `db.pool`, i.e. the file's own database,
+whose tests run one at a time). **Verified** against a local Postgres 16: the five files run together in parallel,
+23 tests, 5 runs out of 5 green; and directly — with a `FOR UPDATE` waiter queued in database A, the old probe run
+from database B counted it (1), the new one did not (0), and the new one run from A still did (1). **Not verified:**
+that CI never flakes on these again; the failure was seen once.
+
+## «اقترح ميزة» asks for an email with a reason, and answers ideas that already exist — 2026-11-01
+
+Follows «ردّ بالبريد» (2026-10-30, #1351): most signed-out ideas in «البريد المجمّع» had no email, so the admin
+cannot answer them, and one of them — «اريد تصدسر ورقة الى وورد» — asked for Word export, which exists. The form's
+own placeholder was «مثال: أريد تصدير ورقة العمل إلى Word…», an example of a feature already there.
+
+**Changed (`app/suggest-feature.tsx`, `services/i18n.ts`):** the placeholder is now a question with no example
+(«ما الذي تحتاجه، ومتى تحتاجه في يومك؟»). A signed-out visitor sees one line above the email field: «اترك بريدك
+لنردّ عليك ونخبرك إن أضفنا فكرتك. لا نستخدمه لشيء آخر.» — true because broadcasts reach waitlist rows only
+(`pickRecipients` in `lib/siteMail.ts` skips every other kind). After sending, an idea for something «إقرأ» already
+does gets a box under the thank-you, «يمكنك فعل هذا الآن», with the existing answer text (`faqA4` for Word/PDF,
+`howDarkMode` for dark mode). The idea is still sent either way.
+
+**The matcher (`services/existingFeature.ts`) is strict on purpose.** `findAppPlaces` (`appHelp.ts`) was tried
+first and is wrong for ideas: it read «تحضير كل شيء» as the lesson-plan tool and «أريد لعبة عن الكسور» as the games,
+so every idea would have been told it exists. The rules match «وورد» with its clitics («بالوورد», «كوورد»), «Word»
+inside an Arabic message, PDF/docx, English that names Word as a file, and named dark-mode phrases. English "word"
+alone ("word search", "word problems") and Arabic words containing «ورد» («موارد», «ورود», «الوردة») do not match.
+Append a rule when real ideas keep asking for something that exists.
+
+**Verified:** `existingFeature.test.ts` (10 tests: the real idea with its typo, prefixes, Latin Word, PDF/docx,
+English, the "word" and «ورد» misses, dark mode, and ideas that only name a tool); the mobile suite (9,101 pass) and
+the monorepo typecheck; the signed-out screen in a production web build at phone width, in Arabic, light and dark,
+with `/site/ideas` stubbed — the form, the hint, the post body, and the thank-you with the export box. **Not
+verified:** a signed-in teacher's thank-you (same code path after `res.ok`), native Android/iOS layout, and whether
+the hint actually raises the share of ideas with an email — watch «البريد المجمّع» for that.
+
+## Spelling bank: a word whose misspelling is itself a word is dictated, never offered as a choice — 2026-11-01
+
+`lib/arabic-spelling` builds choose, true/false and tap questions that show a
+word's spelling beside its misspellings and **no sentence**. That is only safe
+while every misspelling is a non-word. Where it is a word, the child who picks it
+is right and is marked wrong: «قلم» beside «قلمًا», «رمي» beside «رمى»,
+«أبني» beside «ابني», «أمن» beside «آمن», «يدعوا» beside «يدعو». Found by an
+independent review of the /play spelling game, then measured (see that game's
+entry below). The teacher's «add a spelling dictation» screen
+(`AddDictationModal`) builds these into evaluations, so teachers could ship them.
+
+- **Fixed by exclusion, not by writing sentences.** `SpellingWord.dictationOnly`
+  is a reason string (never a bare flag). A flagged word is never built into a
+  choose, judge or tap item; it is **dictated** instead (the teacher reads it aloud,
+  so nothing is ambiguous). A flagged word that lands on a choice slot in a mixed
+  worksheet becomes a dictation item without moving the rotation, so a rule that is
+  mostly flagged still fills a worksheet; if the teacher asked for no dictation,
+  it is skipped. A rule with no choice-safe words (`hamzat-istifham-ala-wasl`, all 8
+  flagged) gives dictation only.
+- **50 of the bank's 174 words are flagged**, from reading every option each word
+  can show (about 520 spellings, authored plus derived). More than the ~20 I first
+  estimated from the books' text, which cannot find them: the extracted text drops
+  hamzas («إلى» appears as «الى» 54 times) and the real words are often not in the
+  books at all («ينبوع», «أنباء», «عنابر»). Per rule: همزة الوصل 3, الألف الفارقة 5
+  (the plural «يدعوا» is real), همزة المد 6 of 8, الهمزة المتوسطة 2, حروف تنطق ولا
+  تكتب 3, النون الساكنة 4, الهمزة المتطرفة 1, تنوين الفتح 4, الألف اللينة 3, الأفعال
+  الثلاثية 5, المتطرفة مع التنوين 5, ابن 1, همزة الاستفهام 8 (its derived options
+  «استأذنت» / «أستأذنت» are real verbs; only a question sentence picks «آ»). Each
+  carries its reason in `rules.ts`.
+- **A cross-rule check, now bank-wide.** The «never offer another word's answer» set
+  was one rule's words; it is now every correct spelling in the bank. «دفء» (a
+  misspelling of «دُفْئًا») is the correct «دُفْء» of another rule. Tests assert
+  that no unflagged word shows an option that is correct anywhere in the bank.
+- **One data fix.** «ذلك» in `hatha-hathihi` listed «دلك» (a verb) as a misspelling;
+  it now lists «ذالك», the error children make and the one the other rule already
+  uses. This word is not flagged.
+- **Effect on a teacher.** Words that can be asked as a choice question: 150 before,
+  105 now (measured over 200 seeds each; 24 of the 174 never could, having fewer than
+  two misspellings). The loss is uneven: همزة المد 8 → 2, الأفعال الثلاثية 5 → 0,
+  همزة الاستفهام 8 → 0, الألف اللينة 5 → 2, تنوين الفتح 8 → 4, الهمزة المتطرفة مع
+  التنوين 8 → 3, النون الساكنة 8 → 4, حروف تنطق ولا تكتب 8 → 5; the rest lose 0 to 3.
+  Those words are dictated instead, so a worksheet is not shorter: every rule still
+  fills a grade-introducing worksheet with at least 5 questions (the existing test).
+- **Verified:** `choiceSafety.test.ts` (per-rule bank-wide collision check, flags
+  carry a reason, flags counted per rule so adding or removing one is a decision,
+  flagged words never reach choose/judge/tap and still come out as dictation, a
+  fully flagged rule gives dictation); the bank's 250 tests; the API's 116
+  `spellingItems` tests; the /play spelling game's tests; typecheck; the mobile suite.
+  **Deploys the API** (a `lib/` change), no schema or migration.
+- **Not verified / limits — read these.** The flags are one person's reading of
+  Arabic, mine, not a linguist's or a teacher's. Borderline calls go both ways:
+  flagged conservatively: «مسئول» (an accepted variant of «مسؤول»), «الرحمان» (a
+  variant in names); left unflagged because a pupil would not know the word:
+  «أبن», «هده», «يصلى», «نجّى», and «بير» (dialect for a well). The remaining 124
+  words are not proven safe, only read. A sentence per word would let flagged words
+  back into choice questions, but each sentence must rule out the other spelling
+  («أستمع إلى المعلم» is grammatical, so «____ إلى المعلم» does not) and a bad one
+  is a wrong key again. **The rule `alif-tathniya-baad-hamza` is untouched and
+  still open:** it marks «شيآن» / «هواآن» / «ضوآن» correct and «شيئان» / «هواءان» /
+  «ضوءان» wrong, while keeping «بدءان» / «جزءان» correct. By standard spelling
+  «شيئان» is right; I could not check what the Ministry book prints. Its dictation
+  keys have the same problem, so this is not fixed by the flag. It needs a person
+  with the book. The /play game still serves only its five rules; with this change
+  it could widen to the unflagged words of the others, which is a separate step.
+
+## Forty-second pass: a lesson named whole is no longer lost to the picked grade, 2026-11-01
+
+**Found live, on the build that shipped the forty-first pass.** «جهّز ورقة عمل من 4 أسئلة عن حل المعادلة التربيعية بالتحليل» no
+longer asked «أيّ مادة تقصد؟», but made a **Digital Skills, grade 10** worksheet with a note that the topic is not in that book.
+The quiz on «قانون الجيوب» was right (maths). So the bonus turned a clarifying question into a silently wrong paper for this
+ask: it made the hit confident, and the chat's artifact path then did what it always did with a confident hit.
+
+**Cause.** `iqra.tsx` searches the picked grade first (`teachingCtxScope`, the account's grade 10) and uses that result whenever
+it is non-empty. The named lesson is in grade 9, so the grade-10 search returned «تحليل البيانات» (66, one shared word) and won.
+That rule is deliberate («a quiz on fractions» with grade 7 picked means grade 7's fractions); it just had no exception for a
+lesson the message names whole.
+
+**Built.** `namedLessonBeatsGrade(inGrade, all, subjectOf)` in `kbSuggestion.ts`: the whole-KB search is decided by a title no
+other lesson shares (`titleDecides`), the grade's own search is not decided by one, and the grade's best hit is in a **different
+subject** from the named lesson (or there is none). Then the whole-KB result is used. It deliberately does not move a request
+to another grade of the *same* subject: a second live check found that «جهّز واجبا عن محيط الدائرة» with grade 10 picked is
+grade 10 maths, and the only lesson of that name is grade 7's. The first version of this change would have switched it; the
+picked grade is the teacher's class, and only a subject it cannot answer in is overruled. A title that also exists in the picked
+grade makes the whole-KB search contested, so the grade keeps it. Only the artifact path changed (the subject-scoped search
+filters by the named subject already).
+
+**Verified.** `kbTitleCoverage.test.ts` (16 tests, five new): the grade-10 search alone picks Digital Skills; the named grade 9
+maths lesson beats it; grade 9 itself is unchanged; the grade 7 «محيط الدائرة» does not take a grade 10 maths request;
+«تحليل» alone never overrides a grade. Typecheck clean. On the live
+build before this change, the sine-law quiz and the three teaching answers (circle circumference, angle sum, chemical reaction)
+were right. Not seen live after this change yet.
+
+## «ما الجديد»: existing users are told about new features, once, in the app — 2026-11-01
+
+Nothing told someone already using the app that it had changed: the tour is for new
+accounts, the admin broadcast mails the waitlist, and pushes fire only on classroom events.
+Design: `docs/superpowers/specs/2026-10-30-whats-new-design.md`.
+
+- **The list** is `WHATS_NEW` in `artifacts/mobile/services/whatsNew.ts`, newest first: an
+  `id`, the Amman `date` the feature reached users, the `roles`, title and body i18n keys,
+  and an optional `route` for «جرّبها». It ships in the same PR as the feature, so the note
+  reaches people with the same web deploy and OTA update — never before the feature.
+- **The dialog** (`components/whatsNew/WhatsNewHost.tsx`, mounted beside `TourHost`) opens
+  at most once per account per session, on the role's home screen, with the unseen entries
+  for that role, at most three, newest first (any more wait for the next launch). An entry is shown only to an account created **before** its date, only
+  once its day has come, and only while it is at most 45 days old. It waits for the tour's
+  gates (`routeGating.ts`), never opens while a tour runs or a replay is pending, holds back
+  for a young account that has not had its tour, and honours the tour's device off switch
+  (which the e2e sets). Entries are marked seen when the dialog opens
+  (`@iqra_whats_new_seen_v1:<id>`, on the device); a read that fails counts as "all seen".
+  Ids marked seen this session are also held in `services/whatsNewSession.ts`, so a note read
+  on the Profile screen is not offered again on the way back home.
+- **The screen** `/whats-new`, from a new Profile row «ما الجديد», lists every entry for the
+  role and marks them seen. It is in `NON_TEACHER_ROUTES`, so a parent or student is not
+  bounced from it.
+- **Two entries ship with it:** the six new games and the subject / grade filter in «ألعاب
+  إقرأ» (2026-10-30, `/play`), and the tour replay in Profile (2026-10-27) for accounts made
+  before the tour existed.
+- **Events:** `whats_new_shown` (`role`, `count`, `ids`), `whats_new_opened` (`id`,
+  `source`), `whats_new_closed` (`count`).
+- **The rule** (CLAUDE.md, STATUS.md): a change users can see adds an entry, or says in the
+  PR body why it needs none.
+
+**Verified:** `services/__tests__/whatsNew.test.ts` (23 tests: who sees what and when, the
+tour interplay, the session store, and that every real entry has a unique id, a real day,
+keys in both languages, and a route that is a real screen its roles may open); the whole
+mobile suite (8,311 pass, before the session-store fix, which re-ran its own file and
+`designScale`); `pnpm run typecheck`. A code-review pass found the dialog could fire a
+second time with four or more unseen entries, and could repeat notes just read in Profile;
+both are fixed and pinned.
+**Not verified:** the dialog and the screen were not opened in a browser or on a phone — the
+session had no database to sign in against. Check both in `pnpm run dev:mobile:web`, phone
+and desktop, light and dark, RTL, before relying on the look. Seen-state is per device, so a
+teacher on phone and web sees each note twice. «جرّبها» on the games note opens `/play`,
+whose hub has no back button on screen (`hideBack`); Android back and the browser's back
+work.
+
+## Forty-first pass: a lesson named by its whole title now wins the knowledge-base search, 2026-11-01
+
+**Why.** The fortieth pass found `searchKBRanked` ranking the wrong lesson first and left it for its own PR. «جهّز ورقة عمل من 4
+أسئلة عن حل المعادلة التربيعية بالتحليل» was answered «أيّ مادة تقصد؟» with Digital Skills and English on the menu, because
+«تحليل البيانات» (65) beat the lesson the teacher named, «حل المعادلات التربيعية بالتحليل» (26): `scoreField` sums ~10 fields per
+lesson, so one common word hits many of them, while a title that matches every word typed only scores its title field.
+
+**Built.** `searchKBRanked` adds `TITLE_COVERED_BONUS` (45) to a lesson whose title has every significant word in the query
+(two words at least; a one-word title already wins by the exact-substring rule), and marks it `titleCovered`. Only the **most
+specific** covered title counts: a query that is a lesson's whole title also contains the shorter «حوار الفريق», and the first
+version of this rule let four lessons by that name push the named lesson from 1st to 5th (an Arabic debate lesson from 1st to
+40th). Specificity ignores harakat even where the bonus does not (below). Four gates then read it, through one predicate,
+`titleDecides(ranked)` (the top hit's whole title is in the query, it scores ≥ 10, and no other result's title is): 
+`isConfidentKbHit` (so `shouldAskWhichLesson` stops asking), `isConfidentSingleSubjectHit`, `liveChatGrounding` (which no longer
+calls a covered lesson's subject «mixed» because a rival shares one word), and the ambiguity check in `iqra.tsx`
+(`!confidentHit`). Two lessons with the same title (the books repeat 107) are both covered and stay contested, as before.
+
+**Verified.** `kbTitleCoverage.test.ts` (11): the maths lesson ranks first for the topic and for the full worksheet request;
+all four gates treat it as confident; «تحليل البيانات» still wins for itself; «تحليل» alone decides nothing; the vowelled
+grade-3 lesson `groundingTashkeel.test.ts` guards still does not surface; the shadowing case above. Measured before/after on
+every third lesson (1,111) by its own title: top-1 by id 238 → 312, top-1 among same-title lessons 353 → 453, better in 129
+and **worse in none**. On the 813 historic questions 7 first hits changed, all toward the lesson asked about («قانون الجيوب»
+28 → 71 maths, was Newton's laws; «ما محيط الدائرة…» 45 → 78; «ما مجموع زوايا المثلث؟» 39 → 74; «ما هو التفاعل الكيميائي؟» 19 → 64
+chemistry; «كيف أحسب الوسط الحسابي…» 68 → 79; «اشرح لي طريقة حل المعادلة التربيعية بالتحليل» 65 → 71 maths;
+«هل تظهر لي إشعارات القراءة في الرسائل؟» 14 → 55). Typecheck clean. Not seen live yet.
+
+**Limits.** The bonus is blind to harakat across grades on purpose (folding them promoted a grade 8 science lesson over grade
+10 chemistry; `groundingTashkeel.test.ts`), so a vowelled early-grade title still gets none. «الأعداد الأولية» has no lesson,
+so it is still asked about. «اشرح لي تحليل الفرق بين مربعين» still ranks «تحليل البيانات» first: no maths lesson title is
+inside that query.
+
+## Fortieth live pass: app questions the model answered by improvising, 2026-11-01
+
+**Why.** With the model on (allowance reset 2026-11-01), 28 new questions on app.iqrra.com. The six teaching answers
+(difference of squares, the covalent bond, acid vs base, algebraic fractions, element vs compound, uniform motion) were right
+apart from one wrong word and one muddled note (below). The weak spot was app questions the matcher missed: the model answered
+ten of them from nowhere, two with invented steps («كيف أغير صف الطالب» → "look for an edit option and change the grade";
+«كيف أغير كلمة مرور الطالب» → generic steps, "it depends on the system"), the rest with "outside my scope" or a vague "yes".
+
+**Built.** Nine of the ten now reach the app's own answer: `howMoveStudent`, `howFamilyView`, `howInstallApp` (tablet),
+`howChatHistory`, `howHomeworkDone`, `faqA4` (export to Word, print), `faqA5` (add a note to a plan = an item). One new answer,
+`howStudentPassword`: **there is no button for a student's password**; a student who signed up with the link code has a
+*login code* (the teacher issues a new one, `howReissueLoginCode`), one who signed up with an email resets it themselves
+(`howChangePassword`). «بدي اغير صف الطالب» stays with the model on purpose (an existing test pins it: «صف» can be a mark),
+so the move-student rule takes the how-question only.
+
+**Left, and why.** «هل يوجد اختبار تجريبي للطلاب» (ambiguous: a practice test to make, or one students can take).
+
+**Found, not fixed: the knowledge-base search ranks the wrong lesson first.** «جهّز ورقة عمل … عن حل المعادلة التربيعية
+بالتحليل» and the same for primes were answered «أيّ مادة تقصد؟» with a menu that included Digital Skills and English. The
+clarifier is a symptom: `searchKBRanked('حل المعادلة التربيعية بالتحليل')` puts «تحليل البيانات» (digital-literacy) first at 65
+and the exact lesson «حل المعادلات التربيعية بالتحليل» fifth at 26, because `scoreField` sums across ~10 fields per lesson and
+one common word («تحليل») hits many of them, while a title that matches every query word only scores its title field. «الأعداد
+الأولية» has no lesson at all. A title-coverage bonus would fix the first, but it changes how every lesson is grounded
+(`resolveGeneratorGrounding`, the 63-lesson exact-title test), so it needs its own before/after over the picker lessons and the
+historic questions, not a rider on this PR.
+
+**Model answers, two small errors worth knowing.** The acid/base answer wrote «ورقة تباع الشمس» (litmus is «عبّاد الشمس»); the
+uniform-motion answer's teacher note mixes speed and velocity. Neither is something this repo's code produced.
+
+**Verified.** `appHelp.test.ts` (13 phrasings, 4 near-misses, and the exact claim of the new answer). The 813 historic questions
+give the same app-help answers (0 changed). Not seen live yet.
+
 ## Parent screens: «نتائج أبنائي» and the school tab's exams and homework say what they mean — 2026-11-01
 
 A parent reported both screens as confusing. Read against a screenshot of each:

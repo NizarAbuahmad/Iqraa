@@ -207,6 +207,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-11-01 — «ما الجديد»: existing users are told about new features, once, in the app
 - 2026-11-01 — Grammar sheets stop mentioning pictures in the grades that have none
 - 2026-11-01 — Admin daily activity — new vs returning
 - 2026-11-01 — English audio check: a person listened to the 24 flagged words
@@ -241,3 +242,6 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line
   before you rely on it: CLAUDE.md's first rule applies here too.
+- **A change users can see adds a «ما الجديد» entry** to `WHATS_NEW`
+  (`artifacts/mobile/services/whatsNew.ts`), dated the day it merges, or says in the PR body
+  why it needs none.

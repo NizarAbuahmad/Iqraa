@@ -114,6 +114,13 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   app auto-deployed, which is how a bundle once went live against an API without
   the matching route.
   The schema deploys too, as migrations — see *Schema* in that file.
+- **A change users can see adds a «ما الجديد» entry** to `WHATS_NEW` in
+  `artifacts/mobile/services/whatsNew.ts`, in the same PR, dated the day it merges
+  (a later day stays hidden until it comes), or says in the PR body why it needs
+  none. Existing accounts get it once, as a dialog on their home screen; Profile →
+  «ما الجديد» lists them all. Never change a shipped entry's `id` — devices remember
+  it as seen. `whatsNew.test.ts` checks the keys, the date and that the route is
+  one every named role may open.
 - Arabic is the product language; the UI is RTL-first. Compute maths in latin
   `x` and convert to `س` / Arabic digits **only at display time**.
 - `DEMO_MODE = true` in `artifacts/mobile/services/ai/demoMode.ts` mocks all

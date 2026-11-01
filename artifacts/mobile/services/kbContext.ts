@@ -12,6 +12,7 @@ import {
   getLessonById as getKbLessonById,
   getUnitForLesson,
   isConfidentKbHit,
+  titleDecides,
   KB_CONFIDENT_SCORE,
   KB_SUGGEST_SCORE,
   resolveGroundedKbLesson,
@@ -430,6 +431,8 @@ export function detectSubjectAmbiguity(results: KBLesson[]): string[] | null {
  */
 export function isConfidentSingleSubjectHit(ranked: KBScoredLesson[]): boolean {
   if (!isConfidentKbHit(ranked)) return false;
+  // The teacher named the lesson; another subject's shared word is not a rival.
+  if (titleDecides(ranked)) return true;
   const topSubject = getBookForLesson(ranked[0]!.lesson)?.subjectId;
   return !ranked.slice(1).some(r =>
     r.score >= KB_SUGGEST_SCORE
@@ -477,6 +480,7 @@ export function liveChatGrounding(args: {
   const top = ranked[0];
   if (!top || top.score < KB_CONFIDENT_SCORE) return [];
   const topSubject = getBookForLesson(top.lesson)?.subjectId;
+  if (titleDecides(ranked)) return results.filter(l => getBookForLesson(l)?.subjectId === topSubject);
   const mixed = ranked.slice(1).some(r =>
     r.score >= Math.max(KB_SUGGEST_SCORE, top.score * RIVAL_SUBJECT_SHARE)
     && getBookForLesson(r.lesson)?.subjectId !== topSubject,

@@ -59,7 +59,7 @@ import {
   isConfidentSingleSubjectHit,
   liveChatGrounding,
 } from '@/services/kbContext';
-import { KB_SUGGEST_SCORE, shouldAskWhichLesson } from '@/services/kbSuggestion';
+import { KB_SUGGEST_SCORE, namedLessonBeatsGrade, shouldAskWhichLesson } from '@/services/kbSuggestion';
 import { Toast } from '@/components/ui/Toast';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
 import { DEMO_MODE } from '@/services/ai/demoMode';
@@ -2459,7 +2459,9 @@ export default function IqraScreen() {
         || teachingCtx
         || sessionMemory.lessonPin === 'hard',
       );
-      if (!hasHardContext && !liveTeaching && results.length > 0) {
+      // A confident single-subject hit has already settled the subject: a weak
+      // other-subject lesson further down `results` is not a second reading.
+      if (!hasHardContext && !liveTeaching && !confidentHit && results.length > 0) {
         const ambiguousSubjects = detectSubjectAmbiguity(results);
         if (ambiguousSubjects) {
           const clarifyMsg: Message = {
@@ -2708,7 +2710,10 @@ export default function IqraScreen() {
         const topicRankedInGrade = artGradeId
           ? searchKBRanked(topicForArt, lang as 'ar' | 'en', { gradeId: artGradeId })
           : [];
-        const topicRanked = topicRankedInGrade.length ? topicRankedInGrade : topicRankedAll;
+        // …unless the message names a lesson whole in a subject the grade has no answer in.
+        const topicRanked = !namedLessonBeatsGrade(topicRankedInGrade, topicRankedAll, l => getBookForLesson(l)?.subjectId) && topicRankedInGrade.length
+          ? topicRankedInGrade
+          : topicRankedAll;
         const topicConfident = isConfidentSingleSubjectHit(topicRanked);
         // Unit-level asks (الدائرة) often tie several lessons — still prefer that unit
         const topicStrong =

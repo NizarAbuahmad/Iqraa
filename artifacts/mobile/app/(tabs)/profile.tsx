@@ -417,6 +417,15 @@ export default function ProfileScreen() {
           {canReplay ? (
             <SettingRow icon="compass-outline" label={t('tourReplayTitle')} onPress={replay} isRTL={isRTL} colors={colors} />
           ) : null}
+          {canReplay ? (
+            <SettingRow
+              icon="sparkles-outline"
+              label={t('whatsNewTitle')}
+              onPress={() => router.push('/whats-new' as any)}
+              isRTL={isRTL}
+              colors={colors}
+            />
+          ) : null}
           <SettingRow
             icon="bulb-outline"
             label={t('suggestFeature')}

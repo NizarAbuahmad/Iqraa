@@ -170,6 +170,7 @@ const SCREENS: AppPlace[] = [
   { id: 'jordan-only', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howJordanOnly' },
   { id: 'exam-cheat', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howExamCheat' },
   { id: 'exam-schedule', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howExamSchedule' },
+  { id: 'student-password', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howStudentPassword' },
   { id: 'class-size', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howClassSize' },
   { id: 'one-teacher-class', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howOneTeacherClass' },
   { id: 'student-app', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howStudentApp' },
@@ -1337,6 +1338,63 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
   // goes on the slides (not the lesson plan), a student can always go back, and
   // Messages has no voice notes. The nouns end each message, so «كيف أضيف رابط
   // يوتيوب إلى الشريحة» and «كيف أمنع الطلبة من الغش» stay with the model.
+  // The fortieth live pass: app questions the model answered by improvising.
+  {
+    id: 'move-student',
+    res: [
+      // A how-question only: the bare statement «بدي اغير صف الطالب» is pinned as ambiguous («صف» can be a mark).
+      new RegExp(String.raw`^(?:كيف|كيفيه|شلون|ازاي)\s+(?:يمكنني\s+|ممكن\s+|بقدر\s+)?(?:اغير|انقل|بدل|ابدل)\s+(?:ال)?صف\s+(?:ال)?(?:طالب|طلبه)(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`(?:change|switch|update)\s+(?:a\s+|the\s+|my\s+)?student['’]?s?\s+(?:grade|class)(?:\s+\w+){0,2}` + EN_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'student-password',
+    res: [
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اغير|اعيد\s+تعيين|اعيد\s+ضبط|ابدل)\s+(?:كلمه\s+(?:ال)?(?:مرور|سر)|باسورد)\s+(?:(?:لل|ل)\s*)?(?:ال)?(?:طالب|طلبه)(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`(?:change|reset)\s+(?:a\s+|the\s+|my\s+)?student['’]?s?\s+password` + EN_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`(?:change|reset)\s+(?:the\s+)?password\s+(?:of|for)\s+(?:a\s+|the\s+|my\s+)?student` + EN_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'family-view',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+)?(?:يمكن|يستطيع|يقدر)\s+(?:لل|ل)?\s*(?:ال)?(?:اهل|اولياء\s+(?:ال)?امور|ولي\s+(?:ال)?امر|والد\S*)\s+(?:ان\s+)?(?:رؤيه|يرى|يري|يشوف|مشاهده|متابعه)\s+(?:ال)?(?:علامات|نتائج|درجات|واجبات)(?:\s+\S+){0,3}` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'install-app',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+)?(?:يعمل|يشتغل|يفتح)\s+(?:(?:ال)?تطبيق\s+|اقرا\s+)*(?:علي|في|عل|ع)\s*(?:ال)?(?:تابلت|ايباد|لوحي|جهاز\s+لوحي|ايفون|اندرويد|حاسوب|كمبيوتر|لابتوب)(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:does|will|can)\s+(?:the\s+)?(?:app|iqrra|iqraa|it)\s+(?:work|run|open)\s+(?:on|in)\s+(?:an?\s+|my\s+|the\s+)?(?:tablet|ipad|kindle)` + EN_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'chat-history',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+)?(?:تحفظ|يحفظ|بتنحفظ)\s+(?:ال)?(?:محادثات|محادثه|رسائل)(?:\s+(?:مع|ل)\s*(?:ال)?(?:مساعد|اقرا))?` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:are|is)\s+(?:my\s+|the\s+)?(?:chats?|conversations?|messages)\s+(?:with\s+(?:the\s+)?assistant\s+)?(?:saved|stored|kept)` + EN_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'homework-done',
+    res: [
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اعرف|اشوف|اري|ارى|اتابع)\s+(?:من|مين)\s+(?:فتح|قرا|شاف|شاهد|انجز|سلم|حل)\s+(?:ال)?واجب` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:هل\s+)?(?:يمكن|استطيع|اقدر)\s+(?:ان\s+)?(?:معرفه|اعرف)\s+(?:من|مين)\s+(?:انجز|فتح|حل|سلم)\s+(?:ال)?واجب` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'export',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+|كيف\s+)?(?:(?:يمكن|استطيع|اقدر)\s+)?(?:تصدير|اصدر|حفظ|تحميل|تنزيل)\s+(?:ال)?(?:درس|خطه(?:\s+(?:ال)?درس)?|ورقه\s+(?:ال)?عمل|اختبار|نشاط)\s+(?:ك|ب|الي|علي\s+شكل)?\s*(?:ملف\s+)?(?:وورد|word|pdf|بي\s*دي\s*اف)(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:هل\s+)?(?:يمكن|استطيع|اقدر)?\s*(?:طباعه|اطبع)\s+(?:ال)?(?:خطه(?:\s+(?:ال)?درس)?|ورقه\s+(?:ال)?عمل|اختبار|نشاط|واجب)(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'edit-plan',
+    res: [
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اضيف|اكتب|اضع)\s+(?:ال)?ملاحظه\s+(?:ل|علي|في|الي)\s*(?:ال)?خطه\s+(?:ال)?درس` + AR_RULE_TAIL),
+    ],
+  },
   // The thirty-eighth live pass: the two questions the model answered without the app's own answer.
   {
     id: 'class-chat',
