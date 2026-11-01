@@ -10,6 +10,36 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Forty-third live pass: four app questions the model improvised, one with a false «نعم», 2026-11-01
+
+**Why.** Thirty new questions on app.iqrra.com (22 answered well). Eight needed work; this PR takes the five that are ours.
+The worst: «هل يمكن رفع ملف PDF للدرس» was answered «نعم، بالتأكيد. يمكنك رفع ملف PDF هنا». Upload is off
+(`DOCUMENT_UPLOAD_ENABLED = false`, `services/features.ts`) and the app's own answer, `howUploadFile`, says so; the matcher
+missed the wording, so the model answered from nothing. The others got invented steps or a sample letter although the app has
+the real answer:
+
+- «كيف أحذف اختبارا نشرته» → invented a "delete/unpublish button". `howDeleteExam` says: close it first («أغلق الاختبار»), then delete.
+- «كيف أرسل رسالة لأولياء الأمور» → the model wrote a letter. `howParentMessage` is the letter tool and points to «الرسائل».
+- «How do I create a class?» → invented steps. `howAddClass`.
+- «اعطني اختبارا قصيرا عن التفاعلات الكيميائية» asked a grade 10 teacher «كيمياء أم علوم؟» (grade 8 Science has a lesson of that title).
+
+**Built.** New anchored rules in `appHelp.ts` for the upload question (file + a destination: the lesson, the chat, the app), a
+published-exam relative clause on delete («نشرته», «اللي نشرته»; accusative «اختبارا»), the plural «رسالة لأولياء الأمور»
+(English: «message to parents»), and «create/set up a class» (an anchored rule, not a keyword: a first attempt as a keyword
+captured «How can I create a class plan»). «رسالة جماعية…» and «message to **all** parents» keep the broadcast answer; the
+existing tests pinned that and caught my first version. For the subject question, `lessonsTheTeacherTeaches` (`kbContext.ts`)
+narrows the candidates to the grade and subject this teacher teaches (`useTeacherScope().isSubjectShown`) before
+`detectSubjectAmbiguity` runs, and when the question disappears the narrowed list is what the chat grounds on. A teacher
+who has not set up, or who teaches none of them, keeps the old list.
+
+**Verified.** `appHelp.test.ts` (11 wordings, two near-misses, and a test that fails if `DOCUMENT_UPLOAD_ENABLED` is flipped while
+`howUploadFile` still says «غير متاح»); `teacherTaughtLessons.test.ts` (5). The 813 historic questions give the same app-help
+answer before and after (0 changed). Typecheck clean. Not seen live yet.
+
+**Left.** «what is the Pythagorean theorem?» is refused as outside scope in English only (the Arabic version is answered); that is
+the model's wording, not a matcher. «جهّز نشاطا جماعيا عن الأعداد النسبية» offers three grade 7 lessons to a grade 10 teacher; it is
+asking which lesson, which is acceptable.
+
 ## Student «اختباراتي» gets the parent screen's card — 2026-11-01
 
 The parent redesign (see «Parent screens: «نتائج أبنائي» and the school tab's exams and
