@@ -670,6 +670,10 @@ export function allGrammarSpoken(): string[] {
 const MARKER_GLYPH: Record<GrammarMarker, string> = { yes: '✅', no: '❌', boy: '👦', girl: '👧', many: '' };
 
 export function renderGrammarSheet(grade = 1): string {
+  const units = grammarUnitsForGrade(grade);
+  // A grade with no picture or marker anywhere (Grades 5, 9, 10) has no Picture column and no wrong picture:
+  // «True or false» there shows the sentence or its wrong twin.
+  const hasPictures = units.some(u => unitSentences(u).some(s => s.picture || s.falsePicture || s.marker));
   const lines = [
     `# English corner — Grade ${grade} grammar sentences`,
     '',
@@ -679,16 +683,17 @@ export function renderGrammarSheet(grade = 1): string {
     'This is every sentence the grammar activities can show a pupil. A unit is',
     'shown to nobody until a teacher has read its list and it is signed off',
     '(`reviewedBy`). «Choose» shows the right option in bold and the wrong one',
-    'it is offered beside; «True or false» shows the sentence beside its own',
-    'picture, or beside the «wrong picture».',
+    ...(hasPictures
+      ? ['it is offered beside; «True or false» shows the sentence beside its own', 'picture, or beside the «wrong picture».']
+      : ['it is offered beside; «True or false» shows the sentence, or its wrong twin', '(the last column), and the pupil says right or wrong.']),
     '',
   ];
-  const units = grammarUnitsForGrade(grade);
   const hasYesNo = (u: GrammarUnit) => unitSentences(u).some(s => s.yesNo);
   if (units.some(hasYesNo)) {
     lines.push(
-      '«Yes or No» shows the question, the answer it expects and, for «Is it …?», the question the «No»',
-      'item asks about the same picture.',
+      ...(hasPictures
+        ? ['«Yes or No» shows the question, the answer it expects and, for «Is it …?», the question the «No»', 'item asks about the same picture.']
+        : ['«Yes or No» shows the question and the answer it expects.']),
       '',
     );
   }
@@ -699,10 +704,17 @@ export function renderGrammarSheet(grade = 1): string {
       '',
       unit.reviewedBy ? `Reviewed by ${unit.reviewedBy.name}, ${unit.reviewedBy.date}.` : 'Not reviewed yet — shown to nobody.',
       '',
-      hasYesNo(unit)
-        ? '| Sentence | Picture | Choose | True or false: wrong picture | Yes or No |'
-        : '| Sentence | Picture | Choose | True or false: wrong picture |',
-      hasYesNo(unit) ? '|---|---|---|---|---|' : '|---|---|---|---|',
+      ...(hasPictures
+        ? [
+            hasYesNo(unit)
+              ? '| Sentence | Picture | Choose | True or false: wrong picture | Yes or No |'
+              : '| Sentence | Picture | Choose | True or false: wrong picture |',
+            hasYesNo(unit) ? '|---|---|---|---|---|' : '|---|---|---|---|',
+          ]
+        : [
+            hasYesNo(unit) ? '| Sentence | Choose | True or false: wrong sentence | Yes or No |' : '| Sentence | Choose | True or false: wrong sentence |',
+            hasYesNo(unit) ? '|---|---|---|---|' : '|---|---|---|',
+          ]),
     );
     for (const s of unitSentences(unit)) {
       const pic = s.picture
@@ -714,7 +726,12 @@ export function renderGrammarSheet(grade = 1): string {
         : y.kind !== 'match' ? `${y.question} → ${y.answer ? y.yes : y.no}`
           : `${y.question} → ${y.yes}${y.otherQuestion ? `<br>${y.otherQuestion} → ${y.no}` : ''}`;
       const text = s.build?.prompt ? `${s.text} _(Build: ${s.build.text})_` : s.text;
-      lines.push(`| ${text} | ${pic} | ${choose} | ${s.falsePicture ?? (s.claim ? `_${s.claim.falseText}_` : '—')} |${hasYesNo(unit) ? ` ${yesNoText} |` : ''}`);
+      const wrong = s.falsePicture ?? (s.claim ? `_${s.claim.falseText}_` : '—');
+      lines.push(
+        hasPictures
+          ? `| ${text} | ${pic} | ${choose} | ${wrong} |${hasYesNo(unit) ? ` ${yesNoText} |` : ''}`
+          : `| ${text} | ${choose} | ${wrong} |${hasYesNo(unit) ? ` ${yesNoText} |` : ''}`,
+      );
     }
     lines.push('');
   }
