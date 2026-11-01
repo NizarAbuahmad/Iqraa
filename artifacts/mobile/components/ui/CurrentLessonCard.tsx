@@ -80,6 +80,13 @@ type Props = {
    */
   readyLabel?: (done: number, total: number) => string;
   readyInline?: boolean;
+  /**
+   * The lesson's subject colour, drawn as a thin bar on the card's start edge.
+   * The caller makes it readable on `colors.card` (`subjectChipColor`): it is a
+   * mark, not text, but a raw catalog colour still sinks on the dark card.
+   * Omitted, the card is as it was.
+   */
+  accent?: string;
 };
 
 export function CurrentLessonCard({
@@ -103,9 +110,18 @@ export function CurrentLessonCard({
   hideCount = false,
   readyLabel,
   readyInline = false,
+  accent,
 }: Props) {
   const align = isRTL ? 'right' : 'left' as const;
   const rowDir = isRTL ? 'row-reverse' : 'row' as const;
+  // Physical edge, from the same flag as the row direction: `start` follows
+  // I18nManager, which this app does not use to lay out Arabic.
+  const accentBar = accent ? (
+    <View
+      pointerEvents="none"
+      style={[styles.accentBar, isRTL ? { right: 0 } : { left: 0 }, { backgroundColor: accent }]}
+    />
+  ) : null;
 
   const doneCount = lesson.resources.filter(r => r.done).length;
   const totalCount = hideCount ? 0 : lesson.resources.length;
@@ -209,6 +225,7 @@ export function CurrentLessonCard({
           containerStyle,
         ]}
       >
+        {accentBar}
         <View style={[styles.inner, styles.collapsedInner, { flexDirection: rowDir }]}>
           {lead}
           <Pressable
@@ -282,6 +299,7 @@ export function CurrentLessonCard({
 
   return (
     <View style={[styles.wrap, { backgroundColor: colors.card, borderBottomColor: colors.border }, containerStyle]}>
+     {accentBar}
      <View style={styles.inner}>
       <View style={[styles.headerText, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
         <Pressable onPress={onToggleCollapse} style={[styles.headerRow, { flexDirection: rowDir, width: '100%' }]}>
@@ -532,6 +550,7 @@ const styles = StyleSheet.create({
     fontFamily: 'ReadexPro_600SemiBold',
     fontSize: 12,
   },
+  accentBar: { position: 'absolute', top: 0, bottom: 0, width: 4 },
   clearGroup: { alignItems: 'center', gap: 10, flexShrink: 0 },
   clearDivider: { width: StyleSheet.hairlineWidth, height: 18 },
   clearBtn: {
