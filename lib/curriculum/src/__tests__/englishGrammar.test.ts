@@ -132,6 +132,22 @@ test("the committed teacher's sheet is exactly what the generator produces", () 
   assert.equal(committed, renderGrammarSheet(), 'run: pnpm --filter @workspace/curriculum run grammar-sheet');
 });
 
+test("the teacher's sheet speaks of pictures only for a grade that has them", () => {
+  for (const grade of [5, 9, 10]) {
+    const sheet = renderGrammarSheet(grade);
+    // The sentences themselves may say «picture» (I drew a picture); the intro and the table headers may not.
+    const chrome = sheet.split('\n').filter(l => !l.startsWith('| ') || l.startsWith('| Sentence |'));
+    assert.ok(!/picture/i.test(chrome.join('\n')), `Grade ${grade}: the sheet's own text must not mention a picture`);
+    assert.ok(sheet.includes('| Sentence | Choose | True or false: wrong sentence |'), `Grade ${grade}: table header`);
+    assert.ok(sheet.includes('«True or false» shows the sentence, or its wrong twin'), `Grade ${grade}: intro`);
+  }
+  for (const grade of [1, 2, 3, 4]) {
+    const sheet = renderGrammarSheet(grade);
+    assert.ok(sheet.includes('shows the sentence beside its own\npicture, or beside the «wrong picture».'), `Grade ${grade}: intro`);
+    assert.ok(/\| Sentence \| Picture \| Choose \| True or false: wrong picture \|/.test(sheet), `Grade ${grade}: table header`);
+  }
+});
+
 test("the teacher's printable review form lists every sentence once, and the committed copy is current", async () => {
   const { renderGrammarReviewHtml, sentenceCountAr } = await import('../englishGrammarReview.ts');
   const html = renderGrammarReviewHtml();

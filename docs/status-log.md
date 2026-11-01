@@ -10,6 +10,27 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grammar sheets stop mentioning pictures in the grades that have none — 2026-11-01
+
+The teacher's sheets `docs/english-grammar-g{N}-sheet.md` (made by `renderGrammarSheet`) told every grade that «True or false»
+«shows the sentence beside its own picture, or beside the «wrong picture»», and gave every table a «Picture» column and a
+«True or false: wrong picture» column. In Grades 5, 9 and 10 no sentence has a picture or a marker, so the intro was wrong,
+the «Picture» column was a column of dashes, and the last column holds the wrong sentence, not a picture.
+
+- **Fixed in the generator** (`lib/curriculum/src/englishGrammar.ts`): a grade with no picture, wrong picture or marker anywhere
+  now says «True or false» «shows the sentence, or its wrong twin (the last column), and the pupil says right or wrong», has the
+  columns `Sentence | Choose | True or false: wrong sentence` (plus `Yes or No` where the grade has it), and its «Yes or No» line
+  no longer speaks of a picture. Grades 1-4 are byte-identical to before.
+- **Regenerated:** the Grade 5, 9 and 10 sheets only (`pnpm --filter @workspace/curriculum run grammar-sheet`). Every printed review
+  form (`*-review.html`) is unchanged: the form already had no picture column for these grades, so this concerned the Markdown sheets only.
+  The sheets' diffs are large because every table row loses its dash column; no sentence changed.
+- **Pinned** by a new test in `englishGrammar.test.ts`: the sheet's own text (intro and table headers; sentences may say «picture»,
+  as in «I drew a picture») never mentions a picture for Grades 5, 9 and 10, and keeps the picture wording for Grades 1-4. The existing
+  tests that compare each committed sheet with the generator still pass.
+- **Verified:** the curriculum suite (906 tests; the one failure, `r2.test.ts` «R2 helpers are inert, not broken, when unconfigured»,
+  fails here with and without this change) and `tsc --noEmit`. **Not verified:** that every teacher who reads the sheet finds
+  the new wording clearer; no app, API or schema change.
+
 ## Admin daily activity — new vs returning — 2026-11-01
 
 `GET /admin/daily-activity?days=30` (1–90, default 30): for each day, how many people were active, how
