@@ -2710,8 +2710,8 @@ export default function IqraScreen() {
         const topicRankedInGrade = artGradeId
           ? searchKBRanked(topicForArt, lang as 'ar' | 'en', { gradeId: artGradeId })
           : [];
-        // …unless the message names a lesson of another grade whole.
-        const topicRanked = !namedLessonBeatsGrade(topicRankedInGrade, topicRankedAll) && topicRankedInGrade.length
+        // …unless the message names a lesson whole in a subject the grade has no answer in.
+        const topicRanked = !namedLessonBeatsGrade(topicRankedInGrade, topicRankedAll, l => getBookForLesson(l)?.subjectId) && topicRankedInGrade.length
           ? topicRankedInGrade
           : topicRankedAll;
         const topicConfident = isConfidentSingleSubjectHit(topicRanked);
