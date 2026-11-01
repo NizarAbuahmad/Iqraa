@@ -10,6 +10,45 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Exam question edits: add, change, remove and the paper grid take the evaluation lock — 2026-11-01
+
+`POST /evaluations/:id/questions`, `PATCH` and `DELETE …/questions/:qid` and
+`PUT …/questions/paper` checked "is it a draft" from a read made at the top of the
+request, then wrote with no lock and recomputed the total as a separate statement.
+Publish locks the evaluation row and reads the questions under that lock, so a
+question write it did not wait for could land after it had checked and totalled the
+paper. The same four routes, as found:
+
+- an edit after a publish: a question added to, changed in or removed from an exam
+  students are already sitting, under a total publish had fixed;
+- two adds at once read the same highest `order_index` and tied on a position;
+- the paper grid saved twice at once (a retry after the app's timeout) each
+  soft-deleted before the other had inserted, so the paper held the grid twice;
+- a grid whose insert failed had already soft-deleted the old paper: no paper, and a 500;
+- the total was recomputed outside the write, so the last of two overlapping edits
+  could store the other's stale sum.
+
+Now each runs in one transaction behind `FOR UPDATE` on the evaluation row
+(`withLockedDraft` in `routes/evaluations.ts`, the same check generate and publish
+make): status re-read under the lock, archived refused, the position / the
+limit / the total all taken from the paper as the transaction sees it, and any
+throw rolls the whole write back. A draft published, closed or removed meanwhile
+answers `409 { code: "no_longer_draft" }` and nothing is written. `PATCH` reads
+the question under the lock, so its 404 / 400 / 200 answers are unchanged.
+
+**Verified:** `routes/__tests__/evaluationQuestionEditRace.db.test.ts`, 9 tests
+against a real Postgres, run red first (8 of 9 failed for the reasons above, the 4
+publish races by never queueing behind the lock) and green after. The publish races
+hold the row from the test, wait until the request is queued on it, publish as a
+committed writer would, and let go; the overlaps use a trigger that slows the insert.
+Full api-server suite and typecheck green.
+
+**Not verified / still open:** the app shows its generic failure line for this 409
+from these four routes (only the exam screen's Generate button has the dedicated
+«نُشر هذا الاختبار أو حُذف…» line). Archiving (`DELETE /evaluations/:id`) still
+reads then writes without the lock, so it can race a publish. A second tap on
+Generate still starts a second model call. `FOR UPDATE` could be `FOR NO KEY UPDATE`.
+
 ## Grammar sheets stop mentioning pictures in the grades that have none — 2026-11-01
 
 The teacher's sheets `docs/english-grammar-g{N}-sheet.md` (made by `renderGrammarSheet`) told every grade that «True or false»
