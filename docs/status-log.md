@@ -80,6 +80,71 @@ with `/site/ideas` stubbed — the form, the hint, the post body, and the thank-
 verified:** a signed-in teacher's thank-you (same code path after `res.ok`), native Android/iOS layout, and whether
 the hint actually raises the share of ideas with an email — watch «البريد المجمّع» for that.
 
+## Spelling bank: a word whose misspelling is itself a word is dictated, never offered as a choice — 2026-11-01
+
+`lib/arabic-spelling` builds choose, true/false and tap questions that show a
+word's spelling beside its misspellings and **no sentence**. That is only safe
+while every misspelling is a non-word. Where it is a word, the child who picks it
+is right and is marked wrong: «قلم» beside «قلمًا», «رمي» beside «رمى»,
+«أبني» beside «ابني», «أمن» beside «آمن», «يدعوا» beside «يدعو». Found by an
+independent review of the /play spelling game, then measured (see that game's
+entry below). The teacher's «add a spelling dictation» screen
+(`AddDictationModal`) builds these into evaluations, so teachers could ship them.
+
+- **Fixed by exclusion, not by writing sentences.** `SpellingWord.dictationOnly`
+  is a reason string (never a bare flag). A flagged word is never built into a
+  choose, judge or tap item; it is **dictated** instead (the teacher reads it aloud,
+  so nothing is ambiguous). A flagged word that lands on a choice slot in a mixed
+  worksheet becomes a dictation item without moving the rotation, so a rule that is
+  mostly flagged still fills a worksheet; if the teacher asked for no dictation,
+  it is skipped. A rule with no choice-safe words (`hamzat-istifham-ala-wasl`, all 8
+  flagged) gives dictation only.
+- **50 of the bank's 174 words are flagged**, from reading every option each word
+  can show (about 520 spellings, authored plus derived). More than the ~20 I first
+  estimated from the books' text, which cannot find them: the extracted text drops
+  hamzas («إلى» appears as «الى» 54 times) and the real words are often not in the
+  books at all («ينبوع», «أنباء», «عنابر»). Per rule: همزة الوصل 3, الألف الفارقة 5
+  (the plural «يدعوا» is real), همزة المد 6 of 8, الهمزة المتوسطة 2, حروف تنطق ولا
+  تكتب 3, النون الساكنة 4, الهمزة المتطرفة 1, تنوين الفتح 4, الألف اللينة 3, الأفعال
+  الثلاثية 5, المتطرفة مع التنوين 5, ابن 1, همزة الاستفهام 8 (its derived options
+  «استأذنت» / «أستأذنت» are real verbs; only a question sentence picks «آ»). Each
+  carries its reason in `rules.ts`.
+- **A cross-rule check, now bank-wide.** The «never offer another word's answer» set
+  was one rule's words; it is now every correct spelling in the bank. «دفء» (a
+  misspelling of «دُفْئًا») is the correct «دُفْء» of another rule. Tests assert
+  that no unflagged word shows an option that is correct anywhere in the bank.
+- **One data fix.** «ذلك» in `hatha-hathihi` listed «دلك» (a verb) as a misspelling;
+  it now lists «ذالك», the error children make and the one the other rule already
+  uses. This word is not flagged.
+- **Effect on a teacher.** Words that can be asked as a choice question: 150 before,
+  105 now (measured over 200 seeds each; 24 of the 174 never could, having fewer than
+  two misspellings). The loss is uneven: همزة المد 8 → 2, الأفعال الثلاثية 5 → 0,
+  همزة الاستفهام 8 → 0, الألف اللينة 5 → 2, تنوين الفتح 8 → 4, الهمزة المتطرفة مع
+  التنوين 8 → 3, النون الساكنة 8 → 4, حروف تنطق ولا تكتب 8 → 5; the rest lose 0 to 3.
+  Those words are dictated instead, so a worksheet is not shorter: every rule still
+  fills a grade-introducing worksheet with at least 5 questions (the existing test).
+- **Verified:** `choiceSafety.test.ts` (per-rule bank-wide collision check, flags
+  carry a reason, flags counted per rule so adding or removing one is a decision,
+  flagged words never reach choose/judge/tap and still come out as dictation, a
+  fully flagged rule gives dictation); the bank's 250 tests; the API's 116
+  `spellingItems` tests; the /play spelling game's tests; typecheck; the mobile suite.
+  **Deploys the API** (a `lib/` change), no schema or migration.
+- **Not verified / limits — read these.** The flags are one person's reading of
+  Arabic, mine, not a linguist's or a teacher's. Borderline calls go both ways:
+  flagged conservatively: «مسئول» (an accepted variant of «مسؤول»), «الرحمان» (a
+  variant in names); left unflagged because a pupil would not know the word:
+  «أبن», «هده», «يصلى», «نجّى», and «بير» (dialect for a well). The remaining 124
+  words are not proven safe, only read. A sentence per word would let flagged words
+  back into choice questions, but each sentence must rule out the other spelling
+  («أستمع إلى المعلم» is grammatical, so «____ إلى المعلم» does not) and a bad one
+  is a wrong key again. **The rule `alif-tathniya-baad-hamza` is untouched and
+  still open:** it marks «شيآن» / «هواآن» / «ضوآن» correct and «شيئان» / «هواءان» /
+  «ضوءان» wrong, while keeping «بدءان» / «جزءان» correct. By standard spelling
+  «شيئان» is right; I could not check what the Ministry book prints. Its dictation
+  keys have the same problem, so this is not fixed by the flag. It needs a person
+  with the book. The /play game still serves only its five rules; with this change
+  it could widen to the unflagged words of the others, which is a separate step.
+
 ## Forty-second pass: a lesson named whole is no longer lost to the picked grade, 2026-11-01
 
 **Found live, on the build that shipped the forty-first pass.** «جهّز ورقة عمل من 4 أسئلة عن حل المعادلة التربيعية بالتحليل» no
