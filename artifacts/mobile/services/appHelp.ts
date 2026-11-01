@@ -1841,6 +1841,9 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
     res: [
       new RegExp(String.raw`^(?:(?:please|pls|plz)\s+)?(?:how\s+(?:do|can|should)\s+(?:i|we)|how\s+to)\s+(?:create|make|set\s+up|build|add)\s+(?:(?:an?|the|my|new)\s+)*(?:exam|evaluation)` + EN_RULE_TAIL),
       new RegExp(String.raw`^(?:كيفيه|كيف|اشلون|شلون|ازاي|طريقه|خطوات)\s+(?:يمكنني\s+|ممكن\s+|بقدر\s+)?(?:انشئ|انشاء|اعمل|اسوي|اجهز|اضيف|اضافه)\s+(?:ال)?(?:امتحان|تقييم)(?:\s+(?:جديد|ورقي|الكتروني))?` + AR_RULE_TAIL),
+      // The thirty-ninth live pass: «كيف أجهز امتحانا» (accusative alif, «أعد», a class after it). They
+      // used to reach the test button through `toolAskFromQuery`, which now leaves how-to questions alone.
+      new RegExp(String.raw`^(?:كيفيه|كيف|اشلون|شلون|ازاي|طريقه|خطوات)\s+(?:يمكنني\s+|ممكن\s+|بقدر\s+)?(?:انشئ|انشاء|اعمل|اسوي|اجهز|اعد|احضر|اضيف)\s+(?:ال)?(?:امتحان|تقييم)ا?(?:\s+(?:جديد|ورقي|الكتروني))?(?:\s+(?:لل|ل)\s*(?:ال)?(?:صف|ماده|درس|شعبه)(?:\s+\S+){0,2})?` + AR_RULE_TAIL),
     ],
   },
   {

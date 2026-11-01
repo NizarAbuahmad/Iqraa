@@ -10,6 +10,30 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Thirty-ninth live pass: «How can I prepare students for the exam» opened the test builder, 2026-11-01
+
+**Why.** After the thirty-eighth pass merged, re-running its questions on app.iqrra.com showed one still wrong: «How can I
+prepare students for the exam» got «Tests are built in Evaluations… Tap to start» and a button. Not the router this time:
+`toolAskFromQuery` (`services/chatToolAsk.ts`), which turns a message into a button for a screen that has its own builder
+(game, slides, test, dictation), reads «exam» as the test and «prepare» as a request cue. It is the same mistake the
+thirty-eighth fixed in `artifactFromAsk`, in a second reader of the same sentence.
+
+**Built.** `isHowToAdvice` (exported from `services/ai/askVocabulary.ts`, the rule the thirty-eighth added) is now the
+shared reading: a how-to question that does not speak to the assistant («can you», «ممكن», «please»…) is advice, so
+`toolAskFromQuery` returns null for it. Imperatives («prepare an exam», «جهز امتحان», «make me a test») still open the
+screen.
+
+**What it could have broken, checked.** 14 of the 813 historic questions now get `null` from `toolAskFromQuery` where they
+used to get a button («كيف أنشئ امتحاناً جديداً؟», «how do i make slides from my own text»…). All 14 are routed to app help
+**before** the chat reaches `toolAskFromQuery` (`iqra.tsx`, `route.intent === 'app_help'`), so their replies do not change.
+Two phrasings were not claimed by app help and would have lost a helpful button to model advice — «كيف أجهز امتحانا»
+(accusative alif) and «كيف أعد امتحانا للصف العاشر» — so the `create-exam` rule now takes them (`howCreateExam`).
+«كيف أعد الطلاب للامتحان» (prepare the *students*) is correctly not an app answer.
+
+**Verified.** `chatToolAsk.test.ts` (5 how-to questions open nothing, 5 requests still open their screen),
+`appHelp.test.ts` (3 phrasings, 3 near-misses), `askVocabulary.test.ts` (`isHowToAdvice`). The 813 historic questions give the
+same app-help answers (0 changed). Not seen live yet.
+
 ## Thirty-eighth live pass: the first run with the model on, 2026-11-01
 
 **Why.** The demo account's $1.00 monthly allowance reset on 2026-11-01 (`ai-usage`: spent $0), so for the first

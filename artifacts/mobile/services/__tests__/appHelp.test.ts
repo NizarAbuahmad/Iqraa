@@ -2687,3 +2687,18 @@ describe('the thirty-eighth live pass — a homework reminder and maths support 
     });
   }
 });
+
+describe('«كيف أجهز امتحانا» — making an exam, with the accusative alif or «أعد» (thirty-ninth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  for (const q of ['كيف أجهز امتحانا', 'كيف أعد امتحانا للصف العاشر', 'كيف أحضر امتحانا جديدا']) {
+    it(`«${q}» → howCreateExam`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, 'ar', t).text, '<howCreateExam>');
+    });
+  }
+  for (const q of ['كيف أعد الطلاب للامتحان', 'كيف أحضّر الطلاب للامتحان', 'كيف أجهز نفسي للامتحان']) {
+    it(`«${q}» is not howCreateExam`, () => {
+      assert.notEqual(answerAppHelp(q, 'ar', t).text, '<howCreateExam>');
+    });
+  }
+});
