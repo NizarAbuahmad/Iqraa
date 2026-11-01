@@ -23,6 +23,8 @@ import { File, Paths } from 'expo-file-system';
 import { visualForExport, visualForSlide, type VisualBlock } from './deckVisuals.ts';
 import { isBulletLine, looksLikeEquation, stripBullet, workingSteps } from './deckText.ts';
 import { asPhotoHero, resolveSlideLayout } from './slideLayout.ts';
+import { diagramGeometry, isDiagram } from './diagramGeometry.ts';
+import { drawPptxDiagram } from './pptxDiagram.ts';
 import { slideTeacherNotesText } from './deckNotes.ts';
 import { saveBlob } from './webSave.ts';
 import { creditSegments, type PhotoCredit } from './photoCredit.ts';
@@ -358,6 +360,16 @@ export async function exportDeckAsPptx(
     // the types below are about content. `null` — no layout, or one whose data
     // was too thin — falls through untouched.
     const layout = resolveSlideLayout(slide);
+    // Cycle, tree, Venn and mind map: native shapes from the shared geometry,
+    // built in inches for the 8.9 × 3.99 in area under the heading (the rule
+    // under the title ends at y 0.83, the drawing ends at 5.34 of 5.63).
+    if (isDiagram(layout)) {
+      const g = diagramGeometry(layout, 8.9, 3.99, isAr);
+      drawPptxDiagram(s, g, {
+        card: P.card, tint: theme.pptxHex(theme.diagramTint(T)), accent, border: P.border, text: P.text,
+      }, { x: 0.55, y: 1.35, rtl: isAr, font: HEAD_FONT });
+      continue;
+    }
     if (layout && layout.kind !== 'photo') {
       if (layout.kind === 'statement') {
         s.addText(layout.text, {

@@ -113,7 +113,7 @@ describe('isPublicRoute', () => {
   });
 
   it('lets anyone open the free games hub with no account', () => {
-    for (const p of ['/play', '/play/flags', '/play/capitals', '/play/memory', '/play/colors', '/play/multiply', '/play/divide', '/play/add', '/play/subtract', '/play/antonyms', '/play/plurals', '/play/numberType', '/play/fractions', '/play/matter', '/play/governorates']) {
+    for (const p of ['/play', '/play/flags', '/play/capitals', '/play/memory', '/play/colors', '/play/multiply', '/play/divide', '/play/add', '/play/subtract', '/play/antonyms', '/play/plurals', '/play/numberType', '/play/fractions', '/play/matter', '/play/governorates', '/play/spelling']) {
       assert.equal(isPublicRoute(p), true, p);
     }
   });
@@ -174,6 +174,8 @@ describe('isNonTeacherRoute', () => {
       '/exam-review/e1',
       '/school',
       '/school/anything',
+      // A homework's project hand-in, opened from a row of «المدرسة».
+      '/homework-project/h1',
       '/profile',
       '/join-class',
       '/claim-required',

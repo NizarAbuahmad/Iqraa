@@ -7,11 +7,15 @@
 import type { HomeworkResource } from "@workspace/db";
 import { attachedGames, isBetterResult } from "./game.ts";
 import { dueAtToDueDate, homeworkState, type HomeworkState } from "./rules.ts";
+import { submissionStatus, type SubmissionStatus } from "./submission.ts";
 
 export interface HomeworkRow {
   id: string; classGroupId: string; title: string; instructions: string; dueAt: Date; evaluationId: string | null;
   resources?: HomeworkResource[];
+  requiresSubmission?: boolean;
 }
+/** A handed-in or draft project, for one roster row. */
+export interface SubmissionRow { homeworkId: string; studentId: string; submittedAt: Date | null }
 /** One roster row of the family sitting in one live class. */
 export interface MembershipRow { classGroupId: string; studentId: string; className: string; teacherId: string }
 export interface CompletionRow { homeworkId: string; studentId: string; doneAt: Date }
@@ -45,6 +49,10 @@ export interface FamilyHomeworkItem {
   canTrack: boolean;
   /** Best result per currently attached (lesson, game), for this family's own roster rows in the item's class; `[]` when none. No ids. */
   gameResults: Array<{ lessonId: string; game: string; score: number; total: number; attempts: number }>;
+  /** The teacher asked for a project (photos and a note) instead of a tick. */
+  requiresSubmission: boolean;
+  /** The best state among the family's own roster rows in this item's class; `none` for a draft or an ordinary homework. */
+  submission: SubmissionStatus;
 }
 
 /**
@@ -70,6 +78,7 @@ function bestPerGame(rows: GameResultRow[], resources: readonly HomeworkResource
 export function buildFamilyHomework(input: {
   homework: HomeworkRow[]; memberships: MembershipRow[]; completions: CompletionRow[];
   gameResults?: GameResultRow[];
+  submissions?: SubmissionRow[];
   teachers: TeacherRow[]; exams: ExamRow[]; now: Date;
   /** Roster-row ids that have a student account (a `self` link to any user). */
   withAccount: ReadonlySet<string>;
@@ -98,6 +107,16 @@ export function buildFamilyHomework(input: {
     }
     const done = earliest !== null;
 
+    const requiresSubmission = h.requiresSubmission === true;
+    let submission: SubmissionStatus = "none";
+    if (requiresSubmission) {
+      for (const s of input.submissions ?? []) {
+        if (s.homeworkId !== h.id || !rosterIds.has(s.studentId)) continue;
+        const status = submissionStatus({ submittedAt: s.submittedAt, dueAt: h.dueAt });
+        if (status !== "none" && (submission === "none" || status === "submitted")) submission = status;
+      }
+    }
+
     const teacher = teachers.get(rows[0]!.teacherId);
     const exam = h.evaluationId ? exams.get(h.evaluationId) : undefined;
 
@@ -122,6 +141,8 @@ export function buildFamilyHomework(input: {
         (input.gameResults ?? []).filter((g) => g.homeworkId === h.id && rosterIds.has(g.studentId)),
         h.resources ?? [],
       ),
+      requiresSubmission,
+      submission,
     });
   }
 

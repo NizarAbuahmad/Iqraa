@@ -89,6 +89,8 @@ router.use("/messaging", authMiddleware);
 const DEFAULT_MESSAGE_LIMIT = 30;
 const MAX_MESSAGE_LIMIT = 100;
 const MAX_BODY_LENGTH = 4000;
+/** A report's free-text reason: a sentence or two, and the moderation queue lists fifty a page. */
+const MAX_REPORT_REASON_LENGTH = 1000;
 
 function trimmed(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -1302,10 +1304,9 @@ router.post("/messaging/threads/broadcast", sendMessageLimiter, async (req: Auth
       await db.insert(chatMessages).values({ threadId: thread.id, senderId: teacherId, body });
       // systemDb: as above — the thread may have been opened by the recipient.
       await systemDb.update(chatThreads).set({ updatedAt: now }).where(eq(chatThreads.id, thread.id));
-      await db
-        .update(chatParticipants)
-        .set({ lastReadAt: now })
-        .where(and(eq(chatParticipants.threadId, thread.id), eq(chatParticipants.userId, teacherId)));
+      // The teacher's read mark is left alone: they have not opened this thread,
+      // and a reply waiting in it must stay unread. Their own message is never
+      // counted (unread skips the viewer's sends), so nothing needs clearing.
       sentThreadIds.push(thread.id);
     }
 
@@ -1529,6 +1530,10 @@ router.post("/messaging/reports", async (req: AuthenticatedRequest, res) => {
     }
     if (![threadId, reportedUserId, ...(messageId ? [messageId] : [])].every(id => UUID.test(id))) {
       res.status(400).json({ error: "threadId, reportedUserId and messageId must be valid ids", code: "invalid_input" });
+      return;
+    }
+    if (reason.length > MAX_REPORT_REASON_LENGTH) {
+      res.status(400).json({ error: `reason must be at most ${MAX_REPORT_REASON_LENGTH} characters`, code: "too_long" });
       return;
     }
 

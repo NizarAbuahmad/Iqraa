@@ -169,7 +169,39 @@ describe("buildFamilyHomework", () => {
       assert.equal(keys.includes(banned), false, banned);
     }
     assert.deepEqual(keys.sort(), [
-      "canTrack", "className", "done", "doneAt", "dueAt", "dueDate", "exam", "gameResults", "id", "instructions", "resources", "state", "teacherName", "title",
+      "canTrack", "className", "done", "doneAt", "dueAt", "dueDate", "exam", "gameResults", "id", "instructions", "requiresSubmission", "resources", "state", "submission", "teacherName", "title",
     ]);
+  });
+});
+
+describe("a homework that asks for a project", () => {
+  const dueAt = new Date("2026-11-10T20:59:59.999Z");
+  const now = new Date("2026-11-08T08:00:00Z");
+  const hw = { id: "h1", classGroupId: "c1", title: "مشروع", instructions: "", dueAt, evaluationId: null, requiresSubmission: true };
+  const membership = { classGroupId: "c1", studentId: "s1", className: "10A", teacherId: "t1" };
+  const build = (submissions: Array<{ homeworkId: string; studentId: string; submittedAt: Date | null }>) =>
+    buildFamilyHomework({
+      homework: [hw], memberships: [membership], completions: [], teachers: [{ id: "t1", firstName: "Omar", lastName: "H" }],
+      exams: [], now, withAccount: new Set(["s1"]), submissions,
+    })[0]!;
+
+  it("says whether it asks for a project, and that nothing is handed in yet", () => {
+    const item = build([]);
+    assert.equal(item.requiresSubmission, true);
+    assert.equal(item.submission, "none");
+  });
+  it("is submitted on time, late after the due day, and ignores a draft and another child's row", () => {
+    assert.equal(build([{ homeworkId: "h1", studentId: "s1", submittedAt: new Date("2026-11-09T10:00:00Z") }]).submission, "submitted");
+    assert.equal(build([{ homeworkId: "h1", studentId: "s1", submittedAt: new Date("2026-11-11T10:00:00Z") }]).submission, "late");
+    assert.equal(build([{ homeworkId: "h1", studentId: "s1", submittedAt: null }]).submission, "none");
+    assert.equal(build([{ homeworkId: "h1", studentId: "someone-else", submittedAt: new Date("2026-11-09T10:00:00Z") }]).submission, "none");
+  });
+  it("an ordinary homework is not a project and is never 'submitted'", () => {
+    const item = buildFamilyHomework({
+      homework: [{ ...hw, requiresSubmission: undefined }], memberships: [membership], completions: [],
+      teachers: [], exams: [], now, withAccount: new Set(), submissions: [{ homeworkId: "h1", studentId: "s1", submittedAt: new Date("2026-11-09T10:00:00Z") }],
+    })[0]!;
+    assert.equal(item.requiresSubmission, false);
+    assert.equal(item.submission, "none");
   });
 });

@@ -25,11 +25,11 @@ import type {
 import type { KBLesson } from './knowledgeBase.ts';
 import { CONCEPTS_CAP, type RevisionUnit } from './revisionScope.ts';
 import { buildChartSlide, buildGraphSlide, referencesShownVisual, scanGraphCommands } from './classMedia.ts';
-import { chartForLesson, visualForSlide } from './deckVisuals.ts';
+import { chartForLesson, usableChartVisual, visualForSlide } from './deckVisuals.ts';
 import { type BookFigure, bookPagesForLesson, figuresForLesson } from './bookFigures.ts';
 import { exerciseReference, exercisesForLesson } from './bookExercises.ts';
-import { inlineSteps, MAX_STAT_VALUE_CHARS, resolveSlideLayout } from './slideLayout.ts';
-import { iconForTopic } from './deckIcons.ts';
+import { inlineSteps, MAX_STAT_VALUE_CHARS, resolveSlideLayout, usableConceptShape } from './slideLayout.ts';
+import { iconForTopic, isSectionIconName } from './deckIcons.ts';
 import { englishOnly } from './englishText.ts';
 import { isSpotTheMistake } from './spotTheMistake.ts';
 
@@ -156,10 +156,35 @@ export interface LessonDeckOptions {
   teaching?: LessonTeachingOutput | null;
 }
 
+const PHOTO_QUERY = /^[\x20-\x7E]{3,60}$/;
+
+/**
+ * The extras one generated concept may carry, each kept only if the renderers
+ * can draw it — the same gates they ask (`resolveSlideLayout`,
+ * `isSectionIconName`, `usableChartVisual`). One bad extra is dropped alone; the
+ * points always stay as the slide's words, so a refused shape is a list.
+ * A chart and a shape never share a slide (the shape fills it), and a photo goes
+ * only where neither is.
+ */
+function conceptExtras(raw: unknown, title: string, points: string[]): Partial<ActivitySlide> {
+  const c = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const out: Partial<ActivitySlide> = {};
+  const shape = usableConceptShape(c.shape, title, points.map(p => `• ${p}`).join('\n'));
+  if (shape) Object.assign(out, shape);
+  if (isSectionIconName(c.icon)) out.icon = c.icon;
+  if (!out.layout) {
+    const chart = usableChartVisual(c.chart);
+    if (chart) out.visual = chart;
+  }
+  const photo = typeof c.photo === 'string' ? c.photo.trim() : '';
+  if (!out.layout && !out.visual && PHOTO_QUERY.test(photo)) out.mediaPrompt = photo;
+  return out;
+}
+
 /** A cleaned `LessonTeachingOutput`: every string trimmed, empties gone. */
 export interface UsableTeaching {
   hook: { question: string; teacherNote: string } | null;
-  concepts: { title: string; points: string[]; teacherNote: string; misconception: string }[];
+  concepts: { title: string; points: string[]; teacherNote: string; misconception: string; extras: Partial<ActivitySlide> }[];
   workedExample: { problem: string; steps: string[]; answer: string } | null;
   practice: { problem: string; hint: string; answer: string } | null;
   mistake: { claim: string; hint: string; answer: string } | null;
@@ -187,12 +212,11 @@ export function usableTeaching(raw: LessonTeachingOutput | null | undefined): Us
       .slice(0, max);
   const hookQ = str(raw?.hook?.question);
   const concepts = (Array.isArray(raw?.concepts) ? raw!.concepts! : [])
-    .map(c => ({
-      title: str(c?.title),
-      points: lines(c?.points, 4),
-      teacherNote: str(c?.teacherNote),
-      misconception: str(c?.misconception),
-    }))
+    .map(c => {
+      const title = str(c?.title);
+      const points = lines(c?.points, 4);
+      return { title, points, teacherNote: str(c?.teacherNote), misconception: str(c?.misconception), extras: conceptExtras(c, title, points) };
+    })
     .filter(c => c.title && c.points.length > 0)
     .slice(0, TEACHING_CONCEPTS_MAX);
   const problem = str(raw?.workedExample?.problem);
@@ -755,10 +779,11 @@ export function buildLessonDeck(
   // index lines, and they were in the context the explanation was written
   // from; the rule, figures, examples, outcomes and vocabulary — the parts
   // that ARE the book's wording — are all still projected verbatim around it.
-  for (const { points, ...c } of generatedConcepts) {
+  for (const { points, extras, ...c } of generatedConcepts) {
     aiWritten = true;
     push({
       aiWritten: true,
+      ...extras,
       type: 'intro',
       title: c.title,
       content: points.map(p => `• ${p}`).join('\n'),
@@ -1204,6 +1229,30 @@ export function rebuildAnswerKey(slides: readonly ActivitySlide[], isAr: boolean
     }
   }
   return key;
+}
+
+/** Explanation-slide photos per deck; with the cover photo that makes three. */
+export const MAX_TEACHING_PHOTOS = 2;
+
+/**
+ * The generated concept slides that asked for a photo (`mediaPrompt`, from the
+ * teaching section's `photo`) and can show one: written by the model, no book
+ * figure already beside the text, no layout filling the slide. First two, by
+ * distinct query, so one search never puts the same picture on two slides.
+ * Matched back by title by the caller, like the unit-break photos, because the
+ * teacher may move or delete a slide while the search runs.
+ */
+export function teachingPhotoTargets(slides: readonly ActivitySlide[]): { title: string; query: string }[] {
+  const out: { title: string; query: string }[] = [];
+  const seen = new Set<string>();
+  for (const s of slides) {
+    const query = s.mediaPrompt?.trim() ?? '';
+    if (!s.aiWritten || !query || s.sideImageUrl || s.layout || seen.has(query)) continue;
+    seen.add(query);
+    out.push({ title: s.title, query });
+    if (out.length === MAX_TEACHING_PHOTOS) break;
+  }
+  return out;
 }
 
 /**

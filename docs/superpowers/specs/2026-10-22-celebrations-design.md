@@ -12,7 +12,8 @@ sees a number change.
 
 ## Decisions
 
-1. **Four moments, chosen because each marks real progress:**
+1. **Four moments, chosen because each marks real progress (a fifth was added
+   on 2026-10-30, last in this list):**
    - **A student hands in an exam** (`/take/CODE`). This fires only when this
      sitting is handed in, not when a paper that was already handed in is
      reopened or reported `already_submitted`. It is a big burst with
@@ -29,6 +30,12 @@ sees a number change.
      burst with «أنجزت كل واجباتك». Parents never tick, so they never see it.
    - **A teacher's prep checklist reaches all ready** on Today, phone and
      desktop. It is a small burst with «الدرس جاهز».
+   - **A fifth, added 2026-10-30: a student hands in a homework project on
+     time** (`/homework-project/<id>`). It fires only when the server's answer
+     takes the project from not handed in to `submitted` on that screen
+     (`celebratesHandIn` in `services/homeworkProject.ts`). It never fires for a
+     late hand-in, which is acknowledged with a toast, nor for handing in again.
+     It is a small burst with «تم تسليم المشروع».
 2. **Fire on the crossing, never on the state.**
    - A moment fires only when, *for the same subject* (same lesson, same
      child, same game round), the condition goes from false to true within
@@ -63,7 +70,8 @@ sees a number change.
     measurement, regressions), the determinism and bounds of `confettiPieces`,
     and the colours (no amber, every corner present);
   - `allTrackedDone` in `homework.test.ts`;
-  - source checks that each of the four moments mounts `Celebrate`.
+  - source checks that each of the moments (four, five since 2026-10-30)
+    mounts `Celebrate`, in `celebrateMoments.test.ts`.
 - `pnpm run typecheck`.
 - Screenshots of the overlay mid-burst (light and dark) and with reduced
   motion.

@@ -22,6 +22,7 @@ const FILES: Record<string, string> = {
   'messaging.ts (pickChatImage)': read('../messaging.ts'),
   'avatarPick.ts (pickAvatarPhoto)': read('../avatarPick.ts'),
   'lessonMediaPick.ts (pickLessonPhotos)': read('../lessonMediaPick.ts'),
+  'homeworkPhotoPick.ts (pickHomeworkPhoto)': read('../homeworkPhotoPick.ts'),
 };
 
 const count = (text: string, re: RegExp) => (text.match(re) ?? []).length;

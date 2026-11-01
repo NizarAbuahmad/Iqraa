@@ -4,7 +4,7 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatLinkedOn, linkDisplayName, selfLink, type RosterLink } from '../rosterLinks.ts';
+import { chatTarget, formatLinkedOn, linkDisplayName, selfLink, type RosterLink } from '../rosterLinks.ts';
 
 const link = (relation: RosterLink['relation'], firstName: string, lastName = ''): RosterLink => ({
   userId: `${relation}-${firstName}`,
@@ -24,6 +24,26 @@ describe('selfLink', () => {
     assert.equal(selfLink([link('guardian', 'ولي أمر')]), null);
     assert.equal(selfLink([]), null);
     assert.equal(selfLink(undefined), null);
+  });
+});
+
+describe('chatTarget', () => {
+  it('opens the one linked account directly', () => {
+    assert.deepEqual(chatTarget([link('guardian', 'علي')]), { kind: 'direct', userId: 'guardian-علي' });
+  });
+
+  it('never picks between several accounts', () => {
+    assert.deepEqual(chatTarget([link('guardian', 'علي'), link('self', 'أحمد')]), { kind: 'choose' });
+  });
+
+  it('counts one account linked twice as one', () => {
+    const a = link('guardian', 'علي');
+    assert.deepEqual(chatTarget([a, { ...a, relation: 'self' }]), { kind: 'direct', userId: a.userId });
+  });
+
+  it('is null when nobody has joined or the server sent no links', () => {
+    assert.equal(chatTarget([]), null);
+    assert.equal(chatTarget(undefined), null);
   });
 });
 

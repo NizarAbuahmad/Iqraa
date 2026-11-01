@@ -536,11 +536,15 @@ export function assertUsableDeck(parsed: unknown): void {
     const hasStat = typeof stat?.value === "string" && stat.value.trim() !== "";
     const hasCompare = Array.isArray(compare?.left) && compare.left.length > 0
       && Array.isArray(compare?.right) && compare.right.length > 0;
-    // The four structure layouts keep their words in a payload of their own too.
+    // The structure layouts (timeline … mindmap) keep their words in a payload of their own too.
     const filled = (v: unknown) => Array.isArray(v) && v.length > 0;
     const hasStructure = filled(slide.timeline) || filled(slide.stats)
       || filled((slide.table as { rows?: unknown } | undefined)?.rows)
       || filled((slide.flow as { steps?: unknown } | undefined)?.steps)
+      || filled((slide.cycle as { stages?: unknown } | undefined)?.stages)
+      || filled((slide.tree as { branches?: unknown } | undefined)?.branches)
+      || filled((slide.venn as { sets?: unknown } | undefined)?.sets)
+      || filled((slide.mindmap as { nodes?: unknown } | undefined)?.nodes)
       || (typeof (slide.quote as { text?: unknown } | undefined)?.text === "string"
         && ((slide.quote as { text: string }).text.trim() !== ""));
     return !title || !(content || hasStat || hasCompare || hasStructure);

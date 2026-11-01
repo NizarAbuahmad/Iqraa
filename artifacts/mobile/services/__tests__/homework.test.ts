@@ -9,6 +9,7 @@ import {
   dueDatePresets,
   formatDueDate,
   homeworkDraftError,
+  homeworkChatTarget,
   isHomeworkChatLine,
   isValidYmd,
   maskYmd,
@@ -23,11 +24,16 @@ import {
   normalizeGameResults,
   normalizeTeacherGameResults,
   resultForGame,
+  showsSubmissionLink,
   homeworkSections,
   normalizeTeacherHomework,
   normalizeTeacherList,
   splitHomework,
   untrackedMode,
+  projectSubmittedText,
+  deleteConfirmKey,
+  requiresSubmissionPatch,
+  isSwitchLockedError,
   type FamilyHomework,
 } from '../homework.ts';
 
@@ -44,6 +50,8 @@ const hw = (over: Partial<FamilyHomework> = {}): FamilyHomework => ({
   resources: [],
   canTrack: true,
   gameResults: [],
+  requiresSubmission: false,
+  submission: 'none',
   ...over,
 });
 
@@ -151,6 +159,8 @@ test('normalizeFamilyHomework keeps a well-formed row', () => {
       resources: [],
       canTrack: true,
       gameResults: [],
+      requiresSubmission: false,
+      submission: 'none',
     },
   ]);
 });
@@ -255,8 +265,29 @@ test('normalizeTeacherHomework keeps a well-formed row and ignores extra fields'
       doneCount: 3,
       studentCount: 20,
       trackableCount: 20,
+      requiresSubmission: false,
+      submittedCount: 0,
+      requiresSubmissionLocked: false,
     },
   ]);
+});
+
+test('normalizeTeacherHomework keeps the project fields the server sends', () => {
+  const [row] = normalizeTeacherHomework([
+    { ...rawTeacher, requiresSubmission: true, submittedCount: 4, requiresSubmissionLocked: true },
+  ]);
+  assert.equal(row!.requiresSubmission, true);
+  assert.equal(row!.submittedCount, 4);
+  assert.equal(row!.requiresSubmissionLocked, true);
+});
+
+test('normalizeTeacherHomework reads a bad submittedCount as 0 and only a literal true as a flag', () => {
+  const [row] = normalizeTeacherHomework([
+    { ...rawTeacher, requiresSubmission: 'true', submittedCount: -2, requiresSubmissionLocked: 1 },
+  ]);
+  assert.equal(row!.requiresSubmission, false);
+  assert.equal(row!.submittedCount, 0);
+  assert.equal(row!.requiresSubmissionLocked, false);
 });
 
 test('normalizeTeacherHomework defaults missing counts to 0 and exam fields to null', () => {
@@ -554,10 +585,23 @@ test('isHomeworkChatLine matches the shared-homework chat line only', () => {
   assert.equal(isHomeworkChatLine('مرحبا'), false);
 });
 
+test('homeworkChatTarget: where a tap on a shared-homework line goes, for the teacher and for a student', () => {
+  const line = '📚 واجب جديد: تاريخ الوطن\nموعد التسليم: 19-10-2026';
+  // The teacher's own line (the one in their screenshot) opens the class's homework tab.
+  assert.equal(homeworkChatTarget({ body: line, isOwn: true, classGroupId: 'c1' }), '/classes/c1?tab=homework');
+  // A student's opens «المدرسة», where the homework and its attachments are.
+  assert.equal(homeworkChatTarget({ body: line, isOwn: false, classGroupId: 'c1' }), '/school');
+  // A teacher's line in a thread with no class has nowhere to go.
+  assert.equal(homeworkChatTarget({ body: line, isOwn: true, classGroupId: null }), null);
+  // An ordinary message is not a link.
+  assert.equal(homeworkChatTarget({ body: 'مرحبا', isOwn: false, classGroupId: 'c1' }), null);
+});
+
 test('allTrackedDone: every item that can be ticked is done', () => {
   const item = (id: string, done: boolean, canTrack = true) => ({
     id, title: id, instructions: '', dueDate: '2026-10-22', className: '', teacherName: '',
     done, state: done ? 'done' as const : 'open' as const, examTitle: null, resources: [], canTrack, gameResults: [],
+    requiresSubmission: false, submission: 'none' as const,
   });
   assert.equal(allTrackedDone([item('a', true), item('b', true)]), true);
   assert.equal(allTrackedDone([item('a', true), item('b', false)]), false);
@@ -625,4 +669,74 @@ test('gameScoreText: Arabic-Indic digits in the Arabic UI, latin in English', ()
   assert.equal(gameScoreText(7, 8, true), '٧ من ٨');
   assert.equal(gameScoreText(10, 12, true), '١٠ من ١٢');
   assert.equal(gameScoreText(7, 8, false), '7 of 8');
+});
+
+// ─── project submission fields ───────────────────────────────────────────────
+
+test('normalizeFamilyHomework reads an old-server payload (neither field) as no submission', () => {
+  const [row] = normalizeFamilyHomework([rawItem]);
+  assert.equal(row!.requiresSubmission, false);
+  assert.equal(row!.submission, 'none');
+});
+
+test('normalizeFamilyHomework keeps requiresSubmission and a late submission', () => {
+  const [row] = normalizeFamilyHomework([{ ...rawItem, requiresSubmission: true, submission: 'late' }]);
+  assert.equal(row!.requiresSubmission, true);
+  assert.equal(row!.submission, 'late');
+});
+
+test('normalizeFamilyHomework reads an unknown submission state as none', () => {
+  assert.equal(normalizeFamilyHomework([{ ...rawItem, requiresSubmission: true, submission: 'draft' }])[0]!.submission, 'none');
+});
+
+test('normalizeFamilyHomework reads a non-boolean requiresSubmission as false', () => {
+  assert.equal(normalizeFamilyHomework([{ ...rawItem, requiresSubmission: 'yes' }])[0]!.requiresSubmission, false);
+  assert.equal(normalizeFamilyHomework([{ ...rawItem, requiresSubmission: 1 }])[0]!.requiresSubmission, false);
+});
+
+test('showsSubmissionLink is true only when a submission is required and the item can be tracked', () => {
+  assert.equal(showsSubmissionLink({ requiresSubmission: true, canTrack: true }), true);
+  assert.equal(showsSubmissionLink({ requiresSubmission: true, canTrack: false }), false);
+  assert.equal(showsSubmissionLink({ requiresSubmission: false, canTrack: true }), false);
+  assert.equal(showsSubmissionLink({ requiresSubmission: false, canTrack: false }), false);
+});
+
+test('an untracked submission item is never ranked as overdue', () => {
+  // The existing rule (canTrack false => no «متأخّر» claim) must still hold when a project is required.
+  const untracked = hw({ id: 'u', requiresSubmission: true, canTrack: false, state: 'overdue', dueDate: '2026-10-25' });
+  const tracked = hw({ id: 't', requiresSubmission: true, canTrack: true, state: 'open', dueDate: '2026-10-20' });
+  const { todo } = splitHomework([tracked, untracked]);
+  assert.deepEqual(todo.map(h => h.id), ['t', 'u']); // by date, not pulled to the front as late
+  const late = hw({ id: 'l', requiresSubmission: true, canTrack: true, state: 'overdue', dueDate: '2026-10-18' });
+  assert.equal(splitHomework([tracked, untracked, late]).todo[0]!.id, 'l');
+});
+
+test('projectSubmittedText clamps the handed-in count into [0, trackable]', () => {
+  assert.deepEqual(projectSubmittedText({ submittedCount: 3, trackableCount: 10 }), { submitted: 3, of: 10 });
+  // A submission is kept after a roster link is removed, so the numerator can outrun the denominator.
+  assert.deepEqual(projectSubmittedText({ submittedCount: 5, trackableCount: 4 }), { submitted: 4, of: 4 });
+  assert.deepEqual(projectSubmittedText({ submittedCount: -2, trackableCount: 4 }), { submitted: 0, of: 4 });
+  assert.deepEqual(projectSubmittedText({ submittedCount: 2, trackableCount: 0 }), { submitted: 0, of: 0 });
+});
+
+test('deleteConfirmKey warns about the photos only for a project homework', () => {
+  assert.equal(deleteConfirmKey({ requiresSubmission: true }), 'hwDeleteConfirmProject');
+  assert.equal(deleteConfirmKey({ requiresSubmission: false }), 'hwDeleteConfirm');
+});
+
+test('requiresSubmissionPatch sends the switch on an edit only when it differs from the stored value', () => {
+  assert.deepEqual(requiresSubmissionPatch(false, true), { requiresSubmission: true });
+  assert.deepEqual(requiresSubmissionPatch(true, false), { requiresSubmission: false });
+  // A locked homework saved unchanged must never carry a flag (the server would 409 a different value).
+  assert.deepEqual(requiresSubmissionPatch(true, true), {});
+  assert.deepEqual(requiresSubmissionPatch(false, false), {});
+});
+
+test('isSwitchLockedError recognises the 409 submission_locked refusal and nothing else', () => {
+  assert.equal(isSwitchLockedError(Object.assign(new Error('x'), { status: 409, code: 'submission_locked' })), true);
+  assert.equal(isSwitchLockedError(Object.assign(new Error('x'), { status: 409, code: 'other' })), false);
+  assert.equal(isSwitchLockedError(Object.assign(new Error('x'), { status: 400, code: 'submission_locked' })), false);
+  assert.equal(isSwitchLockedError(new Error('x')), false);
+  assert.equal(isSwitchLockedError(null), false);
+  assert.equal(isSwitchLockedError('submission_locked'), false);
 });

@@ -166,6 +166,18 @@ export function slideTypeAccent(type: ActivitySlide['type'], theme: DeckTheme = 
 }
 
 /**
+ * The pale fill a diagram's emphasis shape takes (a tree's root, a mind map's
+ * centre): the accent at 18% over the card, as a solid colour so PowerPoint,
+ * the PDF and the presenter draw the same one. Body text sits on it, so
+ * `deckTheme.test.ts` holds it to 4.5:1 against `text` in every theme.
+ */
+export function diagramTint(T: DeckTheme): string {
+  const ch = (hex: string, i: number) => parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16);
+  const mix = (i: number) => Math.round(ch(T.accent, i) * 0.18 + ch(T.card, i) * 0.82);
+  return `#${[0, 1, 2].map(i => mix(i).toString(16).padStart(2, '0')).join('').toUpperCase()}`;
+}
+
+/**
  * Type sizes for the structure layouts when they are PROJECTED. Deliberately
  * not the app's UI `TYPE` scale (constants/theme.ts): that scale sizes a phone
  * screen read at arm's length, and a slide is read from the back of a room — the

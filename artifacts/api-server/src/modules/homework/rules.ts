@@ -82,6 +82,8 @@ export interface CreateInput {
   evaluationId: string | null;
   /** Raw items, each checked by the route (parseClassResourceInput needs @workspace/curriculum). */
   resources: unknown[];
+  /** Students hand in a project (photos and a note) instead of just ticking it off. */
+  requiresSubmission: boolean;
 }
 export interface PatchInput {
   title?: string;
@@ -89,12 +91,16 @@ export interface PatchInput {
   dueAt?: Date;
   evaluationId?: string | null;
   resources?: unknown[];
+  requiresSubmission?: boolean;
 }
 /** `code` is a machine-readable reason a client can branch on; absent for the ordinary field errors. */
 type Parsed<T> = { ok: true; value: T } | { ok: false; error: string; code?: string };
 
 /** Machine code for a due date outside the allowed window (POST and PATCH 400 bodies carry it next to `error`). */
 export const DUE_RANGE_CODE = "due_date_out_of_range";
+
+/** Machine code of the 409 a PATCH gets when it flips `requiresSubmission` on a homework a student has already started. */
+export const SUBMISSION_LOCKED_CODE = "submission_locked";
 const DUE_RANGE_FAIL = { ok: false, error: DUE_RANGE_ERROR, code: DUE_RANGE_CODE } as const;
 
 function record(body: unknown): Record<string, unknown> | null {
@@ -124,6 +130,10 @@ function parseResources(v: unknown): Parsed<unknown[]> {
   return { ok: true, value: v };
 }
 
+function parseRequiresSubmission(v: unknown): Parsed<boolean> {
+  return typeof v === "boolean" ? { ok: true, value: v } : { ok: false, error: "requiresSubmission must be true or false" };
+}
+
 export function parseCreate(body: unknown, now: Date = new Date()): Parsed<CreateInput> {
   const b = record(body);
   if (!b) return { ok: false, error: "A JSON object is required" };
@@ -139,6 +149,8 @@ export function parseCreate(body: unknown, now: Date = new Date()): Parsed<Creat
   if (!evaluationId.ok) return evaluationId;
   const resources = parseResources(b["resources"] ?? []);
   if (!resources.ok) return resources;
+  const requiresSubmission = b["requiresSubmission"] === undefined ? ({ ok: true, value: false } as const) : parseRequiresSubmission(b["requiresSubmission"]);
+  if (!requiresSubmission.ok) return requiresSubmission;
   return {
     ok: true,
     value: {
@@ -148,6 +160,7 @@ export function parseCreate(body: unknown, now: Date = new Date()): Parsed<Creat
       dueAt,
       evaluationId: evaluationId.value,
       resources: resources.value,
+      requiresSubmission: requiresSubmission.value,
     },
   };
 }
@@ -190,6 +203,11 @@ export function parsePatch(body: unknown, now: Date = new Date(), existing?: { d
     const r = parseResources(b["resources"]);
     if (!r.ok) return r;
     out.resources = r.value;
+  }
+  if (b["requiresSubmission"] !== undefined) {
+    const r = parseRequiresSubmission(b["requiresSubmission"]);
+    if (!r.ok) return r;
+    out.requiresSubmission = r.value;
   }
   if (Object.keys(out).length === 0) return { ok: false, error: "Nothing to change" };
   return { ok: true, value: out };

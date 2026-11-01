@@ -7,7 +7,7 @@
  * a double-click on a destructive button must never leave an orphaned promise.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -65,6 +65,19 @@ export function ConfirmHost() {
             <Text style={[styles.message, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
               {opts.message}
             </Text>
+          ) : null}
+          {opts.preview ? (
+            <ScrollView
+              style={[styles.preview, { backgroundColor: colors.muted, borderColor: colors.border }]}
+              contentContainerStyle={{ padding: 12 }}
+            >
+              <Text
+                selectable
+                style={[styles.previewText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
+              >
+                {opts.preview}
+              </Text>
+            </ScrollView>
           ) : null}
           <View style={[styles.actions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Pressable
@@ -127,6 +140,9 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 18, textAlign: 'center', lineHeight: 28 },
   message: { fontSize: 15, textAlign: 'center', lineHeight: 24 },
+  // Bounded so a long letter scrolls inside the card instead of pushing the buttons off a phone.
+  preview: { alignSelf: 'stretch', maxHeight: 240, borderWidth: 1, borderRadius: 12, marginTop: 4 },
+  previewText: { fontSize: 14, lineHeight: 23 },
   actions: { width: '100%', gap: 10, marginTop: 16 },
   btn: {
     flex: 1,

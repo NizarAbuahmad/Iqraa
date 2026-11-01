@@ -69,6 +69,10 @@ Checked 2026-10-22:
 
 ## Open
 
+- 2026-10-31 — Homework submissions record their author (migration `0022`)
+- 2026-10-31 — Homework project submission — teacher screens (phase 3: the switch, the handed-in list, one project, «حذف المشروع»; what is left open is the item «Homework projects: what the teacher's app still cannot do…» below)
+- 2026-10-31 — Teacher can clear one student's project (the API; the app's button is the teacher-screens entry above)
+- 2026-10-31 — Slides: cycle, tree, Venn and mind-map diagrams; curriculum slides gain shapes, icons, charts and photos (untested against a live model)
 - **Screen recording of everyone is ON for the web app (since the 2026-10-29 re-run of Deploy
   #868) and not yet running on Android.** Web: the Contentsquare tag loads on `app.iqrra.com` (not
   the marketing website) because the `CONTENTSQUARE_TAG_ID` repository **variable** is set; delete
@@ -84,7 +88,13 @@ Checked 2026-10-22:
   its history is out of reach. For Android replay that project needs "Record user sessions" on
   **and a 1.6.0 build made after that change merged** (see Mobile above); web events reach it
   once the site redeploys. Students, parents and exam pages are recorded; the parent consent page
-  is not. The policy (`LEGAL_VERSION` 2026-10-30) was written by a model and **not reviewed by a
+  is not. The homework project screen (`/homework-project`, students' photos of their work) and the
+  teacher's two screens that show the same photos (`/homework-submissions`) are left
+  out of screen-view tracking (`shouldTrackScreen`), which does not stop a recording already
+  running, and whether masking hides their photos is unverified, like every other screen. The
+  teacher's screens are reached from the tracked class page, so on the web a Contentsquare
+  recording is usually already running when they open and only the body-level mask protects the
+  photos; Android replay has `maskAllImages` true. The policy (`LEGAL_VERSION` 2026-10-31.d now; its recording text dates from 2026-10-30) was written by a model and **not reviewed by a
   lawyer**; Contentsquare's data location was not checked (PostHog's settings say «EU Cloud»),
   and the Contentsquare plan shows a 200K sessions a month cap.
   Entry: «Screen recordings: Contentsquare on the web, PostHog replay on Android» in the log.
@@ -98,14 +108,45 @@ Checked 2026-10-22:
   «Parent approval for email students — server (PR A)».
 - **A student can sign up with an email and no teacher's code (PR #1226, merged 2026-10-24) — the
   legal wording still needs a person to read it.** The privacy policy §5 and terms §1
-  (`constants/legal.ts`, `LEGAL_VERSION` 2026-10-23) say a student may join with an email after
+  (`constants/legal.ts`, since `LEGAL_VERSION` 2026-10-23; 2026-10-31.d now) say a student may join with an email after
   confirming they are an adult or have a guardian's agreement. They were drafted, not reviewed by
-  a lawyer, and nothing in the repo records a review since. Merging deploys, so every user is
-  asked to accept that version. The code comment on the store declaration
+  a lawyer, and nothing in the repo records a review since. Merging deploys, and from then new
+  sign-ups record that version; existing accounts are not asked again (there is no re-acceptance
+  flow, checked 2026-10-31: only the three sign-up calls in `context/AuthContext.tsx` send it). The code comment on the store declaration
   (`artifacts/api-server/src/lib/features.ts`) now describes both ways in; **the store declaration
   itself (Play Console) was not checked** and may still say accounts are made only through a class.
   Becoming a student by switching role asks for the same confirmation as signing up as one. Entry:
   «Students choose an email or a teacher's code» in the log.
+- **Homework projects: what the teacher's app still cannot do (phase 3, the teacher's screens, is
+  built; checked against a local stack with an S3 stub, never against real R2 or on a phone).** The
+  teacher now turns a homework into a project with a switch, sees «سلّم X من Y» on its card, a list of
+  who handed in, each handed-in project (photos, note, time), and deletes one with «حذف المشروع» (which
+  also ends the mis-claim dead end: after unlinking, the teacher deletes the wrong child's project and
+  the account linked now starts clean). Still open: (1) **a hidden draft with content locks the switch** —
+  once any tick, or any project that holds a photo or a note, exists the switch is disabled (409
+  `submission_locked`). A draft is never shown to the teacher and the app has no control to clear one;
+  the way out is deleting the homework and posting it again (or the API's `DELETE
+  /homework/:id/submissions/:studentId`). **Ruling that refines the owner's rule («any tick or any
+  row»), which the owner can revert:** a draft whose student removed every photo and cleared the note
+  holds nothing and no longer locks; revert by dropping `holdsWork` in `homeworkIdsWithWork`. The lock
+  check is not atomic with the write.
+  (2) **Parents have no view** of their child's project (the API route exists; no screen). (3) **No
+  push to the teacher** when a project is handed in. (4) The privacy-policy text on projects
+  (`constants/legal.ts` §1 and §6) was written by a model and **not reviewed by a lawyer**. Entries:
+  «Homework project submission — teacher screens», «Teacher can clear one student's project» and
+  «Homework submissions record their author» in the log.
+- **An exam's read-aloud recordings outlive the exam's removal and the student's account.**
+  Removing an exam (`DELETE /evaluations/:id`) archives it, and attempts reference the roster row, so
+  neither that nor the student deleting their account deletes the recordings in R2 (privacy §6
+  says so). They go only with a re-take, a quiz retake, the teacher deleting the attempt, or the
+  teacher's account. To decide: purge them on archive and/or with the student's account.
+- **Uploaded images keep the metadata the device wrote, which can include where a photo was
+  taken.** The client re-encodes a photo only when it shrinks it (long edge over 1600 px): on the
+  web through a canvas, which writes no metadata; on a phone through `expo-image-manipulator`,
+  whose output was not checked for metadata. A smaller photo, or one whose resize fails, is sent as
+  its file's own bytes, and the server stores them as received. That covers
+  project photos, chat images and lesson media. Privacy §1 now says an attached image may carry its
+  own metadata. To do: strip EXIF/GPS on the server, or always re-encode on the client.
 - **Neon is on Launch (applied 2026-10-23 by the owner); two checks remain.** Autoscaling 0.25-0.5
   CU, scale to zero on: about $10 a month expected, about $39 at most (estimates; read Neon's
   Usage page weekly for a month). Check `pooled` on `GET /api/healthz/pool` (admin key) once this
@@ -120,8 +161,11 @@ Checked 2026-10-22:
   and Crashlytics is enabled in the Firebase console (project `iqraa-95dd1`) **(notes — the owner
   said so; not checked)**. Not verified: which build is installed on a phone, that a crash
   actually appears in the console, and that the OTAs published since #1115 (all runtime 1.5.0)
-  reach a device. The API has no error-reporting service; it keeps its own log
-  (`/healthz/errors`, admin key) and Cloud Run logs.
+  reach a device. **API errors:** since PR #1238 (2026-10-24) the API logs in Cloud Logging's
+  shape (`severity`, `stack_trace`, `serviceContext`) and the Error Reporting API is enabled on
+  `iqraa-auth-507315`. Checked 2026-10-30: production error entries carry `stack_trace`. Not
+  checked: that the Error Reporting page groups them. `/healthz/errors` (admin key) and Cloud
+  Run logs still work.
 - **Row-level security is switched on in production** (`RLS_ENFORCE=on` on `iqraa-api`, set by the owner;
   PR #1048, migration `0008`). The last switch-on was 2026-10-27 about 21:16 on the owner's clock, revision
   `iqraa-api-00456-7md`; the owner reported the teacher inbox, a chat message, the parent's notification and
@@ -163,7 +207,11 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
-- 2026-10-30 — «ما الجديد»: existing users are told about new features, once, in the app
+- 2026-11-01 — «ما الجديد»: existing users are told about new features, once, in the app
+- 2026-11-01 — Grammar sheets stop mentioning pictures in the grades that have none
+- 2026-11-01 — Admin daily activity — new vs returning
+- 2026-11-01 — English audio check: a person listened to the 24 flagged words
+- 2026-10-31 — Grade 6 unit word lists in the English corner
 - 2026-10-30 — PostHog moves to the owner's own EU project
 - 2026-10-29 — Screen recordings: Contentsquare on the web, PostHog replay on Android
 - 2026-10-28 — Grade 8 semester 2 word lists in the English corner
@@ -186,17 +234,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-24 — Tests for the code-only account routes
 - 2026-10-24 — Printed grammar forms fit the page, sign-off no longer covers rows, and True or false says right or wrong without pictures
 - 2026-10-24 — Grade 10 grammar (Semester 1) in the English corner — built, shown to nobody yet
-- 2026-10-24 — Generator screens: Retry repeats the run, and the evaluations picker row
-- 2026-10-24 — Generator screens: the toast clears the docked bar
-- 2026-10-23 — Students choose an email or a teacher's code
-- 2026-10-23 — Generator screens: Cancel then a refusal, and the banner contrast
-- 2026-10-23 — Generator screens: the slides
-- 2026-10-23 — Generator screens: the activity
-- 2026-10-23 — Generator screens: the lesson plan
 
 ## Finding older detail, and recording new work
 
-- The log has 417 sections. Anything cited elsewhere as
+- The log has 422 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line

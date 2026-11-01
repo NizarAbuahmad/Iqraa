@@ -179,3 +179,35 @@ describe("resources", () => {
     assert.ok(p.ok && p.value.resources?.length === 0, "clearing is a change");
   });
 });
+
+describe("requiresSubmission", () => {
+  const base = { classGroupId: CLASS, title: "مشروع الوحدة", dueDate: "2026-10-20" };
+
+  it("defaults to false on create and accepts true and false", () => {
+    const none = parseCreate(base, NOW);
+    assert.ok(none.ok);
+    assert.equal(none.value.requiresSubmission, false);
+    const on = parseCreate({ ...base, requiresSubmission: true }, NOW);
+    assert.ok(on.ok && on.value.requiresSubmission === true);
+    const off = parseCreate({ ...base, requiresSubmission: false }, NOW);
+    assert.ok(off.ok && off.value.requiresSubmission === false);
+  });
+  it("refuses anything that is not a boolean, on create and on patch", () => {
+    for (const bad of ["true", 1, null, {}]) {
+      const c = parseCreate({ ...base, requiresSubmission: bad }, NOW);
+      assert.ok(!c.ok, `create ${String(bad)}`);
+      assert.equal(c.error, "requiresSubmission must be true or false");
+      const p = parsePatch({ requiresSubmission: bad }, NOW);
+      assert.ok(!p.ok, `patch ${String(bad)}`);
+      assert.equal(p.error, "requiresSubmission must be true or false");
+    }
+  });
+  it("patches the flag alone, and leaves it out when not sent", () => {
+    const on = parsePatch({ requiresSubmission: true }, NOW);
+    assert.ok(on.ok);
+    assert.equal(on.value.requiresSubmission, true);
+    const title = parsePatch({ title: "عنوان جديد" }, NOW);
+    assert.ok(title.ok);
+    assert.equal("requiresSubmission" in title.value, false);
+  });
+});

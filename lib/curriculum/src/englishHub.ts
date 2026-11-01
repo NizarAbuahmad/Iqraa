@@ -25,6 +25,8 @@ import { nccdG4EnglishSem1, g4EnglishSem1LessonKbId } from './catalogs/g4English
 import { nccdG4EnglishSem2, g4EnglishSem2LessonKbId } from './catalogs/g4EnglishSem2.ts';
 import { nccdG5EnglishSem1, g5EnglishSem1LessonKbId } from './catalogs/g5EnglishSem1.ts';
 import { nccdG5EnglishSem2, g5EnglishSem2LessonKbId } from './catalogs/g5EnglishSem2.ts';
+import { buildG6EnglishSem1BrowserCatalog } from './catalogs/g6EnglishSem1.ts';
+import { buildG6EnglishSem2BrowserCatalog } from './catalogs/g6EnglishSem2.ts';
 import { buildG8EngSem1BrowserCatalog } from './catalogs/g8EngSem1.ts';
 import { buildG8EngSem2BrowserCatalog } from './catalogs/g8EngSem2.ts';
 import { buildG9EngSem1BrowserCatalog } from './catalogs/g9EngSem1.ts';
@@ -130,6 +132,8 @@ interface BrowserBook {
  * Grade 10 semester 2 has no vocabulary extracted yet, so it contributes no lessons.
  */
 const VOCAB_BOOKS: [number, 1 | 2, BrowserBook][] = [
+  [6, 1, buildG6EnglishSem1BrowserCatalog()],
+  [6, 2, buildG6EnglishSem2BrowserCatalog()],
   [8, 1, buildG8EngSem1BrowserCatalog()],
   [8, 2, buildG8EngSem2BrowserCatalog()],
   [9, 1, buildG9EngSem1BrowserCatalog()],
@@ -211,10 +215,11 @@ export const ENGLISH_HUB_LESSONS: HubLesson[] = [...build(), ...buildFromVocabul
 
 /**
  * Tab order: grade order. The picked grade travels as its number in the URL, never as a
- * position, so a grade can be slotted in (5 went between 4 and 9, 8 between 5 and 9). Grades 6
- * and 7 are not here yet: their books carry no vocabulary to drill (and are third-party text).
+ * position, so a grade can be slotted in (5 went between 4 and 9, 8 between 5 and 9, 6 between 5 and 8).
+ * Grade 6 is here with its unit word lists only: headword and Arabic, from the activity book's Wordlist, with
+ * no sentences (third-party text). Grade 7 is not here yet: it has no extracted text.
  */
-export const ENGLISH_HUB_GRADES = [1, 2, 3, 4, 5, 8, 9, 10] as const;
+export const ENGLISH_HUB_GRADES = [1, 2, 3, 4, 5, 6, 8, 9, 10] as const;
 
 export function hubLessonsForGrade(grade: number): HubLesson[] {
   return ENGLISH_HUB_LESSONS.filter(l => l.grade === grade);

@@ -20,6 +20,7 @@
  * Pure, so the bare `node --test` runner can load it.
  */
 import type { ActivitySlide } from './ai/AIService.ts';
+import { diagramBeats, isDiagram } from './diagramGeometry.ts';
 import { isBulletLine } from './deckText.ts';
 import { resolveSlideLayout } from './slideLayout.ts';
 
@@ -36,6 +37,7 @@ export function pacedBeats(slide: ActivitySlide): number[] {
 function beatsFor(slide: ActivitySlide): number[] {
   const layout = resolveSlideLayout(slide);
   if (layout) {
+    if (isDiagram(layout)) return range(diagramBeats(layout));
     switch (layout.kind) {
       case 'compare': return [0, 1];
       case 'steps': return range(layout.steps.length);

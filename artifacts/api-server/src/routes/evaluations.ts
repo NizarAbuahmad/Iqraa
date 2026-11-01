@@ -255,15 +255,65 @@ async function liveQuestions(evaluationId: string) {
     .orderBy(asc(evaluationQuestions.orderIndex));
 }
 
-/** Recompute the denormalized mark total after any question write. */
-async function recomputeTotal(evaluationId: string): Promise<number> {
-  const rows = await liveQuestions(evaluationId);
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * Recompute the denormalized mark total after a question write, from what is live
+ * in `tx` (so it sees the write it follows, and no other request's half-done one).
+ */
+async function recomputeTotalIn(tx: Tx, evaluationId: string): Promise<number> {
+  const rows = await tx
+    .select({ marks: evaluationQuestions.marks })
+    .from(evaluationQuestions)
+    .where(and(eq(evaluationQuestions.evaluationId, evaluationId), isNull(evaluationQuestions.deletedAt)));
   const total = rows.reduce((sum, q) => sum + Number(q.marks), 0);
-  await db
+  await tx
     .update(evaluations)
     .set({ totalMarks: total.toFixed(2), updatedAt: new Date() })
     .where(eq(evaluations.id, evaluationId));
   return total;
+}
+
+/**
+ * Run a write to a draft's questions in one transaction behind a lock on the
+ * evaluation row, and only if the evaluation is still a live draft once it has
+ * the lock.
+ *
+ * The routes check "is it a draft" from a read made before they write, and publish
+ * locks this same row and reads the questions under that lock. So a write that did
+ * not take the lock could land after the publish had read, checked and totalled the
+ * paper, and change an exam students are already sitting; two overlapping writes
+ * could read the same highest position or each delete before the other had inserted;
+ * and a failure partway through left half a change behind. Behind the lock the
+ * status is re-read, the writes are all-or-nothing, and the total is computed from
+ * what this transaction wrote. «Delete» archives an evaluation and leaves its
+ * status as it was, so a removed draft is still status = 'draft': the archived
+ * check is the same one generate and publish make.
+ *
+ * `{ ok: false }` means it was published, closed or removed meanwhile; nothing was
+ * written. Whatever `write` throws rolls the whole write back.
+ */
+async function withLockedDraft<T>(
+  evaluationId: string,
+  write: (tx: Tx) => Promise<T>,
+): Promise<{ ok: true; value: T } | { ok: false }> {
+  return db.transaction(async tx => {
+    const [locked] = await tx
+      .select({ status: evaluations.status, archivedAt: evaluations.archivedAt })
+      .from(evaluations)
+      .where(eq(evaluations.id, evaluationId))
+      .for("update");
+    if (!locked || locked.status !== "draft" || locked.archivedAt) return { ok: false as const };
+    return { ok: true as const, value: await write(tx) };
+  });
+}
+
+/** The 409 for a question edit that found the evaluation published, closed or removed. */
+function noLongerDraft(res: Response): void {
+  res.status(409).json({
+    error: "This evaluation was published or removed while you were editing it. Nothing was changed.",
+    code: "no_longer_draft",
+  });
 }
 
 // ─── Evaluation CRUD ─────────────────────────────────────────────────────────
@@ -1130,54 +1180,99 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
     // Replace rather than append: generating twice should not silently double
     // the length of the evaluation. Questions the teacher wrote survive — see
     // `partitionForRegeneration` — and move after the new generated ones.
-    const { keep, replace } = partitionForRegeneration(await liveQuestions(evaluation.id));
-    if (replace.length > 0) {
-      await db
-        .update(evaluationQuestions)
-        .set({ deletedAt: new Date() })
-        .where(inArray(evaluationQuestions.id, replace.map(q => q.id)));
-    }
-    for (const [i, q] of keep.entries()) {
-      await db
-        .update(evaluationQuestions)
-        .set({ orderIndex: keyCheck.kept.length + i })
-        .where(eq(evaluationQuestions.id, q.id));
-    }
+    //
+    // One transaction behind a lock on the evaluation row, because the draft
+    // check at the top of this route was made before a model call that can take
+    // a minute. Without the lock two requests for one draft (the app gives up
+    // after 45 s and the teacher taps again) could both read an empty paper and
+    // both insert it; without the status check under the lock a draft published
+    // meanwhile had its questions replaced; and without the transaction an
+    // insert that failed after the old questions were soft-deleted left no paper
+    // under an error that says "Nothing was changed". Any throw below rolls the
+    // whole write back, which makes that sentence true.
+    const totalMarks = await db.transaction(async tx => {
+      const [locked] = await tx
+        .select({ status: evaluations.status, archivedAt: evaluations.archivedAt })
+        .from(evaluations)
+        .where(eq(evaluations.id, evaluation.id))
+        .for("update");
+      // «Delete» archives an evaluation and leaves its status as it was, so a removed
+      // draft is still status = 'draft'; publish refuses archived ones for the same reason.
+      if (!locked || locked.status !== "draft" || locked.archivedAt) return null;
 
-    if (keyCheck.kept.length > 0) {
-      await db.insert(evaluationQuestions).values(
-        keyCheck.kept.map(({ question: q, verification }, i) => ({
-          evaluationId: evaluation.id,
-          orderIndex: i,
-          type: q.type,
-          body: q.body,
-          expectedAnswer: q.expectedAnswer,
-          rubric: q.rubric,
-          objectiveId: q.objectiveId,
-          competencyKey: q.competencyKey,
-          skill: q.skill,
-          difficulty: q.difficulty,
-          marks: q.marks.toFixed(2),
-          gradingMode: q.gradingMode as never,
-          source: "ai" as const,
-          // The column the schema has described since Phase 3 and nothing
-          // wrote. `verified` is the verifier's own word or false — never an
-          // inference from the question having looked fine.
-          verification,
-          aiMetadata: q.aiMetadata,
-        })),
+      const { keep, replace } = partitionForRegeneration(
+        await tx
+          .select()
+          .from(evaluationQuestions)
+          .where(and(eq(evaluationQuestions.evaluationId, evaluation.id), isNull(evaluationQuestions.deletedAt)))
+          .orderBy(asc(evaluationQuestions.orderIndex)),
       );
+      if (replace.length > 0) {
+        await tx
+          .update(evaluationQuestions)
+          .set({ deletedAt: new Date() })
+          .where(inArray(evaluationQuestions.id, replace.map(q => q.id)));
+      }
+      for (const [i, q] of keep.entries()) {
+        await tx
+          .update(evaluationQuestions)
+          .set({ orderIndex: keyCheck.kept.length + i })
+          .where(eq(evaluationQuestions.id, q.id));
+      }
+
+      if (keyCheck.kept.length > 0) {
+        await tx.insert(evaluationQuestions).values(
+          keyCheck.kept.map(({ question: q, verification }, i) => ({
+            evaluationId: evaluation.id,
+            orderIndex: i,
+            type: q.type,
+            body: q.body,
+            expectedAnswer: q.expectedAnswer,
+            rubric: q.rubric,
+            objectiveId: q.objectiveId,
+            competencyKey: q.competencyKey,
+            skill: q.skill,
+            difficulty: q.difficulty,
+            marks: q.marks.toFixed(2),
+            gradingMode: q.gradingMode as never,
+            source: "ai" as const,
+            // The column the schema has described since Phase 3 and nothing
+            // wrote. `verified` is the verifier's own word or false — never an
+            // inference from the question having looked fine.
+            verification,
+            aiMetadata: q.aiMetadata,
+          })),
+        );
+      }
+
+      // The total from what is live now, in this transaction: the kept
+      // teacher-written questions plus the new paper.
+      const marks = await tx
+        .select({ marks: evaluationQuestions.marks })
+        .from(evaluationQuestions)
+        .where(and(eq(evaluationQuestions.evaluationId, evaluation.id), isNull(evaluationQuestions.deletedAt)));
+      const total = marks.reduce((sum, q) => sum + Number(q.marks), 0);
+
+      // Recorded on the evaluation, not just in each question's aiMetadata, so
+      // "was this paper written by a model or by four templates?" is answerable
+      // without opening a question.
+      await tx
+        .update(evaluations)
+        .set({ generator, modelId, generationParams, totalMarks: total.toFixed(2), updatedAt: new Date() })
+        .where(eq(evaluations.id, evaluation.id));
+      return total;
+    });
+    if (totalMarks === null) {
+      // Published, closed or removed while the questions were being written.
+      // The model's paper is dropped rather than put under students.
+      res.status(409).json({
+        error:
+          "This evaluation was published or removed while its questions were being generated. "
+          + "Nothing was changed.",
+        code: "no_longer_draft",
+      });
+      return;
     }
-
-    // Recorded on the evaluation, not just in each question's aiMetadata, so
-    // "was this paper written by a model or by four templates?" is answerable
-    // without opening a question.
-    await db
-      .update(evaluations)
-      .set({ generator, modelId, generationParams, updatedAt: new Date() })
-      .where(eq(evaluations.id, evaluation.id));
-
-    const totalMarks = await recomputeTotal(evaluation.id);
 
     res.json({
       questions: await liveQuestions(evaluation.id),
@@ -1271,34 +1366,43 @@ router.put("/evaluations/:id/questions/paper", async (req: AuthenticatedRequest,
       return;
     }
 
-    await db
-      .update(evaluationQuestions)
-      .set({ deletedAt: new Date() })
-      .where(
-        and(
-          eq(evaluationQuestions.evaluationId, evaluation.id),
-          isNull(evaluationQuestions.deletedAt),
-        ),
+    // Locked, and all or nothing: see withLockedDraft. Saved twice at once (a retry
+    // after the app's timeout) each used to delete before the other had inserted, and
+    // the paper held the grid twice; an insert that failed left no paper at all.
+    const saved = await withLockedDraft(evaluation.id, async tx => {
+      await tx
+        .update(evaluationQuestions)
+        .set({ deletedAt: new Date() })
+        .where(
+          and(
+            eq(evaluationQuestions.evaluationId, evaluation.id),
+            isNull(evaluationQuestions.deletedAt),
+          ),
+        );
+
+      await tx.insert(evaluationQuestions).values(
+        parsed.rows.map((q, i) => ({
+          evaluationId: evaluation.id,
+          orderIndex: i,
+          type: "open_ended" as QuestionType,
+          body: {},
+          expectedAnswer: {},
+          objectiveId: q.objectiveId,
+          competencyKey: q.competencyKey,
+          difficulty: q.difficulty,
+          marks: q.marks.toFixed(2),
+          gradingMode: "manual" as const,
+          source: "teacher" as const,
+        })),
       );
 
-    await db.insert(evaluationQuestions).values(
-      parsed.rows.map((q, i) => ({
-        evaluationId: evaluation.id,
-        orderIndex: i,
-        type: "open_ended" as QuestionType,
-        body: {},
-        expectedAnswer: {},
-        objectiveId: q.objectiveId,
-        competencyKey: q.competencyKey,
-        difficulty: q.difficulty,
-        marks: q.marks.toFixed(2),
-        gradingMode: "manual" as const,
-        source: "teacher" as const,
-      })),
-    );
-
-    const totalMarks = await recomputeTotal(evaluation.id);
-    res.json({ questions: await liveQuestions(evaluation.id), totalMarks });
+      return recomputeTotalIn(tx, evaluation.id);
+    });
+    if (!saved.ok) {
+      noLongerDraft(res);
+      return;
+    }
+    res.json({ questions: await liveQuestions(evaluation.id), totalMarks: saved.value });
   } catch (err) {
     logger.error({ err }, "save paper questions failed");
     res.status(500).json({ error: "Failed to save the paper" });
@@ -1376,44 +1480,54 @@ router.post("/evaluations/:id/questions", async (req: AuthenticatedRequest, res)
       return;
     }
 
-    const existingCount = await db
-      .select({ id: evaluationQuestions.id, orderIndex: evaluationQuestions.orderIndex })
-      .from(evaluationQuestions)
-      .where(
-        and(
-          eq(evaluationQuestions.evaluationId, evaluation.id),
-          isNull(evaluationQuestions.deletedAt),
-        ),
-      );
-    if (existingCount.length >= MAX_QUESTIONS) {
+    // The position, the limit and the total are all read from the paper as it stands
+    // under the lock: two adds at once used to read the same highest position and
+    // tie, and the count could be passed by one.
+    const added = await withLockedDraft(evaluation.id, async tx => {
+      const existingCount = await tx
+        .select({ id: evaluationQuestions.id, orderIndex: evaluationQuestions.orderIndex })
+        .from(evaluationQuestions)
+        .where(
+          and(
+            eq(evaluationQuestions.evaluationId, evaluation.id),
+            isNull(evaluationQuestions.deletedAt),
+          ),
+        );
+      if (existingCount.length >= MAX_QUESTIONS) return null;
+
+      const [created] = await tx
+        .insert(evaluationQuestions)
+        .values({
+          evaluationId: evaluation.id,
+          // Appended, not inserted: one past the highest live `orderIndex`, so
+          // adding a question never renumbers one a teacher has already placed.
+          // Not the count — after a delete leaves a gap, the count equals the
+          // last question's index and the new one would tie with it.
+          orderIndex: Math.max(-1, ...existingCount.map(q => q.orderIndex)) + 1,
+          type,
+          body,
+          expectedAnswer,
+          rubric,
+          objectiveId,
+          competencyKey,
+          marks: marks.toFixed(2),
+          difficulty,
+          gradingMode: QUESTION_TYPES[type].defaultGradingMode,
+          source: "teacher",
+        })
+        .returning();
+
+      return { created, totalMarks: await recomputeTotalIn(tx, evaluation.id) };
+    });
+    if (!added.ok) {
+      noLongerDraft(res);
+      return;
+    }
+    if (added.value === null) {
       res.status(400).json({ error: `An evaluation may hold ${MAX_QUESTIONS} questions` });
       return;
     }
-
-    const [created] = await db
-      .insert(evaluationQuestions)
-      .values({
-        evaluationId: evaluation.id,
-        // Appended, not inserted: one past the highest live `orderIndex`, so
-        // adding a question never renumbers one a teacher has already placed.
-        // Not the count — after a delete leaves a gap, the count equals the
-        // last question's index and the new one would tie with it.
-        orderIndex: Math.max(-1, ...existingCount.map(q => q.orderIndex)) + 1,
-        type,
-        body,
-        expectedAnswer,
-        rubric,
-        objectiveId,
-        competencyKey,
-        marks: marks.toFixed(2),
-        difficulty,
-        gradingMode: QUESTION_TYPES[type].defaultGradingMode,
-        source: "teacher",
-      })
-      .returning();
-
-    const totalMarks = await recomputeTotal(evaluation.id);
-    res.status(201).json({ question: created, totalMarks });
+    res.status(201).json({ question: added.value.created, totalMarks: added.value.totalMarks });
   } catch (err) {
     logger.error({ err }, "add question failed");
     res.status(500).json({ error: "Failed to add the question" });
@@ -1435,102 +1549,114 @@ router.patch(
         return;
       }
 
-      const [existing] = await db
-        .select()
-        .from(evaluationQuestions)
-        .where(
-          and(
-            eq(evaluationQuestions.id, req.params["qid"] as string),
-            eq(evaluationQuestions.evaluationId, evaluation.id),
-            isNull(evaluationQuestions.deletedAt),
-          ),
-        )
-        .limit(1);
+      // Everything below runs behind the lock (withLockedDraft), because the question
+      // is read, checked and rewritten: a read made before a publish, written after
+      // it, would change a question of an exam students are sitting. A refusal is
+      // returned, not sent, so the transaction ends before the response is written.
+      const outcome = await withLockedDraft(
+        evaluation.id,
+        async (
+          tx,
+        ): Promise<
+          | { fail: { status: number; error: string } }
+          | { updated: typeof evaluationQuestions.$inferSelect; totalMarks: number }
+        > => {
+          const [existing] = await tx
+            .select()
+            .from(evaluationQuestions)
+            .where(
+              and(
+                eq(evaluationQuestions.id, req.params["qid"] as string),
+                eq(evaluationQuestions.evaluationId, evaluation.id),
+                isNull(evaluationQuestions.deletedAt),
+              ),
+            )
+            .limit(1);
 
-      if (!existing) {
-        res.status(404).json({ error: "Question not found" });
+          if (!existing) return { fail: { status: 404, error: "Question not found" } };
+
+          const patch: Record<string, unknown> = { updatedAt: new Date() };
+
+          if (req.body?.objectiveId !== undefined) {
+            const objectiveId = trimmed(req.body.objectiveId);
+            // A teacher may retarget a question, but only within the objectives the
+            // evaluation was scoped to — otherwise the results claim to measure
+            // something the evaluation was never about.
+            if (!evaluation.objectiveIds.includes(objectiveId)) {
+              return { fail: { status: 400, error: "Objective is not in this evaluation's scope" } };
+            }
+            patch["objectiveId"] = objectiveId;
+          }
+
+          if (req.body?.competencyKey !== undefined) {
+            const key = trimmed(req.body.competencyKey) as CompetencyKey;
+            if (!COMPETENCY_KEYS.includes(key)) {
+              return { fail: { status: 400, error: "Unknown competency" } };
+            }
+            patch["competencyKey"] = key;
+          }
+
+          if (req.body?.marks !== undefined) {
+            const marks = Number(req.body.marks);
+            if (!(marks > 0)) {
+              return { fail: { status: 400, error: "Marks must be greater than zero" } };
+            }
+            patch["marks"] = marks.toFixed(2);
+          }
+
+          if (req.body?.difficulty !== undefined) {
+            if (!DIFFICULTIES.includes(req.body.difficulty)) {
+              return { fail: { status: 400, error: "Unknown difficulty" } };
+            }
+            patch["difficulty"] = req.body.difficulty;
+          }
+
+          // Body / answer / rubric edits are re-validated against the type, so a
+          // teacher cannot save a question that would break in front of a student.
+          const nextBody = req.body?.body ?? existing.body;
+          const nextAnswer = req.body?.expectedAnswer ?? existing.expectedAnswer;
+          const nextRubric = req.body?.rubric !== undefined ? req.body.rubric : existing.rubric;
+
+          if (
+            req.body?.body !== undefined ||
+            req.body?.expectedAnswer !== undefined ||
+            req.body?.rubric !== undefined
+          ) {
+            const problems = QUESTION_TYPES[existing.type].validate({
+              type: existing.type,
+              body: nextBody,
+              expectedAnswer: nextAnswer,
+              rubric: nextRubric,
+            });
+            if (problems.length > 0) return { fail: { status: 400, error: problems.join("; ") } };
+            patch["body"] = nextBody;
+            patch["expectedAnswer"] = nextAnswer;
+            patch["rubric"] = nextRubric;
+            // The verdict was about the question as generated, not as edited.
+            patch["verification"] = verificationAfterEdit(existing.verification);
+          }
+
+          // Mark the provenance honestly: this is no longer purely AI output.
+          if (existing.source === "ai") patch["source"] = "ai_edited";
+
+          const [updated] = await tx
+            .update(evaluationQuestions)
+            .set(patch)
+            .where(eq(evaluationQuestions.id, existing.id))
+            .returning();
+
+          return { updated: updated!, totalMarks: await recomputeTotalIn(tx, evaluation.id) };
+        },
+      );
+      if (!outcome.ok) {
+        noLongerDraft(res);
         return;
       }
-
-      const patch: Record<string, unknown> = { updatedAt: new Date() };
-
-      if (req.body?.objectiveId !== undefined) {
-        const objectiveId = trimmed(req.body.objectiveId);
-        // A teacher may retarget a question, but only within the objectives the
-        // evaluation was scoped to — otherwise the results claim to measure
-        // something the evaluation was never about.
-        if (!evaluation.objectiveIds.includes(objectiveId)) {
-          res.status(400).json({ error: "Objective is not in this evaluation's scope" });
-          return;
-        }
-        patch["objectiveId"] = objectiveId;
+      if ("fail" in outcome.value) {
+        res.status(outcome.value.fail.status).json({ error: outcome.value.fail.error });
+        return;
       }
-
-      if (req.body?.competencyKey !== undefined) {
-        const key = trimmed(req.body.competencyKey) as CompetencyKey;
-        if (!COMPETENCY_KEYS.includes(key)) {
-          res.status(400).json({ error: "Unknown competency" });
-          return;
-        }
-        patch["competencyKey"] = key;
-      }
-
-      if (req.body?.marks !== undefined) {
-        const marks = Number(req.body.marks);
-        if (!(marks > 0)) {
-          res.status(400).json({ error: "Marks must be greater than zero" });
-          return;
-        }
-        patch["marks"] = marks.toFixed(2);
-      }
-
-      if (req.body?.difficulty !== undefined) {
-        if (!DIFFICULTIES.includes(req.body.difficulty)) {
-          res.status(400).json({ error: "Unknown difficulty" });
-          return;
-        }
-        patch["difficulty"] = req.body.difficulty;
-      }
-
-      // Body / answer / rubric edits are re-validated against the type, so a
-      // teacher cannot save a question that would break in front of a student.
-      const nextBody = req.body?.body ?? existing.body;
-      const nextAnswer = req.body?.expectedAnswer ?? existing.expectedAnswer;
-      const nextRubric = req.body?.rubric !== undefined ? req.body.rubric : existing.rubric;
-
-      if (
-        req.body?.body !== undefined ||
-        req.body?.expectedAnswer !== undefined ||
-        req.body?.rubric !== undefined
-      ) {
-        const problems = QUESTION_TYPES[existing.type].validate({
-          type: existing.type,
-          body: nextBody,
-          expectedAnswer: nextAnswer,
-          rubric: nextRubric,
-        });
-        if (problems.length > 0) {
-          res.status(400).json({ error: problems.join("; ") });
-          return;
-        }
-        patch["body"] = nextBody;
-        patch["expectedAnswer"] = nextAnswer;
-        patch["rubric"] = nextRubric;
-        // The verdict was about the question as generated, not as edited.
-        patch["verification"] = verificationAfterEdit(existing.verification);
-      }
-
-      // Mark the provenance honestly: this is no longer purely AI output.
-      if (existing.source === "ai") patch["source"] = "ai_edited";
-
-      const [updated] = await db
-        .update(evaluationQuestions)
-        .set(patch)
-        .where(eq(evaluationQuestions.id, existing.id))
-        .returning();
-
-      const totalMarks = await recomputeTotal(evaluation.id);
-      res.json({ question: updated, totalMarks });
+      res.json({ question: outcome.value.updated, totalMarks: outcome.value.totalMarks });
     } catch (err) {
       logger.error({ err }, "update question failed");
       res.status(500).json({ error: "Failed to update question" });
@@ -1551,23 +1677,30 @@ router.delete(
         res.status(409).json({ error: "Only a draft can be edited" });
         return;
       }
-      const [removed] = await db
-        .update(evaluationQuestions)
-        .set({ deletedAt: new Date() })
-        .where(
-          and(
-            eq(evaluationQuestions.id, req.params["qid"] as string),
-            eq(evaluationQuestions.evaluationId, evaluation.id),
-            isNull(evaluationQuestions.deletedAt),
-          ),
-        )
-        .returning({ id: evaluationQuestions.id });
-
-      if (!removed) {
+      const outcome = await withLockedDraft(evaluation.id, async tx => {
+        const [removed] = await tx
+          .update(evaluationQuestions)
+          .set({ deletedAt: new Date() })
+          .where(
+            and(
+              eq(evaluationQuestions.id, req.params["qid"] as string),
+              eq(evaluationQuestions.evaluationId, evaluation.id),
+              isNull(evaluationQuestions.deletedAt),
+            ),
+          )
+          .returning({ id: evaluationQuestions.id });
+        if (!removed) return null;
+        return { removed: removed.id, totalMarks: await recomputeTotalIn(tx, evaluation.id) };
+      });
+      if (!outcome.ok) {
+        noLongerDraft(res);
+        return;
+      }
+      if (outcome.value === null) {
         res.status(404).json({ error: "Question not found" });
         return;
       }
-      res.json({ removed: removed.id, totalMarks: await recomputeTotal(evaluation.id) });
+      res.json(outcome.value);
     } catch (err) {
       logger.error({ err }, "delete question failed");
       res.status(500).json({ error: "Failed to delete question" });
@@ -1649,81 +1782,119 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
       res.status(409).json({ error: "This evaluation was removed from your list", code: "archived" });
       return;
     }
-    const questions = await liveQuestions(evaluation.id);
-    const total = questions.reduce((s, q) => s + Number(q.marks), 0);
 
-    // Publishing is the point of no return for in-flight attempts, so the
-    // blocking checks live here rather than being advisory.
-    const blockers: string[] = [];
-    if (questions.length === 0) blockers.push("Add at least one question before publishing");
-    if (total <= 0) blockers.push("Total marks must be greater than zero");
-    for (const q of questions) {
-      // A paper exam's questions are on paper. There is no body to validate,
-      // and demanding one would make a paper exam unpublishable.
-      if (isPaperQuestion(q)) continue;
-      const problems = QUESTION_TYPES[q.type].validate({
-        type: q.type,
-        body: q.body,
-        expectedAnswer: q.expectedAnswer,
-        rubric: q.rubric,
-      });
-      if (problems.length > 0) blockers.push(`Question ${q.orderIndex + 1}: ${problems[0]}`);
-    }
+    // Everything that decides whether and how to publish happens behind a lock on
+    // the evaluation row, in one transaction: the questions are read, checked and
+    // totalled under it, and the UPDATE is made under it. Without that, a
+    // generation committing between the read and the UPDATE (it locks the same
+    // row) left the exam published with the OLD total, or with no questions at
+    // all, and the checks below had been run on a paper that no longer existed.
+    // The push for a dated exam is sent after the commit, so the lock is not
+    // held across a call to Expo.
+    const outcome = await db.transaction(async tx => {
+      const [locked] = await tx
+        .select()
+        .from(evaluations)
+        .where(eq(evaluations.id, evaluation.id))
+        .for("update");
+      // Read again under the lock: it may have been removed, or published by a
+      // request ahead of this one, since the check above.
+      if (!locked) return { kind: "gone" as const };
+      if (locked.archivedAt) return { kind: "archived" as const };
 
-    if (blockers.length > 0) {
-      res.status(400).json({ error: "Evaluation is not ready to publish", blockers });
+      const questions = await tx
+        .select()
+        .from(evaluationQuestions)
+        .where(and(eq(evaluationQuestions.evaluationId, evaluation.id), isNull(evaluationQuestions.deletedAt)))
+        .orderBy(asc(evaluationQuestions.orderIndex));
+      const total = questions.reduce((s, q) => s + Number(q.marks), 0);
+
+      // Publishing is the point of no return for in-flight attempts, so the
+      // blocking checks live here rather than being advisory.
+      const blockers: string[] = [];
+      if (questions.length === 0) blockers.push("Add at least one question before publishing");
+      if (total <= 0) blockers.push("Total marks must be greater than zero");
+      for (const q of questions) {
+        // A paper exam's questions are on paper. There is no body to validate,
+        // and demanding one would make a paper exam unpublishable.
+        if (isPaperQuestion(q)) continue;
+        const problems = QUESTION_TYPES[q.type].validate({
+          type: q.type,
+          body: q.body,
+          expectedAnswer: q.expectedAnswer,
+          rubric: q.rubric,
+        });
+        if (problems.length > 0) blockers.push(`Question ${q.orderIndex + 1}: ${problems[0]}`);
+      }
+      if (blockers.length > 0) return { kind: "blockers" as const, blockers };
+
+      // The share code is issued once and kept. Re-publishing after an edit must
+      // not invalidate a link a teacher has already written on the board.
+      //
+      // The retry is for the unique index, not for luck: 31^6 codes make a
+      // collision vanishingly rare, and silently failing a publish because of one
+      // would be a bug nobody could reproduce. Each attempt runs in a savepoint:
+      // a unique violation aborts a Postgres transaction, and without one the
+      // retry would only be refused with "current transaction is aborted".
+      let updated;
+      for (let attempt = 0; attempt < 5 && !updated; attempt++) {
+        try {
+          [updated] = await tx.transaction(sp =>
+            sp
+              .update(evaluations)
+              .set({
+                status: "published",
+                publishedAt: new Date(),
+                // Re-publishing reopens a closed exam; it is no longer closed.
+                closedAt: null,
+                // And it is being sat again, so its answers go back out of view
+                // (`modules/assessment/answerReview.ts`).
+                showSolutionsToStudent: false,
+                updatedAt: new Date(),
+                totalMarks: total.toFixed(2),
+                shareCode: locked.shareCode ?? generateShareCode(),
+                // Refreshed on every publish, unlike the code itself, which is
+                // kept. A teacher who edits a paper the day before a sitting must
+                // not find the link they already wrote on the board has a week
+                // less life than they think. See the column's own note for why an
+                // expiry exists at all: the link hands a class list of minors to
+                // anyone holding it, and that used to be true forever.
+                shareCodeExpiresAt: new Date(Date.now() + SHARE_CODE_TTL_MS),
+              })
+              .where(eq(evaluations.id, evaluation.id))
+              .returning(),
+          );
+        } catch (err) {
+          if (!isUniqueViolation(err) || locked.shareCode) throw err;
+          logger.warn({ evaluationId: evaluation.id }, "share code collision, retrying");
+        }
+      }
+      if (!updated) return { kind: "failed" as const };
+      // From the row as it was under the lock, not the one read before it: a
+      // publish ahead of this one has already moved the exam out of draft, so a
+      // second publish of the same dated draft no longer announces it twice.
+      return { kind: "published" as const, updated, notice: publishNotice(locked) };
+    });
+
+    if (outcome.kind === "gone") {
+      res.status(404).json({ error: "Evaluation not found" });
       return;
     }
-
-    // The share code is issued once and kept. Re-publishing after an edit must
-    // not invalidate a link a teacher has already written on the board.
-    //
-    // The retry is for the unique index, not for luck: 31^6 codes make a
-    // collision vanishingly rare, and silently failing a publish because of one
-    // would be a bug nobody could reproduce.
-    let updated;
-    for (let attempt = 0; attempt < 5 && !updated; attempt++) {
-      try {
-        [updated] = await db
-          .update(evaluations)
-          .set({
-            status: "published",
-            publishedAt: new Date(),
-            // Re-publishing reopens a closed exam; it is no longer closed.
-            closedAt: null,
-            // And it is being sat again, so its answers go back out of view
-            // (`modules/assessment/answerReview.ts`).
-            showSolutionsToStudent: false,
-            updatedAt: new Date(),
-            totalMarks: total.toFixed(2),
-            shareCode: evaluation.shareCode ?? generateShareCode(),
-            // Refreshed on every publish, unlike the code itself, which is
-            // kept. A teacher who edits a paper the day before a sitting must
-            // not find the link they already wrote on the board has a week
-            // less life than they think. See the column's own note for why an
-            // expiry exists at all: the link hands a class list of minors to
-            // anyone holding it, and that used to be true forever.
-            shareCodeExpiresAt: new Date(Date.now() + SHARE_CODE_TTL_MS),
-          })
-          .where(eq(evaluations.id, evaluation.id))
-          .returning();
-      } catch (err) {
-        if (!isUniqueViolation(err) || evaluation.shareCode) throw err;
-        logger.warn({ evaluationId: evaluation.id }, "share code collision, retrying");
-      }
+    if (outcome.kind === "archived") {
+      res.status(409).json({ error: "This evaluation was removed from your list", code: "archived" });
+      return;
     }
-    if (!updated) {
+    if (outcome.kind === "blockers") {
+      res.status(400).json({ error: "Evaluation is not ready to publish", blockers: outcome.blockers });
+      return;
+    }
+    if (outcome.kind === "failed") {
       res.status(500).json({ error: "Failed to publish" });
       return;
     }
 
     // A dated draft leaving draft is the moment its date reaches families.
-    // Not made race-safe, by choice (a known gap): two publishes of one draft
-    // racing each other can both announce. A conditional write is possible inside
-    // the share-code retry loop (first attempt `status = draft`, a zero-row result
-    // is not an exception so the retry stays intact) but it was left out of this
-    // part to keep the publish path unchanged.
-    const notice = publishNotice(evaluation);
+    const { updated, notice } = outcome;
     if (notice) await pushWithin("exam published with a date", () => announceExamDate(updated, notice));
     res.json({ evaluation: updated });
   } catch (err) {
@@ -1778,16 +1949,33 @@ router.delete("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
       res.status(404).json({ error: "Evaluation not found" });
       return;
     }
-    const decision = archiveDecision(evaluation);
+    // Decided on the row as it is once this request holds its lock, not on the read
+    // above: publish locks the same row and flips the status, and a publish that
+    // committed in between would otherwise be hidden from its teacher while its
+    // student link is live (the case archiveDecision exists to refuse).
+    const decision = await db.transaction(async tx => {
+      const [locked] = await tx
+        .select({ status: evaluations.status, archivedAt: evaluations.archivedAt })
+        .from(evaluations)
+        .where(eq(evaluations.id, evaluation.id))
+        .for("update");
+      if (!locked) return null;
+      const d = archiveDecision(locked);
+      if (d.ok && !d.alreadyArchived) {
+        await tx
+          .update(evaluations)
+          .set({ archivedAt: new Date(), updatedAt: new Date() })
+          .where(eq(evaluations.id, evaluation.id));
+      }
+      return d;
+    });
+    if (!decision) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
     if (!decision.ok) {
       res.status(decision.status).json({ error: decision.error, code: decision.code });
       return;
-    }
-    if (!decision.alreadyArchived) {
-      await db
-        .update(evaluations)
-        .set({ archivedAt: new Date(), updatedAt: new Date() })
-        .where(eq(evaluations.id, evaluation.id));
     }
     res.json({ archived: evaluation.id });
   } catch (err) {

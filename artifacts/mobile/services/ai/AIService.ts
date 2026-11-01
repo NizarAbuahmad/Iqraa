@@ -529,7 +529,8 @@ export interface ActivitySlide {
    * `services/slideLayout.ts` decides whether a layout's data is complete
    * enough to draw; all three renderers ask it rather than checking fields.
    */
-  layout?: 'statement' | 'stat' | 'compare' | 'steps' | 'timeline' | 'stats' | 'table' | 'flow' | 'quote' | 'photo' | 'concepts';
+  layout?: 'statement' | 'stat' | 'compare' | 'steps' | 'timeline' | 'stats' | 'table' | 'flow' | 'quote' | 'photo' | 'concepts'
+    | 'cycle' | 'tree' | 'venn' | 'mindmap';
   /** The figure and its caption, for `layout: 'stat'`. */
   stat?: { value: string; label: string; source?: string };
   /** The two sides, for `layout: 'compare'`. */
@@ -554,6 +555,14 @@ export interface ActivitySlide {
    * the model: the Prompt Slides prompt does not describe it.
    */
   concepts?: string[];
+  /** Stages on a circle, for `layout: 'cycle'` (3–6). */
+  cycle?: { stages: { label: string; note?: string }[] };
+  /** A classification, for `layout: 'tree'`: one root, 2–4 branches, 0–4 leaves each. */
+  tree?: { root: string; branches: { label: string; leaves?: string[] }[] };
+  /** Two or three sets, for `layout: 'venn'`; `shared` is what all of them have. */
+  venn?: { sets: { label: string; only: string[] }[]; shared: string[] };
+  /** One idea and 3–6 linked ones, for `layout: 'mindmap'`; a role draws an arrow. */
+  mindmap?: { center: string; nodes: { text: string; role?: 'cause' | 'effect' }[] };
   /**
    * A short English photo-search phrase the generator asked for on this slide.
    *
@@ -783,7 +792,15 @@ export interface LessonFlowOutput {
  */
 export interface LessonTeachingOutput {
   hook?: { question?: string; teacherNote?: string };
-  concepts?: { title?: string; points?: string[]; teacherNote?: string; misconception?: string }[];
+  concepts?: {
+    title?: string; points?: string[]; teacherNote?: string; misconception?: string;
+    /** `{ layout, [layout]: payload }` — drawn instead of the points when the gate accepts it. */
+    shape?: Record<string, unknown>;
+    icon?: string;
+    chart?: unknown;
+    /** An English photo-search phrase. */
+    photo?: string;
+  }[];
   workedExample?: { problem?: string; steps?: string[]; answer?: string };
   practice?: { problem?: string; hint?: string; answer?: string };
   /** A student's wrong solution built from a real misconception, for «اكتشف الخطأ». */

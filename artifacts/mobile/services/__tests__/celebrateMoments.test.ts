@@ -1,9 +1,12 @@
-// Each of the four moments mounts the shared Celebrate overlay
-// (docs/superpowers/specs/2026-10-22-celebrations-design.md). The firing rule
-// itself is pinned in celebration.test.ts; these pin that each screen uses it.
+// Each of the five moments mounts the shared Celebrate overlay
+// (docs/superpowers/specs/2026-10-22-celebrations-design.md; the fifth, a
+// homework project handed in on time, since 2026-10-30). The firing rules
+// are pinned in celebration.test.ts and homeworkProject.test.ts; these pin
+// that each screen uses them. A sixth moment needs a test here, and every
+// screen that mounts Celebrate must be one of the listed moments.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -63,6 +66,43 @@ test('ticking off the last homework is celebrated, after the save succeeds and n
   );
   // The rollback path must not celebrate.
   assert.doesNotMatch(src.slice(src.indexOf('} catch (e) {', save), src.indexOf('} finally {', save)), /setCelebrateHw/);
+});
+
+test('a homework project handed in on time is celebrated, after the server accepted it, on the crossing', () => {
+  const src = read('app', 'homework-project', '[id].tsx');
+  assert.match(src, /<Celebrate\b/);
+  assert.match(src, /projectHandedIn/);
+  const calls = [...src.matchAll(/setCelebrate\(true\)/g)];
+  assert.equal(calls.length, 1, 'exactly one place starts the project celebration');
+  assert.match(
+    src,
+    /await homeworkSubmissionApi\.handIn\([^]*?if \(celebratesHandIn\(before\.status, next\.status\)\) setCelebrate\(true\)/,
+    'celebrate after handIn resolves, and only on the none → submitted crossing (never late, never again)',
+  );
+  // The failure path must not celebrate.
+  const fire = src.indexOf('setCelebrate(true)');
+  assert.doesNotMatch(src.slice(src.indexOf('} catch (e) {', fire), src.indexOf('} finally {', fire)), /setCelebrate\(true\)/);
+});
+
+test('every screen that mounts Celebrate is one of the five moments', () => {
+  const MOMENTS = [
+    'app/take/[code].tsx',
+    'components/publicGames/GameShell.tsx',
+    'app/(tabs)/school.tsx',
+    'app/(tabs)/index.tsx',
+    'components/today/PhoneToday.tsx',
+    'app/homework-project/[id].tsx',
+  ];
+  const mounts: string[] = [];
+  const walk = (dir: string) => {
+    for (const name of readdirSync(join(root, dir))) {
+      const rel = `${dir}/${name}`;
+      if (statSync(join(root, rel)).isDirectory()) walk(rel);
+      else if (rel.endsWith('.tsx') && rel !== 'components/ui/Celebrate.tsx' && /<Celebrate\b/.test(read(rel))) mounts.push(rel);
+    }
+  };
+  for (const dir of ['app', 'components']) walk(dir);
+  assert.deepEqual(mounts.sort(), [...MOMENTS].sort(), 'a new celebration is a design decision: add it to CLAUDE.md, the celebrations spec and this file');
 });
 
 test('a prep checklist reaching all ready is celebrated, on the phone and on desktop', () => {

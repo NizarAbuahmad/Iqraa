@@ -132,6 +132,8 @@ export interface NewHomework {
   resources?: object[];
   /** Also leave a line in the class's group chat. */
   shareToChat?: boolean;
+  /** Students hand it in as a project (photos and a note) instead of ticking it. */
+  requiresSubmission?: boolean;
 }
 
 /**
@@ -145,6 +147,8 @@ export interface HomeworkPatch {
   evaluationId?: string | null;
   /** The whole list: replaces what is attached. */
   resources?: object[];
+  /** Refused with 409 `submission_locked` once any student has a tick or project work (`TeacherHomework.requiresSubmissionLocked`). */
+  requiresSubmission?: boolean;
 }
 
 export async function listClassHomework(classId: string): Promise<TeacherHomeworkList> {

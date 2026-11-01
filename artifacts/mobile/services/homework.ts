@@ -1,7 +1,8 @@
 /**
  * «الواجبات» — pure types and helpers shared by the student, parent and
  * teacher screens. No imports on purpose: this file is loaded by bare
- * `node --test`, so nothing here may touch react-native, expo or `apiClient`.
+ * `node --test`, so nothing here may touch react-native, expo or `apiClient`
+ * (the one import is `homeworkSubmission.ts`, itself import-free).
  * The fetchers live in `homeworkApi.ts`.
  *
  * A due date is a calendar day (`YYYY-MM-DD`) in Asia/Amman, never a
@@ -12,6 +13,8 @@
  * Compare dates as strings or through `Date.UTC` — never `new Date('YYYY-MM-DD')`
  * in local time, which shifts the day in any zone west of UTC.
  */
+
+import { normalizeSubmissionState, type SubmissionState } from './homeworkSubmission.ts';
 
 export type HomeworkState = 'done' | 'overdue' | 'open';
 
@@ -119,6 +122,23 @@ export interface FamilyHomework {
   canTrack: boolean;
   /** Best round per attached game; absent on the wire (an older server) reads as none. */
   gameResults: FamilyGameResult[];
+  /**
+   * The teacher asked for a project hand-in (photos / a note). Such an item is
+   * never ticked by hand — the server answers 409 `submission_required` — it
+   * turns `done` when the project is handed in. Absent on the wire (an older
+   * server) reads as false.
+   */
+  requiresSubmission: boolean;
+  /** Where the project stands; absent or unknown on the wire reads as 'none'. */
+  submission: SubmissionState;
+}
+
+/**
+ * Whether the row offers «افتح المشروع». Needs the same per-item `canTrack` as
+ * a tick: with no student account in this item's class nobody can hand in.
+ */
+export function showsSubmissionLink(hw: Pick<FamilyHomework, 'requiresSubmission' | 'canTrack'>): boolean {
+  return hw.requiresSubmission && hw.canTrack;
 }
 
 export interface ChildHomework {
@@ -148,6 +168,15 @@ export interface TeacherHomework {
    * can only ever reach this, so it — not `studentCount` — is the denominator.
    */
   trackableCount: number;
+  /** Handed in as a project, not ticked. False when absent (an older server). */
+  requiresSubmission: boolean;
+  /** Students who have handed the project in (on time or late). 0 when absent. */
+  submittedCount: number;
+  /**
+   * The switch can no longer be changed: some student has already ticked it or saved project work. That work may be
+   * a tick or a draft the teacher cannot see, so say «a student has started», never «N have handed in». False when absent.
+   */
+  requiresSubmissionLocked: boolean;
 }
 
 export interface TeacherHomeworkList {
@@ -190,6 +219,18 @@ export function isValidYmd(s: string): boolean {
  */
 export function isHomeworkChatLine(body: string): boolean {
   return body.startsWith('📚 واجب جديد:');
+}
+
+/**
+ * Where a tap on a message goes, when the message is a shared-homework line.
+ * The sender (the teacher) lands on the class's homework tab; anyone else on
+ * «المدرسة». Null for any other message, and for the teacher's line in a
+ * thread that has no class to open.
+ */
+export function homeworkChatTarget(m: { body: string; isOwn: boolean; classGroupId: string | null }): string | null {
+  if (!isHomeworkChatLine(m.body)) return null;
+  if (!m.isOwn) return '/school';
+  return m.classGroupId ? `/classes/${encodeURIComponent(m.classGroupId)}?tab=homework` : null;
 }
 
 /**
@@ -268,6 +309,8 @@ export function normalizeFamilyHomework(raw: unknown): FamilyHomework[] {
         resources: normalizeResources(r['resources']),
         canTrack: r['canTrack'] !== false,
         gameResults: normalizeGameResults(r['gameResults']),
+        requiresSubmission: r['requiresSubmission'] === true,
+        submission: normalizeSubmissionState(r['submission']),
       },
     ];
   });
@@ -400,6 +443,9 @@ export function normalizeTeacherHomework(raw: unknown): TeacherHomework[] {
         doneCount: count(r['doneCount']),
         studentCount,
         trackableCount: trackable(r['trackableCount'], studentCount),
+        requiresSubmission: r['requiresSubmission'] === true,
+        submittedCount: count(r['submittedCount']),
+        requiresSubmissionLocked: r['requiresSubmissionLocked'] === true,
       },
     ];
   });
@@ -417,6 +463,38 @@ function trackable(raw: unknown, studentCount: number): number {
  */
 export function clampedDone(done: number, trackable: number): number {
   return Math.max(0, Math.min(done, trackable));
+}
+
+/**
+ * «سلّم X من Y» on a project homework's card. `submittedCount` keeps a hand-in after the student's roster link is
+ * removed, so — like `clampedDone` — it is clamped to the denominator rather than showing «5 of 4».
+ */
+export function projectSubmittedText(hw: Pick<TeacherHomework, 'submittedCount' | 'trackableCount'>): { submitted: number; of: number } {
+  return { submitted: clampedDone(hw.submittedCount, hw.trackableCount), of: Math.max(0, hw.trackableCount) };
+}
+
+/**
+ * The server's refusal of a changed project switch (409 `submission_locked`): some student started after the list
+ * was loaded. Duck-typed so it holds for an `ApiError` and a `HomeworkError` alike, and loads without the API module.
+ */
+export function isSwitchLockedError(e: unknown): boolean {
+  if (!e || typeof e !== 'object') return false;
+  const { status, code } = e as { status?: unknown; code?: unknown };
+  return status === 409 && code === 'submission_locked';
+}
+
+/** A project homework's photos and notes go with it, so its delete confirmation says so. */
+export function deleteConfirmKey(hw: Pick<TeacherHomework, 'requiresSubmission'>): 'hwDeleteConfirm' | 'hwDeleteConfirmProject' {
+  return hw.requiresSubmission ? 'hwDeleteConfirmProject' : 'hwDeleteConfirm';
+}
+
+/**
+ * What an EDIT sends for the project switch: the new value only when it differs from the stored one. The server
+ * refuses a different value once any student has started (409 `submission_locked`), so a save that did not touch
+ * the switch must never carry it — a locked homework stays editable.
+ */
+export function requiresSubmissionPatch(stored: boolean, draft: boolean): { requiresSubmission?: boolean } {
+  return draft === stored ? {} : { requiresSubmission: draft };
 }
 
 /** The whole body of `GET /classes/:id/homework`. Never throws. */

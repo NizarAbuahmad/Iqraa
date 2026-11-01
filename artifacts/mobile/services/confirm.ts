@@ -15,6 +15,8 @@ import { Alert, Platform } from 'react-native';
 export type ConfirmOptions = {
   title: string;
   message?: string;
+  /** Text the user is about to commit to (a letter, say), shown in its own scrollable box under `message`. */
+  preview?: string;
   /** Label for the action that goes ahead. */
   confirmLabel: string;
   cancelLabel: string;
@@ -39,7 +41,8 @@ export function registerConfirmHandler(next: ConfirmHandler | null) {
 
 /** Resolves true when the user confirms, false on cancel or dismissal. */
 export function confirm(options: ConfirmOptions): Promise<boolean> {
-  const { title, message, confirmLabel, cancelLabel, destructive } = options;
+  const { title, confirmLabel, cancelLabel, destructive } = options;
+  const message = [options.message, options.preview].filter(Boolean).join('\n\n') || undefined;
 
   if (handler) return handler(options);
 

@@ -19,7 +19,7 @@ import {
   students,
   rosterLinks,
 } from "@workspace/db";
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull } from "drizzle-orm";
 
 /**
  * Get-or-create the one thread for a class, then reconcile membership to
@@ -146,6 +146,116 @@ export async function syncClassThreadsForStudent(studentId: string): Promise<voi
 }
 
 /**
+ * After an account's links to some roster rows were deleted: take it out of the
+ * chats that only existed because of those links.
+ *
+ * A direct thread and a custom group are created only for someone connected to
+ * the teacher (a roster link to one of their students), and sending and reading
+ * check participation alone, so removing the link left the account reading and
+ * posting in them. For each teacher whose students it was just unlinked from,
+ * and only if it now has no link left to ANY of that teacher's students (a
+ * parent unlinked from one child but still linked to another keeps everything),
+ * remove it from that teacher's direct thread, and, only when `alsoGroups`, from
+ * the custom groups that teacher owns. Class chats are not handled here: they
+ * are re-derived from the roster by `syncClassThreadsForStudent`.
+ *
+ * `alsoGroups` is the caller's decision, and it is required so nobody gets it by
+ * default. A teacher unlinking an account is often correcting a roster (wrong
+ * child, linked again a minute later), and a group is a deliberate list the
+ * teacher built, so that route passes false and takes someone out of a group
+ * through the group's own member list. An account withdrawing its OWN claim has
+ * chosen to leave, so that route passes true.
+ *
+ * Messages stay (moderation reads them, and a re-link brings the thread back
+ * through `openDirectThread`). The teacher's side of the emptied direct thread
+ * is hidden and marked read, so the inbox and the badge do not keep a chat with
+ * nobody in it — unless the account left something the teacher has not read, in
+ * which case the thread stays visible (the teacher cannot reopen it: the pair
+ * is no longer connected) until they have.
+ *
+ * Safe to repeat, and callers rely on it: it acts only on the state it finds, so
+ * a retry after a failure part-way (the link delete commits on its own) finishes
+ * the job. Not atomic with a link created in the same instant for another of the
+ * teacher's students: the account could end up linked but out of the direct
+ * chat or, with `alsoGroups`, the groups (the direct chat returns when the
+ * teacher opens it; a group needs adding again).
+ */
+export async function pruneTeacherChatsAfterUnlink(
+  userId: string,
+  studentIds: string[],
+  opts: { alsoGroups: boolean },
+): Promise<void> {
+  if (studentIds.length === 0) return;
+  const teachers = await db
+    .selectDistinct({ teacherId: students.teacherId })
+    .from(students)
+    .where(inArray(students.id, studentIds));
+  for (const { teacherId } of teachers) {
+    // Never the teacher's own seat in their own chats (reconcileClassThreadMembers has the same guard).
+    if (teacherId === userId) continue;
+    const [stillConnected] = await db
+      .select({ id: rosterLinks.id })
+      .from(rosterLinks)
+      .innerJoin(students, eq(students.id, rosterLinks.studentId))
+      .where(and(eq(students.teacherId, teacherId), eq(rosterLinks.userId, userId)))
+      .limit(1);
+    if (stillConnected) continue;
+
+    const directKey = [teacherId, userId].sort().join(":");
+    const [direct] = await db
+      .select({ id: chatThreads.id })
+      .from(chatThreads)
+      .where(eq(chatThreads.directKey, directKey))
+      .limit(1);
+    if (direct) {
+      await db
+        .delete(chatParticipants)
+        .where(and(eq(chatParticipants.threadId, direct.id), eq(chatParticipants.userId, userId)));
+      const [mine] = await db
+        .select({ lastReadAt: chatParticipants.lastReadAt })
+        .from(chatParticipants)
+        .where(and(eq(chatParticipants.threadId, direct.id), eq(chatParticipants.userId, teacherId)))
+        .limit(1);
+      const [unread] = await db
+        .select({ id: chatMessages.id })
+        .from(chatMessages)
+        .where(
+          and(
+            eq(chatMessages.threadId, direct.id),
+            eq(chatMessages.senderId, userId),
+            isNull(chatMessages.archivedAt),
+            mine?.lastReadAt ? gt(chatMessages.createdAt, mine.lastReadAt) : undefined,
+          ),
+        )
+        .limit(1);
+      if (!unread) {
+        const now = new Date();
+        await db
+          .update(chatParticipants)
+          .set({ hiddenAt: now, lastReadAt: now })
+          .where(and(eq(chatParticipants.threadId, direct.id), eq(chatParticipants.userId, teacherId)));
+      }
+    }
+
+    if (!opts.alsoGroups) continue;
+    const groups = await db
+      .select({ id: chatThreads.id })
+      .from(chatThreads)
+      .where(and(eq(chatThreads.type, "custom_group"), eq(chatThreads.createdBy, teacherId)));
+    if (groups.length > 0) {
+      await db
+        .delete(chatParticipants)
+        .where(
+          and(
+            inArray(chatParticipants.threadId, groups.map(g => g.id)),
+            eq(chatParticipants.userId, userId),
+          ),
+        );
+    }
+  }
+}
+
+/**
  * An archived class's thread goes with it. `chatThreads.archivedAt` existed
  * and the inbox already filtered on it; nothing ever set it, so archiving a
  * class left its chat live for every member.
@@ -161,8 +271,9 @@ export async function archiveClassThread(classGroupId: string): Promise<void> {
  * One line in a class's group chat, in the teacher's name, sent by the server
  * for something the teacher did (results released, homework shared). Not
  * pushed: each caller has already pushed the families it concerns. Bumps the
- * thread so it rises in the inbox, and marks it read for the teacher — they
- * pressed the button, their own line is not news to them.
+ * thread so it rises in the inbox. The teacher's read mark is NOT moved: their
+ * own line is never counted as unread, and moving it would bury any family
+ * reply they have not opened.
  */
 export async function postToClassThread(
   group: { id: string; teacherId: string; name: string; nameAr: string },
@@ -175,8 +286,4 @@ export async function postToClassThread(
     .returning({ createdAt: chatMessages.createdAt });
   const at = line?.createdAt ?? new Date();
   await db.update(chatThreads).set({ updatedAt: at }).where(eq(chatThreads.id, thread.id));
-  await db
-    .update(chatParticipants)
-    .set({ lastReadAt: at })
-    .where(and(eq(chatParticipants.threadId, thread.id), eq(chatParticipants.userId, group.teacherId)));
 }

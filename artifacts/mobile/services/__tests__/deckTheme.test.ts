@@ -9,7 +9,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  DECK_ACCENT, DECK_BG, DECK_TEAL, DECK_THEMES, DECK_THEME_ORDER, DEFAULT_DECK_THEME,
+  DECK_ACCENT, DECK_BG, DECK_TEAL, DECK_THEMES, DECK_THEME_ORDER, DEFAULT_DECK_THEME, diagramTint,
   isDeckThemeId, resolveDeckTheme, slideTypeAccent, themeIdForSubject,
 } from '../deckTheme.ts';
 
@@ -142,5 +142,14 @@ describe('resolveDeckTheme', () => {
     assert.equal(resolveDeckTheme({ themeId: 'neon', subject: 'English' }).id, 'violet');
     assert.equal(resolveDeckTheme({ themeId: 42 as unknown, subject: '' }).id, 'iqraa');
     assert.ok(!isDeckThemeId('toString'), 'inherited object keys are not theme ids');
+  });
+});
+
+describe('diagram tint', () => {
+  it('carries body text at 4.5:1 in every theme', () => {
+    for (const id of DECK_THEME_ORDER) {
+      const T = DECK_THEMES[id];
+      assert.ok(contrast(T.text, diagramTint(T)) >= 4.5, id);
+    }
   });
 });

@@ -29,6 +29,7 @@ import { RATE_LIMITS } from "../lib/rateLimit.js";
 import { parseSchoolAssignment, parseSchoolIdFilter, parseSchoolInput } from "../lib/adminSchools.js";
 import { parseDateRange, parseMetricInput, parsePublicIdea, parseSiteSignup, siteKeyMatches, toCsv, UUID } from "../lib/adminMetrics.js";
 import { notifyAdminsOfWaitlistSignup } from "../lib/adminNotify.js";
+import { AMMAN_OFFSET_HOURS, addDays, ammanDay, ammanDayStart, buildDailySeries, parseDays } from "../lib/dailyActivity.js";
 import { configuredAutoMetrics } from "../lib/autoMetrics.js";
 import { APP_INVITE_SUBJECT, appInviteBodyHtml, appInviteUrl, sendAppInviteEmail, sendBroadcast } from "../lib/email.js";
 import { isValidEmailAddress } from "../lib/emailAddress.js";
@@ -326,6 +327,69 @@ router.post(
     }
   },
 );
+
+/**
+ * GET /admin/daily-activity?days=30 — people active each day, split into new and returning.
+ *
+ * "Active" is the same definition as `activeUsers7d/30d` in usage-summary: generated something with
+ * AI or saved a material. Opening the app or signing in is not recorded anywhere durable
+ * (`users.last_login` is only stamped at sign-in), so those are PostHog's to count.
+ * "New" = the account was created on that same day; "returning" = created on an earlier day. A person
+ * is counted once per day however much they did. `signups` is accounts created that day, active or not.
+ * Days are Amman calendar days (fixed UTC+3), oldest first, quiet days zero-filled.
+ * System admin only: the numbers span every school.
+ */
+router.get("/admin/daily-activity", authMiddleware, requireRole("system_admin"), async (req, res) => {
+  const parsed = parseDays(req.query["days"]);
+  if ("error" in parsed) {
+    res.status(400).json({ error: parsed.error });
+    return;
+  }
+  try {
+    const endDay = ammanDay(new Date());
+    const since = ammanDayStart(addDays(endDay, -(parsed.days - 1)));
+    // A day in Amman local time: shift the UTC wall clock by the fixed offset, then drop the time.
+    const local = (col: SQL) => sql`((${col} at time zone 'UTC') + make_interval(hours => ${AMMAN_OFFSET_HOURS}))::date`;
+
+    const [activity, signups] = await Promise.all([
+      db.execute<{ day: string; active: number; new_users: number; returning_users: number }>(sql`
+        select to_char(p.day, 'YYYY-MM-DD') as day,
+               count(*)::int as active,
+               (count(*) filter (where ${local(sql`u.created_at`)} = p.day))::int as new_users,
+               (count(*) filter (where ${local(sql`u.created_at`)} < p.day))::int as returning_users
+        from (
+          select distinct a.user_id, ${local(sql`a.created_at`)} as day
+          from (
+            select user_id, created_at from ai_generations
+              where created_at >= ${since} and user_id is not null
+            union all
+            select user_id, created_at from saved_materials
+              where created_at >= ${since}
+          ) a
+        ) p
+        join users u on u.id = p.user_id
+        group by p.day`).then((r) => r.rows),
+      db.execute<{ day: string; count: number }>(sql`
+        select to_char(${local(sql`created_at`)}, 'YYYY-MM-DD') as day, count(*)::int as count
+        from users
+        where created_at >= ${since}
+        group by 1`).then((r) => r.rows),
+    ]);
+
+    res.json({
+      timezone: "Asia/Amman",
+      days: buildDailySeries(
+        endDay,
+        parsed.days,
+        activity.map((r) => ({ day: r.day, active: r.active, newUsers: r.new_users, returningUsers: r.returning_users })),
+        signups,
+      ),
+    });
+  } catch (err) {
+    logger.error({ err }, "admin daily activity failed");
+    res.status(500).json({ error: "Failed to load daily activity" });
+  }
+});
 
 const PAGE = 30;
 const offsetOf = (v: unknown) => {

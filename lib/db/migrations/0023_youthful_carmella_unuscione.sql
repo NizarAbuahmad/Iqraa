@@ -1,0 +1,1 @@
+ALTER TABLE "students" ADD COLUMN "display_name_ar" text DEFAULT '' NOT NULL;

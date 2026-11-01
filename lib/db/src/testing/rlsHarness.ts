@@ -24,6 +24,15 @@ export async function seed(owner: pg.Pool): Promise<Fixture> {
     classA: id("classA"), evalA: id("evalA"), questionA: id("questionA"), attemptA: id("attemptA"),
     threadDirect: id("threadDirect"), threadOther: id("threadOther"), threadClass: id("threadClass"),
     msgDirect: id("msgDirect"), msgOther: id("msgOther"),
+    // hwA3 and hwA4 deliberately have NO submission: the INSERT cases need a free (homework, student) pair, or a
+    // unique-key error could stand in for a policy refusal.
+    hwA: id("hwA"), hwA2: id("hwA2"), hwA3: id("hwA3"), hwA4: id("hwA4"), subA: id("subA"), subDraftA: id("subDraftA"),
+    // studentA's record changed hands: `formerStudent` wrote these and is no longer linked to it. Two more have no
+    // author at all (written before the column existed, or by an account since deleted).
+    formerStudent: id("formerStudent"),
+    hwA5: id("hwA5"), hwA6: id("hwA6"), hwA7: id("hwA7"), hwA8: id("hwA8"),
+    subForeignDraft: id("subForeignDraft"), subForeignHanded: id("subForeignHanded"),
+    subOrphanDraft: id("subOrphanDraft"), subOrphanHanded: id("subOrphanHanded"),
   };
   const q = (text: string, values: unknown[] = []) => owner.query(text, values);
 
@@ -33,6 +42,7 @@ export async function seed(owner: pg.Pool): Promise<Fixture> {
   await user("teacherA", "teacher"); await user("teacherB", "teacher");
   await user("parentA", "parent"); await user("parentB", "parent");
   await user("studentUser", "student"); await user("studentUser2", "student"); await user("admin", "system_admin");
+  await user("formerStudent", "student");
 
   await q(`INSERT INTO students (id, teacher_id, display_name) VALUES ($1,$2,'Student A'), ($3,$4,'Student B')`,
     [ids.studentA, ids.teacherA, ids.studentB, ids.teacherB]);
@@ -43,6 +53,23 @@ export async function seed(owner: pg.Pool): Promise<Fixture> {
     [ids.studentA, ids.studentUser2]);
   await q(`INSERT INTO class_groups (id, teacher_id, name) VALUES ($1,$2,'Class A')`, [ids.classA, ids.teacherA]);
   await q(`INSERT INTO class_memberships (class_group_id, student_id) VALUES ($1,$2)`, [ids.classA, ids.studentA]);
+  await q(`INSERT INTO homework (id, teacher_id, class_group_id, title, due_at, requires_submission)
+           VALUES ($1,$2,$3,'hw-a', now() + interval '3 days', true), ($4,$2,$3,'hw-a2', now() + interval '3 days', true),
+                  ($5,$2,$3,'hw-a3', now() + interval '3 days', true), ($6,$2,$3,'hw-a4', now() + interval '3 days', true)`,
+    [ids.hwA, ids.teacherA, ids.classA, ids.hwA2, ids.hwA3, ids.hwA4]);
+  await q(`INSERT INTO homework (id, teacher_id, class_group_id, title, due_at, requires_submission)
+           VALUES ($1,$2,$3,'hw-a5', now() + interval '3 days', true), ($4,$2,$3,'hw-a6', now() + interval '3 days', true),
+                  ($5,$2,$3,'hw-a7', now() + interval '3 days', true), ($6,$2,$3,'hw-a8', now() + interval '3 days', true)`,
+    [ids.hwA5, ids.teacherA, ids.classA, ids.hwA6, ids.hwA7, ids.hwA8]);
+  await q(`INSERT INTO homework_submissions (id, homework_id, student_id, author_user_id, note, submitted_at) VALUES ($1,$2,$3,$4,'done', now())`,
+    [ids.subA, ids.hwA, ids.studentA, ids.studentUser]);
+  await q(`INSERT INTO homework_submissions (id, homework_id, student_id, author_user_id, note) VALUES ($1,$2,$3,$4,'unfinished')`,
+    [ids.subDraftA, ids.hwA2, ids.studentA, ids.studentUser]);
+  await q(`INSERT INTO homework_submissions (id, homework_id, student_id, author_user_id, note, submitted_at)
+           VALUES ($1,$2,$3,$4,'old draft', NULL), ($5,$6,$3,$4,'old handed in', now()),
+                  ($7,$8,$3,NULL,'nobody''s draft', NULL), ($9,$10,$3,NULL,'nobody''s handed in', now())`,
+    [ids.subForeignDraft, ids.hwA5, ids.studentA, ids.formerStudent, ids.subForeignHanded, ids.hwA6,
+     ids.subOrphanDraft, ids.hwA7, ids.subOrphanHanded, ids.hwA8]);
   await q(`INSERT INTO parent_contacts (teacher_id, student_id, kind, channel) VALUES ($1,$2,'note','copy')`,
     [ids.teacherA, ids.studentA]);
 
@@ -70,7 +97,7 @@ export async function seed(owner: pg.Pool): Promise<Fixture> {
   return {
     ids,
     async cleanup() {
-      const users = [ids.teacherA, ids.teacherB, ids.parentA, ids.parentB, ids.studentUser, ids.studentUser2, ids.admin];
+      const users = [ids.teacherA, ids.teacherB, ids.parentA, ids.parentB, ids.studentUser, ids.studentUser2, ids.admin, ids.formerStudent];
       await q(`DELETE FROM users WHERE id = ANY($1::uuid[])`, [users]);
     },
   };

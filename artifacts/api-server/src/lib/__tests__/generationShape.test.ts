@@ -728,6 +728,28 @@ describe("prompt-slides — the structure layouts keep their words in a payload"
     }
   });
 
+  it("accepts a cycle, tree, Venn or mind map slide whose body is only its payload", () => {
+    for (const over of [
+      { layout: "cycle", cycle: { stages: [{ label: "a" }, { label: "b" }, { label: "c" }] } },
+      { layout: "tree", tree: { root: "r", branches: [{ label: "a", leaves: [] }, { label: "b", leaves: [] }] } },
+      { layout: "venn", venn: { sets: [{ label: "a", only: ["x"] }, { label: "b", only: [] }], shared: [] } },
+      { layout: "mindmap", mindmap: { center: "c", nodes: [{ text: "a" }, { text: "b" }, { text: "d" }] } },
+    ]) {
+      assert.doesNotThrow(() => assertUsableGeneration("prompt-slides", withBody(over)), JSON.stringify(over));
+    }
+  });
+
+  it("still refuses an empty cycle, tree, Venn or mind map with no sentence", () => {
+    for (const over of [
+      { layout: "cycle", cycle: { stages: [] } },
+      { layout: "tree", tree: { root: "r", branches: [] } },
+      { layout: "venn", venn: { sets: [] } },
+      { layout: "mindmap", mindmap: { center: "c" } },
+    ]) {
+      assert.throws(() => assertUsableGeneration("prompt-slides", withBody(over)), UnusableGenerationError, JSON.stringify(over));
+    }
+  });
+
   it("still refuses a slide that names a layout and has neither a payload nor a sentence", () => {
     for (const over of [
       { layout: "timeline", timeline: [] },

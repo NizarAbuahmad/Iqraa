@@ -98,6 +98,7 @@ import {
   type SpeechCache,
 } from '../src/englishAudioCheck.ts';
 import { audioPlan, type AudioItem } from '../src/englishAudioPlan.ts';
+import { REVIEWED_BY_EAR } from '../src/englishAudioReviewed.ts';
 import { audioSlug } from '../src/englishHub.ts';
 import { pool, requestWithBackoff } from './audioHttp.ts';
 
@@ -402,6 +403,7 @@ const run = await checkClips(selected, {
   fetchClip,
   transcribe,
   cache: working,
+  reviewed: REVIEWED_BY_EAR,
   concurrency: CHECK_CONCURRENCY,
   onProgress: (done, total) => {
     if (done % 100 === 0) {
@@ -449,6 +451,7 @@ const report = {
     verdict: r.verdict,
     heard: r.heard,
     ...(r.detail ? { detail: r.detail } : {}),
+    ...(r.reviewed ? { reviewed: true } : {}),
   })),
   only,
 };
@@ -475,6 +478,10 @@ const missingRows = results.filter(r => r.verdict === 'missing');
 if (closeRows.length) console.log(`\n${closeRows.length} close — see «Close: worth a glance» in ${outPath}`);
 if (missingRows.length) {
   console.log(`\n${missingRows.length} missing from the bucket — voice them first (english-audio) or ignore; the report lists the first 50, the JSON all.`);
+}
+const reviewedRows = results.filter(r => r.reviewed);
+if (reviewedRows.length) {
+  console.log(`\n${reviewedRows.length} counted as a match because a person listened (src/englishAudioReviewed.ts); a re-voiced clip is checked again.`);
 }
 if (problems.length === 0 && errored.length === 0 && !partial) console.log('\nnothing needs a listen.');
 if (errored.length) {

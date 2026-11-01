@@ -923,6 +923,34 @@ describe('buildDeckSlidesHTML — the structure layouts', () => {
     assert.match(html, /أول/);
   });
 
+  it('draws a cycle slide as a diagram, and a refused one as its words', () => {
+    const ok = lay({
+      title: 'دورة الماء', content: 'الماء يدور', layout: 'cycle',
+      cycle: { stages: [{ label: 'تبخر' }, { label: 'تكاثف' }, { label: 'هطول' }] },
+    });
+    const html = render(ok);
+    assert.match(html, /class="deck-diagram"/);
+    assert.match(html, /تبخر/);
+    const thin = { ...ok, cycle: { stages: [{ label: 'تبخر' }] } };
+    assert.doesNotMatch(render(thin), /class="deck-diagram"/);
+    assert.match(render(thin), /الماء يدور/);
+  });
+
+  it('draws tree, Venn and mind-map slides as diagrams too, in either direction', () => {
+    const slides: ActivitySlide[] = [
+      lay({ layout: 'tree', tree: { root: 'المادة', branches: [{ label: 'صلبة', leaves: ['حديد'] }, { label: 'سائلة', leaves: ['ماء'] }] } }),
+      lay({ layout: 'venn', venn: { sets: [{ label: 'أ', only: ['س'] }, { label: 'ب', only: ['ص'] }], shared: ['ع'] } }),
+      lay({ layout: 'mindmap', mindmap: { center: 'الطاقة', nodes: [{ text: 'شمسية' }, { text: 'حرارية' }, { text: 'حركية', role: 'effect' }] } }),
+    ];
+    for (const s of slides) {
+      for (const ar of [true, false]) {
+        const html = render(s, ar);
+        assert.match(html, /class="deck-diagram"/);
+        assert.match(html, ar ? /direction:rtl/ : /direction:ltr/);
+      }
+    }
+  });
+
   it('the heading carries the slide icon, as on every other content slide', () => {
     const html = render({ ...timeline, icon: 'clock' });
     assert.match(html, /<span class="deck-emoji"><svg class="deck-icon"/);

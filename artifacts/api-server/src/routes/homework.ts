@@ -28,14 +28,14 @@ import {
   gameResults,
   homework,
   homeworkCompletions,
-  rosterLinks,
+  homeworkSubmissions,
   savedMaterials,
   students,
   type ClassGroup,
   type Homework,
   type HomeworkResource,
 } from "@workspace/db";
-import { and, asc, count, countDistinct, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, count, countDistinct, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { authMiddleware, requireRole, TEACHER_ROLES, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { findLiveClass } from "../lib/classOwnership.js";
 import { parseClassResourceInput } from "../lib/classResource.js";
@@ -44,9 +44,10 @@ import { libraryItemSnapshot } from "../lib/librarySnapshot.ts";
 import { homeworkChatLine } from "../modules/notifications/familyPushText.ts";
 import { announceHomeworkPosted } from "../lib/familyPushEvents.ts";
 import { logger } from "../lib/logger";
+import { hasSelfLink, homeworkIdsWithWork, purgeSubmissions } from "../lib/homeworkSubmission.ts";
 import { pushWithin } from "../lib/pushWithin.ts";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
-import { RESOURCES_MAX, dueAtToDueDate, isUuid, parseCreate, parsePatch } from "../modules/homework/rules.ts";
+import { RESOURCES_MAX, SUBMISSION_LOCKED_CODE, dueAtToDueDate, isUuid, parseCreate, parsePatch } from "../modules/homework/rules.ts";
 import { GAME_TITLE_MAX, GAMES_TEXT, attachedGames, carryOverGames, gameResourceKey, isGame, knownGamesOf, type GameKind } from "../modules/homework/game.ts";
 import { isMathsLesson } from "../modules/mathPractice/practice.ts";
 import { getLessonById } from "@workspace/curriculum";
@@ -58,6 +59,10 @@ router.use("/homework", authMiddleware, requireRole(...TEACHER_ROLES));
 const NO_CLASS = { error: "Class not found" } as const;
 const NO_HOMEWORK = { error: "Homework not found" } as const;
 const BAD_EXAM = { error: "That exam is not attached to this class" } as const;
+const SUBMISSION_LOCKED = {
+  error: "Students have already started this homework, so whether it asks for a project can no longer be changed",
+  code: SUBMISSION_LOCKED_CODE,
+} as const;
 const LIST_LIMIT = 100;
 type Fail = { error: string };
 
@@ -75,6 +80,16 @@ interface TeacherHomework {
   studentCount: number;
   /** Of studentCount, the rows with a student account — the only ones who can tick it off. */
   trackableCount: number;
+  /** Students hand in a project instead of ticking it off. */
+  requiresSubmission: boolean;
+  /**
+   * True once any student has a completion tick or a submission that holds a photo or a note (a draft with
+   * work counts, an emptied one does not) on this homework: the
+   * `requiresSubmission` switch can no longer be changed (PATCH answers 409 `submission_locked`).
+   */
+  requiresSubmissionLocked: boolean;
+  /** Of studentCount, the live roster rows that have handed a project in. Drafts are not counted. */
+  submittedCount: number;
 }
 
 /** The 400 body: `error` always, `code` when the rule has a machine-readable reason (a client branches on it). */
@@ -222,7 +237,7 @@ async function shareToChat(hw: Homework, klass: ClassGroup): Promise<boolean> {
 }
 
 /** A homework row the teacher owns, not archived, whose class is also live. */
-async function ownedHomework(id: string, teacherId: string): Promise<Homework | undefined> {
+export async function ownedHomework(id: string, teacherId: string): Promise<Homework | undefined> {
   if (!isUuid(id)) return undefined;
   const [row] = await db
     .select({ hw: homework })
@@ -246,16 +261,16 @@ async function ownedHomework(id: string, teacherId: string): Promise<Homework | 
  * ever reach — a class of children with no accounts shows 0 of N, which a
  * teacher must not read as "nobody did it".
  */
-async function classSizes(classIds: string[]): Promise<Map<string, { students: number; trackable: number }>> {
+export async function classSizes(classIds: string[]): Promise<Map<string, { students: number; trackable: number }>> {
   const rows = await db
     .select({
       classId: classMemberships.classGroupId,
       n: countDistinct(students.id),
-      t: countDistinct(rosterLinks.studentId),
+      // The same predicate as the submissions list's `hasAccount` (hasSelfLink), so the two cannot drift.
+      t: countDistinct(sql`case when ${hasSelfLink(students.id)} then ${students.id} end`),
     })
     .from(classMemberships)
     .innerJoin(students, eq(students.id, classMemberships.studentId))
-    .leftJoin(rosterLinks, and(eq(rosterLinks.studentId, students.id), eq(rosterLinks.relation, "self")))
     .where(and(inArray(classMemberships.classGroupId, classIds), isNull(students.archivedAt)))
     .groupBy(classMemberships.classGroupId);
   return new Map(rows.map(r => [r.classId, { students: Number(r.n), trackable: Number(r.t) }]));
@@ -273,7 +288,7 @@ async function withCounts(rows: Homework[]): Promise<TeacherHomework[]> {
   const homeworkIds = rows.map(r => r.id);
   const examIds = [...new Set(rows.map(r => r.evaluationId).filter((v): v is string => !!v))];
 
-  const [sizes, doneCounts, exams] = await Promise.all([
+  const [sizes, doneCounts, submitted, exams, started] = await Promise.all([
     classSizes(classIds),
     db
       .select({ homeworkId: homeworkCompletions.homeworkId, n: count() })
@@ -289,15 +304,38 @@ async function withCounts(rows: Homework[]): Promise<TeacherHomework[]> {
       .innerJoin(students, eq(students.id, homeworkCompletions.studentId))
       .where(and(inArray(homeworkCompletions.homeworkId, homeworkIds), isNull(students.archivedAt)))
       .groupBy(homeworkCompletions.homeworkId),
+    db
+      .select({ homeworkId: homeworkSubmissions.homeworkId, n: count() })
+      .from(homeworkSubmissions)
+      .innerJoin(homework, eq(homework.id, homeworkSubmissions.homeworkId))
+      .innerJoin(
+        classMemberships,
+        and(
+          eq(classMemberships.classGroupId, homework.classGroupId),
+          eq(classMemberships.studentId, homeworkSubmissions.studentId),
+        ),
+      )
+      .innerJoin(students, eq(students.id, homeworkSubmissions.studentId))
+      .where(
+        and(
+          inArray(homeworkSubmissions.homeworkId, homeworkIds),
+          isNotNull(homeworkSubmissions.submittedAt),
+          isNull(students.archivedAt),
+        ),
+      )
+      .groupBy(homeworkSubmissions.homeworkId),
     examIds.length === 0
       ? Promise.resolve([] as Array<{ id: string; title: string; titleAr: string }>)
       : db
           .select({ id: evaluations.id, title: evaluations.title, titleAr: evaluations.titleAr })
           .from(evaluations)
           .where(inArray(evaluations.id, examIds)),
+    // One query for the whole list, on the owner connection (drafts are invisible to the teacher's own).
+    homeworkIdsWithWork(homeworkIds),
   ]);
 
   const done = new Map(doneCounts.map(c => [c.homeworkId, Number(c.n)]));
+  const submittedBy = new Map(submitted.map(c => [c.homeworkId, Number(c.n)]));
   const examTitle = new Map(exams.map(e => [e.id, e.titleAr || e.title]));
 
   return rows.map(r => ({
@@ -313,6 +351,9 @@ async function withCounts(rows: Homework[]): Promise<TeacherHomework[]> {
     doneCount: done.get(r.id) ?? 0,
     studentCount: sizes.get(r.classGroupId)?.students ?? 0,
     trackableCount: sizes.get(r.classGroupId)?.trackable ?? 0,
+    requiresSubmission: r.requiresSubmission,
+    requiresSubmissionLocked: started.has(r.id),
+    submittedCount: submittedBy.get(r.id) ?? 0,
   }));
 }
 
@@ -349,6 +390,7 @@ router.post("/homework", async (req: AuthenticatedRequest, res) => {
         dueAt: input.dueAt,
         evaluationId: input.evaluationId,
         resources,
+        requiresSubmission: input.requiresSubmission,
       })
       .returning();
     const [out] = await withCounts([row!]);
@@ -433,6 +475,21 @@ router.patch("/homework/:id", async (req: AuthenticatedRequest, res) => {
         req.body?.gamesIncluded === true ? knownGamesOf(req.body?.knownGames) : undefined,
       );
     }
+    // The project switch locks once a student has started: any completion tick, or any submission that holds a
+    // photo or a note, a draft included (hence the owner connection inside — the teacher cannot see a draft). Only a
+    // CHANGE is refused; the same value is always fine. Checked before the update, so a PATCH that also edits other
+    // fields and flips the locked flag is refused as a whole and applies none of them.
+    // NOT ATOMIC with the UPDATE below: a student's first upload or tick in the milliseconds between this check and
+    // the write can slip through, and the flag then flips under that work. Closing it cheaply is not possible (the
+    // existence check runs on the owner connection, the update on the teacher's; one transaction would hold a lock
+    // across both). Possible follow-up (not built) that would limit the damage: the sweep's archived-homework phase also purging submission
+    // rows of requires_submission=false homework, so a stranded row is cleaned up rather than kept.
+    if (patch.requiresSubmission !== undefined && patch.requiresSubmission !== existing.requiresSubmission) {
+      if ((await homeworkIdsWithWork([existing.id])).has(existing.id)) {
+        res.status(409).json(SUBMISSION_LOCKED);
+        return;
+      }
+    }
     // Only fields parsePatch produced, never `...req.body`: the class and the
     // teacher are not editable, whatever the client sends.
     const [row] = await db
@@ -443,6 +500,7 @@ router.patch("/homework/:id", async (req: AuthenticatedRequest, res) => {
         ...(patch.dueAt !== undefined && { dueAt: patch.dueAt }),
         ...(patch.evaluationId !== undefined && { evaluationId: patch.evaluationId }),
         ...(resources !== undefined && { resources }),
+        ...(patch.requiresSubmission !== undefined && { requiresSubmission: patch.requiresSubmission }),
         updatedAt: new Date(),
       })
       .where(and(eq(homework.id, existing.id), eq(homework.teacherId, teacherId), isNull(homework.archivedAt)))
@@ -530,10 +588,21 @@ router.delete("/homework/:id", async (req: AuthenticatedRequest, res) => {
       res.status(404).json(NO_HOMEWORK);
       return;
     }
+    // The photos are a minor's work and archiving is the teacher's "delete": remove them FIRST. An archived
+    // homework is no longer found by `ownedHomework`, so a purge that failed after the archive could never be
+    // retried and the photos would stay for good. A purge that throws answers 500 here and leaves the homework
+    // live, so the teacher can send the same DELETE again. It is awaited (Cloud Run throttles work after
+    // res.json) and bounded by the R2 round trips, which run concurrently.
+    await purgeSubmissions(existing.id);
     await db
       .update(homework)
       .set({ archivedAt: new Date(), updatedAt: new Date() })
       .where(and(eq(homework.id, existing.id), eq(homework.teacherId, teacherId)));
+    // A student's upload that landed between the purge and the archive (milliseconds) is caught by a second,
+    // best-effort pass; a failure here is logged with the homework id and never fails the archive.
+    await purgeSubmissions(existing.id).catch(err =>
+      logger.error({ err, homeworkId: existing.id }, "homework archive: could not purge submissions after the archive"),
+    );
     res.json({ archived: existing.id });
   } catch (err) {
     failHomework(res, err, "delete homework");
