@@ -12,6 +12,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from './Avatar';
 import { AR_LATIN } from '@/services/dateLabels';
 import type { ChatReaction } from '@/services/messageReactions';
@@ -61,6 +62,21 @@ interface Props {
   onReactionLongPress?: () => void;
   /** Spoken label for a chip — passed in so this component needs no translation hook. */
   reactionLabel?: (r: ChatReaction) => string;
+  /**
+   * A line that opens something («افتح الواجب»), drawn inside the bubble so the
+   * message reads as tappable. The tap itself is the caller's Pressable around
+   * the bubble; this is only the cue.
+   */
+  actionLabel?: string;
+}
+
+function ActionLine({ label, color, isRTL, rule }: { label: string; color: string; isRTL: boolean; rule: string }) {
+  return (
+    <View style={[styles.action, { borderTopColor: rule, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+      <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={color} />
+      <Text style={[styles.actionText, { color }]}>{label}</Text>
+    </View>
+  );
 }
 
 function ReactionChips({
@@ -105,7 +121,7 @@ function ReactionChips({
 
 export function MessageBubble({
   body, createdAt, isOwn, isRTL, colors, senderFirstName, senderLastName, attachmentUrl, attachmentKind, seenLabel,
-  senderName, senderRoleLabel, reactions, onReactionPress, onReactionLongPress, reactionLabel,
+  senderName, senderRoleLabel, reactions, onReactionPress, onReactionLongPress, reactionLabel, actionLabel,
 }: Props) {
   const timeLabel = new Date(createdAt).toLocaleTimeString(isRTL ? AR_LATIN : undefined, { hour: '2-digit', minute: '2-digit' });
   const image = attachmentKind === 'image' && attachmentUrl ? (
@@ -123,6 +139,7 @@ export function MessageBubble({
                 {body}
               </Text>
             ) : null}
+            {actionLabel ? <ActionLine label={actionLabel} color={colors.primaryForeground} rule="rgba(255,255,255,0.45)" isRTL={isRTL} /> : null}
             <Text style={[styles.timestamp, { color: 'rgba(255,255,255,0.95)', textAlign: isRTL ? 'left' : 'right' }]}>
               {seenLabel ? `${timeLabel} · ${seenLabel}` : timeLabel}
             </Text>
@@ -153,6 +170,7 @@ export function MessageBubble({
               {body}
             </Text>
           ) : null}
+          {actionLabel ? <ActionLine label={actionLabel} color={colors.primary} rule={colors.border} isRTL={isRTL} /> : null}
           <Text style={[styles.timestamp, { color: colors.mutedForeground, textAlign: isRTL ? 'left' : 'right' }]}>
             {timeLabel}
           </Text>
@@ -173,6 +191,8 @@ const styles = StyleSheet.create({
   chipEmoji: { fontSize: 14, lineHeight: 20 },
   chipCount: { fontSize: 12, lineHeight: 18, fontFamily: 'Almarai_400Regular' },
   senderLine: { fontSize: TYPE.caption, lineHeight: 18, marginBottom: 4, fontFamily: 'ReadexPro_600SemiBold' },
+  action: { alignItems: 'center', gap: 4, marginTop: 8, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth, minHeight: 32 },
+  actionText: { fontSize: TYPE.caption, lineHeight: 20, fontFamily: 'ReadexPro_600SemiBold' },
   attachment: { width: 200, height: 200, borderRadius: 12, marginBottom: 6 },
   text: { fontSize: 15, lineHeight: 24, fontFamily: 'Almarai_400Regular' },
   timestamp: { fontSize: 10, lineHeight: 16, marginTop: 6, fontFamily: 'Almarai_400Regular' },
