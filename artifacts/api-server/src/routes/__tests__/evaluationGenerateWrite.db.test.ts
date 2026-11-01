@@ -145,10 +145,12 @@ describeDb("generating into a draft evaluation, against a real database", () => 
       // Wait until the request is really queued behind our lock, not for a fixed time:
       // on a slow runner it could still be before its early draft check, which also
       // answers 409 and would let this test pass without reaching the lock at all.
+      // Only this file's database: pg_stat_activity lists the whole server, and the other
+      // race files, running in parallel, queue on the same query in theirs (seen in CI).
       await waitUntil(async () => {
         const r = await db.pool.query<{ n: number }>(
           `SELECT count(*)::int AS n FROM pg_stat_activity
-            WHERE wait_event_type = 'Lock' AND query ILIKE '%from "evaluations"%for update%'`,
+            WHERE datname = current_database() AND wait_event_type = 'Lock' AND query ILIKE '%from "evaluations"%for update%'`,
         );
         return r.rows[0].n > 0;
       });

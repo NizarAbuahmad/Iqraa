@@ -10,6 +10,76 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## A DB test's server can no longer answer from another test file's port — 2026-11-01
+
+Also on PR #1387, after the lock-probe fix below: «ends the dead end, with row-level security enforced»
+(`homeworkSubmission.db.test.ts`) got a 401 «User not found» on its first upload, for a student it had inserted a
+moment before. The auth lookup uses `systemDb`, so RLS was not it: the request had reached a server that did not
+have that row.
+
+**Cause:** `startServer` (`test-support/startServer.ts`) picked a port by opening and closing a socket, then started
+the API on it, and called the server ready when `/healthz` answered. The DB test files run in parallel, each with
+its own database; in the gap another file's server could take the same port. This file's server then died on
+"address in use", `/healthz` answered from the other one, and every request reached the other file's database.
+
+**Changed:** the API may take `PORT=0` (the OS picks) only when its parent opened an IPC channel, and it then sends
+`{ listening: port }` (`src/index.ts`). Without a channel `PORT=0` is still refused, as before — Cloud Run never has
+one. `startServer` starts the child with `PORT=0` and the channel, waits for that message (or fails on exit), and
+builds its URL from the port the child reports. Nothing can answer in its place.
+
+**Verified:** the full api-server suite against a local Postgres 16, DB tests included: 3,332 tests, 0 failures, and
+the run exits (the channel is closed after the message). A demonstration against the built bundle: with another
+server already on a port, the old way's `/healthz` answered "ok" while the API exited with code 1; the new way
+reported its own port and answered 200 there; `PORT=0` with no IPC channel exits with «Invalid PORT value».
+**Not verified:** that CI never flakes on these again — it was seen once. `mountOrder.test.ts` keeps its own fixed
+port ranges (8100–8899, outside the OS's ephemeral range) and was left alone.
+
+## The evaluation race tests wait for their own lock, not any database's — 2026-11-01
+
+`typecheck + tests` failed once on PR #1387, which touched only the app: «does not replace the questions of a
+draft that was published while it was generating» (`evaluationGenerateWrite.db.test.ts`) got the early draft
+check's 409 instead of the locked one's `no_longer_draft`. `main` passed on the same base.
+
+**Cause:** five race tests (`evaluationGenerateWrite`, `evaluationArchiveRace`, `evaluationPublishRace`,
+`evaluationPublishAnnounce`, `evaluationQuestionEditRace` `.db.test.ts`) wait until a session is blocked on
+`"evaluations" … for update` by polling `pg_stat_activity` — which lists the whole Postgres server. Each test file
+has its own database (`testDb.ts`), but the files run in parallel on one server, and the others queue on the same
+query in theirs. So a wait could end on another file's request, and the test would publish before its own request
+reached the lock. `homeworkSubmission.db.test.ts` already filtered by `datname = current_database()`.
+
+**Changed:** all five probes add `datname = current_database()` (run on `db.pool`, i.e. the file's own database,
+whose tests run one at a time). **Verified** against a local Postgres 16: the five files run together in parallel,
+23 tests, 5 runs out of 5 green; and directly — with a `FOR UPDATE` waiter queued in database A, the old probe run
+from database B counted it (1), the new one did not (0), and the new one run from A still did (1). **Not verified:**
+that CI never flakes on these again; the failure was seen once.
+
+## «اقترح ميزة» asks for an email with a reason, and answers ideas that already exist — 2026-11-01
+
+Follows «ردّ بالبريد» (2026-10-30, #1351): most signed-out ideas in «البريد المجمّع» had no email, so the admin
+cannot answer them, and one of them — «اريد تصدسر ورقة الى وورد» — asked for Word export, which exists. The form's
+own placeholder was «مثال: أريد تصدير ورقة العمل إلى Word…», an example of a feature already there.
+
+**Changed (`app/suggest-feature.tsx`, `services/i18n.ts`):** the placeholder is now a question with no example
+(«ما الذي تحتاجه، ومتى تحتاجه في يومك؟»). A signed-out visitor sees one line above the email field: «اترك بريدك
+لنردّ عليك ونخبرك إن أضفنا فكرتك. لا نستخدمه لشيء آخر.» — true because broadcasts reach waitlist rows only
+(`pickRecipients` in `lib/siteMail.ts` skips every other kind). After sending, an idea for something «إقرأ» already
+does gets a box under the thank-you, «يمكنك فعل هذا الآن», with the existing answer text (`faqA4` for Word/PDF,
+`howDarkMode` for dark mode). The idea is still sent either way.
+
+**The matcher (`services/existingFeature.ts`) is strict on purpose.** `findAppPlaces` (`appHelp.ts`) was tried
+first and is wrong for ideas: it read «تحضير كل شيء» as the lesson-plan tool and «أريد لعبة عن الكسور» as the games,
+so every idea would have been told it exists. The rules match «وورد» with its clitics («بالوورد», «كوورد»), «Word»
+inside an Arabic message, PDF/docx, English that names Word as a file, and named dark-mode phrases. English "word"
+alone ("word search", "word problems") and Arabic words containing «ورد» («موارد», «ورود», «الوردة») do not match.
+Append a rule when real ideas keep asking for something that exists.
+
+**Verified:** `existingFeature.test.ts` (10 tests: the real idea with its typo, prefixes, Latin Word, PDF/docx,
+English, the "word" and «ورد» misses, dark mode, and ideas that only name a tool); the mobile suite (9,101 pass) and
+the monorepo typecheck; the signed-out screen in a production web build at phone width, in Arabic, light and dark,
+with `/site/ideas` stubbed — the form, the hint, the post body, and the thank-you with the export box. **Not
+verified:** a signed-in teacher's thank-you (same code path after `res.ok`), native Android/iOS layout, and whether
+the hint actually raises the share of ideas with an email — watch «البريد المجمّع» for that.
+
 ## Spelling bank: a word whose misspelling is itself a word is dictated, never offered as a choice — 2026-11-01
 
 `lib/arabic-spelling` builds choose, true/false and tap questions that show a
