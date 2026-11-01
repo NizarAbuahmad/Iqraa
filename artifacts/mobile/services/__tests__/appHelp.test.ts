@@ -2702,3 +2702,43 @@ describe('«كيف أجهز امتحانا» — making an exam, with the accusa
     });
   }
 });
+
+describe('the fortieth live pass — app questions the model had been answering by improvising', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string, 'ar' | 'en']> = [
+    ['كيف أغير صف الطالب', 'howMoveStudent', 'ar'],
+    ['How do I change a student\'s class', 'howMoveStudent', 'en'],
+    ['كيف أغير كلمة مرور الطالب', 'howStudentPassword', 'ar'],
+    ['How do I reset a student\'s password', 'howStudentPassword', 'en'],
+    ['هل يمكن للأهل رؤية العلامات', 'howFamilyView', 'ar'],
+    ['Can parents see their child\'s marks', 'howFamilyView', 'en'],
+    ['هل يعمل التطبيق على التابلت', 'howInstallApp', 'ar'],
+    ['Does the app work on a tablet', 'howInstallApp', 'en'],
+    ['هل تُحفظ المحادثات مع المساعد', 'howChatHistory', 'ar'],
+    ['كيف أعرف من فتح الواجب', 'howHomeworkDone', 'ar'],
+    ['هل يمكن تصدير الدرس إلى وورد', 'faqA4', 'ar'],
+    ['هل يمكن طباعة خطة الدرس', 'faqA4', 'ar'],
+    ['كيف أضيف ملاحظة لخطة الدرس', 'faqA5', 'ar'],
+  ];
+  for (const [q, key, lang] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, lang, t).text, `<${key}>`);
+    });
+  }
+  // The teacher's own password keeps its answer, and unrelated sentences with the same words stay with the model.
+  it('«كيف أغير كلمة المرور» is the teacher\'s own password, not a student\'s', () => {
+    assert.equal(answerAppHelp('كيف أغير كلمة المرور', 'ar', t).text, '<howChangePassword>');
+  });
+  for (const q of ['هل يمكن للأهل مساعدة الأبناء في الواجب', 'هل تحفظ الذاكرة المعلومات', 'كيف أطبع الصور', 'كيف أعرف من فاز بالمسابقة']) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howMoveStudent', 'howStudentPassword', 'howFamilyView', 'howInstallApp', 'howChatHistory', 'howHomeworkDone', 'faqA4', 'faqA5']);
+      assert.equal(ids.has(answerAppHelp(q, 'ar', t).text.replace(/[<>]/g, '')), false);
+    });
+  }
+  it('the student-password answer makes no promise the code cannot keep', () => {
+    const ar = (translations.ar as unknown as Record<string, string>).howStudentPassword;
+    assert.match(ar, /لا يوجد في إقرأ زر لتغيير كلمة مرور طالب/);
+    assert.match(ar, /رمز دخول جديد/);
+  });
+});

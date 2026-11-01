@@ -10,6 +10,38 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Fortieth live pass: app questions the model answered by improvising, 2026-11-01
+
+**Why.** With the model on (allowance reset 2026-11-01), 28 new questions on app.iqrra.com. The six teaching answers
+(difference of squares, the covalent bond, acid vs base, algebraic fractions, element vs compound, uniform motion) were right
+apart from one wrong word and one muddled note (below). The weak spot was app questions the matcher missed: the model answered
+ten of them from nowhere, two with invented steps («كيف أغير صف الطالب» → "look for an edit option and change the grade";
+«كيف أغير كلمة مرور الطالب» → generic steps, "it depends on the system"), the rest with "outside my scope" or a vague "yes".
+
+**Built.** Nine of the ten now reach the app's own answer: `howMoveStudent`, `howFamilyView`, `howInstallApp` (tablet),
+`howChatHistory`, `howHomeworkDone`, `faqA4` (export to Word, print), `faqA5` (add a note to a plan = an item). One new answer,
+`howStudentPassword`: **there is no button for a student's password**; a student who signed up with the link code has a
+*login code* (the teacher issues a new one, `howReissueLoginCode`), one who signed up with an email resets it themselves
+(`howChangePassword`). «بدي اغير صف الطالب» stays with the model on purpose (an existing test pins it: «صف» can be a mark),
+so the move-student rule takes the how-question only.
+
+**Left, and why.** «هل يوجد اختبار تجريبي للطلاب» (ambiguous: a practice test to make, or one students can take).
+
+**Found, not fixed: the knowledge-base search ranks the wrong lesson first.** «جهّز ورقة عمل … عن حل المعادلة التربيعية
+بالتحليل» and the same for primes were answered «أيّ مادة تقصد؟» with a menu that included Digital Skills and English. The
+clarifier is a symptom: `searchKBRanked('حل المعادلة التربيعية بالتحليل')` puts «تحليل البيانات» (digital-literacy) first at 65
+and the exact lesson «حل المعادلات التربيعية بالتحليل» fifth at 26, because `scoreField` sums across ~10 fields per lesson and
+one common word («تحليل») hits many of them, while a title that matches every query word only scores its title field. «الأعداد
+الأولية» has no lesson at all. A title-coverage bonus would fix the first, but it changes how every lesson is grounded
+(`resolveGeneratorGrounding`, the 63-lesson exact-title test), so it needs its own before/after over the picker lessons and the
+historic questions, not a rider on this PR.
+
+**Model answers, two small errors worth knowing.** The acid/base answer wrote «ورقة تباع الشمس» (litmus is «عبّاد الشمس»); the
+uniform-motion answer's teacher note mixes speed and velocity. Neither is something this repo's code produced.
+
+**Verified.** `appHelp.test.ts` (13 phrasings, 4 near-misses, and the exact claim of the new answer). The 813 historic questions
+give the same app-help answers (0 changed). Not seen live yet.
+
 ## Parent screens: «نتائج أبنائي» and the school tab's exams and homework say what they mean — 2026-11-01
 
 A parent reported both screens as confusing. Read against a screenshot of each:
