@@ -1949,16 +1949,33 @@ router.delete("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
       res.status(404).json({ error: "Evaluation not found" });
       return;
     }
-    const decision = archiveDecision(evaluation);
+    // Decided on the row as it is once this request holds its lock, not on the read
+    // above: publish locks the same row and flips the status, and a publish that
+    // committed in between would otherwise be hidden from its teacher while its
+    // student link is live (the case archiveDecision exists to refuse).
+    const decision = await db.transaction(async tx => {
+      const [locked] = await tx
+        .select({ status: evaluations.status, archivedAt: evaluations.archivedAt })
+        .from(evaluations)
+        .where(eq(evaluations.id, evaluation.id))
+        .for("update");
+      if (!locked) return null;
+      const d = archiveDecision(locked);
+      if (d.ok && !d.alreadyArchived) {
+        await tx
+          .update(evaluations)
+          .set({ archivedAt: new Date(), updatedAt: new Date() })
+          .where(eq(evaluations.id, evaluation.id));
+      }
+      return d;
+    });
+    if (!decision) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
     if (!decision.ok) {
       res.status(decision.status).json({ error: decision.error, code: decision.code });
       return;
-    }
-    if (!decision.alreadyArchived) {
-      await db
-        .update(evaluations)
-        .set({ archivedAt: new Date(), updatedAt: new Date() })
-        .where(eq(evaluations.id, evaluation.id));
     }
     res.json({ archived: evaluation.id });
   } catch (err) {
