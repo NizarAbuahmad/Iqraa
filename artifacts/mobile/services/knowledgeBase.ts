@@ -4398,11 +4398,70 @@ function scoreFieldRaw(query: string, field: string, weight: number): number {
 }
 
 /**
+ * The words of a title or query that can tell two lessons apart: harakat gone,
+ * the prefix (ال، بال…) and a plural/feminine ending (ات، ة…) stripped, so
+ * «المعادلة» and «المعادلات» meet. Used only to ask "does the query contain the
+ * whole title", never to score a single word.
+ */
+function coverageStem(word: string): string {
+  let w = stripArabicPrefix(word);
+  for (const suffix of ['ات', 'ين', 'ون', 'ة', 'ه']) {
+    if (w.length > suffix.length + 2 && w.endsWith(suffix)) { w = w.slice(0, -suffix.length); break; }
+  }
+  return w;
+}
+const coverageTokenCache = new Map<string, string[]>();
+/**
+ * `foldTashkeel` follows the scorer: harakat are folded only inside a
+ * grade-scoped search. Across all grades a vowelled early-grade title («التفاعلاتُ
+ * الكيميائيّةُ», grade 8 science) must NOT start matching a plain query and
+ * outrank grade 10 chemistry's — see groundingTashkeel.test.ts.
+ */
+function coverageTokens(text: string, foldTashkeel: boolean): string[] {
+  const key = (foldTashkeel ? '1' : '0') + text;
+  const hit = coverageTokenCache.get(key);
+  if (hit) return hit;
+  const tokens = (foldTashkeel ? text.replace(TASHKEEL, '') : text)
+    .toLowerCase()
+    .split(/[\s،,.。]+/)
+    .filter(w => w.length >= 3 && !SCORE_STOPWORDS.has(w))
+    .map(coverageStem);
+  if (coverageTokenCache.size > 6000) coverageTokenCache.clear();
+  coverageTokenCache.set(key, tokens);
+  return tokens;
+}
+
+/**
+ * Added when every significant word of a lesson's title is in the query.
+ *
+ * `scoreField` sums over ~10 fields, so one common word that many of a lesson's
+ * concepts and terms contain («تحليل» in the data-analysis lesson: 65) outweighs
+ * a lesson whose title matches every word the teacher typed («حل المعادلات
+ * التربيعية بالتحليل»: 26), and «جهّز ورقة عمل عن حل المعادلة التربيعية
+ * بالتحليل» was asked "which subject?" with Digital Skills on the menu. A title
+ * the query contains whole is the strongest signal there is. Two words at least:
+ * one-word titles already win by the exact-substring rule, and a single shared
+ * word proves nothing.
+ */
+const TITLE_COVERED_BONUS = 45;
+function titleCoveredByQuery(titleTokens: string[], queryTokens: string[]): boolean {
+  if (titleTokens.length < 2 || queryTokens.length < 2) return false;
+  return titleTokens.every(ft =>
+    queryTokens.some(qt => qt === ft
+      || (qt.length >= 4 && ft.length >= 4 && (qt.includes(ft) || ft.includes(qt)))));
+}
+
+/**
  * Search the knowledge base for relevant lessons matching a query.
  * Handles Arabic prefix variation and partial word matches.
  * Returns ranked results (most relevant first).
  */
-export type KBScoredLesson = { lesson: KBLesson; score: number };
+export type KBScoredLesson = {
+  lesson: KBLesson;
+  score: number;
+  /** The query contains every significant word of this lesson's title (see `titleCoveredByQuery`). */
+  titleCovered?: boolean;
+};
 
 /** Ranked KB hits with scores — used for confidence gating in chat. */
 /**
@@ -4463,11 +4522,25 @@ function searchKBRankedUncached(
   const visibleIds = visibleLessonIds();
   const pool = KB_LESSONS.filter(l =>
     visibleIds.has(l.id) && (!gradeId || getBookForLesson(l)?.gradeId === gradeId));
+  const queryTokens = coverageTokens(q, Boolean(gradeId));
 
+  const foldedQueryTokens = gradeId ? queryTokens : coverageTokens(q, true);
+  let maxCovered = 0;
   const scored = pool.map(lesson => {
     let score = 0;
+    let coveredSize = 0;
 
     const title    = lang === 'ar' ? lesson.titleAr    : lesson.titleEn;
+    const titleTokens = coverageTokens(title, Boolean(gradeId));
+    const titleCovered = titleCoveredByQuery(titleTokens, queryTokens);
+    coveredSize = titleCovered ? titleTokens.length : 0;
+    // Specificity ignores harakat even where the bonus does not: a vowelled
+    // lesson the query names whole earns no bonus (see `gradeId` above), but it
+    // is still a longer title than the plain one inside it, which must not win.
+    const foldedTokens = gradeId ? titleTokens : coverageTokens(title, true);
+    if (titleCoveredByQuery(foldedTokens, foldedQueryTokens)) {
+      maxCovered = Math.max(maxCovered, foldedTokens.length);
+    }
     const summary  = lang === 'ar' ? lesson.summaryAr  : lesson.summaryEn;
     const concepts = lang === 'ar' ? lesson.keyConceptsAr : lesson.keyConceptsEn;
     const terms    = lesson.keyTerms.map(t => lang === 'ar' ? t.ar : t.en);
@@ -4492,10 +4565,18 @@ function searchKBRankedUncached(
       score += scoreField(q, t.definitionEn, 1);
     });
 
-    return { lesson, score };
+    return { lesson, score, titleCovered, coveredSize };
   });
 
+  // Only the most specific title the query contains counts. A query that is the
+  // whole title «حوار الفريق: توقع وظيفة أليكس المستقبلية» also contains the
+  // shorter «حوار الفريق», and four lessons by that name outranked the lesson
+  // actually named (rank 1 → 5; an Arabic debate lesson 1 → 40).
   return scored
+    .map(({ lesson, score, titleCovered, coveredSize }) => {
+      const decisive = titleCovered && coveredSize === maxCovered;
+      return { lesson, score: decisive ? score + TITLE_COVERED_BONUS : score, titleCovered: decisive };
+    })
     .filter(s => s.score > 0)
     .sort((a, b) => b.score - a.score);
 }
@@ -4511,6 +4592,7 @@ export function searchKB(query: string, lang: 'ar' | 'en' = 'ar'): KBLesson[] {
  */
 export {
   isConfidentKbHit,
+  titleDecides,
   KB_CONFIDENT_SCORE,
   KB_SUGGEST_SCORE,
   resolveKbCandidates,
