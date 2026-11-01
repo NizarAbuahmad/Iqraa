@@ -51,10 +51,26 @@ export const KB_SUGGEST_SCORE = 5;
  */
 const CONFIDENT_MARGIN = 1.2;
 
+/**
+ * The teacher named the lesson: the top hit's whole title is in the query and
+ * no other lesson's title is. Then a rival's score is a shared word, not a
+ * competing reading («تحليل» in the data-analysis lesson, 65, against «حل
+ * المعادلات التربيعية بالتحليل», 71 once its title counts) — so the margin and
+ * the other-subject checks, which exist for the case where nobody named
+ * anything, do not apply. Two lessons with the same title (the book repeats 107
+ * across grades) are both covered and stay contested.
+ */
+export function titleDecides(ranked: KBScoredLesson[]): boolean {
+  const top = ranked[0];
+  if (!top?.titleCovered || top.score < KB_CONFIDENT_SCORE) return false;
+  return !ranked.slice(1).some(r => r.titleCovered);
+}
+
 /** True when the top ranked hit clears the confidence bar vs the runner-up. */
 export function isConfidentKbHit(ranked: KBScoredLesson[]): boolean {
   const top = ranked[0];
   if (!top || top.score < KB_CONFIDENT_SCORE) return false;
+  if (titleDecides(ranked)) return true;
   const second = ranked[1];
   if (!second) return true;
   return top.score >= second.score * CONFIDENT_MARGIN;

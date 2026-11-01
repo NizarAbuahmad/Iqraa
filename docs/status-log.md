@@ -10,6 +10,37 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Forty-first pass: a lesson named by its whole title now wins the knowledge-base search, 2026-11-01
+
+**Why.** The fortieth pass found `searchKBRanked` ranking the wrong lesson first and left it for its own PR. «جهّز ورقة عمل من 4
+أسئلة عن حل المعادلة التربيعية بالتحليل» was answered «أيّ مادة تقصد؟» with Digital Skills and English on the menu, because
+«تحليل البيانات» (65) beat the lesson the teacher named, «حل المعادلات التربيعية بالتحليل» (26): `scoreField` sums ~10 fields per
+lesson, so one common word hits many of them, while a title that matches every word typed only scores its title field.
+
+**Built.** `searchKBRanked` adds `TITLE_COVERED_BONUS` (45) to a lesson whose title has every significant word in the query
+(two words at least; a one-word title already wins by the exact-substring rule), and marks it `titleCovered`. Only the **most
+specific** covered title counts: a query that is a lesson's whole title also contains the shorter «حوار الفريق», and the first
+version of this rule let four lessons by that name push the named lesson from 1st to 5th (an Arabic debate lesson from 1st to
+40th). Specificity ignores harakat even where the bonus does not (below). Four gates then read it, through one predicate,
+`titleDecides(ranked)` (the top hit's whole title is in the query, it scores ≥ 10, and no other result's title is): 
+`isConfidentKbHit` (so `shouldAskWhichLesson` stops asking), `isConfidentSingleSubjectHit`, `liveChatGrounding` (which no longer
+calls a covered lesson's subject «mixed» because a rival shares one word), and the ambiguity check in `iqra.tsx`
+(`!confidentHit`). Two lessons with the same title (the books repeat 107) are both covered and stay contested, as before.
+
+**Verified.** `kbTitleCoverage.test.ts` (11): the maths lesson ranks first for the topic and for the full worksheet request;
+all four gates treat it as confident; «تحليل البيانات» still wins for itself; «تحليل» alone decides nothing; the vowelled
+grade-3 lesson `groundingTashkeel.test.ts` guards still does not surface; the shadowing case above. Measured before/after on
+every third lesson (1,111) by its own title: top-1 by id 238 → 312, top-1 among same-title lessons 353 → 453, better in 129
+and **worse in none**. On the 813 historic questions 7 first hits changed, all toward the lesson asked about («قانون الجيوب»
+28 → 71 maths, was Newton's laws; «ما محيط الدائرة…» 45 → 78; «ما مجموع زوايا المثلث؟» 39 → 74; «ما هو التفاعل الكيميائي؟» 19 → 64
+chemistry; «كيف أحسب الوسط الحسابي…» 68 → 79; «اشرح لي طريقة حل المعادلة التربيعية بالتحليل» 65 → 71 maths;
+«هل تظهر لي إشعارات القراءة في الرسائل؟» 14 → 55). Typecheck clean. Not seen live yet.
+
+**Limits.** The bonus is blind to harakat across grades on purpose (folding them promoted a grade 8 science lesson over grade
+10 chemistry; `groundingTashkeel.test.ts`), so a vowelled early-grade title still gets none. «الأعداد الأولية» has no lesson,
+so it is still asked about. «اشرح لي تحليل الفرق بين مربعين» still ranks «تحليل البيانات» first: no maths lesson title is
+inside that query.
+
 ## Fortieth live pass: app questions the model answered by improvising, 2026-11-01
 
 **Why.** With the model on (allowance reset 2026-11-01), 28 new questions on app.iqrra.com. The six teaching answers

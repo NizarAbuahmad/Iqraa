@@ -2459,7 +2459,9 @@ export default function IqraScreen() {
         || teachingCtx
         || sessionMemory.lessonPin === 'hard',
       );
-      if (!hasHardContext && !liveTeaching && results.length > 0) {
+      // A confident single-subject hit has already settled the subject: a weak
+      // other-subject lesson further down `results` is not a second reading.
+      if (!hasHardContext && !liveTeaching && !confidentHit && results.length > 0) {
         const ambiguousSubjects = detectSubjectAmbiguity(results);
         if (ambiguousSubjects) {
           const clarifyMsg: Message = {
