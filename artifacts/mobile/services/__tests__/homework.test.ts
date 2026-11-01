@@ -9,6 +9,7 @@ import {
   dueDatePresets,
   formatDueDate,
   homeworkDraftError,
+  homeworkChatTarget,
   isHomeworkChatLine,
   isValidYmd,
   maskYmd,
@@ -582,6 +583,18 @@ test('isHomeworkChatLine matches the shared-homework chat line only', () => {
   assert.equal(isHomeworkChatLine('📚 واجب جديد: تاريخ الوطن\nموعد التسليم: 19-10-2026'), true);
   assert.equal(isHomeworkChatLine('واجب جديد'), false);
   assert.equal(isHomeworkChatLine('مرحبا'), false);
+});
+
+test('homeworkChatTarget: where a tap on a shared-homework line goes, for the teacher and for a student', () => {
+  const line = '📚 واجب جديد: تاريخ الوطن\nموعد التسليم: 19-10-2026';
+  // The teacher's own line (the one in their screenshot) opens the class's homework tab.
+  assert.equal(homeworkChatTarget({ body: line, isOwn: true, classGroupId: 'c1' }), '/classes/c1?tab=homework');
+  // A student's opens «المدرسة», where the homework and its attachments are.
+  assert.equal(homeworkChatTarget({ body: line, isOwn: false, classGroupId: 'c1' }), '/school');
+  // A teacher's line in a thread with no class has nowhere to go.
+  assert.equal(homeworkChatTarget({ body: line, isOwn: true, classGroupId: null }), null);
+  // An ordinary message is not a link.
+  assert.equal(homeworkChatTarget({ body: 'مرحبا', isOwn: false, classGroupId: 'c1' }), null);
 });
 
 test('allTrackedDone: every item that can be ticked is done', () => {

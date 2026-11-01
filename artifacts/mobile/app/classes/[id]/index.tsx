@@ -143,10 +143,11 @@ export default function ClassDetailScreen() {
   // a door onto an error. Asked of the server, not a build-time constant —
   // see services/features.ts.
   const studentAccounts = useStudentAccountsEnabled();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, tab: tabParam } = useLocalSearchParams<{ id: string; tab?: string }>();
   const queryClient = useQueryClient();
 
-  const [tab, setTab] = useState<Tab>('students');
+  // `?tab=homework` is how the class chat's homework line opens the right tab.
+  const [tab, setTab] = useState<Tab>(tabParam === 'homework' ? 'homework' : 'students');
   const [materials, setMaterials] = useState<SavedMaterial[]>([]);
   const [error, setError] = useState('');
   const [showAdd, setShowAdd] = useState(false);
