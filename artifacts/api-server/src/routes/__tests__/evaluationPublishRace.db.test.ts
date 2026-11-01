@@ -87,9 +87,11 @@ describeDb("publishing an evaluation, against a real database", () => {
   const waitUntilQueued = async (timeoutMs = 10_000): Promise<void> => {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
+      // Only this file's database: pg_stat_activity lists the whole server, where other
+      // test files run the same query in parallel.
       const r = await db.pool.query<{ n: number }>(
         `SELECT count(*)::int AS n FROM pg_stat_activity
-          WHERE wait_event_type = 'Lock' AND query ILIKE '%"evaluations"%'`,
+          WHERE datname = current_database() AND wait_event_type = 'Lock' AND query ILIKE '%"evaluations"%'`,
       );
       if (r.rows[0].n > 0) return;
       await new Promise(res => setTimeout(res, 50));

@@ -11,6 +11,7 @@ import { artifactFromQuery } from '../ai/teachingAssistant.ts';
 import { buildLessonSuggestions, mergeScopeReply, ordinalChoice, pinLesson } from '../lessonCopilot.ts';
 import { emptyChatSessionMemory } from '../ai/teachingAssistant.ts';
 import { getLessonById } from '../knowledgeBase.ts';
+import { isHowToAdvice } from '../ai/askVocabulary.ts';
 
 const ASKS: Record<string, string[]> = {
   'lesson-plan': [
@@ -149,5 +150,53 @@ describe('every create chip the chat offers asks for its own material', () => {
     }
     assert.equal(artifactFromQuery('جهز اختبارا قصيرا'), 'quiz');
     assert.equal(artifactFromQuery('اعطني واجباً'), 'homework');
+  });
+});
+
+// Found 2026-11-01 on app.iqrra.com, with the allowance reset: «How do I give
+// students more time for an exam» came back as a Grade 3 quiz titled «students
+// more time an exam». A how-to question's own verb ("give", "write", "prepare")
+// was read as a request for material because the exam word was in the sentence.
+describe('a how-to question is advice, not a request for a material', () => {
+  const advice = [
+    'How do I give students more time for an exam',
+    'How do I write good exam questions',
+    'How can I prepare students for the exam',
+    'How should I make a quiz less stressful',
+    'كيف أكتب أسئلة امتحان جيدة',
+  ];
+  for (const q of advice) {
+    it(`«${q}» is not an artifact`, () => {
+      assert.equal(artifactFromQuery(q), null);
+      assert.notEqual(classifyChatIntent(q, /[a-z]/i.test(q) ? 'en' : 'ar').intent, 'artifact');
+    });
+  }
+
+  // An imperative, or a how-question that speaks to the assistant, still asks for the material.
+  const requests: Array<[string, string]> = [
+    ['give me a quiz on fractions', 'quiz'],
+    ['give students a quiz on fractions', 'quiz'],
+    ['Can you give me 5 exam questions', 'quiz'],
+    ['how can you make me a quiz please', 'quiz'],
+    ['جهّز اختبارا قصيرا', 'quiz'],
+    ['اكتب لي أسئلة امتحان عن المشتقات', 'quiz'],
+  ];
+  for (const [q, want] of requests) {
+    it(`«${q}» still asks for a ${want}`, () => {
+      assert.equal(artifactFromQuery(q), want);
+    });
+  }
+});
+
+describe('isHowToAdvice — the one reading of a how-to question the chat shares', () => {
+  it('a how-to question for oneself is advice', () => {
+    for (const q of ['How can I prepare students for the exam', 'How do I give students more time', 'كيف أعد الطلاب للاختبار']) {
+      assert.equal(isHowToAdvice(q), true, q);
+    }
+  });
+  it('a request, or a question that speaks to the assistant, is not', () => {
+    for (const q of ['prepare an exam', 'give me a quiz on fractions', 'How can you make me a quiz please', 'جهّز اختبارا قصيرا']) {
+      assert.equal(isHowToAdvice(q), false, q);
+    }
   });
 });

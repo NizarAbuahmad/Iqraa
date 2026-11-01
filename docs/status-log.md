@@ -42,6 +42,531 @@ pattern was checked to fail on a swapped surface.
 10 skipped. **Not verified:** nothing was looked at in a browser, so how strong the bar and the
 heading read for each subject, in light and dark, is from the numbers (contrast), not the screen.
 
+## A DB test's server can no longer answer from another test file's port — 2026-11-01
+
+Also on PR #1387, after the lock-probe fix below: «ends the dead end, with row-level security enforced»
+(`homeworkSubmission.db.test.ts`) got a 401 «User not found» on its first upload, for a student it had inserted a
+moment before. The auth lookup uses `systemDb`, so RLS was not it: the request had reached a server that did not
+have that row.
+
+**Cause:** `startServer` (`test-support/startServer.ts`) picked a port by opening and closing a socket, then started
+the API on it, and called the server ready when `/healthz` answered. The DB test files run in parallel, each with
+its own database; in the gap another file's server could take the same port. This file's server then died on
+"address in use", `/healthz` answered from the other one, and every request reached the other file's database.
+
+**Changed:** the API may take `PORT=0` (the OS picks) only when its parent opened an IPC channel, and it then sends
+`{ listening: port }` (`src/index.ts`). Without a channel `PORT=0` is still refused, as before — Cloud Run never has
+one. `startServer` starts the child with `PORT=0` and the channel, waits for that message (or fails on exit), and
+builds its URL from the port the child reports. Nothing can answer in its place.
+
+**Verified:** the full api-server suite against a local Postgres 16, DB tests included: 3,332 tests, 0 failures, and
+the run exits (the channel is closed after the message). A demonstration against the built bundle: with another
+server already on a port, the old way's `/healthz` answered "ok" while the API exited with code 1; the new way
+reported its own port and answered 200 there; `PORT=0` with no IPC channel exits with «Invalid PORT value».
+**Not verified:** that CI never flakes on these again — it was seen once. `mountOrder.test.ts` keeps its own fixed
+port ranges (8100–8899, outside the OS's ephemeral range) and was left alone.
+
+## The evaluation race tests wait for their own lock, not any database's — 2026-11-01
+
+`typecheck + tests` failed once on PR #1387, which touched only the app: «does not replace the questions of a
+draft that was published while it was generating» (`evaluationGenerateWrite.db.test.ts`) got the early draft
+check's 409 instead of the locked one's `no_longer_draft`. `main` passed on the same base.
+
+**Cause:** five race tests (`evaluationGenerateWrite`, `evaluationArchiveRace`, `evaluationPublishRace`,
+`evaluationPublishAnnounce`, `evaluationQuestionEditRace` `.db.test.ts`) wait until a session is blocked on
+`"evaluations" … for update` by polling `pg_stat_activity` — which lists the whole Postgres server. Each test file
+has its own database (`testDb.ts`), but the files run in parallel on one server, and the others queue on the same
+query in theirs. So a wait could end on another file's request, and the test would publish before its own request
+reached the lock. `homeworkSubmission.db.test.ts` already filtered by `datname = current_database()`.
+
+**Changed:** all five probes add `datname = current_database()` (run on `db.pool`, i.e. the file's own database,
+whose tests run one at a time). **Verified** against a local Postgres 16: the five files run together in parallel,
+23 tests, 5 runs out of 5 green; and directly — with a `FOR UPDATE` waiter queued in database A, the old probe run
+from database B counted it (1), the new one did not (0), and the new one run from A still did (1). **Not verified:**
+that CI never flakes on these again; the failure was seen once.
+
+## «اقترح ميزة» asks for an email with a reason, and answers ideas that already exist — 2026-11-01
+
+Follows «ردّ بالبريد» (2026-10-30, #1351): most signed-out ideas in «البريد المجمّع» had no email, so the admin
+cannot answer them, and one of them — «اريد تصدسر ورقة الى وورد» — asked for Word export, which exists. The form's
+own placeholder was «مثال: أريد تصدير ورقة العمل إلى Word…», an example of a feature already there.
+
+**Changed (`app/suggest-feature.tsx`, `services/i18n.ts`):** the placeholder is now a question with no example
+(«ما الذي تحتاجه، ومتى تحتاجه في يومك؟»). A signed-out visitor sees one line above the email field: «اترك بريدك
+لنردّ عليك ونخبرك إن أضفنا فكرتك. لا نستخدمه لشيء آخر.» — true because broadcasts reach waitlist rows only
+(`pickRecipients` in `lib/siteMail.ts` skips every other kind). After sending, an idea for something «إقرأ» already
+does gets a box under the thank-you, «يمكنك فعل هذا الآن», with the existing answer text (`faqA4` for Word/PDF,
+`howDarkMode` for dark mode). The idea is still sent either way.
+
+**The matcher (`services/existingFeature.ts`) is strict on purpose.** `findAppPlaces` (`appHelp.ts`) was tried
+first and is wrong for ideas: it read «تحضير كل شيء» as the lesson-plan tool and «أريد لعبة عن الكسور» as the games,
+so every idea would have been told it exists. The rules match «وورد» with its clitics («بالوورد», «كوورد»), «Word»
+inside an Arabic message, PDF/docx, English that names Word as a file, and named dark-mode phrases. English "word"
+alone ("word search", "word problems") and Arabic words containing «ورد» («موارد», «ورود», «الوردة») do not match.
+Append a rule when real ideas keep asking for something that exists.
+
+**Verified:** `existingFeature.test.ts` (10 tests: the real idea with its typo, prefixes, Latin Word, PDF/docx,
+English, the "word" and «ورد» misses, dark mode, and ideas that only name a tool); the mobile suite (9,101 pass) and
+the monorepo typecheck; the signed-out screen in a production web build at phone width, in Arabic, light and dark,
+with `/site/ideas` stubbed — the form, the hint, the post body, and the thank-you with the export box. **Not
+verified:** a signed-in teacher's thank-you (same code path after `res.ok`), native Android/iOS layout, and whether
+the hint actually raises the share of ideas with an email — watch «البريد المجمّع» for that.
+
+## Spelling bank: a word whose misspelling is itself a word is dictated, never offered as a choice — 2026-11-01
+
+`lib/arabic-spelling` builds choose, true/false and tap questions that show a
+word's spelling beside its misspellings and **no sentence**. That is only safe
+while every misspelling is a non-word. Where it is a word, the child who picks it
+is right and is marked wrong: «قلم» beside «قلمًا», «رمي» beside «رمى»,
+«أبني» beside «ابني», «أمن» beside «آمن», «يدعوا» beside «يدعو». Found by an
+independent review of the /play spelling game, then measured (see that game's
+entry below). The teacher's «add a spelling dictation» screen
+(`AddDictationModal`) builds these into evaluations, so teachers could ship them.
+
+- **Fixed by exclusion, not by writing sentences.** `SpellingWord.dictationOnly`
+  is a reason string (never a bare flag). A flagged word is never built into a
+  choose, judge or tap item; it is **dictated** instead (the teacher reads it aloud,
+  so nothing is ambiguous). A flagged word that lands on a choice slot in a mixed
+  worksheet becomes a dictation item without moving the rotation, so a rule that is
+  mostly flagged still fills a worksheet; if the teacher asked for no dictation,
+  it is skipped. A rule with no choice-safe words (`hamzat-istifham-ala-wasl`, all 8
+  flagged) gives dictation only.
+- **50 of the bank's 174 words are flagged**, from reading every option each word
+  can show (about 520 spellings, authored plus derived). More than the ~20 I first
+  estimated from the books' text, which cannot find them: the extracted text drops
+  hamzas («إلى» appears as «الى» 54 times) and the real words are often not in the
+  books at all («ينبوع», «أنباء», «عنابر»). Per rule: همزة الوصل 3, الألف الفارقة 5
+  (the plural «يدعوا» is real), همزة المد 6 of 8, الهمزة المتوسطة 2, حروف تنطق ولا
+  تكتب 3, النون الساكنة 4, الهمزة المتطرفة 1, تنوين الفتح 4, الألف اللينة 3, الأفعال
+  الثلاثية 5, المتطرفة مع التنوين 5, ابن 1, همزة الاستفهام 8 (its derived options
+  «استأذنت» / «أستأذنت» are real verbs; only a question sentence picks «آ»). Each
+  carries its reason in `rules.ts`.
+- **A cross-rule check, now bank-wide.** The «never offer another word's answer» set
+  was one rule's words; it is now every correct spelling in the bank. «دفء» (a
+  misspelling of «دُفْئًا») is the correct «دُفْء» of another rule. Tests assert
+  that no unflagged word shows an option that is correct anywhere in the bank.
+- **One data fix.** «ذلك» in `hatha-hathihi` listed «دلك» (a verb) as a misspelling;
+  it now lists «ذالك», the error children make and the one the other rule already
+  uses. This word is not flagged.
+- **Effect on a teacher.** Words that can be asked as a choice question: 150 before,
+  105 now (measured over 200 seeds each; 24 of the 174 never could, having fewer than
+  two misspellings). The loss is uneven: همزة المد 8 → 2, الأفعال الثلاثية 5 → 0,
+  همزة الاستفهام 8 → 0, الألف اللينة 5 → 2, تنوين الفتح 8 → 4, الهمزة المتطرفة مع
+  التنوين 8 → 3, النون الساكنة 8 → 4, حروف تنطق ولا تكتب 8 → 5; the rest lose 0 to 3.
+  Those words are dictated instead, so a worksheet is not shorter: every rule still
+  fills a grade-introducing worksheet with at least 5 questions (the existing test).
+- **Verified:** `choiceSafety.test.ts` (per-rule bank-wide collision check, flags
+  carry a reason, flags counted per rule so adding or removing one is a decision,
+  flagged words never reach choose/judge/tap and still come out as dictation, a
+  fully flagged rule gives dictation); the bank's 250 tests; the API's 116
+  `spellingItems` tests; the /play spelling game's tests; typecheck; the mobile suite.
+  **Deploys the API** (a `lib/` change), no schema or migration.
+- **Not verified / limits — read these.** The flags are one person's reading of
+  Arabic, mine, not a linguist's or a teacher's. Borderline calls go both ways:
+  flagged conservatively: «مسئول» (an accepted variant of «مسؤول»), «الرحمان» (a
+  variant in names); left unflagged because a pupil would not know the word:
+  «أبن», «هده», «يصلى», «نجّى», and «بير» (dialect for a well). The remaining 124
+  words are not proven safe, only read. A sentence per word would let flagged words
+  back into choice questions, but each sentence must rule out the other spelling
+  («أستمع إلى المعلم» is grammatical, so «____ إلى المعلم» does not) and a bad one
+  is a wrong key again. **The rule `alif-tathniya-baad-hamza` is untouched and
+  still open:** it marks «شيآن» / «هواآن» / «ضوآن» correct and «شيئان» / «هواءان» /
+  «ضوءان» wrong, while keeping «بدءان» / «جزءان» correct. By standard spelling
+  «شيئان» is right; I could not check what the Ministry book prints. Its dictation
+  keys have the same problem, so this is not fixed by the flag. It needs a person
+  with the book. The /play game still serves only its five rules; with this change
+  it could widen to the unflagged words of the others, which is a separate step.
+
+## Forty-second pass: a lesson named whole is no longer lost to the picked grade, 2026-11-01
+
+**Found live, on the build that shipped the forty-first pass.** «جهّز ورقة عمل من 4 أسئلة عن حل المعادلة التربيعية بالتحليل» no
+longer asked «أيّ مادة تقصد؟», but made a **Digital Skills, grade 10** worksheet with a note that the topic is not in that book.
+The quiz on «قانون الجيوب» was right (maths). So the bonus turned a clarifying question into a silently wrong paper for this
+ask: it made the hit confident, and the chat's artifact path then did what it always did with a confident hit.
+
+**Cause.** `iqra.tsx` searches the picked grade first (`teachingCtxScope`, the account's grade 10) and uses that result whenever
+it is non-empty. The named lesson is in grade 9, so the grade-10 search returned «تحليل البيانات» (66, one shared word) and won.
+That rule is deliberate («a quiz on fractions» with grade 7 picked means grade 7's fractions); it just had no exception for a
+lesson the message names whole.
+
+**Built.** `namedLessonBeatsGrade(inGrade, all, subjectOf)` in `kbSuggestion.ts`: the whole-KB search is decided by a title no
+other lesson shares (`titleDecides`), the grade's own search is not decided by one, and the grade's best hit is in a **different
+subject** from the named lesson (or there is none). Then the whole-KB result is used. It deliberately does not move a request
+to another grade of the *same* subject: a second live check found that «جهّز واجبا عن محيط الدائرة» with grade 10 picked is
+grade 10 maths, and the only lesson of that name is grade 7's. The first version of this change would have switched it; the
+picked grade is the teacher's class, and only a subject it cannot answer in is overruled. A title that also exists in the picked
+grade makes the whole-KB search contested, so the grade keeps it. Only the artifact path changed (the subject-scoped search
+filters by the named subject already).
+
+**Verified.** `kbTitleCoverage.test.ts` (16 tests, five new): the grade-10 search alone picks Digital Skills; the named grade 9
+maths lesson beats it; grade 9 itself is unchanged; the grade 7 «محيط الدائرة» does not take a grade 10 maths request;
+«تحليل» alone never overrides a grade. Typecheck clean. On the live
+build before this change, the sine-law quiz and the three teaching answers (circle circumference, angle sum, chemical reaction)
+were right. Not seen live after this change yet.
+
+## «ما الجديد»: existing users are told about new features, once, in the app — 2026-11-01
+
+Nothing told someone already using the app that it had changed: the tour is for new
+accounts, the admin broadcast mails the waitlist, and pushes fire only on classroom events.
+Design: `docs/superpowers/specs/2026-10-30-whats-new-design.md`.
+
+- **The list** is `WHATS_NEW` in `artifacts/mobile/services/whatsNew.ts`, newest first: an
+  `id`, the Amman `date` the feature reached users, the `roles`, title and body i18n keys,
+  and an optional `route` for «جرّبها». It ships in the same PR as the feature, so the note
+  reaches people with the same web deploy and OTA update — never before the feature.
+- **The dialog** (`components/whatsNew/WhatsNewHost.tsx`, mounted beside `TourHost`) opens
+  at most once per account per session, on the role's home screen, with the unseen entries
+  for that role, at most three, newest first (any more wait for the next launch). An entry is shown only to an account created **before** its date, only
+  once its day has come, and only while it is at most 45 days old. It waits for the tour's
+  gates (`routeGating.ts`), never opens while a tour runs or a replay is pending, holds back
+  for a young account that has not had its tour, and honours the tour's device off switch
+  (which the e2e sets). Entries are marked seen when the dialog opens
+  (`@iqra_whats_new_seen_v1:<id>`, on the device); a read that fails counts as "all seen".
+  Ids marked seen this session are also held in `services/whatsNewSession.ts`, so a note read
+  on the Profile screen is not offered again on the way back home.
+- **The screen** `/whats-new`, from a new Profile row «ما الجديد», lists every entry for the
+  role and marks them seen. It is in `NON_TEACHER_ROUTES`, so a parent or student is not
+  bounced from it.
+- **Two entries ship with it:** the six new games and the subject / grade filter in «ألعاب
+  إقرأ» (2026-10-30, `/play`), and the tour replay in Profile (2026-10-27) for accounts made
+  before the tour existed.
+- **Events:** `whats_new_shown` (`role`, `count`, `ids`), `whats_new_opened` (`id`,
+  `source`), `whats_new_closed` (`count`).
+- **The rule** (CLAUDE.md, STATUS.md): a change users can see adds an entry, or says in the
+  PR body why it needs none.
+
+**Verified:** `services/__tests__/whatsNew.test.ts` (23 tests: who sees what and when, the
+tour interplay, the session store, and that every real entry has a unique id, a real day,
+keys in both languages, and a route that is a real screen its roles may open); the whole
+mobile suite (8,311 pass, before the session-store fix, which re-ran its own file and
+`designScale`); `pnpm run typecheck`. A code-review pass found the dialog could fire a
+second time with four or more unseen entries, and could repeat notes just read in Profile;
+both are fixed and pinned.
+**Not verified:** the dialog and the screen were not opened in a browser or on a phone — the
+session had no database to sign in against. Check both in `pnpm run dev:mobile:web`, phone
+and desktop, light and dark, RTL, before relying on the look. Seen-state is per device, so a
+teacher on phone and web sees each note twice. «جرّبها» on the games note opens `/play`,
+whose hub has no back button on screen (`hideBack`); Android back and the browser's back
+work.
+
+## Forty-first pass: a lesson named by its whole title now wins the knowledge-base search, 2026-11-01
+
+**Why.** The fortieth pass found `searchKBRanked` ranking the wrong lesson first and left it for its own PR. «جهّز ورقة عمل من 4
+أسئلة عن حل المعادلة التربيعية بالتحليل» was answered «أيّ مادة تقصد؟» with Digital Skills and English on the menu, because
+«تحليل البيانات» (65) beat the lesson the teacher named, «حل المعادلات التربيعية بالتحليل» (26): `scoreField` sums ~10 fields per
+lesson, so one common word hits many of them, while a title that matches every word typed only scores its title field.
+
+**Built.** `searchKBRanked` adds `TITLE_COVERED_BONUS` (45) to a lesson whose title has every significant word in the query
+(two words at least; a one-word title already wins by the exact-substring rule), and marks it `titleCovered`. Only the **most
+specific** covered title counts: a query that is a lesson's whole title also contains the shorter «حوار الفريق», and the first
+version of this rule let four lessons by that name push the named lesson from 1st to 5th (an Arabic debate lesson from 1st to
+40th). Specificity ignores harakat even where the bonus does not (below). Four gates then read it, through one predicate,
+`titleDecides(ranked)` (the top hit's whole title is in the query, it scores ≥ 10, and no other result's title is): 
+`isConfidentKbHit` (so `shouldAskWhichLesson` stops asking), `isConfidentSingleSubjectHit`, `liveChatGrounding` (which no longer
+calls a covered lesson's subject «mixed» because a rival shares one word), and the ambiguity check in `iqra.tsx`
+(`!confidentHit`). Two lessons with the same title (the books repeat 107) are both covered and stay contested, as before.
+
+**Verified.** `kbTitleCoverage.test.ts` (11): the maths lesson ranks first for the topic and for the full worksheet request;
+all four gates treat it as confident; «تحليل البيانات» still wins for itself; «تحليل» alone decides nothing; the vowelled
+grade-3 lesson `groundingTashkeel.test.ts` guards still does not surface; the shadowing case above. Measured before/after on
+every third lesson (1,111) by its own title: top-1 by id 238 → 312, top-1 among same-title lessons 353 → 453, better in 129
+and **worse in none**. On the 813 historic questions 7 first hits changed, all toward the lesson asked about («قانون الجيوب»
+28 → 71 maths, was Newton's laws; «ما محيط الدائرة…» 45 → 78; «ما مجموع زوايا المثلث؟» 39 → 74; «ما هو التفاعل الكيميائي؟» 19 → 64
+chemistry; «كيف أحسب الوسط الحسابي…» 68 → 79; «اشرح لي طريقة حل المعادلة التربيعية بالتحليل» 65 → 71 maths;
+«هل تظهر لي إشعارات القراءة في الرسائل؟» 14 → 55). Typecheck clean. Not seen live yet.
+
+**Limits.** The bonus is blind to harakat across grades on purpose (folding them promoted a grade 8 science lesson over grade
+10 chemistry; `groundingTashkeel.test.ts`), so a vowelled early-grade title still gets none. «الأعداد الأولية» has no lesson,
+so it is still asked about. «اشرح لي تحليل الفرق بين مربعين» still ranks «تحليل البيانات» first: no maths lesson title is
+inside that query.
+
+## Fortieth live pass: app questions the model answered by improvising, 2026-11-01
+
+**Why.** With the model on (allowance reset 2026-11-01), 28 new questions on app.iqrra.com. The six teaching answers
+(difference of squares, the covalent bond, acid vs base, algebraic fractions, element vs compound, uniform motion) were right
+apart from one wrong word and one muddled note (below). The weak spot was app questions the matcher missed: the model answered
+ten of them from nowhere, two with invented steps («كيف أغير صف الطالب» → "look for an edit option and change the grade";
+«كيف أغير كلمة مرور الطالب» → generic steps, "it depends on the system"), the rest with "outside my scope" or a vague "yes".
+
+**Built.** Nine of the ten now reach the app's own answer: `howMoveStudent`, `howFamilyView`, `howInstallApp` (tablet),
+`howChatHistory`, `howHomeworkDone`, `faqA4` (export to Word, print), `faqA5` (add a note to a plan = an item). One new answer,
+`howStudentPassword`: **there is no button for a student's password**; a student who signed up with the link code has a
+*login code* (the teacher issues a new one, `howReissueLoginCode`), one who signed up with an email resets it themselves
+(`howChangePassword`). «بدي اغير صف الطالب» stays with the model on purpose (an existing test pins it: «صف» can be a mark),
+so the move-student rule takes the how-question only.
+
+**Left, and why.** «هل يوجد اختبار تجريبي للطلاب» (ambiguous: a practice test to make, or one students can take).
+
+**Found, not fixed: the knowledge-base search ranks the wrong lesson first.** «جهّز ورقة عمل … عن حل المعادلة التربيعية
+بالتحليل» and the same for primes were answered «أيّ مادة تقصد؟» with a menu that included Digital Skills and English. The
+clarifier is a symptom: `searchKBRanked('حل المعادلة التربيعية بالتحليل')` puts «تحليل البيانات» (digital-literacy) first at 65
+and the exact lesson «حل المعادلات التربيعية بالتحليل» fifth at 26, because `scoreField` sums across ~10 fields per lesson and
+one common word («تحليل») hits many of them, while a title that matches every query word only scores its title field. «الأعداد
+الأولية» has no lesson at all. A title-coverage bonus would fix the first, but it changes how every lesson is grounded
+(`resolveGeneratorGrounding`, the 63-lesson exact-title test), so it needs its own before/after over the picker lessons and the
+historic questions, not a rider on this PR.
+
+**Model answers, two small errors worth knowing.** The acid/base answer wrote «ورقة تباع الشمس» (litmus is «عبّاد الشمس»); the
+uniform-motion answer's teacher note mixes speed and velocity. Neither is something this repo's code produced.
+
+**Verified.** `appHelp.test.ts` (13 phrasings, 4 near-misses, and the exact claim of the new answer). The 813 historic questions
+give the same app-help answers (0 changed). Not seen live yet.
+
+## Parent screens: «نتائج أبنائي» and the school tab's exams and homework say what they mean — 2026-11-01
+
+A parent reported both screens as confusing. Read against a screenshot of each:
+
+- **«نتائج أبنائي»:** a child's name had the same weight as «القادمة» / «السابقة»; every
+  child repeated an empty «القادمة»; a card's facts were unlabelled fragments in two date
+  styles («11-11-2026» beside «24 تشرين الأول 2026»), the subject twice, and an exam day in
+  the future on a paper already handed in; the hourglass/padlock icon and the chip said the
+  same thing, all in grey. «مُغلق» reads as "locked" but is the server's `closed`: the exam is
+  over and nothing was handed in.
+- **School tab:** the exam row's date chip, time and status were one dotted string with
+  «سُلِّم — بانتظار النتيجة» listed as «القادمة»; homework links were bare bold teal text; the
+  note that a child has no student account sat as one more grey line; an untracked item due
+  today showed only a numeric date.
+
+What changed (parent view only; a student's own «اختباراتي» keeps its layout):
+
+- Each child is a block: an initial, the name at heading size and one summary line
+  (`childSummaryLine`, «نتيجة واحدة جاهزة · اختبار واحد مفتوح»). «القادمة» appears only
+  when it has rows; «السابقة» is a smaller grey label.
+- A card is the title, one status pill, then labelled facts with one icon each. The planned
+  day is left off once the paper is handed in. Pill text is a parent's wording
+  (`PARENT_EXAM_STATE_KEY`): «سُلِّم — بانتظار تصحيح المعلّم», «مُغلق — لم يُسلَّم» (red).
+  Tones are by meaning (`EXAM_STATE_TONE`); amber stays «now». `ExamStatusChip` is shared by
+  both screens.
+- School tab exams: a calendar tile (day + month), «بعد 10 أيام», the time with a clock, and
+  the status pill. The tile turns amber only for an exam that can still be sat.
+- School tab homework: links are a labelled group («المرفقات والأنشطة») of bordered rows with a
+  chevron; the no-account note is a boxed info note; an untracked item due today or tomorrow
+  says «اليوم» / «غدًا» (it still never says «متأخّر»).
+- Exam days now print as «11 تشرين الثاني 2026» (`formatExamDay`, read from the text, never
+  through `Date`) on these two screens, for students too.
+
+**Verified:** `tsc` clean; the full mobile suite passes except two scale guards the first
+draft tripped (a literal font size and radius), fixed and re-run green with `myExams` and
+`upcomingExams`; both screens rendered in a browser at phone width, light and dark, RTL,
+against a stub API (parent with two children, handed-in / closed / result / open exams).
+
+**Not verified:** a real device or a real parent account; English layout (strings added and
+unit-tested, not looked at); a long child name or a very long exam title. The parent's
+`closed` wording is deliberately modest: the server cannot tell a missed paper from one the
+teacher closed early, so it says only «مُغلق — لم يُسلَّم». Homework due dates still print
+numerically (`formatDueDate`, per the bidi rule in CLAUDE.md), so on the school tab they sit
+beside month-name exam days.
+
+## Thirty-ninth live pass: «How can I prepare students for the exam» opened the test builder, 2026-11-01
+
+**Why.** After the thirty-eighth pass merged, re-running its questions on app.iqrra.com showed one still wrong: «How can I
+prepare students for the exam» got «Tests are built in Evaluations… Tap to start» and a button. Not the router this time:
+`toolAskFromQuery` (`services/chatToolAsk.ts`), which turns a message into a button for a screen that has its own builder
+(game, slides, test, dictation), reads «exam» as the test and «prepare» as a request cue. It is the same mistake the
+thirty-eighth fixed in `artifactFromAsk`, in a second reader of the same sentence.
+
+**Built.** `isHowToAdvice` (exported from `services/ai/askVocabulary.ts`, the rule the thirty-eighth added) is now the
+shared reading: a how-to question that does not speak to the assistant («can you», «ممكن», «please»…) is advice, so
+`toolAskFromQuery` returns null for it. Imperatives («prepare an exam», «جهز امتحان», «make me a test») still open the
+screen.
+
+**What it could have broken, checked.** 14 of the 813 historic questions now get `null` from `toolAskFromQuery` where they
+used to get a button («كيف أنشئ امتحاناً جديداً؟», «how do i make slides from my own text»…). All 14 are routed to app help
+**before** the chat reaches `toolAskFromQuery` (`iqra.tsx`, `route.intent === 'app_help'`), so their replies do not change.
+Two phrasings were not claimed by app help and would have lost a helpful button to model advice — «كيف أجهز امتحانا»
+(accusative alif) and «كيف أعد امتحانا للصف العاشر» — so the `create-exam` rule now takes them (`howCreateExam`).
+«كيف أعد الطلاب للامتحان» (prepare the *students*) is correctly not an app answer.
+
+**Verified.** `chatToolAsk.test.ts` (5 how-to questions open nothing, 5 requests still open their screen),
+`appHelp.test.ts` (3 phrasings, 3 near-misses), `askVocabulary.test.ts` (`isHowToAdvice`). The 813 historic questions give the
+same app-help answers (0 changed). Not seen live yet.
+
+## Removing an exam decides «is it published?» under the row lock — 2026-11-01
+
+`DELETE /evaluations/:id` (soft delete, `archived_at`) may remove only a draft or a
+closed exam, because a published exam has a live student link and hiding it from its
+teacher leaves an exam nobody can close (`lib/evaluationArchive.ts`). The route made
+that decision from a read taken before it wrote, with no lock, while publish locks
+the same row and flips the status. A publish that committed between the two (a
+draft, or a closed exam re-published) ended as a published exam with `archived_at`
+set: gone from the teacher's lists, link still admitting students.
+
+Now the status and `archived_at` are read under `FOR UPDATE` in one transaction and
+`archiveDecision` runs on that row, so the loser of the race sees the winner: a
+publish that got the lock first makes the removal answer `409 still_published`;
+a removal that got it first makes publish answer its existing `archived` 409.
+Archiving twice is still not an error.
+
+**Verified:** `routes/__tests__/evaluationArchiveRace.db.test.ts`, 4 tests against a
+real Postgres (two controls; the two races hold the row from the test, wait until the
+removal is queued on it, publish as a committed writer, and let go). Run red first (both
+races failed by never queueing behind a lock), green after. Full api-server suite and
+typecheck green.
+
+**Not verified / still open:** nothing was done in the app. The exam screen does not
+read `still_published` (or any code) from this route: every failure of the delete shows
+«تعذّر حذف الاختبار.» (`archiveEvaluationFailed`), so a teacher whose exam was published
+meanwhile is told the delete failed, not why, and the screen is not refreshed. A second
+tap on Generate still starts a second model call. The four question-edit routes' 409
+still shows the app's generic line.
+
+## A shared homework in the class chat can be tapped, and says so — 2026-11-01
+
+A teacher shared a homework to the class chat and reported that the message «is not clickable» and that students could not
+tell how to see the details. Cause, read from the code (not reproduced on a device): the line is plain text — a chat message
+carries no link or homework id — and the app recognises it by its opening (`isHomeworkChatLine`). The tap that opens it was wired for
+`!isOwn` only, so the teacher's own line did nothing; and for a student the bubble looked like any other message, with no sign it
+opens «المدرسة».
+
+- **Fixed in the app only** (no API, schema or migration change): `homeworkChatTarget` (`services/homework.ts`) says where a homework line
+  goes — the teacher's own line opens the class's homework tab (`/classes/<id>?tab=homework`, which the class screen now reads), a student's
+  opens `/school`. The bubble draws a link row inside it («افتح الواجب» / «عرض الواجب في الشعبة», `MessageBubble`'s `actionLabel`) and the
+  row is `accessibilityRole="link"`.
+- **Pinned** by a new test in `homework.test.ts` (both directions, a thread with no class, an ordinary message).
+- **Verified:** `pnpm run typecheck`, and the mobile suite (9,012 passed, 10 skipped, 0 failed).
+- **Not verified:** the bubble on a device or in the browser (phone, RTL, light and dark) — nobody has looked at it yet.
+- **Known limits:** a student's tap opens the School tab's list, not the one homework (the line carries no id, so it cannot be
+  highlighted; the line itself already prints the title, due date, instructions up to 300 characters and the attachment names). Opening one
+  homework from the chat would need the message to carry its id — a `chat_messages` column, i.e. a migration — and was left out on purpose.
+  The same homework can also appear twice in the chat (the «share» action is repeatable, and it was shared again at 9:47 in the report); not changed.
+
+## Thirty-eighth live pass: the first run with the model on, 2026-11-01
+
+**Why.** The demo account's $1.00 monthly allowance reset on 2026-11-01 (`ai-usage`: spent $0), so for the first
+time since the 28th pass the questions the matcher leaves to the model could be seen answered. Eight were run.
+
+**What the model did.** Six were fine: the exam-length question got length advice and invented no timer; the cheating
+question got classroom advice; a cell question and Newton's second law were accurate and short; «how many students in
+Jordan» was politely declined as out of scope. Three were not:
+
+- **A how-to question became a quiz (fixed).** «How do I give students more time for an exam» came back as a Grade 3
+  maths quiz titled «students more time an exam». `artifactFromAsk` (`services/ai/askVocabulary.ts`) lets a question
+  that starts with «how» / «كيف» through when it contains a request verb, and the list included «give», «write» and
+  «prepare», so any how-to sentence with the word *exam* was read as «make me a quiz»: «How do I write good exam
+  questions», «How can I prepare students for the exam» and «كيف أكتب أسئلة امتحان جيدة» did the same. A how-to
+  question is now advice unless it speaks to the assistant («can you», «ممكن», «من فضلك», «please»). Imperatives
+  («give me a quiz on fractions», «give students a quiz…») are unchanged.
+- **«كيف أرسل تذكير للطلاب بالواجب»** got a reminder-text template and no mention of where to send it; it now gets
+  `howClassChat` (post it in the class chat), which is a way to do it that exists. The system's day-before reminder
+  push is **not** claimed: its Cloud Scheduler job is a one-time manual setup this session cannot see.
+- **«هل يدعم التطبيق المعادلات الرياضية»** got «نعم، يدعم التطبيق…» followed by what the *assistant* can write; it now
+  gets `howMathTools` (the maths corner: scientific calculator, function plotter, geometry board, formulas).
+
+**Known and left.** «كيف أعد الطلاب للاختبار» still reads as a quiz request: the verb «أعد» + «اختبار» is also matched by
+`isArtifact`'s own verb-and-noun pattern, and «كيف أعد اختبارا قصيرا» (how do I prepare a short quiz) is a fair request
+for one. Telling the two apart needs the object («الطلاب» vs «اختبارا»), not a keyword.
+
+**Verified.** `askVocabulary.test.ts` (5 how-to questions stay advice, 6 requests stay requests) and `appHelp.test.ts`
+(8 phrasings, 4 near-misses). The 813 historic questions give the same app-help answers (0 changed) and the same
+intent (0 changed). Not seen live yet: re-run the 8 after the deploy, now that the model path can be seen.
+
+## Exam question edits: add, change, remove and the paper grid take the evaluation lock — 2026-11-01
+
+`POST /evaluations/:id/questions`, `PATCH` and `DELETE …/questions/:qid` and
+`PUT …/questions/paper` checked "is it a draft" from a read made at the top of the
+request, then wrote with no lock and recomputed the total as a separate statement.
+Publish locks the evaluation row and reads the questions under that lock, so a
+question write it did not wait for could land after it had checked and totalled the
+paper. The same four routes, as found:
+
+- an edit after a publish: a question added to, changed in or removed from an exam
+  students are already sitting, under a total publish had fixed;
+- two adds at once read the same highest `order_index` and tied on a position;
+- the paper grid saved twice at once (a retry after the app's timeout) each
+  soft-deleted before the other had inserted, so the paper held the grid twice;
+- a grid whose insert failed had already soft-deleted the old paper: no paper, and a 500;
+- the total was recomputed outside the write, so the last of two overlapping edits
+  could store the other's stale sum.
+
+Now each runs in one transaction behind `FOR UPDATE` on the evaluation row
+(`withLockedDraft` in `routes/evaluations.ts`, the same check generate and publish
+make): status re-read under the lock, archived refused, the position / the
+limit / the total all taken from the paper as the transaction sees it, and any
+throw rolls the whole write back. A draft published, closed or removed meanwhile
+answers `409 { code: "no_longer_draft" }` and nothing is written. `PATCH` reads
+the question under the lock, so its 404 / 400 / 200 answers are unchanged.
+
+**Verified:** `routes/__tests__/evaluationQuestionEditRace.db.test.ts`, 9 tests
+against a real Postgres, run red first (8 of 9 failed for the reasons above, the 4
+publish races by never queueing behind the lock) and green after. The publish races
+hold the row from the test, wait until the request is queued on it, publish as a
+committed writer would, and let go; the overlaps use a trigger that slows the insert.
+Full api-server suite and typecheck green.
+
+**Not verified / still open:** the app shows its generic failure line for this 409
+from these four routes (only the exam screen's Generate button has the dedicated
+«نُشر هذا الاختبار أو حُذف…» line). Archiving (`DELETE /evaluations/:id`) still
+reads then writes without the lock, so it can race a publish. A second tap on
+Generate still starts a second model call. `FOR UPDATE` could be `FOR NO KEY UPDATE`.
+
+## Grammar sheets stop mentioning pictures in the grades that have none — 2026-11-01
+
+The teacher's sheets `docs/english-grammar-g{N}-sheet.md` (made by `renderGrammarSheet`) told every grade that «True or false»
+«shows the sentence beside its own picture, or beside the «wrong picture»», and gave every table a «Picture» column and a
+«True or false: wrong picture» column. In Grades 5, 9 and 10 no sentence has a picture or a marker, so the intro was wrong,
+the «Picture» column was a column of dashes, and the last column holds the wrong sentence, not a picture.
+
+- **Fixed in the generator** (`lib/curriculum/src/englishGrammar.ts`): a grade with no picture, wrong picture or marker anywhere
+  now says «True or false» «shows the sentence, or its wrong twin (the last column), and the pupil says right or wrong», has the
+  columns `Sentence | Choose | True or false: wrong sentence` (plus `Yes or No` where the grade has it), and its «Yes or No» line
+  no longer speaks of a picture. Grades 1-4 are byte-identical to before.
+- **Regenerated:** the Grade 5, 9 and 10 sheets only (`pnpm --filter @workspace/curriculum run grammar-sheet`). Every printed review
+  form (`*-review.html`) is unchanged: the form already had no picture column for these grades, so this concerned the Markdown sheets only.
+  The sheets' diffs are large because every table row loses its dash column; no sentence changed.
+- **Pinned** by a new test in `englishGrammar.test.ts`: the sheet's own text (intro and table headers; sentences may say «picture»,
+  as in «I drew a picture») never mentions a picture for Grades 5, 9 and 10, and keeps the picture wording for Grades 1-4. The existing
+  tests that compare each committed sheet with the generator still pass.
+- **Verified:** the curriculum suite (906 tests; the one failure, `r2.test.ts` «R2 helpers are inert, not broken, when unconfigured»,
+  fails here with and without this change) and `tsc --noEmit`. **Not verified:** that every teacher who reads the sheet finds
+  the new wording clearer; no app, API or schema change.
+
+## Admin daily activity — new vs returning — 2026-11-01
+
+`GET /admin/daily-activity?days=30` (1–90, default 30): for each day, how many people were active, how
+many of those were new and how many returning, plus accounts created that day. System admin only (the
+numbers span every school); a school admin gets 403. Oldest day first, quiet days zero-filled. The admin
+dashboard (`app/admin/dashboard.tsx`) draws it as «النشاط اليومي — آخر ٣٠ يومًا» / "Daily activity — last
+30 days" under the signups chart: one stacked bar per day (returning below, new above, so the bar is that
+day's active people), the first and last date, and the average, the busiest day, new / returning summed
+over the window and signups. **No schema change, no migration, no native change** (`artifacts/mobile/app.json`,
+`package.json`, `eas.json` and `android/` untouched, so an OTA reaches a binary of the same `version`). A
+merge touches `artifacts/api-server/` and `artifacts/mobile/`, so it deploys the API first, then the web
+bundle, and publishes to the `preview` OTA channel. Only a system admin's dashboard asks for it and shows
+the section; a school admin sees nothing new, and a failed request prints one line in the section instead
+of blanking the screen (it is a request of its own, not part of the dashboard's `load`).
+
+**Definitions (the limits worth knowing)**
+
+- *Active* is the same as `activeUsers7d/30d` in `/admin/usage-summary`: the person generated something
+  with AI (`ai_generations`, cache hits included, rows with no user excluded) or saved a material
+  (`saved_materials`). **Opening the app or signing in is not counted** — nothing durable records it
+  (`users.last_login` is only stamped at sign-in, so a person who stays signed in never moves it). For
+  "opened the app" use PostHog (Trends «unique users», Lifecycle for new/returning).
+- *New* = the account was created on that same day; *returning* = created on an earlier day. So a person
+  who signed up on Monday and first used the tool on Wednesday is *returning* on Wednesday. `signups` is
+  accounts created that day, active or not, to make that gap visible.
+- A person is counted once a day however much they did. A day is an Asia/Amman calendar day (fixed UTC+3),
+  not UTC, unlike `signupsByDay` in `/usage-summary`, which is UTC; the two will not line up near midnight.
+
+**Verified:** `src/lib/__tests__/dailyActivity.test.ts` (window parsing, the Amman day, zero-fill, month and
+year boundaries) and `src/routes/__tests__/adminDailyActivity.db.test.ts` against a real Postgres through
+the built bundle (once per person per day across both sources, new vs returning, a null-user generation
+ignored, a signup with no activity shows in `signups` only, 400 on a bad window, 401 and 403). Each was
+seen failing first. Typecheck clean; the whole api-server suite (3319 tests) passes.
+The chart's heights and sums are `services/adminDailyActivity.ts`, pinned by
+`services/__tests__/adminDailyActivity.test.ts` (seen failing first); the mobile suite passes (9008 tests)
+after the new text was moved onto `TYPE` steps, which `designScale.test.ts` had refused. **Seen in a
+browser:** the real API against a throwaway Postgres seeded with 60 teachers and 30 days of activity, signed
+in as a system admin through the web build: English on a 1100 px desktop in light mode and Arabic on a
+390 px phone in dark mode (bars stack, the day runs with the reading direction like the signups chart
+beside it, both colours read on the dark card).
+**Not verified:** the query's speed on production volumes (it scans the last `days` days of
+`ai_generations` and `saved_materials`; `ai_generations_created_at_idx` exists, `saved_materials` has no
+`created_at` index); nothing was run against production data; a school admin's dashboard was not opened
+(that it shows nothing new is from the `system_admin` check in the code); a screen reader's reading of the
+chart (the bars carry one summary label, not a label per day); the Arabic wording was not reviewed by a native
+reader.
+
 ## /play: «كيف تُكتب؟» — a spelling game built on the existing spelling bank — 2026-11-01
 
 A seventeenth /play game (route `/play/spelling`, "Spell It Right", card says

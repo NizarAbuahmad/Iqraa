@@ -76,6 +76,35 @@ const REQUEST = new RegExp(
 );
 
 /**
+ * «How do I give students more time for an exam», «كيف أعد الطلاب للاختبار»:
+ * a how-to question is advice about doing something, so the verb in it ("give",
+ * "write", "prepare", «أعد») is the teacher's own and asks for no material.
+ * `REQUEST` above cannot tell the two apart, and the question that reached the
+ * model path was answered with a Grade 3 quiz titled «students more time an
+ * exam» (found on app.iqrra.com, 2026-11-01). The "how do I make a worksheet"
+ * questions about the app were claimed by the app-help router before this is
+ * reached; a how-question stays an artifact ask only when it speaks to the
+ * assistant («can you», «ممكن», «من فضلك»).
+ */
+const HOW_TO = /^(?:كيف\s|how\s+(?:do|can|should|would|could|to)\b)/i;
+const ASKS_THE_ASSISTANT = new RegExp(
+  `${B}(?:ممكن|يمكنك|تقدر|لو\\s+سمحت|من\\s+فضلك)${E}`
+  + '|\\b(?:can|could|would|will)\\s+you\\b|\\bplease\\b',
+  'i',
+);
+
+/**
+ * Is this a how-to question the teacher asks for themselves — advice about
+ * doing something — rather than a request to the assistant? The chat's other
+ * "did they ask for a thing" readers (`toolAskFromQuery`) share the answer, so
+ * «How can I prepare students for the exam» opens advice, not the test builder.
+ */
+export function isHowToAdvice(query: string): boolean {
+  const q = normaliseAsk(query.trim());
+  return HOW_TO.test(q) && !ASKS_THE_ASSISTANT.test(q);
+}
+
+/**
  * The material the message asks for, or null. When a message names two
  * («خطة درس مع اختبار»), the first in this order wins: homework, worksheet,
  * quiz, activity, then a plan — the plan words are the loosest.
@@ -97,6 +126,7 @@ export function artifactFromAsk(query: string): SessionArtifact | null {
   const q = normaliseAsk(query.trim()).replace(BEFORE_THE_TEST, ' ');
   if (!q) return null;
   if (CONTENT_QUESTION.test(q) && !REQUEST.test(q)) return null;
+  if (HOW_TO.test(q) && !ASKS_THE_ASSISTANT.test(q)) return null;
   for (const [artifact, patterns] of VOCAB) {
     if (patterns.some(p => p.test(q))) return artifact;
   }

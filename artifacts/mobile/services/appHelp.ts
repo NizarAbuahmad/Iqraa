@@ -170,6 +170,7 @@ const SCREENS: AppPlace[] = [
   { id: 'jordan-only', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howJordanOnly' },
   { id: 'exam-cheat', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howExamCheat' },
   { id: 'exam-schedule', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howExamSchedule' },
+  { id: 'student-password', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howStudentPassword' },
   { id: 'class-size', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howClassSize' },
   { id: 'one-teacher-class', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howOneTeacherClass' },
   { id: 'student-app', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howStudentApp' },
@@ -1337,6 +1338,82 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
   // goes on the slides (not the lesson plan), a student can always go back, and
   // Messages has no voice notes. The nouns end each message, so «كيف أضيف رابط
   // يوتيوب إلى الشريحة» and «كيف أمنع الطلبة من الغش» stay with the model.
+  // The fortieth live pass: app questions the model answered by improvising.
+  {
+    id: 'move-student',
+    res: [
+      // A how-question only: the bare statement «بدي اغير صف الطالب» is pinned as ambiguous («صف» can be a mark).
+      new RegExp(String.raw`^(?:كيف|كيفيه|شلون|ازاي)\s+(?:يمكنني\s+|ممكن\s+|بقدر\s+)?(?:اغير|انقل|بدل|ابدل)\s+(?:ال)?صف\s+(?:ال)?(?:طالب|طلبه)(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`(?:change|switch|update)\s+(?:a\s+|the\s+|my\s+)?student['’]?s?\s+(?:grade|class)(?:\s+\w+){0,2}` + EN_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'student-password',
+    res: [
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اغير|اعيد\s+تعيين|اعيد\s+ضبط|ابدل)\s+(?:كلمه\s+(?:ال)?(?:مرور|سر)|باسورد)\s+(?:(?:لل|ل)\s*)?(?:ال)?(?:طالب|طلبه)(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`(?:change|reset)\s+(?:a\s+|the\s+|my\s+)?student['’]?s?\s+password` + EN_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`(?:change|reset)\s+(?:the\s+)?password\s+(?:of|for)\s+(?:a\s+|the\s+|my\s+)?student` + EN_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'family-view',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+)?(?:يمكن|يستطيع|يقدر)\s+(?:لل|ل)?\s*(?:ال)?(?:اهل|اولياء\s+(?:ال)?امور|ولي\s+(?:ال)?امر|والد\S*)\s+(?:ان\s+)?(?:رؤيه|يرى|يري|يشوف|مشاهده|متابعه)\s+(?:ال)?(?:علامات|نتائج|درجات|واجبات)(?:\s+\S+){0,3}` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'install-app',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+)?(?:يعمل|يشتغل|يفتح)\s+(?:(?:ال)?تطبيق\s+|اقرا\s+)*(?:علي|في|عل|ع)\s*(?:ال)?(?:تابلت|ايباد|لوحي|جهاز\s+لوحي|ايفون|اندرويد|حاسوب|كمبيوتر|لابتوب)(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:does|will|can)\s+(?:the\s+)?(?:app|iqrra|iqraa|it)\s+(?:work|run|open)\s+(?:on|in)\s+(?:an?\s+|my\s+|the\s+)?(?:tablet|ipad|kindle)` + EN_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'chat-history',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+)?(?:تحفظ|يحفظ|بتنحفظ)\s+(?:ال)?(?:محادثات|محادثه|رسائل)(?:\s+(?:مع|ل)\s*(?:ال)?(?:مساعد|اقرا))?` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:are|is)\s+(?:my\s+|the\s+)?(?:chats?|conversations?|messages)\s+(?:with\s+(?:the\s+)?assistant\s+)?(?:saved|stored|kept)` + EN_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'homework-done',
+    res: [
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اعرف|اشوف|اري|ارى|اتابع)\s+(?:من|مين)\s+(?:فتح|قرا|شاف|شاهد|انجز|سلم|حل)\s+(?:ال)?واجب` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:هل\s+)?(?:يمكن|استطيع|اقدر)\s+(?:ان\s+)?(?:معرفه|اعرف)\s+(?:من|مين)\s+(?:انجز|فتح|حل|سلم)\s+(?:ال)?واجب` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'export',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+|كيف\s+)?(?:(?:يمكن|استطيع|اقدر)\s+)?(?:تصدير|اصدر|حفظ|تحميل|تنزيل)\s+(?:ال)?(?:درس|خطه(?:\s+(?:ال)?درس)?|ورقه\s+(?:ال)?عمل|اختبار|نشاط)\s+(?:ك|ب|الي|علي\s+شكل)?\s*(?:ملف\s+)?(?:وورد|word|pdf|بي\s*دي\s*اف)(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:هل\s+)?(?:يمكن|استطيع|اقدر)?\s*(?:طباعه|اطبع)\s+(?:ال)?(?:خطه(?:\s+(?:ال)?درس)?|ورقه\s+(?:ال)?عمل|اختبار|نشاط|واجب)(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'edit-plan',
+    res: [
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اضيف|اكتب|اضع)\s+(?:ال)?ملاحظه\s+(?:ل|علي|في|الي)\s*(?:ال)?خطه\s+(?:ال)?درس` + AR_RULE_TAIL),
+    ],
+  },
+  // The thirty-eighth live pass: the two questions the model answered without the app's own answer.
+  {
+    id: 'class-chat',
+    res: [
+      new RegExp(AR_RULE_LEAD + String.raw`(?:ارسل|ابعث|اكتب|اعمل)\s+(?:تذكير|تنبيه)\s+(?:لل|ل)\s*(?:ال)?(?:طلاب|طلبه)\s+(?:ب|عن)\s*(?:ال)?واجب(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اذكر|ذكر|انبه)\s+(?:ال)?(?:طلاب|طلبه)\s+(?:ب|عن)\s*(?:ال)?واجب(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`(?:send|give|post)\s+(?:the\s+)?(?:students?|class)\s+(?:a\s+)?reminder\s+(?:about|of|for)\s+(?:the\s+)?homework` + EN_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`(?:remind|notify)\s+(?:the\s+)?students\s+(?:about|of)\s+(?:the\s+)?homework` + EN_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`send\s+(?:a\s+)?homework\s+reminder(?:\s+to\s+(?:the\s+)?(?:students|class))?` + EN_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'math-tools',
+    res: [
+      new RegExp(String.raw`^(?:هل\s+)?(?:يدعم|يوجد|فيه|في|يتوفر|متوفر)\s+(?:(?:ال)?تطبيق\s+)?(?:ال)?(?:معادلات|حاسبه|رسم\s+(?:ال)?(?:اقترانات|منحنيات|بياني)|اداه\s+(?:ال)?رياضيات|ادوات\s+(?:ال)?رياضيات)(?:\s+(?:ال)?(?:رياضيه|علميه))?(?:\s+\S+){0,2}` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:does|can)\s+(?:the\s+)?(?:app|iqrra|iqraa|it)\s+(?:support|have|show|handle|draw|plot)\s+(?:math(?:s|ematical)?\s+)?(?:equations?|formulas?|graphs?|graphing|calculator)(?:\s+\w+){0,2}` + EN_RULE_TAIL),
+      new RegExp(String.raw`^(?:is\s+there|do\s+you\s+have)\s+(?:an?\s+)?(?:math(?:s)?\s+)?(?:calculator|graphing\s+tool|equation\s+(?:editor|support))` + EN_RULE_TAIL),
+    ],
+  },
   // The thirty-sixth live pass: wordings of answers that existed, and two that say what the app does not do.
   {
     id: 'attendance',
@@ -1822,6 +1899,9 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
     res: [
       new RegExp(String.raw`^(?:(?:please|pls|plz)\s+)?(?:how\s+(?:do|can|should)\s+(?:i|we)|how\s+to)\s+(?:create|make|set\s+up|build|add)\s+(?:(?:an?|the|my|new)\s+)*(?:exam|evaluation)` + EN_RULE_TAIL),
       new RegExp(String.raw`^(?:كيفيه|كيف|اشلون|شلون|ازاي|طريقه|خطوات)\s+(?:يمكنني\s+|ممكن\s+|بقدر\s+)?(?:انشئ|انشاء|اعمل|اسوي|اجهز|اضيف|اضافه)\s+(?:ال)?(?:امتحان|تقييم)(?:\s+(?:جديد|ورقي|الكتروني))?` + AR_RULE_TAIL),
+      // The thirty-ninth live pass: «كيف أجهز امتحانا» (accusative alif, «أعد», a class after it). They
+      // used to reach the test button through `toolAskFromQuery`, which now leaves how-to questions alone.
+      new RegExp(String.raw`^(?:كيفيه|كيف|اشلون|شلون|ازاي|طريقه|خطوات)\s+(?:يمكنني\s+|ممكن\s+|بقدر\s+)?(?:انشئ|انشاء|اعمل|اسوي|اجهز|اعد|احضر|اضيف)\s+(?:ال)?(?:امتحان|تقييم)ا?(?:\s+(?:جديد|ورقي|الكتروني))?(?:\s+(?:لل|ل)\s*(?:ال)?(?:صف|ماده|درس|شعبه)(?:\s+\S+){0,2})?` + AR_RULE_TAIL),
     ],
   },
   {

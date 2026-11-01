@@ -26,6 +26,8 @@ import { signupsHref } from '@/services/adminSignupKind';
 import { NEW_USERS_HREF, countNewUsers } from '@/services/adminUsers';
 import { confirm } from '@/services/confirm';
 import { ACCENT, Bar, FilterChip, KeyValue, SectionTitle, StatCard, Table } from '@/components/admin/widgets';
+import { DailyActivityChart } from '@/components/admin/DailyActivityChart';
+import type { DailyActivityResponse } from '@/services/adminDailyActivity';
 import { DateField, DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
 import { palette } from '@/constants/colors';
 import { TYPE } from '@/constants/theme';
@@ -128,6 +130,8 @@ export default function AdminDashboardScreen() {
   const [aiPlatform, setAiPlatform] = useState<AiPlatform>('all');
   const [aiCosts, setAiCosts] = useState<AiCosts | null>(null);
   const [aiError, setAiError] = useState('');
+  const [activity, setActivity] = useState<DailyActivityResponse | null>(null);
+  const [activityError, setActivityError] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
@@ -173,6 +177,17 @@ export default function AdminDashboardScreen() {
       .then(setAiCosts)
       .catch((e: unknown) => setAiError(e instanceof Error ? e.message : String(e)));
   }, [isAdmin, aiPlatform]);
+
+  // Daily activity is its own request, not part of `load`: the route is system-admin only (it spans
+  // every school), so a school admin never asks, and a failure here must not blank the rest of the screen.
+  const isSystemAdmin = user?.role === 'system_admin';
+  useEffect(() => {
+    if (!isSystemAdmin) return;
+    setActivityError('');
+    apiJson<DailyActivityResponse>('/admin/daily-activity?days=30')
+      .then(setActivity)
+      .catch((e: unknown) => setActivityError(e instanceof Error ? e.message : String(e)));
+  }, [isSystemAdmin]);
 
   const removeFeedback = async (item: FeedbackItem) => {
     const ok = await confirm({
@@ -333,6 +348,19 @@ export default function AdminDashboardScreen() {
                 <SignupBars rows={summary.signupsByDay} ar={lang === 'ar'} isRTL={isRTL} colors={colors} />
               </View>
             )}
+
+            {isSystemAdmin && (activity || activityError) ? (
+              <View style={{ marginHorizontal: 20, marginBottom: 16 }}>
+                <SectionTitle text={lang === 'ar' ? 'النشاط اليومي — آخر ٣٠ يومًا' : 'Daily activity — last 30 days'} isRTL={isRTL} colors={colors} />
+                {activity ? (
+                  <DailyActivityChart days={activity.days} ar={lang === 'ar'} isRTL={isRTL} colors={colors} />
+                ) : (
+                  <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }}>
+                    {(lang === 'ar' ? 'تعذّر تحميل النشاط اليومي: ' : 'Failed to load daily activity: ') + activityError}
+                  </Text>
+                )}
+              </View>
+            ) : null}
 
             {summary && (
               <View style={{ marginHorizontal: 20, marginBottom: 16 }}>

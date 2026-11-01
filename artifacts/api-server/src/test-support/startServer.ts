@@ -1,11 +1,10 @@
 /**
  * Boots the BUILT bundle (dist/index.mjs) as a child process against a given
- * database, on a free port. This is the same approach as mountOrder.test.ts —
+ * database, on a port the OS picks. This is the same approach as mountOrder.test.ts —
  * source files use extensionless imports that only esbuild resolves — but
  * pointed at a real database so authenticated routes can be exercised.
  */
 import { spawn } from "node:child_process";
-import net from "node:net";
 
 import { bundleEntry, TEST_SESSION_SECRET } from "./env.ts";
 
@@ -17,27 +16,22 @@ export interface TestServer {
   stop(): Promise<void>;
 }
 
-function freePort(): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const srv = net.createServer();
-    srv.once("error", reject);
-    srv.listen(0, "127.0.0.1", () => {
-      const { port } = srv.address() as net.AddressInfo;
-      srv.close(() => resolve(port));
-    });
-  });
-}
-
+/**
+ * The server binds PORT=0 itself and reports the port the OS gave it over IPC
+ * (src/index.ts). It used to bind a port this function had picked and closed: in
+ * that gap another test file, running in parallel, could start its own server on
+ * the same port, `/healthz` answered from there, and every request in this file
+ * reached the other file's database — seen in CI as a 401 «User not found» for a
+ * user this file had just inserted.
+ */
 export async function startServer(opts: {
   databaseUrl: string;
   /** Extra/overriding env. A key set to `undefined` is REMOVED from the child's env. */
   env?: Record<string, string | undefined>;
 }): Promise<TestServer> {
-  const port = await freePort();
-  const base = `http://127.0.0.1:${port}/api`;
   const env: NodeJS.ProcessEnv = {
     ...process.env,
-    PORT: String(port),
+    PORT: "0",
     DATABASE_URL: opts.databaseUrl,
     SESSION_SECRET: TEST_SESSION_SECRET,
     // chat.ts and generate.ts construct the OpenAI client at module scope.
@@ -57,7 +51,7 @@ export async function startServer(opts: {
     else env[key] = value;
   }
 
-  const child = spawn(process.execPath, [bundleEntry], { env, stdio: ["ignore", "pipe", "pipe"] });
+  const child = spawn(process.execPath, [bundleEntry], { env, stdio: ["ignore", "pipe", "pipe", "ipc"] });
   let logs = "";
   child.stdout?.on("data", d => {
     logs += String(d);
@@ -71,6 +65,27 @@ export async function startServer(opts: {
   });
 
   const deadline = Date.now() + 30_000;
+  const port = await new Promise<number>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      child.kill();
+      reject(new Error(`server did not report its port within 30s:\n${logs.slice(-2000)}`));
+    }, 30_000);
+    child.on("message", (m: unknown) => {
+      const listening = (m as { listening?: unknown } | null)?.listening;
+      if (typeof listening === "number" && listening > 0) {
+        clearTimeout(timer);
+        resolve(listening);
+      }
+    });
+    child.once("exit", () => {
+      clearTimeout(timer);
+      reject(new Error(`server exited during boot:\n${logs.slice(-2000)}`));
+    });
+  });
+  // The port is known; the channel is not needed again, and an open one keeps this process alive.
+  child.disconnect();
+  const base = `http://127.0.0.1:${port}/api`;
+
   for (;;) {
     if (exited) throw new Error(`server exited during boot:\n${logs.slice(-2000)}`);
     try {
