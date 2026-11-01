@@ -59,7 +59,7 @@ import {
   isConfidentSingleSubjectHit,
   liveChatGrounding,
 } from '@/services/kbContext';
-import { KB_SUGGEST_SCORE, shouldAskWhichLesson } from '@/services/kbSuggestion';
+import { KB_SUGGEST_SCORE, namedLessonBeatsGrade, shouldAskWhichLesson } from '@/services/kbSuggestion';
 import { Toast } from '@/components/ui/Toast';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
 import { DEMO_MODE } from '@/services/ai/demoMode';
@@ -2710,7 +2710,10 @@ export default function IqraScreen() {
         const topicRankedInGrade = artGradeId
           ? searchKBRanked(topicForArt, lang as 'ar' | 'en', { gradeId: artGradeId })
           : [];
-        const topicRanked = topicRankedInGrade.length ? topicRankedInGrade : topicRankedAll;
+        // …unless the message names a lesson of another grade whole.
+        const topicRanked = !namedLessonBeatsGrade(topicRankedInGrade, topicRankedAll) && topicRankedInGrade.length
+          ? topicRankedInGrade
+          : topicRankedAll;
         const topicConfident = isConfidentSingleSubjectHit(topicRanked);
         // Unit-level asks (الدائرة) often tie several lessons — still prefer that unit
         const topicStrong =
