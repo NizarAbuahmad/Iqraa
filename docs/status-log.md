@@ -10,6 +10,35 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## «جديد» on a new tool's card, from its «ما الجديد» entry — 2026-11-01
+
+A follow-up to «ما الجديد» (its own entry, of the same day, is further down): the dialog tells a teacher once, and a
+badge on the card itself is what they meet when they next reach for a tool.
+
+- **One switch.** A `WHATS_NEW` entry may name a tool (`toolId`, an id from
+  `services/toolCatalog.ts`). That tool's card on the Tools tab (`app/(tabs)/ai-tools.tsx`)
+  and in the chat "+" menu (`badgeFor` in `app/(tabs)/iqra.tsx`) then wears «جديد» / "New",
+  in the slot the fixed `badgeKey` already used. A fixed label wins (`toolBadgeKey`).
+- **Who and how long** (`newToolIds`): an account made before the entry's day, whose role
+  the entry names (tools are a teacher's), from that day for `NEW_TOOL_DAYS` (30) days or
+  until the tool is first opened. A newer account sees no badges.
+- **"Opened" is any way in.** `useClearNewToolOnVisit`, mounted in `WhatsNewHost`, watches
+  the path and records a new tool when its screen or anything under it is open
+  (`toolIdsForPath`: `/ai-tools/classroom/builder` is the classroom; a look-alike path is
+  not). Only a tool that is new right now is recorded, so a tool opened long ago still gets
+  its badge if it is announced again. Recorded per account on the device
+  (`@iqra_new_tool_opened_v1:<id>`); a per-account session store (`whatsNewSession.ts`, now
+  holding both lists) clears the card at once. Unreadable storage shows no badges. Event:
+  `new_tool_opened` (`ids`).
+- **No entry names a tool yet,** so no card wears the badge until the next tool ships with
+  its entry.
+
+**Verified:** `whatsNew.test.ts` (31 tests; 8 new: who sees the badge and for how long, the
+path match, the label order, the session store, and that every real `toolId` is a catalog
+tool announced to teachers); `pnpm run typecheck`; the full mobile suite.
+**Not verified:** the badge has not been seen on a card in a browser or on a phone — no
+entry names a tool, and there is no database here to sign in against.
+
 ## A DB test's server can no longer answer from another test file's port — 2026-11-01
 
 Also on PR #1387, after the lock-probe fix below: «ends the dead end, with row-level security enforced»

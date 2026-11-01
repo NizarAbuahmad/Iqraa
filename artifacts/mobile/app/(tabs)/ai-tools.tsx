@@ -19,6 +19,8 @@ import { pickPrefillParams } from '@/services/lessonPrep';
 import { loadLessonPick } from '@/services/lessonContext';
 import { classToolParamsFromRoute, type ClassToolParams } from '@/services/classToolParams';
 import { readableOn } from '@/services/readableColor';
+import { toolBadgeKey } from '@/services/whatsNew';
+import { useNewTools } from '@/hooks/useWhatsNew';
 import {
   TAB_TOOLS,
   type ToolDef,
@@ -63,6 +65,7 @@ function ToolCard({
   t,
   phone,
   forClass,
+  badgeKey,
 }: {
   tool: ToolDef;
   isRTL: boolean;
@@ -72,6 +75,8 @@ function ToolCard({
   phone?: boolean;
   /** Set when the teacher came from a class's الموارد tab. */
   forClass: ClassToolParams | null;
+  /** The card's label: a fixed one, or «جديد» while the tool is new (`toolBadgeKey`). */
+  badgeKey?: string;
 }) {
   const isExternal = !!tool.externalAction;
   const { lang } = useLanguage();
@@ -92,10 +97,10 @@ function ToolCard({
         <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: 'center' }]}>
           {t((tool.tabTitleKey ?? tool.titleKey) as any)}
         </Text>
-        {tool.badgeKey && (
+        {badgeKey && (
           <View style={[styles.badge, { backgroundColor: tool.color + '22' }]}>
             <Text style={[styles.badgeText, { color: readableOn(tool.color, colors.card), fontFamily: 'ReadexPro_600SemiBold' }]}>
-              {t(tool.badgeKey as any)}
+              {t(badgeKey as any)}
             </Text>
           </View>
         )}
@@ -123,6 +128,7 @@ export default function AIToolsScreen() {
   // Set only when the teacher tapped «أنشئ مادة جديدة» inside a class.
   const routeParams = useLocalSearchParams<{ classId?: string; gradeIdx?: string; subjectIdx?: string }>();
   const forClass = classToolParamsFromRoute(routeParams);
+  const newTools = useNewTools();
 
   return (
     <ScrollView
@@ -163,7 +169,16 @@ export default function AIToolsScreen() {
           ]}
         >
           {TAB_TOOLS.map(tool => (
-            <ToolCard key={tool.id} tool={tool} isRTL={isRTL} colors={colors} t={t} phone={!isDesktop} forClass={forClass} />
+            <ToolCard
+              key={tool.id}
+              tool={tool}
+              isRTL={isRTL}
+              colors={colors}
+              t={t}
+              phone={!isDesktop}
+              forClass={forClass}
+              badgeKey={toolBadgeKey(tool, newTools)}
+            />
           ))}
         </View>
       </View>
