@@ -2660,3 +2660,30 @@ describe('the thirty-sixth live pass — wordings of answers that existed, plus 
     assert.match(ar('howExamSchedule'), /ولا يفتح الامتحان/);
   });
 });
+
+describe('the thirty-eighth live pass — a homework reminder and maths support reach the app\'s own answers', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string, 'ar' | 'en']> = [
+    ['كيف أرسل تذكير للطلاب بالواجب', 'howClassChat', 'ar'],
+    ['كيف أذكر الطلاب بالواجب', 'howClassChat', 'ar'],
+    ['How do I remind students about homework', 'howClassChat', 'en'],
+    ['Can I send students a reminder about the homework', 'howClassChat', 'en'],
+    ['هل يدعم التطبيق المعادلات الرياضية', 'howMathTools', 'ar'],
+    ['هل يوجد حاسبة علمية', 'howMathTools', 'ar'],
+    ['Does the app support math equations', 'howMathTools', 'en'],
+    ['Is there a calculator', 'howMathTools', 'en'],
+  ];
+  for (const [q, key, lang] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, lang, t).text, `<${key}>`);
+    });
+  }
+  // A maths or homework question that is not about the app stays with the model.
+  for (const q of ['كيف أحل المعادلات التربيعية', 'ما هي المعادلات التفاضلية', 'how do I solve a quadratic equation', 'remind me what homework is for']) {
+    it(`«${q}» is not one of these answers`, () => {
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.equal(['howClassChat', 'howMathTools'].includes(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});
