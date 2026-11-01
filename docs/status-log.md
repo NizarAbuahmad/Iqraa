@@ -10,6 +10,51 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Parent screens: «نتائج أبنائي» and the school tab's exams and homework say what they mean — 2026-11-01
+
+A parent reported both screens as confusing. Read against a screenshot of each:
+
+- **«نتائج أبنائي»:** a child's name had the same weight as «القادمة» / «السابقة»; every
+  child repeated an empty «القادمة»; a card's facts were unlabelled fragments in two date
+  styles («11-11-2026» beside «24 تشرين الأول 2026»), the subject twice, and an exam day in
+  the future on a paper already handed in; the hourglass/padlock icon and the chip said the
+  same thing, all in grey. «مُغلق» reads as "locked" but is the server's `closed`: the exam is
+  over and nothing was handed in.
+- **School tab:** the exam row's date chip, time and status were one dotted string with
+  «سُلِّم — بانتظار النتيجة» listed as «القادمة»; homework links were bare bold teal text; the
+  note that a child has no student account sat as one more grey line; an untracked item due
+  today showed only a numeric date.
+
+What changed (parent view only; a student's own «اختباراتي» keeps its layout):
+
+- Each child is a block: an initial, the name at heading size and one summary line
+  (`childSummaryLine`, «نتيجة واحدة جاهزة · اختبار واحد مفتوح»). «القادمة» appears only
+  when it has rows; «السابقة» is a smaller grey label.
+- A card is the title, one status pill, then labelled facts with one icon each. The planned
+  day is left off once the paper is handed in. Pill text is a parent's wording
+  (`PARENT_EXAM_STATE_KEY`): «سُلِّم — بانتظار تصحيح المعلّم», «مُغلق — لم يُسلَّم» (red).
+  Tones are by meaning (`EXAM_STATE_TONE`); amber stays «now». `ExamStatusChip` is shared by
+  both screens.
+- School tab exams: a calendar tile (day + month), «بعد 10 أيام», the time with a clock, and
+  the status pill. The tile turns amber only for an exam that can still be sat.
+- School tab homework: links are a labelled group («المرفقات والأنشطة») of bordered rows with a
+  chevron; the no-account note is a boxed info note; an untracked item due today or tomorrow
+  says «اليوم» / «غدًا» (it still never says «متأخّر»).
+- Exam days now print as «11 تشرين الثاني 2026» (`formatExamDay`, read from the text, never
+  through `Date`) on these two screens, for students too.
+
+**Verified:** `tsc` clean; the full mobile suite passes except two scale guards the first
+draft tripped (a literal font size and radius), fixed and re-run green with `myExams` and
+`upcomingExams`; both screens rendered in a browser at phone width, light and dark, RTL,
+against a stub API (parent with two children, handed-in / closed / result / open exams).
+
+**Not verified:** a real device or a real parent account; English layout (strings added and
+unit-tested, not looked at); a long child name or a very long exam title. The parent's
+`closed` wording is deliberately modest: the server cannot tell a missed paper from one the
+teacher closed early, so it says only «مُغلق — لم يُسلَّم». Homework due dates still print
+numerically (`formatDueDate`, per the bidi rule in CLAUDE.md), so on the school tab they sit
+beside month-name exam days.
+
 ## Exam question edits: add, change, remove and the paper grid take the evaluation lock — 2026-11-01
 
 `POST /evaluations/:id/questions`, `PATCH` and `DELETE …/questions/:qid` and

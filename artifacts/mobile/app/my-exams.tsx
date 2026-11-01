@@ -40,6 +40,8 @@ import { useMasteryProgress } from '@/hooks/useMasteryProgress';
 import {
   MY_EXAM_STATE_KEY,
   canRetakeExam,
+  childSummaryLine,
+  formatExamDay,
   metaSegments,
   myExamAction,
   myExamTitle,
@@ -52,14 +54,16 @@ import {
 } from '@/services/myExams';
 import { formatListDate } from '@/services/evaluationRow';
 import { isValidYmd } from '@/services/homework';
-import { formatExamWhen, groupChildExams } from '@/services/upcomingExams';
+import { formatExamTime, groupChildExams } from '@/services/upcomingExams';
+import { readableOn } from '@/services/readableColor';
+import { ExamStatusChip } from '@/components/ExamStatusChip';
 import { formatMarks } from '@/services/studentAnswers';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { StudentResultCard, LEVEL_LABEL_KEY } from '@/components/StudentResultCard';
 import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { ICON } from '@/constants/icons';
-import { SPACE, TYPE } from '@/constants/theme';
+import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
@@ -238,17 +242,24 @@ export default function MyExamsScreen() {
         ) : null}
 
         {groups !== null && groups.some(g => g.exams.length > 0)
-          ? groups.map(group => (
-              <View key={group.key} style={{ gap: 12 }}>
+          ? groups.map((group, groupIndex) => (
+              <View
+                key={group.key}
+                style={[
+                  { gap: 12 },
+                  // Each child is a block of their own: a rule and room above the second one on.
+                  group.name && groupIndex > 0
+                    ? { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: SPACE.xl, marginTop: SPACE.sm }
+                    : null,
+                ]}
+              >
                 {group.name ? (
-                  <Text style={[styles.childName, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
-                    {group.name}
-                  </Text>
-                ) : null}
-                {group.name && group.exams.length === 0 ? (
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, textAlign: align }}>
-                    {t('childResultsNone')}
-                  </Text>
+                  <ChildHeader
+                    name={group.name}
+                    summary={group.exams.length > 0 ? childSummaryLine(group.exams, lang) : t('childResultsNone')}
+                    colors={colors}
+                    isRTL={isRTL}
+                  />
                 ) : null}
                 {!isParent && group.exams.length > 0 ? (
                   <ProgressCard
@@ -274,6 +285,7 @@ export default function MyExamsScreen() {
                             canRetake={canRetakeExam(exam, progress.retakeEvaluationIds, isParent)}
                             retaking={retaking === exam.evaluationId}
                             onRetake={() => void onRetake(exam)}
+                            parentView={isParent}
                             colors={colors}
                             isRTL={isRTL}
                             lang={lang}
@@ -281,9 +293,13 @@ export default function MyExamsScreen() {
                           />
                         );
                       };
+                      // A parent has several children on one page, so an empty «القادمة»
+                      // under each is noise: the heading appears only when it has rows,
+                      // and «nothing upcoming» is one quiet line instead.
+                      const quietEmpty = isParent && upcoming.length === 0;
                       return (
                         <>
-                          <SectionTitle text={t('myExamsUpcoming')} colors={colors} align={align} />
+                          {quietEmpty ? null : <SectionTitle text={t('myExamsUpcoming')} colors={colors} align={align} />}
                           {upcoming.length > 0 ? (
                             upcoming.map(row)
                           ) : (
@@ -291,7 +307,7 @@ export default function MyExamsScreen() {
                               {t('myExamsNoUpcoming')}
                             </Text>
                           )}
-                          {past.length > 0 ? <SectionTitle text={t('myExamsPast')} colors={colors} align={align} /> : null}
+                          {past.length > 0 ? <SectionTitle text={t('myExamsPast')} colors={colors} align={align} quiet={isParent} /> : null}
                           {past.map(row)}
                         </>
                       );
@@ -308,11 +324,45 @@ export default function MyExamsScreen() {
 type Colors = ReturnType<typeof useColors>;
 type TFn = ReturnType<typeof useLanguage>['t'];
 
-function SectionTitle({ text, colors, align }: { text: string; colors: Colors; align: 'left' | 'right' }) {
+function SectionTitle({ text, colors, align, quiet }: { text: string; colors: Colors; align: 'left' | 'right'; quiet?: boolean }) {
+  // `quiet` is the smaller, grey label a parent sees under a child's name, where
+  // the child's name is the heading and «السابقة» only sorts what follows it.
   return (
-    <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.bodyLg, textAlign: align, marginTop: 4 }}>
+    <Text
+      style={{
+        color: quiet ? colors.mutedForeground : colors.foreground,
+        fontFamily: quiet ? 'ReadexPro_600SemiBold' : 'ReadexPro_700Bold',
+        fontSize: quiet ? TYPE.label : TYPE.bodyLg,
+        textAlign: align,
+        marginTop: 4,
+      }}
+    >
       {text}
     </Text>
+  );
+}
+
+/**
+ * «نتائج أبنائي»: one child's heading — an initial, the name at heading size and
+ * one line of what needs attention — so the rows below read as that child's.
+ */
+function ChildHeader({ name, summary, colors, isRTL }: { name: string; summary: string; colors: Colors; isRTL: boolean }) {
+  const align = isRTL ? 'right' : 'left';
+  const initial = Array.from(name.trim())[0]?.toLocaleUpperCase() ?? '';
+  return (
+    <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: SPACE.md }}>
+      <View style={[styles.avatar, { backgroundColor: ACCENT + '1F' }]}>
+        <Text style={{ color: readableOn(ACCENT, colors.background), fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.bodyLg }}>{initial}</Text>
+      </View>
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.title, textAlign: align }}>{name}</Text>
+        {summary ? (
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.label, lineHeight: 22, textAlign: align }}>
+            {summary}
+          </Text>
+        ) : null}
+      </View>
+    </View>
   );
 }
 
@@ -377,7 +427,7 @@ function ProgressCard({
 }
 
 function ExamRow({
-  exam, open, onPress, canRetake, retaking, onRetake, colors, isRTL, lang, t,
+  exam, open, onPress, canRetake, retaking, onRetake, parentView, colors, isRTL, lang, t,
 }: {
   exam: MyExam;
   open: boolean;
@@ -386,6 +436,8 @@ function ExamRow({
   canRetake: boolean;
   retaking: boolean;
   onRetake: () => void;
+  /** «نتائج أبنائي»: the same row, laid out for a parent (no link, plain-language status). */
+  parentView: boolean;
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
   lang: 'ar' | 'en';
@@ -405,7 +457,9 @@ function ExamRow({
   // The planned day, when the teacher set one. A paper exam's "sent" and
   // "handed in" times are when the teacher published it and typed the mark —
   // not what a family means by either — so a paper row shows only its day.
-  const examWhen = exam.examDate && isValidYmd(exam.examDate) ? t('myExamsOnDate', formatExamWhen(exam.examDate, exam.examTime)) : null;
+  const dayText = exam.examDate && isValidYmd(exam.examDate) ? formatExamDay(exam.examDate, lang) : null;
+  const time = formatExamTime(exam.examTime);
+  const examWhen = dayText ? t('myExamsOnDate', time ? `${dayText} ${time}` : dayText) : null;
   // Separate pieces in a wrapping row, spaced by a gap and with no separator
   // character: one string under `numberOfLines` cut «· 10 …» mid-text, and a
   // « ·» at the end of a piece dangled at the end of a wrapped line.
@@ -418,6 +472,62 @@ function ExamRow({
   ]);
 
   const levelKey = exam.result?.levelKey ? LEVEL_LABEL_KEY[exam.result.levelKey] : undefined;
+
+  // A parent's card: the title and its status first, then a few labelled facts
+  // (one icon each, nothing joined with dots). The planned day is left off once
+  // the paper is handed in: it would sit beside «سُلِّم» looking like a date in
+  // the future for something already done.
+  const rowDir = isRTL ? 'row-reverse' : 'row';
+  const title = myExamTitle(exam, lang) || t('myExamsUntitled', subject ?? '');
+  // «اختبار الكيمياء» already says «الكيمياء».
+  const showSubject = Boolean(subject) && !title.includes(subject!);
+  const handedIn = !exam.paper && exam.submittedAt ? formatListDate(exam.submittedAt, lang) : null;
+  const sentOn = !exam.paper && !handedIn && !examWhen ? formatListDate(exam.publishedAt, lang) : null;
+  const facts: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [];
+  if (dayText && !handedIn) facts.push({ icon: 'calendar-outline', text: t('childResultsExamDay', time ? `${dayText} ${time}` : dayText) });
+  if (handedIn) facts.push({ icon: 'checkmark-done-outline', text: t('myExamsHandedInOn', handedIn) });
+  if (sentOn) facts.push({ icon: 'paper-plane-outline', text: t('myExamsSentOn', sentOn) });
+  if (exam.timeLimitMin && !exam.paper) facts.push({ icon: 'time-outline', text: t('myExamsTimeLimit', exam.timeLimitMin) });
+  if (exam.totalMarks) facts.push({ icon: 'ribbon-outline', text: t('childResultsOutOf', t('myExamsMarks', formatMarks(exam.totalMarks))) });
+  const parentTop = (
+    <View style={{ gap: SPACE.sm }}>
+      <View style={{ flexDirection: rowDir, alignItems: 'flex-start', gap: SPACE.md }}>
+        <View style={{ flex: 1, gap: 2 }}>
+          {showSubject ? (
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textAlign: align }}>
+              {subject}
+            </Text>
+          ) : null}
+          <Text numberOfLines={2} style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.bodyLg, lineHeight: 26, textAlign: align }}>
+            {title}
+          </Text>
+        </View>
+        {action === 'toggle_result' ? (
+          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={ICON.xl} color={colors.mutedForeground} />
+        ) : null}
+      </View>
+      <View style={{ flexDirection: rowDir, alignItems: 'center', gap: SPACE.md, flexWrap: 'wrap' }}>
+        <ExamStatusChip state={exam.state} parent />
+        {exam.result ? (
+          <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.bodyLg }}>
+            {exam.result.percent}%{levelKey ? ` · ${t(levelKey)}` : ''}
+          </Text>
+        ) : null}
+      </View>
+      {facts.length > 0 ? (
+        <View style={{ gap: SPACE.xs, marginTop: SPACE.xxs }}>
+          {facts.map(f => (
+            <View key={f.icon} style={{ flexDirection: rowDir, alignItems: 'center', gap: SPACE.sm }}>
+              <Ionicons name={f.icon} size={ICON.md} color={colors.mutedForeground} />
+              <Text style={{ flex: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 21, textAlign: align }}>
+                {f.text}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
 
   // The retake bar sits beside the card, not inside it: the card is a button,
   // and a button inside a button is invalid on the web build.
@@ -432,6 +542,7 @@ function ExamRow({
         { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.85 : 1 },
       ]}
     >
+      {parentView ? parentTop : (
       <View style={[styles.rowTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <View style={[styles.stateIcon, { backgroundColor: stateColor + '1F' }]}>
           <Ionicons name={stateIcon} size={20} color={stateColor} />
@@ -473,6 +584,7 @@ function ExamRow({
           <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={colors.mutedForeground} />
         ) : null}
       </View>
+      )}
 
       {open && exam.result ? (
         <View style={{ marginTop: 14, borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border, paddingTop: 14 }}>
@@ -539,5 +651,5 @@ const styles = StyleSheet.create({
   chip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
   retakeBar: { alignItems: 'center', gap: 12, borderWidth: 1, paddingVertical: 10, paddingHorizontal: 14 },
   cta: { alignSelf: 'center', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
-  childName: { fontSize: 17, marginTop: 4 },
+  avatar: { width: 44, height: 44, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
 });
