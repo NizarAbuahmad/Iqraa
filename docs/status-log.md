@@ -62,6 +62,29 @@ The new line was never seen on a screen and the Arabic was not read by a native 
 other model-backed routes (`/worked-steps`, the scan routes) have no such claim. **Android:**
 installed binaries (1.5.0) show the generic line for this 429 until a 1.6.0 build.
 
+## Cloud Run bill: verifier scales to zero, API back to one vCPU, 2026-11-02
+
+**Why.** The Google Cloud bill went from US$1.05 (Sept) to US$22.57 (Oct), with a last-seven-days
+cost of US$5.88 (about US$1 a day) and a November forecast of US$38. Billing → Reports names the
+top SKU as "Services Min Instance CPU (Request-based billing)" at about US$0.63 a day, which matches
+the hand estimate for the idle CPU of the two warm instances (API 2 vCPU + verifier 1 vCPU at the
+idle rate, about US$0.65 a day). The jump follows `--min-instances 1` on the API (2026-09-26) and on
+the verifier (2026-09-28) and `--cpu 2` on the API (2026-10-19). Cloud Storage, Artifact Registry
+and Secret Manager are cents.
+
+**Changed.** `deploy.yml`: verifier `--min-instances 1` → `0`; API `--cpu 2` → `1` and
+`PASSWORD_HASH_WORKERS=2` → `1` (kept together). The API stays at `--min-instances 1`, so the splash
+screen still does not wait on a cold `/auth/me`. `docs/deploying.md` gains «Keeping the verifier
+warm» (a Cloud Scheduler job, created by hand). Expected bill: about US$10-11 a month.
+
+**Cost of it.** A cold verifier adds ~4.6 s to one request (client timeout 8 s; a timeout fails
+closed, no «تم التحقق»). A sign-up rush of 100 accounts takes ~38 s instead of ~19 s; a single
+sign-in is unchanged.
+
+**Not verified.** The savings are an estimate from the Billing console, not a measured result: read
+the SKU report a week after the deploy. The Scheduler job does not exist until someone creates it,
+and Cloud Run does not guarantee a warm instance survives. Production was not touched by this PR.
+
 ## Forty-third live pass: four app questions the model improvised, one with a false «نعم», 2026-11-01
 
 **Why.** Thirty new questions on app.iqrra.com (22 answered well). Eight needed work; this PR takes the five that are ours.
