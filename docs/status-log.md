@@ -10,6 +10,44 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## A test database is dropped only after its connections have closed — 2026-11-02
+
+On #1381's first CI run, `homeworkSubmission.db.test.ts` ended red with every one of its 88 tests
+green: «Test hook "before" … generated asynchronous activity after the test ended … `terminating
+connection due to administrator command`» («would have caused the test to fail, but instead
+triggered an uncaughtException event»). A re-run passed. The shape — a file failing after its tests
+pass — was the signature of the harness, not of a test.
+
+**Cause.** `setupTestDb().drop()` did `await pool.end()` and then `DROP DATABASE … WITH (FORCE)`.
+pg-pool's `end()` calls `client.end()` on each idle client and resolves as soon as its list is
+empty — when each close has been *started*, not when the server has read it. FORCE kills every
+session still on the database; a client it reaches before its goodbye is told «terminating
+connection due to administrator command», emits `'error'`, pg-pool's idle listener re-emits it on
+the pool, and a pool with no `'error'` listener throws it as an uncaughtException. `node --test`
+attributes that to the hook that created the pool (the `before`), after the tests have finished.
+It affects every file that uses `setupTestDb`. It is rare because `dropDatabase` opens a new admin
+connection first, which usually gives the goodbyes time to land; a starved runner loses that race.
+
+**Change** (`src/test-support/testDb.ts`): the teardown is one exported function,
+`closeAndDropTestDb(pool, admin, name)`. It ends the pool, **waits until `pg_stat_activity` shows no
+session on the database** (up to 5 s; FORCE stays as the backstop for a session that never leaves),
+then drops. A no-op `'error'` listener is attached to the pool at that point only, so a connection
+that dies in the middle of a test still fails loudly. New test `testDbDrop.db.test.ts`: the pool talks
+to Postgres through a small proxy that holds client→server bytes for 400 ms (what a starved runner
+does to the goodbyes) and the teardown must not kill a live client. Red first: 12 of 12 clients killed,
+3 runs of 3; green with the fix, 3 of 3.
+
+**Verified:** the full api-server suite against a local Postgres 16 (3335 tests, 0 failed, 0 skipped);
+the mechanism in isolation (80 drops with a warm admin connection: 49 uncaught `terminating
+connection` errors on the pool, all on the pool emitter; with the wait or a listener, 0); `tsc` clean.
+
+**Not verified:** the CI failure itself was **not reproduced** — the real harness, old teardown, run
+30 times with all four cores busy, failed 0 times. So the link to that failure is the identical error
+text plus the mechanism above, not an observed before/after on `homeworkSubmission`. Nor can it be
+said that CI's flake rate is now zero, only that this cause is closed. Merging touches
+`artifacts/api-server/`, so `deploy.yml` redeploys the API: the code that runs is unchanged, only
+test support is.
+
 ## Lesson explanations: the math verifier checks the worked example and the practice — 2026-11-02
 
 **Why.** Two prefill runs of student explanations were read line by line before approval: 20 of 50 rejected on
