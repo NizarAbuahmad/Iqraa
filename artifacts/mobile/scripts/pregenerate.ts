@@ -227,6 +227,12 @@ export type ReviewEntry = {
   /** sha256 of `{ variantId, lessonId, content }` when the entry was written; `--approve` checks it. */
   contentHash: string;
   content: unknown;
+  /**
+   * The math verifier's verdicts on the worked example and the practice
+   * (`lib/lessonTeachingChecks.ts` in the API), shown beside the text a student
+   * would read. Absent for an explanation generated before they existed.
+   */
+  verification?: unknown;
 };
 
 /**
@@ -234,8 +240,24 @@ export type ReviewEntry = {
  * reviewer read. A canonical object (fixed key order), so editing either id in
  * the file is caught the same way as editing the text.
  */
-export function hashContent(variantId: string, lessonId: string, content: unknown): string {
-  return createHash('sha256').update(JSON.stringify({ variantId, lessonId, content })).digest('hex');
+export function hashContent(variantId: string, lessonId: string, content: unknown, verification?: unknown): string {
+  // The verdicts are part of what was reviewed: without them in the hash, deleting
+  // «contradicted» from the file would be a way to approve a wrong answer. An entry
+  // with none hashes exactly as it did before they existed.
+  const payload = verification === undefined ? { variantId, lessonId, content } : { variantId, lessonId, content, verification };
+  return createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+}
+
+/**
+ * Did the verifier compute a different answer for the worked example or the
+ * practice? Only `contradicted` blocks: `unlinked` (the prose is not the answer
+ * that was checked) and `undecided` are shown to the reviewer, whose call they are.
+ */
+function isContradicted(verification: unknown): boolean {
+  if (!verification || typeof verification !== 'object') return false;
+  return Object.values(verification as Record<string, unknown>).some(
+    v => !!v && typeof v === 'object' && (v as Record<string, unknown>).code === 'contradicted',
+  );
 }
 
 /** The server's rule for a variant id (`isUuid` in api-server `lib/lessonExplanation.ts`). */
@@ -250,11 +272,14 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function verifyReviewEntries(entries: unknown): {
   approvable: ReviewEntry[];
   edited: ReviewEntry[];
+  /** The verifier computed a different answer from the one a student would read. */
+  contradicted: ReviewEntry[];
   malformed: number;
 } {
-  if (!Array.isArray(entries)) return { approvable: [], edited: [], malformed: 1 };
+  if (!Array.isArray(entries)) return { approvable: [], edited: [], contradicted: [], malformed: 1 };
   const approvable: ReviewEntry[] = [];
   const edited: ReviewEntry[] = [];
+  const contradicted: ReviewEntry[] = [];
   let malformed = 0;
   for (const raw of entries as unknown[]) {
     const e = raw as Record<string, unknown> | null;
@@ -263,9 +288,12 @@ export function verifyReviewEntries(entries: unknown): {
       typeof e.variantId !== 'string' || !UUID.test(e.variantId) ||
       typeof e.lessonId !== 'string' || typeof e.contentHash !== 'string' || !('content' in e)
     ) { malformed++; continue; }
-    (hashContent(e.variantId, e.lessonId, e.content) === e.contentHash ? approvable : edited).push(e as unknown as ReviewEntry);
+    const entry = e as unknown as ReviewEntry;
+    if (hashContent(e.variantId, e.lessonId, e.content, e.verification) !== e.contentHash) edited.push(entry);
+    else if (isContradicted(e.verification)) contradicted.push(entry);
+    else approvable.push(entry);
   }
-  return { approvable, edited, malformed };
+  return { approvable, edited, contradicted, malformed };
 }
 
 /** A generate run must not silently replace a review file a person may be midway through. */
@@ -282,9 +310,10 @@ export function assertReviewFileFree(exists: boolean, forced: boolean, path: str
  * The keys a student is never served (`stripTeacherNotes` in the API's
  * `lib/lessonExplanation.ts`): stage directions, and `mistake` — the deck's
  * deliberately wrong solution, which would otherwise ask a reviewer to approve
- * wrong maths as «what a student would see».
+ * wrong maths as «what a student would see» — and `check` / `verification`, the
+ * verifier's Latin working and verdicts, which are shown beside the text instead.
  */
-const STUDENT_HIDDEN_KEYS = new Set(['teacherNote', 'mistake']);
+const STUDENT_HIDDEN_KEYS = new Set(['teacherNote', 'mistake', 'check', 'verification']);
 
 function withoutTeacherNotes(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(withoutTeacherNotes);
@@ -314,8 +343,14 @@ export function reviewEntry(call: Call, json: unknown): ReviewEntry | null {
   const lessonId = call.body.lessonId;
   if (typeof variantId !== 'string' || !variantId.trim()) return null;
   if (typeof lessonId !== 'string' || !lessonId) return null;
+  const verification = content.verification && typeof content.verification === 'object' ? content.verification : undefined;
   const shown = withoutTeacherNotes(content);
-  return { variantId, lessonId, lesson: call.lesson, contentHash: hashContent(variantId, lessonId, shown), content: shown };
+  return {
+    variantId, lessonId, lesson: call.lesson,
+    contentHash: hashContent(variantId, lessonId, shown, verification),
+    content: shown,
+    ...(verification === undefined ? {} : { verification }),
+  };
 }
 
 type Credentials = { base: string; token: string } | { base: string; email: string; password: string };
@@ -362,12 +397,15 @@ function titles(entries: ReviewEntry[]): string {
 /** Mark the entries still in a reviewed file as fit for students. */
 async function approve(file: string): Promise<void> {
   // Check the file before any network call: all or nothing.
-  const { approvable, edited, malformed } = verifyReviewEntries(JSON.parse(readFileSync(file, 'utf8')));
+  const { approvable, edited, contradicted, malformed } = verifyReviewEntries(JSON.parse(readFileSync(file, 'utf8')));
   if (malformed > 0) {
     throw new Error(`${malformed} malformed in ${file}: an entry has no content/contentHash, a variantId that is not a uuid, or no lessonId (or the file is not a list of entries). Nothing was approved.`);
   }
   if (edited.length > 0) {
     throw new Error(`${edited.length} entr${edited.length === 1 ? 'y' : 'ies'} in ${file} ${edited.length === 1 ? 'was' : 'were'} edited (${titles(edited)}): edits are not applied; delete the entry instead of editing it. (If you did not edit it, the file may have been written by an older version of this script, whose hash did not cover the ids: regenerate it.) Nothing was approved.`);
+  }
+  if (contradicted.length > 0) {
+    throw new Error(`${contradicted.length} entr${contradicted.length === 1 ? 'y' : 'ies'} in ${file} ${contradicted.length === 1 ? 'was' : 'were'} contradicted by the math check (${titles(contradicted)}): the verifier computed a different answer from the one a student would read. Delete ${contradicted.length === 1 ? 'it' : 'them'} from the file (a stored explanation stays in the pool until it is retired, so do not approve it another way). Nothing was approved.`);
   }
   const env = apiEnv();
   const token = await login(env);

@@ -37,9 +37,13 @@ export const PROMPT_VERSION = "2026-10-04.1";
  *   2026-11-01: rule 14 (accuracy). The first student review of 50 pooled
  *   sections rejected 17 for wrong or missing answers and false rules, and
  *   the rejected ones would otherwise be served again on every prefill rerun.
+ *   2026-11-02: rule 15 and the `check` blocks. The worked example and the
+ *   practice are computed by the math verifier, and the route asks once more
+ *   when it disagrees; a row stored before this has no verdicts and would sit
+ *   in the pool looking unchecked forever.
  */
 const PROMPT_VERSION_BY_KIND: Readonly<Record<string, string>> = {
-  "lesson-teaching": "2026-11-01.1",
+  "lesson-teaching": "2026-11-02.1",
 };
 
 /** The version a kind's pool is keyed and stored under. */

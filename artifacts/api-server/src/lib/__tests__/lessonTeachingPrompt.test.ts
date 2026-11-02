@@ -152,6 +152,24 @@ describe("lesson-teaching prompt", () => {
     });
   }
 
+  // From the second prefill review (2026-11-02): the accuracy rule removed
+  // wrong ideas and not wrong arithmetic (5 cm for 5.77 cm, 4.8 for 5.2,
+  // (9, 63) for (9, 135)). The worked example and the practice now carry a
+  // Latin `check` the verifier computes — see lib/lessonTeachingChecks.ts.
+  for (const [lang, build] of [["ar", lessonTeachingPromptAr], ["en", lessonTeachingPromptEn]] as const) {
+    it(`${lang}: asks for a verifiable check on the worked example and the practice`, () => {
+      const p = build(BODY);
+      for (const re of lang === "ar"
+        ? [/"check"/, /evaluate/, /system_solutions/, /10\*sin\(30°\)\/sin\(60°\)/, /\(0, 0\), \(9, 135\)/, /لا تضع check/, /لا وحدة/]
+        : [/"check"/, /evaluate/, /system_solutions/, /10\*sin\(30°\)\/sin\(60°\)/, /\(0, 0\), \(9, 135\)/, /omit "check"/i, /no unit/i]) {
+        assert.match(p, re, String(re));
+      }
+      // …in the output shape too, or the model reads the rule and never writes one.
+      const shape = p.slice(p.lastIndexOf("{\n  \"hook\""));
+      assert.equal((shape.match(/"check"/g) ?? []).length >= 2, true, "both blocks show a check");
+    });
+  }
+
   it("en: pins the rules each earlier deck broke", () => {
     const p = lessonTeachingPromptEn(BODY);
     assert.match(p, /Stay inside this lesson/);

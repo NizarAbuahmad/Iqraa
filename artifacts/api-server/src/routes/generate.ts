@@ -34,6 +34,7 @@ import {
   sanitizeDeckStructure,
 } from "../lib/promptSlidesPrompt.ts";
 import { lessonTeachingPromptAr, lessonTeachingPromptEn, teachingVisualCounts } from "../lib/lessonTeachingPrompt.ts";
+import { problemsOf, settleTeaching } from "../lib/lessonTeachingChecks.ts";
 import {
   QUESTIONS_TOKENS,
   parseQuestions,
@@ -579,6 +580,44 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
           produced: quizWanted(body)! - still,
         };
       }
+    }
+
+    // A lesson explanation is read by a student with no one to catch a wrong
+    // answer, and the first two prefill runs showed the model keying 5 cm for
+    // 5.77 cm and (9, 63) for (9, 135). The worked example and the practice carry
+    // a Latin `check` the verifier can compute; a contradiction asks once more
+    // and the better attempt is stored with its verdicts. Nothing is dropped:
+    // see lib/lessonTeachingChecks.ts.
+    if (kind === "lesson-teaching") {
+      const settled = await settleTeaching(
+        chosen,
+        async (correction) =>
+          completeOnce({
+            ...completionArgs,
+            userPrompt:
+              args.userPrompt
+              + variationBlock({ variantIndex: decision.variantIndex, isArabic: args.isAr, avoid })
+              + correction,
+          }),
+        undefined,
+        args.isAr,
+      );
+      if (settled.discarded) {
+        // Paid for, not stored, so recorded with no artifact to its name.
+        recordUsage(settled.discarded.usage, model, { ...detail, artifactId: null, durationMs: settled.discarded.durationMs });
+      }
+      chosen = settled.chosen;
+      const unresolved = problemsOf(settled.verification);
+      logger.info(
+        {
+          kind,
+          strictKey: keys.strictKey,
+          retried: settled.discarded !== undefined,
+          workedExample: settled.verification.workedExample.code,
+          practice: settled.verification.practice.code,
+        },
+        unresolved.length ? "lesson-teaching checks: a contradiction survived" : "lesson-teaching checks",
+      );
     }
 
     // Stored only once, and only the artifact actually being served. Storing
