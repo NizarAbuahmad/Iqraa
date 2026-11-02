@@ -10,6 +10,58 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Generate: a second tap while the first is still running is refused, not run — 2026-11-02
+
+The app gives up on `POST /evaluations/:id/generate` after 45 s, and the model can take
+longer, so a teacher taps «generate» again while the first request is still writing. Both
+called the model; the second replaced the first's paper. (The write was already serialised
+by the row lock — see the question-edit entry — so this was spend and waiting, not a
+corrupt paper.)
+
+- **Claim in the database, not in memory.** `evaluations.generating_since` (migration
+  0024, one nullable column, additive) is set by a conditional `UPDATE` when a request
+  starts and cleared when it answers. `iqraa-api` runs on up to 20 instances, so a
+  `Map` would only stop a second tap that lands on the same one.
+  `lib/generationClaim.ts`: `claimGeneration`, `releaseBeforeResponding`.
+- A request that finds a live claim answers **429 `generation_in_progress`** with
+  `Retry-After: 30`, before anything that costs, and writes nothing. It does not touch the
+  other request's claim, and a release only frees its own (compared by timestamp), so a
+  slow first request cannot free a second one's after the first expired.
+- **Released before the response is written**, by wrapping `res.json` once: every exit of the
+  route (success, 502, 409, 429 from quota) goes through it. Cloud Run throttles the CPU
+  after a response, so a release that came after could stall and leave the exam refusing
+  the teacher's next regenerate.
+- **Expiry 330 s** = Cloud Run's request limit (`--timeout 300`) plus margin: no request outlives
+  it, so an expired claim is certainly dead. The trade: an instance that dies mid-call leaves
+  the exam refusing a regenerate for up to that long. The model client allows 120 s × 2
+  attempts per call and a paper can add a retry and a top-up, so a shorter expiry would have
+  let a long, legitimate generation be duplicated.
+- **App:** `generateFailure` maps 429 + `generation_in_progress` to a new line
+  («يجري توليد أسئلة هذا الاختبار الآن. انتظر دقيقة ثم أعد فتح الصفحة.») and reloads, instead of
+  «تعذّر توليد الأسئلة.», which would have been wrong: the first request is still running and
+  will finish. It is a 429, not a 409, on purpose: the web bundle that is live today maps
+  every 409 to «نُشر هذا الاختبار أو حُذف…», so a 409 would have told teachers the exam was
+  published; a 429 reaches old clients as the generic line.
+- Two older tests in `evaluationGenerateWrite.db.test.ts` encoded the old behaviour and were
+  changed on purpose: two overlapping requests now give one 200 and one 429 (still one paper),
+  and the «published while it was generating» test also waits on the claim `UPDATE`, which is
+  where a request now queues behind a held row.
+
+**Verified:** `routes/__tests__/evaluationGenerateClaim.db.test.ts` (5 tests, real Postgres):
+a control, a refused request on a claimed exam (nothing written, other claim untouched), a
+10-minute-old claim ignored, two overlapping requests (a trigger slows the first; the second
+is refused, the first finishes, the exam is free after), and a failed generation freeing the
+exam. Run before the fix: 3 of 5 failed (a fourth passed vacuously, nothing yet to leak).
+With the release wrapper removed, 4 of 5 fail. App: `evaluationGenerateError.test.ts` gained the
+429 case and the new line in both locales. Full suites: api-server 3339 / 3339, mobile 9186
+(9176 passed, 10 skipped, 0 failed; the skips are not from this change). Typecheck clean.
+
+**Not verified:** nothing was run with a real model (live mode off throughout), so the 330 s
+figure rests on the deploy timeout and the client's timeouts, not on measured generation times.
+The new line was never seen on a screen and the Arabic was not read by a native speaker. The
+other model-backed routes (`/worked-steps`, the scan routes) have no such claim. **Android:**
+installed binaries (1.5.0) show the generic line for this 429 until a 1.6.0 build.
+
 ## Forty-third live pass: four app questions the model improvised, one with a false «نعم», 2026-11-01
 
 **Why.** Thirty new questions on app.iqrra.com (22 answered well). Eight needed work; this PR takes the five that are ours.

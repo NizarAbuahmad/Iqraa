@@ -37,6 +37,15 @@ describe("a generate request that failed", () => {
     });
   });
 
+  it("says the exam is already being generated, and refreshes, on the 429 for a second request", () => {
+    // The first request is still writing the paper and will finish, so "could not
+    // generate" would be wrong, and trying again gets the same answer.
+    assert.deepEqual(generateFailure(apiError(429, 'generation_in_progress')), {
+      messageKey: 'evaluationGenerateInProgress',
+      refetch: true,
+    });
+  });
+
   it("keeps the generic line, and no refresh, for a generator that did not answer", () => {
     assert.deepEqual(generateFailure(apiError(502, 'generator_unavailable')), {
       messageKey: 'evaluationGenerateFailed',
@@ -86,5 +95,22 @@ describe("the line for an exam that is no longer a draft", () => {
   it("tells the teacher nothing was changed", () => {
     const table = translations as unknown as Record<string, Record<string, unknown>>;
     assert.match(String(table['en']['evaluationGenerateNoLongerDraft']), /nothing was changed/i);
+  });
+});
+
+describe("the line for an exam whose questions are already being generated", () => {
+  const table = translations as unknown as Record<string, Record<string, unknown>>;
+  for (const lang of ['ar', 'en'] as const) {
+    it(`exists in ${lang} and differs from the generic failure and from «no longer a draft»`, () => {
+      const line = table[lang]!['evaluationGenerateInProgress'];
+      assert.equal(typeof line, 'string');
+      assert.ok((line as string).length > 0);
+      assert.notEqual(line, table[lang]!['evaluationGenerateFailed']);
+      assert.notEqual(line, table[lang]!['evaluationGenerateNoLongerDraft']);
+    });
+  }
+
+  it("tells the teacher it is already running, not that it failed", () => {
+    assert.match(String(table['en']!['evaluationGenerateInProgress']), /already being generated/i);
   });
 });
