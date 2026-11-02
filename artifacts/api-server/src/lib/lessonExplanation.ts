@@ -38,10 +38,14 @@ export function pickExplanation(rows: readonly ExplanationRow[]): ExplanationRow
  * `mistake` goes too: it is the deck's «اكتشف الخطأ» activity, a deliberately
  * wrong solution the teacher reveals the correction to in class. A student
  * reading alone would be shown a wrong solution as part of the explanation.
- * `mobile/scripts/pregenerate.ts` drops the same two keys from what the
- * reviewer approves. Nothing else is removed.
+ *
+ * `check` and `verification` go too: the first is Latin working the model wrote
+ * for the verifier (`lib/lessonTeachingChecks.ts`), the second the verifier's
+ * verdicts on it. Both are for whoever reviews the explanation, not for a student.
+ * `mobile/scripts/pregenerate.ts` drops the same keys from what the reviewer
+ * approves, and shows the verdicts beside it. Nothing else is removed.
  */
-const STUDENT_HIDDEN_KEYS = new Set(["teacherNote", "mistake"]);
+const STUDENT_HIDDEN_KEYS = new Set(["teacherNote", "mistake", "check", "verification"]);
 
 export function stripTeacherNotes(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(stripTeacherNotes);

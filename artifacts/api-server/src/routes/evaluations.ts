@@ -106,6 +106,7 @@ import {
 } from "../lib/aiBudget.ts";
 import { extractJSON } from "../lib/generationShape.ts";
 import { groundingForObjectives } from "../lib/grounding.ts";
+import { claimGeneration, releaseBeforeResponding } from "../lib/generationClaim.ts";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { recommendationsFor } from "../modules/assessment/recommend";
 import {
@@ -833,6 +834,22 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
       });
       return;
     }
+
+    // One generation at a time per exam. The app gives up after 45 s and the model can
+    // take longer, so a second tap arrives while the first is still writing; without
+    // this it starts a second model call that replaces the first's paper. Taken here,
+    // after the cheap refusals above and before anything that costs; freed before the
+    // response is written, whichever way the request ends (lib/generationClaim.ts).
+    const generationClaim = await claimGeneration(evaluation.id);
+    if (!generationClaim) {
+      res.setHeader("Retry-After", "30");
+      res.status(429).json({
+        error: "Questions are already being generated for this evaluation. Wait for them, then reload.",
+        code: "generation_in_progress",
+      });
+      return;
+    }
+    releaseBeforeResponding(res, generationClaim);
 
     /**
      * Which generator wrote this paper, and the one rule about it.

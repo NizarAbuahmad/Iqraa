@@ -136,13 +136,16 @@ def _shutdown() -> None:
 
 @app.get("/healthz")
 def healthz() -> dict[str, Any]:
-    from verify_core import EQUATION_TOPICS, SOLVERS
+    from verify_core import EQUATION_TOPICS, EVALUATE_TOPICS, SOLVERS, SYSTEM_TOPICS
 
-    # Equation topics are handled by set comparison, not the SOLVERS registry,
-    # so they must be listed explicitly or the capability looks missing.
+    # Equation, evaluate and system topics are handled by their own comparison,
+    # not the SOLVERS registry, so they must be listed explicitly or the
+    # capability looks missing.
     return {
         "status": "ok",
-        "topics": sorted(set(SOLVERS.keys()) | set(EQUATION_TOPICS)),
+        "topics": sorted(
+            set(SOLVERS.keys()) | set(EQUATION_TOPICS) | set(EVALUATE_TOPICS) | set(SYSTEM_TOPICS)
+        ),
     }
 
 

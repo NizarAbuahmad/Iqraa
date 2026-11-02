@@ -48,6 +48,96 @@ said that CI's flake rate is now zero, only that this cause is closed. Merging t
 `artifacts/api-server/`, so `deploy.yml` redeploys the API: the code that runs is unchanged, only
 test support is.
 
+## Lesson explanations: the math verifier checks the worked example and the practice — 2026-11-02
+
+**Why.** Two prefill runs of student explanations were read line by line before approval: 20 of 50 rejected on
+prompt `2026-10-31.1`, then 12 of 37 on `2026-11-01.1` (which added an accuracy rule). The rule fixed ideas and left
+arithmetic: 5 cm for 10/√3, a mean of 4.8 for 5.2, a median of 20 for 20.9, (9, 63) for (9, 135), and the same
+lessons failed in both runs. Design: `docs/superpowers/specs/2026-11-02-lesson-explanation-verification-design.md`.
+
+**Changed.**
+
+- **Verifier** (`math-verifier/verify_core.py`): two key topics, `evaluate` (a closed expression, degrees as `30°`;
+  the key is compared rounded or truncated to the places it is written with, a whole-number key by rounding only, or
+  exactly) and `system_solutions` (`eq1; eq2` in x and y, compared as a set of points, surds included). A unit on the
+  key, prose, or a system with no real solution is `error`, never `distinct`. 35 new cases; 124/124.
+- **API** (`lib/lessonTeachingChecks.ts`, hooked into `generateContent` for `lesson-teaching` before the variant is
+  stored): the worked example and the practice may carry `check: { topic, question, answer }`. The verifier runs it;
+  `verified` needs the verifier's `equivalent` AND the prose stating the checked answer (`statesAnswer`, now exported
+  from `keyLinking.ts`). A `contradicted` or `unlinked` item asks the model once more, told what was computed and what
+  was written; the attempt with fewer problems is kept (the second on a tie), the other is billed. Verdicts are stored
+  as `content.verification`. Nothing is deleted; an unreachable or undecided verifier changes nothing.
+- **Prompt**: rule 15 and a `check` in both output shapes, in both languages. `lesson-teaching` moves to
+  `2026-11-02.1`, so the next prefill generates under it. `check` and `verification` are stripped from what a student
+  reads, with `teacherNote` and `mistake`.
+- **`pregenerate.ts`**: each review entry carries `verification` beside its text (and in its hash, so deleting a
+  verdict is an edit), and `--approve` refuses a `contradicted` entry, all or nothing, like an edited one. `unlinked`
+  and `undecided` are shown, not blocked.
+
+**Verified.** The real SymPy service, started locally, and the real client, on the actual answers from both reviews:
+every wrong one (5 cm, 4.8, 20, (9, 63), (1, 0)+(3, 2)) `contradicted`, every right one `verified`, a prose answer that
+differs from its own check `unlinked`. Typecheck clean; mobile 9,176 pass, 0 fail, 10 skipped; api-server 2,836 / 2,836;
+math verifier 124/124.
+
+**Not verified.** That a live model writes a usable `check` often enough, or that its retry fixes what was found: a
+third prefill and a third review are the only test. And what no calculation can see: of the 12 run-2 rejects about
+five were arithmetic of the kind this catches; the rest were false or loose statements (a sector between «two arcs», a
+quadrant rule without its sign condition, a lab that uses derivatives early). **A person still reads every
+explanation.** Also not done: the 13 lessons the second run never reached (the per-account monthly AI allowance
+stopped it, `429`), the six chemistry lessons among the rejects, and the 22 lessons without a reviewed explanation.
+
+## Generate: a second tap while the first is still running is refused, not run — 2026-11-02
+
+The app gives up on `POST /evaluations/:id/generate` after 45 s, and the model can take
+longer, so a teacher taps «generate» again while the first request is still writing. Both
+called the model; the second replaced the first's paper. (The write was already serialised
+by the row lock — see the question-edit entry — so this was spend and waiting, not a
+corrupt paper.)
+
+- **Claim in the database, not in memory.** `evaluations.generating_since` (migration
+  0024, one nullable column, additive) is set by a conditional `UPDATE` when a request
+  starts and cleared when it answers. `iqraa-api` runs on up to 20 instances, so a
+  `Map` would only stop a second tap that lands on the same one.
+  `lib/generationClaim.ts`: `claimGeneration`, `releaseBeforeResponding`.
+- A request that finds a live claim answers **429 `generation_in_progress`** with
+  `Retry-After: 30`, before anything that costs, and writes nothing. It does not touch the
+  other request's claim, and a release only frees its own (compared by timestamp), so a
+  slow first request cannot free a second one's after the first expired.
+- **Released before the response is written**, by wrapping `res.json` once: every exit of the
+  route (success, 502, 409, 429 from quota) goes through it. Cloud Run throttles the CPU
+  after a response, so a release that came after could stall and leave the exam refusing
+  the teacher's next regenerate.
+- **Expiry 330 s** = Cloud Run's request limit (`--timeout 300`) plus margin: no request outlives
+  it, so an expired claim is certainly dead. The trade: an instance that dies mid-call leaves
+  the exam refusing a regenerate for up to that long. The model client allows 120 s × 2
+  attempts per call and a paper can add a retry and a top-up, so a shorter expiry would have
+  let a long, legitimate generation be duplicated.
+- **App:** `generateFailure` maps 429 + `generation_in_progress` to a new line
+  («يجري توليد أسئلة هذا الاختبار الآن. انتظر دقيقة ثم أعد فتح الصفحة.») and reloads, instead of
+  «تعذّر توليد الأسئلة.», which would have been wrong: the first request is still running and
+  will finish. It is a 429, not a 409, on purpose: the web bundle that is live today maps
+  every 409 to «نُشر هذا الاختبار أو حُذف…», so a 409 would have told teachers the exam was
+  published; a 429 reaches old clients as the generic line.
+- Two older tests in `evaluationGenerateWrite.db.test.ts` encoded the old behaviour and were
+  changed on purpose: two overlapping requests now give one 200 and one 429 (still one paper),
+  and the «published while it was generating» test also waits on the claim `UPDATE`, which is
+  where a request now queues behind a held row.
+
+**Verified:** `routes/__tests__/evaluationGenerateClaim.db.test.ts` (5 tests, real Postgres):
+a control, a refused request on a claimed exam (nothing written, other claim untouched), a
+10-minute-old claim ignored, two overlapping requests (a trigger slows the first; the second
+is refused, the first finishes, the exam is free after), and a failed generation freeing the
+exam. Run before the fix: 3 of 5 failed (a fourth passed vacuously, nothing yet to leak).
+With the release wrapper removed, 4 of 5 fail. App: `evaluationGenerateError.test.ts` gained the
+429 case and the new line in both locales. Full suites: api-server 3339 / 3339, mobile 9186
+(9176 passed, 10 skipped, 0 failed; the skips are not from this change). Typecheck clean.
+
+**Not verified:** nothing was run with a real model (live mode off throughout), so the 330 s
+figure rests on the deploy timeout and the client's timeouts, not on measured generation times.
+The new line was never seen on a screen and the Arabic was not read by a native speaker. The
+other model-backed routes (`/worked-steps`, the scan routes) have no such claim. **Android:**
+installed binaries (1.5.0) show the generic line for this 429 until a 1.6.0 build.
+
 ## Cloud Run bill: verifier scales to zero, API back to one vCPU, 2026-11-02
 
 **Why.** The Google Cloud bill went from US$1.05 (Sept) to US$22.57 (Oct), with a last-seven-days
