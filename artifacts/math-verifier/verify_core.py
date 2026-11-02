@@ -692,6 +692,208 @@ def _unjudgeable_arabic(text: str) -> bool:
     return bool(_ARABIC.search(text))
 
 
+# ── `evaluate` and `system_solutions` ────────────────────────────────────────
+# The two key topics a lesson explanation's worked example and practice need.
+# Neither has a derivation to run: the model writes the closed expression (or
+# the system) it solved as a Latin `check`, and SymPy only does the arithmetic
+# the model is bad at. The 2026-11-01 review of 50 generated explanations found
+# a key of 5 cm for 10/√3, a mean of 4.8 for 5.2, a median of 20 for 20.9 and
+# (9, 63) for (9, 135): every one of them is a slip in arithmetic or in
+# substitution, and every one is caught here. What this cannot catch is a
+# model that sets the problem up wrongly and then computes its wrong setup
+# correctly — the `check` is the model's own statement of what it computed.
+
+EVALUATE_TOPICS: frozenset[str] = frozenset({"evaluate"})
+SYSTEM_TOPICS: frozenset[str] = frozenset({"system_solutions"})
+
+# «30°» and «30 deg» are degrees; SymPy's trig functions take radians.
+_DEGREES = re.compile(r"(\d+(?:\.\d+)?)\s*(?:°|deg\b)")
+
+_KNOWN_WORDS = re.compile(r"sqrt|cbrt|sin|cos|tan|pi|ln|log|exp|abs", re.IGNORECASE)
+_STRAY_LETTERS = re.compile(r"[A-Za-z]")
+_DECIMAL_KEY = re.compile(r"^-?\d+\.\d+$")
+_INTEGER_KEY = re.compile(r"^-?\d+$")
+
+
+def _degrees_to_radians(text: str) -> str:
+    return _DEGREES.sub(r"(\1*pi/180)", text)
+
+
+def evaluate_expression(question: str) -> Any:
+    """A closed expression, exactly. Raises when it is not one (an unknown, an '=')."""
+    text = normalise_expr_text(_degrees_to_radians(question))
+    if "=" in text:
+        raise ValueError("expected an expression, not an equation")
+    value = safe_parse_expr(text, evaluate=True)
+    if value.free_symbols:
+        raise ValueError("expression has unknowns")
+    return value
+
+
+def _decimal_places(text: str) -> int:
+    return len(text.split(".")[1]) if "." in text else 0
+
+
+def _matches_as_written(expected: Any, written: str) -> bool:
+    """
+    Is a plain number the exact value `expected`, rounded or truncated to the
+    places it was written with?
+
+    «5.77», «5.7» and «6» are all 10/√3 as a person writes it; «5» is not.
+    A tolerance would blur exactly that: 5 is within one unit of 5.77. So the
+    value is quantised to the key's own number of places, both ways a person
+    shortens a number, and compared exactly.
+    """
+    from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal
+
+    places = _decimal_places(written)
+    exact = Decimal(str(expected.evalf(40)))
+    step = Decimal(1).scaleb(-places)
+    claimed = Decimal(written)
+    allowed = [exact.quantize(step, rounding=ROUND_HALF_UP)]
+    # A whole-number key is a rounding, never a truncation: «5» for 5.77 is the
+    # slip this check exists for, and «20» for 20.93 the one beside it.
+    if places >= 1:
+        allowed.append(exact.quantize(step, rounding=ROUND_DOWN))
+    return claimed in allowed
+
+
+def relate_evaluate(question: str, answer: str) -> dict[str, Any]:
+    try:
+        expected = evaluate_expression(question)
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "relation": "error",
+            "computed_answer": None,
+            "error": f"solve_error: {type(exc).__name__}: {exc}",
+        }
+    pretty = f"{expected} ≈ {expected.evalf(8)}" if not expected.is_Integer else str(expected)
+    written = normalise_expr_text(answer).lstrip("≈~ ").strip()
+    if _unjudgeable_arabic(written):
+        return {"relation": "error", "computed_answer": pretty, "error": "answer_not_latin"}
+    try:
+        if _DECIMAL_KEY.match(written) or _INTEGER_KEY.match(written):
+            matched = _matches_as_written(expected, written)
+            relation = "equivalent" if matched else "distinct"
+        else:
+            # An exact form: «10*sqrt(3)/3», «1/3». A unit left on the key
+            # («3.3 cm») would parse as the product 3.3*c*m and read as a wrong
+            # key, so any letters beyond the function names make it `error`.
+            if _STRAY_LETTERS.search(_KNOWN_WORDS.sub("", written)):
+                return {
+                    "relation": "error",
+                    "computed_answer": pretty,
+                    "error": "answer_has_text",
+                }
+            relation = _relation(str(expected), written)
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "relation": "error",
+            "computed_answer": pretty,
+            "error": f"answer_parse_error: {type(exc).__name__}: {exc}",
+        }
+    return {
+        "relation": relation,
+        "computed_answer": pretty,
+        "error": None if relation == "equivalent" else relation,
+    }
+
+
+def _top_level_groups(text: str) -> list[str]:
+    """The text inside each outermost «( … )», so «(2 + sqrt(2), 1)» stays whole."""
+    groups: list[str] = []
+    depth, start = 0, 0
+    for i, ch in enumerate(text):
+        if ch == "(":
+            if depth == 0:
+                start = i + 1
+            depth += 1
+        elif ch == ")" and depth > 0:
+            depth -= 1
+            if depth == 0:
+                groups.append(text[start:i])
+    return groups
+
+
+def solve_system(question: str) -> list[tuple[Any, Any]]:
+    """
+    Real solutions of «eq1; eq2» in two unknowns, as ordered pairs (x first).
+    Raises when the shape is not a two-unknown system or nothing real solves it.
+    """
+    equations = [e for e in _normalise_answer_text(question).replace(";", "\n").split("\n") if e.strip()]
+    if len(equations) < 2:
+        raise ValueError("expected at least two equations")
+    parsed = []
+    for eq in equations:
+        if eq.count("=") != 1:
+            raise ValueError("each equation needs exactly one '='")
+        lhs, rhs = eq.split("=")
+        parsed.append(Eq(_parse_any(lhs), _parse_any(rhs)))
+    symbols = sorted({s for e in parsed for s in e.free_symbols}, key=lambda s: s.name)
+    if len(symbols) != 2:
+        raise ValueError(f"expected two unknowns, found {len(symbols)}")
+    found = solve(parsed, symbols, dict=True)
+    real = [
+        (sol[symbols[0]], sol[symbols[1]])
+        for sol in found
+        if symbols[0] in sol and symbols[1] in sol
+        and sol[symbols[0]].is_real and sol[symbols[1]].is_real
+    ]
+    if not real:
+        raise ValueError("no real solution found")
+    return real
+
+
+def parse_point_list(answer: str) -> list[tuple[Any, ...]]:
+    """«(0, 0), (9, 135)» and «(0, 0) و (9, 135)» → two points."""
+    groups = _top_level_groups(normalise_expr_text(answer).replace("،", ","))
+    if not groups:
+        raise ValueError("no points found")
+    return [parse_point("(" + g + ")") for g in groups]
+
+
+def point_sets_match(expected: list[tuple[Any, ...]], claimed: list[tuple[Any, ...]]) -> bool:
+    if len(expected) != len(claimed):
+        return False
+    remaining = list(claimed)
+    for e in expected:
+        hit = next((i for i, c in enumerate(remaining) if points_match(tuple(e), c)), None)
+        if hit is None:
+            return False
+        remaining.pop(hit)
+    return not remaining
+
+
+def relate_system(question: str, answer: str) -> dict[str, Any]:
+    try:
+        expected = solve_system(question)
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "relation": "error",
+            "computed_answer": None,
+            "error": f"solve_error: {type(exc).__name__}: {exc}",
+        }
+    pretty = ", ".join(f"({x}, {y})" for x, y in expected)
+    # «و» / «أو» between points are the only Arabic a real key carries.
+    text = re.sub(r"\s+(?:و|أو)\s+", ", ", answer)
+    if _unjudgeable_arabic(text):
+        return {"relation": "error", "computed_answer": pretty, "error": "answer_not_latin"}
+    try:
+        claimed = parse_point_list(text)
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "relation": "error",
+            "computed_answer": pretty,
+            "error": f"answer_parse_error: {type(exc).__name__}: {exc}",
+        }
+    matched = point_sets_match(expected, claimed)
+    return {
+        "relation": "equivalent" if matched else "distinct",
+        "computed_answer": pretty,
+        "error": None if matched else "answer_mismatch",
+    }
+
+
 def relate_answer_key(topic: str, question: str, answer: str) -> dict[str, Any]:
     """
     Three-way verdict on a proposed ANSWER KEY.
@@ -711,6 +913,11 @@ def relate_answer_key(topic: str, question: str, answer: str) -> dict[str, Any]:
     'equivalent' | 'distinct' | 'indeterminate' | 'error' | 'unsupported_topic'.
     Only 'distinct' is evidence against the key.
     """
+    if topic in EVALUATE_TOPICS:
+        return relate_evaluate(question, answer)
+    if topic in SYSTEM_TOPICS:
+        return relate_system(question, answer)
+
     if topic in EQUATION_TOPICS:
         try:
             expected = solve_equation(question)

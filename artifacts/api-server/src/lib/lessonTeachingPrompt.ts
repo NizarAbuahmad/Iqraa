@@ -92,6 +92,10 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي لهذا ال�
    - استعمل رموز الكتاب: في المثلث ABC الضلع a يقابل الزاوية A، فقانون جيب التمام c^2 = a^2 + b^2 - 2ab cos C.
    - «معمل» أو «تجربة استهلالية» يسبق الدروس التي يمهّد لها: مثاله وتدريبه مما يفعله النشاط نفسه، لا مهارة من درس لاحق.
    - إن طلبت نتاجات الدرس حسابًا فالمثال والتدريب حساب من هذا النوع، لا سؤال وصفي.
+15. فحص آلي للحساب: يجوز أن يحمل "workedExample" و"practice" حقل "check" بالأحرف اللاتينية فقط، يحسبه برنامج جبر رمزي ويقارنه بإجابتك، فيُعاد الرد إن اختلفا:
+   - "check": {"topic","question","answer"}. اكتب في "question" ما حسبتَه فعلًا، وفي "answer" الناتج نفسه الذي كتبتَه في "answer" أعلاه.
+   - "topic" واحد من: "evaluate" (تعبير عددي مغلق: "question" مثل "10*sin(30°)/sin(60°)" أو "(1*1 + 4*4 + 5*7)/10"، والزاوية بالدرجات تُكتب 30°؛ و"answer" عدد بأرقام لاتينية بالتقريب الذي كتبتَه، لا وحدة ولا رمز ≈، أو صيغة دقيقة مثل "10*sqrt(3)/3")، و"system_solutions" (نظام معادلتين في x وy تفصل بينهما فاصلة منقوطة: "y = x^2 + 6x; y = -x^2 + 24x"، و"answer" النقاط: "(0, 0), (9, 135)")، و"equation_linear" أو "equation_quadratic" (معادلة واحدة "x^2 - 5x + 6 = 0" والإجابة "x = 2 or x = 3")، و"derivative_polynomial" (الاقتران "x^3 - 4x" والإجابة "3x^2 - 4").
+   - لا تضع check إن لم يناسب أحد هذه المواضيع، ولا تكتب check لا يطابق ما حسبتَه فعلًا؛ غيابه أفضل من فحص لسؤال آخر.
 
 أعد JSON بهذا الشكل فقط:
 {
@@ -99,9 +103,9 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي لهذا ال�
   "concepts": [
     { "title": "الفكرة كجملة خبرية", "points": ["سطر الشرح", "مثال قصير"], "teacherNote": "ما يؤكّد عليه المعلّم", "misconception": "الخطأ الشائع" }
   ],
-  "workedExample": { "problem": "نص المسألة بمعطياتها", "steps": ["الخطوة الأولى", "الخطوة الثانية"], "answer": "الإجابة النهائية" },
+  "workedExample": { "problem": "نص المسألة بمعطياتها", "steps": ["الخطوة الأولى", "الخطوة الثانية"], "answer": "الإجابة النهائية", "check": {"topic":"evaluate","question":"10*sin(30°)/sin(60°)","answer":"5.77"} },
   "mistake": { "claim": "قالت سلمى: … (حلّ فيه خطأ واحد)", "hint": "أين تبحث", "answer": "الخطوة الخاطئة وتصحيحها" },
-  "practice": { "problem": "مسألة التدريب", "hint": "تلميح", "answer": "الإجابة" }
+  "practice": { "problem": "مسألة التدريب", "hint": "تلميح", "answer": "الإجابة", "check": {"topic":"system_solutions","question":"y = x^2 + 6x; y = -x^2 + 24x","answer":"(0, 0), (9, 135)"} }
 }`;
 }
 
@@ -155,6 +159,10 @@ Mandatory rules:
    - Use the book's notation: in triangle ABC side a is opposite angle A, so the law of cosines is c^2 = a^2 + b^2 - 2ab cos C.
    - A lab or an opening experiment comes before the lessons it leads into: its example and practice use what the activity itself does, never a skill from a later lesson.
    - If the lesson's outcomes ask for a calculation, the example and the practice are calculations of that kind, not a descriptive question.
+15. An automatic check of the arithmetic: "workedExample" and "practice" may each carry a "check", in Latin characters only, that a symbolic-algebra program computes and compares with your answer; if they differ the reply is asked for again:
+   - "check": {"topic","question","answer"}. Put in "question" what you actually computed, and in "answer" the very result you wrote in "answer" above.
+   - "topic" is one of: "evaluate" (a closed numeric expression: "question" like "10*sin(30°)/sin(60°)" or "(1*1 + 4*4 + 5*7)/10", angles in degrees written 30°; "answer" a number in Latin digits rounded the way you wrote it, no unit and no ≈ sign, or an exact form like "10*sqrt(3)/3"), "system_solutions" (two equations in x and y separated by a semicolon: "y = x^2 + 6x; y = -x^2 + 24x", and "answer" the points: "(0, 0), (9, 135)"), "equation_linear" or "equation_quadratic" (one equation "x^2 - 5x + 6 = 0", answer "x = 2 or x = 3"), "derivative_polynomial" (the function "x^3 - 4x", answer "3x^2 - 4").
+   - Omit "check" when none of these fits, and never write a check that is not what you actually computed; no check is better than a check of a different question.
 
 Return only JSON in this shape:
 {
@@ -162,8 +170,8 @@ Return only JSON in this shape:
   "concepts": [
     { "title": "The idea as a claim", "points": ["An explanation line", "A short example"], "teacherNote": "What the teacher stresses", "misconception": "The common error" }
   ],
-  "workedExample": { "problem": "The problem with its givens", "steps": ["Step one", "Step two"], "answer": "The final answer" },
+  "workedExample": { "problem": "The problem with its givens", "steps": ["Step one", "Step two"], "answer": "The final answer", "check": {"topic":"evaluate","question":"10*sin(30°)/sin(60°)","answer":"5.77"} },
   "mistake": { "claim": "Salma says: … (a solution with one error)", "hint": "Where to look", "answer": "The wrong step and its correction" },
-  "practice": { "problem": "The practice problem", "hint": "A hint", "answer": "The answer" }
+  "practice": { "problem": "The practice problem", "hint": "A hint", "answer": "The answer", "check": {"topic":"system_solutions","question":"y = x^2 + 6x; y = -x^2 + 24x","answer":"(0, 0), (9, 135)"} }
 }`;
 }

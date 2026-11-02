@@ -134,6 +134,56 @@ function entryFor(id: string, content: unknown): ReviewEntry {
   return { variantId: id, lessonId: `kbl-${id.slice(0, 2)}`, lesson: `درس ${id.slice(0, 2)}`, contentHash: hashContent(id, `kbl-${id.slice(0, 2)}`, content), content };
 }
 
+// The math verifier's verdicts (api-server `lib/lessonTeachingChecks.ts`). A reviewer
+// sees them beside the text; a contradicted entry cannot be approved from the file.
+const VERDICTS = {
+  workedExample: { code: 'verified', computed: '5.7735' },
+  practice: { code: 'contradicted', computed: '5.2', stated: '4.8' },
+};
+
+test('reviewEntry shows the verdicts beside the text, and neither the check nor the verdicts inside it', () => {
+  const call: Call = { kind: 'lesson-teaching', lesson: 'المنحنى', body: { lessonId: 'kbl-x' } };
+  const entry = reviewEntry(call, {
+    hook: { question: 'q' },
+    practice: { problem: 'p', answer: '4.8', check: { topic: 'evaluate', question: '(1*1+4*4+5*7)/10', answer: '4.8' } },
+    verification: VERDICTS,
+    variantId: V1,
+  })!;
+  assert.deepEqual(entry.content, { hook: { question: 'q' }, practice: { problem: 'p', answer: '4.8' } });
+  assert.deepEqual(entry.verification, VERDICTS);
+  assert.equal(entry.contentHash, hashContent(V1, 'kbl-x', entry.content, VERDICTS));
+});
+
+test('an entry with no verdicts hashes exactly as it did before verdicts existed', () => {
+  const c = { hook: { question: 'q' } };
+  assert.equal(hashContent(V1, 'kbl-x', c), hashContent(V1, 'kbl-x', c, undefined));
+  assert.notEqual(hashContent(V1, 'kbl-x', c), hashContent(V1, 'kbl-x', c, VERDICTS));
+});
+
+test('deleting or softening the verdicts in the file is an edit, not a way past them', () => {
+  const call: Call = { kind: 'lesson-teaching', lesson: 'x', body: { lessonId: 'kbl-x' } };
+  const entry = reviewEntry(call, { hook: { question: 'q' }, verification: VERDICTS, variantId: V1 })!;
+  const { verification: _dropped, ...withoutVerdicts } = entry;
+  const softened = { ...entry, verification: { ...VERDICTS, practice: { code: 'verified' } } };
+  const result = verifyReviewEntries([withoutVerdicts, softened]);
+  assert.equal(result.approvable.length, 0);
+  assert.equal(result.edited.length, 2);
+});
+
+test('verifyReviewEntries keeps a contradicted entry out of what may be approved', () => {
+  const call: Call = { kind: 'lesson-teaching', lesson: 'x', body: { lessonId: 'kbl-x' } };
+  const contradicted = reviewEntry(call, { hook: { question: 'q' }, verification: VERDICTS, variantId: V1 })!;
+  const fine = (code: string) =>
+    reviewEntry({ ...call, body: { lessonId: `kbl-${code}` } }, {
+      hook: { question: 'q' },
+      verification: { workedExample: { code }, practice: { code: 'no_check' } },
+      variantId: code === 'verified' ? V2 : code === 'unlinked' ? V3 : V4,
+    })!;
+  const result = verifyReviewEntries([contradicted, fine('verified'), fine('unlinked'), fine('undecided')]);
+  assert.deepEqual(result.contradicted.map(e => e.variantId), [V1]);
+  assert.equal(result.approvable.length, 3, 'verified, unlinked and undecided are the reviewer\'s call');
+});
+
 test('verifyReviewEntries separates what may be approved from what was edited or is malformed', () => {
   const good = entryFor(V1, { hook: { question: 'q' } });
   const edited: ReviewEntry = { ...entryFor(V2, { hook: { question: 'q2' } }), content: { hook: { question: 'changed' } } };
@@ -160,7 +210,7 @@ test('a variantId that is not a uuid is malformed, even with a matching hash', (
   const content = { hook: { question: 'q' } };
   const bad: ReviewEntry = { variantId: 'v-1', lessonId: 'kbl-x', lesson: 'x', contentHash: hashContent('v-1', 'kbl-x', content), content };
   const trailing: ReviewEntry = { ...bad, variantId: `${V1} `, contentHash: hashContent(`${V1} `, 'kbl-x', content) };
-  assert.deepEqual(verifyReviewEntries([bad, trailing]), { approvable: [], edited: [], malformed: 2 });
+  assert.deepEqual(verifyReviewEntries([bad, trailing]), { approvable: [], edited: [], contradicted: [], malformed: 2 });
   // Upper-case uuids are fine: the server lower-cases them.
   const upper = entryFor(V1.toUpperCase(), content);
   assert.equal(verifyReviewEntries([upper]).approvable.length, 1);
@@ -169,14 +219,14 @@ test('a variantId that is not a uuid is malformed, even with a matching hash', (
 test('an entry with no content key is malformed, not a TypeError', () => {
   const noContent = { variantId: V1, lessonId: 'kbl-x', lesson: 'x', contentHash: 'abc' };
   assert.doesNotThrow(() => verifyReviewEntries([noContent]));
-  assert.deepEqual(verifyReviewEntries([noContent]), { approvable: [], edited: [], malformed: 1 });
+  assert.deepEqual(verifyReviewEntries([noContent]), { approvable: [], edited: [], contradicted: [], malformed: 1 });
 });
 
 test('verifyReviewEntries treats a file that is not an array as one malformed entry', () => {
   for (const input of [{}, 'x', null, undefined, 3]) {
-    assert.deepEqual(verifyReviewEntries(input), { approvable: [], edited: [], malformed: 1 });
+    assert.deepEqual(verifyReviewEntries(input), { approvable: [], edited: [], contradicted: [], malformed: 1 });
   }
-  assert.deepEqual(verifyReviewEntries([]), { approvable: [], edited: [], malformed: 0 });
+  assert.deepEqual(verifyReviewEntries([]), { approvable: [], edited: [], contradicted: [], malformed: 0 });
 });
 
 test('a review file that already exists is not overwritten without --force', () => {

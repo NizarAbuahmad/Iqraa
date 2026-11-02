@@ -10,6 +10,44 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Lesson explanations: the math verifier checks the worked example and the practice — 2026-11-02
+
+**Why.** Two prefill runs of student explanations were read line by line before approval: 20 of 50 rejected on
+prompt `2026-10-31.1`, then 12 of 37 on `2026-11-01.1` (which added an accuracy rule). The rule fixed ideas and left
+arithmetic: 5 cm for 10/√3, a mean of 4.8 for 5.2, a median of 20 for 20.9, (9, 63) for (9, 135), and the same
+lessons failed in both runs. Design: `docs/superpowers/specs/2026-11-02-lesson-explanation-verification-design.md`.
+
+**Changed.**
+
+- **Verifier** (`math-verifier/verify_core.py`): two key topics, `evaluate` (a closed expression, degrees as `30°`;
+  the key is compared rounded or truncated to the places it is written with, a whole-number key by rounding only, or
+  exactly) and `system_solutions` (`eq1; eq2` in x and y, compared as a set of points, surds included). A unit on the
+  key, prose, or a system with no real solution is `error`, never `distinct`. 35 new cases; 124/124.
+- **API** (`lib/lessonTeachingChecks.ts`, hooked into `generateContent` for `lesson-teaching` before the variant is
+  stored): the worked example and the practice may carry `check: { topic, question, answer }`. The verifier runs it;
+  `verified` needs the verifier's `equivalent` AND the prose stating the checked answer (`statesAnswer`, now exported
+  from `keyLinking.ts`). A `contradicted` or `unlinked` item asks the model once more, told what was computed and what
+  was written; the attempt with fewer problems is kept (the second on a tie), the other is billed. Verdicts are stored
+  as `content.verification`. Nothing is deleted; an unreachable or undecided verifier changes nothing.
+- **Prompt**: rule 15 and a `check` in both output shapes, in both languages. `lesson-teaching` moves to
+  `2026-11-02.1`, so the next prefill generates under it. `check` and `verification` are stripped from what a student
+  reads, with `teacherNote` and `mistake`.
+- **`pregenerate.ts`**: each review entry carries `verification` beside its text (and in its hash, so deleting a
+  verdict is an edit), and `--approve` refuses a `contradicted` entry, all or nothing, like an edited one. `unlinked`
+  and `undecided` are shown, not blocked.
+
+**Verified.** The real SymPy service, started locally, and the real client, on the actual answers from both reviews:
+every wrong one (5 cm, 4.8, 20, (9, 63), (1, 0)+(3, 2)) `contradicted`, every right one `verified`, a prose answer that
+differs from its own check `unlinked`. Typecheck clean; mobile 9,176 pass, 0 fail, 10 skipped; api-server 2,836 / 2,836;
+math verifier 124/124.
+
+**Not verified.** That a live model writes a usable `check` often enough, or that its retry fixes what was found: a
+third prefill and a third review are the only test. And what no calculation can see: of the 12 run-2 rejects about
+five were arithmetic of the kind this catches; the rest were false or loose statements (a sector between «two arcs», a
+quadrant rule without its sign condition, a lab that uses derivatives early). **A person still reads every
+explanation.** Also not done: the 13 lessons the second run never reached (the per-account monthly AI allowance
+stopped it, `429`), the six chemistry lessons among the rejects, and the 22 lessons without a reviewed explanation.
+
 ## Generate: a second tap while the first is still running is refused, not run — 2026-11-02
 
 The app gives up on `POST /evaluations/:id/generate` after 45 s, and the model can take
