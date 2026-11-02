@@ -78,8 +78,43 @@ export async function setupTestDb(adminUrlRaw: string | undefined = process.env.
     url,
     pool,
     async drop() {
-      await pool.end();
-      await dropDatabase(admin, name);
+      await closeAndDropTestDb(pool, admin, name);
     },
   };
+}
+
+/**
+ * Waits until no session is connected to `name`, or `timeoutMs` has passed (the
+ * force-drop that follows is the backstop for a session that never leaves).
+ */
+async function waitForNoSessions(admin: URL, name: string, timeoutMs = 5000): Promise<void> {
+  if (!isTestDbName(name)) throw new Error(`refusing to look at ${name}: not a test database name`);
+  await withAdmin(admin, async p => {
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
+      const r = await p.query<{ n: number }>("SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname = $1", [name]);
+      if (r.rows[0]!.n === 0 || Date.now() > deadline) return;
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+  });
+}
+
+/**
+ * Closes `pool` and drops the database it was connected to. Exported so the order
+ * of the two can be tested on its own (test-support/__tests__/testDbDrop.db.test.ts).
+ *
+ * `pool.end()` resolves once each client's close has been *started*, not once the
+ * server has read it. Dropping with FORCE at that moment kills clients that were
+ * about to close by themselves; each is told «terminating connection due to
+ * administrator command», pg-pool re-emits that on the pool, and with nobody
+ * listening Node raises an uncaughtException that fails the whole test file after
+ * its tests passed. So wait for the sessions to go first.
+ */
+export async function closeAndDropTestDb(pool: Pool, admin: URL, name: string): Promise<void> {
+  // Backstop for a session the force-drop still reaches. Attached here, not when the pool is
+  // made, so an idle connection that dies in the middle of a test still fails loudly.
+  pool.on("error", () => {});
+  await pool.end();
+  await waitForNoSessions(admin, name);
+  await dropDatabase(admin, name);
 }
