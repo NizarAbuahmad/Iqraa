@@ -199,6 +199,15 @@ export const evaluations = pgTable(
      * attempts, results and what students and parents see are untouched.
      */
     archivedAt: timestamp("archived_at", { withTimezone: true }),
+    /**
+     * Set while a question-generation request for this exam is running, cleared
+     * when it answers (`POST /evaluations/:id/generate`). A second request that
+     * finds it set — the app gives up after 45 s and the teacher taps again while
+     * the model is still writing — is refused instead of starting a second model
+     * call. A claim older than the route's `GENERATION_CLAIM_MS` is treated as
+     * dead, so a crashed instance cannot lock an exam for good.
+     */
+    generatingSince: timestamp("generating_since", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
