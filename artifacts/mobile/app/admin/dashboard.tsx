@@ -19,6 +19,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { apiJson } from '@/services/apiClient';
 import { openExternal } from '@/services/externalLinks';
+import { replyMailto } from '@/services/adminReplyMail';
+import { openMailto } from '@/services/openMailto';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { goBack } from '@/services/navigation';
@@ -107,7 +109,8 @@ type FeedbackItem = {
   createdAt: string;
   userFirstName: string;
   userLastName: string;
-  userEmail: string;
+  /** A parent or student account may have no email (users.email is nullable). */
+  userEmail: string | null;
 };
 
 type RatingFilter = 'all' | 'up' | 'down' | 'idea';
@@ -799,6 +802,16 @@ function GrowthSection({ metrics, onSaved, isRTL, ar, colors }: {
 
 function FeedbackRow({ item, isRTL, colors, onDelete }: { item: FeedbackItem; isRTL: boolean; colors: any; onDelete: () => void }) {
   const date = new Date(item.createdAt).toLocaleDateString();
+  const email = item.userEmail ?? '';
+  // Only a note with words and an address can be answered; see adminReplyMail.ts.
+  const reply = replyMailto({
+    kind: item.rating === 'idea' ? 'idea' : 'feedback',
+    email,
+    name: item.userFirstName,
+    message: item.comment,
+  });
+  // Local to the row: the screen's own `error` replaces the whole dashboard.
+  const [noMailApp, setNoMailApp] = useState(false);
   return (
     <View style={[styles.feedbackCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
       <View style={[styles.feedbackHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -822,8 +835,25 @@ function FeedbackRow({ item, isRTL, colors, onDelete }: { item: FeedbackItem; is
         </Text>
       )}
       <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>
-        {item.userFirstName} {item.userLastName} · {item.userEmail}
+        {[`${item.userFirstName} ${item.userLastName}`.trim(), email].filter(Boolean).join(' · ')}
       </Text>
+      {!!reply && (
+        <Pressable
+          onPress={() => { setNoMailApp(false); void openMailto(reply).then(ok => { if (!ok) setNoMailApp(true); }); }}
+          accessibilityRole="link"
+          style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, paddingVertical: 4 }}
+        >
+          <Ionicons name="arrow-undo-outline" size={16} color={ACCENT} />
+          <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
+            {isRTL ? 'ردّ بالبريد' : 'Reply by email'}
+          </Text>
+        </Pressable>
+      )}
+      {noMailApp && (
+        <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }}>
+          {isRTL ? `لا يوجد تطبيق بريد لفتح الرد — انسخ العنوان: ${email}` : `No mail app to open the reply — copy the address: ${email}`}
+        </Text>
+      )}
     </View>
   );
 }
