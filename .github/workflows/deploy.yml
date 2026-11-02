@@ -252,6 +252,15 @@ jobs:
       # run above shows is fine; more workers than vCPU only adds contention.
       # Cost: the always-on instance (--min-instances 1) now bills two vCPUs.
       #
+      # `--cpu 1` and PASSWORD_HASH_WORKERS=1 (2026-11-02, cost): the 2 vCPU
+      # always-on instance billed ~$0.43 a day idle on its own (the Billing
+      # report's top SKU, "Min Instance CPU", ~$0.63 a day with the verifier),
+      # taking the monthly bill from ~$1-2 (Sept) to ~$22 (Oct). Back on one
+      # vCPU the cost is the sign-up rush above: ~100 accounts in ~38 s instead
+      # of ~19 s. A single sign-in is unchanged, and chat/generation wait on the
+      # model and the database, not the CPU. Revert both numbers together if a
+      # class-sized sign-up burst starts to hurt.
+      #
       # AI_MODEL_CHAT (added 2026-10-16): had been set by hand to gpt-5.4-nano,
       # which no eval had measured for chat (STATUS.md, "Decided 2026-08-22"),
       # and teachers found the answers weak. gpt-5.4-mini is what generation
@@ -265,11 +274,11 @@ jobs:
             --allow-unauthenticated \
             --port 8080 \
             --memory 512Mi \
-            --cpu 2 \
+            --cpu 1 \
             --concurrency 80 \
             --timeout 300 \
             --min-instances 1 \
-            --update-env-vars "GIT_SHA=${GITHUB_SHA::7},AI_USER_BUDGET_USD=1,AI_STUDENT_BUDGET_USD=0.20,AI_MODEL_CHAT=gpt-5.4-mini,PASSWORD_HASH_WORKERS=2"
+            --update-env-vars "GIT_SHA=${GITHUB_SHA::7},AI_USER_BUDGET_USD=1,AI_STUDENT_BUDGET_USD=0.20,AI_MODEL_CHAT=gpt-5.4-mini,PASSWORD_HASH_WORKERS=1"
 
       # gcloud reporting success is not evidence the new code is serving. It
       # has printed a success line while traffic stayed pinned to an older
@@ -318,6 +327,15 @@ jobs:
       # the worst-case ~10.5s stall fetchWithTimeout.ts describes — app to API
       # to verifier, two cold starts back to back. Same tradeoff: a small
       # continuous charge instead of scale-to-zero $0.
+      #
+      # `--min-instances 0` (2026-11-02, cost): that charge (~$0.22 a day of
+      # CPU, ~$0.11 of memory) was a third of the bill. The API stays warm, so
+      # the "two cold starts back to back" stall cannot recur: a cold verifier
+      # adds ~4.6s to one request, inside the 8s client timeout, and a timeout
+      # fails closed (no «تم التحقق» badge), never to a wrong key. A Cloud
+      # Scheduler ping keeps it warm in practice — docs/deploying.md, "Keeping
+      # the verifier warm". The job is created by hand, once; nothing here
+      # depends on it, and without it a cold start is the only difference.
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy iqraa-verifier \
@@ -329,7 +347,7 @@ jobs:
             --cpu 1 \
             --concurrency 80 \
             --timeout 300 \
-            --min-instances 1
+            --min-instances 0
 
       - name: Verify it answers
         run: |
