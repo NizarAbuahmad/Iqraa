@@ -21,7 +21,9 @@
  * The line above the email field says what it is for: the admin can only answer
  * an idea that left one (`site_signups` ideas carry nothing else to reply to),
  * and broadcasts reach waitlist rows only (`lib/siteMail.ts`), so "we don't use
- * it for anything else" is true.
+ * it for anything else" is true. It says plainly that without one nobody can
+ * reach them, and the thank-you repeats that when none was left (`noEmail`),
+ * because most signed-out ideas arrived with none and went unanswered.
  *
  * An idea for something «إقرأ» already does is still sent, and the thank-you
  * then says how to do it now (services/existingFeature.ts — strict on purpose).
@@ -51,6 +53,9 @@ export default function SuggestFeatureScreen() {
   const [sent, setSent] = useState(false);
   // What the sent idea asked for that already exists, if anything; shown on the thank-you.
   const [already, setAlready] = useState<ExistingFeature | null>(null);
+  // A signed-out visitor who sent no email: we cannot answer them, so the thank-you says so
+  // rather than let them wait for a reply that cannot come.
+  const [noEmail, setNoEmail] = useState(false);
   const [failed, setFailed] = useState<null | 'network' | 'session' | 'email' | 'tooMany'>(null);
   const { user } = useAuth();
   const signedOut = !user;
@@ -98,6 +103,7 @@ export default function SuggestFeatureScreen() {
       trackEvent('feature_suggested', { length: idea.trim().length, signedIn: !signedOut });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       setAlready(existingFeatureFor(idea));
+      setNoEmail(signedOut && !email.trim());
       setSent(true);
       setIdea('');
       void saveSuggestionDraft('');
@@ -142,6 +148,9 @@ export default function SuggestFeatureScreen() {
               <Ionicons name="bulb" size={32} color={colors.primary} />
               <Text style={[styles.thanksTitle, { color: colors.foreground }]}>{t('suggestFeatureThanksTitle')}</Text>
               <Text style={[styles.thanksBody, { color: colors.mutedForeground }]}>{t('suggestFeatureThanks')}</Text>
+              {noEmail && (
+                <Text style={[styles.thanksBody, { color: colors.mutedForeground }]}>{t('suggestFeatureNoEmailNote')}</Text>
+              )}
               {already && (
                 <View style={[styles.alreadyBox, { borderColor: colors.border, borderRadius: colors.radius, backgroundColor: colors.background }]}>
                   <View style={{ flexDirection: rowDir, alignItems: 'center', gap: 6 }}>
@@ -152,7 +161,7 @@ export default function SuggestFeatureScreen() {
                 </View>
               )}
               <Pressable
-                onPress={() => { setSent(false); setAlready(null); }}
+                onPress={() => { setSent(false); setAlready(null); setNoEmail(false); }}
                 accessibilityRole="button"
                 style={({ pressed }) => [styles.secondaryBtn, { borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.7 : 1 }]}
               >

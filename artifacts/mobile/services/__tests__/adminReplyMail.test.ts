@@ -82,6 +82,40 @@ describe('replyMailto', () => {
     assert.ok(!body.includes('أ'.repeat(QUOTE_LIMIT + 1)), 'and no further');
   });
 
+  describe('a signed-in user’s feedback note', () => {
+    const note = (over: Partial<ReplyableRow> = {}): ReplyableRow => idea({ kind: 'feedback', message: 'الأسئلة لا تناسب الصف', ...over });
+
+    it('is answerable when it has words and an address', () => {
+      assert.equal(canReplyByMail(note()), true);
+    });
+
+    it('has nothing to quote, so no reply, when the thumb came with no comment', () => {
+      assert.equal(canReplyByMail(note({ message: '' })), false);
+      assert.equal(canReplyByMail(note({ message: '  \n ' })), false);
+      assert.equal(replyMailto(note({ message: '' })), null);
+    });
+
+    it('still needs an address', () => {
+      assert.equal(canReplyByMail(note({ email: '' })), false);
+    });
+
+    it('says «ملاحظتك», not «اقتراحك», and quotes the note', () => {
+      const { subject, body } = parse(replyMailto(note())!);
+      assert.equal(subject, 'بخصوص ملاحظتك على «إقرأ»');
+      assert.ok(body.includes('شكرًا على ملاحظتك.'), body);
+      assert.ok(body.includes('ملاحظتك:\r\n> الأسئلة لا تناسب الصف'), body);
+      assert.ok(!body.includes('اقتراحك'), body);
+    });
+
+    it('writes English for an English note', () => {
+      const { subject, body } = parse(replyMailto(note({ message: 'Too easy for grade 10', name: 'Sana' }))!);
+      assert.equal(subject, 'About your feedback on Iqrra');
+      assert.ok(body.startsWith('Hello Sana,'), body);
+      assert.ok(body.includes('Thank you for your feedback.'), body);
+      assert.ok(body.includes('Your feedback:'), body);
+    });
+  });
+
   it('percent-encodes spaces and line breaks (mail apps read `+` literally)', () => {
     const { query } = parse(replyMailto(idea({ message: 'Please add Word export' }))!);
     assert.ok(!/[ +\n\r]/.test(query), query);
