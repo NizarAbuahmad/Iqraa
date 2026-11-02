@@ -1,0 +1,1 @@
+ALTER TABLE "evaluations" ADD COLUMN "generating_since" timestamp with time zone;
