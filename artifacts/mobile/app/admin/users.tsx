@@ -19,10 +19,14 @@ import { apiJson } from '@/services/apiClient';
 import { confirm } from '@/services/confirm';
 import { LEGAL_CONTACT_EMAIL } from '@/constants/legal';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
-import { DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
+import { DateRange, EMPTY_RANGE, type Range } from '@/components/admin/DateRange';
+import { FilterChip } from '@/components/admin/widgets';
 import { BackButton } from '@/components/ui/BackButton';
 import { TYPE } from '@/constants/theme';
-import { channelOf, isNewUser, newUsersFrom, parseNewUsersParam } from '@/services/adminUsers';
+import {
+  channelOf, cohortForRange, isNewUser, newUsersFrom, parseNewUsersParam, rangeForCohort, usersListQuery,
+  type ChannelFilter, type CohortFilter,
+} from '@/services/adminUsers';
 
 const ACCENT = '#4F46E5';
 const ADMIN_ROLES = ['school_admin', 'system_admin'];
@@ -44,6 +48,19 @@ type UserRow = {
   schoolName: string | null;
   monthSpendUsd: number;
 };
+
+/** [value, Arabic, English] for each chip row. */
+const CHANNELS: [ChannelFilter, string, string][] = [
+  ['all', 'الكل', 'All'],
+  ['web', 'ويب', 'Web'],
+  ['app', 'تطبيق', 'App'],
+  ['unknown', 'غير معروف', 'Unknown'],
+];
+const COHORTS: [CohortFilter, string, string][] = [
+  ['all', 'الجميع', 'Everyone'],
+  ['new', 'جدد', 'New'],
+  ['returning', 'عائدون', 'Returning'],
+];
 
 /** What the blocked person is shown — written to them, editable per block. */
 const DEFAULT_REASON =
@@ -86,7 +103,13 @@ export default function AdminUsersScreen() {
   // The dashboard's «جدد» tile links here with ?new=1: open on the new window, which
   // is the «٧ أيام» chip (dayAgo(6)) so that chip lights up.
   const params = useLocalSearchParams<{ new?: string | string[] }>();
-  const [range, setRange] = useState<Range>(() => (parseNewUsersParam(params.new) ? { from: newUsersFrom(today), to: '' } : EMPTY_RANGE));
+  const [range, setRangeState] = useState<Range>(() => (parseNewUsersParam(params.new) ? { from: newUsersFrom(today), to: '' } : EMPTY_RANGE));
+  const [channel, setChannel] = useState<ChannelFilter>('all');
+  const [cohort, setCohortState] = useState<CohortFilter>(() => (parseNewUsersParam(params.new) ? 'new' : 'all'));
+  // New and returning only mean something against a start day: picking one opens the
+  // new-user window if there is none, and clearing the start day drops it.
+  const setCohort = (c: CohortFilter) => { setCohortState(c); setRangeState(r => rangeForCohort(c, r, today)); };
+  const setRange = (r: Range) => { setRangeState(r); setCohortState(c => cohortForRange(r, c)); };
   const [items, setItems] = useState<UserRow[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -94,11 +117,11 @@ export default function AdminUsersScreen() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [blocking, setBlocking] = useState<{ id: string; reason: string } | null>(null);
   const load = useCallback(async (offset: number) => {
-    const params = `q=${encodeURIComponent(q)}&status=${onlySuspended ? 'suspended' : 'all'}&offset=${offset}${rangeQuery(range)}`;
-    const res = await apiJson<{ items: UserRow[]; total: number }>(`/admin/users?${params}`);
+    const query = usersListQuery({ q, onlySuspended, range, channel, cohort, offset });
+    const res = await apiJson<{ items: UserRow[]; total: number }>(`/admin/users?${query}`);
     setItems(cur => (offset === 0 ? res.items : [...cur, ...res.items]));
     setTotal(res.total);
-  }, [q, onlySuspended, range]);
+  }, [q, onlySuspended, range, channel, cohort]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -191,7 +214,26 @@ export default function AdminUsersScreen() {
               </Text>
             </Pressable>
           </View>
+          <View style={[styles.filterRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>{ar ? 'انضم عبر' : 'Joined via'}</Text>
+            {CHANNELS.map(([value, a, e]) => (
+              <FilterChip key={value} label={ar ? a : e} active={channel === value} onPress={() => setChannel(value)} colors={colors} />
+            ))}
+          </View>
+          <View style={[styles.filterRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>{ar ? 'المستخدمون' : 'Users'}</Text>
+            {COHORTS.map(([value, a, e]) => (
+              <FilterChip key={value} label={ar ? a : e} active={cohort === value} onPress={() => setCohort(value)} colors={colors} />
+            ))}
+          </View>
           <DateRange value={range} onChange={setRange} ar={ar} isRTL={isRTL} colors={colors} />
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 18, textAlign: align }}>
+            {cohort === 'returning'
+              ? (ar ? 'عائدون: حساباتهم أقدم من هذه الفترة، وعادوا خلالها — سجّلوا الدخول، أو أنشؤوا محتوى بالذكاء الاصطناعي، أو حفظوا مادة.' : 'Returning: accounts made before this period that came back during it — signed in, generated with AI, or saved a material.')
+              : cohort === 'new'
+                ? (ar ? 'جدد: أنشؤوا حساباتهم خلال هذه الفترة.' : 'New: accounts made during this period.')
+                : (ar ? 'الفترة هنا تاريخ إنشاء الحساب.' : 'The period is when the account was made.')}
+          </Text>
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
             {ar ? `${total} حساب` : `${total} accounts`}
           </Text>
@@ -288,5 +330,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 20 },
   card: { padding: 12, borderWidth: 1, gap: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 7, borderWidth: 1.5 },
+  filterRow: { flexWrap: 'wrap', alignItems: 'center', gap: 8 },
+  filterLabel: { fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption },
   input: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 9, fontFamily: 'Almarai_400Regular', fontSize: 13 },
 });
