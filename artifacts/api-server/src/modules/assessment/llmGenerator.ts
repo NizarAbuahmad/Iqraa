@@ -39,6 +39,29 @@ import { variationBlock } from "../../lib/variation.ts";
 import { figureFormatEn } from "../../lib/figurePrompt.ts";
 import { figureConsistentWith, resolveFigure } from "@workspace/figure";
 
+/**
+ * Check topics whose answer a student reads straight off a plotted curve: an
+ * equation's solutions are where the curve crosses an axis or a line, and the
+ * grid ticks give the values. A question with one of these checks never keeps a
+ * drawing — the figure gate cannot see it, because an equation is not a function
+ * the tie in `figureConsistentWith` can compare.
+ *
+ * Every other `VERIFIABLE_TOPICS` entry computes something a picture does not
+ * hand over: a derivative (an expression, or a slope the curve only suggests)
+ * and a circle's centre or radius (a function graph never draws a circle). A
+ * topic added later must be placed in one list or the other
+ * (`llmGeneratorVisual.test.ts` fails until it is). The lesson-teaching verifier's
+ * `system_solutions` is not an exam check topic, so it is not here.
+ *
+ * What this does NOT cover is a question with no `check` at all (a vertex, the
+ * components of a vector): only rule 9 and the teacher's preview guard those.
+ */
+export const ANSWER_READABLE_FROM_DRAWING_TOPICS: ReadonlySet<string> = new Set([
+  "equation_linear",
+  "equation_quadratic",
+  "equation_exponential",
+]);
+
 /** Bumped when the prompt changes shape, so usage rows stay comparable. */
 export const GENERATION_PROMPT_VERSION = "exam-gen-8";
 
@@ -547,7 +570,13 @@ export function parseGeneratedQuestions(
       } else {
         visual = resolveFigure(q["visual"]);
         if (!visual) visualsDropped.push({ index, reason: "the drawing is outside the limits" });
-        else if (!figureConsistentWith(visual, check?.question)) {
+        else if (check && ANSWER_READABLE_FROM_DRAWING_TOPICS.has(check.topic)) {
+          visualsDropped.push({
+            index,
+            reason: "the answer would be readable off the drawing (an equation's roots or a system's intersection)",
+          });
+          visual = null;
+        } else if (!figureConsistentWith(visual, check?.question)) {
           visualsDropped.push({ index, reason: "the drawn function differs from the check" });
           visual = null;
         }

@@ -6,7 +6,13 @@
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { buildGenerationPrompt, parseGeneratedQuestions, type LlmGenerationRequest } from "../llmGenerator.ts";
+import {
+  ANSWER_READABLE_FROM_DRAWING_TOPICS,
+  buildGenerationPrompt,
+  parseGeneratedQuestions,
+  type LlmGenerationRequest,
+} from "../llmGenerator.ts";
+import { VERIFIABLE_TOPICS } from "@workspace/math-verify";
 import type { CurriculumObjective } from "@workspace/curriculum";
 
 function objective(id: string, subjectId?: string): CurriculumObjective {
@@ -107,6 +113,61 @@ describe("a question's drawing", () => {
     assert.equal(out.questions[0]!.check?.question, "x^2 - 4");
     assert.deepEqual(out.questions[0]!.body["visual"], graph);
     assert.deepEqual(out.visualsDropped, []);
+  });
+
+  // A plotted curve shows its roots, and the grid ticks read them off. The
+  // figure gate cannot see that (an equation does not compile as a function), so
+  // the topic of the check decides.
+  const READABLE_REASON = /readable off the drawing/;
+  const equationChecks: Record<string, { topic: string; question: string; answer: string }> = {
+    equation_quadratic: { topic: "equation_quadratic", question: "x^2 - 4 = 0", answer: "x = 2 or x = -2" },
+    equation_linear: { topic: "equation_linear", question: "2x + 5 = 13", answer: "x = 4" },
+    equation_exponential: { topic: "equation_exponential", question: "2^x = 8", answer: "x = 3" },
+  };
+  for (const [name, check] of Object.entries(equationChecks)) {
+    it(`drops the drawing, keeps the question, when the check is ${name}`, () => {
+      const out = parseGeneratedQuestions(mcq({ visual: graph, check }), req("mathematics"), META);
+      assert.equal(out.questions.length, 1);
+      assert.equal(out.questions[0]!.check?.topic, name, "the check must have been read");
+      assert.equal("visual" in out.questions[0]!.body, false);
+      assert.equal(out.visualsDropped.length, 1);
+      assert.match(out.visualsDropped[0]!.reason, READABLE_REASON);
+    });
+  }
+
+  it("keeps a drawing beside a derivative check that matches it, and beside no check at all", () => {
+    const check = { topic: "derivative_polynomial", question: "x^2 - 4", answer: "2x" };
+    assert.deepEqual(
+      parseGeneratedQuestions(mcq({ visual: graph, check }), req("mathematics"), META).questions[0]!.body["visual"],
+      graph,
+    );
+    assert.deepEqual(
+      parseGeneratedQuestions(mcq({ visual: graph }), req("mathematics"), META).questions[0]!.body["visual"],
+      graph,
+    );
+  });
+
+  it("records one reason, not two, when the gate already refused the drawing", () => {
+    const out = parseGeneratedQuestions(
+      mcq({ visual: { kind: "pie" }, check: equationChecks["equation_quadratic"] }),
+      req("mathematics"),
+      META,
+    );
+    assert.equal(out.visualsDropped.length, 1);
+  });
+
+  it("classifies every verifiable topic: readable-off-a-drawing or deliberately not", () => {
+    const notReadable = new Set(["derivative_polynomial", "derivative_at_point", "circle_center", "circle_radius"]);
+    for (const topic of VERIFIABLE_TOPICS) {
+      assert.ok(
+        ANSWER_READABLE_FROM_DRAWING_TOPICS.has(topic) !== notReadable.has(topic),
+        `${topic} must be in exactly one of the two lists`,
+      );
+    }
+    assert.deepEqual(
+      [...ANSWER_READABLE_FROM_DRAWING_TOPICS].sort(),
+      ["equation_exponential", "equation_linear", "equation_quadratic"],
+    );
   });
 
   it("a question with no drawing reports nothing dropped", () => {

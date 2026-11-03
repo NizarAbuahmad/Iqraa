@@ -100,6 +100,34 @@ describe("reviewItems", () => {
   });
 });
 
+describe("reviewItems and a stored drawing", () => {
+  const graph = { kind: "function-graph", functions: [{ expr: "x^2 - 4", label: "f" }], x: [-3, 3] };
+  const review = (body: Record<string, unknown>) =>
+    reviewItems({
+      snapshot: [{ ...mcq, body }],
+      answers: [],
+      grades: [],
+      stepsById: new Map(),
+      isAr: true,
+    })[0]!;
+
+  it("carries a drawing only as the gate normalises it", () => {
+    const item = review({ ...mcq.body, visual: { ...graph, junk: 1, functions: [{ expr: "x^2 - 4", label: "f", extra: true }] } });
+    assert.deepEqual(item.body["visual"], graph);
+  });
+
+  it("carries no drawing the gate refuses", () => {
+    assert.equal("visual" in review({ ...mcq.body, visual: { kind: "pie" } }).body, false);
+    assert.equal("visual" in review({ ...mcq.body, visual: "x" }).body, false);
+  });
+
+  it("leaves every other field of the body, and a body with no drawing, as it was", () => {
+    assert.deepEqual(review(mcq.body!).body, mcq.body);
+    const { visual: _v, ...rest } = review({ ...mcq.body, visual: graph }).body;
+    assert.deepEqual(rest, mcq.body);
+  });
+});
+
 describe("worked steps", () => {
   it("gives the model the choices and the key, and steps only to types that work towards a result", () => {
     assert.equal(stepsProblemText(mcq), "ما حل المعادلة 2x + 1 = 7؟\n- x = 2\n- x = 3\n- x = 4");

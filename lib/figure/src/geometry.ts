@@ -99,7 +99,7 @@ const ANCHOR_OFFSETS: Pt[] = [
 const aroundAnchor = (anchor: Pt): Pt[] =>
   [1, 1.8, 2.6].flatMap(k => ANCHOR_OFFSETS.map(o => ({ x: anchor.x + o.x * k, y: anchor.y + o.y * k })));
 
-const percentile =(sorted: number[], q: number): number =>
+const percentile = (sorted: number[], q: number): number =>
   sorted[Math.min(sorted.length - 1, Math.max(0, Math.round(q * (sorted.length - 1))))]!;
 
 function layoutGraph(fig: FunctionGraph, box: Box): FigureLayout {
