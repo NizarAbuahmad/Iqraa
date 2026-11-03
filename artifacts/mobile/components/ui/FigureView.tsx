@@ -44,8 +44,9 @@ export function FigureView({ figure, lang }: { figure: Figure; lang: 'ar' | 'en'
   const ink = useMemo(() => SERIES.map(c => readableOn(c, colors.card, 4.5)), [colors.card]);
   const color = (i: number) => series[i % series.length]!;
   const letter = (i: number) => ink[i % ink.length]!;
-  // A letter laid out at the very edge of the box is cut in half; keep its whole glyph inside.
-  const inBox = (p: { x: number; y: number }) => ({ x: Math.min(Math.max(p.x, 4), W - 18), y: Math.min(Math.max(p.y, 16), H - 4) });
+  // `layoutFigure` already puts every letter inside the box and off its own line (`placeLabel`); this is only the
+  // last-resort net for a box that changed size under it, with the same bounds: the whole glyph stays inside.
+  const inBox = (p: { x: number; y: number }) => ({ x: Math.min(Math.max(p.x, 2), W - 12), y: Math.min(Math.max(p.y, 13), H - 4) });
 
   const origin = layout ? toPx(layout.viewport, 0, 0) : null;
   const axisName = { fontFamily: 'ReadexPro_500Medium', fontSize: TYPE.micro, fill: colors.foreground };

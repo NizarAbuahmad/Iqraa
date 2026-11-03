@@ -43,6 +43,8 @@ test('FigureView keeps its axis names off the tick numbers and its letters insid
   assert.match(src, /origin\.x - 6 : origin\.x \+ 6/);
   assert.match(src, /gridTicks\(layout\.viewport\)/);
   // Curve, vector and point letters are clamped into the box and are readable text, not just readable lines.
+  // `inBox` is only the net under `placeLabel` (lib/figure), with the same bounds as its glyph box.
+  assert.match(src, /Math\.min\(Math\.max\(p\.x, 2\), W - 12\), y: Math\.min\(Math\.max\(p\.y, 13\), H - 4\)/);
   assert.match(src, /inBox\(c\.labelAt\)/);
   assert.match(src, /inBox\(a\.labelAt\)/);
   assert.match(src, /inBox\(p\.labelAt\)/);
