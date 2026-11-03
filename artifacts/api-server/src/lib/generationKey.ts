@@ -41,9 +41,12 @@ export const PROMPT_VERSION = "2026-10-04.1";
  *   practice are computed by the math verifier, and the route asks once more
  *   when it disagrees; a row stored before this has no verdicts and would sit
  *   in the pool looking unchecked forever.
+ *   2026-11-03: the check's examples became placeholders in the output shape
+ *   (the model had copied the example check into chemistry lessons), a descriptive
+ *   answer carries no check, and the kind moved to the documents model.
  */
 const PROMPT_VERSION_BY_KIND: Readonly<Record<string, string>> = {
-  "lesson-teaching": "2026-11-02.1",
+  "lesson-teaching": "2026-11-03.1",
 };
 
 /** The version a kind's pool is keyed and stored under. */

@@ -334,9 +334,17 @@ export function isClaudeModel(model: string): boolean {
 /**
  * The generators whose output a teacher prints or projects as it stands — the
  * four a blind comparison (2026-10-23) measured: lesson plans, worksheets,
- * quizzes and slide decks. Anything not listed keeps `getGenerationModel()`.
+ * quizzes and slide decks — and, since 2026-11-03, the explanation a STUDENT reads
+ * alone (`lesson-teaching`): three prefill runs on the cheap model had 20 of 50,
+ * 12 of 37 and 25 of 50 rejected by a person reading them, for wrong keys, false
+ * rules and lessons that did not match their title. Anything not listed keeps
+ * `getGenerationModel()`.
+ *
+ * `lesson-teaching` costs about 2.3x per call here (Sonnet 5.5 $2/$10 against
+ * gpt-5.4-mini $0.75/$4.5 per million tokens). A 50-lesson prefill is a few
+ * dollars, which is more than the per-teacher `AI_USER_BUDGET_USD=1` allows.
  */
-const DOCUMENT_KINDS: ReadonlySet<string> = new Set(["lesson-plan", "worksheet", "quiz", "prompt-slides"]);
+const DOCUMENT_KINDS: ReadonlySet<string> = new Set(["lesson-plan", "worksheet", "quiz", "prompt-slides", "lesson-teaching"]);
 
 const warnedNoClaudeKey = new Set<string>();
 
