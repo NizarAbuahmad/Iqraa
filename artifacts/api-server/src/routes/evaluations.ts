@@ -1488,7 +1488,14 @@ router.post("/evaluations/:id/questions", async (req: AuthenticatedRequest, res)
       ? req.body.difficulty
       : "standard";
 
-    const body = (req.body?.body ?? {}) as Record<string, unknown>;
+    // A drawing is never taken from the client (modules/assessment/questionVisual.ts):
+    // a new question has none, and PATCH only ever puts back the stored one.
+    const sentBody = (req.body?.body ?? {}) as Record<string, unknown>;
+    let body = sentBody;
+    if (sentBody && typeof sentBody === "object" && !Array.isArray(sentBody)) {
+      const { visual: _sentVisual, ...rest } = sentBody;
+      body = rest;
+    }
     const expectedAnswer = (req.body?.expectedAnswer ?? {}) as Record<string, unknown>;
     const rubric = (req.body?.rubric ?? null) as Record<string, unknown> | null;
 
