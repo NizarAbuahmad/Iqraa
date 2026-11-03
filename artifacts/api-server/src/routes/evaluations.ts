@@ -2091,6 +2091,25 @@ router.post("/evaluations/:id/worked-steps", aiLimiter, async (req: Authenticate
       res.status(409).json({ error: "Worked steps are for maths exams", code: "not_math" });
       return;
     }
+
+    // One model-backed request per exam at a time. A paper of twenty runs for minutes and
+    // the app gives up after 45 s, so a second tap arrives while the first is still going
+    // and, finding nothing saved yet, asks the model about the same questions again. The
+    // claim is taken BEFORE the list below is read, so a request that arrives just after
+    // another finished sees what it saved, not a stale list; it is the exam's generation
+    // claim, so this also waits out a generation writing the same questions. Freed before
+    // the response is written, whichever way the request ends (lib/generationClaim.ts).
+    const stepsClaim = await claimGeneration(evaluation.id);
+    if (!stepsClaim) {
+      res.setHeader("Retry-After", "30");
+      res.status(429).json({
+        error: "Worked steps or questions are already being prepared for this evaluation. Wait for them, then try again.",
+        code: "worked_steps_in_progress",
+      });
+      return;
+    }
+    releaseBeforeResponding(res, stepsClaim);
+
     const isAr = evaluation.language !== "en";
     const todo = (await liveQuestions(evaluation.id)).filter(q => needsWorkedSteps(q, isAr));
     if (todo.length > 0) assertLiveModeEnabled();

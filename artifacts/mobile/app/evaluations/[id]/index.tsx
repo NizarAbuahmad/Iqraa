@@ -38,6 +38,7 @@ import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { questionText as questionTextFor } from '@/services/evaluationQuestionText';
 import { generateFailure } from '@/services/evaluationGenerateError';
 import { archiveFailure, editRefusedAsNotDraft } from '@/services/evaluationEditError';
+import { workedStepsFailure } from '@/services/workedStepsError';
 import { copyToClipboard } from '@/services/share';
 import { AddReadAloudModal } from '@/components/AddReadAloudModal';
 import { AddDictationModal } from '@/components/AddDictationModal';
@@ -359,8 +360,11 @@ export default function EvaluationDetailScreen() {
       );
       setStepsMissed(missed);
     } catch (err) {
-      const code = err instanceof EvaluationError ? err.code : '';
-      setError(t(code === 'user_quota_exceeded' || code === 'budget_exceeded' ? 'aiQuotaSpent' : 'prepareStepsFailed'));
+      const failure = workedStepsFailure(err);
+      setError(t(failure.messageKey));
+      // Already being prepared: the first request saves its steps on its own, so show
+      // what has landed rather than leave the screen as it was before the tap.
+      if (failure.refetch) await refetch();
     } finally {
       setBusy(null);
     }

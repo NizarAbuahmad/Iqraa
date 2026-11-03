@@ -10,6 +10,51 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Worked steps: a second tap while the first is still running is refused, not run — 2026-11-02
+
+`POST /evaluations/:id/worked-steps` reads the questions of a maths exam that still have
+no steps and asks the model about each, five at a time, so a paper of twenty runs for
+minutes. The app gives up after 45 s and the teacher taps again; the second request re-read
+the same list (nothing was saved yet) and asked the model about the same questions again.
+The writes are per question and last-wins, so nothing was corrupted: it was spend and waiting,
+the same shape as the generate double-tap fixed the same day.
+
+- **It takes the exam's generation claim** (`evaluations.generating_since`,
+  `lib/generationClaim.ts`; **no new migration**): one model-backed request per exam at a time,
+  shared with `/generate`, so a worked-steps request also waits out a generation that is
+  replacing the questions it would write steps for. A request that finds a live claim answers
+  **429 `worked_steps_in_progress`** (`Retry-After: 30`) and does nothing.
+- **Taken before the list is read.** A request that arrives just after another finished then
+  sees the steps it saved instead of a stale list and does not pay for them again.
+  Taken after the cheap refusals (404, not a maths exam), so those leave no claim.
+  Released before the response is written (the same `releaseBeforeResponding`), whichever way
+  the request ends, including a spend cap or live mode being off.
+- **App:** `workedStepsFailure` (`services/workedStepsError.ts`, pure) replaces the inline
+  code check on the exam screen: the 429 shows a new line («يجري تجهيز أسئلة هذا الاختبار أو
+  خطوات حلّه الآن. انتظر دقيقة ثم أعد فتح الصفحة.») and reloads the exam instead of «تعذّر تجهيز
+  خطوات الحل», which would be wrong, the first request being still alive. The spend-cap codes keep
+  their line, and so does everything else. The line says «أسئلة … أو خطوات» because the claim may be
+  held by a generation.
+
+**Verified:** `routes/__tests__/evaluationWorkedStepsClaim.db.test.ts` (6 tests, real Postgres):
+a control; a refused request on a claimed exam (the other claim untouched); a 10-minute-old claim
+ignored; two overlapping requests (a trigger sleeps while the claim is taken, so the second
+request's conditional `UPDATE` waits on the first's row lock and finds the claim set: one 200, one
+429, the exam free after); a request that fails after taking the claim (a question the model would be
+asked about, live mode off: 503) freeing the exam; a non-maths exam taking no claim. Run before the
+change, 3 of 6 failed (the other three passed with no claim yet to leak). With the release removed,
+4 of 6 fail. App: `workedStepsError.test.ts` (8 tests): the helper's cases, both locales' lines, and
+source checks that the screen uses the helper; putting the inline mapping back fails it. Full suites:
+api-server 3372 / 3372; mobile 9198 (9188 passed, 10 skipped, 0 failed; the skips are not from
+this change). Typecheck clean.
+
+**Not verified:** nothing was run with a real model (live mode off), so the 330 s expiry still rests
+on the deploy timeout and the client's timeouts, not on measured step-preparation times. The new
+line was never seen on a screen and the Arabic was not read by a native speaker. The scan routes
+(`/evaluations/scan-paper`, the class scan) are model-backed too and have no such claim; I did not
+look at how they are retried, so whether they need one is open. **Android:** installed binaries (1.5.0) show the generic line
+for this 429 until a 1.6.0 build.
+
 ## A test database is dropped only after its connections have closed — 2026-11-02
 
 On #1381's first CI run, `homeworkSubmission.db.test.ts` ended red with every one of its 88 tests

@@ -1,5 +1,7 @@
 /**
- * One question-generation request at a time per exam (`POST /evaluations/:id/generate`).
+ * One model-backed request at a time per exam: `POST /evaluations/:id/generate` and
+ * `POST /evaluations/:id/worked-steps` share the claim, so a worked-steps request also
+ * waits out a generation that is replacing the questions it would write steps for.
  *
  * The app gives up on that request after 45 s and the model can take longer, so a
  * teacher taps «generate» again while the first request is still writing; both
