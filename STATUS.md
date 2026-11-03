@@ -75,6 +75,7 @@ Checked 2026-10-22:
 - 2026-10-31 — Teacher can clear one student's project (the API; the app's button is the teacher-screens entry above)
 - 2026-10-31 — Slides: cycle, tree, Venn and mind-map diagrams; curriculum slides gain shapes, icons, charts and photos (Prompt Slides still untested against a live model)
 - 2026-11-03 — Student lesson explanations: 55 approved from the first two runs; the third run (50) was read blind, **25 fit, 25 not** (approval of the 25 given to the owner, not confirmed here); 11 lessons still have none. `lesson-teaching` now runs on Claude Sonnet 5.5 (2.3x the cost; a fourth run is the test) and the maths check lost two linking bugs («Lesson explanations: the third review…» in the log). `AI_USER_BUDGET_USD` is reset to `1` by every API deploy: raise it for a prefill run
+- 2026-11-03 — Drawn figures (graphs, vectors) in exams and student lessons: the shared package `lib/figure` is in (PR 1 of 3, no screen draws a figure yet); exam questions are PR 2 and student lesson cards PR 3 (spec `docs/superpowers/specs/2026-11-03-drawn-figures-design.md`, plan `docs/superpowers/plans/2026-11-03-drawn-figures.md`; entry «lib/figure: a shared gate and geometry for drawn graphs and vectors» in the log). No live model has filled a figure yet.
 - **Screen recording of everyone is ON for the web app (since the 2026-10-29 re-run of Deploy
   #868) and not yet running on Android.** Web: the Contentsquare tag loads on `app.iqrra.com` (not
   the marketing website) because the `CONTENTSQUARE_TAG_ID` repository **variable** is set; delete
