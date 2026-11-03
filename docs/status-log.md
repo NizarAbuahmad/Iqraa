@@ -10,6 +10,24 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Spend ceilings: Cloud Run instance caps and a smaller site-assistant cap, 2026-11-03
+
+**Why.** Follow-up to «Cloud Run bill: verifier scales to zero, API back to one vCPU» (2026-11-02). Two
+ways spend could grow with no one deciding it: Cloud Run had no instance ceiling beyond its own large
+default, and the iqrra.com assistant could spend up to $1 a day ($30 a month) on anonymous visitors.
+
+**Changed.** `deploy.yml`: `iqraa-api` `--max-instances 10`, `iqraa-verifier` `--max-instances 3`, and
+`SITE_BOT_BUDGET_USD_DAILY=0.3` on the API (it was set by hand to `1`; `--update-env-vars` now owns it, so a
+console edit no longer drifts). No code change: `getSiteAskDailyCapUsd` already parses a decimal.
+
+**Cost of it.** Past 10 API instances (800 requests in flight at `--concurrency 80`) requests queue rather
+than scale; nothing near a class sitting an exam reaches that. The assistant answers at most about $9 a
+month of non-starter questions, then the AI path refuses and the three fixed answers keep working.
+
+**Not verified.** That ten and three are the right ceilings: read Cloud Run's «Container instances» graph for
+a month and raise them if it ever sits at the cap. No test covers a workflow flag. Production was not touched
+by this PR; both services redeploy on merge.
+
 ## A test database is dropped only after its connections have closed — 2026-11-02
 
 On #1381's first CI run, `homeworkSubmission.db.test.ts` ended red with every one of its 88 tests
