@@ -72,6 +72,7 @@ import {
 } from "../modules/assessment/bookQuestions.ts";
 import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
 import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
+import { bodyAfterEdit } from "../modules/assessment/questionVisual.ts";
 import {
   allocateQuestions,
   COMPETENCY_KEYS,
@@ -1646,7 +1647,12 @@ router.patch(
               rubric: nextRubric,
             });
             if (problems.length > 0) return { fail: { status: 400, error: problems.join("; ") } };
-            patch["body"] = nextBody;
+            // A drawing is put back from the stored question only if nothing the
+            // student reads has changed (modules/assessment/questionVisual.ts).
+            patch["body"] = bodyAfterEdit(
+              { body: existing.body, expectedAnswer: existing.expectedAnswer },
+              { body: nextBody, expectedAnswer: nextAnswer },
+            );
             patch["expectedAnswer"] = nextAnswer;
             patch["rubric"] = nextRubric;
             // The verdict was about the question as generated, not as edited.
