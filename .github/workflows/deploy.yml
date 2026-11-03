@@ -261,6 +261,22 @@ jobs:
       # model and the database, not the CPU. Revert both numbers together if a
       # class-sized sign-up burst starts to hurt.
       #
+      # `--max-instances 10` (2026-11-03, cost): Cloud Run's default ceiling is
+      # far higher, so a traffic spike, a bot or a retry loop could scale out and
+      # bill every instance, and each extra instance opens its own pool of
+      # database connections (STATUS.md, Neon: 218 direct connections at the
+      # 0.5 CU maximum). Ten instances at `--concurrency 80` is 800 requests in
+      # flight, well above a class sitting an exam together, so ordinary use
+      # never reaches it; past it, requests queue instead of costing more.
+      # Raise it here if the run's "Container instances" graph ever sits at 10.
+      #
+      # SITE_BOT_BUDGET_USD_DAILY=0.3 (2026-11-03, cost): the iqrra.com assistant
+      # was set by hand to 1 a day, up to ~$30 a month of anonymous visitor
+      # questions. The three starter questions are answered from fixed text and
+      # cost nothing; only the rest reach the model. 0.3 is ~$9 a month at most,
+      # still counted in AI_BUDGET_USD. When it is spent the AI path refuses and
+      # the fixed answers keep working. Set it to 0 to switch the AI path off.
+      #
       # AI_MODEL_CHAT (added 2026-10-16): had been set by hand to gpt-5.4-nano,
       # which no eval had measured for chat (STATUS.md, "Decided 2026-08-22"),
       # and teachers found the answers weak. gpt-5.4-mini is what generation
@@ -278,7 +294,8 @@ jobs:
             --concurrency 80 \
             --timeout 300 \
             --min-instances 1 \
-            --update-env-vars "GIT_SHA=${GITHUB_SHA::7},AI_USER_BUDGET_USD=1,AI_STUDENT_BUDGET_USD=0.20,AI_MODEL_CHAT=gpt-5.4-mini,PASSWORD_HASH_WORKERS=1"
+            --max-instances 10 \
+            --update-env-vars "GIT_SHA=${GITHUB_SHA::7},AI_USER_BUDGET_USD=1,AI_STUDENT_BUDGET_USD=0.20,AI_MODEL_CHAT=gpt-5.4-mini,PASSWORD_HASH_WORKERS=1,SITE_BOT_BUDGET_USD_DAILY=0.3"
 
       # gcloud reporting success is not evidence the new code is serving. It
       # has printed a success line while traffic stayed pinned to an older
@@ -336,6 +353,11 @@ jobs:
       # Scheduler ping keeps it warm in practice — docs/deploying.md, "Keeping
       # the verifier warm". The job is created by hand, once; nothing here
       # depends on it, and without it a cold start is the only difference.
+      #
+      # `--max-instances 3` (2026-11-03, cost): same reasoning as the API's cap.
+      # Each instance runs one worker process and serialises its checks (see
+      # `--concurrency` above), so more than three would only add cost; only the
+      # API calls it, and the API itself is capped at 10.
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy iqraa-verifier \
@@ -347,7 +369,8 @@ jobs:
             --cpu 1 \
             --concurrency 80 \
             --timeout 300 \
-            --min-instances 0
+            --min-instances 0 \
+            --max-instances 3
 
       - name: Verify it answers
         run: |
