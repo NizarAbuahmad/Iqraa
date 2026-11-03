@@ -359,7 +359,7 @@ sweep in your staged files.
   for a short reply is measured against the model's share (`count − k`).
   The prompt is told what the book supplies and a per-competency quota
   (`allocateQuestions` over the whole paper, rescaled for the top-up by
-  `remainingQuota`), and such a paper records `promptVersion` `exam-gen-7+book`.
+  `remainingQuota`), and such a paper records `promptVersion` `exam-gen-8+book`.
 - **A teaching style shapes the whole lesson plan, in two places.** Per-style
   phases live in `artifacts/mobile/services/ai/lessonPlanBlueprints.ts` and the
   matching contract in `LESSON_STYLE_RULES_AR`/`_EN`
