@@ -111,6 +111,8 @@ function layoutGraph(fig: FunctionGraph, box: Box): FigureLayout {
     const y = f ? f(p.at) : null;
     if (y === null || !Number.isFinite(y)) continue;
     const at = toPx(viewport, p.at, y);
+    // Off the canvas (a zoomed-in range): draw nothing, not a label floating in a corner.
+    if (at.x < 0 || at.x > box.w || at.y < 0 || at.y > box.h) continue;
     points.push({ colorIndex: on, label: p.label, at, labelAt: clampPt({ x: at.x + 6, y: at.y - 8 }, box) });
   }
 

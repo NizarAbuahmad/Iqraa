@@ -45,6 +45,15 @@ describe('layoutFigure: function-graph', () => {
     near(b.yMin, -10);
     near(b.yMax, 10);
   });
+
+  it('emits no point or label for a marked point outside the given y range', () => {
+    const base = { kind: 'function-graph', functions: [{ expr: 'x^2' }], x: [-3, 3], y: [-1, 3] };
+    const off = layoutFigure(fig({ ...base, points: [{ at: 3, label: 'A' }] }), BOX);
+    assert.equal(off.points.length, 0);
+    const mixed = layoutFigure(fig({ ...base, points: [{ at: 3, label: 'A' }, { at: 1, label: 'B' }] }), BOX);
+    assert.equal(mixed.points.length, 1);
+    assert.equal(mixed.points[0]!.label, 'B');
+  });
 });
 
 describe('layoutFigure: asymptotes never join two branches', () => {
@@ -69,6 +78,25 @@ describe('layoutFigure: asymptotes never join two branches', () => {
   it('splits tan(x) at its asymptotes', () => {
     const l = layoutFigure(fig({ kind: 'function-graph', functions: [{ expr: 'tan(x)' }], x: [-3, 3] }), BOX);
     assert.ok(l.curves[0]!.segments.length >= 3);
+    monotone(l, 1);
+  });
+
+  // These are split by the sign-flip + jump rule alone; the clip cut-off does not
+  // reach them, so removing the rule joins neighbouring branches.
+  it('splits tan(2x) into five branches', () => {
+    const l = layoutFigure(fig({ kind: 'function-graph', functions: [{ expr: 'tan(2x)' }], x: [-3, 3] }), BOX);
+    assert.equal(l.curves[0]!.segments.length, 5);
+    monotone(l, 1);
+  });
+
+  it('splits 1/(x^2-1) into three branches', () => {
+    const l = layoutFigure(fig({ kind: 'function-graph', functions: [{ expr: '1/(x^2-1)' }], x: [-3, 3] }), BOX);
+    assert.equal(l.curves[0]!.segments.length, 3);
+  });
+
+  it('splits tan(x) over [-6.3, 6.3] into five branches', () => {
+    const l = layoutFigure(fig({ kind: 'function-graph', functions: [{ expr: 'tan(x)' }], x: [-6.3, 6.3] }), BOX);
+    assert.equal(l.curves[0]!.segments.length, 5);
     monotone(l, 1);
   });
 
