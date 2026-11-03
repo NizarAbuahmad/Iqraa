@@ -10,6 +10,32 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Test accounts for every role: a seed script — 2026-11-03
+
+**What changed.** `pnpm --filter @workspace/api-server run seed:test-accounts`
+(`artifacts/api-server/scripts/seed-test-accounts.mjs`) writes a teacher, a student and a parent that are linked to one
+another: the teacher owns one grade-10 maths class with three roster rows, the student is linked `self` to the first row
+and the parent `guardian` to the same row. One account cannot hold all three roles (`users.role` is one value, and
+`lib/roleSwitch.ts` locks the switch once there is a class or a link), so this is three accounts, used side by side
+through the app's saved accounts. Each is email-verified, and has the grade/subject picks that skip `/setup-subjects`,
+`/setup-grade` and `/claim-required`. Password `IqrraTest-2026` unless `--password`; `--email-base you@gmail.com` gives
+`you+teacher@…` and so on. Terms acceptance is left unset, because nobody accepted terms. It is idempotent (matched by
+email, class name and roster name), and refuses an existing email with another role, a roster row already claimed by
+another student, and any database that is not local (or has `?host=`) unless `--allow-remote`. Documented in
+`LOCAL_SETUP.md` («Test accounts for every role»). No «ما الجديد» entry: nothing in the app changes.
+
+**Verified** against a throwaway local Postgres with all migrations applied: two runs (`created` then `updated`, still
+1 class, 3 roster rows, 1 `self` link and 1 `guardian` link); the remote-host and short-password refusals. Then I booted
+the built API against that database (`STUDENT_ACCOUNTS=true`, `AI_LIVE_MODE=false`) and signed in as each account:
+`/auth/me` shows the teacher with grade-10/mathematics, and the student and parent with `hasRosterLink: true`, grade-10
+and `guardianStatus: not_required`. `/classes` lists the class with `studentCount: 3`. `/parent/homework` lists the
+child with `canTrack: true`. `/student/homework` and `/parent/schedule` answer 200, `/classes` as the student answers
+403, and a wrong password answers 401.
+
+**Not verified:** signing in through the app's UI (only the API was driven), and running it against production. Nothing
+was written to production. With `GUARDIAN_APPROVAL` on, the student would still be `not_required`, because it has a live
+link; that was reasoned from `guardianStatus`, not run.
+
 ## Lesson explanations: the third review, a stronger model, and two linking bugs in the maths check — 2026-11-03
 
 **What the third prefill showed.** The run under the maths check (prompt `2026-11-02.1`, gpt-5.4-mini) generated all 50
