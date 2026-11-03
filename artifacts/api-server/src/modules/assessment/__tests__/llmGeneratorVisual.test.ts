@@ -40,11 +40,11 @@ const mcq = (extra: Record<string, unknown> = {}) => ({
       marks: 2,
       skill: "graphs",
       body: {
-        stem: "ما جذرا الاقتران f(س) = س² − ٤؟",
+        stem: "ما مشتقة الاقتران f(س) = س² − ٤؟",
         multiSelect: false,
         options: [
-          { id: "a", text: "±٢" },
-          { id: "b", text: "٤" },
+          { id: "a", text: "٢س" },
+          { id: "b", text: "س" },
         ],
       },
       expectedAnswer: { optionIds: ["a"] },
@@ -73,11 +73,23 @@ describe("a question's drawing", () => {
     assert.equal(out.visualsDropped.length, 1);
   });
 
-  it("is never taken from inside body", () => {
+  it("is never taken from inside body — and the ignored one is recorded", () => {
     const q = mcq();
     (q.questions[0]!.body as Record<string, unknown>)["visual"] = graph;
     const out = parseGeneratedQuestions(q, req("mathematics"), META);
     assert.equal("visual" in out.questions[0]!.body, false);
+    assert.deepEqual(out.visualsDropped, [
+      { index: 0, reason: "a drawing inside body is ignored; the question-level visual is the only door" },
+    ]);
+  });
+
+  it("keeps the question-level drawing when one was also tucked inside body, and still records the ignored one", () => {
+    const q = mcq({ visual: graph });
+    (q.questions[0]!.body as Record<string, unknown>)["visual"] = { kind: "vectors" };
+    const out = parseGeneratedQuestions(q, req("mathematics"), META);
+    assert.deepEqual(out.questions[0]!.body["visual"], graph);
+    assert.equal(out.visualsDropped.length, 1);
+    assert.match(out.visualsDropped[0]!.reason, /inside body/);
   });
 
   it("is dropped when the checked function is a different one", () => {
@@ -115,6 +127,12 @@ describe("the prompt", () => {
 
   it("does not mention drawings on other papers", () => {
     assert.ok(!plain.system.includes("ONE drawing") && !plain.user.includes('"function-graph"'));
+  });
+
+  it("tells a maths paper not to draw what the question asks for, and says nothing of it elsewhere", () => {
+    assert.match(system, /answer can be read straight off it/);
+    assert.match(system, /the roots, the vertex, the intersection points/);
+    assert.ok(!plain.system.includes("read straight off"));
   });
 
   it("keeps rule 7 about book figures word for word", () => {

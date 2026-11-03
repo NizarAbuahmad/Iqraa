@@ -323,6 +323,7 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
           + "leave \"check\" out: a question nobody can verify is better than a check for the wrong question.",
         "9. A question may carry ONE drawing, in a question-level \"visual\" field (a sibling of \"check\", never inside \"body\"), when it is about a graph or a vector. "
           + "The stem must state everything the question needs — write the function out, give the vectors' components — so the drawing only illustrates and the question is answerable without it. "
+          + "Attach a drawing only where it illustrates the question, never to a question whose answer can be read straight off it (the roots, the vertex, the intersection points, or the components of a vector the student is asked to find). "
           + "The drawing is yours, so the stem may say «في الرسم المرافق»; never name a textbook figure (rule 7 still holds).",
       ]
       : []),
@@ -533,6 +534,12 @@ export function parseGeneratedQuestions(
     // The model's only door for a drawing is the question-level field; a
     // `visual` it tucked inside `body` is removed either way.
     const { visual: _inBody, ...bodyRest } = body;
+    if ("visual" in body) {
+      visualsDropped.push({
+        index,
+        reason: "a drawing inside body is ignored; the question-level visual is the only door",
+      });
+    }
     let visual: ReturnType<typeof resolveFigure> = null;
     if (q["visual"] !== undefined && q["visual"] !== null) {
       if (!maths) {
