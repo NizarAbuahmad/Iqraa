@@ -155,7 +155,7 @@ describe('stagesFromLessonPlan', () => {
 });
 
 describe('learnerRoles', () => {
-  const STYLES = ['direct', 'inquiry', 'collaborative'] as const;
+  const STYLES = ['direct', 'inquiry', 'collaborative', '5e'] as const;
 
   it('gives four non-empty stages for every style and language', () => {
     for (const lang of ['ar', 'en'] as const) {
@@ -180,6 +180,16 @@ describe('learnerRoles', () => {
     assert.match(learnerRoles({ lang: 'en', style: 'collaborative' })[1], /group/i);
     assert.doesNotMatch(learnerRoles({ lang: 'en', style: 'direct' })[1], /group/i);
     assert.match(learnerRoles({ lang: 'ar', style: 'collaborative' })[1], /مجموعات/);
+  });
+
+  it('5e: the learner explores before the idea is named, in groups, and ends alone', () => {
+    const ar = learnerRoles({ lang: 'ar', style: '5e', topic: 'قانون الجيوب' });
+    assert.match(ar[1], /يستكشف الطلبة/);
+    assert.ok(ar[1].includes('قانون الجيوب'));
+    assert.match(ar[3], /بمفرده/);
+    const en = learnerRoles({ lang: 'en', style: '5e', topic: 'Vocabulary' });
+    assert.match(en[1], /explore/i);
+    assert.notDeepEqual(en, learnerRoles({ lang: 'en', style: 'inquiry', topic: 'Vocabulary' }));
   });
 
   it('names the lesson in the explain stage when it is known', () => {

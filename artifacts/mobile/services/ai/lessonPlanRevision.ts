@@ -24,13 +24,14 @@
  */
 import type { AIRequest, LessonPlanOutput } from './AIService.ts';
 import { arMinutes } from './lessonPlanTypes.ts';
+import { FIVE_E_ID, stageIntro } from './lessonPlanFiveE.ts';
 import { englishOnly } from '../englishText.ts';
 import {
   leftOutSentence, revisionPhrase, revisionUnits, revisionUnitsFromLessons, scopeFromKey, splitShown,
   REVISION_SHOWN_PER_UNIT, type RevisionUnit,
 } from '../revisionScope.ts';
 
-export type RevisionStyle = 'direct' | 'inquiry' | 'collaborative';
+export type RevisionStyle = 'direct' | 'inquiry' | 'collaborative' | '5e';
 
 export type RevisionPlanInput = {
   units: RevisionUnit[];
@@ -55,7 +56,7 @@ export const ROUND_MARK_AR = 'الجولة';
 export const ROUND_MARK_EN = 'Round';
 
 function styleOf(style: string): RevisionStyle {
-  return style === 'inquiry' || style === 'collaborative' ? style : 'direct';
+  return style === 'inquiry' || style === 'collaborative' || style === FIVE_E_ID ? style : 'direct';
 }
 
 /** «وحدة واحدة» / «وحدتان» / «3 وحدات» / «11 وحدةً». */
@@ -153,7 +154,8 @@ function introduction(input: RevisionPlanInput, c: Ctx): string {
     : `(${c.label(c.min(0.1))}) Announce that this is one revision session covering ${input.phrase}`
       + (n > 1 ? ` — ${n} units: ${titles}.` : '.')
       + ' Each student then writes, in one minute, the hardest idea they remember from it; start from what comes up most.';
-  return left ? `${body} ${left}` : body;
+  // 5E labels its opening as the Engage stage; every other style gets the text back as it was.
+  return stageIntro(input.style, input.lang, left ? `${body} ${left}` : body);
 }
 
 function conceptsOf(c: Ctx, u: RevisionUnit, n: number): string {
@@ -190,6 +192,10 @@ function mainActivity(style: RevisionStyle, c: Ctx): string {
         + rounds((u, i) => `${roundHead(c, u, i)}: بطاقة فيها ${conceptsOf(c, u, 3)} من دروس ${shownTitles(c, u)}؛ تُعِدّ المجموعة ملخّصًا ومثالًا واحدًا، ثم تعرضه على الصف.`)
         + '\nوبعد كل عرض سأسحب رقمًا: يجيب صاحبه عن سؤال من بطاقة مجموعة أخرى.';
     }
+    if (style === '5e') {
+      return `(${m}) – مراجعة بنموذج 5E، ${c.one ? 'جولة استكشاف ثم تفسير للوحدة' : 'جولة استكشاف ثم تفسير لكل وحدة'} (مجموعات 3-4):\n\n`
+        + rounds((u, i) => `${roundHead(c, u, i)}: الاستكشاف (Explore): تفحص كل مجموعة أمثلة من دروس ${shownTitles(c, u)} وتكتب ما تتذكّره عن ${conceptsOf(c, u, 2)} وما تشكّ فيه، وسأمرّ عليها وأسأل دون أن أصحّح بعد. ثم التفسير (Explain): سأجمع ما كتبته المجموعات، وأسمّي الفكرة التي تحتاج ضبطًا، وأشرحها بمثال واحد من الكتاب.`);
+    }
     return `(${m}) – ${c.one ? 'مراجعة مباشرة («أنا أفعل» ثم سؤال سريع)' : 'مراجعة مباشرة، جولة لكل وحدة («أنا أفعل» ثم سؤال سريع)'}:\n\n`
       + rounds((u, i) => `${roundHead(c, u, i)}: سأراجع دروس ${shownTitles(c, u)} بشرح قصير يتناول ${conceptsOf(c, u, 2)} ومثال واحد من الكتاب، ثم سأطرح سؤالًا سريعًا يجيب عنه الصف معًا.`);
   }
@@ -205,6 +211,10 @@ function mainActivity(style: RevisionStyle, c: Ctx): string {
         + 'Give each group a unit card; with more groups than units, cards repeat:\n')
       + rounds((u, i) => `${roundHead(c, u, i)}: a card on ${conceptsOf(c, u, 3)} from ${shownTitles(c, u)}; the group prepares a summary and one example, then presents it.`)
       + '\nAfter each presentation draw a number: that student answers a question from another group\'s card.';
+  }
+  if (style === '5e') {
+    return `(${m}) – 5E review, ${c.one ? 'one Explore-then-Explain round for the unit' : 'one Explore-then-Explain round per unit'} (groups of 3-4):\n\n`
+      + rounds((u, i) => `${roundHead(c, u, i)}: Explore: each group examines examples from ${shownTitles(c, u)} and writes what it remembers about ${conceptsOf(c, u, 2)} and what it is unsure of; circulate and ask without correcting yet. Then Explain: gather what the groups wrote, name the idea that needs tightening and explain it with one textbook example.`);
   }
   return `(${m}) – ${c.one ? 'Direct review (I do, then a quick check)' : 'Direct review, one round per unit (I do, then a quick check)'}:\n\n`
     + rounds((u, i) => `${roundHead(c, u, i)}: review ${shownTitles(c, u)} with a short explanation of ${conceptsOf(c, u, 2)} and one textbook example, then pose a quick question the class answers together.`);
@@ -236,6 +246,15 @@ function practice(style: RevisionStyle, c: Ctx): Pick<RevisionPlanFields, 'guide
         independentPractice: `(${ind}) – مساءلة فردية:\n\n• الآن فقط يعمل كل طالب بمفرده وبصمت على ورقة قصيرة فيها سؤال من **كل** وحدة (${titles})، لا من بطاقة مجموعته وحدها.\n• وسأسحب رقمًا: يعرض صاحبه إجابته عن وحدة غير وحدة مجموعته.`,
       };
     }
+    if (style === '5e') {
+      return c.one ? {
+        guidedPractice: `(${g}) – التوسّع (Elaborate):\n\n• سأختار من كل درس من دروس الوحدة موقفًا جديدًا يربط الدرس بسياق مختلف، وتحلّه المجموعات وتشرح لماذا تنطبق الفكرة أو لا تنطبق.\n• وسأسأل: «ماذا لو تغيّر هذا الشرط؟» وأربط الدروس ببعضها.`,
+        independentPractice: `(${ind}) – التقويم (Evaluate) — الجزء الفردي:\n\n• يعمل كل طالب بمفرده على ورقة قصيرة فيها موقف جديد من كل درس (${lessons})، يطبّق فيه الفكرة ويفسّر إجابته.\n• ثم يضع إجابته على معيار من ثلاثة مستويات ويكتب ما سيعيد مراجعته.`,
+      } : {
+        guidedPractice: `(${g}) – التوسّع (Elaborate):\n\n• سأختار لكل وحدة موقفًا جديدًا يربط الوحدة بسياق مختلف، وتحلّه المجموعات وتشرح لماذا تنطبق الفكرة أو لا تنطبق.\n• وسأسأل: «ماذا لو تغيّر هذا الشرط؟» وأربط الوحدات ببعضها.`,
+        independentPractice: `(${ind}) – التقويم (Evaluate) — الجزء الفردي:\n\n• يعمل كل طالب بمفرده على ورقة قصيرة فيها موقف جديد من كل وحدة (${titles})، يطبّق فيه الفكرة ويفسّر إجابته.\n• ثم يضع إجابته على معيار من ثلاثة مستويات ويكتب ما سيعيد مراجعته.`,
+      };
+    }
     return c.one ? {
       guidedPractice: `(${g}) – «نحن نفعل»:\n\n• سأختار من كل درس من دروس الوحدة سؤالًا واحدًا من أسئلة الكتاب، وسنحلّه معًا والطلبة يوجّهون كل خطوة.\n• سأطرح أسئلة استرشادية: «من أي درس هذا السؤال؟ وما الذي نحتاجه منه؟»\n• وسأصحّح الأخطاء الشائعة فور ظهورها.`,
       independentPractice: `(${ind}) – «أنت تفعل»:\n\n• يعمل كل طالب بمفرده على ورقة مراجعة قصيرة فيها سؤال من كل درس (${lessons}).\n• سأتجوّل وأقدّم تلميحات مكتوبة دون أن أعطي الحل.`,
@@ -263,6 +282,15 @@ function practice(style: RevisionStyle, c: Ctx): Pick<RevisionPlanFields, 'guide
       independentPractice: `(${ind}) – Individual accountability:\n\n• Only now does each student work alone and in silence, on a short sheet with a question from **every** unit (${titles}) — not just their group's card.\n• Draw a number: that student reports their answer on a unit other than their group's.`,
     };
   }
+  if (style === '5e') {
+    return c.one ? {
+      guidedPractice: `(${g}) – Elaborate:\n\n• Pick a new situation from each lesson of the unit that links the lesson to a different context; groups work it and explain why the idea does or does not apply.\n• Ask: "What if this condition changed?" and connect the lessons to one another.`,
+      independentPractice: `(${ind}) – Evaluate, the individual part:\n\n• Each student works alone on a short sheet with a new situation from each lesson (${lessons}), applies the idea and explains the answer.\n• Then each places their answer on a three-level rubric and writes what they will review again.`,
+    } : {
+      guidedPractice: `(${g}) – Elaborate:\n\n• Pick a new situation for each unit that links the unit to a different context; groups work it and explain why the idea does or does not apply.\n• Ask: "What if this condition changed?" and connect the units to one another.`,
+      independentPractice: `(${ind}) – Evaluate, the individual part:\n\n• Each student works alone on a short sheet with a new situation from each unit (${titles}), applies the idea and explains the answer.\n• Then each places their answer on a three-level rubric and writes what they will review again.`,
+    };
+  }
   return c.one ? {
     guidedPractice: `(${g}) – We Do:\n\n• Pick one textbook question from each lesson of the unit and solve it together, with students directing each step.\n• Guiding questions: "Which lesson is this from? What do we need from it?"\n• Correct common errors the moment they surface.`,
     independentPractice: `(${ind}) – You Do:\n\n• Each student works alone on a short review sheet with a question from each lesson (${lessons}).\n• Circulate with written hints rather than answers.`,
@@ -284,6 +312,11 @@ function assessment(style: RevisionStyle, c: Ctx): string {
         ? 'سأقيّم المجموعة بورقة الفرد الذي سُحب رقمه، لا بأفضل أفرادها.\nتكويني: سأراجع ملخّصات المجموعات بحثًا عن درس ضعيف باستمرار — ذاك هو الذي سأعيد شرحه للصف كله.\nختامي: سأرصد نتيجة الورقة الفردية لكل درس على حدة.'
         : 'سأقيّم المجموعة بورقة الفرد الذي سُحب رقمه، لا بأفضل أفرادها.\nتكويني: سأراجع ملخّصات المجموعات بحثًا عن وحدة ضعيفة باستمرار — تلك هي التي سأعيد شرحها للصف كله.\nختامي: سأرصد نتيجة الورقة الفردية لكل وحدة على حدة.';
     }
+    if (style === '5e') {
+      return c.one
+        ? 'التقويم (Evaluate) مستمر عبر المراحل الخمس:\nتكويني: سأراقب مرحلة الاستكشاف — ما تتذكّره المجموعات وما تشكّ فيه من كل درس — وأسجّل التصورات الخاطئة لأعالجها في التفسير.\nختامي: سأصحّح الورقة الفردية وأرصد النتيجة لكل درس على حدة.'
+        : 'التقويم (Evaluate) مستمر عبر المراحل الخمس:\nتكويني: سأراقب مرحلة الاستكشاف — ما تتذكّره المجموعات وما تشكّ فيه من كل وحدة — وأسجّل التصورات الخاطئة لأعالجها في التفسير.\nختامي: سأصحّح الورقة الفردية وأرصد النتيجة لكل وحدة على حدة.';
+    }
     return c.one
       ? 'تكويني: سأراقب في «نحن نفعل» أيّ الدروس يتعثّر فيها الطلبة.\nختامي: سأصحّح ورقة المراجعة الفردية وأرصد النتيجة لكل درس على حدة، لا علامة واحدة للحصة.\nبطاقة الخروج: سأعدّ الدروس التي يذكرها الطلبة لأقرّر ما أعيده.'
       : 'تكويني: سأراقب في «نحن نفعل» أيّ الوحدات يتعثّر فيها الطلبة.\nختامي: سأصحّح ورقة المراجعة الفردية وأرصد النتيجة لكل وحدة على حدة، لا علامة واحدة للحصة.\nبطاقة الخروج: سأعدّ الوحدات التي يذكرها الطلبة لأقرّر ما أعيده.';
@@ -297,6 +330,11 @@ function assessment(style: RevisionStyle, c: Ctx): string {
     return c.one
       ? 'Grade the group on the sheet of the student whose number was drawn, not on its strongest member.\nFormative: scan the summaries for a lesson that is consistently weak — that is the one to re-teach to the whole class.\nSummative: record the individual sheet\'s result for each lesson separately.'
       : 'Grade the group on the sheet of the student whose number was drawn, not on its strongest member.\nFormative: scan the summaries for a unit that is consistently weak — that is the one to re-teach to the whole class.\nSummative: record the individual sheet\'s result for each unit separately.';
+  }
+  if (style === '5e') {
+    return c.one
+      ? 'Evaluate runs through all five stages:\nFormative: watch the Explore stage — what the groups remember and what they doubt in each lesson — and note misconceptions to address in Explain.\nSummative: mark the individual sheet and record the result for each lesson separately.'
+      : 'Evaluate runs through all five stages:\nFormative: watch the Explore stage — what the groups remember and what they doubt in each unit — and note misconceptions to address in Explain.\nSummative: mark the individual sheet and record the result for each unit separately.';
   }
   return c.one
     ? 'Formative: watch the We-Do stage for the lessons students stumble on.\nSummative: mark the individual review sheet and record the result per lesson, not one mark for the session.\nExit ticket: count the lessons students name, to decide what to revisit.'
@@ -314,6 +352,7 @@ function differentiation(style: RevisionStyle, c: Ctx): string {
         ? `سأعطي بطاقات الدروس بقصد لا عشوائيًا: البطاقة الأقصر لمجموعة تحتاج دعمًا، وتبقى مسؤولة عن جزء حقيقي يعتمد عليه الصف.\nتحدٍّ: ${link}، أو صياغة سؤال امتحان يغطي دروس الوحدة كلها.`
         : `سأعطي بطاقات الوحدات بقصد لا عشوائيًا: البطاقة الأقصر لمجموعة تحتاج دعمًا، وتبقى مسؤولة عن جزء حقيقي يعتمد عليه الصف.\nتحدٍّ: ${link}، أو صياغة سؤال امتحان يغطي الوحدات كلها.`;
     }
+    if (style === '5e') return `دعم: سأقلّل الأمثلة في الاستكشاف وأعطي أسئلة موجّهة وبداية جملة للوصف.\nتحدٍّ: ${link} في مرحلة التوسّع.\nالمبدأ: يمرّ الجميع بالمراحل الخمس نفسها، وأغيّر مقدار التوجيه لا مَن يُسمح له بالاستكشاف.`;
     return `دعم: سأعطي من يحتاج بطاقة مثال ${c.one ? 'لكل درس' : 'لكل وحدة'} يرجع إليها في الورقة الفردية.\nتحدٍّ: ${link}.\nالمبدأ: سأقلّل الحمل المعرفي بالأمثلة أولًا ثم أزيلها تدريجيًا.`;
   }
   const link = pair ? `a question that links two units (such as ${pair})` : 'a question that links two lessons of the unit';
@@ -323,6 +362,7 @@ function differentiation(style: RevisionStyle, c: Ctx): string {
       ? `Hand out the lesson cards deliberately, not at random: the shortest card to a group that needs support — it still owns a real part the class depends on.\nStretch: ${link}, or writing an exam question that covers every lesson of the unit.`
       : `Hand out the unit cards deliberately, not at random: the shortest card to a group that needs support — it still owns a real part the class depends on.\nStretch: ${link}, or writing an exam question that covers every unit.`;
   }
+  if (style === '5e') return `Support: fewer examples and guiding questions in Explore, plus a sentence stem for describing.\nStretch: ${link} in the Elaborate stage.\nThe principle: everyone goes through the same five stages — vary the amount of guidance, never who is allowed to explore.`;
   return `Support: an example card per ${c.one ? 'lesson' : 'unit'} for students who need it during the individual sheet.\nStretch: ${link}.\nThe principle: cut cognitive load with examples first, then withdraw them.`;
 }
 
@@ -347,11 +387,13 @@ function materials(style: RevisionStyle, c: Ctx): string[] {
     const group = c.one ? 'بطاقة من دروس الوحدة لكل مجموعة' : 'بطاقة وحدة لكل مجموعة';
     if (style === 'inquiry') return [c.one ? 'بطاقة السؤال الموجّه' : 'بطاقة سؤال موجّه لكل وحدة', 'ورق كبير وأقلام لتسجيل الإجابات', 'الكتاب المدرسي (يُفتح بعد المحاولة لا قبلها)', `ورقة حالة جديدة ${perUnit}`];
     if (style === 'collaborative') return [group, 'لوح إجابة لكل مجموعة', 'أقلام ملوّنة وشريط لاصق', 'كيس أرقام للمساءلة العشوائية', c.one ? 'ورقة مراجعة فردية تغطي دروس الوحدة' : 'ورقة مراجعة فردية تغطي الوحدات كلها'];
+    if (style === '5e') return [`أمثلة أو أسئلة للاستكشاف ${perUnit}`, 'ورق كبير وأقلام لتسجيل ملاحظات المجموعات', 'الكتاب المدرسي (يُفتح بعد الاستكشاف لا قبله)', `موقف جديد للتوسّع ${perUnit}`, 'معيار تقويم من ثلاثة مستويات'];
     return [`الكتاب المدرسي (صفحات مراجعة ${unit})`, 'السبورة وأقلام ملوّنة', c.one ? 'بطاقة مثال لكل درس' : 'بطاقة مثال لكل وحدة', c.one ? 'ورقة مراجعة فردية فيها سؤال من كل درس' : 'ورقة مراجعة فردية فيها سؤال من كل وحدة'];
   }
   const part = c.one ? 'lesson' : 'unit';
   if (style === 'inquiry') return [c.one ? 'A guiding-question card' : 'A guiding-question card per unit', 'Chart paper and markers for recording answers', 'Textbook (opened after the attempt, not before)', `A new-case sheet from ${c.one ? 'the unit' : 'each unit'}`];
   if (style === 'collaborative') return [c.one ? 'One card per group, from the unit\'s lessons' : 'One unit card per group', 'One answer board per group', 'Coloured markers and tape', 'Number draw for random accountability', c.one ? 'Individual review sheet covering the unit\'s lessons' : 'Individual review sheet covering every unit'];
+  if (style === '5e') return [`Examples or questions to explore from ${c.one ? 'the unit' : 'each unit'}`, 'Chart paper and markers for the groups\' notes', 'Textbook (opened after the exploring, not before)', `A new situation for Elaborate from ${c.one ? 'the unit' : 'each unit'}`, 'A three-level evaluation rubric'];
   return [c.one ? 'Textbook (the unit\'s review pages)' : 'Textbook (each unit\'s review pages)', 'Board and coloured markers', `An example card per ${part}`, `Individual review sheet with a question from each ${part}`];
 }
 

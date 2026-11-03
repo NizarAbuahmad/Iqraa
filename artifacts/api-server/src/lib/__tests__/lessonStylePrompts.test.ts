@@ -22,11 +22,11 @@ import {
 } from "../prompts.ts";
 
 const base = { subject: "الرياضيات", grade: "العاشر", topic: "قانون الجيوب", duration: 45 };
-const STYLES = ["direct", "inquiry", "collaborative"] as const;
+const STYLES = ["direct", "inquiry", "collaborative", "5e"] as const;
 
 describe("lesson-plan prompts differ per teaching style", () => {
   for (const [name, build] of [["ar", lessonPlanPromptAr], ["en", lessonPlanPromptEn]] as const) {
-    it(`${name}: all three styles produce different prompts`, () => {
+    it(`${name}: every style produces a different prompt`, () => {
       const prompts = STYLES.map(teachingStyle => build({ ...base, teachingStyle }));
       assert.equal(new Set(prompts).size, STYLES.length, `${name}: only ${new Set(prompts).size} distinct`);
     });
@@ -82,5 +82,40 @@ describe("each style's clause states what that style requires", () => {
   it("collaborative demands individual accountability after the group work", () => {
     assert.match(lessonStyleClauseEn({ teachingStyle: "collaborative" }), /individual accountability AFTER the group work/i);
     assert.match(lessonStyleClauseAr({ teachingStyle: "collaborative" }), /مساءلة فردية/);
+  });
+});
+
+describe("the 5E model's clause names the five stages and their order", () => {
+  it("ar: Engage in the introduction, Explore before Explain, Elaborate, Evaluate", () => {
+    const c = lessonStyleClauseAr({ teachingStyle: "5e" });
+    assert.match(c, /نموذج 5E/);
+    for (const stage of ["التشويق (Engage)", "الاستكشاف (Explore)", "التفسير (Explain)", "التوسّع (Elaborate)", "التقويم (Evaluate)"]) {
+      assert.ok(c.includes(stage), `missing ${stage}`);
+    }
+    assert.ok(c.indexOf("الاستكشاف (Explore)") < c.indexOf("التفسير (Explain)"), "Explore must be stated before Explain");
+    for (const field of ["introduction", "mainActivity", "guidedPractice", "independentPractice", "assessment"]) {
+      assert.match(c, new RegExp(`"${field}"`), `the clause never says where the stages go: ${field}`);
+    }
+    assert.match(c, /ممنوع: أن تسمّي الفكرة أو المصطلح قبل مرحلة التفسير/);
+  });
+
+  it("en: the same contract", () => {
+    const c = lessonStyleClauseEn({ teachingStyle: "5e" });
+    assert.match(c, /^Teaching style: 5E model\n/);
+    for (const stage of ["Engage", "Explore", "Explain", "Elaborate", "Evaluate"]) assert.ok(c.includes(stage), `missing ${stage}`);
+    assert.ok(c.indexOf("Explore") < c.indexOf("Explain"), "Explore must be stated before Explain");
+    assert.match(c, /Forbidden: naming the idea or the term before the Explain stage/);
+  });
+
+  it("neither language lets a 5E plan ban peer discussion or claim a discussion-free stage", () => {
+    assert.ok(!/discussion-free/.test(lessonStyleClauseEn({ teachingStyle: "5e" })));
+    assert.ok(!/المناقشة بين الطلبة مؤجّلة/.test(lessonStyleClauseAr({ teachingStyle: "5e" })));
+  });
+
+  it("only 5E labels the introduction as the Engage stage", () => {
+    for (const teachingStyle of ["direct", "inquiry", "collaborative"] as const) {
+      assert.ok(!lessonStyleClauseAr({ teachingStyle }).includes("التشويق (Engage)"), teachingStyle);
+      assert.ok(!lessonStyleClauseEn({ teachingStyle }).includes("Engage"), teachingStyle);
+    }
   });
 });

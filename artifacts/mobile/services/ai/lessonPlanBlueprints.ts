@@ -21,6 +21,7 @@
  * | `direct` | I do → we do → you do. Worked examples, faded to solo practice. |
  * | `inquiry` | Students meet the phenomenon BEFORE the rule is stated, and test their conclusion on a new case. |
  * | `collaborative` | Interdependent group work, then individual accountability — so assessment does not contradict the grouping. |
+ * | `5e` | Engage · Explore · Explain · Elaborate · Evaluate, each stage named in the field that carries it (`lessonPlanFiveE.ts`). |
  *
  * `homework`, `objectives`, `title` and `introduction` stay style-blind on
  * purpose: the curriculum outcomes and the hook do not change because the
@@ -31,13 +32,16 @@ import type { LessonKind } from './lessonPlanKinds.ts';
 import { nativeDirectBlueprint } from './lessonPlanNative.ts';
 import { collaborativeAr1, directAr1, inquiryAr1, nativeDirectVariant1 } from './lessonPlanVariantsAr.ts';
 import { collaborativeEn1, directEn1, inquiryEn1, nativeDirectVariant1En } from './lessonPlanVariantsEn.ts';
+import { fiveEAr, fiveEAr1, fiveEEn, fiveEEn1 } from './lessonPlanFiveE.ts';
 import {
   concepts, firstConcept, fromDoc, phaseMinutes, term,
   type LessonStyleBlueprint, type LessonStyleContext,
 } from './lessonPlanTypes.ts';
 import { arPrefixed } from './lessonPlanKinds.ts';
 
-export const LESSON_STYLE_IDS = ['direct', 'inquiry', 'collaborative'] as const;
+// APPEND new styles: the picker persists a position into this list (`styleIdx`
+// in formState and route URLs), so an insert would silently change a saved plan's style.
+export const LESSON_STYLE_IDS = ['direct', 'inquiry', 'collaborative', '5e'] as const;
 export type LessonStyleId = typeof LESSON_STYLE_IDS[number];
 
 export function isLessonStyleId(v: unknown): v is LessonStyleId {
@@ -46,6 +50,7 @@ export function isLessonStyleId(v: unknown): v is LessonStyleId {
 
 export type { LessonDocContext, LessonStyleBlueprint, LessonStyleContext } from './lessonPlanTypes.ts';
 export { lessonKindFor } from './lessonPlanKinds.ts';
+export { stageIntro } from './lessonPlanFiveE.ts';
 
 /** The noun the inquiry style asks students to find — «القاعدة» is for maths and language lessons. */
 const IDEA_AR: Partial<Record<LessonKind, string>> = {
@@ -174,12 +179,13 @@ const BUILDERS: Record<LessonStyleId, Record<Lang, (ctx: LessonStyleContext) => 
   direct: { ar: directAr, en: directEn },
   inquiry: { ar: inquiryAr, en: inquiryEn },
   collaborative: { ar: collaborativeAr, en: collaborativeEn },
+  '5e': { ar: fiveEAr, en: fiveEEn },
 };
 
 /** The alternatives, per language and style (the kinds with their own direct plan are in `nativeDirectVariant1[En]`). */
 const VARIANT_1: Record<Lang, Record<LessonStyleId, (ctx: LessonStyleContext) => LessonStyleBlueprint>> = {
-  ar: { direct: directAr1, inquiry: inquiryAr1, collaborative: collaborativeAr1 },
-  en: { direct: directEn1, inquiry: inquiryEn1, collaborative: collaborativeEn1 },
+  ar: { direct: directAr1, inquiry: inquiryAr1, collaborative: collaborativeAr1, '5e': fiveEAr1 },
+  en: { direct: directEn1, inquiry: inquiryEn1, collaborative: collaborativeEn1, '5e': fiveEEn1 },
 };
 
 /**

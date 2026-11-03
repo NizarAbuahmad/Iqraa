@@ -105,7 +105,7 @@ export interface AIRequest {
    *  server does not serve them again. */
   excludeVariantIds?: string[];
   // Lesson plan extras
-  teachingStyle?: 'direct' | 'inquiry' | 'collaborative';
+  teachingStyle?: 'direct' | 'inquiry' | 'collaborative' | '5e';
   objectives?: string;
   /**
    * Free-text notes on prior topics the teacher wants re-explained in class —

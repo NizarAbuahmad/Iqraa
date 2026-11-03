@@ -13,6 +13,8 @@ export interface LessonPlanOutput {
   duration: number;
   objectives: string[];
   materials: string[];
+  /** Plan for a short warm-up reviewing prior material — present only when the teacher asked for it via priorTopicsNotes or includePriorReview. */
+  priorReview?: string;
   introduction: string;
   mainActivity: string;
   guidedPractice: string;

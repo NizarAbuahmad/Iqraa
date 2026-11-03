@@ -209,6 +209,13 @@ const LESSON_STYLE_RULES_AR: Record<string, string> = {
 - "guidedPractice": نقد متبادل بين المجموعات (تبادل الألواح، نقطة قوة وسؤال حقيقي، ثم ردّ أمام الصف) — لا حل نموذجي من المعلم.
 - "independentPractice": مساءلة فردية **بعد** العمل الجماعي: ورقة قصيرة يجيب عنها كل طالب وحده وتغطي البطاقات الأربع كلها.
 ممنوع تمامًا: أي عبارة تمنع النقاش بين الطلبة («المناقشة بين الطلبة مؤجّلة») — فهي تناقض الأسلوب الذي بُنيت عليه الحصة.`,
+  "5e": `نموذج 5E (التعلم البنائي) — خمس مراحل بهذا الترتيب، وسمِّ كل مرحلة في الحقل الذي تقع فيه:
+- "introduction": ابدأه بعبارة «التشويق (Engage):» ثم موقف أو سؤال محيّر يثير الفضول دون أن يعطي الفكرة.
+- "mainActivity": مرحلتان بهذا الترتيب. «الاستكشاف (Explore)»: يفحص الطلبة في مجموعات أمثلة أو مواد ويسجّلون ملاحظاتهم وتفسيرهم المبدئي قبل أن يسمّي المعلم الفكرة. ثم «التفسير (Explain)»: يبني المعلم على ما وجدوه، ويسمّي الفكرة بمصطلحها العلمي ويشرحها بمثال، ويصحّح ما خالفها من تفسيرات الطلبة.
+- "guidedPractice": «التوسّع (Elaborate)»: موقف أو مسألة جديدة في سياق مختلف يطبّق الطلبة فيها الفكرة ويفسّرون لماذا تنطبق أو لا تنطبق.
+- "independentPractice": «التقويم (Evaluate)» — الجزء الفردي: ورقة قصيرة بموقف جديد يجيب عنها كل طالب وحده.
+- "assessment": «التقويم (Evaluate)» مستمر عبر المراحل الخمس: تكويني في الاستكشاف، وختامي على الورقة الفردية، مقابل أهداف الدرس.
+ممنوع: أن تسمّي الفكرة أو المصطلح قبل مرحلة التفسير، وأن تجعل الاستكشاف تلقينًا.`,
 };
 
 const LESSON_STYLE_RULES_EN: Record<string, string> = {
@@ -225,16 +232,23 @@ Forbidden: opening the lesson by stating the rule or naming the term.`,
 - "guidedPractice": group-to-group critique (swap boards, one genuine strength and one genuine question, then answer in front of the class) — not a teacher-modelled solution.
 - "independentPractice": individual accountability AFTER the group work: a short sheet each student answers alone covering all four cards.
 Strictly forbidden: any clause banning peer discussion ("peer discussion is not permitted") — it contradicts the style the lesson was built on.`,
+  "5e": `5E model (Engage, Explore, Explain, Elaborate, Evaluate) — five stages in this order; name each stage in the field that carries it:
+- "introduction": open with "Engage:" and a puzzling situation or question that raises curiosity WITHOUT giving the idea.
+- "mainActivity": two stages in this order. Explore: groups examine examples or materials and record their observations and a first explanation BEFORE the teacher names the idea. Then Explain: the teacher builds on what they found, names the idea with its formal term, explains it with an example and corrects any student explanation that conflicts with it.
+- "guidedPractice": Elaborate: a new situation or problem in a different context where students apply the idea and explain why it does or does not apply.
+- "independentPractice": Evaluate, the individual part: a short sheet with a new situation that each student answers alone.
+- "assessment": Evaluate runs through all five stages: formative during Explore, summative on the individual sheet, against the lesson objectives.
+Forbidden: naming the idea or the term before the Explain stage, and turning Explore into a lecture.`,
 };
 
 function lessonStyleKey(b: any): string {
   const st = b.teachingStyle;
-  return st === "inquiry" || st === "collaborative" ? st : "direct";
+  return st === "inquiry" || st === "collaborative" || st === "5e" ? st : "direct";
 }
 
 export function lessonStyleClauseAr(b: any): string {
   const key = lessonStyleKey(b);
-  const label: Record<string, string> = { direct: "مباشر", inquiry: "استقصائي", collaborative: "تعاوني" };
+  const label: Record<string, string> = { direct: "مباشر", inquiry: "استقصائي", collaborative: "تعاوني", "5e": "نموذج 5E" };
   return `أسلوب التدريس: ${label[key]}
 بنية هذا الأسلوب — التزم بها في كل حقول الخطة، لا في "mainActivity" وحده:
 ${LESSON_STYLE_RULES_AR[key]}`;
@@ -242,7 +256,7 @@ ${LESSON_STYLE_RULES_AR[key]}`;
 
 export function lessonStyleClauseEn(b: any): string {
   const key = lessonStyleKey(b);
-  return `Teaching style: ${key}
+  return `Teaching style: ${key === "5e" ? "5E model" : key}
 The structure this style requires — follow it across EVERY field of the plan, not just "mainActivity":
 ${LESSON_STYLE_RULES_EN[key]}`;
 }

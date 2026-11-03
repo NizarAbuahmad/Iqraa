@@ -13,4 +13,5 @@ export const GenerateRequestTeachingStyle = {
   direct: 'direct',
   inquiry: 'inquiry',
   collaborative: 'collaborative',
+  '5e': '5e',
 } as const;

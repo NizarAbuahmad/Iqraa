@@ -35,7 +35,7 @@ import {
   resolveGeneratorGrounding,
 } from './kbContext.ts';
 
-export type TeachingStyle = 'direct' | 'inquiry' | 'collaborative';
+export type TeachingStyle = 'direct' | 'inquiry' | 'collaborative' | '5e';
 
 /** Everything the generators need about a lesson, resolved from its id. */
 export type LessonPrepContext = {

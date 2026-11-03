@@ -1,7 +1,7 @@
 /**
  * What kind of lesson a subject teaches, for the LIVE lesson-plan prompt.
  *
- * The teaching style (direct / inquiry / collaborative, `prompts.ts`) says how
+ * The teaching style (direct / inquiry / collaborative / 5e, `prompts.ts`) says how
  * a lesson is run. This says what the work in it is made of — a recitation, an
  * observation, a source, a drill, a piece being made. Without it the live
  * prompt is subject-blind: its "direct" clause asks every subject for fully

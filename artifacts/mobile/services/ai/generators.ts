@@ -29,7 +29,7 @@ import {
 } from './mathPractice.ts';
 import { isChemContext, takeConcreteChem, takeConcreteChemBatch, takeSolvedChem, type SolvedItem } from './chemPractice.ts';
 import { buildActivityBlueprint } from './activityBlueprints.ts';
-import { buildLessonStyleBlueprint, type LessonDocContext } from './lessonPlanBlueprints.ts';
+import { buildLessonStyleBlueprint, stageIntro, type LessonDocContext } from './lessonPlanBlueprints.ts';
 import { revisionPlanFromRequest } from './lessonPlanRevision.ts';
 import { arPrefixed, lessonKindFor, type LessonKind } from './lessonPlanKinds.ts';
 import { arMinutes } from './lessonPlanTypes.ts';
@@ -1384,10 +1384,10 @@ export class MockAIService extends AIService {
             ...styleBlueprint.materials.slice(0, 3),
           ],
           ...(priorReview ? { priorReview } : {}),
-          introduction:
+          introduction: stageIntro(style, 'ar',
             `اعتمادًا على ${fileLabel}: سأبدأ بعرض فكرة من الملف وأسأل: «ماذا نعرف عن ${topic}؟»`
             + (conceptLine ? ` وسأسجّل المفاهيم الظاهرة: ${conceptLine}.` : '')
-            + (docs.summary ? ` ملخص الملف: ${docs.summary}` : ''),
+            + (docs.summary ? ` ملخص الملف: ${docs.summary}` : '')),
           mainActivity: styleBlueprint.mainActivity
             + (exampleLine ? `\n\nمثال جاهز من الملف:\n• ${exampleLine}` : ''),
           guidedPractice: styleBlueprint.guidedPractice,
@@ -1409,10 +1409,10 @@ export class MockAIService extends AIService {
           ...styleBlueprint.materials.slice(0, 3),
         ],
         ...(priorReview ? { priorReview } : {}),
-        introduction:
+        introduction: stageIntro(style, 'en',
           `Using ${fileLabel}: open with one idea from the file and ask “What do we already know about ${topic}?”`
           + (conceptLine ? ` Capture visible concepts: ${conceptLine}.` : '')
-          + (docs.summary ? ` File summary: ${docs.summary}` : ''),
+          + (docs.summary ? ` File summary: ${docs.summary}` : '')),
         mainActivity: styleBlueprint.mainActivity
           + (exampleLine ? `\n\nFile-ready example:\n• ${exampleLine}` : ''),
         guidedPractice: styleBlueprint.guidedPractice,
@@ -1433,7 +1433,7 @@ export class MockAIService extends AIService {
         objectives: lpObjectivesAr(topic, kb, req.objectives, kind),
         materials: styleBlueprint.materials,
         ...(priorReview ? { priorReview } : {}),
-        introduction: lpIntroAr(topic, kb, kind),
+        introduction: stageIntro(style, 'ar', lpIntroAr(topic, kb, kind)),
         mainActivity: styleBlueprint.mainActivity,
         guidedPractice: styleBlueprint.guidedPractice,
         independentPractice: styleBlueprint.independentPractice,
@@ -1449,7 +1449,7 @@ export class MockAIService extends AIService {
       objectives: lpObjectivesEn(topic, kb, req.objectives, kind),
       materials: styleBlueprint.materials,
       ...(priorReview ? { priorReview } : {}),
-      introduction: lpIntroEn(topic, kb, kind),
+      introduction: stageIntro(style, 'en', lpIntroEn(topic, kb, kind)),
       mainActivity: styleBlueprint.mainActivity,
       guidedPractice: styleBlueprint.guidedPractice,
       independentPractice: styleBlueprint.independentPractice,

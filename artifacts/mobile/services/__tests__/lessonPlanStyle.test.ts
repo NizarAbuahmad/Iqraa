@@ -106,6 +106,77 @@ describe('a plan does not contradict its own style', () => {
   });
 });
 
+describe('the 5E model is a style of its own, appended to the picker', () => {
+  it('is the fourth style — appended, so a saved styleIdx never moves', () => {
+    assert.deepEqual([...LESSON_STYLE_IDS], ['direct', 'inquiry', 'collaborative', '5e']);
+  });
+
+  /** The index of the first stage label in `text`; -1 when it is missing. */
+  const at = (text: string, label: string) => text.indexOf(label);
+
+  it('ar: the five stages are named, in order, across the fields that carry them', async () => {
+    const out = await plan(AR, '5e');
+    assert.match(out.introduction, /^التشويق/, 'the opening hook is the Engage stage and says so');
+    const explore = at(out.mainActivity, 'الاستكشاف');
+    const explain = at(out.mainActivity, 'التفسير');
+    assert.ok(explore >= 0 && explain >= 0, 'main activity names Explore and Explain');
+    assert.ok(explore < explain, 'students explore BEFORE the teacher explains');
+    assert.match(out.guidedPractice, /التوسّع/, 'guided practice is the Elaborate stage');
+    assert.match(out.independentPractice, /التقويم/, 'independent practice is the Evaluate stage');
+    assert.match(out.assessment, /التقويم/);
+  });
+
+  it('en: the five stages are named, in order, across the fields that carry them', async () => {
+    const out = await plan(EN, '5e');
+    assert.match(out.introduction, /^Engage/, 'the opening hook is the Engage stage and says so');
+    const explore = at(out.mainActivity, 'Explore');
+    const explain = at(out.mainActivity, 'Explain');
+    assert.ok(explore >= 0 && explain >= 0, 'main activity names Explore and Explain');
+    assert.ok(explore < explain, 'students explore BEFORE the teacher explains');
+    assert.match(out.guidedPractice, /Elaborate/);
+    assert.match(out.independentPractice, /Evaluate/);
+    assert.match(out.assessment, /Evaluate/);
+  });
+
+  it('the formal term is named only after the exploring, never in the opening', async () => {
+    // KB lesson with a known key term: «قانون الجيوب» has one; the opening must not state it as a rule.
+    const out = await plan(AR, '5e');
+    const explain = out.mainActivity.indexOf('التفسير');
+    const before = out.mainActivity.slice(0, explain);
+    assert.ok(!/سأسمّي الفكرة/.test(before), 'the idea is named before the Explain stage');
+    assert.match(out.mainActivity.slice(explain), /سأسمّي الفكرة/);
+  });
+
+  it('does not ban peer discussion, and keeps an individual Evaluate stage', async () => {
+    const ar = JSON.stringify(await plan(AR, '5e'));
+    assert.ok(!/المناقشة بين الطلبة مؤجّلة/.test(ar));
+    const out = await plan(AR, '5e');
+    assert.match(out.independentPractice, /يعمل كل طالب بمفرده/);
+  });
+
+  it('is not the inquiry plan with a new label', async () => {
+    const five = await plan(AR, '5e');
+    const inquiry = await plan(AR, 'inquiry');
+    // Inquiry settles on a wording with the class and withholds the rule; 5E has a teacher-led Explain stage.
+    assert.ok(!/تخمين/.test(five.mainActivity), '5E should not be the conjecture routine');
+    assert.match(inquiry.mainActivity, /تخمين/);
+    assert.match(five.mainActivity, /سأسمّي الفكرة/);
+  });
+
+  it('a document-grounded 5E plan keeps the stage labels, including Engage', async () => {
+    const out = await plan(AR, '5e', DOC_BLOCK);
+    assert.match(out.introduction, /^التشويق/);
+    assert.match(out.mainActivity, /الاستكشاف/);
+    assert.match(out.mainActivity, /الرابطة/, 'the file’s own concepts reach the plan');
+  });
+
+  it('the other styles do not get an Engage label', async () => {
+    for (const style of ['direct', 'inquiry', 'collaborative']) {
+      assert.ok(!/^التشويق/.test((await plan(AR, style)).introduction), style);
+    }
+  });
+});
+
 describe('an attached document does not make the style picker inert', () => {
   it('the document path honours the style', async () => {
     const out: Record<string, LessonPlanOutput> = {};

@@ -91,7 +91,8 @@ const SECTION_LABEL_KEY = {
 } as const satisfies Record<LessonPlanSection, string>;
 
 const DURATION_VALUES = [30, 45, 60, 90];
-const STYLE_IDS = ['direct', 'inquiry', 'collaborative'] as const;
+// Append, never insert: `styleIdx` is persisted and carried in route URLs as a position here.
+const STYLE_IDS = ['direct', 'inquiry', 'collaborative', '5e'] as const;
 /**
  * What a unit / semester / book plan is anchored to: the scope itself, never one
  * lesson its label happens to match. A full grounding because `captureGenerationScope`
@@ -123,7 +124,7 @@ export default function LessonPlanScreen() {
   const subjects = getPickerSubjects();
   const gradeNames = grades.map(g => uiLang === 'ar' ? g.nameAr : g.name);
   const durationLabels = DURATION_VALUES.map(d => `${d} ${t('min')}`);
-  const styleLabels = [t('teachingStyleDirect'), t('teachingStyleInquiry'), t('teachingStyleCollaborative')];
+  const styleLabels = [t('teachingStyleDirect'), t('teachingStyleInquiry'), t('teachingStyleCollaborative'), t('teachingStyle5E')];
 
   // An index the picker list cannot honour is NOT index 0 — see
   // `scopeFromParams`. Grounding the topic is what recovers the right scope.
