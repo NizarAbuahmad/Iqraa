@@ -26,3 +26,11 @@ test('QuestionVisual re-validates what it is given', () => {
   const src = read('../../components/ui/QuestionVisual.tsx');
   assert.match(src, /resolveFigure\(body\['visual'\]\)/);
 });
+
+test('both exam screens draw a question’s drawing, and the take screen skips the book-figure hint for it', () => {
+  const take = read('../../app/take/[code].tsx');
+  const teacher = read('../../app/evaluations/[id]/index.tsx');
+  assert.match(take, /<QuestionVisual body=\{body\} lang=\{lang\} \/>/);
+  assert.match(teacher, /<QuestionVisual body=\{q\.body\} lang=\{lang\} \/>/);
+  assert.match(take, /!question\.body\['visual'\]/);
+});
