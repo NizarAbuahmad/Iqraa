@@ -28,7 +28,10 @@
       "path": "./lib/exam-paper"
     },
     {
-      "path": "./lib/arabic-spelling"
+      "path": "./lib/figure"
     },
+    {
+      "path": "./lib/arabic-spelling"
+    }
   ]
 }
