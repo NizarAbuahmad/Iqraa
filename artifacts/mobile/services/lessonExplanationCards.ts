@@ -2,8 +2,8 @@
  * Turns a stored `lesson-teaching` artifact into the cards the student screen
  * draws.
  *
- * Pure (its one runtime import, slideLayout, is react-free), so it runs under
- * bare `node --test` (the screen itself cannot). The text is shown as stored, the same as the slide
+ * Pure (its runtime imports, slideLayout and `@workspace/figure`, are react-free),
+ * so it runs under bare `node --test` (the screen itself cannot). The text is shown as stored, the same as the slide
  * deck shows it, except that a leading list marker on a point or a step is
  * removed (`stripMarker`). Anything blank is dropped here, so the screen never renders
  * an empty card; an artifact with nothing usable yields no cards and the
