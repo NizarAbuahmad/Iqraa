@@ -55,7 +55,8 @@ export interface MinistryLessonPage {
  * A generated lesson plan as the form's four stages. Uses the model's own
  * teacher/learner split (`ministryRoles`) when it came back whole; otherwise
  * folds the phases into the teacher column: intro → تهيئة; main + guided →
- * شرح; independent + differentiation → توسع; closure + assessment → تأكيد.
+ * شرح; independent + differentiation → توسع; closure + assessment → تأكيد (5E: main →
+ * شرح; guided + differentiation → توسع; independent + closure + assessment → تأكيد).
  *
  * A learner cell the plan left blank is filled from `learnerRoles` — in the
  * plan's language and teaching style, so pass `opts` when the caller knows
@@ -85,12 +86,22 @@ export function stagesFromLessonPlan(
     stages.map((s, i) => ({ teacher: s.teacher, learner: s.learner || fallback[i] }));
 
   const join = (...xs: string[]) => xs.map(x => (x ?? '').trim()).filter(Boolean).join('\n');
-  const folded = [
-    join(plan.introduction),
-    join(plan.mainActivity, plan.guidedPractice),
-    join(plan.independentPractice, plan.differentiation),
-    join(plan.closure, plan.assessment),
-  ];
+  // 5E has five stages and the form four rows, and `learnerRoles` pairs them as Engage · Explore+Explain ·
+  // Elaborate · Evaluate. The other styles' fold would put Elaborate (guided practice) in the explain row and the
+  // individual Evaluate sheet in the extension row, beside learner text that describes different stages.
+  const folded = opts.style === '5e'
+    ? [
+      join(plan.introduction),
+      join(plan.mainActivity),
+      join(plan.guidedPractice, plan.differentiation),
+      join(plan.independentPractice, plan.closure, plan.assessment),
+    ]
+    : [
+      join(plan.introduction),
+      join(plan.mainActivity, plan.guidedPractice),
+      join(plan.independentPractice, plan.differentiation),
+      join(plan.closure, plan.assessment),
+    ];
 
   const roles = plan.ministryRoles;
   if (Array.isArray(roles) && roles.length === MINISTRY_STAGES.length) {

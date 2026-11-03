@@ -154,6 +154,39 @@ describe('stagesFromLessonPlan', () => {
   });
 });
 
+describe('a 5E plan puts each stage in the same form row as its learner text', () => {
+  const five = {
+    introduction: 'INTRO', mainActivity: 'MAIN', guidedPractice: 'GUIDED', independentPractice: 'INDEPENDENT',
+    differentiation: 'DIFF', closure: 'CLOSURE', assessment: 'ASSESS',
+  };
+  it('Engage · Explore+Explain · Elaborate · Evaluate, as learnerRoles assumes', () => {
+    const rows = stagesFromLessonPlan(five, { lang: 'ar', style: '5e' }).map(r => r.teacher);
+    assert.equal(rows[0], 'INTRO');
+    assert.equal(rows[1], 'MAIN');
+    assert.equal(rows[2], 'GUIDED\nDIFF');
+    assert.equal(rows[3], 'INDEPENDENT\nCLOSURE\nASSESS');
+  });
+
+  it('every other style keeps the grouping it always had', () => {
+    for (const style of ['direct', 'inquiry', 'collaborative', undefined]) {
+      const rows = stagesFromLessonPlan(five, { lang: 'ar', style }).map(r => r.teacher);
+      assert.deepEqual(rows, ['INTRO', 'MAIN\nGUIDED', 'INDEPENDENT\nDIFF', 'CLOSURE\nASSESS'], String(style));
+    }
+  });
+
+  it('the generated 5E plan, folded, has Elaborate in row 3 and Evaluate in row 4', async () => {
+    const { aiService } = await import('../ai/generators.ts');
+    (aiService as unknown as { delay: () => Promise<void> }).delay = async () => {};
+    const p = await aiService.generateLessonPlan({ grade: 'grade-10', subject: 'Mathematics', topic: 'قانون الجيوب', language: 'arabic', duration: 45, teachingStyle: '5e' } as never);
+    const rows = stagesFromLessonPlan(p, { lang: 'ar', style: '5e' }).map(r => r.teacher);
+    assert.match(rows[0], /التشويق/);
+    assert.match(rows[1], /الاستكشاف/); assert.match(rows[1], /التفسير/);
+    assert.match(rows[2], /التوسّع/);
+    assert.ok(!/التقويم \(Evaluate\) — الجزء الفردي/.test(rows[2]), 'the individual Evaluate sheet must not sit in the Elaborate row');
+    assert.match(rows[3], /التقويم/);
+  });
+});
+
 describe('learnerRoles', () => {
   const STYLES = ['direct', 'inquiry', 'collaborative', '5e'] as const;
 

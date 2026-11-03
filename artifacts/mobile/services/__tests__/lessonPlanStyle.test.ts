@@ -19,7 +19,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { aiService } from '@/services/ai/generators.ts';
-import { LESSON_STYLE_IDS } from '@/services/ai/lessonPlanBlueprints.ts';
+import { LESSON_STYLE_IDS, stageIntro } from '@/services/ai/lessonPlanBlueprints.ts';
+import { KB_LESSONS, getBookForLesson } from '@/services/knowledgeBase.ts';
 import type { AIRequest, LessonPlanOutput } from '@/services/ai/AIService.ts';
 
 /** The real block shape, per `buildDocumentPromptBlock` in
@@ -145,6 +146,43 @@ describe('the 5E model is a style of its own, appended to the picker', () => {
     const before = out.mainActivity.slice(0, explain);
     assert.ok(!/سأسمّي الفكرة/.test(before), 'the idea is named before the Explain stage');
     assert.match(out.mainActivity.slice(explain), /سأسمّي الفكرة/);
+  });
+
+  it('Explore does not hand over the idea it says it is withholding', async () => {
+    // The reviewer found «أعطي كل مجموعة أمثلة حول «a/sin A = b/sin B …»» in Explore: the law itself, one line
+    // above «دون أن أسمّي الفكرة». So for lessons with a known key term and concept, neither may appear before Explain.
+    const withTerms = KB_LESSONS.filter(l => l.keyTerms?.[0]?.ar && l.keyTerms[0].ar.trim().length >= 5 && l.keyConceptsAr?.[0]?.trim().length >= 5).slice(0, 12);
+    assert.ok(withTerms.length >= 5, 'probe: lessons with a key term and a concept');
+    for (const l of withTerms) {
+      const book = getBookForLesson(l)!;
+      for (const [lang, explainMark, termOf, conceptOf, language] of [
+        ['ar', 'التفسير', l.keyTerms![0].ar, l.keyConceptsAr[0], 'arabic'],
+        ['en', 'Explain', l.keyTerms![0].en, l.keyConceptsEn[0], 'english'],
+      ] as const) {
+        if (!termOf?.trim() || !conceptOf?.trim()) continue;
+        const out = await aiService.generateLessonPlan({
+          grade: book.gradeId, subject: book.subjectId, topic: lang === 'ar' ? l.titleAr : l.titleEn, lessonId: l.id,
+          language, duration: 45, teachingStyle: '5e',
+        } as AIRequest);
+        const before = out.mainActivity.slice(0, out.mainActivity.indexOf(explainMark));
+        assert.ok(before.length > 40, `${l.id}/${lang}: probe`);
+        assert.ok(!before.includes(termOf.trim()), `${l.id}/${lang}: the key term «${termOf}» is in Explore:\n${before}`);
+        assert.ok(!before.includes(conceptOf.trim()), `${l.id}/${lang}: the key concept «${conceptOf}» is in Explore:\n${before}`);
+      }
+    }
+  });
+
+  it('the Engage label never sits on an opening that is itself called «Explore»', async () => {
+    // One of the three stock openers is titled «التنبؤ والاستكشاف» / "Predict & Explore".
+    for (const [base, mark] of [[AR, 'الاستكشاف'], [EN, 'Explore']] as const) {
+      for (let i = 0; i < 40; i++) {
+        const out = await plan(base, '5e');
+        assert.ok(!out.introduction.includes(mark), `Engage opening names Explore:\n${out.introduction}`);
+      }
+    }
+    assert.equal(stageIntro('5e', 'ar', '"التنبؤ والاستكشاف": سأعرض موقفًا'), 'التشويق (Engage): "التنبؤ": سأعرض موقفًا');
+    assert.equal(stageIntro('5e', 'en', '"Predict & Explore": Present a scenario'), 'Engage: "Predict": Present a scenario');
+    assert.equal(stageIntro('direct', 'ar', '"التنبؤ والاستكشاف": x'), '"التنبؤ والاستكشاف": x', 'other styles are untouched');
   });
 
   it('does not ban peer discussion, and keeps an individual Evaluate stage', async () => {

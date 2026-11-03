@@ -92,7 +92,11 @@ describe("the 5E model's clause names the five stages and their order", () => {
     for (const stage of ["التشويق (Engage)", "الاستكشاف (Explore)", "التفسير (Explain)", "التوسّع (Elaborate)", "التقويم (Evaluate)"]) {
       assert.ok(c.includes(stage), `missing ${stage}`);
     }
-    assert.ok(c.indexOf("الاستكشاف (Explore)") < c.indexOf("التفسير (Explain)"), "Explore must be stated before Explain");
+    // «الاستكشاف (Explore)»: … ثم «التفسير (Explain)»: — the order inside mainActivity's own line.
+    const explore = c.indexOf("«الاستكشاف (Explore)»:");
+    const explain = c.indexOf("«التفسير (Explain)»:");
+    assert.ok(explore >= 0 && explain > explore, "Explore must be stated before Explain");
+    assert.match(c, /ابنِ على ما وجدوه/, "the teacher's moves are addressed to the model, not described in the third person");
     for (const field of ["introduction", "mainActivity", "guidedPractice", "independentPractice", "assessment"]) {
       assert.match(c, new RegExp(`"${field}"`), `the clause never says where the stages go: ${field}`);
     }
@@ -103,7 +107,10 @@ describe("the 5E model's clause names the five stages and their order", () => {
     const c = lessonStyleClauseEn({ teachingStyle: "5e" });
     assert.match(c, /^Teaching style: 5E model\n/);
     for (const stage of ["Engage", "Explore", "Explain", "Elaborate", "Evaluate"]) assert.ok(c.includes(stage), `missing ${stage}`);
-    assert.ok(c.indexOf("Explore") < c.indexOf("Explain"), "Explore must be stated before Explain");
+    // Not the header line, which lists all five in order whatever the rules say: the two stages of mainActivity.
+    const explore = c.indexOf("Explore: have groups");
+    const explain = c.indexOf("Then Explain:");
+    assert.ok(explore >= 0 && explain > explore, "mainActivity must state Explore before Explain");
     assert.match(c, /Forbidden: naming the idea or the term before the Explain stage/);
   });
 

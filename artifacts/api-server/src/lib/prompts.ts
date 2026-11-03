@@ -210,11 +210,12 @@ const LESSON_STYLE_RULES_AR: Record<string, string> = {
 - "independentPractice": مساءلة فردية **بعد** العمل الجماعي: ورقة قصيرة يجيب عنها كل طالب وحده وتغطي البطاقات الأربع كلها.
 ممنوع تمامًا: أي عبارة تمنع النقاش بين الطلبة («المناقشة بين الطلبة مؤجّلة») — فهي تناقض الأسلوب الذي بُنيت عليه الحصة.`,
   "5e": `نموذج 5E (التعلم البنائي) — خمس مراحل بهذا الترتيب، وسمِّ كل مرحلة في الحقل الذي تقع فيه:
-- "introduction": ابدأه بعبارة «التشويق (Engage):» ثم موقف أو سؤال محيّر يثير الفضول دون أن يعطي الفكرة.
-- "mainActivity": مرحلتان بهذا الترتيب. «الاستكشاف (Explore)»: يفحص الطلبة في مجموعات أمثلة أو مواد ويسجّلون ملاحظاتهم وتفسيرهم المبدئي قبل أن يسمّي المعلم الفكرة. ثم «التفسير (Explain)»: يبني المعلم على ما وجدوه، ويسمّي الفكرة بمصطلحها العلمي ويشرحها بمثال، ويصحّح ما خالفها من تفسيرات الطلبة.
+- "introduction": ابدأه بعبارة «التشويق (Engage):» ثم موقف أو سؤال محيّر يثير الفضول؛ يجوز ذكر عنوان الدرس، ولا تذكر الفكرة نفسها أو تعريفها.
+- "mainActivity": مرحلتان بهذا الترتيب. «الاستكشاف (Explore)»: اجعل الطلبة يفحصون في مجموعات أمثلة أو مواد ويسجّلون ملاحظاتهم وتفسيرهم المبدئي قبل أن تسمّي الفكرة؛ ولا تضع نص الفكرة أو القاعدة في مواد الاستكشاف. ثم «التفسير (Explain)»: ابنِ على ما وجدوه، وسمِّ الفكرة بمصطلحها العلمي واشرحها بمثال من الدرس، وصحِّح ما خالفها من تفسيرات الطلبة.
 - "guidedPractice": «التوسّع (Elaborate)»: موقف أو مسألة جديدة في سياق مختلف يطبّق الطلبة فيها الفكرة ويفسّرون لماذا تنطبق أو لا تنطبق.
 - "independentPractice": «التقويم (Evaluate)» — الجزء الفردي: ورقة قصيرة بموقف جديد يجيب عنها كل طالب وحده.
 - "assessment": «التقويم (Evaluate)» مستمر عبر المراحل الخمس: تكويني في الاستكشاف، وختامي على الورقة الفردية، مقابل أهداف الدرس.
+إن طُلب "ministryRoles" فمراحله الأربع: التهيئة = التشويق، الشرح = الاستكشاف ثم التفسير، التوسع = التوسّع، التأكيد = التقويم.
 ممنوع: أن تسمّي الفكرة أو المصطلح قبل مرحلة التفسير، وأن تجعل الاستكشاف تلقينًا.`,
 };
 
@@ -233,11 +234,12 @@ Forbidden: opening the lesson by stating the rule or naming the term.`,
 - "independentPractice": individual accountability AFTER the group work: a short sheet each student answers alone covering all four cards.
 Strictly forbidden: any clause banning peer discussion ("peer discussion is not permitted") — it contradicts the style the lesson was built on.`,
   "5e": `5E model (Engage, Explore, Explain, Elaborate, Evaluate) — five stages in this order; name each stage in the field that carries it:
-- "introduction": open with "Engage:" and a puzzling situation or question that raises curiosity WITHOUT giving the idea.
-- "mainActivity": two stages in this order. Explore: groups examine examples or materials and record their observations and a first explanation BEFORE the teacher names the idea. Then Explain: the teacher builds on what they found, names the idea with its formal term, explains it with an example and corrects any student explanation that conflicts with it.
+- "introduction": open with "Engage:" and a puzzling situation or question that raises curiosity; the lesson's title may appear, but do not state the idea itself or its definition.
+- "mainActivity": two stages in this order. Explore: have groups examine examples or materials and record their observations and a first explanation BEFORE you name the idea; do not put the idea's statement or rule in the Explore materials. Then Explain: build on what they found, name the idea with its formal term, explain it with an example from the lesson and correct any student explanation that conflicts with it.
 - "guidedPractice": Elaborate: a new situation or problem in a different context where students apply the idea and explain why it does or does not apply.
 - "independentPractice": Evaluate, the individual part: a short sheet with a new situation that each student answers alone.
 - "assessment": Evaluate runs through all five stages: formative during Explore, summative on the individual sheet, against the lesson objectives.
+If "ministryRoles" is requested, its four stages are: orientation = Engage, explanation = Explore then Explain, extension = Elaborate, consolidation = Evaluate.
 Forbidden: naming the idea or the term before the Explain stage, and turning Explore into a lecture.`,
 };
 

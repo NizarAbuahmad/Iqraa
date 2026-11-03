@@ -49,7 +49,12 @@ export function stageIntro(style: string, lang: Lang, intro: string): string {
   // A revision plan's opening starts with its minutes («(5 دقائق) …»), as every section does:
   // the label goes after them, so the time still leads.
   const time = /^\([^)]*\)\s*/.exec(intro)?.[0] ?? '';
-  return `${time}${label} ${intro.slice(time.length)}`;
+  // One stock opener is titled «التنبؤ والاستكشاف» / "Predict & Explore". Under an Engage label that would name
+  // the opening after the NEXT stage, so 5E drops the second half of the title and keeps the opener.
+  const body = intro.slice(time.length)
+    .replace('"التنبؤ والاستكشاف"', '"التنبؤ"')
+    .replace('"Predict & Explore"', '"Predict"');
+  return `${time}${label} ${body}`;
 }
 
 // ─── Arabic ──────────────────────────────────────────────────────────────────
@@ -66,12 +71,12 @@ export const fiveEAr: Builder = ctx => {
     ],
     mainActivity: `(${m(ctx, 0.3)}) – نموذج 5E: الاستكشاف ثم التفسير${fromDoc(ctx)}:\n\n`
       + '**الاستكشاف (Explore):**\n'
-      + `1. سأقسّم الصف إلى مجموعات ثلاثية وأعطي كل مجموعة أمثلة أو مواد حول «${c0}» مع سؤال واحد: «ما الذي تلاحظونه، وما الذي يتكرر؟»\n`
+      + '1. سأقسّم الصف إلى مجموعات ثلاثية وأعطي كل مجموعة أمثلة أو مواد من الدرس دون أن أذكر الفكرة، مع سؤال واحد: «ما الذي تلاحظونه، وما الذي يتكرر؟»\n'
       + '2. سأتنقّل بين المجموعات وأسأل أسئلة مفتوحة دون أن أعطي الجواب أو أسمّي الفكرة بعد.\n'
       + '3. تسجّل كل مجموعة ملاحظاتها وتفسيرها المبدئي على ورقة كبيرة.\n\n'
       + '**التفسير (Explain):**\n'
       + '4. سأجمع ملاحظات المجموعات وأبني عليها: «ماذا وجدتم؟ وبأي كلمات تصفونه؟»\n'
-      + `5. ثم سأسمّي الفكرة بمصطلحها العلمي (${term(ctx)}) وأشرحها بمثال محلول، وأصحّح ما يخالفها من تفسيرات الطلبة.`,
+      + `5. ثم سأسمّي الفكرة بمصطلحها العلمي (${term(ctx)}) وأشرحها بمثال من الدرس، وأصحّح ما يخالفها من تفسيرات الطلبة.`,
     guidedPractice: `(${m(ctx, 0.22)}) – التوسّع (Elaborate):\n\n`
       + `• سأقدّم موقفًا جديدًا لم يُناقش ليطبّق الطلبة فيه المصطلح (${term(ctx)}) وما فسّرناه معًا.\n`
       + `• تعمل المجموعات على مسألة جديدة تربط «${c0}» بسياق مختلف، وتشرح لماذا تنطبق الفكرة أو لا تنطبق.\n`
@@ -104,7 +109,7 @@ export const fiveEAr1: Builder = ctx => {
     ],
     mainActivity: `(${m(ctx, 0.3)}) – نموذج 5E: الاستكشاف بالتوقّع ثم التفسير${fromDoc(ctx)}:\n\n`
       + '**الاستكشاف (Explore):**\n'
-      + `1. سأعرض موقفًا عن «${c0}» وأطلب من كل طالب أن يكتب توقّعه وسببه قبل أي تجربة.\n`
+      + '1. سأعرض موقفًا من الدرس دون أن أذكر الفكرة، وأطلب من كل طالب أن يكتب توقّعه وسببه قبل أي تجربة.\n'
       + '2. تجرّب المجموعات أو تفحص الأمثلة وتسجّل ما حدث فعلًا مقابل ما توقّعته.\n'
       + '3. سأمرّ على المجموعات وأسأل: «ما الذي فاجأكم؟» دون أن أصحّح بعد.\n\n'
       + '**التفسير (Explain):**\n'
@@ -117,13 +122,13 @@ export const fiveEAr1: Builder = ctx => {
       + '• ثم تعلّق كل مجموعة ورقتها ونتجوّل معًا لنقارن بين السياقات.',
     independentPractice: `(${m(ctx, 0.18)}) – التقويم (Evaluate) بمعيار واضح:\n\n`
       + '• سأعرض معيار تقويم من ثلاثة مستويات للفكرة، ثم يجيب كل طالب بمفرده عن موقف جديد.\n'
-      + '• يحدّد كل طالب مستوى إجابته وفق المعيار ويكتب ما سيحسّنه.\n'
-      + '• تذكرة الخروج: «اكتب جملة تشرح بها الفكرة لزميل غاب اليوم.»',
+      + '• يقيّم كل طالب إجابته وفق المعيار ويكتب ما سيحسّنه.\n'
+      + '• من ينهي مبكرًا يكتب جملة يشرح بها الفكرة لزميل غاب اليوم.',
     assessment: 'التقويم (Evaluate) يتوزّع على الحصة كلها:\n'
       + 'تكويني: سأقرأ توقّعات الطلبة وتفسيراتهم قبل الشرح وبعده، وأرصد كيف تغيّر فهمهم.\n'
       + 'ختامي: سأستعمل المعيار الثلاثي نفسه في تصحيح الورقة الفردية.\n'
       + 'تأمّل: سأسأل في آخر الحصة: «ما الذي تغيّر في فهمك؟»',
-    differentiation: 'دعم: سأعطي من يحتاج دعمًا توقّعًا بالاختيار من متعدد في الاستكشاف، وبطاقة مصطلحات في التفسير.\n'
+    differentiation: 'دعم: سأعطي من يحتاج دعمًا خيارات جاهزة للتوقّع في الاستكشاف، وبطاقة مصطلحات في التفسير.\n'
       + 'تحدٍّ: سأطلب من المتميزين اقتراح تجربة أو مثال يختبر حدود الفكرة في مرحلة التوسّع.\n'
       + 'المبدأ: المراحل نفسها للجميع، والفرق في مقدار الدعم لا في فرصة الاستكشاف.',
   };
@@ -143,12 +148,12 @@ export const fiveEEn: Builder = ctx => {
     ],
     mainActivity: `(${m(ctx, 0.3)}) – 5E model: Explore, then Explain${fromDoc(ctx)}:\n\n`
       + '**Explore:**\n'
-      + `1. Groups of three get examples or materials on "${c0}" and one question: "What do you notice, and what repeats?"\n`
+      + '1. Groups of three get examples or materials from the lesson, without the idea being stated, and one question: "What do you notice, and what repeats?"\n'
       + '2. Circulate and ask open questions without giving the answer or naming the idea yet.\n'
       + '3. Each group records its observations and a first explanation on chart paper.\n\n'
       + '**Explain:**\n'
       + '4. Gather the groups\' findings and build on them: "What did you find? In what words would you describe it?"\n'
-      + `5. Only now name the idea with its formal term (${term(ctx)}) and explain it with a worked example, correcting any student explanation that conflicts with it.`,
+      + `5. Only now name the idea with its formal term (${term(ctx)}) and explain it with an example from the lesson, correcting any student explanation that conflicts with it.`,
     guidedPractice: `(${m(ctx, 0.22)}) – Elaborate:\n\n`
       + `• Offer a new situation that was not discussed, where students apply the term (${term(ctx)}) and what the class explained together.\n`
       + `• Groups work on a new problem linking "${c0}" to a different context and explain why the idea does or does not apply.\n`
@@ -180,7 +185,7 @@ export const fiveEEn1: Builder = ctx => {
     ],
     mainActivity: `(${m(ctx, 0.3)}) – 5E model: Explore by predicting, then Explain${fromDoc(ctx)}:\n\n`
       + '**Explore:**\n'
-      + `1. Show a situation about "${c0}" and have each student write a prediction and a reason before any trial.\n`
+      + '1. Show a situation from the lesson without stating the idea, and have each student write a prediction and a reason before any trial.\n'
       + '2. Groups try it or examine the examples and record what actually happened against what they predicted.\n'
       + '3. Circulate and ask: "What surprised you?" without correcting yet.\n\n'
       + '**Explain:**\n'
@@ -194,7 +199,7 @@ export const fiveEEn1: Builder = ctx => {
     independentPractice: `(${m(ctx, 0.18)}) – Evaluate against a clear rubric:\n\n`
       + '• Share a three-level rubric for the idea, then each student answers a new situation alone.\n'
       + '• Each student places their own answer on the rubric and writes what they will improve.\n'
-      + '• Exit ticket: "Write one sentence that explains the idea to a classmate who was absent."',
+      + '• Early finishers write one sentence explaining the idea to a classmate who was absent.',
     assessment: 'Evaluate is spread across the whole lesson:\n'
       + 'Formative: read the predictions and explanations before and after the teaching and note how understanding changed.\n'
       + 'Summative: use the same three-level rubric to mark the individual sheet.\n'
