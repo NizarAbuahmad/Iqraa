@@ -68,3 +68,9 @@ test('both exam screens draw a question’s drawing, and the take screen skips t
   assert.match(teacher, /<QuestionVisual body=\{q\.body\} lang=\{lang\} \/>/);
   assert.match(take, /!question\.body\['visual'\]/);
 });
+
+test('the student lesson screen draws a card’s drawing', () => {
+  const src = read('../../app/curriculum/lesson-explanation.tsx');
+  assert.match(src, /import \{ FigureView \} from '@\/components\/ui\/FigureView'/);
+  assert.equal((src.match(/<FigureView figure=\{c\.visual\} lang=\{lang\} \/>/g) ?? []).length, 2);
+});
