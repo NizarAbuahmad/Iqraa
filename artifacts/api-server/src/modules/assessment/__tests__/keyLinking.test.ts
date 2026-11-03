@@ -57,6 +57,10 @@ describe("one notation for comparing a key", () => {
 
   it("keeps spaces for display but not for comparison", () => {
     assert.equal(toLatinMath("٣س  +  ١"), "3x  +  1");
+    // π is written the way SymPy reads it, so «9π» and «9*pi» are one answer (2026-11-03:
+    // a sector's area keyed «9π» was refused against its own check «9*pi»).
+    assert.equal(toLatinMath("9π"), "9pi");
+    assert.equal(squashMath("9π cm²".replace(/\s*cm²/, "")), squashMath("9*pi"));
   });
 });
 

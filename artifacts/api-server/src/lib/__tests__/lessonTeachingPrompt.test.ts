@@ -12,6 +12,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { lessonTeachingPromptAr, lessonTeachingPromptEn, teachingVisualCounts } from "../lessonTeachingPrompt.ts";
+import { PROMPT_EXAMPLE_CHECKS } from "../lessonTeachingChecks.ts";
 import { diagramLimitsAr, diagramLimitsEn, promptSlidesPromptAr, promptSlidesPromptEn } from "../promptSlidesPrompt.ts";
 import { assertUsableGeneration, missingFields, UnusableGenerationError } from "../generationShape.ts";
 
@@ -160,13 +161,19 @@ describe("lesson-teaching prompt", () => {
     it(`${lang}: asks for a verifiable check on the worked example and the practice`, () => {
       const p = build(BODY);
       for (const re of lang === "ar"
-        ? [/"check"/, /evaluate/, /system_solutions/, /10\*sin\(30°\)\/sin\(60°\)/, /\(0, 0\), \(9, 135\)/, /لا تضع check/, /لا وحدة/]
-        : [/"check"/, /evaluate/, /system_solutions/, /10\*sin\(30°\)\/sin\(60°\)/, /\(0, 0\), \(9, 135\)/, /omit "check"/i, /no unit/i]) {
+        ? [/"check"/, /evaluate/, /system_solutions/, /12\*sin\(30°\)\/sin\(45°\)/, /\(0, 0\), \(2, 8\)/, /لا تضع check/, /لا وحدة/, /لأنها ليست عددًا/]
+        : [/"check"/, /evaluate/, /system_solutions/, /12\*sin\(30°\)\/sin\(45°\)/, /\(0, 0\), \(2, 8\)/, /omit "check"/i, /no unit/i, /no number/i]) {
         assert.match(p, re, String(re));
       }
       // …in the output shape too, or the model reads the rule and never writes one.
       const shape = p.slice(p.lastIndexOf("{\n  \"hook\""));
       assert.equal((shape.match(/"check"/g) ?? []).length >= 2, true, "both blocks show a check");
+      // …with placeholders, never a worked check: the model copied one into chemistry lessons
+      // that have no such number (third prefill review, 2026-11-03).
+      for (const e of Object.values(PROMPT_EXAMPLE_CHECKS)) {
+        assert.equal(shape.includes(e.question), false, `the output shape must not show ${e.question}`);
+      }
+      assert.match(shape, lang === "ar" ? /<ما حسبتَه فعلًا>/ : /<what you actually computed>/);
     });
   }
 

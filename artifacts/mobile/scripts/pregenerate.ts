@@ -57,8 +57,8 @@
  * a review file) is refused until you delete or rename it, or pass `--force`.
  *
  * A bare `--go` plans the worksheet and lesson-plan calls first and the
- * lesson-teaching calls last. The default $1 cap allows about 100 model calls
- * (at the $0.01 estimate); on 2026-10-18 the dry run printed 66 of the earlier
+ * lesson-teaching calls last. The default $1 cap allows about 20 model calls
+ * (at the $0.05 estimate; it allowed 100 at the old $0.01); on 2026-10-18 the dry run printed 66 of the earlier
  * calls and 50 teaching calls, so at worst only about 34 teaching calls fit and
  * the rest are cut off partway (a call the pool already holds answers in under
  * 3 s and does not count against the cap). The counts move with the curriculum
@@ -99,8 +99,15 @@ const TEACHING_SCOPES: Scope[] = [
   SCOPE,
   { gradeNameAr: 'الصف العاشر', subjectName: 'Chemistry' },
 ];
-/** Conservative: gpt-4o-mini is nearer $0.003 for one of these. */
-const EST_COST_PER_CALL_USD = 0.01;
+/**
+ * Conservative, and sized for the dearest model a call can land on. A lesson
+ * explanation (~3k tokens in, ~3k out, plus a retry when the maths check finds a
+ * contradiction) is about $0.013 on gpt-5.4-mini and about $0.035 on Claude Sonnet
+ * 5.5, where `lesson-teaching` has run since 2026-11-03. It was $0.01, which let a
+ * 50-lesson run plan against a $1 cap it would then overrun; the server's own
+ * per-account allowance (`AI_USER_BUDGET_USD`) is what actually stops it.
+ */
+const EST_COST_PER_CALL_USD = 0.05;
 /** Faster than any model call; the pool answered. */
 const POOL_HIT_MS = 3000;
 

@@ -327,7 +327,7 @@ describe("prompt version per kind", () => {
   const body = { lessonId: "kbl-g10-chem-1", subject: "Chemistry", grade: "10", language: "arabic" };
 
   it("gives lesson-teaching its own version, and every other kind the global one", () => {
-    assert.equal(promptVersionFor("lesson-teaching"), "2026-11-02.1");
+    assert.equal(promptVersionFor("lesson-teaching"), "2026-11-03.1");
     for (const kind of ["worksheet", "quiz", "lesson-plan", "homework", "prompt-slides"]) {
       assert.equal(promptVersionFor(kind), PROMPT_VERSION, kind);
     }

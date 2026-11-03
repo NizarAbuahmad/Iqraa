@@ -44,6 +44,8 @@ export function toLatinMath(input: string): string {
   s = s.replace(/[⁻⁰¹²³⁴⁵⁶⁷⁸⁹]+/g, run =>
     "^" + [...run].map(c => (c === "⁻" ? "-" : String(SUPERSCRIPTS.indexOf(c)))).join(""));
   s = s.replace(/√\(/g, "sqrt(").replace(/√([0-9]+|[a-z])/gi, "sqrt($1)");
+  // π is «pi» to SymPy and to a model's `check`, but «π» in the prose a student reads.
+  s = s.replace(/π/g, "pi");
   // A variable is a letter standing alone. Inside an Arabic word it is just a
   // letter: «سم» (cm) is not «x·م», and «١٠ سم» used to become «10xم», which no
   // «10» could be found in.
