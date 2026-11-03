@@ -42,6 +42,84 @@ with no 3, in book order; wave motion is its own unit with the two lessons and n
 **Not verified / limits.** Not looked at on a running app; no periods for any semester 2 lesson (unchanged). No «ما الجديد»
 entry: three experiments appear in a lesson picker, which is not a feature to announce to every account.
 
+## Exam questions can carry a drawn graph or vector — 2026-11-03
+
+**PR 2 of 3** of the answer to a teacher's feedback (no outright errors, but some lessons need a graph or a vector drawing and
+the app puts none in the lesson or the exam; spec `docs/superpowers/specs/2026-11-03-drawn-figures-design.md`, plan
+`docs/superpowers/plans/2026-11-03-drawn-figures.md`). This is the first **user-visible** change: a maths exam question can
+now carry a drawing — a function's graph or vectors on the coordinate plane — that the teacher sees before publishing and the
+student sees with the question. Teachers get one «ما الجديد» entry (`exam-drawn-figures`, dated 2026-11-03, route
+`/evaluations`). Student lesson cards are PR 3.
+
+**What was built.**
+- *Generator.* On a **maths paper only**, the exam prompt offers the model an optional question-level `"visual"` (rule 9 +
+  the format text from `figurePrompt.ts`, every number read from the gate's limits; `GENERATION_PROMPT_VERSION` is now
+  `exam-gen-8`). `parseGeneratedQuestions` runs the PR 1 gate, ties a graph to the question's `check` (a different function
+  than the one checked → the drawing is dropped), drops the drawing beside an `equation_*` check (a curve shows the roots),
+  strips and records a drawing the model tucked inside `body`, and stores the accepted figure as `body.visual`. Every
+  drawing that is dropped is recorded with a reason in `visualsDropped`; the question always stays. The route logs
+  `exam visuals` (kept count + reasons) — that line is how the first live runs will show up.
+- *Storage and the student's copy.* `studentView.ts` sends a drawing only if the gate accepts it (outside every type's
+  allowlist, beside the book `figure`). Editing a question's **text or key removes its drawing** server-side
+  (`bodyAfterEdit`); a marks-, rubric- or difficulty-only edit keeps it; a client can never add or swap one (PATCH keeps
+  only the stored, re-gated drawing; POST strips it). The after-close review payload re-gates it too.
+- *Screens.* The teacher's evaluation screen and the student's `/take/CODE` render `QuestionVisual`; a question with its own
+  drawing does not also get the lesson's book-figure panel.
+- *First look at a real screen* (task B7): the app was run for real (throwaway Postgres + built web bundle + Playwright),
+  drawings were planted on exam questions, and ~300 screenshots were taken (phone and desktop, Arabic and English, light and
+  dark; teacher and student). What it found and fixed: the figure was 2px wider than its bordered box (the right and bottom
+  2px were cropped and «س» was cut to a stub); «ص» sat on the top tick number; letters sank into the dark card (letters now
+  4.5:1, lines 3:1); on a wide desktop the vectors shrank to a speck (figure capped at 520px, aligned to the text edge);
+  a y tick number at the very top edge was half cut (`PlaneGrid`, shared with the Math Corner grapher: the number is
+  skipped, the gridline stays; the grapher shots were pixel-identical before and after); and a curve's letter or a point's
+  letter sat on its own line (`placeLabel` in `lib/figure`: letters are placed ≥ 9px from their own line and inside the
+  box, pure and tested; a 4,000-figure fuzz found no letter outside the box and no NaN). A reviewer's suspicion that Arabic
+  negative ticks were reversed was checked at 8× zoom and is **wrong**: the minus is on the left («−٢»).
+
+**What the reviews found that the first tests did not.**
+- The prompt's own example marked the **root** of `x² − 4` — exactly the leak the prompt forbids; the position of a point
+  leaks as much as a label. The example now marks x = 1, and rule 9 says never to attach a drawing to a question whose
+  answer can be read straight off it.
+- A question like «حلّ س² − ٤ = ٠» with the parabola drawn passed every server check (the `check` tie skips equations).
+  `equation_linear`, `equation_quadratic` and `equation_exponential` now drop the drawing (`ANSWER_READABLE_FROM_DRAWING_TOPICS`,
+  a test forces any new check topic to be classified).
+- `POST /evaluations/:id/questions` stored a client-sent `visual` as given, which made the edit rule bypassable by delete +
+  re-add. Stripped.
+- The after-close answer review sent the raw stored body. Re-gated before anything draws it.
+
+**Verified.** Locally on the final code: `pnpm run typecheck` clean; `lib/figure` 82/82; exam-paper 14/14; math-verify
+29/29; api-server build clean and 2,887/2,887 (0 skipped); mobile 9,193 passed, 0 failed, 10 skipped. The DB-backed route
+tests (edit rule, forged drawing on edit and on add — 17/17 in their file) were run once on a throwaway Postgres 16 and are
+**required in CI**; the counts above do not include them unless a database was configured. Pinned prompts: rules 1–8 and
+every non-maths prompt are byte-identical to `exam-gen-7` (checked by parsing the diff). Each task was reviewed on its own,
+the branch had a final whole-branch review on the most capable model, and the one allowed fix wave got a scoped re-review.
+CI on the PR's head is the one to read.
+
+**Not verified.**
+- **No live model has ever written a `visual`.** The first live run is the real test: read the `exam visuals` log line and
+  read that paper's questions **and answer keys** by eye (CLAUDE.md: a model's Arabic reads fluently either way).
+- Android and iOS (the web build was built and looked at; no native device).
+- `MathSketchpad` shares `PlaneGrid` and has no screenshot (the one-line change was judged safe by reading: a number is skipped
+  only if it would be cut by the top edge).
+- The teacher's per-student **marking** screen (`evaluations/[id]/answers/[studentId]`) draws no figure — a teacher marking a
+  drawn question does not see the drawing (the stem is self-sufficient by rule; the same gap exists for book figures).
+- The DB-backed tests in CI were not seen running by me.
+
+**Known limits.**
+- **A drawing can still show an answer where only the prompt and the teacher's preview stand guard:** a question with no
+  `check` (a vertex, roots the model left unchecked, «find the components of the vector»); a `check` the parser rejects
+  (Arabic text, no `=`); a derivative check where the model also draws the derivative as a second curve (the tie accepts any
+  one matching curve); a «solve» question mislabelled with a non-equation topic.
+- A no-change save of a question can drop its drawing when the edit modal resends a rebuilt body that differs trivially
+  (a generated MCQ whose option ids are not a–d, a stem with trailing spaces). It fails safe (drawn → none, never wrong).
+- `visualsDropped` reaches the log line only; it is not stored in `generationParams`.
+- `exam-gen-8` is also stamped on non-maths papers, whose prompt is unchanged.
+- Cost: about +3.3k characters (roughly 800 tokens) on every maths exam request, including each retry and top-up.
+- The label letters avoid their own line but not tick numbers or other curves; `placeLabel` is an approximation of the font.
+- The desktop figure is capped at 520px; the Arabic prompt text `figureFormatAr` is unused until PR 3 and says «دالة» where the
+  Jordanian books say «اقتران» (to change before PR 3 sends it to a model).
+- Merging deploys the API and the web bundle; there is no migration and no native change.
+
 ## lib/figure: a shared gate and geometry for drawn graphs and vectors — 2026-11-03
 
 A teacher's feedback: no outright scientific errors, but some lessons need a graph or a vector drawing and the app puts

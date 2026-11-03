@@ -21,7 +21,7 @@
  * and make the races deterministic with a lock the test holds itself and, for the
  * overlaps, a trigger that slows the insert.
  */
-import { after, before, it } from "node:test";
+import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import pg from "pg";
 
@@ -188,6 +188,94 @@ describeDb("editing a draft evaluation's questions, against a real database", ()
     assert.equal(saved.status, 200, saved.text);
     assert.equal((await live(id)).length, 3);
     assert.equal(await storedTotal(id), 3);
+  });
+
+  describe("a question's drawing under edit", () => {
+    // A spec PR 1's gate accepts.
+    const visual = { kind: "vectors", vectors: [{ from: [0, 0], to: [3, 2], label: "u" }] };
+    const storedBody = async (qid: string): Promise<Record<string, unknown>> =>
+      (await db.pool.query<{ body: Record<string, unknown> }>(`SELECT body FROM evaluation_questions WHERE id = $1`, [qid]))
+        .rows[0]!.body;
+    // One paper for the group: generating is rate-limited, and each case only needs its own question.
+    let sharedDraft: string | undefined;
+    /** A fresh question; with `withDrawing`, one that already carries a stored drawing. */
+    const questionWith = async (withDrawing: boolean) => {
+      const id = (sharedDraft ??= await draftWithPaper());
+      const added = await add(id, await newQuestion(id, 2));
+      assert.equal(added.status, 201, added.text);
+      const qid: string = added.json.question.id;
+      if (withDrawing) {
+        await db.pool.query(`UPDATE evaluation_questions SET body = body || $1::jsonb WHERE id = $2`, [
+          JSON.stringify({ visual }),
+          qid,
+        ]);
+        assert.equal((await storedBody(qid))["visual"] !== undefined, true, "the drawing is planted");
+      }
+      return { id, qid, body: await storedBody(qid) };
+    };
+
+    it("keeps the drawing when only the marks change", async () => {
+      const { id, qid } = await questionWith(true);
+      const res = await edit(id, qid, { marks: 5 });
+      assert.equal(res.status, 200, res.text);
+      assert.equal(((await storedBody(qid))["visual"] as { kind?: string } | undefined)?.kind, "vectors");
+    });
+
+    it("keeps the drawing when only the rubric changes", async () => {
+      const { id, qid } = await questionWith(true);
+      const res = await edit(id, qid, { rubric: { criteria: [{ label: "الخطوات", marks: 1 }] } });
+      assert.equal(res.status, 200, res.text);
+      assert.equal(((await storedBody(qid))["visual"] as { kind?: string } | undefined)?.kind, "vectors");
+    });
+
+    it("removes the drawing when the question's text changes", async () => {
+      const { id, qid, body } = await questionWith(true);
+      const res = await edit(id, qid, { body: { ...body, prompt: "غيّرت النص" } });
+      assert.equal(res.status, 200, res.text);
+      const after = await storedBody(qid);
+      assert.equal(after["prompt"], "غيّرت النص");
+      assert.equal("visual" in after, false, "the drawing was made for the old wording");
+    });
+
+    it("removes the drawing when the answer key changes", async () => {
+      const { id, qid, body } = await questionWith(true);
+      const res = await edit(id, qid, { body, expectedAnswer: { modelAnswer: "٥", keyConcepts: ["الجمع"] } });
+      assert.equal(res.status, 200, res.text);
+      assert.equal("visual" in (await storedBody(qid)), false);
+    });
+
+    it("never stores a drawing sent with a new question", async () => {
+      const id = (sharedDraft ??= await draftWithPaper());
+      const q = await newQuestion(id, 2);
+      const res = await add(id, { ...q, body: { ...q.body, visual } });
+      assert.equal(res.status, 201, res.text);
+      const stored = await storedBody(res.json.question.id);
+      assert.equal("visual" in stored, false, "a drawing is never taken from the client");
+      assert.deepEqual(stored, q.body, "the rest of the body is intact");
+    });
+
+    it("stores a new question without a drawing unchanged", async () => {
+      const id = (sharedDraft ??= await draftWithPaper());
+      const q = await newQuestion(id, 2);
+      const res = await add(id, q);
+      assert.equal(res.status, 201, res.text);
+      assert.deepEqual(await storedBody(res.json.question.id), q.body);
+    });
+
+    it("never stores a drawing the client sent", async () => {
+      const { id, qid, body } = await questionWith(false);
+      const res = await edit(id, qid, { body: { ...body, prompt: "نص جديد", visual } });
+      assert.equal(res.status, 200, res.text);
+      assert.equal("visual" in (await storedBody(qid)), false);
+    });
+
+    it("keeps the stored drawing, not a different one the client sent with unchanged text", async () => {
+      const { id, qid, body } = await questionWith(true);
+      const other = { kind: "vectors", vectors: [{ from: [0, 0], to: [1, 1], label: "w" }] };
+      const res = await edit(id, qid, { body: { ...body, visual: other }, marks: 4 });
+      assert.equal(res.status, 200, res.text);
+      assert.deepEqual((await storedBody(qid))["visual"], (body as { visual: unknown }).visual);
+    });
   });
 
   it("does not add a question to a draft that was published while the request waited", async () => {
