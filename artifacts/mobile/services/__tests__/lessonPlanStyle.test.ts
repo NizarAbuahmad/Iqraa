@@ -23,6 +23,9 @@ import { LESSON_STYLE_IDS, stageIntro } from '@/services/ai/lessonPlanBlueprints
 import { KB_LESSONS, getBookForLesson } from '@/services/knowledgeBase.ts';
 import type { AIRequest, LessonPlanOutput } from '@/services/ai/AIService.ts';
 
+// The 5E tests below generate a few hundred plans; the mock generator's artificial latency would make that minutes.
+(aiService as unknown as { delay: () => Promise<void> }).delay = async () => {};
+
 /** The real block shape, per `buildDocumentPromptBlock` in
  *  `services/documents/extractMeta.ts`. A block that does not match the parser
  *  silently falls through to the normal path and proves nothing. */
@@ -118,9 +121,10 @@ describe('the 5E model is a style of its own, appended to the picker', () => {
   it('ar: the five stages are named, in order, across the fields that carry them', async () => {
     const out = await plan(AR, '5e');
     assert.match(out.introduction, /^التشويق/, 'the opening hook is the Engage stage and says so');
-    const explore = at(out.mainActivity, 'الاستكشاف');
-    const explain = at(out.mainActivity, 'التفسير');
-    assert.ok(explore >= 0 && explain >= 0, 'main activity names Explore and Explain');
+    // The section headings, not the opening line («الاستكشاف ثم التفسير»), which lists both whatever follows.
+    const explore = at(out.mainActivity, '**الاستكشاف (Explore):**');
+    const explain = at(out.mainActivity, '**التفسير (Explain):**');
+    assert.ok(explore >= 0 && explain >= 0, 'main activity has an Explore section and an Explain section');
     assert.ok(explore < explain, 'students explore BEFORE the teacher explains');
     assert.match(out.guidedPractice, /التوسّع/, 'guided practice is the Elaborate stage');
     assert.match(out.independentPractice, /التقويم/, 'independent practice is the Evaluate stage');
@@ -130,9 +134,9 @@ describe('the 5E model is a style of its own, appended to the picker', () => {
   it('en: the five stages are named, in order, across the fields that carry them', async () => {
     const out = await plan(EN, '5e');
     assert.match(out.introduction, /^Engage/, 'the opening hook is the Engage stage and says so');
-    const explore = at(out.mainActivity, 'Explore');
-    const explain = at(out.mainActivity, 'Explain');
-    assert.ok(explore >= 0 && explain >= 0, 'main activity names Explore and Explain');
+    const explore = at(out.mainActivity, '**Explore:**');
+    const explain = at(out.mainActivity, '**Explain:**');
+    assert.ok(explore >= 0 && explain >= 0, 'main activity has an Explore section and an Explain section');
     assert.ok(explore < explain, 'students explore BEFORE the teacher explains');
     assert.match(out.guidedPractice, /Elaborate/);
     assert.match(out.independentPractice, /Evaluate/);
@@ -142,7 +146,8 @@ describe('the 5E model is a style of its own, appended to the picker', () => {
   it('the formal term is named only after the exploring, never in the opening', async () => {
     // KB lesson with a known key term: «قانون الجيوب» has one; the opening must not state it as a rule.
     const out = await plan(AR, '5e');
-    const explain = out.mainActivity.indexOf('التفسير');
+    const explain = out.mainActivity.indexOf('**التفسير (Explain):**');
+    assert.ok(explain > 0, 'probe: the Explain section exists');
     const before = out.mainActivity.slice(0, explain);
     assert.ok(!/سأسمّي الفكرة/.test(before), 'the idea is named before the Explain stage');
     assert.match(out.mainActivity.slice(explain), /سأسمّي الفكرة/);
@@ -156,8 +161,8 @@ describe('the 5E model is a style of its own, appended to the picker', () => {
     for (const l of withTerms) {
       const book = getBookForLesson(l)!;
       for (const [lang, explainMark, termOf, conceptOf, language] of [
-        ['ar', 'التفسير', l.keyTerms![0].ar, l.keyConceptsAr[0], 'arabic'],
-        ['en', 'Explain', l.keyTerms![0].en, l.keyConceptsEn[0], 'english'],
+        ['ar', '**التفسير (Explain):**', l.keyTerms![0].ar, l.keyConceptsAr[0], 'arabic'],
+        ['en', '**Explain:**', l.keyTerms![0].en, l.keyConceptsEn[0], 'english'],
       ] as const) {
         if (!termOf?.trim() || !conceptOf?.trim()) continue;
         const out = await aiService.generateLessonPlan({
@@ -165,7 +170,7 @@ describe('the 5E model is a style of its own, appended to the picker', () => {
           language, duration: 45, teachingStyle: '5e',
         } as AIRequest);
         const before = out.mainActivity.slice(0, out.mainActivity.indexOf(explainMark));
-        assert.ok(before.length > 40, `${l.id}/${lang}: probe`);
+        assert.ok(before.length > 100, `${l.id}/${lang}: probe — no real Explore before the Explain section:\n${out.mainActivity}`);
         assert.ok(!before.includes(termOf.trim()), `${l.id}/${lang}: the key term «${termOf}» is in Explore:\n${before}`);
         assert.ok(!before.includes(conceptOf.trim()), `${l.id}/${lang}: the key concept «${conceptOf}» is in Explore:\n${before}`);
       }
@@ -205,7 +210,10 @@ describe('the 5E model is a style of its own, appended to the picker', () => {
     const out = await plan(AR, '5e', DOC_BLOCK);
     assert.match(out.introduction, /^التشويق/);
     assert.match(out.mainActivity, /الاستكشاف/);
-    assert.match(out.mainActivity, /الرابطة/, 'the file’s own concepts reach the plan');
+    assert.match(out.mainActivity, /مستمدًا من الملف «bonding\.pdf»/, 'the plan says it is drawn from the file');
+    // Explore deliberately does not name the idea; the file's concepts do the work in Elaborate, after Explain.
+    assert.match(out.guidedPractice, /الرابطة/, 'the file’s own concepts reach the plan');
+    assert.ok(!/الرابطة/.test(out.mainActivity), 'but not before the idea is explained');
   });
 
   it('the other styles do not get an Engage label', async () => {

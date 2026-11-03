@@ -150,8 +150,8 @@ describe('variant 1 keeps each style’s own contract', () => {
 
     it('5e: Explore before Explain, then Elaborate and Evaluate, each named', () => {
       const v = b('5e');
-      const explore = v.mainActivity.indexOf('الاستكشاف');
-      const explain = v.mainActivity.indexOf('التفسير');
+      const explore = v.mainActivity.indexOf('**الاستكشاف (Explore):**');
+      const explain = v.mainActivity.indexOf('**التفسير (Explain):**');
       assert.ok(explore >= 0 && explain > explore, 'Explore must come before Explain');
       assert.match(v.guidedPractice, /التوسّع/);
       assert.match(v.independentPractice, /التقويم/);
@@ -184,8 +184,8 @@ describe('variant 1 keeps each style’s own contract', () => {
 
     it('5e: Explore before Explain, then Elaborate and Evaluate, each named', () => {
       const v = b('5e');
-      const explore = v.mainActivity.indexOf('Explore');
-      const explain = v.mainActivity.indexOf('Explain');
+      const explore = v.mainActivity.indexOf('**Explore:**');
+      const explain = v.mainActivity.indexOf('**Explain:**');
       assert.ok(explore >= 0 && explain > explore, 'Explore must come before Explain');
       assert.match(v.guidedPractice, /Elaborate/);
       assert.match(v.independentPractice, /Evaluate/);
