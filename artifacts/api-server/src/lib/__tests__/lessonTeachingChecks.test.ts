@@ -11,6 +11,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  PROMPT_EXAMPLE_CHECKS,
   annotateVerification,
   correctionBlock,
   problemsOf,
@@ -143,6 +144,75 @@ describe("verifyLessonTeaching", () => {
   it("never throws when the verifier call does", async () => {
     const v = await verifyLessonTeaching(content(), async () => { throw new Error("boom"); });
     assert.equal(v.workedExample.code, "undecided");
+  });
+});
+
+// From the third prefill review (2026-11-03). The first version of the linking
+// refused real answers and passed fake ones: a unit after «)» or «π» was not a
+// unit («8√3 cm» ≠ «8√3»), the prompt's own example check was copied into
+// chemistry lessons, and an answer with no number in it was compared with a
+// number anyway, wasting a retry on each.
+describe("linking, the third review's findings", () => {
+  const ok = fake(relation("equivalent"));
+  const verdict = async (answer: string, check: { topic: string; question: string; answer: string }) =>
+    (await verifyLessonTeaching({ workedExample: { problem: "p", steps: ["s"], answer, check } }, ok.fn)).workedExample.code;
+
+  it("reads a unit after a bracket, a root or π as a unit", async () => {
+    const e = { topic: "evaluate", question: "8*sqrt(3)", answer: "8*sqrt(3)" };
+    for (const a of ["8sqrt(3) cm", "8√3 cm", "8*sqrt(3) cm", "8√3 cm²", "8sqrt(3) cm^2"]) {
+      assert.equal(await verdict(a, e), "verified", a);
+    }
+    assert.equal(await verdict("10sqrt(3) + 10 cm", { topic: "evaluate", question: "10*sqrt(3)+10", answer: "10*sqrt(3)+10" }), "verified");
+    assert.equal(await verdict("9π cm²", { topic: "evaluate", question: "9*pi", answer: "9*pi" }), "verified");
+    assert.equal(await verdict("طول القوس = 3π cm", { topic: "evaluate", question: "3*pi", answer: "3*pi" }), "verified");
+  });
+
+  it("still tells π from 3π: a unit is stripped, a coefficient is not", async () => {
+    // The model keyed «π cm» for an arc that is 3π; its own check said 3π.
+    assert.equal(await verdict("طول القوس = π cm", { topic: "evaluate", question: "3*pi", answer: "3*pi" }), "unlinked");
+    assert.equal(await verdict("5 cm", { topic: "evaluate", question: "10*sqrt(3)/3", answer: "5.77" }), "unlinked");
+    assert.equal(await verdict("√2 cm", { topic: "evaluate", question: "sqrt(3)", answer: "sqrt(3)" }), "unlinked", "a root with no digit is still a value");
+  });
+
+  it("does not strip a letter that is a variable or part of the answer", async () => {
+    assert.equal(await verdict("x = 3", { topic: "equation_linear", question: "2x = 6", answer: "x = 3" }), "verified");
+    assert.equal(await verdict("3x^2 - 4", { topic: "derivative_polynomial", question: "x^3 - 4x", answer: "3x^2 - 4" }), "verified");
+  });
+
+  it("calls a copy of the prompt's own example no check, and does not ask the verifier", async () => {
+    const calls: unknown[] = [];
+    const counting = async (t: string, q: string, a: string) => { calls.push([t, q, a]); return relation("equivalent"); };
+    for (const example of [PROMPT_EXAMPLE_CHECKS.evaluate, PROMPT_EXAMPLE_CHECKS.system]) {
+      const v = await verifyLessonTeaching(
+        { workedExample: { problem: "p", steps: ["s"], answer: example.answer, check: example } },
+        counting,
+      );
+      assert.equal(v.workedExample.code, "no_check", example.topic);
+    }
+    assert.equal(calls.length, 0);
+  });
+
+  it("calls an answer with no number in it no check: a description is not compared with a value", async () => {
+    const calls: unknown[] = [];
+    const counting = async (t: string, q: string, a: string) => { calls.push([t, q, a]); return relation("equivalent"); };
+    for (const answer of [
+      "يدل هذا الضوء على أن الذرّة كانت مثارة.",
+      "المركب الأيوني هو الذي يُتوقع أن يكون صلبًا",
+    ]) {
+      const v = await verifyLessonTeaching(
+        { practice: { problem: "p", answer, check: { topic: "evaluate", question: "2*3", answer: "6" } } },
+        counting,
+      );
+      assert.equal(v.practice.code, "no_check", answer);
+    }
+    assert.equal(calls.length, 0);
+  });
+
+  it("keeps checking an answer that has a number and words together", async () => {
+    assert.equal(
+      await verdict("x = 1 قيمة عظمى محلية، وx = 3 قيمة صغرى محلية.", { topic: "equation_quadratic", question: "x^2 - 4x + 3 = 0", answer: "x = 1, x = 3" }),
+      "verified",
+    );
   });
 });
 

@@ -10,6 +10,58 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Lesson explanations: the third review, a stronger model, and two linking bugs in the maths check — 2026-11-03
+
+**What the third prefill showed.** The run under the maths check (prompt `2026-11-02.1`, gpt-5.4-mini) generated all 50
+explanations; five reviewers read them blind (no verdicts shown), each answer recomputed. **25 fit, 25 not.** Not a
+better rate than the earlier runs (20 of 50, then 12 of 37), but not comparable either: it included the hardest
+lessons and a stricter reading of «a lab must not use later skills». The 25 rejects: about 8 wrong keys (π cm for 3π, a
+slope sign reversed, `c = 6 cm` for √84, a practice copied from its worked example), about 8 false or misleading
+statements (a true fact taught as a «misconception», a wrong date for Lewis, an unconditioned quadrant rule), 5 labs or
+«calculation» lessons that do not teach their own lesson, and 4 garbled texts (book-extraction artefacts such as
+«الأفالك», «جبـيب»).
+
+**What the maths check did.** Of the 8 wrong-key rejects it flagged 4: the law of cosines (`contradicted`), and three
+that it called `unlinked` (the prose differs from the model's own check: sectors, law of sines, maxima/minima). It missed
+4: sequences (the model computed its own wrong rule correctly), a slope-sign lab (`undecided`), cumulative-frequency
+quartiles (no check written), and a grouped mean keyed «19» for 19.23, which the rounding rule accepts. So the
+arithmetic check is worth having and covers about half of the wrong keys; the false statements and lesson mismatches
+are not arithmetic, and a person still reads every explanation. **`unlinked` carries signal** (3 of its 17 flags were
+real wrong answers), so it is shown, not hidden; `--approve` still blocks only `contradicted`.
+
+**Two bugs in the check, found by reading its flags.** (1) A unit after a bracket, a root or π was not a unit, so «8√3 cm»
+was refused against its own check «8√3»; and «π» was never «pi». (2) The prompt's output shape carried a concrete example
+check, which the model copied verbatim into chemistry lessons (`10*sin(30°)/sin(60°)` against «1s2 2s2 2p1»), each time
+an `unlinked` and a wasted retry.
+
+**Changed.**
+
+- `lessonTeachingChecks.ts`: a unit after `)` or π is stripped; a check identical to the prompt's own example
+  (`PROMPT_EXAMPLE_CHECKS`, the one place both the prompt and the guard read) is no check; an answer with no number in it
+  (digit, π, √) is no check and is not sent to the verifier. `keyLinking.toLatinMath` reads «π» as «pi».
+- `lessonTeachingPrompt.ts`: the output shape shows placeholders, not a worked check; both languages say a descriptive
+  answer (an explanation, a definition, an electron configuration) has no check and that the example is not to be copied.
+- **`lesson-teaching` now runs on the documents model** (`DOCUMENT_KINDS` in `aiBudget.ts`): Claude Sonnet 5.5 in
+  production (`AI_MODEL_DOCUMENTS`), as lesson plans, worksheets, quizzes and slide decks already do. The model is part of
+  the pool key. Version `2026-11-03.1`.
+- `pregenerate.ts`: the cost estimate per call rises from $0.01 to $0.05, so `--cap` means something against the dearer
+  model (the default `$1` cap now plans about 20 calls; use `--cap=3`).
+
+**Cost, and a trap.** Sonnet 5.5 is $2/$10 per million tokens against $0.75/$4.5 for gpt-5.4-mini: about 2.3x a call,
+roughly $0.035 against $0.013 with a retry (from the price table and the earlier run's ledger, not yet measured). A
+50-lesson run is about $2 to $3. **`deploy.yml` sets `AI_USER_BUDGET_USD=1` on every API deploy**, so a console edit to
+raise it is undone by the next merge; and the account's spend this month counts against it. A prefill needs it above
+the month's spend plus the run (set it to 5 for the run).
+
+**Verified.** Typecheck clean; mobile 9,185 pass, 0 fail, 10 skipped; api-server 2,842 / 2,842; math verifier 124/124
+(unchanged). New tests pin each linking case (including that «π cm» is still told from «3π cm» and that «√2 cm» is a
+value), the example guard, the no-number guard, the prompt's placeholders, and the model list.
+
+**Not verified.** Whether Sonnet writes better explanations: only a fourth prefill and a fourth review can say. The cost
+figures. That the Claude path returns this kind's JSON in the shape `assertUsableGeneration` wants (it does for the other
+document kinds; this one has not run on it). Of the 25 explanations the third review judged fit, the owner was given the
+command to approve them; this entry does not claim it ran.
+
 ## Spend ceilings: Cloud Run instance caps and a smaller site-assistant cap, 2026-11-03
 
 **Why.** Follow-up to «Cloud Run bill: verifier scales to zero, API back to one vCPU» (2026-11-02). Two

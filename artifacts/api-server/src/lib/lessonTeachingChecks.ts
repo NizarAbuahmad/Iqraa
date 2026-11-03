@@ -42,6 +42,26 @@ import { statesAnswer } from "../modules/assessment/keyLinking.ts";
 export const CHECKED_ITEMS = ["workedExample", "practice"] as const;
 export type CheckedItem = (typeof CHECKED_ITEMS)[number];
 
+/**
+ * The worked checks the prompt shows the model. One place, so the guard below
+ * cannot drift from what the prompt prints. The first version of the output shape
+ * carried a concrete check, and the model copied it into chemistry lessons that
+ * have no such number (third review, 2026-11-03).
+ */
+export const PROMPT_EXAMPLE_CHECKS = {
+  evaluate: { topic: "evaluate", question: "12*sin(30°)/sin(45°)", answer: "8.49" },
+  system: { topic: "system_solutions", question: "y = x^2 + 2x; y = -x^2 + 6x", answer: "(0, 0), (2, 8)" },
+} as const;
+
+/** A digit, or π or a root: «π cm» and «√2» are values with no digit in them. */
+const statesAValue = (text: string): boolean => /[0-9٠-٩π√]|sqrt|\bpi\b/i.test(text);
+
+const norm = (v: string) => v.replace(/\s+/g, "").toLowerCase();
+const isPromptExample = (c: Check): boolean =>
+  Object.values(PROMPT_EXAMPLE_CHECKS).some(
+    e => e.topic === c.topic && norm(e.question) === norm(c.question) && norm(e.answer) === norm(c.answer),
+  );
+
 export type VerdictCode =
   /** The verifier agreed, and the prose states the checked answer. */
   | "verified"
@@ -84,8 +104,12 @@ function readCheck(value: unknown): Check | null {
   return { topic, question, answer };
 }
 
-/** A Latin unit after a number is a unit: «5.77 cm», «12 cm²». */
-const LATIN_UNIT = /(?<=[0-9٠-٩])\s*(?:cm|mm|km|kg|mol|kj|nm|pm|hz|ev|m|g|j|s)(?:\^?[23]|[²³])?(?![a-z])/gi;
+/**
+ * A Latin unit after a number, a closing bracket or π is a unit: «5.77 cm»,
+ * «8√3 cm», «9π cm²». It used to need a digit, so «8√3 cm» read as the product
+ * 8√3·c·m and was refused against its own check.
+ */
+const LATIN_UNIT = /(?<=[0-9٠-٩)π])\s*(?:cm|mm|km|kg|mol|kj|nm|pm|hz|ev|m|g|j|s)(?:\^?[23]|[²³])?(?![a-z])/gi;
 
 /** The answer a student reads, with its unit taken off, ready to be looked for. */
 const statedAnswer = (prose: string): string => prose.replace(LATIN_UNIT, "");
@@ -112,6 +136,10 @@ export async function verifyLessonTeaching(
     const check = readCheck(block.check);
     if (!check) continue;
     const stated = str(block.answer).slice(0, 160);
+    // Not a check of this lesson: the prompt's own example, repeated. Nor is a number
+    // compared with a sentence: an answer with no number in it is a description, and
+    // asking the verifier about it only buys a retry for nothing.
+    if (isPromptExample(check) || !statesAValue(stated)) continue;
     if (down) {
       out[item] = { code: "unreachable", stated };
       continue;
