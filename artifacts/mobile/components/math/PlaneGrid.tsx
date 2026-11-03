@@ -63,7 +63,8 @@ export function PlaneGrid({
           {axisLabel(t.value, lang, degreeAxis)}
         </SvgText>
       ))}
-      {ys.filter(t => t.value !== 0).map(t => (
+      {/* A tick at the top edge keeps its gridline but not its number: the text would sit above the box. */}
+      {ys.filter(t => t.value !== 0 && t.px - 3 >= TYPE.micro).map(t => (
         <SvgText key={`ly${t.value}`} x={yLabelX} y={t.px - 3} textAnchor="start" {...label}>
           {axisLabel(t.value, lang, false)}
         </SvgText>

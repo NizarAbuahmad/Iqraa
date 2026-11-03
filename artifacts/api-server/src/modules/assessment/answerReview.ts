@@ -19,6 +19,7 @@
  * Pure: the route fetches plain rows.
  */
 import { studentResultReady } from "./studentView.ts";
+import { studentVisual } from "./questionVisual.ts";
 
 export type SolutionsDecision =
   | { ok: true; shown: boolean }
@@ -149,6 +150,17 @@ export function yourAnswerText(q: ReviewQuestion, response: Record<string, unkno
 }
 
 /**
+ * The body as the review sends it. A stored drawing goes out only as the gate
+ * returns it (normalised), or not at all: storage only ever holds gated drawings,
+ * so this is defence in depth for whatever draws it later.
+ */
+function reviewBody(body: ReviewQuestion["body"]): Record<string, unknown> {
+  const { visual: _stored, ...rest } = rec(body);
+  const visual = studentVisual(rec(body));
+  return visual ? { ...rest, visual } : rest;
+}
+
+/**
  * One item per question of the paper the student sat — the attempt's
  * snapshot, in its order — so the review shows what they were asked even if
  * the exam was edited afterwards. Steps come from the live question by id.
@@ -169,7 +181,7 @@ export function reviewItems(input: {
       questionId: q.id,
       number: i + 1,
       type: q.type,
-      body: rec(q.body),
+      body: reviewBody(q.body),
       yourAnswer: yourAnswerText(q, answerOf.get(q.id), input.isAr),
       correctAnswer: correctAnswerText(q, input.isAr),
       awardedMarks: grade ? Number(grade.awardedMarks) : null,
