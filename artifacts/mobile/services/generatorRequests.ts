@@ -91,7 +91,7 @@ export type LessonPlanForm = {
   topic: string;
   lang: Lang;
   durationMinutes: number;
-  teachingStyle: 'direct' | 'inquiry' | 'collaborative';
+  teachingStyle: 'direct' | 'inquiry' | 'collaborative' | '5e';
   objectives: string;
   adaptations: string;
   priorTopicsNotes: string;

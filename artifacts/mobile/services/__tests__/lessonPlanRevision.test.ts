@@ -234,6 +234,41 @@ describe('a one-unit scope never talks as if there were several', () => {
   });
 });
 
+describe('a 5E review keeps the model: Explore before Explain in every round, and each stage named', () => {
+  for (const [lang, explore, explain, elaborate, evaluate, engage] of [
+    ['ar', 'الاستكشاف', 'التفسير', 'التوسّع', 'التقويم', 'التشويق'],
+    ['en', 'Explore', 'Explain', 'Elaborate', 'Evaluate', 'Engage'],
+  ] as const) {
+    for (const sel of [sem1, vectors]) {
+      it(`${lang} · ${sel.kind}`, () => {
+        const p = plan(sel, lang, '5e');
+        const rounds = p.mainActivity.split('\n').filter(l => l.startsWith(lang === 'ar' ? ROUND_MARK_AR : ROUND_MARK_EN));
+        assert.equal(rounds.length, revisionUnits(sel, lang).length, 'still one round per unit');
+        for (const r of rounds) {
+          const a = r.indexOf(explore), b = r.indexOf(explain);
+          assert.ok(a >= 0 && b > a, `Explore must come before Explain in the round:\n${r}`);
+        }
+        // The opening's minutes still lead, as in every section; the stage label follows them.
+        assert.match(p.introduction, new RegExp(`^\\([^)]*\\) ${engage}`), `the opening is labelled as the Engage stage after its minutes:\n${p.introduction}`);
+        assert.ok(p.guidedPractice.includes(elaborate));
+        assert.ok(p.independentPractice.includes(evaluate));
+        assert.ok(p.assessment.includes(evaluate));
+      });
+    }
+
+    it(`${lang}: it is not the direct review under a new name, and no other style carries the Engage label`, () => {
+      const five = plan(sem1, lang, '5e');
+      const direct = plan(sem1, lang, 'direct');
+      for (const f of ['mainActivity', 'guidedPractice', 'independentPractice', 'assessment', 'differentiation'] as const) {
+        assert.notEqual(five[f], direct[f], f);
+      }
+      for (const style of ['direct', 'inquiry', 'collaborative']) {
+        assert.ok(!plan(sem1, lang, style).introduction.includes(engage), style);
+      }
+    });
+  }
+});
+
 const base = { grade: 'الصف العاشر', subject: 'Mathematics', language: 'arabic', duration: 45, teachingStyle: 'inquiry' } as const;
 const wideReq = (sel: ScopeSelection, extra: Partial<AIRequest> = {}): AIRequest => ({
   ...base, topic: scopeLabel(sel, 'ar'), ...extra, ...buildScopeRequest(sel, 'ar')!.fields,

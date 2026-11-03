@@ -21,13 +21,13 @@
 export interface LearnerRoleContext {
   /** The language the plan's teacher column is written in. */
   lang: 'ar' | 'en';
-  /** `direct` | `inquiry` | `collaborative`; anything else reads as `direct`. */
+  /** `direct` | `inquiry` | `collaborative` | `5e`; anything else reads as `direct`. */
   style?: string;
   /** The lesson's title, named in the explain stage. */
   topic?: string;
 }
 
-type Style = 'direct' | 'inquiry' | 'collaborative';
+type Style = 'direct' | 'inquiry' | 'collaborative' | '5e';
 
 /** Four stages, in form order: engage · explain · extend · consolidate. */
 type Roles = readonly [string, string, string, string];
@@ -51,6 +51,13 @@ const AR = (topic: string): Record<Style, Roles> => ({
     'ينجز كل طالب جزءه من مهمة المجموعة ويشرحه لزملائه، ثم يعمل بمفرده ليتأكد من فهمه الشخصي، ويساعد المتميزون زملاءهم.',
     'تعرض المجموعات نتاجها، ثم يجيب كل طالب عن سؤال ختامي بمفرده، ويراجع خطأه، ويدوّن الواجب.',
   ],
+  // 5E has five stages and the form four columns: Engage, Explore + Explain, Elaborate, Evaluate.
+  '5e': [
+    'يلاحظ الطلبة موقفًا أو عرضًا مثيرًا للفضول، ويطرحون أسئلتهم وتوقعاتهم، ويستحضرون ما يعرفونه سابقًا.',
+    `يستكشف الطلبة أمثلة أو مواد حول «${topic}» في مجموعات صغيرة ويسجّلون ملاحظاتهم وتفسيرهم المبدئي، ثم يصوغون تفسيرهم بكلماتهم ويقارنونه بشرح المعلم بعد أن يسمّي الفكرة.`,
+    'يطبّق الطلبة الفكرة على موقف أو مسألة جديدة في سياق مختلف، ويفسّرون لماذا تنطبق أو لا تنطبق، ويربطونها بدروس سابقة وبحياتهم.',
+    'يجيب كل طالب بمفرده عن ورقة تقويم قصيرة، ويقارن فهمه في بداية الحصة بفهمه في نهايتها، ويراجع أخطاءه، ويدوّن الواجب.',
+  ],
 });
 
 const EN = (topic: string): Record<Style, Roles> => ({
@@ -72,11 +79,18 @@ const EN = (topic: string): Record<Style, Roles> => ({
     'Each student completes their part of the group task and explains it to their group, then works alone to confirm their own understanding; stronger students help their peers.',
     'Groups present their results, then every student answers a closing question on their own, corrects their mistakes and notes the homework.',
   ],
+  // 5E has five stages and the form four columns: Engage, Explore + Explain, Elaborate, Evaluate.
+  '5e': [
+    'Students look at a curiosity-raising situation or demo, ask questions and make predictions, and recall what they already know.',
+    `Students explore examples or materials on ${topic} in small groups, record what they notice and a first explanation, then put their explanation into their own words and compare it with the teacher's once the idea is named.`,
+    'Students apply the idea to a new situation or problem in a different context, explain why it does or does not apply, and link it to earlier lessons and to life.',
+    'Each student answers a short evaluation sheet alone, compares their understanding at the start of the lesson with the end, corrects their mistakes and notes the homework.',
+  ],
 });
 
 /** The learner's role for each of the form's four stages, in form order. */
 export function learnerRoles(ctx: LearnerRoleContext): string[] {
-  const style: Style = ctx.style === 'inquiry' || ctx.style === 'collaborative' ? ctx.style : 'direct';
+  const style: Style = ctx.style === 'inquiry' || ctx.style === 'collaborative' || ctx.style === '5e' ? ctx.style : 'direct';
   const topic = ctx.topic?.trim() || (ctx.lang === 'ar' ? 'الدرس' : 'the lesson');
   const table = ctx.lang === 'ar' ? AR(topic) : EN(topic);
   return [...table[style]];

@@ -47,7 +47,7 @@ function lessonListEn(b: Record<string, unknown>): string {
 
 const CONTRACT_AR: Record<RevisionKind, string> = {
   plan: `هذه خطة حصة مراجعة واحدة لا خطة درس جديد:
-- رتّب "mainActivity" جولةً لكل وحدة، بالشكل الذي يقتضيه أسلوب التدريس المحدد أعلاه (المباشر: مراجعة بمثال محلول لكل وحدة؛ الاستقصائي: سؤال موجّه واحد لكل وحدة؛ التعاوني: بطاقة مجموعة لكل وحدة)، ولا تُسقط وحدة.
+- رتّب "mainActivity" جولةً لكل وحدة، بالشكل الذي يقتضيه أسلوب التدريس المحدد أعلاه (المباشر: مراجعة بمثال محلول لكل وحدة؛ الاستقصائي: سؤال موجّه واحد لكل وحدة؛ التعاوني: بطاقة مجموعة لكل وحدة؛ 5E: جولة استكشاف ثم تفسير لكل وحدة)، ولا تُسقط وحدة.
 - اصرف الوقت على الأفكار الرئيسة لكل وحدة، ولا تحاول تغطية كل درس.
 - اذكر في "introduction" النطاق الذي تراجعه الحصة، وما الذي لن تتّسع له، بأسماء الدروس.
 - اجعل "objectives" من نتاجات الوحدات المذكورة في النطاق، لا أهدافًا عامة.
@@ -63,7 +63,7 @@ const CONTRACT_AR: Record<RevisionKind, string> = {
 
 const CONTRACT_EN: Record<RevisionKind, string> = {
   plan: `This is ONE revision session, not a plan for a new lesson:
-- Arrange "mainActivity" as one round per unit, in the form the teaching style above requires (direct: a worked review per unit; inquiry: one guiding question per unit; collaborative: one group card per unit), and leave no unit out.
+- Arrange "mainActivity" as one round per unit, in the form the teaching style above requires (direct: a worked review per unit; inquiry: one guiding question per unit; collaborative: one group card per unit; 5E: one Explore-then-Explain round per unit), and leave no unit out.
 - Spend the time on each unit's key ideas; do not try to cover every lesson.
 - State in "introduction" the scope the session reviews and, by lesson name, what it cannot fit.
 - Draw "objectives" from the outcomes of the units in scope, not generic aims.

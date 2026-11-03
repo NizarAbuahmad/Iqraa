@@ -364,7 +364,7 @@ components:
           type: string
         teachingStyle:
           type: string
-          enum: [direct, inquiry, collaborative]
+          enum: [direct, inquiry, collaborative, "5e"]
         objectives:
           type: string
         priorTopicsNotes:

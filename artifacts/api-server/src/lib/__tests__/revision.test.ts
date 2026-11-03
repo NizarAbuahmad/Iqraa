@@ -145,7 +145,7 @@ describe("revisionClauseAr / revisionClauseEn", () => {
 });
 
 describe("the clause is the ONLY difference a scope makes to a prompt", () => {
-  const STYLES = ["direct", "inquiry", "collaborative"];
+  const STYLES = ["direct", "inquiry", "collaborative", "5e"];
   const FORMATS = ["individual", "group", "discussion", "hands-on", "game"];
 
   it("lesson plan, every style, with and without the extras on the clause's line", () => {
@@ -190,5 +190,12 @@ describe("the clause is the ONLY difference a scope makes to a prompt", () => {
         }
       }
     }
+  });
+});
+
+describe("the revision clause tells the model what a 5E review round is", () => {
+  it("names the 5E round beside the other styles' rounds, in both languages", () => {
+    assert.match(revisionClauseAr({ ...base, ...wideFields }, "plan"), /5E: جولة استكشاف ثم تفسير لكل وحدة/);
+    assert.match(revisionClauseEn({ ...base, ...wideFields }, "plan"), /5E: one Explore-then-Explain round per unit/);
   });
 });

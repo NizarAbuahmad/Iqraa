@@ -147,6 +147,17 @@ describe('variant 1 keeps each style’s own contract', () => {
       assert.match(b('collaborative').independentPractice, /مساءلة فردية/);
       assert.ok(!/المناقشة بين الطلبة مؤجّلة/.test(JSON.stringify(b('collaborative'))));
     });
+
+    it('5e: Explore before Explain, then Elaborate and Evaluate, each named', () => {
+      const v = b('5e');
+      const explore = v.mainActivity.indexOf('**الاستكشاف (Explore):**');
+      const explain = v.mainActivity.indexOf('**التفسير (Explain):**');
+      assert.ok(explore >= 0 && explain > explore, 'Explore must come before Explain');
+      assert.match(v.guidedPractice, /التوسّع/);
+      assert.match(v.independentPractice, /التقويم/);
+      assert.match(v.assessment, /التقويم/);
+      assert.ok(!/المناقشة بين الطلبة مؤجّلة/.test(JSON.stringify(v)));
+    });
   });
 
   describe('en', () => {
@@ -169,6 +180,17 @@ describe('variant 1 keeps each style’s own contract', () => {
       assert.match(b('collaborative').mainActivity, /task card|Card/i);
       assert.match(b('collaborative').independentPractice, /individual accountability/i);
       assert.ok(!/peer discussion is not/i.test(JSON.stringify(b('collaborative'))));
+    });
+
+    it('5e: Explore before Explain, then Elaborate and Evaluate, each named', () => {
+      const v = b('5e');
+      const explore = v.mainActivity.indexOf('**Explore:**');
+      const explain = v.mainActivity.indexOf('**Explain:**');
+      assert.ok(explore >= 0 && explain > explore, 'Explore must come before Explain');
+      assert.match(v.guidedPractice, /Elaborate/);
+      assert.match(v.independentPractice, /Evaluate/);
+      assert.match(v.assessment, /Evaluate/);
+      assert.ok(!/peer discussion is not/i.test(JSON.stringify(v)));
     });
   });
 });

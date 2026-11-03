@@ -605,7 +605,8 @@ test('the lesson plan carries the lesson by id, and keeps its state names, route
   }
   assert.match(lessonPlanCode, /const \[topic, setTopic\] = useState/);
   assert.match(lessonPlanCode, /const DURATION_VALUES = \[30, 45, 60, 90\];/);
-  assert.match(lessonPlanCode, /const STYLE_IDS = \['direct', 'inquiry', 'collaborative'\] as const;/);
+  // The fourth entry was APPENDED (5E): the first three keep their positions, so a saved `styleIdx` still means what it did.
+  assert.match(lessonPlanCode, /const STYLE_IDS = \['direct', 'inquiry', 'collaborative', '5e'\] as const;/);
   assert.match(lessonPlanCode, /durationIdx, styleIdx, objectives, adaptations,/);
   assert.match(lessonPlanCode, /priorTopicsNotes: wideFrozen \? '' : priorTopicsNotes,/);
   assert.match(lessonPlanCode, /includePriorReview: includePriorReview \? '1' : '0',/);
@@ -616,7 +617,7 @@ test('duration and teaching style are segmented controls over the same arrays an
   assert.match(lessonPlanCode, /<SegmentedControl label=\{t\('durationLabel'\)\} options=\{durationLabels\} index=\{durationIdx\} onChange=\{setDurationIdx\}/);
   assert.match(lessonPlanCode, /<SegmentedControl label=\{t\('teachingStyleLabel'\)\} options=\{styleLabels\} index=\{styleIdx\} onChange=\{setStyleIdx\}/);
   assert.match(lessonPlanCode, /const durationLabels = DURATION_VALUES\.map\(d => `\$\{d\} \$\{t\('min'\)\}`\);/);
-  assert.match(lessonPlanCode, /const styleLabels = \[t\('teachingStyleDirect'\), t\('teachingStyleInquiry'\), t\('teachingStyleCollaborative'\)\];/);
+  assert.match(lessonPlanCode, /const styleLabels = \[t\('teachingStyleDirect'\), t\('teachingStyleInquiry'\), t\('teachingStyleCollaborative'\), t\('teachingStyle5E'\)\];/);
   assert.doesNotMatch(lessonPlanCode, /<PickerField\b[^>]*label=\{t\('(durationLabel|teachingStyleLabel)'\)\}/, 'no dropdown for a short list');
 });
 

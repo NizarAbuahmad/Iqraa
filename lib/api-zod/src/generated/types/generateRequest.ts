@@ -18,6 +18,14 @@ export interface GenerateRequest {
   additionalContext?: string;
   teachingStyle?: GenerateRequestTeachingStyle;
   objectives?: string;
+  /** Free-text notes on prior topics (from earlier lessons or earlier grades) the teacher wants re-explained in class. Lesson-plan only. */
+  priorTopicsNotes?: string;
+  /** Catalog unit id the server uses to pull the unit's own textbook pages. */
+  unitId?: string;
+  /** When true and priorKnowledge is non-empty, prepend a "مراجعة سابقة" warm-up review. Shared by worksheet and lesson-plan generation. */
+  includePriorReview?: boolean;
+  /** Grounded unit prior-knowledge concepts (never invented when empty). */
+  priorKnowledge?: string[];
   difficulty?: GenerateRequestDifficulty;
   numQuestions?: number;
   questionTypes?: string[];

@@ -67,7 +67,7 @@ import { palette } from '@/constants/colors';
 
 /** Same ladder the lesson-plan tool offers, so a saved plan can reopen there. */
 const DURATION_VALUES = [30, 45, 60, 90];
-const STYLE_IDS: TeachingStyle[] = ['direct', 'inquiry', 'collaborative'];
+const STYLE_IDS: TeachingStyle[] = ['direct', 'inquiry', 'collaborative', '5e'];
 
 /** Nearest standard slot, for handing a curriculum duration to the tool form. */
 function nearestDurationIdx(duration: number): number {
@@ -328,7 +328,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
   const durationChoices = DURATION_VALUES.includes(context.duration)
     ? DURATION_VALUES
     : [...DURATION_VALUES, context.duration].sort((a, b) => a - b);
-  const styleLabels = [t('teachingStyleDirect'), t('teachingStyleInquiry'), t('teachingStyleCollaborative')];
+  const styleLabels = [t('teachingStyleDirect'), t('teachingStyleInquiry'), t('teachingStyleCollaborative'), t('teachingStyle5E')];
   const rowDir = isRTL ? 'row-reverse' : 'row';
   const align = isRTL ? 'right' : 'left';
 

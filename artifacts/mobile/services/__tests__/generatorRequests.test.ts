@@ -78,7 +78,7 @@ describe('buildLessonPlanRequest', () => {
   });
 
   it('asks for them whatever the teaching style, language or prior-review choice', () => {
-    for (const teachingStyle of ['direct', 'inquiry', 'collaborative'] as const) {
+    for (const teachingStyle of ['direct', 'inquiry', 'collaborative', '5e'] as const) {
       for (const lang of ['ar', 'en'] as const) {
         const req = buildLessonPlanRequest(
           { ...planForm, teachingStyle, lang, includePriorReview: true },

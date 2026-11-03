@@ -10,6 +10,61 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Lesson plans on the 5E model, 2026-11-03
+
+**Why.** Admin feedback, 2026-10-30, a lesson-plan 👎 with the comment «حضرلي درس ع نموذج5e»: the
+teaching-style control offered direct, inquiry and collaborative, none of them 5E (Engage, Explore,
+Explain, Elaborate, Evaluate). It was the only thumbs-down in the batch that named a concrete gap in the
+plan itself.
+
+**Changed.** `5e` is a fourth teaching style, **appended** to `LESSON_STYLE_IDS` / the picker's
+`STYLE_IDS` (a saved `styleIdx` is a position in that list). The plan has no field per stage, so the
+stages share the fields the other styles use and each field names its stage: `introduction` is Engage
+(`stageIntro` adds «التشويق (Engage):» after the opening's minutes, if any), `mainActivity` is Explore
+*then* Explain, `guidedPractice` is Elaborate, `independentPractice` and `assessment` are Evaluate.
+- Offline: `services/ai/lessonPlanFiveE.ts` (Arabic and English, variant 0 and the regenerate wording),
+  registered in `lessonPlanBlueprints.ts`; the Arabic teacher text is first person, future.
+- Live: a `5e` entry in `LESSON_STYLE_RULES_AR/_EN` and the style label in `prompts.ts`.
+- Unit / semester / book review plans: `lessonPlanRevision.ts` (offline, a 5E round per unit: Explore then
+  Explain) and the `plan` contract in `api-server/src/lib/revision.ts` (live). Without this a 5E pick on
+  a wide scope would have come back as a direct review.
+- Ministry form: `learnerRoles` has a `5e` row (Engage · Explore+Explain · Elaborate · Evaluate, the form
+  having four columns), and `stagesFromLessonPlan` folds a 5E plan's teacher column the same way (main →
+  row 2; guided + differentiation → row 3; independent + closure + assessment → row 4). The other styles'
+  fold would have put Elaborate in the explain row beside learner text about a different stage.
+- `lib/api-spec/openapi.yaml` enum gains `"5e"`; `pnpm --filter @workspace/api-spec run codegen`
+  regenerated `api-zod` and `api-client-react`. That run also picked up optional fields (`priorTopicsNotes`,
+  `unitId`, `includePriorReview`, `priorKnowledge`, `priorReview`) that were in the spec but missing from
+  the committed generated files; they are additive.
+- «ما الجديد» entry `lesson-plan-5e` (teachers, route `/ai-tools/lesson-plan`).
+
+**Found in review and fixed (a first pass had these wrong).** `lessonPlanKinds.test.ts` was red — 20 cases —
+because 5E's Explain said «بمثال محلول» / "worked example" to every subject (the maths routine); I had
+not run that file. Explore handed groups «حول «<first key concept>»», for «قانون الجيوب» the law itself, one
+line above «دون أن أسمّي الفكرة»; Explore now says «من الدرس», and a test checks that neither the key term
+nor the key concept appears before Explain for lessons that have them. The Engage label could sit on the
+stock opener titled «التنبؤ والاستكشاف» (`stageIntro` now drops its second half). The live Arabic rule
+described the teacher in the third person («يبني المعلم»), which a model may copy into the plan; it now
+addresses the model. A weak English ordering test (both words are in the header line) and two
+hard-coded three-style lists were fixed.
+
+**Pinned.** The style is fourth in the list; each field names its stage in both languages; Explore comes
+before Explain in the single-lesson plan, the regenerate wording and every round of a revision plan; the
+term is not named before Explain; no peer-discussion ban; only 5E labels the opening; a document-grounded
+5E plan keeps the labels; `5e` is accepted by the prompts and named in the revision contract. Every
+existing style-parameterised suite (variants, teacher voice, regenerate, one-unit wording) now runs
+over `5e` too.
+
+**Not verified.** **Terminology:** the stages are «التشويق · الاستكشاف · التفسير · التوسّع · التقويم»; a
+teacher (or the Ministry's own 5E material) may say «التهيئة» or «الانشغال» for Engage — not checked, and
+cheap to change (`lessonPlanFiveE.ts`, `prompts.ts`). No Jordanian teacher has read the Arabic, and these plans are the offline blueprints —
+the **live model's** answer to the new clause was not generated here (no key), so whether it really keeps
+Explore before Explain is untested. The picker now has four segments; it was **not looked at** in a
+browser (phone width, RTL, long Arabic labels). When a lesson has no key term the Explain stage names the
+lesson title as «المصطلح» (the same fallback every style uses), which reads oddly for a lab activity.
+Free text typed as «5E» into the extra-instructions box is not detected. Other tools (slides, worksheets)
+are unchanged.
+
 ## Lesson explanations: the third review, a stronger model, and two linking bugs in the maths check — 2026-11-03
 
 **What the third prefill showed.** The run under the maths check (prompt `2026-11-02.1`, gpt-5.4-mini) generated all 50

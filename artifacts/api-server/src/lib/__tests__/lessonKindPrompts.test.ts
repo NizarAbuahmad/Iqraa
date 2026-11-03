@@ -116,7 +116,7 @@ describe("the live lesson-plan prompt", () => {
   });
 
   it("works with every teaching style and with a prior-knowledge review", () => {
-    for (const teachingStyle of ["direct", "inquiry", "collaborative"]) {
+    for (const teachingStyle of ["direct", "inquiry", "collaborative", "5e"]) {
       const p = lessonPlanPromptAr({
         ...base, subject: "التربية الرياضية", teachingStyle, includePriorReview: true, priorKnowledge: ["الإحماء"],
       });
