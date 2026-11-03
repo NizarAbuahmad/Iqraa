@@ -36,6 +36,65 @@ child with `canTrack: true`. `/student/homework` and `/parent/schedule` answer 2
 was written to production. With `GUARDIAN_APPROVAL` on, the student would still be `not_required`, because it has a live
 link; that was reasoned from `guardianStatus`, not run.
 
+## lib/figure: a shared gate and geometry for drawn graphs and vectors — 2026-11-03
+
+A teacher's feedback: no outright scientific errors, but some lessons need a graph or a vector drawing and the app puts
+none in the lesson or the exam. This is **PR 1 of 3** of the answer (spec
+`docs/superpowers/specs/2026-11-03-drawn-figures-design.md`, plan `docs/superpowers/plans/2026-11-03-drawn-figures.md`):
+the pieces every later PR shares. **No screen draws a figure yet and nothing user-visible changed**, so there is no
+«ما الجديد» entry; PR 2 (exam questions) and PR 3 (student lesson cards) carry theirs.
+
+**What was built.** A new pure package `lib/figure` (`@workspace/figure`): `resolveFigure` (the one gate every figure
+passes, never repairs, never throws), `layoutFigure` (pure geometry: a figure and a box in, pixel primitives out),
+`figureAltText`, `figureSvg` (a standalone SVG for places with no React: the admin's review files in PR 3) and
+`figureConsistentWith` (a narrow guard against a drawing that shows a different function from the one a question's
+`check` verified). Two kinds: `function-graph` and `vectors`. Two moves, both byte-identical and both leaving a
+re-export behind so no caller or test changed: the viewport maths (`mathViewport.ts` → `lib/figure/src/viewport.ts`) and
+the expression compiler (`compileExpression` out of `deckVisuals.ts`). In the app, `components/ui/FigureView.tsx`
+(react-native-svg, backdrop from the Math Corner's `PlaneGrid`) and `QuestionVisual.tsx` exist and are **unused**.
+Wired like `lib/exam-paper`: root `tsconfig.json`, both `package.json` files, a CI step «Test figure core», the lockfile
+(two incidental pnpm-11 hunks rode along: a posthog snapshot key and a `deprecated:` line on `@smithy/core`).
+
+**What the reviews found that the first tests did not** (worth knowing for PRs 2 and 3, which trust this gate):
+- `figureConsistentWith` as planned broke out of its loop on the first mismatch, so a genuinely different function
+  looked like «too few points» and passed. Fixed; two tests.
+- The rule that stops two branches of `tan(x)` or `1/x` being joined across an asymptote had no test that failed
+  without it. It does now.
+- **The gate accepted figures that froze every renderer** — a domain one float step wide made `gridTicks` loop forever
+  (`k++` stops changing above 2^53), a tiny range threw a `RangeError` from `toFixed`. In PR 2 a model-written figure
+  would have hung a student's JS thread. Closed at four layers: new limits (`x` width ≥ 0.5, a given `y` ≥ 0.1 tall, no
+  sample beyond 1e9), a minimum span in the auto-fit, a hard guard in `ticksBetween`/`gridTicks` (this one also protects
+  the grapher), and a regression test over the five probes.
+- The gate kept a marked point that the geometry then silently dropped (auto-fit trimmed it off the box): a question
+  naming «A» would have shown a drawing without A. Auto-fit now includes marked points and a given `y` refuses a point
+  outside it.
+- A label could still carry a value as a number word («six», «ستة», «عشر») or a tatweel; now refused by a short
+  deny-list. Duplicate functions/vectors (their labels would land on one pixel) and non-string `check` input are refused.
+
+**Verified.** Locally on the final code: `pnpm run typecheck` clean; `lib/figure` 76/76; exam-paper 14/14;
+math-verify 29/29; api-server build clean and 2,842/2,842; mobile 9,187 passed, 0 failed, 10 skipped. CI was green on all
+six jobs on `b38286a` (everything up to the final-review fixes; the run on the final head is the PR's). The pictures were
+looked at: a parabola with a marked point, `1/x`, `tan(x)` and two vectors with component dashes, rendered to PNG in
+Chromium from `figureSvg` — smooth curves, branches split at the asymptotes with no connecting line, arrowheads the right
+way. The tick guard was swept over widths 320–4000 and scales from `MIN_SCALE` to `MAX_SCALE`: worst case 56 ticks, never
+an empty grid where one was expected. The api-server's esbuild bundles the package and its `./viewport` subpath.
+
+**Not verified.**
+- **`FigureView` has never been rendered**, because nothing uses it. Its clipping (outer `overflow: 'hidden'` plus a
+  `<G clipPath>`), dark mode and the way its axis names sit against `PlaneGrid`'s tick labels are read from code only;
+  PR 2 puts it on a screen and is where that gets looked at (two known cosmetic issues are listed below).
+- No live model has ever written a `visual`. That is PR 2's prompt and the first live run's job.
+- Android/iOS, and the Metro bundle (a screen has to import the component before it is bundled).
+
+**Known limits and deferred.** Label collisions (a curve's letter on the axis name at the right edge; the top y tick on
+«ص»; a vector's letter on a tick number); `FigureView`'s Svg is 2px wider/taller than its bordered View so the last 2px
+are cropped; the 2%–98% range trim cuts the end off an exponential (`2^x` leaves the canvas before `x` ends); a marked
+point right at an asymptote stretches the range and flattens the rest of the curve (`tan` with a point at 1.57); the
+number-word deny-list misses a few two-letter or variant spellings (`ست`, `سته`); `x^2` and `x ^ 2` count as different
+functions for the duplicate check; `figureSvg` prints Latin digits where the app shows Arabic-Indic; `figureSvg`'s clip
+id is per size, so two same-size figures on one HTML page share it (the root `overflow` still clips). The gate's numbers
+are conservative on purpose: a legitimate figure outside them is refused and the question or card shows words, as today.
+
 ## Lesson explanations: the third review, a stronger model, and two linking bugs in the maths check — 2026-11-03
 
 **What the third prefill showed.** The run under the maths check (prompt `2026-11-02.1`, gpt-5.4-mini) generated all 50
