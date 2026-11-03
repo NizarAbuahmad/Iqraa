@@ -1001,7 +1001,18 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
             model,
           };
         },
-      );
+      ).then(result => {
+        // The only way to see how a live model uses the optional `visual` field:
+        // what it proposed, what was kept, and why each dropped one was.
+        const kept = result.questions.filter(q => q.body["visual"]).length;
+        if (kept + result.visualsDropped.length > 0) {
+          logger.info(
+            { evaluationId: evaluation.id, kept, dropped: result.visualsDropped },
+            "exam visuals",
+          );
+        }
+        return result;
+      });
 
       let llm = await runLlm(avoid, false);
       if (avoid.length > 0) {
