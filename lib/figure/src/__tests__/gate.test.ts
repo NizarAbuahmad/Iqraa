@@ -127,6 +127,17 @@ describe('figureConsistentWith', () => {
     assert.equal(figureConsistentWith(f, null), true);
     assert.equal(figureConsistentWith(f, undefined), true);
   });
+  it('does not object when too few points are comparable', () => {
+    // x^0.5 is finite only for x >= 0: on [-39, 1] that is 1 of the 24 samples.
+    const g = resolveFigure(graph({ functions: [{ expr: 'x + 1' }], x: [-39, 1] }))!;
+    assert.ok(g);
+    assert.equal(figureConsistentWith(g, 'x^0.5'), true);
+  });
+  it('agrees when any one of several drawn functions matches', () => {
+    const two = resolveFigure(graph({ functions: [{ expr: 'x^2 - 9', label: 'f' }, { expr: 'x^2 - 4', label: 'g' }] }))!;
+    assert.equal(figureConsistentWith(two, 'x^2 - 4'), true);
+    assert.equal(figureConsistentWith(two, 'x^2 - 5'), false);
+  });
   it('has nothing to say about vectors', () => {
     assert.equal(figureConsistentWith(resolveFigure(vecs())!, 'x^2'), true);
   });

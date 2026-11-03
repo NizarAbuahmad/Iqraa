@@ -171,11 +171,11 @@ export function figureConsistentWith(figure: Figure, checkQuestion: string | nul
       const b = checked(x);
       if (a === null || b === null || !Number.isFinite(a) || !Number.isFinite(b)) continue;
       n++;
-      if (Math.abs(a - b) > 1e-6 * Math.max(1, Math.abs(a), Math.abs(b))) { same = false; break; }
+      if (Math.abs(a - b) > 1e-6 * Math.max(1, Math.abs(a), Math.abs(b))) same = false;
     }
-    // A mismatch breaks out early, so `n` is small then; one differing point is
-    // already a definite disagreement and must count as a comparison.
-    if (same && n < 8) continue;
+    // No early exit: `n` must count every comparable sample before we decide
+    // whether there were enough of them to judge at all.
+    if (n < 8) continue;
     compared++;
     if (same) return true;
   }
