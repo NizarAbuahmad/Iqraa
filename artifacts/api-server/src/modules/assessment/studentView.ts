@@ -22,6 +22,7 @@
 import crypto from "node:crypto";
 import { QUESTION_TYPES } from "./questionTypes.ts";
 import { studentFigure } from "./questionFigure.ts";
+import { studentVisual } from "./questionVisual.ts";
 import { SHARE_CODE_ALPHABET } from "../../lib/shareCodeAlphabet.ts";
 
 // No I, L, O, 0 or 1 — see lib/shareCodeAlphabet.ts.
@@ -183,6 +184,9 @@ export function sanitizeQuestionForStudent(
   // only a book figure the app serves gets through (see questionFigure.ts).
   const figure = studentFigure(source);
   if (figure) body["figure"] = figure;
+  // Same door: a drawing the gate accepts, or nothing (see questionVisual.ts).
+  const visual = studentVisual(source);
+  if (visual) body["visual"] = visual;
 
   return {
     id: question.id,
