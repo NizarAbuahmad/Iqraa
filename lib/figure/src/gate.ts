@@ -23,16 +23,30 @@ export const FIGURE_LIMITS = {
   maxBytes: 1500,
   samples: 200,
   minFiniteShare: 0.8,
+  /** Narrower than this a domain has no readable grid and no visible curve. */
+  minXWidth: 0.5,
+  minYHeight: 0.1,
+  /** A sample this large cannot be laid out or labelled; the figure is refused. */
+  maxSampleAbs: 1e9,
 } as const;
 
 const L = FIGURE_LIMITS;
-const LABEL = /^[A-Za-zء-ي]{1,3}[0-9]?['′]?$/u;
+// U+0640 (tatweel) sits inside ء-ي; it is a stretch mark, not a letter, so it is left out.
+const LABEL = /^[A-Za-zء-غف-ي]{1,3}[0-9]?['′]?$/u;
+// Short number words: a label of one would hand the answer over. Longer ones
+// already fail the three-letter cap.
+const NUMBER_WORDS = new Set([
+  'one', 'two', 'six', 'ten',
+  'صفر', 'ستة', 'سبع', 'تسع', 'عشر', 'خمس', 'ثمن', 'ثلث', 'ربع', 'نصف', 'مئة', 'ألف', 'الف',
+]);
+const isNumberWord = (label: string): boolean => NUMBER_WORDS.has(label.replace(/[0-9'′]+$/u, '').toLowerCase());
 
 type Rec = Record<string, unknown>;
 const isRec = (v: unknown): v is Rec => !!v && typeof v === 'object' && !Array.isArray(v);
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const isPair = (v: unknown): v is [number, number] => Array.isArray(v) && v.length === 2 && isNum(v[0]) && isNum(v[1]);
-const isLabel = (v: unknown): v is string => typeof v === 'string' && LABEL.test(v);
+const isLabel = (v: unknown): v is string => typeof v === 'string' && LABEL.test(v) && !isNumberWord(v);
+const half = (v: number) => Math.round(v * 2) / 2 + 0;
 const onHalfGrid = (v: number) => Math.abs(v) <= L.maxCoord && Math.abs(v * 2 - Math.round(v * 2)) < 1e-9;
 
 function resolveGraph(raw: Rec): FunctionGraph | null {
@@ -41,10 +55,14 @@ function resolveGraph(raw: Rec): FunctionGraph | null {
   const functions: FunctionGraph['functions'] = [];
   const compiled: ((x: number) => number | null)[] = [];
   const labels = new Set<string>();
+  const exprs = new Set<string>();
   for (const f of fns) {
     if (!isRec(f) || typeof f['expr'] !== 'string') return null;
     const expr = f['expr'].trim();
     if (expr.length < 1 || expr.length > L.maxExprChars) return null;
+    // Twice the same curve would put two labels on one pixel.
+    if (exprs.has(expr)) return null;
+    exprs.add(expr);
     const fn = compileExpression(expr);
     if (!fn) return null;
     compiled.push(fn);
@@ -61,14 +79,17 @@ function resolveGraph(raw: Rec): FunctionGraph | null {
   const xr = raw['x'];
   if (!isPair(xr)) return null;
   const [x0, x1] = xr;
-  if (!(x1 > x0) || x1 - x0 > L.maxXWidth || Math.abs(x0) > L.maxXAbs || Math.abs(x1) > L.maxXAbs) return null;
+  if (!(x1 > x0) || x1 - x0 < L.minXWidth || x1 - x0 > L.maxXWidth || Math.abs(x0) > L.maxXAbs || Math.abs(x1) > L.maxXAbs) return null;
 
   const dx = (x1 - x0) / (L.samples - 1);
   for (const fn of compiled) {
     let finite = 0;
     for (let i = 0; i < L.samples; i++) {
       const y = fn(x0 + i * dx);
-      if (y !== null && Number.isFinite(y)) finite++;
+      if (y !== null && Number.isFinite(y)) {
+        if (Math.abs(y) > L.maxSampleAbs) return null;
+        finite++;
+      }
     }
     if (finite / L.samples < L.minFiniteShare) return null;
   }
@@ -78,7 +99,7 @@ function resolveGraph(raw: Rec): FunctionGraph | null {
     const yr = raw['y'];
     if (!isPair(yr)) return null;
     const [y0, y1] = yr;
-    if (!(y1 > y0) || y1 - y0 > L.maxYHeight || Math.abs(y0) > L.maxYAbs || Math.abs(y1) > L.maxYAbs) return null;
+    if (!(y1 > y0) || y1 - y0 < L.minYHeight || y1 - y0 > L.maxYHeight || Math.abs(y0) > L.maxYAbs || Math.abs(y1) > L.maxYAbs) return null;
     y = [y0, y1];
   }
 
@@ -95,6 +116,8 @@ function resolveGraph(raw: Rec): FunctionGraph | null {
       if (typeof on !== 'number' || !Number.isInteger(on) || on < 0 || on >= compiled.length) return null;
       const py = compiled[on]!(at);
       if (py === null || !Number.isFinite(py)) return null;
+      // A point the drawn range would cut off is a question naming a point the picture lacks.
+      if (y && (py < y[0] || py > y[1])) return null;
       points.push({ at, label, on });
     }
   }
@@ -113,20 +136,27 @@ function resolveVectors(raw: Rec): VectorsFigure | null {
   if (!Array.isArray(list) || list.length < 1 || list.length > L.maxVectors) return null;
   const vectors: VectorsFigure['vectors'] = [];
   const labels = new Set<string>();
+  const seen = new Set<string>();
   for (const v of list) {
     if (!isRec(v)) return null;
     const from = v['from'];
     const to = v['to'];
     if (!isPair(from) || !isPair(to)) return null;
     if (![...from, ...to].every(onHalfGrid)) return null;
-    if (from[0] === to[0] && from[1] === to[1]) return null;
+    // Half-units on output, so 1.0000000001 (accepted within 1e-9) is stored as 1.
+    const f: [number, number] = [half(from[0]), half(from[1])];
+    const t: [number, number] = [half(to[0]), half(to[1])];
+    if (f[0] === t[0] && f[1] === t[1]) return null;
+    const key = `${f[0]},${f[1]}>${t[0]},${t[1]}`;
+    if (seen.has(key)) return null;
+    seen.add(key);
     const label = v['label'];
     if (label === undefined) {
-      vectors.push({ from: [from[0], from[1]], to: [to[0], to[1]] });
+      vectors.push({ from: f, to: t });
     } else {
       if (!isLabel(label) || labels.has(label)) return null;
       labels.add(label);
-      vectors.push({ from: [from[0], from[1]], to: [to[0], to[1]], label });
+      vectors.push({ from: f, to: t, label });
     }
   }
   const components = raw['components'];
@@ -155,7 +185,7 @@ export function resolveFigure(raw: unknown): Figure | null {
  * it is a narrow guard, not a proof the drawing is right.
  */
 export function figureConsistentWith(figure: Figure, checkQuestion: string | null | undefined): boolean {
-  if (figure.kind !== 'function-graph' || !checkQuestion) return true;
+  if (figure.kind !== 'function-graph' || typeof checkQuestion !== 'string' || !checkQuestion) return true;
   const checked = compileExpression(checkQuestion.trim());
   if (!checked) return true;
   const [x0, x1] = figure.x;

@@ -142,3 +142,78 @@ describe('figureConsistentWith', () => {
     assert.equal(figureConsistentWith(resolveFigure(vecs())!, 'x^2'), true);
   });
 });
+
+describe('limits that keep every renderer finishing', () => {
+  it('lists the new limits', () => {
+    assert.equal(FIGURE_LIMITS.minXWidth, 0.5);
+    assert.equal(FIGURE_LIMITS.minYHeight, 0.1);
+    assert.equal(FIGURE_LIMITS.maxSampleAbs, 1e9);
+  });
+  it('refuses a domain narrower than minXWidth', () => {
+    for (const x of [[-50, -49.99999999999999], [0, 1e-300], [0, 0.4], [1, 1.1]]) {
+      assert.equal(resolveFigure(graph({ x })), null, JSON.stringify(x));
+    }
+    assert.ok(resolveFigure(graph({ x: [0, 0.5] })));
+  });
+  it('refuses a given y range shorter than minYHeight', () => {
+    for (const y of [[999.9999999999999, 1000], [0, 1e-120], [0, 0.05]]) {
+      assert.equal(resolveFigure(graph({ functions: [{ expr: 'x' }], y })), null, JSON.stringify(y));
+    }
+    assert.ok(resolveFigure(graph({ functions: [{ expr: 'x' }], y: [0, 0.1] })));
+  });
+  it('refuses a function with any sample beyond maxSampleAbs', () => {
+    assert.equal(resolveFigure(graph({ functions: [{ expr: '10^12 + x/10000' }], x: [-1, 1] })), null);
+    assert.equal(resolveFigure(graph({ functions: [{ expr: '10^300*x' }], x: [-1, 1] })), null);
+    // one huge sample among many ordinary ones still counts
+    assert.equal(resolveFigure(graph({ functions: [{ expr: '2^(x*10)' }], x: [0, 40] })), null);
+  });
+  it('still accepts a steep but sane function', () => {
+    // x:[-50,50] is 100 wide and refused by maxXWidth anyway; the widest legal domain is 40.
+    assert.ok(resolveFigure(graph({ functions: [{ expr: '1000000*x' }], x: [-20, 20] })));
+  });
+});
+
+describe('a marked point must be inside a given y range', () => {
+  const base = { functions: [{ expr: 'x^2' }], x: [-3, 3], y: [-1, 3] };
+  it('refuses a point whose y lies outside the range, accepts one inside', () => {
+    assert.equal(resolveFigure(graph({ ...base, points: [{ at: 3, label: 'A' }] })), null);
+    assert.ok(resolveFigure(graph({ ...base, points: [{ at: 1, label: 'A' }] })));
+  });
+});
+
+describe('labels hold no number word and no tatweel', () => {
+  const words = ['one', 'two', 'six', 'ten', 'Six', 'TEN', 'ten1', "six'",
+    'ستة', 'عشر', 'سبع', 'مئة', 'ألف', 'الف', 'صفر', 'تسع', 'خمس', 'ثمن', 'ثلث', 'ربع', 'نصف', 'عشر2'];
+  const tatweel = ['ـ', 'ـــ', 'بـ'];
+  it('refuses them as a curve, point or vector label', () => {
+    for (const label of [...words, ...tatweel]) {
+      assert.equal(resolveFigure(vecs({ vectors: [{ from: [0, 0], to: [1, 1], label }] })), null, `vector ${label}`);
+      assert.equal(resolveFigure(graph({ functions: [{ expr: 'x', label }] })), null, `curve ${label}`);
+      assert.equal(resolveFigure(graph({ points: [{ at: 0, label }] })), null, `point ${label}`);
+    }
+  });
+  it('still accepts ordinary letters', () => {
+    for (const label of ['u', 'v1', "A'", 'ab', 'س', 'ق']) {
+      assert.ok(resolveFigure(vecs({ vectors: [{ from: [0, 0], to: [1, 1], label }] })), label);
+    }
+  });
+});
+
+describe('cheap guards', () => {
+  const f = resolveFigure(graph())!;
+  it('figureConsistentWith tolerates a non-string question check', () => {
+    assert.equal(figureConsistentWith(f, 7 as never), true);
+    assert.equal(figureConsistentWith(f, {} as never), true);
+  });
+  it('stores vector coordinates on the half-unit grid', () => {
+    const out = resolveFigure(vecs({ vectors: [{ from: [0, 0], to: [1.0000000001, 2.4999999999] }] })) as { vectors: { to: number[] }[] };
+    assert.deepEqual(out.vectors[0]!.to, [1, 2.5]);
+  });
+  it('refuses a duplicate function or a duplicate vector', () => {
+    assert.equal(resolveFigure(graph({ functions: [{ expr: 'x^2', label: 'f' }, { expr: ' x^2 ', label: 'g' }] })), null);
+    assert.equal(resolveFigure(graph({ functions: [{ expr: 'x^2' }, { expr: 'x^2' }] })), null);
+    const dup = { from: [0, 0], to: [1, 1] };
+    assert.equal(resolveFigure(vecs({ vectors: [{ ...dup, label: 'u' }, { ...dup, label: 'v' }] })), null);
+    assert.equal(resolveFigure(vecs({ vectors: [{ ...dup }, { from: [0, 0], to: [1.0000000001, 1] }] })), null);
+  });
+});

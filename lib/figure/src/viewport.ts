@@ -149,6 +149,15 @@ function decimalsOf(step: number): number {
 
 function ticksBetween(min: number, max: number, step: number, pxOf: (v: number) => number): Tick[] {
   const decimals = decimalsOf(step);
+  // A hard guard, not a nicety: past 2^53 `k++` stops changing `k` and the loop
+  // never ends, and `toFixed` throws above 100 digits. A view this extreme has
+  // no readable grid, so it gets none rather than freezing the thread that draws it.
+  if (
+    !Number.isFinite(min) || !Number.isFinite(max) || !(step > 0) || !Number.isFinite(step) ||
+    decimals > 20 ||
+    Math.max(Math.abs(min), Math.abs(max)) / step >= 2 ** 50 ||
+    (max - min) / step > 1000
+  ) return [];
   const out: Tick[] = [];
   for (let k = Math.ceil(min / step - 1e-9); k <= Math.floor(max / step + 1e-9); k++) {
     const value = Number((k * step).toFixed(decimals));
@@ -160,10 +169,11 @@ function ticksBetween(min: number, max: number, step: number, pxOf: (v: number) 
 /** Grid lines for each axis, as clean values (0.3, not 0.30000000000000004) with their pixel. */
 export function gridTicks(vp: Viewport, xMode: 'decimal' | 'deg' = 'decimal'): { xs: Tick[]; ys: Tick[] } {
   const b = bounds(vp);
-  const xStep = niceStep(vp.sx, 56, xMode);
-  const yStep = niceStep(vp.sy, 40, 'decimal');
+  // `niceStep` searches for a step and never ends on a zero, negative or
+  // non-finite scale, so such an axis gets no grid before it is asked.
+  const usable = (s: number) => Number.isFinite(s) && s > 0;
   return {
-    xs: ticksBetween(b.xMin, b.xMax, xStep, v => toPx(vp, v, 0).x),
-    ys: ticksBetween(b.yMin, b.yMax, yStep, v => toPx(vp, 0, v).y),
+    xs: usable(vp.sx) ? ticksBetween(b.xMin, b.xMax, niceStep(vp.sx, 56, xMode), v => toPx(vp, v, 0).x) : [],
+    ys: usable(vp.sy) ? ticksBetween(b.yMin, b.yMax, niceStep(vp.sy, 40, 'decimal'), v => toPx(vp, 0, v).y) : [],
   };
 }

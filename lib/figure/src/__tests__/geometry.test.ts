@@ -2,7 +2,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { layoutFigure } from '../geometry.ts';
 import { resolveFigure } from '../gate.ts';
-import { bounds, toPx, toWorld } from '../viewport.ts';
+import type { Figure } from '../types.ts';
+import { bounds, gridTicks, toPx, toWorld } from '../viewport.ts';
 
 const BOX = { w: 400, h: 300 };
 const fig = (raw: unknown) => resolveFigure(raw)!;
@@ -47,12 +48,32 @@ describe('layoutFigure: function-graph', () => {
   });
 
   it('emits no point or label for a marked point outside the given y range', () => {
+    // The gate now refuses such a figure, so it is built by hand: the geometry's
+    // own defensive drop is what is tested here.
     const base = { kind: 'function-graph', functions: [{ expr: 'x^2' }], x: [-3, 3], y: [-1, 3] };
-    const off = layoutFigure(fig({ ...base, points: [{ at: 3, label: 'A' }] }), BOX);
+    const off = layoutFigure({ ...base, points: [{ at: 3, label: 'A', on: 0 }] } as Figure, BOX);
     assert.equal(off.points.length, 0);
-    const mixed = layoutFigure(fig({ ...base, points: [{ at: 3, label: 'A' }, { at: 1, label: 'B' }] }), BOX);
+    const mixed = layoutFigure({ ...base, points: [{ at: 3, label: 'A', on: 0 }, { at: 1, label: 'B', on: 0 }] } as Figure, BOX);
     assert.equal(mixed.points.length, 1);
     assert.equal(mixed.points[0]!.label, 'B');
+  });
+
+  it('keeps every gated marked point inside an auto-fitted box', () => {
+    // 2^x on [0,10]: the 98th-percentile fit alone leaves x=10 (y=1024) off the top.
+    const l = layoutFigure(fig({ kind: 'function-graph', functions: [{ expr: '2^x' }], x: [0, 10], points: [{ at: 10, label: 'A' }] }), BOX);
+    assert.equal(l.points.length, 1);
+    const p = l.points[0]!.at;
+    assert.ok(p.x >= 0 && p.x <= BOX.w && p.y >= 0 && p.y <= BOX.h, JSON.stringify(p));
+  });
+
+  it('lays out a nearly flat curve far from zero with a finite scale and a grid', () => {
+    const l = layoutFigure(fig({ kind: 'function-graph', functions: [{ expr: '100000000 + x/10000' }], x: [-1, 1] }), BOX);
+    assert.ok(Number.isFinite(l.viewport.sy) && l.viewport.sy > 0, String(l.viewport.sy));
+    const t = gridTicks(l.viewport);
+    assert.ok(t.xs.length <= 2000 && t.ys.length <= 2000);
+    assert.ok(t.ys.length > 0, 'a readable grid, not none');
+    const b = bounds(l.viewport);
+    assert.ok(b.yMax - b.yMin >= 99.9, `fitted span ${b.yMax - b.yMin} is below the minimum for values near 1e8`);
   });
 });
 

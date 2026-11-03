@@ -91,7 +91,7 @@ type Vectors = {
 
 | Kind | Limits |
 |---|---|
-| `function-graph` | 1–3 functions; `expr` ≤ 60 chars and accepted by `compileExpression`; finite at ≥ 80% of 200 samples across `x` (so a function that is nothing but gaps is refused); `x` increasing, width ≤ 40, within ±50; `y`, if given, increasing and ≤ 200 tall; ≤ 4 `points`, each `at` inside `x`, with `f(at)` finite (a marked point on a gap is refused, not moved), `on` an existing function index (default 0) |
+| `function-graph` | 1–3 functions; `expr` ≤ 60 chars and accepted by `compileExpression`; finite at ≥ 80% of 200 samples across `x` (so a function that is nothing but gaps is refused); `x` increasing, width 0.5–40, within ±50; no sample beyond 1e9 in magnitude; no repeated `expr`; `y`, if given, increasing and 0.1–200 tall; ≤ 4 `points`, each `at` inside `x`, with `f(at)` finite (a marked point on a gap, or outside a given `y`, is refused, not moved), `on` an existing function index (default 0) |
 | `vectors` | 1–5 vectors; each coordinate a multiple of 0.5 with \|coord\| ≤ 12; non-zero length; labels distinct |
 | labels (both) | 1–3 letters (Latin or Arabic), optionally followed by one digit and/or a prime — **never** `=`, brackets, or a number on its own |
 | both | the serialised spec ≤ 1.5 KB |

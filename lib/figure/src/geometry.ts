@@ -50,10 +50,25 @@ function layoutGraph(fig: FunctionGraph, box: Box): FigureLayout {
     const ys = series.flat().map(s => s.y).filter((y): y is number => y !== null).sort((a, b) => a - b);
     let min = ys.length ? percentile(ys, 0.02) : -1;
     let max = ys.length ? percentile(ys, 0.98) : 1;
+    // A marked point is always in the box, whatever the trim would have cut: a
+    // question that names «A» must not get a drawing without it.
+    for (const p of fig.points ?? []) {
+      const f = fns[p.on ?? 0];
+      const py = f ? f(p.at) : null;
+      if (py !== null && Number.isFinite(py)) { min = Math.min(min, py); max = Math.max(max, py); }
+    }
     if (max - min < 1e-9) { min -= 1; max += 1; }
     const pad = (max - min) * 0.1;
     lo = min - pad;
     hi = max + pad;
+    // Never fit tighter than a readable span for values this size: a near-flat
+    // curve far from zero would otherwise get a scale of millions per unit.
+    const minSpan = Math.max(1e-6, 1e-6 * Math.max(Math.abs(lo), Math.abs(hi)));
+    if (hi - lo < minSpan) {
+      const mid = (lo + hi) / 2;
+      lo = mid - minSpan / 2;
+      hi = mid + minSpan / 2;
+    }
     const span = hi - lo;
     // Keep the x axis in view when it is close to the data.
     if (lo > 0 && hi <= 4 * span) lo = -0.1 * span;
