@@ -88,7 +88,8 @@ explanation is approved, with that day's date (`lesson-drawn-figures`, roles `st
 - *Pool version.* `lesson-teaching` moves from `2026-11-03.1` to `2026-11-03.2` (all subjects, chemistry included, even
   though its prompt text is unchanged — the key is per kind).
 - *Admin review.* `pregenerate` writes each lesson drawing as an SVG beside the review file
-  (`<review>-figures/<lessonId>-<n>.svg`, concepts first then the example, the same order the cards use) and
+  (`<review>-figures/<lessonId>-<n>.svg` — renamed by card the next day, see «Lesson drawings are named by card in the
+  pregenerate review folder»; concepts first then the example, the same order the cards use) and
   `--approve` refuses an entry whose drawings have no file there (`entriesMissingFigures`), before any approve request.
   The review file's content hash covers `visual`, so deleting or editing a drawing counts as an edit and the file is refused.
 - *Wording.* `figureFormatAr` now says «اقتران» (the Jordanian books' word) instead of «دالة». The exam prompt embeds only
