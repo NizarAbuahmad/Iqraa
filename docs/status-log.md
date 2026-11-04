@@ -10,6 +10,30 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Deploy: the «what changed» job stops downloading every file of every branch — 2026-11-04
+
+The same checkout problem as the entry below, in the job that **gates production deploys**. On #1413's merge (`28fda7c`)
+`deploy.yml`'s `what changed` job (`timeout-minutes: 5`, `fetch-depth: 0`) was cancelled inside `git fetch`, and every job
+behind it (`iqraa-api`, `iqraa-verifier`, `iqraa-web`, both schema jobs) was **skipped**. Nothing was lost that time — the
+merge touched only a workflow file — but a merge that did need a deploy would have shipped nothing, with no red job to say
+so (the trap `CLAUDE.md` describes: a skipped job is not a failure).
+
+**What changed.** `.github/workflows/deploy.yml`, the `changes` job only: checkout gains `filter: blob:none`, and
+`timeout-minutes` goes 5 → 10. The script is unchanged.
+
+**Measured, against the real remote, full clone vs `--filter=blob:none`.** `git diff --name-only BEFORE AFTER` returned the
+same file list (same hash) for ranges of 1, 3, 10, 40 and 120 commits (2 to 519 files), each in under 10 ms, and the clone
+stayed 5.4 MB, so no file contents were fetched on demand. `git cat-file -e` of an unknown commit still exits 128 in about a
+second, so the «No usable base commit; deploying everything» fallback still fires; a real commit exits 0.
+
+**What merging this does.** `deploy.yml` is on the API's and the verifier's own file lists, so merging it **deploys the API
+and the verifier to Cloud Run (same code, new revisions) and the web bundle**, then the OTA publish to `preview`. That is
+the existing rule working, not a side effect of this change.
+
+**Not verified.** It has not run on a runner; the first `what changed` run on the merge commit is the test, and its
+duration (and whether the three deploy jobs then ran) is what to read. A rename of a file whose contents git must compare
+would fetch those blobs on demand: slower, still correct; none of the ranges above needed it.
+
 ## CI: the destructive-migrations check stops downloading every file of every branch — 2026-11-04
 
 On 2026-11-03 the check `destructive migrations acknowledged` was cancelled four times in a row on one PR (#1411, which
