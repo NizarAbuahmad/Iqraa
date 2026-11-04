@@ -10,6 +10,35 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Lesson drawings are named by card in the pregenerate review folder — 2026-11-04
+
+Follow-up to «Student lesson cards can show a drawn graph or vectors» (the first item under its *Known limits*). The
+admin's one job with a lesson drawing is to compare it with the words of its card, and the files used to be named
+`<lessonId>-<n>.svg` with n counting only the drawings the gate **accepted**, so a file could not be traced to its card by
+name and a refused drawing shifted every later number.
+
+**What changed** (`artifacts/mobile/scripts/pregenerate.ts`, nothing else): `reviewFigures` names a concept's drawing
+`<lessonId>-concept<K>.svg`, K being that concept's 1-based place in the entry's stored `concepts`, and the worked
+example's `<lessonId>-example.svg`. A concept with no (or a refused) drawing leaves a gap in K and nothing shifts. The
+run now prints one line per file under the "drawing(s) to look at" line: `L-concept2.svg → concept 2 «title»` or
+`L-example.svg → the worked example`. `--approve`'s guard (`entriesMissingFigures`) uses the same names, unchanged
+otherwise.
+
+**Verified.** `pregenerate.test.ts` 31/31 (the new cases: a drawing only on concept 2; a refused drawing between two valid
+ones shifts nothing; example only; concept + example in order; the guard with a stub `exists`), mobile typecheck clean.
+The full mobile and api-server suites are CI's here — only this script and its test changed. Not run against a real
+`--go` / `--approve` (needs credentials and spends money).
+
+**Known limits.**
+- A review file written before this change holds old names (`L1-1.svg`), so `--approve` refuses it; regenerate the review
+  file. None with drawings exists yet.
+- K is the place in the stored concepts, not among the cards the app keeps: a concept the app drops (blank title) leaves a
+  gap in the numbering. The number matches the review JSON, which is what the admin reads beside the file.
+- Everything else in the previous entry's limits stands: the guard is in the script only and checks that a file exists, not
+  what is in it; the figures folder is never cleared; nothing in code ties a drawing to its card's words.
+- Admin tooling only: no «ما الجديد» entry, no deploy of the API or the app bundle is needed for it to take effect (the
+  script runs from a checkout). No migration, no native change.
+
 ## Grade 10 physics: semester 2's three introductory experiments, and the unit numbering pinned — 2026-11-03
 
 A teacher compared the app's Grade 10 physics with the two student books and reported four things: (1) no unit 3 exists in
@@ -115,7 +144,8 @@ explanation is approved, with that day's date (`lesson-drawn-figures`, roles `st
 - *Pool version.* `lesson-teaching` moves from `2026-11-03.1` to `2026-11-03.2` (all subjects, chemistry included, even
   though its prompt text is unchanged — the key is per kind).
 - *Admin review.* `pregenerate` writes each lesson drawing as an SVG beside the review file
-  (`<review>-figures/<lessonId>-<n>.svg`, concepts first then the example, the same order the cards use) and
+  (`<review>-figures/<lessonId>-<n>.svg` — renamed by card the next day, see «Lesson drawings are named by card in the
+  pregenerate review folder»; concepts first then the example, the same order the cards use) and
   `--approve` refuses an entry whose drawings have no file there (`entriesMissingFigures`), before any approve request.
   The review file's content hash covers `visual`, so deleting or editing a drawing counts as an edit and the file is refused.
 - *Wording.* `figureFormatAr` now says «اقتران» (the Jordanian books' word) instead of «دالة». The exam prompt embeds only
