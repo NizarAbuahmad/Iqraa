@@ -44,9 +44,12 @@ export const PROMPT_VERSION = "2026-10-04.1";
  *   2026-11-03: the check's examples became placeholders in the output shape
  *   (the model had copied the example check into chemistry lessons), a descriptive
  *   answer carries no check, and the kind moved to the documents model.
+ *   2026-11-03 (second): rule 16. A maths lesson may ask for one `visual` (a
+ *   graph or vectors) on a concept or the worked example; a row stored before
+ *   this has none, so a maths lesson's pooled section would never draw one.
  */
 const PROMPT_VERSION_BY_KIND: Readonly<Record<string, string>> = {
-  "lesson-teaching": "2026-11-03.1",
+  "lesson-teaching": "2026-11-03.2",
 };
 
 /** The version a kind's pool is keyed and stored under. */

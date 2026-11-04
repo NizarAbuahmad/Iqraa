@@ -42,6 +42,114 @@ with no 3, in book order; wave motion is its own unit with the two lessons and n
 **Not verified / limits.** Not looked at on a running app; no periods for any semester 2 lesson (unchanged). No «ما الجديد»
 entry: three experiments appear in a lesson picker, which is not a feature to announce to every account.
 
+## CI: the destructive-migrations check stops downloading every file of every branch — 2026-11-04
+
+On 2026-11-03 the check `destructive migrations acknowledged` was cancelled four times in a row on one PR (#1411, which
+adds no migration), each time at exactly its `timeout-minutes: 5`, inside `actions/checkout`'s `git fetch` and before its
+own step ran. The same job had taken ~30 s that morning and ~4 min on #1410. Its cause is the checkout, not the PR:
+`fetch-depth: 0` downloads the whole history of all 77 branches **with every file version**.
+
+**What changed.** `.github/workflows/destructive-migration-ack.yml` only: the checkout gains `filter: blob:none`
+(history kept, file contents fetched on demand) and `timeout-minutes` goes 5 → 10. The job's script is unchanged.
+
+**Measured, from this machine against the real remote.** Full clone 1.2 GB / 52 s (on a fast link); `--filter=blob:none`
+5.4 MB / 1 s. The job's own `git diff --name-only --diff-filter=A base...head -- 'lib/db/migrations/*.sql'`, run on both
+over a range that contains migrations, returned the same 2 files (same hash), and the lightweight clone stayed 5.4 MB, so
+the diff pulled no blobs; an empty range returned nothing. `filter` is an input of `actions/checkout@v4` (read from its
+`action.yml`).
+
+**Not verified.** It has not run on a runner yet — this PR's own run is the first. If the `base...head` diff ever needs a
+file's contents (for example to detect a renamed migration), git fetches just that blob on demand, which is slower but
+correct.
+
+**Left alone, on purpose.** `ci.yml`'s `migrations match schema` job (`fetch-depth: 0`, 10-minute limit; it timed out
+twice on #1411 and then passed) has the same checkout, but it installs dependencies and runs migrations, which could not
+be tried locally; `deploy.yml` also uses `fetch-depth: 0`. Both want the same look if they start timing out.
+
+## Student lesson cards can show a drawn graph or vectors — 2026-11-03
+
+**PR 3 of 3** of the answer to a teacher's feedback (some lessons need a graph or vector drawing and the app shows none;
+spec `docs/superpowers/specs/2026-11-03-drawn-figures-design.md`, plan `docs/superpowers/plans/2026-11-03-drawn-figures.md`).
+PR 1 shipped the shared gate and `FigureView`, PR 2 the exam questions. This one wires the same pieces into the student's
+lesson explanations. **No student sees a drawing on the day this merges**: the explanations students are served were
+approved before drawings existed, and none carries one. A drawing appears only after an admin regenerates explanations,
+opens the drawings as files and approves (below). For that reason there is **no student «ما الجديد» entry yet** — it was
+written, reviewed, and taken out again before this PR (commits `3851dc8`, `f3ba501`); add it the day the first drawn
+explanation is approved, with that day's date (`lesson-drawn-figures`, roles `student`, route `/curriculum`, strings in
+`i18n.ts`; `git show 3851dc8` has all of it).
+
+**What was built.**
+- *Cards.* A `concept` card and the `example` card carry `visual?: Figure`, passed through `resolveFigure` (never throws,
+  a refused drawing is dropped alone and the card keeps its words); a card with no drawing is unchanged. The lesson screen
+  (`app/curriculum/lesson-explanation.tsx`) draws it below the concept's points, and after the example's steps and
+  before its answer line (the spec first said "above"; corrected).
+- *Prompt.* On a **maths** lesson only (`isMathContext`), the `lesson-teaching` prompt gains rule 16 in both languages:
+  one optional `"visual"` per concept or worked example, at most 2 in the section (`LESSON_VISUALS_MAX`), the drawing
+  illustrates and never carries information alone, plus the format text from `figurePrompt.ts`. Rules 1–15 and every
+  non-maths prompt are unchanged (a chemistry lesson's prompt is byte-identical; traced by hand, pinned by substring).
+  `teachingVisualCounts` now reports `visual`, so the existing "lesson-teaching visuals" log line counts them.
+- *Pool version.* `lesson-teaching` moves from `2026-11-03.1` to `2026-11-03.2` (all subjects, chemistry included, even
+  though its prompt text is unchanged — the key is per kind).
+- *Admin review.* `pregenerate` writes each lesson drawing as an SVG beside the review file
+  (`<review>-figures/<lessonId>-<n>.svg`, concepts first then the example, the same order the cards use) and
+  `--approve` refuses an entry whose drawings have no file there (`entriesMissingFigures`), before any approve request.
+  The review file's content hash covers `visual`, so deleting or editing a drawing counts as an edit and the file is refused.
+- *Wording.* `figureFormatAr` now says «اقتران» (the Jordanian books' word) instead of «دالة». The exam prompt embeds only
+  the English format text, so no exam prompt text moved.
+
+**What the reviews found.** The final review found nothing that lets an unapproved or un-gated drawing reach a student
+(approval gate on `student_approved_at`; stored content is never updated after approval; the cards gate; the teacher's
+deck never reads `visual`). Its one Important finding was the student entry announcing drawings that nobody could see —
+removed (above). Everything else is under *Known limits*.
+
+**Verified.** Locally on the final code (`f3ba501` plus docs): `pnpm run typecheck` clean; `lib/figure` 82/82;
+exam-paper 14/14; math-verify 29/29; api-server build clean and 2,892/2,892 (0 skipped); mobile 9,201 passed, 0 failed,
+10 skipped (9,211 tests). The real lesson screen was opened (throwaway Postgres, built web bundle, a signed-in Grade 10
+maths student, an approved `lesson-teaching` row with a graph on a concept and vectors on the worked example planted by SQL
+in the throwaway database only): phone and desktop, Arabic and English, light and dark. Seen: the graph under the
+concept's points and the vectors between the steps and the answer, axis names and letters whole, x growing to the right in
+Arabic too, Arabic-Indic digits intact, dark mode legible, desktop figure capped at 520px at the text's edge, a concept
+without a drawing unchanged, the card readable with the drawing hidden. Each task was reviewed on its own; the branch had
+a final whole-branch review on the most capable model.
+
+**Not verified.**
+- **No live model has ever written a lesson `visual`.** The screenshots used hand-written content. The first
+  `pregenerate` run on maths lessons is the test: read the "lesson-teaching visuals" log line (if `visual` stays 0 on
+  maths lessons, add `visual` to the prompt's JSON output shape — it is taught today only by rule 16 and its examples) and
+  open every SVG.
+- Native iOS/Android; the «ما الجديد» dialog (nothing to show); the student in the screenshots was signed in with grade
+  and subject set directly, not linked through a class code (the student route needs no roster link); 8 of ~38
+  screenshots were opened by the implementer, the rest share the script and had clean DOM measures.
+- `lib/curriculum` tests and `python -X utf8 test_equations.py` were not run locally (neither is touched); CI runs them.
+
+**How drawings reach students (an admin action, not part of the merge).** Run `pregenerate --go` (maths lessons) **from
+`main` at or after this merge**, then open every SVG in `<review>-figures/` and compare it with the lesson's words, then
+`--approve`. The script prints its worst-case cost before spending (calls × `EST_COST_PER_CALL_USD` = $0.05). The newest
+approved row for a lesson and language wins, so approving a regenerated row replaces the old one for students; delete the
+entries you do not want replaced (chemistry, which has no drawings) from the review file first, because any entry you leave
+is regenerated and replaces its predecessor. The 55 previously approved explanations keep being served, without drawings,
+until then. Teachers' pooled `lesson-teaching` rows restart at the new version: the first teacher per lesson pays for a new
+teaching section. Android needs the manual production OTA (`gh workflow run mobile-update.yml -f branch=production`) for
+the screen change; the web bundle ships with the merge.
+
+**Known limits.**
+- **The admin is the only check that a lesson drawing matches the lesson's words.** Nothing in code ties it to the text or
+  to the example's `check` (unlike exams): the realistic failure is a graph of `x^2 + 4` beside points that say
+  `f(x) = x^2 − 4`. The SVG files are named by position among the *accepted* drawings, not by card, so a file cannot be
+  traced to its card by name — naming them by card (`<id>-concept2.svg`, `<id>-example.svg`) is the first follow-up.
+- The guard lives in the script. An admin running an older checkout, or a direct POST to
+  `/moderation/lesson-explanations/approve`, approves drawings nobody opened. It checks that a file exists, not what is in
+  it, and the figures folder is never cleared (a failed SVG write after a re-run could leave an old same-named file).
+  Rejecting only a drawing is not possible: removing it is an edit and the file is refused, so a bad drawing means a
+  rejected explanation.
+- The cap of 2 drawings is in the prompt only; the cards draw every drawing the gate accepts, and the admin sees all of them.
+- The drawing-format text is still worded for exams («علّم نقطةً ذكرها السؤال», "mark only a point the question names");
+  in a lesson it also stops the model marking a vertex in a concept about vertices — drawings are less useful, not unsafe.
+- Maths lessons only; the teacher's slide deck does not draw `visual`; practice cards carry none.
+- The guard's comment says "before any network call" but it runs after login (before any approve request); the rule says
+  "concept" in the singular; `reviewFigures` may list a drawing for a card the app drops (it errs toward showing more).
+- No native module and no migration; merging deploys the API and the web bundle.
+
 ## Exam questions can carry a drawn graph or vector — 2026-11-03
 
 **PR 2 of 3** of the answer to a teacher's feedback (no outright errors, but some lessons need a graph or a vector drawing and

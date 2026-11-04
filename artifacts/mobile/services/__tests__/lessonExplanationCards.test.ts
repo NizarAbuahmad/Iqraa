@@ -261,3 +261,34 @@ test('bullets and «N.» / «N)» markers keep their behaviour in front of maths
   assert.equal(stripMarker('1. 3x = 6'), '3x = 6');
   assert.equal(stripMarker('2) x = 4'), 'x = 4');
 });
+
+const vec = { kind: 'vectors', vectors: [{ from: [0, 0], to: [3, 2], label: 'u' }] };
+
+test('a concept and a worked example carry a drawing the gate accepts', () => {
+  const cards = buildExplanationCards({
+    ...full,
+    concepts: [{ title: 'المتجه له مقدار واتجاه', points: ['u = ⟨3, 2⟩'], visual: { ...vec, junk: 1 } }],
+    workedExample: { ...full.workedExample, visual: vec },
+  } as never);
+  assert.deepEqual((cards.find(c => c.kind === 'concept') as { visual?: unknown }).visual, vec);
+  assert.deepEqual((cards.find(c => c.kind === 'example') as { visual?: unknown }).visual, vec);
+});
+
+test('a drawing the gate refuses is dropped alone — the card keeps its words', () => {
+  const bad = { kind: 'vectors', vectors: [{ from: [0, 0], to: [3, 2], label: 'x=3' }] };
+  const cards = buildExplanationCards({ ...full, concepts: [{ title: 'ت', points: ['نقطة'], visual: bad }] } as never);
+  const concept = cards.find(c => c.kind === 'concept')!;
+  assert.equal('visual' in concept, false);
+  assert.deepEqual((concept as { points: string[] }).points, ['نقطة']);
+});
+
+test('a card with no drawing is unchanged', () => {
+  const [, first] = buildExplanationCards(full);
+  assert.equal('visual' in first!, false);
+});
+
+test('a hostile value does not throw', () => {
+  for (const visual of [null, 7, 'x', [], { kind: 'vectors', vectors: 5 }, { get kind(): string { throw new Error('boom'); } }]) {
+    assert.doesNotThrow(() => buildExplanationCards({ ...full, concepts: [{ title: 'ت', points: ['ن'], visual }] } as never));
+  }
+});
