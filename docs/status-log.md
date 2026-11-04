@@ -10,6 +10,46 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## /play spelling game: from 5 rules to 15, 40 questions to 86 — 2026-11-04
+
+The game («كيف تُكتب؟») served five of the bank's 19 rules, because the tile shows a
+rule name and bare options, so a wrong option that is itself a word is a second
+defensible answer. The bank now marks those words `dictationOnly` (see the entry
+below, «Spelling bank: a word whose misspelling is itself a word…»), and
+`takeSpellingItems` never builds a choice from one. So the game no longer needs its
+own allowlist: it serves every rule except one, and gets only the words whose options
+were read and are not words.
+
+- **Served now: 15 rules, 86 distinct questions** (it was 5 and 40; counted over 3,000
+  seeded rounds). A round is still 8 words, none twice, at most 3 from one rule.
+- **Not served, and why.** `alif-tathniya-baad-hamza` is excluded
+  (`SPELLING_EXCLUDED_RULE_IDS`): its key marks «شيآن» correct and «شيئان» wrong, and
+  nobody has checked the Ministry book. Three more never appear because the bank
+  leaves them no choice-safe word: الألف الفارقة (the plural «يدعوا» is a word),
+  الأفعال الثلاثية (ى/ي: «رمي», «هدي» are words) and همزة الاستفهام (its options are
+  real verbs). They still come out as dictation in worksheets.
+- **One more word flagged in the bank, found by reading what the widened game would
+  show:** «احمد» beside «أحمد» is a real imperative («احمد الله»), the same kind of case
+  as «أستمع» beside «استمع». `hamza-wasl-qat` now has 4 flagged words, not 3; words
+  that can be asked as a choice are 104, not 105. This is a `lib/` change, so the merge
+  deploys the API (no schema, no migration).
+- **Removed:** the five-rule list, and the one-word `SPELLING_DROPPED_ANSWERS`
+  («ذلك»): the bank's data fix («ذالك» in place of the verb «دلك») made it unnecessary.
+  `BANK_CORRECT`, the cross-rule backstop, stays as a second line of defence.
+- **Verified:** I read all 53 questions the widening added (each answer with the three
+  wrong options it can show); one needed a flag (above). Tests: the game's
+  (`playGameSpelling.test.ts`: every rule that can make a choice is reachable and no
+  excluded rule ever is; a dictation-only word is never asked; rounds stay full), the
+  bank's 250, the API's 116 `spellingItems`, typecheck, the mobile suite. The longest
+  tile name was already served before, so no new wrapping case.
+- **Not verified / limits.** The reading is mine, not a linguist's or a teacher's, and
+  words nobody flagged are read, not proven: «أبن», «هده», «يصلى», «بير» and «قاريء»
+  (an older accepted spelling of «قارئ», which the rule marks wrong) stay as wrong
+  options because a pupil is unlikely to know them or the curriculum teaches the other
+  form. Not re-checked in a browser: the screens did not change. The «ما الجديد» text
+  for the game still says «منها التاء المربوطة واللام الشمسية و«هذا» و«هذه»», which is
+  true, only no longer all of it.
+
 ## Grade 10 physics: semester 2's three introductory experiments, and the unit numbering pinned — 2026-11-03
 
 A teacher compared the app's Grade 10 physics with the two student books and reported four things: (1) no unit 3 exists in
