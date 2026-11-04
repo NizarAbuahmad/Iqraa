@@ -38,8 +38,12 @@
  *      wording that assumes a class or a projector ("your teacher", "the
  *      screen"), wrong maths or chemistry, and a different lesson's content.
  *      A drawing cannot be judged from JSON: each one is written as an SVG file
- *      in `pregen-review-figures/`, beside the review file. Open them before
- *      approving; `--approve` refuses an entry whose drawings have no file there.
+ *      in `pregen-review-figures/`, beside the review file, named by the card
+ *      it belongs to: `<lessonId>-concept<K>.svg` (K = that concept's place in
+ *      the entry's `concepts`, so a concept with no drawing leaves a gap) and
+ *      `<lessonId>-example.svg`; the run prints which card each file is. Open
+ *      them before approving, beside the words of that card; `--approve`
+ *      refuses an entry whose drawings have no file there.
  *      Edits are NOT applied: each entry carries a hash of its `variantId`,
  *      `lessonId` and text, and `--approve` refuses the whole file if any
  *      entry no longer matches it (so changing an id to approve a different
@@ -401,20 +405,37 @@ async function refreshed(env: Credentials): Promise<string> {
   return login(env);
 }
 
-/** The drawings a student would see in this explanation, as files an admin can open. */
-export function reviewFigures(entry: ReviewEntry): { name: string; svg: string; alt: string }[] {
+/** One drawing as a file, and the card it belongs to (`position` and `title` only for a concept). */
+export type ReviewFigure = { name: string; svg: string; alt: string; card: 'concept' | 'example'; position?: number; title?: string };
+
+/**
+ * The drawings a student would see in this explanation, as files an admin can open.
+ * A file is named by its card's place in the stored content (`<lessonId>-concept<K>.svg`,
+ * `<lessonId>-example.svg`), never by a count of accepted drawings, so a refused or
+ * missing drawing leaves a gap and shifts nothing.
+ */
+export function reviewFigures(entry: ReviewEntry): ReviewFigure[] {
   const c = entry.content as { concepts?: unknown; workedExample?: unknown } | null;
   if (!c || typeof c !== 'object') return [];
-  const raws: unknown[] = [
-    ...(Array.isArray(c.concepts) ? c.concepts.map(x => (x as { visual?: unknown } | null)?.visual) : []),
-    (c.workedExample as { visual?: unknown } | null | undefined)?.visual,
-  ];
-  const out: { name: string; svg: string; alt: string }[] = [];
-  for (const raw of raws) {
-    const figure = resolveFigure(raw);
-    if (figure) out.push({ name: `${entry.lessonId}-${out.length + 1}.svg`, svg: figureSvg(figure, { lang: 'ar' }), alt: figureAltText(figure, 'ar') });
-  }
+  const out: ReviewFigure[] = [];
+  const concepts: unknown[] = Array.isArray(c.concepts) ? c.concepts : [];
+  concepts.forEach((x, i) => {
+    const concept = x as { visual?: unknown; title?: unknown } | null;
+    const figure = resolveFigure(concept?.visual);
+    if (!figure) return;
+    const position = i + 1;
+    const title = typeof concept?.title === 'string' && concept.title.trim() !== '' ? concept.title : undefined;
+    out.push({ name: `${entry.lessonId}-concept${position}.svg`, svg: figureSvg(figure, { lang: 'ar' }), alt: figureAltText(figure, 'ar'), card: 'concept', position, ...(title !== undefined ? { title } : {}) });
+  });
+  const example = resolveFigure((c.workedExample as { visual?: unknown } | null | undefined)?.visual);
+  if (example) out.push({ name: `${entry.lessonId}-example.svg`, svg: figureSvg(example, { lang: 'ar' }), alt: figureAltText(example, 'ar'), card: 'example' });
   return out;
+}
+
+/** «L1-concept2.svg → concept 2 «title»»: what an admin should compare the file with. */
+export function figureCardLabel(f: ReviewFigure): string {
+  if (f.card === 'example') return `${f.name} → the worked example`;
+  return `${f.name} → concept ${f.position}${f.title !== undefined ? ` «${f.title}»` : ''}`;
 }
 
 /** `pregen-review.json` → `pregen-review-figures/`, beside it. */
@@ -528,6 +549,7 @@ async function main() {
           mkdirSync(dir, { recursive: true });
           for (const f of figures) writeFileSync(join(dir, f.name), f.svg);
           console.log(`  ${figures.length} drawing(s) to look at in ${dir}: ${c.lesson}`);
+          for (const f of figures) console.log(`    ${figureCardLabel(f)}`);
         }
       } else {
         console.log(`  not pooled, nothing to review: ${c.lesson}`);

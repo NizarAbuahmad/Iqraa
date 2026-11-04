@@ -303,8 +303,41 @@ const withDrawings = (lessonId: string) => figEntry({
 
 test('reviewFigures yields one SVG per drawing the student would see, in card order', () => {
   const out = reviewFigures(withDrawings('L1'));
-  assert.deepEqual(out.map(f => f.name), ['L1-1.svg', 'L1-2.svg']);
+  assert.deepEqual(out.map(f => f.name), ['L1-concept1.svg', 'L1-example.svg']);
   assert.ok(out[0]!.svg.startsWith('<svg ') && out[0]!.alt.length > 0);
+});
+
+test('reviewFigures names a file by its card: a drawing only on the 2nd concept is concept2', () => {
+  const out = reviewFigures(figEntry({ concepts: [{ title: 'أ', points: ['ن'] }, { title: 'ب', points: ['ن'], visual: vis }] }));
+  assert.deepEqual(out.map(f => f.name), ['L1-concept2.svg']);
+});
+
+test('reviewFigures: a refused drawing between two valid ones does not shift the later number', () => {
+  const out = reviewFigures(figEntry({
+    concepts: [
+      { title: 'أ', points: ['ن'], visual: vis },
+      { title: 'ب', points: ['ن'], visual: { kind: 'pie' } },
+      { title: 'ج', points: ['ن'], visual: vis },
+    ],
+  }));
+  assert.deepEqual(out.map(f => f.name), ['L1-concept1.svg', 'L1-concept3.svg']);
+});
+
+test('reviewFigures: the worked example alone is L1-example.svg', () => {
+  const out = reviewFigures(figEntry({ concepts: [{ title: 'أ', points: ['ن'] }], workedExample: { problem: 'م', steps: ['خ'], answer: '2', visual: vis } }));
+  assert.deepEqual(out.map(f => f.name), ['L1-example.svg']);
+  assert.equal(out[0]!.card, 'example');
+});
+
+test('reviewFigures says which card each file belongs to: concepts in order, then the example', () => {
+  const out = reviewFigures(figEntry({
+    concepts: [{ title: 'أ', points: ['ن'] }, { title: 'ب', points: ['ن'], visual: vis }, { points: ['ن'], visual: vis }],
+    workedExample: { problem: 'م', steps: ['خ'], answer: '2', visual: vis },
+  }));
+  assert.deepEqual(out.map(f => f.name), ['L1-concept2.svg', 'L1-concept3.svg', 'L1-example.svg']);
+  assert.deepEqual(out.map(f => f.card), ['concept', 'concept', 'example']);
+  assert.deepEqual(out.map(f => f.position), [2, 3, undefined]);
+  assert.deepEqual(out.map(f => f.title), ['ب', undefined, undefined]);
 });
 
 test('reviewFigures ignores a drawing the gate refuses and a section with none', () => {
@@ -323,8 +356,15 @@ test('entriesMissingFigures flags an entry whose drawing has no file, and only t
   assert.deepEqual(entriesMissingFigures([plain], file, () => false), []);
   // Every file present: not flagged, looked up in <review>-figures beside the file.
   assert.deepEqual(entriesMissingFigures([drawn], file, all), []);
-  assert.deepEqual(seen.map(p => p.replaceAll('\\', '/')), ['/r/pregen-review-figures/D-1.svg', '/r/pregen-review-figures/D-2.svg']);
+  assert.deepEqual(seen.map(p => p.replaceAll('\\', '/')), ['/r/pregen-review-figures/D-concept1.svg', '/r/pregen-review-figures/D-example.svg']);
   // One file missing flags the entry (once), the others stay clear.
-  const missingSecond = (p: string) => !p.endsWith('D-2.svg');
+  const missingSecond = (p: string) => !p.endsWith('D-example.svg');
   assert.deepEqual(entriesMissingFigures([plain, drawn], file, missingSecond), [drawn]);
+});
+
+test('entriesMissingFigures looks for the card-named file: a missing L1-concept2.svg flags, a present one does not', () => {
+  const file = '/r/pregen-review.json';
+  const e = figEntry({ concepts: [{ title: 'أ', points: ['ن'] }, { title: 'ب', points: ['ن'], visual: vis }] });
+  assert.deepEqual(entriesMissingFigures([e], file, p => !p.endsWith('L1-concept2.svg')), [e]);
+  assert.deepEqual(entriesMissingFigures([e], file, p => p.endsWith('L1-concept2.svg')), []);
 });
