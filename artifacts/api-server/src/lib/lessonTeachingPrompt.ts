@@ -29,18 +29,25 @@
 
 import { DECK_ICON_NAMES, diagramLimitsAr, diagramLimitsEn } from "./promptSlidesPrompt.ts";
 import { PROMPT_EXAMPLE_CHECKS } from "./lessonTeachingChecks.ts";
+import { figureFormatAr, figureFormatEn } from "./figurePrompt.ts";
+import { isMathContext } from "@workspace/math-practice";
 
 /** Concept slides asked for. More is a lecture; fewer is not an explanation. */
 export const TEACHING_CONCEPTS_MIN = 3;
 export const TEACHING_CONCEPTS_MAX = 5;
 
+/** Drawings (a graph or vectors) a maths lesson may carry in all: on its concepts and its worked example. */
+export const LESSON_VISUALS_MAX = 2;
+
 /** What the model attached to its concepts — logged per section, see routes/generate.ts. */
-export function teachingVisualCounts(content: unknown): { concepts: number; shape: number; icon: number; chart: number; photo: number } {
+export function teachingVisualCounts(content: unknown): { concepts: number; shape: number; icon: number; chart: number; photo: number; visual: number } {
   const list = content !== null && typeof content === "object" && Array.isArray((content as { concepts?: unknown }).concepts)
     ? (content as { concepts: unknown[] }).concepts.filter((c): c is Record<string, unknown> => c !== null && typeof c === "object")
     : [];
   const has = (k: string) => list.filter(c => c[k] !== undefined && c[k] !== null && c[k] !== "").length;
-  return { concepts: list.length, shape: has("shape"), icon: has("icon"), chart: has("chart"), photo: has("photo") };
+  const example = content !== null && typeof content === "object" ? (content as { workedExample?: unknown }).workedExample : undefined;
+  const exampleVisual = example !== null && typeof example === "object" && (example as Record<string, unknown>)["visual"] ? 1 : 0;
+  return { concepts: list.length, shape: has("shape"), icon: has("icon"), chart: has("chart"), photo: has("photo"), visual: has("visual") + exampleVisual };
 }
 
 export function lessonTeachingPromptAr(b: any): string {
@@ -98,7 +105,9 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي لهذا ال�
    - "topic" واحد من: "evaluate" (تعبير عددي مغلق: "question" مثل "${PROMPT_EXAMPLE_CHECKS.evaluate.question}" أو "(1*1 + 4*4 + 5*7)/10"، والزاوية بالدرجات تُكتب 30°؛ و"answer" عدد بأرقام لاتينية بالتقريب الذي كتبتَه، لا وحدة ولا رمز ≈، أو صيغة دقيقة مثل "10*sqrt(3)/3")، و"system_solutions" (نظام معادلتين في x وy تفصل بينهما فاصلة منقوطة: "${PROMPT_EXAMPLE_CHECKS.system.question}"، و"answer" النقاط: "${PROMPT_EXAMPLE_CHECKS.system.answer}")، و"equation_linear" أو "equation_quadratic" (معادلة واحدة "x^2 - 5x + 6 = 0" والإجابة "x = 2 or x = 3")، و"derivative_polynomial" (الاقتران "x^3 - 4x" والإجابة "3x^2 - 4").
    - لا تضع check إن لم يناسب أحد هذه المواضيع، ولا تكتب check لا يطابق ما حسبتَه فعلًا؛ غيابه أفضل من فحص لسؤال آخر.
    - لا تضع check إلا حين تكون الإجابة عددًا أو تعبيرًا أو أزواجًا مرتبة؛ والإجابة الوصفية (تفسير، تعريف، تركيب إلكتروني، مقارنة) لا check لها لأنها ليست عددًا. ولا تنسخ المثال أعلاه: "question" هو ما حسبتَه أنت في هذه المسألة.
-
+${isMathContext(b.topic, null, b.subject) ? `16. رسم بياني أو متجهات (لدروس الرياضيات فقط): يجوز أن يحمل "concept" أو "workedExample" حقلًا اختياريًّا واحدًا اسمه "visual"، وبحدٍّ أقصى ${LESSON_VISUALS_MAX} في القسم كله. اكتب في "points" أو "problem" كل ما يحتاجه الطالب (الاقتران مكتوبًا أو مركّبات المتجه): الرسم يوضّح ولا يحمل المعلومة وحده.
+${figureFormatAr()}
+` : ''}
 أعد JSON بهذا الشكل فقط:
 {
   "hook": { "question": "سؤال التمهيد", "teacherNote": "كيف يدير المعلّم النقاش حوله" },
@@ -166,7 +175,9 @@ Mandatory rules:
    - "topic" is one of: "evaluate" (a closed numeric expression: "question" like "${PROMPT_EXAMPLE_CHECKS.evaluate.question}" or "(1*1 + 4*4 + 5*7)/10", angles in degrees written 30°; "answer" a number in Latin digits rounded the way you wrote it, no unit and no ≈ sign, or an exact form like "10*sqrt(3)/3"), "system_solutions" (two equations in x and y separated by a semicolon: "${PROMPT_EXAMPLE_CHECKS.system.question}", and "answer" the points: "${PROMPT_EXAMPLE_CHECKS.system.answer}"), "equation_linear" or "equation_quadratic" (one equation "x^2 - 5x + 6 = 0", answer "x = 2 or x = 3"), "derivative_polynomial" (the function "x^3 - 4x", answer "3x^2 - 4").
    - Omit "check" when none of these fits, and never write a check that is not what you actually computed; no check is better than a check of a different question.
    - Write a "check" only when the answer is a number, an expression or ordered pairs; a descriptive answer (an explanation, a definition, an electron configuration, a comparison) has no check, because it is no number. Do not copy the example above: "question" is what you computed in this problem.
-
+${isMathContext(b.topic, null, b.subject) ? `16. A graph or vectors (maths lessons only): a "concept" or the "workedExample" may carry one optional "visual", at most ${LESSON_VISUALS_MAX} in the whole section. Write everything the student needs in "points" or "problem" (the function written out, the vector's components): the drawing illustrates and never carries the information alone.
+${figureFormatEn()}
+` : ''}
 Return only JSON in this shape:
 {
   "hook": { "question": "The hook question", "teacherNote": "How the teacher runs the discussion" },

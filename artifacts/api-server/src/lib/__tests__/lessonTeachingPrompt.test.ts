@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { lessonTeachingPromptAr, lessonTeachingPromptEn, teachingVisualCounts } from "../lessonTeachingPrompt.ts";
+import { LESSON_VISUALS_MAX, lessonTeachingPromptAr, lessonTeachingPromptEn, teachingVisualCounts } from "../lessonTeachingPrompt.ts";
 import { PROMPT_EXAMPLE_CHECKS } from "../lessonTeachingChecks.ts";
 import { diagramLimitsAr, diagramLimitsEn, promptSlidesPromptAr, promptSlidesPromptEn } from "../promptSlidesPrompt.ts";
 import { assertUsableGeneration, missingFields, UnusableGenerationError } from "../generationShape.ts";
@@ -248,7 +248,31 @@ describe("teachingVisualCounts", () => {
       { title: "a", points: ["x"], shape: { layout: "cycle" }, icon: "drop" },
       { title: "b", points: ["y"], chart: { kind: "chart" }, photo: "water cycle" },
       { title: "c", points: ["z"] },
-    ] }), { concepts: 3, shape: 1, icon: 1, chart: 1, photo: 1 });
-    assert.deepEqual(teachingVisualCounts(null), { concepts: 0, shape: 0, icon: 0, chart: 0, photo: 0 });
+    ] }), { concepts: 3, shape: 1, icon: 1, chart: 1, photo: 1, visual: 0 });
+    assert.deepEqual(teachingVisualCounts(null), { concepts: 0, shape: 0, icon: 0, chart: 0, photo: 0, visual: 0 });
+  });
+});
+
+describe("lesson-teaching drawings", () => {
+  const MATH = { ...BODY, subject: "Mathematics", topic: "المتجهات في المستوى" };
+  for (const [lang, build, needle] of [["ar", lessonTeachingPromptAr, "رسم بياني أو متجهات"], ["en", lessonTeachingPromptEn, "graph or vectors"]] as const) {
+    it(`${lang}: a maths lesson may ask for a drawing, told to write everything in the words`, () => {
+      const p = build(MATH);
+      assert.ok(p.includes(needle), needle);
+      assert.ok(p.includes('"visual"') && p.includes('"function-graph"') && p.includes('"vectors"'));
+      assert.ok(p.includes(`${LESSON_VISUALS_MAX}`), "states the cap");
+    });
+    it(`${lang}: a chemistry lesson is not offered one`, () => {
+      const p = build(BODY);
+      assert.ok(!p.includes(needle) && !p.includes('"function-graph"') && !p.includes('"visual"'));
+    });
+  }
+
+  it("counts drawings on concepts and on the worked example", () => {
+    const counts = teachingVisualCounts({
+      concepts: [{ visual: { kind: "vectors" } }, {}, { visual: { kind: "function-graph" } }],
+      workedExample: { visual: { kind: "vectors" } },
+    });
+    assert.equal(counts.visual, 3);
   });
 });

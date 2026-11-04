@@ -188,7 +188,8 @@ unequal scales. A `tan`-style spike is dropped at the asymptote by `maxAbsY`, as
 - `buildExplanationCards`: a `concept` and an `example` card gain `visual?: Figure`,
   passed through only if the gate accepts it (the card builder stays pure and loadable
   under bare `node --test`). `app/curriculum/lesson-explanation.tsx` draws `FigureView`
-  above the points/steps.
+  below the concept's points, and after the example's steps and before its answer line
+  (as built in PR 3; this spec first said "above").
 - **Pool.** `PROMPT_VERSION_BY_KIND['lesson-teaching']` moves to a new value
   (`2026-11-03.1` is today's; the plan picks the next). Consequence, to be stated in the
   PR: every lesson's first teacher after the merge pays for a new teaching section, and
