@@ -10,6 +10,30 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## CI: the destructive-migrations check stops downloading every file of every branch — 2026-11-04
+
+On 2026-11-03 the check `destructive migrations acknowledged` was cancelled four times in a row on one PR (#1411, which
+adds no migration), each time at exactly its `timeout-minutes: 5`, inside `actions/checkout`'s `git fetch` and before its
+own step ran. The same job had taken ~30 s that morning and ~4 min on #1410. Its cause is the checkout, not the PR:
+`fetch-depth: 0` downloads the whole history of all 77 branches **with every file version**.
+
+**What changed.** `.github/workflows/destructive-migration-ack.yml` only: the checkout gains `filter: blob:none`
+(history kept, file contents fetched on demand) and `timeout-minutes` goes 5 → 10. The job's script is unchanged.
+
+**Measured, from this machine against the real remote.** Full clone 1.2 GB / 52 s (on a fast link); `--filter=blob:none`
+5.4 MB / 1 s. The job's own `git diff --name-only --diff-filter=A base...head -- 'lib/db/migrations/*.sql'`, run on both
+over a range that contains migrations, returned the same 2 files (same hash), and the lightweight clone stayed 5.4 MB, so
+the diff pulled no blobs; an empty range returned nothing. `filter` is an input of `actions/checkout@v4` (read from its
+`action.yml`).
+
+**Not verified.** It has not run on a runner yet — this PR's own run is the first. If the `base...head` diff ever needs a
+file's contents (for example to detect a renamed migration), git fetches just that blob on demand, which is slower but
+correct.
+
+**Left alone, on purpose.** `ci.yml`'s `migrations match schema` job (`fetch-depth: 0`, 10-minute limit; it timed out
+twice on #1411 and then passed) has the same checkout, but it installs dependencies and runs migrations, which could not
+be tried locally; `deploy.yml` also uses `fetch-depth: 0`. Both want the same look if they start timing out.
+
 ## Student lesson cards can show a drawn graph or vectors — 2026-11-03
 
 **PR 3 of 3** of the answer to a teacher's feedback (some lessons need a graph or vector drawing and the app shows none;
