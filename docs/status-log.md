@@ -39,6 +39,62 @@ The full mobile and api-server suites are CI's here — only this script and its
 - Admin tooling only: no «ما الجديد» entry, no deploy of the API or the app bundle is needed for it to take effect (the
   script runs from a checkout). No migration, no native change.
 
+## Grade 10 physics: semester 2's three introductory experiments, and the unit numbering pinned — 2026-11-03
+
+A teacher compared the app's Grade 10 physics with the two student books and reported four things: (1) no unit 3 exists in
+either book; (2) «الحركة الموجية» showed with unit 2 when it is a unit of its own with two lessons; (3) every lesson on
+offer was semester 2's, so no semester 1 file could be made; (4) unit numbers should be 4, 5, 6 in semester 2 and not
+1, 2, 3.
+
+**What the code already did, checked before changing anything.** Points 1, 2 and 4 are already how the data reads:
+semester 1 is units 1–2, semester 2 is units 4–6 in book order, wave motion is unit 6 with two lessons, and nothing
+generates a unit 3. Point 3 is not reproducible from the code either: both books are in `KB_BOOKS` and the picker lists
+S1 then S2 for Grade 10 physics. The unit picker prints a unit's title with no number, so **where the teacher saw
+«الوحدة الثانية» beside wave motion is not found** — a stale deploy, or a screen other than the picker, is the open
+guess. We asked for the screenshot; this change does not claim to have fixed 1–4 as seen.
+
+**What was wrong and is fixed.** `iqra_curriculum_g10_phys_sem2.json` said the semester 2 book has no
+«تجربة استهلالية», so semester 2 had no `lab` lessons. It does: «الكتلة والوزن» (p. 9), «خصائص الموائع» (p. 57) and
+«الموجات تنقل الطاقة ولا تنقل المادة» (p. 93), one at the head of each unit as in semester 1. They are added as
+`u4_lab`, `u5_lab`, `u6_lab` (order 0, no objectives, the book prints none), the file's `known_gaps` entry and the
+catalog header are corrected, and the page list in `source_books` now names pp. 9, 57 and 93. The English titles are
+translations (the extraction carries none); the Arabic «ولا» in the unit 6 title is restored from the extraction's
+«وال», which the lesson-1 main idea on p. 94 confirms.
+
+**Pinned.** `lib/curriculum/src/__tests__/physG10Structure.test.ts`: semester 1 units are [1, 2] and semester 2 [4, 5, 6]
+with no 3, in book order; wave motion is its own unit with the two lessons and none under fluids; the built catalogs'
+`order` is the book number; every unit of both semesters opens with its lab (order 0) and its lessons run 1..n.
+
+**Verified.** The new test failed 3 of 8 before the data change and passes after; `lib/curriculum` `pnpm test` 915/915 and
+`pnpm run verify` 0 errors.
+
+**Not verified / limits.** Not looked at on a running app; no periods for any semester 2 lesson (unchanged). No «ما الجديد»
+entry: three experiments appear in a lesson picker, which is not a feature to announce to every account.
+
+## Deploy: the «what changed» job stops downloading every file of every branch — 2026-11-04
+
+The same checkout problem as the entry below, in the job that **gates production deploys**. On #1413's merge (`28fda7c`)
+`deploy.yml`'s `what changed` job (`timeout-minutes: 5`, `fetch-depth: 0`) was cancelled inside `git fetch`, and every job
+behind it (`iqraa-api`, `iqraa-verifier`, `iqraa-web`, both schema jobs) was **skipped**. Nothing was lost that time — the
+merge touched only a workflow file — but a merge that did need a deploy would have shipped nothing, with no red job to say
+so (the trap `CLAUDE.md` describes: a skipped job is not a failure).
+
+**What changed.** `.github/workflows/deploy.yml`, the `changes` job only: checkout gains `filter: blob:none`, and
+`timeout-minutes` goes 5 → 10. The script is unchanged.
+
+**Measured, against the real remote, full clone vs `--filter=blob:none`.** `git diff --name-only BEFORE AFTER` returned the
+same file list (same hash) for ranges of 1, 3, 10, 40 and 120 commits (2 to 519 files), each in under 10 ms, and the clone
+stayed 5.4 MB, so no file contents were fetched on demand. `git cat-file -e` of an unknown commit still exits 128 in about a
+second, so the «No usable base commit; deploying everything» fallback still fires; a real commit exits 0.
+
+**What merging this does.** `deploy.yml` is on the API's and the verifier's own file lists, so merging it **deploys the API
+and the verifier to Cloud Run (same code, new revisions) and the web bundle**, then the OTA publish to `preview`. That is
+the existing rule working, not a side effect of this change.
+
+**Not verified.** It has not run on a runner; the first `what changed` run on the merge commit is the test, and its
+duration (and whether the three deploy jobs then ran) is what to read. A rename of a file whose contents git must compare
+would fetch those blobs on demand: slower, still correct; none of the ranges above needed it.
+
 ## CI: the destructive-migrations check stops downloading every file of every branch — 2026-11-04
 
 On 2026-11-03 the check `destructive migrations acknowledged` was cancelled four times in a row on one PR (#1411, which
