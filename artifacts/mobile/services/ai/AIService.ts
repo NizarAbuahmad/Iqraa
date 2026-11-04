@@ -800,8 +800,14 @@ export interface LessonTeachingOutput {
     chart?: unknown;
     /** An English photo-search phrase. */
     photo?: string;
+    /** A drawing (graph or vectors); gated by `resolveFigure` where it is used. */
+    visual?: unknown;
   }[];
-  workedExample?: { problem?: string; steps?: string[]; answer?: string };
+  workedExample?: {
+    problem?: string; steps?: string[]; answer?: string;
+    /** A drawing (graph or vectors); gated by `resolveFigure` where it is used. */
+    visual?: unknown;
+  };
   practice?: { problem?: string; hint?: string; answer?: string };
   /** A student's wrong solution built from a real misconception, for «اكتشف الخطأ». */
   mistake?: { claim?: string; hint?: string; answer?: string };
