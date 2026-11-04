@@ -10,6 +10,38 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 10 physics: semester 2's three introductory experiments, and the unit numbering pinned — 2026-11-03
+
+A teacher compared the app's Grade 10 physics with the two student books and reported four things: (1) no unit 3 exists in
+either book; (2) «الحركة الموجية» showed with unit 2 when it is a unit of its own with two lessons; (3) every lesson on
+offer was semester 2's, so no semester 1 file could be made; (4) unit numbers should be 4, 5, 6 in semester 2 and not
+1, 2, 3.
+
+**What the code already did, checked before changing anything.** Points 1, 2 and 4 are already how the data reads:
+semester 1 is units 1–2, semester 2 is units 4–6 in book order, wave motion is unit 6 with two lessons, and nothing
+generates a unit 3. Point 3 is not reproducible from the code either: both books are in `KB_BOOKS` and the picker lists
+S1 then S2 for Grade 10 physics. The unit picker prints a unit's title with no number, so **where the teacher saw
+«الوحدة الثانية» beside wave motion is not found** — a stale deploy, or a screen other than the picker, is the open
+guess. We asked for the screenshot; this change does not claim to have fixed 1–4 as seen.
+
+**What was wrong and is fixed.** `iqra_curriculum_g10_phys_sem2.json` said the semester 2 book has no
+«تجربة استهلالية», so semester 2 had no `lab` lessons. It does: «الكتلة والوزن» (p. 9), «خصائص الموائع» (p. 57) and
+«الموجات تنقل الطاقة ولا تنقل المادة» (p. 93), one at the head of each unit as in semester 1. They are added as
+`u4_lab`, `u5_lab`, `u6_lab` (order 0, no objectives, the book prints none), the file's `known_gaps` entry and the
+catalog header are corrected, and the page list in `source_books` now names pp. 9, 57 and 93. The English titles are
+translations (the extraction carries none); the Arabic «ولا» in the unit 6 title is restored from the extraction's
+«وال», which the lesson-1 main idea on p. 94 confirms.
+
+**Pinned.** `lib/curriculum/src/__tests__/physG10Structure.test.ts`: semester 1 units are [1, 2] and semester 2 [4, 5, 6]
+with no 3, in book order; wave motion is its own unit with the two lessons and none under fluids; the built catalogs'
+`order` is the book number; every unit of both semesters opens with its lab (order 0) and its lessons run 1..n.
+
+**Verified.** The new test failed 3 of 8 before the data change and passes after; `lib/curriculum` `pnpm test` 915/915 and
+`pnpm run verify` 0 errors.
+
+**Not verified / limits.** Not looked at on a running app; no periods for any semester 2 lesson (unchanged). No «ما الجديد»
+entry: three experiments appear in a lesson picker, which is not a feature to announce to every account.
+
 ## Deploy: the «what changed» job stops downloading every file of every branch — 2026-11-04
 
 The same checkout problem as the entry below, in the job that **gates production deploys**. On #1413's merge (`28fda7c`)

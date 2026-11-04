@@ -15,8 +15,11 @@
  *    semester’s student book. Semester 1 shows two units where the guide
  *    counts three, so «الحركة والقوى» appears to absorb the guide’s units 2
  *    and 3 and the numbering resumes at 4. Copied as printed, not renumbered.
- * 2. There are no تجربة استهلالية pages in this book, so no `lab` lessons —
- *    both Semester 1 units have one.
+ * 2. Every unit opens with a تجربة استهلالية (book pp. 9, 57, 93), kept as a
+ *    `lab` lesson with order 0 like Semester 1's. An earlier version of this
+ *    file said the book had none; a teacher comparing the app with the book
+ *    found them missing. `physG10Structure.test.ts` pins them and the unit
+ *    numbering.
  *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */
