@@ -62,15 +62,26 @@ jobs:
   changes:
     name: what changed
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     outputs:
       api: ${{ steps.filter.outputs.api }}
       verifier: ${{ steps.filter.outputs.verifier }}
       web: ${{ steps.filter.outputs.web }}
     steps:
+      # This job lists file NAMES (`git diff --name-only BEFORE AFTER`) and checks
+      # that BEFORE is a commit it has, so it needs the commits and not their file
+      # contents. A full `fetch-depth: 0` pulls every blob of every branch (~1.2 GB):
+      # on 2026-11-04 it outgrew the old 5-minute limit and this job was cancelled
+      # inside `git fetch`, which skipped every deploy job behind it (nothing shipped
+      # that time only because the merge needed no deploy). `blob:none` keeps the
+      # history and leaves the contents to be fetched on demand: ~5 MB. Checked
+      # against a full clone: the same file list for ranges of 1 to 120 commits,
+      # and an unknown BEFORE still fails fast, so the "deploy everything" fallback
+      # below still fires.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
 
       - id: filter
         env:

@@ -48,6 +48,7 @@ import { isPaperQuestion } from '@/services/paperQuestion';
 import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { QuestionFigure } from '@/components/ui/QuestionFigure';
+import { QuestionVisual } from '@/components/ui/QuestionVisual';
 import { bookFigureRefsForObjectives } from '@/services/bookFigureUri';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
@@ -797,6 +798,7 @@ export default function EvaluationDetailScreen() {
               {questionTextFor(q, lang === 'ar') || '—'}
             </Text>
             <QuestionFigure body={q.body} captionColor={colors.mutedForeground} />
+            <QuestionVisual body={q.body} lang={lang} />
             {q.workedSteps?.length ? (
               <View style={[styles.verifySummary, { backgroundColor: ACCENT + '0D', borderColor: ACCENT + '33', marginTop: 8, gap: 4 }]}>
                 <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: align }}>

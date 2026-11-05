@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { layoutFigure } from '../geometry.ts';
+import { layoutFigure, placeLabel, type Pt } from '../geometry.ts';
 import { resolveFigure } from '../gate.ts';
 import type { Figure } from '../types.ts';
 import { bounds, gridTicks, toPx, toWorld } from '../viewport.ts';
@@ -169,5 +169,97 @@ describe('layoutFigure: vectors', () => {
     const l = layoutFigure(fig({ kind: 'vectors', vectors: [{ from: [0, 0], to: [0.5, 0.5] }] }), BOX);
     const b = bounds(l.viewport);
     assert.ok(b.xMax - b.xMin >= 4 && b.yMax - b.yMin >= 4);
+  });
+});
+
+// A letter is the only non-colour cue, so it must be readable: clear of its own line, inside the box.
+// The text is start-anchored with its baseline at y; the box below is the glyph's, as `placeLabel` assumes.
+const PHONE = { w: 312, h: 238 };
+const centreOf = (p: Pt): Pt => ({ x: p.x + 5, y: p.y - 4.5 });
+const inside = (p: Pt, box: { w: number; h: number }) =>
+  p.x >= 2 && p.x + 10 <= box.w - 2 && p.y - 11 >= 2 && p.y + 2 <= box.h - 2;
+const distToSegment = (p: Pt, a: Pt, b: Pt): number => {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len2 = dx * dx + dy * dy;
+  const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2));
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+};
+const distToPolylines = (p: Pt, lines: Pt[][]): number => {
+  let d = Infinity;
+  for (const l of lines) for (let i = 0; i < l.length; i++) d = Math.min(d, distToSegment(p, l[i]!, l[Math.min(i + 1, l.length - 1)]!));
+  return d;
+};
+
+describe('layoutFigure: a letter is clear of its own line', () => {
+  it('(a) the point letter «A» on x^2 - 4 is ≥ 9px from the curve and inside the box', () => {
+    const l = layoutFigure(fig({ kind: 'function-graph', functions: [{ expr: 'x^2 - 4', label: 'f' }], x: [-3, 3], points: [{ at: 1, label: 'A' }] }), PHONE);
+    const a = l.points[0]!.labelAt;
+    assert.ok(inside(a, PHONE), `A at ${JSON.stringify(a)}`);
+    const d = distToPolylines(centreOf(a), l.curves[0]!.segments);
+    assert.ok(d >= 9, `A is ${d.toFixed(1)}px from the curve`);
+  });
+
+  it('(b) the letters of two curves are each ≥ 9px from their own curve, inside the box, and ≥ 10px apart', () => {
+    const l = layoutFigure(fig({ kind: 'function-graph', functions: [{ expr: 'x', label: 'f' }, { expr: 'x^2', label: 'g' }], x: [-2, 2] }), PHONE);
+    for (const c of l.curves) {
+      assert.ok(c.labelAt && inside(c.labelAt, PHONE), `${c.label} at ${JSON.stringify(c.labelAt)}`);
+      const d = distToPolylines(centreOf(c.labelAt!), c.segments);
+      assert.ok(d >= 9, `${c.label} is ${d.toFixed(1)}px from its curve`);
+    }
+    const [f, g] = l.curves.map(c => centreOf(c.labelAt!)) as [Pt, Pt];
+    assert.ok(Math.hypot(f.x - g.x, f.y - g.y) >= 10, 'the two letters overlap');
+  });
+
+  it('(b2) the same holds on a wide desktop box and for a marked point on the second curve', () => {
+    const wide = { w: 518, h: 238 };
+    const l = layoutFigure(fig({ kind: 'function-graph', functions: [{ expr: 'x', label: 'f' }, { expr: 'x^2', label: 'g' }], x: [-2, 2], points: [{ at: 1, label: 'A', on: 1 }] }), wide);
+    for (const c of l.curves) {
+      assert.ok(inside(c.labelAt!, wide));
+      assert.ok(distToPolylines(centreOf(c.labelAt!), c.segments) >= 9, `${c.label}`);
+    }
+    const a = l.points[0]!.labelAt;
+    assert.ok(inside(a, wide));
+    assert.ok(distToPolylines(centreOf(a), l.curves[1]!.segments) >= 9, 'A is on its curve');
+  });
+
+  it('(c) each vector letter is ≥ 9px from its own shaft and inside the box', () => {
+    const l = layoutFigure(fig({ kind: 'vectors', vectors: [{ from: [0, 0], to: [3, 2], label: 'u' }, { from: [0, 0], to: [-1, 2.5], label: 'v' }], components: true }), PHONE);
+    for (const a of l.arrows) {
+      assert.ok(a.labelAt && inside(a.labelAt, PHONE), `${a.label} at ${JSON.stringify(a.labelAt)}`);
+      const d = distToPolylines(centreOf(a.labelAt!), [[a.from, a.to]]);
+      assert.ok(d >= 9, `${a.label} is ${d.toFixed(1)}px from its shaft`);
+    }
+    const [u, v] = l.arrows.map(a => centreOf(a.labelAt!)) as [Pt, Pt];
+    assert.ok(Math.hypot(u.x - v.x, u.y - v.y) >= 10, 'the two letters overlap');
+  });
+
+  it('(c2) horizontal, vertical and diagonal shafts together: every letter clear of every shaft', () => {
+    const l = layoutFigure(fig({ kind: 'vectors', vectors: [{ from: [0, 0], to: [3, 0], label: 'u' }, { from: [0, 0], to: [0, 3], label: 'v' }, { from: [0, 0], to: [2, 2], label: 'w' }, { from: [0, 0], to: [-2, -1], label: 'z' }] }), PHONE);
+    const shafts = l.arrows.map(a => [a.from, a.to]);
+    for (const a of l.arrows) {
+      assert.ok(a.labelAt && inside(a.labelAt, PHONE), `${a.label} at ${JSON.stringify(a.labelAt)}`);
+      const d = distToPolylines(centreOf(a.labelAt!), shafts);
+      assert.ok(d >= 9, `${a.label} is ${d.toFixed(1)}px from a shaft`);
+    }
+  });
+
+  it('(d) a curve that fills the whole box still gets an inside-the-box letter, finite, without throwing', () => {
+    // A hand-made raster of lines every 4px: nothing is ≥ 9px from a line, so the best-of fallback must answer.
+    const fill: Pt[][] = [];
+    for (let y = 0; y <= PHONE.h; y += 4) fill.push([{ x: 0, y }, { x: PHONE.w, y }]);
+    const p = placeLabel([{ x: 300, y: 5 }, { x: 100, y: 100 }, { x: Number.NaN, y: 3 }, { x: 900, y: 900 }], fill, PHONE);
+    assert.ok(Number.isFinite(p.x) && Number.isFinite(p.y), JSON.stringify(p));
+    assert.ok(inside(p, PHONE), JSON.stringify(p));
+    // no candidate at all, or none inside: still an inside position
+    const q = placeLabel([{ x: -50, y: -50 }], fill, PHONE);
+    assert.ok(inside(q, PHONE), JSON.stringify(q));
+    const r = placeLabel([], [], PHONE);
+    assert.ok(inside(r, PHONE), JSON.stringify(r));
+    // and a real figure whose curve zigzags across the whole box
+    const l = layoutFigure(fig({ kind: 'function-graph', functions: [{ expr: 'sin(60x)', label: 'f' }], x: [-3, 3], points: [{ at: 0.1, label: 'A' }] }), PHONE);
+    for (const q2 of [l.curves[0]!.labelAt!, l.points[0]!.labelAt]) {
+      assert.ok(Number.isFinite(q2.x) && Number.isFinite(q2.y) && inside(q2, PHONE), JSON.stringify(q2));
+    }
   });
 });

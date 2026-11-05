@@ -37,6 +37,9 @@
  *   2. A person reads the file and deletes the entries they reject. Look for
  *      wording that assumes a class or a projector ("your teacher", "the
  *      screen"), wrong maths or chemistry, and a different lesson's content.
+ *      A drawing cannot be judged from JSON: each one is written as an SVG file
+ *      in `pregen-review-figures/`, beside the review file. Open them before
+ *      approving; `--approve` refuses an entry whose drawings have no file there.
  *      Edits are NOT applied: each entry carries a hash of its `variantId`,
  *      `lessonId` and text, and `--approve` refuses the whole file if any
  *      entry no longer matches it (so changing an id to approve a different
@@ -81,7 +84,9 @@
  * to change the defaults a lot (the pool's hit rate says).
  */
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { basename, dirname, join } from 'node:path';
+import { figureAltText, figureSvg, resolveFigure } from '@workspace/figure';
 import { getPickerGrades, getPickerSubjects } from '../services/curriculumData.ts';
 import { getLessonsForUnit, getUnitsForSubjectGrade } from '../services/knowledgeBase.ts';
 import { resolveGeneratorGrounding } from '../services/kbContext.ts';
@@ -396,6 +401,31 @@ async function refreshed(env: Credentials): Promise<string> {
   return login(env);
 }
 
+/** The drawings a student would see in this explanation, as files an admin can open. */
+export function reviewFigures(entry: ReviewEntry): { name: string; svg: string; alt: string }[] {
+  const c = entry.content as { concepts?: unknown; workedExample?: unknown } | null;
+  if (!c || typeof c !== 'object') return [];
+  const raws: unknown[] = [
+    ...(Array.isArray(c.concepts) ? c.concepts.map(x => (x as { visual?: unknown } | null)?.visual) : []),
+    (c.workedExample as { visual?: unknown } | null | undefined)?.visual,
+  ];
+  const out: { name: string; svg: string; alt: string }[] = [];
+  for (const raw of raws) {
+    const figure = resolveFigure(raw);
+    if (figure) out.push({ name: `${entry.lessonId}-${out.length + 1}.svg`, svg: figureSvg(figure, { lang: 'ar' }), alt: figureAltText(figure, 'ar') });
+  }
+  return out;
+}
+
+/** `pregen-review.json` → `pregen-review-figures/`, beside it. */
+const figuresDirFor = (reviewFile: string) => join(dirname(reviewFile), `${basename(reviewFile, '.json')}-figures`);
+
+/** Entries with a drawing whose file is not beside the review file: the admin was never given it to look at. */
+export function entriesMissingFigures(entries: ReviewEntry[], reviewFile: string, exists: (path: string) => boolean = existsSync): ReviewEntry[] {
+  const dir = figuresDirFor(reviewFile);
+  return entries.filter(e => reviewFigures(e).some(f => !exists(join(dir, f.name))));
+}
+
 function titles(entries: ReviewEntry[]): string {
   const shown = entries.slice(0, 3).map(e => e.lesson).join(', ');
   return entries.length > 3 ? `${shown}, …` : shown;
@@ -417,6 +447,10 @@ async function approve(file: string): Promise<void> {
   const env = apiEnv();
   const token = await login(env);
   const ids = [...new Set(approvable.map(e => e.variantId))];
+  const unseen = entriesMissingFigures(approvable, file);
+  if (unseen.length > 0) {
+    throw new Error(`${unseen.length} entr${unseen.length === 1 ? 'y' : 'ies'} in ${file} ${unseen.length === 1 ? 'has' : 'have'} a drawing with no file in ${figuresDirFor(file)} (${titles(unseen)}): the drawings were not written for you to look at (regenerate the review file). Nothing was approved.`);
+  }
   let approved = 0;
   for (let i = 0; i < ids.length; i += 100) {
     const r = await fetch(`${env.base}/api/moderation/lesson-explanations/approve`, {
@@ -488,6 +522,13 @@ async function main() {
         review.push(entry);
         // Written as it goes, so a run that dies midway still leaves a file.
         writeFileSync(reviewPath, JSON.stringify(review, null, 2));
+        const figures = reviewFigures(entry);
+        if (figures.length > 0) {
+          const dir = figuresDirFor(reviewPath);
+          mkdirSync(dir, { recursive: true });
+          for (const f of figures) writeFileSync(join(dir, f.name), f.svg);
+          console.log(`  ${figures.length} drawing(s) to look at in ${dir}: ${c.lesson}`);
+        }
       } else {
         console.log(`  not pooled, nothing to review: ${c.lesson}`);
       }

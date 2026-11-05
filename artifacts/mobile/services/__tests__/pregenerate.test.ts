@@ -3,12 +3,14 @@ import assert from 'node:assert/strict';
 import {
   assertApproveAlone,
   assertReviewFileFree,
+  entriesMissingFigures,
   hashContent,
   parseOnly,
   plannedCalls,
   plannedTeachingCalls,
   readCredentials,
   reviewEntry,
+  reviewFigures,
   verifyReviewEntries,
   type Call,
   type ReviewEntry,
@@ -287,4 +289,42 @@ test('credentials: an email and password, or a session token for an account with
   assert.throws(() => readCredentials({ PREGEN_TOKEN: 'tok' }), /PREGEN_API_BASE/);
   assert.throws(() => readCredentials({ ...base, PREGEN_EMAIL: 'a@b.c' }), /PREGEN_PASSWORD.*PREGEN_TOKEN/s);
   assert.throws(() => readCredentials(base), /PREGEN_EMAIL.*PREGEN_TOKEN/s);
+});
+
+// A drawing is judged by looking at it, not at JSON: the script writes each one
+// as an SVG file beside the review file, and --approve refuses without them.
+const figEntry = (content: unknown, lessonId = 'L1'): ReviewEntry =>
+  ({ variantId: 'v', lessonId, lesson: 'درس', contentHash: 'h', content });
+const vis = { kind: 'vectors', vectors: [{ from: [0, 0], to: [3, 2], label: 'u' }] };
+const withDrawings = (lessonId: string) => figEntry({
+  concepts: [{ title: 'أ', points: ['ن'], visual: vis }, { title: 'ب', points: ['ن'] }],
+  workedExample: { problem: 'م', steps: ['خ'], answer: '2', visual: vis },
+}, lessonId);
+
+test('reviewFigures yields one SVG per drawing the student would see, in card order', () => {
+  const out = reviewFigures(withDrawings('L1'));
+  assert.deepEqual(out.map(f => f.name), ['L1-1.svg', 'L1-2.svg']);
+  assert.ok(out[0]!.svg.startsWith('<svg ') && out[0]!.alt.length > 0);
+});
+
+test('reviewFigures ignores a drawing the gate refuses and a section with none', () => {
+  assert.deepEqual(reviewFigures(figEntry({ concepts: [{ title: 'أ', points: ['ن'], visual: { kind: 'pie' } }] })), []);
+  assert.deepEqual(reviewFigures(figEntry({})), []);
+  assert.deepEqual(reviewFigures(figEntry(null)), []);
+});
+
+test('entriesMissingFigures flags an entry whose drawing has no file, and only that', () => {
+  const file = '/r/pregen-review.json';
+  const plain = figEntry({ concepts: [{ title: 'أ', points: ['ن'] }] }, 'P');
+  const drawn = withDrawings('D');
+  const seen: string[] = [];
+  const all = (p: string) => { seen.push(p); return true; };
+  // No drawing: never flagged, and nothing is looked up.
+  assert.deepEqual(entriesMissingFigures([plain], file, () => false), []);
+  // Every file present: not flagged, looked up in <review>-figures beside the file.
+  assert.deepEqual(entriesMissingFigures([drawn], file, all), []);
+  assert.deepEqual(seen.map(p => p.replaceAll('\\', '/')), ['/r/pregen-review-figures/D-1.svg', '/r/pregen-review-figures/D-2.svg']);
+  // One file missing flags the entry (once), the others stay clear.
+  const missingSecond = (p: string) => !p.endsWith('D-2.svg');
+  assert.deepEqual(entriesMissingFigures([plain, drawn], file, missingSecond), [drawn]);
 });
