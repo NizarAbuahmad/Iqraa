@@ -30,6 +30,69 @@ pin that another class's or another subject's plan still reads «no plan»); `pn
 suite (9,192 pass, 0 fail, 10 skipped). **Not verified:** the screen itself in a browser or on a device (no API/DB
 in the session), and the Arabic wording by a native reviewer. No «ما الجديد» entry: a corrected nudge sentence, not a
 feature.
+## Admin users list: filter by channel (web / app) and by new or returning — 2026-11-03
+
+**What changed.** The admin «المستخدمون والحظر» screen (`app/admin/users.tsx`) gains two chip rows above the dates,
+on web and in the app alike:
+- **«انضم عبر»** — الكل · ويب · تطبيق · غير معروف. `تطبيق` is either store platform (`android`/`ios`), `غير معروف` a
+  null `signup_platform` (accounts from before 2 Oct). API: `GET /admin/users?channel=all|web|app|unknown`
+  (`parseUserChannel`, `lib/adminMetrics.ts`).
+- **«المستخدمون»** — الجميع · جدد · عائدون. It decides how the date range is read
+  (`?cohort=all|new|returning`, `parseUserCohort`): *جدد* = the account was made inside the range (what the range
+  already meant); *عائدون* = made **before** the range and came back inside it — a sign-in (`last_login`), an AI
+  generation or a saved material (the daily-activity chart's "active", plus a sign-in). The API refuses `returning`
+  with no `from`, so the screen ties the two: picking جدد/عائدون with no start day opens the «٧ أيام» window, and
+  «الكل» on the dates drops back to الجميع (`rangeForCohort` / `cohortForRange`, `services/adminUsers.ts`). A line
+  under the dates says which reading is in force. The dashboard's «جدد» tile (`?new=1`) now also lights «جدد».
+
+**Verified.** `adminUsersFilters.db.test.ts` (new, real Postgres through the built bundle): each channel, new inside
+the range combined with a channel, returning by each of the three signals alone, the end day honoured, an old account
+quiet in the window excluded, and the two 400s. Unit tests for both parsers and for the screen's query/range helpers
+(`adminUsers.test.ts`). Full api-server and mobile suites, monorepo typecheck. The screen was looked at in a browser
+(web build against a local API).
+
+**«هذا الشهر» clipped again, and «المحظورون فقط» off a narrow screen (2026-11-05).** An admin's
+Android screenshot from 2 Nov still showed «هذا الشهر» cut to «هذا», after the 31 Oct fix
+(`textBreakStrategy="simple"`, see «هذا الشهر» was clipped on Android). Either that phone had not
+received the update or greedy breaking was not enough; it cannot be told from here, so the label is
+now made unable to wrap at all: `FilterChip` (`components/admin/widgets.tsx`) sets
+`numberOfLines={1}` with `ellipsizeMode="clip"` (a pixel-short measurement clips a pixel instead of
+printing «…»). `adminFilterChip.test.ts` pins both props; it fails on the old source. Separately, at
+360px on web the search box would not shrink below a web `<input>`'s default width and pushed
+«المحظورون فقط» off the left edge; it now has `minWidth: 0`. Both seen fixed in a web build at 360
+and 430px (the label's `scrollWidth` equals its `clientWidth`). **Not** seen on an Android phone,
+which is where the clipping was reported.
+
+**Not verified / limits.** Not looked at on an Android device. `last_login` is stamped only at sign-in, not on token
+refresh, so someone who stays signed in and only browses is not "returning" unless they generated or saved
+something — the same blind spot the daily-activity chart documents. No «ما الجديد» entry: the screen is admin-only and
+those entries reach only teacher/student/parent roles.
+## Test accounts for every role: a seed script — 2026-11-03
+
+**What changed.** `pnpm --filter @workspace/api-server run seed:test-accounts`
+(`artifacts/api-server/scripts/seed-test-accounts.mjs`) writes a teacher, a student and a parent that are linked to one
+another: the teacher owns one grade-10 maths class with three roster rows, the student is linked `self` to the first row
+and the parent `guardian` to the same row. One account cannot hold all three roles (`users.role` is one value, and
+`lib/roleSwitch.ts` locks the switch once there is a class or a link), so this is three accounts, used side by side
+through the app's saved accounts. Each is email-verified, and has the grade/subject picks that skip `/setup-subjects`,
+`/setup-grade` and `/claim-required`. Password `IqrraTest-2026` unless `--password`; `--email-base you@gmail.com` gives
+`you+teacher@…` and so on. Terms acceptance is left unset, because nobody accepted terms. It is idempotent (matched by
+email, class name and roster name), and refuses an existing email with another role, a roster row already claimed by
+another student, and any database that is not local (or has `?host=`) unless `--allow-remote`. Documented in
+`LOCAL_SETUP.md` («Test accounts for every role»). No «ما الجديد» entry: nothing in the app changes.
+
+**Verified** against a throwaway local Postgres with all migrations applied: two runs (`created` then `updated`, still
+1 class, 3 roster rows, 1 `self` link and 1 `guardian` link); the remote-host and short-password refusals. Then I booted
+the built API against that database (`STUDENT_ACCOUNTS=true`, `AI_LIVE_MODE=false`) and signed in as each account:
+`/auth/me` shows the teacher with grade-10/mathematics, and the student and parent with `hasRosterLink: true`, grade-10
+and `guardianStatus: not_required`. `/classes` lists the class with `studentCount: 3`. `/parent/homework` lists the
+child with `canTrack: true`. `/student/homework` and `/parent/schedule` answer 200, `/classes` as the student answers
+403, and a wrong password answers 401.
+
+**Not verified:** signing in through the app's UI (only the API was driven), and running it against production. Nothing
+was written to production. With `GUARDIAN_APPROVAL` on, the student would still be `not_required`, because it has a live
+link; that was reasoned from `guardianStatus`, not run.
+
 ## CI: the «migrations match schema» job stops fetching history it never reads — 2026-11-05
 
 The third of three jobs with `fetch-depth: 0` (after `destructive migrations acknowledged`, #1413, and Deploy's
@@ -346,7 +409,6 @@ CI on the PR's head is the one to read.
 - The desktop figure is capped at 520px; the Arabic prompt text `figureFormatAr` is unused until PR 3 and says «دالة» where the
   Jordanian books say «اقتران» (to change before PR 3 sends it to a model).
 - Merging deploys the API and the web bundle; there is no migration and no native change.
-
 ## lib/figure: a shared gate and geometry for drawn graphs and vectors — 2026-11-03
 
 A teacher's feedback: no outright scientific errors, but some lessons need a graph or a vector drawing and the app puts
