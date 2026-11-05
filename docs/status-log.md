@@ -10,6 +10,41 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## CI: the «migrations match schema» job stops fetching history it never reads — 2026-11-05
+
+The third of three jobs with `fetch-depth: 0` (after `destructive migrations acknowledged`, #1413, and Deploy's
+`what changed`, #1415). On 2026-11-03 this job hit its 10-minute limit inside `git fetch` twice on one PR (#1411), then
+passed on the next head. Unlike the other two it needs **no history at all**: it installs, runs `generate` and asks
+`git status --porcelain lib/db/migrations` whether a file changed, which is a working-tree question.
+
+**What changed.** `.github/workflows/ci.yml`, that job's checkout only: `fetch-depth: 0` removed, so it takes the default
+(the one commit). No `filter`, no timeout change, no script change. The destructive-SQL check, which did read history, lived
+in this job until 2026-10-11 (see `destructive-migration-ack.yml`); nothing left here does.
+
+**Checked** on a `--depth 1` clone of `main`, with the exact pnpm the job pins (11.18.0): `pnpm install --frozen-lockfile
+--filter @workspace/db...` 1.4 s (warm store; 8 s cold), `generate` printed «No schema changes», `git status --porcelain lib/db/migrations` was empty.
+**Negative control** on the same clone: one column added to `adminMetrics.ts` with no migration made `generate` write
+`0025_*.sql` and `git status` list three paths, so the job's check still fails when it should. A shallow checkout does not
+blunt it.
+
+**A correction to #1413 and #1415.** Their text says the lightweight fetch is «~5 MB, about a second». That figure was a
+**bare clone with no working tree**. A CI job also checks out the commit's files, and the repository is large: a depth-1
+clone here is 564 MB (the full history of all branches, 1.2 GB). So the real saving on those two jobs is roughly half the
+bytes plus no negotiation over 77 branches, not 200×. What actually shows the fix works is the runner timings, not that
+figure. (The comments inside `destructive-migration-ack.yml` and `deploy.yml` repeat the «~5 MB» wording; they are left as they
+are here because any edit to `deploy.yml`, even a comment, redeploys the API and the verifier. Correct them the next time that
+file is touched for a real reason.) `destructive migrations acknowledged` took 16–24 s on three heads (it was cut off at 300 s four times before),
+and Deploy's `what changed` took 17–18 s with a 12–13 s checkout on two merges.
+
+**Not verified.** It has not run on a runner; this PR's own `migrations match schema` run is the first. The
+`Migrations apply to an empty database` step needs Postgres, which was not available here, so it was not run; it does not
+read the checkout's history. Merging this touches `ci.yml`, which `deploy.yml`'s `what changed` job counts as a web change:
+expect the web bundle to redeploy (not the API or the verifier) and an OTA to `preview`.
+
+**Left alone.** The other two jobs keep `fetch-depth: 0` **with** `filter: blob:none` on purpose: one needs the merge base of
+`base...head`, the other checks that a `BEFORE` commit exists. These are the only two `fetch-depth: 0` left in
+`.github/workflows/`.
+
 ## Grade 10 physics: semester 2's three introductory experiments, and the unit numbering pinned — 2026-11-03
 
 A teacher compared the app's Grade 10 physics with the two student books and reported four things: (1) no unit 3 exists in
