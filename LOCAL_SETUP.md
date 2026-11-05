@@ -371,6 +371,32 @@ runuser -u postgres -- $B/pg_ctl -D $D/data -o "-p 55432 -k $D -c listen_address
 runuser -u postgres -- $B/pg_ctl -D $D/data stop && rm -rf $D
 ```
 
+## Test accounts for every role
+
+No account can be a teacher, a student and a parent at once (`users.role` is one
+value, and the role switch locks once there is a class or a link), so this seeds
+three that are linked to each other and already past every first-run screen:
+
+```bash
+pnpm --filter @workspace/api-server run seed:test-accounts
+# or with addresses in your own inbox (you+teacher@, you+student@, you+parent@):
+pnpm --filter @workspace/api-server run seed:test-accounts -- --email-base you@gmail.com
+```
+
+- **teacher**: grade 10 maths picked, owns «العاشر أ — رياضيات (تجريبي)» with three students.
+- **student**: linked to the first of them, «طالب تجريبي».
+- **parent**: that same child's guardian.
+
+All three sign in with email and password `IqrraTest-2026` (change it with
+`--password`), and are already verified, so no code is emailed. Re-running resets
+the passwords and adds only what is missing. In the app, Settings → «إضافة حساب
+آخر» keeps all three signed in on one device.
+
+Like lib/db's scripts it uses the repo-root `.env`'s `DATABASE_URL`, or the
+shell's with `--from-env`. It refuses a database that is not on this machine
+unless you pass `--allow-remote`. The password is published, so on a shared
+database pass your own `--password` too.
+
 ## Run the frontend
 
 In a **second** terminal:
