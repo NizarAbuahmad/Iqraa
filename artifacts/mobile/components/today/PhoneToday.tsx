@@ -194,7 +194,7 @@ export function PhoneToday() {
                 <Text style={[s.nudgeText, { color: colors.foreground, textAlign: align }]}>
                   {setup.step === 'timetable'
                     ? t('homeSetupTimetable')
-                    : t('homeSetupPlan', periodClassLabel(classNameFor(classes, setup.classGroupId, lang as 'ar' | 'en'), setup.subjectId, lang) ?? '')}
+                    : t(setup.step === 'schedule' ? 'homeSetupSchedule' : 'homeSetupPlan', periodClassLabel(classNameFor(classes, setup.classGroupId, lang as 'ar' | 'en'), setup.subjectId, lang) ?? '')}
                 </Text>
                 <PressableScale
                   onPress={() =>
@@ -208,7 +208,7 @@ export function PhoneToday() {
                   style={[s.nudgeBtn, { backgroundColor: colors.primary }]}
                 >
                   <Text style={[s.nudgeBtnText, { color: colors.primaryForeground }]}>
-                    {t(setup.step === 'timetable' ? 'homeSetupTimetableCta' : 'homeSetupPlanCta')}
+                    {t(setup.step === 'timetable' ? 'homeSetupTimetableCta' : setup.step === 'schedule' ? 'homeSetupScheduleCta' : 'homeSetupPlanCta')}
                   </Text>
                 </PressableScale>
                 <Pressable

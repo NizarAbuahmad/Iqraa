@@ -10,6 +10,27 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Today's setup nudge no longer says "no plan" about a plan that exists — 2026-11-05
+
+A teacher added a pacing plan from the Today nudge «أضف الخطة» and the nudge kept saying «لا توجد خطة زمنية». Not a
+refresh bug: Today re-reads the schedule and the plans on every focus, nothing caches (client has no cache, the API
+sends `no-store`), and the plans screen is an ordinary pushed screen. The cause: the nudge never asked whether a plan
+exists, only whether the next period has a lesson (`timetableSetupStep`), and the plans form saves with a title and a
+class alone, so a plan with nothing dated in it left the nudge in its «no plan» wording.
+
+**What changed.** `timetableSetupStep` takes the plans and classes and has a third step, `schedule`: the next period's
+class has a plan (same class, same subject) but no dated lesson in it. Text «خطة … بلا دروس مجدولة بعد — أضف دروسها
+ليظهر هنا درس الحصة.», button «جدول الدروس», same destination as before (the plans screen opens the one matching
+plan). The plan filter now lives in one function, `plansForPeriod`, used by both `nextPeriodLesson` and the nudge, so
+the card and the nudge cannot disagree about which plans speak for a period. Both Today layouts (phone and desktop)
+carry the new wording.
+
+**Verified.** Red/green on `scheduleCalendar.test.ts` (3 new cases failed first, for the right reason; 2 boundary cases
+pin that another class's or another subject's plan still reads «no plan»); `pnpm run typecheck`; the whole mobile
+suite (9,192 pass, 0 fail, 10 skipped). **Not verified:** the screen itself in a browser or on a device (no API/DB
+in the session), and the Arabic wording by a native reviewer. No «ما الجديد» entry: a corrected nudge sentence, not a
+feature.
+
 ## lib/figure: a shared gate and geometry for drawn graphs and vectors — 2026-11-03
 
 A teacher's feedback: no outright scientific errors, but some lessons need a graph or a vector drawing and the app puts
