@@ -31,6 +31,18 @@ quiet in the window excluded, and the two 400s. Unit tests for both parsers and 
 (`adminUsers.test.ts`). Full api-server and mobile suites, monorepo typecheck. The screen was looked at in a browser
 (web build against a local API).
 
+**«هذا الشهر» clipped again, and «المحظورون فقط» off a narrow screen (2026-11-05).** An admin's
+Android screenshot from 2 Nov still showed «هذا الشهر» cut to «هذا», after the 31 Oct fix
+(`textBreakStrategy="simple"`, see «هذا الشهر» was clipped on Android). Either that phone had not
+received the update or greedy breaking was not enough; it cannot be told from here, so the label is
+now made unable to wrap at all: `FilterChip` (`components/admin/widgets.tsx`) sets
+`numberOfLines={1}` with `ellipsizeMode="clip"` (a pixel-short measurement clips a pixel instead of
+printing «…»). `adminFilterChip.test.ts` pins both props; it fails on the old source. Separately, at
+360px on web the search box would not shrink below a web `<input>`'s default width and pushed
+«المحظورون فقط» off the left edge; it now has `minWidth: 0`. Both seen fixed in a web build at 360
+and 430px (the label's `scrollWidth` equals its `clientWidth`). **Not** seen on an Android phone,
+which is where the clipping was reported.
+
 **Not verified / limits.** Not looked at on an Android device. `last_login` is stamped only at sign-in, not on token
 refresh, so someone who stays signed in and only browses is not "returning" unless they generated or saved
 something — the same blind spot the daily-activity chart documents. No «ما الجديد» entry: the screen is admin-only and

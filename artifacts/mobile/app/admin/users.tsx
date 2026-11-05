@@ -203,7 +203,9 @@ export default function AdminUsersScreen() {
               onChangeText={setQ}
               placeholder={ar ? 'ابحث بالاسم أو البريد' : 'Search name or email'}
               placeholderTextColor={colors.mutedForeground}
-              style={[styles.input, { flex: 1, borderColor: colors.border, borderRadius: colors.radius, color: colors.foreground, textAlign: align }]}
+              // minWidth 0: a web <input> will not shrink below its default ~20 characters,
+              // which pushed «المحظورون فقط» off a 360px screen.
+              style={[styles.input, { flex: 1, minWidth: 0, borderColor: colors.border, borderRadius: colors.radius, color: colors.foreground, textAlign: align }]}
             />
             <Pressable
               onPress={() => setOnlySuspended(v => !v)}
