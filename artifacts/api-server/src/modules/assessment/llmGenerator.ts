@@ -36,9 +36,34 @@ import { MARKS_BY_COMPETENCY, competencyForBlooms, type CompetencyKey } from "./
 import type { BookSupplied } from "./bookQuestions.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
 import { variationBlock } from "../../lib/variation.ts";
+import { figureFormatEn } from "../../lib/figurePrompt.ts";
+import { figureConsistentWith, resolveFigure } from "@workspace/figure";
+
+/**
+ * Check topics whose answer a student reads straight off a plotted curve: an
+ * equation's solutions are where the curve crosses an axis or a line, and the
+ * grid ticks give the values. A question with one of these checks never keeps a
+ * drawing — the figure gate cannot see it, because an equation is not a function
+ * the tie in `figureConsistentWith` can compare.
+ *
+ * Every other `VERIFIABLE_TOPICS` entry computes something a picture does not
+ * hand over: a derivative (an expression, or a slope the curve only suggests)
+ * and a circle's centre or radius (a function graph never draws a circle). A
+ * topic added later must be placed in one list or the other
+ * (`llmGeneratorVisual.test.ts` fails until it is). The lesson-teaching verifier's
+ * `system_solutions` is not an exam check topic, so it is not here.
+ *
+ * What this does NOT cover is a question with no `check` at all (a vertex, the
+ * components of a vector): only rule 9 and the teacher's preview guard those.
+ */
+export const ANSWER_READABLE_FROM_DRAWING_TOPICS: ReadonlySet<string> = new Set([
+  "equation_linear",
+  "equation_quadratic",
+  "equation_exponential",
+]);
 
 /** Bumped when the prompt changes shape, so usage rows stay comparable. */
-export const GENERATION_PROMPT_VERSION = "exam-gen-7";
+export const GENERATION_PROMPT_VERSION = "exam-gen-8";
 
 /**
  * What the model is told the official textbook already supplies for this paper
@@ -319,6 +344,10 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
           + "thing a topic computes — solve this equation, differentiate this function, find this circle's "
           + "centre — over asking about it, so more of the paper can be verified. Where no topic fits, "
           + "leave \"check\" out: a question nobody can verify is better than a check for the wrong question.",
+        "9. A question may carry ONE drawing, in a question-level \"visual\" field (a sibling of \"check\", never inside \"body\"), when it is about a graph or a vector. "
+          + "The stem must state everything the question needs — write the function out, give the vectors' components — so the drawing only illustrates and the question is answerable without it. "
+          + "Attach a drawing only where it illustrates the question, never to a question whose answer can be read straight off it (the roots, the vertex, the intersection points, or the components of a vector the student is asked to find). "
+          + "The drawing is yours, so the stem may say «في الرسم المرافق»; never name a textbook figure (rule 7 still holds).",
       ]
       : []),
     "",
@@ -423,6 +452,11 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
           + '"check":{"topic":"derivative_polynomial","question":"x^3 - 4x","answer":"3x^2 - 4"}}',
       ]
       : []),
+    // Maths only, like rule 9 in the system prompt. The format text is read from
+    // the gate's own limits (`figurePrompt.ts`), so it cannot drift from them.
+    ...(isMaths
+      ? ["", 'For a question about a graph or a vector you may also include "visual" (see rule 9):', figureFormatEn()]
+      : []),
     variationBlock({ variantIndex: 0, isArabic: arabic, avoid: req.avoid ?? [], insistent: req.insistent }),
   ].join("\n");
 
@@ -446,6 +480,11 @@ export interface ParseResult {
   questions: GeneratedQuestion[];
   /** Items the model returned that could not be used, and why. */
   discarded: { index: number; reason: string }[];
+  /**
+   * Drawings the model proposed that were not kept, and why. The question they
+   * belonged to stays; only the drawing goes.
+   */
+  visualsDropped: { index: number; reason: string }[];
 }
 
 /**
@@ -473,6 +512,8 @@ export function parseGeneratedQuestions(
 
   const questions: GeneratedQuestion[] = [];
   const discarded: { index: number; reason: string }[] = [];
+  const visualsDropped: { index: number; reason: string }[] = [];
+  const maths = paperIsMathematics(req.objectives);
 
   list.forEach((item, index) => {
     const drop = (reason: string): void => {
@@ -513,9 +554,38 @@ export function parseGeneratedQuestions(
     // question only its chance at being verified, never its place in the paper.
     const check = parseAnswerKeyCheck(q["check"]);
 
+    // The model's only door for a drawing is the question-level field; a
+    // `visual` it tucked inside `body` is removed either way.
+    const { visual: _inBody, ...bodyRest } = body;
+    if ("visual" in body) {
+      visualsDropped.push({
+        index,
+        reason: "a drawing inside body is ignored; the question-level visual is the only door",
+      });
+    }
+    let visual: ReturnType<typeof resolveFigure> = null;
+    if (q["visual"] !== undefined && q["visual"] !== null) {
+      if (!maths) {
+        visualsDropped.push({ index, reason: "drawings are offered on maths papers only" });
+      } else {
+        visual = resolveFigure(q["visual"]);
+        if (!visual) visualsDropped.push({ index, reason: "the drawing is outside the limits" });
+        else if (check && ANSWER_READABLE_FROM_DRAWING_TOPICS.has(check.topic)) {
+          visualsDropped.push({
+            index,
+            reason: "the answer would be readable off the drawing (an equation's roots or a system's intersection)",
+          });
+          visual = null;
+        } else if (!figureConsistentWith(visual, check?.question)) {
+          visualsDropped.push({ index, reason: "the drawn function differs from the check" });
+          visual = null;
+        }
+      }
+    }
+
     questions.push({
       type: type as QuestionType,
-      body,
+      body: visual ? { ...bodyRest, visual } : bodyRest,
       expectedAnswer: asRecord(q["expectedAnswer"]) ?? {},
       rubric: asRecord(q["rubric"]),
       objectiveId,
@@ -535,7 +605,7 @@ export function parseGeneratedQuestions(
     });
   });
 
-  return { questions, discarded };
+  return { questions, discarded, visualsDropped };
 }
 
 export interface LlmGenerationResult extends ParseResult {

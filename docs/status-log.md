@@ -30,6 +30,322 @@ pin that another class's or another subject's plan still reads «no plan»); `pn
 suite (9,192 pass, 0 fail, 10 skipped). **Not verified:** the screen itself in a browser or on a device (no API/DB
 in the session), and the Arabic wording by a native reviewer. No «ما الجديد» entry: a corrected nudge sentence, not a
 feature.
+## CI: the «migrations match schema» job stops fetching history it never reads — 2026-11-05
+
+The third of three jobs with `fetch-depth: 0` (after `destructive migrations acknowledged`, #1413, and Deploy's
+`what changed`, #1415). On 2026-11-03 this job hit its 10-minute limit inside `git fetch` twice on one PR (#1411), then
+passed on the next head. Unlike the other two it needs **no history at all**: it installs, runs `generate` and asks
+`git status --porcelain lib/db/migrations` whether a file changed, which is a working-tree question.
+
+**What changed.** `.github/workflows/ci.yml`, that job's checkout only: `fetch-depth: 0` removed, so it takes the default
+(the one commit). No `filter`, no timeout change, no script change. The destructive-SQL check, which did read history, lived
+in this job until 2026-10-11 (see `destructive-migration-ack.yml`); nothing left here does.
+
+**Checked** on a `--depth 1` clone of `main`, with the exact pnpm the job pins (11.18.0): `pnpm install --frozen-lockfile
+--filter @workspace/db...` 1.4 s (warm store; 8 s cold), `generate` printed «No schema changes», `git status --porcelain lib/db/migrations` was empty.
+**Negative control** on the same clone: one column added to `adminMetrics.ts` with no migration made `generate` write
+`0025_*.sql` and `git status` list three paths, so the job's check still fails when it should. A shallow checkout does not
+blunt it.
+
+**A correction to #1413 and #1415.** Their text says the lightweight fetch is «~5 MB, about a second». That figure was a
+**bare clone with no working tree**. A CI job also checks out the commit's files, and the repository is large: a depth-1
+clone here is 564 MB (the full history of all branches, 1.2 GB). So the real saving on those two jobs is roughly half the
+bytes plus no negotiation over 77 branches, not 200×. What actually shows the fix works is the runner timings, not that
+figure. (The comments inside `destructive-migration-ack.yml` and `deploy.yml` repeat the «~5 MB» wording; they are left as they
+are here because any edit to `deploy.yml`, even a comment, redeploys the API and the verifier. Correct them the next time that
+file is touched for a real reason.) `destructive migrations acknowledged` took 16–24 s on three heads (it was cut off at 300 s four times before),
+and Deploy's `what changed` took 17–18 s with a 12–13 s checkout on two merges.
+
+**Not verified.** It has not run on a runner; this PR's own `migrations match schema` run is the first. The
+`Migrations apply to an empty database` step needs Postgres, which was not available here, so it was not run; it does not
+read the checkout's history. Merging this touches `ci.yml`, which `deploy.yml`'s `what changed` job counts as a web change:
+expect the web bundle to redeploy (not the API or the verifier) and an OTA to `preview`.
+
+**Left alone.** The other two jobs keep `fetch-depth: 0` **with** `filter: blob:none` on purpose: one needs the merge base of
+`base...head`, the other checks that a `BEFORE` commit exists. These are the only two `fetch-depth: 0` left in
+`.github/workflows/`.
+
+## /play spelling game: from 5 rules to 15, 40 questions to 86 — 2026-11-04
+
+The game («كيف تُكتب؟») served five of the bank's 19 rules, because the tile shows a
+rule name and bare options, so a wrong option that is itself a word is a second
+defensible answer. The bank now marks those words `dictationOnly` (see the entry
+below, «Spelling bank: a word whose misspelling is itself a word…»), and
+`takeSpellingItems` never builds a choice from one. So the game no longer needs its
+own allowlist: it serves every rule except one, and gets only the words whose options
+were read and are not words.
+
+- **Served now: 15 rules, 86 distinct questions** (it was 5 and 40; counted over 3,000
+  seeded rounds). A round is still 8 words, none twice, at most 3 from one rule.
+- **Not served, and why.** `alif-tathniya-baad-hamza` is excluded
+  (`SPELLING_EXCLUDED_RULE_IDS`): its key marks «شيآن» correct and «شيئان» wrong, and
+  nobody has checked the Ministry book. Three more never appear because the bank
+  leaves them no choice-safe word: الألف الفارقة (the plural «يدعوا» is a word),
+  الأفعال الثلاثية (ى/ي: «رمي», «هدي» are words) and همزة الاستفهام (its options are
+  real verbs). They still come out as dictation in worksheets.
+- **One more word flagged in the bank, found by reading what the widened game would
+  show:** «احمد» beside «أحمد» is a real imperative («احمد الله»), the same kind of case
+  as «أستمع» beside «استمع». `hamza-wasl-qat` now has 4 flagged words, not 3; words
+  that can be asked as a choice are 104, not 105. This is a `lib/` change, so the merge
+  deploys the API (no schema, no migration).
+- **Removed:** the five-rule list, and the one-word `SPELLING_DROPPED_ANSWERS`
+  («ذلك»): the bank's data fix («ذالك» in place of the verb «دلك») made it unnecessary.
+  `BANK_CORRECT`, the cross-rule backstop, stays as a second line of defence.
+- **Verified:** I read all 53 questions the widening added (each answer with the three
+  wrong options it can show); one needed a flag (above). Tests: the game's
+  (`playGameSpelling.test.ts`: every rule that can make a choice is reachable and no
+  excluded rule ever is; a dictation-only word is never asked; rounds stay full), the
+  bank's 250, the API's 116 `spellingItems`, typecheck, the mobile suite. The longest
+  tile name was already served before, so no new wrapping case.
+- **Not verified / limits.** The reading is mine, not a linguist's or a teacher's, and
+  words nobody flagged are read, not proven: «أبن», «هده», «يصلى», «بير» and «قاريء»
+  (an older accepted spelling of «قارئ», which the rule marks wrong) stay as wrong
+  options because a pupil is unlikely to know them or the curriculum teaches the other
+  form. Not re-checked in a browser: the screens did not change. The «ما الجديد» text
+  for the game still says «منها التاء المربوطة واللام الشمسية و«هذا» و«هذه»», which is
+  true, only no longer all of it.
+
+## Grade 10 physics: semester 2's three introductory experiments, and the unit numbering pinned — 2026-11-03
+
+A teacher compared the app's Grade 10 physics with the two student books and reported four things: (1) no unit 3 exists in
+either book; (2) «الحركة الموجية» showed with unit 2 when it is a unit of its own with two lessons; (3) every lesson on
+offer was semester 2's, so no semester 1 file could be made; (4) unit numbers should be 4, 5, 6 in semester 2 and not
+1, 2, 3.
+
+**What the code already did, checked before changing anything.** Points 1, 2 and 4 are already how the data reads:
+semester 1 is units 1–2, semester 2 is units 4–6 in book order, wave motion is unit 6 with two lessons, and nothing
+generates a unit 3. Point 3 is not reproducible from the code either: both books are in `KB_BOOKS` and the picker lists
+S1 then S2 for Grade 10 physics. The unit picker prints a unit's title with no number, so **where the teacher saw
+«الوحدة الثانية» beside wave motion is not found** — a stale deploy, or a screen other than the picker, is the open
+guess. We asked for the screenshot; this change does not claim to have fixed 1–4 as seen.
+
+**What was wrong and is fixed.** `iqra_curriculum_g10_phys_sem2.json` said the semester 2 book has no
+«تجربة استهلالية», so semester 2 had no `lab` lessons. It does: «الكتلة والوزن» (p. 9), «خصائص الموائع» (p. 57) and
+«الموجات تنقل الطاقة ولا تنقل المادة» (p. 93), one at the head of each unit as in semester 1. They are added as
+`u4_lab`, `u5_lab`, `u6_lab` (order 0, no objectives, the book prints none), the file's `known_gaps` entry and the
+catalog header are corrected, and the page list in `source_books` now names pp. 9, 57 and 93. The English titles are
+translations (the extraction carries none); the Arabic «ولا» in the unit 6 title is restored from the extraction's
+«وال», which the lesson-1 main idea on p. 94 confirms.
+
+**Pinned.** `lib/curriculum/src/__tests__/physG10Structure.test.ts`: semester 1 units are [1, 2] and semester 2 [4, 5, 6]
+with no 3, in book order; wave motion is its own unit with the two lessons and none under fluids; the built catalogs'
+`order` is the book number; every unit of both semesters opens with its lab (order 0) and its lessons run 1..n.
+
+**Verified.** The new test failed 3 of 8 before the data change and passes after; `lib/curriculum` `pnpm test` 915/915 and
+`pnpm run verify` 0 errors.
+
+**Not verified / limits.** Not looked at on a running app; no periods for any semester 2 lesson (unchanged). No «ما الجديد»
+entry: three experiments appear in a lesson picker, which is not a feature to announce to every account.
+
+## Deploy: the «what changed» job stops downloading every file of every branch — 2026-11-04
+
+The same checkout problem as the entry below, in the job that **gates production deploys**. On #1413's merge (`28fda7c`)
+`deploy.yml`'s `what changed` job (`timeout-minutes: 5`, `fetch-depth: 0`) was cancelled inside `git fetch`, and every job
+behind it (`iqraa-api`, `iqraa-verifier`, `iqraa-web`, both schema jobs) was **skipped**. Nothing was lost that time — the
+merge touched only a workflow file — but a merge that did need a deploy would have shipped nothing, with no red job to say
+so (the trap `CLAUDE.md` describes: a skipped job is not a failure).
+
+**What changed.** `.github/workflows/deploy.yml`, the `changes` job only: checkout gains `filter: blob:none`, and
+`timeout-minutes` goes 5 → 10. The script is unchanged.
+
+**Measured, against the real remote, full clone vs `--filter=blob:none`.** `git diff --name-only BEFORE AFTER` returned the
+same file list (same hash) for ranges of 1, 3, 10, 40 and 120 commits (2 to 519 files), each in under 10 ms, and the clone
+stayed 5.4 MB, so no file contents were fetched on demand. `git cat-file -e` of an unknown commit still exits 128 in about a
+second, so the «No usable base commit; deploying everything» fallback still fires; a real commit exits 0.
+
+**What merging this does.** `deploy.yml` is on the API's and the verifier's own file lists, so merging it **deploys the API
+and the verifier to Cloud Run (same code, new revisions) and the web bundle**, then the OTA publish to `preview`. That is
+the existing rule working, not a side effect of this change.
+
+**Not verified.** It has not run on a runner; the first `what changed` run on the merge commit is the test, and its
+duration (and whether the three deploy jobs then ran) is what to read. A rename of a file whose contents git must compare
+would fetch those blobs on demand: slower, still correct; none of the ranges above needed it.
+
+## CI: the destructive-migrations check stops downloading every file of every branch — 2026-11-04
+
+On 2026-11-03 the check `destructive migrations acknowledged` was cancelled four times in a row on one PR (#1411, which
+adds no migration), each time at exactly its `timeout-minutes: 5`, inside `actions/checkout`'s `git fetch` and before its
+own step ran. The same job had taken ~30 s that morning and ~4 min on #1410. Its cause is the checkout, not the PR:
+`fetch-depth: 0` downloads the whole history of all 77 branches **with every file version**.
+
+**What changed.** `.github/workflows/destructive-migration-ack.yml` only: the checkout gains `filter: blob:none`
+(history kept, file contents fetched on demand) and `timeout-minutes` goes 5 → 10. The job's script is unchanged.
+
+**Measured, from this machine against the real remote.** Full clone 1.2 GB / 52 s (on a fast link); `--filter=blob:none`
+5.4 MB / 1 s. The job's own `git diff --name-only --diff-filter=A base...head -- 'lib/db/migrations/*.sql'`, run on both
+over a range that contains migrations, returned the same 2 files (same hash), and the lightweight clone stayed 5.4 MB, so
+the diff pulled no blobs; an empty range returned nothing. `filter` is an input of `actions/checkout@v4` (read from its
+`action.yml`).
+
+**Not verified.** It has not run on a runner yet — this PR's own run is the first. If the `base...head` diff ever needs a
+file's contents (for example to detect a renamed migration), git fetches just that blob on demand, which is slower but
+correct.
+
+**Left alone, on purpose.** `ci.yml`'s `migrations match schema` job (`fetch-depth: 0`, 10-minute limit; it timed out
+twice on #1411 and then passed) has the same checkout, but it installs dependencies and runs migrations, which could not
+be tried locally; `deploy.yml` also uses `fetch-depth: 0`. Both want the same look if they start timing out.
+
+## Student lesson cards can show a drawn graph or vectors — 2026-11-03
+
+**PR 3 of 3** of the answer to a teacher's feedback (some lessons need a graph or vector drawing and the app shows none;
+spec `docs/superpowers/specs/2026-11-03-drawn-figures-design.md`, plan `docs/superpowers/plans/2026-11-03-drawn-figures.md`).
+PR 1 shipped the shared gate and `FigureView`, PR 2 the exam questions. This one wires the same pieces into the student's
+lesson explanations. **No student sees a drawing on the day this merges**: the explanations students are served were
+approved before drawings existed, and none carries one. A drawing appears only after an admin regenerates explanations,
+opens the drawings as files and approves (below). For that reason there is **no student «ما الجديد» entry yet** — it was
+written, reviewed, and taken out again before this PR (commits `3851dc8`, `f3ba501`); add it the day the first drawn
+explanation is approved, with that day's date (`lesson-drawn-figures`, roles `student`, route `/curriculum`, strings in
+`i18n.ts`; `git show 3851dc8` has all of it).
+
+**What was built.**
+- *Cards.* A `concept` card and the `example` card carry `visual?: Figure`, passed through `resolveFigure` (never throws,
+  a refused drawing is dropped alone and the card keeps its words); a card with no drawing is unchanged. The lesson screen
+  (`app/curriculum/lesson-explanation.tsx`) draws it below the concept's points, and after the example's steps and
+  before its answer line (the spec first said "above"; corrected).
+- *Prompt.* On a **maths** lesson only (`isMathContext`), the `lesson-teaching` prompt gains rule 16 in both languages:
+  one optional `"visual"` per concept or worked example, at most 2 in the section (`LESSON_VISUALS_MAX`), the drawing
+  illustrates and never carries information alone, plus the format text from `figurePrompt.ts`. Rules 1–15 and every
+  non-maths prompt are unchanged (a chemistry lesson's prompt is byte-identical; traced by hand, pinned by substring).
+  `teachingVisualCounts` now reports `visual`, so the existing "lesson-teaching visuals" log line counts them.
+- *Pool version.* `lesson-teaching` moves from `2026-11-03.1` to `2026-11-03.2` (all subjects, chemistry included, even
+  though its prompt text is unchanged — the key is per kind).
+- *Admin review.* `pregenerate` writes each lesson drawing as an SVG beside the review file
+  (`<review>-figures/<lessonId>-<n>.svg`, concepts first then the example, the same order the cards use) and
+  `--approve` refuses an entry whose drawings have no file there (`entriesMissingFigures`), before any approve request.
+  The review file's content hash covers `visual`, so deleting or editing a drawing counts as an edit and the file is refused.
+- *Wording.* `figureFormatAr` now says «اقتران» (the Jordanian books' word) instead of «دالة». The exam prompt embeds only
+  the English format text, so no exam prompt text moved.
+
+**What the reviews found.** The final review found nothing that lets an unapproved or un-gated drawing reach a student
+(approval gate on `student_approved_at`; stored content is never updated after approval; the cards gate; the teacher's
+deck never reads `visual`). Its one Important finding was the student entry announcing drawings that nobody could see —
+removed (above). Everything else is under *Known limits*.
+
+**Verified.** Locally on the final code (`f3ba501` plus docs): `pnpm run typecheck` clean; `lib/figure` 82/82;
+exam-paper 14/14; math-verify 29/29; api-server build clean and 2,892/2,892 (0 skipped); mobile 9,201 passed, 0 failed,
+10 skipped (9,211 tests). The real lesson screen was opened (throwaway Postgres, built web bundle, a signed-in Grade 10
+maths student, an approved `lesson-teaching` row with a graph on a concept and vectors on the worked example planted by SQL
+in the throwaway database only): phone and desktop, Arabic and English, light and dark. Seen: the graph under the
+concept's points and the vectors between the steps and the answer, axis names and letters whole, x growing to the right in
+Arabic too, Arabic-Indic digits intact, dark mode legible, desktop figure capped at 520px at the text's edge, a concept
+without a drawing unchanged, the card readable with the drawing hidden. Each task was reviewed on its own; the branch had
+a final whole-branch review on the most capable model.
+
+**Not verified.**
+- **No live model has ever written a lesson `visual`.** The screenshots used hand-written content. The first
+  `pregenerate` run on maths lessons is the test: read the "lesson-teaching visuals" log line (if `visual` stays 0 on
+  maths lessons, add `visual` to the prompt's JSON output shape — it is taught today only by rule 16 and its examples) and
+  open every SVG.
+- Native iOS/Android; the «ما الجديد» dialog (nothing to show); the student in the screenshots was signed in with grade
+  and subject set directly, not linked through a class code (the student route needs no roster link); 8 of ~38
+  screenshots were opened by the implementer, the rest share the script and had clean DOM measures.
+- `lib/curriculum` tests and `python -X utf8 test_equations.py` were not run locally (neither is touched); CI runs them.
+
+**How drawings reach students (an admin action, not part of the merge).** Run `pregenerate --go` (maths lessons) **from
+`main` at or after this merge**, then open every SVG in `<review>-figures/` and compare it with the lesson's words, then
+`--approve`. The script prints its worst-case cost before spending (calls × `EST_COST_PER_CALL_USD` = $0.05). The newest
+approved row for a lesson and language wins, so approving a regenerated row replaces the old one for students; delete the
+entries you do not want replaced (chemistry, which has no drawings) from the review file first, because any entry you leave
+is regenerated and replaces its predecessor. The 55 previously approved explanations keep being served, without drawings,
+until then. Teachers' pooled `lesson-teaching` rows restart at the new version: the first teacher per lesson pays for a new
+teaching section. Android needs the manual production OTA (`gh workflow run mobile-update.yml -f branch=production`) for
+the screen change; the web bundle ships with the merge.
+
+**Known limits.**
+- **The admin is the only check that a lesson drawing matches the lesson's words.** Nothing in code ties it to the text or
+  to the example's `check` (unlike exams): the realistic failure is a graph of `x^2 + 4` beside points that say
+  `f(x) = x^2 − 4`. The SVG files are named by position among the *accepted* drawings, not by card, so a file cannot be
+  traced to its card by name — naming them by card (`<id>-concept2.svg`, `<id>-example.svg`) is the first follow-up.
+- The guard lives in the script. An admin running an older checkout, or a direct POST to
+  `/moderation/lesson-explanations/approve`, approves drawings nobody opened. It checks that a file exists, not what is in
+  it, and the figures folder is never cleared (a failed SVG write after a re-run could leave an old same-named file).
+  Rejecting only a drawing is not possible: removing it is an edit and the file is refused, so a bad drawing means a
+  rejected explanation.
+- The cap of 2 drawings is in the prompt only; the cards draw every drawing the gate accepts, and the admin sees all of them.
+- The drawing-format text is still worded for exams («علّم نقطةً ذكرها السؤال», "mark only a point the question names");
+  in a lesson it also stops the model marking a vertex in a concept about vertices — drawings are less useful, not unsafe.
+- Maths lessons only; the teacher's slide deck does not draw `visual`; practice cards carry none.
+- The guard's comment says "before any network call" but it runs after login (before any approve request); the rule says
+  "concept" in the singular; `reviewFigures` may list a drawing for a card the app drops (it errs toward showing more).
+- No native module and no migration; merging deploys the API and the web bundle.
+
+## Exam questions can carry a drawn graph or vector — 2026-11-03
+
+**PR 2 of 3** of the answer to a teacher's feedback (no outright errors, but some lessons need a graph or a vector drawing and
+the app puts none in the lesson or the exam; spec `docs/superpowers/specs/2026-11-03-drawn-figures-design.md`, plan
+`docs/superpowers/plans/2026-11-03-drawn-figures.md`). This is the first **user-visible** change: a maths exam question can
+now carry a drawing — a function's graph or vectors on the coordinate plane — that the teacher sees before publishing and the
+student sees with the question. Teachers get one «ما الجديد» entry (`exam-drawn-figures`, dated 2026-11-03, route
+`/evaluations`). Student lesson cards are PR 3.
+
+**What was built.**
+- *Generator.* On a **maths paper only**, the exam prompt offers the model an optional question-level `"visual"` (rule 9 +
+  the format text from `figurePrompt.ts`, every number read from the gate's limits; `GENERATION_PROMPT_VERSION` is now
+  `exam-gen-8`). `parseGeneratedQuestions` runs the PR 1 gate, ties a graph to the question's `check` (a different function
+  than the one checked → the drawing is dropped), drops the drawing beside an `equation_*` check (a curve shows the roots),
+  strips and records a drawing the model tucked inside `body`, and stores the accepted figure as `body.visual`. Every
+  drawing that is dropped is recorded with a reason in `visualsDropped`; the question always stays. The route logs
+  `exam visuals` (kept count + reasons) — that line is how the first live runs will show up.
+- *Storage and the student's copy.* `studentView.ts` sends a drawing only if the gate accepts it (outside every type's
+  allowlist, beside the book `figure`). Editing a question's **text or key removes its drawing** server-side
+  (`bodyAfterEdit`); a marks-, rubric- or difficulty-only edit keeps it; a client can never add or swap one (PATCH keeps
+  only the stored, re-gated drawing; POST strips it). The after-close review payload re-gates it too.
+- *Screens.* The teacher's evaluation screen and the student's `/take/CODE` render `QuestionVisual`; a question with its own
+  drawing does not also get the lesson's book-figure panel.
+- *First look at a real screen* (task B7): the app was run for real (throwaway Postgres + built web bundle + Playwright),
+  drawings were planted on exam questions, and ~300 screenshots were taken (phone and desktop, Arabic and English, light and
+  dark; teacher and student). What it found and fixed: the figure was 2px wider than its bordered box (the right and bottom
+  2px were cropped and «س» was cut to a stub); «ص» sat on the top tick number; letters sank into the dark card (letters now
+  4.5:1, lines 3:1); on a wide desktop the vectors shrank to a speck (figure capped at 520px, aligned to the text edge);
+  a y tick number at the very top edge was half cut (`PlaneGrid`, shared with the Math Corner grapher: the number is
+  skipped, the gridline stays; the grapher shots were pixel-identical before and after); and a curve's letter or a point's
+  letter sat on its own line (`placeLabel` in `lib/figure`: letters are placed ≥ 9px from their own line and inside the
+  box, pure and tested; a 4,000-figure fuzz found no letter outside the box and no NaN). A reviewer's suspicion that Arabic
+  negative ticks were reversed was checked at 8× zoom and is **wrong**: the minus is on the left («−٢»).
+
+**What the reviews found that the first tests did not.**
+- The prompt's own example marked the **root** of `x² − 4` — exactly the leak the prompt forbids; the position of a point
+  leaks as much as a label. The example now marks x = 1, and rule 9 says never to attach a drawing to a question whose
+  answer can be read straight off it.
+- A question like «حلّ س² − ٤ = ٠» with the parabola drawn passed every server check (the `check` tie skips equations).
+  `equation_linear`, `equation_quadratic` and `equation_exponential` now drop the drawing (`ANSWER_READABLE_FROM_DRAWING_TOPICS`,
+  a test forces any new check topic to be classified).
+- `POST /evaluations/:id/questions` stored a client-sent `visual` as given, which made the edit rule bypassable by delete +
+  re-add. Stripped.
+- The after-close answer review sent the raw stored body. Re-gated before anything draws it.
+
+**Verified.** Locally on the final code: `pnpm run typecheck` clean; `lib/figure` 82/82; exam-paper 14/14; math-verify
+29/29; api-server build clean and 2,887/2,887 (0 skipped); mobile 9,193 passed, 0 failed, 10 skipped. The DB-backed route
+tests (edit rule, forged drawing on edit and on add — 17/17 in their file) were run once on a throwaway Postgres 16 and are
+**required in CI**; the counts above do not include them unless a database was configured. Pinned prompts: rules 1–8 and
+every non-maths prompt are byte-identical to `exam-gen-7` (checked by parsing the diff). Each task was reviewed on its own,
+the branch had a final whole-branch review on the most capable model, and the one allowed fix wave got a scoped re-review.
+CI on the PR's head is the one to read.
+
+**Not verified.**
+- **No live model has ever written a `visual`.** The first live run is the real test: read the `exam visuals` log line and
+  read that paper's questions **and answer keys** by eye (CLAUDE.md: a model's Arabic reads fluently either way).
+- Android and iOS (the web build was built and looked at; no native device).
+- `MathSketchpad` shares `PlaneGrid` and has no screenshot (the one-line change was judged safe by reading: a number is skipped
+  only if it would be cut by the top edge).
+- The teacher's per-student **marking** screen (`evaluations/[id]/answers/[studentId]`) draws no figure — a teacher marking a
+  drawn question does not see the drawing (the stem is self-sufficient by rule; the same gap exists for book figures).
+- The DB-backed tests in CI were not seen running by me.
+
+**Known limits.**
+- **A drawing can still show an answer where only the prompt and the teacher's preview stand guard:** a question with no
+  `check` (a vertex, roots the model left unchecked, «find the components of the vector»); a `check` the parser rejects
+  (Arabic text, no `=`); a derivative check where the model also draws the derivative as a second curve (the tie accepts any
+  one matching curve); a «solve» question mislabelled with a non-equation topic.
+- A no-change save of a question can drop its drawing when the edit modal resends a rebuilt body that differs trivially
+  (a generated MCQ whose option ids are not a–d, a stem with trailing spaces). It fails safe (drawn → none, never wrong).
+- `visualsDropped` reaches the log line only; it is not stored in `generationParams`.
+- `exam-gen-8` is also stamped on non-maths papers, whose prompt is unchanged.
+- Cost: about +3.3k characters (roughly 800 tokens) on every maths exam request, including each retry and top-up.
+- The label letters avoid their own line but not tick numbers or other curves; `placeLabel` is an approximation of the font.
+- The desktop figure is capped at 520px; the Arabic prompt text `figureFormatAr` is unused until PR 3 and says «دالة» where the
+  Jordanian books say «اقتران» (to change before PR 3 sends it to a model).
+- Merging deploys the API and the web bundle; there is no migration and no native change.
 
 ## lib/figure: a shared gate and geometry for drawn graphs and vectors — 2026-11-03
 

@@ -1,0 +1,202 @@
+/**
+ * The exam generator and a question's drawing: offered on maths papers only,
+ * gated by `resolveFigure`, tied to the question's `check`, and stored in
+ * `body.visual`. A dropped drawing leaves the question standing and is
+ * recorded in `visualsDropped` with a reason.
+ */
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import {
+  ANSWER_READABLE_FROM_DRAWING_TOPICS,
+  buildGenerationPrompt,
+  parseGeneratedQuestions,
+  type LlmGenerationRequest,
+} from "../llmGenerator.ts";
+import { VERIFIABLE_TOPICS } from "@workspace/math-verify";
+import type { CurriculumObjective } from "@workspace/curriculum";
+
+function objective(id: string, subjectId?: string): CurriculumObjective {
+  return {
+    id,
+    description: `Objective ${id}`,
+    descriptionAr: `نتاج ${id}`,
+    effectiveBloomsLevel: "Apply",
+    inferredBloomsLevel: null,
+    bloomsSource: "authored",
+    lessonTitle: "Lesson",
+    lessonTitleAr: "الدرس",
+    ...(subjectId ? { subjectId } : {}),
+  } as unknown as CurriculumObjective;
+}
+const req = (subjectId?: string): LlmGenerationRequest => ({
+  objectives: [objective("obj-1", subjectId)],
+  assessmentTypes: ["multiple_choice"],
+  count: 1,
+  difficulty: "standard",
+  language: "ar",
+});
+const META = { model: "test-model" };
+const graph = { kind: "function-graph", functions: [{ expr: "x^2 - 4", label: "f" }], x: [-3, 3] };
+const mcq = (extra: Record<string, unknown> = {}) => ({
+  questions: [
+    {
+      type: "multiple_choice",
+      objectiveId: "obj-1",
+      competencyKey: "application",
+      marks: 2,
+      skill: "graphs",
+      body: {
+        stem: "ما مشتقة الاقتران f(س) = س² − ٤؟",
+        multiSelect: false,
+        options: [
+          { id: "a", text: "٢س" },
+          { id: "b", text: "س" },
+        ],
+      },
+      expectedAnswer: { optionIds: ["a"] },
+      ...extra,
+    },
+  ],
+});
+
+describe("a question's drawing", () => {
+  it("is kept, gated, in body.visual on a maths paper", () => {
+    const out = parseGeneratedQuestions(mcq({ visual: { ...graph, junk: 1 } }), req("mathematics"), META);
+    assert.deepEqual(out.questions[0]!.body["visual"], graph);
+    assert.deepEqual(out.visualsDropped, []);
+  });
+
+  it("is dropped, with a reason, when the gate refuses it — the question stays", () => {
+    const out = parseGeneratedQuestions(mcq({ visual: { kind: "pie" } }), req("mathematics"), META);
+    assert.equal(out.questions.length, 1);
+    assert.equal("visual" in out.questions[0]!.body, false);
+    assert.equal(out.visualsDropped.length, 1);
+  });
+
+  it("is not accepted on a paper that is not maths", () => {
+    const out = parseGeneratedQuestions(mcq({ visual: graph }), req("chemistry"), META);
+    assert.equal("visual" in out.questions[0]!.body, false);
+    assert.equal(out.visualsDropped.length, 1);
+  });
+
+  it("is never taken from inside body — and the ignored one is recorded", () => {
+    const q = mcq();
+    (q.questions[0]!.body as Record<string, unknown>)["visual"] = graph;
+    const out = parseGeneratedQuestions(q, req("mathematics"), META);
+    assert.equal("visual" in out.questions[0]!.body, false);
+    assert.deepEqual(out.visualsDropped, [
+      { index: 0, reason: "a drawing inside body is ignored; the question-level visual is the only door" },
+    ]);
+  });
+
+  it("keeps the question-level drawing when one was also tucked inside body, and still records the ignored one", () => {
+    const q = mcq({ visual: graph });
+    (q.questions[0]!.body as Record<string, unknown>)["visual"] = { kind: "vectors" };
+    const out = parseGeneratedQuestions(q, req("mathematics"), META);
+    assert.deepEqual(out.questions[0]!.body["visual"], graph);
+    assert.equal(out.visualsDropped.length, 1);
+    assert.match(out.visualsDropped[0]!.reason, /inside body/);
+  });
+
+  it("is dropped when the checked function is a different one", () => {
+    const check = { topic: "derivative_polynomial", question: "x^3 - 4x", answer: "3x^2 - 4" };
+    const out = parseGeneratedQuestions(mcq({ visual: graph, check }), req("mathematics"), META);
+    // The check must have been read, or the tie was never applied.
+    assert.equal(out.questions[0]!.check?.question, "x^3 - 4x");
+    assert.equal("visual" in out.questions[0]!.body, false);
+    assert.match(out.visualsDropped[0]!.reason, /check/);
+  });
+
+  it("is kept when the checked function is the drawn one", () => {
+    const check = { topic: "derivative_polynomial", question: "x^2 - 4", answer: "2x" };
+    const out = parseGeneratedQuestions(mcq({ visual: graph, check }), req("mathematics"), META);
+    assert.equal(out.questions[0]!.check?.question, "x^2 - 4");
+    assert.deepEqual(out.questions[0]!.body["visual"], graph);
+    assert.deepEqual(out.visualsDropped, []);
+  });
+
+  // A plotted curve shows its roots, and the grid ticks read them off. The
+  // figure gate cannot see that (an equation does not compile as a function), so
+  // the topic of the check decides.
+  const READABLE_REASON = /readable off the drawing/;
+  const equationChecks: Record<string, { topic: string; question: string; answer: string }> = {
+    equation_quadratic: { topic: "equation_quadratic", question: "x^2 - 4 = 0", answer: "x = 2 or x = -2" },
+    equation_linear: { topic: "equation_linear", question: "2x + 5 = 13", answer: "x = 4" },
+    equation_exponential: { topic: "equation_exponential", question: "2^x = 8", answer: "x = 3" },
+  };
+  for (const [name, check] of Object.entries(equationChecks)) {
+    it(`drops the drawing, keeps the question, when the check is ${name}`, () => {
+      const out = parseGeneratedQuestions(mcq({ visual: graph, check }), req("mathematics"), META);
+      assert.equal(out.questions.length, 1);
+      assert.equal(out.questions[0]!.check?.topic, name, "the check must have been read");
+      assert.equal("visual" in out.questions[0]!.body, false);
+      assert.equal(out.visualsDropped.length, 1);
+      assert.match(out.visualsDropped[0]!.reason, READABLE_REASON);
+    });
+  }
+
+  it("keeps a drawing beside a derivative check that matches it, and beside no check at all", () => {
+    const check = { topic: "derivative_polynomial", question: "x^2 - 4", answer: "2x" };
+    assert.deepEqual(
+      parseGeneratedQuestions(mcq({ visual: graph, check }), req("mathematics"), META).questions[0]!.body["visual"],
+      graph,
+    );
+    assert.deepEqual(
+      parseGeneratedQuestions(mcq({ visual: graph }), req("mathematics"), META).questions[0]!.body["visual"],
+      graph,
+    );
+  });
+
+  it("records one reason, not two, when the gate already refused the drawing", () => {
+    const out = parseGeneratedQuestions(
+      mcq({ visual: { kind: "pie" }, check: equationChecks["equation_quadratic"] }),
+      req("mathematics"),
+      META,
+    );
+    assert.equal(out.visualsDropped.length, 1);
+  });
+
+  it("classifies every verifiable topic: readable-off-a-drawing or deliberately not", () => {
+    const notReadable = new Set(["derivative_polynomial", "derivative_at_point", "circle_center", "circle_radius"]);
+    for (const topic of VERIFIABLE_TOPICS) {
+      assert.ok(
+        ANSWER_READABLE_FROM_DRAWING_TOPICS.has(topic) !== notReadable.has(topic),
+        `${topic} must be in exactly one of the two lists`,
+      );
+    }
+    assert.deepEqual(
+      [...ANSWER_READABLE_FROM_DRAWING_TOPICS].sort(),
+      ["equation_exponential", "equation_linear", "equation_quadratic"],
+    );
+  });
+
+  it("a question with no drawing reports nothing dropped", () => {
+    const out = parseGeneratedQuestions(mcq(), req("mathematics"), META);
+    assert.deepEqual(out.visualsDropped, []);
+  });
+});
+
+describe("the prompt", () => {
+  const { system, user } = buildGenerationPrompt(req("mathematics"));
+  const plain = buildGenerationPrompt(req("chemistry"));
+
+  it("offers a drawing on a maths paper, with the stem-is-sufficient rule", () => {
+    assert.match(system, /ONE drawing/);
+    assert.match(system, /answerable without it/);
+    assert.ok(user.includes('"visual"') && user.includes('"function-graph"') && user.includes('"vectors"'));
+  });
+
+  it("does not mention drawings on other papers", () => {
+    assert.ok(!plain.system.includes("ONE drawing") && !plain.user.includes('"function-graph"'));
+  });
+
+  it("tells a maths paper not to draw what the question asks for, and says nothing of it elsewhere", () => {
+    assert.match(system, /answer can be read straight off it/);
+    assert.match(system, /the roots, the vertex, the intersection points/);
+    assert.ok(!plain.system.includes("read straight off"));
+  });
+
+  it("keeps rule 7 about book figures word for word", () => {
+    assert.ok(system.includes("Never name or number a specific one"));
+  });
+});

@@ -45,3 +45,26 @@ describe("the student projection carries a checked figure", () => {
     assert.ok(!("figure" in sanitizeQuestionForStudent(q(undefined), "a1").body));
   });
 });
+
+describe("the student projection carries a checked drawing", () => {
+  const vis = { kind: "vectors", vectors: [{ from: [0, 0], to: [3, 2], label: "u" }] };
+  const q = (visual: unknown) => ({
+    id: "q1", orderIndex: 0, type: "true_false", marks: "1",
+    body: { statement: "س", visual },
+  });
+
+  it("keeps a figure the gate accepts", () => {
+    assert.deepEqual(sanitizeQuestionForStudent(q(vis), "a1").body["visual"], vis);
+  });
+
+  it("drops one that is over a limit or of an unknown kind", () => {
+    const tooBig = { kind: "vectors", vectors: [{ from: [0, 0], to: [13, 1] }] };
+    for (const v of [tooBig, { kind: "pie" }, "x"]) {
+      assert.equal(sanitizeQuestionForStudent(q(v), "a1").body["visual"], undefined);
+    }
+  });
+
+  it("adds nothing to a question without one", () => {
+    assert.ok(!("visual" in sanitizeQuestionForStudent(q(undefined), "a1").body));
+  });
+});
