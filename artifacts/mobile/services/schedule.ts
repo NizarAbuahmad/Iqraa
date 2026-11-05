@@ -111,7 +111,7 @@ export async function loadTimetable(
       listClasses().catch(() => []),
     ]);
     const next = nextPeriodLesson(now, schedule.periods, schedule.slots, plans, classes);
-    return { next, setup: timetableSetupStep(schedule.slots, next) };
+    return { next, setup: timetableSetupStep(schedule.slots, next, plans, classes) };
   } catch {
     return null;
   }

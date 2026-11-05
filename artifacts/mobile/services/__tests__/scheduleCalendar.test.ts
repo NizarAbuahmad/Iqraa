@@ -320,6 +320,8 @@ describe('formatNextPeriod', () => {
 
 describe('timetableSetupStep', () => {
   const next = { schoolName: '', periodNumber: 1, startTime: '08:00', durationMinutes: 45, classGroupId: 'c1', date: '2026-09-20', happeningNow: false };
+  /** A plan saved with a title and a class and nothing scheduled in it. */
+  const emptyPlanOn = (classGroupId: string, subjectId = '') => ({ id: 'p', title: 'Plan', classGroupId, subjectId, entries: [] });
 
   it('asks for a timetable when no period has a class in it', () => {
     assert.deepEqual(timetableSetupStep([{ dayOfWeek: 0, periodNumber: 1, classGroupId: null }], null), { step: 'timetable' });
@@ -334,6 +336,55 @@ describe('timetableSetupStep', () => {
     assert.deepEqual(
       timetableSetupStep(SLOTS, { ...next, subjectId: 'arabic', lessonId: null }),
       { step: 'plan', classGroupId: 'c1', subjectId: 'arabic' },
+    );
+  });
+
+  // A plan saved with a title and a class but no dated lessons is a plan that
+  // exists: telling the teacher "there is no plan" after they added one reads as
+  // the app ignoring them. The next step is to put lessons in it.
+  it('asks for lessons, not a plan, when the class already has an empty plan', () => {
+    assert.deepEqual(
+      timetableSetupStep(SLOTS, { ...next, lessonId: null }, [emptyPlanOn('c1')]),
+      { step: 'schedule', classGroupId: 'c1', subjectId: '' },
+    );
+  });
+
+  it('asks for lessons in the period\'s own subject plan', () => {
+    const plans = [emptyPlanOn('c1', 'arabic')];
+    assert.deepEqual(
+      timetableSetupStep(SLOTS, { ...next, subjectId: 'arabic', lessonId: null }, plans),
+      { step: 'schedule', classGroupId: 'c1', subjectId: 'arabic' },
+    );
+  });
+
+  it('still asks for a plan when the only plan on the class is for another subject', () => {
+    const plans = [emptyPlanOn('c1', 'mathematics')];
+    assert.deepEqual(
+      timetableSetupStep(SLOTS, { ...next, subjectId: 'arabic', lessonId: null }, plans),
+      { step: 'plan', classGroupId: 'c1', subjectId: 'arabic' },
+    );
+  });
+
+  it('still asks for a plan when the only plan is on another class', () => {
+    const plans = [emptyPlanOn('c2')];
+    assert.deepEqual(
+      timetableSetupStep(SLOTS, { ...next, lessonId: null }, plans),
+      { step: 'plan', classGroupId: 'c1', subjectId: '' },
+    );
+  });
+
+  it('reads a plan with no subject of its own as its class\'s primary subject', () => {
+    const classes = [{ id: 'c1', subjectId: 'mathematics' }];
+    const plans = [emptyPlanOn('c1')];
+    // the plan is the class's maths plan, so an Arabic period still has none…
+    assert.deepEqual(
+      timetableSetupStep(SLOTS, { ...next, subjectId: 'arabic', lessonId: null }, plans, classes),
+      { step: 'plan', classGroupId: 'c1', subjectId: 'arabic' },
+    );
+    // …and a maths period has an empty one.
+    assert.deepEqual(
+      timetableSetupStep(SLOTS, { ...next, subjectId: 'mathematics', lessonId: null }, plans, classes),
+      { step: 'schedule', classGroupId: 'c1', subjectId: 'mathematics' },
     );
   });
 
