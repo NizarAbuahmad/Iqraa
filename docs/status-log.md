@@ -10,6 +10,43 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Admin users list: filter by channel (web / app) and by new or returning — 2026-11-03
+
+**What changed.** The admin «المستخدمون والحظر» screen (`app/admin/users.tsx`) gains two chip rows above the dates,
+on web and in the app alike:
+- **«انضم عبر»** — الكل · ويب · تطبيق · غير معروف. `تطبيق` is either store platform (`android`/`ios`), `غير معروف` a
+  null `signup_platform` (accounts from before 2 Oct). API: `GET /admin/users?channel=all|web|app|unknown`
+  (`parseUserChannel`, `lib/adminMetrics.ts`).
+- **«المستخدمون»** — الجميع · جدد · عائدون. It decides how the date range is read
+  (`?cohort=all|new|returning`, `parseUserCohort`): *جدد* = the account was made inside the range (what the range
+  already meant); *عائدون* = made **before** the range and came back inside it — a sign-in (`last_login`), an AI
+  generation or a saved material (the daily-activity chart's "active", plus a sign-in). The API refuses `returning`
+  with no `from`, so the screen ties the two: picking جدد/عائدون with no start day opens the «٧ أيام» window, and
+  «الكل» on the dates drops back to الجميع (`rangeForCohort` / `cohortForRange`, `services/adminUsers.ts`). A line
+  under the dates says which reading is in force. The dashboard's «جدد» tile (`?new=1`) now also lights «جدد».
+
+**Verified.** `adminUsersFilters.db.test.ts` (new, real Postgres through the built bundle): each channel, new inside
+the range combined with a channel, returning by each of the three signals alone, the end day honoured, an old account
+quiet in the window excluded, and the two 400s. Unit tests for both parsers and for the screen's query/range helpers
+(`adminUsers.test.ts`). Full api-server and mobile suites, monorepo typecheck. The screen was looked at in a browser
+(web build against a local API).
+
+**«هذا الشهر» clipped again, and «المحظورون فقط» off a narrow screen (2026-11-05).** An admin's
+Android screenshot from 2 Nov still showed «هذا الشهر» cut to «هذا», after the 31 Oct fix
+(`textBreakStrategy="simple"`, see «هذا الشهر» was clipped on Android). Either that phone had not
+received the update or greedy breaking was not enough; it cannot be told from here, so the label is
+now made unable to wrap at all: `FilterChip` (`components/admin/widgets.tsx`) sets
+`numberOfLines={1}` with `ellipsizeMode="clip"` (a pixel-short measurement clips a pixel instead of
+printing «…»). `adminFilterChip.test.ts` pins both props; it fails on the old source. Separately, at
+360px on web the search box would not shrink below a web `<input>`'s default width and pushed
+«المحظورون فقط» off the left edge; it now has `minWidth: 0`. Both seen fixed in a web build at 360
+and 430px (the label's `scrollWidth` equals its `clientWidth`). **Not** seen on an Android phone,
+which is where the clipping was reported.
+
+**Not verified / limits.** Not looked at on an Android device. `last_login` is stamped only at sign-in, not on token
+refresh, so someone who stays signed in and only browses is not "returning" unless they generated or saved
+something — the same blind spot the daily-activity chart documents. No «ما الجديد» entry: the screen is admin-only and
+those entries reach only teacher/student/parent roles.
 ## Test accounts for every role: a seed script — 2026-11-03
 
 **What changed.** `pnpm --filter @workspace/api-server run seed:test-accounts`
@@ -352,7 +389,6 @@ CI on the PR's head is the one to read.
 - The desktop figure is capped at 520px; the Arabic prompt text `figureFormatAr` is unused until PR 3 and says «دالة» where the
   Jordanian books say «اقتران» (to change before PR 3 sends it to a model).
 - Merging deploys the API and the web bundle; there is no migration and no native change.
-
 ## lib/figure: a shared gate and geometry for drawn graphs and vectors — 2026-11-03
 
 A teacher's feedback: no outright scientific errors, but some lessons need a graph or a vector drawing and the app puts

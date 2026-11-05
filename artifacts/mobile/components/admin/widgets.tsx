@@ -91,9 +91,12 @@ export function FilterChip({ label, active, onPress, colors }: { label: string; 
         borderRadius: colors.radius,
       }]}
     >
-      {/* Android's default highQuality breaking wrapped «هذا الشهر» inside the width
-          measured for one line, clipping «الشهر»; greedy breaking keeps it on the line. */}
-      <Text textBreakStrategy="simple" style={{ color: active ? '#fff' : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{label}</Text>
+      {/* Android measured «هذا الشهر» as one line, then drew it wrapped inside that
+          width, so the chip's one-line height cut «الشهر» off. Greedy breaking
+          (textBreakStrategy, 31 Oct) was not enough — it was still clipped on a phone on
+          2 Nov — so a chip label may not wrap at all: one line, and `clip` rather than an
+          ellipsis if the measurement is a pixel short. Pinned by adminFilterChip.test.ts. */}
+      <Text numberOfLines={1} ellipsizeMode="clip" textBreakStrategy="simple" style={{ color: active ? '#fff' : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{label}</Text>
     </Pressable>
   );
 }

@@ -8,7 +8,7 @@
  */
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { NEW_USERS_HREF, channelOf, countNewUsers, isNewUser, newUsersFrom, parseNewUsersParam } from '../adminUsers.ts';
+import { NEW_USERS_HREF, channelOf, cohortForRange, countNewUsers, isNewUser, newUsersFrom, parseNewUsersParam, rangeForCohort, usersListQuery } from '../adminUsers.ts';
 
 const TODAY = '2026-10-29';
 
@@ -76,5 +76,37 @@ describe('parseNewUsersParam', () => {
   });
   it('is what the tile links with', () => {
     assert.equal(NEW_USERS_HREF, '/admin/users?new=1');
+  });
+});
+
+describe('rangeForCohort / cohortForRange', () => {
+  it('opens the new window when new or returning is picked with no start day, keeping an end day', () => {
+    assert.deepEqual(rangeForCohort('returning', { from: '', to: '' }, TODAY), { from: '2026-10-23', to: '' });
+    assert.deepEqual(rangeForCohort('new', { from: '', to: '2026-10-25' }, TODAY), { from: '2026-10-23', to: '2026-10-25' });
+  });
+  it('leaves a range that has a start day, and leaves «all» alone', () => {
+    const r = { from: '2026-10-01', to: '' };
+    assert.equal(rangeForCohort('returning', r, TODAY), r);
+    assert.deepEqual(rangeForCohort('all', { from: '', to: '' }, TODAY), { from: '', to: '' });
+  });
+  it('drops new/returning when the start day is cleared', () => {
+    assert.equal(cohortForRange({ from: '', to: '' }, 'returning'), 'all');
+    assert.equal(cohortForRange({ from: '2026-10-01', to: '' }, 'returning'), 'returning');
+  });
+});
+
+describe('usersListQuery', () => {
+  const base = { q: '', onlySuspended: false, range: { from: '', to: '' }, channel: 'all' as const, cohort: 'all' as const, offset: 0 };
+  it('sends no channel or cohort for «all»', () => {
+    assert.equal(usersListQuery(base), 'q=&status=all&offset=0');
+  });
+  it('sends the channel, the range and the cohort', () => {
+    assert.equal(
+      usersListQuery({ ...base, q: 'سناء', channel: 'app', cohort: 'returning', range: { from: '2026-11-02', to: '2026-11-02' }, offset: 30 }),
+      `q=${encodeURIComponent('سناء')}&status=all&offset=30&from=2026-11-02&to=2026-11-02&channel=app&cohort=returning`,
+    );
+  });
+  it('never sends a cohort without a start day, which the API refuses for returning', () => {
+    assert.equal(usersListQuery({ ...base, cohort: 'returning' }), 'q=&status=all&offset=0');
   });
 });
