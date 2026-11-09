@@ -124,6 +124,32 @@ export function hasExtractedText(sourceId: string): boolean {
   return pagesFor(sourceId).length > 0;
 }
 
+type PageRange = { sourceId: string; startPage: number; endPage: number };
+let lessonRanges: Record<string, PageRange> | undefined;
+
+/**
+ * Where a lesson sits in its student book — `knowledge-base/book-page-links.json`,
+ * the table the slide decks already use (same `sourceId`, same 1-based page
+ * numbers as the extracted text). Read with `fs` rather than imported: the file
+ * lives outside this package's `rootDir`. The API build copies it to
+ * `dist/data/` next to `extracted/`; from source it is found at the repo root.
+ * Missing file or lesson is `null`, never an error — retrieval falls back to
+ * term ranking.
+ */
+function pageRangeFor(lessonId: string): PageRange | null {
+  if (!lessonRanges) {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const file = [
+      path.join(extractedDir, '..', 'book-page-links.json'),
+      path.join(here, '..', '..', '..', 'knowledge-base', 'book-page-links.json'),
+    ].find(f => existsSync(f));
+    lessonRanges = file
+      ? (JSON.parse(readFileSync(file, 'utf8')) as { lessons: Record<string, PageRange> }).lessons
+      : {};
+  }
+  return lessonRanges[lessonId] ?? null;
+}
+
 /**
  * Terms worth matching on, longest first.
  *
@@ -149,6 +175,13 @@ export interface PassageQuery {
   /** Default 4. A prompt has a budget; a whole book does not fit in it. */
   limit?: number;
   /**
+   * The lesson itself, when known. Its own book pages (in book order) are served
+   * instead of ranked guesses: a lesson whose title is generic — every
+   * «أقرأ بطلاقة وفهم (…)» — otherwise matches the contents table and the
+   * unit's skills page, which say nothing about the passage.
+   */
+  lessonId?: string;
+  /**
    * Restrict to material that may be quoted. Set this on any path that puts
    * text in front of a teacher verbatim.
    */
@@ -167,6 +200,30 @@ export function passagesForUnit(query: PassageQuery): Passage[] {
 
   const tags = bankTagsForUnit(unitId);
   if (!tags.length) return [];
+
+  // The lesson must belong to this unit: the request carries both ids, and a
+  // mismatched pair would otherwise serve another unit's pages under this one.
+  const lessonHere = query.lessonId
+    && LESSONS.some(l => l.id === query.lessonId && l.unitId === unitId);
+  const range = lessonHere ? pageRangeFor(query.lessonId!) : null;
+  if (range) {
+    const source = itemsForUnitTags(tags).find(s => s.id === range.sourceId);
+    if (source && (!quotableOnly || usePolicy(source) === 'quotable')) {
+      const own = pagesFor(source.id)
+        .filter(p => p.page >= range.startPage && p.page <= range.endPage)
+        .slice(0, limit);
+      if (own.length) {
+        return own.map((p, i) => ({
+          sourceId: source.id,
+          page: p.page,
+          text: repairExtractionArtifacts(p.raw),
+          score: own.length - i, // book order, not relevance
+          usePolicy: usePolicy(source),
+          authority: source.authority,
+        }));
+      }
+    }
+  }
 
   // Objectives and vocabulary are what the catalog knows about this unit, and
   // they are the strongest available description of what its pages say.

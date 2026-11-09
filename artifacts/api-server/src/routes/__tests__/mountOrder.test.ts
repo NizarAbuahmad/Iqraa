@@ -1199,5 +1199,11 @@ describe("the built bundle ships its data, not just its code", { skip: built ? f
     assert.ok(existsSync(extractedDir), "dist/data/extracted does not exist — grounding will find nothing");
     const files = readdirSync(extractedDir).filter(f => f.endsWith(".json"));
     assert.ok(files.length >= 6, `only ${files.length} extraction files shipped next to the built bundle`);
+    // The lesson→page table `pageRangeFor` reads sits one level up; without it a
+    // reading lesson silently falls back to ranking against the contents table.
+    assert.ok(
+      existsSync(path.join(path.dirname(entry), "data", "book-page-links.json")),
+      "dist/data/book-page-links.json does not exist — lessons will not be pinned to their own pages",
+    );
   });
 });
