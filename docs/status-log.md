@@ -10,6 +10,29 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## A reading lesson's worksheet is grounded on its own book pages — 2026-11-09
+
+An admin email reported a worksheet for Grade 4 Arabic «أقرأ بطلاقة وفهم (السلام الملكي)». The report carries no reason
+(`ai_artifact_reports.reason` exists but `reportVariant` never fills it), so what the reporter saw is **not known**; what
+was found is that the book text a model is given for that lesson was the wrong pages. `passagesForUnit` ranks pages by
+title words, and every «أقرأ بطلاقة وفهم (…)» title shares «بطلاقة» and «وفهم», which the contents table (pp. 4-5) and the
+unit's skills page (59) repeat. All five Grade 4 semester 1 reading lessons got those pages; the poem is on pp. 67-74.
+
+**What changed.** `passagesForUnit` takes an optional `lessonId`. If the lesson belongs to that unit and
+`knowledge-base/book-page-links.json` (the table the slide decks use; same `sourceId` and 1-based page numbers as the
+extracted text) lists its pages, those pages are served in book order instead of ranked ones. `groundingFor` passes the
+request's `lessonId`, else the one the title resolved to when it is in the grounded unit. A lesson with no entry, or a
+mismatched lesson/unit pair, falls back to the old ranking. `build.mjs` copies the table to `dist/data/` and
+`mountOrder.test.ts` asserts the copy landed (the same trap the extracted text fell into).
+
+**Verified.** `passages.test.ts` (5 reading lessons pinned to their ranges, no-id fallback, cross-unit id ignored) and
+`grounding.test.ts` (the reported lesson by title and by id) pass; `pnpm run typecheck`; api-server build, and the
+mount-order suite against it. **Not verified:** a real generation (no model call was made); the poem's text in the
+extraction is garbled, so the model now gets the right pages but noisy text — OCR of those pages would be the next step;
+other books' lessons are only pinned where the page table has them. 15 curriculum tests (committed English review
+sheets vs generator, `quran_corner`) fail in this Windows checkout (`core.autocrlf=true`) and touch nothing here; CI is
+the check.
+
 ## Today's setup nudge no longer says "no plan" about a plan that exists — 2026-11-05
 
 A teacher added a pacing plan from the Today nudge «أضف الخطة» and the nudge kept saying «لا توجد خطة زمنية». Not a

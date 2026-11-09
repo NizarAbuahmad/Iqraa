@@ -43,6 +43,17 @@ describe("groundingFor", () => {
     assert.ok(g.block.length > 500, "the block is too short to be book text");
   });
 
+  it("grounds a reading lesson on its own pages, not the contents table", () => {
+    // «السلام الملكي»: reported 2026-11-09. Its title words match the contents
+    // table (pp. 4-5) and the skills page (59); the poem is on pp. 67-74.
+    const title = "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (السَّلامُ الْمَلَكِيُّ)";
+    for (const input of [{ topic: title }, { unitId: "kbu-g4-arabic-s1-nccd-u3", lessonId: "kbl-g4-arabic-s1-nccd-u3_l3" }]) {
+      const g = groundingFor(input, true);
+      assert.ok(g);
+      assert.ok(g.sources.length > 0 && g.sources.every(s => s.page >= 67 && s.page <= 74), JSON.stringify(g.sources));
+    }
+  });
+
   it("prefers an explicit unit id over the topic", () => {
     // The screen knows which lesson the teacher picked; a title match only
     // infers it. A topic naming a different subject must not win.

@@ -65,6 +65,49 @@ describe('repairExtractionArtifacts', () => {
   });
 });
 
+describe('passagesForUnit with a lessonId', () => {
+  // Every G4 «أقرأ بطلاقة وفهم (…)» lesson has the same title words, so ranking
+  // sent all five to the contents table (pp. 4-5) and the unit's skills page
+  // (59). Reported on the «السلام الملكي» worksheet, 2026-11-09. Page ranges are
+  // knowledge-base/book-page-links.json's (verified: the poem is on p. 68).
+  const READING = [
+    ['u1', 14, 21],
+    ['u2', 41, 48],
+    ['u3', 67, 74],
+    ['u4', 92, 99],
+    ['u5', 119, 126],
+  ] as const;
+
+  for (const [u, start, end] of READING) {
+    it(`serves ${u}_l3's own pages, in book order`, () => {
+      const ps = passagesForUnit({
+        unitId: `kbu-g4-arabic-s1-nccd-${u}`,
+        lessonId: `kbl-g4-arabic-s1-nccd-${u}_l3`,
+        terms: ['أقرأ بطلاقة وفهم'],
+        limit: 3,
+      });
+      assert.equal(ps.length, 3);
+      assert.ok(ps.every(p => p.page >= start && p.page <= end), `pages ${ps.map(p => p.page)}`);
+      assert.deepEqual(ps.map(p => p.page), [...ps.map(p => p.page)].sort((a, b) => a - b));
+    });
+  }
+
+  it('without the lesson id, falls back to ranking (the old behaviour)', () => {
+    const ps = passagesForUnit({ unitId: 'kbu-g4-arabic-s1-nccd-u3', terms: ['أقرأ بطلاقة وفهم'], limit: 3 });
+    assert.ok(ps.length > 0);
+  });
+
+  it('ignores a lesson id from another unit', () => {
+    const ps = passagesForUnit({
+      unitId: 'kbu-g4-arabic-s1-nccd-u3',
+      lessonId: 'kbl-g4-arabic-s1-nccd-u5_l3',
+      terms: ['أقرأ بطلاقة وفهم'],
+      limit: 3,
+    });
+    assert.ok(ps.every(p => p.page < 119 || p.page > 126));
+  });
+});
+
 describe('passagesForUnit', () => {
   it('returns the circle unit\'s own pages', () => {
     const ps = passagesForUnit({ unitId: CIRCLE, limit: 5 });

@@ -146,6 +146,13 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
   const extractedSrc = path.resolve(artifactDir, "../../lib/curriculum/src/data/extracted");
   const extractedDest = path.join(distDir, "data", "extracted");
   await cp(extractedSrc, extractedDest, { recursive: true });
+
+  // Same reason: `pageRangeFor` (passages.ts) looks for the lesson→page table
+  // at dist/data/book-page-links.json, one level above `extracted/`.
+  await cp(
+    path.resolve(artifactDir, "../../knowledge-base/book-page-links.json"),
+    path.join(distDir, "data", "book-page-links.json"),
+  );
 }
 
 buildAll().catch((err) => {

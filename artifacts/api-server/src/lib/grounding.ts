@@ -159,7 +159,7 @@ function renderBlock(passages: Passage[], isAr: boolean): { block: string; used:
  * as authoritative and is worse than no grounding at all.
  */
 export function groundingFor(
-  input: { unitId?: unknown; topic?: unknown; scope?: unknown },
+  input: { unitId?: unknown; lessonId?: unknown; topic?: unknown; scope?: unknown },
   isAr: boolean,
 ): Grounding | null {
   // A wide scope names its own units. Its topic is a label («الفصل الأول
@@ -175,11 +175,18 @@ export function groundingFor(
     ? input.unitId
     : null;
   const topic = typeof input.topic === "string" ? input.topic : "";
-  const unitId = explicit ?? resolveUnitByTopic(topic)?.unitId ?? null;
+  const byTitle = resolveUnitByTopic(topic);
+  const unitId = explicit ?? byTitle?.unitId ?? null;
   if (!unitId) return null;
+  // The lesson's own pages, when we know the lesson: the id the caller carried,
+  // else the one the title resolved to (only if it is in the unit we ground).
+  const lessonId = typeof input.lessonId === "string" && input.lessonId
+    ? input.lessonId
+    : byTitle?.unitId === unitId ? byTitle.lessonId : undefined;
 
   const passages = passagesForUnit({
     unitId,
+    lessonId,
     terms: topic ? [topic] : [],
     limit: PASSAGE_LIMIT,
     quotableOnly: true,
