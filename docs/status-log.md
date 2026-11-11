@@ -10,6 +10,33 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## A content report can say what is wrong — 2026-11-11
+
+The admin's «تقرير محتوى جديد» email of 2026-11-11 (a Grade 4 Arabic lesson plan, the second Grade 4 Arabic report in four
+days) said only *that* a paper was flagged. The report carried no reason: `ai_artifact_reports.reason` existed since the
+table was made, but `reportVariant` never wrote it and neither route accepted it, so it was `""` on every row.
+
+**What changed.** «بلّغ عن مشكلة» now opens a sheet (`components/ui/ReportProblemSheet.tsx`, replacing the bare confirm on
+the shared result row and on Slides) with an optional box, «ما المشكلة؟ (اختياري)». Empty is still one tap. The reason goes
+in the body of `POST /generate/variants/:id/retire` (`reportRequestBody`, sent only when non-empty), is normalised by
+`lib/reportReason.ts` (non-string or blank → none, control characters dropped, cut to 500 — the client box has the same
+`maxLength`), stored in the existing `reason` column (**no migration**), quoted in both blocks of the admin email
+(escaped, line breaks kept) and returned by `GET /moderation/artifact-reports`, where the card shows it above «عرض المحتوى».
+A failed send leaves the sheet open with the text still in it.
+
+**Verified.** Red/green: `reportReason.test.ts`, `artifactReportEmail.test.ts` (reason in both blocks, absent when empty,
+markup escaped), mobile `reportReason.test.ts`; `artifactReportReason.test.ts` scans the route → store → notification →
+list wiring, and was shown to fail when the reason was dropped from the notification call. `pnpm run typecheck`; api-server
+build + suite (2,913 pass, 0 skipped).
+
+**Not verified / limits.** The sheet and the admin card were **not** opened in a browser or on a device: a pooled result
+needs a live API and database. Nothing here exercises Postgres — the `reason` insert and the admin select are checked by
+type and by source scan only. The **student** report (`POST /student/lesson-explanation/:variantId/report`) still sends no
+reason, so its rows stay `""`; it would need the same sheet on the student screen. A second report by the same teacher on
+the same open artifact is still treated as a duplicate and does not update the first one's reason. The push to admins is
+unchanged (kind and lesson only); the reason is in the email and on the card. Reports filed before this change have no
+reason and show none.
+
 ## Today's setup nudge no longer says "no plan" about a plan that exists — 2026-11-05
 
 A teacher added a pacing plan from the Today nudge «أضف الخطة» and the nudge kept saying «لا توجد خطة زمنية». Not a
