@@ -19,6 +19,7 @@ import { goBack } from '@/services/navigation';
 import { BackButton } from '@/components/ui/BackButton';
 import { artifactText } from '@/services/artifactText';
 import { readableOn } from '@/services/readableColor';
+import { TYPE } from '@/constants/theme';
 
 const ACCENT = '#4F46E5';
 const ADMIN_ROLES = ['system_admin'];
@@ -236,7 +237,7 @@ function ReportCard({
 
       {report.reason ? (
         <View style={{ marginTop: 10, padding: 12, borderRadius: colors.radius, backgroundColor: colors.background }}>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 12, textAlign: align }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: TYPE.caption, textAlign: align }}>
             {ar ? 'سبب البلاغ' : 'Reason given'}
           </Text>
           <Text
