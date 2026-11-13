@@ -5,6 +5,7 @@
     "subject": "التربية الإسلامية",
     "subject_en": "Islamic Education",
     "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
     "schema_version": "1.0",
     "source_books": [
       "كتاب الطالب لمادة التربية الإسلامية الصف الأول الفصل الأول (g1-islamic-s1-student-book)"
@@ -13,7 +14,8 @@
     "known_gaps": [
       "vocabulary فارغةٌ لكلِّ الدروسِ الثلاثةَ عشرَ: ال يطبَعُ هذا الكتابُ صندوقًا ثنائيَّ اللغةِ، بل صندوقَ «الْمُفْرَداتُ وَالتَّراكيبُ» أحاديَّ اللغةِ (عربيٌّ فقط، يُفَسِّرُ ألفاظًا واردةً في آيةٍ أو حديثٍ شريفٍ) — لا مقابلَ إنجليزيَّ له، فلا يُمْكِنُ تعبئةُ حقلِ vocabulary الثنائيِّ اللغةِ منه دونَ اختراعٍ.",
       "general_idea_ar وprior_knowledge فارغتانِ لكلِّ الوحداتِ: صفحةُ افتتاحِ كلِّ وحدةٍ قائمةُ دروسٍ فقط، بلا صندوقِ فكرةٍ عامّةٍ.",
-      "لا عددَ حصصٍ مطبوعًا لأيِّ درسٍ (periods وtotal_periods = null)."
+      "لا عددَ حصصٍ مطبوعًا لأيِّ درسٍ (periods وtotal_periods = null).",
+      "Edition mismatch (found 2026-11-13, from the live book's page images in iqraa-public/book-pages): the NCCD book teachers download today orders units 2-3 differently — unit 2 = القرآن الكريم، سورة الفاتحة (1-4)، سورة الفاتحة (5-7); unit 3 = ولادة سيدنا محمد ﷺ ونسبه (one lesson)، آداب تلاوة القرآن الكريم، الحديث الشريف: آداب الطعام — and it prints a «الفكرة الرئيسة» box whose wording differs from main_idea_ar here (e.g. «أقول «بسم الله» عند كل قول أو عمل.»). Lesson ids are unchanged because they are stored in Postgres; re-read the current PDF before restructuring."
     ]
   },
   "units": [
