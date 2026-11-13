@@ -10,6 +10,82 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 1 review: book pages on the wrong unit, tens and two-digit lessons, and an older Islamic edition — 2026-11-13
+
+The same review as Grade 2 (below), for Grade 1's 15 books and 279 lessons.
+
+**Book pages (the only book pictures Grade 1 has; there are no figure crops).**
+I opened page 1 of all 88 listed lessons, then the last page of each.
+- **Arabic semester 2 was on the wrong unit.** 6 of its 7 lessons showed
+  another unit's lesson: «مدرستي / أتحدث» showed unit 7, and «علم بلادي»'s
+  lessons showed units 8, 9 and 10. «أستمع بانتباه وتركيز» repeats in every
+  unit, and the mapper's title walk slipped a unit.
+  - The right images were already in the bucket, under the wrong folders. Each
+    page header was read by eye, and 19 lessons now point at their own pages
+    through `rendered`, the Grade 6 mechanism; nothing was uploaded.
+  - Unit 7's other five lessons were never cut, so they now show no page
+    instead of another unit's.
+  - u6_l1 had run to the 20-page cap (pp. 8–27); it is now pp. 8–10.
+  - `bookPage.test.ts` pins this.
+- **Islamic semester 1.** «كتابي القرآن الكريم» ran pp. 22–40, through both
+  Fatiha lessons and into unit 3; it is now pp. 22–24. The two Fatiha lessons
+  and «ولادة / نسب رسولي» now get their pages from that folder.
+- **17 ranges ended on the next unit's cover or «كفايات الوحدة» page,** 12 in
+  Grade 1 and 5 in Grade 2 (the Grade 2 review checked first pages only). Each
+  now ends on its lesson's last page. Shortening a range only shows fewer of
+  the same images.
+- Still without pages: math, science, social, arts and English, which have no
+  student PDF on disk. Neither does the rest of Arabic S2 unit 7, or the Islamic
+  lessons the mapper dropped.
+
+**Islamic semester 1 is from an older edition.** The live book's pages (above)
+order units 2–3 differently:
+- unit 3 has one lesson «ولادة سيدنا محمد ﷺ ونسبه» where the catalog has two;
+- «آداب تلاوة القرآن الكريم» is in unit 3, not unit 2;
+- it prints a «الفكرة الرئيسة» box whose wording differs from `main_idea_ar`.
+
+Lesson ids are stored in Postgres, so nothing was restructured; it is written
+into the file's `known_gaps` for a re-read of the current PDF. Semester 2
+matches the live book word for word.
+
+**Generators (offline).** Grounding by lesson id is exact for all 279 lessons;
+by title alone, 43 Arabic and English lessons collapse onto unit 1. Math draws
+Grade 1 numbers, and the 375 keys the checker could recompute are right. Its 22
+«wrong» flags were its own sign error. Fixed:
+- **«جمع / طرح العشرات» and «جمع / طرح عددين من منزلتين»** drew the grade's
+  generic sums within 20 («9 + 1», «5 + 4»). They now have their own
+  generators: `tensG1` (multiples of ten, «4 عشرات + 3 عشرات») and `twoDigitG1`
+  (two two-digit numbers with nothing to regroup, as Grade 1 teaches).
+  `elementaryOpsForTitle` leaves them to those. Its pattern is not anchored at
+  the end, because from a lesson the blob is «title titleEn»; an anchored
+  version passed the null-lesson test and missed the app's path, and the test
+  now goes through the app's path.
+- **«مع ليلى 2 قطع … »** is gone (counts start at 3), and so is «لتكوين 10
+  قرشًا». Both were in `coins`.
+
+Before → after over all 279 lessons: «2 قطع» 20 → 0; «N≤10 قرشًا» 3 → 0;
+double answer lines 0 (fixed in the Grade 2 PR).
+
+Not fixed:
+- «الطرح باستعمال الضعف» and «الجمع بالإكمال إلى العشرة» still draw generic
+  sums: on topic, but they do not use the strategy.
+- Lesson plans are one template per subject, as in Grade 2 (a separate task).
+
+**Also:** `meta.semester_covered` added to Grade 1 Islamic, math and science.
+
+**Verified:**
+- `pnpm run typecheck`;
+- math-practice: 977 pass;
+- mobile: 9,239 pass, 0 fail;
+- api-server `pnpm build && pnpm test`: 2,914 pass;
+- curriculum `verify`: 0 errors; tests: all pass but `r2.test.ts`, which fails
+  in this session only (R2 env vars set);
+- `bookPage.test.ts` / `lessonSlides.test.ts`: 148 pass.
+
+Each new test was first seen failing on the old code or data. **Not run:** the
+pages on a phone, live AI, and checking topics against the PDFs (NCCD refuses
+this network; see the Grade 2 entry).
+
 ## Grade 2 review: coverage, images, and four generator fixes — 2026-11-13
 
 A review of the Grade 2 subjects (14 books, 236 lessons): are all topics in, do

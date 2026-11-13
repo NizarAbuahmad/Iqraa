@@ -99,6 +99,23 @@ describe('book-page-links.json', () => {
   });
 });
 
+describe('Grade 1 Arabic semester 2 pages (audit 2026-11-13)', () => {
+  // The mapper matched «أستمع بانتباه وتركيز» by title, which repeats in every
+  // unit, and filed unit 7's speaking lesson under unit 6 and units 8-10 under
+  // unit 7. Each page was read by eye; these pin where the right images sit.
+  const A = 'kbl-g1-arabic-s2-nccd-';
+  it('unit 8 reads its own pages from the folders they were cut into', () => {
+    const p = bookPagesForLesson(`${A}u8_l1`)!;
+    assert.equal(p.page, 74);
+    assert.equal(p.urls[0], `${BOOK_PAGES_BASE_URL}/${A}u7_l1/1.jpg`);
+    assert.equal(bookPagesForLesson(`${A}u7_l2`)!.urls[0], `${BOOK_PAGES_BASE_URL}/${A}u6_l2/1.jpg`);
+  });
+
+  it('a unit 7 lesson whose pages were never cut shows none, not unit 8 or 9', () => {
+    for (const l of ['u7_l1', 'u7_l3', 'u7_l4', 'u7_l5', 'u7_l6']) assert.equal(bookPagesForLesson(`${A}${l}`), null, l);
+  });
+});
+
 describe('bookPagesForLesson', () => {
   it('lists one image per page of the lesson, numbered from 1', () => {
     const [id, entry] = Object.entries(lessons)[0]!;
