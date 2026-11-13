@@ -126,6 +126,9 @@ describe('figuresForLesson', () => {
       'g4-arts': 'g4-arts',
       // Grade 4 maths, cropped 2026-11-13 from the book-page renders.
       'g4-math': 'g4-math',
+      // Grade 4 Arabic and Islamic, cropped 2026-11-13 from the book-page renders.
+      'g4-arabic': 'g4-arabic',
+      'g4-islamic': 'g4-islamic',
       'g4-science': 'g4-science',
       'g4-social': 'g4-social',
       'g4-voc': 'g4-voc',
