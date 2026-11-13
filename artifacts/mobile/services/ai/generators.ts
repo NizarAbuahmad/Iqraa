@@ -437,7 +437,7 @@ function lpIntroAr(topic: string, kb: KBLesson | null, kind: LessonKind = 'calc'
 function lpClosureAr(topic: string, dur: number, band: GradeBand = 'upper'): string {
   const t = Math.round(dur * 0.1);
   if (band === 'early') return pick([
-    `(${arMinutes(t)}) غلق الدرس شفويًا:\n• سأسأل: «ما أجمل شيء تعلّمناه اليوم عن ${topic}؟» ويجيب ثلاثة أو أربعة طلبة.\n• ثم يرفع كل طالب إبهامه إن فهم الدرس، أو يده إن بقي عنده سؤال، وسأبدأ الحصة القادمة بأسئلتهم.`,
+    `(${arMinutes(t)}) غلق الدرس شفويًا:\n• سأسأل: «ما أجمل شيء تعلّمناه اليوم في درس “${topic}”؟» ويجيب ثلاثة أو أربعة طلبة.\n• ثم يرفع كل طالب إبهامه إن فهم الدرس، أو يده إن بقي عنده سؤال، وسأبدأ الحصة القادمة بأسئلتهم.`,
     `(${arMinutes(t)}) دائرة الختام:\n• سأطلب من كل طالب أن يقول كلمة واحدة تذكّره بدرس اليوم.\n• وسأختم بتذكير الطلبة بما سيفعلونه في البيت.`,
   ]);
   return pick([
@@ -485,7 +485,7 @@ function lpIntroEn(topic: string, kb: KBLesson | null, kind: LessonKind = 'calc'
 function lpClosureEn(topic: string, dur: number, band: GradeBand = 'upper'): string {
   const t = Math.round(dur * 0.1);
   if (band === 'early') return pick([
-    `(${t} min) Oral close:\n• Ask: “What was the best thing we learned today about ${topic}?” and take three or four answers.\n• Students show a thumbs-up if they understood, or a raised hand if they still have a question; start the next lesson with those questions.`,
+    `(${t} min) Oral close:\n• Ask: “What was the best thing we learned today in the lesson ‘${topic}’?” and take three or four answers.\n• Students show a thumbs-up if they understood, or a raised hand if they still have a question; start the next lesson with those questions.`,
     `(${t} min) Closing circle:\n• Each student says one word that reminds them of today’s lesson.\n• Finish by reminding students what they will do at home.`,
   ]);
   return pick([

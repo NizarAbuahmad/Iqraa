@@ -127,6 +127,9 @@ async function postJSON<T>(
  * AI is on or not. A request that names no catalog lesson goes as it was.
  */
 export function withLessonType(req: AIRequest): AIRequest {
+  // Only the direct style is typed, offline and on the API alike.
+  const style = req.teachingStyle;
+  if (style === 'inquiry' || style === 'collaborative') return req;
   const lessonType = lessonTypeForId(req.lessonId);
   return lessonType ? { ...req, lessonType } : req;
 }

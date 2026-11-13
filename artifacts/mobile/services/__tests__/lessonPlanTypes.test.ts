@@ -116,6 +116,30 @@ describe('a lesson’s type is read from the lesson, not from a title search', (
     assert.deepEqual(counts, { listening: 10, speaking: 10, reading: 10, writing: 10, language: 10 });
   });
 
+  it('places Grade 4–6 Islamic lessons the first patterns missed', () => {
+    assert.equal(lessonTypeForId('kbl-g5-islamic-s1-nccd-u2_l1'), 'quran', 'آية الكرسي');
+    assert.equal(lessonTypeForId('kbl-g5-islamic-s2-nccd-u7_l4'), 'worship', 'صدقة الفطر');
+    assert.equal(lessonTypeForId('kbl-g6-islamic-s2-nccd-u2_l4'), 'worship', 'المسح على الخفين');
+    assert.equal(lessonTypeForId('kbl-g5-islamic-s2-nccd-u6_l4'), 'sira', 'عام الحزن');
+  });
+
+  it('Islamic and Arabic lessons are typed in Grades 1–6 only; art, music and drama in every grade', () => {
+    // The typed bodies are written for young children, and the upper-grade Islamic
+    // books (rulings, sources, fiqh of transactions) do not fit the title patterns.
+    assert.equal(lessonTypeForId('kbl-islamic-s1-nccd-u3_l2'), null, 'G10 «موقف الشريعة الإسلامية من الربا»');
+    assert.equal(lessonTypeForId('kbl-g7-islamic-s2-nccd-u2_l5'), null, 'G7 «الجمع بين الصلاتين»');
+    assert.equal(lessonTypeForId('kbl-arabic-s1-nccd-u1_l1'), null, 'G10 «أستمع بانتباه وتركيز»');
+    assert.equal(lessonTypeForId('kbl-g6-arabic-s1-nccd-u1_l1'), 'listening', 'G6 «أستمع بانتباه وتركيز»');
+    for (const l of KB_LESSONS) {
+      const b = getBookForLesson(l);
+      const level = gradeLevelOf(b?.gradeId);
+      if (!b || level === null) continue;
+      const type = lessonTypeForKb(l);
+      if (level > 6 && (b.subjectId === 'islamic' || b.subjectId === 'arabic')) assert.equal(type, null, `${l.id} ${l.titleAr}`);
+      if (b.subjectId === 'creative-arts') assert.ok(type, `${l.id} ${l.titleAr} has no arts type`);
+    }
+  });
+
   it('a type belongs to one kind, and other subjects have none', () => {
     for (const type of LESSON_TYPES) assert.ok(['recitation', 'making', 'arabic'].includes(KIND_OF_TYPE[type]));
     for (const id of ['mathematics', 'science', 'english', 'social', 'physical-education']) {
@@ -162,8 +186,29 @@ describe('the Grade 2 defects the audit found', () => {
     const p = await planFor(byId(SAMPLES.creed));
     const all = JSON.stringify(p);
     assert.doesNotMatch(all, /سأتلو|مرتّلًا|تسميع/);
-    assert.match(p.mainActivity, /الأركان بترتيبها/);
+    assert.match(p.mainActivity, /بندًا بندًا وبترتيبه/);
     assert.match(p.mainActivity, /يَقومُ الإيمانُ/, 'the book’s own main idea is in the plan');
+  });
+
+  it('a Name of Allah is one Name, not a list to put in order', async () => {
+    const p = await planFor(byId(G('islamic-s1-nccd-u3_l2'))); // الله الرزّاق
+    assert.match(p.mainActivity, /الاسم ومعناه على بطاقة/);
+    assert.doesNotMatch(`${p.mainActivity}\n${p.guidedPractice}`, /يرتّبون أنفسهم|الأركان بترتيبها|أو الاسم ومعناه\)/);
+    const pillars = await planFor(byId(SAMPLES.creed));
+    assert.match(pillars.guidedPractice, /يرتّبون أنفسهم كما في الكتاب/);
+  });
+
+  it('a sira plan never asks a child to draw the Prophet or the companions', async () => {
+    for (const lang of ['arabic', 'english'] as const) {
+      const p = await planFor(byId(SAMPLES.sira), lang);
+      assert.doesNotMatch(p.independentPractice, lang === 'arabic' ? /يرسم كل طالب المشهد/ : /draws the scene/);
+      assert.match(p.independentPractice, lang === 'arabic' ? /دون رسم الأنبياء أو الصحابة/ : /never the prophets or the companions/);
+      for (let i = 0; i < 6; i++) assert.doesNotMatch((await planFor(byId(SAMPLES.sira), lang)).homework, /ارسم المشهد|Draw the scene/);
+    }
+  });
+
+  it('the oral closure names the lesson in quotes, not bare after «عن»', async () => {
+    for (let i = 0; i < 8; i++) assert.doesNotMatch((await planFor(byId(SAMPLES.listening))).closure, /عن أَسْتَمِعُ|عن أستمع/);
   });
 
   it('«أعمال الوضوء» demonstrates the steps; «الصادق الأمين» tells a story', async () => {

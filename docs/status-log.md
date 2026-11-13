@@ -26,6 +26,10 @@ Grade 2 maths plans asked a seven-year-old for «ملخصًا شخصيًا من 
   `language`, `letters` (from the «لغتي» title's first word). It is read **only from the lesson the request names by id**
   (`lessonTypeForId(req.lessonId)`), never from the title search `groundedKb` falls back to: Grade 2 Arabic titles repeat in
   every unit. A typed topic, an uploaded file and every other subject have no type and keep their plan.
+  **Islamic and Arabic types hold in Grades 1–6 only** (`TYPED_UP_TO_GRADE`); art, music and drama in every grade. The
+  bodies are written for young children, and the upper-grade Islamic books (rulings, sources, fiqh of transactions) do not
+  fit the title patterns — a first version sent G10 «موقف الشريعة الإسلامية من الربا» to the children's ethics routine and
+  G5 «آية الكرسي» away from recitation (caught in review, fixed and pinned).
 - **Offline plan** (`lessonPlanTyped.ts`): the direct style's body, objectives (when the lesson has no official outcomes)
   and opening come from the type. Twelve types have their own body; `quran`, `visual-art` and `reading` keep their kind's
   routine, which was written for them. Every typed plan quotes the lesson's **main idea** — the first sentence of its
@@ -36,10 +40,15 @@ Grade 2 maths plans asked a seven-year-old for «ملخصًا شخصيًا من 
   short task to do with someone at home (per type, else per kind); Grades 4–6 get a five-sentence summary in place of ten;
   Grade 7 up, and an unreadable grade, are unchanged. An Arabic typed lesson's homework (middle/upper) is about the unit's
   theme, not «أستمع بانتباه وتركيز».
-- **Live plan**: `RemoteAIService.generateLessonPlan` sends `lessonType` (`withLessonType`); the API adds a type clause after
+- **Live plan**: `RemoteAIService.generateLessonPlan` sends `lessonType` (`withLessonType`, direct style only); the API adds a type clause after
   the subject clause and a grade-band clause (`lessonTypeClauseAr/En`, `gradeBandClauseAr/En` in `lessonKinds.ts`, wired in
-  `prompts.ts`). A type that is unknown or belongs to another subject adds nothing. `lessonType` joined the strict pool key
-  and `lesson-plan` got its own pool version (`2026-11-13.1`), so plans pooled before are not served again.
+  `prompts.ts`). A type that is unknown, belongs to another subject, sits outside its grades or rides on an inquiry or
+  collaborative plan adds nothing — offline, too, only the direct style is typed. `lessonType` joined the strict pool key
+  and `lesson-plan` got its own pool version (`2026-11-13.1`), so plans pooled before are not served again — including the
+  pregenerated ones (`artifacts/mobile/scripts/pregenerate.ts`), whose lesson-plan pass needs re-running.
+- **Wording kept to the book**: a sira plan never asks a child to draw the Prophet or the companions (a place or an object
+  instead); a Name of Allah is one Name, not a list to put in order; the ethics body asks «بماذا يرشدنا الكتاب…» rather than
+  stating why Allah loves a deed; the oral closure quotes the lesson's title.
 
 **Verified.** `lessonPlanTypes.test.ts` (mobile, new): the Grade 2 classification by id (all 24 Islamic, 30 arts in
 10/10/10, 50 Arabic in 10 per type); the types of each subject produce different main activities in both languages; the
@@ -61,8 +70,12 @@ distinct plans (was 1); arts 29 of 30 plans carry the lesson's main idea (the 30
 - **Only the direct style is typed.** Inquiry and collaborative keep their generic, kind-adjusted phases for every lesson.
 - **The live path was not run against a model.** The prompt is tested as text; whether a model follows the type clause is
   unmeasured. Production pools are keyed afresh, so the first live plan per lesson costs a generation.
-- **The classification is title patterns.** Upper-grade Islamic fiqh of transactions («البيع…», «الإجارة…») and topics like
-  «صحيح البخاري» fall to `conduct`; «فضل تلاوة القرآن الكريم» is `conduct`, not `quran`. Worth a teacher's pass.
+- **The classification is title patterns.** Inside Grades 1–6, anything unplaced is `conduct` (38 lessons: manners, family,
+  values, and a few about the Quran itself such as «فضل تلاوة القرآن الكريم»). Worth a teacher's pass.
+- **Grade 7 and up Islamic and Arabic plans are unchanged** — still the subject's single routine. Typing them needs bodies
+  written for older students.
+- The grade is read from the lesson's book offline and from the request's `grade` on the API; they differ only when the
+  picker's grade is not the lesson's. An uploaded file drops the type offline, but `withLessonType` still sends it.
 - **No teacher has read the new bodies.** Whether «نجرّب على الخشبة» or the books-closed listening routine is how a Jordanian
   Grade 2 teacher runs those lessons needs a teacher's read; the tests prove only that they differ and avoid the defects.
 - No «ما الجديد» entry: this corrects generated content inside an existing tool; nothing new to find.

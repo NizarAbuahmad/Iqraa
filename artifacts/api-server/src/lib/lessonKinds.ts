@@ -221,21 +221,39 @@ export const KIND_OF_TYPE: Record<LessonType, LessonKind> = {
   writing: "arabic", language: "arabic", letters: "arabic",
 };
 
-/** The request's lesson type, when it is a known one that belongs to its subject. */
-export function lessonTypeOf(b: { subject?: string; subjectId?: string; lessonType?: unknown }): LessonType | null {
+/**
+ * Islamic and Arabic types hold in Grades 1–6; art, music and drama in every
+ * grade — `TYPED_UP_TO_GRADE` / `typeHoldsAt` in the app's `lessonTypes.ts`,
+ * which does not send a type outside them. Checked here too, since the request
+ * is the client's.
+ */
+const TYPED_UP_TO_GRADE = 6;
+const EVERY_GRADE: ReadonlySet<LessonType> = new Set(["visual-art", "music", "drama"]);
+
+/**
+ * The request's lesson type: a known one, belonging to its subject, at a grade
+ * it holds at, on a direct-style plan. Offline, only the direct style is typed
+ * (`lessonPlanBlueprints.ts`); inquiry and collaborative keep their own phases,
+ * so the live prompt must not reshape them either.
+ */
+export function lessonTypeOf(b: { subject?: string; subjectId?: string; lessonType?: unknown; grade?: unknown; teachingStyle?: unknown }): LessonType | null {
   const t = b.lessonType;
   if (typeof t !== "string" || !(LESSON_TYPES as readonly string[]).includes(t)) return null;
   const type = t as LessonType;
-  return lessonKindOf(b) === KIND_OF_TYPE[type] ? type : null;
+  if (lessonKindOf(b) !== KIND_OF_TYPE[type]) return null;
+  if (b.teachingStyle === "inquiry" || b.teachingStyle === "collaborative") return null;
+  const level = gradeLevelOf(b.grade);
+  if (!EVERY_GRADE.has(type) && level !== null && level > TYPED_UP_TO_GRADE) return null;
+  return type;
 }
 
 const TYPE_AR: Record<LessonType, string> = {
   quran: "نوع الدرس: تلاوة قرآن (سورة أو أحكام تلاوة) — تلاوة المعلّم ثم ترديد جماعي ففردي، ومعاني المفردات من الكتاب، والمعنى الإجمالي، وتسميع ما قُرّر حفظه.",
   hadith: "نوع الدرس: حديث شريف — قراءة نص الحديث كما ورد في سياق الكتاب وذكر راويه، ومعاني مفرداته، والتوجيه الذي يدعو إليه؛ ثم مواقف قصيرة يقرّر فيها الطلبة ما يوافق التوجيه، وتسميع الحديث.",
-  creed: "نوع الدرس: عقيدة (أركان، أو اسم من أسماء الله الحسنى، أو ركن من أركان الإيمان) — يعرض المعلّم ما يذكره الكتاب بندًا بندًا (الأركان بترتيبها، أو الاسم ومعناه) ويسمّيه صراحةً كما ورد في سياق الكتاب، ثم يربطه بأمثلة من حياة الطالب وأثره في سلوكه. لا تلاوة ولا تسميع حفظ في هذا الدرس.",
+  creed: "نوع الدرس: عقيدة (أركان، أو اسم من أسماء الله الحسنى، أو ركن من أركان الإيمان) — يعرض المعلّم ما يذكره الكتاب بندًا بندًا (الأركان بترتيبها، أو الاسم ومعناه) ويسمّيه صراحةً كما ورد في سياق الكتاب، ثم يربطه بأمثلة من حياة الطالب وأثره في سلوكه. ليس الدرس تلاوة سورة.",
   worship: "نوع الدرس: عبادة عملية (وضوء أو صلاة أو صيام…) — خطوات العبادة بترتيبها كما في الكتاب، ثم أداء المعلّم العملي، ثم محاكاة الطلبة خطوة بخطوة، ثم أداء فردي بقائمة رصد. لا تُضف حكمًا لم يرد في سياق الكتاب.",
-  sira: "نوع الدرس: سيرة وقصة — رواية القصة كما في الكتاب، وترتيب أحداثها على خط زمني، وإعادة الطلبة روايتها، والصفة أو العبرة المستفادة. لا تلاوة ولا تسميع، ولا تفصيل لم يرد في سياق الكتاب.",
-  conduct: "نوع الدرس: خُلق وآداب وقيم — موقف من حياة الطلبة، والتوجيه الذي يذكره الكتاب، وتمييز السلوك الحسن من غيره بأمثلة وتمثيل أدوار، وعمل محدّد يلتزم به الطالب. لا تلاوة ولا تسميع حفظ.",
+  sira: "نوع الدرس: سيرة وقصة — رواية القصة كما في الكتاب، وترتيب أحداثها على خط زمني، وإعادة الطلبة روايتها، والصفة أو العبرة المستفادة. ليس الدرس تلاوة سورة، ولا تفصيل فيه لم يرد في سياق الكتاب.",
+  conduct: "نوع الدرس: خُلق وآداب وقيم — موقف من حياة الطلبة، والتوجيه الذي يذكره الكتاب، وتمييز السلوك الحسن من غيره بأمثلة وتمثيل أدوار، وعمل محدّد يلتزم به الطالب. ليس الدرس تلاوة سورة.",
   "visual-art": "نوع الدرس: تربية فنية (رسم أو تلوين أو تشكيل) — عرض نموذج وتقنية، ثم يُنتج الطالب عمله، ثم يراجعه بمعايير. سمِّ ما يذكره سياق الكتاب من ألوان أو أشكال أو خطوط بأسمائها.",
   music: "نوع الدرس: تربية موسيقية — استماع أولًا، ثم تقليد بالتصفيق أو الآلة أو الغناء (صدى)، ثم أداء جماعي وتنويع من ابتكار الطلبة. \"materials\": آلة إيقاعية أو تصفيق وتسجيل. لا «نموذج منجز» ولا منتج يُصنع.",
   drama: "نوع الدرس: تربية مسرحية — تحديد مساحة تمثيل، ومشهد قصير يؤدّيه المعلّم، ثم تجريب الطلبة في مجموعات (تجميد، وتبادل دوري الممثل والجمهور)، ثم عرض مشهد قصير وتعليق الجمهور. لا «نموذج منجز» ولا منتج يُصنع.",
@@ -250,10 +268,10 @@ const TYPE_AR: Record<LessonType, string> = {
 const TYPE_EN: Record<LessonType, string> = {
   quran: "Lesson type: Quran recitation (a surah or a recitation rule) — the teacher recites, students repeat together then one by one, the word meanings from the book, the overall meaning, and recitation of what is set for memorising.",
   hadith: "Lesson type: hadith — read the hadith as the book context gives it and name its narrator, the meanings of its words and the guidance it calls to; then short situations where students decide what follows the guidance, and recitation of the hadith.",
-  creed: "Lesson type: creed (pillars, one of the Names of Allah, or an article of faith) — the teacher sets out what the book states item by item (the pillars in order, or the Name and its meaning), naming each as the book context does, then links it to examples from the student's life and its effect on behaviour. No recitation and no memorisation check in this lesson.",
+  creed: "Lesson type: creed (pillars, one of the Names of Allah, or an article of faith) — the teacher sets out what the book states item by item (the pillars in order, or the Name and its meaning), naming each as the book context does, then links it to examples from the student's life and its effect on behaviour. It is not a surah-recitation lesson.",
   worship: "Lesson type: an act of worship (wudu, prayer, fasting…) — the steps in the book's order, the teacher's demonstration, students miming step by step, then individual performance against a checklist. Add no ruling the book context does not contain.",
-  sira: "Lesson type: sira and story — tell the story as the book gives it, put its events on a timeline, students retell it, and the quality or lesson learned. No recitation, no memorisation, and no detail the book context does not contain.",
-  conduct: "Lesson type: manners, character and values — a situation from students' lives, the guidance the book gives, telling good behaviour from bad through examples and role play, and one specific deed the student commits to. No recitation and no memorisation check.",
+  sira: "Lesson type: sira and story — tell the story as the book gives it, put its events on a timeline, students retell it, and the quality or lesson learned. It is not a surah-recitation lesson, and it adds no detail the book context does not contain.",
+  conduct: "Lesson type: manners, character and values — a situation from students' lives, the guidance the book gives, telling good behaviour from bad through examples and role play, and one specific deed the student commits to. It is not a surah-recitation lesson.",
   "visual-art": "Lesson type: visual art (drawing, colouring or making) — show a model and a technique, the student makes their own work, then reviews it against criteria. Name the colours, shapes or lines the book context gives.",
   music: "Lesson type: music — listen first, then copy by clapping, instrument or singing (echo), then perform together and vary it with the students' own ideas. \"materials\": a percussion instrument or clapping, and a recording. No \"finished model\" and no product to make.",
   drama: "Lesson type: drama — mark out an acting space, the teacher performs a short scene, students try it in groups (freeze, swapping actor and audience), then perform a short scene and the audience responds. No \"finished model\" and no product to make.",
@@ -269,12 +287,12 @@ const TYPE_OVERRIDE_AR = "نوع الدرس يحدّد ما يجري في \"main
 const TYPE_OVERRIDE_EN = "The lesson type decides what happens in \"mainActivity\", \"guidedPractice\" and \"independentPractice\", and replaces anything in the subject section above that contradicts it.";
 
 /** The lesson-type clause to put after the subject clause, or "". */
-export function lessonTypeClauseAr(b: { subject?: string; subjectId?: string; lessonType?: unknown }): string {
+export function lessonTypeClauseAr(b: Parameters<typeof lessonTypeOf>[0]): string {
   const type = lessonTypeOf(b);
   return type ? `${TYPE_AR[type]}\n${TYPE_OVERRIDE_AR}` : "";
 }
 
-export function lessonTypeClauseEn(b: { subject?: string; subjectId?: string; lessonType?: unknown }): string {
+export function lessonTypeClauseEn(b: Parameters<typeof lessonTypeOf>[0]): string {
   const type = lessonTypeOf(b);
   return type ? `${TYPE_EN[type]}\n${TYPE_OVERRIDE_EN}` : "";
 }

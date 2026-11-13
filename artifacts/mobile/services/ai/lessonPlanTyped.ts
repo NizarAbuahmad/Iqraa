@@ -99,18 +99,24 @@ function withIdea(bp: LessonStyleBlueprint | null, ctx: LessonStyleContext): Les
 const ISLAMIC_DIFF_AR = 'دعم: سأقدّم بطاقات فيها صورة إلى جانب الكلمة، وسؤالًا بخيارين بدل السؤال المفتوح، وزميلًا يساعد في الترتيب.\nتحدٍّ: يشرح الطالب لزملائه مثالًا من حياته، أو يربط الدرس بدرس سابق من الكتاب.\nالمبدأ: الفهم والعمل بما نتعلّم قبل الحفظ — يتغيّر مقدار الدعم، لا فرصة المشاركة.';
 const ISLAMIC_DIFF_EN = 'Support: cards with a picture beside the word, a two-choice question instead of an open one, and a classmate to help with the ordering.\nStretch: the student explains an example from their own life to the class, or links the lesson to an earlier one in the book.\nThe principle: understanding and acting on what we learn come before memorising — change the support, not the chance to take part.';
 
-const creedAr = (ctx: LessonStyleContext): LessonStyleBlueprint => ({
-  materials: ['الكتاب المدرسي (صفحة الدرس)', 'بطاقات كبيرة أكتب عليها ما يذكره الكتاب', 'صور من الطبيعة أو من حياة الطلبة تدلّ على فكرة الدرس', 'ورقة «أثرها في حياتي»'],
-  mainActivity: `(${m(ctx, 0.3)}) – نتعرّف ونتأمّل:\n\n1. سأكتب «${ctx.topic}» في وسط السبورة، وأسأل: «ماذا نعرف عن هذا؟» وأستمع إلى إجابتين أو ثلاث دون تصحيح.\n2. سأقرأ ما ورد في الكتاب، وأكتب على البطاقات ما يذكره واحدًا واحدًا (الأركان بترتيبها، أو الاسم ومعناه) دون أن أضيف شيئًا من عندي.${ideaAr(ctx)}\n3. سأربط كل بطاقة بمثال قريب من الطلبة: نعمة يرونها كل يوم، أو موقف من يومهم يدلّ عليها.\n4. وسأختم بسؤال: «ماذا يتغيّر في سلوكي حين أؤمن بهذا؟» وأكتب إجابة الصف بجملة واحدة.`,
-  guidedPractice: `(${m(ctx, 0.22)}) – نرتّب ونربط معًا:\n\n• سأوزّع البطاقات على الطلبة بغير ترتيب، فيقف أصحابها أمام الصف ويرتّبون أنفسهم كما في الكتاب، والصف يتحقّق.\n• سأعرض صورًا أو مواقف، ويختار الطلبة البطاقة التي تدلّ عليها كل صورة ويذكرون السبب.\n• وسأصحّح أي معنى غير دقيق بالرجوع إلى نص الكتاب.`,
+/** «الله الرزّاق», «من أسماء الله الحسنى: القادر» — one Name, not a list to put in order. */
+const isNameLesson = (ctx: LessonStyleContext) => /^(من )?اسماء الله|^الله /.test(foldArabic(ctx.kb?.titleAr ?? ''));
+
+const creedAr = (ctx: LessonStyleContext): LessonStyleBlueprint => {
+  const name = isNameLesson(ctx);
+  return {
+  materials: ['الكتاب المدرسي (صفحة الدرس)', name ? 'بطاقة كبيرة بالاسم ومعناه كما في الكتاب' : 'بطاقات كبيرة أكتب عليها ما يذكره الكتاب', 'صور من الطبيعة أو من حياة الطلبة تدلّ على فكرة الدرس', 'ورقة «أثرها في حياتي»'],
+  mainActivity: `(${m(ctx, 0.3)}) – نتعرّف ونتأمّل:\n\n1. سأكتب «${ctx.topic}» في وسط السبورة، وأسأل: «ماذا نعرف عن هذا؟» وأستمع إلى إجابتين أو ثلاث دون تصحيح.\n2. ${name ? 'سأقرأ ما ورد في الكتاب، وأكتب الاسم ومعناه على بطاقة كبيرة كما يذكرهما الكتاب، دون أن أضيف شيئًا من عندي.' : 'سأقرأ ما ورد في الكتاب، وأكتب على البطاقات ما يذكره بندًا بندًا وبترتيبه، دون أن أضيف شيئًا من عندي.'}${ideaAr(ctx)}\n3. سأربط ${name ? 'الاسم' : 'كل بطاقة'} بمثال قريب من الطلبة: نعمة يرونها كل يوم، أو موقف من يومهم يدلّ ${name ? 'عليه' : 'عليها'}.\n4. وسأختم بسؤال: «ماذا يتغيّر في سلوكي حين أؤمن بهذا؟» وأكتب إجابة الصف بجملة واحدة.`,
+  guidedPractice: `(${m(ctx, 0.22)}) – ${name ? 'نتأمّل ونربط معًا' : 'نرتّب ونربط معًا'}:\n\n• ${name ? 'سأعرض صورًا من حياة الطلبة ومن الطبيعة، ويقول الطلبة كيف تدلّ كل صورة على معنى الاسم كما ورد في الكتاب.' : 'سأوزّع البطاقات على الطلبة بغير ترتيب، فيقف أصحابها أمام الصف ويرتّبون أنفسهم كما في الكتاب، والصف يتحقّق.'}\n• سأعرض صورًا أو مواقف، ويختار الطلبة البطاقة التي تدلّ عليها كل صورة ويذكرون السبب.\n• وسأصحّح أي معنى غير دقيق بالرجوع إلى نص الكتاب.`,
   independentPractice: `(${m(ctx, 0.18)}) – أتأمّل بمفردي:\n\n• يكمل كل طالب ورقة «أثرها في حياتي»: يرسم أو يكتب موقفًا واحدًا يظهر فيه ما تعلّمه.\n• يذكر الطالب لزميله ما على البطاقات دون النظر إليها، ثم يتبادلان.\n• من ينهي مبكرًا يكتب جملة شكر لله مرتبطة بالدرس.`,
-  assessment: 'تكويني: سأطرح أسئلة شفوية سريعة عن البطاقات («ما الأول؟ ما معنى هذا الاسم؟») وأسجّل من يحتاج مراجعة.\nختامي: سأقرأ أوراق «أثرها في حياتي»: هل ربط الطالب ما تعلّمه بسلوك حقيقي؟\nغلق الدرس: يقول كل طالب جملة يبدأها بـ«تعلّمت اليوم أن…».',
+  assessment: 'تكويني: سأطرح أسئلة شفوية سريعة عمّا تعلّمناه («ما الأول؟ ما معنى هذا الاسم؟») وأسجّل من يحتاج مراجعة.\nختامي: سأقرأ أوراق «أثرها في حياتي»: هل ربط الطالب ما تعلّمه بسلوك حقيقي؟\nغلق الدرس: يقول كل طالب جملة يبدأها بـ«تعلّمت اليوم أن…».',
   differentiation: ISLAMIC_DIFF_AR,
-});
+  };
+};
 
 const worshipAr = (ctx: LessonStyleContext): LessonStyleBlueprint => ({
   materials: ['الكتاب المدرسي (صور الخطوات)', 'بطاقات مصوّرة للخطوات بترتيب الكتاب', 'ما يلزم للعرض العملي بحسب الدرس (إبريق ماء وطست، أو سجادة صلاة)', 'قائمة رصد الخطوات'],
-  mainActivity: `(${m(ctx, 0.3)}) – أعرض الخطوات وأؤدّيها:\n\n1. سأسأل: «من رأى أحدًا من أسرته يؤدّي هذه العبادة؟ ماذا يفعل أولًا؟» وأستمع إلى إجابات قصيرة، ثم أعلن موضوع الدرس: «${ctx.topic}».\n2. سأعرض صور الخطوات من الكتاب بترتيبها، وأسمّي كل خطوة كما وردت فيه، وأثبّت بطاقتها على السبورة.${ideaAr(ctx)}\n3. ثم سأؤدّي الخطوات أمام الطلبة أداءً عمليًا هادئًا، وأتوقف عند كل خطوة ليقول الطلبة اسمها.\n4. وسأبيّن ما يذكره الكتاب من آداب أو أخطاء تُتجنّب، دون أن أضيف أحكامًا من عندي.`,
+  mainActivity: `(${m(ctx, 0.3)}) – أعرض الخطوات وأؤدّيها:\n\n1. سأسأل: «من رأى أحدًا من أسرته يؤدّي هذه العبادة؟ ماذا يفعل أولًا؟» وأستمع إلى إجابات قصيرة، ثم سأعلن موضوع الدرس: «${ctx.topic}».\n2. سأعرض صور الخطوات من الكتاب بترتيبها، وأسمّي كل خطوة كما وردت فيه، وأثبّت بطاقتها على السبورة.${ideaAr(ctx)}\n3. ثم سأؤدّي الخطوات أمام الطلبة أداءً عمليًا هادئًا، وأتوقف عند كل خطوة ليقول الطلبة اسمها.\n4. وسأبيّن ما يذكره الكتاب من آداب أو أخطاء تُتجنّب، دون أن أضيف أحكامًا من عندي.`,
   guidedPractice: `(${m(ctx, 0.22)}) – نؤدّي معًا:\n\n• يؤدّي الطلبة الخطوات معي محاكاةً في أماكنهم، خطوةً بعد خطوة، وأنا أقول اسم كل خطوة.\n• سأخلط البطاقات المصوّرة، ويرتّبها الطلبة في ثنائيات ثم يقارنون بترتيب الكتاب.\n• وسأصحّح الترتيب أو الأداء بلطف حين يظهر خطأ.`,
   independentPractice: `(${m(ctx, 0.18)}) – أؤدّي بمفردي:\n\n• يؤدّي كل طالب الخطوات أمامي أو أمام زميل متقن، واحدًا في كل مرة، والزميل يضع إشارة على قائمة الرصد.\n• يرتّب الباقون صور الخطوات على ورقة ويقولون اسم كل خطوة.\n• من ينهي مبكرًا يشرح لزميله لماذا يحرص المسلم على هذه العبادة كما ذكر الكتاب.`,
   assessment: 'تكويني: سأراقب الأداء العملي بقائمة الرصد: الترتيب، واكتمال الخطوات، والهدوء في الأداء.\nختامي: أداء فردي للخطوات وترتيب صورها؛ وسأسجّل الخطوة التي يتعثّر فيها الطالب لأعيدها معه.\nغلق الدرس: سنقول الخطوات بترتيبها جماعيًا.',
@@ -120,8 +126,8 @@ const worshipAr = (ctx: LessonStyleContext): LessonStyleBlueprint => ({
 const siraAr = (ctx: LessonStyleContext): LessonStyleBlueprint => ({
   materials: ['الكتاب المدرسي (قصة الدرس)', 'صور أو بطاقات لأحداث القصة', 'خط زمني بسيط على السبورة', 'ورقة «ماذا أتعلّم من القصة؟»'],
   mainActivity: `(${m(ctx, 0.3)}) – أروي القصة ونرتّبها:\n\n1. سأروي قصة «${ctx.topic}» كما وردت في الكتاب بأسلوب قصصي مشوّق، مستعينًا بالصور، والطلبة يستمعون دون مقاطعة.\n2. سأتوقف عند لحظتين مهمتين وأسأل: «ماذا تتوقعون أن يحدث؟» ثم أكمل الرواية.\n3. سأرتّب مع الطلبة أحداث القصة على خط زمني بسيط على السبورة: ماذا حدث أولًا، ثم، وفي النهاية.${ideaAr(ctx)}\n4. وسأسأل: «ما الصفة أو العمل الذي نتعلّمه من هذه القصة؟» وأكتب الصفة بخط واضح.`,
-  guidedPractice: `(${m(ctx, 0.22)}) – نعيد الرواية معًا:\n\n• سأوزّع بطاقات الأحداث على مجموعات صغيرة، فترتّبها كل مجموعة وتعيد رواية القصة بكلماتها.\n• سأطرح أسئلة: «من؟ أين؟ ماذا فعل؟ لماذا؟» وأصحّح أي تفصيل لم يرد في الكتاب.\n• وسنتحدث عن موقف من حياة الطلبة يشبه ما في القصة.`,
-  independentPractice: `(${m(ctx, 0.18)}) – أعبّر بمفردي:\n\n• يرسم كل طالب المشهد الذي أحبّه من القصة ويكتب تحته جملة واحدة أو يقولها لي.\n• يكمل ورقة «ماذا أتعلّم من القصة؟» بصفة واحدة وكيف سيطبّقها.\n• من ينهي مبكرًا يروي القصة لزميله في ثلاث جمل.`,
+  guidedPractice: `(${m(ctx, 0.22)}) – نعيد الرواية معًا:\n\n• سأوزّع بطاقات الأحداث على مجموعات صغيرة، فترتّبها كل مجموعة وتعيد رواية القصة بكلماتها.\n• سأطرح أسئلة: «من؟ أين؟ ماذا حدث؟ لماذا؟» وأصحّح أي تفصيل لم يرد في الكتاب.\n• وسنتحدث عن موقف من حياة الطلبة يشبه ما في القصة.`,
+  independentPractice: `(${m(ctx, 0.18)}) – أعبّر بمفردي:\n\n• يرسم كل طالب مكانًا أو شيئًا من القصة (دون رسم الأنبياء أو الصحابة) ويكتب تحته جملة واحدة أو يقولها لي.\n• يكمل ورقة «ماذا أتعلّم من القصة؟» بصفة واحدة وكيف سيطبّقها.\n• من ينهي مبكرًا يروي القصة لزميله في ثلاث جمل.`,
   assessment: 'تكويني: سأتابع إعادة الرواية في المجموعات: هل الأحداث بترتيبها؟ وهل التفاصيل من الكتاب؟\nختامي: سأقرأ الرسوم والجمل: هل ذكر الطالب حدثًا صحيحًا وصفة مستفادة؟\nغلق الدرس: يكمل كل طالب شفويًا: «أحببت في هذه القصة…».',
   differentiation: ISLAMIC_DIFF_AR,
 });
@@ -137,21 +143,24 @@ const hadithAr = (ctx: LessonStyleContext): LessonStyleBlueprint => ({
 
 const conductAr = (ctx: LessonStyleContext): LessonStyleBlueprint => ({
   materials: ['الكتاب المدرسي (صور الدرس)', 'بطاقات مواقف من حياة الطلبة', 'لافتتان: «سلوك أحبّه» و«سلوك أتجنّبه»', 'لوحة «وعدي»'],
-  mainActivity: `(${m(ctx, 0.3)}) – موقف وتوجيه:\n\n1. سأعرض صورة من الكتاب أو أروي موقفًا قصيرًا عن «${ctx.topic}» من حياة طفل في عمر الطلبة، وأسأل: «ماذا فعل؟ هل أحسن التصرّف؟»\n2. سأقرأ ما يرشدنا إليه الكتاب في هذا الدرس، وأكتب التوجيه على السبورة بجملة واحدة.${ideaAr(ctx)}\n3. سأسأل: «لماذا يحبّ الله هذا السلوك؟ وكيف يشعر من حولنا حين نفعله؟»\n4. وسأعدّد مع الطلبة ثلاثة أعمال صغيرة يقدرون عليها اليوم في البيت أو في المدرسة.`,
+  mainActivity: `(${m(ctx, 0.3)}) – موقف وتوجيه:\n\n1. سأعرض صورة من الكتاب أو أروي موقفًا قصيرًا عن «${ctx.topic}» من حياة طفل في عمر الطلبة، وأسأل: «ماذا فعل؟ هل أحسن التصرّف؟»\n2. سأقرأ ما يرشدنا إليه الكتاب في هذا الدرس، وأكتب التوجيه على السبورة بجملة واحدة.${ideaAr(ctx)}\n3. سأسأل: «بماذا يرشدنا الكتاب في هذا السلوك؟ وكيف يشعر من حولنا حين نفعله؟»\n4. وسأعدّد مع الطلبة ثلاثة أعمال صغيرة يقدرون عليها اليوم في البيت أو في المدرسة.`,
   guidedPractice: `(${m(ctx, 0.22)}) – نميّز ونمثّل معًا:\n\n• سأقرأ بطاقات المواقف، ويضع الطلبة كل بطاقة تحت «سلوك أحبّه» أو «سلوك أتجنّبه» مع ذكر السبب.\n• يمثّل ثنائيان الموقف نفسه مرتين: مرة بتصرّف خاطئ ومرة بتصرّف حسن، ويقارن الصف بينهما.\n• وسأربط كل تصرّف حسن بما ذكره الكتاب.`,
   independentPractice: `(${m(ctx, 0.18)}) – وعدي:\n\n• يكتب كل طالب أو يرسم «وعدي»: عملًا واحدًا سيفعله هذا الأسبوع، ويعلّقه على اللوحة.\n• يختار الطالب بطاقة موقف ويقول لزميله كيف سيتصرّف فيه.\n• من ينهي مبكرًا يقترح موقفًا جديدًا للصف.`,
   assessment: 'تكويني: سأتابع تصنيف المواقف وتعليل الطلبة: هل يذكرون السبب أم يكرّرون الجواب؟\nختامي: سأقرأ بطاقات «وعدي»: هل العمل محدّد وممكن؟ وسأسأل عنه في الحصة القادمة.\nغلق الدرس: يقول كل طالب عملًا واحدًا سيفعله اليوم.',
   differentiation: ISLAMIC_DIFF_AR,
 });
 
-const creedEn = (ctx: LessonStyleContext): LessonStyleBlueprint => ({
-  materials: ['Textbook (the lesson page)', 'Large cards to write what the book states', 'Pictures from nature or from students’ lives that show the lesson’s idea', 'A “What it means in my life” sheet'],
-  mainActivity: `(${m(ctx, 0.3)}) – Learn and reflect:\n\n1. Write “${ctx.topic}” in the middle of the board and ask: “What do we know about this?” Take two or three answers without correcting.\n2. Read what the book says and write what it states on the cards one at a time (the pillars in order, or the Name and its meaning), adding nothing of your own.${ideaEn(ctx)}\n3. Link each card to an example close to the students: a blessing they see every day, or a moment from their day that shows it.\n4. Close with: “What changes in how I behave when I believe this?” and write the class’s answer in one sentence.`,
-  guidedPractice: `(${m(ctx, 0.22)}) – Order and connect together:\n\n• Hand the cards out in no order; their holders stand at the front and arrange themselves as in the book while the class checks.\n• Show pictures or situations; students pick the card each one points to and say why.\n• Correct any inexact meaning by going back to the book’s text.`,
+const creedEn = (ctx: LessonStyleContext): LessonStyleBlueprint => {
+  const name = isNameLesson(ctx);
+  return {
+  materials: ['Textbook (the lesson page)', name ? 'A large card with the Name and its meaning as the book gives them' : 'Large cards to write what the book states', 'Pictures from nature or from students’ lives that show the lesson’s idea', 'A “What it means in my life” sheet'],
+  mainActivity: `(${m(ctx, 0.3)}) – Learn and reflect:\n\n1. Write “${ctx.topic}” in the middle of the board and ask: “What do we know about this?” Take two or three answers without correcting.\n2. ${name ? 'Read what the book says and write the Name and its meaning on a large card as the book gives them, adding nothing of your own.' : 'Read what the book says and write what it states on the cards, item by item and in its order, adding nothing of your own.'}${ideaEn(ctx)}\n3. Link ${name ? 'the Name' : 'each card'} to an example close to the students: a blessing they see every day, or a moment from their day that shows it.\n4. Close with: “What changes in how I behave when I believe this?” and write the class’s answer in one sentence.`,
+  guidedPractice: `(${m(ctx, 0.22)}) – ${name ? 'Reflect and connect together' : 'Order and connect together'}:\n\n• ${name ? 'Show pictures from students’ lives and from nature; students say how each one shows the meaning of the Name as the book gives it.' : 'Hand the cards out in no order; their holders stand at the front and arrange themselves as in the book while the class checks.'}\n• Show pictures or situations; students pick the card each one points to and say why.\n• Correct any inexact meaning by going back to the book’s text.`,
   independentPractice: `(${m(ctx, 0.18)}) – Reflect on my own:\n\n• Each student completes the “What it means in my life” sheet: draw or write one moment where what they learned shows.\n• Students tell a partner what is on the cards without looking, then swap.\n• Early finishers write one sentence of thanks to Allah linked to the lesson.`,
-  assessment: 'Formative: quick oral questions on the cards (“Which comes first? What does this Name mean?”); note who needs review.\nSummative: read the “What it means in my life” sheets: did the student link the lesson to real behaviour?\nExit ticket: each student says a sentence starting “Today I learned that…”.',
+  assessment: 'Formative: quick oral questions on what we learned (“Which comes first? What does this Name mean?”); note who needs review.\nSummative: read the “What it means in my life” sheets: did the student link the lesson to real behaviour?\nExit ticket: each student says a sentence starting “Today I learned that…”.',
   differentiation: ISLAMIC_DIFF_EN,
-});
+  };
+};
 
 const worshipEn = (ctx: LessonStyleContext): LessonStyleBlueprint => ({
   materials: ['Textbook (pictures of the steps)', 'Picture cards of the steps in the book’s order', 'What the demonstration needs for this lesson (a water jug and basin, or a prayer mat)', 'A checklist of the steps'],
@@ -165,8 +174,8 @@ const worshipEn = (ctx: LessonStyleContext): LessonStyleBlueprint => ({
 const siraEn = (ctx: LessonStyleContext): LessonStyleBlueprint => ({
   materials: ['Textbook (the lesson’s story)', 'Pictures or cards of the story’s events', 'A simple timeline on the board', 'A “What I learn from the story” sheet'],
   mainActivity: `(${m(ctx, 0.3)}) – Tell the story and order it:\n\n1. Tell the story of “${ctx.topic}” as the book gives it, in an engaging storytelling voice with the pictures, while students listen without interrupting.\n2. Stop at two key moments and ask: “What do you think happens next?” Then carry on.\n3. Put the story’s events on a simple timeline on the board with the class: first, then, in the end.${ideaEn(ctx)}\n4. Ask: “What quality or deed do we learn from this story?” and write it clearly.`,
-  guidedPractice: `(${m(ctx, 0.22)}) – Retell together:\n\n• Give the event cards to small groups; each group orders them and retells the story in its own words.\n• Ask: “Who? Where? What did he do? Why?” and correct any detail the book does not give.\n• Talk about a situation in students’ lives that is like the one in the story.`,
-  independentPractice: `(${m(ctx, 0.18)}) – Express it on my own:\n\n• Each student draws the scene they liked best and writes one sentence under it, or says it to you.\n• They complete the “What I learn from the story” sheet with one quality and how they will practise it.\n• Early finishers retell the story to a partner in three sentences.`,
+  guidedPractice: `(${m(ctx, 0.22)}) – Retell together:\n\n• Give the event cards to small groups; each group orders them and retells the story in its own words.\n• Ask: “Who? Where? What happened? Why?” and correct any detail the book does not give.\n• Talk about a situation in students’ lives that is like the one in the story.`,
+  independentPractice: `(${m(ctx, 0.18)}) – Express it on my own:\n\n• Each student draws a place or an object from the story (never the prophets or the companions) and writes one sentence under it, or says it to you.\n• They complete the “What I learn from the story” sheet with one quality and how they will practise it.\n• Early finishers retell the story to a partner in three sentences.`,
   assessment: 'Formative: listen to the group retellings — are the events in order, and are the details from the book?\nSummative: read the drawings and sentences: did the student give a correct event and a lesson learned?\nExit ticket: each student finishes aloud: “What I liked in this story was…”.',
   differentiation: ISLAMIC_DIFF_EN,
 });
@@ -182,7 +191,7 @@ const hadithEn = (ctx: LessonStyleContext): LessonStyleBlueprint => ({
 
 const conductEn = (ctx: LessonStyleContext): LessonStyleBlueprint => ({
   materials: ['Textbook (the lesson’s pictures)', 'Situation cards from students’ lives', 'Two signs: “Behaviour I love” and “Behaviour I avoid”', 'A “My promise” board'],
-  mainActivity: `(${m(ctx, 0.3)}) – A situation and its guidance:\n\n1. Show a picture from the book or tell a short situation about “${ctx.topic}” from the life of a child the students’ age, and ask: “What did they do? Was it right?”\n2. Read what the book guides us to in this lesson and write it on the board in one sentence.${ideaEn(ctx)}\n3. Ask: “Why does Allah love this behaviour? How do the people around us feel when we do it?”\n4. List with students three small things they can do today at home or at school.`,
+  mainActivity: `(${m(ctx, 0.3)}) – A situation and its guidance:\n\n1. Show a picture from the book or tell a short situation about “${ctx.topic}” from the life of a child the students’ age, and ask: “What did they do? Was it right?”\n2. Read what the book guides us to in this lesson and write it on the board in one sentence.${ideaEn(ctx)}\n3. Ask: “What does the book guide us to in this behaviour? How do the people around us feel when we do it?”\n4. List with students three small things they can do today at home or at school.`,
   guidedPractice: `(${m(ctx, 0.22)}) – Sort and act together:\n\n• Read out the situation cards; students place each under “Behaviour I love” or “Behaviour I avoid” and give the reason.\n• Two pairs act the same situation twice — once badly, once well — and the class compares.\n• Link each good choice back to what the book says.`,
   independentPractice: `(${m(ctx, 0.18)}) – My promise:\n\n• Each student writes or draws “My promise”: one thing they will do this week, and pins it on the board.\n• Students pick a situation card and tell a partner how they would act.\n• Early finishers suggest a new situation for the class.`,
   assessment: 'Formative: follow the sorting and the reasons — do students give a reason, or repeat the answer?\nSummative: read the “My promise” cards: is the deed specific and doable? Ask about it next lesson.\nExit ticket: each student names one thing they will do today.',
@@ -202,7 +211,7 @@ const musicAr = (ctx: LessonStyleContext): LessonStyleBlueprint => ({
 
 const dramaAr = (ctx: LessonStyleContext): LessonStyleBlueprint => ({
   materials: ['مساحة فارغة في الصف أو المسرح المدرسي', 'شريط لاصق لتحديد «الخشبة»', 'بطاقات أدوار أو مواقف قصيرة', 'صور الدرس من الكتاب'],
-  mainActivity: `(${m(ctx, 0.3)}) – نجرّب على الخشبة:\n\n1. سأحدّد «خشبة» في جزء من الصف بشريط لاصق، وأعرض صورة الدرس من الكتاب وأسأل: «ماذا ترون؟ أين يقف الممثل؟ وأين يجلس الجمهور؟»\n2. سأشرح فكرة «${ctx.topic}» كما وردت في الكتاب، وأسمّي المصطلحات وأنا أشير إلى المكان أو أؤدّي الحركة.${ideaAr(ctx)}\n3. سأؤدّي أمام الطلبة مشهدًا قصيرًا (دقيقة واحدة) يُظهر الفكرة، ثم أسأل: «ماذا لاحظتم في صوتي أو حركتي أو مكاني؟»\n4. وسأتفق مع الطلبة على قواعد الأداء الآمن: مساحة لكل ممثل، ولا تدافع، والجمهور يصغي ويصفّق في النهاية.`,
+  mainActivity: `(${m(ctx, 0.3)}) – نجرّب على الخشبة:\n\n1. سأحدّد «خشبة» في جزء من الصف بشريط لاصق، وأعرض صورة الدرس من الكتاب وأسأل: «ماذا ترون؟ أين يقف الممثل؟ وأين يجلس الجمهور؟»\n2. سأشرح فكرة درس «${ctx.topic}» كما ورد في الكتاب، وأسمّي المصطلحات وأنا أشير إلى المكان أو أؤدّي الحركة.${ideaAr(ctx)}\n3. سأؤدّي أمام الطلبة مشهدًا قصيرًا (دقيقة واحدة) يُظهر الفكرة، ثم أسأل: «ماذا لاحظتم في صوتي أو حركتي أو مكاني؟»\n4. وسأتفق مع الطلبة على قواعد الأداء الآمن: مساحة لكل ممثل، ولا تدافع، والجمهور يصغي ويصفّق في النهاية.`,
   guidedPractice: `(${m(ctx, 0.22)}) – نؤدّي ونتوقف معًا:\n\n• يجرّب الطلبة الفكرة في مجموعات صغيرة، وحين أقول «تجميد!» يتوقفون، وأسأل الجمهور عمّا يراه.\n• سأوزّع دوري «ممثل» و«جمهور» وأبدّلهما بعد كل جولة.\n• وسأوجّه الأداء بأسئلة قصيرة: «أين ستقف ليراك الجمهور؟»`,
   independentPractice: `(${m(ctx, 0.18)}) – مشهدنا:\n\n• تجهّز كل مجموعة مشهدًا قصيرًا (نصف دقيقة) يطبّق فكرة الدرس، وتعرضه على الخشبة.\n• يعلّق الجمهور بعد كل عرض: شيء أعجبني، وفكرة للتحسين.\n• من ينهي مبكرًا يضيف دورًا جديدًا إلى مشهد مجموعته.`,
   assessment: 'تكويني: سأراقب المشاركة والالتزام بقواعد الخشبة وظهور فكرة الدرس في الأداء.\nختامي: عرض المشهد القصير بقائمة ملاحظة: الصوت مسموع، والحركة في مكانها، والتعاون مع الفريق.\nغلق الدرس: يقول كل طالب ما أحبّه في عرض مجموعة أخرى.',
@@ -250,7 +259,7 @@ const listeningAr = (ctx: LessonStyleContext): LessonStyleBlueprint => ({
 
 const speakingAr = (ctx: LessonStyleContext): LessonStyleBlueprint => ({
   materials: ['صورة التحدّث من الكتاب', 'بطاقات أسئلة ومفردات مساعدة', '«ميكروفون» رمزي يتناقله الطلبة', 'قائمة ملاحظة التحدّث'],
-  mainActivity: `(${m(ctx, 0.3)}) – نتحدّث عن الصورة:\n\n1. سأعرض صورة التحدّث من الكتاب في الوحدة${unitAr(ctx)} وأسأل: «ماذا ترون؟ وماذا يحدث؟»\n2. سأكتب على السبورة كلمات وعبارات مساعدة يحتاجها الطلبة للحديث عن الصورة.\n3. سأتحدّث أمامهم نموذجًا قصيرًا (ثلاث جمل) عن الصورة بصوت واضح وجمل تامة.\n4. وسأتفق معهم على آداب الحديث: صوت واضح، وجملة تامة، وانتظار الدور.`,
+  mainActivity: `(${m(ctx, 0.3)}) – نتحدّث عن الصورة:\n\n1. سأعرض صورة التحدّث من الكتاب في الوحدة${unitAr(ctx)} وأسأل: «ماذا ترون؟ وماذا يحدث؟»\n2. سأكتب على السبورة كلمات وعبارات مساعدة يحتاجها الطلبة للحديث عن الصورة.\n3. سأقدّم أمامهم نموذج حديث قصير (ثلاث جمل) عن الصورة بصوت واضح وجمل تامة.\n4. وسأتفق معهم على آداب الحديث: صوت واضح، وجملة تامة، وانتظار الدور.`,
   guidedPractice: `(${m(ctx, 0.22)}) – نتحدّث بالتناوب:\n\n• يتناقل الطلبة «الميكروفون» ويقول كل منهم جملة واحدة عن الصورة، وأساعد في إكمال الجملة.\n• سأطرح أسئلة مفتوحة: «ماذا تفعل لو كنت مكانه؟»\n• حوار ثنائي: يسأل الطالب زميله سؤالًا من البطاقات ويجيبه، ثم يتبادلان.`,
   independentPractice: `(${m(ctx, 0.18)}) – دقيقتي:\n\n• يتحدّث كل طالب أمام مجموعته دقيقة واحدة عن الصورة أو عن تجربة تشبهها، مستعملًا كلمتين من السبورة.\n• تعلّق المجموعة بشيء أعجبها في حديثه.\n• من ينهي مبكرًا يروي نهاية مختلفة للموقف.`,
   assessment: 'تكويني: سأدوّن على قائمة الملاحظة: وضوح الصوت، والجملة التامة، واستعمال المفردات الجديدة.\nختامي: حديث فردي قصير، أقيّم فيه الطلاقة والفكرة لا الحفظ.\nغلق الدرس: يقول كل طالب جملة واحدة بدأها بكلمة من السبورة.',
@@ -446,51 +455,51 @@ export function typedIntro(type: LessonType | null | undefined, topic: string, l
   if (!type) return null;
   const ar: Partial<Record<LessonType, string[]>> = {
     hadith: [
-      `سأبدأ بسؤال: «من يحبّ أن يكون مثل سيدنا محمد صلى الله عليه وسلم؟» ثم أخبر الطلبة أنهم سيتعلّمون اليوم حديثًا يرشدنا إلى عمل جميل في درس «${topic}».`,
-      `سأروي موقفًا قصيرًا من حياة طفل يحتاج إلى نصيحة، ثم أسأل: «بماذا ننصحه؟» وأعلن أن حديث اليوم يحمل النصيحة.`,
+      `سأبدأ بسؤال: «من يحبّ أن يكون مثل سيدنا محمد صلى الله عليه وسلم؟» ثم سأخبر الطلبة أنهم سيتعلّمون اليوم حديثًا يرشدنا إلى عمل جميل في درس «${topic}».`,
+      `سأروي موقفًا قصيرًا من حياة طفل يحتاج إلى نصيحة، ثم أسأل: «بماذا ننصحه؟» وسأعلن أن حديث اليوم يحمل النصيحة.`,
     ],
     creed: [
       `سأسأل الطلبة: «ماذا نرى حولنا من نِعم الله؟» وأدوّن إجاباتهم، ثم أربطها بدرس «${topic}».`,
-      `سأعرض صورة من الطبيعة وأسأل: «من خلق هذا؟ وماذا نشعر حين نتأمّله؟» ثم أعلن موضوع درس «${topic}».`,
+      `سأعرض صورة من الطبيعة وأسأل: «من خلق هذا؟ وماذا نشعر حين نتأمّله؟» ثم سأعلن موضوع درس «${topic}».`,
     ],
     worship: [
-      `سأسأل: «ماذا نفعل قبل أن نصلّي؟ ومن علّمنا ذلك؟» وأستمع إلى إجابات قصيرة، ثم أعلن أننا سنتعلّم «${topic}» خطوةً بخطوة.`,
+      `سأسأل: «ماذا نفعل قبل أن نصلّي؟ ومن علّمنا ذلك؟» وأستمع إلى إجابات قصيرة، ثم سأعلن أننا سنتعلّم «${topic}» خطوةً بخطوة.`,
       `سأعرض صورة من الكتاب لطفل يؤدّي العبادة وأسأل: «ماذا يفعل؟ وماذا تتوقعون أن يفعل بعد ذلك؟»`,
     ],
     sira: [
       `سأبدأ بسؤال: «من يحبّ القصص؟ اليوم سأروي لكم قصة حقيقية»، ثم أعرض صورة من الكتاب وأسأل: «ماذا تتوقعون أن تحكي؟»`,
-      `سأكتب «${topic}» على السبورة وأسأل: «ماذا نعرف عن هذا؟» ثم أعلن أننا سنعرف القصة كما يرويها الكتاب.`,
+      `سأكتب «${topic}» على السبورة وأسأل: «ماذا نعرف عن هذا؟» ثم سأعلن أننا سنعرف القصة كما يرويها الكتاب.`,
     ],
     conduct: [
       `سأعرض صورة من الكتاب لموقف من حياة الأطفال وأسأل: «ماذا ترون؟ وماذا كنتم ستفعلون؟» ثم أربط الإجابات بدرس «${topic}».`,
-      `سأسأل: «ما الذي يفرح أسرتنا وأصدقاءنا منّا؟» وأدوّن ثلاث إجابات، ثم أعلن موضوع درس «${topic}».`,
+      `سأسأل: «ما الذي يفرح أسرتنا وأصدقاءنا منّا؟» وأدوّن ثلاث إجابات، ثم سأعلن موضوع درس «${topic}».`,
     ],
     music: [
-      `سأبدأ بلعبة «الصدى»: أصفّق نمطًا قصيرًا ويقلّده الطلبة، ثم أعلن أننا سنتعرّف اليوم إلى «${topic}».`,
+      `سأبدأ بلعبة «الصدى»: أصفّق نمطًا قصيرًا ويقلّده الطلبة، ثم سأعلن أننا سنتعرّف اليوم إلى «${topic}».`,
       `سأُسمع الطلبة صوتين مختلفين وأسأل: «ما الفرق بينهما؟» ثم أربط إجاباتهم بدرس «${topic}».`,
     ],
     drama: [
       `سأدخل الصف كأنني شخصية من قصة، وأقول جملة واحدة بصوت مختلف، ثم أسأل: «من أكون؟ وكيف عرفتم؟» وأربط ذلك بدرس «${topic}».`,
-      `سأسأل: «من شاهد مسرحية؟ ماذا رأيتم على الخشبة؟» وأدوّن الإجابات، ثم أعلن أننا سنجرّب اليوم «${topic}».`,
+      `سأسأل: «من شاهد مسرحية؟ ماذا رأيتم على الخشبة؟» وأدوّن الإجابات، ثم سأعلن أننا سنجرّب اليوم «${topic}».`,
     ],
     listening: [
-      `سأبدأ بدقيقة صمت يصغي فيها الطلبة إلى أصوات المكان، ثم أسأل: «ماذا سمعتم؟» وأعلن أننا سنتدرّب اليوم على الإصغاء.`,
+      `سأبدأ بدقيقة صمت يصغي فيها الطلبة إلى أصوات المكان، ثم أسأل: «ماذا سمعتم؟» وسأعلن أننا سنتدرّب اليوم على الإصغاء.`,
       `سأعرض صورة من الوحدة وأسأل: «ماذا تتوقعون أن نسمع عنها؟» وأدوّن التوقعات لنعود إليها بعد الاستماع.`,
     ],
     speaking: [
-      `سأسأل سؤالًا قريبًا من الطلبة عن موضوع الوحدة، وأستمع إلى إجابتين أو ثلاث، ثم أعلن أن كل واحد سيتحدّث اليوم.`,
+      `سأسأل سؤالًا قريبًا من الطلبة عن موضوع الوحدة، وأستمع إلى إجابتين أو ثلاث، ثم سأعلن أن كل واحد سيتحدّث اليوم.`,
       `سأعرض صورة التحدّث من الكتاب وأطلب من الطلبة أن يذكروا كلمة واحدة تخطر لهم، وأكتب الكلمات لتساعدنا في الحديث.`,
     ],
     writing: [
-      `سأكتب على السبورة كلمتين متشابهتين فيهما خطأ في إحداهما، وأسأل: «أيّهما الصحيحة؟ ولماذا؟» ثم أعلن موضوع الكتابة اليوم.`,
+      `سأكتب على السبورة كلمتين متشابهتين فيهما خطأ في إحداهما، وأسأل: «أيّهما الصحيحة؟ ولماذا؟» ثم سأعلن موضوع الكتابة اليوم.`,
       `سأعرض جملة من نص الوحدة وأسأل: «ماذا تلاحظون في طريقة كتابة هذه الكلمة؟» ثم أربط ذلك بدرس «${topic}».`,
     ],
     language: [
-      `سأقول جملتين من نص الوحدة بينهما فرق صغير، وأسأل: «ما الذي تغيّر؟» ثم أعلن أننا سنكتشف اليوم ظاهرة لغوية جديدة.`,
+      `سأقول جملتين من نص الوحدة بينهما فرق صغير، وأسأل: «ما الذي تغيّر؟» ثم سأعلن أننا سنكتشف اليوم ظاهرة لغوية جديدة.`,
       `سأعرض بطاقات كلمات مبعثرة وأسأل: «هل نستطيع أن نصنع منها جملة؟» ثم أربط ذلك بدرس «${topic}».`,
     ],
     letters: [
-      `سأنطق ثلاث كلمات فيها الصوت نفسه وأسأل: «ما الصوت الذي يتكرّر؟» ثم أعلن حرف اليوم.`,
+      `سأنطق ثلاث كلمات فيها الصوت نفسه وأسأل: «ما الصوت الذي يتكرّر؟» ثم سأعلن حرف اليوم.`,
       `سأعرض صورة شيء يبدأ اسمه بصوت الحرف وأسأل: «ما اسمه؟ وبأيّ صوت يبدأ؟»`,
     ],
   };
@@ -558,7 +567,7 @@ export function typedEarlyHomework(type: LessonType, topic: string, lang: 'ar' |
     hadith: ['ردّد الحديث لأحد أفراد أسرتك، وأخبره بعمل واحد ستفعله بسببه.', 'ارسم نفسك وأنت تعمل بما يدعو إليه الحديث، واكتب تحت الرسم كلمة واحدة.'],
     creed: [`أخبر أحد أفراد أسرتك بما تعلّمته في درس «${topic}».`, 'ارسم نعمة واحدة من نِعم الله تراها في بيتك، واكتب اسمها تحت الرسم.'],
     worship: ['أدِّ الخطوات التي تعلّمناها أمام أحد أفراد أسرتك، واطلب منه أن يتابعك.', 'رتّب صور الخطوات في كتابك، وقلها بترتيبها لأحد أفراد أسرتك.'],
-    sira: [`احكِ قصة «${topic}» لأحد أفراد أسرتك في ثلاث جمل.`, 'ارسم المشهد الذي أحببته من القصة، وأخبر أسرتك لماذا أحببته.'],
+    sira: [`احكِ قصة «${topic}» لأحد أفراد أسرتك في ثلاث جمل.`, 'أخبر أسرتك بالحدث الذي أحببته من القصة، ولماذا أحببته.'],
     conduct: [`افعل في بيتك عملًا واحدًا تعلّمته في درس «${topic}»، وأخبر معلّمك به في الحصة القادمة.`, 'ارسم نفسك وأنت تقوم بالسلوك الجميل الذي تعلّمته اليوم.'],
     'visual-art': ['أكمل رسمتك في البيت، وأحضرها إلى الصف.', `ابحث في بيتك عن شيء يذكّرك بدرس «${topic}»، وأخبر صفّك عنه.`],
     music: ['صفّق الإيقاع الذي تعلّمناه لأحد أفراد أسرتك، واطلب منه أن يقلّدك.', 'ابحث في بيتك عن شيئين يصدران صوتين مختلفين، وأحضر واحدًا منهما إن استطعت.'],
@@ -575,7 +584,7 @@ export function typedEarlyHomework(type: LessonType, topic: string, lang: 'ar' |
     hadith: ['Repeat the hadith to a family member and tell them one thing you will do because of it.', 'Draw yourself doing what the hadith asks, and write one word under the drawing.'],
     creed: [`Tell a family member what you learned in “${topic}”.`, 'Draw one blessing of Allah you see at home, and write its name under it.'],
     worship: ['Perform the steps we learned for a family member and ask them to watch.', 'Put the step pictures in your book in order, and say them in order to a family member.'],
-    sira: [`Tell the story of “${topic}” to a family member in three sentences.`, 'Draw the scene you liked best in the story and tell your family why.'],
+    sira: [`Tell the story of “${topic}” to a family member in three sentences.`, 'Tell your family about the event you liked best in the story, and why.'],
     conduct: [`At home, do one thing you learned in “${topic}”, and tell your teacher about it next lesson.`, 'Draw yourself doing the good behaviour you learned today.'],
     'visual-art': ['Finish your drawing at home and bring it to class.', `Find something at home that reminds you of “${topic}” and tell the class about it.`],
     music: ['Clap the rhythm we learned for a family member and ask them to copy it.', 'Find two things at home that make different sounds, and bring one if you can.'],

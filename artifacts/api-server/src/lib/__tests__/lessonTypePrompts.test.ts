@@ -22,7 +22,8 @@ import {
   KIND_OF_TYPE, LESSON_TYPES, gradeBandClauseAr, gradeLevelOf, lessonTypeClauseAr, lessonTypeClauseEn, lessonTypeOf,
 } from "../lessonKinds.ts";
 
-const base = { grade: "الصف العاشر", topic: "موضوع الاختبار", duration: 45 };
+/** Grade 4: Islamic and Arabic types hold up to Grade 6, and Grade 4 adds the five-sentence band. */
+const base = { grade: "الصف الرابع", topic: "موضوع الاختبار", duration: 45 };
 
 const mobileSource = readFileSync(
   fileURLToPath(new URL("../../../../mobile/services/ai/lessonTypes.ts", import.meta.url)),
@@ -58,9 +59,24 @@ describe("the lesson-type clause", () => {
     assert.equal(lessonTypeClauseAr({ subjectId: "arabic", lessonType: "drama" }), "");
   });
 
+  it("is added only to a direct-style plan, as offline", () => {
+    for (const teachingStyle of ["inquiry", "collaborative"]) {
+      assert.equal(lessonTypeOf({ subjectId: "islamic", lessonType: "hadith", teachingStyle }), null, teachingStyle);
+      assert.doesNotMatch(lessonPlanPromptAr({ ...base, subject: "التربية الإسلامية", lessonType: "hadith", teachingStyle }), /نوع الدرس:/);
+    }
+    assert.equal(lessonTypeOf({ subjectId: "islamic", lessonType: "hadith", teachingStyle: "direct" }), "hadith");
+  });
+
+  it("holds Islamic and Arabic types to Grades 1–6, and the arts types in every grade", () => {
+    assert.equal(lessonTypeOf({ subjectId: "islamic", lessonType: "conduct", grade: "الصف العاشر" }), null);
+    assert.equal(lessonTypeOf({ subjectId: "arabic", lessonType: "listening", grade: "grade-7" }), null);
+    assert.equal(lessonTypeOf({ subjectId: "arabic", lessonType: "listening", grade: "الصف السادس" }), "listening");
+    assert.equal(lessonTypeOf({ subjectId: "creative-arts", lessonType: "drama", grade: "الصف العاشر" }), "drama");
+  });
+
   it("gives every type its own wording in both languages", () => {
-    const ar = LESSON_TYPES.map(t => lessonTypeClauseAr({ subjectId: subjectOf(t), lessonType: t }));
-    const en = LESSON_TYPES.map(t => lessonTypeClauseEn({ subjectId: subjectOf(t), lessonType: t }));
+    const ar = LESSON_TYPES.map(t => lessonTypeClauseAr({ subjectId: subjectOf(t), lessonType: t, grade: base.grade }));
+    const en = LESSON_TYPES.map(t => lessonTypeClauseEn({ subjectId: subjectOf(t), lessonType: t, grade: base.grade }));
     assert.equal(new Set(ar).size, LESSON_TYPES.length);
     assert.equal(new Set(en).size, LESSON_TYPES.length);
     for (const c of ar) assert.match(c, /^نوع الدرس: /);
@@ -112,7 +128,7 @@ describe("homework and closure sized to the grade", () => {
     assert.match(gradeBandClauseAr({ grade: "الصف الخامس" }), /خمس جمل/);
     assert.equal(gradeBandClauseAr({ grade: "الصف العاشر" }), "");
     assert.equal(gradeBandClauseAr({ grade: "something else" }), "");
-    assert.doesNotMatch(lessonPlanPromptAr({ ...base, subject: "الرياضيات" }), /مهمة واحدة قصيرة|خمس جمل/);
+    assert.doesNotMatch(lessonPlanPromptAr({ ...base, grade: "الصف العاشر", subject: "الرياضيات" }), /مهمة واحدة قصيرة|خمس جمل/);
   });
 });
 

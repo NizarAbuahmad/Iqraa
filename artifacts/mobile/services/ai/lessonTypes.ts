@@ -63,14 +63,14 @@ export function foldArabic(s: string): string {
 
 /** `bare` keeps the hamza: «الإيمان» (faith) and «الأيمان» (oaths) fold to the same letters. */
 function islamicType(title: string, bare: string): LessonType {
-  if (/^سورة|^التلاوة والتجويد|وقف التلاوة|احكام التلاوة|تفخيم|ترقيق/.test(title)) return 'quran';
+  if (/^سورة|^اية |^التلاوة والتجويد|وقف التلاوة|احكام التلاوة|تفخيم|ترقيق/.test(title)) return 'quran';
   if (/^الحديث الشريف/.test(title)) return 'hadith';
   // «الصلاة على النبي» is a remembrance, not a prayer and not a story.
   if (/^الصلاة علي النبي/.test(title)) return 'conduct';
   if (/الإيمان/.test(bare)) return 'creed';
   if (/^(من )?اسماء الله|^الله |الشهادتان|اركان الاسلام|التوحيد|الملائكة|اليوم الاخر|القضاء والقدر|معجزات/.test(title)) return 'creed';
-  if (/الوضوء|الصلاة|الصلوات|صلاة|الصيام|صيام|الزكاة|الحج|العمرة|الطهارة|النجاسة|الاغتسال|التيمم|سجود|الاذان|السنن الرواتب/.test(title)) return 'worship';
-  if (/سيدنا |النبي ﷺ|صلح |الصحابة|رسول الله|رسولي|الصادق الامين|نسب |ولادة|رضاعة|الهجرة|غزوة|^يوم (بدر|احد|الخندق)|الصحابي|الصحابية|السيدة|ام المؤمنين|نبي الله|نزول الوحي|السابقون|الخلفاء الراشدين/.test(title)) return 'sira';
+  if (/الوضوء|الصلاة|الصلوات|صلاة|الصلاتين|الفطر|الافطار|رمضان|الخفين|الصيام|صيام|الزكاة|الحج|العمرة|الطهارة|النجاسة|الاغتسال|التيمم|سجود|الاذان|السنن الرواتب/.test(title)) return 'worship';
+  if (/سيدنا |النبي ﷺ|صلح |الصحابة|رسول الله|رسولي|الصادق الامين|نسب |ولادة|رضاعة|الهجرة|غزوة|^يوم (بدر|احد|الخندق)|الصحابي|الصحابية|السيدة|ام المؤمنين|نبي الله|نزول الوحي|السابقون|الخلفاء الراشدين|عام الحزن|شعب ابي طالب|الطائف|الاسراء والمعراج|بناء الكعبة|^قصة /.test(title)) return 'sira';
   return 'conduct';
 }
 
@@ -101,12 +101,31 @@ export function lessonTypeOf(lesson: { subjectId: string; titleAr: string; unitT
   }
 }
 
+/**
+ * Islamic and Arabic types are honoured in Grades 1–6 only. Those bodies are
+ * written for young children (a pretend microphone, answers given by drawing, no
+ * written paragraph in a listening lesson), the classification was checked on
+ * Grade 2, and the upper-grade Islamic books are mostly fiqh, sources and rulings
+ * the title patterns do not place — «موقف الشريعة الإسلامية من الربا» landed on
+ * the ethics routine for children. From Grade 7 they keep their kind's plan. The
+ * arts types (art, music, drama, from the unit) hold in every grade.
+ * `lessonKinds.ts` on the API applies the same limit.
+ */
+export const TYPED_UP_TO_GRADE = 6;
+const EVERY_GRADE: ReadonlySet<LessonType> = new Set(['visual-art', 'music', 'drama']);
+
+/** Whether a type is honoured at a grade (1–12, or null when unknown). */
+export function typeHoldsAt(type: LessonType, level: number | null): boolean {
+  return EVERY_GRADE.has(type) || (level !== null && level <= TYPED_UP_TO_GRADE);
+}
+
 /** The type of a KB lesson the caller already holds (grounded by its id), or null. */
 export function lessonTypeForKb(kb: KBLesson | null | undefined): LessonType | null {
   if (!kb) return null;
   const book = getBookForLesson(kb);
   if (!book) return null;
-  return lessonTypeOf({ subjectId: book.subjectId, titleAr: kb.titleAr, unitTitleAr: getUnitForLesson(kb)?.titleAr });
+  const type = lessonTypeOf({ subjectId: book.subjectId, titleAr: kb.titleAr, unitTitleAr: getUnitForLesson(kb)?.titleAr });
+  return type && typeHoldsAt(type, gradeLevelOf(book.gradeId)) ? type : null;
 }
 
 /** The type of the lesson a request names by id — what the live route is told. */
