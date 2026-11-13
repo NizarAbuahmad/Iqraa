@@ -2,54 +2,6 @@
   "sourceId": "g7-finlit-s2-student-book",
   "figures": [
     {
-      "file": "p011.png",
-      "sourceId": "g7-finlit-s2-student-book",
-      "pdfPage": 11,
-      "rect": [
-        18.9,
-        66.1,
-        215.3,
-        187.0
-      ],
-      "unit": 4,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": "ُميزانيتي الشخصيُة",
-      "lessonStartPage": 8
-    },
-    {
-      "file": "p016-v2.png",
-      "sourceId": "g7-finlit-s2-student-book",
-      "pdfPage": 16,
-      "rect": [
-        50.7,
-        531.2,
-        332.9,
-        742.0
-      ],
-      "unit": 4,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": "ُأُخِّطُِطُ ميزانيتي الشخصيَة",
-      "lessonStartPage": 14
-    },
-    {
-      "file": "p034-v2.png",
-      "sourceId": "g7-finlit-s2-student-book",
-      "pdfPage": 34,
-      "rect": [
-        93.0,
-        201.0,
-        165.0,
-        304.0
-      ],
-      "unit": 5,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": "وُمُ االِّدِخاِرِ وأهِّمِيُتُُه مفه",
-      "lessonStartPage": 34
-    },
-    {
       "file": "p035-v2.png",
       "sourceId": "g7-finlit-s2-student-book",
       "pdfPage": 35,
@@ -74,22 +26,6 @@
         546.6,
         550.0,
         753.9
-      ],
-      "unit": 5,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": "األهداُفُ الماليُةُ وأنواُعُها",
-      "lessonStartPage": 41
-    },
-    {
-      "file": "p044-v2.png",
-      "sourceId": "g7-finlit-s2-student-book",
-      "pdfPage": 44,
-      "rect": [
-        64.0,
-        485.6,
-        559.0,
-        714.3
       ],
       "unit": 5,
       "lesson": 2,

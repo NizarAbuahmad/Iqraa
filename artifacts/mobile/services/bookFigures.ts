@@ -248,15 +248,37 @@ export type BookPages = {
  * `book-page-links.json` only after comparing the live book with the copy our
  * page numbers came from — a book re-issued with different pagination gets no
  * pages rather than the wrong ones. Null for every lesson not listed.
+ *
+ * A lesson whose start the scripts missed had its pages rendered under the
+ * lesson before it, whose range ran on through it. Such a lesson is listed with
+ * `imagesOf` naming that lesson, and its pages are read from those images; the
+ * host keeps `renderedEndPage`, the last page it has an image for, when its own
+ * `endPage` was cut back to where it really ends (`bookPage.test.ts`).
  */
+export type BookPageEntry = {
+  sourceId: string;
+  startPage: number;
+  endPage: number;
+  aspect: number;
+  /** The lesson under whose key this lesson's page images were rendered. */
+  imagesOf?: string;
+  /** Last page with an image under this lesson's key, when past `endPage`. */
+  renderedEndPage?: number;
+};
+
+const PAGE_LESSONS = (pageLinks as { lessons: Record<string, BookPageEntry> }).lessons;
+
 export function bookPagesForLesson(kbLessonId: string | null | undefined): BookPages | null {
   if (!kbLessonId) return null;
-  const entry = (pageLinks as { lessons: Record<string, { startPage: number; endPage: number; aspect: number }> })
-    .lessons[kbLessonId];
+  const entry = PAGE_LESSONS[kbLessonId];
   if (!entry) return null;
+  const host = entry.imagesOf ? PAGE_LESSONS[entry.imagesOf] : entry;
+  if (!host) return null;
+  const key = entry.imagesOf ?? kbLessonId;
+  const first = entry.startPage - host.startPage + 1;
   const count = entry.endPage - entry.startPage + 1;
   return {
-    urls: Array.from({ length: count }, (_, n) => `${BOOK_PAGES_BASE_URL}/${kbLessonId}/${n + 1}.jpg`),
+    urls: Array.from({ length: count }, (_, n) => `${BOOK_PAGES_BASE_URL}/${key}/${first + n}.jpg`),
     page: entry.startPage,
     aspect: entry.aspect,
   };
