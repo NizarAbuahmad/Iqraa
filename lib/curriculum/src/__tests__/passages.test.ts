@@ -153,6 +153,24 @@ describe('passagesForUnit', () => {
     assert.deepEqual(passagesForUnit({ unitId: 'not-a-unit' }), []);
   });
 
+  it('finds a unit\'s pages from its lesson titles when the book prints no objectives', () => {
+    // Grade 9 Islamic Studies prints no learning outcomes, so a unit-wide paper
+    // and the exam generator — both call with no `terms` — searched with nothing
+    // and got no pages for 8 of 8 units, while a single lesson (which passes its
+    // title) found them. The unit's own lesson titles are the description left.
+    const unit = 'kbu-g9-islamic-s1-nccd-u1';
+    assert.ok(hasExtractedText('g9-islamic-s1-student-book'));
+    const ps = passagesForUnit({ unitId: unit, limit: 4, quotableOnly: true });
+    assert.ok(ps.length > 0, 'a unit with extracted text and no objectives still gets pages');
+    for (const p of ps) assert.equal(p.sourceId, 'g9-islamic-s1-student-book');
+    // Page 4 is the contents page, which lists every lesson title in the book
+    // and so outscored the unit's own pages for every unit before it was skipped.
+    assert.ok(!ps.some(p => p.page === 4), 'the contents page is not a passage');
+    // Unit 1 is PDF pages 6-33 by that contents page; unit 4 repeats unit 1's
+    // lesson types (Surat al-Isra', recitation), whose pages used to leak in.
+    for (const p of ps) assert.ok(p.page >= 6 && p.page <= 33, `page ${p.page} is outside unit 1`);
+  });
+
   it('knows which sources have text', () => {
     assert.ok(hasExtractedText('math-s1-student-book'));
     // math-s1-support-material used to stand here as the un-fetched case; it
