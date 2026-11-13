@@ -1,0 +1,485 @@
+{
+  "sourceId": "g4-math-s1-student-book",
+  "figures": [
+    {
+      "file": "p008.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 8,
+      "rect": [
+        148.8,
+        420.4,
+        449.9,
+        522.0
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": "Place Value within Hundred Thousands",
+      "lessonTitleAr": "القِيمَةُ المَنْزِلِيَّةُ ضِمْنَ مِئاتِ الأُلوفِ",
+      "lessonStartPage": 8
+    },
+    {
+      "file": "p017.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 17,
+      "rect": [
+        71.4,
+        274.6,
+        375.0,
+        395.4
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": "Rounding Numbers",
+      "lessonTitleAr": "تَقْريبُ الأَعْدادِ",
+      "lessonStartPage": 15
+    },
+    {
+      "file": "p020.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 20,
+      "rect": [
+        183.3,
+        234.2,
+        424.8,
+        297.6
+      ],
+      "unit": 1,
+      "lesson": 4,
+      "lessonTitleEn": "Estimating Sums and Differences",
+      "lessonTitleAr": "تَقْديرُ المَجْموعِ وَالفَرْقِ",
+      "lessonStartPage": 19
+    },
+    {
+      "file": "p022.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 22,
+      "rect": [
+        74.0,
+        587.1,
+        523.4,
+        717.6
+      ],
+      "unit": 1,
+      "lesson": 5,
+      "lessonTitleEn": "Adding Numbers",
+      "lessonTitleAr": "جَمْعُ الأَعْدادِ",
+      "lessonStartPage": 22
+    },
+    {
+      "file": "p026.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 26,
+      "rect": [
+        48.0,
+        471.9,
+        577.0,
+        749.9
+      ],
+      "unit": 1,
+      "lesson": 6,
+      "lessonTitleEn": "Subtracting Numbers",
+      "lessonTitleAr": "طَرْحُ الأَعْدادِ",
+      "lessonStartPage": 26
+    },
+    {
+      "file": "p034.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 34,
+      "rect": [
+        125.0,
+        313.3,
+        287.4,
+        452.3
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": "Multiplying by Multiples of 10, 100, 1000",
+      "lessonTitleAr": "الضَّرْبُ في مُضاعَفاتِ 10, 100, 1000",
+      "lessonStartPage": 34
+    },
+    {
+      "file": "p040.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 40,
+      "rect": [
+        56.6,
+        468.1,
+        504.7,
+        599.0
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": "Multiplying Numbers",
+      "lessonTitleAr": "ضَرْبُ الأَعْدادِ",
+      "lessonStartPage": 40
+    },
+    {
+      "file": "p041.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 41,
+      "rect": [
+        44.6,
+        317.1,
+        493.2,
+        428.5
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": "Multiplying Numbers",
+      "lessonTitleAr": "ضَرْبُ الأَعْدادِ",
+      "lessonStartPage": 40
+    },
+    {
+      "file": "p056.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 56,
+      "rect": [
+        48.9,
+        388.6,
+        537.0,
+        622.8
+      ],
+      "unit": 3,
+      "lesson": 3,
+      "lessonTitleEn": "Dividing Numbers",
+      "lessonTitleAr": "قِسْمَةُ الأَعْدادِ",
+      "lessonStartPage": 56
+    },
+    {
+      "file": "p057.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 57,
+      "rect": [
+        200.3,
+        289.5,
+        525.6,
+        480.0
+      ],
+      "unit": 3,
+      "lesson": 3,
+      "lessonTitleEn": "Dividing Numbers",
+      "lessonTitleAr": "قِسْمَةُ الأَعْدادِ",
+      "lessonStartPage": 56
+    },
+    {
+      "file": "p074.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 74,
+      "rect": [
+        78.7,
+        551.4,
+        526.8,
+        734.6
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": "Factors",
+      "lessonTitleAr": "العَوامِلُ",
+      "lessonStartPage": 74
+    },
+    {
+      "file": "p075.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 75,
+      "rect": [
+        180.7,
+        102.9,
+        368.2,
+        191.3
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": "Factors",
+      "lessonTitleAr": "العَوامِلُ",
+      "lessonStartPage": 74
+    },
+    {
+      "file": "p078.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 78,
+      "rect": [
+        174.3,
+        590.9,
+        221.1,
+        676.4
+      ],
+      "unit": 4,
+      "lesson": 3,
+      "lessonTitleEn": "Prime and Non-Prime Numbers",
+      "lessonTitleAr": "الأَعْدادُ الأَوَّلِيَّةُ، وَالأَعْدادُ غَيْرُ الأَوَّلِيَّةِ",
+      "lessonStartPage": 78
+    },
+    {
+      "file": "p086.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 86,
+      "rect": [
+        65.1,
+        376.7,
+        545.1,
+        682.3
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": "Lines, Rays, and Angles",
+      "lessonTitleAr": "الخُطوطُ، وَالأَشِعَّةُ، وَالزَّوايا",
+      "lessonStartPage": 86
+    },
+    {
+      "file": "p086b.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 86,
+      "rect": [
+        95.7,
+        138.6,
+        181.6,
+        306.9
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": "Lines, Rays, and Angles",
+      "lessonTitleAr": "الخُطوطُ، وَالأَشِعَّةُ، وَالزَّوايا",
+      "lessonStartPage": 86
+    },
+    {
+      "file": "p087.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 87,
+      "rect": [
+        40.8,
+        434.0,
+        169.7,
+        539.5
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": "Lines, Rays, and Angles",
+      "lessonTitleAr": "الخُطوطُ، وَالأَشِعَّةُ، وَالزَّوايا",
+      "lessonStartPage": 86
+    },
+    {
+      "file": "p088.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 88,
+      "rect": [
+        48.0,
+        124.1,
+        556.6,
+        279.7
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": "Lines, Rays, and Angles",
+      "lessonTitleAr": "الخُطوطُ، وَالأَشِعَّةُ، وَالزَّوايا",
+      "lessonStartPage": 86
+    },
+    {
+      "file": "p090.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 90,
+      "rect": [
+        59.5,
+        99.1,
+        205.4,
+        244.0
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": "Lines, Rays, and Angles",
+      "lessonTitleAr": "الخُطوطُ، وَالأَشِعَّةُ، وَالزَّوايا",
+      "lessonStartPage": 86
+    },
+    {
+      "file": "p091.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 91,
+      "rect": [
+        37.8,
+        261.9,
+        273.0,
+        403.9
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": "Measuring and Drawing Angles",
+      "lessonTitleAr": "قِياسُ الزَّوايا وَرَسْمُها",
+      "lessonStartPage": 91
+    },
+    {
+      "file": "p091b.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 91,
+      "rect": [
+        193.9,
+        542.5,
+        449.5,
+        727.4
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": "Measuring and Drawing Angles",
+      "lessonTitleAr": "قِياسُ الزَّوايا وَرَسْمُها",
+      "lessonStartPage": 91
+    },
+    {
+      "file": "p092.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 92,
+      "rect": [
+        49.3,
+        395.4,
+        281.1,
+        624.9
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": "Measuring and Drawing Angles",
+      "lessonTitleAr": "قِياسُ الزَّوايا وَرَسْمُها",
+      "lessonStartPage": 91
+    },
+    {
+      "file": "p094.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 94,
+      "rect": [
+        59.5,
+        377.9,
+        550.7,
+        702.3
+      ],
+      "unit": 5,
+      "lesson": 3,
+      "lessonTitleEn": "Parallel and Intersecting Lines",
+      "lessonTitleAr": "المُسْتَقيماتُ المُتَوازِيَةُ وَالمُتَقاطِعَةُ",
+      "lessonStartPage": 94
+    },
+    {
+      "file": "p095.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 95,
+      "rect": [
+        37.8,
+        102.9,
+        542.6,
+        245.7
+      ],
+      "unit": 5,
+      "lesson": 3,
+      "lessonTitleEn": "Parallel and Intersecting Lines",
+      "lessonTitleAr": "المُسْتَقيماتُ المُتَوازِيَةُ وَالمُتَقاطِعَةُ",
+      "lessonStartPage": 94
+    },
+    {
+      "file": "p098.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 98,
+      "rect": [
+        68.0,
+        134.8,
+        175.6,
+        212.6
+      ],
+      "unit": 5,
+      "lesson": 4,
+      "lessonTitleEn": "Symmetry",
+      "lessonTitleAr": "التَّماثُلُ",
+      "lessonStartPage": 98
+    },
+    {
+      "file": "p098b.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 98,
+      "rect": [
+        53.6,
+        491.9,
+        217.3,
+        724.8
+      ],
+      "unit": 5,
+      "lesson": 4,
+      "lessonTitleEn": "Symmetry",
+      "lessonTitleAr": "التَّماثُلُ",
+      "lessonStartPage": 98
+    },
+    {
+      "file": "p099.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 99,
+      "rect": [
+        74.0,
+        99.1,
+        229.2,
+        301.8
+      ],
+      "unit": 5,
+      "lesson": 4,
+      "lessonTitleEn": "Symmetry",
+      "lessonTitleAr": "التَّماثُلُ",
+      "lessonStartPage": 98
+    },
+    {
+      "file": "p100.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 100,
+      "rect": [
+        116.9,
+        434.9,
+        210.9,
+        552.7
+      ],
+      "unit": 5,
+      "lesson": 4,
+      "lessonTitleEn": "Symmetry",
+      "lessonTitleAr": "التَّماثُلُ",
+      "lessonStartPage": 98
+    },
+    {
+      "file": "p101.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 101,
+      "rect": [
+        44.6,
+        317.1,
+        276.8,
+        463.4
+      ],
+      "unit": 5,
+      "lesson": 5,
+      "lessonTitleEn": "Reflection",
+      "lessonTitleAr": "الانْعِكاسُ",
+      "lessonStartPage": 101
+    },
+    {
+      "file": "p101b.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 101,
+      "rect": [
+        23.8,
+        526.7,
+        149.3,
+        713.4
+      ],
+      "unit": 5,
+      "lesson": 5,
+      "lessonTitleEn": "Reflection",
+      "lessonTitleAr": "الانْعِكاسُ",
+      "lessonStartPage": 101
+    },
+    {
+      "file": "p102.png",
+      "sourceId": "g4-math-s1-student-book",
+      "pdfPage": 102,
+      "rect": [
+        57.8,
+        413.6,
+        165.0,
+        732.1
+      ],
+      "unit": 5,
+      "lesson": 5,
+      "lessonTitleEn": "Reflection",
+      "lessonTitleAr": "الانْعِكاسُ",
+      "lessonStartPage": 101
+    }
+  ]
+}
