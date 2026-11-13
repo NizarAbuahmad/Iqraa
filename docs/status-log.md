@@ -10,6 +10,48 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 7 review: offline maths for the three lessons that had none, and a sweep of every lesson — 2026-11-13
+
+**What was already done.** «Grade 7 audit: book pages, figures, contents and honorifics…» (below, the same day)
+checked every Grade 7 lesson's book pages and figures as images, rebuilt each book's lesson list from its unit
+openers (every book matched the catalog), and fixed «ﷺ» after people other than the Prophet. That review is not
+repeated here; the public book-page bucket is not reachable from this session, so nothing was re-read from a page.
+
+**Sweep.** Every Grade 7 lesson (397) was run through the offline lesson plan, quiz, worksheet and activity:
+- Every lesson grounds on itself by id. Lesson plans and activities generate for all 397.
+- Maths: all 43 lessons give a full 10-question quiz and a worksheet (40 before this change).
+- Every other subject refuses the quiz and the worksheet offline with `NoQuestionBankError`. That is the design:
+  only maths and chemistry have real offline questions, and Grade 7 has no chemistry. Production runs live AI.
+- Exact-title lookup lands on another lesson for 33 titles (24 of them generic English S2 headings such as
+  «المفردات»). The generator screens ground by id, so this is the known title trap, not a new break.
+
+**What changed.** `lib/math-practice/src/g7.ts` adds one computed generator for each lesson that had none:
+- «خطة حل المسألة: الحل العكسي» (S1 u1_l6, `g7_work_backward`): a number machine, money spent then half the
+  rest, two fractions of what is left, a temperature that fell then rose, the latest time to wake up.
+- «التطابق» (S2 u6_l1, `g7_congruence`): the corresponding side and angle from a correspondence written in letter
+  order, an angle from its partner or from the angle sum, a perimeter, and x from two corresponding sides.
+- «خطة حل المسألة: الرسم» (S2 u6_l5, `g7_draw_diagram`): posts along a fence and round a rectangle, cuts in a
+  plank, handshakes, a snail in a well, two houses on a road, square tables in a row.
+
+Each is limited to Grade 7 and matched on the exact folded title, which is unique in the catalog. There is no
+extracted Grade 7 book, so the kinds follow the lessons' NCCD objectives. `geometry.test.ts` and
+`topics.test.ts` had pinned «التطابق» and «خطة حل المسألة: الرسم» (G7) as refused; they now name the new
+generators and keep a refused case at another grade.
+
+**Verified.**
+- `g7Lessons.test.ts` recomputes every key from the printed Arabic stem by its own route: the story replayed
+  forward from the key, the correspondence read off the letters, the sketch simulated (posts laid one by one, the
+  snail stepped day by day, handshakes counted pair by pair). Three planted wrong formulas each fail it.
+- About 50 sample items were read and checked by hand. Nothing is `verified` and no item carries a `check`.
+- math-practice tests pass, and the PR body has the rest of the CI set.
+
+**Not done.**
+- Needs the book pages: Arabic S1 u1_l1 has no topic and u5_l4 is cut short. Science S1's `known_gaps` still says
+  unit 3 prints no «الفكرة العامة» box; the audit found it on p50, but that was not re-checked here.
+- No worked steps for the three new generators, so they do not supply a worksheet's worked example.
+- Grade 7 still has no extracted text, so live prompts get no book pages (Tracks A and B of
+  `docs/adding-a-book.md`).
+
 ## Grade 10 figures: six unit-review figures the audit missed — 2026-11-13
 
 A re-check of Grade 10 after «Grade 10 checked against its books, and corrected» and «Grade 10 audit: book pages,
