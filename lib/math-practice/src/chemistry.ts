@@ -226,10 +226,12 @@ export const CHEM_BANK: ConcreteItem[] = [
     promptEn: 'What is the maximum number of electrons in energy level n = 3? Use the rule 2n².',
   },
   {
-    id: 'ch-as-m1', family: 'atomic_structure', diff: 'medium', eq: 'E = −13.6/n² eV, n = 2',
-    answer: '−3.4 eV', wrongs: ['−6.8 eV', '−13.6 eV', '−1.51 eV'],
-    promptAr: 'طاقة الإلكترون في ذرة الهيدروجين تُعطى بالعلاقة E = −13.6/n² إلكترون فولت. أوجد طاقة المستوى n = 2.',
-    promptEn: 'The electron energy in hydrogen is E = −13.6/n² eV. Find the energy of level n = 2.',
+    // In joules with R_H, as the Grade 10 book works it (chem S1 pp.16–18);
+    // it never uses 13.6 eV. Wrongs: ÷n instead of ÷n², n ignored, n = 3.
+    id: 'ch-as-m1', family: 'atomic_structure', diff: 'medium', eq: 'Eₙ = −R_H/n², R_H = 2.18 × 10⁻¹⁸ J, n = 2',
+    answer: '−5.45 × 10⁻¹⁹ J', wrongs: ['−1.09 × 10⁻¹⁸ J', '−2.18 × 10⁻¹⁸ J', '−2.42 × 10⁻¹⁹ J'],
+    promptAr: 'طاقة مستوى الإلكترون في ذرة الهيدروجين تُعطى بالعلاقة Eₙ = −R_H/n²، حيث R_H = 2.18 × 10⁻¹⁸ J. أوجد طاقة المستوى n = 2.',
+    promptEn: 'The energy of a level in hydrogen is Eₙ = −R_H/n², where R_H = 2.18 × 10⁻¹⁸ J. Find the energy of level n = 2.',
   },
   {
     id: 'ch-as-m2', family: 'atomic_structure', diff: 'medium', eq: 'الطيف الخطي',
@@ -789,10 +791,11 @@ export const CHEM_BANK: ConcreteItem[] = [
     promptEn: 'In which energy level is the electron of a hydrogen atom in its ground state?',
   },
   {
-    id: 'ch-as-m3', family: 'atomic_structure', diff: 'medium', eq: 'E = −13.6/n² eV, n = 3',
-    answer: '−1.51 eV', wrongs: ['−4.53 eV', '−13.6 eV', '−3.4 eV'],
-    promptAr: 'طاقة الإلكترون في ذرة الهيدروجين تُعطى بالعلاقة E = −13.6/n² إلكترون فولت. أوجد طاقة المستوى n = 3.',
-    promptEn: 'The electron energy in hydrogen is E = −13.6/n² eV. Find the energy of level n = 3.',
+    // Joules with R_H, as in the book. Wrongs: ÷n instead of ÷n², n ignored, n = 2.
+    id: 'ch-as-m3', family: 'atomic_structure', diff: 'medium', eq: 'Eₙ = −R_H/n², R_H = 2.18 × 10⁻¹⁸ J, n = 3',
+    answer: '−2.42 × 10⁻¹⁹ J', wrongs: ['−7.27 × 10⁻¹⁹ J', '−2.18 × 10⁻¹⁸ J', '−5.45 × 10⁻¹⁹ J'],
+    promptAr: 'طاقة مستوى الإلكترون في ذرة الهيدروجين تُعطى بالعلاقة Eₙ = −R_H/n²، حيث R_H = 2.18 × 10⁻¹⁸ J. أوجد طاقة المستوى n = 3.',
+    promptEn: 'The energy of a level in hydrogen is Eₙ = −R_H/n², where R_H = 2.18 × 10⁻¹⁸ J. Find the energy of level n = 3.',
   },
   {
     id: 'ch-as-m4', family: 'atomic_structure', diff: 'medium', eq: 'n = 1 و n = 3',

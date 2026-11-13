@@ -5,6 +5,16 @@
     {
       "sourceId": "chem-s1-student-book",
       "unit": 1,
+      "lesson": 0,
+      "bookTitleAr": "تجربة استهلالية: الطيف الذري",
+      "kbLessonId": "kbl-chem-s1-nccd-u1_lab",
+      "score": 1,
+      "matchedBy": "manual",
+      "why": "Lesson 0 is the unit's opening experiment / lab page, which the book prints before lesson 1 and the curriculum carries as its own lab lesson. Figures cut from that page are filed here by hand (2026-11-13 grade-10 figure review), never by the extractor."
+    },
+    {
+      "sourceId": "chem-s1-student-book",
+      "unit": 1,
       "lesson": 1,
       "bookTitleAr": "نظريةُ بور لذرَّةِ الهيدروجين",
       "kbLessonId": "kbl-chem-s1-nccd-u1_l1",
@@ -20,6 +30,16 @@
       "score": 1,
       "matchedBy": "arabic-title",
       "why": "Chemistry is joined on the Arabic title, which matches the curriculum's word for word — the book states no English lesson title the opener band can reach, and what sits there is its first SECTION heading. The unit and lesson numbers agree independently: the book prints 3 units of 2 lessons and the curriculum carries exactly u1_l1..u3_l2."
+    },
+    {
+      "sourceId": "chem-s1-student-book",
+      "unit": 2,
+      "lesson": 0,
+      "bookTitleAr": "تجربة استهلالية: نمذجة التوزيع الإلكتروني",
+      "kbLessonId": "kbl-chem-s1-nccd-u2_lab",
+      "score": 1,
+      "matchedBy": "manual",
+      "why": "Lesson 0 is the unit's opening experiment / lab page, which the book prints before lesson 1 and the curriculum carries as its own lab lesson. Figures cut from that page are filed here by hand (2026-11-13 grade-10 figure review), never by the extractor."
     },
     {
       "sourceId": "chem-s1-student-book",
@@ -777,6 +797,16 @@
       "lesson": 2,
       "kbLessonId": "kbl-phys-s2-nccd-u5_l2",
       "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "phys-s2-student-book",
+      "unit": 6,
+      "lesson": 0,
+      "bookTitleAr": "تجربة استهلالية: الموجات تنقل الطاقة ولا تنقل المادة",
+      "kbLessonId": "kbl-phys-s2-nccd-u6_lab",
+      "score": 1,
+      "matchedBy": "manual",
+      "why": "Lesson 0 is the unit's opening experiment / lab page, which the book prints before lesson 1 and the curriculum carries as its own lab lesson. Figures cut from that page are filed here by hand (2026-11-13 grade-10 figure review), never by the extractor."
     },
     {
       "sourceId": "phys-s2-student-book",

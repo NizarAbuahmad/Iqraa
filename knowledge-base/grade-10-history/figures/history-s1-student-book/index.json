@@ -256,22 +256,6 @@
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": 67
-    },
-    {
-      "file": "p076.png",
-      "sourceId": "history-s1-student-book",
-      "pdfPage": 76,
-      "rect": [
-        54.2,
-        274.7,
-        533.2,
-        530.0
-      ],
-      "unit": 2,
-      "lesson": 6,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 67
     }
   ]
 }

@@ -256,7 +256,10 @@ describe('numeric chemistry items', () => {
     answerHas('ch-fm-h2', '8 ذرات');
     answerHas('ch-fm-h3', '17 ذرة');
     answerHas('ch-as-e3', `${2 * 2 ** 2} إلكترونات`);
-    answerHas('ch-as-m3', `${(-13.6 / 9).toFixed(2)} eV`.replace('-', '−'));
+    // E₃ = −R_H/9 with R_H = 2.18 × 10⁻¹⁸ J, as the Grade 10 book works it.
+    assert.equal((2.18e-18 / 9 / 1e-19).toFixed(2), '2.42');
+    answerHas('ch-as-m3', '−2.42 × 10⁻¹⁹ J');
+    answerHas('ch-as-m1', '−5.45 × 10⁻¹⁹ J');
     answerHas('ch-as-h2', '5 أوربيتالات تتسع لـ10');
   });
 });

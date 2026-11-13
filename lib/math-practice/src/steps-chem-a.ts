@@ -104,16 +104,16 @@ export const CHEM_A_STEPS: Record<string, SolutionSteps> = {
   },
   'ch-as-m1': {
     ar: [
-      'العلاقة: E = −13.6/n² eV',
+      'العلاقة: Eₙ = −R_H/n²، حيث R_H = 2.18 × 10⁻¹⁸ J',
       'n = 2، إذن n² = 4',
-      'E = −13.6/4 = −3.4 eV',
-      'إذن طاقة المستوى n = 2 تساوي −3.4 eV',
+      'E₂ = −2.18 × 10⁻¹⁸ / 4 = −0.545 × 10⁻¹⁸ J',
+      'إذن طاقة المستوى n = 2 تساوي −5.45 × 10⁻¹⁹ J',
     ],
     en: [
-      'The relation: E = −13.6/n² eV',
+      'The relation: Eₙ = −R_H/n², where R_H = 2.18 × 10⁻¹⁸ J',
       'n = 2, so n² = 4',
-      'E = −13.6/4 = −3.4 eV',
-      'So the energy of level n = 2 is −3.4 eV',
+      'E₂ = −2.18 × 10⁻¹⁸ / 4 = −0.545 × 10⁻¹⁸ J',
+      'So the energy of level n = 2 is −5.45 × 10⁻¹⁹ J',
     ],
   },
   'ch-as-m2': {
@@ -705,28 +705,28 @@ export const CHEM_A_STEPS: Record<string, SolutionSteps> = {
   },
   'ch-as-m3': {
     ar: [
-      'E = −13.6 / n²',
-      'n = 3 ⟹ E = −13.6 / 9',
-      'E ≈ −1.51 eV',
-      'إذن طاقة المستوى n = 3 هي −1.51 eV',
+      'Eₙ = −R_H / n²، حيث R_H = 2.18 × 10⁻¹⁸ J',
+      'n = 3 ⟹ E₃ = −2.18 × 10⁻¹⁸ / 9',
+      'E₃ ≈ −0.242 × 10⁻¹⁸ J',
+      'إذن طاقة المستوى n = 3 هي −2.42 × 10⁻¹⁹ J',
     ],
     en: [
-      'E = −13.6 / n²',
-      'n = 3 ⟹ E = −13.6 / 9',
-      'E ≈ −1.51 eV',
-      'So the energy of level n = 3 is −1.51 eV',
+      'Eₙ = −R_H / n², where R_H = 2.18 × 10⁻¹⁸ J',
+      'n = 3 ⟹ E₃ = −2.18 × 10⁻¹⁸ / 9',
+      'E₃ ≈ −0.242 × 10⁻¹⁸ J',
+      'So the energy of level n = 3 is −2.42 × 10⁻¹⁹ J',
     ],
   },
   'ch-as-m4': {
     ar: [
-      'E₁ = −13.6 eV وE₃ = −13.6/9 ≈ −1.51 eV',
-      'الطاقة الأقل هي الأكثر سالبية: −13.6 < −1.51',
+      'E₁ = −2.18 × 10⁻¹⁸ J وE₃ = −2.18 × 10⁻¹⁸ / 9 ≈ −2.42 × 10⁻¹⁹ J',
+      'الطاقة الأقل هي الأكثر سالبية: −2.18 × 10⁻¹⁸ < −2.42 × 10⁻¹⁹',
       'المستوى n = 1 هو الأقرب إلى النواة',
       'إذن الأقل طاقة n = 1، لأنه الأقرب إلى النواة',
     ],
     en: [
-      'E₁ = −13.6 eV and E₃ = −13.6/9 ≈ −1.51 eV',
-      'The lower energy is the more negative one: −13.6 < −1.51',
+      'E₁ = −2.18 × 10⁻¹⁸ J and E₃ = −2.18 × 10⁻¹⁸ / 9 ≈ −2.42 × 10⁻¹⁹ J',
+      'The lower energy is the more negative one: −2.18 × 10⁻¹⁸ < −2.42 × 10⁻¹⁹',
       'Level n = 1 is the closest to the nucleus',
       'So n = 1 has the lower energy, because it is closest to the nucleus',
     ],

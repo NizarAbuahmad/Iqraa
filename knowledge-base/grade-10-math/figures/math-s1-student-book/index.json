@@ -2,54 +2,6 @@
  "sourceId": "math-s1-student-book",
  "figures": [
   {
-   "file": "p001b.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 1,
-   "rect": [
-    346.5,
-    454.8,
-    523.8,
-    586.6
-   ],
-   "unit": null,
-   "lesson": null,
-   "lessonTitleEn": null,
-   "lessonTitleAr": null,
-   "lessonStartPage": null
-  },
-  {
-   "file": "p007.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 7,
-   "rect": [
-    13.6,
-    294.5,
-    275.0,
-    544.3
-   ],
-   "unit": null,
-   "lesson": null,
-   "lessonTitleEn": null,
-   "lessonTitleAr": null,
-   "lessonStartPage": null
-  },
-  {
-   "file": "p009.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 9,
-   "rect": [
-    415.2,
-    580.1,
-    548.5,
-    685.9
-   ],
-   "unit": 1,
-   "lesson": 1,
-   "lessonTitleEn": "Solving Special Equations",
-   "lessonTitleAr": null,
-   "lessonStartPage": 8
-  },
-  {
    "file": "p015.png",
    "sourceId": "math-s1-student-book",
    "pdfPage": 15,
@@ -410,22 +362,6 @@
     588.1,
     128.0,
     706.0
-   ],
-   "unit": 2,
-   "lesson": 1,
-   "lessonTitleEn": "Chords, Diameters and Tangents of a Circle",
-   "lessonTitleAr": null,
-   "lessonStartPage": 34
-  },
-  {
-   "file": "p038.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 38,
-   "rect": [
-    408.5,
-    116.0,
-    564.1,
-    329.4
    ],
    "unit": 2,
    "lesson": 1,
@@ -1564,10 +1500,10 @@
     225.9
    ],
    "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
+   "lesson": 2,
+   "lessonTitleEn": "Arcs and Sectors",
    "lessonTitleAr": null,
-   "lessonStartPage": 54
+   "lessonStartPage": 41
   },
   {
    "file": "p062b-v2.png",
@@ -1580,10 +1516,10 @@
     283.1
    ],
    "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
+   "lesson": 1,
+   "lessonTitleEn": "Chords, Diameters and Tangents of a Circle",
    "lessonTitleAr": null,
-   "lessonStartPage": 54
+   "lessonStartPage": 34
   },
   {
    "file": "p062c.png",
@@ -1596,10 +1532,10 @@
     445.1
    ],
    "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
+   "lesson": 3,
+   "lessonTitleEn": "Angles in a Circle",
    "lessonTitleAr": null,
-   "lessonStartPage": 54
+   "lessonStartPage": 47
   },
   {
    "file": "p062d-v2.png",
@@ -1612,10 +1548,10 @@
     462.1
    ],
    "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
+   "lesson": 1,
+   "lessonTitleEn": "Chords, Diameters and Tangents of a Circle",
    "lessonTitleAr": null,
-   "lessonStartPage": 54
+   "lessonStartPage": 34
   },
   {
    "file": "p062e-v2.png",
@@ -1628,10 +1564,10 @@
     664.0
    ],
    "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
+   "lesson": 1,
+   "lessonTitleEn": "Chords, Diameters and Tangents of a Circle",
    "lessonTitleAr": null,
-   "lessonStartPage": 54
+   "lessonStartPage": 34
   },
   {
    "file": "p063.png",
@@ -1644,10 +1580,10 @@
     342.8
    ],
    "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
+   "lesson": 2,
+   "lessonTitleEn": "Arcs and Sectors",
    "lessonTitleAr": null,
-   "lessonStartPage": 54
+   "lessonStartPage": 41
   },
   {
    "file": "p063b-v2.png",
@@ -1660,10 +1596,10 @@
     414.0
    ],
    "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
+   "lesson": 2,
+   "lessonTitleEn": "Arcs and Sectors",
    "lessonTitleAr": null,
-   "lessonStartPage": 54
+   "lessonStartPage": 41
   },
   {
    "file": "p063d-v2.png",
@@ -1676,10 +1612,10 @@
     480.0
    ],
    "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
+   "lesson": 2,
+   "lessonTitleEn": "Arcs and Sectors",
    "lessonTitleAr": null,
-   "lessonStartPage": 54
+   "lessonStartPage": 41
   },
   {
    "file": "p063e-v2.png",
@@ -1692,10 +1628,10 @@
     480.0
    ],
    "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
+   "lesson": 2,
+   "lessonTitleEn": "Arcs and Sectors",
    "lessonTitleAr": null,
-   "lessonStartPage": 54
+   "lessonStartPage": 41
   },
   {
    "file": "p063f-v2.png",
@@ -1708,10 +1644,10 @@
     714.3
    ],
    "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
+   "lesson": 1,
+   "lessonTitleEn": "Chords, Diameters and Tangents of a Circle",
    "lessonTitleAr": null,
-   "lessonStartPage": 54
+   "lessonStartPage": 34
   },
   {
    "file": "p065.png",
@@ -1724,10 +1660,10 @@
     366.3
    ],
    "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
+   "lesson": null,
+   "lessonTitleEn": null,
    "lessonTitleAr": null,
-   "lessonStartPage": 54
+   "lessonStartPage": null
   },
   {
    "file": "p067-v2.png",
@@ -1850,22 +1786,6 @@
     329.2,
     566.9,
     451.0
-   ],
-   "unit": 3,
-   "lesson": 2,
-   "lessonTitleEn": "Trigonometric Ratios for Angles between 0º and 360º",
-   "lessonTitleAr": null,
-   "lessonStartPage": 74
-  },
-  {
-   "file": "p079b.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 79,
-   "rect": [
-    408.1,
-    557.6,
-    548.5,
-    660.6
    ],
    "unit": 3,
    "lesson": 2,
@@ -2098,22 +2018,6 @@
    "lessonStartPage": 82
   },
   {
-   "file": "p090.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 90,
-   "rect": [
-    422.3,
-    121.4,
-    562.8,
-    248.1
-   ],
-   "unit": 3,
-   "lesson": 4,
-   "lessonTitleEn": "Solving Trigonometric Equations",
-   "lessonTitleAr": null,
-   "lessonStartPage": 88
-  },
-  {
    "file": "p092-v2.png",
    "sourceId": "math-s1-student-book",
    "pdfPage": 92,
@@ -2204,10 +2108,10 @@
     315.0
    ],
    "unit": 3,
-   "lesson": 4,
-   "lessonTitleEn": "Solving Trigonometric Equations",
+   "lesson": null,
+   "lessonTitleEn": null,
    "lessonTitleAr": null,
-   "lessonStartPage": 88
+   "lessonStartPage": null
   },
   {
    "file": "p097b-v2.png",
@@ -2220,10 +2124,10 @@
     669.1
    ],
    "unit": 3,
-   "lesson": 4,
-   "lessonTitleEn": "Solving Trigonometric Equations",
+   "lesson": null,
+   "lessonTitleEn": null,
    "lessonTitleAr": null,
-   "lessonStartPage": 88
+   "lessonStartPage": null
   },
   {
    "file": "p099-v2.png",
@@ -2236,10 +2140,10 @@
     340.0
    ],
    "unit": 3,
-   "lesson": 4,
-   "lessonTitleEn": "Solving Trigonometric Equations",
+   "lesson": null,
+   "lessonTitleEn": null,
    "lessonTitleAr": null,
-   "lessonStartPage": 88
+   "lessonStartPage": null
   },
   {
    "file": "p099b-v2.png",
@@ -2252,10 +2156,10 @@
     467.0
    ],
    "unit": 3,
-   "lesson": 4,
-   "lessonTitleEn": "Solving Trigonometric Equations",
+   "lesson": null,
+   "lessonTitleEn": null,
    "lessonTitleAr": null,
-   "lessonStartPage": 88
+   "lessonStartPage": null
   },
   {
    "file": "p101-v2.png",
@@ -2460,10 +2364,10 @@
     434.8
    ],
    "unit": 4,
-   "lesson": 5,
-   "lessonTitleEn": "Solving Problems in Three Dimensions",
+   "lesson": null,
+   "lessonTitleEn": null,
    "lessonTitleAr": null,
-   "lessonStartPage": 124
+   "lessonStartPage": null
   },
   {
    "file": "p132.png",
@@ -2476,10 +2380,10 @@
     291.3
    ],
    "unit": 4,
-   "lesson": 5,
-   "lessonTitleEn": "Solving Problems in Three Dimensions",
+   "lesson": 2,
+   "lessonTitleEn": "Law of Sines",
    "lessonTitleAr": null,
-   "lessonStartPage": 124
+   "lessonStartPage": 106
   },
   {
    "file": "p132b-v2.png",
@@ -2492,10 +2396,10 @@
     690.0
    ],
    "unit": 4,
-   "lesson": 5,
-   "lessonTitleEn": "Solving Problems in Three Dimensions",
+   "lesson": 4,
+   "lessonTitleEn": null,
    "lessonTitleAr": null,
-   "lessonStartPage": 124
+   "lessonStartPage": null
   }
  ]
 }

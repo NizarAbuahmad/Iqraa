@@ -825,6 +825,13 @@ export interface KBLesson {
   objectives: string[];
   /** Period count from the teacher guide, or null if unknown. */
   periods: number | null;
+  /**
+   * The book's self-assessment statements for this lesson / its unit, where
+   * the book prints those instead of an outcomes list. Never merged into
+   * `objectives`, which the prompt labels as official outcomes.
+   */
+  selfAssessmentAr?: string[];
+  unitSelfAssessmentAr?: string[];
   examplesAr?: string[];
   examplesEn?: string[];
   rulesAr?: string[];
@@ -2705,7 +2712,7 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
     summaryAr:
       'اقترح نيلز بور نموذجًا لذرة الهيدروجين يقوم على أن الإلكترونات تتحرك في مدارات محددة حول النواة. كل مدار له طاقة ثابتة. عندما ينتقل الإلكترون من مستوى طاقة أعلى إلى أدنى يُطلق طاقة على شكل فوتون، وعندما يمتص طاقة ينتقل إلى مستوى أعلى. هذا يفسر الطيف الذري لذرة الهيدروجين.',
     summaryEn:
-      "Niels Bohr proposed that electrons orbit the nucleus in fixed energy levels. When an electron jumps from a higher to a lower energy level it emits a photon of light, and when it absorbs energy it jumps to a higher level. This explains the discrete line spectrum of hydrogen. Energy of each orbit: E = −13.6 / n² eV.",
+      "Niels Bohr proposed that electrons orbit the nucleus in fixed energy levels. When an electron jumps from a higher to a lower energy level it emits a photon of light, and when it absorbs energy it jumps to a higher level. This explains the discrete line spectrum of hydrogen. Energy of level n: Eₙ = −R_H / n², with R_H = 2.18 × 10⁻¹⁸ J.",
     keyConceptsAr: [
       'مستويات الطاقة (n = 1, 2, 3, ...)',
       'انتقال الإلكترون بين المستويات',
@@ -2726,14 +2733,18 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
       { ar: 'الفوتون', en: 'Photon', definitionAr: 'حزمة من الطاقة الكهرومغناطيسية تُطلق أو تُمتص عند انتقال الإلكترون', definitionEn: 'A quantum of electromagnetic energy emitted or absorbed during electron transitions' },
       { ar: 'الكم', en: 'Quantum', definitionAr: 'مقدار محدد من الطاقة ينبعث من الذرة المثارة نتيجة انتقال الإلكترون', definitionEn: 'A discrete packet of energy emitted when an electron transitions between energy levels' },
     ],
+    // The book (chem S1 pp.16–18) works in joules with Rydberg's constant;
+    // it never uses 13.6 eV, so a key in eV would not match its answers.
     rulesAr: [
-      'طاقة المستوى: E = −13.6 / n² إلكترون فولت',
+      'طاقة المستوى: Eₙ = −R_H / n²، حيث R_H = 2.18 × 10⁻¹⁸ J (ثابت ريدبيرغ)',
+      'فرق الطاقة بين مستويين: |ΔE| = R_H (1/n₁² − 1/n₂²)، ويقاس بالجول',
       'كلما زادت n ابتعد المستوى عن النواة وزادت طاقته',
       'الانتقال إلى مستوى أدنى = انبعاث ضوء',
       'الانتقال إلى مستوى أعلى = امتصاص طاقة',
     ],
     rulesEn: [
-      'Energy of level n: E = −13.6 / n² eV',
+      'Energy of level n: Eₙ = −R_H / n², where R_H = 2.18 × 10⁻¹⁸ J (Rydberg constant)',
+      'Energy difference between two levels: |ΔE| = R_H (1/n₁² − 1/n₂²), in joules',
       'Higher n = farther from nucleus, higher energy',
       'Transition to lower level → photon emission',
       'Transition to higher level → energy absorption',
@@ -2745,45 +2756,82 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
     order: 2,
     titleAr: 'النموذج الميكانيكي الموجي للذرة',
     titleEn: 'Wave-Mechanical Model of the Atom',
+    // What chem S1 pp.20–23 teach. Heisenberg and Pauli are not in the book;
+    // Aufbau, Hund and the filling order are the NEXT lesson (pp.30–31) and
+    // live on «التوزيع الإلكتروني للذرات» below.
     summaryAr:
-      'يستند النموذج الميكانيكي الموجي على أن الإلكترون يمتلك طبيعة جسيمية وموجية. لا يمكن تحديد مكان الإلكترون وسرعته معًا (مبدأ هايزنبرغ). تُستخدم الأفلاك (Orbitals) وهي مناطق ثلاثية الأبعاد حول النواة. تُوصف بأربعة أعداد كمية وأنواع: s و p و d و f.',
+      'لم يفسّر نموذج بور أطياف ذرات العناصر غير الهيدروجين، فوضع شرودنغر النموذج الميكانيكي الموجي: أكبر احتمال لوجود الإلكترون في منطقة حول النواة تشبه السحابة تُسمّى الفلك. ونتج من حل معادلته الموجية أعداد الكم: الرئيس والفرعي والمغناطيسي، وأُضيف إليها عدد الكم المغزلي؛ وبها يوصف وجود الإلكترون وطاقته وشكل الفلك واتجاهه.',
     summaryEn:
-      'The wave-mechanical model treats the electron as both a particle and a wave. It is impossible to simultaneously know the exact position and momentum of an electron (Heisenberg Uncertainty Principle). Electrons occupy orbitals — three-dimensional regions of high electron probability, described by four quantum numbers: s, p, d, f types.',
+      "Bohr's model could not explain the spectra of atoms other than hydrogen, so Schrödinger proposed the wave-mechanical model: the electron is most likely found in a cloud-like region around the nucleus called an orbital. Solving his wave equation gives the principal, angular (subsidiary) and magnetic quantum numbers, and a fourth, the spin quantum number, was added; together they describe the electron's location, its energy, and the orbital's shape and orientation.",
     keyConceptsAr: [
-      'مبدأ هايزنبرغ للشك',
-      'الأفلاك: s و p و d و f',
-      'الأعداد الكمية: الرئيسي n، الثانوي l، المغناطيسي ml، الغزلي ms',
-      'مبدأ أوفباو',
-      'قاعدة هوند',
-      'مبدأ باولي للاستبعاد',
+      'النظرية الميكانيكية الموجية (شرودنغر)',
+      'الفلك',
+      'أعداد الكم: الرئيس n، الفرعي l، المغناطيسي ml، المغزلي ms',
+      'أشكال أفلاك المستويين الفرعيين s و p',
+      'عدد الأفلاك في المستوى الرئيس = n²',
+      'السعة القصوى للمستوى الرئيس = 2n²',
     ],
     keyConceptsEn: [
-      "Heisenberg's Uncertainty Principle",
-      'Orbitals: s, p, d, f types',
-      'Quantum numbers: principal n, azimuthal l, magnetic ml, spin ms',
-      'Aufbau principle',
-      "Hund's rule",
-      'Pauli exclusion principle',
+      'Wave-mechanical theory (Schrödinger)',
+      'Orbital',
+      'Quantum numbers: principal n, angular l, magnetic ml, spin ms',
+      'Shapes of s and p orbitals',
+      'Number of orbitals in a main level = n²',
+      'Maximum electrons in a main level = 2n²',
     ],
     keyTerms: [
       { ar: 'الفلك', en: 'Orbital', definitionAr: 'منطقة فراغية حول النواة يكون فيها احتمال وجود الإلكترونات أكبر ما يمكن', definitionEn: 'A region of space around the nucleus where there is the highest probability of finding electrons' },
-      { ar: 'مبدأ أوفباو', en: 'Aufbau Principle', definitionAr: 'امتلاء الأفلاك بالإلكترونات وفقًا لتزايد طاقاتها من الأدنى إلى الأعلى', definitionEn: 'Electrons fill orbitals starting from the lowest energy level then progressively higher levels' },
-      { ar: 'قاعدة هوند', en: "Hund's Rule", definitionAr: 'توزع الإلكترونات بصورة منفردة على أفلاك المستوى الفرعي الواحد قبل الاقتران', definitionEn: 'Electrons occupy orbitals of the same subshell singly before pairing, with parallel spins' },
-      { ar: 'مبدأ باولي', en: 'Pauli Exclusion Principle', definitionAr: 'لا يمكن لإلكترونين في نفس الذرة أن يكون لهما نفس الأعداد الكمية الأربعة', definitionEn: 'No two electrons in an atom can have identical sets of all four quantum numbers' },
+      { ar: 'أعداد الكم', en: 'Quantum Numbers', definitionAr: 'أعداد نتجت من حل معادلة شرودنغر الموجية: الرئيس والفرعي والمغناطيسي، وأُضيف إليها عدد الكم المغزلي', definitionEn: "Numbers from solving Schrödinger's wave equation (principal, angular, magnetic), with the spin quantum number added as a fourth" },
+      { ar: 'النظرية الميكانيكية الموجية', en: 'Wave Mechanical Theory', definitionAr: 'تصوّر شرودنغر لحركة الإلكترون الموجية حول النواة، ويصف الإلكترون بأكبر احتمال لوجوده في الفلك', definitionEn: "Schrödinger's description of the electron's wave motion around the nucleus, locating it by the highest probability of finding it in an orbital" },
     ],
     rulesAr: [
-      'المستوى الفرعي s يتسع لـ 2 إلكترون',
-      'المستوى الفرعي p يتسع لـ 6 إلكترونات',
-      'المستوى الفرعي d يتسع لـ 10 إلكترونات',
-      'المستوى الفرعي f يتسع لـ 14 إلكترونًا',
-      'ترتيب الملء: 1s 2s 2p 3s 3p 4s 3d 4p 5s 4d 5p 6s 4f 5d 6p',
+      'عدد المستويات الفرعية في المستوى الرئيس يساوي n',
+      'المستوى الفرعي s فيه فلك واحد ويتسع لـ 2 إلكترون',
+      'المستوى الفرعي p فيه 3 أفلاك ويتسع لـ 6 إلكترونات',
+      'المستوى الفرعي d فيه 5 أفلاك ويتسع لـ 10 إلكترونات',
+      'المستوى الفرعي f فيه 7 أفلاك ويتسع لـ 14 إلكترونًا',
+      'عدد الأفلاك في المستوى الرئيس = n²، والسعة القصوى = 2n²',
+      'لا يتسع الفلك لأكثر من إلكترونين، يدوران حول نفسيهما باتجاهين متعاكسين',
     ],
     rulesEn: [
-      's subshell holds up to 2 electrons',
-      'p subshell holds up to 6 electrons',
-      'd subshell holds up to 10 electrons',
-      'f subshell holds up to 14 electrons',
-      'Filling order (Aufbau): 1s 2s 2p 3s 3p 4s 3d 4p 5s 4d 5p',
+      'A main level n has n sublevels',
+      's sublevel: 1 orbital, up to 2 electrons',
+      'p sublevel: 3 orbitals, up to 6 electrons',
+      'd sublevel: 5 orbitals, up to 10 electrons',
+      'f sublevel: 7 orbitals, up to 14 electrons',
+      'Orbitals in main level n = n²; maximum electrons = 2n²',
+      'An orbital holds at most two electrons, spinning in opposite directions',
+    ],
+  },
+  {
+    // Enrichment for «التوزيع الإلكتروني للذرات» (chem S1 pp.30–38); the
+    // definitions are the book's glossary (pp.75–76). Its unit is superseded,
+    // so it serves only as content for the NCCD lesson of the same title.
+    id: 'kbl-chem-2-0',
+    unitId: 'kbu-chem-2',
+    order: 0,
+    titleAr: 'التوزيع الإلكتروني للذرات',
+    titleEn: 'Electronic Configuration',
+    summaryAr:
+      'تتوزع الإلكترونات في كل مستوى وفق مبادئ تحقق الاستقرار للذرات: مبدأ أوفباو يملأ المستويات الأدنى طاقة أولًا، وقاعدة هوند توزع الإلكترونات منفردة على أفلاك المستوى الفرعي الواحد قبل اقترانها. ويحدد التوزيع الإلكتروني موقع العنصر في الجدول الدوري وصفاته العامة.',
+    summaryEn:
+      "Electrons fill each level by principles that keep the atom stable: the Aufbau principle fills the lowest-energy levels first, and Hund's rule spreads electrons singly over the orbitals of one sublevel before they pair. The configuration fixes an element's place in the periodic table and its general properties.",
+    keyConceptsAr: ['مبدأ أوفباو', 'قاعدة هوند', 'ترتيب ملء المستويات الفرعية', 'العناصر الممثلة', 'العناصر الانتقالية', 'طاقة التأين'],
+    keyConceptsEn: ['Aufbau principle', "Hund's rule", 'Sublevel filling order', 'Representative elements', 'Transition elements', 'Ionization energy'],
+    keyTerms: [
+      { ar: 'مبدأ أوفباو', en: 'Aufbau Principle', definitionAr: 'توزع الإلكترونات في أدنى مستوى للطاقة أولًا، ثم تملأ المستويات العليا للطاقة', definitionEn: 'Electrons occupy the lowest energy level first, then fill the higher levels' },
+      { ar: 'قاعدة هوند', en: "Hund's Rule", definitionAr: 'توزع الإلكترونات بصورة منفردة على أفلاك المستوى الفرعي الواحد في اتجاه الغزل نفسه، ثم إضافة ما تبقى من إلكترونات إلى الأفلاك في اتجاه مغزلي معاكس', definitionEn: 'Electrons occupy the orbitals of one sublevel singly with the same spin before the rest are added with opposite spin' },
+      { ar: 'العناصر الممثلة', en: 'The Representative Elements', definitionAr: 'عناصر المجموعات ذوات الأرقام (1، 2، 13–18) في الجدول الدوري، وينتهي توزيعها الإلكتروني بالمستوى الفرعي s أو p', definitionEn: 'Elements of groups 1, 2 and 13–18, whose configuration ends in an s or p sublevel' },
+      { ar: 'العناصر الانتقالية', en: 'Transition Elements', definitionAr: 'عناصر تقع في وسط الجدول الدوري، ويضاف الإلكترون الأخير في توزيعها الإلكتروني إلى المستوى الفرعي d أو f', definitionEn: 'Elements in the middle of the periodic table whose last electron enters a d or f sublevel' },
+      { ar: 'طاقة التأين', en: 'Ionization Energy', definitionAr: 'الحد الأدنى من الطاقة اللازمة لنزع الإلكترون الأبعد عن النواة في الحالة الغازية للذرة أو الأيون', definitionEn: 'The minimum energy needed to remove the outermost electron from a gaseous atom or ion' },
+    ],
+    rulesAr: [
+      'ترتيب ملء المستويات الفرعية: 1s، 2s، 2p، 3s، 3p، 4s، 3d، 4p، 5s، 4d، 5p',
+      'تُملأ أفلاك المستوى الفرعي الواحد بإلكترون واحد لكل فلك قبل الاقتران (قاعدة هوند)',
+    ],
+    rulesEn: [
+      'Sublevel filling order: 1s, 2s, 2p, 3s, 3p, 4s, 3d, 4p, 5s, 4d, 5p',
+      "Orbitals of one sublevel take one electron each before any pair (Hund's rule)",
     ],
   },
 
@@ -2908,8 +2956,9 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
       'تتناول الوحدة الخامسة التفاعلات الكيميائية: أنواعها، تمثيلها بمعادلات، وربطها بالحسابات والتطبيقات الصفية. يمكن دعم الحصة بورقة عمل التفاعلات وملخص الوحدة الخامسة.',
     summaryEn:
       'Unit 5 covers chemical reactions: types, equation representation, and classroom applications. Support lessons with the reactions worksheet and Unit 5 summary.',
-    keyConceptsAr: ['أنواع التفاعلات', 'المعادلة الكيميائية', 'حفظ الكتلة', 'تطبيقات حياتية'],
-    keyConceptsEn: ['Reaction types', 'Chemical equations', 'Conservation of mass', 'Real-life applications'],
+    // The lesson's own terms (chem S2 p.10), not generic headings.
+    keyConceptsAr: ['التغير الكيميائي', 'المعادلة الكيميائية الموزونة', 'قانون حفظ الكتلة', 'تفاعل الاحتراق', 'تفاعل الاتحاد', 'تفاعل التحلل (التفكك)', 'تفاعل الإحلال الأحادي'],
+    keyConceptsEn: ['Chemical change', 'Balanced chemical equation', 'Law of conservation of mass', 'Combustion reaction', 'Combination reaction', 'Decomposition reaction', 'Single displacement reaction'],
     keyTerms: [
       { ar: 'التفاعل الكيميائي', en: 'Chemical Reaction', definitionAr: 'تغيّر ينتج مواد جديدة بخواص مختلفة عن المواد المتفاعلة', definitionEn: 'A change that produces new substances with different properties from the reactants' },
     ],
@@ -2958,24 +3007,48 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
     examplesAr: ['f(x) = 1/(x − 2): مجاله ℝ \\ {2}، مقاربة رأسية x = 2', 'f(x) = (x + 1)/(x² − 4): مجاله ℝ \\ {2, −2}'],
     examplesEn: ['f(x) = 1/(x − 2): domain ℝ \\ {2}, vertical asymptote x = 2', 'f(x) = (x + 1)/(x² − 4): domain ℝ \\ {2, −2}'],
   },
+  // The book (math S2) teaches composition (L3, p.25) and the inverse with
+  // the radical function (L4, pp.32–41) as two lessons; this used to be one
+  // merged row that, by prefix match, gave «تركيب الاقترانات» the inverse
+  // content and left «الاقتران العكسي» with none.
   {
     id: 'kbl-math-1-3',
     unitId: 'kbu-math-1',
     order: 3,
-    titleAr: 'تركيب الاقترانات والاقتران العكسي والاقتران الجذري',
-    titleEn: 'Function Composition, Inverse, and Radical Functions',
+    titleAr: 'تركيب الاقترانات',
+    titleEn: 'Composition of Functions',
     summaryAr:
-      'تركيب الاقترانات: (f∘g)(x) = f(g(x))، نطبق g أولًا ثم f. الاقتران العكسي f⁻¹ يعكس العلاقة: إذا كان f(a) = b فإن f⁻¹(b) = a، وشرطه أن يكون الاقتران تقابلًا. الاقتران الجذري: f(x) = √x له مجال x ≥ 0.',
+      'الاقتران المركب (f∘g)(x) = f(g(x)): نطبق g أولًا ثم نطبق f على الناتج، ويُسمّى f و g مركبتيه. يُوجد للتركيب شرط: أن تقع قيم g(x) في مجال f، فمجال f∘g هو قيم x من مجال g التي تكون g(x) عندها في مجال f. ونجد قيمة الاقتران المركب لعدد معطى، أو قاعدته إذا علمت قاعدتا مركبتيه. والتركيب ليس تبديليًا: f∘g لا يساوي g∘f عمومًا.',
     summaryEn:
-      "Function composition: (f∘g)(x) = f(g(x)) — apply g first, then f. The inverse function f⁻¹ reverses the mapping: if f(a) = b then f⁻¹(b) = a. An inverse exists only when f is bijective. Radical function: f(x) = √x has domain x ≥ 0. The graph of f⁻¹ is the reflection of f's graph across y = x.",
-    keyConceptsAr: ['تركيب الاقترانات f∘g', 'الاقتران العكسي f⁻¹', 'شرط وجود الاقتران العكسي', 'الاقتران الجذري √x', 'انعكاس الرسم البياني حول y = x'],
-    keyConceptsEn: ['Function composition (f∘g)', 'Inverse function f⁻¹', 'Conditions for inverse to exist', 'Radical function √x', 'Graph reflection across y = x'],
+      'The composite function (f∘g)(x) = f(g(x)): apply g first, then apply f to the result; f and g are its components. Composition needs g(x) to lie in the domain of f, so the domain of f∘g is the x in the domain of g whose g(x) is in the domain of f. We evaluate a composite at a given number or find its rule from the rules of its components. Composition is not commutative: f∘g generally differs from g∘f.',
+    keyConceptsAr: ['الاقتران المركب f∘g', 'المركبتان', 'شرط تركيب اقترانين', 'مجال الاقتران المركب', 'إيجاد قيمة الاقتران المركب وقاعدته', 'التركيب ليس تبديليًا'],
+    keyConceptsEn: ['Composite function f∘g', 'Components', 'Condition for composing two functions', 'Domain of a composite', 'Evaluating a composite and finding its rule', 'Composition is not commutative'],
     keyTerms: [
-      { ar: 'تركيب الاقترانات', en: 'Function Composition', definitionAr: '(f∘g)(x) = f(g(x)): تطبيق g أولًا ثم f على النتيجة', definitionEn: '(f∘g)(x) = f(g(x)): apply g first, then apply f to the result' },
-      { ar: 'الاقتران العكسي', en: 'Inverse Function', definitionAr: 'f⁻¹ هو الاقتران الذي يعكس تأثير f: f(f⁻¹(x)) = x', definitionEn: 'f⁻¹ reverses the effect of f: f(f⁻¹(x)) = x for all x in the domain' },
+      { ar: 'تركيب الاقترانات', en: 'Composition of Functions', definitionAr: '(f∘g)(x) = f(g(x)): تطبيق g أولًا ثم f على الناتج', definitionEn: '(f∘g)(x) = f(g(x)): apply g first, then apply f to the result' },
+      { ar: 'الاقتران المركب', en: 'Composite Function', definitionAr: 'الاقتران الناتج من تركيب اقترانين، ومجاله قيم x من مجال g التي تقع g(x) عندها في مجال f', definitionEn: 'The function made by composing two functions; its domain is the x in the domain of g with g(x) in the domain of f' },
     ],
-    examplesAr: ['إذا f(x) = x + 3 و g(x) = 2x، فإن (f∘g)(x) = 2x + 3', 'عكس f(x) = 2x − 4 هو f⁻¹(x) = (x + 4)/2'],
-    examplesEn: ['If f(x) = x + 3 and g(x) = 2x, then (f∘g)(x) = 2x + 3', 'Inverse of f(x) = 2x − 4 is f⁻¹(x) = (x + 4)/2'],
+    examplesAr: ['إذا f(x) = 3x + 5 و g(x) = 2x² − 6، فإن (f∘g)(x) = 6x² − 13، و (f∘g)(−2) = 11', '(g∘f)(x) = 18x² + 60x + 44 ≠ (f∘g)(x)'],
+    examplesEn: ['If f(x) = 3x + 5 and g(x) = 2x² − 6, then (f∘g)(x) = 6x² − 13 and (f∘g)(−2) = 11', '(g∘f)(x) = 18x² + 60x + 44 ≠ (f∘g)(x)'],
+  },
+  {
+    id: 'kbl-math-1-4',
+    unitId: 'kbu-math-1',
+    order: 4,
+    titleAr: 'الاقتران العكسي',
+    titleEn: 'Inverse Function',
+    summaryAr:
+      'الاقتران العكسي f⁻¹ يعكس عمل f: إذا كان f(a) = b فإن f⁻¹(b) = a، فمجال f⁻¹ هو مدى f ومداه مجال f. يكون للاقتران اقتران عكسي إذا كان اقتران واحد لواحد، ونتحقق من ذلك باختبار الخط الأفقي. لإيجاد f⁻¹ نكتب y = f(x) ونجعل x موضوع القانون ثم نبدل المتغيرين. التمثيل البياني لـ f⁻¹ انعكاس لتمثيل f حول المستقيم y = x، ويكون f و g عكسيين إذا كان (f∘g)(x) = (g∘f)(x) = x (الاقتران المحايد). وقد ينتج من إيجاد الاقتران العكسي اقتران جذري، أي اقتران يحوي جذرًا لمقدار جبري.',
+    summaryEn:
+      'The inverse f⁻¹ undoes f: if f(a) = b then f⁻¹(b) = a, so the domain of f⁻¹ is the range of f and its range is the domain of f. A function has an inverse when it is one-to-one, checked with the horizontal-line test. To find f⁻¹, write y = f(x), make x the subject, then swap the variables. The graph of f⁻¹ is the reflection of f in the line y = x, and f and g are inverses when (f∘g)(x) = (g∘f)(x) = x (the identity function). Finding an inverse can give a radical function: one that contains a root of an algebraic expression.',
+    keyConceptsAr: ['العلاقة العكسية', 'الاقتران العكسي f⁻¹', 'اقتران واحد لواحد', 'اختبار الخط الأفقي', 'الاقتران المحايد', 'الانعكاس حول المستقيم y = x', 'الاقتران الجذري'],
+    keyConceptsEn: ['Inverse relation', 'Inverse function f⁻¹', 'One-to-one function', 'Horizontal-line test', 'Identity function', 'Reflection in the line y = x', 'Radical function'],
+    keyTerms: [
+      { ar: 'الاقتران العكسي', en: 'Inverse Function', definitionAr: 'f⁻¹ الاقتران الذي يعكس عمل f، فيكون (f∘f⁻¹)(x) = (f⁻¹∘f)(x) = x', definitionEn: 'f⁻¹ undoes f, so (f∘f⁻¹)(x) = (f⁻¹∘f)(x) = x' },
+      { ar: 'اقتران واحد لواحد', en: 'One-to-One Function', definitionAr: 'اقتران لا يرتبط فيه عنصران مختلفان من المجال بالعنصر نفسه من المدى؛ ولا يقطع أي خط أفقي تمثيله البياني في أكثر من نقطة', definitionEn: 'A function where no two domain elements share an image; no horizontal line meets its graph more than once' },
+      { ar: 'الاقتران الجذري', en: 'Radical Function', definitionAr: 'اقتران يحوي جذرًا لمقدار جبري؛ مجال الجذر التربيعي القيم التي تجعل ما تحت الجذر ≥ 0، ومجال الجذر ذي الدليل الفردي جميع الأعداد الحقيقية', definitionEn: 'A function containing a root of an algebraic expression; a square root needs the radicand ≥ 0, an odd-index root is defined for all reals' },
+    ],
+    examplesAr: ['عكس f(x) = 4x − 20 هو f⁻¹(x) = (x + 20)/4', 'f(x) = 3x² − 4, x ≥ 0 واحد لواحد، وعكسه f⁻¹(x) = √((x + 4)/3)'],
+    examplesEn: ['The inverse of f(x) = 4x − 20 is f⁻¹(x) = (x + 20)/4', 'f(x) = 3x² − 4, x ≥ 0 is one-to-one, with inverse f⁻¹(x) = √((x + 4)/3)'],
   },
   {
     id: 'kbl-math-1-5',
@@ -3016,13 +3089,15 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
     titleAr: 'تقدير ميل المنحنى',
     titleEn: 'Estimating the Slope of a Curve',
     summaryAr:
-      'يُعرَّف ميل المنحنى عند نقطة ما بأنه ميل المماس (المستقيم الذي يلمس المنحنى في تلك النقطة فقط). لتقدير الميل: نرسم المماس بيانيًا ونختار نقطتين عليه ثم نحسب الميل. تطبيق: السرعة اللحظية لجسم متحرك تساوي ميل منحنى الموقع-الزمن عند تلك اللحظة.',
+      // «touches the curve at that point only» is false in general — the
+      // book's own figure (math S2 p.57) shows a tangent crossing the cubic.
+      'ميل المنحنى عند نقطة واقعة عليه يساوي ميل المماس عند تلك النقطة، لذا يختلف ميل المنحنى من نقطة إلى أخرى. لتقدير الميل: نرسم المماس عند النقطة، ونختار نقطتين عليه ثم نحسب ميله. تطبيق: السرعة المتجهة اللحظية تساوي ميل منحنى (الموقع-الزمن) عند تلك اللحظة، والتسارع اللحظي يساوي ميل منحنى (السرعة-الزمن).',
     summaryEn:
       'The slope of a curve at a point is defined as the slope of the tangent line at that point. To estimate it: draw the tangent graphically, pick two points on it, and calculate m = (y₂−y₁)/(x₂−x₁). Application: instantaneous velocity equals the slope of the position-time curve at that moment.',
-    keyConceptsAr: ['المماس: خط يلمس المنحنى في نقطة واحدة', 'ميل المنحنى عند نقطة = ميل المماس', 'تقدير الميل بيانيًا', 'السرعة اللحظية', 'القاطع يصبح مماسًا عند تقليص الفترة الزمنية'],
-    keyConceptsEn: ['Tangent: a line touching the curve at one point', 'Slope of curve at a point = slope of tangent', 'Graphical estimation of slope', 'Instantaneous velocity', 'Secant line approaches tangent as interval shrinks'],
+    keyConceptsAr: ['المماس عند نقطة: المستقيم الذي ميله يساوي ميل المنحنى عند تلك النقطة', 'ميل المنحنى عند نقطة = ميل المماس', 'تقدير الميل بيانيًا', 'السرعة المتجهة اللحظية', 'التسارع اللحظي', 'القاطع يصبح مماسًا عند تقليص الفترة الزمنية'],
+    keyConceptsEn: ['Tangent at a point: the line whose slope equals the curve’s slope there', 'Slope of curve at a point = slope of tangent', 'Graphical estimation of slope', 'Instantaneous velocity', 'Instantaneous acceleration', 'Secant line approaches tangent as interval shrinks'],
     keyTerms: [
-      { ar: 'المماس', en: 'Tangent Line', definitionAr: 'مستقيم يلمس المنحنى في نقطة واحدة فقط ويمثل ميله عند تلك النقطة', definitionEn: 'A line that touches the curve at exactly one point and represents its slope there' },
+      { ar: 'المماس', en: 'Tangent Line', definitionAr: 'المستقيم الذي ميله يساوي ميل المنحنى عند نقطة التماس؛ وقد يقطع المنحنى في نقطة أخرى', definitionEn: "The line whose slope equals the curve's slope at the point of tangency; it may cross the curve elsewhere" },
       { ar: 'القاطع', en: 'Secant Line', definitionAr: 'مستقيم يمر بنقطتين على المنحنى، ويُستخدم لتقريب المماس', definitionEn: 'A line passing through two points on a curve, used to approximate the tangent' },
       { ar: 'السرعة اللحظية', en: 'Instantaneous Velocity', definitionAr: 'السرعة عند لحظة زمنية محددة، تساوي ميل مماس منحنى الموقع-الزمن', definitionEn: 'Speed at a specific instant, equal to the slope of the position-time curve at that moment' },
     ],
@@ -3083,15 +3158,17 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
     titleAr: 'المتجهات في المستوى الإحداثي',
     titleEn: 'Vectors in the Coordinate Plane',
     summaryAr:
-      'المتجه كمية تمتلك مقدارًا واتجاهًا. يُمثَّل بقطعة مستقيمة موجَّهة من نقطة البداية إلى نقطة النهاية. الصورة الإحداثية: v = ⟨v₁, v₂⟩. مقدار المتجه: |v| = √(v₁² + v₂²). المتجهان متساويان إذا كانا متطابقَي المقدار والاتجاه.',
+      // Math S2 p.80 terms. Unit vectors are not in the book, and equal
+      // vectors are the next lesson (p.88).
+      'المتجه كمية تمتلك مقدارًا واتجاهًا، ويُمثَّل بقطعة مستقيمة موجَّهة من نقطة البداية إلى نقطة النهاية. الصورة الإحداثية للمتجه v = ⟨v₁, v₂⟩ حيث v₁ المركبة الأفقية و v₂ المركبة الرأسية، ويكون المتجه في الوضع القياسي إذا بدأ من نقطة الأصل (متجه الموقع). مقدار المتجه: |v| = √(v₁² + v₂²)، ويُحدَّد اتجاهه بالزاوية التي يصنعها مع الأفقي. ومن تطبيقاته السرعة المتجهة.',
     summaryEn:
-      'A vector has both magnitude and direction. It is represented by a directed line segment from initial to terminal point. Component form: v = ⟨v₁, v₂⟩. Magnitude: |v| = √(v₁² + v₂²). Two vectors are equal if they have the same magnitude and direction.',
-    keyConceptsAr: ['المقدار والاتجاه', 'الصورة الإحداثية ⟨v₁, v₂⟩', 'مقدار المتجه |v|', 'المتجه الوحدة', 'المتجهات المتساوية'],
-    keyConceptsEn: ['Magnitude and direction', 'Component form ⟨v₁, v₂⟩', 'Magnitude |v|', 'Unit vector', 'Equal vectors'],
+      'A vector has both magnitude and direction and is drawn as a directed segment from initial to terminal point. Component form v = ⟨v₁, v₂⟩, with v₁ the horizontal and v₂ the vertical component; a vector starting at the origin is in standard position (a position vector). Magnitude: |v| = √(v₁² + v₂²); its direction is the angle it makes with the horizontal. Velocity is one application.',
+    keyConceptsAr: ['المقدار والاتجاه', 'المركبة الأفقية والمركبة الرأسية', 'الصورة الإحداثية ⟨v₁, v₂⟩', 'الوضع القياسي ومتجه الموقع', 'مقدار المتجه |v|', 'الاتجاه (الزاوية مع الأفقي)', 'السرعة المتجهة'],
+    keyConceptsEn: ['Magnitude and direction', 'Horizontal and vertical components', 'Component form ⟨v₁, v₂⟩', 'Standard position and position vector', 'Magnitude |v|', 'Direction (angle with the horizontal)', 'Velocity'],
     keyTerms: [
       { ar: 'المتجه', en: 'Vector', definitionAr: 'كمية لها مقدار واتجاه، تُمثَّل بسهم من نقطة البداية إلى نقطة النهاية', definitionEn: 'A quantity with both magnitude and direction, represented by an arrow from initial to terminal point' },
       { ar: 'مقدار المتجه', en: 'Magnitude', definitionAr: 'طول المتجه: |v| = √(v₁² + v₂²)', definitionEn: 'The length of a vector: |v| = √(v₁² + v₂²)' },
-      { ar: 'المتجه الوحدة', en: 'Unit Vector', definitionAr: 'متجه مقداره 1، يُستخدم لتحديد الاتجاه فقط', definitionEn: 'A vector with magnitude 1, used to indicate direction only' },
+      { ar: 'متجه الموقع', en: 'Position Vector', definitionAr: 'متجه في الوضع القياسي، نقطة بدايته نقطة الأصل', definitionEn: 'A vector in standard position, starting at the origin' },
     ],
     rulesAr: ['إذا كانت نقطة البداية P₁(x₁,y₁) ونهاية P₂(x₂,y₂) فإن v = ⟨x₂−x₁, y₂−y₁⟩', '|v| = √(v₁² + v₂²)'],
     rulesEn: ['If initial point P₁(x₁,y₁) and terminal point P₂(x₂,y₂) then v = ⟨x₂−x₁, y₂−y₁⟩', '|v| = √(v₁² + v₂²)'],
@@ -3187,17 +3264,19 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
     titleAr: 'مقاييس التشتت للجداول التكرارية ذات الفئات',
     titleEn: 'Measures of Dispersion for Grouped Data',
     summaryAr:
-      'مقاييس التشتت تقيس مدى تباعد البيانات. المدى = أكبر قيمة − أصغر قيمة. لحساب الانحراف المعياري للبيانات المبوبة: نستخدم منتصف كل فئة كممثل لها، ونحسب الانحراف عن الوسط الحسابي.',
+      // Math S2 pp.124–125: the lesson estimates variance and standard
+      // deviation from a grouped frequency table, using class centres.
+      'نقدّر التباين والانحراف المعياري لبيانات منظمة في جدول تكراري ذي فئات بالنظر إلى جميع القيم في الفئة على أنها ممثلة بمركز الفئة x. الوسط الحسابي μ = Σ(x × f) / Σf، والتباين σ² = Σ((x − μ)² × f) / Σf، والانحراف المعياري هو الجذر التربيعي للتباين.',
     summaryEn:
-      'Measures of dispersion quantify the spread of data. Range = maximum − minimum. For grouped data: use class midpoints as representatives, compute deviations from the mean. Standard deviation measures how spread out values are from the mean.',
-    keyConceptsAr: ['المدى = الحد الأعلى − الحد الأدنى', 'منتصف الفئة كممثل', 'الانحراف عن الوسط الحسابي', 'الانحراف المعياري للبيانات المبوبة', 'التباين'],
-    keyConceptsEn: ['Range = max − min', 'Class midpoint as representative', 'Deviation from the mean', 'Standard deviation for grouped data', 'Variance'],
+      'We estimate the variance and standard deviation of data in a grouped frequency table by treating every value in a class as its class centre x. Mean μ = Σ(x × f) / Σf, variance σ² = Σ((x − μ)² × f) / Σf, and the standard deviation is the square root of the variance.',
+    keyConceptsAr: ['مركز الفئة ممثلًا لقيمها', 'الوسط الحسابي للجدول التكراري ذي الفئات', 'التباين للجدول التكراري ذي الفئات', 'الانحراف المعياري = الجذر التربيعي للتباين', 'مجموع الانحرافات عن الوسط الحسابي = صفر'],
+    keyConceptsEn: ['Class centre representing its values', 'Mean of a grouped frequency table', 'Variance of a grouped frequency table', 'Standard deviation = square root of variance', 'Deviations from the mean sum to zero'],
     keyTerms: [
-      { ar: 'المدى', en: 'Range', definitionAr: 'الفرق بين أكبر قيمة وأصغر قيمة في مجموعة البيانات', definitionEn: 'The difference between the maximum and minimum values in a dataset' },
-      { ar: 'الانحراف المعياري', en: 'Standard Deviation', definitionAr: 'مقياس لمتوسط انحراف القيم عن الوسط الحسابي', definitionEn: 'A measure of the average deviation of values from the mean' },
+      { ar: 'التباين', en: 'Variance', definitionAr: 'الوسط الحسابي لمربعات انحرافات القيم عن وسطها الحسابي', definitionEn: 'The mean of the squared deviations of the values from their mean' },
+      { ar: 'الانحراف المعياري', en: 'Standard Deviation', definitionAr: 'الجذر التربيعي للتباين', definitionEn: 'The square root of the variance' },
     ],
-    rulesAr: ['المدى = أكبر قيمة − أصغر قيمة', 'الوسط الحسابي للمبوبة = Σ(fᵢ · xᵢ) / Σfᵢ حيث xᵢ منتصف الفئة'],
-    rulesEn: ['Range = max value − min value', 'Mean for grouped data = Σ(fᵢ · xᵢ) / Σfᵢ where xᵢ is the class midpoint'],
+    rulesAr: ['μ = Σ(x × f) / Σf حيث x مركز الفئة و f تكرارها', 'σ² = Σ((x − μ)² × f) / Σf', 'σ = √σ²'],
+    rulesEn: ['μ = Σ(x × f) / Σf where x is the class centre and f its frequency', 'σ² = Σ((x − μ)² × f) / Σf', 'σ = √σ²'],
   },
   {
     id: 'kbl-math-8-1',
@@ -3353,18 +3432,19 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
     titleAr: 'الأقواس والقطاعات الدائرية',
     titleEn: 'Arcs and Sectors of a Circle',
     summaryAr:
-      'القوس جزء من محيط الدائرة. القطاع الدائري المنطقة المحصورة بين قوسَين ونصفَي قطر. طول القوس = (θ/360) × 2πr حيث θ بالدرجات. مساحة القطاع = (θ/360) × πr². بالراديان: طول القوس = rθ، مساحة القطاع = ½r²θ.',
+      // Math S1 p.41: a sector is bounded by ONE arc and the two radii to its
+      // ends. The book works in degrees only — no radians in this lesson.
+      'القوس جزء من الدائرة محدد بنقطتين عليها. والقطاع الدائري هو الجزء المحصور بين قوس منها ونصفي القطرين اللذين يمران بطرفي القوس، ويعد القطاع كسرًا من الدائرة قيمته θ/360° حيث θ قياس زاوية القطاع. طول القوس = (θ/360°) × 2πr، ومساحة القطاع = (θ/360°) × πr².',
     summaryEn:
-      'An arc is part of the circle circumference. A sector is the region between two radii and an arc. Arc length = (θ/360) × 2πr where θ is in degrees. Sector area = (θ/360) × πr². In radians: arc length = rθ, sector area = ½r²θ.',
-    keyConceptsAr: ['القوس: جزء من محيط الدائرة', 'القطاع الدائري', 'طول القوس = (θ/360) × 2πr', 'مساحة القطاع = (θ/360) × πr²', 'الراديان كوحدة قياس الزاوية'],
-    keyConceptsEn: ['Arc: part of circumference', 'Circular sector', 'Arc length = (θ/360) × 2πr', 'Sector area = (θ/360) × πr²', 'Radian as angle unit'],
+      'An arc is part of a circle between two points on it. A sector is the region bounded by an arc and the two radii through its endpoints; it is the fraction θ/360° of the circle, where θ is the sector angle. Arc length = (θ/360°) × 2πr and sector area = (θ/360°) × πr².',
+    keyConceptsAr: ['القوس: جزء من الدائرة محدد بنقطتين عليها', 'القطاع الدائري: محصور بين قوس ونصفي قطرين', 'القطاع كسر من الدائرة = θ/360°', 'طول القوس = (θ/360°) × 2πr', 'مساحة القطاع = (θ/360°) × πr²'],
+    keyConceptsEn: ['Arc: part of a circle between two points', 'Sector: bounded by an arc and two radii', 'A sector is the fraction θ/360° of the circle', 'Arc length = (θ/360°) × 2πr', 'Sector area = (θ/360°) × πr²'],
     keyTerms: [
-      { ar: 'القوس', en: 'Arc', definitionAr: 'جزء من محيط الدائرة محدود بنقطتين عليها', definitionEn: 'A portion of the circle circumference between two points' },
-      { ar: 'القطاع الدائري', en: 'Sector', definitionAr: 'المنطقة المحصورة بين قوس الدائرة ونصفَي القطر المحددَين له', definitionEn: 'The region bounded by an arc and the two radii connecting its endpoints to the center' },
-      { ar: 'الراديان', en: 'Radian', definitionAr: 'وحدة قياس الزاوية: 1 راديان = الزاوية التي قوسها يساوي نصف القطر. π راديان = 180°', definitionEn: 'Unit of angle: 1 radian is the angle whose arc equals the radius. π radians = 180°' },
+      { ar: 'القوس', en: 'Arc', definitionAr: 'جزء من الدائرة محدد بنقطتين عليها', definitionEn: 'A part of a circle between two points on it' },
+      { ar: 'القطاع الدائري', en: 'Sector', definitionAr: 'الجزء المحصور بين قوس من الدائرة ونصفي القطرين اللذين يمران بطرفي القوس', definitionEn: 'The region bounded by an arc and the two radii through its endpoints' },
     ],
-    rulesAr: ['طول القوس = (θ/360) × 2πr', 'مساحة القطاع = (θ/360) × πr²', 'بالراديان: l = rθ ، A = ½r²θ'],
-    rulesEn: ['Arc length = (θ/360) × 2πr', 'Sector area = (θ/360) × πr²', 'In radians: l = rθ, A = ½r²θ'],
+    rulesAr: ['طول القوس = (θ/360°) × 2πr', 'مساحة القطاع = (θ/360°) × πr²'],
+    rulesEn: ['Arc length = (θ/360°) × 2πr', 'Sector area = (θ/360°) × πr²'],
     examplesAr: ['دائرة نصف قطرها 6 cm وزاوية مركزية 60°: طول القوس = (60/360)×2π×6 = 2π cm'],
     examplesEn: ['Circle radius 6 cm, central angle 60°: arc length = (60/360)×2π×6 = 2π cm'],
   },
@@ -3417,21 +3497,23 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
     order: 1,
     titleAr: 'النسب المثلثية',
     titleEn: 'Trigonometric Ratios',
+    // Math S1 p.66: the Grade 10 lesson is angles in standard position and the
+    // unit circle — right-triangle ratios were taught earlier.
     summaryAr:
-      'في مثلث قائم الزاوية: جيب الزاوية (sin) = المقابل/الوتر، جيب التمام (cos) = المجاور/الوتر، الظل (tan) = المقابل/المجاور. العلاقة الأساسية: sin²A + cos²A = 1. القيم الخاصة: sin 30° = ½، cos 60° = ½، sin 45° = cos 45° = √2/2.',
+      'الزاوية في الوضع القياسي رأسها نقطة الأصل وضلع ابتدائها على محور x الموجب، وقياسها موجب إذا دار ضلع الانتهاء عكس اتجاه حركة عقارب الساعة وسالب إذا دار معه. إذا قطع ضلع انتهاء الزاوية θ دائرة الوحدة في النقطة P(x, y) فإن cos θ = x و sin θ = y و tan θ = y/x، ومنها النسب المثلثية للزوايا الربعية 0° و90° و180° و270°، والعلاقة sin²θ + cos²θ = 1 لإيجاد نسبة من أخرى.',
     summaryEn:
-      'In a right triangle: sin A = opposite/hypotenuse, cos A = adjacent/hypotenuse, tan A = opposite/adjacent. Fundamental identity: sin²A + cos²A = 1. Special values: sin 30° = ½, cos 60° = ½, sin 45° = cos 45° = √2/2.',
-    keyConceptsAr: ['sin A = مقابل/وتر', 'cos A = مجاور/وتر', 'tan A = مقابل/مجاور', 'sin²A + cos²A = 1', 'قيم الزوايا الخاصة: 30°، 45°، 60°'],
-    keyConceptsEn: ['sin A = opposite/hypotenuse', 'cos A = adjacent/hypotenuse', 'tan A = opposite/adjacent', 'sin²A + cos²A = 1', 'Special angles: 30°, 45°, 60°'],
+      'An angle in standard position has its vertex at the origin and its initial side on the positive x-axis; its measure is positive when the terminal side turns anticlockwise and negative when it turns clockwise. If the terminal side of θ meets the unit circle at P(x, y), then cos θ = x, sin θ = y and tan θ = y/x. This gives the ratios of the quadrantal angles 0°, 90°, 180° and 270°, and sin²θ + cos²θ = 1 finds one ratio from another.',
+    keyConceptsAr: ['الزاوية في الوضع القياسي', 'ضلع الابتداء وضلع الانتهاء', 'القياس الموجب والسالب للزاوية', 'دائرة الوحدة: P = (cos θ, sin θ)', 'الزوايا الربعية', 'sin²θ + cos²θ = 1'],
+    keyConceptsEn: ['Angle in standard position', 'Initial side and terminal side', 'Positive and negative angle measure', 'Unit circle: P = (cos θ, sin θ)', 'Quadrantal angles', 'sin²θ + cos²θ = 1'],
     keyTerms: [
-      { ar: 'جيب الزاوية (sin)', en: 'Sine', definitionAr: 'نسبة الضلع المقابل للزاوية إلى الوتر في المثلث القائم', definitionEn: 'Ratio of the opposite side to the hypotenuse in a right triangle' },
-      { ar: 'جيب التمام (cos)', en: 'Cosine', definitionAr: 'نسبة الضلع المجاور للزاوية إلى الوتر في المثلث القائم', definitionEn: 'Ratio of the adjacent side to the hypotenuse in a right triangle' },
-      { ar: 'الظل (tan)', en: 'Tangent', definitionAr: 'نسبة الضلع المقابل للزاوية إلى الضلع المجاور: tan A = sin A / cos A', definitionEn: 'Ratio of opposite to adjacent: tan A = sin A / cos A' },
+      { ar: 'الوضع القياسي', en: 'Standard Position', definitionAr: 'تكون الزاوية في الوضع القياسي إذا كان رأسها عند نقطة الأصل (0, 0) وضلع ابتدائها منطبقًا على محور x الموجب', definitionEn: 'An angle is in standard position when its vertex is at the origin and its initial side lies on the positive x-axis' },
+      { ar: 'دائرة الوحدة', en: 'Unit Circle', definitionAr: 'دائرة مركزها نقطة الأصل ونصف قطرها وحدة واحدة؛ إحداثيا نقطة تقاطعها مع ضلع انتهاء الزاوية θ هما (cos θ, sin θ)', definitionEn: 'The circle of radius 1 centred at the origin; the terminal side of θ meets it at (cos θ, sin θ)' },
+      { ar: 'الزاوية الربعية', en: 'Quadrantal Angle', definitionAr: 'زاوية في الوضع القياسي ينطبق ضلع انتهائها على أحد المحورين، مثل 0° و90° و180° و270°', definitionEn: 'An angle in standard position whose terminal side lies on an axis, such as 0°, 90°, 180°, 270°' },
     ],
-    rulesAr: ['sin²A + cos²A = 1', 'tan A = sin A / cos A', 'sin 30°=½, cos 30°=√3/2, tan 30°=√3/3', 'sin 45°=cos 45°=√2/2, tan 45°=1', 'sin 60°=√3/2, cos 60°=½, tan 60°=√3'],
-    rulesEn: ['sin²A + cos²A = 1', 'tan A = sin A / cos A', 'sin 30°=½, cos 30°=√3/2, tan 30°=√3/3', 'sin 45°=cos 45°=√2/2, tan 45°=1', 'sin 60°=√3/2, cos 60°=½, tan 60°=√3'],
-    examplesAr: ['مثلث قائم: الوتر=10، مقابل زاوية A = 6: sin A = 6/10 = 0.6 → A = 37°'],
-    examplesEn: ['Right triangle: hypotenuse=10, opposite of angle A=6: sin A = 6/10 = 0.6 → A = 37°'],
+    rulesAr: ['cos θ = x ، sin θ = y ، tan θ = y/x لنقطة P(x, y) على دائرة الوحدة', 'sin²θ + cos²θ = 1', 'sin 90° = 1 ، cos 180° = −1 ، sin 270° = −1 ، cos 0° = 1'],
+    rulesEn: ['cos θ = x, sin θ = y, tan θ = y/x for P(x, y) on the unit circle', 'sin²θ + cos²θ = 1', 'sin 90° = 1, cos 180° = −1, sin 270° = −1, cos 0° = 1'],
+    examplesAr: ['إذا كان sin θ = 0.6 وكانت θ في الربع الأول، فإن cos θ = √(1 − 0.36) = 0.8'],
+    examplesEn: ['If sin θ = 0.6 with θ in the first quadrant, then cos θ = √(1 − 0.36) = 0.8'],
   },
   {
     id: 'kbl-math-s2-3-2',
@@ -3459,20 +3541,21 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
     order: 3,
     titleAr: 'تمثيل الاقترانات المثلثية',
     titleEn: 'Graphing Trigonometric Functions',
+    // Math S1 pp.82–87: graphing sin, cos and tan on [0°, 360°] from a table
+    // of values. Amplitude, period changes and shifts are not in this book.
     summaryAr:
-      'اقتران الجيب y = sin x: دوري بفترة 360°، سعة 1، يمر بالأصل. اقتران الجيب التمام y = cos x: دوري بفترة 360°، سعة 1، يبدأ من (0,1). للاقتران y = a·sin(bx + c) + d: السعة = |a|، الفترة = 360°/|b|، الإزاحة الأفقية = −c/b، الإزاحة الرأسية = d.',
+      'نمثل الاقترانات y = sin x و y = cos x و y = tan x بيانيًا في الفترة [0°, 360°]: نكوّن جدولًا لزوايا شائعة (الزوايا الربعية والزوايا التي زاويتها المرجعية 30° أو 60°)، ثم نعيّن الأزواج المرتبة ونصل بينها بمنحنى أملس. أكبر قيمة لـ sin x و cos x هي 1 وأصغر قيمة −1؛ و sin x موجب عندما 0° < x < 180° وسالب عندما 180° < x < 360°؛ و tan x غير معرّف عند 90° و270°، فيُرسم منحناه أجزاءً لا تتصل عند هاتين الزاويتين. ويستعمل التمثيل البياني لتقدير حلول معادلات مثل sin x = k.',
     summaryEn:
-      'y = sin x: periodic with period 360°, amplitude 1, passes through origin. y = cos x: periodic with period 360°, amplitude 1, starts at (0,1). For y = a·sin(bx + c) + d: amplitude = |a|, period = 360°/|b|, horizontal shift = −c/b, vertical shift = d.',
-    keyConceptsAr: ['الدورة (الفترة) = 360° لـ sin وcos', 'السعة = |a|', 'الفترة = 360°/|b|', 'الإزاحة الأفقية والرأسية', 'القيم العظمى والصغرى للاقتران المثلثي'],
-    keyConceptsEn: ['Period = 360° for sin and cos', 'Amplitude = |a|', 'Period = 360°/|b|', 'Horizontal and vertical shift', 'Maximum and minimum of trig function'],
+      'We graph y = sin x, y = cos x and y = tan x on [0°, 360°]: tabulate common angles (quadrantal angles and those with reference angle 30° or 60°), plot the ordered pairs and join them with a smooth curve. sin x and cos x have maximum 1 and minimum −1; sin x is positive for 0° < x < 180° and negative for 180° < x < 360°; tan x is undefined at 90° and 270°, so its graph is drawn in pieces that do not join there. A graph is used to estimate solutions of equations such as sin x = k.',
+    keyConceptsAr: ['تمثيل sin x و cos x و tan x في الفترة [0°, 360°]', 'جدول قيم للزوايا الشائعة', 'القيمة العظمى 1 والصغرى −1 لـ sin x و cos x', 'إشارة الاقتران على الفترة', 'tan x غير معرّف عند 90° و270°', 'قراءة حلول sin x = k من التمثيل البياني'],
+    keyConceptsEn: ['Graphing sin x, cos x and tan x on [0°, 360°]', 'Table of values for common angles', 'Maximum 1 and minimum −1 for sin x and cos x', 'Sign of the function on the interval', 'tan x is undefined at 90° and 270°', 'Reading solutions of sin x = k from the graph'],
     keyTerms: [
-      { ar: 'السعة', en: 'Amplitude', definitionAr: 'نصف الفرق بين القيمة العظمى والصغرى للاقتران المثلثي', definitionEn: 'Half the difference between the maximum and minimum values of a trig function' },
-      { ar: 'الفترة (الدورة)', en: 'Period', definitionAr: 'أصغر قيمة موجبة T حيث f(x+T) = f(x)، أي طول دورة كاملة', definitionEn: 'The smallest positive T where f(x+T)=f(x), the length of one complete cycle' },
+      { ar: 'التمثيل البياني للاقتران المثلثي', en: 'Graph of a Trigonometric Function', definitionAr: 'منحنى أملس يصل الأزواج المرتبة (x, f(x)) لزوايا الفترة [0°, 360°]', definitionEn: 'A smooth curve through the ordered pairs (x, f(x)) for angles in [0°, 360°]' },
     ],
-    rulesAr: ['y = a·sin(bx) + d: السعة |a|، الفترة 360°/|b|، المحور الوسطي y=d', 'y = sin x: قيمة عظمى 1 عند 90°، صفر عند 0° و180°، قيمة صغرى −1 عند 270°'],
-    rulesEn: ['y = a·sin(bx)+d: amplitude |a|, period 360°/|b|, midline y=d', 'y = sin x: max 1 at 90°, zero at 0° and 180°, min −1 at 270°'],
-    examplesAr: ['y = 3·sin(2x): سعة=3، فترة=360°/2=180°', 'y = cos(x)+2: نفس شكل cos لكن مرفوع 2 وحدات'],
-    examplesEn: ['y = 3·sin(2x): amplitude=3, period=360°/2=180°', 'y = cos(x)+2: same shape as cos but shifted up 2 units'],
+    rulesAr: ['y = sin x: صفر عند 0° و180° و360°، قيمة عظمى 1 عند 90°، قيمة صغرى −1 عند 270°', 'y = cos x: قيمة عظمى 1 عند 0° و360°، صفر عند 90° و270°، قيمة صغرى −1 عند 180°', 'y = tan x: صفر عند 0° و180° و360°، وغير معرّف عند 90° و270°'],
+    rulesEn: ['y = sin x: zero at 0°, 180°, 360°; max 1 at 90°; min −1 at 270°', 'y = cos x: max 1 at 0° and 360°; zero at 90° and 270°; min −1 at 180°', 'y = tan x: zero at 0°, 180°, 360°; undefined at 90° and 270°'],
+    examplesAr: ['من منحنى y = sin x: للمعادلة sin x = 0.5 حلان في الفترة [0°, 360°] هما 30° و150°'],
+    examplesEn: ['From the graph of y = sin x: sin x = 0.5 has two solutions in [0°, 360°], 30° and 150°'],
   },
   {
     id: 'kbl-math-s2-3-4',
@@ -3484,8 +3567,10 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
       'لحل معادلة مثلثية مثل sin x = k: أجد الحل الأساسي باستخدام arcsin، ثم أجد جميع الحلول في الفترة المطلوبة [0°, 360°] بمراعاة ربع الزاوية وإشارة النسبة. لـ cos x = k: حلان في الدورة. لـ tan x = k: حل واحد في [0°, 180°].',
     summaryEn:
       'To solve sin x = k: find the principal solution using arcsin, then find all solutions in [0°, 360°] using the quadrant and sign. For cos x = k: two solutions per cycle. For tan x = k: one solution in [0°, 180°].',
-    keyConceptsAr: ['arcsin و arccos و arctan (النسب العكسية)', 'الحلول في الفترة [0°, 360°]', 'للـ sin: ربعان (1 و2)، للـ cos: ربعان (1 و4)، للـ tan: ربعان (1 و3)', 'الحلول الكاملة: +360°n'],
-    keyConceptsEn: ['arcsin, arccos, arctan (inverse trig)', 'Solutions in [0°, 360°]', 'For sin: quadrants 1&2; cos: 1&4; tan: 1&3', 'General solutions: +360°n'],
+    // The book solves within one rotation only (0° ≤ x ≤ 360°, p.88); which
+    // two quadrants hold the solutions depends on the sign of k.
+    keyConceptsAr: ['arcsin و arccos و arctan (النسب العكسية)', 'الحلول في الفترة [0°, 360°]', 'تحديد ربعي الحلين حسب إشارة k', 'الزاوية المرجعية لإيجاد الحل الثاني'],
+    keyConceptsEn: ['arcsin, arccos, arctan (inverse trig)', 'Solutions in [0°, 360°]', 'The two quadrants of the solutions follow the sign of k', 'Using the reference angle to find the second solution'],
     keyTerms: [
       { ar: 'الدالة العكسية للنسبة المثلثية', en: 'Inverse Trig Function', definitionAr: 'arcsin(k) تعطي الزاوية التي جيبها k، مجالها [−90°, 90°]', definitionEn: 'arcsin(k) gives the angle whose sine is k, range [−90°, 90°]' },
     ],
@@ -3521,11 +3606,13 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
     titleAr: 'قانون الجيوب',
     titleEn: 'The Law of Sines',
     summaryAr:
-      'في أي مثلث: a/sin A = b/sin B = c/sin C حيث a,b,c أطوال الأضلاع والزوايا A,B,C المقابلة لها. يُستخدم عندما نعرف: زاوية وضلعًا مقابلًا لها وزاوية أخرى (ZZض)، أو زاويتين وضلعًا (ZضZ). يُستخدم أيضًا لإيجاد زوايا مجهولة.',
+      // Math S1 p.107: two cases, ASA/SAA and SSA; the book does not treat
+      // the ambiguous case.
+      'في أي مثلث: a/sin A = b/sin B = c/sin C حيث a و b و c أطوال الأضلاع، و A و B و C قياسات الزوايا المقابلة لها. يُستعمل قانون الجيوب لحل المثلث الذي علمت ثلاثة من قياساته في حالتين: ضلع واحد وزاويتان (ASA أو SAA)، أو ضلعان وزاوية مقابلة لأحدهما (SSA). ويُستعمل لإيجاد ضلع مجهول أو زاوية مجهولة.',
     summaryEn:
-      'In any triangle: a/sin A = b/sin B = c/sin C where a,b,c are side lengths and A,B,C are the opposite angles. Use when: angle-side-angle (ASA), angle-angle-side (AAS), or when two sides and a non-included angle are known (SSA — ambiguous case).',
-    keyConceptsAr: ['a/sin A = b/sin B = c/sin C', 'يُستخدم عند معرفة زاوية وضلعها المقابل', 'حالة الغموض (ضضز): قد يوجد مثلثان', 'مثلثات حادة وقائمة ومنفرجة'],
-    keyConceptsEn: ['a/sin A = b/sin B = c/sin C', 'Use when an angle and its opposite side are known', 'Ambiguous case (SSA): may give two triangles', 'Acute, right, and obtuse triangles'],
+      'In any triangle: a/sin A = b/sin B = c/sin C, where a, b, c are side lengths and A, B, C the opposite angles. The law of sines solves a triangle with three known measures in two cases: one side and two angles (ASA or SAA), or two sides and an angle opposite one of them (SSA). It finds an unknown side or angle.',
+    keyConceptsAr: ['a/sin A = b/sin B = c/sin C', 'الحالة الأولى: ضلع وزاويتان (ASA أو SAA)', 'الحالة الثانية: ضلعان وزاوية مقابلة لأحدهما (SSA)', 'إيجاد ضلع مجهول أو زاوية مجهولة'],
+    keyConceptsEn: ['a/sin A = b/sin B = c/sin C', 'Case 1: one side and two angles (ASA or SAA)', 'Case 2: two sides and an angle opposite one of them (SSA)', 'Finding an unknown side or angle'],
     keyTerms: [
       { ar: 'قانون الجيوب', en: 'Law of Sines', definitionAr: 'في أي مثلث: a/sin A = b/sin B = c/sin C', definitionEn: 'In any triangle: a/sin A = b/sin B = c/sin C' },
     ],

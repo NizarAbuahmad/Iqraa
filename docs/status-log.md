@@ -10,6 +10,115 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 10 civic, history S2 and PE: the books' self-assessment criteria reach the generator, labelled as such — 2026-11-13
+
+Third fix from the Grade 10 review. Grade 10 history, geography, civic and PE lessons have no `objectives`. Their catalogs say why, in `meta.known_gaps`: the books print no outcomes list, and PE's «أُقيِّمُ تعلُّمي» was deliberately not used «تجنُّبًا لتصنيفِ محتوًى تقييميٍّ على أنّهُ نتاجاتٌ منهجيّةٌ». The review proposed filling `objectives` from the self-assessment tables and the «الفكرة الرئيسة» box. Anything in `objectives` reaches the model as «النتاجات (من المنهاج الرسمي)», so that would have claimed outcomes the books do not print. The owner chose a separate field instead. The «الفكرة الرئيسة» box was already the lesson summary, so it stays as it was.
+
+**What changed**
+- **New optional field `self_assessment_ar`** (`lib/curriculum/src/catalogs/nccdCatalog.ts`).
+  - On a unit for a book that prints the table per unit: civic S1 (p43, p84), civic S2 (p25, 49, 69, 83, 99) and history S2 (p67, p93). The book does not say which statement belongs to which lesson, so none is assigned to a lesson.
+  - On a lesson for PE, whose box ends each lesson (40 statements).
+  - It reaches `KBLesson` as `selfAssessmentAr` / `unitSelfAssessmentAr`.
+- **`buildLessonBlock`** (`services/kbContext.ts`) prints the statements under «معايير التقويم الذاتي في كتاب الطالب … (ليست قائمة النتاجات الرسمية)», for this lesson or for the whole unit. `objectives` stays empty, so nothing new is labelled official.
+- **Each statement was checked against its page in the extracted text.**
+  - Civic: fuzzy line match, 0.83–1.0.
+  - History S2: read against the numbered tables, and kept in the book's order.
+  - PE: letter-composition match against each line, 0.93–1.0, because that text layer prints words in reverse order.
+  - Three civic S2 lines whose OCR cannot be read with confidence are left out and listed in that catalog's `known_gaps`: p25 item 7, p69 items 1 and 6.
+- **Test.** `selfAssessmentContext.test.ts`, 4 cases: civic unit-level, history S2, PE lesson-level, and biology as a control, which keeps its official outcomes and gets no criteria. It fails 3/4 without the `kbContext` change.
+
+**Verified:**
+- mobile suite: 9,221 pass, 0 fail, 10 skipped;
+- api-server, build then test: 2,913 pass;
+- curriculum: 915 pass, `verify` 0 errors;
+- `pnpm run typecheck`.
+
+**Not verified:**
+- a live-AI plan for these lessons;
+- the API's own prompts (`lessonTeachingPrompt`, the evaluation generator) do not read the new field; only the app's generator context does.
+
+**Not done:**
+- history S1 and geography print no self-assessment table, so they still have nothing beyond the main idea;
+- `verify --gaps` still lists these lessons as «no outcomes», which is true.
+
+## Grade 10 lesson content: wrong maths and chemistry text corrected from the books — 2026-11-13
+
+Second fix from the Grade 10 review, on the same branch as the figures fix below. Lessons get their summary, key concepts, terms and rules from hand-written rows in `artifacts/mobile/services/knowledgeBase.ts`, merged onto the NCCD lesson by title (`enrichLesson`). Several of those rows described a different lesson, or material the 2026 book does not teach. Each fix below was checked against the extracted book text (`lib/curriculum/src/data/extracted/`), with page numbers in code comments.
+
+**Chemistry**
+- **Bohr (S1 u1_l1).** The rules used E = −13.6/n² eV. The book never uses 13.6 or eV; it works Eₙ = −R_H/n² with R_H = 2.18 × 10⁻¹⁸ J, and |ΔE| = R_H(1/n₁² − 1/n₂²), on pp.16–18. Now in joules.
+- **Wave-mechanical model (u1_l2).** It carried Heisenberg and Pauli, which appear on no page of the book. It also carried Aufbau, Hund and the filling order, which are the next lesson (pp.30–31). It now has the book's content from pp.20–23: Schrödinger, the orbital, the four quantum numbers with the book's terms «الفرعي» and «المغزلي», n², 2n² and the sublevel capacities.
+- **Electronic configuration (u2_l1).** A new row, `kbl-chem-2-0`, gives this lesson Aufbau, Hund and the book's filling order. Its five terms carry definitions from the book's glossary (pp.75–76); before, they were empty.
+- **Chemical reactions (S2 u4_l1).** The filler concept «تطبيقات حياتية» is replaced by the lesson's own terms from p.10.
+- **Offline chemistry bank** (`lib/math-practice`). `ch-as-m1` and `ch-as-m3` and their worked steps are now in joules: −5.45 × 10⁻¹⁹ J and −2.42 × 10⁻¹⁹ J. Each distractor is a named slip (÷n, n ignored, the other level), computed, not typed. So is the `ch-as-m4` comparison. `chemistryBankDepth.test.ts` pins both keys.
+- **`catalog.ts` outcome `o-chem-2-1`.** It is merged onto the wave-model lesson but read «writes electron configurations for elements 1–36», which is the next lesson. Reworded to the quantum-number outcome the book states for this lesson; the id is kept. The superseded `lesson-chem-1` objective's formula was also corrected. That objective is not served, but it is the text a future copy would come from.
+
+**Maths**
+- **Composition and inverse (S2 u5_l3, u5_l4).** One merged row «تركيب الاقترانات والاقتران العكسي والاقتران الجذري», matched by prefix, gave the composition lesson the inverse content and left the inverse lesson with only its placeholder. It is split into two rows, following the book (p.25 and pp.32–41): one-to-one (not «تقابل»), the horizontal-line test, the identity function, and the radical function including odd roots.
+- **Unit circle (S1 u3_l1).** It described right-triangle ratios; the book lesson (p.66) is standard position and the unit circle.
+- **Graphs (u3_l3).** It taught amplitude, period changes and shifts, none of which is in the book. It now covers sin, cos and tan on [0°, 360°], as pp.82–87 do; tan is «غير معرّف» at 90° and 270°, the book's wording.
+- **Trig equations (u3_l4).** The general solution «+360°n» is gone; the book works within one rotation.
+- **Sectors (S1 u2_l2).** A sector was defined as bounded by two arcs; it is one arc and two radii (p.41). The radian content is gone, since the book uses degrees only.
+- **Law of sines (u4_l2).** The garbled «(ZZض)» and the ambiguous case, which the book does not treat, are replaced by its two cases (ASA/SAA and SSA, p.107).
+- **Tangent (S2 u6_l1).** «touches the curve at one point only» is false in general: the book's own figure shows a tangent crossing the cubic. Now defined by slope.
+- **Vectors (u7_l1).** The unit vector is not in the book, and equal vectors belong to the next lesson. Both are replaced by the p.80 terms.
+- **Grouped variance (u8_l3).** The lesson opened with the range. It now gives the book's grouped-table formulas (p.125).
+
+**Scope check.** A before/after snapshot of all 3,335 KB lessons differs in exactly these 14 Grade 10 lessons and nothing else, so no other grade shares a changed title.
+
+**Verified:**
+- mobile suite: 9,213 pass, 0 fail, 10 skipped;
+- api-server, build then test: 2,899 pass;
+- math-practice: 949 pass;
+- curriculum: 915 pass;
+- `pnpm run typecheck`.
+
+**Not verified:**
+- live-AI output for these lessons;
+- the screens themselves.
+
+**Left open:**
+- placeholder summaries remain for maths u4_l3, u4_l4, u5_l1, u5_l2, u8_l4, u8_l5 and the labs. The hand-written row for «قانون جيوب التمام» never matches the catalog's «قانون جيب التمام», and renaming a catalog title was left alone;
+- the 2020-edition maths lessons u1_l3 and u1_l4, and the missing «حل معادلات خاصة».
+
+## Grade 10 book figures: junk dropped, misplaced figures moved — 2026-11-13
+
+First fix from a Grade 10 review covering coverage, results and book images, across all 15 subjects. Six reviewers each took a subject group and opened all ≈700 Grade 10 figure crops. They checked every figure→lesson map entry and every book-page range against the extracted book text. This PR fixes only the figures that need no PDF.
+
+**What changed** (`knowledge-base/grade-10-*/figures/*/index.json`, `figure-lesson-map.json`, regenerated
+`bookFigureAssets.ts`):
+- **28 crops dropped** (PNG and index entry):
+  - unit badges «الوحدة 2/3», the NCCD logo, a cover crop, a unit-opener banner;
+  - text-only «أفكر / أتذكر / أتعلم / معلومة أساسية» callouts;
+  - single answer options of review MCQs (phys-s2 p052, p089c/d);
+  - review-page text columns (earth-s2 p023, p055, p085);
+  - blank numbered exercise maps (history-s1 p076, geo-s1 p051/p061b, geo-s2 p086/p088) and a half-map fragment (geo-s2 p077b).
+- **24 figures moved to the lesson they show:**
+  - Maths unit-test figures were all pinned to the unit's last lesson. Ten chord, sector and angle test items sat under «معادلة الدائرة»; they now go to chords (u2_l1), arcs and sectors (u2_l2) and inscribed angles (u2_l3). U4 and U6 test items moved likewise, and U8 test items now go to scatter (u8_l1), cumulative frequency (u8_l2) and Venn probability (u8_l4).
+  - bio-s2 stomata: «الفقاريات» → «النباتات الوعائية البذرية».
+  - earth-s1 star field → «ماهية النجوم»; binary stars → «الأنظمة النجمية».
+  - Chemistry S1 and physics S2 «تجربة استهلالية» figures (spectrum apparatus, sodium shells, slinky) go to their unit's lab lesson through three new `lesson: 0` map entries (`matchedBy: "manual"`). Before, two were served on the previous unit's last lesson.
+- **9 detached** (`lesson: null`; the crop stays, nothing serves it):
+  - maths project and test figures with no matching lesson (polar grid, clinometer, rotating disc, trucks);
+  - three English Culture Spot photos (tea, bagpipes) that were shown on the personal-statement and formal-letter writing lessons. S2 u10_l7 now has no figure, on purpose: no picture beats a wrong one.
+
+**Guards** (a scratch script, not committed). It refused to write unless `lesson_ranges()` (`scripts/verify_book_pages.py`) gave identical ranges for every book before and after, so book pages are untouched. It also refused if any lesson that had figures was left with none, except the one above. That check kept `history-s2/p091-v2`, a wrong-lesson blank timeline: it is the only page anchor for «زيغريد هونكه». Before writing, every dropped and moved crop was looked at on two contact sheets. Two proposed drops were kept as real images that need a recrop: `bio-s2/p011` and `geo-s2/p067b-v2`.
+
+**No R2 upload needed.** No key is added to `bookFigureAssets.ts`. Two figures that would have become reachable, `math-s1/p016` (GeoGebra lab) and `phys-s2/p009b` (spring balance), were left out, because they were never uploaded. Mapping them needs `upload-figures-r2` with a token that can write `iqraa-public`.
+
+**Verified:** mobile suite (9,213 pass, 0 fail, 10 skipped), curriculum tests (915 pass), `verify` 0 errors, `pnpm run typecheck`.
+**Not verified:** no crop was compared with the printed page, because the PDFs are not on disk and nccd.gov.jo and r2.dev are blocked from the session. Not seen in the running app.
+
+**Still open from the review** (separate PRs):
+- book-page ranges: Civic S1 shows every lesson the previous lesson's pages; `lesson_ranges()` lets a lesson swallow the next one when that lesson has no figure; History S2 and creative arts have no pages;
+- ≈140 crops to recrop and many missing figures, both needing the PDFs;
+- wrong hand-written KB content (maths summaries; chemistry Heisenberg/Pauli and eV vs J);
+- objectives for history, geography, civic and PE;
+- English S1 vocabulary filed on the wrong lessons;
+- the vocational-English tracks mixed into the English unit picker;
+- the 2026 maths lesson «حل معادلات خاصة» missing from the catalog;
+- the vocational books: Part 2 on file is the Grade 9 book.
+
 ## Grade 6 audit: every lesson's book pages, figures and contents checked against the printed books — 2026-11-13
 
 A review of all eleven Grade 6 subjects: are all the books' lessons in the catalog, do generators give the right
