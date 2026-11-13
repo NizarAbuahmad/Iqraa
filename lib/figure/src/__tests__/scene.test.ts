@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { formatValue, layoutScene, type ScenePrim } from '../scene.ts';
 import type { SceneFigure } from '../sceneTypes.ts';
+import { resolveSceneFigure } from '../sceneGate.ts';
 
 const BOX = { w: 480, h: 320 };
 const SMALL = { w: 320, h: 240 };
@@ -194,6 +195,87 @@ describe('layoutScene: physics the drawing gets right', () => {
         }
       }
     }
+  });
+
+  it('forces: in one figure a larger size is always drawn longer, on any incline and box, and stays inside', () => {
+    const boxes = [BOX, SMALL, { w: 518, h: 238 }, { w: 286, h: 238 }];
+    const length = (p: ScenePrim) => (p.t === 'arrow' ? Math.hypot(p.b.x - p.a.x, p.b.y - p.a.y) : NaN);
+    const check = (raw: Record<string, unknown>, box: { w: number; h: number }) => {
+      const f = resolveSceneFigure(raw);
+      if (!f || f.kind !== 'forces') return 0;  // two arrows too close to draw: the gate refuses it
+      const prims = layoutScene(f, box).prims;
+      const tag = `${JSON.stringify(raw)} in ${box.w}x${box.h}`;
+      for (const p of prims) {
+        for (const q of pointsOf(p)) assert.ok(q.x >= 0 && q.x <= box.w && q.y >= 0 && q.y <= box.h, `${p.role} outside, ${tag}`);
+      }
+      const drawn = f.arrows.map(a => ({ size: a.size, len: length(one(prims, `arrow:${a.label}`)) }));
+      for (const a of drawn) {
+        for (const b of drawn) {
+          if (a.size > b.size) assert.ok(a.len > b.len, `size ${a.size} (${a.len.toFixed(1)}) not longer than size ${b.size} (${b.len.toFixed(1)}), ${tag}`);
+        }
+      }
+      return 1;
+    };
+    const labels = ['A', 'B', 'C'];
+    let checked = 0;
+    for (const box of boxes) {
+      for (let incline = 5; incline <= 60; incline += 5) {
+        // Weight, the slope's normal, up and down the slope, into the slope, and the axes and diagonals.
+        const dirs = [270, 90 + incline, incline, 180 + incline, 270 + incline, 0, 90, 180, 45, 135, 225, 315];
+        for (const d1 of dirs) {
+          for (const d2 of dirs) {
+            for (const [s1, s2] of [[1, 2], [2, 3], [1, 3], [3, 1]]) {
+              checked += check({ kind: 'forces', body: 'block', incline, arrows: [{ dir: d1, size: s1, label: 'A' }, { dir: d2, size: s2, label: 'B' }] }, box);
+            }
+            for (const d3 of dirs) {
+              const arrows = [d1, d2, d3].map((dir, i) => ({ dir, size: i + 1, label: labels[i] }));
+              checked += check({ kind: 'forces', body: 'block', incline, arrows }, box);
+            }
+          }
+        }
+      }
+      for (const body of ['block', 'point']) {
+        for (let d1 = 0; d1 < 360; d1 += 30) {
+          for (let d2 = 0; d2 < 360; d2 += 30) {
+            for (let d3 = 0; d3 < 360; d3 += 45) {
+              const arrows = [d1, d2, d3].map((dir, i) => ({ dir, size: i + 1, label: labels[i] }));
+              checked += check({ kind: 'forces', body, arrows }, box);
+            }
+          }
+        }
+      }
+    }
+    assert.ok(checked > 20000, `checked ${checked} figures`);
+  });
+
+  it('forces: where the arrows cannot all fit, they shrink by one scale and keep their order', () => {
+    let shrunk = 0;
+    for (const box of [{ w: 600, h: 140 }, { w: 160, h: 160 }, { w: 140, h: 400 }]) {
+      const nominal3 = Math.min(box.w, box.h) * 0.36;
+      for (const incline of [undefined, 5, 30, 60]) {
+        const dirs = incline === undefined ? [0, 90, 180, 270, 45, 225] : [270, 90 + incline, incline, 180 + incline, 0, 180];
+        for (const d1 of dirs) {
+          for (const d2 of dirs) {
+            for (const d3 of dirs) {
+              const f = resolveSceneFigure({ kind: 'forces', body: 'block', ...(incline ? { incline } : {}), arrows: [d1, d2, d3].map((dir, i) => ({ dir, size: i + 1, label: 'ABC'[i] })) });
+              if (!f || f.kind !== 'forces') continue;
+              const prims = layoutScene(f, box).prims;
+              const len = f.arrows.map(a => {
+                const p = one(prims, `arrow:${a.label}`);
+                return p.t === 'arrow' ? Math.hypot(p.b.x - p.a.x, p.b.y - p.a.y) : NaN;
+              });
+              assert.ok(len[0]! > 0 && len[1]! > len[0]! && len[2]! > len[1]!, `${len.map(l => l.toFixed(1))} for ${JSON.stringify(f)} in ${box.w}x${box.h}`);
+              assert.ok(Math.abs(len[1]! / len[0]! - 1.5) < 1e-9 && Math.abs(len[2]! / len[0]! - 2) < 1e-9, 'one scale for all arrows');
+              if (len[2]! < nominal3 - 1e-6) shrunk++;
+              for (const p of prims) {
+                for (const q of pointsOf(p)) assert.ok(q.x >= 0 && q.x <= box.w && q.y >= 0 && q.y <= box.h, `${p.role} outside`);
+              }
+            }
+          }
+        }
+      }
+    }
+    assert.ok(shrunk > 0, 'some figure needed the shared scale');
   });
 
   it('wave: the λ line sits below the in-phase sum', () => {

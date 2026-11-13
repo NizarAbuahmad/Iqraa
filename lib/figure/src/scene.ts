@@ -52,26 +52,95 @@ function text(p: Pt, s: string, box: Box, role: string, tone: Tone = 'ink'): Sce
   return { t: 'text', at: { x, y }, text: s, tone, anchor: 'middle', role };
 }
 
+/** An arrow's nominal length per size, as a share of the box's short side. */
+const ARROW_SIZE = [0, 0.18, 0.27, 0.36] as const;
+/** Room kept past an arrow's tip for its label. */
+const LABEL_ROOM = 26;
+/** Where on the slope the block may sit, as a share of the slope's length from its foot. */
+const ON_SLOPE: [number, number] = [0.25, 0.75];
+
+/** Screen direction of an arrow: (cos, −sin), since y grows downward. */
+const heading = (deg: number) => ({ dx: Math.cos(rad(deg)), dy: -Math.sin(rad(deg)) });
+
+/** Distance from `c` along an arrow's heading to the box's edge. */
+function toEdge(c: Pt, deg: number, box: Box): number {
+  const { dx, dy } = heading(deg);
+  return Math.min(
+    Math.abs(dx) > 1e-9 ? (dx > 0 ? box.w - c.x : -c.x) / dx : Infinity,
+    Math.abs(dy) > 1e-9 ? (dy > 0 ? box.h - c.y : -c.y) / dy : Infinity,
+  );
+}
+
+/**
+ * Where the block goes on a slope so every arrow fits at `k` times its nominal length
+ * plus its label room. The block's centre is `(a + run·t + tx, b − rise·t − ty)`: `t` is
+ * how far up the slope it sits, `tx` moves the whole slope right and `ty` lifts it. The
+ * arrows need the centre inside a rectangle; each side of it bounds `t`. Returns the
+ * placement nearest the plain one (mid-slope, slope in the bottom-left corner), or null.
+ */
+function slopePlacement(
+  arrows: { dir: number; len: number }[], k: number, box: Box,
+  a: number, b: number, run: number, rise: number, txMax: number, tyMax: number,
+): { t: number; tx: number; ty: number } | null {
+  let xlo = 0, xhi = box.w, ylo = 0, yhi = box.h;
+  for (const ar of arrows) {
+    const L = ar.len * k + LABEL_ROOM;
+    const { dx, dy } = heading(ar.dir);
+    if (dx < -1e-9) xlo = Math.max(xlo, -L * dx);
+    if (dx > 1e-9) xhi = Math.min(xhi, box.w - L * dx);
+    if (dy < -1e-9) ylo = Math.max(ylo, -L * dy);
+    if (dy > 1e-9) yhi = Math.min(yhi, box.h - L * dy);
+  }
+  if (xlo > xhi || ylo > yhi) return null;
+  const lo = Math.max(ON_SLOPE[0], (xlo - a - txMax) / run, (b - tyMax - yhi) / rise);
+  const hi = Math.min(ON_SLOPE[1], (xhi - a) / run, (b - ylo) / rise);
+  if (lo > hi) return null;
+  const t = Math.max(lo, Math.min(hi, 0.5));
+  const tx = Math.min(txMax, Math.max(0, xlo - (a + run * t)));
+  const ty = Math.min(tyMax, Math.max(0, b - rise * t - yhi));
+  return { t, tx, ty };
+}
+
 function layoutForces(f: ForcesFigure, box: Box): ScenePrim[] {
   const out: ScenePrim[] = [];
   const unit = Math.min(box.w, box.h);
   const s = unit * 0.16;
   const h = s / 2;
+  const nominal = f.arrows.map(a => ({ dir: a.dir, len: unit * ARROW_SIZE[a.size] }));
   let c: Pt = { x: box.w / 2, y: box.h / 2 };
   if (f.incline !== undefined) {
     const th = rad(f.incline);
-    const base = box.h - M;
     const rise = Math.min((box.w - 2 * M) * Math.tan(th), box.h - 2 * M);
     const run = rise / Math.tan(th);
-    const left = { x: M, y: base };
-    const right = { x: M + run, y: base };
-    const top = { x: M + run, y: base - rise };
-    out.push({ t: 'poly', pts: [left, right, top], tone: 'muted', closed: true, role: 'slope' });
-    out.push(text({ x: left.x + 40, y: base - 6 }, `${f.incline}°`, box, 'incline', 'muted'));
-    const mid = { x: (left.x + top.x) / 2, y: (left.y + top.y) / 2 };
     const u = { x: Math.cos(th), y: -Math.sin(th) };   // along the slope, up it
     const n = { x: -Math.sin(th), y: -Math.cos(th) };  // away from the surface
-    c = { x: mid.x + n.x * h, y: mid.y + n.y * h };
+    // On a shallow slope mid-slope sits near the bottom, and on a steep one near the left
+    // edge, so an arrow that way has no room. Move the block (up the slope, or the slope
+    // itself right or up) until every arrow fits at full length; when none does, as long
+    // as they can, all at one scale (below).
+    const a = M + n.x * h;
+    const b = box.h - M + n.y * h;
+    const txMax = Math.max(0, box.w - 2 * M - run);
+    const tyMax = Math.max(0, box.h - 2 * M - rise);
+    let place = slopePlacement(nominal, 1, box, a, b, run, rise, txMax, tyMax);
+    if (!place && slopePlacement(nominal, 0, box, a, b, run, rise, txMax, tyMax)) {
+      let lo = 0, hi = 1;
+      for (let i = 0; i < 30; i++) {
+        const mid = (lo + hi) / 2;
+        if (slopePlacement(nominal, mid, box, a, b, run, rise, txMax, tyMax)) lo = mid;
+        else hi = mid;
+      }
+      place = slopePlacement(nominal, lo, box, a, b, run, rise, txMax, tyMax);
+    }
+    const { t, tx, ty } = place ?? { t: 0.5, tx: 0, ty: 0 };
+    const base = box.h - M - ty;
+    const left = { x: M + tx, y: base };
+    const right = { x: M + tx + run, y: base };
+    const top = { x: M + tx + run, y: base - rise };
+    out.push({ t: 'poly', pts: [left, right, top], tone: 'muted', closed: true, role: 'slope' });
+    out.push(text({ x: left.x + 40, y: base - 6 }, `${f.incline}°`, box, 'incline', 'muted'));
+    const on = { x: left.x + run * t, y: base - rise * t };
+    c = { x: on.x + n.x * h, y: on.y + n.y * h };
     const corner = (a: number, b: number): Pt => ({ x: c.x + u.x * h * a + n.x * h * b, y: c.y + u.y * h * a + n.y * h * b });
     out.push({ t: 'poly', pts: [corner(-1, -1), corner(1, -1), corner(1, 1), corner(-1, 1)], tone: 'ink', closed: true, role: 'body' });
   } else if (f.body === 'block') {
@@ -80,14 +149,12 @@ function layoutForces(f: ForcesFigure, box: Box): ScenePrim[] {
   } else {
     out.push({ t: 'circle', c, r: 5, tone: 'ink', fill: true, role: 'body' });
   }
+  // One scale for the whole figure, never one cap per arrow: a cap per arrow drew a size-3
+  // weight no longer than a size-1 normal on a shallow slope, which says the wrong physics.
+  const k = Math.min(1, ...nominal.map(a => Math.max(toEdge(c, a.dir, box) - LABEL_ROOM, 0) / a.len));
   f.arrows.forEach((a, i) => {
-    const dx = Math.cos(rad(a.dir));
-    const dy = -Math.sin(rad(a.dir));
-    const toEdge = Math.min(
-      Math.abs(dx) > 1e-9 ? (dx > 0 ? box.w - c.x : -c.x) / dx : Infinity,
-      Math.abs(dy) > 1e-9 ? (dy > 0 ? box.h - c.y : -c.y) / dy : Infinity,
-    );
-    const len = Math.min(unit * [0, 0.18, 0.27, 0.36][a.size]!, Math.max(toEdge - 26, 0));
+    const { dx } = heading(a.dir);
+    const len = nominal[i]!.len * k;
     const tip = polar(c, a.dir, len);
     out.push(arrow(c, tip, series(i), `arrow:${a.label}`));
     const label = tagged(a.label, a.value);
