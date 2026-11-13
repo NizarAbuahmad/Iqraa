@@ -248,15 +248,31 @@ export type BookPages = {
  * `book-page-links.json` only after comparing the live book with the copy our
  * page numbers came from — a book re-issued with different pagination gets no
  * pages rather than the wrong ones. Null for every lesson not listed.
+ *
+ * An entry may carry `rendered`: the bucket folder its images actually sit in
+ * and the book pages that folder holds. That exists because a range can be
+ * corrected after its pages were cut — Grade 6 Arabic was cut one lesson early
+ * throughout, so each lesson's right pages were already in the bucket under
+ * its NEIGHBOUR's folder (audit 2026-11-13). Without `rendered` the folder is
+ * the lesson's own and starts at its `startPage`, as every renderer writes it.
  */
+export type BookPageLink = {
+  sourceId: string;
+  startPage: number;
+  endPage: number;
+  aspect: number;
+  rendered?: { dir: string; startPage: number; endPage: number };
+};
+
 export function bookPagesForLesson(kbLessonId: string | null | undefined): BookPages | null {
   if (!kbLessonId) return null;
-  const entry = (pageLinks as { lessons: Record<string, { startPage: number; endPage: number; aspect: number }> })
-    .lessons[kbLessonId];
+  const entry = (pageLinks as { lessons: Record<string, BookPageLink> }).lessons[kbLessonId];
   if (!entry) return null;
+  const dir = entry.rendered?.dir ?? kbLessonId;
+  const first = entry.rendered?.startPage ?? entry.startPage;
   const count = entry.endPage - entry.startPage + 1;
   return {
-    urls: Array.from({ length: count }, (_, n) => `${BOOK_PAGES_BASE_URL}/${kbLessonId}/${n + 1}.jpg`),
+    urls: Array.from({ length: count }, (_, n) => `${BOOK_PAGES_BASE_URL}/${dir}/${entry.startPage - first + n + 1}.jpg`),
     page: entry.startPage,
     aspect: entry.aspect,
   };

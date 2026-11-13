@@ -252,11 +252,10 @@ function passwordResetBodyHtml(code: string): string {
 }
 
 /**
- * `reason`/`lessonRef` ultimately trace back to a teacher's report and a
- * lesson id — neither is attacker-controlled today (no free-text field
- * exists yet), but this is the one place in the file that interpolates
- * anything other than a server-generated code, so it escapes rather than
- * assuming that stays true.
+ * `reason`/`lessonRef` ultimately trace back to a reporter's free text and a
+ * lesson id. The reason IS user-typed (since 2026-11-11), and this is the one
+ * place in the file that interpolates anything other than a server-generated
+ * code, so everything that is not ours goes through here first.
  */
 function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) =>
@@ -272,7 +271,7 @@ function escapeHtml(s: string): string {
  */
 export async function sendArtifactReportedEmail(
   to: string,
-  info: { kind: string; lessonRef: string },
+  info: { kind: string; lessonRef: string; reason?: string },
 ): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -287,12 +286,17 @@ export async function sendArtifactReportedEmail(
   );
 }
 
-function artifactReportedBodyHtml(info: { kind: string; lessonRef: string }): string {
+export function artifactReportedBodyHtml(info: { kind: string; lessonRef: string; reason?: string }): string {
   const label = artifactReportLabel(info.kind, info.lessonRef);
   const lessonAr = escapeHtml(label.lessonAr || "—");
   const lessonEn = escapeHtml(label.lessonEn || "—");
   const contextAr = label.contextAr ? `<p><strong>الصف والمادة:</strong> ${escapeHtml(label.contextAr)}</p>` : "";
   const contextEn = label.contextEn ? `<p><strong>Grade &amp; subject:</strong> ${escapeHtml(label.contextEn)}</p>` : "";
+  // The reporter's own words, quoted in both blocks (an admin may read either).
+  // Escaped first, then line breaks restored, so a typed `<` can never become markup.
+  const reasonHtml = info.reason ? escapeHtml(info.reason).replace(/\r?\n/g, "<br />") : "";
+  const reasonAr = reasonHtml ? `<p><strong>سبب البلاغ:</strong> ${reasonHtml}</p>` : "";
+  const reasonEn = reasonHtml ? `<p><strong>Reason given:</strong> ${reasonHtml}</p>` : "";
   const link = "https://app.iqrra.com/admin/artifact-reports";
   return `
     <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-bottom:24px;">
@@ -300,6 +304,7 @@ function artifactReportedBodyHtml(info: { kind: string; lessonRef: string }): st
       <p><strong>النوع:</strong> ${escapeHtml(label.kindAr)}</p>
       <p><strong>الدرس:</strong> ${lessonAr}</p>
       ${contextAr}
+      ${reasonAr}
       <p><a href="${link}">افتح البلاغ وراجع المحتوى</a></p>
     </div>
     <hr style="border:none;border-top:1px solid #E2E8F0;" />
@@ -307,6 +312,7 @@ function artifactReportedBodyHtml(info: { kind: string; lessonRef: string }): st
       <p>Someone reported a problem with an AI-generated ${escapeHtml(label.kindEn)}, awaiting your review.</p>
       <p><strong>Lesson:</strong> ${lessonEn}</p>
       ${contextEn}
+      ${reasonEn}
       <p><a href="${link}">Open the report and read the content</a></p>
     </div>
   `;
