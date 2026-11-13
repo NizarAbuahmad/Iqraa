@@ -10,6 +10,46 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Parents: «المدرسة» first, and a read-only view of a handed-in project — 2026-11-13
+
+Two changes from a review of the parent side.
+
+**What changed.**
+- **A parent sees their child's handed-in project.** The API route existed (`GET /parent/homework/:id/submissions`,
+  `readForParent`), and nothing in the app called it. A project row on «المدرسة» now shows «اعرض المشروع» to a
+  parent once the child has handed in (`showsChildProjectLink`: the student link's rule plus `submission !== 'none'`;
+  the parent's read never carries a draft, so before a hand-in the link would open onto nothing). It opens
+  `app/homework-project/child/[id].tsx`: the state and when it was handed in, the photos (tap to enlarge), the note.
+  Read-only, built from the teacher's detail screen without the delete. The client is `services/parentProjectApi.ts`
+  (+ `.default.ts`). The route sits under `/homework-project` on purpose: that prefix is already open to parents
+  (`routeGating.ts`) and already kept out of analytics (`screenTracking.ts`), since it shows a minor's photos. The
+  link carries the child's key, so siblings in one class open on the child «المدرسة» was showing
+  (`childrenToShow`; a key that matches nobody shows every child in the answer, never an empty screen).
+- **A parent lands on «المدرسة», not Messages.** Messages was chosen on 2026-09-13 («The student has a place to go»),
+  when «المدرسة» was only a timetable. It now holds homework and exams, and the homework and exam-date pushes already
+  open it. `app/(tabs)/index.tsx` now redirects a student or parent with `homeHrefFor` from `services/tour.ts`, the
+  href the tour's replay uses, so the two cannot drift; an unknown role still fails closed to Messages. The tour
+  (`homeRouteFor`) starts on `/school` for a parent, and the What's New dialog shows there. The bounce for a parent
+  who opens a teacher URL still goes to Messages (`app/_layout.tsx`); unchanged.
+- «ما الجديد» entry `parent-school-first-projects` (parents only, route `/school`).
+
+**Verified.** New tests: `parentProjectApi.test.ts` (the call, normalizing, a 404, a non-JSON 2xx never reading as
+«nobody handed in», which child is shown), `parentProjectScreen.test.ts` (the path is open to parents and not
+tracked, the screen only reads, the design rules, the School link uses the tested rule and href, the landing uses
+`homeHrefFor` and still fails closed), and two in `homework.test.ts` (the link rule; the href round-trips Arabic and
+`&` with no `+`). `tour.test.ts` moved to the new home. Mutation check: dropping `submission !== 'none'` from
+`showsChildProjectLink` fails its test. Mobile suite: 9,285 tests, 9,275 pass, 0 fail, 10 skipped. `pnpm run
+typecheck` (whole monorepo) clean. In a built web bundle with the API stubbed by Playwright, as a parent: lands on
+`/school` (Arabic phone light and dark, English desktop); «اعرض المشروع» shows on the handed-in project and not on the
+one not yet handed in; it opens the project with both photos loaded and the note; Back returns to `/school`; a new
+parent's tour starts on `/school`; an existing parent sees this What's New entry there. Screenshots read for layout,
+RTL and dark mode.
+
+**Not verified.** Nothing was seen on a phone or in a native build. The browser check stubbed the API: the real
+`/parent/homework/:id/submissions` was not called from the app against a real database, and photos were local SVGs,
+not signed R2 links (the route itself is covered by the API's own tests). Whether replay masking hides the photos is
+unverified, as for the student's and the teacher's project screens (STATUS.md, «Screen recording»).
+
 ## Grade 8 review: book figures on the right lessons, teaching-plan export grounded by id — 2026-11-13
 
 A review of the 19 grade 8 catalogs (11 subjects). It found the catalogs complete and wired, a picked lesson

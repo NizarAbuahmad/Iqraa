@@ -141,6 +141,28 @@ export function showsSubmissionLink(hw: Pick<FamilyHomework, 'requiresSubmission
   return hw.requiresSubmission && hw.canTrack;
 }
 
+/**
+ * Whether a PARENT's row offers «اعرض المشروع»: the same rule as the student's
+ * link, and only once the child has handed in. The parent's read never carries a
+ * draft, so before a hand-in the link would open onto nothing.
+ */
+export function showsChildProjectLink(
+  hw: Pick<FamilyHomework, 'requiresSubmission' | 'canTrack' | 'submission'>,
+): boolean {
+  return showsSubmissionLink(hw) && hw.submission !== 'none';
+}
+
+/**
+ * The parent's project screen for one homework, for the child «المدرسة» is
+ * showing (`app/homework-project/child/[id].tsx`). Under `/homework-project`, so
+ * the route allowlist and the analytics exclusion that prefix already has cover it.
+ */
+export function childProjectHref(homeworkId: string, childKey: string, title: string): string {
+  // encodeURIComponent, not URLSearchParams: that writes a space as `+`, which a
+  // route's params do not read back as a space.
+  return `/homework-project/child/${encodeURIComponent(homeworkId)}?child=${encodeURIComponent(childKey)}&title=${encodeURIComponent(title)}`;
+}
+
 export interface ChildHomework {
   key: string;
   displayName: string;

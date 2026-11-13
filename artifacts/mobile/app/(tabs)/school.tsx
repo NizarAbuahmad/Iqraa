@@ -46,7 +46,9 @@ import {
   gameScoreText,
   homeworkSections,
   resourceKey,
+  childProjectHref,
   resultForGame,
+  showsChildProjectLink,
   showsSubmissionLink,
   untrackedMode,
   type ChildHomework,
@@ -375,6 +377,7 @@ export default function SchoolScreen() {
                 <HomeworkRow
                   key={item.id}
                   item={item}
+                  childKey={hwChild?.key ?? 'self'}
                   isParent={isParent}
                   today={hwToday}
                   saving={hwSaving.has(item.id)}
@@ -615,9 +618,11 @@ function UpcomingExamRow({
 }
 
 function HomeworkRow({
-  item, isParent, today, saving, onToggle, colors, isRTL, t,
+  item, childKey, isParent, today, saving, onToggle, colors, isRTL, t,
 }: {
   item: FamilyHomework;
+  /** The child this list is for: the parent's project link opens their project. */
+  childKey: string;
   isParent: boolean;
   today: string;
   saving: boolean;
@@ -658,6 +663,8 @@ function HomeworkRow({
   const isSubmission = item.requiresSubmission;
   const showSubmission = isSubmission && !untracked;
   const showLink = !isParent && showsSubmissionLink(item);
+  // A parent reads the handed-in project (photos, note) on a screen of its own; before a hand-in there is nothing to see.
+  const showChildLink = isParent && showsChildProjectLink(item);
   const stateLabel = t(stateLabelKey(item.submission));
   // The same look as the project screen's status (submissionLook): late is destructive, never amber.
   const look = submissionLook(item.submission);
@@ -777,6 +784,19 @@ function HomeworkRow({
             <Ionicons name="images-outline" size={ICON.md} color={ACCENT} />
             <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textAlign: align }}>
               {t('submissionOpen')}
+            </Text>
+          </PressableScale>
+        ) : null}
+        {showChildLink ? (
+          <PressableScale
+            accessibilityRole="link"
+            aria-label={t('childProjectOpenA11y', item.title)}
+            onPress={() => router.push(childProjectHref(item.id, childKey, item.title) as never)}
+            style={{ flexDirection: rowDir, alignItems: 'center', gap: SPACE.xs, minHeight: TOUCH }}
+          >
+            <Ionicons name="images-outline" size={ICON.md} color={ACCENT} />
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textAlign: align }}>
+              {t('childProjectOpen')}
             </Text>
           </PressableScale>
         ) : null}
