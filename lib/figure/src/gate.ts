@@ -39,7 +39,7 @@ const NUMBER_WORDS = new Set([
   'one', 'two', 'six', 'ten',
   'صفر', 'ستة', 'سبع', 'تسع', 'عشر', 'خمس', 'ثمن', 'ثلث', 'ربع', 'نصف', 'مئة', 'ألف', 'الف',
 ]);
-const isNumberWord = (label: string): boolean => NUMBER_WORDS.has(label.replace(/[0-9'′]+$/u, '').toLowerCase());
+export const isNumberWord = (label: string): boolean => NUMBER_WORDS.has(label.replace(/[0-9'′]+$/u, '').toLowerCase());
 
 type Rec = Record<string, unknown>;
 const isRec = (v: unknown): v is Rec => !!v && typeof v === 'object' && !Array.isArray(v);
