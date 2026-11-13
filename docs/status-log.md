@@ -32,8 +32,16 @@ plan: [`docs/superpowers/plans/2026-11-13-physics-figures-1-package.md`](./super
   `components/ui/SceneFigureView.tsx`, and `FigureView` hands scenes to it.
 - **Deliberately unchanged: `Figure`, `resolveFigure`, `layoutFigure`.** The maths exam generator, `studentVisual` and
   the lesson cards pass `resolveFigure`'s output straight to the plane renderer and must never be handed a scene. The
-  spec said to add the kinds "in resolveFigure"; this is a refinement of that. PRs 2 and 3 call `resolveSceneFigure`.
-  No behaviour difference, only the function name differs from the spec text.
+  spec said to add the kinds "in resolveFigure"; this is a refinement of that. PRs 2 and 3 call `resolvePhysicsFigure`
+  (scenes and plane vectors), not `resolveSceneFigure` (scenes only). The spec's §2 and §3 still say `resolveFigure`.
+- **Fixed in review.** The leak guard failed OPEN: it read the digit in a symbol (`F2`, `m1`, `v0`, `H2O`) as a stated
+  number, so a question that named `F2` and asked for it passed a figure printing «F2 = 2 N». A digit after a Latin,
+  Greek or Arabic letter, `_`, a digit or a point no longer counts; after tatweel it still does («بـ20»). The gate now
+  refuses a negative value (the arrow's direction carries the sign) and two arrows on one body less than 15° apart
+  (they draw over each other). On an incline a bigger arrow is now always drawn longer: the block moves up the slope,
+  or the slope moves right or up, until every arrow fits, and if they still cannot, all shrink by one scale. Before,
+  each arrow was cut at its own edge, so on a shallow slope a size-3 weight drew no longer than a size-1 normal.
+  `figureSvg` keeps only `[A-Za-z0-9_-]` of `opts.id`.
 
 **Verified.**
 - Package tests, root `pnpm run typecheck`, and the api-server and mobile suites unchanged (counts in the PR).
@@ -55,10 +63,11 @@ plan: [`docs/superpowers/plans/2026-11-13-physics-figures-1-package.md`](./super
 **Known limits (cosmetic unless noted).**
 - «10°» sits on the arrow lines at 10°; at 80° in a small box the H dashed line passes through the v0 label; «A = …»
   touches the wave curve. All readable.
-- **To fix before PR 2 relies on it:** a digit inside a symbol (`F2`, `v0`) counts as a stated number in
-  `figureNumbersInText`, so a question that does not say "2" can be refused for a label. That fails closed (a figure
-  is dropped, never a leak), but it will drop good figures. Also fail-closed: `1,000`, `١٬٠٠٠`, `.5` and `1/2` are not
-  matched as numbers.
+- The leak guard does not match `1,000`, `١٬٠٠٠`, `.5` or `1/2` as numbers, nor a number written straight after a
+  letter («ب20»). Those fail closed: a good figure is dropped, never a leak. It does not compare units («30 N» is
+  satisfied by «30°»).
+- **The guard does not judge `vectors`.** `figureNumbers` returns nothing for them, so they always pass, yet they are
+  drawn on a numbered grid and the alt text prints end points. PR 2 must judge them some other way.
 - A wave's amplitude / wavelength is accepted without its A / λ mark; the layout prints them only with the mark.
 
 **«ما الجديد»:** none; no user-visible change.
