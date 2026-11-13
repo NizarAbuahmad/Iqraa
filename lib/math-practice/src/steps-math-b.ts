@@ -196,6 +196,112 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
       'So b = 8√2',
     ],
   },
+  'ls-e1': {
+    ar: [
+      'قانون الجيوب: a / sin A = b / sin B',
+      'نعوّض: 10 / sin 30° = b / sin 90°',
+      'نحلّ لـ b: b = 10 × sin 90° / sin 30°',
+      'sin 90° = 1 و sin 30° = 1/2: b = 10 × 1 ÷ (1/2)',
+      'إذن b = 20',
+    ],
+    en: [
+      'Sine rule: a / sin A = b / sin B',
+      'Substitute: 10 / sin 30° = b / sin 90°',
+      'Solve for b: b = 10 × sin 90° / sin 30°',
+      'sin 90° = 1 and sin 30° = 1/2: b = 10 × 1 ÷ (1/2)',
+      'So b = 20',
+    ],
+  },
+  'ls-e2': {
+    ar: [
+      'قانون الجيوب: sin A / a = sin B / b',
+      'نعوّض: sin A / 6 = sin 90° / 12',
+      'sin A = 6 × 1 / 12 = 1/2',
+      'A حادة لأن a < b (الضلع الأقصر يقابل الزاوية الأصغر)، إذن A = 30°',
+    ],
+    en: [
+      'Sine rule: sin A / a = sin B / b',
+      'Substitute: sin A / 6 = sin 90° / 12',
+      'sin A = 6 × 1 / 12 = 1/2',
+      'A is acute because a < b (the shorter side faces the smaller angle), so A = 30°',
+    ],
+  },
+  'ls-m1': {
+    ar: [
+      'قانون الجيوب: a / sin A = b / sin B',
+      'نعوّض: 12 / sin 45° = b / sin 30°',
+      'b = 12 × sin 30° / sin 45° = 12 × (1/2) ÷ (√2/2)',
+      'b = 6 ÷ (√2/2) = 12/√2',
+      'نضرب البسط والمقام في √2: 12√2/2، إذن b = 6√2',
+    ],
+    en: [
+      'Sine rule: a / sin A = b / sin B',
+      'Substitute: 12 / sin 45° = b / sin 30°',
+      'b = 12 × sin 30° / sin 45° = 12 × (1/2) ÷ (√2/2)',
+      'b = 6 ÷ (√2/2) = 12/√2',
+      'Multiply top and bottom by √2: 12√2/2, so b = 6√2',
+    ],
+  },
+  'ls-m2': {
+    ar: [
+      'مجموع زوايا المثلث 180°: C = 180° − 30° − 30° = 120°',
+      'قانون الجيوب: a / sin A = c / sin C',
+      'نعوّض: 5 / sin 30° = c / sin 120°',
+      'sin 120° = √3/2 و sin 30° = 1/2: c = 5 × (√3/2) ÷ (1/2)',
+      'إذن c = 5√3',
+    ],
+    en: [
+      'The angles of a triangle sum to 180°: C = 180° − 30° − 30° = 120°',
+      'Sine rule: a / sin A = c / sin C',
+      'Substitute: 5 / sin 30° = c / sin 120°',
+      'sin 120° = √3/2 and sin 30° = 1/2: c = 5 × (√3/2) ÷ (1/2)',
+      'So c = 5√3',
+    ],
+  },
+  'ls-m3': {
+    ar: [
+      'قانون الجيوب: sin B / b = sin A / a',
+      'نعوّض: sin B = 2√3 × sin 60° / (3√2)',
+      'sin 60° = √3/2: sin B = 2√3 × (√3/2) / (3√2) = 3 / (3√2) = √2/2',
+      'B حادة لأن b < a، إذن B = 45°',
+    ],
+    en: [
+      'Sine rule: sin B / b = sin A / a',
+      'Substitute: sin B = 2√3 × sin 60° / (3√2)',
+      'sin 60° = √3/2: sin B = 2√3 × (√3/2) / (3√2) = 3 / (3√2) = √2/2',
+      'B is acute because b < a, so B = 45°',
+    ],
+  },
+  'ls-h1': {
+    ar: [
+      'قانون الجيوب: sin B / b = sin A / a',
+      'نعوّض: sin B = 2√3 × sin 120° / 6',
+      'sin 120° = √3/2: sin B = 2√3 × (√3/2) / 6 = 3/6 = 1/2',
+      'sin B = 1/2 تعطي 30° أو 150°، و A = 120° منفرجة فلا يتسع المثلث لزاوية منفرجة ثانية، إذن B = 30°',
+    ],
+    en: [
+      'Sine rule: sin B / b = sin A / a',
+      'Substitute: sin B = 2√3 × sin 120° / 6',
+      'sin 120° = √3/2: sin B = 2√3 × (√3/2) / 6 = 3/6 = 1/2',
+      'sin B = 1/2 gives 30° or 150°, but A = 120° is obtuse and a triangle has room for only one obtuse angle, so B = 30°',
+    ],
+  },
+  'ls-w1': {
+    ar: [
+      'الزاوية الثالثة: ∠ACB = 180° − 30° − 120° = 30°',
+      'AC يقابل الزاوية B، و AB يقابل الزاوية C',
+      'قانون الجيوب: AC / sin 120° = AB / sin 30°',
+      'AC = 100 × sin 120° / sin 30° = 100 × (√3/2) ÷ (1/2)',
+      'إذن AC = 100√3 م (نحو 173 م)',
+    ],
+    en: [
+      'The third angle: ∠ACB = 180° − 30° − 120° = 30°',
+      'AC faces angle B, and AB faces angle C',
+      'Sine rule: AC / sin 120° = AB / sin 30°',
+      'AC = 100 × sin 120° / sin 30° = 100 × (√3/2) ÷ (1/2)',
+      'So AC = 100√3 m (about 173 m)',
+    ],
+  },
 
   // ── Functions ──
   'f-e1': {

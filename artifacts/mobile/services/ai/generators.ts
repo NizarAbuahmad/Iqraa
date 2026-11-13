@@ -1733,6 +1733,9 @@ export class MockAIService extends AIService {
     bankOnly = questionBankPolicy.required;
     let wordQ: WQ | null = null;
     let wordIsStory = false;
+    // Its own flag: a word problem the bank cannot supply is a shortfall, but
+    // the practice still gets its turn (`spent` would end it).
+    let wordSpent = false;
     try {
     // The word problem is drawn FIRST and printed after the practice: a lesson
     // has few stories (`exp_eq` two), and drawn last it found them spent — the
@@ -1748,7 +1751,7 @@ export class MockAIService extends AIService {
         // A word problem the spent bank cannot supply is a shortfall, reported
         // like any other — it must not take the practice or the formats with it.
         if (!(e instanceof BankSpentError)) throw e;
-        spent = true;
+        wordSpent = true;
       }
       slot = practiceStart;
     }
@@ -1789,7 +1792,7 @@ export class MockAIService extends AIService {
     if (wordQ) {
       sections.push(wordIsStory
         ? { type: 'word_problem', title: lang === 'ar' ? 'مسألة حياتية' : 'Real-life word problem', questions: [withoutSteps(wordQ)] }
-        : { type: 'short_answer', title: lang === 'ar' ? 'مسألة: حلّ موضّحًا الخطوات' : 'Problem: show your working', questions: [withoutSteps(wordQ)] });
+        : { type: 'short_answer', title: lang === 'ar' ? 'مسألة للحل' : 'Problem to solve', questions: [withoutSteps(wordQ)] });
       answerKey.push({ num: qNum++, answer: wordQ.answer ?? '—', ...(wordQ.steps ? { solution: wordQ.steps } : {}) });
       if (!wordIsStory) missingFormats.push('word_problem');
     }
@@ -1814,8 +1817,8 @@ export class MockAIService extends AIService {
         ? `ورقة عمل صفية – ${topic}`
         : `In-class Worksheet – ${topic}`,
       instructions: lang === 'ar'
-        ? `مقدمة قصيرة: هذه ورقة تدريب صفية حول «${topic}». اعمل بهدوء، وابدأ بالأسهل ثم انتقل للأصعب.\n\n${exampleItem ? '• ادرس المثال المحلول أولًا، ثم أكمل الحل في السؤال الأول، ثم تابع بقية الأسئلة.\n' : ''}• أجب في المساحات المخصصة.\n• بيّن خطوات الحل عند الحاجة.`
-        : `Short intro: This is an in-class practice sheet on “${topic}”. Work quietly and move from easier to harder items.\n\n${exampleItem ? '• Study the worked example first, then finish the solution in question 1, then carry on.\n' : ''}• Write in the answer spaces provided.\n• Show working where needed.`,
+        ? `مقدمة قصيرة: هذه ورقة تدريب صفية حول «${topic}». اعمل بهدوء، وابدأ بالأسهل ثم انتقل للأصعب.\n\n${exampleItem ? (completionItem ? '• ادرس المثال المحلول أولًا، ثم أكمل الحل في السؤال الأول، ثم تابع بقية الأسئلة.\n' : '• ادرس المثال المحلول أولًا، ثم تابع الأسئلة.\n') : ''}• أجب في المساحات المخصصة.\n• بيّن خطوات الحل عند الحاجة.`
+        : `Short intro: This is an in-class practice sheet on “${topic}”. Work quietly and move from easier to harder items.\n\n${exampleItem ? (completionItem ? '• Study the worked example first, then finish the solution in question 1, then carry on.\n' : '• Study the worked example first, then carry on with the questions.\n') : ''}• Write in the answer spaces provided.\n• Show working where needed.`,
       ...(exampleItem
         ? {
             workedExample: {
@@ -1834,7 +1837,7 @@ export class MockAIService extends AIService {
       // The worked example is one of the `totalQ` items the picker promised, so it
       // is one of the items produced — without it a three-item paper asked of
       // twelve would be reported as two.
-      ...(spent ? { shortfall: { requested: totalQ, produced: qNum - 1 - priorCount + (exampleItem ? 1 : 0) } } : {}),
+      ...(spent || wordSpent ? { shortfall: { requested: totalQ, produced: qNum - 1 - priorCount + (exampleItem ? 1 : 0) } } : {}),
       ...(missingFormats.length ? { missingFormats } : {}),
     };
   }

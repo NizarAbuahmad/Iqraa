@@ -21,11 +21,9 @@ the four formats, a homework) found three defects on the page. Every answer key 
   law-of-cosines worked example. Each item of a split family now names its lesson (`ITEM_FOCUS`, the new
   `lib/math-practice/src/lessonFocus.ts`; families `trig_apps`, `circle`, `trig`, `functions`, `vectors`,
   `stats`), and a lesson title names the item lessons it accepts (`lessonFocus`). The worked example and the
-  half-solved question come **only** from those, or there is none. Practice prefers them **among the items of the
-  difficulty asked for**, then takes the rest of the family as before, so a thin lesson keeps its count. A first
-  version ranked the lesson above difficulty. That put the one law-of-sines item first on every paper, and three
-  existing tests caught it: homework regenerate repeated, and a warm-up and the activity after it posed the same
-  triangle.
+  half-solved question come **only** from those, or there is none. Practice prefers them (the final ranking is under
+  «Fixed after an independent review» below), then takes the rest of the family as before, so a thin lesson keeps its
+  count.
 - **«مسألة حياتية» is a story.** The word problem used to be drawn last, after the practice had spent the lesson's
   few stories (`exp_eq` has two). So the bacteria story was printed in the challenge section as multiple choice,
   still saying «اكتب المعادلة وحلّها», while «مسألة حياتية» held «أوجد حل المعادلة: 8^x = 4^{x+1}». Now:
@@ -43,8 +41,8 @@ the four formats, a homework) found three defects on the page. Every answer key 
   - The match format pairs one equation once.
 
 **Verified.**
-- Red/green: `lib/math-practice/src/__tests__/lessonFocus.test.ts` (12 cases) and
-  `artifacts/mobile/services/__tests__/worksheetOwnLesson.test.ts` (5). The mobile file's word-problem cases failed
+- Red/green: `lib/math-practice/src/__tests__/lessonFocus.test.ts` (18 cases) and
+  `artifacts/mobile/services/__tests__/worksheetOwnLesson.test.ts` (7). The mobile file's word-problem cases failed
   before the generator change; its other cases passed once the bank change was in.
 - Three bank tests counted raw session entries and now count item ids only (`chemistry.test.ts`,
   `formatsBank.test.ts`, `orderSafe.test.ts`); what they assert is unchanged.
@@ -52,11 +50,50 @@ the four formats, a homework) found three defects on the page. Every answer key 
   printed 9^x = 27 once, and asked no question the half-solved working answered; the law-of-sines paper studied a
   law-of-sines example.
 
+**Law of sines: seven new bank items** (`ls-e1` … `ls-w1`, `trig_apps`, focus `sine_rule`), each with checked
+working in both languages (`steps-math-b.ts`):
+- easy: a side from two angles (`b = 20`) and an angle from two sides (`A = 30°`);
+- medium: `b = 6√2`, `c = 5√3` (the third angle first), `B = 45°`;
+- hard: `B = 30°`, whose working rules out 150° because `A = 120°` is already obtuse; and a story: a surveyor on a
+  riverbank, `AC = 100√3 م` (about 173 m).
+
+Special angles only, so every key is exact. Every key was computed again by hand for this entry. No item is the
+two-triangle case: each angle asked has one answer, and its working says why. With eight items of its own, a
+«قانون الجيوب» worksheet of 8 is now full: worked example, half-solved question, practice and its own «مسألة حياتية»,
+all on the law of sines (`worksheetOwnLesson.test.ts`).
+
+**Fixed after an independent review of the first commit:**
+- **Instructions.** They promised «أكمل الحل في السؤال الأول» whenever there was a worked example. A lesson with one
+  solved item of its own («قانون جيب التمام», «الاقتران العكسي») gets no half-solved question, so the line now
+  depends on that question being on the page.
+- **Chemistry tags.** Equation keys (`eq:`) are maths only. A chemistry item's `eq` is a context tag («Cl₂»,
+  «أمثلة») shared by different questions, and keying on it dropped real questions from quizzes and the API's
+  evaluation bank.
+- **The printed-working rule** spends an item only when the equation printed holds the item's own answer («81 = 3^4»
+  for «اكتب 81 كقوة أساسها 3»). An operator beside the match now counts as part of a longer expression. Before,
+  «f(x) = x² − 1» spent «مشتقة x²», and chemistry givens («n = 2 mol», «pH = 3») spent questions.
+- **Stories are marked by hand** (`ConcreteItem.story`). `kind: 'word'` also held a GeoGebra task and a number
+  puzzle. A story also counts only for its own lesson, so the law-of-sines river crossing is not «قانون جيب
+  التمام»'s real-life problem.
+- **Heading.** The plain heading is «مسألة للحل». The question body already says «اكتب الحل موضّحًا الخطوات», which
+  the old heading repeated.
+- **A spent word problem** no longer stops the practice sections; it is reported as a shortfall.
+- **Lesson ranking.** The lesson's own items come before the rest of the family in the tier asked for, then in any
+  tier. A lesson with a single item of its own gets it only in its tier, so that item does not open every paper.
+- **Tests that used the law of sines as their thin bank.**
+  - The warm-up/activity test compared single values («A = 30»), which different law-of-sines triangles share. It now
+    compares a problem's givens together.
+  - The short-paper tests (`noQuestionBank`, `worksheetWorkedExample`) now use «معادلة الدائرة», whose family still
+    has five items.
+  - The regenerate test keeps the law of sines and adds that lesson as its small-bank case.
+
 **Not changed, and known.**
-- **Practice can still leave the lesson.** `trig_apps` has one law-of-sines item. A «قانون الجيوب» worksheet of 8 now
-  studies that item and then practises the area and law-of-cosines items (3 of 8, `shortfall` reported). The bank
-  needs more items per lesson (`trig_apps` 3, `circle`/`functions`/`stats`/`vectors` 5 each), or practice must
-  become as strict as the worked example. That is a decision, not made here.
+- **Practice can still leave a thin lesson.** «قانون جيب التمام», the triangle-area lesson, «الاقتران العكسي» and
+  «جمع المتجهات وطرحها» each have one item of their own, and practise their family's other lessons after it. They need
+  items like the law of sines got (`circle`/`functions`/`stats`/`vectors` have 5 items each).
+- **Offline worksheets with «مسألة حياتية» ticked** now say the real-life problem could not be added for every lesson
+  without a story of its own. That is every chemistry lesson, and every maths family but `exp_eq`, `linear_quad`,
+  `algebra` and the law of sines. The notice's wording («…أو لا تكفي أسئلة البنك لهذا الدرس») fits only loosely.
 - `f-h1` is an arithmetic-sequence item filed under `functions`. It is tagged so no functions lesson studies it, but
   it can still fill a functions paper's practice.
 - **The review's chemistry finding was wrong.** It said an ionic-bonds worksheet opened with a metallic-bond example.

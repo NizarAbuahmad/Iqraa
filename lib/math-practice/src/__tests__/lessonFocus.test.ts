@@ -19,6 +19,9 @@ import assert from 'node:assert/strict';
 import {
   MATH_BANK, itemSpent, lessonFocus, markShown, spendItem, takeConcreteMath, takeSolvedMath,
 } from '../index.ts';
+import { stepsFor } from '../steps.ts';
+import { CHEM_BANK } from '../chemistry.ts';
+import { SPLIT_FAMILIES } from '../lessonFocus.ts';
 
 const item = (id: string) => MATH_BANK.find(i => i.id === id)!;
 
@@ -30,7 +33,7 @@ describe('lessonFocus', () => {
   });
 
   it('every item of a split family names a lesson, and every lesson has an item', () => {
-    for (const fam of ['trig_apps', 'circle', 'trig', 'vectors', 'stats'] as const) {
+    for (const fam of SPLIT_FAMILIES) {
       const items = MATH_BANK.filter(i => i.family === fam);
       assert.ok(items.every(i => i.focus), `${fam}: an item without a focus`);
     }
@@ -41,6 +44,27 @@ describe('lessonFocus', () => {
       assert.ok(focus, `${title}: no focus`);
       assert.ok(MATH_BANK.some(i => i.focus && focus.includes(i.focus)), `${title}: no item for its focus`);
     }
+  });
+});
+
+describe('«قانون الجيوب» has a lesson\'s worth of items', () => {
+  const sine = () => MATH_BANK.filter(i => i.focus === 'sine_rule');
+
+  it('enough for an eight-question worksheet, in every tier, with a story', () => {
+    assert.ok(sine().length >= 8, `${sine().length} law-of-sines items`);
+    for (const tier of ['easy', 'medium', 'hard'] as const) {
+      assert.ok(sine().some(i => i.diff === tier), `no ${tier} law-of-sines item`);
+    }
+    assert.ok(sine().some(i => i.kind === 'word' && i.wordAr), 'no real-life law-of-sines story');
+  });
+
+  it('every one has checked working, so any can be the worked example', () => {
+    for (const i of sine()) assert.ok(stepsFor(i.id), `${i.id} has no working`);
+  });
+
+  it('asks both ways the lesson does: a side, and an angle', () => {
+    assert.ok(sine().some(i => /°$/.test(i.answer)), 'no item asks for an angle');
+    assert.ok(sine().some(i => !/°$/.test(i.answer)), 'no item asks for a side');
   });
 });
 
@@ -56,9 +80,10 @@ describe('the worked example is the lesson\'s own', () => {
   });
 
   it('runs out rather than leave the lesson', () => {
+    // «قانون جيب التمام» has one item of its own: one worked example, then none.
     const session = new Set<string>();
-    assert.ok(takeSolvedMath('قانون الجيوب', null, 'medium', 'ar', session));
-    assert.equal(takeSolvedMath('قانون الجيوب', null, 'medium', 'ar', session), null);
+    assert.ok(takeSolvedMath('قانون جيب التمام', null, 'medium', 'ar', session));
+    assert.equal(takeSolvedMath('قانون جيب التمام', null, 'medium', 'ar', session), null);
   });
 
   it('practice takes the lesson\'s own items first, within the tier asked', () => {
@@ -72,9 +97,9 @@ describe('the worked example is the lesson\'s own', () => {
   });
 
   it('the tier still comes first, so a one-item lesson does not open every paper', () => {
-    // «قانون الجيوب» has one item, and it is hard: an easy slot takes an easy one.
-    const q = takeConcreteMath('short_answer', 'قانون الجيوب', null, 'easy', 'ar', 4, new Set(), false)!;
-    assert.doesNotMatch(q.text, /قانون الجيوب/);
+    // «قانون جيب التمام» has one item, and it is medium: an easy slot takes an easy one.
+    const q = takeConcreteMath('short_answer', 'قانون جيب التمام', null, 'easy', 'ar', 4, new Set(), false)!;
+    assert.doesNotMatch(q.text, /جيب التمام/);
   });
 });
 
@@ -97,6 +122,21 @@ describe('one equation is one question', () => {
     assert.ok(texts.filter(t => t.includes('9^x = 27')).length <= 1, texts.join('\n'));
   });
 
+  it('a chemistry tag is not an equation: two questions about Cl₂ are two questions', () => {
+    const chem = (id: string) => CHEM_BANK.find(i => i.id === id)!;
+    assert.equal(chem('ch-bd-e2').eq, chem('ch-bd-e4').eq, 'the fixture still shares a tag');
+    const used = new Set<string>();
+    spendItem(chem('ch-bd-e2'), used);
+    assert.equal(itemSpent(chem('ch-bd-e4'), used), false);
+  });
+
+  it('working that states a given, or a longer expression, answers nothing', () => {
+    const used = new Set<string>();
+    markShown(['إذا كان f(x) = x² − 1', 'n = 2 mol', 'pH = 3'], used);
+    assert.equal(itemSpent(item('d-e1'), used), false, '«f(x) = x²» is inside «x² − 1», and is not the derivative asked');
+    for (const i of CHEM_BANK) assert.equal(itemSpent(i, used), false, `${i.id} spent by chemistry working`);
+  });
+
   it('printed working spends the items whose equation it states', () => {
     const used = new Set<string>();
     markShown(['نكتب 81 بالأساس 3: 81 = 3^4', 'نعوّض: 3^{2x} = 3^4'], used);
@@ -113,9 +153,18 @@ describe('a word problem is a story', () => {
     }
   });
 
-  it('says so when the lesson has none', () => {
+  it('says so when the lesson has none — another lesson\'s story in its family does not count', () => {
+    // `trig_apps` holds the law-of-sines river crossing; «قانون جيب التمام» has no story.
+    for (let k = 0; k < 20; k++) {
+      const q = takeConcreteMath('word_problem', 'قانون جيب التمام', null, 'medium', 'ar', 6, new Set(), false)!;
+      assert.notEqual(q.story, true, q.text);
+    }
+  });
+
+  it('«قانون الجيوب» has a story of its own', () => {
     const q = takeConcreteMath('word_problem', 'قانون الجيوب', null, 'medium', 'ar', 6, new Set(), false)!;
-    assert.notEqual(q.story, true);
+    assert.equal(q.story, true, q.text);
+    assert.match(q.text, /نهر/);
   });
 
   it('a story asked as multiple choice does not tell the student to write and solve', () => {

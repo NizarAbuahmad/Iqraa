@@ -38,6 +38,28 @@ describe('the worked example belongs to the lesson', () => {
   });
 });
 
+describe('«قانون الجيوب» fills its own paper', () => {
+  it('eight questions, all on the law of sines, with its own real-life problem', async () => {
+    for (let k = 0; k < RUNS; k++) {
+      const w = await make('قانون الجيوب', 8, ['multiple_choice', 'short_answer', 'word_problem']);
+      assert.equal(w.shortfall, undefined, JSON.stringify(w.shortfall));
+      assert.equal(w.missingFormats, undefined);
+      const all = [w.workedExample!.problem, ...questions(w).map(q => q.text)];
+      for (const t of all) assert.doesNotMatch(t, /جيب التمام|المساحة/, t);
+      assert.ok(w.sections.some(s => s.title === 'مثال نكمله'), 'no half-solved question');
+      assert.match(w.sections.find(s => s.type === 'word_problem')!.questions[0]!.text, /نهر/);
+    }
+  });
+
+  it('the instructions promise a half-solved question only when there is one', async () => {
+    // «قانون جيب التمام» has one solved item of its own: a worked example and no «مثال نكمله».
+    const w = await make('قانون جيب التمام', 6, ['short_answer']);
+    assert.ok(w.workedExample, 'the lesson has a worked example');
+    assert.ok(!w.sections.some(s => s.title === 'مثال نكمله'));
+    assert.doesNotMatch(w.instructions, /أكمل الحل/);
+  });
+});
+
 describe('«مسألة حياتية» is a story', () => {
   it('holds the lesson\'s story, never a bare equation', async () => {
     for (let k = 0; k < RUNS; k++) {

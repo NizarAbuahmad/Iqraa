@@ -82,7 +82,7 @@ describe('a quiz never prints the same question twice', () => {
   it('gives a shorter quiz, not a padded one, when the lesson has fewer items than were asked for', async () => {
     // The trade for no repeats used to be a topic-template question in a spent
     // family's slot — a sentence that reads like a question and tests nothing.
-    // `trig_apps` holds three items, so asking for more returns those three.
+    // `trig_apps` holds ten items, so asking for more returns at most those.
     const lesson = lessonIn('mathematics', 'trig_apps');
     for (const n of [4, 6, 8, 10]) {
       const quiz = await svc.generateQuiz(request(lesson, n) as never);

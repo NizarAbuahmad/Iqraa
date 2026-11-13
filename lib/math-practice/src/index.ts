@@ -76,7 +76,7 @@ export interface PracticeWQ {
    */
   steps?: string[];
   /**
-   * True when the item is a real-life story (`kind: 'word'`). A worksheet's
+   * True when the item is a real-life story (`ConcreteItem.story`). A worksheet's
    * «مسألة حياتية» needs one; an equation with «اكتب الحل» under it is not.
    * Absent for everything else, including the word-problem slot of a lesson
    * whose family has no story left.
@@ -132,6 +132,12 @@ export interface ConcreteItem {
   promptEn?: string;
   /** Which of the book's lessons the item practises, in a family that holds several — `./lessonFocus.ts`. */
   focus?: LessonFocus;
+  /**
+   * A real-life situation, which a worksheet's «مسألة حياتية» may print. Set by
+   * hand: `kind: 'word'` only says the item has its own wording, and holds a
+   * GeoGebra task (`g-h3`) and a number puzzle (`lq-w1`) as well.
+   */
+  story?: true;
 }
 
 // ─── Session dedupe (one generation pass) ────────────────────────────────────
@@ -167,15 +173,21 @@ function normMath(s: string): string {
  * The equation an item is about. Two items with one equation are one question
  * asked two ways — `exp-m4` «أوجد حل 9^x = 27» and `exp-v2` «هل x = 2 حل
  * للمعادلة 9^x = 27؟» — and one paper printed both (2026-11-13).
+ *
+ * Maths only. A chemistry item's `eq` is a context tag — a reaction, a
+ * formula, «أمثلة» — that different questions share (the bond type in Cl₂ and
+ * the shared pairs in Cl₂), so keying on it would drop real questions.
  */
-function eqKey(item: ConcreteItem): string {
+function eqKey(item: ConcreteItem): string | null {
+  if (!MATH_ITEMS.has(item)) return null;
   return `eq:${normMath(item.eq)}${item.eq2 ? `|${normMath(item.eq2)}` : ''}`;
 }
 
-/** Spend an item in a pass: its id and its equation. */
+/** Spend an item in a pass: its id and, for maths, its equation. */
 export function spendItem(item: ConcreteItem, used: Set<string>): void {
   used.add(item.id);
-  used.add(eqKey(item));
+  const key = eqKey(item);
+  if (key) used.add(key);
 }
 
 /** `spendItem` by id, for a caller holding a `SolvedItem` — maths or chemistry. */
@@ -187,7 +199,7 @@ export function spendItemById(id: string, used: Set<string>): void {
 
 /**
  * Working the page prints — a worked example's steps, a half-solved question's
- * given steps. An item whose equation that working states is answered on the
+ * given steps. A maths item whose answer that working states is answered on the
  * page: «81 = 3^4» printed in a half-solved question, then «اكتب العدد 81 على
  * صورة قوة أساسها 3» as question 3 (2026-11-13).
  */
@@ -195,26 +207,34 @@ export function markShown(lines: readonly string[], used: Set<string>): void {
   for (const line of lines) used.add(`shown:${normMath(line)}`);
 }
 
-/** Whether `needle` stands in `hay` as a whole expression, not inside a longer one («2^x=8» is not in «32^x=8»). */
+/**
+ * Whether `needle` stands in `hay` as a whole expression, not inside a longer
+ * one: «2^x=8» is not in «32^x=8» nor in «3·2^x=8», and «x^2» is not in «x^2-1».
+ */
 function standsIn(hay: string, needle: string): boolean {
-  const edge = /[0-9a-z.^_]/;
+  const edge = /[0-9a-z.^_+\-*/·×÷(]/;
   for (let at = hay.indexOf(needle); at >= 0; at = hay.indexOf(needle, at + 1)) {
     const before = hay[at - 1];
     const after = hay[at + needle.length];
-    if ((before === undefined || !edge.test(before)) && (after === undefined || !edge.test(after) && after !== '(')) return true;
+    if ((before === undefined || !edge.test(before)) && (after === undefined || !edge.test(after))) return true;
   }
   return false;
 }
 
-/** Spent in this pass: the item itself, another asking its equation, or working on the page that states it. */
+/** Spent in this pass: the item itself, another asking its equation, or working on the page that states its answer. */
 export function itemSpent(item: ConcreteItem, used: Set<string>): boolean {
-  if (used.has(item.id) || used.has(eqKey(item))) return true;
-  // Only an equation can be stated. «sin 30°» is an expression, and «r = 5» or
-  // «a=7, b=7, C=60°» are the givens of a problem, not something it answers.
+  const key = eqKey(item);
+  if (used.has(item.id) || (key !== null && used.has(key))) return true;
+  if (key === null) return false;
+  // Only an equation that holds the item's own answer is answered by stating
+  // it: «81 = 3^4» answers «اكتب 81 كقوة أساسها 3» (answer 3⁴), while
+  // «f(x) = x²» printed in working answers nothing about its derivative, and
+  // «n = 2 mol» or «a=7, b=7, C=60°» are givens.
   const eq = normMath(item.eq);
-  if (!eq.includes('=') || item.eq2 || eq.includes(',') || /^[a-z]=[-0-9./]+$/.test(eq)) return false;
-  for (const key of used) {
-    if (key.startsWith('shown:') && standsIn(key.slice(6), eq)) return true;
+  const answer = normMath(item.answer);
+  if (!eq.includes('=') || item.eq2 || !answer || !eq.includes(answer)) return false;
+  for (const k of used) {
+    if (k.startsWith('shown:') && standsIn(k.slice(6), eq)) return true;
   }
   return false;
 }
@@ -449,7 +469,7 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 'exp-h3', family: 'exp_eq', diff: 'hard', eq: '4^{x} = 8^{x-1}', answer: 'x = 3', wrongs: ['x = 2', 'x = 1', 'x = 4'] },
   { id: 'exp-h4', family: 'exp_eq', diff: 'hard', eq: '2^{x+2} = 2^x + 12', answer: 'x = 2', wrongs: ['x = 1', 'x = 3', 'x = 4'] },
   {
-    id: 'exp-h5', family: 'exp_eq', diff: 'hard', eq: '2^t = 32', answer: 't = 5', wrongs: ['t = 4', 't = 6', 't = 32'], kind: 'word',
+    id: 'exp-h5', family: 'exp_eq', diff: 'hard', eq: '2^t = 32', answer: 't = 5', wrongs: ['t = 4', 't = 6', 't = 32'], kind: 'word', story: true,
     wordAr: 'تتضاعف مستعمرة بكتيريا كل ساعة: N = N₀ · 2^t. متى تصبح المستعمرة 32 ضعف الحجم الابتدائي؟ اكتب المعادلة وحلّها.',
     wordEn: 'Bacteria double each hour: N = N₀ · 2^t. After how many hours is the colony 32× initial size? Write and solve.',
   },
@@ -466,7 +486,7 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 'exp-v1', family: 'exp_eq', diff: 'easy', eq: '2^{x+1} = 16', answer: 'نعم، لأن 2⁴ = 16', wrongs: ['لا، لأن 2³ = 8', 'لا، لأن 2⁴ = 32', 'نعم، لأن 2³ = 16'], promptAr: 'هل x = 3 حل للمعادلة 2^{x+1} = 16؟ علّل.', promptEn: 'Is x = 3 a solution of 2^{x+1} = 16? Explain.' },
   { id: 'exp-v2', family: 'exp_eq', diff: 'medium', eq: '9^x = 27', answer: 'لا، لأن 9² = 81', wrongs: ['نعم، لأن 9² = 27', 'نعم، لأن 9 × 3 = 27', 'لا، لأن 9² = 18'], promptAr: 'هل x = 2 حل للمعادلة 9^x = 27؟ علّل.', promptEn: 'Is x = 2 a solution of 9^x = 27? Explain.' },
   {
-    id: 'exp-h6', family: 'exp_eq', diff: 'hard', eq: '80 · (1/2)^t = 5', answer: 't = 4', wrongs: ['t = 3', 't = 5', 't = 16'], kind: 'word',
+    id: 'exp-h6', family: 'exp_eq', diff: 'hard', eq: '80 · (1/2)^t = 5', answer: 't = 4', wrongs: ['t = 3', 't = 5', 't = 16'], kind: 'word', story: true,
     wordAr: 'تتناقص كمية مادة مشعة إلى النصف كل يوم، وكانت كميتها في البداية 80 غرامًا. بعد كم يومًا تصبح كميتها 5 غرامات؟ اكتب المعادلة وحلّها.',
     wordEn: 'A radioactive substance halves every day and starts at 80 g. After how many days are 5 g left? Write and solve.',
   },
@@ -501,7 +521,7 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 'lq-k1', family: 'linear_quad', diff: 'hard', eq: 'y = 2x + k', eq2: 'y = x²', answer: '−1', wrongs: ['1', '0', '−2'], promptAr: 'ما قيمة k التي تجعل المستقيم y = 2x + k يمسّ المنحنى y = x² (حل واحد فقط)؟', promptEn: 'What value of k makes the line y = 2x + k touch the curve y = x² (exactly one solution)?' },
   { id: 'lq-k2', family: 'linear_quad', diff: 'hard', eq: 'y = 6x + k', eq2: 'y = x² + 1', answer: '−8', wrongs: ['8', '−9', '10'], promptAr: 'ما قيمة k التي تجعل المستقيم y = 6x + k يمسّ المنحنى y = x² + 1 (حل واحد فقط)؟', promptEn: 'What value of k makes the line y = 6x + k touch the curve y = x² + 1 (exactly one solution)?' },
   { id: 'lq-w1', family: 'linear_quad', diff: 'medium', eq: 'x + y = 7', eq2: 'xy = 12', answer: '3 و 4', wrongs: ['2 و 5', '1 و 6', '3 و 5'], kind: 'word', wordAr: 'عددان موجبان مجموعهما 7 وحاصل ضربهما 12. ما العددان؟', wordEn: 'Two positive numbers add up to 7 and multiply to 12. What are they?' },
-  { id: 'lq-w2', family: 'linear_quad', diff: 'hard', eq: '2(l + w) = 20', eq2: 'lw = 24', answer: '4 م و 6 م', wrongs: ['3 م و 8 م', '2 م و 12 م', '5 م و 5 م'], kind: 'word', wordAr: 'قطعة أرض مستطيلة الشكل محيطها 20 م ومساحتها 24 م². ما بُعداها؟', wordEn: 'A rectangular plot has perimeter 20 m and area 24 m². What are its dimensions?' },
+  { id: 'lq-w2', family: 'linear_quad', diff: 'hard', eq: '2(l + w) = 20', eq2: 'lw = 24', answer: '4 م و 6 م', wrongs: ['3 م و 8 م', '2 م و 12 م', '5 م و 5 م'], kind: 'word', story: true, wordAr: 'قطعة أرض مستطيلة الشكل محيطها 20 م ومساحتها 24 م². ما بُعداها؟', wordEn: 'A rectangular plot has perimeter 20 m and area 24 m². What are its dimensions?' },
 
   // ── Two quadratics ──
   { id: 'qq-e1', family: 'quad_system', diff: 'easy', eq: 'y = x²', eq2: 'y = 4', answer: '(−2 ، 4) و (2 ، 4)', wrongs: ['(4 ، 16)', '(0 ، 0)', 'لا حل'], kind: 'system' },
@@ -565,6 +585,20 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 'ta-e1', family: 'trig_apps', diff: 'easy', eq: 'a=5, b=5, included=60°', answer: 'مساحة = (25√3)/4', wrongs: ['25', '12.5', '5√3'], promptAr: 'مثلث فيه ضلعان 5 و 5 والزاوية المحصورة 60°. أوجد المساحة باستخدام (1/2)ab sin C.', promptEn: 'Triangle sides 5, 5 with included angle 60°. Find area using (1/2)ab sin C.' },
   { id: 'ta-m1', family: 'trig_apps', diff: 'medium', eq: 'a=7, b=7, C=60°', answer: 'c = 7', wrongs: ['c = 14', 'c = 7√3', 'c = 3.5'], promptAr: 'في مثلث: a = 7، b = 7، C = 60°. أوجد c بقانون جيب التمام.', promptEn: 'In a triangle a = 7, b = 7, C = 60°. Find c using the cosine rule.' },
   { id: 'ta-h1', family: 'trig_apps', diff: 'hard', eq: 'a=8, A=30°, B=45°', answer: 'b = 8√2', wrongs: ['b = 8', 'b = 4', 'b = 8√3'], promptAr: 'مثلث: a = 8، A = 30°، B = 45°. أوجد b بقانون الجيوب.', promptEn: 'Triangle: a = 8, A = 30°, B = 45°. Find b using the sine rule.' },
+  // «قانون الجيوب» on its own: a side from two angles, an angle from two sides
+  // (never the two-triangle case: each has one answer, and its working says
+  // why), and a surveyor's river crossing. Special angles only, so the key is exact.
+  { id: 'ls-e1', family: 'trig_apps', diff: 'easy', eq: 'a=10, A=30°, B=90°', answer: 'b = 20', wrongs: ['b = 5', 'b = 10', 'b = 10√3'], promptAr: 'في المثلث ABC: a = 10، A = 30°، B = 90°. أوجد b بقانون الجيوب.', promptEn: 'In triangle ABC, a = 10, A = 30°, B = 90°. Find b using the sine rule.' },
+  { id: 'ls-e2', family: 'trig_apps', diff: 'easy', eq: 'a=6, b=12, B=90°', answer: 'A = 30°', wrongs: ['A = 60°', 'A = 45°', 'A = 150°'], promptAr: 'في المثلث ABC: a = 6، b = 12، B = 90°. أوجد قياس الزاوية A بقانون الجيوب.', promptEn: 'In triangle ABC, a = 6, b = 12, B = 90°. Find angle A using the sine rule.' },
+  { id: 'ls-m1', family: 'trig_apps', diff: 'medium', eq: 'a=12, A=45°, B=30°', answer: 'b = 6√2', wrongs: ['b = 12√2', 'b = 6', 'b = 6√3'], promptAr: 'في المثلث ABC: a = 12، A = 45°، B = 30°. أوجد b بقانون الجيوب.', promptEn: 'In triangle ABC, a = 12, A = 45°, B = 30°. Find b using the sine rule.' },
+  { id: 'ls-m2', family: 'trig_apps', diff: 'medium', eq: 'a=5, A=30°, B=30°', answer: 'c = 5√3', wrongs: ['c = 5', 'c = 10', 'c = 5√2'], promptAr: 'في المثلث ABC: a = 5، A = 30°، B = 30°. أوجد c.', promptEn: 'In triangle ABC, a = 5, A = 30°, B = 30°. Find c.' },
+  { id: 'ls-m3', family: 'trig_apps', diff: 'medium', eq: 'a=3√2, A=60°, b=2√3', answer: 'B = 45°', wrongs: ['B = 30°', 'B = 60°', 'B = 135°'], promptAr: 'في المثلث ABC: a = 3√2، A = 60°، b = 2√3. أوجد قياس الزاوية B بقانون الجيوب.', promptEn: 'In triangle ABC, a = 3√2, A = 60°, b = 2√3. Find angle B using the sine rule.' },
+  { id: 'ls-h1', family: 'trig_apps', diff: 'hard', eq: 'a=6, A=120°, b=2√3', answer: 'B = 30°', wrongs: ['B = 150°', 'B = 60°', 'B = 45°'], promptAr: 'في المثلث ABC: a = 6، A = 120°، b = 2√3. أوجد قياس الزاوية B، وبيّن لماذا لها قيمة واحدة فقط.', promptEn: 'In triangle ABC, a = 6, A = 120°, b = 2√3. Find angle B, and show why it has only one value.' },
+  {
+    id: 'ls-w1', family: 'trig_apps', diff: 'hard', eq: 'AB=100, A=30°, B=120°', answer: 'AC = 100√3 م', wrongs: ['AC = 100 م', 'AC = 50√3 م', 'AC = 200 م'], kind: 'word', story: true,
+    wordAr: 'يقف مسّاح عند النقطتين A و B على ضفة نهر، والمسافة بينهما 100 م، ويرصد شجرة C على الضفة الأخرى. قاس الزاويتين فكانت ∠CAB = 30° و ∠ABC = 120°. أوجد المسافة AC بين النقطة A والشجرة.',
+    wordEn: 'A surveyor stands at points A and B on a riverbank, 100 m apart, and sights a tree C on the far bank. The angles are ∠CAB = 30° and ∠ABC = 120°. Find the distance AC from A to the tree.',
+  },
 
   // ── Functions ──
   { id: 'f-e1', family: 'functions', diff: 'easy', eq: 'f(x)=2x+3, f(4)', answer: '11', wrongs: ['8', '14', '5'], promptAr: 'إذا كان f(x) = 2x + 3، أوجد f(4).', promptEn: 'If f(x) = 2x + 3, find f(4).' },
@@ -629,7 +663,7 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 'a-h1', family: 'algebra', diff: 'hard', eq: 'x² − 4x + 1 = 0', answer: 'x = 2 ± √3', wrongs: ['x = ±2', 'x = 4', 'x = 1'], promptAr: 'حل بالقانون العام: x² − 4x + 1 = 0', promptEn: 'Solve with the quadratic formula: x² − 4x + 1 = 0' },
   { id: 'a-h2', family: 'algebra', diff: 'hard', eq: 'x² − 9 = 0', answer: 'x = ±3', wrongs: ['x = 9', 'x = 3 فقط', 'x = 0'] },
   {
-    id: 'a-h3', family: 'algebra', diff: 'hard', eq: '2^n = 16', answer: 'n = 4', wrongs: ['n = 8', 'n = 2', 'n = 16'], kind: 'word',
+    id: 'a-h3', family: 'algebra', diff: 'hard', eq: '2^n = 16', answer: 'n = 4', wrongs: ['n = 8', 'n = 2', 'n = 16'], kind: 'word', story: true,
     wordAr: 'عدد يتضاعف كل يوم بدءًا من 1. بعد كم يوم يصبح 16؟ اكتب معادلة أسية وحلّها.',
     wordEn: 'A quantity doubles each day from 1. After how many days is it 16? Write and solve an exponential equation.',
   },
@@ -639,6 +673,8 @@ for (const item of MATH_BANK) {
   const focus = ITEM_FOCUS[item.id];
   if (focus) item.focus = focus;
 }
+/** The maths items, which alone are keyed by their equation (`eqKey`). */
+const MATH_ITEMS = new Set<ConcreteItem>(MATH_BANK);
 
 /**
  * The question as a teacher would write it.
@@ -791,8 +827,10 @@ function takeFromBank(
   focus: readonly LessonFocus[] | null = null,
 ): PracticeWQ | null {
   const matches = (item: ConcreteItem, fam: Family) => item.family === fam && !itemSpent(item, used);
-  const isStory = (item: ConcreteItem) => item.kind === 'word' && Boolean(item.wordAr || item.wordEn);
   const ownLesson = (item: ConcreteItem) => !focus || (item.focus !== undefined && focus.includes(item.focus));
+  // The lesson's own story: the law-of-sines river crossing is not a real-life
+  // problem for «قانون جيب التمام», which shares its family.
+  const isStory = (item: ConcreteItem) => item.story === true && Boolean(item.wordAr || item.wordEn) && ownLesson(item);
 
   const pickFrom = (fam: Family): ConcreteItem | null => {
     let pool = bank.filter(i => matches(i, fam));
@@ -809,18 +847,19 @@ function takeFromBank(
     // the page reloaded. The used set still guarantees no repeats in a pass.
     const sameDiff = pool.filter(i => i.diff === diff);
     let tier = sameDiff.length > 0 ? sameDiff : pool;
-    // Within the tier asked for, the lesson's own items before the rest of its
-    // family, so a family that holds several lessons does not hand this one
-    // another lesson's question while its own are unused. Only there: ranking
-    // the lesson above the tier, or inside the any-tier fallback, made the draw
-    // fixed where it had been random — the one law-of-sines item opened every
-    // paper, «إعادة التوليد» served the same homework, and a warm-up and the
-    // activity after it posed the same triangle. The rest of the family still
-    // follows, so a thin lesson keeps its count rather than stopping short.
-    if (sameDiff.length > 0) {
-      const own = sameDiff.filter(ownLesson);
-      if (own.length > 0) tier = own;
-    }
+    // The lesson's own items before the rest of its family, so a family that
+    // holds several lessons does not hand this one the next lesson's question
+    // while its own are unused: the tier asked for first, then any tier of the
+    // lesson's own. A lesson with a single item of its own gets it only in its
+    // tier: put first on every paper, it was the whole of the draw — «إعادة
+    // التوليد» served the same homework, and a warm-up and the activity after
+    // it posed the same triangle (when «قانون الجيوب» had one item). The rest
+    // of the family still follows, so a thin lesson keeps its count.
+    const ownInTier = tier.filter(ownLesson);
+    const ownAny = pool.filter(ownLesson);
+    const lessonSize = focus ? bank.filter(i => i.family === fam && ownLesson(i)).length : 0;
+    if (sameDiff.length > 0 && ownInTier.length > 0) tier = ownInTier;
+    else if (lessonSize > 1 && ownAny.length > 0) tier = ownAny;
     // Then away from kinds this pass has already served: each candidate's
     // chance falls with the cube of how often its kind came up (the kind
     // part of `spreadScore`). A family is often one ask with a few others
