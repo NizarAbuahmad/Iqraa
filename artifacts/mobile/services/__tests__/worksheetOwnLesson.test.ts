@@ -52,11 +52,25 @@ describe('«قانون الجيوب» fills its own paper', () => {
   });
 
   it('the instructions promise a half-solved question only when there is one', async () => {
-    // «قانون جيب التمام» has one solved item of its own: a worked example and no «مثال نكمله».
-    const w = await make('قانون جيب التمام', 6, ['short_answer']);
+    // «الاقتران العكسي» has one solved item of its own: a worked example and no «مثال نكمله».
+    const w = await make('الاقتران العكسي', 6, ['short_answer']);
     assert.ok(w.workedExample, 'the lesson has a worked example');
     assert.ok(!w.sections.some(s => s.title === 'مثال نكمله'));
     assert.doesNotMatch(w.instructions, /أكمل الحل/);
+  });
+});
+
+describe('«قانون جيب التمام» studies its own law', () => {
+  it('the worked example, the half-solved question and the real-life problem are all the law of cosines', async () => {
+    for (let k = 0; k < RUNS; k++) {
+      const w = await make('قانون جيب التمام', 8, ['multiple_choice', 'short_answer', 'word_problem']);
+      assert.ok(w.workedExample, 'no worked example');
+      assert.doesNotMatch(w.workedExample.problem, /قانون الجيوب|المساحة/, w.workedExample.problem);
+      const half = w.sections.find(s => s.title === 'مثال نكمله');
+      assert.ok(half, 'no half-solved question');
+      assert.doesNotMatch(half.questions[0]!.text, /قانون الجيوب|المساحة/, half.questions[0]!.text);
+      assert.match(w.sections.find(s => s.type === 'word_problem')!.questions[0]!.text, /سفينت/);
+    }
   });
 });
 

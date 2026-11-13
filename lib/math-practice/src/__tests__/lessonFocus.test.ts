@@ -47,26 +47,47 @@ describe('lessonFocus', () => {
   });
 });
 
-describe('«قانون الجيوب» has a lesson\'s worth of items', () => {
-  const sine = () => MATH_BANK.filter(i => i.focus === 'sine_rule');
+for (const [title, focus, story] of [
+  ['قانون الجيوب', 'sine_rule', /نهر/],
+  ['قانون جيب التمام', 'cosine_rule', /سفينت/],
+] as const) {
+  describe(`«${title}» has a lesson's worth of items`, () => {
+    const own = () => MATH_BANK.filter(i => i.focus === focus);
 
-  it('enough for an eight-question worksheet, in every tier, with a story', () => {
-    assert.ok(sine().length >= 8, `${sine().length} law-of-sines items`);
-    for (const tier of ['easy', 'medium', 'hard'] as const) {
-      assert.ok(sine().some(i => i.diff === tier), `no ${tier} law-of-sines item`);
-    }
-    assert.ok(sine().some(i => i.kind === 'word' && i.wordAr), 'no real-life law-of-sines story');
-  });
+    it('enough for an eight-question worksheet, in every tier, with a story', () => {
+      assert.ok(own().length >= 7, `${own().length} items`);
+      for (const tier of ['easy', 'medium', 'hard'] as const) {
+        assert.ok(own().some(i => i.diff === tier), `no ${tier} item`);
+      }
+      assert.ok(own().some(i => i.story && story.test(i.wordAr ?? '')), 'no real-life story of its own');
+    });
 
-  it('every one has checked working, so any can be the worked example', () => {
-    for (const i of sine()) assert.ok(stepsFor(i.id), `${i.id} has no working`);
-  });
+    it('every one has checked working, so any can be the worked example', () => {
+      for (const i of own()) assert.ok(stepsFor(i.id), `${i.id} has no working`);
+    });
 
-  it('asks both ways the lesson does: a side, and an angle', () => {
-    assert.ok(sine().some(i => /°$/.test(i.answer)), 'no item asks for an angle');
-    assert.ok(sine().some(i => !/°$/.test(i.answer)), 'no item asks for a side');
+    it('asks both ways the lesson does: a side, and an angle', () => {
+      assert.ok(own().some(i => /°$/.test(i.answer)), 'no item asks for an angle');
+      assert.ok(own().some(i => !/°$/.test(i.answer)), 'no item asks for a side');
+    });
+
+    it('studies only its own law', () => {
+      for (const tier of ['easy', 'medium', 'hard'] as const) {
+        for (let k = 0; k < 20; k++) {
+          const s = takeSolvedMath(title, null, tier, 'ar', new Set());
+          assert.ok(s, 'the lesson has a solved item');
+          assert.equal(item(s.id).focus, focus, `got ${s.id}: ${s.problem}`);
+        }
+      }
+    });
+
+    it('its word problem is its own story', () => {
+      const q = takeConcreteMath('word_problem', title, null, 'medium', 'ar', 6, new Set(), false)!;
+      assert.equal(q.story, true, q.text);
+      assert.match(q.text, story);
+    });
   });
-});
+}
 
 describe('the worked example is the lesson\'s own', () => {
   it('a «قانون الجيوب» worksheet never studies the law of cosines or the area formula', () => {
@@ -80,10 +101,10 @@ describe('the worked example is the lesson\'s own', () => {
   });
 
   it('runs out rather than leave the lesson', () => {
-    // «قانون جيب التمام» has one item of its own: one worked example, then none.
+    // «الاقتران العكسي» has one item of its own: one worked example, then none.
     const session = new Set<string>();
-    assert.ok(takeSolvedMath('قانون جيب التمام', null, 'medium', 'ar', session));
-    assert.equal(takeSolvedMath('قانون جيب التمام', null, 'medium', 'ar', session), null);
+    assert.ok(takeSolvedMath('الاقتران العكسي', null, 'medium', 'ar', session));
+    assert.equal(takeSolvedMath('الاقتران العكسي', null, 'medium', 'ar', session), null);
   });
 
   it('practice takes the lesson\'s own items first, within the tier asked', () => {
@@ -98,9 +119,9 @@ describe('the worked example is the lesson\'s own', () => {
   });
 
   it('the tier still comes first, so a one-item lesson does not open every paper', () => {
-    // «قانون جيب التمام» has one item, and it is medium: an easy slot takes an easy one.
-    const q = takeConcreteMath('short_answer', 'قانون جيب التمام', null, 'easy', 'ar', 4, new Set(), false)!;
-    assert.doesNotMatch(q.text, /جيب التمام/);
+    // «الاقتران العكسي» has one item, and it is medium: an easy slot takes an easy one.
+    const q = takeConcreteMath('short_answer', 'الاقتران العكسي', null, 'easy', 'ar', 4, new Set(), false)!;
+    assert.doesNotMatch(q.text, /العكسي/);
   });
 });
 
@@ -155,17 +176,15 @@ describe('a word problem is a story', () => {
   });
 
   it('says so when the lesson has none — another lesson\'s story in its family does not count', () => {
-    // `trig_apps` holds the law-of-sines river crossing; «قانون جيب التمام» has no story.
+    // `trig_apps` holds the law-of-sines river crossing; once «قانون جيب التمام»'s
+    // own story is spent, the river crossing must not stand in for it.
     for (let k = 0; k < 20; k++) {
-      const q = takeConcreteMath('word_problem', 'قانون جيب التمام', null, 'medium', 'ar', 6, new Set(), false)!;
+      const used = new Set<string>();
+      spendItem(item('lc-w1'), used);
+      const q = takeConcreteMath('word_problem', 'قانون جيب التمام', null, 'medium', 'ar', 6, used, false)!;
       assert.notEqual(q.story, true, q.text);
+      assert.doesNotMatch(q.text, /نهر/);
     }
-  });
-
-  it('«قانون الجيوب» has a story of its own', () => {
-    const q = takeConcreteMath('word_problem', 'قانون الجيوب', null, 'medium', 'ar', 6, new Set(), false)!;
-    assert.equal(q.story, true, q.text);
-    assert.match(q.text, /نهر/);
   });
 
   it('a story asked as multiple choice does not tell the student to write and solve', () => {

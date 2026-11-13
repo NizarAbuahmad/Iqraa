@@ -62,6 +62,17 @@ two-triangle case: each angle asked has one answer, and its working says why. Wi
 «قانون الجيوب» worksheet of 8 is now full: worked example, half-solved question, practice and its own «مسألة حياتية»,
 all on the law of sines (`worksheetOwnLesson.test.ts`).
 
+**Law of cosines: seven new bank items** (`lc-e1` … `lc-w1`, focus `cosine_rule`), each with checked working:
+- easy: a side with the included angle 60° (`c = √19`), and 90°, where the rule becomes Pythagoras (`c = 10`);
+- medium: 120°, whose negative cosine adds (`c = 7`); an angle from three sides (`C = 60°`); a 5-12-13 triangle
+  shown to be right-angled (`C = 90°`);
+- hard: the largest angle of a 7-8-13 triangle (`120°`), and a story: two ships 60° apart after 5 km and 8 km,
+  `7 كم` apart.
+
+No triangle repeats another's. Every key was recomputed numerically. Practice for this lesson comes from its generator
+(`grade10.ts`), so these items are what its worked example, half-solved question and «مسألة حياتية» print; before
+them it had one solved item, and no half-solved question.
+
 **Fixed after an independent review of the first commit:**
 - **Instructions.** They promised «أكمل الحل في السؤال الأول» whenever there was a worked example. A lesson with one
   solved item of its own («قانون جيب التمام», «الاقتران العكسي») gets no half-solved question, so the line now

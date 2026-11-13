@@ -611,6 +611,21 @@ export const MATH_BANK: ConcreteItem[] = [
     wordAr: 'يقف مسّاح عند النقطتين A و B على ضفة نهر، والمسافة بينهما 100 م، ويرصد شجرة C على الضفة الأخرى. قاس الزاويتين فكانت ∠CAB = 30° و ∠ABC = 120°. أوجد المسافة AC بين النقطة A والشجرة.',
     wordEn: 'A surveyor stands at points A and B on a riverbank, 100 m apart, and sights a tree C on the far bank. The angles are ∠CAB = 30° and ∠ABC = 120°. Find the distance AC from A to the tree.',
   },
+  // «قانون جيب التمام» on its own: a side from two sides and the angle between
+  // them (60°, 90° — where it is Pythagoras — and 120°, whose negative cosine
+  // adds), an angle from three sides, the largest angle, and two ships.
+  // Special angles only, so the key is exact; no triangle repeats another's.
+  { id: 'lc-e1', family: 'trig_apps', diff: 'easy', eq: 'a=3, b=5, C=60°', answer: 'c = √19', wrongs: ['c = 7', 'c = √34', 'c = 19'], promptAr: 'في المثلث ABC: a = 3، b = 5، C = 60°. أوجد c بقانون جيب التمام.', promptEn: 'In triangle ABC, a = 3, b = 5, C = 60°. Find c using the cosine rule.' },
+  { id: 'lc-e2', family: 'trig_apps', diff: 'easy', eq: 'a=6, b=8, C=90°', answer: 'c = 10', wrongs: ['c = 14', 'c = 2', 'c = 100'], promptAr: 'في المثلث ABC: a = 6، b = 8، C = 90°. أوجد c بقانون جيب التمام.', promptEn: 'In triangle ABC, a = 6, b = 8, C = 90°. Find c using the cosine rule.' },
+  { id: 'lc-m1', family: 'trig_apps', diff: 'medium', eq: 'a=3, b=5, C=120°', answer: 'c = 7', wrongs: ['c = √19', 'c = 8', 'c = √34'], promptAr: 'في المثلث ABC: a = 3، b = 5، C = 120°. أوجد c بقانون جيب التمام.', promptEn: 'In triangle ABC, a = 3, b = 5, C = 120°. Find c using the cosine rule.' },
+  { id: 'lc-m2', family: 'trig_apps', diff: 'medium', eq: 'a=3, b=8, c=7', answer: 'C = 60°', wrongs: ['C = 30°', 'C = 120°', 'C = 45°'], promptAr: 'في المثلث ABC: a = 3، b = 8، c = 7. أوجد قياس الزاوية C بقانون جيب التمام.', promptEn: 'In triangle ABC, a = 3, b = 8, c = 7. Find angle C using the cosine rule.' },
+  { id: 'lc-m3', family: 'trig_apps', diff: 'medium', eq: 'a=5, b=12, c=13', answer: 'C = 90°', wrongs: ['C = 60°', 'C = 120°', 'C = 45°'], promptAr: 'في المثلث ABC: a = 5، b = 12، c = 13. أوجد قياس الزاوية C بقانون جيب التمام. ماذا تستنتج عن المثلث؟', promptEn: 'In triangle ABC, a = 5, b = 12, c = 13. Find angle C using the cosine rule. What do you conclude about the triangle?' },
+  { id: 'lc-h1', family: 'trig_apps', diff: 'hard', eq: 'sides 7, 8, 13', answer: 'الزاوية الكبرى = 120°', wrongs: ['الزاوية الكبرى = 60°', 'الزاوية الكبرى = 90°', 'الزاوية الكبرى = 150°'], promptAr: 'مثلث أطوال أضلاعه 7 و 8 و 13. أوجد قياس أكبر زواياه.', promptEn: 'A triangle has sides 7, 8 and 13. Find its largest angle.' },
+  {
+    id: 'lc-w1', family: 'trig_apps', diff: 'hard', eq: 'ships 5, 8, 60°', answer: 'المسافة = 7 كم', wrongs: ['المسافة = 13 كم', 'المسافة = √89 كم', 'المسافة = 3 كم'], kind: 'word', story: true,
+    wordAr: 'تنطلق سفينتان من الميناء في الوقت نفسه بمسارين مستقيمين بينهما زاوية 60°. بعد ساعة قطعت الأولى 5 كم والثانية 8 كم. كم تبعد السفينتان إحداهما عن الأخرى عندئذ؟',
+    wordEn: 'Two ships leave port at the same time on straight courses 60° apart. After an hour the first has sailed 5 km and the second 8 km. How far apart are the ships then?',
+  },
 
   // ── Functions ──
   { id: 'f-e1', family: 'functions', diff: 'easy', eq: 'f(x)=2x+3, f(4)', answer: '11', wrongs: ['8', '14', '5'], promptAr: 'إذا كان f(x) = 2x + 3، أوجد f(4).', promptEn: 'If f(x) = 2x + 3, find f(4).' },

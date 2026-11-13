@@ -302,6 +302,108 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
       'So AC = 100√3 m (about 173 m)',
     ],
   },
+  'lc-e1': {
+    ar: [
+      'قانون جيب التمام: c² = a² + b² − 2ab cos C',
+      'نعوّض: c² = 3² + 5² − 2 × 3 × 5 × cos 60°',
+      'cos 60° = 1/2، فتكون c² = 9 + 25 − 30 × (1/2)',
+      'c² = 34 − 15 = 19',
+      'c طول موجب، إذن c = √19',
+    ],
+    en: [
+      'Cosine rule: c² = a² + b² − 2ab cos C',
+      'Substitute: c² = 3² + 5² − 2 × 3 × 5 × cos 60°',
+      'cos 60° = 1/2, so c² = 9 + 25 − 30 × (1/2)',
+      'c² = 34 − 15 = 19',
+      'c is a length, so c = √19',
+    ],
+  },
+  'lc-e2': {
+    ar: [
+      'قانون جيب التمام: c² = a² + b² − 2ab cos C',
+      'نعوّض: c² = 6² + 8² − 2 × 6 × 8 × cos 90°',
+      'cos 90° = 0 فيختفي الحد الأخير: c² = 36 + 64 = 100 (وهي نظرية فيثاغورس)',
+      'c طول موجب، إذن c = 10',
+    ],
+    en: [
+      'Cosine rule: c² = a² + b² − 2ab cos C',
+      'Substitute: c² = 6² + 8² − 2 × 6 × 8 × cos 90°',
+      'cos 90° = 0, so the last term vanishes: c² = 36 + 64 = 100 (Pythagoras)',
+      'c is a length, so c = 10',
+    ],
+  },
+  'lc-m1': {
+    ar: [
+      'قانون جيب التمام: c² = a² + b² − 2ab cos C',
+      'نعوّض: c² = 3² + 5² − 2 × 3 × 5 × cos 120°',
+      'cos 120° = −1/2، فتكون c² = 9 + 25 − 30 × (−1/2) = 9 + 25 + 15',
+      'c² = 49',
+      'c طول موجب، إذن c = 7',
+    ],
+    en: [
+      'Cosine rule: c² = a² + b² − 2ab cos C',
+      'Substitute: c² = 3² + 5² − 2 × 3 × 5 × cos 120°',
+      'cos 120° = −1/2, so c² = 9 + 25 − 30 × (−1/2) = 9 + 25 + 15',
+      'c² = 49',
+      'c is a length, so c = 7',
+    ],
+  },
+  'lc-m2': {
+    ar: [
+      'قانون جيب التمام لإيجاد زاوية: cos C = (a² + b² − c²) / (2ab)',
+      'نعوّض: cos C = (3² + 8² − 7²) / (2 × 3 × 8)',
+      'cos C = (9 + 64 − 49) / 48 = 24/48 = 1/2',
+      'C زاوية في مثلث (بين 0° و 180°)، إذن C = 60°',
+    ],
+    en: [
+      'Cosine rule for an angle: cos C = (a² + b² − c²) / (2ab)',
+      'Substitute: cos C = (3² + 8² − 7²) / (2 × 3 × 8)',
+      'cos C = (9 + 64 − 49) / 48 = 24/48 = 1/2',
+      'C is an angle of a triangle (between 0° and 180°), so C = 60°',
+    ],
+  },
+  'lc-m3': {
+    ar: [
+      'قانون جيب التمام لإيجاد زاوية: cos C = (a² + b² − c²) / (2ab)',
+      'نعوّض: cos C = (5² + 12² − 13²) / (2 × 5 × 12)',
+      'cos C = (25 + 144 − 169) / 120 = 0/120 = 0',
+      'إذن C = 90°، فالمثلث قائم الزاوية',
+    ],
+    en: [
+      'Cosine rule for an angle: cos C = (a² + b² − c²) / (2ab)',
+      'Substitute: cos C = (5² + 12² − 13²) / (2 × 5 × 12)',
+      'cos C = (25 + 144 − 169) / 120 = 0/120 = 0',
+      'So C = 90°, and the triangle is right-angled',
+    ],
+  },
+  'lc-h1': {
+    ar: [
+      'أكبر زاوية تقابل أطول ضلع، وهو 13؛ نسمّيها θ',
+      'cos θ = (7² + 8² − 13²) / (2 × 7 × 8)',
+      'cos θ = (49 + 64 − 169) / 112 = −56/112 = −1/2',
+      'cos θ سالب فالزاوية منفرجة، و θ بين 0° و 180°، إذن الزاوية الكبرى = 120°',
+    ],
+    en: [
+      'The largest angle faces the longest side, 13; call it θ',
+      'cos θ = (7² + 8² − 13²) / (2 × 7 × 8)',
+      'cos θ = (49 + 64 − 169) / 112 = −56/112 = −1/2',
+      'cos θ is negative, so the angle is obtuse; θ is between 0° and 180°, so the largest angle is 120°',
+    ],
+  },
+  'lc-w1': {
+    ar: [
+      'المسافة بين السفينتين d ضلع يقابل الزاوية 60° بين المسارين',
+      'قانون جيب التمام: d² = 5² + 8² − 2 × 5 × 8 × cos 60°',
+      'cos 60° = 1/2، فتكون d² = 25 + 64 − 40 = 49',
+      'd طول موجب، إذن المسافة = 7 كم',
+    ],
+    en: [
+      'The distance d between the ships is the side facing the 60° angle between their courses',
+      'Cosine rule: d² = 5² + 8² − 2 × 5 × 8 × cos 60°',
+      'cos 60° = 1/2, so d² = 25 + 64 − 40 = 49',
+      'd is a length, so the ships are 7 km apart',
+    ],
+  },
 
   // ── Functions ──
   'f-e1': {
