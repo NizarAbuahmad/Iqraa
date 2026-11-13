@@ -10,6 +10,29 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 4 maths: offline questions for the two «خطة حل المسألة» lessons — 2026-11-13
+
+The Grade 4 audit found two maths lessons with no offline questions at all: «خطة حل المسألة: الحل بأكثر من خطوة»
+(S1 u2_l4) and «خطة حل المسألة: استعمال شكل ڤن» (S2 u10_l5). Each now has a generator in
+`lib/math-practice/src/topics.ts`, built from the lesson's own pages in the student book (S1 pp. 44–45, S2 pp. 126–127):
+
+- **`multi_step`** — two operations, as the book's worked example and «أتدرب» problems: a daily amount over two named
+  months (Rami's 23 laps a day in آب and أيلول), pay per hour over a year's 52 weeks, books on two kinds of shelf, words a
+  minute over «ساعة وربعًا», photos in several albums. The wrong options always include stopping after the first step
+  (one month, one week, the shelf count, one hour, one album).
+- **`venn_plan`** — two groups and their overlap: the total (the book's 20 + 30 − 15), one group only (18 − 4), and the
+  reverse (the total and one group known, the other wanted). Adding the groups without taking off the overlap is always
+  a wrong option for the total.
+
+Both are Grade 4 only (`grades: [4, 4]`), whole numbers, positive wrong options; nothing sets `verified` or a `check`.
+The existing Venn generators (`venn_g3`, `venn_g4` for «تمثيل البيانات بأشكال ڤن», `venn_g9`) are other lessons and
+unchanged. Grade 4 offline maths now covers all 50 lessons.
+
+**Verified:** `grade4Lessons.test.ts` (8, written first and seen failing) recomputes every key from the numbers in its own
+stem with code that shares nothing with the generators, and checks every kind is drawn and the one-step wrong option is
+always offered; breaking the overlap rule fails 2 of them. math-practice suite 1096 pass. Twelve sampled items and the
+mobile probe's six read by hand, keys correct.
+
 ## Grade 8 maths: offline questions for the four S2 lessons that had none — 2026-11-13
 
 **Why.** Grade 8 had already been checked against its books by earlier changes. One gap was left: four
