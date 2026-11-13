@@ -10,6 +10,52 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## The offline escape challenge and detective fit the lesson — 2026-11-13
+
+The 2026-11-13 Grade 7 audit found every one of the 397 Grade 7 lessons served the same offline **escape challenge** (the
+classroom builder's default card) and **error detective**: one hand-written set of quadratic equations — «س² + 7س + 12 = 0»,
+a key of quadratic roots, «حل معادلات ${topic}», «المحقق الرياضي» cases about a lost negative root. An English vocabulary
+lesson became "Solve Vocabulary: City tourism equations". The **bingo** and **relay** no-bank fallbacks also asked any
+subject for «المعادلة: الصيغة الرياضية…» / "Formula: …". This is what a teacher sees offline, in demo mode, and whenever a
+live call fails (`RemoteAIService` falls back to `MockAIService`).
+
+**What changed.** A first attempt refused both types (`NoQuestionBankError`) unless the lesson was about quadratics; it broke
+tests that require all seven types to produce output for a history lesson or scope. Instead, both types are now built in
+`services/ai/classroomFit.ts`, the way quick check, bingo and relay already were:
+- **A lesson with a bank** (maths or chemistry, or a revision scope through `revisionPractice`) draws from it. The escape
+  challenge's stages are the lesson's own problems with their keys; the detective's three cases are banked multiple-choice
+  questions shown with one of their deliberate wrong options («طالب أجاب… إجابته: …»).
+- **A lesson with none** gets a subject-neutral version from its own outcomes (Arabic) or English concepts (English, Arabic
+  glosses left out — `activityPoints`), the topic when it has neither: five escape tasks (explain, example, ask-and-answer,
+  summarise, link to daily life) with a flexible key, and a peer detective (write an answer, swap, find and fix the error).
+  Same shape as before: 5 codes (8-4-7-3-6), 13 slides; 3 cases, 8 slides.
+- **The hand-written quadratic set is deleted.** Every lesson with «تربيعي» in its title has a bank, so bank-first already
+  serves a quadratics lesson its own quadratics; the set was reachable only through a title regex that also matched Grade 8
+  «الجذور التربيعية» (square roots).
+- The detective is named «المحقق الرياضي» for a maths lesson (the card's and the live prompt's name), «محقق الأخطاء»
+  otherwise. The escape room is «غرفة التحديات», not «مختبر الرياضيات».
+- Bingo's call 5 is a formula only for a maths lesson; other subjects get a key-term call. Relay's placeholder keys no longer
+  read as equations («القيمة الأولى (أ)», not «أ = القيمة الأولى»), and the «استبدل (أ) في المعادلة الجديدة» hint is
+  maths-only. The reworded hint («تذكّر الصيغ المهمة») no longer claims one unit, so its two revision-rewording entries
+  (`revisionWording.ts`) were removed.
+
+**Verified.** `classroomSubjectFit.test.ts`, written first and seen failing (10,599 hits): all 397 Grade 7 lessons × seven
+types × both languages carry none of the quadratic set, and no non-maths one a formula call; every non-maths Grade 7 lesson
+whose own text holds no equation (over 200) gets none in any type; the audit's vocabulary lesson is not asked to solve
+anything; the shapes above; a Grade 10 «الاشتقاق» lesson and a Grade 9 quadratics lesson draw both types from their banks.
+Run 8 times (the bank draws are random). The tests the first attempt broke (`classroomWideScope.test.ts`,
+`offlineRegenerate.test.ts`) pass unedited. Mobile suite 9,224 pass, 0 fail; `pnpm run typecheck`. The new Arabic and
+English output was read for a Grade 7 science and English lesson.
+
+**Not verified / limits.** Not opened in the app or a browser. A non-maths lesson's neutral version is only as specific as
+its outcomes: a Grade 7 English lesson has no English concepts, so its five tasks all name the topic. The objectives are in the
+student's first person («أوضّحُ…»), and are spliced after an instruction, as the quick check already does. The rest of the
+relay and bingo no-bank fallbacks are still generic ("apply ${topic} to the given data and find (a)", a unit of measurement) —
+no equation, but not written for a language or religion lesson. A maths lesson matched to the `algebra` family still draws
+quadratic items from that family's bank in every banked type; that is the bank's grouping, unchanged. **Live path untouched:**
+the live error-detective prompt (`artifacts/api-server/src/lib/classroomPrompts.ts`) still names the activity «المحقق
+الرياضي» for every subject, as does the card label (`activityErrorTitle` in `i18n.ts`).
+
 ## A content report can say what is wrong — 2026-11-11
 
 The admin's «تقرير محتوى جديد» email of 2026-11-11 (a Grade 4 Arabic lesson plan, the second Grade 4 Arabic report in four

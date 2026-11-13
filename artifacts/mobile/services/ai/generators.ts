@@ -29,6 +29,10 @@ import {
 } from './mathPractice.ts';
 import { isChemContext, takeConcreteChem, takeConcreteChemBatch, takeSolvedChem, type SolvedItem } from './chemPractice.ts';
 import { buildActivityBlueprint } from './activityBlueprints.ts';
+import {
+  activityPoints, detectiveFromMistakes, detectiveFromPoints, escapeFromItems, escapeFromPoints,
+  type FitContext, type FitMistake,
+} from './classroomFit.ts';
 import { buildLessonStyleBlueprint, type LessonDocContext } from './lessonPlanBlueprints.ts';
 import { revisionPlanFromRequest } from './lessonPlanRevision.ts';
 import { arPrefixed, lessonKindFor, type LessonKind } from './lessonPlanKinds.ts';
@@ -2010,6 +2014,28 @@ export class MockAIService extends AIService {
             : [];
     const bingoItems = actType === 'bingo' ? batch(8) : [];
     const relayItems = actType === 'relay' ? batch(4) : [];
+    // The escape challenge and the detective used to be one hand-written set of
+    // quadratic equations for every lesson. They now draw from the lesson's bank,
+    // or ask about its own outcomes when it has none (classroomFit.ts).
+    const fit: FitContext = { req, topic, isAr, math, dur, slideDuration };
+    const escapeItems = actType === 'escape-challenge' ? batch(5) : [];
+    const mistakes = (n: number): FitMistake[] => {
+      const lang = isAr ? 'ar' : 'en';
+      const drawn = rev
+        ? revisionPractice(rev, n, 0, lang, req.subject, { type: 'multiple_choice', tier: () => 'medium', points: 0 })
+        : math || chem
+          ? Array.from({ length: n }, () => math
+            ? takeConcreteMath('multiple_choice', topic, kb, 'medium', lang, 0)
+            : takeConcreteChem('multiple_choice', topic, kb, 'medium', lang, 0))
+          : [];
+      const out: FitMistake[] = [];
+      for (const q of drawn) {
+        const wrong = q?.options?.find(o => o !== q.answer);
+        if (q && wrong) out.push({ text: q.text, answer: q.answer, wrong });
+      }
+      return out;
+    };
+    const detectiveCases = actType === 'error-detective' ? mistakes(3) : [];
 
     // ── Quick Check (whole-class ABCD response) ────────────────────────────────
     // Every student answers every question (hands raised / mini-whiteboards) —
@@ -2273,7 +2299,10 @@ export class MockAIService extends AIService {
             { slideNumber: 3, type: 'bingo-call', title: 'الاستدعاء 2', content: `خاصية: ${topic} يُستخدم عندما…`, hint: 'فكّر في حالات التطبيق', answer: 'المصطلح 2', durationSeconds: 30, teacher: { expectedAnswer: `تطبيق مباشر من وحدة ${topic}`, teachingTips: 'ذكّر الطلبة بمثال من الكتاب', suggestedQuestions: ['أين طبّقنا هذا في الدرس؟'] } },
             { slideNumber: 4, type: 'bingo-call', title: 'الاستدعاء 3', content: `قاعدة: إذا كان … في ${topic}، فإن النتيجة هي…`, hint: 'راجع القواعد الأساسية', answer: 'المصطلح 3', durationSeconds: 30, teacher: { expectedAnswer: `القاعدة المرتبطة بـ${topic}`, teachingTips: 'اربط السؤال بخطوة الحل التي درسناها' } },
             { slideNumber: 5, type: 'bingo-call', title: 'الاستدعاء 4', content: `مثال: أوجد نتيجة تطبيق مفهوم من ${topic} في موقف حياتي`, hint: 'تذكّر التطبيقات الحياتية', answer: 'المصطلح 4', durationSeconds: 30, teacher: { expectedAnswer: `مثال حياتي على ${topic}`, teachingTips: 'يمكن قبول أكثر من مصطلح إذا كانت الإجابة منطقية' } },
-            { slideNumber: 6, type: 'bingo-call', title: 'الاستدعاء 5', content: `المعادلة: الصيغة الرياضية المرتبطة بـ${topic} هي…`, hint: 'تذكّر صيغ وحدتنا', answer: 'المصطلح 5', durationSeconds: 30, teacher: { expectedAnswer: `الصيغة المرتبطة بـ${topic}`, teachingTips: 'اعرض الصيغة بعد الاستدعاء للتأكيد' } },
+            // Only a maths lesson is asked for a formula; any other subject for a key term.
+            math
+              ? { slideNumber: 6, type: 'bingo-call', title: 'الاستدعاء 5', content: `المعادلة: الصيغة الرياضية المرتبطة بـ${topic} هي…`, hint: 'تذكّر الصيغ المهمة', answer: 'المصطلح 5', durationSeconds: 30, teacher: { expectedAnswer: `الصيغة المرتبطة بـ${topic}`, teachingTips: 'اعرض الصيغة بعد الاستدعاء للتأكيد' } }
+              : { slideNumber: 6, type: 'bingo-call', title: 'الاستدعاء 5', content: `مصطلح: الكلمة المفتاحية التي تلخّص فكرة أساسية في ${topic} هي…`, hint: 'فكّر في المصطلحات المهمة', answer: 'المصطلح 5', durationSeconds: 30, teacher: { expectedAnswer: `مصطلح أساسي من ${topic}`, teachingTips: 'اكتب المصطلح على السبورة بعد الاستدعاء للتأكيد' } },
             { slideNumber: 7, type: 'bingo-call', title: 'الاستدعاء 6', content: `ما الفرق بين المفهومين الرئيسيين في ${topic}؟`, hint: 'قارن المفهومين', answer: 'المصطلح 6', durationSeconds: 30, teacher: { expectedAnswer: `الفرق بين مفهومَي ${topic}`, teachingTips: 'ادفع الطلبة للتفكير النقدي هنا' } },
             { slideNumber: 8, type: 'bingo-call', title: 'الاستدعاء 7', content: `أي خاصية من خصائص ${topic} تنطبق على هذا الموقف: …؟`, hint: 'راجع قائمة الخصائص', answer: 'المصطلح 7', durationSeconds: 30, teacher: { expectedAnswer: `الخاصية المناسبة من ${topic}`, teachingTips: 'أعطِ مثالًا إضافيًا إذا بدا الطلبة متوقفين' } },
             { slideNumber: 9, type: 'bingo-call', title: 'الاستدعاء 8', content: `الوحدة المستخدمة لقياس كمية مرتبطة بـ${topic} هي…`, hint: 'فكّر في وحدات القياس', answer: 'المصطلح 8', durationSeconds: 30, teacher: { expectedAnswer: `وحدة القياس المرتبطة بـ${topic}`, teachingTips: 'ذكّر الطلبة بجدول الوحدات' } },
@@ -2343,7 +2372,10 @@ export class MockAIService extends AIService {
           { slideNumber: 3, type: 'bingo-call', title: 'Call 2', content: `Property: ${topic} is used when…`, hint: 'Think about when we apply this concept', answer: 'Term 2', durationSeconds: 30, teacher: { expectedAnswer: `A direct application from the ${topic} unit`, teachingTips: 'Remind students of the textbook example' } },
           { slideNumber: 4, type: 'bingo-call', title: 'Call 3', content: `Rule: In ${topic}, when … the result is…`, hint: 'Recall the main rules', answer: 'Term 3', durationSeconds: 30, teacher: { expectedAnswer: `The rule linked to ${topic}`, teachingTips: 'Connect the clue to the solution steps we studied' } },
           { slideNumber: 5, type: 'bingo-call', title: 'Call 4', content: `Example: Name a real-world application of a concept from ${topic}`, hint: 'Think of everyday applications', answer: 'Term 4', durationSeconds: 30, teacher: { expectedAnswer: `A real-world example of ${topic}`, teachingTips: 'Accept multiple terms if the reasoning is sound' } },
-          { slideNumber: 6, type: 'bingo-call', title: 'Call 5', content: `Formula: The mathematical expression associated with ${topic} is…`, hint: 'Recall the formulas from our unit', answer: 'Term 5', durationSeconds: 30, teacher: { expectedAnswer: `The formula linked to ${topic}`, teachingTips: 'Display the formula after calling to confirm' } },
+          // Only a maths lesson is asked for a formula; any other subject for a key term.
+          math
+            ? { slideNumber: 6, type: 'bingo-call', title: 'Call 5', content: `Formula: The mathematical expression associated with ${topic} is…`, hint: 'Recall the key formulas', answer: 'Term 5', durationSeconds: 30, teacher: { expectedAnswer: `The formula linked to ${topic}`, teachingTips: 'Display the formula after calling to confirm' } }
+            : { slideNumber: 6, type: 'bingo-call', title: 'Call 5', content: `Key term: The word that sums up a key idea of ${topic} is…`, hint: 'Think about the important terms', answer: 'Term 5', durationSeconds: 30, teacher: { expectedAnswer: `A key term from ${topic}`, teachingTips: 'Write the term on the board after calling to confirm' } },
           { slideNumber: 7, type: 'bingo-call', title: 'Call 6', content: `What is the main difference between the two key concepts in ${topic}?`, hint: 'Compare the two concepts', answer: 'Term 6', durationSeconds: 30, teacher: { expectedAnswer: `The distinction between the two concepts in ${topic}`, teachingTips: 'Push students toward critical thinking here' } },
           { slideNumber: 8, type: 'bingo-call', title: 'Call 7', content: `Which property of ${topic} applies to this situation: …?`, hint: 'Review your list of properties', answer: 'Term 7', durationSeconds: 30, teacher: { expectedAnswer: `The appropriate property from ${topic}`, teachingTips: 'Give an extra example if students seem stuck' } },
           { slideNumber: 9, type: 'bingo-call', title: 'Call 8', content: `The unit used to measure a quantity related to ${topic} is…`, hint: 'Think about units of measurement', answer: 'Term 8', durationSeconds: 30, teacher: { expectedAnswer: `The measurement unit related to ${topic}`, teachingTips: 'Remind students of the units table' } },
@@ -2421,15 +2453,15 @@ export class MockAIService extends AIService {
               slideNumber: 2, type: 'relay-problem', title: 'المسألة 1 من 4',
               content: `احسب القيمة الأولى:\nطبّق ${topic} على المعطيات التالية وأوجد (أ).\n\nمعطيات: حدّدها من الكتاب المدرسي`,
               hint: 'ابدأ بتحديد المعطيات وطبّق الخطوة الأولى',
-              answer: 'أ = القيمة الأولى',
+              answer: 'القيمة الأولى (أ)',
               durationSeconds: slideDuration,
               teacher: { expectedAnswer: `القيمة الأولى (أ) من تطبيق ${topic}`, commonMisconceptions: 'قد يخطئ الطلبة في تحديد المعطيات', teachingTips: 'تأكد أن كل فريق يكتب إجابته بوضوح قبل التمرير', suggestedQuestions: ['ما المعطى الذي تستخدمه في الخطوة الأولى؟'] },
             },
             {
               slideNumber: 3, type: 'relay-problem', title: 'المسألة 2 من 4',
               content: `استخدم (أ) من المسألة 1:\nالآن طبّق ${topic} مرة أخرى مع (أ) لإيجاد (ب).`,
-              hint: 'استبدل (أ) في المعادلة الجديدة',
-              answer: 'ب = القيمة الثانية',
+              hint: math ? 'استبدل (أ) في المعادلة الجديدة' : 'استخدم (أ) في خطوتك التالية',
+              answer: 'القيمة الثانية (ب)',
               durationSeconds: slideDuration,
               teacher: { expectedAnswer: `القيمة الثانية (ب) باستخدام نتيجة (أ)`, commonMisconceptions: 'استخدام قيمة خاطئة من المسألة السابقة', teachingTips: 'اطلب من الفرق التحقق من (أ) قبل الانتقال' },
             },
@@ -2437,7 +2469,7 @@ export class MockAIService extends AIService {
               slideNumber: 4, type: 'relay-problem', title: 'المسألة 3 من 4',
               content: `استخدم (ب) من المسألة 2:\nطبّق خاصية ${topic} الثانية مع (ب) لإيجاد (ج).`,
               hint: 'تذكّر الخاصية الثانية التي درسناها',
-              answer: 'ج = القيمة الثالثة',
+              answer: 'القيمة الثالثة (ج)',
               durationSeconds: slideDuration,
               teacher: { expectedAnswer: `القيمة الثالثة (ج) باستخدام نتيجة (ب)`, commonMisconceptions: 'الخلط بين الخصائص المختلفة', teachingTips: 'ذكّر بالفرق بين الخاصيتين إذا لزم' },
             },
@@ -2445,7 +2477,7 @@ export class MockAIService extends AIService {
               slideNumber: 5, type: 'relay-problem', title: 'المسألة الأخيرة 4 من 4',
               content: `المسألة النهائية!\nاستخدم (ج) من المسألة 3:\nطبّق ${topic} بالكامل لإيجاد الإجابة النهائية (د).`,
               hint: 'وحّد كل نتائجك لإيجاد الحل الكامل',
-              answer: 'د = الإجابة النهائية',
+              answer: 'الإجابة النهائية (د)',
               durationSeconds: slideDuration,
               teacher: { expectedAnswer: `الإجابة النهائية (د) لسلسلة التتابع`, commonMisconceptions: 'أخطاء التراكم من المسائل السابقة', teachingTips: 'ناقش مع الصف كيف تراكمت الأخطاء في السلسلة', suggestedQuestions: ['كيف أثّرت الخطأ في المسألة 1 على النتيجة النهائية؟'] },
             },
@@ -2481,15 +2513,15 @@ export class MockAIService extends AIService {
             slideNumber: 2, type: 'relay-problem', title: 'Problem 1 of 4',
             content: `Find the first value:\nApply ${topic} to the given data and find (a).\n\nData: see your printed relay sheet`,
             hint: 'Start by identifying the given data and apply the first step',
-            answer: 'a = first value',
+            answer: 'First value (a)',
             durationSeconds: slideDuration,
             teacher: { expectedAnswer: `First value (a) from applying ${topic}`, commonMisconceptions: 'Students may misread the given data', teachingTips: 'Make sure each team writes their answer clearly before passing', suggestedQuestions: ['Which piece of data do you use in the first step?'] },
           },
           {
             slideNumber: 3, type: 'relay-problem', title: 'Problem 2 of 4',
             content: `Use (a) from Problem 1:\nNow apply ${topic} again with (a) to find (b).`,
-            hint: 'Substitute (a) into the new expression',
-            answer: 'b = second value',
+            hint: math ? 'Substitute (a) into the new expression' : 'Use (a) in your next step',
+            answer: 'Second value (b)',
             durationSeconds: slideDuration,
             teacher: { expectedAnswer: `Second value (b) using the result of (a)`, commonMisconceptions: 'Using a wrong value carried from the previous problem', teachingTips: 'Ask teams to double-check (a) before moving on' },
           },
@@ -2497,7 +2529,7 @@ export class MockAIService extends AIService {
             slideNumber: 4, type: 'relay-problem', title: 'Problem 3 of 4',
             content: `Use (b) from Problem 2:\nApply the second property of ${topic} with (b) to find (c).`,
             hint: 'Recall the second property we studied',
-            answer: 'c = third value',
+            answer: 'Third value (c)',
             durationSeconds: slideDuration,
             teacher: { expectedAnswer: `Third value (c) using the result of (b)`, commonMisconceptions: 'Confusing the two main properties', teachingTips: 'Remind students of the distinction if needed' },
           },
@@ -2505,7 +2537,7 @@ export class MockAIService extends AIService {
             slideNumber: 5, type: 'relay-problem', title: 'Final Problem 4 of 4',
             content: `FINAL PROBLEM!\nUse (c) from Problem 3:\nApply the full ${topic} process to find the final answer (d).`,
             hint: 'Combine all your results to reach the complete solution',
-            answer: 'd = final answer',
+            answer: 'Final answer (d)',
             durationSeconds: slideDuration,
             teacher: { expectedAnswer: `Final answer (d) for the relay chain`, commonMisconceptions: 'Accumulated errors from earlier problems', teachingTips: 'Discuss with the class how early errors propagated through the chain', suggestedQuestions: ['How did an error in Problem 1 affect the final answer?'] },
           },
@@ -2516,104 +2548,8 @@ export class MockAIService extends AIService {
 
     // ── Error Detective ────────────────────────────────────────────────────────
     if (actType === 'error-detective') {
-      if (isAr) {
-        return {
-          activityName: `المحقق الرياضي – ${topic}`,
-          activityType: 'error-detective',
-          grade: req.grade, subject: req.subject, lesson: topic, duration: dur,
-          difficulty: req.difficulty, groupType: req.groupType,
-          learningObjective: `تحديد الأخطاء الشائعة في حل مسائل ${topic} وتصحيحها بمنهجية`,
-          materials: ['السبورة', 'بطاقات الحلول الخاطئة المطبوعة', 'أقلام تصحيح حمراء'],
-          teacherPreparation: 'اطبع 3 حلول خاطئة مسبقًا. اطلب من الطلبة العمل في ثنائيات.',
-          teacherNotes: ['ناقش سبب الخطأ وليس فقط الإجابة الصحيحة', 'استخدم أخطاء حقيقية من اختبارات سابقة'],
-          answerKey: ['الخطأ 1: إشارة سالبة مفقودة', 'الخطأ 2: قسمة على المتغير بدلاً من إخراجه', 'الخطأ 3: نسيان الجذر السالب'],
-          printables: ['بطاقات الحلول الخاطئة', 'نموذج التقرير التحقيقي'],
-          assessment: 'قيّم قدرة الطلبة على تحديد الخطأ وشرح سببه وتقديم الحل الصحيح.',
-          extensionChallenge: `اطلب من الطلبة تصميم خطأ متعمد في حل ${topic} وتبادله مع مجموعة أخرى.`,
-          slides: [
-            { slideNumber: 1, type: 'intro', title: '🔍 المحقق الرياضي', content: `مهمتك: اكشف الخطأ في الحلول التالية!\nكل حل يحتوي على خطأ واحد على الأقل.\nحدّد الخطأ، اشرح سببه، وقدّم الحل الصحيح.\n\nعمل ثنائي – دقيقتان لكل بطاقة`, durationSeconds: 0 },
-            {
-              slideNumber: 2, type: 'challenge',
-              title: '🕵️ الجريمة 1 – أوجد الخطأ',
-              content: `الطالب كتب هذا الحل:\n\nحل معادلة: س² - 9 = 0\nس² = 9\nس = 3\n\n❓ أين الخطأ؟`,
-              hint: 'هل هناك حالتان لـ√9 ؟',
-              answer: 'الخطأ: نسيان الجذر السالب\nالصحيح: س = 3 أو س = -3',
-              durationSeconds: slideDuration,
-              teacher: { expectedAnswer: 'نسيان الجذر السالب ± 3', commonMisconceptions: 'الطلبة يعتقدون أن الجذر التربيعي له قيمة موجبة فقط', teachingTips: 'ذكّر: √9 = ±3 دائمًا عند حل المعادلات', suggestedQuestions: ['ما عدد حلول المعادلة التربيعية؟', 'متى تكون الحلول كلاهما موجبة؟'] },
-            },
-            { slideNumber: 3, type: 'reveal', title: '✅ الحل الصحيح', content: 'الخطأ: أخذ الجذر الموجب فقط\n\nالحل الكامل:\nس² = 9\nس = ±3\n\nإذن: س = 3 أو س = -3\n\n🏅 نقطة لمن اكتشف الخطأ!', durationSeconds: 0 },
-            {
-              slideNumber: 4, type: 'challenge',
-              title: '🕵️ الجريمة 2 – أوجد الخطأ',
-              content: `الطالب كتب هذا الحل:\n\nحل معادلة: 3س² - 6س = 0\n3س² = 6س\nس = 2\n\n❓ أين الخطأ؟`,
-              hint: 'ماذا يحدث عند القسمة على المتغير؟',
-              answer: 'الخطأ: القسمة على (س) تُفقد الحل س = 0\nالصحيح: س(3س - 6) = 0، إذن س = 0 أو س = 2',
-              durationSeconds: slideDuration,
-              teacher: { expectedAnswer: 'قسمة طرفي المعادلة على (س) تُضيّع الحل س = 0', commonMisconceptions: 'الطلبة يقسمون على المتغير ظنًا أنه مبسّط', teachingTips: 'القاعدة الذهبية: لا تقسم على متغير، بل أخرجه عاملاً', suggestedQuestions: ['لماذا لا يجوز القسمة على س؟', 'كيف تتحقق أن س = 0 حل صحيح؟'] },
-            },
-            { slideNumber: 5, type: 'reveal', title: '✅ الحل الصحيح', content: 'الخطأ: القسمة على (س) تُفقد الحل الثاني\n\nالطريقة الصحيحة:\n3س² - 6س = 0\nس(3س - 6) = 0\nس = 0  أو  3س - 6 = 0\nس = 0  أو  س = 2\n\n⚠️ لا تقسم أبدًا على متغير!', durationSeconds: 0 },
-            {
-              slideNumber: 6, type: 'challenge',
-              title: '🕵️ الجريمة 3 – أوجد الخطأ',
-              content: `الطالب كتب هذا الحل:\n\nحل معادلة: س² + 4س + 4 = 0\n(س + 4)(س + 1) = 0\nس = -4 أو س = -1\n\n❓ أين الخطأ؟`,
-              hint: 'ما الأعداد التي حاصل ضربها 4 ومجموعها 4؟',
-              answer: 'الخطأ: التحليل خاطئ\nالصحيح: (س + 2)² = 0، إذن س = -2 (جذر مزدوج)',
-              durationSeconds: slideDuration,
-              teacher: { expectedAnswer: '(س + 2)(س + 2) = 0 وليس (س + 4)(س + 1)', commonMisconceptions: 'اختيار عاملين عشوائيين بدون التحقق', teachingTips: 'تحقق دائمًا: 2 × 2 = 4 و 2 + 2 = 4 ✓', suggestedQuestions: ['ما الفرق بين هذه المعادلة والسابقة؟', 'ما معنى الجذر المزدوج هندسيًا؟'] },
-            },
-            { slideNumber: 7, type: 'reveal', title: '✅ الحل الصحيح', content: 'الخطأ: التحليل غير صحيح\n\nالحل الصحيح:\nس² + 4س + 4 = 0\n(س + 2)² = 0\nس + 2 = 0\nس = -2  (جذر مزدوج)\n\n🔑 تذكّر: المربع التام = جذر مزدوج', durationSeconds: 0 },
-            { slideNumber: 8, type: 'summary', title: '🏆 التحقيق اكتمل!', content: `أحسنتم يا محققون!\n\nالأخطاء الشائعة التي اكتشفناها اليوم في ${topic}:\n\n1️⃣ نسيان الجذر السالب\n2️⃣ القسمة على المتغير\n3️⃣ التحليل الخاطئ\n\n💡 هذه الأخطاء تظهر كثيرًا في الامتحانات — تجنّبها!`, durationSeconds: 0 },
-          ],
-        };
-      }
-      return {
-        activityName: `Error Detective – ${topic}`,
-        activityType: 'error-detective',
-        grade: req.grade, subject: req.subject, lesson: topic, duration: dur,
-        difficulty: req.difficulty, groupType: req.groupType,
-        learningObjective: `Identify and correct common mistakes in ${topic} problems through analytical thinking`,
-        materials: ['Whiteboard', 'Printed error cards', 'Red correction pens'],
-        teacherPreparation: 'Print 3 worked solutions with deliberate errors. Students work in pairs.',
-        teacherNotes: ['Discuss WHY the error occurred, not just what the correct answer is', 'Use real errors from previous tests when possible'],
-        answerKey: ['Error 1: Missing negative root', 'Error 2: Dividing by variable loses a solution', 'Error 3: Incorrect factoring'],
-        printables: ['Error cards (one set per pair)', 'Investigation report template'],
-        assessment: 'Assess whether students can identify the error, explain its cause, and provide the correct solution.',
-        extensionChallenge: `Ask students to deliberately introduce an error into a ${topic} solution and swap with another pair to solve.`,
-        slides: [
-          { slideNumber: 1, type: 'intro', title: '🔍 Error Detective', content: `Your mission: spot the mistake in each worked solution!\nEvery solution contains at least one error.\nIdentify the error, explain why it is wrong, and write the correct solution.\n\nWork in pairs — 2 minutes per card`, durationSeconds: 0 },
-          {
-            slideNumber: 2, type: 'challenge',
-            title: '🕵️ Case 1 – Find the Error',
-            content: `A student wrote this solution:\n\nSolve: x² − 9 = 0\nx² = 9\nx = 3\n\n❓ Where is the error?`,
-            hint: 'Are there two possible values for √9?',
-            answer: 'Error: forgot the negative root\nCorrect: x = 3 or x = −3',
-            durationSeconds: slideDuration,
-            teacher: { expectedAnswer: 'Missing the negative root ±3', commonMisconceptions: 'Students assume the square root only yields a positive value', teachingTips: 'Reinforce: √9 = ±3 when solving equations', suggestedQuestions: ['How many solutions does a quadratic equation have?', 'When are both roots positive?'] },
-          },
-          { slideNumber: 3, type: 'reveal', title: '✅ Correct Solution', content: 'Error: taking only the positive root\n\nFull solution:\nx² = 9\nx = ±3\n\nSo: x = 3 or x = −3\n\n🏅 Point to whoever caught the error!', durationSeconds: 0 },
-          {
-            slideNumber: 4, type: 'challenge',
-            title: '🕵️ Case 2 – Find the Error',
-            content: `A student wrote this solution:\n\nSolve: 3x² − 6x = 0\n3x² = 6x\nx = 2\n\n❓ Where is the error?`,
-            hint: 'What happens when you divide both sides by the variable?',
-            answer: 'Error: dividing by x loses the solution x = 0\nCorrect: x(3x − 6) = 0, so x = 0 or x = 2',
-            durationSeconds: slideDuration,
-            teacher: { expectedAnswer: 'Dividing both sides by x eliminates x = 0', commonMisconceptions: 'Students divide by the variable as if it were a constant', teachingTips: 'Golden rule: never divide by a variable — factor it out instead', suggestedQuestions: ['Why can\'t we divide both sides by x?', 'How do you verify x = 0 is a valid solution?'] },
-          },
-          { slideNumber: 5, type: 'reveal', title: '✅ Correct Solution', content: 'Error: dividing by x loses one solution\n\nCorrect method:\n3x² − 6x = 0\nx(3x − 6) = 0\nx = 0  or  3x − 6 = 0\nx = 0  or  x = 2\n\n⚠️ Never divide both sides by a variable!', durationSeconds: 0 },
-          {
-            slideNumber: 6, type: 'challenge',
-            title: '🕵️ Case 3 – Find the Error',
-            content: `A student wrote this solution:\n\nSolve: x² + 4x + 4 = 0\n(x + 4)(x + 1) = 0\nx = −4 or x = −1\n\n❓ Where is the error?`,
-            hint: 'What two numbers multiply to 4 and add to 4?',
-            answer: 'Error: incorrect factoring\nCorrect: (x + 2)² = 0, so x = −2 (double root)',
-            durationSeconds: slideDuration,
-            teacher: { expectedAnswer: '(x + 2)(x + 2) not (x + 4)(x + 1)', commonMisconceptions: 'Guessing factor pairs without checking', teachingTips: 'Always verify: 2 × 2 = 4 ✓ and 2 + 2 = 4 ✓', suggestedQuestions: ['How is this different from the previous equations?', 'What does a double root mean graphically?'] },
-          },
-          { slideNumber: 7, type: 'reveal', title: '✅ Correct Solution', content: 'Error: wrong factor pair\n\nCorrect solution:\nx² + 4x + 4 = 0\n(x + 2)² = 0\nx + 2 = 0\nx = −2  (double root)\n\n🔑 Perfect square → double root!', durationSeconds: 0 },
-          { slideNumber: 8, type: 'summary', title: '🏆 Investigation Complete!', content: `Outstanding detectives!\n\nCommon ${topic} errors we uncovered today:\n\n1️⃣ Forgetting the negative root\n2️⃣ Dividing by a variable\n3️⃣ Incorrect factoring\n\n💡 These errors appear frequently in exams — now you know how to avoid them!`, durationSeconds: 0 },
-        ],
-      };
+      if (detectiveCases.length >= 3) return detectiveFromMistakes(fit, detectiveCases);
+      return detectiveFromPoints(fit, activityPoints(kb, topic, isAr));
     }
 
     // ── Gallery Walk ────────────────────────────────────────────────────────────
@@ -2765,328 +2701,8 @@ export class MockAIService extends AIService {
     }
 
     // ── Escape Challenge (default) ─────────────────────────────────────────────
-    if (isAr) {
-      return {
-        activityName: `تحدي الهروب – ${topic}`,
-        activityType: 'escape-challenge',
-        grade: req.grade,
-        subject: req.subject,
-        lesson: topic,
-        duration: dur,
-        difficulty: req.difficulty,
-        groupType: req.groupType,
-        learningObjective: `حل معادلات ${topic} بأساليب متنوعة ضمن فريق`,
-        materials: ['السبورة', 'أوراق التحديات المطبوعة', 'مؤقت', 'أقلام ملونة'],
-        teacherPreparation: 'اطبع بطاقات التحديات الخمسة مسبقًا. رتّب الطلبة في مجموعات من 3-4 أفراد. اكتب الأكواد على السبورة عند الانتهاء من كل تحدٍّ.',
-        teacherNotes: ['راقب المجموعات وقدّم تلميحات إضافية عند الحاجة', 'شجّع الطلبة على مناقشة أساليب الحل المختلفة'],
-        answerKey: [
-          'التحدي 1: س = -3، س = -4',
-          'التحدي 2: س = 2، س = 3',
-          'التحدي 3: س = ±3',
-          'التحدي 4: س = 0، س = 4',
-          'التحدي 5: س = 2 (جذر مزدوج)',
-        ],
-        printables: ['بطاقات التحديات', 'مفتاح الإجابات', 'شهادات الإنجاز'],
-        assessment: 'راقب دقة الحلول وسرعة الإنجاز. ناقش الأخطاء الشائعة مع الصف في الختام.',
-        extensionChallenge: 'صمّم معادلة تربيعية خاصة بك بحيث يكون مجموع الجذرين 5 وحاصل ضربهما 6.',
-        slides: [
-          {
-            slideNumber: 1, type: 'intro',
-            title: '🔐 مهمتكم',
-            content: 'فريقك محاصر في مختبر الرياضيات!\nعليكم حل 5 تحديات للهروب في غضون ' + dur + ' دقيقة.\nكل تحدٍّ صحيح يمنحكم كودًا سريًا.',
-            durationSeconds: 0,
-          },
-          {
-            slideNumber: 2, type: 'intro',
-            title: '🧭 كيف نلعب؟',
-            content: '• تعملون في مجموعات، ولكل مجموعة ورقة واحدة تسجّلون فيها الأرقام.\n• أمامكم 5 تحديات، لكل تحدٍّ وقت محدّد يظهر على الشاشة.\n• كل تحدٍّ تحلّونه حلًّا صحيحًا يكشف رقمًا سريًا واحدًا — اكتبوه فورًا بالترتيب.\n• لا تُدخلون الأرقام في أي مكان: الكود يُجمع على ورقتكم أنتم.\n• في النهاية تقرؤون الأرقام الخمسة بالترتيب نفسه، فيكتمل كود الهروب.',
-            durationSeconds: 0,
-          },
-          {
-            slideNumber: 3, type: 'challenge',
-            title: 'التحدي 1 من 5',
-            content: 'حلّ المعادلة:\nس² + 7س + 12 = 0',
-            hint: 'حاول تحليل المعادلة: (س + ؟)(س + ؟) = 0',
-            answer: 'س = -3، س = -4',
-            unlockCode: '8',
-            durationSeconds: slideDuration,
-            teacher: {
-              expectedAnswer: 'س² + 7س + 12 = (س + 3)(س + 4) = 0، إذن س = -3 أو س = -4',
-              commonMisconceptions: 'قد ينسى الطلبة الإشارة السالبة عند كتابة الجذور',
-              teachingTips: 'ذكّر الطلبة بأن حاصل ضرب العاملين = 12 ومجموعهما = 7',
-              suggestedQuestions: ['ما العاملان اللذان حاصل ضربهما 12 ومجموعهما 7؟', 'كيف نتحقق من الإجابة؟'],
-              differentiationTips: 'للطلبة المتقدمين: استخدم القانون العام للتحقق',
-            },
-          },
-          {
-            slideNumber: 4, type: 'reveal',
-            title: '🔓 الكود 8 مفتوح!',
-            content: 'أحسنتم! حصلتم على الكود الأول: 8\nسجّلوه في ورقتكم.',
-            unlockCode: '8',
-            durationSeconds: 0,
-          },
-          {
-            slideNumber: 5, type: 'challenge',
-            title: 'التحدي 2 من 5',
-            content: 'حلّ المعادلة:\nس² - 5س + 6 = 0',
-            hint: 'أوجد عددين حاصل ضربهما 6 ومجموعهما -5',
-            answer: 'س = 2، س = 3',
-            unlockCode: '4',
-            durationSeconds: slideDuration,
-            teacher: {
-              expectedAnswer: '(س - 2)(س - 3) = 0، إذن س = 2 أو س = 3',
-              commonMisconceptions: 'خلط الإشارات عند التحليل',
-              teachingTips: 'اطلب من الطلبة رسم جدول بسيط للعاملين المحتملة',
-              suggestedQuestions: ['ما علامة الجذرين هنا ولماذا؟'],
-              differentiationTips: 'للطلبة الأقل تقدمًا: ارسم الدالة التربيعية وحدد نقاط التقاطع مع المحور السيني',
-            },
-          },
-          {
-            slideNumber: 6, type: 'reveal',
-            title: '🔓 الكود 4 مفتوح!',
-            content: 'رائع! الكود الثاني: 4',
-            unlockCode: '4',
-            durationSeconds: 0,
-          },
-          {
-            slideNumber: 7, type: 'challenge',
-            title: 'التحدي 3 من 5',
-            content: 'حلّ المعادلة:\nس² - 9 = 0',
-            hint: 'تذكّر قانون الفرق بين مربعين: أ² - ب² = (أ+ب)(أ-ب)',
-            answer: 'س = 3، س = -3',
-            unlockCode: '7',
-            durationSeconds: slideDuration,
-            teacher: {
-              expectedAnswer: '(س-3)(س+3) = 0، إذن س = ±3',
-              commonMisconceptions: 'نسيان الجذر السالب',
-              teachingTips: 'وضّح أن ±3 تعني جذرين مختلفين',
-              suggestedQuestions: ['لماذا توجد إجابتان؟', 'كيف نوثق الإجابة بشكل صحيح؟'],
-              differentiationTips: 'يمكن حلّها أيضًا بإضافة 9 للطرفين ثم أخذ الجذر',
-            },
-          },
-          {
-            slideNumber: 8, type: 'reveal',
-            title: '🔓 الكود 7 مفتوح!',
-            content: 'ممتاز! الكود الثالث: 7',
-            unlockCode: '7',
-            durationSeconds: 0,
-          },
-          {
-            slideNumber: 9, type: 'challenge',
-            title: 'التحدي 4 من 5',
-            content: 'حلّ المعادلة:\n2س² - 8س = 0',
-            hint: 'أخرج العامل المشترك أولًا',
-            answer: 'س = 0، س = 4',
-            unlockCode: '3',
-            durationSeconds: slideDuration,
-            teacher: {
-              expectedAnswer: '2س(س - 4) = 0، إذن س = 0 أو س = 4',
-              commonMisconceptions: 'قسمة طرفي المعادلة على س وإهمال الحل س = 0',
-              teachingTips: 'نبّه الطلبة إلى خطأ القسمة على المجهول',
-              suggestedQuestions: ['لماذا لا يمكن القسمة على س مباشرةً؟'],
-              differentiationTips: 'للمتقدمين: طبّق القانون العام وقارن النتائج',
-            },
-          },
-          {
-            slideNumber: 10, type: 'reveal',
-            title: '🔓 الكود 3 مفتوح!',
-            content: 'عظيم! الكود الرابع: 3',
-            unlockCode: '3',
-            durationSeconds: 0,
-          },
-          {
-            slideNumber: 11, type: 'challenge',
-            title: 'التحدي الأخير 5 من 5',
-            content: 'التحدي النهائي!\nحلّ المعادلة:\nس² - 4س + 4 = 0',
-            hint: 'هل هذا مربع كامل؟ (س - ؟)² = 0',
-            answer: 'س = 2 (جذر مزدوج)',
-            unlockCode: '6',
-            durationSeconds: slideDuration,
-            teacher: {
-              expectedAnswer: '(س - 2)² = 0، إذن س = 2 (جذر مزدوج)',
-              commonMisconceptions: 'توقع جذرين مختلفين دائمًا',
-              teachingTips: 'اشرح مفهوم الجذر المزدوج وعلاقته بالمميّز = صفر',
-              suggestedQuestions: ['ما قيمة المميّز في هذه المعادلة؟', 'ماذا يعني الجذر المزدوج هندسيًا؟'],
-              differentiationTips: 'للمتقدمين: ارسم الدالة وتحقق من أن القطع المكافئ يلمس المحور السيني في نقطة واحدة',
-            },
-          },
-          {
-            slideNumber: 12, type: 'reveal',
-            title: '🔓 الكود 6 مفتوح!',
-            content: 'التحدي الأخير انتهى! الكود الخامس: 6',
-            unlockCode: '6',
-            durationSeconds: 0,
-          },
-          {
-            slideNumber: 13, type: 'summary',
-            title: '🎉 لقد هربتم!',
-            content: 'أحسنتم! فريقكم نجح في الهروب!\nالكود الكامل: 8 – 4 – 7 – 3 – 6\n\nحللتم اليوم:\n• التحليل إلى عوامل\n• الفرق بين مربعين\n• إخراج العامل المشترك\n• المربع الكامل',
-            durationSeconds: 0,
-          },
-        ],
-      };
-    }
-
-    // English mock
-    return {
-      activityName: `Escape Challenge – ${topic}`,
-      activityType: 'escape-challenge',
-      grade: req.grade,
-      subject: req.subject,
-      lesson: topic,
-      duration: dur,
-      difficulty: req.difficulty,
-      groupType: req.groupType,
-      learningObjective: `Solve ${topic} equations using multiple techniques as a team`,
-      materials: ['Whiteboard', 'Printed challenge cards', 'Timer', 'Coloured markers'],
-      teacherPreparation: 'Print the five challenge cards in advance. Arrange students into groups of 3-4. Reveal each code on the board as groups complete each challenge.',
-      teacherNotes: ['Monitor groups and provide extra hints if needed', 'Encourage discussion of different solution methods'],
-      answerKey: [
-        'Challenge 1: x = -3, x = -4',
-        'Challenge 2: x = 2, x = 3',
-        'Challenge 3: x = ±3',
-        'Challenge 4: x = 0, x = 4',
-        'Challenge 5: x = 2 (double root)',
-      ],
-      printables: ['Challenge cards', 'Answer key', 'Completion certificates'],
-      assessment: 'Monitor solution accuracy and speed. Discuss common mistakes with the class at the end.',
-      extensionChallenge: 'Design your own quadratic equation where the sum of roots is 5 and the product is 6.',
-      slides: [
-        {
-          slideNumber: 1, type: 'intro',
-          title: '🔐 Your Mission',
-          content: 'Your team is trapped in the Math Lab!\nSolve 5 challenges to escape within ' + dur + ' minutes.\nEach correct answer unlocks a secret code.',
-          durationSeconds: 0,
-        },
-        {
-          slideNumber: 2, type: 'intro',
-          title: '🧭 How to Play',
-          content: '• Work in groups. One sheet per group — that is where the digits go.\n• There are 5 challenges, each with its own timer on screen.\n• Solve a challenge correctly and one secret digit is revealed — write it down straight away, in order.\n• There is nothing to type the digits into: the code is collected on your own sheet.\n• At the end, read your five digits back in the same order to complete the escape code.',
-          durationSeconds: 0,
-        },
-        {
-          slideNumber: 3, type: 'challenge',
-          title: 'Challenge 1 of 5',
-          content: 'Solve the equation:\nx² + 7x + 12 = 0',
-          hint: 'Try factoring: (x + ?)(x + ?) = 0',
-          answer: 'x = -3 and x = -4',
-          unlockCode: '8',
-          durationSeconds: slideDuration,
-          teacher: {
-            expectedAnswer: 'x² + 7x + 12 = (x + 3)(x + 4) = 0, so x = -3 or x = -4',
-            commonMisconceptions: 'Students may forget the negative signs when writing the roots',
-            teachingTips: 'Remind students: two numbers that multiply to 12 and add to 7',
-            suggestedQuestions: ['What two numbers multiply to 12 and add to 7?', 'How do we verify the answer?'],
-            differentiationTips: 'Advanced: use the quadratic formula to verify',
-          },
-        },
-        {
-          slideNumber: 4, type: 'reveal',
-          title: '🔓 Code 8 Unlocked!',
-          content: 'Great work! You got the first code: 8\nWrite it down on your sheet.',
-          unlockCode: '8',
-          durationSeconds: 0,
-        },
-        {
-          slideNumber: 5, type: 'challenge',
-          title: 'Challenge 2 of 5',
-          content: 'Solve the equation:\nx² − 5x + 6 = 0',
-          hint: 'Find two numbers with product 6 and sum −5',
-          answer: 'x = 2 and x = 3',
-          unlockCode: '4',
-          durationSeconds: slideDuration,
-          teacher: {
-            expectedAnswer: '(x − 2)(x − 3) = 0, so x = 2 or x = 3',
-            commonMisconceptions: 'Mixing up signs during factoring',
-            teachingTips: 'Ask students to draw a quick factor table',
-            suggestedQuestions: ['What is the sign of the roots and why?'],
-            differentiationTips: 'For lower ability: graph the parabola and identify x-intercepts',
-          },
-        },
-        {
-          slideNumber: 6, type: 'reveal',
-          title: '🔓 Code 4 Unlocked!',
-          content: 'Excellent! Second code: 4',
-          unlockCode: '4',
-          durationSeconds: 0,
-        },
-        {
-          slideNumber: 7, type: 'challenge',
-          title: 'Challenge 3 of 5',
-          content: 'Solve the equation:\nx² − 9 = 0',
-          hint: 'Recall the difference of squares: a² − b² = (a+b)(a−b)',
-          answer: 'x = 3 and x = −3',
-          unlockCode: '7',
-          durationSeconds: slideDuration,
-          teacher: {
-            expectedAnswer: '(x − 3)(x + 3) = 0, so x = ±3',
-            commonMisconceptions: 'Forgetting the negative root',
-            teachingTips: 'Emphasise that ±3 means two distinct solutions',
-            suggestedQuestions: ['Why are there two answers?'],
-            differentiationTips: 'Can also be solved by adding 9 to both sides, then taking the square root',
-          },
-        },
-        {
-          slideNumber: 8, type: 'reveal',
-          title: '🔓 Code 7 Unlocked!',
-          content: 'Brilliant! Third code: 7',
-          unlockCode: '7',
-          durationSeconds: 0,
-        },
-        {
-          slideNumber: 9, type: 'challenge',
-          title: 'Challenge 4 of 5',
-          content: 'Solve the equation:\n2x² − 8x = 0',
-          hint: 'Factor out the common term first',
-          answer: 'x = 0 and x = 4',
-          unlockCode: '3',
-          durationSeconds: slideDuration,
-          teacher: {
-            expectedAnswer: '2x(x − 4) = 0, so x = 0 or x = 4',
-            commonMisconceptions: 'Dividing both sides by x and losing x = 0',
-            teachingTips: 'Warn students: never divide both sides by the variable',
-            suggestedQuestions: ['Why can\'t we divide both sides by x?'],
-            differentiationTips: 'Advanced: apply the quadratic formula and compare',
-          },
-        },
-        {
-          slideNumber: 10, type: 'reveal',
-          title: '🔓 Code 3 Unlocked!',
-          content: 'Amazing! Fourth code: 3',
-          unlockCode: '3',
-          durationSeconds: 0,
-        },
-        {
-          slideNumber: 11, type: 'challenge',
-          title: 'Final Challenge 5 of 5',
-          content: 'FINAL CHALLENGE!\nSolve the equation:\nx² − 4x + 4 = 0',
-          hint: 'Is this a perfect square? (x − ?)² = 0',
-          answer: 'x = 2 (double root)',
-          unlockCode: '6',
-          durationSeconds: slideDuration,
-          teacher: {
-            expectedAnswer: '(x − 2)² = 0, so x = 2 (double root)',
-            commonMisconceptions: 'Expecting two different roots every time',
-            teachingTips: 'Explain the double root concept and its relation to discriminant = 0',
-            suggestedQuestions: ['What is the discriminant here?', 'What does a double root mean graphically?'],
-            differentiationTips: 'Advanced: sketch the parabola and verify it touches the x-axis at one point',
-          },
-        },
-        {
-          slideNumber: 12, type: 'reveal',
-          title: '🔓 Code 6 Unlocked!',
-          content: 'Last challenge solved! Fifth code: 6',
-          unlockCode: '6',
-          durationSeconds: 0,
-        },
-        {
-          slideNumber: 13, type: 'summary',
-          title: '🎉 You Escaped!',
-          content: 'Outstanding! Your team escaped the Math Lab!\nFull code: 8 – 4 – 7 – 3 – 6\n\nToday you practised:\n• Factoring quadratics\n• Difference of squares\n• Common factor extraction\n• Perfect square trinomials',
-          durationSeconds: 0,
-        },
-      ],
-    };
+    if (escapeItems.length >= 3) return escapeFromItems(fit, escapeItems);
+    return escapeFromPoints(fit, activityPoints(kb, topic, isAr));
   }
 
   async generateHomework(req: AIRequest): Promise<WorksheetOutput> {

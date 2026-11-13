@@ -118,7 +118,6 @@ export function classroomRevisionRewords(phrase: string, lang: 'ar' | 'en', unit
         // The hints and tips that point back at «the lesson» we «studied».
         [`هل تتذكر هذا المصطلح من الدرس؟`, `هل تتذكر هذا المصطلح مما راجعناه؟`],
         [`أين طبّقنا هذا في الدرس؟`, `أين طبّقنا هذا فيما راجعناه؟`],
-        [`تذكّر صيغ وحدتنا`, `تذكّر الصيغ التي راجعناها`],
         [`اربط السؤال بخطوة الحل التي درسناها`, `اربط السؤال بخطوة الحل التي راجعناها`],
         [`استخدم الخطوات التي درسناها اليوم`, `استخدم الخطوات التي راجعناها اليوم`],
         [`تذكّر الخاصية الثانية التي درسناها`, `تذكّر الخاصية الثانية التي راجعناها`],
@@ -150,7 +149,6 @@ export function classroomRevisionRewords(phrase: string, lang: 'ar' | 'en', unit
         [`Apply the full ${p} process to find the final answer`, `Combine what you applied from ${p} to find the final answer`],
         [`Today you applied ${p} across a full connected chain`, `Today you revised ${p} across a full connected chain`],
         [`Do you remember this term from the lesson?`, `Do you remember this term from what we revised?`],
-        [`Recall the formulas from our unit`, `Recall the formulas we revised`],
         [`Connect the clue to the solution steps we studied`, `Connect the clue to the solution steps we revised`],
         [`Use the steps we practised today`, `Use the steps we revised today`],
         [`Recall the second property we studied`, `Recall the second property we revised`],
