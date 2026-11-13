@@ -2907,6 +2907,15 @@
     {
       "sourceId": "g9-english-s2-student-book",
       "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "المفردات والقواعد",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u8_l1",
+      "score": null,
+      "matchedBy": "hand-checked: the photo is on the unit's opening page, just before its first lesson; it was filed under the previous unit's writing lesson"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 3,
       "lesson": 4,
       "bookTitleAr": "القراءة والمفردات",
       "kbLessonId": "kbl-g9-eng-s2-nccd-u8_l4",
