@@ -44,6 +44,8 @@ export async function notifyAdminsOfWaitlistSignup(signup: { email: string; cont
 export async function notifyAdminsOfArtifactReport(args: {
   kind: string;
   lessonRef: string;
+  /** The reporter's own words, if they gave any — goes in the email, not the push. */
+  reason?: string;
 }): Promise<void> {
   try {
     const admins = await db
