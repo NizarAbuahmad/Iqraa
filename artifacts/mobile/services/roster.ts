@@ -13,6 +13,7 @@ import { parseClaimResponse, type ClaimResult } from './claimResult.ts';
 import type { PendingClaim } from './claimWaiting.ts';
 import type { AddLabResourceBody, AddResourceBody, ClassResource } from './classResources.ts';
 import type { RosterLink } from './rosterLinks.ts';
+import { normalizeClassCodes, type ClassCode } from './parentCodes.ts';
 import type { StudentRecord } from './studentRecord.ts';
 import type { SupportGroup } from './supportGroups';
 
@@ -339,6 +340,31 @@ export async function generateClaimCode(
 ): Promise<{ claimCode: string; claimCodeExpiresAt: string }> {
   const res = await apiFetch(`/students/${studentId}/claim-code`, { method: 'POST' });
   return readJson(res, 'Generating class code');
+}
+
+/**
+ * Every live student's per-student code for one class (null where none is live),
+ * for «رموز أولياء الأمور». A 2xx that is not a list throws: it must never read as
+ * «no codes yet», which would offer to mint over codes families already hold.
+ */
+export async function getClassClaimCodes(classId: string): Promise<ClassCode[]> {
+  const res = await apiFetch(`/classes/${encodeURIComponent(classId)}/claim-codes`);
+  const codes = normalizeClassCodes(await readJson<unknown>(res, 'Loading link codes'));
+  if (!codes) throw new RosterError('Unexpected response', res.status, '');
+  return codes;
+}
+
+/**
+ * Mints a code for every student of the class who has no live one, and leaves
+ * every live code alone (unlike `generateClaimCode`, which overwrites). Answers
+ * the whole list, so a repeat press is harmless.
+ */
+export async function mintClassClaimCodes(classId: string): Promise<{ minted: number; codes: ClassCode[] }> {
+  const res = await apiFetch(`/classes/${encodeURIComponent(classId)}/claim-codes`, { method: 'POST' });
+  const json = await readJson<{ minted?: unknown }>(res, 'Creating link codes');
+  const codes = normalizeClassCodes(json);
+  if (!codes) throw new RosterError('Unexpected response', res.status, '');
+  return { minted: typeof json.minted === 'number' ? json.minted : 0, codes };
 }
 
 /**

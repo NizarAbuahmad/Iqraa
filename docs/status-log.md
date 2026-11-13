@@ -10,11 +10,39 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## Parents: «المدرسة» first, a quick look at each child, and a read-only view of a handed-in project — 2026-11-13
+## Parents: «المدرسة» first, a quick look at each child, a read-only view of a handed-in project, and every parent code of a class in one place — 2026-11-13
 
-Three changes from a review of the parent side.
+Four changes from a review of the parent side.
 
 **What changed.**
+- **«رموز أولياء الأمور» for a whole class (teacher).** A parent cannot join from the class code
+  (`claimParentNeedsOwnCode`), so each family needs its child's own code, and a teacher with thirty students opened
+  `/messaging/claim/<student>` thirty times. The class page's join-status card now opens
+  `app/classes/[id]/parent-codes.tsx`: create the missing codes in one press, send one family its code (the same
+  `composeClaimCodeMessage` as the per-student screen) or copy it, and print one slip per child (`slipsHtml` in
+  `services/parentCodes.ts`, through `exportAsPDF`). It lists the children with no parent linked by default; «كل
+  الطلبة» shows the rest. Two new API routes in `routes/roster.ts`: `GET /classes/:id/claim-codes` (every live
+  student of the class, live codes only, by `isCodeLive`) and `POST /classes/:id/claim-codes`, which mints a code only
+  where none is live and **never replaces a live one** (unlike the per-student POST, which overwrites): a slip already
+  handed out keeps working, and a second press only fills in students added since. Its UPDATE re-checks ownership and
+  that no live code appeared meanwhile, and retries a unique-code collision once. **What it deliberately cannot do**: put
+  every code in one message. Redeeming a code links that child at once, with no approval, so a list posted in a class
+  group would let any parent claim any child; `parentCodes.test.ts` fails if the screen builds a message from anything
+  but one row. Re-minting one code and unlinking a wrong parent stay on the per-student screen, which each row's name
+  opens. A teachers-only «ما الجديد» entry, `teacher-class-parent-codes`.
+  Verified: `classClaimCodes.db.test.ts` against a local Postgres (lists live students only, a live code as it is and
+  an expired one as none; mints exactly the two missing; never replaces the live one; leaves archived students and
+  other classes alone; a repeat mints nothing; a minted code really signs a parent up for that child as `guardian`;
+  another teacher gets 404 on both with nothing written; with `STUDENT_ACCOUNTS` off both answer 403). Mutation:
+  dropping the archived filter fails two of its cases. `mountOrder.test.ts` now also checks both class routes answer
+  401 without a token. `parentCodes.test.ts` (13 cases: normalizing, rows, filter, escaping in the slips, the one-family
+  rule). In the stubbed browser build as a teacher (Arabic phone light and dark, English desktop): the button shows
+  the one missing code, one press creates it and the button goes, the filter hides and shows the child whose parent is
+  linked. The slips page was rendered as printed (A4): right to left, the code in its own left-to-right box, an English
+  name in place. The full mobile suite caught the screen offering codes without checking `studentAccounts`
+  (`claimCodeGating.test.ts`); it now shows the «accounts are off» card and loads nothing, seen in the browser with the
+  flag off. Not checked: the print dialog itself (web `iframe` print and native `expo-print`), the share sheet on a
+  phone, and a real class.
 - **«نظرة سريعة» at the top of a parent's «المدرسة».** One card for the child the picker shows: homework due in the
   next seven days (Amman days, today included), how much is late, the next dated exam and its day, and the latest
   released result (a link to «نتائج أبنائي»). Built from the three lists the screen already loads; no new API.

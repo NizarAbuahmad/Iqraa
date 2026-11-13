@@ -1684,6 +1684,124 @@ router.post("/students/:id/claim-code", async (req: AuthenticatedRequest, res) =
 });
 
 /**
+ * Every live student of one class with their per-student code, for the
+ * teacher's «رموز أولياء الأمور» screen: one place to hand each family its
+ * code, instead of opening the per-student screen thirty times. Only live
+ * codes are returned (`isCodeLive`, the same rule as the per-student GET), so
+ * anything shown is something sign-up will accept.
+ *
+ * The codes stay per student on purpose. A parent who redeems one is linked
+ * to that child at once, with no approval, so they must never be posted to a
+ * group: the screen hands them out one family at a time, or printed on slips.
+ */
+async function classCodes(classId: string, teacherId: string) {
+  const rows = await db
+    .select({
+      studentId: students.id,
+      claimCode: students.claimCode,
+      claimCodeExpiresAt: students.claimCodeExpiresAt,
+    })
+    .from(classMemberships)
+    .innerJoin(students, eq(students.id, classMemberships.studentId))
+    .where(
+      and(
+        eq(classMemberships.classGroupId, classId),
+        eq(students.teacherId, teacherId),
+        isNull(students.archivedAt),
+      ),
+    )
+    .orderBy(asc(students.displayName));
+  return rows.map(r =>
+    isCodeLive(r.claimCodeExpiresAt)
+      ? { studentId: r.studentId, claimCode: r.claimCode, claimCodeExpiresAt: r.claimCodeExpiresAt }
+      : { studentId: r.studentId, claimCode: null, claimCodeExpiresAt: null },
+  );
+}
+
+const CLAIM_CODE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+router.get("/classes/:id/claim-codes", async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!studentAccountsEnabled()) {
+      res.status(403).json({
+        code: "student_accounts_disabled",
+        error: "Parent and student accounts are not enabled on this deployment.",
+      });
+      return;
+    }
+    const classId = req.params["id"] as string;
+    if (!(await findLiveClass(classId, req.user!.id))) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+    res.json({ codes: await classCodes(classId, req.user!.id) });
+  } catch (err) {
+    failRoster(res, err, "read class claim codes", "Failed to load the class's codes");
+  }
+});
+
+/**
+ * Mints a code for every live student of the class who has NO live code, and
+ * leaves every live one alone. That is the difference from the per-student
+ * POST, which overwrites: a code already handed to a family must keep working,
+ * so a teacher can press this again for a student added later without
+ * breaking anyone's slip. Answers the whole list, as the GET does.
+ *
+ * Row by row, not one statement: `claim_code` is unique, and a collision
+ * (31^6 codes) is retried once with a fresh code rather than failing the
+ * class. A failure part-way leaves the rows already minted in place, and
+ * pressing again only fills the rest.
+ */
+router.post("/classes/:id/claim-codes", async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!studentAccountsEnabled()) {
+      res.status(403).json({
+        code: "student_accounts_disabled",
+        error: "Parent and student accounts are not enabled on this deployment.",
+      });
+      return;
+    }
+    const classId = req.params["id"] as string;
+    const teacherId = req.user!.id;
+    if (!(await findLiveClass(classId, teacherId))) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+    const missing = (await classCodes(classId, teacherId)).filter(c => c.claimCode === null);
+    const claimCodeExpiresAt = new Date(Date.now() + CLAIM_CODE_TTL_MS);
+    let minted = 0;
+    for (const { studentId } of missing) {
+      for (let attempt = 0; ; attempt++) {
+        try {
+          const [row] = await db
+            .update(students)
+            .set({ claimCode: generateShareCode(), claimCodeExpiresAt, updatedAt: new Date() })
+            // Re-checks ownership, and that no live code appeared meanwhile (another
+            // tab, the per-student screen): that one may already be on a slip.
+            .where(
+              and(
+                eq(students.id, studentId),
+                eq(students.teacherId, teacherId),
+                sql`(${students.claimCodeExpiresAt} IS NULL OR ${students.claimCodeExpiresAt} <= now())`,
+              ),
+            )
+            .returning({ id: students.id });
+          if (row) minted++;
+          break;
+        } catch (err) {
+          const code = (err as { code?: string; cause?: { code?: string } }).code ?? (err as { cause?: { code?: string } }).cause?.code;
+          if (code === "23505" && attempt === 0) continue;
+          throw err;
+        }
+      }
+    }
+    res.status(minted > 0 ? 201 : 200).json({ minted, codes: await classCodes(classId, teacherId) });
+  } catch (err) {
+    failRoster(res, err, "mint class claim codes", "Failed to create the class's codes");
+  }
+});
+
+/**
  * One code for the whole class — the joiner types it and picks their own name
  * off the roster (see GET /auth/join/:code, which is where the picking
  * happens, and lib/claimDecision.ts for the rules).
