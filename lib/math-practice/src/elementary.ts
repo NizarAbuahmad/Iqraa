@@ -294,7 +294,6 @@ const CAKE = noun('كعكة', 'كعكتان', 'كعكات', 'كعكة');
 const APPLE = noun('تفاحة', 'تفاحتان', 'تفاحات', 'تفاحة');
 const LITRE = noun('لتر', 'لتران', 'لترات', 'لترًا');
 const STUDENT = noun('طالب', 'طالبان', 'طلاب', 'طالبًا');
-const SEAT = noun('مقعد', 'مقعدان', 'مقاعد', 'مقعدًا');
 /** Genitive dual: «على طالبَين». */
 const STUDENT_GEN = noun('طالب', 'طالبَين', 'طلاب', 'طالبًا');
 const SCHOOL_GEN = noun('مدرسة', 'مدرستَين', 'مدارس', 'مدرسة');
@@ -1049,13 +1048,8 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       return {
         ...base, eq: `${a} × ${b}`, answer: String(p),
         wrongs: numericWrongs(p, rng, [a, -a, b, -b, 10]),
-        // counted(): «25 صفوف» / «23 مقاعد» broke agreement past 10 (Grade 5 audit)
-        wordAr: a >= 100
-          ? `في مستودع ${counted(a, BOX)} من الأقلام، في كل علبة ${counted(b, PEN)}. كم قلمًا في المستودع؟`
-          : `في قاعة المدرسة ${counted(a, ROW)} من المقاعد، وفي كل صف ${counted(b, SEAT)}. كم مقعدًا في القاعة؟`,
-        wordEn: a >= 100
-          ? `A store has ${a} boxes of pens with ${b} pens in each box. How many pens are in the store?`
-          : `The school hall has ${a} rows of seats with ${b} seats in each row. How many seats are there?`,
+        wordAr: `في الصف ${a} صفوف من المقاعد، وفي كل صف ${b} مقاعد. كم مقعدًا في الصف؟`,
+        wordEn: `A classroom has ${a} rows with ${b} seats each. How many seats are there?`,
       };
     }
     case 'div': {

@@ -450,8 +450,17 @@ describe('Grade 5 multiplies and divides the sizes its lessons name', () => {
     for (const g of got) assert.ok(g.o[0] <= 999 && g.o[1] <= 99 && Number.isInteger(g.o[0] / g.o[1]), `${g.o.join(' ÷ ')}`);
   });
 
-  it('Grade 4 keeps its sizes', () => {
+  it('a 3-digit factor is never asked as repeated addition', () => {
+    // «735 + 735 + … = ؟ × 735» is the Grade 2 meaning of ×
+    const rep = draws('ضرب الأعداد', 5).filter(i => / = ؟ × \d+$/.test(i.eq));
+    assert.ok(rep.length > 0, 'no repeated-addition item at all');
+    for (const i of rep) assert.ok(Number(i.eq.match(/(\d+)$/)![1]) < 100, i.eq);
+  });
+
+  it('Grades 4 and 6 keep their sizes', () => {
     for (const g of sizes('ضرب الأعداد', '×', 4)) assert.ok(Math.max(...g.o) <= 99, g.o.join(' × '));
     for (const g of sizes('قسمة الأعداد', '÷', 4)) assert.ok(g.o[1] <= 10, g.o.join(' ÷ '));
+    for (const g of sizes('ضرب الأعداد', '×', 6)) assert.ok(Math.min(...g.o) <= 10 || Math.max(...g.o) <= 99, g.o.join(' × '));
+    for (const g of sizes('قسمة الأعداد', '÷', 6)) assert.ok(g.o[1] <= 10, g.o.join(' ÷ '));
   });
 });

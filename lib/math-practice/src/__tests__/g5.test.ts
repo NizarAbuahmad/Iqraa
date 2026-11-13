@@ -70,8 +70,8 @@ describe('Grade 5 generators: answers recomputed from the stem', () => {
   });
 
   it('polygons', () => {
-    const SIDES: Record<string, number> = { 'الثلاثي': 3, 'الرباعي': 4, 'الخماسي': 5, 'السداسي': 6, 'السباعي': 7, 'الثماني': 8, 'التساعي': 9, 'العشاري': 10 };
-    const NAME: Record<number, string> = { 3: 'ثلاثي', 4: 'رباعي', 5: 'خماسي', 6: 'سداسي', 7: 'سباعي', 8: 'ثماني', 9: 'تساعي', 10: 'عشاري' };
+    const SIDES: Record<string, number> = { 'الرباعي': 4, 'الخماسي': 5, 'السداسي': 6, 'السباعي': 7, 'الثماني': 8, 'التساعي': 9, 'العشاري': 10 };
+    const NAME: Record<number, string> = { 4: 'رباعي', 5: 'خماسي', 6: 'سداسي', 7: 'سباعي', 8: 'ثماني', 9: 'تساعي', 10: 'عشاري' };
     const named = (p: string) => { const k = Object.keys(SIDES).find(w => p.includes(`المضلع ${w}`) || p.includes(`مضلع ${w.slice(2)}`)); return k ? SIDES[k]! : null; };
     const kinds = new Set<string>();
     for (const item of draws('polygons_g5')) {
@@ -115,52 +115,69 @@ describe('Grade 5 generators: answers recomputed from the stem', () => {
     assert.equal(kinds.size, 3, [...kinds].join(', '));
   });
 
+  /** A graph stem: «…: label: 18°، label: 21°…. question» → the points and the question. */
+  const graph = (p: string, sep: string) => {
+    const table = p.slice(p.indexOf(': ') + 2, p.lastIndexOf('. ')), q = p.slice(p.lastIndexOf('. ') + 2);
+    const rows = table.split(sep).map(r => { const m = r.match(/^\s*(.+?): \D*?(\d+)(?:\D*?(\d+))?/)!; return { k: m[1]!.trim(), v: [Number(m[2]), Number(m[3])] }; });
+    return { rows, q };
+  };
+
   it('line graphs', () => {
     const kinds = new Set<string>();
     for (const item of draws('line_graph_g5')) {
-      const p = item.promptAr!;
-      const pts = series(p, /([^\s:،]+(?: [^\s:،]+)?): (\d+)°/g);
-      assert.ok(pts.length >= 4, p);
-      const v = pts.map(x => x.v[0]!), k = pts.map(x => x.k);
-      if (has(p, 'أعلى درجة')) { kinds.add('max'); assert.equal(item.answer, k[v.indexOf(Math.max(...v))], p); assert.equal(v.filter(x => x === Math.max(...v)).length, 1, p); continue; }
-      if (has(p, 'أدنى درجة')) { kinds.add('min'); assert.equal(item.answer, k[v.indexOf(Math.min(...v))], p); assert.equal(v.filter(x => x === Math.min(...v)).length, 1, p); continue; }
-      if (has(p, 'أكبر ارتفاع')) {
+      const { rows, q } = graph(item.promptAr!, '، ');
+      const v = rows.map(r => r.v[0]!), k = rows.map(r => r.k), p = item.promptAr!;
+      assert.ok(rows.length >= 5, p);
+      if (/أعلى|أدنى/.test(q)) {
+        kinds.add('extreme'); const x = q.includes('أعلى') ? Math.max(...v) : Math.min(...v);
+        assert.equal(v.filter(y => y === x).length, 1, `a tie: ${p}`); assert.equal(item.answer, k[v.indexOf(x)], p); continue;
+      }
+      if (q.includes('أكبر زيادة')) {
         kinds.add('rise');
         const rises = v.slice(1).map((x, i) => x - v[i]!), best = Math.max(...rises);
-        assert.equal(rises.filter(r => r === best).length, 1, p);
+        assert.ok(best > 0, p); assert.equal(rises.filter(r => r === best).length, 1, `a tie: ${p}`);
         const i = rises.indexOf(best);
         assert.equal(item.answer, `من ${k[i]} إلى ${k[i + 1]}`, p);
         continue;
       }
-      kinds.add('change');
-      const m = p.match(/بين (\S+(?: \S+)?) و ?(\S+(?: \S+)?)؟/)!;
-      const a = v[k.indexOf(m[1]!)]!, b = v[k.indexOf(m[2]!)]!;
-      assert.equal(Number(item.answer), Math.abs(b - a), p);
+      kinds.add('grow');
+      const named = k.filter(x => q.includes(x));
+      assert.equal(named.length, 2, p);
+      assert.equal(Number(item.answer), v[k.indexOf(named[1]!)]! - v[k.indexOf(named[0]!)]!, p);
+      for (let i = 1; i < v.length; i++) assert.ok(v[i]! > v[i - 1]!, `a plant shrank: ${p}`);
     }
-    assert.equal(kinds.size, 4, [...kinds].join(', '));
+    assert.equal(kinds.size, 3, [...kinds].join(', '));
   });
 
   it('double bar graphs', () => {
     const kinds = new Set<string>();
     for (const item of draws('double_bar_g5')) {
-      const p = item.promptAr!;
-      const rows = series(p, /([^:؛]+?): الطلاب (\d+) والطالبات (\d+)/g);
-      assert.ok(rows.length >= 3, p);
-      const find = (name: string) => rows.find(r => r.k.endsWith(name))!;
-      if (has(p, 'كم طالبًا وطالبة')) { kinds.add('total'); const r = rows.find(r => p.includes(`يفضّلون ${r.k}`))!; assert.equal(Number(item.answer), r.v[0]! + r.v[1]!, p); continue; }
-      if (has(p, 'بكم يزيد')) {
-        kinds.add('diff'); const r = rows.find(r => p.includes(`يفضّلون ${r.k}`))!;
-        assert.equal(Number(item.answer), Math.abs(r.v[0]! - r.v[1]!), p); assert.notEqual(r.v[0], r.v[1], p); continue;
+      const p = item.promptAr!, { rows, q } = graph(p, '؛ ');
+      assert.equal(rows.length, 4, p);
+      const gap = (r: (typeof rows)[number]) => Math.abs(r.v[0]! - r.v[1]!);
+      const asked = rows.filter(r => q.includes(r.k));
+      if (q.includes('كم طالبًا وطالبة')) { kinds.add('total'); assert.equal(asked.length, 1, p); assert.equal(Number(item.answer), asked[0]!.v[0]! + asked[0]!.v[1]!, p); continue; }
+      if (q.includes('بكم يزيد')) {
+        kinds.add('gap'); assert.equal(asked.length, 1, p);
+        assert.equal(Number(item.answer), gap(asked[0]!), p);
+        // «بكم يزيد عدد طلاب الشعبة X … على عدد طلاب الشعبة Y»: X is the larger
+        const x = q.match(/الشعبة (\S)/)![1], larger = asked[0]!.v[0]! > asked[0]!.v[1]! ? 'أ' : 'ب';
+        assert.equal(x, larger, p);
+        continue;
       }
-      if (has(p, 'أكبر فرق')) {
-        kinds.add('widest'); const d = rows.map(r => Math.abs(r.v[0]! - r.v[1]!)), best = Math.max(...d);
-        assert.equal(d.filter(x => x === best).length, 1, p); assert.equal(find(item.answer).k, rows[d.indexOf(best)]!.k, p); continue;
+      if (q.includes('الفرق')) {
+        kinds.add('widest'); const best = Math.max(...rows.map(gap));
+        assert.equal(rows.filter(r => gap(r) === best).length, 1, `a tie: ${p}`);
+        assert.equal(item.answer, rows.find(r => gap(r) === best)!.k, p); continue;
       }
-      kinds.add('more');
-      const girls = has(p, 'الطالبات أكثر');
-      const hits = rows.filter(r => (girls ? r.v[1]! > r.v[0]! : r.v[0]! > r.v[1]!));
-      assert.equal(hits.length, 1, p);
-      assert.equal(find(item.answer).k, hits[0]!.k, p);
+      kinds.add('lead');
+      const first = rows.filter(r => r.v[0]! > r.v[1]!), second = rows.filter(r => r.v[1]! > r.v[0]!);
+      const odd = first.length === 1 ? first : second;
+      assert.equal(odd.length, 1, p);
+      assert.equal(item.answer, odd[0]!.k, p);
+      // the question names the section that is ahead in that month
+      const leader = q.match(/استعارت الشعبة (\S)/)![1];
+      assert.equal(leader, odd[0]!.v[0]! > odd[0]!.v[1]! ? 'أ' : 'ب', p);
     }
     assert.equal(kinds.size, 4, [...kinds].join(', '));
   });

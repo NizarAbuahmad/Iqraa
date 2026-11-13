@@ -31,17 +31,21 @@ method was the same as for Grades 1–4.
   - «قسمة الأعداد» names a divisor of one or two digits, but no divisor was ever above 10. A dividend now has at most
     3 digits, and the divisor is two digits on half the medium papers and on all hard ones.
   - Grades 4 and 6 are unchanged (`elementary.test.ts` «Grade 5 multiplies and divides the sizes its lessons name»).
-- **Fixed for every grade:** the direct × word problem printed «في الصف 25 صفوف … 23 مقاعد», breaking Arabic
-  number agreement past 10. It now goes through `counted()`, and a 3-digit factor gets a story about a store of pens
-  rather than a hall with 345 rows.
 - **New:** `lib/math-practice/src/g5.ts` serves the five lessons that threw `NoQuestionBankError`, each with answers
   recomputed from the stem in `g5.test.ts`:
   - «الضرب الذهني»: zeros, a missing factor, doubling, halving and doubling, the distributive property.
   - «المضلعات»: name ↔ sides, vertices, perimeter ↔ side, «ليس مضلعًا».
   - «السؤال الإحصائي»: which question is statistical, yes/no, the most frequent answer in a list of answers.
-  - «التمثيل بالخطوط» and «التمثيل بالأعمدة المزدوجة»: the graph's values are given in words.
+  - «التمثيل بالخطوط» and «التمثيل بالأعمدة المزدوجة»: the graph's values are given in words. Each kind has its own
+    story (temperatures, a library's visitors, a plant's height; sports, subjects, the way to school, books
+    borrowed). The first draft put four questions under one paragraph, and `mathLessonKinds.test.ts` counted that
+    as one kind of question.
+  - Polygon names start at four sides: a triangle is «مثلث», with its own lessons.
   - The two «خطة حل المسألة» lessons stay unserved, as in Grades 3 and 4.
 - **Weak, not fixed:**
+  - The direct × item's unused `wordAr` (no `kind: 'word'`, so it is never shown) reads «في الصف 25 صفوف … 23
+    مقاعد». The ÷ twin would read «على 25 مجموعات». Neither reaches a paper today; they would if either item became a
+    word problem.
   - «تصنيف الأشكال الرباعية» runs out at 5 questions of 10.
   - «قسمة الكسور» can print «2/2» and «3/3».
   - «يمثّل المقدار 6n + 4 … إذا اشترى 2 من الكتب».

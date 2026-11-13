@@ -12,7 +12,7 @@
  * The two problem-solving-plan lessons («خطة حل المسألة») stay unserved, as in
  * Grades 3 and 4: they teach a method, which a question bank cannot drill.
  */
-import { int, numWrongs, pick, tamyiz, wrongsFrom, type Draft, type Rng, type Topic } from './topicKit.ts';
+import { int, numWrongs, pick, tamyiz, type Draft, type Rng, type Topic } from './topicKit.ts';
 
 type D = 'easy' | 'medium' | 'hard';
 type Gen = (c: { rng: Rng; diff: D; grade: number }) => Draft;
@@ -62,15 +62,15 @@ const mentalMul = T('mental_mul_g5', /^الضرب الذهني$/, ({ rng, diff }
 // ─── polygons ──────────────────────────────────────────────────────────────
 
 const POLY: Array<[number, string, string]> = [
-  [3, 'ثلاثي', 'triangle'], [4, 'رباعي', 'quadrilateral'], [5, 'خماسي', 'pentagon'], [6, 'سداسي', 'hexagon'],
+  [4, 'رباعي', 'quadrilateral'], [5, 'خماسي', 'pentagon'], [6, 'سداسي', 'hexagon'],
   [7, 'سباعي', 'heptagon'], [8, 'ثماني', 'octagon'], [9, 'تساعي', 'nonagon'], [10, 'عشاري', 'decagon'],
 ];
 const NOT_POLY = [['دائرة'], ['شكل بيضاوي'], ['نصف دائرة']] as const;
 const IS_POLY = ['مثلث', 'مربع', 'مستطيل', 'مضلع خماسي', 'مضلع سداسي', 'معين'];
 
-/** «المضلعات»: a polygon's name and its sides, vertices and perimeter. */
+/** «المضلعات»: a polygon's name and its sides, vertices and perimeter. Four sides and up: a triangle is «مثلث», with its own lessons. */
 const polygons = T('polygons_g5', /^المضلعات$/, ({ rng, diff }) => {
-  const [n, name, en] = pick(rng, POLY.slice(diff === 'easy' ? 1 : 0, diff === 'easy' ? 5 : 8));
+  const [n, name, en] = pick(rng, POLY.slice(0, diff === 'easy' ? 4 : 7));
   const k = int(rng, 0, 5);
   if (k === 0) {
     const [shape] = pick(rng, NOT_POLY);
@@ -132,7 +132,7 @@ const statQuestion = T('stat_question_g5', /^السؤال الاحصائي$/, ({
   }
   if (k === 1) {
     const yes = rng() < 0.5, [q, qEn] = pick(rng, yes ? STAT : NON);
-    return { eq: `is ${q}`, answer: yes ? 'نعم' : 'لا', wrongs: [yes ? 'لا' : 'نعم'], ar: `هل السؤال «${q}» سؤال إحصائي؟ (نعم / لا)`, en: `Is «${qEn}» a statistical question? (yes / no)` };
+    return { eq: `is ${q}`, answer: yes ? 'نعم' : 'لا', wrongs: [yes ? 'لا' : 'نعم'], ar: `هل السؤال «${q}» سؤال إحصائي؟ (نعم / لا)`, en: `Is "${qEn}" a statistical question? (yes / no)` };
   }
   const s = pick(rng, SURVEYS), opts = shuffle(rng, s.opts);
   const top = int(rng, 4, span(diff, 5, 6, 7));
@@ -149,73 +149,117 @@ const statQuestion = T('stat_question_g5', /^السؤال الاحصائي$/, ({
 // ─── line graphs ───────────────────────────────────────────────────────────
 
 const DAYS: Array<[string, string]> = [['السبت', 'Saturday'], ['الأحد', 'Sunday'], ['الاثنين', 'Monday'], ['الثلاثاء', 'Tuesday'], ['الأربعاء', 'Wednesday'], ['الخميس', 'Thursday']];
-
-/** «التمثيل بالخطوط»: a week's temperatures read from the points of the line. */
-const lineGraph = T('line_graph_g5', /^التمثيل بالخطوط$/, ({ rng, diff }) => {
-  const n = span(diff, 5, 5, 6), days = DAYS.slice(0, n);
-  // values with one highest, one lowest, and one largest day-to-day rise
+const MONTHS: Array<[string, string]> = [['أيلول', 'September'], ['تشرين الأول', 'October'], ['تشرين الثاني', 'November'], ['كانون الأول', 'December'], ['كانون الثاني', 'January'], ['شباط', 'February']];
+const WEEKS: Array<[string, string]> = [['الأسبوع الأول', 'week 1'], ['الأسبوع الثاني', 'week 2'], ['الأسبوع الثالث', 'week 3'], ['الأسبوع الرابع', 'week 4'], ['الأسبوع الخامس', 'week 5'], ['الأسبوع السادس', 'week 6']];
+/** `n` values in [lo, hi] with one highest, one lowest and one largest step up from the point before. */
+function points(rng: Rng, n: number, lo: number, hi: number): number[] {
   let v: number[] = [];
-  for (let t = 0; t < 200; t++) {
-    v = Array.from({ length: n }, () => int(rng, 12, 34));
+  for (let t = 0; t < 500; t++) {
+    v = Array.from({ length: n }, () => int(rng, lo, hi));
     const rises = v.slice(1).map((x, i) => x - v[i]!), best = Math.max(...rises);
-    if (best > 0 && rises.filter(r => r === best).length === 1 && v.filter(x => x === Math.max(...v)).length === 1 && v.filter(x => x === Math.min(...v)).length === 1) break;
+    const one = (x: number) => v.filter(y => y === x).length === 1;
+    if (best > 0 && rises.filter(r => r === best).length === 1 && one(Math.max(...v)) && one(Math.min(...v))) return v;
   }
-  const list = days.map((d, i) => `${d[0]}: ${v[i]}°`).join('، '), listEn = days.map((d, i) => `${d[1]}: ${v[i]}°`).join(', ');
-  const head = `يبيّن تمثيل بالخطوط درجات الحرارة العظمى في مدينة إربد خلال ${n} أيام، وقراءات نقاطه هي: ${list}. `;
-  const headEn = `A line graph shows the highest temperature in Irbid over ${n} days; its points read: ${listEn}. `;
-  const names = days.map(d => d[0]);
-  const k = int(rng, 0, 3);
-  if (k === 0) { const i = v.indexOf(Math.max(...v)); return { eq: `max ${v.join(',')}`, answer: names[i]!, wrongs: others(rng, names[i]!, names), ar: `${head}في أيّ يوم كانت أعلى درجة حرارة؟`, en: `${headEn}On which day was it hottest?` }; }
-  if (k === 1) { const i = v.indexOf(Math.min(...v)); return { eq: `min ${v.join(',')}`, answer: names[i]!, wrongs: others(rng, names[i]!, names), ar: `${head}في أيّ يوم كانت أدنى درجة حرارة؟`, en: `${headEn}On which day was it coldest?` }; }
-  if (k === 2) {
-    const rises = v.slice(1).map((x, i) => x - v[i]!), i = rises.indexOf(Math.max(...rises));
+  return Array.from({ length: n }, (_, i) => lo + (i * (i + 1)) / 2); // strictly rising by 1, 2, 3…: one of each, inside [lo, hi]
+}
+
+/**
+ * «التمثيل بالخطوط»: a line graph read from its points. Each kind has its own
+ * story (a week's temperatures, a library's visitors, a plant's height), so a
+ * paper is not four questions under one paragraph.
+ */
+const lineGraph = T('line_graph_g5', /^التمثيل بالخطوط$/, ({ rng, diff }) => {
+  const n = span(diff, 5, 5, 6);
+  const k = int(rng, 0, 2);
+  if (k === 0) { // temperatures: the hottest or the coldest day
+    const days = DAYS.slice(0, n), v = points(rng, n, 12, 34), names = days.map(d => d[0]);
+    const hot = rng() < 0.5, i = v.indexOf(hot ? Math.max(...v) : Math.min(...v));
+    return {
+      eq: `${hot ? 'max' : 'min'} ${v.join(',')}`, answer: names[i]!, wrongs: others(rng, names[i]!, names),
+      ar: `يبيّن تمثيل بالخطوط درجات الحرارة العظمى في مدينة إربد خلال ${n} أيام: ${days.map((d, j) => `${d[0]}: ${v[j]}°`).join('، ')}. في أيّ يوم كانت ${hot ? 'أعلى' : 'أدنى'} درجة حرارة؟`,
+      en: `A line graph shows the highest temperature in Irbid over ${n} days: ${days.map((d, j) => `${d[1]}: ${v[j]}°`).join(', ')}. On which day was it ${hot ? 'hottest' : 'coldest'}?`,
+    };
+  }
+  if (k === 1) { // a library's visitors: the biggest rise from one month to the next
+    const months = MONTHS.slice(0, n), v = points(rng, n, 40, 150), names = months.map(m => m[0]);
+    const rises = v.slice(1).map((x, j) => x - v[j]!), i = rises.indexOf(Math.max(...rises));
     const pairs = names.slice(1).map((x, j) => `من ${names[j]} إلى ${x}`);
-    return { eq: `rise ${v.join(',')}`, answer: pairs[i]!, wrongs: others(rng, pairs[i]!, pairs), ar: `${head}بين أيّ يومين متتاليين كان أكبر ارتفاع في درجة الحرارة؟`, en: `${headEn}Between which two days in a row did the temperature rise the most?` };
+    return {
+      eq: `rise ${v.join(',')}`, answer: pairs[i]!, wrongs: others(rng, pairs[i]!, pairs),
+      ar: `مثّلت مكتبة المدرسة عدد زوارها في ${n} أشهر بالخطوط: ${months.map((m, j) => `${m[0]}: ${v[j]}`).join('، ')}. بين أيّ شهرين متتاليين كانت أكبر زيادة في عدد الزوار؟`,
+      en: `The school library drew a line graph of its visitors over ${n} months: ${months.map((m, j) => `${m[1]}: ${v[j]}`).join(', ')}. Between which two months in a row did the number of visitors rise the most?`,
+    };
   }
-  let a = 0, b = 1;
-  for (let t = 0; t < 50; t++) { a = int(rng, 0, n - 2); b = int(rng, a + 1, n - 1); if (v[a] !== v[b]) break; }
-  if (v[a] === v[b]) v[b] = v[b]! + 3; // still a distinct reading
-  const d = Math.abs(v[b]! - v[a]!);
-  const listB = days.map((x, i) => `${x[0]}: ${v[i]}°`).join('، ');
-  return { eq: `change ${v[a]}, ${v[b]}`, answer: String(d), wrongs: ints(d, [v[a]! + v[b]!, d + 1, d - 1, Math.max(v[a]!, v[b]!)]), ar: `يبيّن تمثيل بالخطوط درجات الحرارة العظمى في مدينة إربد خلال ${n} أيام، وقراءات نقاطه هي: ${listB}. بكم درجة اختلفت درجة الحرارة بين ${names[a]} و${names[b]}؟`, en: `A line graph shows the highest temperature in Irbid over ${n} days; its points read: ${days.map((x, i) => `${x[1]}: ${v[i]}°`).join(', ')}. By how many degrees did the temperature differ between ${days[a]![1]} and ${days[b]![1]}?` };
+  // a plant's height, which only grows: how much between two weeks
+  const weeks = WEEKS.slice(0, n), v: number[] = [];
+  for (let j = 0, h = int(rng, 2, 6); j < n; j++) { v.push(h); h += int(rng, 1, span(diff, 3, 4, 6)); }
+  const a = int(rng, 0, n - 2), b = int(rng, a + 1, n - 1), d = v[b]! - v[a]!;
+  return {
+    eq: `grow ${v[a]}, ${v[b]}`, answer: String(d), wrongs: ints(d, [v[a]! + v[b]!, v[b]!, d + 1, d - 1]),
+    ar: `قاست سلمى طول نبتة كل أسبوع ومثّلته بالخطوط: ${weeks.map((w, j) => `${w[0]}: ${v[j]} سم`).join('، ')}. كم سنتيمترًا زاد طول النبتة بين ${weeks[a]![0]} و${weeks[b]![0]}؟`,
+    en: `Salma measured a plant every week and drew a line graph: ${weeks.map((w, j) => `${w[1]}: ${v[j]} cm`).join(', ')}. By how many centimetres did the plant grow between ${weeks[a]![1]} and ${weeks[b]![1]}?`,
+  };
 });
 
 // ─── double bar graphs ─────────────────────────────────────────────────────
 
-const SPORTS: Array<[string, string]> = [['كرة القدم', 'football'], ['كرة السلة', 'basketball'], ['السباحة', 'swimming'], ['الجري', 'running'], ['الكرة الطائرة', 'volleyball'], ['تنس الطاولة', 'table tennis']];
-
-/** «التمثيل بالأعمدة المزدوجة»: two bars per sport, boys and girls. */
-const doubleBar = T('double_bar_g5', /^التمثيل بالاعمده المزدوجه$/, ({ rng, diff }) => {
-  const sports = shuffle(rng, SPORTS).slice(0, 4);
-  // distinct, non-zero gaps: one widest; exactly one sport leans the other way
+/** Four categories, two series; the gaps are distinct and non-zero, and exactly one category leans the other way. */
+function pairs(rng: Rng, diff: D) {
   const gaps = shuffle(rng, [1, 2, 3, 4, 5, 6, 7]).slice(0, 4);
-  const odd = int(rng, 0, 3), girlsLead = rng() < 0.5; // the one sport where the minority side is ahead
-  const rows = sports.map((s, i) => {
-    const base = int(rng, 3, span(diff, 9, 12, 15)), up = base + gaps[i]!;
-    const girlsAhead = i === odd ? girlsLead : !girlsLead;
-    return { s, boys: girlsAhead ? base : up, girls: girlsAhead ? up : base };
+  const odd = int(rng, 0, 3), firstLeads = rng() < 0.5; // in the odd category the first series is ahead iff firstLeads
+  return gaps.map((g, i) => {
+    const base = int(rng, 3, span(diff, 9, 12, 15)), ahead = i === odd ? firstLeads : !firstLeads;
+    return ahead ? [base + g, base] as const : [base, base + g] as const;
   });
-  const table = rows.map(r => `${r.s[0]}: الطلاب ${r.boys} والطالبات ${r.girls}`).join('؛ ');
-  const tableEn = rows.map(r => `${r.s[1]}: boys ${r.boys}, girls ${r.girls}`).join('; ');
-  const head = `يبيّن تمثيل بالأعمدة المزدوجة عدد الطلاب والطالبات الذين يفضّلون كل رياضة في مدرسة: ${table}. `;
-  const headEn = `A double bar graph shows how many boys and girls at a school prefer each sport: ${tableEn}. `;
-  const names = rows.map(r => r.s[0]);
+}
+
+const SPORTS: Array<[string, string]> = [['كرة القدم', 'football'], ['كرة السلة', 'basketball'], ['السباحة', 'swimming'], ['الجري', 'running'], ['الكرة الطائرة', 'volleyball'], ['تنس الطاولة', 'table tennis']];
+const SUBJECTS: Array<[string, string]> = [['الرياضيات', 'maths'], ['العلوم', 'science'], ['اللغة العربية', 'Arabic'], ['التربية الفنية', 'art'], ['اللغة الإنجليزية', 'English']];
+const TRANSPORT: Array<[string, string]> = [['الحافلة', 'the bus'], ['المشي', 'walking'], ['السيارة', 'a car'], ['الدراجة', 'a bicycle']];
+
+/**
+ * «التمثيل بالأعمدة المزدوجة»: two bars per category. Each kind has its own
+ * story, as in the line graphs.
+ */
+const doubleBar = T('double_bar_g5', /^التمثيل بالاعمده المزدوجه$/, ({ rng, diff }) => {
   const k = int(rng, 0, 3);
-  if (k === 0) {
-    const r = pick(rng, rows), t = r.boys + r.girls;
-    return { eq: `total ${r.boys} + ${r.girls}`, answer: String(t), wrongs: ints(t, [Math.abs(r.boys - r.girls), r.boys, r.girls, t + 1]), ar: `${head}كم طالبًا وطالبة يفضّلون ${r.s[0]}؟`, en: `${headEn}How many boys and girls altogether prefer ${r.s[1]}?` };
+  const row = (label: string, s1: string, a: number, s2: string, b: number) => `${label}: ${s1} ${a} و${s2} ${b}`;
+  if (k === 0) { // boys and girls by sport: a category's total
+    const cats = shuffle(rng, SPORTS).slice(0, 4), v = pairs(rng, diff), i = int(rng, 0, 3), t = v[i]![0] + v[i]![1];
+    return {
+      eq: `total ${v[i]!.join(' + ')}`, answer: String(t), wrongs: ints(t, [Math.abs(v[i]![0] - v[i]![1]), v[i]![0], v[i]![1], t + 1]),
+      ar: `يبيّن تمثيل بالأعمدة المزدوجة عدد الطلاب والطالبات الذين يفضّلون كل رياضة: ${cats.map((c, j) => row(c[0], 'الطلاب', v[j]![0], 'الطالبات', v[j]![1])).join('؛ ')}. كم طالبًا وطالبة يفضّلون ${cats[i]![0]}؟`,
+      en: `A double bar graph shows how many boys and girls prefer each sport: ${cats.map((c, j) => `${c[1]}: boys ${v[j]![0]}, girls ${v[j]![1]}`).join('; ')}. How many boys and girls altogether prefer ${cats[i]![1]}?`,
+    };
   }
-  if (k === 1) {
-    const r = pick(rng, rows), d = Math.abs(r.boys - r.girls), girls = r.girls > r.boys;
-    return { eq: `diff ${r.boys}, ${r.girls}`, answer: String(d), wrongs: ints(d, [r.boys + r.girls, d + 1, d - 1, Math.max(r.boys, r.girls)]), ar: `${head}بكم يزيد عدد ${girls ? 'الطالبات' : 'الطلاب'} على عدد ${girls ? 'الطلاب' : 'الطالبات'} الذين يفضّلون ${r.s[0]}؟`, en: `${headEn}How many more ${girls ? 'girls than boys' : 'boys than girls'} prefer ${r.s[1]}?` };
+  if (k === 1) { // two class sections by favourite subject: the gap in one subject
+    const cats = shuffle(rng, SUBJECTS).slice(0, 4), v = pairs(rng, diff), i = int(rng, 0, 3);
+    const aHead = v[i]![0] > v[i]![1], d = Math.abs(v[i]![0] - v[i]![1]);
+    const [more, less] = aHead ? ['أ', 'ب'] : ['ب', 'أ'];
+    return {
+      eq: `gap ${v[i]!.join(', ')}`, answer: String(d), wrongs: ints(d, [v[i]![0] + v[i]![1], Math.max(...v[i]!), d + 1, d - 1]),
+      ar: `مثّل معلم الصف الخامس بالأعمدة المزدوجة المادة المفضلة لدى طلاب الشعبتين: ${cats.map((c, j) => row(c[0], 'الشعبة أ', v[j]![0], 'الشعبة ب', v[j]![1])).join('؛ ')}. بكم يزيد عدد طلاب الشعبة ${more} الذين يفضّلون ${cats[i]![0]} على عدد طلاب الشعبة ${less}؟`,
+      en: `A Grade 5 teacher drew a double bar graph of the favourite subject in two sections: ${cats.map((c, j) => `${c[1]}: section A ${v[j]![0]}, section B ${v[j]![1]}`).join('; ')}. How many more pupils in section ${aHead ? 'A' : 'B'} than in section ${aHead ? 'B' : 'A'} prefer ${cats[i]![1]}?`,
+    };
   }
-  if (k === 2) {
-    const d = rows.map(r => Math.abs(r.boys - r.girls)), i = d.indexOf(Math.max(...d));
-    return { eq: `widest ${d.join(',')}`, answer: names[i]!, wrongs: others(rng, names[i]!, names), ar: `${head}في أيّ رياضة يوجد أكبر فرق بين عدد الطلاب وعدد الطالبات؟`, en: `${headEn}For which sport is the gap between boys and girls the widest?` };
+  if (k === 2) { // last year and this year by way to school: the widest change
+    const cats = shuffle(rng, TRANSPORT), v = pairs(rng, diff), names = cats.map(c => c[0]);
+    const d = v.map(p => Math.abs(p[0] - p[1])), i = d.indexOf(Math.max(...d));
+    return {
+      eq: `widest ${d.join(',')}`, answer: names[i]!, wrongs: others(rng, names[i]!, names),
+      ar: `يبيّن تمثيل بالأعمدة المزدوجة عدد الطلاب الذين يأتون إلى المدرسة بكل وسيلة في عامين: ${cats.map((c, j) => row(c[0], 'العام الماضي', v[j]![0], 'هذا العام', v[j]![1])).join('؛ ')}. أيّ وسيلة كان الفرق في عدد مستعمليها بين العامين هو الأكبر؟`,
+      en: `A double bar graph shows how many pupils came to school each way in two years: ${cats.map((c, j) => `${c[1]}: last year ${v[j]![0]}, this year ${v[j]![1]}`).join('; ')}. For which way did the number of pupils change the most?`,
+    };
   }
-  return { eq: `lead ${girlsLead ? 'girls' : 'boys'}`, answer: names[odd]!, wrongs: others(rng, names[odd]!, names), ar: `${head}في أيّ رياضة كان عدد ${girlsLead ? 'الطالبات أكثر من عدد الطلاب' : 'الطلاب أكثر من عدد الطالبات'}؟`, en: `${headEn}For which sport did more ${girlsLead ? 'girls than boys' : 'boys than girls'} choose it?` };
+  // two sections' reading, month by month: the one month the other section read more
+  const cats = MONTHS.slice(0, 4), v = pairs(rng, diff), names = cats.map(c => c[0]);
+  const aLead = v.filter(p => p[0] > p[1]).length === 1, i = v.findIndex(p => (aLead ? p[0] > p[1] : p[1] > p[0]));
+  return {
+    eq: `lead ${v.map(p => p.join('/')).join(',')}`, answer: names[i]!, wrongs: others(rng, names[i]!, names),
+    ar: `مثّلت مكتبة المدرسة بالأعمدة المزدوجة عدد الكتب التي استعارتها شعبتا الصف الخامس في كل شهر: ${cats.map((c, j) => row(c[0], 'الشعبة أ', v[j]![0], 'الشعبة ب', v[j]![1])).join('؛ ')}. في أيّ شهر استعارت الشعبة ${aLead ? 'أ' : 'ب'} كتبًا أكثر من الشعبة ${aLead ? 'ب' : 'أ'}؟`,
+    en: `The school library drew a double bar graph of the books two Grade 5 sections borrowed each month: ${cats.map((c, j) => `${c[1]}: section A ${v[j]![0]}, section B ${v[j]![1]}`).join('; ')}. In which month did section ${aLead ? 'A' : 'B'} borrow more books than section ${aLead ? 'B' : 'A'}?`,
+  };
 });
 
 export const G5_TOPICS: readonly Topic[] = [mentalMul, polygons, statQuestion, lineGraph, doubleBar];
 
-void wrongsFrom;
