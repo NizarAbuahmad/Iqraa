@@ -41,6 +41,7 @@ import { normalizeArabic } from './arabic.ts';
 import { bankTagsForUnit, itemsForUnitTags, usePolicy, type BankUsePolicy } from './bank.ts';
 import { getObjectivesForUnit } from './objectives.ts';
 import { LESSONS, UNITS } from './catalog.ts';
+import { objectivesFromTeacherGuide } from './catalogs/nccdCatalog.ts';
 import type { CurriculumSource, SourceAuthority } from './sources.ts';
 
 const extractedDir = path.join(
@@ -344,7 +345,13 @@ export function passagesForUnit(query: PassageQuery): Passage[] {
 
   // Objectives and vocabulary are what the catalog knows about this unit, and
   // they are the strongest available description of what its pages say.
-  const objectives = getObjectivesForUnit(unitId);
+  // Objectives copied from a teacher guide are the guide's own wording, which
+  // it reprints on the outcome page, the teaching notes and every unit plan:
+  // searching with them finds the guide, not the lesson's student-book pages
+  // (Grade 5 Islamic, 27 → 3 of 37 lessons). Such a unit is searched as it was
+  // before it had objectives. See `objectivesFromTeacherGuide`.
+  const guideObjectives = objectivesFromTeacherGuide(unitId);
+  const objectives = guideObjectives ? [] : getObjectivesForUnit(unitId);
   // Some books print no learning outcomes at all (Grade 9 Islamic Studies,
   // history, geography, civics, PE), so their units have no objectives. A
   // caller that passes no `terms` and no lesson — a unit/semester/book paper,
@@ -373,8 +380,10 @@ export function passagesForUnit(query: PassageQuery): Passage[] {
       ...queryTerms([lesson.titleAr], 3),
       ...queryTerms([
         ...lesson.keywordsAr,
-        ...lesson.objectivesAr,
-        ...lesson.outcomes.flatMap(o => [o.descriptionAr, ...(o.skills ?? [])]),
+        ...(guideObjectives ? [] : [
+          ...lesson.objectivesAr,
+          ...lesson.outcomes.flatMap(o => [o.descriptionAr, ...(o.skills ?? [])]),
+        ]),
       ]),
     ]
     : [];

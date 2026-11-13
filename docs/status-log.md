@@ -106,6 +106,28 @@ upload needed (keys only removed).
   أن أعرفها» (pp. 33-34, u2_l4): التخزين السحابي، جوجل درايف، المزامنة التلقائية،
   مشاركة الملفات (no English printed). Its fifth entry, «جوجل سلايدز», is too
   garbled in the extraction to spell with certainty and waits for the PDF.
+- **Islamic objectives for other grades.** Grade 4: 45/45 lessons, 187 outcomes,
+  periods for all 45, from the teacher guides (unit totals left null: the
+  extraction lost the plan's «عدد الحصص» digits). Grade 6: S2 21/21 (86) from the
+  student book's own «نتاجات التعلم» tables; S1 prints none and has no guide on
+  file. Grade 7 (47/48) and 8 (46/47) were already filled; their one empty lesson
+  each is a «مصادر التشريع» lesson the guide's plan does not carry. Grade 3 has no
+  extracted book at all.
+- **Guide-sourced objectives no longer steer page search.** Filling Grade 4/5
+  Islamic objectives from the teacher guides sent `passagesForUnit` to the guide:
+  it reprints the outcome wording on the outcome page, the teaching notes and
+  every unit plan, so lessons reaching one of their own student-book pages fell
+  Grade 4 28 → 5 and Grade 5 27 → 3, and two `passages.test.ts` pins failed. Three
+  ranking changes were measured and rejected (outcomes at unit weight: worse;
+  skip listing pages: some grades worse, more empty results; half the slots per
+  book: helps or hurts by data). Fix: a catalog marks `meta.objectives_source:
+  "teacher-guide"` (`objectivesFromTeacherGuide`), and search reads such a unit as
+  it did before it had objectives; the objectives stay for everything else.
+  Measured on the 2048 lessons with known pages: 432 (baseline 425; Grade 4 and 5
+  Islamic back to 28 and 27, no grade worse). Pinned by
+  `guideObjectivesSearch.test.ts`. **Follow-up:** Grade 10 Islamic reaches its own
+  page for 1 of 50 lessons on `main` too, likely the same cause; mark it only after
+  checking where its objectives came from.
 - **Islamic vocabulary NOT filled:** the «المفردات والتراكيب» boxes (12 lessons,
   listed by page in `known_gaps`) print their headwords in the Mushaf font, which
   pdf-parse dropped, and **the cloud environment's R2 keys answer AccessDenied on

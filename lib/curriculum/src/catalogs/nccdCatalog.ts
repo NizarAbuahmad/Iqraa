@@ -140,6 +140,22 @@ export type NccdCatalog = {
 };
 
 /**
+ * Units whose catalog says its objectives were copied from a teacher guide
+ * (`meta.objectives_source: "teacher-guide"`), by KB unit id.
+ *
+ * A guide reprints a lesson's outcomes verbatim on its outcome page, its
+ * teaching notes and every unit plan, so searching a book's pages with them
+ * finds the guide and not the student book's lesson (`passagesForUnit`). Filled
+ * as each catalog module is built; every catalog is imported by `catalog.ts`.
+ */
+const guideObjectiveUnits = new Set<string>();
+
+/** True when this unit's objectives were copied from a teacher guide — see `guideObjectiveUnits`. */
+export function objectivesFromTeacherGuide(unitKbId: string): boolean {
+  return guideObjectiveUnits.has(unitKbId);
+}
+
+/**
  * A lesson with no `periods` still has to occupy time on a timetable, so the
  * browser bills it as one 45-minute period. Named because the twenty-two
  * hand-written builders each inline `(lesson.periods ?? 1) * 45` and a reader
@@ -161,6 +177,10 @@ export function makeNccdCatalog(opts: {
 
   const unitKbId = (jsonUnitId: string): string => makeUnitKbId(scope, jsonUnitId);
   const lessonKbId = (jsonLessonId: string): string => makeLessonKbId(scope, jsonLessonId);
+
+  if (curriculum.meta?.objectives_source === 'teacher-guide') {
+    for (const u of curriculum.units) guideObjectiveUnits.add(unitKbId(u.id));
+  }
 
   const findLessonByKbId = (kbLessonId: string): NccdLesson | null => {
     const prefix = lessonKbPrefix(scope);
