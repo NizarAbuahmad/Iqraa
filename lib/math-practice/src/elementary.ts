@@ -68,6 +68,10 @@ export function elementaryOpsForTitle(title: string): ElementaryOp[] {
   }
   if (/مئوي|percent/i.test(t)) return /والكسور/.test(t) ? [] : ['percent'];
   if (UNSERVED.test(t)) return [];
+  // Grade 1's tens and two-digit lessons have their own generators (early.ts
+  // `tensG1`, `twoDigitG1`); as plain add/sub they drew sums within 20. Not
+  // anchored at the end: from a lesson the blob is «title titleEn».
+  if (/^(?:جمع|طرح) (?:العشرات|عددين من منزلتين)(?=\s|$)/.test(t.trim())) return [];
   if (/منزلي|place\s*value/i.test(t)) return ['place'];
 
   const kind = /كسور|كسر|fraction/i.test(t) ? 'frac' : /عشري|decimal/i.test(t) ? 'dec' : 'whole';
