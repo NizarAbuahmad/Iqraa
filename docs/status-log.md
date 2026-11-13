@@ -33,6 +33,56 @@ source prefix. The 85 PNGs were uploaded to `iqraa-public/figures/` (keys only a
 tables with no picture worth a crop; units' opener art and unit tests were skipped on purpose. Crops from a 1400 px
 render are softer than PDF crops; re-cutting them from the PDF with the same boxes is possible when one is at hand.
 
+## Grade 8 review: book figures on the right lessons, teaching-plan export grounded by id — 2026-11-13
+
+A review of the 19 grade 8 catalogs (11 subjects). It found the catalogs complete and wired, a picked lesson
+grounded to exactly itself (358/358 by id), and offline maths serving grade 8 items with correct keys (7 quizzes
+checked by hand). It also found the problems fixed here.
+
+**What changed.**
+- **Figures on the wrong lesson.** The figure extractor gives a unit's opening pages to the last lesson of the unit
+  before. Five images moved, each checked by opening it:
+  - maths S1 `p047b`, `p048-v2`, `p048b-v2` (algebra-tile factoring): from «النسبة المئوية» to u2_l1
+  - maths S2 `p069b-v2` (pantograph): from elimination to «التمدّد»
+  - science S2 `p071b-v2` (O²⁻/Mg²⁺ pieces): from «الحرارة والمادة» to «الروابط الكيميائية»
+  - vocational S2 `p057` (mushroom): to the mushroom unit
+  
+  The English photo extractor gave the back matter (Life Skills, Culture Spot, the reader, the word list) to the last
+  writing lesson. `p060`, `p062b` and `p065` (S2) and `p061-v2` (S1) now sit under no lesson, like the science S2
+  contents-page icons. Both writing lessons' «صفحة الكتاب» now end at page 59 (was 77).
+- **Bad crops dropped:** English S2 `p062` (a page of body text, edge sliced) and vocational S1 `p006b` (half a clock).
+  The PNG and its index entry are both gone.
+- **A good figure that was never shown:** maths S2 `p076` (parallel and perpendicular lines). Its book lesson had no
+  row in `figure-lesson-map.json`; the row is added, marked hand-checked.
+- **Teaching-plan export** (`app/teaching-plans/index.tsx`) grounded each lesson by title. Every grade 8 English unit
+  opens with «المفردات والقواعد», so the title found unit 1 or another grade, and the guard sent no context.
+  It now passes `lessonId`. About 62 grade 8 English and Arabic lessons were affected.
+- Stale «semester 1 not attached» notes in `g8MathSem2.ts` and its JSON corrected.
+
+**Verified.** Red/green on the new grade 8 block in `bookFigures.test.ts` (8 cases) and `teachingPlanGrounding.test.ts`.
+The back-matter case caught `p062b`, which the review had missed. Also run: `pnpm run typecheck`; mobile suite 9,224
+pass, 0 fail, 10 skipped; curriculum test 915/915; `verify` 0 errors.
+
+**Not verified / still open.**
+- **`p076` must be uploaded to `iqraa-public`.** Run `pnpm --filter @workspace/curriculum run upload-figures-r2`;
+  this session has no R2 keys. Until then the lesson's slide shows a missing image. The other moved figures were
+  already in the key list, so they are already in the bucket.
+- The source PDFs were not reachable: NCCD resets connections from the cloud sandbox, and the books are not on
+  Drive. So coverage against the printed books is checked only for English (5 units × 7 lessons per semester, both
+  match).
+- Not checked, for lack of the PDFs:
+  - digital skills unit 2 is missing (S1 has unit 1, S2 starts at 3)
+  - 17 of 19 grade 8 books have no extracted text, so no live grade 8 lesson gets book passages; the English two are
+    `third-party` and never quoted
+  - 8 books have no figures at all
+- Re-running `extract_book_figures.py`, `extract_book_photos.py` or `verify_book_pages.py` would restore the wrong
+  placements; the extractors' boundary rules are unchanged.
+- Small edge cuts left as they are (`g8-math-s2/p138g-v2`, `g8-finlit-s1/p036b-v2`, `g8-science-s2/p126f`): a re-crop
+  needs the PDF.
+- Not looked at in the running app.
+
+No «ما الجديد» entry: corrections to which picture a lesson shows, not a feature.
+
 ## Grade 9 checked against its books, and corrected — 2026-11-13
 
 **What was checked.** All 31 Grade 9 books (16 subjects, 422 lessons). The 20 whose text is in

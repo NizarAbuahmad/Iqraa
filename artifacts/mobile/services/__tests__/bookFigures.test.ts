@@ -12,7 +12,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { figuresForLesson, figurePath, lessonsWithFigures } from '../bookFigures.ts';
+import { bookPagesForLesson, figuresForLesson, figurePath, lessonsWithFigures } from '../bookFigures.ts';
 
 describe('figuresForLesson', () => {
   it('finds the system figures under the lesson that teaches systems', () => {
@@ -329,6 +329,75 @@ describe('general English carries its book photographs', () => {
       for (const f of figuresForLesson(id)) {
         assert.equal(f.lesson, Number(m![1]), `${f.file} is on lesson ${f.lesson}, not ${m![1]}`);
       }
+    }
+  });
+});
+
+describe('grade 8: a figure sits with the lesson its page teaches', () => {
+  // Found by the 2026-11-13 grade 8 review. The figure extractor gives a
+  // unit's opening pages to the LAST lesson of the unit before it, and the
+  // English photo extractor gives the back matter (Life Skills, Culture Spot,
+  // the reader, the word list) to the last writing lesson. Each case below
+  // was checked by opening the image. Asserted by page, not file name: a
+  // re-crop renames `p048.png` to `p048-v2.png`.
+  const pagesOf = (lessonId: string, sourceId: string) =>
+    figuresForLesson(lessonId).filter(f => f.sourceId === sourceId).map(f => f.pdfPage);
+  const allFigures = () => lessonsWithFigures().flatMap(id => figuresForLesson(id));
+
+  it('puts the algebra-tile factoring pictures with factoring, not percentages', () => {
+    const src = 'g8-math-s1-student-book';
+    for (const page of [47, 48]) {
+      assert.ok(!pagesOf('kbl-g8-math-s1-nccd-u1_l5', src).includes(page), `p${page} is not about percentages`);
+      assert.ok(pagesOf('kbl-g8-math-s1-nccd-u2_l1', src).includes(page), `p${page} opens the factoring unit`);
+    }
+  });
+
+  it('puts the pantograph with dilation, not with solving by elimination', () => {
+    const src = 'g8-math-s2-student-book';
+    assert.ok(!pagesOf('kbl-g8-math-s2-nccd-u6_l3', src).includes(69));
+    assert.ok(pagesOf('kbl-g8-math-s2-nccd-u7_l6', src).includes(69));
+  });
+
+  it('shows the parallel-and-perpendicular figure on its own lesson', () => {
+    // Its book lesson (unit 7, lesson 1) had no row in figure-lesson-map.json,
+    // so a good figure was dropped and the lesson had none.
+    assert.ok(pagesOf('kbl-g8-math-s2-nccd-u7_l1', 'g8-math-s2-student-book').includes(76));
+  });
+
+  it('puts the ion puzzle pieces with chemical bonds, not with heat', () => {
+    const src = 'g8-science-s2-student-book';
+    assert.ok(!pagesOf('kbl-g8-science-s2-nccd-u6_l2', src).includes(71));
+    assert.ok(pagesOf('kbl-g8-science-s2-nccd-u7_l1', src).includes(71));
+  });
+
+  it('puts the mushroom photo with the mushroom unit, not with creative ideas', () => {
+    const src = 'g8-voc-s2-student-book';
+    assert.ok(!pagesOf('kbl-g8-voc-s2-nccd-u4_l2', src).includes(57));
+    assert.ok(pagesOf('kbl-g8-voc-s2-nccd-u5_l1', src).includes(57));
+  });
+
+  it('files no English back-matter page under a lesson', () => {
+    // Both books' last lesson, 7A Writing, is pages 58-59; from page 60 on it
+    // is Life Skills, Culture Spot, the reader and the word list.
+    for (const f of allFigures()) {
+      if (!f.sourceId.startsWith('g8-english-')) continue;
+      assert.ok(f.pdfPage < 60, `${f.sourceId} ${f.file} (page ${f.pdfPage}) is back matter`);
+    }
+  });
+
+  it('shows the two writing lessons only their own two pages', () => {
+    for (const id of ['kbl-g8-eng-s1-nccd-u5_l7', 'kbl-g8-eng-s2-nccd-u10_l7']) {
+      const pages = bookPagesForLesson(id);
+      assert.ok(pages, `${id} has pages`);
+      assert.equal(pages!.page, 58, id);
+      assert.equal(pages!.urls.length, 2, `${id} shows ${pages!.urls.length} pages`);
+    }
+  });
+
+  it('drops the crops that show half a picture or a sliced page of text', () => {
+    const files = new Set(allFigures().map(f => `${f.sourceId}/${f.file}`));
+    for (const bad of ['g8-voc-s1-student-book/p006b.png', 'g8-english-s2-student-book/p062.png']) {
+      assert.ok(!files.has(bad), `${bad} is still shown`);
     }
   });
 });
