@@ -274,6 +274,38 @@
       "lessonStartPage": 41
     },
     {
+      "file": "p042.png",
+      "sourceId": "g4-arabic-s1-student-book",
+      "pdfPage": 42,
+      "rect": [
+        74.0,
+        427.2,
+        289.1,
+        587.1
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": "I Read Fluently and with Comprehension (Tariq's Painting)",
+      "lessonTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (لَوْحَةُ طارِقٍ)",
+      "lessonStartPage": 41
+    },
+    {
+      "file": "p043.png",
+      "sourceId": "g4-arabic-s1-student-book",
+      "pdfPage": 43,
+      "rect": [
+        53.6,
+        79.1,
+        267.9,
+        277.6
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": "I Read Fluently and with Comprehension (Tariq's Painting)",
+      "lessonTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (لَوْحَةُ طارِقٍ)",
+      "lessonStartPage": 41
+    },
+    {
       "file": "p051.png",
       "sourceId": "g4-arabic-s1-student-book",
       "pdfPage": 51,
@@ -336,6 +368,22 @@
       "lessonTitleEn": "I Build My Language (Imitating Language Patterns)",
       "lessonTitleAr": "أَبْني لُغَتي (مُحاكاةُ أَنْماطٍ لُغَوِيَّةٍ)",
       "lessonStartPage": 54
+    },
+    {
+      "file": "p060.png",
+      "sourceId": "g4-arabic-s1-student-book",
+      "pdfPage": 60,
+      "rect": [
+        315.9,
+        126.7,
+        452.4,
+        317.1
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": "I Listen Attentively and with Focus",
+      "lessonTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+      "lessonStartPage": 60
     },
     {
       "file": "p063.png",
@@ -402,6 +450,22 @@
       "lessonStartPage": 60
     },
     {
+      "file": "p065.png",
+      "sourceId": "g4-arabic-s1-student-book",
+      "pdfPage": 65,
+      "rect": [
+        107.2,
+        95.2,
+        535.8,
+        698.0
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": "I Speak Fluently (I Talk About One of Jordan's Governorates)",
+      "lessonTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (أَتَحَدَّثُ عَنْ مُحافَظَةٍ مِنْ مُحافَظاتِ الأُرْدُنِّ)",
+      "lessonStartPage": 65
+    },
+    {
       "file": "p067.png",
       "sourceId": "g4-arabic-s1-student-book",
       "pdfPage": 67,
@@ -410,6 +474,22 @@
         142.8,
         455.8,
         328.2
+      ],
+      "unit": 3,
+      "lesson": 3,
+      "lessonTitleEn": "I Read Fluently and with Comprehension (The Royal Anthem)",
+      "lessonTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (السَّلامُ الْمَلَكِيُّ)",
+      "lessonStartPage": 67
+    },
+    {
+      "file": "p069.png",
+      "sourceId": "g4-arabic-s1-student-book",
+      "pdfPage": 69,
+      "rect": [
+        160.7,
+        92.7,
+        418.0,
+        261.9
       ],
       "unit": 3,
       "lesson": 3,
@@ -498,6 +578,22 @@
       "lessonStartPage": 75
     },
     {
+      "file": "p080.png",
+      "sourceId": "g4-arabic-s1-student-book",
+      "pdfPage": 80,
+      "rect": [
+        70.6,
+        172.2,
+        297.6,
+        499.9
+      ],
+      "unit": 3,
+      "lesson": 5,
+      "lessonTitleEn": "I Build My Language (Imitating Language Patterns)",
+      "lessonTitleAr": "أَبْني لُغَتي (مُحاكاةُ أَنْماطٍ لُغَوِيَّةٍ)",
+      "lessonStartPage": 80
+    },
+    {
       "file": "p082.png",
       "sourceId": "g4-arabic-s1-student-book",
       "pdfPage": 82,
@@ -546,6 +642,54 @@
       "lessonStartPage": 86
     },
     {
+      "file": "p088.png",
+      "sourceId": "g4-arabic-s1-student-book",
+      "pdfPage": 88,
+      "rect": [
+        178.6,
+        380.9,
+        446.5,
+        579.0
+      ],
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": "I Listen Attentively and with Focus",
+      "lessonTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+      "lessonStartPage": 86
+    },
+    {
+      "file": "p090.png",
+      "sourceId": "g4-arabic-s1-student-book",
+      "pdfPage": 90,
+      "rect": [
+        190.5,
+        158.6,
+        488.1,
+        515.7
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": "I Speak Fluently (I Talk About the Food Groups in the Food Pyramid)",
+      "lessonTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (أَتَحَدَّثُ عَنِ الْمَجْموعاتِ الْغِذائِيَّةِ في الْهَرَمِ الْغِذائِيِّ)",
+      "lessonStartPage": 90
+    },
+    {
+      "file": "p091.png",
+      "sourceId": "g4-arabic-s1-student-book",
+      "pdfPage": 91,
+      "rect": [
+        131.0,
+        102.9,
+        535.8,
+        357.1
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": "I Speak Fluently (I Talk About the Food Groups in the Food Pyramid)",
+      "lessonTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (أَتَحَدَّثُ عَنِ الْمَجْموعاتِ الْغِذائِيَّةِ في الْهَرَمِ الْغِذائِيِّ)",
+      "lessonStartPage": 90
+    },
+    {
       "file": "p092.png",
       "sourceId": "g4-arabic-s1-student-book",
       "pdfPage": 92,
@@ -554,6 +698,22 @@
         161.5,
         469.4,
         343.5
+      ],
+      "unit": 4,
+      "lesson": 3,
+      "lessonTitleEn": "I Read Fluently and with Comprehension (Our Health Is in Our Food)",
+      "lessonTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (صِحَّتُنا في غِذائِنا)",
+      "lessonStartPage": 92
+    },
+    {
+      "file": "p093.png",
+      "sourceId": "g4-arabic-s1-student-book",
+      "pdfPage": 93,
+      "rect": [
+        42.5,
+        396.6,
+        250.0,
+        546.6
       ],
       "unit": 4,
       "lesson": 3,
@@ -674,6 +834,70 @@
       "lessonStartPage": 116
     },
     {
+      "file": "p117.png",
+      "sourceId": "g4-arabic-s1-student-book",
+      "pdfPage": 117,
+      "rect": [
+        166.7,
+        79.1,
+        533.2,
+        317.1
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": "I Speak Fluently (I Talk About the Water Cycle in Nature)",
+      "lessonTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (أَتَحَدَّثُ عَنْ دَوْرَةِ الْماءِ في الطَّبيعَةِ)",
+      "lessonStartPage": 116
+    },
+    {
+      "file": "p119.png",
+      "sourceId": "g4-arabic-s1-student-book",
+      "pdfPage": 119,
+      "rect": [
+        196.4,
+        120.5,
+        488.1,
+        253.8
+      ],
+      "unit": 5,
+      "lesson": 3,
+      "lessonTitleEn": "I Read Fluently and with Comprehension (The Bee)",
+      "lessonTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (النَّحْلُ)",
+      "lessonStartPage": 119
+    },
+    {
+      "file": "p120.png",
+      "sourceId": "g4-arabic-s1-student-book",
+      "pdfPage": 120,
+      "rect": [
+        59.5,
+        301.4,
+        238.1,
+        595.2
+      ],
+      "unit": 5,
+      "lesson": 3,
+      "lessonTitleEn": "I Read Fluently and with Comprehension (The Bee)",
+      "lessonTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (النَّحْلُ)",
+      "lessonStartPage": 119
+    },
+    {
+      "file": "p121.png",
+      "sourceId": "g4-arabic-s1-student-book",
+      "pdfPage": 121,
+      "rect": [
+        59.5,
+        39.5,
+        285.7,
+        238.1
+      ],
+      "unit": 5,
+      "lesson": 3,
+      "lessonTitleEn": "I Read Fluently and with Comprehension (The Bee)",
+      "lessonTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (النَّحْلُ)",
+      "lessonStartPage": 119
+    },
+    {
       "file": "p125.png",
       "sourceId": "g4-arabic-s1-student-book",
       "pdfPage": 125,
@@ -688,6 +912,22 @@
       "lessonTitleEn": "I Read Fluently and with Comprehension (The Bee)",
       "lessonTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (النَّحْلُ)",
       "lessonStartPage": 119
+    },
+    {
+      "file": "p131.png",
+      "sourceId": "g4-arabic-s1-student-book",
+      "pdfPage": 131,
+      "rect": [
+        74.0,
+        78.2,
+        547.7,
+        769.5
+      ],
+      "unit": 5,
+      "lesson": 4,
+      "lessonTitleEn": "I Write (Words with Letters that Are Pronounced but Not Written)",
+      "lessonTitleAr": "أَكْتُبُ (كَلِماتٌ فيها حُروفٌ تُنْطَقُ وَلا تُكْتَبُ)",
+      "lessonStartPage": 127
     },
     {
       "file": "p134.png",

@@ -41,6 +41,17 @@ pass (199), and so does `pnpm run typecheck`. The generated figure list only los
 nothing to upload.
 **Not verified.** Not looked at in the running app.
 
+## Grade 4 Arabic: 35 pictures the colour detector missed — 2026-11-13
+
+All 266 Arabic renders were looked at with the existing crops outlined, after «Grade 4 Arabic and Islamic figures».
+The detector had missed pictures on pale or white ground and large full-page art: the Jordan map (S1 p. 65), the
+Raghadan palace (p. 69), the food pyramid and food groups (pp. 90, 91, 93), the water-cycle drawing (p. 117), the bee
+pictures (pp. 119–121), the unit 7 and unit 10 openers (S2 pp. 32, 112), Shahrayar and the merchant (pp. 13–14), Juha's
+market and story scenes (pp. 60, 67), the fable animals (pp. 88, 92, 95, 98, 110), the trap-and-doves story (p. 108) and
+others. 52 boxes were drawn and 17 dropped on review (mostly text or a fragment); 35 kept, 2 of them trimmed. Lesson by
+page range, unit-opener art to the next unit's first lesson, as before. Arabic now has 114 crops. All 35 PNGs are in
+`iqraa-public/figures/` under names checked free first.
+
 ## Grade 8 maths: offline questions for the four S2 lessons that had none — 2026-11-13
 
 **Why.** Grade 8 had already been checked against its books by earlier changes. One gap was left: four
