@@ -71,6 +71,15 @@ upload needed (keys only removed).
   page, grouped by lesson type; S2 without harakat, its text too scrambled; u8_l5
   and three statements left out, listed in `known_gaps`). Vocational already had
   them (27 lessons, from «ماذا سأتعلم؟»).
+- **Digital skills objectives** 11/26 (14 statements): the activity book prints
+  no outcome box per task; items come from each block's «نتاجات التعلم» list
+  (pp. 7, 27, 43, 87, 99, 109) only where one item describes one task, and from
+  block 4's own task aims («تهدف هذه المهمة…»). The four projects print none.
+- **Creative arts vocabulary** 14/30 (23 terms): the book prints no terms box;
+  the terms the «أتعلّم» box defines ("term: definition") in 4 art, 2 music and
+  8 drama lessons, without harakat (the extracted marks are detached), `en` ""
+  (no English printed). Vocational vocabulary was already there (27 lessons,
+  56 bilingual terms from «المفاهيم والمصطلحات»).
 - **Islamic vocabulary NOT filled:** the «المفردات والتراكيب» boxes (12 lessons,
   listed by page in `known_gaps`) print their headwords in the Mushaf font, which
   pdf-parse dropped, and **the cloud environment's R2 keys answer AccessDenied on
@@ -97,9 +106,14 @@ upload needed (keys only removed).
   their `catalog.ts` comments; the badge they drive is kept on purpose (no main
   ideas or vocabulary yet).
 
-**Verified:** `math-practice` 958/958 and typecheck; curriculum `verify` 0
-errors, tests 914/915 (the one failure, `r2.test.ts`, asserts R2 is
-unconfigured and fails because this container has R2 set); figure tests 25/25; repo typecheck clean; mobile suite 9212 pass with one failure, fixed after: `mathLessonKinds.test.ts` counted the first wording of doubling and halving («أوجد ضعف/نصف العدد…») as one kind, so they are now distinct word problems.
+**Verified (final state, 2026-11-13):** curriculum `verify` 0 errors (3406
+lessons); curriculum tests 914/915 — the one failure, `r2.test.ts`, asserts R2
+is unconfigured and passes with the `R2_*` variables unset, so it is this
+container's R2 setting; mobile suite 9213 pass, 0 fail (10 skipped); api-server
+build + tests 2899/2899; repo `pnpm run typecheck` clean; `math-practice`
+958/958. Earlier in the day one mobile failure (`mathLessonKinds.test.ts`
+counted «أوجد ضعف/نصف العدد…» as one kind) was fixed by making doubling and
+halving distinct word problems.
 
 ## Today's setup nudge no longer says "no plan" about a plan that exists — 2026-11-05
 

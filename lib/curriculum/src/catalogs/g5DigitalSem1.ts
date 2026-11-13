@@ -12,9 +12,14 @@
  * projects) as four more, in the order the activity book's contents page
  * prints them (pages 4-6 of the 147-page PDF).
  *
- * Title-only: the activity book's table of contents is everything that was
- * read. There is no per-lesson content — `main_idea_ar`/`objectives`/
- * `vocabulary` are empty throughout, same as g6DigitalSem1.
+ * Mostly title-only: the structure comes from the activity book's table of
+ * contents, and `main_idea_ar`/`vocabulary` are empty throughout, same as
+ * g6DigitalSem1. `objectives` (since 2026-11-13) holds 14 statements in 11 of
+ * the 26 lessons, read from the activity book's text: items of each block's
+ * «نتاجات التعلم» list (pp. 7, 27, 43, 87, 99, 109) given to a task only where
+ * they clearly describe that one task, plus block 4's own task aims (pp. 88,
+ * 90). Everything left out, and why, is in the JSON's `meta.known_gaps`.
+ * The four learning projects print no outcomes, so they stay empty.
  *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */
