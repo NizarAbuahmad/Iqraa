@@ -60,6 +60,60 @@ pass, 0 fail, 10 skipped; curriculum test 915/915; `verify` 0 errors.
 
 No «ما الجديد» entry: corrections to which picture a lesson shows, not a feature.
 
+## Grade 7 audit: book pages, figures, contents and honorifics checked against the printed books — 2026-11-13
+
+The Grade 6 review («Grade 6 audit…» below), repeated for all eleven Grade 7 subjects (397 lessons, 21 books). Every lesson's
+book pages and every Grade 7 figure were looked at as images from the public bucket (NCCD and the private bucket were
+unreachable, as for Grade 6). Printed page = PDF page in every book checked.
+
+**Book pages.** Fewer wrong starts than Grade 6 — the Grade 7 Arabic titles carry their strand, and maths, science, PE and
+digital start right everywhere — but most ranges ran past the lesson's end, because a range stops only where the next
+*mapped* lesson starts.
+- Wrong starts: social S1 u6_l1 and S2 u12_l1 (the unit opener), vocational S1 (every unit's first lesson on the unit
+  opener) and S2 (four on the unit's lesson list), Arabic S2 u6_l4 (a page late), and three creative-arts lessons showing
+  another lesson's pages (u1_l3 → u1_l4's, u3_l3 → u3_l6's, u3_l4 → u3_l7's).
+- Overruns: every unit-final lesson in maths (into the unit test, the next opener and project), science (enrichment,
+  inquiry, unit review, the glossary), Islamic, Arabic («حصاد الوحدة» and the next unit's two opener pages), PE, digital and
+  financial literacy (the unit project and test); maths S1 u4_l4 held all of u4_l5; social S2 u9_l1 was 14 pages of others.
+- **Fix:** the Grade 6 mechanism (`rendered`). 104 ranges corrected from images already in the bucket; lessons with pages
+  292 → 301 of 397 (u4_l5 «الدوران», ten social lessons, creative-arts u1_l4, u3_l6, u3_l7 got their own). Four lessons
+  that showed another lesson lose those pages (social S2 u7_l1, creative arts u1_l3, u3_l3, u3_l4). Arabic S2 u6_l4 keeps
+  20-22 (all its own; its first page, 19, sits in another folder). Every Grade 7 URL the app builds (1,715) answered 200.
+- Still without pages: English (by design), 20 creative-arts lessons, social S1 u1_l1 and S2 u7_l1, u7_l2, u8_l1 (34-38;
+  p38 was never cut). The creative-arts and social pages need a render from the PDFs.
+
+**Contents.** No contents page was reachable (no range includes pp. 3-5, and Grade 7 has no extracted text), so each
+book's lesson list was rebuilt from its unit openers' lesson lists and every lesson opener. **Every book matches its
+catalog**: same lessons, order and units; projects, tests, reviews and labs left out as `known_gaps` says. English keeps
+nine lessons a unit on purpose (lessons 4, 7 and 12 are Activity Book only, per its `known_gaps`). Minor: Arabic S1
+u1_l1 carries no topic and u5_l4 is cut short; science S1's `known_gaps` says unit 3 has no «الفكرة العامة» box, but
+the book prints it (p50) and the catalog already carries its text.
+
+**Honorifics (Islamic S1/S2) — fixed.** «ﷺ», which is for the Prophet alone, stood after the angels, Abu Hurayra, ʿAli ibn
+Abi Talib, Musa and Rufaida al-Aslamiyya in 26 places (5 titles, their main ideas and objectives); the book prints
+«عليهم السلام», «رضي الله عنه», «عليه السلام» and «رضي الله عنها» (titles checked on the page). Replaced by referent; the 15
+«ﷺ» left all follow the Prophet. **Not fixed, other grades** (the same symbol after others, not checked against their
+books): Grade 8 «السيدة سكينة بنت الحسين ﷺ», «عمر بن عبد العزيز ﷺ», «أيد الله تعالى رسله ﷺ»; Grade 9 «من أعلام الصحابة ﷺ»,
+«شهداء من الصحابة الكرام ﷺ».
+
+**Figures.** 265 checked. Three moved to their own lesson (science S1 p081b → u3_l1, S2 p052b → u7_l1, social S1 p131 →
+u6_l2); 34 dropped: crops of unit-opener pages (social S1 p073, p098b, p099, p115), wrong-lesson crops that were also cut
+badly (science p127c, p111), major bad crops (science 10, vocational S1 12 — opener-page tops, slices of opener and
+lesson-list pages, empty activity frames — social S2 p020/p020b, social S1 p058, finlit S2 p016) and two English S2 photos
+on the wrong lesson (p056, p059). Minor flaws stay. The social S2 +6 unit offset noted 2026-09-16 holds. **English S2's
+figure map joins on the wrong lesson numbers**: its note said the S2 catalog renumbers lessons 1..9; it keeps the printed
+numbers, so two entries point at u6_l7 and u7_l7, which do not exist, and p027 and p043 are shown nowhere. Left
+unreachable on purpose — neither PNG is in the public bucket and the app has no fallback for a figure that fails to load;
+the entry's note now says what to upload and remap.
+
+**Results.** Offline maths covers 40 of 43 lessons, every sampled key correct (read by hand); u1_l6 «خطة حل المسألة:
+الحل العكسي», u6_l1 «التطابق» and u6_l5 «خطة حل المسألة: الرسم» get nothing. **Grade 7 has no extracted text at all** —
+no manifest rows, no `extracted/g7-*` — so every Grade 7 lesson reaches live generation with no book text; that needs the
+PDFs (Tracks A and B of `docs/adding-a-book.md`).
+
+**Verified:** `bookPage`, `bookFigureAssets` and `lessonSlides` tests (149), curriculum test (924) and verify (0 errors),
+typecheck. **Not verified:** the pages on a phone; anything needing the PDFs.
+
 ## Grade 2 review: coverage, images, and four generator fixes — 2026-11-13
 
 A review of the Grade 2 subjects (14 books, 236 lessons): are all topics in, do
