@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { cellWidthPercent, isVisualKind, libraryColumns, previewCount } from '../libraryLayout.ts';
+import { cellWidthPercent, gradesForChips, isVisualKind, libraryColumns, previewCount } from '../libraryLayout.ts';
 
 describe('libraryColumns', () => {
   it('picks the count from the track width, at the thresholds', () => {
@@ -49,5 +49,14 @@ describe('previewCount', () => {
     }
     assert.equal(previewCount(3, true), 3);
     assert.equal(previewCount(1, true), 3);
+  });
+});
+
+describe('gradesForChips', () => {
+  it('orders by level, highest first, whatever order the catalog keeps', () => {
+    const catalog = [10, 9, 3, 1, 2].map(level => ({ id: `grade-${level}`, level }));
+    assert.deepEqual(gradesForChips(catalog).map(g => g.id), ['grade-10', 'grade-9', 'grade-3', 'grade-2', 'grade-1']);
+    // The catalog's array is persisted-order state elsewhere: never reorder it in place.
+    assert.deepEqual(catalog.map(g => g.level), [10, 9, 3, 1, 2]);
   });
 });
