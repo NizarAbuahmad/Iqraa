@@ -28,22 +28,32 @@ Two findings from a review of the student side.
   grades every `student_link` sitting of that exam with no `submittedAt`, before answering (Cloud Run throttles
   work after the response), and returns `handedIn`. `teacher_entry` papers are left alone. The hand-in is one
   function, `handInAttempt` in `modules/assessment/attemptGrading.ts`, now also used by `/take/attempt/submit`,
-  so the row lock that serialises it against autosave is the same on both paths. The teacher's close confirmation
-  (`closeEvaluationConfirm`) said students «can still hand in»; it now says their papers are handed in.
+  so the row lock that serialises it against autosave is the same on both paths. One paper that cannot be handed
+  in is logged and skipped, never a 500: the exam is already closed by then and a close cannot be repeated, so a
+  throw would leave every later paper open for good. The teacher's close confirmation (`closeEvaluationConfirm`)
+  and the help answer `howCloseExam` said students «can still hand in»; both now say their papers are handed in.
 
 **Verified.** Red, then green: `takeClaimLinkedName.db.test.ts` (4 cases — the anonymous claim of Sara's
-account-linked row was 201, then 403 with no attempt row) and `closeHandsIn.db.test.ts` (4 cases — `handedIn`,
-the open sitting submitted with final answers and a result, a `teacher_entry` paper and another exam's sitting
-untouched), and the new `takeErrorKey` case. `uniqueViolation.db.test.ts` staged its claim race on Sara, who has
+account-linked row was 201, then 403 with no attempt row) and `closeHandsIn.db.test.ts` (5 cases — `handedIn`,
+the open sitting submitted with final answers and a result, a paper whose hand-in fails (a test trigger) left open
+while the close still answers 200 and the others are handed in — that case was a 500 before the per-paper catch —
+a `teacher_entry` paper and another exam's sitting untouched), and the new `takeErrorKey` case. `uniqueViolation.db.test.ts` staged its claim race on Sara, who has
 an account; it now uses Adam. Run against a local Postgres 16: `pnpm run typecheck`; api-server `pnpm build` then
-`pnpm test` (3,466, one failure — that race test — fixed and re-run green); mobile `pnpm test` (9,259, 0 failed,
-10 skipped). Not run in a browser or on a phone; the e2e student has no account, so its path is unchanged.
+`pnpm test` (3,467, 0 failed — the first full run had one failure, that race test, since fixed); mobile `pnpm test`
+(9,259, 0 failed, 10 skipped). Not run in a browser or on a phone; the e2e student has no account, so its path is unchanged.
 
 **Not done / limits.**
 - **Closing is now final for unfinished papers.** Re-publishing reopens the link, but a sitting the close handed
   in stays handed in. A teacher who closes by mistake cannot let those students continue.
 - A student with an account who sits on a shared device must sign in there; the screen says so but has no
   sign-in button (the login screen has no return-to-exam route).
+- A name whose account cannot use `claim-self` can now not sit at all: a suspended account, or one account
+  `self`-linked to two rows in the same class (`claim-self` answers 404 when it finds more than one). Rare; the
+  teacher can type the paper in.
+- A paper a stranger started anonymously before this deploys is still handed to the real student by
+  `claim-self` (`resumeAttemptFor` resumes any `student_link` sitting).
+- Nothing races an autosave against a close in a test; the row lock is the same one the student's own hand-in
+  takes, which is tested elsewhere.
 - Only close hands papers in. A sitting past its time limit on an exam never closed still waits; a sweep
   (an internal cron) would cover that.
 - Names with no account can still be claimed by anyone holding the link — the trade the link was built on; the

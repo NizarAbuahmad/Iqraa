@@ -30,6 +30,7 @@ describeDb("closing an exam hands in the sittings left open", () => {
   let x: ExamWorld;
   let adamAttempt: string;
   let zainTeacherEntry: string;
+  let saraAttempt: string;
   let closed: Awaited<ReturnType<typeof call>>;
 
   const attempt = async (id: string) =>
@@ -73,6 +74,25 @@ describeDb("closing an exam hands in the sittings left open", () => {
       )
     ).rows[0]!.id;
 
+    // Sara starts by signing in, and her hand-in will fail: one paper that
+    // cannot be handed in must not stop the others, nor fail the close.
+    const self = await call(on, "POST", `/take/${CODE}/claim-self`, w.users.studentA);
+    assert.equal(self.status, 201, self.text);
+    saraAttempt = (
+      await db.pool.query<{ id: string }>(`SELECT id FROM attempts WHERE evaluation_id = $1 AND student_id = $2`, [
+        x.exams.exDated,
+        w.students.sA1,
+      ])
+    ).rows[0]!.id;
+    await db.pool.query(`
+      CREATE FUNCTION test_fail_hand_in() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN
+        RAISE EXCEPTION 'hand-in fails (test trigger)';
+      END $$;
+      CREATE TRIGGER test_sara_hand_in_fails BEFORE UPDATE OF submitted_at ON attempts
+        FOR EACH ROW WHEN (OLD.id = '${saraAttempt}') EXECUTE FUNCTION test_fail_hand_in();
+    `);
+
     closed = await call(on, "POST", `/evaluations/${x.exams.exDated}/close`, w.users.t1);
   });
   after(async () => {
@@ -98,6 +118,13 @@ describeDb("closing an exam hands in the sittings left open", () => {
     assert.equal(answers.rows[0]!.is_final, true);
     const result = await db.pool.query(`SELECT 1 FROM attempt_results WHERE attempt_id = $1`, [adamAttempt]);
     assert.equal(result.rowCount, 1);
+  });
+
+  it("hands in the others when one paper cannot be handed in, and still closes", async () => {
+    assert.equal(closed.status, 200, closed.text);
+    const sara = await attempt(saraAttempt);
+    assert.equal(sara.submitted_at, null);
+    assert.notEqual((await attempt(adamAttempt)).submitted_at, null);
   });
 
   it("leaves a paper the teacher is typing in untouched", async () => {

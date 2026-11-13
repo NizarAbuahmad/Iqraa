@@ -543,8 +543,10 @@ async function attemptForToken(header: string | undefined) {
  * enforced nowhere, so a twenty-minute quiz took answers for the six hours
  * the token lasts; a closed exam (which could not be closed at all until
  * `POST /evaluations/:id/close` existed) kept taking them until the share
- * code expired a week later. Handing in stays allowed after both — what the
- * student wrote in time is theirs to submit — only new answers are refused.
+ * code expired a week later. Handing in stays allowed after the clock runs
+ * out — what the student wrote in time is theirs to submit — only new answers
+ * are refused. Closing goes further: it hands every open sitting in itself
+ * (`handInOpenSittings`), so after a close there is nothing left to submit.
  */
 async function writeGate(attempt: { evaluationId: string; startedAt: Date | null }) {
   const [evaluation] = await db

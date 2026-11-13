@@ -278,8 +278,9 @@ export async function handInAttempt(
   });
   if (!handedIn) return { handedIn: false };
   try {
-    await gradeSubmission({ ...attempt, submittedAt: now });
-    return { handedIn: true };
+    const graded = await gradeSubmission({ ...attempt, submittedAt: now });
+    // No snapshot or no level scale: handed in, but nothing was marked.
+    return graded.ok ? { handedIn: true } : { handedIn: true, gradingError: new Error(graded.error) };
   } catch (err) {
     return { handedIn: true, gradingError: err };
   }
@@ -293,13 +294,20 @@ export async function handInAttempt(
  * «قيد الحل» and the mastery gate never counted it.
  *
  * A `teacher_entry` paper is the teacher's own, still being typed in; it is
- * left alone. Returns how many papers this call handed in, and the ids whose
- * grading failed (handed in all the same).
+ * left alone. Returns how many papers this call handed in, the ids whose
+ * grading failed (handed in all the same), and the ids that could not be
+ * handed in at all. One paper failing never stops the rest: the exam is
+ * already closed when this runs, and a close cannot be repeated, so a throw
+ * here would leave every paper after it open for good.
  */
 export async function handInOpenSittings(
   evaluationId: string,
   now: Date = new Date(),
-): Promise<{ handedIn: number; gradingFailed: { attemptId: string; err: unknown }[] }> {
+): Promise<{
+  handedIn: number;
+  gradingFailed: { attemptId: string; err: unknown }[];
+  handInFailed: { attemptId: string; err: unknown }[];
+}> {
   const open = await db
     .select()
     .from(attempts)
@@ -312,11 +320,18 @@ export async function handInOpenSittings(
     );
   let handedIn = 0;
   const gradingFailed: { attemptId: string; err: unknown }[] = [];
+  const handInFailed: { attemptId: string; err: unknown }[] = [];
   for (const attempt of open) {
-    const outcome = await handInAttempt(attempt, now);
+    let outcome: Awaited<ReturnType<typeof handInAttempt>>;
+    try {
+      outcome = await handInAttempt(attempt, now);
+    } catch (err) {
+      handInFailed.push({ attemptId: attempt.id, err });
+      continue;
+    }
     if (!outcome.handedIn) continue;
     handedIn += 1;
     if (outcome.gradingError) gradingFailed.push({ attemptId: attempt.id, err: outcome.gradingError });
   }
-  return { handedIn, gradingFailed };
+  return { handedIn, gradingFailed, handInFailed };
 }

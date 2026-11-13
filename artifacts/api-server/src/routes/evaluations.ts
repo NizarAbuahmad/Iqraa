@@ -1978,9 +1978,20 @@ router.post("/evaluations/:id/close", async (req: AuthenticatedRequest, res) => 
     // Closed first, so no new answer can land; then what each student wrote is
     // handed in and graded. Awaited before answering: work after `res.json`
     // may never run on Cloud Run (CLAUDE.md, «Work after `res.json`…»).
-    const { handedIn, gradingFailed } = await handInOpenSittings(evaluation.id);
-    for (const f of gradingFailed) {
-      logger.error({ err: f.err, attemptId: f.attemptId }, "grading on close failed");
+    // The exam is closed whatever happens next, and a close cannot be
+    // repeated, so a hand-in failure is logged and never turns this into a 500.
+    let handedIn = 0;
+    try {
+      const outcome = await handInOpenSittings(evaluation.id);
+      handedIn = outcome.handedIn;
+      for (const f of outcome.handInFailed) {
+        logger.error({ err: f.err, attemptId: f.attemptId }, "hand-in on close failed");
+      }
+      for (const f of outcome.gradingFailed) {
+        logger.error({ err: f.err, attemptId: f.attemptId }, "grading on close failed");
+      }
+    } catch (err) {
+      logger.error({ err, evaluationId: evaluation.id }, "hand-in on close failed");
     }
     res.json({ evaluation: updated, handedIn });
   } catch (err) {
