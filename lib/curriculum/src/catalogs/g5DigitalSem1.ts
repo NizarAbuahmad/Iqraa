@@ -13,7 +13,10 @@
  * prints them (pages 4-6 of the 147-page PDF).
  *
  * Mostly title-only: the structure comes from the activity book's table of
- * contents, and `vocabulary` is empty throughout, same as g6DigitalSem1.
+ * contents. `vocabulary` (since 2026-11-13) is filled for one lesson only,
+ * u2_l4: four terms from the book's single terms box, «مصطلحات يجب أن
+ * أعرفها» (pp. 33-34). Its fifth entry, Google Slides, is left out because the
+ * extraction garbles its Arabic name. No other task prints a terms box.
  * `objectives` (since 2026-11-13) holds 14 statements in 11 of
  * the 26 lessons, read from the activity book's text: items of each block's
  * «نتاجات التعلم» list (pp. 7, 27, 43, 87, 99, 109) given to a task only where
