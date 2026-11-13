@@ -7,7 +7,7 @@
     "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
     "semester_covered": 1,
     "schema_version": "1.0",
-    "provenance_note": "نُقلت الوحدتان ودروسُهما الأربعةُ من كتاب الطالب (sourceId: g9-earth-science-s1-student-book) في 2026-09-08. الوحدةُ من صفحةِ افتتاحِها (ص 7 و37)، والدرسُ من صفحةِ افتتاحِه (ص 10 و25 و40 و47). عناوينُ الدروسِ الإنجليزيةُ منقولةٌ عنِ الكتابِ لا مترجَمةٌ.",
+    "provenance_note": "نُقلت الوحدتان ودروسُهما الأربعةُ من كتاب الطالب (sourceId: g9-earth-science-s1-student-book) في 2026-09-08. الوحدةُ من صفحةِ افتتاحِها (ص 7 و37)، والدرسُ من صفحةِ افتتاحِه (ص 10 و25 و40 و47). «الفكرةُ العامّةُ» للوحدةِ (general_idea_ar) منقولةٌ من الصفحةِ التي تلي صفحةَ الافتتاحِ (ص 8 و38) حيثُ يطبعُها الكتابُ بهذا العنوانِ، لا من فقرةِ «أتأمّلُ الصورةَ» على صفحةِ الافتتاحِ. عناوينُ الدروسِ الإنجليزيةُ منقولةٌ عنِ الكتابِ لا مترجَمةٌ.",
     "source_books": {
       "student_book": "كتاب الطالب - علوم الأرض - الصف التاسع - الفصل الدراسي الأول - المركز الوطني لتطوير المناهج والتقويم (sourceId: g9-earth-science-s1-student-book، 64 صفحة)"
     },
@@ -23,7 +23,7 @@
       "number": 1,
       "title_ar": "المعادنُ",
       "title_en": "Minerals",
-      "general_idea_ar": "تتكوَّنُ صخورُ القشرةِ الأرضيةِ منَ المعادنِ، التي تمتازُ بخصائصَ فيزيائيةٍ وكيميائيةٍ متعددةٍ.",
+      "general_idea_ar": "تُصنَّفُ المعادنُ بناءً على خصائصِها الفيزيائيةِ والكيميائيةِ، وللمعادنِ أهميةٌ كبيرةٌ في حياتِنا.",
       "total_periods": null,
       "data_tier": "lesson-level (student book only: main idea, learning outcomes and bilingual vocabulary printed per lesson opener; no teacher guide on disk for this semester, so no periods)",
       "prior_knowledge": [],
@@ -52,7 +52,9 @@
             { "ar": "الحكاكةُ", "en": "Streak" },
             { "ar": "البريقُ", "en": "Luster" },
             { "ar": "الانفصامُ", "en": "Cleavage" },
-            { "ar": "المَكسِرُ", "en": "Fracture" }
+            { "ar": "المَكسِرُ", "en": "Fracture" },
+            { "ar": "القساوةُ", "en": "Hardness" },
+            { "ar": "مقياسُ موس", "en": "Mohs Scale" }
           ]
         },
         {
@@ -86,7 +88,7 @@
       "number": 2,
       "title_ar": "المياهُ",
       "title_en": "Water",
-      "general_idea_ar": "المياهُ سرُّ الحياةِ على سطحِ الأرضِ، وتُعدُّ مياهُ الأمطارِ المصدرَ الرئيسَ للمياهِ العذبةِ. فما الرحلةُ التي تسلكُها مياهُ الأمطارِ منذُ لحظةِ هطولِها على سطحِ الأرضِ، حتى تُشكِّلَ البحيراتِ والأنهارَ والمياهَ الجوفيةَ؟",
+      "general_idea_ar": "مياهُ الأمطارِ هيَ المصدرُ الرئيسُ للمياهِ العذبةِ في كوكبِ الأرضِ.",
       "total_periods": null,
       "data_tier": "lesson-level (student book only: main idea, learning outcomes and bilingual vocabulary printed per lesson opener; no teacher guide on disk for this semester, so no periods)",
       "prior_knowledge": [],
