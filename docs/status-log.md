@@ -82,6 +82,55 @@ the book's tables) and the catalog objectives, not line by line. No ambiguous-ca
 non-special angles (the book's calculator questions), no graphs drawn. No «ما الجديد» entry: offline
 question content, no new screen or tool. Generated items carry no `check` and are never `verified`.
 
+## Grade 9 figures: unit-opening pages and the pages between English units — 2026-11-13
+
+A pass over grade 9 after «Grade 9 checked against its books, and corrected» (same day), for the two figure faults
+the grade 8 review found. That review's check (every figure inside its lesson's pages) cannot see either fault,
+because each starts with the lesson's page range being wrong.
+
+**What changed.**
+- **Unit-opening pages** (the figure extractor gives them to the last lesson of the unit before). Each was checked
+  by opening it and, where the book has text, reading the page:
+  - chemistry S1 `p035` (pH scale): from u1_l2 to u2_l1, acids and bases
+  - physics S1 `p065` (climbing stairs against a clock): to u3_l1, work and power
+  - geography S1 `p030` (ocean globe, two pages before the hydrosphere unit starts): to u2_l1
+  
+  The other 27 candidates are end-of-unit reviews, tests and projects, or English lesson pages. Those stay with
+  their unit.
+- **English pages between units, grade 9.** The books print two Life Skills pages after units 2 and 4 (S1) or 1
+  and 3 (S2), and Culture Spot, a reader and a project at the back. The photo extractor filed those photos under
+  the writing lesson before them, and that lesson's «صفحة الكتاب» ran into them.
+  - 6 photos now sit under no lesson: the Life Skills pages, plus the S1/S2 back matter.
+  - S2 `p028` (scientists, "Switch on") is on that unit's opening page. It moves to the unit's first lesson, with a
+    new hand-checked map row.
+  - 7 writing-lesson ranges trimmed to the lesson's own pages; every page was read from the book text. The two
+    last ones end at page 59, not 76 and 77.
+- **Grade 8 English: left as «Grade 8 audit…» (#1441) has it.** This PR first did the same for grade 8 (6 Life
+  Skills photos; the opening photos S1 `p016` and S2 `p028`–`p028d`; 6 ranges). #1441 landed first with the same
+  calls, and it drops those photos rather than unfiling them. Its files are kept as they are, and the two map rows
+  both PRs added are kept once. The tests here still pin grade 8's outcome.
+- **Grade 10 English** (same series, same layout):
+  - S1 `p026-v2`, `p027-v2`, `p048` and `p049` (Life Skills) and `p060-v2` (Culture Spot) now sit under no lesson.
+  - S2 `p038-v2`, `p038b` and `p038c` (Life Skills) and `p062` and `p063` (Culture Spot) now sit under no lesson.
+  - Six writing-lesson ranges are trimmed. S1 u5_l7 and S2 u10_l7 had run to page 77.
+  - No opening-page photo was misfiled.
+- **Grade 7 English** (Jordan Team Together, a different series with no Life Skills pages) needed no change of
+  this kind. Two S2 map rows point at u6_l7 and u7_l7, lessons the catalog does not carry, and the two photos
+  they should carry (`p027`, English in Action; `p043`, Literacy: Writing) are shown nowhere. They are **left as
+  the grade 7 audit left them**, on purpose: neither PNG is in `iqraa-public`, and `upload-figures-r2` uploads only
+  keys already in `bookFigureAssets.ts`. The order that works is: map them on a branch, run the upload from that
+  branch, then merge.
+
+**Verified.** Red/green on two new blocks in `bookFigures.test.ts`: English pages between units for grades 8–10
+(3 cases), and grade 9 opening pages (3 cases). Also run: `pnpm run typecheck`; the mobile suite; curriculum
+test and `verify`. The generated figure list only loses keys, so nothing new needs uploading to `iqraa-public`.
+
+**Not verified / open.** The geography page has no text in the repo; it was judged from the image and its place
+two pages before the unit. **Grade 8's `p076` (merged in #1433) has the upload problem described above**: it
+is mapped and listed but not yet uploaded, so its lesson shows a broken image until `upload-figures-r2` runs.
+Not looked at in the running app. The extractors are unchanged, so re-running them would bring these back.
+Everything the grade 9 review lists as needing the PDFs still does.
+
 ## Grade 3 review: Arabic S2 pages one lesson early, maths pages from their own lesson, calendar grammar — 2026-11-13
 
 The same review as Grades 1 and 2 (below), for Grade 3's 15 books and 254 lessons.
