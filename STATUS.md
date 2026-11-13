@@ -73,6 +73,7 @@ Checked 2026-10-22:
 ## Open
 
 - 2026-11-13 — Grade 9 checked against its books and corrected; what is left needs the PDFs (nccd.gov.jo does not answer from cloud sessions): figures for 16 books, book pages for art / vocational / history S2, two missing download links, and a page check of the 11 books with no extracted text («Grade 9 checked against its books, and corrected» in the log)
+- 2026-11-13 — Grade 10 audit: book pages and figures corrected against the page images; maths unit 1 follows an older edition than the book served (owner's call); still to render from the PDFs: history S2, geography S2 (7), biology S1 u1_l1, four opening labs, arts («Grade 10 audit…» in the log)
 - 2026-11-13 — Grade 9 audit: book pages and figures corrected against the page images; still to render from the PDFs: Arabic S2 u8_l5/u9_l1/u10_l5, three English S2 lessons' first pages, PE S2 u7_l4, history S2 units 4–5 («Grade 9 audit…» in the log)
 - 2026-11-13 — Grade 8 audit: no quotable extracted text, so live generation is ungrounded for all 358 lessons (needs the PDFs); 49 lessons still lack book pages (PE, maths S2, Arabic S2, social); four maths lessons have no offline questions («Grade 8 audit…» in the log)
 - 2026-11-13 — Grade 7 audit: Grade 7 has no extracted book text, so live generation is ungrounded for all 397 lessons (needs the PDFs); 24 creative-arts and social lessons still lack book pages; the English S2 figures p027/p043 wait for an upload and remap («Grade 7 audit…» in the log)
