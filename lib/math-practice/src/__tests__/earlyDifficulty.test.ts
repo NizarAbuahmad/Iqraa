@@ -1,15 +1,15 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { firstGradeLoad, pickByDifficulty } from '../firstGradeDifficulty.ts';
+import { difficultyLoad, pickByDifficulty } from '../earlyDifficulty.ts';
 import { makeTopicItem, topicFor } from '../topics.ts';
 
 const d = (ar: string, answer: string) => ({ ar, answer });
 
-describe('Grade 1 difficulty', () => {
+describe('grades 1–4 difficulty', () => {
   it('weighs the largest number (a ★ row by its length), then the words', () => {
-    assert.ok(firstGradeLoad(d('3 + 4 = ؟', '7')) < firstGradeLoad(d('9 + 8 = ؟', '17')));
-    assert.equal(firstGradeLoad(d('كم نجمة: ★ ★ ★ ★ ★؟', '5')), 500 + 2, 'five stars, two words');
-    assert.ok(firstGradeLoad(d('ما عكس فوق؟', 'تحت')) < firstGradeLoad(d('إذا كانت القطة فوق الطاولة، فإن الطاولة ___ القطة.', 'تحت')));
+    assert.ok(difficultyLoad(d('3 + 4 = ؟', '7')) < difficultyLoad(d('9 + 8 = ؟', '17')));
+    assert.equal(difficultyLoad(d('كم نجمة: ★ ★ ★ ★ ★؟', '5')), 500 + 2, 'five stars, two words');
+    assert.ok(difficultyLoad(d('ما عكس فوق؟', 'تحت')) < difficultyLoad(d('إذا كانت القطة فوق الطاولة، فإن الطاولة ___ القطة.', 'تحت')));
   });
 
   it('easy takes from the lightest third, hard from the heaviest', () => {
@@ -23,16 +23,17 @@ describe('Grade 1 difficulty', () => {
     }
   });
 
-  it('only Grade 1 is chosen by difficulty: a Grade 2 item of the same generator is drawn as before', () => {
+  it('grades 1–4 choose by difficulty; grade 5 draws as before', () => {
     const topic = topicFor('العدد المفقود', 1)!;
-    const rng = () => 0.42;
-    // A fixed rng makes every draw identical, so Grade 1 and Grade 2 agree here; what differs is how many draws.
     let calls = 0;
     const counted = { ...topic, make: (c: Parameters<typeof topic.make>[0]) => { calls++; return topic.make(c); } };
-    makeTopicItem(counted, 2, 'hard', new Set(), rng);
-    const g2 = calls; calls = 0;
-    makeTopicItem(counted, 1, 'hard', new Set(), Math.random);
-    assert.equal(g2, 1, 'grade 2 stops at its first unserved kind');
-    assert.ok(calls >= 15, `grade 1 drew ${calls}`);
+    // A constant rng makes every draw the same unserved kind, so grade 5 stops at its first.
+    makeTopicItem(counted, 5, 'hard', new Set(), () => 0.42);
+    assert.equal(calls, 1, 'grade 5 stops at its first unserved kind');
+    for (const g of [1, 2, 3, 4]) {
+      calls = 0;
+      makeTopicItem(counted, g, 'hard', new Set(), Math.random);
+      assert.ok(calls >= 15, `grade ${g} drew ${calls}`);
+    }
   });
 });

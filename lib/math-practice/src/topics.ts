@@ -20,7 +20,7 @@ import { STATS_TOPICS } from './stats.ts';
 import { PROPORTION_TOPICS } from './proportion.ts';
 import { EARLY_TOPICS } from './early.ts';
 import { FRESH_DRAWS, servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
-import { FIRST_GRADE_CHOICE, FIRST_GRADE_DRAWS, pickByDifficulty } from './firstGradeDifficulty.ts';
+import { EARLY_CHOICE, EARLY_DRAWS, choosesByDifficulty, pickByDifficulty } from './earlyDifficulty.ts';
 import {
   gcd, int, lcm, mixed, nz, numWrongs, numerator, paren, pick, sfrac, signed, sup, tier, valueOf, wrongsFrom,
   type Ctx, type Draft, type Rng, type Topic,
@@ -2022,10 +2022,10 @@ export function topicFor(title: string, grade: number): Topic | null {
  * avoids the last one (`quizRegenerateStems.test.ts`). A generator makes new
  * numbers on every draw, so nothing is lost here.
  *
- * Grade 1 draws more and chooses by difficulty among the least-served kinds
- * (`pickByDifficulty`): its generators take their numbers from the lesson's
- * range and, but for a few, ignored `diff`, so an easy and a hard paper drew
- * the same questions (Grade 1 sweep, 2026-11-13).
+ * Grades 1–4 draw more and choose by difficulty among the least-served kinds
+ * (`pickByDifficulty`, `earlyDifficulty.ts`): their generators take their
+ * numbers from the lesson's range and mostly ignored `diff`, so an easy and a
+ * hard paper drew the same questions (Grade 1–4 sweep, 2026-11-13).
  */
 export function makeTopicItem(topic: Topic, grade: number, diff: DiffTier, used: Set<string>, rng: Rng = Math.random, opts: { word?: boolean } = {}): ConcreteItem {
   const served = servedFrames(used);
@@ -2033,13 +2033,13 @@ export function makeTopicItem(topic: Topic, grade: number, diff: DiffTier, used:
   let best: Draft | null = null;
   let bestServed = Infinity;
   let fresh = 0;
-  const byDifficulty = grade === 1;
-  /** Grade 1: every fresh draw of the least-served kinds, to choose among. */
+  const byDifficulty = choosesByDifficulty(grade);
+  /** Grades 1–4: every fresh draw of the least-served kinds, to choose among. */
   let least: Draft[] = [];
-  const draws = byDifficulty ? FIRST_GRADE_DRAWS : FRESH_DRAWS;
-  // Grade 1 goes on drawing until the least-served kinds offer a choice of
-  // `FIRST_GRADE_CHOICE`, so a later item of a paper is chosen by difficulty too.
-  const enough = () => fresh >= draws && (!byDifficulty || least.length >= FIRST_GRADE_CHOICE);
+  const draws = byDifficulty ? EARLY_DRAWS : FRESH_DRAWS;
+  // Grades 1–4 go on drawing until the least-served kinds offer a choice of
+  // `EARLY_CHOICE`, so a later item of a paper is chosen by difficulty too.
+  const enough = () => fresh >= draws && (!byDifficulty || least.length >= EARLY_CHOICE);
   for (let attempt = 0; attempt < 6 * draws && !enough(); attempt++) {
     d = topic.make({ rng, diff, grade, ...(opts.word ? { word: true } : {}) });
     if (used.has(`stem:${d.ar}`)) continue;

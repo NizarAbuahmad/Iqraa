@@ -156,19 +156,22 @@ maths questions were checked by hand by a sub-agent and re-checked by script: **
     - the evaluation prompt describes each of the paper's types for a six-year-old (`firstGradeTypeNotesEn`):
       three options of a letter, word, number or ★ group; one letter, word or number in a blank; a task done with
       objects while the teacher watches.
-11. **Grade 1 maths difficulty works.** The Grade 1 generators take their numbers from the lesson's range and nearly
+11. **Maths difficulty works in grades 1–4 (offline), and for Grade 1 live.** The Grade 1 generators take their numbers from the lesson's range and nearly
     all ignored `diff`: measured on first questions, 50 of the 64 lessons drew the same largest numbers at easy and
     at hard, and the other 14 differed by chance.
-    - **Offline** (`lib/math-practice/src/firstGradeDifficulty.ts`): both item paths (`makeTopicItem`,
-      `makeElementaryItem`) now draw at least 15 questions for a Grade 1 item. Among those of the kinds the paper
+    - **Offline** (`lib/math-practice/src/earlyDifficulty.ts`): both item paths (`makeTopicItem`,
+      `makeElementaryItem`) now draw at least 15 questions for a grade 1–4 item. Among those of the kinds the paper
       has served least (at least six), they keep one by `firstGradeLoad`, which weighs the largest number (a ★ row
       by its length) and then the words to read: easy keeps one from the lightest third, hard from the heaviest,
       medium from the middle.
-    - The spread over kinds is unchanged. The lesson's range is never left (hard is the top of it), and other
-      grades draw as before.
+    - The spread over kinds is unchanged. The lesson's range is never left (hard is the top of it), and grade 5
+      and up draw as before.
     - Measured over whole five-question papers: 53 of 64 lessons are at least 1.25× heavier at hard, with medium
       between them; none is harder at easy (`g1MathDifficulty.test.ts`). The rest have no harder version: the
       parts of 10, half past, a shape's sides, solids, the days, the lessons on 4–5 and 9–10.
+    - Grades 2–4 used the same generators and mostly ignored difficulty too. Over whole papers, before → after,
+      lessons clearly harder at hard: Grade 2 15 → 54 of 57, Grade 3 25 → 65 of 66, Grade 4 34 → 48 of 48. Lessons
+      harder at easy: 8 → 0. Pinned per grade in `earlyMathDifficulty.test.ts`.
     - **Live:** a Grade 1 quiz, worksheet or evaluation gets Grade 1 level meanings (`FIRST_GRADE_DIFFICULTY_*` in
       `firstGrade.ts`): one step within the lesson's range, with hard being the largest numbers, a missing number,
       a short story or a comparison. The all-grades meanings had asked for "two or three steps" and "analysis".
@@ -179,8 +182,8 @@ the session) — after merge, generate one Grade 1 Arabic letter plan, worksheet
 stems by a native reviewer.
 
 **Still open, found by the sweep:**
-- A live model's Grade 1 output for the item 9–11 prompts has not been read. Grades 2–4 share `early.ts` and
-  still mostly ignore difficulty. An older Grade 1 evaluation's stored types are narrowed when it is
+- A live model's Grade 1 output for the item 9–11 prompts has not been read. Live grades 2–4 keep the all-grades
+  level meanings (medium: "two or three steps", hard: "analysis"). An older Grade 1 evaluation's stored types are narrowed when it is
   generated, not rewritten in the database.
 - **Maths, still to check against the PDF:** the book's own number-chart direction (the generator no longer depends
   on it) and whether «الأنماط الهندسية» uses «معين».

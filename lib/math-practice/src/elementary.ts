@@ -13,7 +13,7 @@
  */
 import type { ConcreteItem, DiffTier } from './index.ts';
 import { FRESH_DRAWS, servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
-import { FIRST_GRADE_CHOICE, FIRST_GRADE_DRAWS, pickByDifficulty } from './firstGradeDifficulty.ts';
+import { EARLY_CHOICE, EARLY_DRAWS, choosesByDifficulty, pickByDifficulty } from './earlyDifficulty.ts';
 
 export type ElementaryOp =
   | 'add' | 'sub' | 'mul' | 'div' | 'compare' | 'place'
@@ -1274,11 +1274,11 @@ export function makeElementaryItem(
   let best: ConcreteItem | null = null;
   let bestScore = Infinity;
   let fresh = 0;
-  // Grade 1 chooses by difficulty among the least-served kinds (`firstGradeDifficulty.ts`).
-  const byDifficulty = g === 1;
+  // Grades 1–4 choose by difficulty among the least-served kinds (`earlyDifficulty.ts`).
+  const byDifficulty = choosesByDifficulty(g);
   let least: ConcreteItem[] = [];
-  const draws = byDifficulty ? FIRST_GRADE_DRAWS : FRESH_DRAWS;
-  const enough = () => fresh >= draws && (!byDifficulty || least.length >= FIRST_GRADE_CHOICE);
+  const draws = byDifficulty ? EARLY_DRAWS : FRESH_DRAWS;
+  const enough = () => fresh >= draws && (!byDifficulty || least.length >= EARLY_CHOICE);
   for (let attempt = 0; attempt < 6 * draws && !enough(); attempt++) {
     const op = pool[int(rng, 0, pool.length - 1)]!;
     // The id's last digit decides a true/false item's claim (see
