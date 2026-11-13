@@ -48,38 +48,6 @@
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": null
-    },
-    {
-      "file": "p056.png",
-      "sourceId": "g7-english-s2-student-book",
-      "pdfPage": 56,
-      "rect": [
-        59.1,
-        253.9,
-        566.7,
-        586.1
-      ],
-      "unit": 4,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
-      "file": "p059.png",
-      "sourceId": "g7-english-s2-student-book",
-      "pdfPage": 59,
-      "rect": [
-        14.0,
-        151.5,
-        623.4,
-        572.0
-      ],
-      "unit": 4,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
     }
   ]
 }
