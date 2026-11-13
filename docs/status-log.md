@@ -10,6 +10,29 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 4 maths figures: 85 crops on 37 lessons, cut from the page renders — 2026-11-13
+
+Grade 4 maths had no figure crops at all, so its slides and lesson screens showed no number lines, protractors,
+symmetry axes, fraction strips, decimal grids, bar graphs or Venn diagrams. No PDF is reachable from a cloud session
+(nccd.gov.jo resets; `iqraa-media` refuses this environment's key), so the crops were cut from the 208 page renders
+already in `iqraa-public/book-pages/` (1400 px, our copy of each book) instead of from the PDF with
+`extract_book_figures.py`.
+
+**How.** Every lesson page was looked at on a 5% grid and each teaching picture boxed by hand (the box is then tightened
+to its drawn content against the box's own background, and a thin strip of ink separated by whitespace at an edge is
+dropped). Each crop was reviewed on a contact sheet; 20 boxes were adjusted and one (S2 p. 63, a ×3 pattern whose
+crop kept a sliver of the «أتحقق من فهمي» heading) dropped. Lesson = the lesson whose start page comes last before the
+crop's page, from the start-page tables the Grade 4 review checked against both books (concept-activity pages 8, 13,
+22, 32, 37, 51 belong to the lesson they introduce). Unit and lesson numbers are the catalog's, which the review found
+equal to the book's. `rect` is in PDF points scaled from the render (595.3 × 793.7). New: `knowledge-base/grade-4-math/
+figures/g4-math-s{1,2}-student-book/` (30 + 55 PNGs and `index.json`), 37 rows in `figure-lesson-map.json`,
+`bookFigures.ts` and `gen_book_figure_assets.mjs` list the two indexes, and `bookFigures.test.ts` knows the `g4-math`
+source prefix. The 85 PNGs were uploaded to `iqraa-public/figures/` (keys only added) and answer 200.
+
+**Not covered.** S1 unit 2-3 multiplication and division pages and S2 unit 8's equations lesson are worked layouts and
+tables with no picture worth a crop; units' opener art and unit tests were skipped on purpose. Crops from a 1400 px
+render are softer than PDF crops; re-cutting them from the PDF with the same boxes is possible when one is at hand.
+
 ## Grade 4 review: every book's lessons are in; retrieval finds a lesson's own pages; figures and page links on the wrong lesson removed — 2026-11-13
 
 Asked: review the Grade 4 subjects — are all the books' topics in, do generators get the right material, are the

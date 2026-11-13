@@ -124,6 +124,8 @@ describe('figuresForLesson', () => {
       'g3-science': 'g3-science',
       'g3-social': 'g3-social',
       'g4-arts': 'g4-arts',
+      // Grade 4 maths, cropped 2026-11-13 from the book-page renders.
+      'g4-math': 'g4-math',
       'g4-science': 'g4-science',
       'g4-social': 'g4-social',
       'g4-voc': 'g4-voc',
