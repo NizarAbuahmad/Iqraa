@@ -156,7 +156,7 @@ const specialEq = T('special_eq', /^حل معادلات خاصه$/, [10, 10], ({
     // quadratic form: x⁴ − (a² + b²)x² + a²b² = 0, or x⁶ − (a³ + b³)x³ + a³b³ = 0
     if (t === 2 && rng() < 0.5) {
       const a = int(rng, 1, 2);
-      const b = a + int(rng, 1, 3 - a === 0 ? 1 : 3 - a);
+      const b = a + int(rng, 1, 3 - a);
       const f = poly([1, 0, 0, -(a ** 3 + b ** 3), 0, 0, (a * b) ** 3]);
       const answer = roots([a, b]);
       return {
@@ -225,27 +225,22 @@ function degreesWhere(fn: TrigName, v: number): number[] {
   return out;
 }
 
-/** Sign of `fn` strictly inside a run of whole degrees, as the intervals the book writes. */
+/** Where `fn` is strictly positive (or negative) on [0°, 360°], as the intervals a book writes: «0° ≤ x < 90° ∪ 270° < x ≤ 360°». */
 function signIntervals(fn: TrigName, positive: boolean): string {
-  const runs: Array<[number, number]> = [];
-  let start: number | null = null;
   const ok = (d: number) => {
-    if (fn === 'tan' && (d === 90 || d === 270)) return false;
+    if (d < 0 || d > 360 || (fn === 'tan' && (d === 90 || d === 270))) return false;
     const v = trigFn[fn](d * RAD);
     return positive ? v > 1e-9 : v < -1e-9;
   };
+  const runs: Array<[number, number]> = [];
+  let start: number | null = null;
   for (let d = 0; d <= 361; d++) {
-    const good = d <= 360 && ok(d);
-    if (good && start === null) start = d;
-    if (!good && start !== null) { runs.push([start, d - 1]); start = null; }
+    if (ok(d) && start === null) start = d;
+    if (!ok(d) && start !== null) { runs.push([start, d - 1]); start = null; }
   }
-  // an interval is open where the function is 0 (or undefined) and closed at the ends of the domain only when it is non-zero there
+  // a run of whole degrees a..b is the open interval (a − 1, b + 1), closed only where the domain itself ends
   return runs
-    .map(([a, b]) => {
-      const lo = a === 0 ? '0° ≤ x' : `${a - 1}° < x`;
-      const hi = b === 360 ? 'x ≤ 360°' : `x < ${b + 1}°`;
-      return `${lo} < ${hi.replace(/^x /, 'x ')}`.replace('x < x', 'x');
-    })
+    .map(([a, b]) => `${a === 0 ? '0° ≤ x' : `${a - 1}° < x`} ${b === 360 ? '≤ 360°' : `< ${b + 1}°`}`)
     .join(' ∪ ');
 }
 
@@ -264,7 +259,7 @@ const trigGraph = T('trig_graph', /^تمثيل الاقترانات المثلث
     const a = pick(rng, t === 0 ? [1, 2, 3] : [2, 3, 4, 5]);
     const neg = t > 0 && rng() < 0.4;
     const high = rng() < 0.5;
-    const fx = `${neg ? '−' : ''}${a === 1 ? '' : a}${fn} x`;
+    const fx = `${neg ? '−' : ''}${a === 1 ? '' : `${a} `}${fn} x`;
     // the greatest value of ±a·f is a and the least is −a, because f runs over [−1, 1]
     const best = high ? a : -a;
     const answer = signed(best);
@@ -442,7 +437,7 @@ const space3d = T('space_3d', /^حل مسائل ثلاثيه الابعاد$/, [
     const answer = deg1(theta);
     return {
       eq: `${a}, ${b}, ${c}`, answer,
-      wrongs: wr(answer, [deg1(90 - theta), deg1(Math.atan(c / D) / RAD), deg1(Math.asin(base / D) / RAD), deg1(Math.atan(c / (a + b)) / RAD), deg1(theta / 2)], j => deg1(theta + 5 * Math.abs(j))),
+      wrongs: wr(answer, [deg1(90 - theta), deg1(Math.atan(c / D) / RAD), deg1(Math.atan(c / Math.max(a, b)) / RAD), deg1(Math.atan(c / (a + b)) / RAD), deg1(Math.atan(c / Math.min(a, b)) / RAD)], j => deg1(theta + 5 * Math.abs(j))),
       ar: `متوازي مستطيلات قاعدته ${a} سم × ${b} سم، وارتفاعه ${c} سم. ما قياس الزاوية بين قطره وقاعدته؟ (لأقرب جزء من عشرة من الدرجة)`,
       en: `A cuboid has a base ${a} cm by ${b} cm and a height of ${c} cm. What is the angle between its space diagonal and its base? (to the nearest tenth of a degree)`,
     };
@@ -525,12 +520,11 @@ const polyFn = T('poly_fn', /^اقترانات كثيرات الحدود$/, [10,
     const x0 = pick(rng, t === 0 ? [1, 2, -1, 0] : [-3, -2, -1, 2, 3, 4]);
     const f = poly(coefs);
     const v = polyAt(coefs, x0);
-    const at = x0 < 0 ? `(${signed(x0)})` : String(x0);
     return {
       eq: `f(${signed(x0)})`, answer: signed(v),
       wrongs: wr(signed(v), [signed(polyAt(coefs, -x0)), signed(-v), signed(v + coefs[coefs.length - 1]!), signed(v + 1), signed(v - 1)], j => signed(v + j)),
-      ar: `إذا كان f(x) = ${f}، فما قيمة f${at}؟`,
-      en: `If f(x) = ${f}, what is f${at}?`,
+      ar: `إذا كان f(x) = ${f}، فما قيمة f(${signed(x0)})؟`,
+      en: `If f(x) = ${f}, what is f(${signed(x0)})?`,
     };
   }
 
@@ -562,7 +556,7 @@ const polyFn = T('poly_fn', /^اقترانات كثيرات الحدود$/, [10,
   const dropped = [1, b - p, c - p * b];
   return {
     eq: `(x ${p < 0 ? '+' : '−'} ${Math.abs(p)})(x² ${b < 0 ? '−' : '+'} ${Math.abs(b)}x ${c < 0 ? '−' : '+'} ${Math.abs(c)})`, answer,
-    wrongs: wr(answer, [poly(noCross), poly(signSlip), poly(dropped), poly([1, b + p, c + p * b, p * c])], j => poly([1, b - p + j, c - p * b, -p * c])),
+    wrongs: wr(answer, [poly(noCross), poly(signSlip), poly(dropped), poly([1, b - p, c + p * b, -p * c])], j => poly([1, b - p + j, c - p * b, -p * c])),
     ar: `أجد ناتج (x ${p < 0 ? '+' : '−'} ${Math.abs(p)})(x² ${b < 0 ? '−' : '+'} ${Math.abs(b)}x ${c < 0 ? '−' : '+'} ${Math.abs(c)}) بالصورة القياسية.`,
     en: `Find (x ${p < 0 ? '+' : '−'} ${Math.abs(p)})(x² ${b < 0 ? '−' : '+'} ${Math.abs(b)}x ${c < 0 ? '−' : '+'} ${Math.abs(c)}) in standard form.`,
   };
