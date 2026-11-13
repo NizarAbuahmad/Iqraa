@@ -2,22 +2,6 @@
   "sourceId": "g8-voc-s2-student-book",
   "figures": [
     {
-      "file": "p008.png",
-      "sourceId": "g8-voc-s2-student-book",
-      "pdfPage": 8,
-      "rect": [
-        0.0,
-        0.0,
-        595.3,
-        340.9
-      ],
-      "unit": 1,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 6
-    },
-    {
       "file": "p017.png",
       "sourceId": "g8-voc-s2-student-book",
       "pdfPage": 17,
@@ -32,22 +16,6 @@
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": 16
-    },
-    {
-      "file": "p027.png",
-      "sourceId": "g8-voc-s2-student-book",
-      "pdfPage": 27,
-      "rect": [
-        0.0,
-        0.0,
-        595.3,
-        661.5
-      ],
-      "unit": 3,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 26
     },
     {
       "file": "p028-v2.png",
@@ -114,22 +82,6 @@
       "lessonStartPage": 34
     },
     {
-      "file": "p044.png",
-      "sourceId": "g8-voc-s2-student-book",
-      "pdfPage": 44,
-      "rect": [
-        0.0,
-        0.0,
-        595.3,
-        338.7
-      ],
-      "unit": 4,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 42
-    },
-    {
       "file": "p050-v2.png",
       "sourceId": "g8-voc-s2-student-book",
       "pdfPage": 50,
@@ -162,22 +114,6 @@
       "lessonStartPage": 58
     },
     {
-      "file": "p058.png",
-      "sourceId": "g8-voc-s2-student-book",
-      "pdfPage": 58,
-      "rect": [
-        0.0,
-        0.0,
-        595.3,
-        314.7
-      ],
-      "unit": 5,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 58
-    },
-    {
       "file": "p061.png",
       "sourceId": "g8-voc-s2-student-book",
       "pdfPage": 61,
@@ -192,22 +128,6 @@
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": 58
-    },
-    {
-      "file": "p064-v2.png",
-      "sourceId": "g8-voc-s2-student-book",
-      "pdfPage": 64,
-      "rect": [
-        0.0,
-        0.0,
-        558.9,
-        385.4
-      ],
-      "unit": 5,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 64
     },
     {
       "file": "p065.png",
@@ -466,22 +386,6 @@
       "lessonStartPage": 92
     },
     {
-      "file": "p103.png",
-      "sourceId": "g8-voc-s2-student-book",
-      "pdfPage": 103,
-      "rect": [
-        0.0,
-        0.0,
-        595.3,
-        662.3
-      ],
-      "unit": 9,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 102
-    },
-    {
       "file": "p106-v2.png",
       "sourceId": "g8-voc-s2-student-book",
       "pdfPage": 106,
@@ -514,38 +418,6 @@
       "lessonStartPage": 102
     },
     {
-      "file": "p112b.png",
-      "sourceId": "g8-voc-s2-student-book",
-      "pdfPage": 112,
-      "rect": [
-        0.0,
-        425.0,
-        182.1,
-        661.5
-      ],
-      "unit": 10,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 112
-    },
-    {
-      "file": "p120.png",
-      "sourceId": "g8-voc-s2-student-book",
-      "pdfPage": 120,
-      "rect": [
-        0.0,
-        0.0,
-        595.3,
-        312.8
-      ],
-      "unit": 10,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 120
-    },
-    {
       "file": "p122-v2.png",
       "sourceId": "g8-voc-s2-student-book",
       "pdfPage": 122,
@@ -570,38 +442,6 @@
         0.0,
         207.7,
         211.8
-      ],
-      "unit": 10,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 120
-    },
-    {
-      "file": "p126b.png",
-      "sourceId": "g8-voc-s2-student-book",
-      "pdfPage": 126,
-      "rect": [
-        0.0,
-        0.0,
-        595.3,
-        235.6
-      ],
-      "unit": 10,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 120
-    },
-    {
-      "file": "p126c.png",
-      "sourceId": "g8-voc-s2-student-book",
-      "pdfPage": 126,
-      "rect": [
-        0.0,
-        425.6,
-        182.1,
-        661.5
       ],
       "unit": 10,
       "lesson": 2,
