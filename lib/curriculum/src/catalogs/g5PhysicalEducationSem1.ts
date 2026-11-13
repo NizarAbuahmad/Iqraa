@@ -4,9 +4,14 @@
  * lesson prints its own «الفِكْرَةُ الرَّئيسَةُ» box and bilingual «المَفاهيمُ
  * وَالمُصْطَلَحاتُ الأَساسِيَّةُ» glossary, both transcribed for all 15 lessons
  * across 4 units (football, badminton, rhythmic movement, general safety).
- * objectives are left empty — the printed «نَتاجاتُ التَّعَلُّمِ» box is a
- * first-person self-assessment rubric, not a curricular outcomes list; see
- * the JSON's known_gaps.
+ * objectives come from each lesson's printed «نَتاجاتُ التَّعَلُّمِ» box (one
+ * first-person statement per row, book wording and order; the box's
+ * عالية/متوسطة/منخفضة self-assessment columns are not carried), read from
+ * the extracted text `extracted/g5-pe-s1-student-book.json` and tied to each
+ * lesson by page (filled 2026-11-13; all 15 lessons, 54 statements). The
+ * football and badminton boxes end with an «أَعْرِفُ مُحْتَوى الْمادَّةِ…» row
+ * pointing at the page's «قانونُ اللُّعْبَةِ» box. See the JSON's known_gaps
+ * for what was cleaned.
  *
  * This subject's student books for BOTH semesters existed on disk but the
  * subject had never been declared for grade-5 in `SUBJECTS.grades` (only
