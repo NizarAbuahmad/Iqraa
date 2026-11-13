@@ -16,6 +16,7 @@ import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/Goo
 import { Input } from '@/components/ui/Input';
 import { AccountRow } from '@/components/ui/AccountRow';
 import { SuggestFeatureAuthLink } from '@/components/ui/SuggestFeatureAuthLink';
+import { SourcesAuthLink } from '@/components/ui/SourcesAuthLink';
 import { ApiError } from '@/services/apiClient';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { getLastGoogleEmail } from '@/services/savedAccounts';
@@ -345,6 +346,7 @@ export default function LoginScreen() {
         </Pressable>
 
         <SuggestFeatureAuthLink />
+        <SourcesAuthLink />
 
       </ScrollView>
     </View>
