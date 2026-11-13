@@ -87,6 +87,28 @@ maths questions were checked by hand by a sub-agent and re-checked by script: **
      (`formatItem`), and the offline worksheet's answer box follows the same rule.
    - Wording: «دفع منها … ثمنَ دفتر», «فأخذ», the homework line that said «ينسخ سطرًا» and «لا كتابة» at once; a grade
      sent as the number 1 is recognised.
+7. **Grade 1 maths content fixed against the book's own objectives** (each lesson's «أتعلّم اليوم» in the catalog;
+   `early.ts`, `early.test.ts`, `earlyG1Ops.test.ts`):
+   - «العدد صفر» (read and write zero): no sums or differences, which units 3–4 teach; it asks the number before 1
+     and zero in digits instead.
+   - Semester 1 within 20: the three-number grouping (`add_props_g1`) and «العدد المفقود» (`missing_number`, its
+     story included) stop at 20 (they reached 27 and 30).
+   - The fractions unit (equal parts, half, quarter, part of a set): no third anywhere; no «ما العدد الذي نصفه/ربعه…؟»
+     nor «Sami took half and had 4 — how many were there?» (both multiplication), which became «how many are left?»;
+     the cube train stays at 12 or fewer.
+   - «لوحة الأعداد» never says left or right — whether 1 sits at a row's left depends on how the book draws the
+     chart. It asks «1 more / 1 less» (the objective's own wording) and «count forward / back».
+   - «الوقت بالساعات الكاملة» reads the clock (hands, a digital clock read aloud, a time shown digitally) instead of
+     «played from 2:00 to 4:00 — how long?» and «the time after 3 hours»; the half-hour lesson's «half an hour
+     earlier» likewise.
+   - Shapes: Grade 1 has the triangle, square, rectangle and circle — no «الخماسي/السداسي المنتظم». «الأشكال
+     المستوية» names shapes («أي شكل يشبه باب الصف؟», the circle); counting sides and vertices is the next lesson's.
+   - Lessons that shared one bank ask their own thing now: «العشرات» (whole tens, reading them), «الآحاد والعشرات»,
+     «تمثيل الأعداد ضمن منزلتين» (tens rods and ones cubes); «القطع النقدية» (identify and add), «… المتساوية» (one
+     coin in smaller coins), «استعمال القطع النقدية» (buying, what is left).
+   - Wording: «من الأمام» in the ordinal line-up; «رقم الآحاد» for «كم آحادًا»; counts of 3 or more before «عشرات /
+     آحاد / قطع»; «10 قروش» not «10 قرشًا»; no «(الأسبوع يبدأ بالأحد)» beside «قبل يوم الأحد»; nearest-ten options
+     only from the stem's own list; no «(اكتب اسمه)» on choice items; «أي جمع مما يأتي ناتجه 10» lists the sums.
 
 **Verified.** Each new test red before its fix, green after. `pnpm run typecheck`; math-practice suite; api-server
 `build` + `test`; mobile suite. **Not verified:** a live model's Grade 1 output with the new clause (no live run from
@@ -97,11 +119,11 @@ stems by a native reviewer.
 - **Not Grade 1 aware yet:** a plan built from a teacher's uploaded file; a revision (unit/semester) activity; the
   live prompts for evaluations (`llmGenerator`), Prompt Slides and the lesson explanation (`lesson-teaching`, which
   slides use when live AI is on). The eight new maths generators ignore difficulty (as most of `early.ts` does).
-- **Maths, to check against the book:** thirds appear in «الأجزاء المتطابقة» and «الكسر كجزء من مجموعة» (the
-  unit teaches halves and quarters); «ما العدد الذي ربعه 5؟» is hidden multiplication; «لوحة الأعداد» keys assume 1
-  sits at the LEFT of each row; «0 + / − 0» items in «العدد صفر» come before units 3–4 teach the operations; sums to 23
-  in semester 1 (`add_props_g1`, `missing_number`). Grammar: «1 عشرات», «2 قطع», «10 قرشًا».
-- **Lessons sharing one bank:** u1_l1–l3, u5_l3–l5, u8_l2/l3, u10_l5–l7, u11 pairs get interchangeable questions.
+- **Maths, still to check against the PDF:** the book's own number-chart direction (the generator no longer depends
+  on it) and whether «الأنماط الهندسية» uses «معين».
+- **Lessons still sharing one bank:** u5_l3–l5 (tables and pictographs) and the u11 pairs (compare, then non-standard
+  units) — close topics, so it matters less. The six refused maths lessons (position, sorting ×2, two problem-solving
+  lessons, daily routines) still have no offline bank.
 - **Grade 1 books need ingesting** (text, figures, book pages) from a machine that can reach the PDFs —
   `docs/adding-a-book.md`.
 - Every live prompt reads «للصف ${grade}» with a grade name that already says «الصف», so it says «للصف الصف الأول»

@@ -165,3 +165,70 @@ describe('a word-problem slot in a Grade 1 operation lesson', () => {
     }
   });
 });
+
+/** Any generator by id, drawn at Grade 1. */
+const g1Draws = (id: string, n = 400) => draws(id, n);
+
+describe('Grade 1 maths fits the book (review, 2026-11-13)', () => {
+  it('semester 1 adds and subtracts within 20', () => {
+    for (const id of ['add_props_g1', 'missing_number']) {
+      for (const item of g1Draws(id)) {
+        const p = item.promptAr!;
+        for (const n of (p.match(/\d+/g) ?? []).map(Number)) assert.ok(n <= 20, `${id}: past 20: ${p}`);
+        assert.ok(Number(item.answer) <= 20, `${id}: ${p} → ${item.answer}`);
+      }
+    }
+  });
+
+  it('«العدد صفر» has no sums or differences — + and − come in units 3 and 4', () => {
+    for (const item of g1Draws('count_zero')) assert.doesNotMatch(item.promptAr!, /[+−]/, item.promptAr);
+  });
+
+  it('the fractions unit teaches the half and the quarter: no third, no hidden multiplication', () => {
+    for (const id of ['equal_parts', 'fraction_of_set_g1', 'half', 'quarter']) {
+      for (const item of g1Draws(id)) {
+        const t = `${item.promptAr} ${item.answer} ${item.wrongs.join(' ')}`;
+        assert.doesNotMatch(t, /ثلث/, `${id}: ${item.promptAr}`);
+        assert.doesNotMatch(item.promptAr!, /ما العدد الذي (نصفه|ربعه)|كم كرة كانت/, `${id}: ${item.promptAr}`);
+      }
+    }
+  });
+
+  it('the number chart never says left or right', () => {
+    for (const item of g1Draws('number_chart')) assert.doesNotMatch(item.promptAr!, /يمين|يسار/, item.promptAr);
+  });
+
+  it('whole hours are read off a clock, not counted as elapsed time', () => {
+    for (const item of g1Draws('hour_full')) assert.doesNotMatch(item.promptAr!, /كم ساعة|بعد \d|بعد ساع/, item.promptAr);
+  });
+
+  it('Grade 1 shapes are the triangle, square, rectangle and circle', () => {
+    for (const id of ['plane_shapes', 'plane_sides_g1']) {
+      for (const item of g1Draws(id)) assert.doesNotMatch(`${item.promptAr} ${item.answer} ${item.wrongs.join(' ')}`, /الخماسي|السداسي/, item.promptAr);
+    }
+  });
+
+  it('counted nouns read right: no «1 عشرات», «2 قطع», «10 قرشًا», «كم آحادًا»', () => {
+    for (const id of ['tens_ones_a', 'tens_ones_b', 'tens_ones_c', 'coins_a', 'coins_b', 'coins_c']) {
+      for (const item of g1Draws(id)) {
+        const p = item.promptAr!;
+        assert.doesNotMatch(p, /(^|\D)[12] (عشرات|آحاد|قطع|أعمدة|مكعبات)|(^|\D)([3-9]|10) قرشًا|كم آحادًا/, `${id}: ${p}`);
+      }
+    }
+  });
+
+  it('a lesson whose bank used to be shared now asks its own thing', () => {
+    const frames = (id: string) => new Set(g1Draws(id, 120).map(i => i.promptAr!.replace(/\d+/g, '#').replace(/«[^»]*»/g, '«»')));
+    for (const group of [['tens_ones_a', 'tens_ones_b', 'tens_ones_c'], ['coins_a', 'coins_b', 'coins_c'], ['plane_shapes', 'plane_sides_g1']]) {
+      const sets = group.map(frames);
+      for (let i = 0; i < sets.length; i++) for (let j = i + 1; j < sets.length; j++) {
+        const shared = [...sets[i]!].filter(f => sets[j]!.has(f)).length;
+        assert.ok(shared / Math.min(sets[i]!.size, sets[j]!.size) < 0.5, `${group[i]} and ${group[j]} share ${shared} frames`);
+      }
+    }
+  });
+
+  it('«using coins» is about buying', () => {
+    assert.ok(g1Draws('coins_c').some(i => /اشترى/.test(i.promptAr!)));
+  });
+});
