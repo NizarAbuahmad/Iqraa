@@ -143,6 +143,12 @@ export default function LabShelfScreen() {
 
   const subjectIds = labSubjectIds(LAB_ITEMS, gradeId);
   const subjectId = keepLabSubject(pickedSubject, subjectIds);
+  // A grade change resets a subject the new grade does not offer (spec §1), so a
+  // pick hidden under one grade cannot resurface under «كل الصفوف».
+  const pickGrade = (id: string | null) => {
+    setPickedGrade(id);
+    setSubjectId(keepLabSubject(subjectId, labSubjectIds(LAB_ITEMS, id)));
+  };
   const shown = filterLabItems({
     gradeId: gradeId ?? undefined,
     subjectId: subjectId ?? undefined,
@@ -163,9 +169,9 @@ export default function LabShelfScreen() {
     <CornerFrame title={t('labTitle')} subtitle={t('labIntro')}>
       {LAB_GRADE_IDS.length > 1 ? (
         <View style={[styles.chips, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Chip colors={colors} label={t('labAllGrades')} on={gradeId === null} onPress={() => setPickedGrade(null)} />
+          <Chip colors={colors} label={t('labAllGrades')} on={gradeId === null} onPress={() => pickGrade(null)} />
           {LAB_GRADE_IDS.map(id => (
-            <Chip colors={colors} key={id} label={gradeName(id)} on={gradeId === id} onPress={() => setPickedGrade(id)} />
+            <Chip colors={colors} key={id} label={gradeName(id)} on={gradeId === id} onPress={() => pickGrade(id)} />
           ))}
         </View>
       ) : null}
