@@ -4752,7 +4752,7 @@ export function resolveGroundedKbLesson(
   lang: 'ar' | 'en' = 'ar',
   scope?: KbScope,
 ): KBLesson | null {
-  const key = `${lang} ${scope?.gradeId ?? ''} ${scope?.subjectId ?? ''} ${query.trim()}`;
+  const key = `${lang}\u0000${scope?.gradeId ?? ''}\u0000${scope?.subjectId ?? ''}\u0000${query.trim()}`;
   if (groundedCache.has(key)) return groundedCache.get(key)!;
   const lesson = resolveGroundedKbLessonUncached(query, lang, scope);
   // ponytail: FIFO eviction, same ceiling as rankedCache.
