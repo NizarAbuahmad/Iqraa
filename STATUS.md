@@ -70,6 +70,7 @@ Checked 2026-10-22:
 
 ## Open
 
+- 2026-11-13 — Grade 9 checked against its books and corrected; what is left needs the PDFs (nccd.gov.jo does not answer from cloud sessions): figures for 16 books, book pages for art / vocational / history S2, two missing download links, and a page check of the 11 books with no extracted text («Grade 9 checked against its books, and corrected» in the log)
 - 2026-10-31 — Homework submissions record their author (migration `0022`)
 - 2026-10-31 — Homework project submission — teacher screens (phase 3: the switch, the handed-in list, one project, «حذف المشروع»; what is left open is the item «Homework projects: what the teacher's app still cannot do…» below)
 - 2026-10-31 — Teacher can clear one student's project (the API; the app's button is the teacher-screens entry above)
