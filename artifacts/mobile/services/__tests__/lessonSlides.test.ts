@@ -952,9 +952,9 @@ describe('usableTeaching', () => {
     assert.ok(t.workedExample);
   });
 
-  it('caps the explanation at five slides', () => {
-    const many = Array.from({ length: 8 }, (_, i) => ({ title: `فكرة ${i}`, points: ['سطر'] }));
-    assert.equal(usableTeaching({ concepts: many }).concepts.length, 5);
+  it('caps the explanation at eight slides', () => {
+    const many = Array.from({ length: 10 }, (_, i) => ({ title: `فكرة ${i}`, points: ['سطر'] }));
+    assert.equal(usableTeaching({ concepts: many }).concepts.length, 8);
   });
 
   it('treats garbage as nothing', () => {

@@ -1,12 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { getLessonById as getBrowserLessonById, getPickerGrades, getPickerSubjects } from '../curriculumData.ts';
-import { getLessonsForUnit, getUnitsForSubjectGrade } from '../knowledgeBase.ts';
+import { getLessonById, getLessonsForUnit, getUnitsForSubjectGrade } from '../knowledgeBase.ts';
 import {
   buildGeneratorContext,
   generatorLessonId,
   generatorUnitId,
+  keyTermsField,
   resolveGeneratorGrounding,
+  scienceKeyTerms,
 } from '../kbContext.ts';
 import { buildLessonTeachingRequest } from '../generatorRequests.ts';
 import { regenerationFields } from '../ai/regeneration.ts';
@@ -36,6 +38,10 @@ test('the builder sends exactly what Slides Maker used to build inline', () => {
       unitId: generatorUnitId(topic, 'ar'),
       lessonId: generatorLessonId(topic, 'ar'),
       contextSource: 'curriculum',
+      // Unscoped grounding can land a maths title on a physics lesson;
+      // keyTerms follows the grounded lesson, so the legacy body gains them
+      // exactly there and nowhere else.
+      ...keyTermsField(scienceKeyTerms(getLessonById(generatorLessonId(topic, 'ar') ?? ''), 'ar')),
     };
     const built = buildLessonTeachingRequest(
       { gradeName: grade.nameAr, subjectName: subject.name, topic, lang: 'ar' },
