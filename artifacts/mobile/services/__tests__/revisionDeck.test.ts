@@ -189,7 +189,8 @@ describe('buildRevisionDeck — a round per unit', () => {
     assert.equal(goals.sideImageUrl, 'https://figs.example/p009.png', 'the first figure (the opening experiment, p9) sits beside the key ideas');
     assert.match(goals.sideImageCaption ?? '', /صفحة/);
     const terms = deck.slides[at + 2]!;
-    assert.equal(terms.sideImageUrl, 'https://figs.example/p010.png', 'the second figure sits beside the terms');
+    // p011-v2 since the 2026-11-13 Grade 10 figure audit dropped p010 (its caption and panel texts were sliced).
+    assert.equal(terms.sideImageUrl, 'https://figs.example/p011-v2.png', 'the second figure sits beside the terms');
     assert.equal(terms.layout, undefined, 'a figure costs the cards: the terms stay a list beside it');
     // Mutation caught: the old standalone «من كتاب الطالب» slides, two back to back per unit.
     assert.equal(deck.slides.filter(s => s.type === 'media').length, 0);

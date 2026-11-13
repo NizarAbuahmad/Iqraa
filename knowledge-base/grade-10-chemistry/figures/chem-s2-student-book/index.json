@@ -66,22 +66,6 @@
    "lessonStartPage": 10
   },
   {
-   "file": "p013b-v2.png",
-   "sourceId": "chem-s2-student-book",
-   "pdfPage": 13,
-   "rect": [
-    309.0,
-    648.0,
-    384.0,
-    739.8
-   ],
-   "unit": 4,
-   "lesson": 1,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "ُالتفاعاتُ الكيميائية",
-   "lessonStartPage": 10
-  },
-  {
    "file": "p018-v2.png",
    "sourceId": "chem-s2-student-book",
    "pdfPage": 18,

@@ -219,11 +219,13 @@ describe('the three sciences carry figures', () => {
   // figure-lesson-map entry, an index.json that stopped being imported.
   const FLOOR: Record<string, number> = {
     'kbl-phys-s1-nccd-u1_l1': 5,
-    'kbl-phys-s2-nccd-u5_l2': 15,
+    // Lowered 2026-11-13 (15 → 12, 8 → 6) when the Grade 10 figure audit
+    // dropped split panels and review-page crops from these two lessons.
+    'kbl-phys-s2-nccd-u5_l2': 12,
     'kbl-biology-s1-nccd-u3_l3': 3,
     'kbl-biology-s2-nccd-u3_l6': 12,
     'kbl-earth-science-s1-nccd-u1_l1': 4,
-    'kbl-earth-science-s2-nccd-u3_l2': 8,
+    'kbl-earth-science-s2-nccd-u3_l2': 6,
   };
 
   for (const [lessonId, floor] of Object.entries(FLOOR)) {

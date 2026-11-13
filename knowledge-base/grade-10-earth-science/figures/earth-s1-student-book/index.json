@@ -139,8 +139,8 @@
         335.5,
         406.2
       ],
-      "unit": 1,
-      "lesson": 3,
+      "unit": 2,
+      "lesson": 1,
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": 28
@@ -250,22 +250,6 @@
         495.4,
         256.1,
         720.5
-      ],
-      "unit": 2,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 50
-    },
-    {
-      "file": "p058-v2.png",
-      "sourceId": "earth-s1-student-book",
-      "pdfPage": 58,
-      "rect": [
-        51.0,
-        180.9,
-        296.0,
-        295.5
       ],
       "unit": 2,
       "lesson": 3,

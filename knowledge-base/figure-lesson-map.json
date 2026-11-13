@@ -61,6 +61,26 @@
       "why": "Chemistry is joined on the Arabic title, which matches the curriculum's word for word — the book states no English lesson title the opener band can reach, and what sits there is its first SECTION heading. The unit and lesson numbers agree independently: the book prints 3 units of 2 lessons and the curriculum carries exactly u1_l1..u3_l2."
     },
     {
+      "sourceId": "chem-s1-student-book",
+      "unit": 1,
+      "lesson": 0,
+      "bookTitleAr": "تجربة استهلالية: الطيف الذري",
+      "kbLessonId": "kbl-chem-s1-nccd-u1_lab",
+      "score": 1,
+      "matchedBy": "hand",
+      "why": "2026-11-13 Grade 10 audit: synthetic coordinate for the unpaginated opening experiment p.9 (p009-v2.png)"
+    },
+    {
+      "sourceId": "chem-s1-student-book",
+      "unit": 2,
+      "lesson": 0,
+      "bookTitleAr": "تجربة استهلالية: نمذجة التوزيع الإلكتروني",
+      "kbLessonId": "kbl-chem-s1-nccd-u2_lab",
+      "score": 1,
+      "matchedBy": "hand",
+      "why": "2026-11-13 Grade 10 audit: opening experiment p.29 (p029b.png, p029c.png)"
+    },
+    {
       "sourceId": "math-s1-student-book",
       "unit": 1,
       "lesson": 1,
@@ -228,6 +248,16 @@
       "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
     },
     {
+      "sourceId": "math-s1-student-book",
+      "unit": 1,
+      "lesson": 0,
+      "bookTitleAr": "معمل برمجية جيوجبرا: حل أنظمة المعادلات بيانياً",
+      "kbLessonId": "kbl-math-s1-nccd-u1_lab",
+      "score": 1,
+      "matchedBy": "hand",
+      "why": "2026-11-13 Grade 10 audit: GeoGebra lab pp.16-17 (p016.png, today filed at the null book lesson (1,1))"
+    },
+    {
       "sourceId": "math-s2-student-book",
       "unit": 5,
       "lesson": 1,
@@ -380,6 +410,16 @@
       "score": 0,
       "why": "احتمالات الحوادث المستقلة والحوادث غير المستقلة = independent and dependent events",
       "matchedBy": "hand-checked against the curriculum Arabic title"
+    },
+    {
+      "sourceId": "math-s2-student-book",
+      "unit": 8,
+      "lesson": 0,
+      "bookTitleAr": "معمل برمجية جيوجبرا",
+      "kbLessonId": "kbl-math-s2-nccd-u8_lab",
+      "score": 1,
+      "matchedBy": "hand",
+      "why": "2026-11-13 Grade 10 audit: GeoGebra lab pp.115-116 (p116.png)"
     },
     {
       "sourceId": "chem-s2-student-book",
@@ -791,6 +831,26 @@
       "lesson": 2,
       "kbLessonId": "kbl-phys-s2-nccd-u6_l2",
       "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "phys-s2-student-book",
+      "unit": 4,
+      "lesson": 0,
+      "bookTitleAr": "تجربة استهلالية: الكتلة والوزن",
+      "kbLessonId": "kbl-phys-s2-nccd-u4_lab",
+      "score": 1,
+      "matchedBy": "hand",
+      "why": "2026-11-13 Grade 10 audit: opening experiment p.9 (p009b.png, today unit/lesson null)"
+    },
+    {
+      "sourceId": "phys-s2-student-book",
+      "unit": 6,
+      "lesson": 0,
+      "bookTitleAr": "تجربة استهلالية: الموجات تنقل الطاقة ولا تنقل المادة",
+      "kbLessonId": "kbl-phys-s2-nccd-u6_lab",
+      "score": 1,
+      "matchedBy": "hand",
+      "why": "2026-11-13 Grade 10 audit: opening experiment p.93 (p093b.png)"
     },
     {
       "sourceId": "bio-s1-student-book",
@@ -1864,6 +1924,16 @@
       "kbLessonId": "kbl-hist-s2-nccd-u4_l3",
       "score": 1,
       "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s2-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "محمد عليّ باشا (1769م-1849م)",
+      "kbLessonId": "kbl-hist-s2-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "hand",
+      "why": "2026-11-13 Grade 10 audit: target for p091-v2.png (unit-4 review timeline about Muhammad Ali Pasha); (2,3) is already u4_l3"
     },
     {
       "sourceId": "g9-geography-s2-student-book",

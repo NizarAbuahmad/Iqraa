@@ -98,38 +98,6 @@
       "lessonStartPage": null
     },
     {
-      "file": "p026-v2.png",
-      "sourceId": "eng-s1-student-book",
-      "pdfPage": 26,
-      "rect": [
-        0.0,
-        0.0,
-        514.0,
-        281.2
-      ],
-      "unit": 2,
-      "lesson": 7,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
-      "file": "p027-v2.png",
-      "sourceId": "eng-s1-student-book",
-      "pdfPage": 27,
-      "rect": [
-        102.0,
-        591.0,
-        485.0,
-        822.0
-      ],
-      "unit": 2,
-      "lesson": 7,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
       "file": "p031.png",
       "sourceId": "eng-s1-student-book",
       "pdfPage": 31,
@@ -141,22 +109,6 @@
       ],
       "unit": 3,
       "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
-      "file": "p033.png",
-      "sourceId": "eng-s1-student-book",
-      "pdfPage": 33,
-      "rect": [
-        14.1,
-        691.1,
-        623.6,
-        870.4
-      ],
-      "unit": 3,
-      "lesson": 5,
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": null
@@ -226,38 +178,6 @@
       "lessonStartPage": null
     },
     {
-      "file": "p048.png",
-      "sourceId": "eng-s1-student-book",
-      "pdfPage": 48,
-      "rect": [
-        306.7,
-        617.8,
-        623.8,
-        870.3
-      ],
-      "unit": 4,
-      "lesson": 7,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
-      "file": "p049.png",
-      "sourceId": "eng-s1-student-book",
-      "pdfPage": 49,
-      "rect": [
-        -0.1,
-        617.8,
-        304.8,
-        870.3
-      ],
-      "unit": 4,
-      "lesson": 7,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
       "file": "p059.png",
       "sourceId": "eng-s1-student-book",
       "pdfPage": 59,
@@ -266,22 +186,6 @@
         -0.0,
         623.7,
         316.1
-      ],
-      "unit": 5,
-      "lesson": 7,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
-      "file": "p060-v2.png",
-      "sourceId": "eng-s1-student-book",
-      "pdfPage": 60,
-      "rect": [
-        0.0,
-        0.0,
-        623.6,
-        233.0
       ],
       "unit": 5,
       "lesson": 7,
