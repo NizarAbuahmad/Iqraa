@@ -29,8 +29,10 @@ const STATED_NUMBER = /(?<![A-Za-z\u0370-\u03FF\u0621-\u063A\u0641-\u064A_0-9.])
 /**
  * Every number the drawing prints, in the order the renderer prints them.
  *
- * A `vectors` figure is drawn on a numbered grid, so a student reads each vector's
- * components off it: every non-zero |dx| and |dy| counts as a printed number.
+ * A `vectors` figure is drawn on a numbered grid and its alt text prints every end point,
+ * so a student reads both off it: for each vector in turn, its non-zero |dx| and |dy|,
+ * then the non-zero coordinates of its tail and its tip, each distinct value once.
+ * The end points matter: in a tip-to-tail chain the last tip IS the resultant.
  */
 export function figureNumbers(f: PhysicsFigure): number[] {
   switch (f.kind) {
@@ -44,27 +46,44 @@ export function figureNumbers(f: PhysicsFigure): number[] {
       return f.radius?.value ? [f.radius.value.n] : [];
     case 'wave':
       return [...(f.amplitude ? [f.amplitude.n] : []), ...(f.wavelength ? [f.wavelength.n] : [])];
-    case 'vectors':
-      // Drawn on a numbered grid: a student reads each component off it, so each counts as printed.
-      return f.vectors.flatMap(v => [Math.abs(v.to[0] - v.from[0]), Math.abs(v.to[1] - v.from[1])]).filter(n => n > 1e-9);
+    case 'vectors': {
+      // Drawn on a numbered grid with every end point in the alt text: components and end points both count.
+      const seen: number[] = [];
+      for (const v of f.vectors) {
+        const values = [v.to[0] - v.from[0], v.to[1] - v.from[1], v.from[0], v.from[1], v.to[0], v.to[1]];
+        for (const n of values.map(Math.abs)) {
+          if (n > 1e-9 && !seen.some(m => Math.abs(m - n) < 1e-9)) seen.push(n);
+        }
+      }
+      return seen;
+    }
   }
 }
 
 /**
- * True when one drawn vector is the sum or the difference of two others (tip to tail or
- * from one origin): the drawing then shows the resultant a question asks for. Coordinates
- * are multiples of 0.5, so the arithmetic is exact.
+ * True when some drawn vector d[k] equals Σ c_i·d[i] over the OTHER drawn vectors, with
+ * every c_i ∈ {−1, 0, 1} and at least two c_i non-zero: the drawing then shows the sum,
+ * the difference, the equilibrant (the negative of a sum) or the resultant of any number
+ * of drawn vectors — the answer a question asks for. A vector and its opposite alone are
+ * not a sum (one non-zero coefficient). Coordinates are multiples of 0.5, so the
+ * arithmetic is exact; at most 5 vectors means at most 81 combinations for each.
  */
 export function vectorsShowResult(f: VectorsFigure): boolean {
   const d = f.vectors.map(v => [v.to[0] - v.from[0], v.to[1] - v.from[1]] as const);
-  const same = (a: readonly number[], x: number, y: number) => Math.abs(a[0]! - x) < 1e-9 && Math.abs(a[1]! - y) < 1e-9;
   for (let k = 0; k < d.length; k++) {
-    for (let i = 0; i < d.length; i++) {
-      for (let j = i + 1; j < d.length; j++) {
-        if (i === k || j === k) continue;
-        const a = d[i]!, b = d[j]!;
-        if (same(d[k]!, a[0] + b[0], a[1] + b[1]) || same(d[k]!, a[0] - b[0], a[1] - b[1]) || same(d[k]!, b[0] - a[0], b[1] - a[1])) return true;
+    const others = d.filter((_, i) => i !== k);
+    const combos = 3 ** others.length;
+    for (let code = 0; code < combos; code++) {
+      let x = 0, y = 0, nonZero = 0, rest = code;
+      for (const o of others) {
+        const c = (rest % 3) - 1;
+        rest = Math.floor(rest / 3);
+        if (c === 0) continue;
+        nonZero++;
+        x += c * o[0];
+        y += c * o[1];
       }
+      if (nonZero >= 2 && Math.abs(d[k]![0] - x) < 1e-9 && Math.abs(d[k]![1] - y) < 1e-9) return true;
     }
   }
   return false;
@@ -73,11 +92,14 @@ export function vectorsShowResult(f: VectorsFigure): boolean {
 /**
  * True when each number the drawing prints appears, as a whole number token, in `text`.
  * A digit inside a symbol (F2, m1, v0) is not a stated number. A `vectors` figure's
- * components count as printed, and a figure that draws a sum or difference of two of its
- * own vectors (`vectorsShowResult`) always fails: it shows the answer.
+ * components and end points count as printed. Two drawings always fail, whatever the
+ * question states, because they show the answer: a `vectors` figure with a drawn signed
+ * sum of its own vectors (`vectorsShowResult`), and a `wave` that draws the sum of its
+ * two waves (`second.sum`).
  */
 export function figureNumbersInText(f: PhysicsFigure, text: string): boolean {
   if (f.kind === 'vectors' && vectorsShowResult(f)) return false;
+  if (f.kind === 'wave' && f.second?.sum === true) return false;
   const found = (foldDigits(text).match(STATED_NUMBER) ?? []).map(Number);
   return figureNumbers(f).every(n => found.some(m => Math.abs(m - Math.abs(n)) < 1e-9));
 }

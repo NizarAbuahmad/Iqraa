@@ -22,7 +22,7 @@ describe('figureNumbers', () => {
     assert.deepEqual(figureNumbers(slope), [37, 49]);
     assert.deepEqual(figureNumbers({ kind: 'wave', cycles: 2, marks: ['A'], amplitude: { n: 0.05, unit: 'm' }, wavelength: { n: 2, unit: 'm' } }), [0.05, 2]);
     assert.deepEqual(figureNumbers({ kind: 'circular', turning: 'cw', arrows: ['v'] }), []);
-    assert.deepEqual(figureNumbers({ kind: 'vectors', vectors: [{ from: [0, 0], to: [3, 2] }, { from: [1, 1], to: [1, 3.5] }] }), [3, 2, 2.5]);
+    assert.deepEqual(figureNumbers({ kind: 'vectors', vectors: [{ from: [0, 0], to: [3, 2] }, { from: [1, 1], to: [1, 3.5] }] }), [3, 2, 2.5, 1, 3.5]);
   });
 });
 
@@ -83,5 +83,50 @@ describe('vectors on the numbered grid', () => {
     ] };
     assert.equal(vectorsShowResult(diff), true);
     assert.equal(vectorsShowResult(two), false);
+  });
+
+  type P = [number, number];
+  const vec = (from: P, to: P, label?: string) => (label ? { from, to, label } : { from, to });
+  const sumStem = 'A = 3i + 1j و B = 2i + 3j. أوجد مركّبتي المحصلة A + B.';
+
+  it('counts the end points: a tip-to-tail chain prints the resultant at its tip', () => {
+    const chain = { kind: 'vectors' as const, vectors: [vec([0, 0], [3, 1], 'A'), vec([3, 1], [5, 4], 'B')] };
+    assert.equal(figureNumbersInText(chain, sumStem), false);
+  });
+
+  it('the same two vectors drawn from the origin pass', () => {
+    const fromOrigin = { kind: 'vectors' as const, vectors: [vec([0, 0], [3, 1], 'A'), vec([0, 0], [2, 3], 'B')] };
+    assert.equal(figureNumbersInText(fromOrigin, sumStem), true);
+  });
+
+  it('refuses an equilibrant and a resultant of three vectors', () => {
+    const equilibrant = { kind: 'vectors' as const, vectors: [vec([0, 0], [3, 0], 'A'), vec([0, 0], [0, 4], 'B'), vec([0, 0], [-3, -4], 'E')] };
+    assert.equal(vectorsShowResult(equilibrant), true);
+    const three = { kind: 'vectors' as const, vectors: [vec([0, 0], [1, 0], 'A'), vec([0, 0], [0, 2], 'B'), vec([0, 0], [3, 0], 'C'), vec([0, 0], [4, 2], 'R')] };
+    assert.equal(vectorsShowResult(three), true);
+  });
+
+  it('a vector and its opposite alone are not a sum (one non-zero coefficient)', () => {
+    const opposite = { kind: 'vectors' as const, vectors: [vec([0, 0], [2, 0], 'A'), vec([0, 0], [-2, 0], 'B')] };
+    assert.equal(vectorsShowResult(opposite), false);
+  });
+
+  it('fails a partly stated pair, reads Arabic-Indic digits, and compares half units exactly', () => {
+    assert.equal(figureNumbersInText(two, 'A = 3 N فقط'), false);
+    assert.equal(figureNumbersInText(two, 'قوتان A = ٣ N و B = ٤ N'), true);
+    const half = { kind: 'vectors' as const, vectors: [vec([0, 0], [1.5, 0], 'A')] };
+    assert.equal(figureNumbersInText(half, 'A = 1.5 N'), true);
+    assert.equal(figureNumbersInText(half, 'A = 1 N'), false);
+  });
+});
+
+describe('a drawn wave sum', () => {
+  const wave: PhysicsFigure & { kind: 'wave' } = { kind: 'wave', cycles: 2, marks: ['A'], amplitude: { n: 0.5, unit: 'm' } };
+  it('always fails: the sum is the answer', () => {
+    assert.equal(figureNumbersInText({ ...wave, second: { phase: 'out', sum: true } }, 'موجتان سعة كل منهما 0.5 m. ارسم مجموعهما.'), false);
+  });
+  it('a second wave without its sum is judged by its numbers', () => {
+    assert.equal(figureNumbersInText({ ...wave, second: { phase: 'out', sum: false } }, 'موجتان سعة كل منهما 0.5 m.'), true);
+    assert.equal(figureNumbersInText({ ...wave, second: { phase: 'out', sum: false } }, 'موجتان متعاكستان في الطور.'), false);
   });
 });
