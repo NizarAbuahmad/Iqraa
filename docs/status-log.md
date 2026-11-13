@@ -74,7 +74,17 @@ units. Appended as `u*_l10..l12` (no id moved); lesson 2 is «Team Talk» as the
   social 26/32, vocational 18/23, PE 10/14, Arabic S2 12/25; Arabic S1 and art are grounded mainly in the contents page.
   The vocational and social extractions are **reversed** («ةَيِبَرَعْلِ ا ةَرَزيجْلُ ا هْبِشْ» = شبه الجزيرة العربية;
   vocational S1 has more reversed «ال» words than forward ones) and Arabic S1/S2 transpose 22-28% of definite articles —
-  yet all passed `rejectReason`, which has no reversed-line check. They need `extract-text --force --ocr` from the PDFs.
+  yet all passed `rejectReason`, which had no reversed-line check. **Not repaired from the text:** beside the reversal the
+  lines carry stray «م» letters, words split by tabs and presentation-form glyphs, so any reconstruction would be a guess
+  handed to a model as the book. **Gated instead:** `reversedWordRate` (`scripts/textQuality.ts`) — of the words carrying
+  ة at one edge, the share where it comes first; real Arabic ~0.1-0.3, the fully reversed books 0.76-0.87 — and
+  `rejectReason` now refuses above `REVERSED_WORD_LIMIT` = 0.5, so an extraction falls back to OCR. Over the corpus it
+  refuses 13 files: Grade 6 social S1/S2, vocational S1/S2 and PE; Grade 5 social S1/S2, vocational S1/S2 and art; Grade 4
+  social S2 and vocational S1/S2. Partly reversed books under 0.5 still pass (Grade 4 social S1 at 0.46). Tested on a
+  synthetic reversal and on the real files, both ways. **Still to do, on a machine with the PDFs:**
+  `pnpm --filter @workspace/curriculum run extract-text --force --ocr g6-social-s1-student-book g6-social-s2-student-book
+  g6-voc-s1-student-book g6-voc-s2-student-book g6-pe-s1-student-book` (and the Grade 4/5 ones), then paste each printed
+  `extraction` block into `g10_sources.json`. Arabic S1/S2 (22-28% article transposition) are under every limit and stay.
 
 **Not verified:** the pages on a phone; the re-rendering above (needs the PDFs); English grounding (third-party by design).
 
