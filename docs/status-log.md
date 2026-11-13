@@ -115,6 +115,31 @@ reaches live generation with no book text; that needs the PDFs.
 `teachingPlanGrounding` (184), curriculum test (927) and verify (0 errors), typecheck.
 **Not verified:** the pages on a phone; anything needing the PDFs.
 
+## Grade 4 PE, vocational S2, social and arts figures from the page renders — 2026-11-13
+
+Same method as the Arabic and Islamic entry below (colour-and-texture candidates on the renders already in
+`iqraa-public/book-pages/`, every one kept or dropped by eye), applied to the renders that exist for these books. Some
+are the renders whose `book-page-links.json` entries the Grade 4 review removed because they showed another lesson:
+the images are still the right book pages, only their lesson link was wrong, so each page is placed here by the page
+table the review read off them.
+
+- **PE** (`g4-pe-s1-student-book`, new `knowledge-base/grade-4-pe/`): 28 crops on 11 of 13 lessons — match photos, the
+  futsal and badminton court diagrams, grip and stance photos, the healthy plate, first-aid pictures. Pages: football
+  L1 7–9, L2 10–12, L3 13–15, L4 16–18, L5 19–21; badminton L1 24–26, L2 27–29, L3 30–32, L4 33–35; unit 3 L2 46–49,
+  L3 50–53 (unit-end and opener art to the adjacent lesson). Badminton L5 and unit 3 L1 were never rendered.
+- **Vocational S2** (`g4-voc-s2-student-book`): 20 crops on 6 of 16 lessons — hygiene and safe use of care products,
+  hair care, clothes care, seasonal produce, electrical tools and an overloaded socket. Renders exist only for pp.
+  10–21, 43–62 and 104–107; units 1–2 had no usable photo on theirs.
+- **Social** (added to the existing indexes): «الحياة البرية» (S1, had none) gains the oak, black iris, Sinai rosefinch,
+  Arabian oryx and fish (pp. 76–78); «بناء الشخصية» (S2, had none) gains the family photos, heredity portraits, the
+  classroom and the dolphin (pp. 8–11); «الأنشطة البشرية» gains the forest, felled logs and plastic litter (pp. 71–72).
+- **Arts**: «الدمى المسرحية» gains the rod and shadow puppets (p. 81) and the human and animal dolls (p. 82); the glove
+  puppets on p. 80 were already there.
+
+Every new file name was checked absent from `iqraa-public/figures/` first (the uploader skips an existing key, so a
+reused name would serve an old crop); all are uploaded. **Still without a source** (no render, no reachable PDF):
+English, digital, the science gaps (relationships, water cycle, Earth's axis) and the arts gaps (qanun, u3_l4, Picasso).
+
 ## Grade 4 Arabic and Islamic figures: 135 crops on 67 lessons, from the page renders — 2026-11-13
 
 Neither book had figure crops. As for Grade 4 maths (entry below), no PDF was reachable, so the crops come from the

@@ -132,6 +132,8 @@ describe('figuresForLesson', () => {
       'g4-science': 'g4-science',
       'g4-social': 'g4-social',
       'g4-voc': 'g4-voc',
+      // Grade 4 PE, cropped 2026-11-13 from the book-page renders.
+      'g4-pe': 'g4-pe',
       'g5-science': 'g5-science',
       // Grades 6 and 7, added 2026-09-16. Slug and source-id prefix agree
       // for all of these.

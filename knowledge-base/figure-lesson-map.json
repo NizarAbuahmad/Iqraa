@@ -7029,6 +7029,161 @@
       "kbLessonId": "kbl-g4-islamic-s2-nccd-u8_l5",
       "score": 1,
       "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-voc-s2-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "اسْتِخْدامٌ آمِنٌ لِمَوادِّ العِنايَةِ بِمَظْهَرِ الشَّخْصِ وَأَدَواتِها",
+      "kbLessonId": "kbl-g4-voc-s2-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table",
+      "why": "hand-checked: crops from the R2 book-page renders made before the Grade 4 review, which were linked to the wrong lessons and unlinked; each image is still the page its render index says. Page-to-lesson from the review's reading of the book (U3 L3 39-45, U4 L1 48-53, L2 54-58, L3 59-65, U8 L1 102-106, L2 107-111). Renders exist only for pp. 10-21, 43-62 and 104-107, so the other ten lessons have none."
+    },
+    {
+      "sourceId": "g4-voc-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "العِنايَةُ بِالشَّعْرِ",
+      "kbLessonId": "kbl-g4-voc-s2-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-voc-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "العِنايَةُ بِالمَلابِسِ الشَّخْصِيَّةِ",
+      "kbLessonId": "kbl-g4-voc-s2-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-voc-s2-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "bookTitleAr": "اخْتِيارُ الخَضْراواتِ وَالفَواكِهِ المَوْسِمِيَّةِ",
+      "kbLessonId": "kbl-g4-voc-s2-nccd-u4_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-voc-s2-student-book",
+      "unit": 8,
+      "lesson": 1,
+      "bookTitleAr": "المَوادُّ وَالعُدَدُ اليَدَوِيَّةُ المُسْتَخْدَمَةُ في أَعْمالِ الكَهْرَباءِ",
+      "kbLessonId": "kbl-g4-voc-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-voc-s2-student-book",
+      "unit": 8,
+      "lesson": 2,
+      "bookTitleAr": "الاسْتِخْدامُ الآمِنُ لِلْمَوادِّ وَالعُدَدِ الكَهْرَبائِيَّةِ البَسيطَةِ",
+      "kbLessonId": "kbl-g4-voc-s2-nccd-u8_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-pe-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "الْإِحْساسُ بِالْكُرَةِ",
+      "kbLessonId": "kbl-g4-pe-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table",
+      "why": "hand-checked: crops from the R2 book-page renders made before the Grade 4 review (some were then linked to the wrong lesson, but each image is the book page its render index says); page-to-lesson from the review's reading of those images (football L1 7-9, L2 10-12, L3 13-15, L4 16-18, L5 19-21; badminton L1 24-26, L2 27-29, L3 30-32, L4 33-35; unit 3 L2 46-49, L3 50-53). Unit-end and opener art go to the adjacent lesson. Badminton L5 and unit 3 L1 have no render."
+    },
+    {
+      "sourceId": "g4-pe-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "تَمْريرُ الْكُرَةِ بِالْوَجْهِ الدّاخِلِيِّ لِلْقَدَمِ",
+      "kbLessonId": "kbl-g4-pe-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-pe-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "الْجَرْيُ بِالْكُرَةِ",
+      "kbLessonId": "kbl-g4-pe-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-pe-s1-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "السَّيْطَرَةُ عَلى الْكُرَةِ بِأَسْفَلِ الْقَدَمِ",
+      "kbLessonId": "kbl-g4-pe-s1-nccd-u1_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-pe-s1-student-book",
+      "unit": 1,
+      "lesson": 5,
+      "bookTitleAr": "رَبْطُ الْمَهاراتِ بِالتَّدْريباتِ في كُرَةِ الْقَدَمِ",
+      "kbLessonId": "kbl-g4-pe-s1-nccd-u1_l5",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-pe-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "الْقَبْضَةُ الْأَمامِيَّةُ",
+      "kbLessonId": "kbl-g4-pe-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-pe-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "الْقَبْضَةُ الْخَلْفِيَّةُ",
+      "kbLessonId": "kbl-g4-pe-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-pe-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "الْإِحْساسُ بِالْمِضْرَبِ وَالرِّيشَةِ",
+      "kbLessonId": "kbl-g4-pe-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-pe-s1-student-book",
+      "unit": 2,
+      "lesson": 4,
+      "bookTitleAr": "وِقْفَةُ الِاسْتِعْدادِ",
+      "kbLessonId": "kbl-g4-pe-s1-nccd-u2_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-pe-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الْوِقايَةُ مِنَ الْإِصاباتِ الرِّياضِيَّةِ",
+      "kbLessonId": "kbl-g4-pe-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-pe-s1-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "التَّعامُلُ مَعَ الْحَوادِثِ الطّارِئَةِ في الْمَدْرَسَةِ",
+      "kbLessonId": "kbl-g4-pe-s1-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
     }
   ],
   "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Units 1-4 are semester 1 and units 5-8 are semester 2, so the printed unit number also identifies which student book a figure came from — `check_semester` in scripts/extract_book_figures.py enforces that. Note the maths PDFs in attached_assets are named backwards: the file called `1st_semester` is the second-semester book. Source ids follow the books' contents, not their filenames."

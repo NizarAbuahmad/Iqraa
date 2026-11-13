@@ -92,6 +92,8 @@ const indexes = [
   'knowledge-base/grade-4-social/figures/g4-social-s1-student-book/index.json',
   'knowledge-base/grade-4-social/figures/g4-social-s2-student-book/index.json',
   'knowledge-base/grade-4-vocational/figures/g4-voc-s1-student-book/index.json',
+  'knowledge-base/grade-4-vocational/figures/g4-voc-s2-student-book/index.json',
+  'knowledge-base/grade-4-pe/figures/g4-pe-s1-student-book/index.json',
   'knowledge-base/grade-5-science/figures/g5-science-s1-student-book/index.json',
   'knowledge-base/grade-5-science/figures/g5-science-s2-student-book/index.json',
   'knowledge-base/grade-8-vocational/figures/g8-voc-s2-student-book/index.json',
