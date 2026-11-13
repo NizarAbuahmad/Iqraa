@@ -37,6 +37,14 @@ the same open artifact is still treated as a duplicate and does not update the f
 unchanged (kind and lesson only); the reason is in the email and on the card. Reports filed before this change have no
 reason and show none.
 
+**Also in this PR: the E2E job is pinned to `ubuntu-24.04`.** The smoke test (`.github/workflows/e2e.yml`) failed twice on
+this PR before any test ran: `playwright install --with-deps chromium` ran apt against the Ubuntu 26.04 («resolute»)
+mirrors and could not resolve `archive.ubuntu.com`, `security.ubuntu.com` or `azure.archive.ubuntu.com` (exit 100 after
+~10 minutes), on two different runners. The last green E2E runs (Nov 5 and Nov 9) predate it. Nothing in the report-reason
+diff touches that workflow. The pin is the smallest change and affects only this job (the other workflows do not run apt).
+**Not verified until it runs:** that `ubuntu-latest` really rolled to 26.04 and that 24.04 resolves the mirrors; the E2E run
+on this branch is the test of it. E2E is not a required check, so this does not gate merging either way.
+
 ## Today's setup nudge no longer says "no plan" about a plan that exists — 2026-11-05
 
 A teacher added a pacing plan from the Today nudge «أضف الخطة» and the nudge kept saying «لا توجد خطة زمنية». Not a
