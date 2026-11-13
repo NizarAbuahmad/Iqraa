@@ -10,6 +10,38 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Book-page renderers stop a unit's last lesson before the next unit's opener — 2026-11-13
+
+**Why.** Both renderers ended a lesson on the page before the next lesson opens
+(`map_lesson_pages.ranges`, `verify_book_pages.lesson_ranges`). At a unit's end the next lesson is a new unit's
+first, so its cover, lesson list and competencies page were shown as the end of the previous unit's last lesson —
+found on about 40 of 99 unit-final lessons in Grades 5 and 8 (entry below).
+
+**What changed.** New `scripts/unit_openers.py`: `trim_end(start, end, text_of)` walks a unit-final lesson's end
+back over the next unit's opener pages (at most 4, never past its start). Both renderers call it only when the next
+lesson is in another unit (`ranges(..., units, text_of)`, `lesson_ranges(..., text_of)`); without those arguments
+they behave as before. A page is an opener when, read as letter multisets (the text layers swap, glue and garble
+letters, so nothing compares strings):
+- it heads a lesson list — «دروس الوحدة» / «قائمة الدروس», in that order (a sentence saying «دروس وحدة …» is not);
+- it is a competencies page — 700+ letters naming four of the five language skills (the title «كفايات» itself
+  often extracts as nonsense);
+- it is the English overview — all six skill headings;
+- it is a cover — at most 180 letters naming a unit ordinal that the lesson's own content pages do not (the
+  Arabic books carry «الوحدة التاسعة» as a running header, and an exercise page of blank lines is as short).
+A unit's end («نهاية / مراجعة / حصاد الوحدة») is never an opener.
+
+**Verified.** Calibrated on the committed text of every book in `extracted/` (167 unit-final lessons): 31 would be
+trimmed, all in Arabic, Islamic and PE books, and the trimmed pages were checked against their page images — G5
+Arabic's cover + «كفايات» (2 pages a unit), Islamic's «دروس الوحدة» covers, PE covers, G4 Arabic and Islamic.
+Two false positives found that way are fixed and pinned (`scripts/test_unit_openers.py`, 14 tests, real pages): a
+G6 exercise page under its own unit's header, and four skill names turning up in a scrambled G6 page; a third, the
+PE «نهاية الوحدة» page, is pinned too. `python -m unittest scripts/test_unit_openers.py` (CI does not run script
+tests; it needs `pip install pymupdf` to import the renderers).
+
+**Not done.** No book was re-rendered: the PDFs are not reachable from the session, so `book-page-links.json` is
+unchanged and the fix applies at the next render. Maths («مشروع الوحدة»), social and vocational openers are not
+recognised — their text layers name the unit by a digit or not at all — so those lessons end as before.
+
 ## Grade 3 review: wrong book pages withdrawn, calendar Arabic fixed, gaps listed — 2026-11-13
 
 A review of all 15 Grade 3 catalogs (60 units, 254 lessons) against the books, the figures and what the
