@@ -873,6 +873,9 @@ describe('money, time and measurement: answers recomputed', () => {
     for (const id of ['coins_a', 'coins_b', 'coins_c']) for (const item of draws(id)) {
       const p = item.promptAr!, n = nums(p), a = Number(item.answer);
       if (has(p, 'كم قطعة')) assert.equal(a * n[0]!, n[1]); else if (has(p, 'و ') && n.length === 4) assert.equal(a, n[0]! * n[1]! + n[2]! * n[3]!); else assert.equal(a, n[0]! * n[1]!);
+      // «2 قطع» is a dual («قطعتان») and «10 قرشًا» is «10 قروش» (Grade 1 audit, 2026-11-13).
+      assert.doesNotMatch(p, /(^|[^\d])[12] قطع/, p);
+      assert.doesNotMatch(p, /(^|[^\d])([3-9]|10) قرشًا/, p);
     }
     const din = new Set<string>();
     for (const item of draws('dinar', 300)) {
@@ -1001,6 +1004,9 @@ describe('money, time and measurement: answers recomputed', () => {
     for (const item of draws('calendar')) {
       const p = item.promptAr!, n = nums(p), a = item.answer;
       if (has(p, 'كم يومًا')) assert.equal(Number(a), n[0]! * 7); else if (has(p, 'كم أسبوعًا')) assert.equal(Number(a) * 7, n[0]); else { const i = DAYS.findIndex(d => p.includes(`اليوم ${d}`)); assert.equal(a, DAYS[(i + n[0]!) % 7]); }
+      // «بعد 5 يومًا» is «بعد 5 أيام», and «2 أسابيع» is «أسبوعين» (Grade 3 audit, 2026-11-13).
+      assert.doesNotMatch(p, /(^|[^\d])([1-9]|10) يومًا/, p);
+      assert.doesNotMatch(p, /(^|[^\d])[12] أسابيع/, p);
     }
   });
 
@@ -1056,6 +1062,49 @@ describe('money, time and measurement: answers recomputed', () => {
   });
 });
 
+describe('Grade 1: adding and subtracting tens, and two-digit numbers', () => {
+  // «جمع العشرات» drew «9 + 1» and «جمع عددين من منزلتين» drew «5 + 4»: the
+  // grade's generic sums within 20, not what either lesson teaches.
+  it('tens: every operand is a multiple of ten, answers recomputed', () => {
+    for (const add of [true, false]) {
+      const kinds = new Set<string>();
+      for (const item of draws(add ? 'tens_add_g1' : 'tens_sub_g1')) {
+        const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+        if (has(p, 'عشرات')) {
+          kinds.add('tens'); assert.equal(a, add ? n[0]! + n[1]! : n[0]! - n[1]!, p);
+          assert.ok(n[0]! >= 3 && n[1]! >= 3, `«1/2 عشرات»: ${p}`);
+          continue;
+        }
+        for (const x of n) assert.equal(x % 10, 0, p);
+        if (has(p, '___ =')) { kinds.add('missing'); assert.equal(add ? n[0]! + a : n[0]! - a, n[1], p); }
+        else { kinds.add('sum'); assert.equal(a, add ? n[0]! + n[1]! : n[0]! - n[1]!, p); }
+        assert.ok(a > 0 && a <= 90, p);
+      }
+      assert.equal(kinds.size, 3, [...kinds].join(', '));
+    }
+  });
+
+  it('two-digit: both numbers have two digits and nothing is regrouped, answers recomputed', () => {
+    for (const add of [true, false]) {
+      const kinds = new Set<string>();
+      for (const item of draws(add ? 'two_digit_add_g1' : 'two_digit_sub_g1')) {
+        const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+        // The two numbers the pupil works with, and the result.
+        let x: number, y: number, r: number;
+        if (has(p, '= ___') || has(p, 'كم عشرة') || has(p, 'قرش')) { [x, y] = [n[0]!, n[1]!]; r = add ? x + y : x - y; }
+        else { kinds.add('missing'); x = n[0]!; r = n[1]!; y = add ? r - x : x - r; assert.equal(a, y, p); } // «x + ___ = r»
+        assert.ok(x >= 10 && x <= 99 && y >= 10 && y <= 99, p);
+        if (add) assert.ok((x % 10) + (y % 10) <= 9 && r <= 99, `regrouping: ${p}`);
+        else assert.ok(x % 10 >= y % 10 && r > 0, `regrouping: ${p}`);
+        if (has(p, 'كم عشرة')) { kinds.add('tens'); assert.equal(a, Math.floor(r / 10), p); }
+        else if (has(p, 'قرش')) { kinds.add('word'); assert.equal(a, r, p); }
+        else if (has(p, '= ___')) { kinds.add('sum'); assert.equal(a, r, p); }
+      }
+      assert.equal(kinds.size, 4, [...kinds].join(', '));
+    }
+  });
+});
+
 describe('early routing', () => {
   const cases: Array<[string, number, string | null]> = [
     ['الأعداد: 1 ,2 ,3', 1, 'count_123'], ['العددان: 9 ,10', 1, 'count_910'], ['العدد صفر', 1, 'count_zero'], ['العد الترتيبي', 1, 'ordinal'],
@@ -1073,6 +1122,9 @@ describe('early routing', () => {
     ['قياس الزوايا ورسمها', 4, 'angle_measure'], ['الأنماط', 4, 'number_patterns_g4'], ['جداول المدخلات والمخرجات', 4, 'input_output'], ['الأعداد العشرية والنقود', 4, 'decimal_money'],
     ['الدينار', 2, 'dinar'], ['فئات النقود الورقية', 2, 'banknotes'], ['أيام الأسبوع', 1, 'week_days'], ['الوقت لأقرب ربع ساعة', 2, 'time_15'], ['أشهر السنة', 2, 'months'], ['التقويم', 3, 'calendar'],
     ['مقارنة الأطوال وترتيبها', 1, 'compare_len'], ['السنتيمتر', 2, 'cm_lengths'], ['اللتر والمليلتر', 2, 'units_l_g2'],
+    // Grade 1 S2: these drew the grade's generic single-digit sums (2026-11-13)
+    ['جمع العشرات', 1, 'tens_add_g1'], ['طرح العشرات', 1, 'tens_sub_g1'],
+    ['جمع عددين من منزلتين', 1, 'two_digit_add_g1'], ['طرح عددين من منزلتين', 1, 'two_digit_sub_g1'],
     // lessons that stay refused: they need pictures, objects, or a digit form the app converts itself
     ['الأرقام الهندية', 3, null], ['التصنيف وفق خاصية واحدة', 1, null], ['الموقع والاتجاه', 1, null], ['ترتيب الأعمال اليومية', 1, null],
   ];
