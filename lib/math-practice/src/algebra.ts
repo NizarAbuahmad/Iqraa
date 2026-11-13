@@ -1838,7 +1838,7 @@ const interpretGraphs: Topic = topic('interpret_graphs', /^تفسير التمث
     const dB = dA + nz(rng, 8);
     const fast = dA > dB ? 'الجسم A' : 'الجسم B';
     const slow = dA > dB ? 'الجسم B' : 'الجسم A';
-    return { eq: `${T}, ${dA}, ${dB}`, answer: fast, wrongs: [slow, 'سرعتا الجسمين متساويتان', 'لا يمكن تحديد ذلك من المنحنى'], ar: `يظهر منحنى الموقع – الزمن لجسمين A وB ينطلقان معًا من الموقع 0، فيكون موقع A بعد ${T} ثوانٍ ${dA} م وموقع B ${dB} م. أيّ الجسمين أسرع؟`, en: `A position–time graph shows two objects A and B leaving together from position 0. After ${T} seconds A is at ${dA} m and B at ${dB} m. Which object is faster?` };
+    return { eq: `${T}, ${dA}, ${dB}`, answer: fast, wrongs: [slow, 'سرعتا الجسمين متساويتان', 'لا يمكن تحديد ذلك من المنحنى'], ar: `يظهر منحنى الموقع – الزمن لجسمين A وB ينطلقان معًا من الموقع 0 ويتحرّك كلٌّ منهما بسرعة ثابتة، فيكون موقع A بعد ${T} ثوانٍ ${dA} م وموقع B ${dB} م. أيّ الجسمين أسرع؟`, en: `A position–time graph shows two objects A and B leaving together from position 0, each moving at a constant speed. After ${T} seconds A is at ${dA} m and B at ${dB} m. Which object is faster?` };
   }
 
   // kind 6: where two position–time graphs cross, the two objects are at the same place

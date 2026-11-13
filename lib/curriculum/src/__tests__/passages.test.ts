@@ -171,6 +171,28 @@ describe('passagesForUnit', () => {
     for (const p of ps) assert.ok(p.page >= 6 && p.page <= 33, `page ${p.page} is outside unit 1`);
   });
 
+  it('never serves the front matter, and keeps the last unit in its own pages', () => {
+    // Page 3 is the book's introduction, which names every unit's topics; it
+    // was once returned as a unit-2 source. Unit 4 is PDF pages 82 on.
+    for (const n of [1, 2, 3, 4]) {
+      for (const p of passagesForUnit({ unitId: `kbu-g9-islamic-s1-nccd-u${n}`, limit: 4, quotableOnly: true })) {
+        assert.ok(p.page > 5, `unit ${n} got front-matter page ${p.page}`);
+      }
+    }
+    const last = passagesForUnit({ unitId: 'kbu-g9-islamic-s1-nccd-u4', limit: 4, quotableOnly: true });
+    assert.ok(last.length > 0);
+    for (const p of last) assert.ok(p.page >= 82, `page ${p.page} is outside unit 4`);
+  });
+
+  it('gives a unit nothing rather than a sibling unit\'s pages when its titles are not its own', () => {
+    // Grade 4 Arabic heads every unit with the same skill names («أستمع
+    // بانتباه»…); unit 3 has no two words of its own on any page, and used to be
+    // handed pages from units 1 and 5.
+    const ps = passagesForUnit({ unitId: 'kbu-g4-arabic-s1-nccd-u3', limit: 4, quotableOnly: true });
+    // Unit 2's pages are around 49-50 and unit 4's 90-96 in the student book.
+    for (const p of ps) assert.ok(p.sourceId !== 'g4-arabic-s1-student-book' || (p.page > 50 && p.page < 90), `page ${p.page} belongs to another unit`);
+  });
+
   it('knows which sources have text', () => {
     assert.ok(hasExtractedText('math-s1-student-book'));
     // math-s1-support-material used to stand here as the un-fetched case; it

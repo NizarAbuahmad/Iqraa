@@ -115,7 +115,7 @@ const UNITS_G9: GrammarUnit[] = [
     ],
     slots: { pl: FOOD_COUNT, mass: FOOD_MASS },
   },
-  // The twenty authored lessons (hand-written items; see `englishGrammarG9Items.ts`), five of them grammar-only hub
+  // The twenty authored lessons (hand-written items; see `englishGrammarG9Items.ts`), six of them grammar-only hub
   // lessons (`GRAMMAR_ONLY_LESSONS`, englishHub.ts). Unsigned like the pilot.
   ...G9_ITEM_LESSONS.map(l => ({ lessonId: l.lessonId, reviewedBy: null, patterns: [], slots: {}, items: l.items }) satisfies GrammarUnit),
 ];

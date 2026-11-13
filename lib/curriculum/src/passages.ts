@@ -143,30 +143,83 @@ function isListingPage(search: string, bookTitleTerms: readonly string[][]): boo
  * The units of one book repeat lesson types — every Grade 9 Islamic unit has a
  * «سورة الإسراء» lesson and a «التلاوة والتجويد» one — so a page about unit 4's
  * recitation also matches unit 1's titles. A page is kept only when this unit's
- * titles describe it better than any sibling unit's do, and never when it is a
- * listing page. Measured on Grade 9 Islamic S1/S2 (2026-11-13) against the
- * unit page ranges on each book's contents page: 28 of 32 returned pages sit
- * in the right unit, where without these guards about half did.
+ * titles describe it better than any sibling unit's do, never when it is a
+ * listing page, and never when it comes before the contents page ends (the
+ * introduction names every topic of the book). Only terms no sibling unit's
+ * titles share count, and a page needs two of them. Measured 2026-11-13
+ * against the unit page ranges on each book's contents page: Grade 9 Islamic
+ * S1/S2, 28 of 31 returned pages in the right unit (without the guards about
+ * half were); Grade 10 geography S1, every page in order inside its unit; a
+ * Grade 4 Arabic unit whose titles are the same skill names as its siblings'
+ * gets no pages rather than another unit's.
  */
-function titleFallbackGuards(unitId: string): { belongsHere: (search: string) => boolean } | null {
+interface TitleGuards {
+  /** Per unit, the title terms no sibling unit's titles share. */
+  termsByUnit: Map<string, string[]>;
+  /** Each lesson's title terms, for the listing-page test. */
+  allTitleTerms: string[][];
+  firstPageBySource: Map<string, number>;
+}
+
+// The catalog never changes at run time, so one build per book is enough.
+const guardsByBook = new Map<string, TitleGuards>();
+
+function titleGuardsFor(unitId: string): TitleGuards | null {
   const bookId = UNITS.find(u => u.id === unitId)?.bookId;
   if (!bookId) return null;
+  const hit = guardsByBook.get(bookId);
+  if (hit) return hit;
   const units = UNITS.filter(u => u.bookId === bookId);
-  const termsByUnit = new Map(units.map(u => [
-    u.id,
-    LESSONS.filter(l => l.unitId === u.id).map(l => queryTerms([l.titleAr])),
-  ]));
-  const allTitleTerms = [...termsByUnit.values()].flat();
-  const unitScore = (search: string, id: string): number =>
-    [...new Set((termsByUnit.get(id) ?? []).flat())]
-      .reduce((sum, t) => sum + (search.includes(t) ? t.length : 0), 0);
-  return {
-    belongsHere(search: string): boolean {
-      if (isListingPage(search, allTitleTerms)) return false;
-      const mine = unitScore(search, unitId);
-      return units.every(u => u.id === unitId || unitScore(search, u.id) < mine);
-    },
+  const lessonsByUnit = units.map(u => LESSONS.filter(l => l.unitId === u.id));
+  const allTitleTerms = lessonsByUnit.flat().map(l => queryTerms([l.titleAr]));
+  const unitTerms = lessonsByUnit.map(ls => new Set(ls.flatMap(l => queryTerms([l.titleAr]))));
+  // Only the terms no other unit's titles use: «الاستماع» heads every unit of
+  // an Arabic book and says nothing about which unit a page belongs to.
+  const distinctive = unitTerms.map((mine, i) =>
+    [...mine].filter(t => unitTerms.every((other, j) => j === i || !other.has(t))));
+  const guards: TitleGuards = {
+    termsByUnit: new Map(units.map((u, i) => [u.id, distinctive[i]!])),
+    allTitleTerms,
+    firstPageBySource: new Map(),
   };
+  guardsByBook.set(bookId, guards);
+  return guards;
+}
+
+function titleScore(search: string, terms: readonly string[]): number {
+  let score = 0;
+  for (const t of terms) if (search.includes(t)) score += t.length;
+  return score;
+}
+
+/**
+ * The first page after the front matter: the page after the contents page,
+ * found as the first listing page in the opening 15% of the book. 0 (nothing
+ * skipped) when no contents page is recognised.
+ */
+function firstLessonPage(guards: TitleGuards, sourceId: string): number {
+  const hit = guards.firstPageBySource.get(sourceId);
+  if (hit !== undefined) return hit;
+  const pages = pagesFor(sourceId);
+  const window = Math.ceil(pages.length * 0.15);
+  const contents = pages.slice(0, window).find(p => isListingPage(p.search, guards.allTitleTerms));
+  const first = contents ? contents.page + 1 : 0;
+  guards.firstPageBySource.set(sourceId, first);
+  return first;
+}
+
+function pageBelongsToUnit(guards: TitleGuards, unitId: string, sourceId: string, page: { page: number; search: string }): boolean {
+  if (page.page < firstLessonPage(guards, sourceId)) return false;
+  if (isListingPage(page.search, guards.allTitleTerms)) return false;
+  const own = guards.termsByUnit.get(unitId) ?? [];
+  // Two of this unit's own terms, as the main search asks two of its terms: one
+  // shared word is a coincidence, and none is no evidence the page is this unit's.
+  if (own.filter(t => page.search.includes(t)).length < 2) return false;
+  const mine = titleScore(page.search, own);
+  for (const [id, terms] of guards.termsByUnit) {
+    if (id !== unitId && titleScore(page.search, terms) >= mine) return false;
+  }
+  return true;
 }
 
 /** Whether any text has been extracted for a source. */
@@ -238,7 +291,7 @@ export function passagesForUnit(query: PassageQuery): Passage[] {
     ...lessonTitles,
   ]);
   // Only the title fallback needs these; the other paths are left as they were.
-  const fallback = lessonTitles.length ? titleFallbackGuards(unitId) : null;
+  const fallback = lessonTitles.length ? titleGuardsFor(unitId) : null;
   if (!terms.length) return [];
 
   const sources: CurriculumSource[] = itemsForUnitTags(tags)
@@ -249,7 +302,7 @@ export function passagesForUnit(query: PassageQuery): Passage[] {
   for (const source of sources) {
     const policy = usePolicy(source);
     for (const page of pagesFor(source.id)) {
-      if (fallback && !fallback.belongsHere(page.search)) continue;
+      if (fallback && !pageBelongsToUnit(fallback, unitId, source.id, page)) continue;
       // Longer terms are rarer and so more informative: «المماس» locating a page
       // means more than «الشكل» does. Length is a cheap stand-in for IDF over a
       // corpus this small.
