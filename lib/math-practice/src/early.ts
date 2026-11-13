@@ -1080,12 +1080,14 @@ const amPm = T('am_pm', /^قبل الظهر بعد الظهر$/, [3, 3], ({ rng 
   return { eq: `${b}`, answer: String(b + 12), wrongs: ints(b + 12, [b, b + 10, 12 - b > 0 ? 12 - b : 11, b + 11]), ar: `الساعة ${b}:00 بعد الظهر. كم تبلغ الساعة بنظام 24 ساعة؟ (اكتب العدد قبل «:00»)`, en: `It is ${b}:00 p.m. What is the hour in 24-hour time? (write the number before ':00')` };
 });
 
+// Counts start at 3 so «${w} أسابيع» and «${j} أيام» are right as written (one
+// and two are «يوم واحد / يومين»); 11 and up take «يومًا» (`tamyiz`).
 const calendar = T('calendar', /^التقويم$/, [3, 3], ({ rng }) => {
   const k = pick(rng, [0, 1, 2]);
-  if (k === 0) { const w = int(rng, 2, 8); return { eq: `${w}`, answer: String(w * 7), wrongs: ints(w * 7, [w * 5, w * 6, w * 7 + 1, w + 7]), ar: `كم يومًا في ${w} أسابيع؟`, en: `How many days are in ${w} weeks?` }; }
+  if (k === 0) { const w = int(rng, 3, 8); return { eq: `${w}`, answer: String(w * 7), wrongs: ints(w * 7, [w * 5, w * 6, w * 7 + 1, w + 7]), ar: `كم يومًا في ${w} أسابيع؟`, en: `How many days are in ${w} weeks?` }; }
   if (k === 1) { const d = 7 * int(rng, 2, 8); return { eq: `${d}`, answer: String(d / 7), wrongs: ints(d / 7, [d / 7 + 1, d / 7 - 1, d, d / 7 + 2]), ar: `كم أسبوعًا في ${d} يومًا؟`, en: `How many weeks are in ${d} days?` }; }
-  const i = int(rng, 0, 6), j = int(rng, 1, 20), ans = DAYS[(i + j) % 7]!;
-  return { eq: `${DAYS[i]}, ${j}`, answer: ans, wrongs: others(rng, ans, DAYS), ar: `اليوم ${DAYS[i]}. ما اليوم بعد ${j} يومًا؟`, en: `Today is ${DAYS[i]}. Which day will it be after ${j} days? (Arabic day names)` };
+  const i = int(rng, 0, 6), j = int(rng, 3, 20), ans = DAYS[(i + j) % 7]!;
+  return { eq: `${DAYS[i]}, ${j}`, answer: ans, wrongs: others(rng, ans, DAYS), ar: `اليوم ${DAYS[i]}. ما اليوم بعد ${j} ${tamyiz(j, 'أيام', 'يومًا', 'يوم')}؟`, en: `Today is ${DAYS[i]}. Which day will it be after ${j} days? (Arabic day names)` };
 });
 
 /**

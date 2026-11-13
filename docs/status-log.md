@@ -166,6 +166,65 @@ build + tests 2899/2899; repo `pnpm run typecheck` clean; `math-practice`
 counted «أوجد ضعف/نصف العدد…» as one kind) was fixed by making doubling and
 halving distinct word problems.
 
+## Grade 3 review: Arabic S2 pages one lesson early, maths pages from their own lesson, calendar grammar — 2026-11-13
+
+The same review as Grades 1 and 2 (below), for Grade 3's 15 books and 254 lessons.
+
+**Book pages.** I opened the first and the last page of all 145 listed lessons,
+then every page of the folders that looked wrong.
+- **Arabic semester 2 was cut one lesson early throughout**, the same fault as
+  Grade 6 Arabic: each lesson showed the lesson before it. 25 lessons now read
+  the folder that opens on them through `rendered`, unit 6 lesson 1 included,
+  which had no pages. Unit 10's last folder holds both lesson 4 (p. 115) and
+  lesson 5 (p. 120).
+- **Maths semester 2:** all 4 entries opened on another page. They showed:
+  - unit 8's project page;
+  - unit 9's cover;
+  - lesson 2 instead of lesson 4;
+  - lesson 3 instead of lesson 4.
+
+  Each folder holds a whole unit, so **18 maths lessons** now open on their own
+  «الدرس» page: unit 8 lessons 1–6, unit 9 lessons 1–6, unit 11 lessons 2–4 and
+  unit 12 lessons 3–5. 14 of them had no picture before.
+- Arabic S1 «أقرأ (أحلام تطير)» now opens on its reading page (p. 113), not
+  the speaking lesson's last page.
+- Social S1 «المدرسة» now opens on its own page (p. 12), not lesson 1's review.
+- **23 ranges ran onto the next unit's cover, a «كفايات» page, the book's
+  closing page or the next lesson's opener.** They are trimmed: Arabic S1 (5),
+  Islamic (8), PE (4), arts (1), social (4) and science (1).
+- Not changed:
+  - Science S2 «المادة النقية والمخلوط» starts mid-lesson (p. 20): its opener
+    was never cut.
+  - Science and social S2 figure crops: all sit on fitting lessons, but some
+    are clipped at the edge; re-cropping needs the PDFs.
+- Still without pages: math S1, most of math S2, and science, English and part
+  of social.
+
+All 68 changed entries were checked through `bookPagesForLesson`: first and last
+image, by eye. `bookPage.test.ts` pins the Arabic shift and the maths offsets;
+it fails on the old data.
+
+**Coverage.** Each opener read matches its catalog title: Arabic, Islamic, PE,
+arts, social, and the maths lessons above. The matter unit («المادة وحالاتها»,
+«المادة النقية والمخلوط») is in **both** the science S1 and S2 books, the same
+pages and figures in each. The catalogs carry it twice, as the books do; it
+looks like the unit moved between editions. Not changed.
+
+**Generators (offline).**
+- Grounding by lesson id is exact for all 254 lessons; by title alone, 48
+  Arabic, English and science lessons collapse onto another unit.
+- Math draws Grade 3 numbers. The 437 keys the checker could recompute are
+  right; its 50 «wrong» and 10 «unsolvable» flags are its own parsing (it reads
+  «6 آلاف و 3 مئات…» as 345).
+- **Fixed:** «التقويم» asked «ما اليوم بعد 5 يومًا؟», which should be «5 أيام»,
+  and «كم يومًا في 2 أسابيع؟», which should be «أسبوعين». Counts start at 3;
+  11 and up take «يومًا».
+- Weak, not fixed: «مقارنة الأعداد» and «ترتيب الأعداد» draw the same mix.
+
+**Verified:** see the PR. Each new test was first seen failing on the old code or
+data. **Not run:** the pages on a phone, live AI, and checking topics against the
+PDFs (NCCD refuses this network).
+
 ## Grade 8 audit: book pages, figures, contents and honorifics checked against the printed books — 2026-11-13
 
 The Grade 6/7 review («Grade 6 audit…», «Grade 7 audit…»), repeated for all of Grade 8 (358 lessons, 19 books). Every
@@ -767,9 +826,10 @@ markup escaped), mobile `reportReason.test.ts`; `artifactReportReason.test.ts` s
 list wiring, and was shown to fail when the reason was dropped from the notification call. `pnpm run typecheck`; api-server
 build + suite (2,913 pass, 0 skipped).
 
-**Not verified / limits.** The sheet and the admin card were **not** opened in a browser or on a device: a pooled result
-needs a live API and database. Nothing here exercises Postgres — the `reason` insert and the admin select are checked by
-type and by source scan only. The **student** report (`POST /student/lesson-explanation/:variantId/report`) still sends no
+**Not verified at merge / limits.** The sheet and the admin card had **not** been opened in a browser or on a device when
+this merged (the production check below covers the sheet; the card is still open). The PR's own tests do not exercise
+Postgres — the `reason` insert and the admin select were checked by type and by source scan only (a local run against a
+throwaway Postgres did exercise them, below). The **student** report (`POST /student/lesson-explanation/:variantId/report`) still sends no
 reason, so its rows stay `""`; it would need the same sheet on the student screen. A second report by the same teacher on
 the same open artifact is still treated as a duplicate and does not update the first one's reason. The push to admins is
 unchanged (kind and lesson only); the reason is in the email and on the card. Reports filed before this change have no
@@ -782,8 +842,40 @@ mirrors and could not resolve `archive.ubuntu.com`, `security.ubuntu.com` or `az
 diff touches that workflow. The pin is the smallest change and affects only this job (the other workflows do not run apt).
 **Verified:** on the pinned runner the smoke test installed the browser and passed (about 3 minutes, 2026-11-13), so 24.04
 reaches the mirrors that 26.04 could not. **Not verified:** that `ubuntu-latest` itself had rolled to 26.04 (inferred from
-the apt log; the pin makes it moot) or that the DNS failure is gone for good rather than absent that day. E2E is not a
-required check, so this never gated merging.
+the apt log; the pin makes it moot) or that the DNS failure is gone for good rather than absent that day. **E2E is a
+required check** (`STATUS.md`: `teacher to student smoke test`, required on `main` since 2026-11-01), so the red smoke test
+would have blocked this merge until the pin made it pass. An earlier version of this entry, and the PR description, said it
+was *not* required; that came from a stale comment in `e2e.yml`, which #1392 corrected after this merged.
+
+**Checked on production (2026-11-13), after the merge.** Deploy run #941 passed: the API (Cloud Run, «Verify the deployed
+commit» green) and the web bundle (Cloudflare Pages, «Verify the deployed bundle» green); `iqraa-verifier` was skipped as
+expected and there was no migration to apply. The Android OTA was then published by hand to the `production` channel
+(`mobile-update.yml`, `branch=production`; runtime version 1.6.0; update group `e2df241e-1124-4752-b91d-65661cec97f8`; commit
+`5ee193e`). With a throwaway teacher account (a plus-alias of the owner's own address) on app.iqrra.com, a Grade 10 maths
+worksheet («تركيب الاقترانات») was generated and «بلّغ عن مشكلة» opened: the new sheet rendered (title, the optional
+«ما المشكلة؟» box with its placeholder, send and cancel). The request `POST /generate/variants/:id/retire` carried the typed
+reason in its JSON body and answered 200, and within seconds the admin email arrived with the reason in both the Arabic
+(«سبب البلاغ») and the English («Reason given») block. Before that, the same path was run locally against a throwaway
+Postgres 16 with all 25 migrations: a report with a reason was stored verbatim (Arabic digits, a line break and a typed
+`<b>` tag intact), a report with no body was stored with an empty reason, a double tap made one row and one notification,
+and the admin list returned the reason.
+
+**Still not verified.** The admin card on production (it needs a `system_admin` login). That the reason is stored in
+`ai_artifact_reports.reason` on the **production** database and returned by the production list: the production email proves
+the request carried the reason and the notification received it, but the email is built from the request, not read back from
+the row, so only the local run shows the insert and the list. The native Android sheet on a device, and that any
+`production`-channel binary on 1.6.0 has fetched the OTA (a successful publish says nothing about receipt). The replacement
+worksheet the app requests after every report was not inspected.
+
+**Observed, unexplained.** The throwaway account's first `POST /generate/worksheet` returned 500 «AI generation failed.
+Please try again.» (the app then showed demo content labelled «تعذّر الاتصال · محتوى تجريبي», which has no report button
+because it is not a pooled paper); an immediate retry returned 200. No server logs were read, so the cause (a provider
+error, a first request from a new account, or something else) is not known.
+
+**Left on production by the test.** One throwaway teacher account (named «اختبار بلاغ تجريبي»), one open report whose
+reason asks the admin to dismiss it, and at least one AI-generated worksheet for that lesson in the shared pool (probably a
+second, the replacement). Resolve the report as «تجاهل»: resolving it as `approved` would withdraw that pooled paper. The
+account can be deleted from its profile.
 
 ## Today's setup nudge no longer says "no plan" about a plan that exists — 2026-11-05
 
