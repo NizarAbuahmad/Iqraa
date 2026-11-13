@@ -279,6 +279,8 @@ test('every grammar-only lesson has a grammar unit', async () => {
   for (const id of GRAMMAR_ONLY) assert.ok(grammarUnit(id), id);
 });
 
-test('the hub has 42 Grade 9 and 31 Grade 10 lessons now and every other grade is unchanged', () => {
-  assert.deepEqual([1, 2, 3, 4, 5, 9, 10].map(g => hubLessonsForGrade(g).length), [10, 9, 8, 9, 10, 42, 31]);
+test('the hub has 42 Grade 9 and 35 Grade 10 lessons now and every other grade is unchanged', () => {
+  // Grade 10 was 31 before the Word List markers were read through their LESSON headings (extract-english-vocabulary.ts):
+  // the lessons that print a Word List (2A, 3A and 5A of units 2-4, 5A and 6A of unit 5 …) now carry their own words.
+  assert.deepEqual([1, 2, 3, 4, 5, 9, 10].map(g => hubLessonsForGrade(g).length), [10, 9, 8, 9, 10, 42, 35]);
 });
