@@ -78,6 +78,78 @@ own change (fixing it turns four G9 grammar lessons grammar-only). Ten offline m
 build + tests; mobile suite; math-verifier — results in the PR body. Not opened in a browser or on a
 device; no live model was run.
 
+## Grade 10 maths: lesson-specific offline questions for thin and empty lessons — 2026-11-13
+
+Offline (live AI off), a Grade 10 maths lesson's questions come from `takeConcreteMath`
+(`lib/math-practice/src/index.ts`), which maps the lesson to a bank *family* shared with its sibling lessons.
+
+**What was thin (measured before the change, one session, `allowRepeat=false`, mobile `takeConcreteMath`
+with the real KB lesson):**
+- «قانون الجيوب» (u4_l2) and «قانون جيب التمام» (u4_l3) shared `trig_apps`: **3 items** in all (one sine
+  rule, one cosine rule, one area), so a sine-rule quiz held 3 questions, one of them on the cosine rule.
+- «النسب المثلثية» (u3_l1), «… ضمن الدورة الواحدة» (u3_l2) and «حل المعادلات المثلثية» (u3_l4) shared
+  `trig`: **6 items**, ratios and equations mixed.
+- «معادلة الدائرة» (u2_l4) got `circle`: 5 items, half of them arc length and area (another lesson).
+- «تمثيل الاقترانات المثلثية» (u3_l3), «حل مسائل ثلاثية الأبعاد» (u4_l5), «اقترانات كثيرات الحدود»
+  (u5_l1), «قسمة كثيرات الحدود والاقترانات النسبية» (u5_l2): **nothing** (no family, no generator).
+- The API's mock evaluation generator was the same or worse: it reaches the bank with the *objective's
+  wording*, so «حل مسائل ثلاثية الأبعاد» was served trigonometry-ratio items (an objective mentions «النسب
+  المثلثية») and a 10-question «قانون الجيوب» paper came back with 4 questions, 3 distinct.
+
+**What changed.**
+- `lib/math-practice/src/grade10.ts`: ten topic generators (`grades: [10, 10]`, `match` anchored to the
+  folded catalog title), one per lesson above, each asking what its student-book pages ask (S1 pp. 54-61,
+  66-95, 106-118, 124-129; S2 pp. 8-24 — the S2 lesson is titled «الاقترانات النسبية» in the book and
+  matches too), with 3–8 kinds each: centre/radius from the standard and general forms, the equation from
+  centre and radius or a point, tangent length; coterminal angles, ratios from a unit-circle point,
+  quadrantal angles, sin²+cos²=1; reference angles, exact values all the way round, the second angle with
+  the same ratio, the book's wheel h = a − a cos θ; graph symmetry, where y = k cuts the curve, max/min and
+  where, value at a point; a·f(x)+b=c for sin/cos/tan, a common factor (the book's «أكتشف الخطأ»: dividing
+  by sin x loses its roots), quadratics in sin/cos/tan; the sine rule for a side, a side after the angle sum,
+  an angle (only where the obtuse twin cannot fit); the cosine rule for a side, an angle, clock hands, two
+  ships; cuboid face and space diagonals, the diagonal–base angle to 0.1°, square-pyramid height; degree /
+  leading coefficient / constant of a polynomial written out of order, one coefficient of f ± g and of a
+  product, s(t) position and when at the origin; remainder, quotient (incl. the book's missing-term
+  dividend), domain, vertical/horizontal asymptotes of a/(x−b)+c and px/(x−b), the hole a common factor
+  leaves. Special angles only; triangles and solids chosen so lengths are whole or simple surds; whole
+  coefficients; distractors are real slips (sin↔cos, wrong quadrant, sign, forgetting the square root,
+  dividing out a factor).
+- Routing, scoped: `G10_LESSON_FIRST` lists exactly these ten ids. `takeConcreteMath` asks
+  `takeG10LessonMath` first (the lesson's title, as `topicForLesson` reads it) and only then the family — so
+  every other Grade 10 lesson keeps exactly today's bank behaviour. `mathBankCovers` is now true for the four
+  that had nothing.
+- API (`mockGenerator.ts` `bankMultipleChoice`): for a Grade 10 maths evaluation it tries
+  `takeG10LessonMath` with `objective.lessonTitleAr` before the existing bank call — the smallest change that
+  makes the API reach the same generators (the objective's wording matches no title).
+
+**Verified.** `lib/math-practice/src/__tests__/grade10Lessons.test.ts` (38 tests, written first and seen
+failing): each catalog title (read from the catalog JSON) reaches its own generator through
+`takeConcreteMath` with the real KB id, never a banked item, ≥10 distinct questions in one session (20/20
+measured on the mobile path for every lesson); every answer recomputed from its own stem by code sharing
+nothing with the generators (Math.sin/cos/tan, a 0°–359° sweep for the equations, its own polynomial
+parser and long division); every kind drawn; 3 distinct wrong options, none worth the answer, no
+hyphen-minus, no float residue, English stems too; the multiple-choice key is among the options; untouched
+lessons («حل المعادلة الأسية», «المتتاليات», «الاشتقاق», «الضرب القياسي», «تبسيط المقادير الأسية», typed
+«law of sines») still draw banked items. Two throwaway mutations (the sine quadrant rule, the cosine-rule
+sign) each failed the suite. API: four lessons now give ≥8 distinct, self-marking, validator-accepted
+questions on a 10-question paper; «حل المعادلة الأسية» stays on its family (test seen failing with the
+change disabled). Three mobile tests used «قانون الجيوب» as *the* thin bank (3 items) to pin the
+shortfall notice and the no-repeat short worksheet; they now use «المتجهات في المستوى الإحداثي» (`vectors`,
+5 items, all with working). Suites: math-practice 1023/1023, api-server 2919/2919, mobile 9248 pass /
+0 fail (10 skipped, as before), root typecheck clean. 100 generated questions (4–6 per lesson, two runs) read and every key checked by hand.
+
+**Not done / limits.** `takeSolvedMath` (worked examples) and the formats bank (`pickForFormat`) still use
+the families — «قانون الجيوب» still gets the one banked sine-rule worked example. **Side effect on wide
+worksheets:** a whole-semester-2 offline worksheet's first two slots are now «اقترانات كثيرات الحدود» and
+«قسمة كثيرات الحدود…» (covered now, but with no hand-checked working), so that paper opens with no worked
+example and no half-solved item — what semester 1 already did for its second slot. The wide-scope test that
+pinned the half-solved item now uses unit 6 (derivatives). Writing working for the new generators, or
+letting a wide paper take its example from the next lesson that has some, is a follow-up. The S1 student book's text
+layer is scrambled, so those lessons were followed from the readable parts (examples, exercise numbers,
+the book's tables) and the catalog objectives, not line by line. No ambiguous-case sine-rule items, no
+non-special angles (the book's calculator questions), no graphs drawn. No «ما الجديد» entry: offline
+question content, no new screen or tool. Generated items carry no `check` and are never `verified`.
+
 ## Library review: admin edits move the lesson, a failed load is said, search knows the lesson, no semester tag — 2026-11-13
 
 A review of the Library (`/curriculum/resources`), its services, the staff screen (`/admin/library`) and

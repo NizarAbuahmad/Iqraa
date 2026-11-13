@@ -19,6 +19,7 @@ import { GEOMETRY_TOPICS } from './geometry.ts';
 import { STATS_TOPICS } from './stats.ts';
 import { PROPORTION_TOPICS } from './proportion.ts';
 import { EARLY_TOPICS } from './early.ts';
+import { G10_LESSON_TOPICS } from './grade10.ts';
 import { G10_TOPICS } from './g10.ts';
 import { FRESH_DRAWS, servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
 import {
@@ -1995,6 +1996,7 @@ export const TOPICS: readonly Topic[] = [
   ...STATS_TOPICS,
   ...PROPORTION_TOPICS,
   ...EARLY_TOPICS,
+  ...G10_LESSON_TOPICS,
   ...G10_TOPICS,
 ];
 

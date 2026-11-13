@@ -28,6 +28,7 @@ import { subjectIdFromName } from './subjects.ts';
 import { stepsFor } from './steps.ts';
 import { elementaryOpsForTitle, makeElementaryItem } from './elementary.ts';
 import { makeTopicItem, topicFor } from './topics.ts';
+import { G10_LESSON_FIRST } from './grade10.ts';
 import { servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
 
 export { isChemContext, detectChemFamily, CHEM_BANK } from './chemistry.ts';
@@ -154,6 +155,17 @@ function topicForLesson(topic: string, kb: KBLesson | null, grade: number) {
     if (gen) return gen;
   }
   return null;
+}
+
+/**
+ * The lesson's own generator when it is one of the thin Grade 10 lessons in
+ * `G10_LESSON_FIRST` (see `./grade10.ts`), else null. Read by title, exactly as
+ * `topicForLesson`, so every other lesson — including every other Grade 10
+ * lesson — goes on to its bank family unchanged.
+ */
+function g10LessonFirst(topic: string, kb: KBLesson | null) {
+  const gen = topicForLesson(topic, kb, 10);
+  return gen && G10_LESSON_FIRST.has(gen.id) ? gen : null;
 }
 
 export function lessonTextBlob(topic: string, kb: KBLesson | null): string {
@@ -289,7 +301,7 @@ export function mathBankCovers(topic: string, kb: KBLesson | null, grade: number
     return (grade <= 6 && elementaryOpsForTitle(title).length > 0) || topicForLesson(topic, kb, grade) !== null;
   }
   // Grade 10 has the banked families; a lesson none of them is about may still have a generator
-  return matchMathFamily(topic, kb) !== null || (grade === 10 && topicForLesson(topic, kb, grade) !== null);
+  return matchMathFamily(topic, kb) !== null || g10LessonFirst(topic, kb) !== null || (grade === 10 && topicForLesson(topic, kb, grade) !== null);
 }
 
 function placeCorrect(correct: string, wrongs: string[]): string[] {
@@ -775,6 +787,11 @@ export function takeConcreteMath(
   /** See `takeFromBank` — false for the worksheet path, true everywhere else. */
   allowRepeat: boolean = true,
 ): PracticeWQ | null {
+  // The thin Grade 10 lessons are served by their own generator, ahead of the
+  // family they share with a sibling lesson (`G10_LESSON_FIRST`). A generator
+  // never runs dry, so `allowRepeat` has nothing to decide for them.
+  const own = takeG10LessonMath(type, topic, kb, diff, lang, points, session);
+  if (own) return own;
   const family = matchMathFamily(topic, kb);
   if (!family) return null;
   return takeFromBank(
@@ -788,6 +805,27 @@ export function takeConcreteMath(
     session ?? usedIds,
     allowRepeat,
   );
+}
+
+/**
+ * An item from the lesson's own generator when the lesson (by title) is one of
+ * the Grade 10 lessons in `G10_LESSON_FIRST`; null for every other lesson.
+ * `takeConcreteMath` calls this first; the API's evaluation generator calls it
+ * with the objective's lesson title, since the topic it passes the bank is the
+ * objective's own wording.
+ */
+export function takeG10LessonMath(
+  type: QType,
+  topic: string,
+  kb: KBLesson | null,
+  diff: DiffTier,
+  lang: Lang,
+  points: number,
+  session?: Set<string>,
+): PracticeWQ | null {
+  const gen = g10LessonFirst(topic, kb);
+  if (!gen) return null;
+  return { ...formatItem(makeTopicItem(gen, 10, diff, session ?? usedIds), lang, type), points };
 }
 
 /**

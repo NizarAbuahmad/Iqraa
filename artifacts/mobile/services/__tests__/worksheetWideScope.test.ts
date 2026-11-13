@@ -107,6 +107,22 @@ describe('offline worksheet — a wide scope', () => {
       assert.ok(wide.lessons.some(l => l.id === half.lessonId), `foreign lesson ${half.lessonId}`);
     });
   }
+
+  it('the half-solved question names a lesson of the scope', async () => {
+    // Unit 6 (derivatives), balanced: the first two slots' lessons both have
+    // checked working, so the paper has an example and a half-solved item. (The
+    // semester papers above now keep theirs too: the solved slots walk past a
+    // lesson with a generator but no worked solutions.)
+    const unit6: ScopeSelection = { kind: 'unit', gradeId: 'grade-10', subjectId: 'mathematics', unitId: 'kbu-math-s2-nccd-u6' };
+    const wide = buildWideRequest(unit6, 'ar', 12, 'balanced')!;
+    const req = { ...base, topic: 'وحدة المشتقات', numQuestions: 12, ...wide.fields } as AIRequest;
+    const out = await aiService.generateWorksheet(req);
+    const half = halfSolved(out);
+    assert.ok(half, 'probe: the wide maths paper should have a half-solved section');
+    assert.ok(out.workedExample, 'probe: ... and the worked example it follows');
+    assert.ok(half.lessonId, 'half-solved question has no lessonId');
+    assert.ok(wide.lessons.some(l => l.id === half.lessonId), `foreign lesson ${half.lessonId}`);
+  });
 });
 
 describe('offline homework — a wide scope', () => {
