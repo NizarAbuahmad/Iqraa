@@ -173,8 +173,11 @@ describe('figuresForLesson', () => {
     // its layout, so these four figures existed but nothing could ask for
     // them. Joined on the Arabic title, which matches the curriculum's word
     // for word — the book states no English lesson title on its openers.
+    // Its own pages are 20-23. This once pinned p024 as «the wave-model figure»,
+    // but p24 is the unit's enrichment page and that crop is its solar cell
+    // (Grade 10 audit, 2026-11-13), so it was dropped.
     const wave = figuresForLesson('kbl-chem-s1-nccd-u1_l2');
-    assert.ok(wave.some(f => f.pdfPage === 24), 'the wave-model figure');
+    assert.ok(wave.length > 0 && wave.every(f => f.pdfPage >= 20 && f.pdfPage <= 23), 'the lesson keeps its own figures');
     assert.ok(wave.every(f => f.sourceId === 'chem-s1-student-book'));
     // Counts are asserted as "some", not as a number. They were 2 and 1 when
     // the extractor only found figures seeded on a pair of axes; teaching the
@@ -226,10 +229,10 @@ describe('the three sciences carry figures', () => {
   // figure-lesson-map entry, an index.json that stopped being imported.
   const FLOOR: Record<string, number> = {
     'kbl-phys-s1-nccd-u1_l1': 5,
-    'kbl-phys-s2-nccd-u5_l2': 15,
+    'kbl-phys-s2-nccd-u5_l2': 13, // 15 until the Grade 10 audit dropped its enrichment and unit-review crops
     'kbl-biology-s1-nccd-u3_l3': 3,
     'kbl-biology-s2-nccd-u3_l6': 12,
-    'kbl-earth-science-s1-nccd-u1_l1': 4,
+    'kbl-earth-science-s1-nccd-u1_l1': 3, // 4 until the Grade 10 audit dropped the rock cycle missing its left third
     'kbl-earth-science-s2-nccd-u3_l2': 8,
   };
 
