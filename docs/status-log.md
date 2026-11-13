@@ -51,10 +51,14 @@ have generators (`ineq_two_var`, `interpret_graphs`, `midsegment_triangle` in `l
 answers computed, never `verified`, re-derived by `g9GraphLessons.test.ts`).
 Live grounding: `passagesForUnit` searched only by objectives when a caller passed no terms (a
 unit/semester/book paper, the exam generator), so a book that prints no outcomes got no pages —
-Grade 9 Islamic Studies, 0 of 8 units. It now falls back to the unit's lesson titles, skipping listing
-pages and pages a sibling unit's titles describe better: Islamic gets pages for 8/8 units, 28 of 32 in
-the right unit (by the contents pages' ranges). This also reaches 149 units in other grades that had
-text but no objectives; their page quality was **not** measured.
+Grade 9 Islamic Studies, 0 of 8 units. It now falls back to the unit's lesson titles, guarded (built
+once per book): no front matter (up to the contents page), no listing pages, and a page counts only on
+two title words no sibling unit's titles share, scoring higher there than for any sibling. Islamic gets
+pages for 8/8 units, 28 of 31 inside the right unit by the contents pages' ranges. This also reaches
+142 units in other grades that had text but no objectives. Spot-checked: Grade 10 geography S1 (every
+page in order inside its unit), Grade 5 science S1 (coherent), Grade 4 Arabic S1 (four units right;
+unit 3, whose titles are the same skill names as its siblings', gets nothing rather than wrong pages).
+The rest were **not** measured.
 
 **Figures.** All 508 remaining Grade 9 figures exist, map to a real lesson, sit inside their lesson's
 pages and are in `bookFigureAssets.ts`. Six crops were dropped (four English photos with body text
