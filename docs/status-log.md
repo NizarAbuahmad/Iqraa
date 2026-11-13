@@ -59,6 +59,65 @@ is mapped and listed but not yet uploaded, so its lesson shows a broken image un
 Not looked at in the running app. The extractors are unchanged, so re-running them would bring these back.
 Everything the grade 9 review lists as needing the PDFs still does.
 
+## Grade 3 review: Arabic S2 pages one lesson early, maths pages from their own lesson, calendar grammar — 2026-11-13
+
+The same review as Grades 1 and 2 (below), for Grade 3's 15 books and 254 lessons.
+
+**Book pages.** I opened the first and the last page of all 145 listed lessons,
+then every page of the folders that looked wrong.
+- **Arabic semester 2 was cut one lesson early throughout**, the same fault as
+  Grade 6 Arabic: each lesson showed the lesson before it. 25 lessons now read
+  the folder that opens on them through `rendered`, unit 6 lesson 1 included,
+  which had no pages. Unit 10's last folder holds both lesson 4 (p. 115) and
+  lesson 5 (p. 120).
+- **Maths semester 2:** all 4 entries opened on another page. They showed:
+  - unit 8's project page;
+  - unit 9's cover;
+  - lesson 2 instead of lesson 4;
+  - lesson 3 instead of lesson 4.
+
+  Each folder holds a whole unit, so **18 maths lessons** now open on their own
+  «الدرس» page: unit 8 lessons 1–6, unit 9 lessons 1–6, unit 11 lessons 2–4 and
+  unit 12 lessons 3–5. 14 of them had no picture before.
+- Arabic S1 «أقرأ (أحلام تطير)» now opens on its reading page (p. 113), not
+  the speaking lesson's last page.
+- Social S1 «المدرسة» now opens on its own page (p. 12), not lesson 1's review.
+- **23 ranges ran onto the next unit's cover, a «كفايات» page, the book's
+  closing page or the next lesson's opener.** They are trimmed: Arabic S1 (5),
+  Islamic (8), PE (4), arts (1), social (4) and science (1).
+- Not changed:
+  - Science S2 «المادة النقية والمخلوط» starts mid-lesson (p. 20): its opener
+    was never cut.
+  - Science and social S2 figure crops: all sit on fitting lessons, but some
+    are clipped at the edge; re-cropping needs the PDFs.
+- Still without pages: math S1, most of math S2, and science, English and part
+  of social.
+
+All 68 changed entries were checked through `bookPagesForLesson`: first and last
+image, by eye. `bookPage.test.ts` pins the Arabic shift and the maths offsets;
+it fails on the old data.
+
+**Coverage.** Each opener read matches its catalog title: Arabic, Islamic, PE,
+arts, social, and the maths lessons above. The matter unit («المادة وحالاتها»,
+«المادة النقية والمخلوط») is in **both** the science S1 and S2 books, the same
+pages and figures in each. The catalogs carry it twice, as the books do; it
+looks like the unit moved between editions. Not changed.
+
+**Generators (offline).**
+- Grounding by lesson id is exact for all 254 lessons; by title alone, 48
+  Arabic, English and science lessons collapse onto another unit.
+- Math draws Grade 3 numbers. The 437 keys the checker could recompute are
+  right; its 50 «wrong» and 10 «unsolvable» flags are its own parsing (it reads
+  «6 آلاف و 3 مئات…» as 345).
+- **Fixed:** «التقويم» asked «ما اليوم بعد 5 يومًا؟», which should be «5 أيام»,
+  and «كم يومًا في 2 أسابيع؟», which should be «أسبوعين». Counts start at 3;
+  11 and up take «يومًا».
+- Weak, not fixed: «مقارنة الأعداد» and «ترتيب الأعداد» draw the same mix.
+
+**Verified:** see the PR. Each new test was first seen failing on the old code or
+data. **Not run:** the pages on a phone, live AI, and checking topics against the
+PDFs (NCCD refuses this network).
+
 ## Grade 8 audit: book pages, figures, contents and honorifics checked against the printed books — 2026-11-13
 
 The Grade 6/7 review («Grade 6 audit…», «Grade 7 audit…»), repeated for all of Grade 8 (358 lessons, 19 books). Every
