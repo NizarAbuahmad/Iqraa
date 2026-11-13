@@ -7672,7 +7672,8 @@
       "semester": 1,
       "kind": "teacher-guide",
       "authority": "nccd",
-      "status": "ingested",
+      "status": "duplicate",
+      "duplicateOf": "g4-digital-s1-teacher-guide",
       "filename": "دليل المعلم لمادة المهارات الرقمية الصف الخامس الفصل الأول.pdf",
       "authorAr": null,
       "unitTags": [
@@ -7687,15 +7688,7 @@
         "دليل المعلم",
         "الفصل الأول"
       ],
-      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 62% of samples — readable by eye, not quotable). من أصلِ 85 صفحةٍ نثريّةٍ، 2 صفحةً (2%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
-      "extraction": {
-        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 62% of samples — readable by eye, not quotable)",
-        "extractedAt": "2026-09-16",
-        "pages": 91,
-        "chars": 83272,
-        "localPath": "knowledge-base/grade-5-digital-literacy/support-pdfs/دليل المعلم لمادة المهارات الرقمية الصف الخامس الفصل الأول.pdf",
-        "sha256": "2b52c644ef4b4943e408bc9356422bcca1eff18a5542235b7af1fd1a3da64e4b"
-      }
+      "notes": "ليسَ دليلَ الصفِّ الخامسِ: غلافُهُ «الصف الرابع الأساسي - دليل المعلم» ورقمُهُ المعياريُّ (978-9923-41-983-0) ورقمُ إيداعِهِ (2025/5/2382) هما رقما g4-digital-s1-teacher-guide (تحقَّقَ منهُ 2026-11-13)، فوُسِمَ duplicate وحُذِفَ نصُّهُ المستخرَجُ كي لا يُؤسِّسَ دروسَ الصفِّ الخامسِ على كتابِ الرابعِ. يبقى دليلُ الصفِّ الخامسِ الحقيقيُّ مطلوبًا. استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 62% of samples — readable by eye, not quotable). من أصلِ 85 صفحةٍ نثريّةٍ، 2 صفحةً (2%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ."
     },
     {
       "id": "g5-arts-s1-student-book",

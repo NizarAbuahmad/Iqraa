@@ -8,14 +8,17 @@
     "semester_covered": 1,
     "schema_version": "1.0",
     "source_books": [
-      "كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الأول (g5-english-s1-pupils-book, Jordan Team Together series, Pearson/York Press)"
+      "كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الأول (g5-eng-s1-student-book, Jordan Team Together series, Pearson/York Press)",
+      "دليل المعلم لمادة اللغة الإنجليزية للصف الخامس الفصل الأول (g5-eng-s1-teacher-guide) — read 2026-11-13 for the lesson structure only"
     ],
     "provenance_note": "Read directly from the PDF via PyMuPDF on 2026-09-16 — extraction is clean (this book is in English, so none of the Arabic-extraction issues that hit other Grade 5 books apply). Unit titles, page numbers, vocabulary, grammar structures (with the book's own example sentences), and skill descriptors were taken from the book's own two-page 'Scope and sequence' table (pp. 4-5), which is unambiguous and easy to verify against the Contents page. Individual page-by-page lesson numbering inside each unit ('Lesson 1', 'Lesson 2'...) follows an inconsistent odd/even pattern across units in the raw extraction and was not reliably reconstructable without much deeper page-by-page reading, so each unit here is split into exactly two lessons — Vocabulary & Grammar, and Listening & Speaking — reflecting the two content halves the scope-and-sequence table itself separates, not the book's own internal lesson count.",
     "known_gaps": [
       "This is real content (vocabulary lists, grammar points with the book's own example sentences, skill descriptors), not title-only — but it is unit-level, not lesson-level: each unit's actual internal lesson count and exact per-lesson titles (as printed inside the unit, e.g. 'Lesson 1: Vocabulary') were not verified page by page.",
       "Following the g7EngSem1.ts precedent for English-subject books, `main_idea_ar` and `objectives` hold literal English text (this book's own language), not Arabic; `title_ar` carries a plain Arabic gloss of the English title for search/display.",
       "'Welcome back' (the review unit opening the book) is included as Unit 1 here because it carries its own new vocabulary and grammar point in the scope-and-sequence table, not just a recap of Grade 4 — same treatment as every other unit.",
-      "Excluded as supplementary, non-core material (no dedicated row in the scope-and-sequence table): the two 'Bo's Learning Club: Language booster' spreads, the 'Festivals' pages (Harvest Festival, World Water Day), 'Solve it', and the 'Grammar reference' appendix."
+      "Excluded as supplementary, non-core material (no dedicated row in the scope-and-sequence table): the two 'Bo's Learning Club: Language booster' spreads, the 'Festivals' pages (Harvest Festival, World Water Day), 'Solve it', and the 'Grammar reference' appendix.",
+      "Checked 2026-11-13 against the teacher's guide (p. 7: 'There are 12 lessons in each main unit') and the pupil's book: the real structure is Welcome back = 3 lessons (1 Vocabulary, 2 Grammar, 3 Vocabulary) and each main unit = 12 lessons (1 PB Vocabulary, 2 AB Vocabulary, 3 PB Story, 4 AB Story, 5 PB Grammar, 6 AB Grammar, 7 PB Vocabulary and Grammar (song), 8 AB Vocabulary and Grammar, 9 Culture + project, 10 English in action + Pronunciation, 11 Reading, 12 Listening, Speaking and Writing). The two lessons per unit here are kept because their ids are persisted; the story, culture, English in action, reading and writing topics of each unit were appended to the existing lessons' objectives instead (l1: grammar, song, pronunciation; l2: the rest). The catalog numbers the units 1–5 (Welcome back = u1), while the book numbers its main units 1–4, so the book's Unit 1 'Talent show' is u2 here.",
+      "Vocabulary corrected 2026-11-13: 'money' + 'box' were the scope table's line-wrapped 'money box' (the unit page, the PB p. 47 labels and the TG's target language all print 'money box'); duplicated pronunciation words already listed as vocabulary (untidy; planet, spacesuit, rocket, satellite, telescope) were removed."
     ]
   },
   "units": [
@@ -37,7 +40,10 @@
           "main_idea_ar": "Present simple with before/after/when. Example: When Jameela gets home, she plays with her cat.",
           "periods": null,
           "objectives": [
-            "Present simple with before/after/when — e.g. When Jameela gets home, she plays with her cat."
+            "Present simple with before/after/when — e.g. When Jameela gets home, she plays with her cat.",
+            "Lesson 1 (PB pp. 4–5): free-time activities — the story 'Back in the shed' (the Discovery Team back at school); asking and answering about a weekly planner (What does Katy do on Sundays?).",
+            "Lesson 2 (PB p. 6): Grammar — before/after/when with the present simple (Before I go to school, I brush my hair.).",
+            "Lesson 3 (PB p. 7): appearance (say long/short first: long, dark, curly hair); the poem 'My family's unusual'; writing a poem about your family."
           ],
           "vocabulary": [
             {
@@ -108,7 +114,11 @@
           "objectives": [
             "Following the sequence of events in a simple story or narrative.",
             "Identifying people in their immediate surroundings or in pictures from a short, simple description of their physical appearance and clothes.",
-            "Describing someone's physical appearance in a basic way."
+            "Describing someone's physical appearance in a basic way.",
+            "Speaking: describing daily routines in a simple way.",
+            "Reading: identifying specific information in a simple story; understanding the correct sequence of events; understanding basic sentences describing someone's physical appearance.",
+            "Writing: short, simple descriptions of people's physical appearance using basic connectors.",
+            "Viewing and presenting: presenting a poem about family to the class."
           ],
           "vocabulary": []
         }
@@ -133,7 +143,10 @@
           "periods": null,
           "objectives": [
             "Comparative and superlative adjectives — e.g. My mum is shorter than me. She's the shortest person in our family!",
-            "be good at — e.g. I'm good at baking a cake."
+            "be good at — e.g. I'm good at baking a cake.",
+            "Irregular comparatives and superlatives: good – better – the best; bad – worse – the worst (PB p. 12).",
+            "Song: 'Everyone's good at something!' (PB p. 13).",
+            "Pronunciation: the prefix un- for adjectives (untidy, unfriendly, unhappy, unlucky, unwell, unsafe) — the tongue twister 'My sister is untidy' (PB p. 15)."
           ],
           "vocabulary": [
             {
@@ -217,10 +230,6 @@
               "en": "make a pizza"
             },
             {
-              "ar": "غير مرتّب",
-              "en": "untidy"
-            },
-            {
               "ar": "غير ودود",
               "en": "unfriendly"
             },
@@ -252,7 +261,13 @@
           "objectives": [
             "Following the sequence of events in a simple story or narrative.",
             "Recognising familiar key words and phrases in short, basic descriptions.",
-            "Describing people — e.g. She's very friendly."
+            "Describing people — e.g. She's very friendly.",
+            "Story (PB pp. 10–11): 'Watch out for the cat!' — Millie and Bo at the school talent show; value: I help my friends develop their talents; designing your own house number.",
+            "Culture (PB p. 14): good manners around the world; project: making a book about good manners.",
+            "English in action (PB p. 15): describing people — Who's that girl over there? What's she like? She seems very confident.",
+            "Reading (PB p. 16): a report, 'Class 5B activity day'.",
+            "Speaking: describing someone's physical appearance; making simple, direct comparisons between two people or things.",
+            "Writing (PB p. 17): a short description of a person you know well (model: 'My Granny'), linking ideas with and, or, but, so, because."
           ],
           "vocabulary": []
         }
@@ -277,7 +292,10 @@
           "periods": null,
           "objectives": [
             "Past simple — e.g. Did you have a phone ten years ago? That computer was really big!",
-            "could/couldn't — e.g. When I was one, I could walk but I couldn't talk."
+            "could/couldn't — e.g. When I was one, I could walk but I couldn't talk.",
+            "Past simple of regular (play – played, try – tried) and irregular (have – had, find – found) verbs, with time expressions (last month, two days ago, ten years ago) (PB p. 22).",
+            "Song: 'What could you do when you were two?' (PB p. 23).",
+            "Pronunciation: changing verbs to nouns with the suffix -tion (inform – information, describe – description) (PB p. 25)."
           ],
           "vocabulary": [
             {
@@ -391,7 +409,11 @@
             "Identifying the context of short, simple dialogues related to familiar everyday situations.",
             "Talking about past events or experiences, using simple language.",
             "Expressing ability or lack of ability in relation to basic everyday actions.",
-            "Function: Asking for information — e.g. I'd like some information about the Science Museum, please."
+            "Function: Asking for information — e.g. I'd like some information about the Science Museum, please.",
+            "Story (PB pp. 20–21): Hamed's 'then and now' project, a speaking tube and a secret Discovery Team code; value: I am creative.",
+            "Culture (PB p. 24): world museums (the Jordan Museum, the Shanghai Museum of Science and Technology, the Natural History Museum in London); project: writing a guide to a museum.",
+            "Reading (PB p. 26): 'Mustafa's science blog — How cardboard is like a bridge'; matching headings to paragraphs.",
+            "Writing (PB p. 27): a report about a visit to a museum or another interesting place, starting with the date and using paragraphs."
           ],
           "vocabulary": []
         }
@@ -416,7 +438,9 @@
           "periods": null,
           "objectives": [
             "will/won't — e.g. I'll get him a present. I won't get him a book.",
-            "How...? — e.g. How deep is the Grand Canyon?"
+            "How...? — e.g. How deep is the Grand Canyon?",
+            "Song: 'Do you love big numbers?' — How tall / high / deep / long / far …? (PB p. 37).",
+            "Pronunciation: syllable stress in two- and three-syllable words (planet, spacesuit, rocket, satellite, astronaut, telescope, scientist, explorer) (PB p. 39)."
           ],
           "vocabulary": [
             {
@@ -500,28 +524,8 @@
               "en": "a million"
             },
             {
-              "ar": "كوكب",
-              "en": "planet"
-            },
-            {
-              "ar": "بدلة فضاء",
-              "en": "spacesuit"
-            },
-            {
-              "ar": "صاروخ",
-              "en": "rocket"
-            },
-            {
-              "ar": "قمر صناعي",
-              "en": "satellite"
-            },
-            {
               "ar": "رائد فضاء",
               "en": "astronaut"
-            },
-            {
-              "ar": "تلسكوب",
-              "en": "telescope"
             },
             {
               "ar": "عالِم",
@@ -544,7 +548,12 @@
             "Following the sequence of events in a simple story or narrative.",
             "Identifying specific information in short, simple dialogues in which speakers make arrangements to do something.",
             "Identifying key information about future plans in short, simple dialogues.",
-            "Talking about plans for the near future in a simple way; giving an opinion in a structured discussion; telling a simple story."
+            "Talking about plans for the near future in a simple way; giving an opinion in a structured discussion; telling a simple story.",
+            "Story (PB pp. 34–35): the Science Fair challenges — a model of the solar system and how astronauts brush their teeth when everything is weightless; value: I am a good citizen at school.",
+            "Culture (PB p. 38): stone circles in the UK (Castlerigg, Stonehenge); project: making a class book about ancient places in your country.",
+            "English in action (PB p. 39): giving personal information — I'm interested in joining the Space Explorers Club.",
+            "Reading (PB p. 40): 'Life on the International Space Station'.",
+            "Writing (PB p. 41): a blog post as an astronaut on the International Space Station, using a question to make the writing more interesting."
           ],
           "vocabulary": []
         }
@@ -569,7 +578,10 @@
           "periods": null,
           "objectives": [
             "Relative clauses — e.g. It's the man who we saw earlier. We're in the shop where my brother works.",
-            "have to/don't have to — e.g. I have to save some money."
+            "have to/don't have to — e.g. I have to save some money.",
+            "Relative pronouns: who for a person, which for a thing, where for a place (PB p. 46).",
+            "Song: 'I stood outside the toy shop' — I have to spend my birthday money (PB p. 47).",
+            "Pronunciation: changing verbs to nouns with the suffix -ment (pay – payment, encourage – encouragement) (PB p. 49)."
           ],
           "vocabulary": [
             {
@@ -621,12 +633,8 @@
               "en": "toy shop"
             },
             {
-              "ar": "مال",
-              "en": "money"
-            },
-            {
-              "ar": "صندوق",
-              "en": "box"
+              "ar": "حصّالة",
+              "en": "money box"
             },
             {
               "ar": "يوفّر",
@@ -684,7 +692,12 @@
           "objectives": [
             "Following the sequence of events in a simple story or narrative.",
             "Identifying key information such as prices, times and dates in a short description.",
-            "Describing basic differences between two pictures."
+            "Describing basic differences between two pictures.",
+            "Story (PB pp. 44–45): shopping for a phone case — an escalator and a phone thief; value: I can show good citizenship; designing your own phone case.",
+            "Culture (PB p. 48): the world of the corner shop (milk bars, dairies, bodegas, convenience stores); project: making a TV advert for a corner shop.",
+            "English in action (PB p. 49): asking for a price — How much is it? It's fifteen dinars and fifty piastres. I'll have that one, please.",
+            "Reading (PB p. 50): Tareq's email about a store detective; choosing the best summary.",
+            "Writing (PB p. 51): an email to a friend suggesting shops to visit where you live."
           ],
           "vocabulary": []
         }

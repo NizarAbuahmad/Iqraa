@@ -8,13 +8,16 @@
     "semester_covered": 2,
     "schema_version": "1.0",
     "source_books": [
-      "كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني (g5-english-s2-pupils-book, Jordan Team Together series, Pearson/York Press)"
+      "كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني (g5-eng-s2-student-book, Jordan Team Together series, Pearson/York Press)",
+      "دليل المعلم لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني (g5-eng-s2-teacher-guide) — read 2026-11-13 for the lesson structure only"
     ],
     "provenance_note": "Read directly from the PDF via PyMuPDF on 2026-09-16 — clean extraction, same as Semester 1 (iqra_curriculum_g5_english_sem1.json). Unit titles, page numbers, vocabulary, grammar structures and skill descriptors were taken from the book's own 'Scope and sequence' table (pp. 4-5).",
     "known_gaps": [
       "Same shape as Semester 1: unit-level real content (not title-only), but each unit's internal page-by-page lesson count was not verified, so every unit here is split into exactly two lessons — Vocabulary & Grammar, and Listening & Speaking.",
-      "Units are numbered 6-10, continuing Semester 1's 1-5, matching the book's own cover and contents page.",
-      "Excluded as supplementary, non-core material: the 'Bo's Learning Club' boosters, 'Festivals' pages (Youth Service Day, World Heritage Day), 'Solve it', and the 'Grammar reference' appendix."
+      "Units are numbered 6-10 here, continuing Semester 1's 1-5. This does NOT match the book: its contents page prints Welcome back (W), then 5 Animals in danger, 6 Staying healthy, 7 Curtain up!, 8 Let's get creative! — so the book's Unit 5 is u7 here, and the book's 'Unit 6' is u8 (corrected 2026-11-13; this line used to say the numbering matched the book).",
+      "Excluded as supplementary, non-core material: the 'Bo's Learning Club' boosters, the cross-curricular spreads (Art: What do landscape paintings look like?; Social Studies: How are the continents different?), 'Festivals' pages (Youth Service Day, World Heritage Day), 'Solve it', and the 'Grammar reference' appendix.",
+      "Checked 2026-11-13 against the teacher's guide and the pupil's book: the real structure is Welcome back = 3 lessons (1 Vocabulary — hobbies, 2 Grammar — past simple, 3 Vocabulary — technology) and each main unit = 12 lessons (1 PB Vocabulary, 2 AB Vocabulary, 3 PB Story, 4 AB Story, 5 PB Grammar, 6 AB Grammar, 7 PB Vocabulary and Grammar (song), 8 AB Vocabulary and Grammar, 9 Culture + project, 10 English in action + Pronunciation, 11 Reading, 12 Listening, Speaking and Writing). The two lessons per unit here are kept because their ids are persisted; each unit's story, culture, English in action, reading and writing topics were appended to the existing lessons' objectives (l1: grammar, song, pronunciation; l2: the rest).",
+      "Vocabulary corrected 2026-11-13: 'fit'/'unfit' were listed twice in u8_l1 (as vocabulary and as pronunciation words) and the second pair was removed. The u10 pronunciation set also prints 'seeing' and 'watching'; they are named in u10_l1's objectives rather than added as vocabulary, because every vocabulary word is drilled and voiced in the English corner."
     ]
   },
   "units": [
@@ -36,7 +39,10 @@
           "main_idea_ar": "Past simple. Example: I learnt how to cook. What did you do, Katy?",
           "periods": null,
           "objectives": [
-            "Past simple — e.g. I learnt how to cook. What did you do, Katy?"
+            "Past simple — e.g. I learnt how to cook. What did you do, Katy?",
+            "Lesson 1 (PB pp. 4–5): hobbies — the story 'The return of the Discovery Team!'; describing a hobby for a partner to guess; writing about your favourite hobby.",
+            "Lesson 2 (PB p. 6): Grammar — the past simple reviewed; completing Grandpa's email; one true and one false sentence about your weekend.",
+            "Lesson 3 (PB p. 7): technology in phrases — study for a test, write an email, send a letter, call a friend, do homework on a computer."
           ],
           "vocabulary": [
             {
@@ -115,7 +121,10 @@
           "objectives": [
             "Following the sequence of events in a simple story or narrative.",
             "Extracting factual information from short, simple dialogues or stories about past events.",
-            "Identifying the context of short, simple dialogues related to familiar everyday situations."
+            "Identifying the context of short, simple dialogues related to familiar everyday situations.",
+            "Speaking: talking about past events or experiences; expressing opinions on familiar topics, using simple language.",
+            "Writing: writing about past activities using simple language, given a model.",
+            "Viewing and presenting: presenting a hobby to the class."
           ],
           "vocabulary": []
         }
@@ -140,7 +149,9 @@
           "periods": null,
           "objectives": [
             "Past continuous — e.g. The shark was looking for small sea animals.",
-            "Past continuous vs past simple — e.g. I was watching the koalas when the lion escaped."
+            "Past continuous vs past simple — e.g. I was watching the koalas when the lion escaped.",
+            "Song: 'I was walking along the path through the hills' — the past continuous with when (PB p. 13).",
+            "Pronunciation: the prefix dis- (appear/disappear, like/dislike, agree/disagree, connect/disconnect) — the tongue twister 'The whale appears in the morning' (PB p. 15)."
           ],
           "vocabulary": [
             {
@@ -268,7 +279,12 @@
             "Following the sequence of events in a simple story or narrative, if told slowly and clearly.",
             "Identifying basic factual information in short, simple dialogues or stories on familiar everyday topics.",
             "Identifying specific information in short, simple dialogues, if there is some repetition and rephrasing.",
-            "Understanding some details in longer dialogues on familiar everyday topics, if guided by questions or prompts."
+            "Understanding some details in longer dialogues on familiar everyday topics, if guided by questions or prompts.",
+            "Story (PB pp. 10–11): whale watching — a basking shark and an egg case; value: I am careful not to harm animals; finding out whether a sea animal lays eggs or has live babies.",
+            "Culture (PB p. 14): the RSPCA, a British animal protection organisation; project: a spider diagram about an animal protection organisation (e.g. the Humane Center for Animal Welfare in Jordan).",
+            "English in action (PB p. 15): reminding someone to do something — Remember to change the cat's food and water every day. Don't forget to clean the bowls.",
+            "Reading (PB p. 16): the article 'Save the beluga whales!'.",
+            "Writing (PB p. 17): a factual text about an animal in danger in Jordan, using headings (where it lives, what it eats, what it does, why it is in danger)."
           ],
           "vocabulary": []
         }
@@ -293,7 +309,10 @@
           "periods": null,
           "objectives": [
             "should/shouldn't — e.g. You should go to the doctor's! You shouldn't go to school.",
-            "Infinitive of purpose — e.g. He went to the supermarket to buy fruit."
+            "Infinitive of purpose — e.g. He went to the supermarket to buy fruit.",
+            "Advice with should/shouldn't: take some medicine, put cream on it, sit down, not scratch it, not go swimming, blow your nose, go home.",
+            "Song: 'I wasn't very healthy, but I wanted to be fit' (PB p. 23).",
+            "Pronunciation: the prefixes un- and ir- (balanced/unbalanced, healthy/unhealthy, fit/unfit, regular/irregular, resistible/irresistible, responsible/irresponsible) (PB p. 25)."
           ],
           "vocabulary": [
             {
@@ -385,14 +404,6 @@
               "en": "unbalanced"
             },
             {
-              "ar": "لائق بدنيًا",
-              "en": "fit"
-            },
-            {
-              "ar": "غير لائق بدنيًا",
-              "en": "unfit"
-            },
-            {
               "ar": "منتظم",
               "en": "regular"
             },
@@ -428,7 +439,12 @@
           "objectives": [
             "Following the sequence of events in a simple story or narrative, if told slowly and clearly.",
             "Identifying basic factual information in short, simple dialogues or stories on familiar everyday topics.",
-            "Identifying specific information in short, simple dialogues, if there is some repetition and rephrasing."
+            "Identifying specific information in short, simple dialogues, if there is some repetition and rephrasing.",
+            "Story (PB pp. 20–21): Hamed feels ill and visits Dr Aladib, who takes his temperature; value: I help my friends when they are ill; designing a doctor's waiting room.",
+            "Culture (PB p. 24): Healthy Food Day in Jordanian primary schools; project: making a healthy lunch for Healthy Lunch Day.",
+            "English in action (PB p. 25): at the doctor's — What's the matter? I'm feeling sick. Where does it hurt? You should rest.",
+            "Reading (PB p. 26): 'Top 5 tips on how to stay healthy!'.",
+            "Writing (PB p. 27): a description of how you stay fit and healthy, using brackets to give extra information."
           ],
           "vocabulary": []
         }
@@ -452,7 +468,9 @@
           "main_idea_ar": "Present perfect. Examples: I've read Alice's Adventures in Wonderland. I haven't seen the film. He's seen Alice's costume somewhere, but he hasn't found it.",
           "periods": null,
           "objectives": [
-            "Present perfect — e.g. I've read Alice's Adventures in Wonderland. I haven't seen the film."
+            "Present perfect — e.g. I've read Alice's Adventures in Wonderland. I haven't seen the film.",
+            "Present perfect questions with ever — Have you ever been to a festival? Yes, I have. / No, I haven't.; the song 'I love music and entertainment' (PB p. 37).",
+            "Pronunciation: the suffix -ful (cheerful, thankful, playful, fearful, peaceful, forgetful, careful, hopeful) (PB p. 39)."
           ],
           "vocabulary": [
             {
@@ -579,7 +597,12 @@
           "objectives": [
             "Following the sequence of events in a simple story or narrative, if told slowly and clearly.",
             "Identifying basic factual information in short, simple dialogues or stories on familiar everyday topics.",
-            "Identifying specific information in short, simple dialogues, if there is some repetition and rephrasing."
+            "Identifying specific information in short, simple dialogues, if there is some repetition and rephrasing.",
+            "Story (PB pp. 34–35): rehearsing the school play Alice's Adventures in Wonderland — the scenery that nearly falls; value: I work well together with my friends.",
+            "Culture (PB p. 38): 'Have you ever been to the theatre?' — the Majestic Theatre on Broadway, the Roman Theatre in Amman, the Haya Cultural Centre; project: a poster for a new show.",
+            "English in action (PB p. 39): describing clothes — The trousers are too long. The T-shirt is too small. Try on this T-shirt.",
+            "Reading (PB p. 40): the play 'Yousuf in the mountains' (scenes and stage directions).",
+            "Writing (PB p. 41): your own ending to the play, with stage directions in brackets."
           ],
           "vocabulary": []
         }
@@ -604,7 +627,10 @@
           "periods": null,
           "objectives": [
             "Present perfect with ever/never — e.g. Have you ever made chocolates? Yes, I have./No, I haven't.",
-            "is/are made of — e.g. What is it made of? It's made of plastic. What are they made of? They're made of gold!"
+            "is/are made of — e.g. What is it made of? It's made of plastic. What are they made of? They're made of gold!",
+            "Song: 'Look at that chair! What is it made of?' (PB p. 47).",
+            "Pronunciation: stress in two- and three-syllable verbs and -ing forms (begin, contain, decide, enjoy, recommend, understand, entertain, seeing, watching) (PB p. 49).",
+            "Subject and object pronouns: I – me, he – him, she – her, it – it, we – us, they – them (PB p. 49)."
           ],
           "vocabulary": [
             {
@@ -727,7 +753,12 @@
           "objectives": [
             "Following the sequence of events in a simple story or narrative, if told slowly and clearly.",
             "Identifying basic factual information in short, simple dialogues or stories on familiar everyday topics.",
-            "Identifying people in their immediate surroundings or in pictures from a short, simple description of where they are and what they are doing."
+            "Identifying people in their immediate surroundings or in pictures from a short, simple description of where they are and what they are doing.",
+            "Story (PB pp. 44–45): making chocolates for Granny with the microwave — a mess and a new idea; value: I am kind to people.",
+            "Culture (PB p. 48): 'Handmade in Jordan' — traditional crafts such as weaving rugs and carpets; project: a class book about traditional crafts.",
+            "English in action (PB p. 49): explaining that something doesn't work — Can you help me? It doesn't work. You need to turn it on.",
+            "Reading (PB p. 50): 'Accidental inventions!' (the microwave, coffee, Velcro).",
+            "Writing (PB p. 51): a personal account of the most useful machines at home, using exclamation marks."
           ],
           "vocabulary": []
         }
