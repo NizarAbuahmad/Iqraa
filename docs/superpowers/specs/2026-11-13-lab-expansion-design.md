@@ -1,6 +1,6 @@
 # Science Lab expansion — more grades, the media we already have, and six physics tools
 
-Status: written 2026-11-13, awaiting review. Nothing is built.
+Status: written 2026-11-13. PR 1 (grade filter, media) built; PRs 2–5 not started.
 
 Builds on `2026-10-06-science-lab-design.md` (the Lab itself),
 `2026-10-06-virtual-lab-design.md` (the predict–observe–explain sheets) and

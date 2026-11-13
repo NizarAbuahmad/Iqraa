@@ -10,6 +10,35 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Science Lab: grade chips and the licensed media it was missing — 2026-11-13
+
+PR 1 of `docs/superpowers/specs/2026-11-13-lab-expansion-design.md`.
+
+**What changed.**
+- The Lab opens on the viewer's own grade (`user.gradeIds`) when that grade has items, else on all grades;
+  grade chips appear when more than one grade has items; subject chips follow the grade and fall back to
+  «كل المواد» when the picked subject has nothing there; with all grades shown, each row names its grade.
+- A grade tap resets a subject the new grade does not offer (spec §1), so a hidden pick cannot resurface
+  under «كل الصفوف».
+- 25 new `external` rows: the 8 Grade 10 earth-science images and videos and the 16 Grade 5 science images
+  that were licensed in `external_resources.json` but not listed (one Grade 5 image spans two units).
+- Five of the new rows (four CC-BY-SA resources: `commons-g5-fly-agaric`, `commons-g5-dead-sea-salt` twice,
+  `commons-g5-digestive-ar`, `commons-g5-earth-layers`) are listed in the Lab but never become deck slides:
+  `POLICY_BY_LICENSE` treats share-alike as reference-only. `labSlides.test.ts`'s credit guard now covers
+  only deckable items, and a new guard asserts a reference-only item never makes a slide. These resources
+  have no hosted copy, so the Lab card shows the credit and a source link, as the lesson shelf already did.
+- `labIntro` and the help answer `howLabAbout` no longer say the Lab is Grade 10 chemistry and physics.
+- `lab.test.ts` reads a table of catalog files with their grades instead of six Grade 10 files, checks each
+  item's grade against its lesson's, and fails when a science image or video has no lab row or a
+  simulation has one. `labLessons.test.ts` (mobile) checks the app resolves every item's lesson.
+
+**Verified.** Curriculum `test` and `verify`, mobile `pnpm test`, root typecheck; the screen in a browser
+against a throwaway Postgres with Playwright, as a Grade 5 teacher and a Grade 7-only teacher (phone/light
+and desktop/dark screenshots taken).
+
+**Not done.** Law cards, the six physics tools and the virtual-lab review screen (PRs 2–5 of the spec).
+Biology still has only four images; Grades 6–9 science have no lab rows.
+
 ## Grade 8 review: book figures on the right lessons, teaching-plan export grounded by id — 2026-11-13
 
 A review of the 19 grade 8 catalogs (11 subjects). It found the catalogs complete and wired, a picked lesson
