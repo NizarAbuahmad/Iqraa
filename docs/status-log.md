@@ -61,6 +61,61 @@ and is correct.
 **Verified:** `bookFigures`, `bookPage`, `bookFigureAssets` tests, curriculum test and verify, typecheck.
 **Not verified:** the pages on a phone; anything needing the PDFs; live grounding text.
 
+## Library review: admin edits move the lesson, a failed load is said, search knows the lesson, no semester tag — 2026-11-13
+
+A review of the Library (`/curriculum/resources`), its services, the staff screen (`/admin/library`) and
+`/library`. The screen was in good shape; these are the problems it found.
+
+**What changed.**
+- **Editing an item could not change its lesson.** `startEdit` filled title, category, cover and scope but not the
+  pickers, and `PATCH /library/:id` ignored `lessonId`. An admin who picked another lesson, or moved an item from a
+  lesson to a semester, got «تم الحفظ» and nothing moved (a semester was added *on top of* the lesson). The edit form
+  now shows the item's own lesson (blank if the KB no longer has it; saving then keeps the id), PATCH takes
+  `lessonId` (absent = unchanged, null or "" = none, otherwise `kbl-*` — `parseLessonIdPatch`), and grade/subject
+  pickers and the file/link inputs are hidden while editing, since PATCH changes neither. The resets on a grade or
+  subject change moved from effects into the pickers' handlers: the effect fired after «edit» and wiped the lesson.
+  The list under the form names subject and lesson instead of printing raw ids, and the edit hint names the grade
+  and subject the pickers no longer show. Deleting the item being edited leaves edit mode (its next save was a 404).
+- **The semester option is gone from the admin form.** Admins could file an item under «الفصل الأول/الثاني», and
+  nothing a teacher sees read it — no filter, no badge. Scope is now «كل الكتاب» or «درس محدد». Saving an edit sends
+  `semester: null`, so an old tag is cleared the next time its item is edited. The column and the API field stay
+  (dropping them is a destructive migration for no gain); nothing writes a semester from the app any more.
+- **A failed load read as an empty library.** `listLibrary` turns any failure into `[]`, so offline the screen said
+  «لا توجد موارد», and on first open it said so before the uploads arrived. The screen uses `listLibraryChecked`
+  (null on failure): a spinner while a grade with nothing else is loading, and a notice with «أعد المحاولة» when the
+  load fails. A refocus that fails while the grade's rows are already shown keeps them and says nothing. Retry
+  bumps a key the focus effect depends on, so every request is the effect's and is cancelled on a grade change (a
+  hand-fired retry could answer late and overwrite another grade's rows); a failure is held with its grade.
+  The duplicate fetch (`useEffect` next to `useFocusEffect`) is gone.
+- **Search knows the lesson and the subject.** `filterResources` takes `alsoMatch`; the screen passes each row's
+  lesson title and subject name in both languages, built once per list rather than per keystroke.
+- **Grade chips in order.** `MVP_GRADE_IDS` is append-only, so the chips read «…الثالث، الأول، الثاني».
+  `gradesForChips` sorts by level for display, and the starting grade is the first chip; the screen holds the grade
+  by id, so no persisted index moves.
+- Book-code rows name their subject (they have no grade; the screen's grade is used). The sheet lookup per row
+  is a cached map. A stale comment in `videoThumbnail.ts` pointed at a function that no longer exists.
+
+**Verified.** New cases in `resourceCatalog.test.ts` (search via `alsoMatch`), `libraryLayout.test.ts`
+(`gradesForChips`, and that it does not reorder its input) and the api-server `libraryResource.test.ts`
+(`parseLessonIdPatch`). `pnpm run typecheck`, the api-server suite (2,918 pass) and the mobile suite. In a browser
+(web build, API mocked through Playwright): chips read العاشر، التاسع، الثاني، الأول; a 500 on `/library` shows the
+notice and not the empty text; a request that never returns shows the spinner and not the empty text; a real empty
+list still shows the empty text; editing a lesson-scoped item shows that lesson, and switching it to «الفصل الأول»
+sends `{"semester":1,"lessonId":null}` (before the semester option was dropped). After it: no semester chips; a
+semester-tagged lesson item opens on its lesson and saves `{"semester":null,"lessonId":"kbl-…"}`; a teacher with
+grades 1 and 2 sees الثاني، الأول and starts on الثاني; a failed load, then «أعد المحاولة», shows the row and drops the
+notice.
+
+**Not done.**
+- Items already tagged with a semester keep the tag until edited; it is invisible either way.
+- PATCH accepts any `kbl-*` id; it does not check the lesson belongs to the item's grade and subject (the client
+  only offers those).
+- **Grades 1–9 have almost nothing built in.** Without staff uploads: grade 10 has 43 items (4 videos, 28 sheets,
+  11 book-code pages), grade 9 has 2, grades 1–8 have none. Production's uploads were not checked.
+- Uploaded videos without a cover still load the file on web (`preload='auto'`, up to 25 MB) to grab a frame, with
+  no cache. Uploads still have no English title (the English UI shows the Arabic one).
+- The PATCH route itself has no database test; only its parser is tested.
+
 ## Grade 9 figures: unit-opening pages and the pages between English units — 2026-11-13
 
 A pass over grade 9 after «Grade 9 checked against its books, and corrected» (same day), for the two figure faults
