@@ -166,6 +166,37 @@ build + tests 2899/2899; repo `pnpm run typecheck` clean; `math-practice`
 counted «أوجد ضعف/نصف العدد…» as one kind) was fixed by making doubling and
 halving distinct word problems.
 
+## Grade 10 figures: six unit-review figures the audit missed — 2026-11-13
+
+A re-check of Grade 10 after «Grade 10 checked against its books, and corrected» and «Grade 10 audit: book pages,
+figures and contents…» (both the same day). Those cover coverage, results, book pages and figures, so this only
+re-ran two automated checks over every served Grade 10 figure (521):
+- figures that sit outside their lesson's corrected page range
+- figures filed under a unit's last lesson just before the next unit
+
+**What changed.** Six figures on unit-review pages were still filed under the unit's last lesson. The audit's rule
+is to drop exactly these. Each was confirmed from the extracted page text («مراجعة الوحدة», numbered review
+questions) and by opening the image:
+- biology S1 `p018c`
+- biology S2 `p054b` (an endangered-amphibians pie chart)
+- earth S1 `p058b` and `p058c-v2`
+- earth S2 `p024b`, and `p055` (a whole page of review questions with a currents map)
+
+They now sit under no lesson. They are kept on disk rather than deleted, so this is easy to undo.
+
+**Looked at and left.**
+- Physics S1 `p056`: a position–time graph on lesson u2_l1's own «مراجعة الدرس» page, so it belongs to that lesson.
+  The audit's range for u2_l1 (36–55) skips that page. Page ranges are backed by rendered images in the bucket,
+  so the range is not changed here.
+- Physics S2 `p039` (three crops): friction's pros and cons, in the gap after u4_l2 «تطبيقات على القوى».
+- English "near the next unit" hits: real writing and reading lesson pages.
+- Maths S1 `p009`, `p015` and `p016`: left unmapped on purpose by the first review until they are uploaded.
+
+**Verified.** Red/green on a new `bookFigures.test.ts` block. The figure, page, asset, figure-view and slide tests
+pass (199), and so does `pnpm run typecheck`. The generated figure list only loses these six keys, so there is
+nothing to upload.
+**Not verified.** Not looked at in the running app.
+
 ## Grade 8 maths: offline questions for the four S2 lessons that had none — 2026-11-13
 
 **Why.** Grade 8 had already been checked against its books by earlier changes. One gap was left: four
