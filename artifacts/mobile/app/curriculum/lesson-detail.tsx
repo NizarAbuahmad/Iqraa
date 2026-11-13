@@ -31,6 +31,7 @@ import { goBack } from '@/services/navigation';
 import { readableOn } from '@/services/readableColor';
 import { palette } from '@/constants/colors';
 import { BackButton } from '@/components/ui/BackButton';
+import { SourceCredit } from '@/components/ui/SourceCredit';
 
 const BLOOMS_COLORS: Record<string, string> = {
   Remember: '#6366F1',
@@ -380,6 +381,8 @@ export default function LessonDetailScreen() {
             );
           })}
         </Section>
+
+        <SourceCredit />
       </View>
     </ScrollView>
   );
