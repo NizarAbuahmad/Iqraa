@@ -36,8 +36,8 @@ describe("the prompt clause", () => {
     assert.match(ar, /"visual"/);
     assert.ok(en.includes(`At most ${MAX_PAPER_VISUALS} drawings`));
     assert.ok(ar.includes(`${MAX_PAPER_VISUALS} رسوم على الأكثر`));
-    assert.match(en, /never refers to it/);
-    assert.match(ar, /ولا يشير إليه/);
+    assert.match(en, /never refer to it/);
+    assert.match(ar, /وألّا يشير إليه/);
   });
 });
 
@@ -85,6 +85,30 @@ describe("settlePaperVisuals", () => {
     assert.deepEqual(s, { physics: true, kept: { projectile: MAX_PAPER_VISUALS }, dropped: { cap: 8 - MAX_PAPER_VISUALS } });
     const flags = paper.sections.flatMap(x => x.questions.map(y => "visual" in y));
     assert.deepEqual(flags, [true, true, true, true, true, true, false, false]);
+  });
+
+  it("caps after the other checks: a refused drawing frees its slot, and the last one is capped", () => {
+    const paper = { questions: Array.from({ length: 8 }, (_, i) => q(i === 1 ? "قُذفت كرة بزاوية 30°. احسب سرعتها." : STEM, PROJ)) };
+    const s = settlePaperVisuals("quiz", paper, physics)!;
+    assert.deepEqual(s, { physics: true, kept: { projectile: 6 }, dropped: { numbers: 1, cap: 1 } });
+    const flags = paper.questions.map(x => "visual" in x);
+    assert.deepEqual(flags, [true, false, true, true, true, true, true, false]);
+  });
+
+  it("removes a visual outside the questions, uncounted: the paper root, a section, an answerKey row", () => {
+    const paper = {
+      title: "t",
+      visual: PROJ,
+      sections: [{ title: "s", visual: PROJ, questions: [q(STEM, PROJ)] }],
+      answerKey: [{ id: "q", answer: "x", visual: PROJ }],
+    };
+    const s = settlePaperVisuals("worksheet", paper, physics)!;
+    assert.deepEqual(s, { physics: true, kept: { projectile: 1 }, dropped: {} });
+    const hasVisual = (o: object) => Object.hasOwn(o, "visual");
+    assert.ok(!hasVisual(paper));
+    assert.ok(!hasVisual(paper.sections[0]!));
+    assert.ok(!hasVisual(paper.answerKey[0]!));
+    assert.ok(hasVisual(paper.sections[0]!.questions[0]!));
   });
 
   it("removes an explicit null and a drawing on a question with no text", () => {

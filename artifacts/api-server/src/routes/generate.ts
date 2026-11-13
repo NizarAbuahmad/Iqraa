@@ -124,6 +124,12 @@ const generateRouter = Router();
 const GENERATION_TOKENS = 8000;
 
 /**
+ * Room for a physics paper's drawings: at most six specs of a few hundred
+ * characters each. A ceiling, not a spend.
+ */
+const PHYSICS_VISUAL_TOKENS = 1500;
+
+/**
  * A quiz's output ceiling, scaled to the count the teacher asked for.
  *
  * A flat 8000 is generous for 10 questions and tight for 20 — an Arabic
@@ -133,12 +139,6 @@ const GENERATION_TOKENS = 8000;
  * a big paper is the one most likely to arrive short. It is a ceiling, not a
  * spend: a reply that finishes early costs what it used.
  */
-/**
- * Room for a physics paper's drawings: at most six specs of a few hundred
- * characters each. A ceiling, not a spend.
- */
-const PHYSICS_VISUAL_TOKENS = 1500;
-
 function quizTokens(body: Record<string, unknown>): number {
   const n = quizWanted(body) ?? 10;
   return Math.min(24000, Math.max(GENERATION_TOKENS, 2500 + 800 * n) + (isPhysicsRequest(body) ? PHYSICS_VISUAL_TOKENS : 0));

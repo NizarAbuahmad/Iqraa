@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { FIGURE_LIMITS as L, PHYSICS_UNITS, SCENE_LIMITS as S, resolvePhysicsFigure } from "@workspace/figure";
+import { FIGURE_LIMITS as L, PHYSICS_UNITS, SCENE_LIMITS as S, figureNumbers, resolvePhysicsFigure } from "@workspace/figure";
 import { PHYSICS_FIGURE_EXAMPLES, physicsFigureFormatAr, physicsFigureFormatEn } from "../figurePrompt.ts";
 
 // Each limit inside the phrase that templates it: a bare includes(String(n)) is vacuous for small numbers.
@@ -50,5 +50,28 @@ describe("physics drawing format", () => {
   it("says a drawing never carries the answer", () => {
     assert.match(physicsFigureFormatEn(), /Never put on the drawing the quantity the question asks for/);
     assert.match(physicsFigureFormatAr(), /لا تضع في الرسم الكمية التي يطلبها السؤال/);
+  });
+  it("forbids drawing a resultant, an equilibrant or a wave sum, just before the examples", () => {
+    const en = physicsFigureFormatEn();
+    const ar = physicsFigureFormatAr();
+    assert.ok(en.includes("Never draw a resultant or net force, an equilibrant, or the sum of two waves: those are what questions ask for.\nExamples:"));
+    assert.ok(ar.includes("لا ترسم محصلةً (لمتجهات أو لقوى) ولا قوةً موازِنة ولا مجموع موجتين: فهذه ما تسأل عنه الأسئلة.\nأمثلة:"));
+  });
+  it("never offers a drawn wave sum, and asks for vectors from the origin with every end point stated", () => {
+    const en = physicsFigureFormatEn();
+    const ar = physicsFigureFormatAr();
+    assert.ok(en.includes(`; "second": optional {"phase":"in" or "out","sum": false} (a second wave drawn with the first)`));
+    assert.ok(ar.includes(`؛ و"second" اختياري {"phase": "in" أو "out"، "sum": false} (موجة ثانية تُرسم مع الأولى)`));
+    assert.ok(!en.includes("true or false") && !ar.includes("true أو false"));
+    assert.ok(en.includes("the question must state every non-zero coordinate of each end point and every non-zero component; draw vectors from [0,0] unless the question gives their positions"));
+    assert.ok(ar.includes("فيجب أن يذكر السؤال كل إحداثي غير صفري لنهايتي كل متجه وكل مركّبة غير صفرية؛ وارسم المتجهات من [0,0] ما لم يذكر السؤال مواقعها"));
+    assert.ok(en.includes("must appear in the question text, with the same value."));
+    assert.ok(ar.includes("يجب أن يرد في نص السؤال بالقيمة نفسها."));
+  });
+  it("the vectors example is drawn from the origin: it prints its components only", () => {
+    const v = resolvePhysicsFigure(JSON.parse(PHYSICS_FIGURE_EXAMPLES[5]));
+    assert.ok(v && v.kind === "vectors");
+    const components = v.vectors.flatMap(x => [Math.abs(x.to[0] - x.from[0]), Math.abs(x.to[1] - x.from[1])]).filter(n => n > 0);
+    assert.deepEqual(figureNumbers(v), components);
   });
 });

@@ -8,6 +8,8 @@
  * be stated, so it can repeat a given but never show an answer), and capped at
  * MAX_PAPER_VISUALS in paper order. A drawing that fails is removed; its question
  * always stays, which is why the prompt makes the text answerable without it.
+ * Only a question may carry a drawing: a visual anywhere else (the paper root, a
+ * section, an answerKey row) is removed uncounted, so the summary's reasons stay exact.
  * Spec: docs/superpowers/specs/2026-11-13-physics-figures-design.md §2.
  */
 import { figureNumbersInText, resolvePhysicsFigure } from "@workspace/figure";
@@ -37,12 +39,12 @@ export function isPhysicsRequest(body: { subject?: unknown; subjectId?: unknown 
 /** The prompt's drawing rules, or "" for any other subject, so its prompt stays byte for byte the same. */
 export function physicsVisualClauseAr(b: { subject?: unknown; subjectId?: unknown }): string {
   if (!isPhysicsRequest(b)) return "";
-  return `\nالرسوم (للفيزياء فقط): يجوز أن يحمل السؤال حقلًا اختياريًا واحدًا "visual" بجانب "text" حيث يفيد الرسم: قوى تؤثر في جسم، أو مقذوف، أو حركة دائرية، أو موجة، أو جسمان يتجاذبان، أو متجهات. ${MAX_PAPER_VISUALS} رسوم على الأكثر في الورقة كلها. يجب أن يذكر نص السؤال كل ما يلزم للإجابة دون الرسم، ولا يشير إليه («في الشكل»، «المبيّن»): الرسم الذي يخالف قاعدة يُحذف ويبقى السؤال وحده.\n${physicsFigureFormatAr()}`;
+  return `\nالرسوم (للفيزياء فقط): يجوز أن يحمل السؤال حقلًا اختياريًا واحدًا "visual" بجانب "text" حيثما يفيد الرسم: قوى تؤثر في جسم، أو مقذوف، أو حركة دائرية، أو موجة، أو جسمان يتجاذبان، أو متجهات. ${MAX_PAPER_VISUALS} رسوم على الأكثر في الورقة كلها. يجب أن يذكر نص السؤال كل ما يلزم للإجابة دون الرسم، وألّا يشير إليه («في الشكل»، «المبيّن»): الرسم الذي يخالف أيّ قاعدة من هذه القواعد يُحذف ويبقى السؤال وحده.\n${physicsFigureFormatAr()}`;
 }
 
 export function physicsVisualClauseEn(b: { subject?: unknown; subjectId?: unknown }): string {
   if (!isPhysicsRequest(b)) return "";
-  return `\nDrawings (physics only): a question MAY carry one optional "visual" field, a sibling of "text", where a drawing helps: forces on a body, a projectile, circular motion, a wave, two attracting bodies, or vectors. At most ${MAX_PAPER_VISUALS} drawings in the whole paper. The question text must state everything needed to answer without the drawing, and never refers to it ("in the figure", "shown"): a drawing that breaks a rule is removed and the question stands alone.\n${physicsFigureFormatEn()}`;
+  return `\nDrawings (physics only): a question MAY carry one optional "visual" field, a sibling of "text", where a drawing helps: forces on a body, a projectile, circular motion, a wave, two attracting bodies, or vectors. At most ${MAX_PAPER_VISUALS} drawings in the whole paper. The question text must state everything needed to answer without the drawing, and never refer to it ("in the figure", "shown"): a drawing that breaks any of these rules is removed and the question stands alone.\n${physicsFigureFormatEn()}`;
 }
 
 type Rec = Record<string, unknown>;
@@ -56,12 +58,23 @@ function paperQuestions(kind: string, parsed: unknown): Rec[] {
   return parsed.sections.filter(isRec).flatMap(s => (Array.isArray(s.questions) ? s.questions.filter(isRec) : []));
 }
 
+/** Remove a visual from the paper root, every section and every answerKey row (uncounted). */
+function stripStrayVisuals(parsed: unknown): void {
+  if (!isRec(parsed)) return;
+  delete parsed.visual;
+  for (const list of [parsed.sections, parsed.answerKey]) {
+    if (Array.isArray(list)) for (const r of list) if (isRec(r)) delete r.visual;
+  }
+}
+
 /**
  * Settle every question's drawing in place. Returns what was kept (by kind) and dropped
- * (by reason), or null for a kind that is not a paper. Never throws.
+ * (by reason), or null for a kind that is not a paper. A visual outside the questions is
+ * removed and not counted. Never throws.
  */
 export function settlePaperVisuals(kind: string, parsed: unknown, body: Record<string, unknown>): VisualsSummary | null {
   if (!PAPER_KINDS.has(kind)) return null;
+  stripStrayVisuals(parsed);
   const physics = isPhysicsRequest(body);
   const summary: VisualsSummary = { physics, kept: {}, dropped: {} };
   const drop = (q: Rec, reason: VisualDropReason) => {
