@@ -99,7 +99,12 @@ type Wave = {
 type Figure = FunctionGraph | VectorsFigure | Forces | Attraction | Projectile | Circular | Wave;
 ```
 
-### Gate (in `resolveFigure`, refusing the whole figure on any breach)
+### Gate (`resolvePhysicsFigure`, refusing the whole figure on any breach)
+
+As built (PR 1): the physics kinds have their own union and resolver — `resolveSceneFigure`
+(scenes only) and `resolvePhysicsFigure` (scenes or plane vectors). `resolveFigure` and `Figure`
+are unchanged, because maths callers hand `resolveFigure`'s output straight to the plane renderer.
+The gate also refuses a negative value and two force arrows on one body less than 15° apart.
 
 - Every enum and range above; arrows 1–5; no two arrows with the same label; directions 0–359.
 - Labels: the existing rule plus Greek letters (λ θ α β ω Δ μ), still 1–3 letters + optional
@@ -150,7 +155,7 @@ The clip-id collision is fixed here: `figureSvg` takes (or generates) a unique i
 - **Check before anything is stored or served** — a new step beside `sanitizeWorksheetExtras`,
   run for quiz/worksheet/homework:
   1. a non-physics paper: every `visual` is removed;
-  2. a physics paper: each `visual` runs `resolveFigure` (refused → removed), then
+  2. a physics paper: each `visual` runs `resolvePhysicsFigure` (refused → removed), then
      `figureNumbersInText(visual, question.text)` (fails → removed), then the per-paper cap of 6
      in paper order (over → removed). The question always stays;
   3. the same step runs on top-up replies (`quizTopUpBlock` / `worksheetTopUpBlock` merges).
@@ -167,8 +172,8 @@ The clip-id collision is fixed here: `figureSvg` takes (or generates) a unique i
 ## 3. Showing them: app and PDF
 
 - **Types**: `QuizQuestion` and the worksheet question type (`services/ai/AIService.ts`) gain
-  `visual?: Figure` from `@workspace/figure`. The book-crop `figure` field is untouched.
-- **Re-gated at every render** with `resolveFigure`; a stored drawing that no longer passes is
+  `visual?: PhysicsFigure` from `@workspace/figure`. The book-crop `figure` field is untouched.
+- **Re-gated at every render** with `resolvePhysicsFigure`; a stored drawing that no longer passes is
   skipped, never half-drawn.
 - **On screen** via the existing `components/ui/QuestionVisual.tsx` (extended by the new
   renderer): the quiz result list (`app/ai-tools/quiz.tsx`), the worksheet/homework result

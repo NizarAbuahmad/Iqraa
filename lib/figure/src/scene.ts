@@ -108,6 +108,7 @@ function layoutForces(f: ForcesFigure, box: Box): ScenePrim[] {
   const h = s / 2;
   const nominal = f.arrows.map(a => ({ dir: a.dir, len: unit * ARROW_SIZE[a.size] }));
   let c: Pt = { x: box.w / 2, y: box.h / 2 };
+  let foot: Pt | null = null;
   if (f.incline !== undefined) {
     const th = rad(f.incline);
     const rise = Math.min((box.w - 2 * M) * Math.tan(th), box.h - 2 * M);
@@ -138,8 +139,8 @@ function layoutForces(f: ForcesFigure, box: Box): ScenePrim[] {
     const right = { x: M + tx + run, y: base };
     const top = { x: M + tx + run, y: base - rise };
     out.push({ t: 'poly', pts: [left, right, top], tone: 'muted', closed: true, role: 'slope' });
-    out.push(text({ x: left.x + 40, y: base - 6 }, `${f.incline}°`, box, 'incline', 'muted'));
-    const on = { x: left.x + run * t, y: base - rise * t };
+    foot = left;
+    const on ={ x: left.x + run * t, y: base - rise * t };
     c = { x: on.x + n.x * h, y: on.y + n.y * h };
     const corner = (a: number, b: number): Pt => ({ x: c.x + u.x * h * a + n.x * h * b, y: c.y + u.y * h * a + n.y * h * b });
     out.push({ t: 'poly', pts: [corner(-1, -1), corner(1, -1), corner(1, 1), corner(-1, 1)], tone: 'ink', closed: true, role: 'body' });
@@ -162,7 +163,42 @@ function layoutForces(f: ForcesFigure, box: Box): ScenePrim[] {
     const at = polar(c, a.dir, len + 12 + Math.abs(dx) * half);
     out.push(text({ x: at.x, y: at.y + 4 }, label, box, `label:${a.label}`, series(i)));
   });
+  if (foot && f.incline !== undefined) out.push(inclineLabel(`${f.incline}°`, foot, out, box));
   return out;
+}
+
+/**
+ * The slope's angle, placed after the arrows: inside the angle by the foot of the slope,
+ * else under the ground line, further along it, or left of the foot — the first spot that
+ * crosses no arrow and no other word. On a steep slope the weight's label lands by the foot.
+ */
+function inclineLabel(s: string, foot: Pt, drawn: ScenePrim[], box: Box): ScenePrim {
+  const rectOf = (t: Extract<ScenePrim, { t: 'text' }>) => {
+    const half = (t.text.length * GLYPH) / 2;
+    return { x0: t.at.x - half - 2, x1: t.at.x + half + 2, y0: t.at.y - 13, y1: t.at.y + 4 };
+  };
+  const words = drawn.filter((p): p is Extract<ScenePrim, { t: 'text' }> => p.t === 'text').map(rectOf);
+  const marks = drawn.flatMap(p => {
+    if (p.t !== 'arrow') return [];
+    return Array.from({ length: 21 }, (_, i) => ({ x: p.a.x + ((p.b.x - p.a.x) * i) / 20, y: p.a.y + ((p.b.y - p.a.y) * i) / 20 }));
+  });
+  const half = (s.length * GLYPH) / 2;
+  const spots: Pt[] = [
+    { x: foot.x + 40, y: foot.y - 6 },
+    { x: foot.x + 40, y: foot.y + 16 },
+    { x: foot.x + 72, y: foot.y - 6 },
+    { x: foot.x - 6 - half, y: foot.y + 4 },
+    { x: foot.x + 72, y: foot.y + 16 },
+  ];
+  for (const sp of spots) {
+    const t = text(sp, s, box, 'incline', 'muted');
+    if (t.t !== 'text') continue;
+    const r = rectOf(t);
+    const hit = words.some(o => o.x1 > r.x0 && o.x0 < r.x1 && o.y1 > r.y0 && o.y0 < r.y1)
+      || marks.some(q => q.x > r.x0 && q.x < r.x1 && q.y > r.y0 && q.y < r.y1);
+    if (!hit) return t;
+  }
+  return text(spots[0]!, s, box, 'incline', 'muted');
 }
 
 function layoutAttraction(f: AttractionFigure, box: Box): ScenePrim[] {

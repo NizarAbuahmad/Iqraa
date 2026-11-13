@@ -33,7 +33,7 @@ plan: [`docs/superpowers/plans/2026-11-13-physics-figures-1-package.md`](./super
 - **Deliberately unchanged: `Figure`, `resolveFigure`, `layoutFigure`.** The maths exam generator, `studentVisual` and
   the lesson cards pass `resolveFigure`'s output straight to the plane renderer and must never be handed a scene. The
   spec said to add the kinds "in resolveFigure"; this is a refinement of that. PRs 2 and 3 call `resolvePhysicsFigure`
-  (scenes and plane vectors), not `resolveSceneFigure` (scenes only). The spec's §2 and §3 still say `resolveFigure`.
+  (scenes and plane vectors), not `resolveSceneFigure` (scenes only); the spec now says so too.
 - **Fixed in review.** The leak guard failed OPEN: it read the digit in a symbol (`F2`, `m1`, `v0`, `H2O`) as a stated
   number, so a question that named `F2` and asked for it passed a figure printing «F2 = 2 N». A digit after a Latin,
   Greek or Arabic letter, `_`, a digit or a point no longer counts; after tatweel it still does («بـ20»). The gate now
@@ -41,7 +41,8 @@ plan: [`docs/superpowers/plans/2026-11-13-physics-figures-1-package.md`](./super
   (they draw over each other). On an incline a bigger arrow is now always drawn longer: the block moves up the slope,
   or the slope moves right or up, until every arrow fits, and if they still cannot, all shrink by one scale. Before,
   each arrow was cut at its own edge, so on a shallow slope a size-3 weight drew no longer than a size-1 normal.
-  `figureSvg` keeps only `[A-Za-z0-9_-]` of `opts.id`.
+  `figureSvg` keeps only `[A-Za-z0-9_-]` of `opts.id`. The slope's angle is placed after the arrows, at the first
+  spot that crosses no arrow and no label: on a 45–60° slope the weight's label lands by the foot, where «60°» sat.
 
 **Verified.**
 - Package tests, root `pnpm run typecheck`, and the api-server and mobile suites unchanged (counts in the PR).

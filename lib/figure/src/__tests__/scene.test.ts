@@ -197,6 +197,47 @@ describe('layoutScene: physics the drawing gets right', () => {
     }
   });
 
+  it('forces: the incline angle crosses no arrow label and no arrow, on any incline and box', () => {
+    const boxes = [BOX, SMALL, { w: 518, h: 238 }, { w: 286, h: 238 }];
+    const rect = (t: Extract<ScenePrim, { t: 'text' }>) => {
+      const half = (t.text.length * 7.2) / 2;
+      return { x0: t.at.x - half, x1: t.at.x + half, y0: t.at.y - 11, y1: t.at.y + 2 };
+    };
+    let checked = 0;
+    for (const box of boxes) {
+      for (let incline = 5; incline <= 60; incline += 5) {
+        const sets = [
+          [{ dir: 270, size: 3, label: 'W', value: { n: 49, unit: 'N' } }, { dir: 90 + incline, size: 2, label: 'N' }, { dir: 180 + incline, size: 1, label: 'f' }],
+          [{ dir: 270, size: 2, label: 'W', value: { n: 120, unit: 'N' } }, { dir: 90 + incline, size: 2, label: 'N', value: { n: 104, unit: 'N' } }, { dir: incline, size: 1, label: 'F' }],
+          [{ dir: 270, size: 3, label: 'mg' }, { dir: 90 + incline, size: 3, label: 'N' }],
+        ];
+        for (const arrows of sets) {
+          const f = resolveSceneFigure({ kind: 'forces', body: 'block', incline, arrows });
+          if (!f) return assert.fail(`gate refused ${incline}`);
+          const prims = layoutScene(f, box).prims;
+          const ang = one(prims, 'incline');
+          if (ang.t !== 'text') return assert.fail('incline is text');
+          const r = rect(ang);
+          const tag = `${incline}° in ${box.w}x${box.h}: ${JSON.stringify(arrows.map(a => a.label))}`;
+          for (const p of prims) {
+            if (p.t === 'text' && p !== ang) {
+              const o = rect(p);
+              assert.ok(o.x1 <= r.x0 || o.x0 >= r.x1 || o.y1 <= r.y0 || o.y0 >= r.y1, `«${ang.text}» crosses «${p.text}», ${tag}`);
+            }
+            if (p.t === 'arrow') {
+              for (let s = 0; s <= 20; s++) {
+                const q = { x: p.a.x + ((p.b.x - p.a.x) * s) / 20, y: p.a.y + ((p.b.y - p.a.y) * s) / 20 };
+                assert.ok(!(q.x > r.x0 && q.x < r.x1 && q.y > r.y0 && q.y < r.y1), `«${ang.text}» crosses ${p.role}, ${tag}`);
+              }
+            }
+          }
+          checked++;
+        }
+      }
+    }
+    assert.equal(checked, 4 * 12 * 3);
+  });
+
   it('forces: in one figure a larger size is always drawn longer, on any incline and box, and stays inside', () => {
     const boxes = [BOX, SMALL, { w: 518, h: 238 }, { w: 286, h: 238 }];
     const length = (p: ScenePrim) => (p.t === 'arrow' ? Math.hypot(p.b.x - p.a.x, p.b.y - p.a.y) : NaN);
