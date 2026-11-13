@@ -47,6 +47,14 @@ export const WHATS_NEW: readonly WhatsNewEntry[] = [
     route: '/curriculum/browse',
   },
   {
+    id: 'follow-us-social',
+    date: '2026-11-13',
+    roles: ALL_ROLES,
+    titleKey: 'whatsNewFollowUsTitle',
+    bodyKey: 'whatsNewFollowUsBody',
+    route: '/profile',
+  },
+  {
     id: 'exam-drawn-figures',
     date: '2026-11-03',
     roles: ['teacher'],
