@@ -1317,6 +1317,16 @@
       "matchedBy": "book-opener-title"
     },
     {
+      "sourceId": "g9-physics-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "قوانين نيوتن في الحركة",
+      "kbLessonId": "kbl-g9-phys-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "hand",
+      "why": "2026-11-13 Grade 9 audit: a figure belonging to this lesson had no coordinate to be filed under."
+    },
+    {
       "sourceId": "g9-physics-s2-student-book",
       "unit": 4,
       "lesson": 1,
@@ -2986,6 +2996,16 @@
       "kbLessonId": "kbl-g9-eng-s2-nccd-u10_l7",
       "score": 1,
       "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "المفردات والقواعد",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "hand",
+      "why": "2026-11-13 Grade 9 audit: a figure belonging to this lesson had no coordinate to be filed under."
     },
     {
       "sourceId": "g7-english-s1-student-book",

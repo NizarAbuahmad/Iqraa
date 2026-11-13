@@ -34,22 +34,6 @@
       "lessonStartPage": 10
     },
     {
-      "file": "p016.png",
-      "sourceId": "g9-earth-science-s1-student-book",
-      "pdfPage": 16,
-      "rect": [
-        399.5,
-        527.4,
-        509.1,
-        667.6
-      ],
-      "unit": 1,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 10
-    },
-    {
       "file": "p020-v2.png",
       "sourceId": "g9-earth-science-s1-student-book",
       "pdfPage": 20,
@@ -90,22 +74,6 @@
         528.5,
         389.1,
         732.5
-      ],
-      "unit": 1,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 25
-    },
-    {
-      "file": "p035.png",
-      "sourceId": "g9-earth-science-s1-student-book",
-      "pdfPage": 35,
-      "rect": [
-        0.0,
-        0.0,
-        201.7,
-        458.1
       ],
       "unit": 1,
       "lesson": 2,
@@ -160,54 +128,6 @@
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": 40
-    },
-    {
-      "file": "p049.png",
-      "sourceId": "g9-earth-science-s1-student-book",
-      "pdfPage": 49,
-      "rect": [
-        45.0,
-        524.4,
-        298.9,
-        702.7
-      ],
-      "unit": 2,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 47
-    },
-    {
-      "file": "p049b.png",
-      "sourceId": "g9-earth-science-s1-student-book",
-      "pdfPage": 49,
-      "rect": [
-        293.0,
-        524.4,
-        546.9,
-        702.7
-      ],
-      "unit": 2,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 47
-    },
-    {
-      "file": "p050.png",
-      "sourceId": "g9-earth-science-s1-student-book",
-      "pdfPage": 50,
-      "rect": [
-        37.4,
-        24.0,
-        562.6,
-        174.4
-      ],
-      "unit": 2,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 47
     },
     {
       "file": "p050b-v2.png",

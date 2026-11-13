@@ -242,22 +242,6 @@
       "lessonStartPage": 18
     },
     {
-      "file": "p026-v2.png",
-      "sourceId": "g9-physics-s2-student-book",
-      "pdfPage": 26,
-      "rect": [
-        69.2,
-        65.3,
-        544.6,
-        259.0
-      ],
-      "unit": 4,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 18
-    },
-    {
       "file": "p027-v2.png",
       "sourceId": "g9-physics-s2-student-book",
       "pdfPage": 27,
@@ -354,70 +338,6 @@
       "lessonStartPage": 18
     },
     {
-      "file": "p028.png",
-      "sourceId": "g9-physics-s2-student-book",
-      "pdfPage": 28,
-      "rect": [
-        401.5,
-        106.7,
-        562.3,
-        267.3
-      ],
-      "unit": 4,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 18
-    },
-    {
-      "file": "p028b-v2.png",
-      "sourceId": "g9-physics-s2-student-book",
-      "pdfPage": 28,
-      "rect": [
-        405.0,
-        275.0,
-        559.0,
-        437.5
-      ],
-      "unit": 4,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 18
-    },
-    {
-      "file": "p028c-v2.png",
-      "sourceId": "g9-physics-s2-student-book",
-      "pdfPage": 28,
-      "rect": [
-        405.0,
-        433.0,
-        559.0,
-        594.8
-      ],
-      "unit": 4,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 18
-    },
-    {
-      "file": "p029-v2.png",
-      "sourceId": "g9-physics-s2-student-book",
-      "pdfPage": 29,
-      "rect": [
-        65.0,
-        136.5,
-        212.0,
-        273.4
-      ],
-      "unit": 4,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 18
-    },
-    {
       "file": "p029b-v2.png",
       "sourceId": "g9-physics-s2-student-book",
       "pdfPage": 29,
@@ -476,9 +396,9 @@
         630.0
       ],
       "unit": 4,
-      "lesson": 2,
+      "lesson": 1,
       "lessonTitleEn": null,
-      "lessonTitleAr": null,
+      "lessonTitleAr": "المائعُ الساكنُ",
       "lessonStartPage": 18
     },
     {
@@ -492,9 +412,9 @@
         205.0
       ],
       "unit": 4,
-      "lesson": 2,
+      "lesson": 1,
       "lessonTitleEn": null,
-      "lessonTitleAr": null,
+      "lessonTitleAr": "المائعُ الساكنُ",
       "lessonStartPage": 18
     },
     {
@@ -508,9 +428,9 @@
         539.0
       ],
       "unit": 4,
-      "lesson": 2,
+      "lesson": 1,
       "lessonTitleEn": null,
-      "lessonTitleAr": null,
+      "lessonTitleAr": "المائعُ الساكنُ",
       "lessonStartPage": 18
     },
     {
@@ -940,9 +860,9 @@
         364.0
       ],
       "unit": 5,
-      "lesson": 3,
+      "lesson": 2,
       "lessonTitleEn": null,
-      "lessonTitleAr": "ُالعدساتُ الرقيقة",
+      "lessonTitleAr": "تطبيقاتٌ وظواهرُ بصريّةٌ",
       "lessonStartPage": 56
     }
   ]

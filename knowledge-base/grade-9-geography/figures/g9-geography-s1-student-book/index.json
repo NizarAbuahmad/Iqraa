@@ -107,10 +107,10 @@
         305.2,
         635.7
       ],
-      "unit": 1,
-      "lesson": 3,
+      "unit": 2,
+      "lesson": 1,
       "lessonTitleEn": null,
-      "lessonTitleAr": "ُالصخوُرُ والتربُة",
+      "lessonTitleAr": "مُكوِّناتُ الغلافِ المائيِّ",
       "lessonStartPage": 20
     },
     {
@@ -226,22 +226,6 @@
       "lessonStartPage": 56
     },
     {
-      "file": "p061.png",
-      "sourceId": "g9-geography-s1-student-book",
-      "pdfPage": 61,
-      "rect": [
-        49.3,
-        332.2,
-        547.4,
-        626.6
-      ],
-      "unit": 3,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": "المالمُحُ الطبيعيُةُ للوطِنِ العربِّي",
-      "lessonStartPage": 56
-    },
-    {
       "file": "p067.png",
       "sourceId": "g9-geography-s1-student-book",
       "pdfPage": 67,
@@ -284,9 +268,9 @@
         584.1
       ],
       "unit": 3,
-      "lesson": 3,
+      "lesson": 1,
       "lessonTitleEn": null,
-      "lessonTitleAr": null,
+      "lessonTitleAr": "الملامحُ الطبيعيةُ للوطنِ العربيِّ",
       "lessonStartPage": 70
     }
   ]

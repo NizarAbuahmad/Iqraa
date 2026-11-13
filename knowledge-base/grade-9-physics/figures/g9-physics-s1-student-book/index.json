@@ -82,54 +82,6 @@
       "lessonStartPage": 30
     },
     {
-      "file": "p034.png",
-      "sourceId": "g9-physics-s1-student-book",
-      "pdfPage": 34,
-      "rect": [
-        398.6,
-        39.9,
-        537.1,
-        195.8
-      ],
-      "unit": 1,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 30
-    },
-    {
-      "file": "p034b.png",
-      "sourceId": "g9-physics-s1-student-book",
-      "pdfPage": 34,
-      "rect": [
-        398.6,
-        209.3,
-        537.1,
-        363.7
-      ],
-      "unit": 1,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 30
-    },
-    {
-      "file": "p034c-v2.png",
-      "sourceId": "g9-physics-s1-student-book",
-      "pdfPage": 34,
-      "rect": [
-        400.0,
-        379.0,
-        538.0,
-        633.1
-      ],
-      "unit": 1,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 30
-    },
-    {
       "file": "p038.png",
       "sourceId": "g9-physics-s1-student-book",
       "pdfPage": 38,
@@ -172,7 +124,7 @@
         331.0
       ],
       "unit": 2,
-      "lesson": 2,
+      "lesson": 1,
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": 54
@@ -204,23 +156,7 @@
         258.0
       ],
       "unit": 2,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 54
-    },
-    {
-      "file": "p062b-v2.png",
-      "sourceId": "g9-physics-s1-student-book",
-      "pdfPage": 62,
-      "rect": [
-        50.0,
-        447.0,
-        167.0,
-        573.7
-      ],
-      "unit": 2,
-      "lesson": 2,
+      "lesson": 1,
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": 54
@@ -235,10 +171,10 @@
         233.8,
         338.3
       ],
-      "unit": 2,
-      "lesson": 2,
+      "unit": 3,
+      "lesson": 1,
       "lessonTitleEn": null,
-      "lessonTitleAr": null,
+      "lessonTitleAr": "الشغلُ والقدرةُ",
       "lessonStartPage": 54
     },
     {
@@ -258,38 +194,6 @@
       "lessonStartPage": 66
     },
     {
-      "file": "p067-v2.png",
-      "sourceId": "g9-physics-s1-student-book",
-      "pdfPage": 67,
-      "rect": [
-        386.0,
-        49.0,
-        528.0,
-        217.0
-      ],
-      "unit": 3,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 66
-    },
-    {
-      "file": "p067b-v2.png",
-      "sourceId": "g9-physics-s1-student-book",
-      "pdfPage": 67,
-      "rect": [
-        212.0,
-        55.0,
-        348.5,
-        220.0
-      ],
-      "unit": 3,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 66
-    },
-    {
       "file": "p068-v2.png",
       "sourceId": "g9-physics-s1-student-book",
       "pdfPage": 68,
@@ -298,38 +202,6 @@
         216.2,
         239.3,
         444.3
-      ],
-      "unit": 3,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 66
-    },
-    {
-      "file": "p071.png",
-      "sourceId": "g9-physics-s1-student-book",
-      "pdfPage": 71,
-      "rect": [
-        50.5,
-        166.6,
-        175.6,
-        238.6
-      ],
-      "unit": 3,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 66
-    },
-    {
-      "file": "p071b-v2.png",
-      "sourceId": "g9-physics-s1-student-book",
-      "pdfPage": 71,
-      "rect": [
-        52.0,
-        242.0,
-        196.0,
-        372.3
       ],
       "unit": 3,
       "lesson": 1,
@@ -450,38 +322,6 @@
       "lessonStartPage": 76
     },
     {
-      "file": "p086b-v2.png",
-      "sourceId": "g9-physics-s1-student-book",
-      "pdfPage": 86,
-      "rect": [
-        271.5,
-        204.2,
-        528.6,
-        382.6
-      ],
-      "unit": 3,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 76
-    },
-    {
-      "file": "p086c.png",
-      "sourceId": "g9-physics-s1-student-book",
-      "pdfPage": 86,
-      "rect": [
-        227.9,
-        253.3,
-        367.6,
-        333.6
-      ],
-      "unit": 3,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 76
-    },
-    {
       "file": "p086d.png",
       "sourceId": "g9-physics-s1-student-book",
       "pdfPage": 86,
@@ -508,9 +348,9 @@
         353.5
       ],
       "unit": 3,
-      "lesson": 2,
+      "lesson": 1,
       "lessonTitleEn": null,
-      "lessonTitleAr": null,
+      "lessonTitleAr": "الشغلُ والقدرةُ",
       "lessonStartPage": 76
     }
   ]

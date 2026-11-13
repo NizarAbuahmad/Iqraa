@@ -178,22 +178,6 @@
       "lessonStartPage": 40
     },
     {
-      "file": "p050.png",
-      "sourceId": "g9-chemistry-s2-student-book",
-      "pdfPage": 50,
-      "rect": [
-        65.2,
-        86.8,
-        254.3,
-        259.4
-      ],
-      "unit": 4,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 40
-    },
-    {
       "file": "p051.png",
       "sourceId": "g9-chemistry-s2-student-book",
       "pdfPage": 51,
@@ -234,22 +218,6 @@
         205.2,
         200.4,
         409.7
-      ],
-      "unit": 4,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 40
-    },
-    {
-      "file": "p054-v2.png",
-      "sourceId": "g9-chemistry-s2-student-book",
-      "pdfPage": 54,
-      "rect": [
-        242.0,
-        578.0,
-        442.7,
-        739.8
       ],
       "unit": 4,
       "lesson": 1,

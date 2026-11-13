@@ -155,10 +155,10 @@
     258.9,
     368.8
    ],
-   "unit": 1,
-   "lesson": 2,
+   "unit": 2,
+   "lesson": 1,
    "lessonTitleEn": null,
-   "lessonTitleAr": null,
+   "lessonTitleAr": "خصائصُ الحُموضِ والقواعدِ",
    "lessonStartPage": 19
   },
   {
@@ -218,38 +218,6 @@
     247.0,
     212.0,
     713.6
-   ],
-   "unit": 2,
-   "lesson": 2,
-   "lessonTitleEn": null,
-   "lessonTitleAr": null,
-   "lessonStartPage": 49
-  },
-  {
-   "file": "p058.png",
-   "sourceId": "g9-chemistry-s1-student-book",
-   "pdfPage": 58,
-   "rect": [
-    51.0,
-    464.0,
-    225.9,
-    568.5
-   ],
-   "unit": 2,
-   "lesson": 2,
-   "lessonTitleEn": null,
-   "lessonTitleAr": null,
-   "lessonStartPage": 49
-  },
-  {
-   "file": "p058b.png",
-   "sourceId": "g9-chemistry-s1-student-book",
-   "pdfPage": 58,
-   "rect": [
-    224.1,
-    468.3,
-    337.0,
-    600.1
    ],
    "unit": 2,
    "lesson": 2,
