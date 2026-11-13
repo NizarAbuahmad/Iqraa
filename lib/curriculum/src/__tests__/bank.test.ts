@@ -131,8 +131,10 @@ describe('manifest shape', () => {
       // `art` key — one of the spellings the comment above warns about.
       // `art-g10-general` only on the old Ministry guide, kept out of grounding.
       art: /^(arts-s[12]|art-g10-general|g\d+-arts-s[12])$/,
-      // Slug is `voc`, not `vocational`.
-      vocational: /^(vocational-s[12]|g\d+-voc-s[12])$/,
+      // Slug is `voc`, not `vocational`. Grade 10 (the implicit grade) takes
+      // the bare `voc-s1` form since 2026-11-13 (vocational-p1-student-book);
+      // `vocational-s2` is still the Grade 9 Part 2 file filed under Grade 10.
+      vocational: /^(vocational-s[12]|voc-s[12]|g\d+-voc-s[12])$/,
       'physical-education': /^(pe-s[12]|g\d+-pe-s[12])$/,
     };
     for (const s of G10_SOURCES) {

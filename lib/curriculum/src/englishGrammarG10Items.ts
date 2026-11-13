@@ -92,16 +92,27 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
     lessonId: L('u1_l5'),
     statement: 'I can use articles to talk about general and specific things.',
     items: [
-      // a or an by the first sound: «a uniform», «a university» (a y sound), «an hour» (a silent h).
-      ...items('a-an', 'form', [
-        ['She has an umbrella.', 'an', 'a'],
-        ['I eat an apple every day.', 'an', 'a'],
-        ['He is an engineer.', 'an', 'a'],
-        ['It was an easy test.', 'an', 'a'],
-        ['She wears a uniform to school.', 'a', 'an'],
-        ['We waited for an hour.', 'an', 'a'],
-        ['My brother studies at a university.', 'a', 'an'],
-        ['He told me an interesting story.', 'an', 'a'],
+      // The book's rule d: a/an with an occupation. The twin drops the article («She is doctor»), never swaps a for
+      // the, which can be a specific person. The a/an choice by first sound is not in this lesson's box.
+      ...items('a-an-jobs', 'form', [
+        ['My mother is a teacher.', 'a teacher', 'teacher'],
+        ['He works as a pilot.', 'a pilot', 'pilot'],
+        ['I want to be an engineer.', 'an engineer', 'engineer'],
+        ['Her sister is a dentist.', 'a dentist', 'dentist'],
+        ['My uncle works as a driver.', 'a driver', 'driver'],
+        ['She wants to be a journalist.', 'a journalist', 'journalist'],
+      ]),
+      // The book's rule f: the with superlatives, ordinal numbers and periods of time (the 1980s). The twin drops the
+      // article, which is not standard English in any of these.
+      ...items('the-superlatives', 'form', [
+        ['She is the best player in the team.', 'the best', 'best'],
+        ['This is the highest mountain in Jordan.', 'the highest', 'highest'],
+        ['This is the third time he has called.', 'the third', 'third'],
+        ['We live on the second floor.', 'the second', 'second'],
+        ['Flared trousers were popular in the 1970s.', 'the 1970s', '1970s'],
+        ['My grandfather was born in the 1950s.', 'the 1950s', '1950s'],
+        ['He is the youngest boy in our class.', 'the youngest', 'youngest'],
+        ['It was the worst film of the year.', 'the worst', 'worst'],
       ]),
       // The second mention of the same thing takes «the»; «a» would make it another one.
       ...items('already-mentioned', 'meaning', [
@@ -115,8 +126,6 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['My uncle has a car. The car is red.', 'The', 'A'],
         ['I found a key. Is the key yours?', 'the', 'a'],
         ['She wrote a poem. The poem won a prize.', 'The', 'A'],
-        ['We bought a cake, but the cake was dry.', 'the', 'a'],
-        ['A man knocked. The man wanted directions.', 'The', 'A'],
       ]),
       ...items('unique-things', 'form', [
         ['The sun rises in the east.', 'The', 'A'],
@@ -125,23 +134,19 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['The internet is very useful.', 'The', 'An'],
         ['He wants to travel around the world.', 'the', 'a'],
         ['Never look directly at the sun.', 'the', 'a'],
-        ['The Earth is our home.', 'The', 'An'],
-        ['We watched the moon last night.', 'the', 'a'],
         ['The sky is very blue today.', 'The', 'A'],
         ['The world is getting warmer.', 'The', 'A'],
       ]),
-      // No article with a sport, a meal after «have», a language, a school subject, a city, «at night», «on foot».
+      // The book's rules a and b: no article with an uncountable noun (a sport), a continent, a country or a city.
       ...items('no-article', 'form', [
         ['My brother plays football after school.', 'football', 'the football'],
-        ['We have breakfast at seven.', 'breakfast', 'the breakfast'],
-        ['She speaks Arabic and English.', 'Arabic', 'the Arabic'],
-        ['I study maths and science.', 'maths', 'the maths'],
         ['They live in Amman.', 'Amman', 'the Amman'],
-        ['My cousin is learning French.', 'French', 'the French'],
-        ['History is my favourite subject.', 'History', 'The history'],
         ['We visited Petra last year.', 'Petra', 'the Petra'],
-        ['Owls hunt at night.', 'night', 'the night'],
-        ['I go to school on foot.', 'foot', 'the foot'],
+        ['Asia is the biggest continent.', 'Asia', 'The Asia'],
+        ['Africa has many different countries.', 'Africa', 'The Africa'],
+        ['My cousin lives in Jordan.', 'Jordan', 'the Jordan'],
+        ['She flew to Aqaba yesterday.', 'Aqaba', 'the Aqaba'],
+        ['Europe is far from here.', 'Europe', 'The Europe'],
       ]),
     ],
   },
@@ -213,13 +218,9 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['Would you mind opening the window?', 'opening', 'to open'],
         ['They avoid flying at night.', 'flying', 'to fly'],
         ['I keep forgetting his name.', 'forgetting', 'to forget'],
-        ['We practise speaking English every day.', 'speaking', 'to speak'],
-        ['She suggested meeting at the library.', 'meeting', 'to meet'],
-        ['The company is considering using drones for delivery.', 'using', 'to use'],
         ['I miss playing football with my cousins.', 'playing', 'to play'],
         ['He gave up eating sweets.', 'eating', 'to eat'],
         ['Imagine flying above the clouds!', 'flying', 'to fly'],
-        ['They risked losing everything.', 'losing', 'to lose'],
         ['She denied breaking the window.', 'breaking', 'to break'],
         ['Do you fancy watching a film?', 'watching', 'to watch'],
       ]),
@@ -232,30 +233,40 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['He refused to answer the question.', 'to answer', 'answering'],
         ['I promise to call you tonight.', 'to call', 'calling'],
         ['He seems to know the answer.', 'to know', 'knowing'],
-        ['Did you manage to finish the project?', 'to finish', 'finishing'],
         ['My uncle offered to drive us home.', 'to drive', 'driving'],
-        ["We can't afford to buy a new car.", 'to buy', 'buying'],
-        ['They plan to use drones for weather forecasting.', 'to use', 'using'],
         ['I would like to try aerial photography.', 'to try', 'trying'],
-        ['He pretended to be asleep.', 'to be', 'being'],
-        ['The drone failed to take off.', 'to take', 'taking'],
+        ['She expects to finish by Friday.', 'to finish', 'finishing'],
       ]),
-      // stop, remember, forget: both forms are English, and the rest of the sentence picks one. «stopped to cry» or
-      // «stopped to rain» makes no sense; «on the way home» is a pause, not giving up; a past time is a memory
-      // (remember doing), a future time a task (remember to do); «so we have none» says it was not bought.
+      // The book's third rule: modal verbs, make and let take the verb without to. The twin adds to.
+      ...items('bare-infinitive', 'form', [
+        ['The film made me cry.', 'cry', 'to cry'],
+        ['Our teacher lets us use dictionaries.', 'use', 'to use'],
+        ['Loud music always makes him feel tired.', 'feel', 'to feel'],
+        ['Her parents never let her stay out late.', 'stay', 'to stay'],
+        ['You must tell the truth.', 'tell', 'to tell'],
+        ['We should leave before the rain starts.', 'leave', 'to leave'],
+        ['She might call you tonight.', 'call', 'to call'],
+        ['The sun will rise at six.', 'rise', 'to rise'],
+        ['Dad let me drive his car.', 'drive', 'to drive'],
+        ["Don't make me laugh!", 'laugh', 'to laugh'],
+      ]),
+      // The book's Watch Out: stop, remember, forget, regret, try. Both forms are English, and the rest of the sentence
+      // picks one. «stopped to cry» or «stopped to rain» makes no sense; «on the way home» is a pause, not giving up; a
+      // past time is a memory (remember doing), a future time a task (remember to do); «so we have none» says it was
+      // not bought; regret + -ing is sorrow for what one did («all her money on shoes»);
+      // «tried hard» is an effort to do something, which is try + to. Try + -ing (an experiment) is not tested: nothing
+      // in a short sentence rules out «tried to» there.
       ...items('change-of-meaning', 'meaning', [
         ['The baby finally stopped crying.', 'crying', 'to cry'],
         ["It stopped raining at six o'clock.", 'raining', 'to rain'],
         ['Please stop making that noise.', 'making', 'to make'],
-        ['The phone stopped ringing.', 'ringing', 'to ring'],
         ['On the way home, we stopped to buy bread.', 'to buy', 'buying'],
-        ['Stop talking! The exam has started.', 'talking', 'to talk'],
-        ['I remember meeting your father last year.', 'meeting', 'to meet'],
-        ['Remember to lock the door tonight.', 'to lock', 'locking'],
-        ['Please remember to bring your camera tomorrow.', 'to bring', 'bringing'],
         ['I remember visiting Petra when I was seven.', 'visiting', 'to visit'],
-        ["Don't forget to call your uncle tomorrow.", 'to call', 'calling'],
+        ['Remember to lock the door tonight.', 'to lock', 'locking'],
         ['I forgot to buy milk, so we have none.', 'to buy', 'buying'],
+        ['She regrets spending all her money on shoes.', 'spending', 'to spend'],
+        ['They regret buying such an old car.', 'buying', 'to buy'],
+        ['She tried hard to stay awake.', 'to stay', 'staying'],
       ]),
     ],
   },
@@ -445,35 +456,34 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ["You mustn't cheat in exams. It's against the rules.", "mustn't", "don't have to"],
         ["You mustn't touch the wires. They're live.", "mustn't", "don't have to"],
         ["You mustn't drive without a licence. It's illegal.", "mustn't", "don't have to"],
-        ["You mustn't play with fire. It's dangerous.", "mustn't", "don't have to"],
-        ["Visitors mustn't feed the animals. It's not allowed.", "mustn't", "don't have to"],
         ["You don't have to pay. It's free.", "don't have to", "mustn't"],
         ["You don't have to come, but you can.", "don't have to", "mustn't"],
         ["The trip is optional. You don't have to go.", "don't have to", "mustn't"],
-        ["You don't have to stay, but you're welcome to.", "don't have to", "mustn't"],
-        ["The museum is free. Visitors don't have to pay.", "don't have to", "mustn't"],
         ["Ties aren't required. You don't have to wear one.", "don't have to", "mustn't"],
         ["Sport isn't compulsory. You don't have to play.", "don't have to", "mustn't"],
       ]),
-      // A past time word («when he was five», «Last night») takes could or was able to, a future one («Next year»,
-      // «Tomorrow») will be able to; the distractor is the present (can, am able to) or the other tense. could and was
-      // able to are never set against each other: both fit too often. No «As a child, I …» here: «As a child, I can't
-      // vote» is present.
+      // Ability: a past time word («when he was five», «Last night») takes could or was able to, a future one («Next
+      // year», «Tomorrow») will be able to; the distractor is the present (can, am able to) or the other tense. could and
+      // was able to are never set against each other: both fit too often. No «As a child, I …» here: «As a child, I
+      // can't vote» is present.
+      // Permission and requests (the book: can, could and may ask for permission; can and could make requests): the
+      // asker is «I» or «we» when the thing asked for is the listener's («borrow your pen», «use your phone») and «you»
+      // when the favour is «for me» or «me». The twin swaps the person, which makes the request nonsense.
       ...items('ability-permission', 'meaning', [
         ['He could swim when he was five.', 'could', 'can'],
         ["When I was little, I couldn't stay up late.", "couldn't", "can't"],
         ['Yesterday, I was able to finish early.', 'was able to', 'am able to'],
         ['Next year, she will be able to drive.', 'will be able to', 'was able to'],
-        ['Last year, we could wear jeans on Fridays.', 'could', 'can'],
-        ["When I was ten, I couldn't ride a bike.", "couldn't", "can't"],
         ["Last night, we weren't able to book a flight.", "weren't able to", "aren't able to"],
-        ['Years ago, my grandfather could run very fast.', 'could', 'can'],
-        ["Ten years ago, we couldn't buy tickets online.", "couldn't", "can't"],
         ['Tomorrow, we will be able to visit Petra.', 'will be able to', 'were able to'],
-        ["Last week, I couldn't find my passport.", "couldn't", "can't"],
-        ['When we were young, we could play outside.', 'could', 'can'],
-        ["Two days ago, he wasn't able to walk.", "wasn't able to", "isn't able to"],
-        ["Last month, she couldn't see clearly.", "couldn't", "can't"],
+        ['Could I borrow your pen, please?', 'Could I', 'Could you'],
+        ['May I use your phone for a moment?', 'May I', 'May you'],
+        ['Can I borrow your charger, please?', 'Can I', 'Can you'],
+        ['May I leave the room, please?', 'May I', 'May you'],
+        ['Could you open the door for me, please?', 'Could you', 'Could I'],
+        ['Can you help me with this bag?', 'Can you', 'Can I'],
+        ['Could you lend me your notes, please?', 'Could you', 'Could I'],
+        ['Can you pass me the salt, please?', 'Can you', 'Can I'],
       ]),
       // A modal takes the bare verb (no to, -ing, -s or past); have to agrees with its subject; ought to is not used here.
       ...items('forms', 'form', [
@@ -489,6 +499,11 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['Could you help me, please?', 'help', 'to help'],
         ['I had to wait for an hour.', 'wait', 'waited'],
         ["He wasn't able to come yesterday.", 'come', 'came'],
+        // can for possibility: the bare verb after it.
+        ['It can be very hot in Aqaba.', 'be', 'to be'],
+        ['Flights can be late in bad weather.', 'be', 'being'],
+        ['Winter in Irbid can get very cold.', 'get', 'gets'],
+        ['It can rain a lot in December.', 'rain', 'raining'],
       ]),
     ],
   },
@@ -563,9 +578,6 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ["That bag looks heavy. I'll carry it.", "I'll carry", 'I carry'],
         ["Wait, I'll help you with that.", "I'll help", 'I help'],
         ["You look tired. I'll make you some tea.", "I'll make", 'I make'],
-        ["I forgot to call Mum! I'll do it now.", "I'll do", 'I do'],
-        ["We've got no milk. I'll buy some.", "I'll buy", 'I buy'],
-        ["Sorry, I don't understand this. I'll ask the teacher.", "I'll ask", 'I ask'],
       ]),
       // A sign of what is about to happen (dark clouds, «Watch out!», «Careful!») takes going to. will is not offered
       // («Look at those clouds, it'll rain» is English too); the distractor is the present simple, and the warning says
@@ -578,9 +590,6 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['Watch out! The ball is going to hit you.', 'is going to hit', 'hits'],
         ["Look at the sky! It's going to snow.", "It's going to snow", 'It snows'],
         ["Mind the step! You're going to trip.", "You're going to trip", 'You trip'],
-        ['Stop! The milk is going to boil over.', 'is going to boil', 'boils'],
-        ["Careful! You're going to spill your tea.", "You're going to spill", 'You spill'],
-        ['Look out! That ladder is going to fall.', 'is going to fall', 'falls'],
       ]),
       // A timetable (present simple) or an arrangement (present continuous). Form only: with a fixed time, will, going
       // to and both presents all fit («The train will leave at nine tomorrow» is English), so the errors are in the form.
@@ -590,23 +599,37 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['We are flying to Aqaba on Friday.', 'flying', 'fly'],
         ['The film starts at eight.', 'starts', 'start'],
         ['What time does the bus leave?', 'leave', 'leaves'],
-        ['She is starting her new job on Monday.', 'is', 'are'],
         ['Are you coming to the party tonight?', 'coming', 'come'],
-        ['The museum opens at nine tomorrow.', 'opens', 'open'],
-        ['My exams begin next week.', 'begin', 'begins'],
-        ['They are having a party on Saturday.', 'having', 'have'],
-        ['When does the term start?', 'start', 'starts'],
-        ["I'm seeing the dentist at four.", 'seeing', 'see'],
       ]),
       ...items('forms', 'form', [
         ["I'm going to study medicine.", 'study', 'studying'],
-        ['She will be a responsible leader one day.', 'be', 'is'],
         ['They are going to visit Petra.', 'are', 'is'],
         ['Will you help me tomorrow?', 'help', 'helps'],
         ['My sister is going to be a doctor.', 'be', 'to be'],
-        ['I think you will win the competition.', 'win', 'to win'],
         ["We aren't going to give up.", 'give', 'giving'],
         ['Are you going to apply for the job?', 'Are', 'Is'],
+      ]),
+      // The book's very-near-future form: be about to + infinitive. -ing after «about» is the error.
+      ...items('about-to', 'form', [
+        ['Hurry! The film is about to start.', 'to start', 'starting'],
+        ['Be quiet! The teacher is about to speak.', 'to speak', 'speaking'],
+        ["Don't leave! We are about to eat.", 'to eat', 'eating'],
+        ['The plane is about to take off.', 'to take', 'taking'],
+      ]),
+      // may, might and could for possibilities: the bare verb after them.
+      ...items('possibility', 'form', [
+        ['I might study medicine next year.', 'study', 'to study'],
+        ['It may rain this evening.', 'rain', 'to rain'],
+        ['We could visit Petra in spring.', 'visit', 'visiting'],
+        ['She might not come to the party.', 'come', 'to come'],
+      ]),
+      // will for a prediction from opinion or belief («I think», «I am sure»), with the adverb of certainty after will
+      // and before won't.
+      ...items('will-predictions', 'form', [
+        ['I think you will win the competition.', 'win', 'to win'],
+        ['I am sure you will pass the exam.', 'pass', 'passes'],
+        ['She will be a responsible leader one day.', 'be', 'is'],
+        ["It probably won't snow tomorrow.", "probably won't", "won't probably"],
       ]),
     ],
   },
@@ -707,27 +730,31 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['What would you do if you lost your phone?', 'do', 'to do'],
         ["I wouldn't worry if I were you.", 'worry', 'worried'],
       ]),
-      // An unreal situation stated in its own first sentence («Imagine …», «Just imagine …», «Suppose …», with a past
-      // verb) takes would in the second; will is ruled out by that opener. The twin's second sentence («You will fly.»)
-      // is sound English on its own, so the choice turns on meaning, not form. No if-clause with were or could + will
-      // (a form error), and no likely condition: after «If it rains, …» a tentative would is accepted too.
-      ...items('imagine-vs-real', 'meaning', [
-        ['Imagine you had wings. You would fly.', 'would fly', 'will fly'],
-        ['Imagine we had no phones. Life would be quiet.', 'would be', 'will be'],
-        ['Imagine you were invisible. Nobody would see you.', 'would see', 'will see'],
-        ['Imagine I could fly. I would never walk.', 'would never walk', 'will never walk'],
-        ['Imagine you lived on the moon. You would float.', 'would float', 'will float'],
-        ['Imagine there were no cars. Cities would be quieter.', 'would be', 'will be'],
-        ['Imagine you spoke every language. You would travel everywhere.', 'would travel', 'will travel'],
-        ['Suppose it snowed in Aqaba. We would build snowmen.', 'would build', 'will build'],
-        ['Suppose you met a dinosaur. You would run.', 'would run', 'will run'],
-        ["Just imagine we lived underwater. We'd need gills.", "We'd need", "We'll need"],
-        ['Suppose you were famous. Everyone would know you.', 'would know', 'will know'],
-        ['Imagine the sun never set. We would never sleep.', 'would never sleep', 'will never sleep'],
-        ['Suppose animals could talk. My cat would complain.', 'would complain', 'will complain'],
-        ['Imagine we had no school. We would get bored.', 'would get', 'will get'],
-        ['Suppose the internet stopped working. We would read more.', 'would read', 'will read'],
-        ['Imagine you were a giant. Houses would look tiny.', 'would look', 'will look'],
+      // The box's main point: the if-clause fixes the result clause. A past if-clause (an imaginary or unlikely
+      // situation) takes would; will after it is a mismatch, whatever the content. Only past if-clauses are set
+      // against will: after «If it rains, …» a tentative would is accepted too, so no present if-clause is tested here.
+      ...items('condition-result', 'form', [
+        ['If I won a prize, I would help others.', 'would help', 'will help'],
+        ['If I were a bird, I would fly to Aqaba.', 'would fly', 'will fly'],
+        ['If she were my daughter, I would call her.', 'would call', 'will call'],
+        ['If we lived on Mars, we would need oxygen.', 'would need', 'will need'],
+        ['If I had wings, I would visit every country.', 'would visit', 'will visit'],
+        ['If animals could talk, my cat would complain.', 'would complain', 'will complain'],
+        ['If I were president, I would build more schools.', 'would build', 'will build'],
+        ['If you were rich, what would you buy?', 'would', 'will'],
+        ['If you were invisible, nobody would see you.', 'would see', 'will see'],
+        ['If there were no cars, cities would be quieter.', 'would be', 'will be'],
+      ]),
+      // The box: were instead of was after I, he, she or it, especially to give advice («If I were you, I'd apologise»).
+      // The twin is am, which no variety of English allows after «If I … you»; was and were are never set against
+      // each other.
+      ...items('were-advice', 'form', [
+        ['If I were you, I would apologise.', 'were', 'am'],
+        ["If I were you, I wouldn't wait.", 'were', 'am'],
+        ['If I were you, I would ask the teacher.', 'were', 'am'],
+        ['If I were you, I would study more.', 'were', 'am'],
+        ['If I were in your place, I would stay.', 'were', 'am'],
+        ['If I were you, I would take the bus.', 'were', 'am'],
       ]),
     ],
   },
@@ -740,35 +767,23 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
       // doubled auxiliary. No bare verb that is also an adjective (clean, open, dry), which could fit.
       ...items('if-present', 'form', [
         ['If you heat ice, it melts.', 'melts', 'melt'],
-        ['If you eat late, you sleep badly.', 'sleep', 'sleeps'],
         ['If you boil water, it turns into steam.', 'turns', 'turning'],
         ['If it rains, the ground gets wet.', 'gets', 'get'],
         ['If you press this button, the machine stops.', 'stops', 'stopping'],
         ['If you drop glass, it breaks.', 'breaks', 'broken'],
-        ['If people eat too much sugar, they gain weight.', 'gain', 'gains'],
         ['If you put oil in water, it floats.', 'floats', 'float'],
-        ['If you leave milk out, it goes bad.', 'goes', 'go'],
-        ['If babies are hungry, they cry.', 'cry', 'cries'],
-        ['If you exercise every day, you feel better.', 'feel', 'feels'],
         ['If iron gets wet, it rusts.', 'gets', 'get'],
-        ['If the traffic light is red, cars stop.', 'stop', 'stops'],
         ['If you heat butter, it becomes liquid.', 'becomes', 'is becomes'],
       ]),
       // The same with when, in either clause order.
       ...items('when-general-truths', 'form', [
         ['Plants die when they get no water.', 'get', 'gets'],
         ['When you heat water, it boils.', 'boils', 'boil'],
-        ['When it gets dark, the street lights come on.', 'come', 'comes'],
-        ["When I drink coffee, I can't sleep.", 'drink', 'drinks'],
         ['Metal expands when you heat it.', 'expands', 'expand'],
         ['When you mix blue and yellow, you get green.', 'mix', 'mixes'],
         ['My dog barks when someone knocks.', 'knocks', 'knock'],
-        ['When the bell rings, the students leave.', 'rings', 'ringing'],
         ['Fish die when the water is dirty.', 'is', 'are'],
-        ['When people are tired, they make mistakes.', 'make', 'makes'],
-        ['When it snows, the roads become dangerous.', 'become', 'becomes'],
         ['Milk turns sour when it gets warm.', 'turns', 'turn'],
-        ['When you press the switch, the light comes on.', 'comes', 'come'],
         ['When water freezes, it becomes ice.', 'freezes', 'frozen'],
       ]),
       // Questions and negatives: do/does agrees with the subject and takes the bare verb.
@@ -777,14 +792,31 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ["If you don't water plants, they die.", 'die', 'dies'],
         ['What happens when you drop an egg?', 'happens', 'happen'],
         ['Do cats purr when they are happy?', 'purr', 'purrs'],
-        ["If you don't sleep, you feel tired.", "don't", "doesn't"],
-        ["Buses don't run if it snows.", "don't", "doesn't"],
         ["What does your cat do when it's hungry?", 'does', 'do'],
         ["Iron doesn't float if you put it in water.", 'float', 'floats'],
         ['Why do leaves fall when it gets cold?', 'fall', 'falls'],
         ["If it doesn't rain, the grass turns brown.", "doesn't", "don't"],
-        ["Do you get a headache if you don't eat?", 'get', 'gets'],
-        ["A car doesn't start if the battery is flat.", 'start', 'starts'],
+      ]),
+      // The box's alternatives to if: unless (= if not), as soon as, as long as, provided that, until, before, after.
+      // Both words are English; the sentence's own logic rules one out, so the choice is by meaning. No pair that
+      // could fit («wash my hands before / after I eat», «keep stirring until / before the sauce thickens»).
+      ...items('alternatives-to-if', 'meaning', [
+        ['Plants die unless they get water.', 'unless', 'if'],
+        ["You can't enter unless you have a ticket.", 'unless', 'if'],
+        ["Ice doesn't melt unless it gets warm.", 'unless', 'if'],
+        ["The engine doesn't start unless you press the button.", 'unless', 'if'],
+        ['Your phone does not work unless it is charged.', 'unless', 'if'],
+        ['As soon as the bell rings, we leave.', 'As soon as', 'Unless'],
+        ['As soon as it gets dark, the lights come on.', 'As soon as', 'Unless'],
+        ['Borrow it as long as you return it.', 'as long as', 'unless'],
+        ['You can stay provided that you are quiet.', 'provided that', 'unless'],
+        ['We can swim as long as the sea is calm.', 'as long as', 'unless'],
+        ['Provided that it is safe, we can try it.', 'Provided that', 'Unless'],
+        ['Wait here until I call you.', 'until', 'as soon as'],
+        ['I will wait until I have heard from you.', 'until', 'as soon as'],
+        ['I brush my teeth before I go to bed.', 'before', 'after'],
+        ['Switch off the engine before you leave the car.', 'before', 'after'],
+        ['The match ends after the final whistle.', 'after', 'before'],
       ]),
     ],
   },
