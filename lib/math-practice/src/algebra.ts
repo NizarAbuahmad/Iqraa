@@ -1670,6 +1670,187 @@ const realNumbers = topic('real_numbers', /^الاعداد الحقيقيه$/, [
 
 
 
+// ─── Grade 9: linear inequalities in two variables, and reading graphs ─────
+// Added 2026-11-13 for the three lessons that had no generator: «تمثيل المتباينات
+// الخطية بمتغيرين بيانيًا» (and its GeoGebra lab, which practises the same skill)
+// and «تفسير التمثيلات البيانية». A stem cannot draw the graph, so each item
+// carries what the graph would show (a point on it, two readings) and asks for
+// what a student reads off it; every answer is computed from those numbers.
+
+/** «2x − 3y», «−x + y»: the left side of a two-variable line. */
+const lhsXY = (a: number, b: number) => `${polyStr([0, a], 'x')}${b < 0 ? ' − ' : ' + '}${Math.abs(b) === 1 ? '' : Math.abs(b)}y`;
+
+const ineqTwoVar: Topic = topic('ineq_two_var', /^(?:معمل برمجيه جيوجبرا )?تمثيل المتباينات الخطيه بمتغيرين بيانيا$/, [9, 9], ({ rng, diff }) => {
+  const lvl = tier(diff);
+  const cap = lvl === 0 ? 3 : lvl === 1 ? 4 : 5;
+  const coef = () => (lvl === 0 ? int(rng, 1, cap) : nz(rng, cap));
+  const kind = wpick(rng, [[0, 1.4], [1, 1], [2, 0.8], [3, 1], [4, 0.9], [5, 0.9]] as const);
+
+  if (kind === 0) {
+    // which listed point is in the solution region; a strict sign makes a point ON the line a trap
+    const a = coef(), b = coef(), s = pick(rng, SYM), c = int(rng, -8, 12);
+    const val = (x: number, y: number) => a * x + b * y;
+    const holds = (x: number, y: number) => (s === '<' ? val(x, y) < c : s === '>' ? val(x, y) > c : s === '≤' ? val(x, y) <= c : val(x, y) >= c);
+    const pts: Array<[number, number]> = [];
+    for (let i = 0; i < 80; i++) {
+      const x = int(rng, -5, 6), y = int(rng, -5, 6);
+      if (!pts.some(p => p[0] === x && p[1] === y)) pts.push([x, y]);
+    }
+    const sat = pts.filter(([x, y]) => holds(x, y)), non = pts.filter(([x, y]) => !holds(x, y));
+    if (sat.length === 0 || non.length < 3) return ineqTwoVar.make({ rng, diff, grade: 9 });
+    const onLine = pts.filter(([x, y]) => val(x, y) === c);
+    const strict = s === '<' || s === '>';
+    const ans = !strict && onLine.length > 0 && rng() < 0.4 ? onLine[0]! : sat[int(rng, 0, sat.length - 1)]!;
+    const wrongs: Array<[number, number]> = [];
+    if (strict && onLine.length > 0 && (lvl > 0 || rng() < 0.5)) wrongs.push(onLine[0]!);
+    for (const p of shuffled(rng, non)) if (wrongs.length < 3 && !wrongs.includes(p)) wrongs.push(p);
+    const listed = shuffled(rng, [ans, ...wrongs]).map(([x, y]) => pair(x, y)).join('، ');
+    const ineq = `${lhsXY(a, b)} ${s} ${signed(c)}`;
+    return { eq: ineq, answer: pair(...ans), wrongs: wrongs.map(([x, y]) => pair(x, y)), ar: `أيّ النقاط الآتية تقع ضمن منطقة حلّ المتباينة ${ineq}: ${listed}؟`, en: `Which of these points lies in the solution region of ${ineq}: ${listed}?` };
+  }
+
+  if (kind === 1 || kind === 2) {
+    // the boundary line (solid or dashed) and the side that is shaded
+    const vert = kind === 2 && rng() < 0.5;
+    const s = pick(rng, SYM);
+    let ineq: string, line: string, sideAr: [string, string], sideEn: [string, string];
+    if (kind === 1) {
+      const m = nz(rng, lvl === 0 ? 2 : 3), k = nz(rng, 6);
+      ineq = `y ${s} ${polyStr([k, m])}`;
+      line = 'المستقيم الحدودي';
+      sideAr = ['فوقه', 'تحته']; sideEn = ['above it', 'below it'];
+    } else {
+      const c = nz(rng, 6), v = vert ? 'x' : 'y';
+      ineq = `${v} ${s} ${signed(c)}`;
+      line = `المستقيم ${v} = ${signed(c)}`;
+      sideAr = vert ? ['على يمينه', 'على يساره'] : ['فوقه', 'تحته'];
+      sideEn = vert ? ['to the right of it', 'to the left of it'] : ['above it', 'below it'];
+    }
+    // y > …, x > … shade the upper or right side
+    const upper = s === '>' || s === '≥', dashed = s === '<' || s === '>';
+    const lineEn = kind === 1 ? 'the boundary line' : line.replace('المستقيم', 'the line');
+    const opts = [false, true].flatMap(d => [true, false].map(u => ({ d, u })));
+    const textAr = (o: { d: boolean; u: boolean }) => `${line} ${o.d ? 'متقطع' : 'متصل'}، ويُظلَّل ما ${sideAr[o.u ? 0 : 1]}`;
+    const textEn = (o: { d: boolean; u: boolean }) => `${lineEn} is ${o.d ? 'dashed' : 'solid'} and the region ${sideEn[o.u ? 0 : 1]} is shaded`;
+    const right = opts.find(o => o.d === dashed && o.u === upper)!;
+    const wrongOpts = opts.filter(o => o !== right);
+    const order = shuffled(rng, opts);
+    return {
+      eq: ineq, answer: textAr(right), wrongs: wrongOpts.map(textAr),
+      ar: `عند تمثيل المتباينة ${ineq} بيانيًا في المستوى الإحداثي، أيّ الأوصاف الآتية صحيح: ${order.map(textAr).join(' ؛ ')}؟`,
+      en: `When ${ineq} is graphed in the coordinate plane, which description is correct: ${order.map(textEn).join('; ')}?`,
+    };
+  }
+
+  if (kind === 3) {
+    // the boundary line of an inequality is the equation with the sign replaced by «=»
+    const a = coef(), b = coef(), s = pick(rng, SYM), c = nz(rng, 12);
+    const ineq = `${lhsXY(a, b)} ${s} ${signed(c)}`;
+    const ans = lineEq(a, b, c);
+    const swap = a !== b ? [lineEq(b, a, c)] : [];
+    return {
+      eq: ineq, answer: ans,
+      wrongs: wrongsFrom(ans, [lineEq(a, -b, c), lineEq(a, b, -c), ...swap, lineEq(a, b, c + 1)], j => lineEq(a, b, c + Math.abs(j) + 1)),
+      ar: `ما معادلة المستقيم الحدودي للمتباينة ${ineq}؟`, en: `What is the equation of the boundary line of ${ineq}?`,
+    };
+  }
+
+  if (kind === 4) {
+    // where the boundary line cuts an axis: the first thing a student plots
+    const a = coef(), b = coef(), s = pick(rng, SYM), k = nz(rng, 6), onY = rng() < 0.5;
+    const c = onY ? b * k : a * k;
+    const ineq = `${lhsXY(a, b)} ${s} ${signed(c)}`;
+    const at = (v: number) => (onY ? pair(0, v) : pair(v, 0));
+    const swapped = onY ? pair(k, 0) : pair(0, k);
+    return {
+      eq: ineq, answer: at(k),
+      wrongs: wrongsFrom(at(k), [swapped, at(-k), at(c)], j => at(k + Math.abs(j) + 1)),
+      ar: `ما نقطة تقاطع المستقيم الحدودي للمتباينة ${ineq} مع المحور ${onY ? 'y' : 'x'}؟`,
+      en: `Where does the boundary line of ${ineq} cross the ${onY ? 'y' : 'x'}-axis?`,
+    };
+  }
+
+  // kind 5: write the inequality a situation gives
+  const a = int(rng, 3, 9);
+  let b = int(rng, 3, 9);
+  if (b === a) b = a === 9 ? 8 : a + 1;
+  const c = 5 * int(rng, 4, 12);
+  const mk = (p: number, q: number, s: string) => `${p}x + ${q}y ${s} ${c}`;
+  const ans = mk(a, b, '≤');
+  return {
+    eq: ans, answer: ans, wrongs: [mk(a, b, '≥'), mk(a, b, '<'), mk(b, a, '≤')],
+    ar: `يشتري طالب x دفترًا ثمن الدفتر الواحد ${dinars(a)}، وy قلمًا ثمن القلم الواحد ${dinars(b)}، على ألّا يزيد المبلغ الكلي على ${dinars(c)}. أيّ المتباينات الآتية تعبّر عن ذلك؟`,
+    en: `A student buys x notebooks at ${a} dinars each and y pens at ${b} dinars each, spending at most ${c} dinars in all. Which inequality describes this?`,
+  };
+});
+
+type UnitForm = readonly [plural: string, accusative: string, genitive: string];
+const CONVERSIONS: ReadonlyArray<{ a: UnitForm; b: UnitForm; f: number; aEn: string; bEn: string }> = [
+  { a: ['ساعات', 'ساعةً', 'ساعة'], b: ['دقائق', 'دقيقةً', 'دقيقة'], f: 60, aEn: 'hours', bEn: 'minutes' },
+  { a: ['كيلومترات', 'كيلومترًا', 'كيلومتر'], b: ['أمتار', 'مترًا', 'متر'], f: 1000, aEn: 'kilometres', bEn: 'metres' },
+  { a: ['كيلوغرامات', 'كيلوغرامًا', 'كيلوغرام'], b: ['غرامات', 'غرامًا', 'غرام'], f: 1000, aEn: 'kilograms', bEn: 'grams' },
+  { a: ['لترات', 'لترًا', 'لتر'], b: ['ملليلترات', 'ملليلترًا', 'ملليلتر'], f: 1000, aEn: 'litres', bEn: 'millilitres' },
+  { a: ['أمتار', 'مترًا', 'متر'], b: ['سنتمترات', 'سنتمترًا', 'سنتمتر'], f: 100, aEn: 'metres', bEn: 'centimetres' },
+  { a: ['أيام', 'يومًا', 'يوم'], b: ['ساعات', 'ساعةً', 'ساعة'], f: 24, aEn: 'days', bEn: 'hours' },
+];
+const unitCount = (n: number, u: UnitForm) => `${n} ${tamyiz(n, u[0], u[1], u[2])}`;
+const whole = (cands: number[]) => cands.filter(v => Number.isInteger(v) && v > 0);
+
+const interpretGraphs: Topic = topic('interpret_graphs', /^تفسير التمثيلات البيانيه$/, [9, 9], ({ rng }) => {
+  const kind = wpick(rng, [[0, 1], [1, 0.8], [2, 1.2], [3, 0.8], [4, 0.5], [5, 0.7], [6, 0.9]] as const);
+
+  if (kind === 0 || kind === 1) {
+    // a conversion curve: a straight line through the origin and one point read off it
+    const c = pick(rng, CONVERSIONS), p = pick(rng, [3, 4, 5]), r = int(rng, 6, 12);
+    const head = `منحنى التحويل من ال${c.a[0]} (المحور الأفقي) إلى ال${c.b[0]} (المحور الرأسي) خطٌّ مستقيم يبدأ من نقطة الأصل ويمرّ بالنقطة (${p} ، ${c.f * p}).`;
+    const headEn = `The conversion graph from ${c.aEn} (horizontal axis) to ${c.bEn} (vertical axis) is a straight line from the origin through (${p}, ${c.f * p}).`;
+    if (kind === 0) {
+      const ans = c.f * r;
+      return { eq: `${p}, ${c.f * p}, ${r}`, answer: String(ans), wrongs: num(ans, whole([c.f + r, c.f * p, c.f * r + c.f, c.f * (r - 1), r * p]), String), ar: `${head} كم ${c.b[2]} تقابل ${unitCount(r, c.a)}؟`, en: `${headEn} How many ${c.bEn} correspond to ${r} ${c.aEn}?` };
+    }
+    const m = c.f * r;
+    return { eq: `${p}, ${c.f * p}, ${m}`, answer: String(r), wrongs: num(r, whole([m - c.f, c.f - r, r + p, r * 2, p]), String), ar: `${head} كم ${c.a[2]} تقابل ${unitCount(m, c.b)}؟`, en: `${headEn} How many ${c.aEn} correspond to ${m} ${c.bEn}?` };
+  }
+
+  if (kind === 2 || kind === 3) {
+    // position–time, constant speed: two points give the speed, or the position at a later time
+    const v = int(rng, 2, 12), s0 = int(rng, 1, 15), t1 = int(rng, 0, 4), dt = int(rng, 2, 6), t2 = t1 + dt;
+    const s1 = s0 + v * t1, s2 = s0 + v * t2;
+    const head = `يمثّل منحنى الموقع – الزمن حركة جسم بسرعة ثابتة على خط مستقيم، ويمرّ بالنقطتين (${t1} ، ${s1}) و(${t2} ، ${s2}) حيث الإحداثي الأول الزمن بالثانية والثاني الموقع بالمتر.`;
+    const headEn = `A position–time graph shows an object moving at constant speed along a line. It passes through (${t1}, ${s1}) and (${t2}, ${s2}), where the first coordinate is the time in seconds and the second the position in metres.`;
+    if (kind === 2) {
+      return { eq: `${t1}, ${s1}, ${t2}, ${s2}`, answer: String(v), wrongs: num(v, whole([s2 - s1, dt, s2 / t2, v + 1, v - 1]), String), ar: `${head} ما سرعة الجسم بالمتر لكل ثانية؟`, en: `${headEn} What is the object's speed in metres per second?` };
+    }
+    const t3 = t2 + int(rng, 1, 5), ans = s0 + v * t3;
+    return { eq: `${t1}, ${s1}, ${t2}, ${s2}, ${t3}`, answer: String(ans), wrongs: num(ans, whole([v * t3, s2 + t3, s2 + (t3 - t2), s2 * t3 - s1]), String), ar: `${head} ما موقع الجسم عند الثانية ${t3}؟`, en: `${headEn} What is the object's position at ${t3} seconds?` };
+  }
+
+  if (kind === 4) {
+    // a flat stretch of a position–time graph
+    const t1 = int(rng, 0, 4), t2 = t1 + int(rng, 2, 6), s = int(rng, 3, 30);
+    const ans = 'الجسم ساكن (سرعته صفر) في هذه الفترة';
+    return { eq: `${t1}, ${t2}, ${s}`, answer: ans, wrongs: ['الجسم يتحرك بسرعة ثابتة لا تساوي صفرًا', 'سرعة الجسم تزداد في هذه الفترة', 'الجسم يعود إلى نقطة البداية'], ar: `في منحنى الموقع – الزمن لجسم، رُسم جزءٌ أفقيٌّ من الثانية ${t1} إلى الثانية ${t2} عند الموقع ${s} م. ماذا يعني ذلك؟`, en: `On an object's position–time graph a horizontal stretch is drawn from ${t1} s to ${t2} s at position ${s} m. What does it mean?` };
+  }
+
+  if (kind === 5) {
+    // two objects leaving together: the steeper graph is the faster one
+    const T = int(rng, 4, 10), dA = int(rng, 12, 60);
+    const dB = dA + nz(rng, 8);
+    const fast = dA > dB ? 'الجسم A' : 'الجسم B';
+    const slow = dA > dB ? 'الجسم B' : 'الجسم A';
+    return { eq: `${T}, ${dA}, ${dB}`, answer: fast, wrongs: [slow, 'سرعتا الجسمين متساويتان', 'لا يمكن تحديد ذلك من المنحنى'], ar: `يظهر منحنى الموقع – الزمن لجسمين A وB ينطلقان معًا من الموقع 0، فيكون موقع A بعد ${T} ثوانٍ ${dA} م وموقع B ${dB} م. أيّ الجسمين أسرع؟`, en: `A position–time graph shows two objects A and B leaving together from position 0. After ${T} seconds A is at ${dA} m and B at ${dB} m. Which object is faster?` };
+  }
+
+  // kind 6: where two position–time graphs cross, the two objects are at the same place
+  const t = int(rng, 2, 9), vB = int(rng, 1, 6), k = int(rng, 1, 5), vA = vB + k, d = k * t;
+  return {
+    eq: `${vA}, ${vB}, ${d}`, answer: String(t),
+    wrongs: num(t, whole([d / vA, d / (vA + vB), k, t + 1, t - 1]), String),
+    ar: `يمثّل منحنى الموقع – الزمن حركة جسمين على الخط المستقيم نفسه وفي الاتجاه نفسه: الجسم A ينطلق من الموقع 0 بسرعة ${vA} م/ث، والجسم B ينطلق من الموقع ${d} م بسرعة ${vB} م/ث. بعد كم ثانية يتقاطع منحنيا الجسمين؟`,
+    en: `Position–time graphs show two objects on the same line moving the same way: A starts at position 0 at ${vA} m/s and B starts at ${d} m at ${vB} m/s. After how many seconds do the two graphs cross?`,
+  };
+});
+
 export const ALGEBRA_TOPICS: readonly Topic[] = [
   exprG4, exprEval, oneStep('eq_add_sub', /^معادلات الجمع والطرح$/, ['add', 'sub'], [5, 5]), oneStep('eq_mul_div', /^معادلات الضرب والقسمه$/, ['mul', 'div'], [5, 5]),
   equations, properties, sequences, terms, polyAddSub, polyMul, special, solveEq,
@@ -1679,7 +1860,7 @@ export const ALGEBRA_TOPICS: readonly Topic[] = [
   standardForm, slope, slopeIntercept, pointSlope, parallel,
   quadSolve('quad_factor', /^حل المعادلات التربيعيه بالتحليل$/, ['بالتحليل', 'by factoring'], [gcfQuad, sqrtQuad, zeroProduct, rectQuad]),
   quadSolve('quad_graph', /^حل المعادلات التربيعيه بيانيا$/, ['بيانيًا (جذراها هما الإحداثيان السينيان لنقطتي تقاطع المنحنى مع المحور x)', 'by graphing (the roots are the x-intercepts of the parabola)'], [vertexCount, standardQuad]),
-  quadComplete, quadFormula, quadFunction, quadVertex, functions,
+  quadComplete, quadFormula, quadFunction, quadVertex, functions, ineqTwoVar, interpretGraphs,
   simplifyExp, radicalOps, radicalEq, ratMulDiv, ratAddSub, ratEq,
   squareRoots, irrational, realNumbers,
 ];

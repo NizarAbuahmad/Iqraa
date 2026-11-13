@@ -1110,6 +1110,33 @@ const medians = T('medians_centroid', /^القطع المتوسطه والارت
   return { eq: `${m}`, answer: String(ans), wrongs: pos(ans, [m / 2, m, k ? m / 3 : (2 * m) / 3, ans + 1, m - 1]), ar: `في المثلث ABC، القطعة المتوسطة من الرأس A طولها ${m} سم، ومركز المثلث G. ما طول ${k ? 'AG' : 'GD (حيث D منتصف BC)'}؟`, en: `In triangle ABC the median from vertex A is ${m} cm long, and G is the centroid. What is the length of ${k ? 'AG' : 'GD (where D is the midpoint of BC)'}?` };
 });
 
+/**
+ * Grade 9 GeoGebra lab «توسع: مثلث القطع المنصفة» (added 2026-11-13): the triangle
+ * the three midsegments make has a quarter of the area and half the perimeter of
+ * the triangle they are drawn in, whatever its shape.
+ */
+const midsegmentTriangle = T('midsegment_triangle', /^(?:معمل برمجيه جيوجبرا (?:توسع )?)?مثلث القطع المنصفه$/, [9, 9], ({ rng, diff }) => {
+  // 0 area of the midsegment triangle; 1 area of the triangle; 2 perimeter; 3 area from coordinates; 4 the ratio
+  const kind = pick(rng, [0, 1, 2, 3, 4]);
+  if (kind === 2) {
+    const a = int(rng, 3, 9), b = int(rng, 3, 9), c = int(rng, Math.abs(a - b) + 1, a + b - 1), h = a + b + c;
+    return { eq: `${2 * a}, ${2 * b}, ${2 * c}`, answer: String(h), wrongs: pos(h, [2 * h, a + b, b + c, a + c, h + a]), ar: `أطوال أضلاع المثلث ABC هي ${2 * a} سم و ${2 * b} سم و ${2 * c} سم. ما محيط مثلث القطع المنصفة له بالسنتمتر؟`, en: `The sides of triangle ABC are ${2 * a} cm, ${2 * b} cm and ${2 * c} cm. What is the perimeter, in cm, of its midsegment triangle?` };
+  }
+  if (kind === 3) {
+    let p = int(rng, 1, 6), v = int(rng, 1, 6);
+    if ((p * v) % 2) v = v === 6 ? 5 : v + 1;
+    const u = int(rng, -3, 6), m = (p * v) / 2;
+    return { eq: `${p}, ${u}, ${v}`, answer: String(m), wrongs: pos(m, [2 * p * v, p * v, (p * v) / 4, 4 * m + 2, m + 1]), ar: `رؤوس المثلث ABC هي A${pt(0, 0)} و B${pt(2 * p, 0)} و C${pt(2 * u, 2 * v)}. ما مساحة مثلث القطع المنصفة له بوحدة المساحة؟`, en: `Triangle ABC has vertices A${pt(0, 0)}, B${pt(2 * p, 0)} and C${pt(2 * u, 2 * v)}. What is the area, in square units, of its midsegment triangle?` };
+  }
+  if (kind === 4) {
+    const shape = pick(rng, [['حاد الزوايا', 'acute'], ['قائم الزاوية', 'right-angled'], ['مختلف الأضلاع', 'scalene']] as const);
+    return { eq: shape[1], answer: '1 : 4', wrongs: ['1 : 2', '1 : 3', '1 : 8'], ar: `في مثلث ${shape[0]}، ما نسبة مساحة مثلث القطع المنصفة إلى مساحة المثلث الأصلي؟`, en: `In a ${shape[1]} triangle, what is the ratio of the area of the midsegment triangle to the area of the original triangle?` };
+  }
+  const m = int(rng, 2, span(diff, 9, 15, 24));
+  if (kind === 1) return { eq: `${m}`, answer: String(4 * m), wrongs: pos(4 * m, [2 * m, 3 * m, 8 * m, m * m, m + 4]), ar: `مساحة مثلث القطع المنصفة للمثلث ABC تساوي ${m} سم². ما مساحة المثلث ABC؟`, en: `The midsegment triangle of triangle ABC has area ${m} cm². What is the area of triangle ABC?` };
+  return { eq: `${4 * m}`, answer: String(m), wrongs: pos(m, [2 * m, 3 * m, 4 * m, 8 * m, m + 1]), ar: `مساحة المثلث ABC تساوي ${4 * m} سم². ما مساحة مثلث القطع المنصفة له؟`, en: `Triangle ABC has area ${4 * m} cm². What is the area of its midsegment triangle?` };
+});
+
 const TRI9: Array<[number, number, number]> = [[3, 4, 5], [5, 12, 13], [8, 15, 17], [7, 24, 25]];
 type Ratio = 'sin' | 'cos' | 'tan';
 const RATIOS: Ratio[] = ['sin', 'cos', 'tan'];
@@ -1393,7 +1420,7 @@ export const GEOMETRY_TOPICS: readonly Topic[] = [
   similarity, pyth,
   reflectLine, translate('translate_g5', /^الانسحاب$/, 5), translate('translate_g6', /^الانسحاب في المستوي الاحداثي$/, 6), reflectAxes, coordPlane5, coordPlane6, rotate,
   dilate('dilate_g7', /^التكبير$/, 7), dilate('dilate_g8', /^التمدد$/, 8),
-  distance, pointLine, proportionalParts, bisector, medians, trigRatios, trigApplications,
+  distance, pointLine, proportionalParts, midsegmentTriangle, bisector, medians, trigRatios, trigApplications,
   circleChords, circleAngles, bearing, sineArea,
   convertGen('units_m', /^المتر والسنتيمتر$/, ['length_m'], [3, 3]), convertGen('units_km', /^الكيلومتر$/, ['length_km'], [3, 3]),
   convertGen('units_mass', /^الغرام والكيلوغرام$/, ['mass'], [3, 3]), convertGen('units_volume', /^اللتر والمليلتر$/, ['volume'], [3, 3]),
