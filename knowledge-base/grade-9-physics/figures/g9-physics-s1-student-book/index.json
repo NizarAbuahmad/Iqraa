@@ -162,86 +162,6 @@
       "lessonStartPage": 54
     },
     {
-      "file": "p061-v2.png",
-      "sourceId": "g9-physics-s1-student-book",
-      "pdfPage": 61,
-      "rect": [
-        43.0,
-        265.0,
-        240.0,
-        331.0
-      ],
-      "unit": 2,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 54
-    },
-    {
-      "file": "p061b.png",
-      "sourceId": "g9-physics-s1-student-book",
-      "pdfPage": 61,
-      "rect": [
-        66.9,
-        361.2,
-        141.3,
-        492.9
-      ],
-      "unit": 2,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 54
-    },
-    {
-      "file": "p062-v2.png",
-      "sourceId": "g9-physics-s1-student-book",
-      "pdfPage": 62,
-      "rect": [
-        0.0,
-        0.0,
-        178.0,
-        258.0
-      ],
-      "unit": 2,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 54
-    },
-    {
-      "file": "p062b-v2.png",
-      "sourceId": "g9-physics-s1-student-book",
-      "pdfPage": 62,
-      "rect": [
-        50.0,
-        447.0,
-        167.0,
-        573.7
-      ],
-      "unit": 2,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 54
-    },
-    {
-      "file": "p065.png",
-      "sourceId": "g9-physics-s1-student-book",
-      "pdfPage": 65,
-      "rect": [
-        11.8,
-        144.5,
-        233.8,
-        338.3
-      ],
-      "unit": 2,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 54
-    },
-    {
       "file": "p066.png",
       "sourceId": "g9-physics-s1-student-book",
       "pdfPage": 66,
@@ -490,22 +410,6 @@
         431.5,
         306.6,
         548.8
-      ],
-      "unit": 3,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 76
-    },
-    {
-      "file": "p088.png",
-      "sourceId": "g9-physics-s1-student-book",
-      "pdfPage": 88,
-      "rect": [
-        44.0,
-        257.4,
-        175.8,
-        353.5
       ],
       "unit": 3,
       "lesson": 2,
