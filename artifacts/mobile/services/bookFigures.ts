@@ -8,13 +8,14 @@
  *
  * Why a checked-in map rather than matching at runtime
  * ────────────────────────────────────────────────────
- * The book and the curriculum disagree about lesson boundaries. The book
- * splits composition, inverse and radical functions into separate lessons
- * where `KB_LESSONS` merges them into one; the book opens unit 1 with a lesson
- * («حل معادلات خاصة») the curriculum does not carry at all, which shifts every
- * later unit-1 lesson by one. A fuzzy title match scored 0.67 between «Inverse
- * Function» and the merged lesson — high enough to look convincing, wrong
- * enough to file a figure under a lesson about something else.
+ * The book and the curriculum disagree about lesson boundaries and numbering.
+ * Grade 10 maths S1 unit 1 is the live case: the book opens with «حل معادلات
+ * خاصة», which the curriculum carries as `u1_l5` (an id added after the
+ * persisted four), so the book's lesson n is the curriculum's `u1_l{n-1}`; and
+ * the curriculum keeps two teacher-guide exponent lessons the book does not
+ * have. A fuzzy title match once scored 0.67 between «Inverse Function» and a
+ * neighbouring lesson — high enough to look convincing, wrong enough to file a
+ * figure under a lesson about something else.
  *
  * So the join lives in `knowledge-base/figure-lesson-map.json`, proposed by
  * title overlap and then read by a human. An entry with a null `kbLessonId`
@@ -75,11 +76,17 @@ import g3SocialS2 from '../../../knowledge-base/grade-3-social/figures/g3-social
 import g4ArtsS1 from '../../../knowledge-base/grade-4-art/figures/g4-arts-s1-student-book/index.json' with { type: 'json' };
 import g4MathS1 from '../../../knowledge-base/grade-4-math/figures/g4-math-s1-student-book/index.json' with { type: 'json' };
 import g4MathS2 from '../../../knowledge-base/grade-4-math/figures/g4-math-s2-student-book/index.json' with { type: 'json' };
+import g4ArabicS1 from '../../../knowledge-base/grade-4-arabic/figures/g4-arabic-s1-student-book/index.json' with { type: 'json' };
+import g4ArabicS2 from '../../../knowledge-base/grade-4-arabic/figures/g4-arabic-s2-student-book/index.json' with { type: 'json' };
+import g4IslamicS1 from '../../../knowledge-base/grade-4-islamic/figures/g4-islamic-s1-student-book/index.json' with { type: 'json' };
+import g4IslamicS2 from '../../../knowledge-base/grade-4-islamic/figures/g4-islamic-s2-student-book/index.json' with { type: 'json' };
 import g4SciS1 from '../../../knowledge-base/grade-4-science/figures/g4-science-s1-student-book/index.json' with { type: 'json' };
 import g4SciS2 from '../../../knowledge-base/grade-4-science/figures/g4-science-s2-student-book/index.json' with { type: 'json' };
 import g4SocialS1 from '../../../knowledge-base/grade-4-social/figures/g4-social-s1-student-book/index.json' with { type: 'json' };
 import g4SocialS2 from '../../../knowledge-base/grade-4-social/figures/g4-social-s2-student-book/index.json' with { type: 'json' };
 import g4VocS1 from '../../../knowledge-base/grade-4-vocational/figures/g4-voc-s1-student-book/index.json' with { type: 'json' };
+import g4VocS2 from '../../../knowledge-base/grade-4-vocational/figures/g4-voc-s2-student-book/index.json' with { type: 'json' };
+import g4PeS1 from '../../../knowledge-base/grade-4-pe/figures/g4-pe-s1-student-book/index.json' with { type: 'json' };
 import g5SciS1 from '../../../knowledge-base/grade-5-science/figures/g5-science-s1-student-book/index.json' with { type: 'json' };
 import g5SciS2 from '../../../knowledge-base/grade-5-science/figures/g5-science-s2-student-book/index.json' with { type: 'json' };
 import g8VocS2 from '../../../knowledge-base/grade-8-vocational/figures/g8-voc-s2-student-book/index.json' with { type: 'json' };
@@ -172,11 +179,17 @@ const INDEXES: { sourceId: string; figures: BookFigure[] }[] = [
   g4ArtsS1 as { sourceId: string; figures: BookFigure[] },
   g4MathS1 as { sourceId: string; figures: BookFigure[] },
   g4MathS2 as { sourceId: string; figures: BookFigure[] },
+  g4ArabicS1 as { sourceId: string; figures: BookFigure[] },
+  g4ArabicS2 as { sourceId: string; figures: BookFigure[] },
+  g4IslamicS1 as { sourceId: string; figures: BookFigure[] },
+  g4IslamicS2 as { sourceId: string; figures: BookFigure[] },
   g4SciS1 as { sourceId: string; figures: BookFigure[] },
   g4SciS2 as { sourceId: string; figures: BookFigure[] },
   g4SocialS1 as { sourceId: string; figures: BookFigure[] },
   g4SocialS2 as { sourceId: string; figures: BookFigure[] },
   g4VocS1 as { sourceId: string; figures: BookFigure[] },
+  g4VocS2 as { sourceId: string; figures: BookFigure[] },
+  g4PeS1 as { sourceId: string; figures: BookFigure[] },
   g5SciS1 as { sourceId: string; figures: BookFigure[] },
   g5SciS2 as { sourceId: string; figures: BookFigure[] },
   g8VocS2 as { sourceId: string; figures: BookFigure[] },

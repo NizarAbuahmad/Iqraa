@@ -82,7 +82,8 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // «الفصل الأول» though the book prints no semester — see g9CreativeArts.ts.
   // vocational-education:grade-9 closed 2026-09-20 — SUBJECTS.grades extended
   // for grade-9 (was grade-4/6/7/8 only) — see g9VocationalSem1.ts.
-  'vocational-education:grade-10',
+  // vocational-education:grade-10 closed 2026-11-13 — SUBJECTS.grades extended
+  // for grade-10, Semester 1 only (Ministry 2016 book) — see g10VocationalSem1.ts.
   // social joined the same day, and both entries are PERMANENT — corrected
   // on 2026-09-10, having been recorded here as ordinary gaps to "delete the
   // line once a book lands". No such book will land. NCCD teaches «الدراسات
