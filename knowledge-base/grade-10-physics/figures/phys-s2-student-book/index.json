@@ -418,22 +418,6 @@
       "lessonStartPage": 42
     },
     {
-      "file": "p052-v2.png",
-      "sourceId": "phys-s2-student-book",
-      "pdfPage": 52,
-      "rect": [
-        442.0,
-        622.0,
-        539.0,
-        733.6
-      ],
-      "unit": 4,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": "ُالقوةُ املركزية",
-      "lessonStartPage": 42
-    },
-    {
       "file": "p059-v2.png",
       "sourceId": "phys-s2-student-book",
       "pdfPage": 59,
@@ -834,38 +818,6 @@
       "lessonStartPage": 72
     },
     {
-      "file": "p089c-v2.png",
-      "sourceId": "phys-s2-student-book",
-      "pdfPage": 89,
-      "rect": [
-        299.0,
-        376.0,
-        403.0,
-        476.0
-      ],
-      "unit": 5,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 72
-    },
-    {
-      "file": "p089d-v2.png",
-      "sourceId": "phys-s2-student-book",
-      "pdfPage": 89,
-      "rect": [
-        409.0,
-        376.0,
-        513.0,
-        476.0
-      ],
-      "unit": 5,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 72
-    },
-    {
       "file": "p089e.png",
       "sourceId": "phys-s2-student-book",
       "pdfPage": 89,
@@ -891,11 +843,11 @@
         242.4,
         376.6
       ],
-      "unit": 5,
-      "lesson": 2,
+      "unit": 6,
+      "lesson": 0,
       "lessonTitleEn": null,
       "lessonTitleAr": null,
-      "lessonStartPage": 72
+      "lessonStartPage": null
     },
     {
       "file": "p097-v2.png",

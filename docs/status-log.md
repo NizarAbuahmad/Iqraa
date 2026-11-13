@@ -10,6 +10,44 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 10 book figures: junk dropped, misplaced figures moved — 2026-11-13
+
+First fix from a Grade 10 review covering coverage, results and book images, across all 15 subjects. Six reviewers each took a subject group and opened all ≈700 Grade 10 figure crops. They checked every figure→lesson map entry and every book-page range against the extracted book text. This PR fixes only the figures that need no PDF.
+
+**What changed** (`knowledge-base/grade-10-*/figures/*/index.json`, `figure-lesson-map.json`, regenerated
+`bookFigureAssets.ts`):
+- **28 crops dropped** (PNG and index entry):
+  - unit badges «الوحدة 2/3», the NCCD logo, a cover crop, a unit-opener banner;
+  - text-only «أفكر / أتذكر / أتعلم / معلومة أساسية» callouts;
+  - single answer options of review MCQs (phys-s2 p052, p089c/d);
+  - review-page text columns (earth-s2 p023, p055, p085);
+  - blank numbered exercise maps (history-s1 p076, geo-s1 p051/p061b, geo-s2 p086/p088) and a half-map fragment (geo-s2 p077b).
+- **24 figures moved to the lesson they show:**
+  - Maths unit-test figures were all pinned to the unit's last lesson. Ten chord, sector and angle test items sat under «معادلة الدائرة»; they now go to chords (u2_l1), arcs and sectors (u2_l2) and inscribed angles (u2_l3). U4 and U6 test items moved likewise, and U8 test items now go to scatter (u8_l1), cumulative frequency (u8_l2) and Venn probability (u8_l4).
+  - bio-s2 stomata: «الفقاريات» → «النباتات الوعائية البذرية».
+  - earth-s1 star field → «ماهية النجوم»; binary stars → «الأنظمة النجمية».
+  - Chemistry S1 and physics S2 «تجربة استهلالية» figures (spectrum apparatus, sodium shells, slinky) go to their unit's lab lesson through three new `lesson: 0` map entries (`matchedBy: "manual"`). Before, two were served on the previous unit's last lesson.
+- **9 detached** (`lesson: null`; the crop stays, nothing serves it):
+  - maths project and test figures with no matching lesson (polar grid, clinometer, rotating disc, trucks);
+  - three English Culture Spot photos (tea, bagpipes) that were shown on the personal-statement and formal-letter writing lessons. S2 u10_l7 now has no figure, on purpose: no picture beats a wrong one.
+
+**Guards** (a scratch script, not committed). It refused to write unless `lesson_ranges()` (`scripts/verify_book_pages.py`) gave identical ranges for every book before and after, so book pages are untouched. It also refused if any lesson that had figures was left with none, except the one above. That check kept `history-s2/p091-v2`, a wrong-lesson blank timeline: it is the only page anchor for «زيغريد هونكه». Before writing, every dropped and moved crop was looked at on two contact sheets. Two proposed drops were kept as real images that need a recrop: `bio-s2/p011` and `geo-s2/p067b-v2`.
+
+**No R2 upload needed.** No key is added to `bookFigureAssets.ts`. Two figures that would have become reachable, `math-s1/p016` (GeoGebra lab) and `phys-s2/p009b` (spring balance), were left out, because they were never uploaded. Mapping them needs `upload-figures-r2` with a token that can write `iqraa-public`.
+
+**Verified:** mobile suite (9,213 pass, 0 fail, 10 skipped), curriculum tests (915 pass), `verify` 0 errors, `pnpm run typecheck`.
+**Not verified:** no crop was compared with the printed page, because the PDFs are not on disk and nccd.gov.jo and r2.dev are blocked from the session. Not seen in the running app.
+
+**Still open from the review** (separate PRs):
+- book-page ranges: Civic S1 shows every lesson the previous lesson's pages; `lesson_ranges()` lets a lesson swallow the next one when that lesson has no figure; History S2 and creative arts have no pages;
+- ≈140 crops to recrop and many missing figures, both needing the PDFs;
+- wrong hand-written KB content (maths summaries; chemistry Heisenberg/Pauli and eV vs J);
+- objectives for history, geography, civic and PE;
+- English S1 vocabulary filed on the wrong lessons;
+- the vocational-English tracks mixed into the English unit picker;
+- the 2026 maths lesson «حل معادلات خاصة» missing from the catalog;
+- the vocational books: Part 2 on file is the Grade 9 book.
+
 ## Today's setup nudge no longer says "no plan" about a plan that exists — 2026-11-05
 
 A teacher added a pacing plan from the Today nudge «أضف الخطة» and the nudge kept saying «لا توجد خطة زمنية». Not a

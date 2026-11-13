@@ -530,22 +530,6 @@
    "lessonStartPage": 56
   },
   {
-   "file": "p058b.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 58,
-   "rect": [
-    435.0,
-    217.5,
-    557.1,
-    310.8
-   ],
-   "unit": 6,
-   "lesson": 1,
-   "lessonTitleEn": "Estimating Slope",
-   "lessonTitleAr": null,
-   "lessonStartPage": 56
-  },
-  {
    "file": "p058c.png",
    "sourceId": "math-s2-student-book",
    "pdfPage": 58,
@@ -674,22 +658,6 @@
    "lessonStartPage": 63
   },
   {
-   "file": "p065.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 65,
-   "rect": [
-    420.9,
-    359.6,
-    542.9,
-    461.1
-   ],
-   "unit": 6,
-   "lesson": 2,
-   "lessonTitleEn": "Differentiation",
-   "lessonTitleAr": null,
-   "lessonStartPage": 63
-  },
-  {
    "file": "p069.png",
    "sourceId": "math-s2-student-book",
    "pdfPage": 69,
@@ -796,10 +764,10 @@
     612.8
    ],
    "unit": 6,
-   "lesson": 3,
-   "lessonTitleEn": "Maximum and Minimum Values",
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
    "lessonTitleAr": null,
-   "lessonStartPage": 70
+   "lessonStartPage": 56
   },
   {
    "file": "p077-v2.png",
@@ -858,22 +826,6 @@
     69.0,
     439.0,
     257.2
-   ],
-   "unit": 7,
-   "lesson": 1,
-   "lessonTitleEn": "Vectors in the Coordinate Plane",
-   "lessonTitleAr": null,
-   "lessonStartPage": 80
-  },
-  {
-   "file": "p082b.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 82,
-   "rect": [
-    435.0,
-    363.5,
-    557.1,
-    470.2
    ],
    "unit": 7,
    "lesson": 1,
@@ -1026,22 +978,6 @@
    "lessonStartPage": 88
   },
   {
-   "file": "p096b.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 96,
-   "rect": [
-    435.0,
-    623.7,
-    557.1,
-    731.8
-   ],
-   "unit": 7,
-   "lesson": 3,
-   "lessonTitleEn": "Scalar Product",
-   "lessonTitleAr": null,
-   "lessonStartPage": 96
-  },
-  {
    "file": "p099.png",
    "sourceId": "math-s2-student-book",
    "pdfPage": 99,
@@ -1114,22 +1050,6 @@
     545.6,
     184.0,
     726.8
-   ],
-   "unit": 8,
-   "lesson": 1,
-   "lessonTitleEn": "Scatter Graphs",
-   "lessonTitleAr": null,
-   "lessonStartPage": 106
-  },
-  {
-   "file": "p116.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 116,
-   "rect": [
-    85.1,
-    544.2,
-    177.2,
-    719.2
    ],
    "unit": 8,
    "lesson": 1,
@@ -1372,10 +1292,10 @@
     248.2
    ],
    "unit": 8,
-   "lesson": 5,
-   "lessonTitleEn": "Probability of Independent and Dependent Events",
+   "lesson": 1,
+   "lessonTitleEn": "Scatter Graphs",
    "lessonTitleAr": null,
-   "lessonStartPage": 139
+   "lessonStartPage": 106
   },
   {
    "file": "p149-v2.png",
@@ -1388,10 +1308,10 @@
     541.0
    ],
    "unit": 8,
-   "lesson": 5,
-   "lessonTitleEn": "Probability of Independent and Dependent Events",
+   "lesson": 4,
+   "lessonTitleEn": "Probability of Mutually Exclusive Events",
    "lessonTitleAr": null,
-   "lessonStartPage": 139
+   "lessonStartPage": 131
   },
   {
    "file": "p149b.png",
@@ -1404,10 +1324,10 @@
     617.7
    ],
    "unit": 8,
-   "lesson": 5,
-   "lessonTitleEn": "Probability of Independent and Dependent Events",
+   "lesson": 2,
+   "lessonTitleEn": "Cumulative Frequency Graph",
    "lessonTitleAr": null,
-   "lessonStartPage": 139
+   "lessonStartPage": 117
   },
   {
    "file": "p150-v2.png",
@@ -1420,10 +1340,10 @@
     521.0
    ],
    "unit": 8,
-   "lesson": 5,
-   "lessonTitleEn": "Probability of Independent and Dependent Events",
+   "lesson": 4,
+   "lessonTitleEn": "Probability of Mutually Exclusive Events",
    "lessonTitleAr": null,
-   "lessonStartPage": 139
+   "lessonStartPage": 131
   }
  ]
 }
