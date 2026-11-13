@@ -13,6 +13,7 @@ import { AuthBrandPanel, useAuthLayout } from '@/components/ui/AuthBrandPanel';
 import { AuthModeSwitch } from '@/components/ui/AuthModeSwitch';
 import { Button } from '@/components/ui/Button';
 import { SuggestFeatureAuthLink } from '@/components/ui/SuggestFeatureAuthLink';
+import { SourcesAuthLink } from '@/components/ui/SourcesAuthLink';
 import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/GoogleSignInButton';
 import { Input } from '@/components/ui/Input';
 import { PillSelector } from '@/components/ui/PillSelector';
@@ -517,6 +518,7 @@ export default function RegisterScreen() {
         </View>
 
         <SuggestFeatureAuthLink />
+        <SourcesAuthLink />
 
       </ScrollView>
     </View>
