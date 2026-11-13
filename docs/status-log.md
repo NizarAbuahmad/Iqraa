@@ -10,6 +10,50 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 5 audit: book pages, figures, a missing lesson, a misfiled guide — 2026-11-13
+
+Same method as the Grade 6-10 audits below. Every Grade 5 book has extracted text, so every catalog was compared
+with its book's printed contents, and every page image that exists was viewed. All 317 lessons ground to
+themselves by id.
+
+**Missing topics and catalog fixes.**
+- **Social studies S2 lacked «دول المغرب العربي»**, unit 7 lesson 4 (contents p.4, opening p.71). It is added.
+- Social studies S1 u4_l1 and u4_l3 now carry the titles the contents page prints: «أشكال سطح الأرض والمسطحات
+  المائية في وطني» and «التوزع السكاني في وطني».
+- Maths, science, Arabic, Islamic, PE, vocational, digital and art match their books in count, titles and order.
+- **English is for a decision, not changed here.**
+  - The books print 12 lessons a unit (Teacher's Book p.7), against the catalog's two: «Vocabulary & Grammar»
+    and «Listening & Speaking».
+  - The Story, Culture/project, Reading and Writing lessons have no home in the catalog.
+  - The catalog numbers the unnumbered «Welcome» unit as unit 1, so its units 2-5 are the book's 1-4.
+  - Completing it means new lesson ids for every Grade 5 English lesson, which saved work and the English hub
+    refer to, so it waits for the owner. Grades 1-4 English were built the same coarse way.
+- **The «Grade 5» digital teacher guide is Grade 4's**: its cover prints «الصف الرابع الأساسي». Its passages were
+  grounding Grade 5 digital lessons in Grade 4 content. The source is now `conflict` with
+  g4-digital-s1-teacher-guide, and its extraction is removed and `extractionBlocked`.
+
+**Book pages** (same fields as Grade 7):
+- **Science S2 «السرعة» (u9_l1) showed 20 pages of units 7-8, 38 pages off.** Its entry is dropped, since its own
+  pages have no image. 7 science S2 lessons inside that range now have their own pages.
+- **Social studies: 8 of 10 entries showed the wrong lesson or started late.**
+  - S1 u2_l1 showed u2_l3 through u3_l1.
+  - S2 u6_l1 was u6_l3.
+  - S2 u8_l2 began on u8_l1.
+  - All are remapped, and the lessons inside them are placed.
+- Maths S1 u4_l2 lay inside u4_l1.
+- Arabic and Islamic start correctly in all 87 lessons; only the unit ends are cut.
+- 162 Grade 5 lessons have pages (was 149).
+- Still no images:
+  - maths S2;
+  - most of science, social studies and maths S1 u2_l1;
+  - vocational, digital, art and English.
+
+**Figures.** All 71 science crops were viewed, and all are on R2. 31 dropped (single ovals and tiles cut from one
+figure, header bands, sliced text, worksheets, duplicates) and 5 moved.
+
+**Verified:** `pnpm run typecheck`; the whole mobile suite (9,214 pass, 0 fail); api-server build and tests (2,910
+pass); `curriculum verify` (0 errors). **Not verified:** the pages and slides in a browser.
+
 ## Grade 6 audit: book pages, figures, and the English lessons that were missing — 2026-11-13
 
 Same method as the Grade 7-10 audits below. Every published page image of every Grade 6 range was viewed, and every
