@@ -15,7 +15,8 @@
 import React, { useId, useMemo, useState } from 'react';
 import { View, type LayoutChangeEvent } from 'react-native';
 import Svg, { ClipPath, Circle, Defs, G, Line, Polygon, Polyline, Rect, Text as SvgText } from 'react-native-svg';
-import { figureAltText, layoutFigure, type Figure } from '@workspace/figure';
+import { figureAltText, isSceneFigure, layoutFigure, type AnyFigure, type Figure } from '@workspace/figure';
+import { SceneFigureView } from './SceneFigureView';
 import { gridTicks, toPx } from '@workspace/figure/viewport';
 import { PlaneGrid } from '@/components/math/PlaneGrid';
 import { TYPE } from '@/constants/theme';
@@ -29,7 +30,7 @@ const BORDER = 1;
 /** A wider figure only shrinks the vectors on a desktop (the plane is equal-aspect), so it stops growing here. */
 const MAX_WIDTH = 520;
 
-export function FigureView({ figure, lang }: { figure: Figure; lang: 'ar' | 'en' }) {
+function PlaneFigureView({ figure, lang }: { figure: Figure; lang: 'ar' | 'en' }) {
   const colors = useColors();
   const [width, setWidth] = useState(0);
   // Several figures can share a screen, so the clip id must be unique per instance.
@@ -116,4 +117,9 @@ export function FigureView({ figure, lang }: { figure: Figure; lang: 'ar' | 'en'
       ) : null}
     </View>
   );
+}
+
+/** A gated figure on a card: a physics scene, or a graph / vectors on the plane. */
+export function FigureView({ figure, lang }: { figure: AnyFigure; lang: 'ar' | 'en' }) {
+  return isSceneFigure(figure) ? <SceneFigureView figure={figure} lang={lang} /> : <PlaneFigureView figure={figure} lang={lang} />;
 }
