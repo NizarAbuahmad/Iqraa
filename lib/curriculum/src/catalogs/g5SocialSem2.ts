@@ -13,8 +13,14 @@
  * «دول المغرب العربي» was appended as u7_l4 — and Unit 8 Lesson 1 is
  * «الثقافة». The same day `objectives` were filled from each unit opener's
  * «ماذا سأتعلم؟» box (pp. 7, 27, 49, 81; one item per lesson, in lesson
- * order — four for Unit 7). Main ideas and vocabulary are still empty, and
- * the title-only predicates below are unchanged. See the JSON's `known_gaps`.
+ * order — four for Unit 7). The same day `main_idea_ar` was filled from each
+ * lesson opener's «الفكرة الرئيسة» box and `vocabulary` from its
+ * «المصطلحات» box (pp. 8, 12, 18, 28, 32, 38, 50, 59, 63, 71, 82, 87), as
+ * printed, without harakat; each term's `en` is the English the book prints
+ * beside it (29 terms; «دول المغرب العربي», p. 71, has none, so `en` is "").
+ * Each transcription was checked letter-for-letter against its box's lines.
+ * The title-only predicates below now follow the content, so no lesson wears
+ * the «عنوان الدرس فقط» badge. See the JSON's `known_gaps`.
  *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */
@@ -50,14 +56,27 @@ export const g5SocialSem2LessonKbId = catalog.lessonKbId;
 export const findG5SocialSem2LessonByKbId: (kbLessonId: string) => NccdLesson | null =
   catalog.findLessonByKbId;
 
-/** True for every unit in this book — see the header for why it is unconditional. */
+/** A lesson the catalog holds nothing for beyond its title. */
+const isEmptyLesson = (l: NccdLesson) =>
+  !l.main_idea_ar && !(l.objectives ?? []).length && !(l.vocabulary ?? []).length;
+
+/**
+ * A unit whose lessons are all titles only — decided by the content, not the
+ * id. Until 2026-11-13 every id in this book was flagged, because its text was
+ * thought unreadable; it reads once each line is reversed, and the lessons now
+ * carry the book's main idea, objectives and terms.
+ */
 export function isG5SocialSem2TitleOnlyUnit(unitKbId: string): boolean {
-  return unitKbId.startsWith(unitKbPrefix(SCOPE));
+  if (!unitKbId.startsWith(unitKbPrefix(SCOPE))) return false;
+  const unit = catalog.curriculum.units.find(u => catalog.unitKbId(u.id) === unitKbId);
+  return !!unit && unit.lessons.every(isEmptyLesson);
 }
 
-/** True for every lesson in this book — see the header for why it is unconditional. */
+/** A lesson with nothing beyond its title — see `isG5SocialSem2TitleOnlyUnit`. */
 export function isG5SocialSem2TitleOnlyLesson(kbLessonId: string): boolean {
-  return kbLessonId.startsWith(lessonKbPrefix(SCOPE));
+  if (!kbLessonId.startsWith(lessonKbPrefix(SCOPE))) return false;
+  const lesson = catalog.findLessonByKbId(kbLessonId);
+  return !!lesson && isEmptyLesson(lesson);
 }
 
 export const buildG5SocialSem2Catalog = catalog.buildCatalog;

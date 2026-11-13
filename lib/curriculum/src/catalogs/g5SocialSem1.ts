@@ -2,8 +2,8 @@
  * Grade 5 Social Studies (الدراسات الاجتماعية) — Semester 1.
  * Source of truth: data/iqra_curriculum_g5_social_sem1.json
  *
- * Titles plus one objective per lesson; main ideas and vocabulary are still
- * empty. On 2026-09-16 the PDF's text layer looked garbled even through
+ * Titles, one objective, a main idea and the book's terms per lesson. On
+ * 2026-09-16 the PDF's text layer looked garbled even through
  * PyMuPDF (which reads every other Grade 5 book cleanly), and was put down to
  * a broken ToUnicode CMap, so unit and lesson titles were recovered by OCR
  * (Tesseract, `ara` language pack) of the contents pages and each unit's
@@ -16,8 +16,14 @@
  * 29, 49, 75): the book prints no per-lesson outcomes box, and that box has
  * exactly one item per lesson, in lesson order, each matching its lesson's
  * topic. They are topic phrases, not behavioural outcomes, and some nearly
- * repeat the lesson title. The title-only predicates below are unchanged.
- * See the JSON's `known_gaps`.
+ * repeat the lesson title. The same day `main_idea_ar` was filled from each
+ * lesson opener's «الفكرة الرئيسة» box and `vocabulary` from its
+ * «المصطلحات» box (pp. 8, 15, 21, 30, 35, 39, 42, 50, 58, 64, 76, 81, 87),
+ * as printed, without harakat; each term's `en` is the English the book
+ * prints beside it (31 terms, all with English). Each transcription was
+ * checked letter-for-letter against its box's lines. The title-only
+ * predicates below now follow the content, so no lesson wears the
+ * «عنوان الدرس فقط» badge. See the JSON's `known_gaps`.
  *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */
@@ -53,14 +59,27 @@ export const g5SocialSem1LessonKbId = catalog.lessonKbId;
 export const findG5SocialSem1LessonByKbId: (kbLessonId: string) => NccdLesson | null =
   catalog.findLessonByKbId;
 
-/** True for every unit in this book — see the header for why it is unconditional. */
+/** A lesson the catalog holds nothing for beyond its title. */
+const isEmptyLesson = (l: NccdLesson) =>
+  !l.main_idea_ar && !(l.objectives ?? []).length && !(l.vocabulary ?? []).length;
+
+/**
+ * A unit whose lessons are all titles only — decided by the content, not the
+ * id. Until 2026-11-13 every id in this book was flagged, because its text was
+ * thought unreadable; it reads once each line is reversed, and the lessons now
+ * carry the book's main idea, objectives and terms.
+ */
 export function isG5SocialSem1TitleOnlyUnit(unitKbId: string): boolean {
-  return unitKbId.startsWith(unitKbPrefix(SCOPE));
+  if (!unitKbId.startsWith(unitKbPrefix(SCOPE))) return false;
+  const unit = catalog.curriculum.units.find(u => catalog.unitKbId(u.id) === unitKbId);
+  return !!unit && unit.lessons.every(isEmptyLesson);
 }
 
-/** True for every lesson in this book — see the header for why it is unconditional. */
+/** A lesson with nothing beyond its title — see `isG5SocialSem1TitleOnlyUnit`. */
 export function isG5SocialSem1TitleOnlyLesson(kbLessonId: string): boolean {
-  return kbLessonId.startsWith(lessonKbPrefix(SCOPE));
+  if (!kbLessonId.startsWith(lessonKbPrefix(SCOPE))) return false;
+  const lesson = catalog.findLessonByKbId(kbLessonId);
+  return !!lesson && isEmptyLesson(lesson);
 }
 
 export const buildG5SocialSem1Catalog = catalog.buildCatalog;

@@ -84,6 +84,12 @@ upload needed (keys only removed).
   the margin note glossing Shawqi's «القبرة وابنها» (S2 p. 76, the u8_l4
   writing lesson): 6 words, Arabic only, without harakat. No other grade's
   Arabic catalog fills vocabulary (Grade 7 left its «أضيف إلى معجمي» out).
+- **Social studies main ideas and vocabulary** 25/25: each lesson opener's
+  «الفكرة الرئيسة» box (without harakat) and «المصطلحات» box (60 terms, with the
+  English the book prints; «دول المغرب العربي» has none), read by reversing the
+  visual-order lines and checked letter for letter. The «عنوان الدرس فقط» badge
+  for these books now follows the content (`isG5SocialSem{1,2}TitleOnly*`, pinned
+  by `g5SocialTitleOnly.test.ts`), so no Grade 5 social lesson wears it.
 - **Islamic vocabulary NOT filled:** the «المفردات والتراكيب» boxes (12 lessons,
   listed by page in `known_gaps`) print their headwords in the Mushaf font, which
   pdf-parse dropped, and **the cloud environment's R2 keys answer AccessDenied on
