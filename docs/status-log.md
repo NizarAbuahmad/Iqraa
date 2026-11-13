@@ -10,6 +10,54 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 10 audit: book pages and figures — 2026-11-13
+
+Same method as the Grade 7-9 audits below. Every published page image of every Grade 10 range was viewed, and
+every book's extracted contents page and lesson openers were compared with its catalog. All 425 lessons,
+including the four vocational-English tracks, ground to themselves by id.
+
+**Coverage.** No printed lesson is missing from the main Grade 10 catalogs, with three exceptions to decide:
+- **Maths S1 unit 1 is an edition conflict.** It was already noted in that catalog's `known_gaps`, and the audit
+  confirms it. The student book we hold (the R2 images are the same old edition) has no lessons «تبسيط المقادير
+  الأسية» and «حل المعادلة الأسية» (catalog u1_l3, u1_l4), which come from the newer teacher guide. It prints a
+  lesson «حل معادلات خاصة» (p.8-15) that the catalog lacks. Which edition schools use decides which is right.
+- **Biology and earth science** print opening experiments their catalogs do not list (bio S1 p.9/21/39, S2 p.9/57;
+  earth S1 p.9/39, S2 p.7/27/59). Chemistry and physics list theirs as `uN_lab`, like Grade 9 maths S2.
+- **Vocational English:** the industry track is built from *Technical English Level 1*, not the Level 2 book the
+  other tracks use, and its units 9-12 are titles only. None of the four tracks has page images, figures or
+  extracted text.
+
+**Book pages** (same fields as Grade 7):
+- **Civics S1: every entry was one lesson off**, as in Grade 9 civics S2. Remapped.
+- Starts that were one page late: civics S2 u7_l1 and arabic S1 u2_l2.
+- Biology S1 u2_l2 started in the middle of u2_l1.
+- Ranges that held the next lesson or lessons: chemistry S2 u4_l1 and u5_l1, geography S1 u1_l2 and u2_l1,
+  finlit u1_l3, u2_l1 and u2_l4.
+- Chem S2 u4_lab opened on the copyright page.
+- Labs and lessons that lay inside a neighbour now have their own pages: chem S1 u2_lab and u3_lab, chem S2
+  u5_lab, phys S1 u2_lab, phys S2 u5_lab, maths S2 u6_lab and u8_lab, maths S1 u4_l4, history S1 u1_l4.
+- English: back matter and Life Skills cut off. S1 2A and 3A share p.52, deliberately.
+- Every unit's last lesson loses the review and the next unit's opener.
+- `fix_pages` now clamps to the 20-page cap, and keeps the rendered pages of a lesson whose tail was never
+  rendered (civics S1 u2_l5: 75-79 of 75-82).
+- 346 Grade 10 lessons have pages (was 337).
+- Still no images: art; history S2; geography S2 u4, u5_l1, u5_l3, u6; and bio S1 u1_l1, chem S1 u1_lab,
+  phys S1 u1_lab, phys S2 u4_lab and u6_lab, maths S1 u1_lab. Their real page ranges are in the audit's notes,
+  read from the text.
+
+**Figures.** All 613 crops were viewed, and all 605 mapped ones are on R2.
+- 84 dropped.
+- 34 moved: unit-test, review and project figures to the lesson they test, and opening-experiment pictures to
+  their lab.
+- 7 map coordinates added. Labs use `lesson: 0`, since the books do not number lab pages.
+- Kept: the chem S1 p.24 solar cell, the unit-1 enrichment picture, on u1_l2.
+- Tests changed: two figure floors in `bookFigures.test.ts` are lowered, as their comment intends for a reviewer's
+  deletions, and the revision deck's second biology figure is now p011-v2.
+- Not extracted: maths S1 p.113-123 (law of cosines, triangle area) prints triangles but has no figures.
+
+**Verified:** `pnpm run typecheck`; the whole mobile suite (9,214 pass, 0 fail, 10 skipped); `curriculum verify`
+(0 errors). **Not verified:** the pages and slides in a browser.
+
 ## Grade 9 audit: book pages and figures — 2026-11-13
 
 Same method as «Grade 7 audit» and «Grade 8 audit» below. Every published page image of every Grade 9 range was
