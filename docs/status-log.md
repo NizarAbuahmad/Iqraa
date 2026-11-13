@@ -80,6 +80,10 @@ upload needed (keys only removed).
   8 drama lessons, without harakat (the extracted marks are detached), `en` ""
   (no English printed). Vocational vocabulary was already there (27 lessons,
   56 bilingual terms from «المفاهيم والمصطلحات»).
+- **Arabic vocabulary** 1/50: no Arabic book prints a word box; the only one is
+  the margin note glossing Shawqi's «القبرة وابنها» (S2 p. 76, the u8_l4
+  writing lesson): 6 words, Arabic only, without harakat. No other grade's
+  Arabic catalog fills vocabulary (Grade 7 left its «أضيف إلى معجمي» out).
 - **Islamic vocabulary NOT filled:** the «المفردات والتراكيب» boxes (12 lessons,
   listed by page in `known_gaps`) print their headwords in the Mushaf font, which
   pdf-parse dropped, and **the cloud environment's R2 keys answer AccessDenied on
