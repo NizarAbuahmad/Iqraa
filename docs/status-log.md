@@ -10,6 +10,65 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 1 review: coverage, generated results, book images — 2026-11-13
+
+A review of Grade 1 (all 8 subjects, 15 books, 279 lessons) against three asks: every subject covered, the right
+results, and the books' topics and images used.
+
+**Coverage (checked, no change).** All 8 Grade 1 subjects (maths, Arabic, English, Islamic, science, social, arts, PE)
+have catalogs, both semesters where the book has two, and are offered in the pickers; the `KNOWN_BOOKLESS` Grade 1
+pairs are subjects Grade 1 does not study. Every lesson grounds on its own id (279 of 279). The Arabic catalog teaches
+all 28 letters plus ة, ء, the three tanween and the shadda.
+
+**Not verified: topics against the PDFs.** The source books could not be opened from the session: `nccd.gov.jo`
+resets every connection from the cloud egress, the `iqraa-media` R2 bucket needs keys, and the Grade 1 maths books in
+the owner's Drive are 44–53 MB, too big for the connector. The catalogs' own provenance notes say they were read from
+the PDFs on 2026-09-18; that was not re-done. **No Grade 1 book has extracted text, figures or book pages**
+(nothing in `extracted/`, `knowledge-base/grade-1-*`, `figure-lesson-map.json` or `book-page-links.json`), so no Grade 1
+lesson shows a book image: slides fall back to stock photos and nothing is grounded on book passages. Fail-closed —
+no other grade's figure leaks in — but empty.
+
+**Results — what was swept.** The offline generators were run on every Grade 1 lesson. Maths: quiz and worksheet for
+60 of 66 lessons; six refuse by design (position, sorting ×2, two problem-solving lessons, daily routines). Every other
+subject refuses quizzes and worksheets offline (`NoQuestionBankError`, by design — production is live AI). All 947
+maths questions were checked by hand by a sub-agent and re-checked by script: **no wrong answer key**.
+
+**What changed.**
+1. **Eight Grade 1 maths lessons get questions about their own skill** (`lib/math-practice/src/early.ts`,
+   `earlyG1Ops.test.ts`): «جمع/طرح العشرات», «جمع/طرح عددين من منزلتين» (no regrouping), «الطرح باستعمال الضعف»,
+   «الطرح بإيجاد عشرة», «الجمع بالإكمال إلى العشرة», «جمع ثلاثة أعداد». They used to fall through to the generic
+   operation drill — a «جمع العشرات» quiz was all «3 + ؟ = 4». `takeElementaryMath` now prefers a lesson's own
+   generator over that drill; measured over grades 1–6, these eight are the only lessons that had both, so no other
+   lesson changes. Every answer is recomputed from the stem in the test; nothing past 99, options included.
+2. **The live prompts say when the class is Grade 1** (`artifacts/api-server/src/lib/firstGrade.ts`, wired into the
+   lesson-plan, worksheet/homework, quiz and activity prompts; `firstGradePrompts.test.ts`). The subject clauses are
+   grade-blind: an Arabic plan «starts from a text» and ends in «a paragraph of their own», every quiz must hold an
+   analysis item. For «حرف الباء» that is the wrong lesson. Grade 1 (from `kbl-g1-`/`kbu-g1-` ids, `grade-1`, or the
+   grade's name) adds a clause that overrides it: short concrete activities, no paragraph or exit-ticket writing,
+   one-word answers, Arabic as a primer (the letter's sound, forms and words), English as a few words, maths within
+   the lesson's numbers. For any other grade the clause is the empty string, so their prompts are unchanged (tested).
+3. **A fill-blank worksheet question printed two answer places** (its own «الإجابة: ____» and an answer box under
+   it), every grade (`generators.ts`, `worksheetFillBlankSpace.test.ts`).
+
+**Verified.** Each new test red before its fix, green after. `pnpm run typecheck`; math-practice suite; api-server
+`build` + `test`; mobile suite. **Not verified:** a live model's Grade 1 output with the new clause (no live run from
+the session) — after merge, generate one Grade 1 Arabic letter plan, worksheet and quiz and read them; the new Arabic
+stems by a native reviewer.
+
+**Still open, found by the sweep:**
+- **The offline lesson plan is not Grade 1 aware** (the fallback when live AI fails): a «حرف الباء» plan asks
+  six-year-olds for a 4–5 sentence paragraph and a written exit ticket. The live prompt is fixed; the offline
+  blueprints (`lessonPlanBlueprints.ts`, `generators.ts` `lpObjectivesAr`/`lpHomework`) are not.
+- **Maths, to check against the book:** thirds appear in «الأجزاء المتطابقة» and «الكسر كجزء من مجموعة» (the
+  unit teaches halves and quarters); «ما العدد الذي ربعه 5؟» is hidden multiplication; «لوحة الأعداد» keys assume 1
+  sits at the LEFT of each row; «0 + / − 0» items in «العدد صفر» come before units 3–4 teach the operations; sums to 23
+  in semester 1 (`add_props_g1`, `missing_number`). Grammar: «1 عشرات», «2 قطع», «10 قرشًا».
+- **Lessons sharing one bank:** u1_l1–l3, u5_l3–l5, u8_l2/l3, u10_l5–l7, u11 pairs get interchangeable questions.
+- **Grade 1 books need ingesting** (text, figures, book pages) from a machine that can reach the PDFs —
+  `docs/adding-a-book.md`.
+- Every live prompt reads «للصف ${grade}» with a grade name that already says «الصف», so it says «للصف الصف الأول»
+  (every grade; harmless to a model, not fixed here).
+
 ## Today's setup nudge no longer says "no plan" about a plan that exists — 2026-11-05
 
 A teacher added a pacing plan from the Today nudge «أضف الخطة» and the nudge kept saying «لا توجد خطة زمنية». Not a

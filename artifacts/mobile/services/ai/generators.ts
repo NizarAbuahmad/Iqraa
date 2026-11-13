@@ -1633,7 +1633,9 @@ export class MockAIService extends AIService {
 
     const pushQuestion = (type: QType, q: WQ, withSpace: boolean) => {
       let out = q;
-      if (withSpace && type !== 'multiple_choice' && type !== 'true_false') {
+      // A fill-blank stem already prints its own «الإجابة: __________» line;
+      // a second answer box under it reads as two answers wanted.
+      if (withSpace && type !== 'multiple_choice' && type !== 'true_false' && !q.text.includes('__________')) {
         out = { ...q, text: `${q.text}${answerSpace}` };
       }
       return out;

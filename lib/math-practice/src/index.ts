@@ -808,13 +808,18 @@ export function takeElementaryMath(
   session?: Set<string>,
 ): PracticeWQ | null {
   const title = lessonTitleBlob(topic, kb);
+  // A lesson with a generator of its own gets it before the grade's generic
+  // operation drill: «جمع العشرات» names addition, and the drill served it
+  // «3 + ؟ = 4» with no ten in sight (Grade 1 sweep, 2026-11-13). Checked
+  // then: the eight Grade 1 lessons in `earlyG1Ops.test.ts` are the only ones
+  // in grades 1–6 that have both, so no other lesson changes.
+  const gen = topicForLesson(topic, kb, grade);
   // A lesson none of the generators is about gets no items, not the grade's
   // default mix of arithmetic.
-  if (grade <= 6 && elementaryOpsForTitle(title).length > 0) {
+  if (!gen && grade <= 6 && elementaryOpsForTitle(title).length > 0) {
     const item = makeElementaryItem(title, grade, diff, session ?? usedIds);
     return { ...formatItem(item, lang, type), points };
   }
-  const gen = topicForLesson(topic, kb, grade);
   if (!gen) return null;
   return { ...formatItem(makeTopicItem(gen, grade, diff, session ?? usedIds), lang, type), points };
 }

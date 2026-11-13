@@ -18,6 +18,7 @@ import {
 import { QUIZ_TYPE_ORDER, type QuizType } from "./generationShape.ts";
 import { coverageClauseAr, coverageClauseEn } from "./coverage.ts";
 import { revisionClauseAr, revisionClauseEn } from "./revision.ts";
+import { firstGradeClauseAr, firstGradeClauseEn } from "./firstGrade.ts";
 
 /** «السؤال الأول» … — how a ministry paper numbers its question blocks. */
 const ORDINAL_AR = ["الأول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس"];
@@ -275,7 +276,7 @@ export function lessonPlanPromptAr(b: any): string {
   return `أنشئ خطة درس كاملة لمادة ${b.subject} للصف ${b.grade} حول موضوع "${b.topic}"، مدتها ${b.duration ?? 45} دقيقة.
 ${b.objectives ? `الأهداف المحددة:\n${b.objectives}` : ""}
 ${b.additionalContext ? `سياق إضافي: ${b.additionalContext}` : ""}
-${lessonStyleClauseAr(b)}${kindBlockAr(b)}${revisionClauseAr(b, "plan")}
+${lessonStyleClauseAr(b)}${kindBlockAr(b)}${revisionClauseAr(b, "plan")}${firstGradeClauseAr(b, "plan")}
 ${teacherVoiceAr(b, hasPriorReview)}
 ${hasPriorReview ? `
 خصّص 5-10 دقائق في بداية الحصة لمراجعة معارف سابقة قد لا يتقنها بعض الطلبة، واكتب خطة هذه المراجعة في حقل "priorReview". هذه مراجعة تمهيدية وليست من أهداف هذا الدرس، فلا تُدرجها ضمن "objectives".
@@ -317,7 +318,7 @@ export function lessonPlanPromptEn(b: any): string {
   return `Create a complete lesson plan for ${b.subject}, ${b.grade}, on the topic "${b.topic}", duration ${b.duration ?? 45} minutes.
 ${b.objectives ? `Specified objectives:\n${b.objectives}` : ""}
 ${b.additionalContext ? `Additional context: ${b.additionalContext}` : ""}
-${lessonStyleClauseEn(b)}${kindBlockEn(b)}${revisionClauseEn(b, "plan")}
+${lessonStyleClauseEn(b)}${kindBlockEn(b)}${revisionClauseEn(b, "plan")}${firstGradeClauseEn(b, "plan")}
 ${hasPriorReview ? `
 Set aside 5-10 minutes at the start of the lesson to review prior material some students may not have fully grasped, and put that review plan in a "priorReview" field. This is a warm-up review, not one of this lesson's own objectives — do not list it under "objectives".
 ${priorConcepts ? `Curriculum concepts to review verbatim (do not invent others):\n- ${priorConcepts.join("\n- ")}` : ""}
@@ -450,7 +451,7 @@ ${difficultyClauseAr(b)}
 ${wantsWP ? "\nيجب تضمين مسألة حياتية واحدة على الأقل (سيناريو واقعي يتطلب تطبيق مفاهيم الدرس، بأسلوب «حل مسائل حياتية»)." : ""}
 ${prior ? `\nابدأ بقسم «مراجعة سابقة» فيه سؤالان أو ثلاثة فقط مبنية حرفيًا على هذه المفاهيم السابقة (لا تختلق غيرها):\n- ${prior.join("\n- ")}` : ""}${coverageClauseAr(b, !!example)}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
-${example ? workedExampleRuleAr(n) : isHW ? "" : worksheetKindRuleAr(b, n)}
+${example ? workedExampleRuleAr(n) : isHW ? "" : worksheetKindRuleAr(b, n)}${firstGradeClauseAr(b, "paper")}
 أعد JSON بالشكل الآتي (بالعربية):
 {
   "title": "عنوان الورقة",
@@ -494,7 +495,7 @@ ${worksheetTypeShapesEn(types)}
 ${wantsWP ? "\nInclude at least one real-life word problem (a realistic scenario that requires applying the lesson concepts)." : ""}
 ${prior ? `\nStart with a "Prior knowledge review" section of 2–3 questions drawn only from these concepts (do not invent others):\n- ${prior.join("\n- ")}` : ""}${coverageClauseEn(b, !!example)}
 ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
-${example ? workedExampleRuleEn(n) : isHW ? "" : worksheetKindRuleEn(b, n)}
+${example ? workedExampleRuleEn(n) : isHW ? "" : worksheetKindRuleEn(b, n)}${firstGradeClauseEn(b, "paper")}
 Return JSON in this exact shape:
 {
   "title": "Worksheet title",
@@ -592,7 +593,7 @@ ${quizDifficultyClauseAr(b)}
 ${types.map(t => `- ${QUIZ_TYPE_CONTRACT_AR[t]}`).join("\n")}
 العلامات: مجموع "points" لكل الأسئلة يساوي ${marks} بالضبط؛ أسئلة الاختيار وصح/خطأ وأكمل علامة أو علامتان للسؤال، والأسئلة المفتوحة أكثر.
 
-${QUIZ_VARIETY_RULE_AR}${coverageClauseAr(b)}
+${QUIZ_VARIETY_RULE_AR}${coverageClauseAr(b)}${firstGradeClauseAr(b, "paper")}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
 أعد JSON بالشكل الآتي (بالعربية):
 {
@@ -628,7 +629,7 @@ The JSON shape of each type:
 ${types.map(t => `- ${QUIZ_TYPE_CONTRACT_EN[t]}`).join("\n")}
 Marks: the "points" of all questions sum to exactly ${marks}; choice, true/false and fill-blank items carry one or two marks each, open questions more.
 
-${QUIZ_VARIETY_RULE_EN}${coverageClauseEn(b)}
+${QUIZ_VARIETY_RULE_EN}${coverageClauseEn(b)}${firstGradeClauseEn(b, "paper")}
 ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
 Return JSON in this exact shape:
 {
@@ -848,7 +849,7 @@ ${b.objectives ? `هدف النشاط: ${b.objectives}` : ""}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي:\n${b.additionalContext}` : ""}
 
 بنية هذا النوع من الأنشطة — التزم بها ولا تستبدلها ببنية عامة:
-${rule}${revisionClauseAr(b, "activity")}
+${rule}${revisionClauseAr(b, "activity")}${firstGradeClauseAr(b, "activity")}
 
 قواعد عامة:
 - مجموع durationMin لكل الخطوات يجب أن يساوي ${dur} بالضبط.
@@ -882,7 +883,7 @@ ${b.objectives ? `Lesson objective: ${b.objectives}` : ""}
 ${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ""}
 
 Structure required for this format — follow it, do not substitute a generic one:
-${rule}${revisionClauseEn(b, "activity")}
+${rule}${revisionClauseEn(b, "activity")}${firstGradeClauseEn(b, "activity")}
 
 General rules:
 - The durationMin values must sum to exactly ${dur}.
