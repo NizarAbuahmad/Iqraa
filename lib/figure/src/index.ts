@@ -7,3 +7,4 @@ export * from './sceneGate.ts';
 export * from './geometry.ts';
 export * from './alt.ts';
 export * from './svg.ts';
+export * from './figureNumbers.ts';
