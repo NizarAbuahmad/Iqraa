@@ -10,6 +10,51 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 9 audit: book pages and figures — 2026-11-13
+
+Same method as «Grade 7 audit» and «Grade 8 audit» below. Every published page image of every Grade 9 range was
+viewed (28 books with pages). Where a book has extracted text (22 books), its printed contents page and
+«الدرس» openers were also compared with the catalog, which reaches pages that have no image. All 422 lessons
+ground to themselves by id.
+
+**Coverage.**
+- No printed lesson is missing from any Grade 9 catalog. Every contents page read matches its catalog in count,
+  titles and order.
+- One inconsistency, left for a decision: maths S2 unit 5 prints a GeoGebra lab (p.18) and two «نشاط مفاهيمي»
+  pages (p.30, p.39) that its catalog does not list, while maths S1 lists its labs as lessons.
+- Vocational (30 lessons) and art (25) have no page images, no figures and no extracted text, so they could
+  not be checked at all.
+- Not checked, no images: history S2 u4_l1-l4, u5_l2, u5_l3; geography S2 pages 48-55; PE S2 u7_l4; Arabic S2
+  u10_l5.
+
+**Book pages** (same fields as Grade 7):
+- **Arabic S2 and civics S2: every entry was one lesson off.** Each showed the previous lesson, a unit opener or a
+  review. All are remapped to the right images.
+- **History S2:** all four entries showed other lessons. History S1 u1_l2 and u2_l4, geography S2 u6_l1, and
+  history S2 u4_l5, u5_l1, u5_l4 and u5_l5 lay inside a neighbour's range and now have their own pages.
+- Geography S2 u6_l3 showed Africa.
+- Biology S2 u4_l1 and physics S1 u1_l3 showed the next lesson.
+- Maths S1 u1_l1 held all of lesson 2, and the labs are cut to their own pages.
+- English:
+  - back matter and Life Skills are cut off;
+  - three S2 lessons whose «LESSON» header is on the right-hand page started a page late;
+  - u8_l1 gains its opener page.
+- Every unit's last lesson loses the review and the next unit's opener.
+- Arabic S2 u10_l5 and history S2 u5_l3 lose their entries: their own pages have no image.
+- 359 Grade 9 lessons have pages (was 354), and no two claim the same page.
+
+**Figures.** All 514 crops were viewed, and all are on R2.
+- 76 dropped: 47 bad crops, 21 non-figures, 1 duplicate, and 7 pictures from Life Skills and Literature pages
+  that are no lesson.
+- 26 good figures from unit tests, reviews, projects and openers moved to the lesson they belong to.
+- Two map coordinates added (physics S1 u2_l1, English S2 u8_l1).
+
+**Not done:** six Grade 9 subjects have no extracted text (civics, geography, history, PE, vocational, art), so
+the live model gets no book passages for them.
+
+**Verified:** `pnpm run typecheck`; the whole mobile suite (9,214 pass, 0 fail, 10 skipped); `curriculum verify`
+(0 errors). **Not verified:** the pages and slides in a browser.
+
 ## Grade 8 audit: book pages and figures — 2026-11-13
 
 Same method as «Grade 7 audit» below: every published page image of every Grade 8 range was viewed (18 books
