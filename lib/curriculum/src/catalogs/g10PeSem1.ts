@@ -30,6 +30,8 @@ const catalog = makeNccdCatalog({
   kbBookId: G10_PE_S1_BOOK_ID,
   browserBookId: G10_PE_S1_CURRICULUM_BOOK_ID,
   raw,
+  // The book prints no outcomes list — exam targets from what it does print.
+  examTargetsFromBook: true,
 });
 
 export const nccdG10PeSem1: NccdCurriculumFile = catalog.curriculum;

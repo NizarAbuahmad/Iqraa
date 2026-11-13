@@ -10,6 +10,38 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 10 history, geography, civic and PE: teachers can make exams for them — 2026-11-13
+
+Found while checking whether the API's prompts use the new self-assessment field. They do, through the app's context: lesson explanations (`pregenerate.ts`) and every `/generate/*` route receive the grounding context as `additionalContext`.
+
+The exam (Evaluation) builder is different. It is scoped by **objectives**, and `getEvaluableBookIds()` lists only books that have at least one. These seven books have none, on purpose, because their books print no outcomes list: history S1/S2, geography S1/S2, civic S1/S2 and PE S1. They were therefore missing from the exam screen altogether; a teacher could not make an exam for them.
+
+**What changed (owner's choice: exam-only objectives)**
+- **New opt-in `examTargetsFromBook`** on `makeNccdCatalog` (`lib/curriculum/src/catalogs/nccdCatalog.ts`), set only on those seven builders, so grades 1–9 are untouched.
+  - For a lesson with no `objectives`, it emits exam-only outcomes into the browser lesson's `outcomes`.
+  - Their text is the lesson's own «أُقيِّمُ تعلُّمي» box where the book prints one (PE: 40 targets), or else its «الفكرة الرئيسة» (61 targets).
+  - The unit-level civic and history tables are not used here, because the book does not say which lesson a unit statement belongs to.
+- **Labelled and kept apart from real outcomes.**
+  - Each target carries `examTargetSource` (`'main-idea' | 'self-assessment'`, new optional field on `LearningOutcome`).
+  - Ids take a separate shape, `o-hist-s1-u1_l1-t-0`. If the book ever prints real outcomes, those would be minted as `…-u1_l1-0`, and an exam stored against a target can never resolve to new text.
+  - `objectives` stays empty, so the generator context still never calls these «النتاجات».
+- **Exam screen** (`app/evaluations/new.tsx`): when a book's objectives are targets, a line under the lesson picker says the book prints no outcomes, so the questions are built on «الفكرة الرئيسة» or «أُقيِّمُ تعلُّمي».
+- **«ما الجديد»:** a teacher entry, `g10-exams-humanities-pe`, linking to `/evaluations`.
+
+**Verified:**
+- all seven books now evaluable; 101 targets, no duplicate ids;
+- `examTargets.test.ts`: 5 cases; with targets switched off, 3 fail;
+- curriculum 929 pass, `verify` 0 errors;
+- mobile 9,230 pass;
+- api-server, build then test: 2,914 pass;
+- `pnpm run typecheck`.
+
+**Not verified:**
+- a live exam generated for one of these books. The model is given main-idea text as the «objective» it writes questions against, and nobody has read the result;
+- the screen itself in a browser.
+
+**Note:** Bloom's level is `'Understand'`, defaulted like every NCCD objective, so each target's competency is inferred from its wording.
+
 ## Grade 10 civic, history S2 and PE: the books' self-assessment criteria reach the generator, labelled as such — 2026-11-13
 
 Third fix from the Grade 10 review. Grade 10 history, geography, civic and PE lessons have no `objectives`. Their catalogs say why, in `meta.known_gaps`: the books print no outcomes list, and PE's «أُقيِّمُ تعلُّمي» was deliberately not used «تجنُّبًا لتصنيفِ محتوًى تقييميٍّ على أنّهُ نتاجاتٌ منهجيّةٌ». The review proposed filling `objectives` from the self-assessment tables and the «الفكرة الرئيسة» box. Anything in `objectives` reaches the model as «النتاجات (من المنهاج الرسمي)», so that would have claimed outcomes the books do not print. The owner chose a separate field instead. The «الفكرة الرئيسة» box was already the lesson summary, so it stays as it was.

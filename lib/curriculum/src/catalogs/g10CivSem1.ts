@@ -25,6 +25,8 @@ const catalog = makeNccdCatalog({
   kbBookId: CIV_S1_BOOK_ID,
   browserBookId: CIV_S1_CURRICULUM_BOOK_ID,
   raw,
+  // The book prints no outcomes list — exam targets from what it does print.
+  examTargetsFromBook: true,
 });
 
 export const nccdCivSem1: NccdCurriculumFile = catalog.curriculum;

@@ -144,6 +144,8 @@ export type NccdBrowserLesson = {
     descriptionAr: string;
     bloomsLevel: 'Understand';
     skills: string[];
+    /** See `LearningOutcome.examTargetSource` in catalog.ts. */
+    examTargetSource?: 'main-idea' | 'self-assessment';
   }>;
 };
 
@@ -172,9 +174,32 @@ export function makeNccdCatalog(opts: {
   /** Book id in curriculumData.BOOKS (browser id space). */
   browserBookId: string;
   raw: unknown;
+  /**
+   * For a book that prints no outcomes list, give each lesson without
+   * `objectives` exam-only targets taken from what the book DOES print for
+   * that lesson: its own self-assessment box when it has one, otherwise its
+   * «الفكرة الرئيسة». Without them the book has no objective at all, and an
+   * evaluation — which is scoped by objectives — cannot target it
+   * (`getEvaluableBookIds`). They live only in the browser lesson's
+   * `outcomes`, tagged `examTargetSource`; `objectives` stays empty, so the
+   * generator context still never calls them «النتاجات». Unit-level
+   * self-assessment tables are not used here: the book does not say which
+   * lesson a unit statement belongs to. Opt-in per book.
+   */
+  examTargetsFromBook?: boolean;
 }): NccdCatalog {
   const { scope, kbBookId, browserBookId } = opts;
   const curriculum = opts.raw as NccdCurriculumFile;
+
+  const examTargetsFor = (
+    lesson: NccdLesson,
+  ): Array<{ text: string; source: 'main-idea' | 'self-assessment' }> => {
+    if (!opts.examTargetsFromBook) return [];
+    const own = (lesson.self_assessment_ar ?? []).filter(s => s.trim());
+    if (own.length > 0) return own.map(text => ({ text, source: 'self-assessment' as const }));
+    const idea = lesson.main_idea_ar?.trim();
+    return idea ? [{ text: idea, source: 'main-idea' as const }] : [];
+  };
 
   const unitKbId = (jsonUnitId: string): string => makeUnitKbId(scope, jsonUnitId);
   const lessonKbId = (jsonLessonId: string): string => makeLessonKbId(scope, jsonLessonId);
@@ -268,14 +293,27 @@ export function makeNccdCatalog(opts: {
           // so `objectives.ts` reports these as derived rather than authored —
           // the distinction three subjects lost on 2026-09-03 by being absent
           // from that check.
-          outcomes: objectives.map((o, i) => ({
-            id: objectiveId(scope, lesson.id, i),
-            lessonId: lKbId,
-            description: o,
-            descriptionAr: o,
-            bloomsLevel: 'Understand' as const,
-            skills: [] as string[],
-          })),
+          outcomes: objectives.length > 0
+            ? objectives.map((o, i) => ({
+              id: objectiveId(scope, lesson.id, i),
+              lessonId: lKbId,
+              description: o,
+              descriptionAr: o,
+              bloomsLevel: 'Understand' as const,
+              skills: [] as string[],
+            }))
+            : examTargetsFor(lesson).map((target, i) => ({
+              // `-t` keeps these ids apart from `objectiveId(scope, lesson.id, i)`,
+              // which real outcomes would take if the book ever prints them:
+              // an exam stored against a target must never resolve to new text.
+              id: objectiveId(scope, `${lesson.id}-t`, i),
+              lessonId: lKbId,
+              description: target.text,
+              descriptionAr: target.text,
+              bloomsLevel: 'Understand' as const,
+              skills: [] as string[],
+              examTargetSource: target.source,
+            })),
         });
       }
     }

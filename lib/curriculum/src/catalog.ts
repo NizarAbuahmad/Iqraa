@@ -939,6 +939,13 @@ export interface LearningOutcome {
   descriptionAr: string;
   bloomsLevel: 'Remember' | 'Understand' | 'Apply' | 'Analyze' | 'Evaluate' | 'Create';
   skills: string[];
+  /**
+   * Set only on an exam-only target for a book that prints no outcomes list
+   * (`examTargetsFromBook` in catalogs/nccdCatalog.ts): the text is the lesson's
+   * «الفكرة الرئيسة» or its printed self-assessment box, not an official outcome.
+   * Absent on every real outcome.
+   */
+  examTargetSource?: 'main-idea' | 'self-assessment';
 }
 
 // ─── Grades ───────────────────────────────────────────────────────────────────

@@ -571,6 +571,13 @@ export default function NewEvaluationScreen() {
             <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
               {t('selectLessonsHint')}
             </Text>
+            {/* Exam-only targets (examTargetsFromBook): say what the questions
+                are built on, since these are not the book's outcomes. */}
+            {objectives.some(o => o.examTargetSource) && (
+              <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                {t('evalTargetsFromBookNote')}
+              </Text>
+            )}
             <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
               {lessonGroups.map((g, i) => {
                 const ids = g.objectives.map(o => o.id);
