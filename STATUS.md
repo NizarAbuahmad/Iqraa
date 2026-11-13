@@ -61,10 +61,11 @@ Checked 2026-10-22:
 - `main` is merge-only and the only branch that deploys. A merge runs: production
   migrations → schema check → API and verifier → web, and the web job is skipped if an
   earlier one failed ([`docs/deploying.md`](./docs/deploying.md)).
-- Required checks on `main`: `typecheck + tests` and `row-level security` (the latter added by the owner
-  on 2026-10-27, in the branch rule's settings **(owner's report — not re-read from GitHub)**). Also run on
-  every PR, not required: `migrations match schema`, `math verifier`, `destructive migrations acknowledged`,
-  and the browser smoke test (`e2e/`, teacher → exam → student → results).
+- Required checks on `main` (read from GitHub 2026-11-01): `typecheck + tests`, `row-level security`
+  and `teacher to student smoke test` (the browser test in `e2e/`: teacher → exam → student →
+  results; made required 2026-11-01 after its last 100 runs on PRs and `main` all passed). Also run
+  on every PR, not required: `migrations match schema`, `math verifier`,
+  `destructive migrations acknowledged`.
 - Workflows: ci, deploy, deploy-rerun-stalled, destructive-migration-ack, e2e, mobile-build,
   mobile-build-gradle, mobile-update, provider-eval, rls-neon-rehearsal, schema-check.
 
@@ -192,8 +193,6 @@ Checked 2026-10-22:
   To turn it off: `RLS_ENFORCE=off` with `--update-env-vars` (rollback, checklist D4).
 - **Draft PR #730** (teacher visibility into English Corner practice) changes the schema,
   conflicts with `main`, and needs `pnpm --filter @workspace/db run generate` after it is updated.
-- **The E2E smoke test is not a required check** yet; make it one after about a week
-  without a red run.
 
 From session notes **(notes)**:
 
