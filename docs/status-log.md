@@ -33,7 +33,17 @@ catalog titles lack the strand prefix («التحدث:») Grades 7 and 9 carry (
 - `bookPage.test.ts` adds: a corrected range sits inside its folder's pages; every entry naming a folder agrees on what
   it holds. Every URL the app builds for Grade 6 (936) answered 200; corrected first pages were viewed.
 
-**To re-render** (`render_lesson_pages.py` with these as the page map, then `upload-book-pages-r2`), PDF pages:
+**To re-render — not done here: NCCD drops every HTTPS connection from the sandbox (HTTP answers 503) and the private
+bucket refused its token, so no copy of these PDFs was reachable.** The page map is committed,
+`knowledge-base/g6-book-pages-to-render.json` (49 lessons, PDF paths as `extract-text` recorded them). On a machine
+with the PDFs: `IQRAA_PDF_ROOT=<checkout with the PDFs> python scripts/render_lesson_pages.py
+knowledge-base/g6-book-pages-to-render.json <out>`, then `pnpm --filter @workspace/curriculum run upload-book-pages-r2 --
+<out>`, then commit `book-page-links.json` and delete the page map. **The renderer was unsafe for this:** 11 of these
+lessons' folders are now read by other lessons (`rendered.dir`), and re-rendering into them would have replaced the
+pages those lessons show (the uploader replaces any image whose size changed). `target_dir` sends such a lesson to
+`<id>-v2` and `entry_for` records it; `book_entry` keeps a live-copy book record (science S1) instead of rewriting it
+as «our copy», which would make `verify_book_pages.py` re-cut the whole book (`scripts/test_render_lesson_pages.py`,
+8 tests, failed first; a dry run over the real file writes no folder another lesson reads). The ranges, PDF pages:
 - social S1: u1_l1 8-14, u1_l2 15-18, u1_l3 19-24, u2_l2 36-40, u2_l3 41-47, u3_l2 59-65, u3_l3 66-70, u3_l4 71-77,
   u4_l1 82-87, u4_l2 88-94, u4_l3 95-99, u5_l1 104-108, u5_l3 113-117
 - social S2: u7_l1 26-35, u7_l2 36-42, u7_l3 43-49, u7_l4 50-54, u8_l1 60-66, u8_l2 67-74, u8_l3 75-79, u9_l1 84-89,

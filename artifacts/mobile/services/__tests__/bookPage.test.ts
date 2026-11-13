@@ -39,7 +39,8 @@ describe('book-page-links.json', () => {
     for (const [id, l] of Object.entries(lessons as Record<string, BookPageLink>)) {
       const r = l.rendered;
       if (!r) continue;
-      assert.ok(known.has(r.dir), `${id} reads from unknown folder ${r.dir}`);
+      // `<lesson>-vN`: a re-render that could not reuse the lesson's own folder (render_lesson_pages.py, target_dir)
+      assert.ok(known.has(r.dir.replace(/-v\d+$/, '')), `${id} reads from unknown folder ${r.dir}`);
       assert.ok(r.startPage <= l.startPage && l.endPage <= r.endPage,
         `${id} (${l.startPage}-${l.endPage}) is outside ${r.dir}'s pages (${r.startPage}-${r.endPage})`);
       assert.ok(r.endPage - r.startPage < 20, `${r.dir} cannot hold ${r.endPage - r.startPage + 1} pages`);
