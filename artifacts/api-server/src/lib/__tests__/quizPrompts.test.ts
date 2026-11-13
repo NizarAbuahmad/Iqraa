@@ -109,3 +109,26 @@ describe("worksheet prompt shows the shape of each requested type", () => {
     });
   }
 });
+
+describe("key terms reach the quiz and worksheet prompts", () => {
+  const terms = ["المقذوفات", "أقصى ارتفاع", "زمن التحليق", "المدى الأفقي"];
+  const base = { subject: "Physics", grade: "الصف العاشر", topic: "الحركة في بعدين", numQuestions: 10 };
+  const builders = [
+    ["quiz ar", quizPromptAr], ["quiz en", quizPromptEn],
+    ["worksheet ar", worksheetPromptAr], ["worksheet en", worksheetPromptEn],
+    ["homework ar", (b: any) => worksheetPromptAr({ ...b, homework: true })],
+    ["homework en", (b: any) => worksheetPromptEn({ ...b, homework: true })],
+  ] as const;
+
+  for (const [name, build] of builders) {
+    it(`${name}: lists every term when sent`, () => {
+      const p = build({ ...base, keyTerms: terms });
+      for (const t of terms) assert.ok(p.includes(`- ${t}`), t);
+    });
+
+    it(`${name}: is unchanged without terms`, () => {
+      assert.equal(build({ ...base, keyTerms: [] }), build(base));
+      assert.equal(build({ ...base, keyTerms: ["x".repeat(61)] }), build(base));
+    });
+  }
+});
