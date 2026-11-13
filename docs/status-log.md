@@ -10,6 +10,57 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Science lessons cover every key term of the book — 2026-11-13
+
+A Grade 10 physics teacher graded the five tools for every physics lesson. Plans and activities passed; three findings
+were about **coverage**: the u2_l2 quiz ignored flight time, range and maximum height; the u6_l2 slides left out
+refraction, interference, diffraction and polarisation (and leaned on Doppler problems); the u2_l3 slide 10 showed an
+Air Track photo without saying how it relates to gravity. The book already names what was missing: each lesson's
+vocabulary list. Nothing told a model to cover it, and the slides app kept at most five concept slides.
+Spec `docs/superpowers/specs/2026-11-13-lesson-key-terms-coverage-design.md`, plan
+`docs/superpowers/plans/2026-11-13-lesson-key-terms-coverage.md`.
+
+**What changed.**
+- **The terms travel with the request.** `groundingRequestFields` (`services/kbContext.ts`) adds `keyTerms` from the
+  grounded lesson's own book subject, **only physics or chemistry** (`scienceKeyTerms` / `keyTermsField`; trimmed,
+  deduped, capped). Maths, English, ungrounded topics and wide scopes send nothing, so their requests are unchanged.
+  `buildWorksheetRequest`, `buildLessonTeachingRequest` and `quiz.tsx` send it.
+- **API.** `artifacts/api-server/src/lib/keyTerms.ts`: `parseKeyTerms`, the prompt clauses and `missingKeyTerms`. Quiz,
+  worksheet and homework prompts print a «cover every term» clause; lesson-teaching prints the terms too.
+- **Slides.** lesson-teaching asks for 3 to `max(5, min(8, n))` concepts (n = number of terms) and the app's
+  `usableTeaching` keeps up to 8 (was 5). Every lesson's photo must now be explained in the concept's own points
+  (the air-track finding), terms or not.
+- **Prompt version.** `PROMPT_VERSION_BY_KIND['lesson-teaching']` is `2026-11-13.1`. **Pool cost:** every lesson's
+  next slides explanation regenerates once (a pooled one under the old version is no longer a hit).
+- **Cache key.** `keyTermsHash` joins the strict generation key, so a request with terms and one without never share a
+  stored artifact.
+- **Log line «key terms coverage»** in four routes (quiz, worksheet, homework, lesson-teaching): which of the sent terms
+  the generation did not mention (`missingKeyTerms`). It is the instrument for the check below.
+- Two existing tests changed by ruling: lessonSlides «caps at five» is now «caps at eight» (the spec raises the cap);
+  lessonTeachingRequest's legacy body gains `keyTerms` where the unscoped grounding of the maths title «جمع المتجهات
+  وطرحها» lands on physics lesson `kbl-phys-s1-nccd-u1_l2` (the known title trap; keyTerms follows the grounded
+  lesson's own subject).
+
+**Verified.** API `pnpm build && pnpm test`, mobile `pnpm test` and root `pnpm run typecheck`: see the PR for the final
+counts on the last commit (API 2,934 pass / 0 fail and mobile 9,219 pass / 0 fail at the end of the code tasks). New
+tests cover the parser, the clauses, the matcher, the prompts, the cache key, the request fields and the 8-slide cap,
+each red before green.
+
+**Not verified.**
+- **No live model output was read at all.** The OpenAI key behind the session proxy answered `insufficient_quota`
+  (credit exhausted) on 2026-11-13, so the planned before/after run of the u2_l2 quiz and the u6_l2 slides was not
+  done, and no answer key was checked by hand. First check once credit returns: generate those two, read the «key
+  terms coverage» line (it names the terms each generation skipped) and read the questions and slides.
+- `lesson-teaching` runs on Claude Sonnet 5.5 in production (STATUS.md), so the slides prompt's behaviour is that
+  model's, not OpenAI's; even a live OpenAI run would not have proved it.
+- No app or browser check of the screens.
+- The offline generators are unchanged, so an offline paper (live AI off or fallen back) can still skip a term. Chat
+  (`chatArtifacts.ts`) and the CQV batch homework paths send no terms.
+- Known matcher limits (log noise only, nothing is removed by it): plural/construct forms (الموجات vs موجة), ؤ/ئ,
+  Arabic-Indic digits can read as «missing»; punctuation-only terms read as present.
+
+No «ما الجديد» entry: the content of existing tools improves; there is no new capability.
+
 ## Today's setup nudge no longer says "no plan" about a plan that exists — 2026-11-05
 
 A teacher added a pacing plan from the Today nudge «أضف الخطة» and the nudge kept saying «لا توجد خطة زمنية». Not a

@@ -210,6 +210,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-11-13 — Science lessons cover every key term of the book (physics and chemistry slides, quizzes, worksheets and homework; slide photos are explained; no live model output read yet)
 - 2026-11-01 — «جديد» on a new tool's card, from its «ما الجديد» entry
 - 2026-11-01 — «ما الجديد»: existing users are told about new features, once, in the app
 - 2026-11-01 — Grammar sheets stop mentioning pictures in the grades that have none
