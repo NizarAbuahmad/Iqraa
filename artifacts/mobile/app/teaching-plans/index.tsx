@@ -578,7 +578,10 @@ export default function TeachingPlansScreen() {
         const lesson = lessons[i + k];
         if (!cls) return;
         try {
-          const g = resolveGeneratorGrounding(lesson.titleAr, 'ar');
+          // By id: a title does not identify a lesson (every grade 8 English
+          // unit opens with «المفردات والقواعد»), and a title match on the
+          // wrong lesson left the guard below sending no context at all.
+          const g = resolveGeneratorGrounding(lesson.titleAr, 'ar', { lessonId: lesson.id });
           const out = await service.generateLessonPlan({
             grade: page.grade,
             subject: SUBJECTS.find(x => x.id === subjectId)?.name ?? '',

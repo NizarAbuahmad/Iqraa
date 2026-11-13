@@ -2,22 +2,6 @@
   "sourceId": "g8-voc-s1-student-book",
   "figures": [
     {
-      "file": "p006b.png",
-      "sourceId": "g8-voc-s1-student-book",
-      "pdfPage": 6,
-      "rect": [
-        0.0,
-        425.0,
-        204.8,
-        661.5
-      ],
-      "unit": 1,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 6
-    },
-    {
       "file": "p010-v2.png",
       "sourceId": "g8-voc-s1-student-book",
       "pdfPage": 10,

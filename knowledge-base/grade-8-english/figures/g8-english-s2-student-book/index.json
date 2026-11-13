@@ -475,24 +475,8 @@
         621.3,
         305.5
       ],
-      "unit": 5,
-      "lesson": 7,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
-      "file": "p062.png",
-      "sourceId": "g8-english-s2-student-book",
-      "pdfPage": 62,
-      "rect": [
-        88.1,
-        -1.0,
-        552.7,
-        870.4
-      ],
-      "unit": 5,
-      "lesson": 7,
+      "unit": null,
+      "lesson": null,
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": null
@@ -507,8 +491,8 @@
         302.0,
         310.4
       ],
-      "unit": 5,
-      "lesson": 7,
+      "unit": null,
+      "lesson": null,
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": null
@@ -523,8 +507,8 @@
         623.9,
         869.6
       ],
-      "unit": 5,
-      "lesson": 7,
+      "unit": null,
+      "lesson": null,
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": null
