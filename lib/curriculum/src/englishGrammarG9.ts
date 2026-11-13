@@ -9,7 +9,7 @@
  * that are plainly true; opinion rows are never judged. Both units ship `reviewedBy: null`: they are offered to
  * nobody until a teacher signs the printed form. `NOT_COVERED_G9` is what the form says is left out.
  *
- * The nineteen authored lessons (specs 2026-10-23-english-corner-grammar-g9-lessons-design.md and ...-grammar-only-lessons-design.md) come from `englishGrammarG9Items.ts`.
+ * The twenty authored lessons (specs 2026-10-23-english-corner-grammar-g9-lessons-design.md and ...-grammar-only-lessons-design.md) come from `englishGrammarG9Items.ts`.
  *
  * Imports only types from the engine, and the hub (which does not import the engine): `englishGrammar.ts` imports this file.
  */
@@ -57,6 +57,16 @@ const OPINION_ROWS = [
   { a: 'Salmon', be: 'is', adj: 'tasty', b: 'rice' }, { a: 'Grapes', be: 'are', adj: 'popular', b: 'melons' },
 ];
 
+/** Opinions about a food, for «too» and «adjective + enough»: Choose and Build only, never judged true or false. */
+const TOO_ROWS = [
+  { a: 'Salmon', be: 'is', adj: 'expensive' }, { a: 'Doughnuts', be: 'are', adj: 'fattening' }, { a: 'Porridge', be: 'is', adj: 'filling' },
+  { a: 'Honey', be: 'is', adj: 'expensive' }, { a: 'Croissants', be: 'are', adj: 'fattening' },
+];
+const ENOUGH_ROWS = [
+  { a: 'Water', be: 'is', adj: 'cheap' }, { a: 'Bread', be: 'is', adj: 'cheap' }, { a: 'Rice', be: 'is', adj: 'filling' },
+  { a: 'Pancakes', be: 'are', adj: 'tasty' }, { a: 'Carrots', be: 'are', adj: 'nutritious' },
+];
+
 /** Hand-classed foods for the quantifiers. Plurals are formed by `{s:}` from the singular hub word. */
 const FOOD_COUNT = ['grapes', 'olive', 'mushroom', 'pancake', 'doughnut', 'croissant', 'muffin', 'carrots'];
 const FOOD_MASS = ['cream', 'honey', 'jam', 'salt', 'sugar', 'porridge', 'milk', 'rice'];
@@ -79,6 +89,11 @@ const UNITS_G9: GrammarUnit[] = [
       { id: 'nmass', text: "Is {big} {cmp:adj} than {small}? No, it isn't.", rows: swapped(MASS_PAIRS), yesNo: { kind: 'fact', ...FACT('Is'), answer: false } },
       { id: 'sup', text: '{v:x} is the {sup:adj} {v:n} {v:where}.', rows: SUPER_ROWS, choose: FORM('comparative') },
       { id: 'opinion', text: '{a} {be} {cmp:adj} than {b}.', rows: OPINION_ROWS, choose: FORM('base') },
+      // «Ways of comparing» (the book's Grammar box): not as … as, from the same true pairs (the twin swaps the two foods), then too / enough.
+      { id: 'notaspl', text: '{smallC} are not as {adj} as {big}.', rows: withCaps(PLURAL_PAIRS), claim: { swap: [['smallC', 'bigC'], ['big', 'small']] }, choose: phrase('not as', 'not more') },
+      { id: 'notasmass', text: '{smallC} is not as {adj} as {big}.', rows: withCaps(MASS_PAIRS), claim: { swap: [['smallC', 'bigC'], ['big', 'small']] }, choose: phrase('not as', 'not more') },
+      { id: 'too', text: '{a} {be} too {adj} for me.', rows: TOO_ROWS, choose: phrase('too', 'enough') },
+      { id: 'enough', text: '{a} {be} {adj} enough for me.', rows: ENOUGH_ROWS, choose: phrase('enough', 'too') },
     ],
     slots: {},
   },
@@ -100,7 +115,7 @@ const UNITS_G9: GrammarUnit[] = [
     ],
     slots: { pl: FOOD_COUNT, mass: FOOD_MASS },
   },
-  // The nineteen authored lessons (hand-written items; see `englishGrammarG9Items.ts`), five of them grammar-only hub
+  // The twenty authored lessons (hand-written items; see `englishGrammarG9Items.ts`), six of them grammar-only hub
   // lessons (`GRAMMAR_ONLY_LESSONS`, englishHub.ts). Unsigned like the pilot.
   ...G9_ITEM_LESSONS.map(l => ({ lessonId: l.lessonId, reviewedBy: null, patterns: [], slots: {}, items: l.items }) satisfies GrammarUnit),
 ];
@@ -127,6 +142,7 @@ export const NOT_COVERED_G9: Record<string, string[]> = {
     'لا صور في هذه الوحدة: صورة جزرة لا تقول إنها أصح من دونات. «صح أم خطأ» و«نعم أم لا» من أزواج المقارنات المكتوبة فقط، وكل زوج منها مطبوع في صفحة البيانات لتتأكدوا أنه صحيح دون جدال، وتوأمه الخاطئ هو الجملة نفسها بعد تبديل الطرفين.',
     'جمل الرأي (Pancakes are tastier than porridge.) وجمل الصيغة العليا (the most expensive dish) في «اختر الكلمة» و«رتّب الجملة» فقط: لا تُسأل صحةً لأنها رأي لا معلومة.',
     'خيارا «اختر الكلمة» دائمًا صيغتان حقيقيتان: healthier مقابل healthy، وthe cheapest مقابل the cheaper.',
+    'من صندوق «Ways of comparing»: not as … as من الأزواج الصحيحة نفسها (وتوأمه الخاطئ بتبديل الطرفين)، وtoo وadjective + enough جمل رأي في «اختر الكلمة» و«رتّب الجملة» فقط. خيار not as هو not more (غير سليم)، وخيارا too وenough يستبعد كل منهما الآخر في الصيغة (Salmon is enough expensive).',
   ],
   [L(4, 3)]: [
     'لا صور في هذه الوحدة، والاسم هو الذي يحدد الاختيار: many مع المعدود بالجمع وmuch مع غير المعدود، وa few مع الأول وa little مع الثاني.',
@@ -154,10 +170,18 @@ export const NOT_COVERED_G9: Record<string, string[]> = {
   [L2('s1-nccd-u3_l1')]: [
     'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
     '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+    'الرابط as يظهر في ثلاث جمل من موضوع «while» (As she was cleaning…) لأنه يؤدي دور while مع الماضي المستمر في صندوق الكتاب.',
   ],
   [L2('s1-nccd-u3_l4')]: [
     'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
     '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+  ],
+  [L2('s1-nccd-u4_l7')]: [
+    'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
+    '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+    'الدرس يتبع صندوق «Watch Out!» في الكتاب وصفحة Grammar Reference 70: a/an للذكر الأول أو لواحد من كثير، وthe للذكر الثاني أو لشيء محدد أو فريد (the sky، the capital).',
+    'ثلاثة مواضيع من أربعة بنوع «meaning»: الخيار الآخر سليم نحويًا لكن الجملة السابقة أو معنى الاسم الفريد يستبعده (I saw a dog. A dog was big. تعني كلبًا آخر). تحققوا من كل جملة. a مقابل an بحسب الصوت فقط (form).',
+    'الأسماء الجمع وغير المعدودة والأسماء بلا أداة (Look at stars) غير مشمولة: الدرس للمفرد المعدود فقط.',
   ],
   [L2('s1-nccd-u5_l1')]: [
     'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
@@ -167,6 +191,8 @@ export const NOT_COVERED_G9: Record<string, string[]> = {
   [L2('s1-nccd-u5_l3')]: [
     'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
     '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+    'الدرس يتبع صندوق «Past modal verbs» في الكتاب فقط: could وcouldn\'t (الإمكان أو القدرة أو الإذن في الماضي) وhad to وdidn\'t have to (الإلزام وانعدامه في الماضي). should have وcould have وmust have وcan\'t have غير مشمولة لأن الكتاب لا يعلّمها هنا.',
+    'الخيارات الخاطئة أخطاء في الصيغة فقط (could swam، had to wore، didn\'t had to)؛ لا اختيار بين could وhad to في المعنى.',
   ],
   [L2('s2-nccd-u6_l1')]: [
     'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
@@ -190,7 +216,7 @@ export const NOT_COVERED_G9: Record<string, string[]> = {
   [L2('s2-nccd-u10_l1')]: [
     'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
     '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
-    'المبني للمجهول (the passive) في المضارع والماضي والسؤال والنفي: الخيار الخاطئ دائمًا الفعل بصيغته الأولى (is speak، was build). ذِكر الفاعل بعد by غير مختبَر.',
+    'المبني للمجهول (the passive) في المضارع والماضي والمضارع التام (has been broken) والسؤال والنفي: الخيار الخاطئ دائمًا الفعل بصيغته الأولى (is speak، was build، has been break). ذِكر الفاعل بعد by غير مختبَر.',
   ],
   [L2('s1-nccd-u2_l3')]: [
     'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
