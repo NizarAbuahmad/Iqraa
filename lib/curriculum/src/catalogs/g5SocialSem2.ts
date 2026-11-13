@@ -7,8 +7,11 @@
  * for the full explanation. Unit and lesson titles here were recovered by
  * OCR of the contents pages and unit opener pages. Units are numbered 5-8,
  * continuing Semester 1's 1-4, matching the book's own cover and contents
- * page. Unit 8 ("الثَّقافَةُ وَالتُّراثُ") carries the lowest confidence in
- * this file — see the JSON's `known_gaps`.
+ * page. Re-checked 2026-11-13 against the contents pages in
+ * data/extracted/g5-social-s2-student-book.json (visual-order text: reverse
+ * each line to read it): Unit 7 has four lessons — «دول المغرب العربي» was
+ * appended as u7_l4 — and Unit 8 Lesson 1 is «الثقافة». See the JSON's
+ * `known_gaps`.
  *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */

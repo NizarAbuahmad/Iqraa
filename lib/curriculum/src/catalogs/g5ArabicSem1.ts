@@ -9,10 +9,12 @@
  * of the same fixed pattern (أستمع، أتحدث، أقرأ، أكتب، أبني لغتي), and every
  * lesson is a page of interactive exercises (multiple choice, matching,
  * fill-in-the-blank) around a literary or grammar topic, not an expository
- * passage. The "unit competencies" printed on each unit's opener page are a
- * near-identical skills checklist repeated unit to unit (aural recall,
- * comprehension, appreciation, etc.) — not lesson-specific content, so they
- * would not make useful `objectives`. Lesson titles here carry both the
+ * passage. The "unit competencies" page after each unit opener is grouped by
+ * the five lesson types, so it does map onto lessons 1-5; its item headings
+ * repeat unit to unit, but some bodies are lesson-specific (audited
+ * 2026-11-13). They are still not in `objectives` because the saved
+ * pdf-parse extraction scrambles those lines — a faithful copy needs the PDF
+ * re-read (see the JSON's known_gaps). Lesson titles here carry both the
  * fixed lesson-type name and its literary/grammar topic (in parentheses),
  * exactly as the book's own contents page prints them.
  *

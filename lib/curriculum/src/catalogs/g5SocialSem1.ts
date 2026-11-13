@@ -9,9 +9,12 @@
  * baked into this specific file is wrong, not because of an extraction-order
  * bug. Unit and lesson titles here were recovered by OCR (Tesseract, `ara`
  * language pack) of the contents pages and each unit's own opener page, not
- * from the text layer. See the JSON's `provenance_note` and `known_gaps` for
- * exactly which titles carry lower confidence (Unit 1 Lesson 1, Unit 4 Lesson
- * 1 in this semester).
+ * from the text layer. Re-checked 2026-11-13: the extracted text in
+ * data/extracted/g5-social-s1-student-book.json is in visual order (each
+ * line's characters reversed, some lam-alef pairs swapped), so the contents
+ * pages read cleanly once a line is reversed — three OCR-era titles were
+ * corrected from it (Unit 1 Lesson 1, Unit 4 Lessons 1 and 3). See the
+ * JSON's `known_gaps`.
  *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */
