@@ -49,7 +49,16 @@
             { "ar": "الأمنُ السيبرانيُّ", "en": "Cyber Security" },
             { "ar": "أمنُ التطبيقاتِ", "en": "Application Security" },
             { "ar": "الأمنُ السحابيُّ", "en": "Cloud Security" },
-            { "ar": "التّعافي من الكارثةِ", "en": "Disaster Recovery" }
+            { "ar": "التّعافي من الكارثةِ", "en": "Disaster Recovery" },
+            { "ar": "الاستجابةُ للحوادثِ", "en": "Incident Response" },
+            { "ar": "أمنُ البِنيةِ التحتيةِ", "en": "Infrastructure Security" },
+            { "ar": "إدارةُ الثغراتِ الأمنيةِ", "en": "Vulnerability Management" },
+            { "ar": "السِّرِّيَّةُ", "en": "Confidentiality" },
+            { "ar": "النزاهةُ", "en": "Integrity" },
+            { "ar": "التوافرُ", "en": "Availability" },
+            { "ar": "إدارةُ الهُويّةِ والوصولِ", "en": "Identity and Access Management - IAM" },
+            { "ar": "المصادقةُ متعددةُ العواملِ", "en": "MFA" },
+            { "ar": "كلماتُ السِّرِّ", "en": "Passwords" }
           ]
         },
         {

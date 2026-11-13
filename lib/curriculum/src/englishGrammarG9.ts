@@ -63,6 +63,25 @@ const FOOD_MASS = ['cream', 'honey', 'jam', 'salt', 'sugar', 'porridge', 'milk',
 const phrase = (right: string, wrong: string) => ({ kind: 'phrase' as const, right, wrong });
 const FORM = (wrong: 'base' | 'comparative') => ({ kind: 'form' as const, slot: 'adj', wrong });
 
+/**
+ * The book's «Ways of comparing» (S1 U4 L1 Grammar box; Grammar Reference p70): «not as big (as)» and «too small / big
+ * enough». Hand-written like the Grade 9 item lessons: every distractor is ungrammatical, never a form that could fit.
+ */
+const WAYS_OF_COMPARING: [topic: string, text: string, answer: string, distractor: string][] = [
+  ['not-as', 'Jam is not as sweet as honey.', 'not as sweet as', 'not as sweeter as'],
+  ['not-as', 'Water is not as expensive as salmon.', 'not as expensive as', 'not as more expensive as'],
+  ['not-as', 'Bread is not as fattening as doughnuts.', 'not as fattening as', 'not as fattening than'],
+  ['not-as', 'Cucumbers are not as filling as porridge.', 'not as filling as', 'not as filling like'],
+  ['not-as', 'Muffins are not as healthy as carrots.', 'not as healthy as', 'not as healthier as'],
+  ['not-as', 'Sugar is not as cheap as water.', 'not as cheap as', 'not as cheaper as'],
+  ['too-enough', 'The chips were too salty.', 'too salty', 'too saltier'],
+  ['too-enough', 'This coffee is too hot to drink.', 'too hot', 'too hotter'],
+  ['too-enough', 'The shoes are too small for me.', 'too small', 'too smaller'],
+  ['too-enough', 'The cake isn\'t big enough for twelve people.', 'big enough', 'enough big'],
+  ['too-enough', 'Is your soup hot enough?', 'hot enough', 'enough hot'],
+  ['too-enough', 'The water isn\'t cold enough.', 'cold enough', 'enough cold'],
+];
+
 const HUB_ORDER = new Map(hubLessonsForGrade(9).map((l, i) => [l.id, i]));
 
 const UNITS_G9: GrammarUnit[] = [
@@ -79,6 +98,9 @@ const UNITS_G9: GrammarUnit[] = [
       { id: 'nmass', text: "Is {big} {cmp:adj} than {small}? No, it isn't.", rows: swapped(MASS_PAIRS), yesNo: { kind: 'fact', ...FACT('Is'), answer: false } },
       { id: 'sup', text: '{v:x} is the {sup:adj} {v:n} {v:where}.', rows: SUPER_ROWS, choose: FORM('comparative') },
       { id: 'opinion', text: '{a} {be} {cmp:adj} than {b}.', rows: OPINION_ROWS, choose: FORM('base') },
+    ],
+    items: [
+      ...WAYS_OF_COMPARING.map(([topic, text, answer, distractor]) => ({ topic, kind: 'form' as const, text, answer, distractor })),
     ],
     slots: {},
   },
@@ -127,6 +149,7 @@ export const NOT_COVERED_G9: Record<string, string[]> = {
     'لا صور في هذه الوحدة: صورة جزرة لا تقول إنها أصح من دونات. «صح أم خطأ» و«نعم أم لا» من أزواج المقارنات المكتوبة فقط، وكل زوج منها مطبوع في صفحة البيانات لتتأكدوا أنه صحيح دون جدال، وتوأمه الخاطئ هو الجملة نفسها بعد تبديل الطرفين.',
     'جمل الرأي (Pancakes are tastier than porridge.) وجمل الصيغة العليا (the most expensive dish) في «اختر الكلمة» و«رتّب الجملة» فقط: لا تُسأل صحةً لأنها رأي لا معلومة.',
     'خيارا «اختر الكلمة» دائمًا صيغتان حقيقيتان: healthier مقابل healthy، وthe cheapest مقابل the cheaper.',
+    'اثنتا عشرة جملة مكتوبة يدويًا لـ «Ways of comparing» في صندوق الكتاب: not as … as (ست جمل) وtoo وadjective + enough (ست جمل). خيارها الخاطئ صيغة غير سليمة دائمًا (not as sweeter as، enough big)، ولا اختيار بين too وnot enough في المعنى.',
   ],
   [L(4, 3)]: [
     'لا صور في هذه الوحدة، والاسم هو الذي يحدد الاختيار: many مع المعدود بالجمع وmuch مع غير المعدود، وa few مع الأول وa little مع الثاني.',
@@ -154,6 +177,7 @@ export const NOT_COVERED_G9: Record<string, string[]> = {
   [L2('s1-nccd-u3_l1')]: [
     'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
     '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+    'الرابط as يظهر في ثلاث جمل من موضوع «while» (As she was cleaning…) لأنه يؤدي دور while مع الماضي المستمر في صندوق الكتاب.',
   ],
   [L2('s1-nccd-u3_l4')]: [
     'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
@@ -167,6 +191,8 @@ export const NOT_COVERED_G9: Record<string, string[]> = {
   [L2('s1-nccd-u5_l3')]: [
     'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
     '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
+    'الدرس يتبع صندوق «Past modal verbs» في الكتاب فقط: could وcouldn\'t (الإمكان أو القدرة أو الإذن في الماضي) وhad to وdidn\'t have to (الإلزام وانعدامه في الماضي). should have وcould have وmust have وcan\'t have غير مشمولة لأن الكتاب لا يعلّمها هنا.',
+    'الخيارات الخاطئة أخطاء في الصيغة فقط (could swam، had to wore، didn\'t had to)؛ لا اختيار بين could وhad to في المعنى.',
   ],
   [L2('s2-nccd-u6_l1')]: [
     'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
@@ -190,7 +216,7 @@ export const NOT_COVERED_G9: Record<string, string[]> = {
   [L2('s2-nccd-u10_l1')]: [
     'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
     '«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.',
-    'المبني للمجهول (the passive) في المضارع والماضي والسؤال والنفي: الخيار الخاطئ دائمًا الفعل بصيغته الأولى (is speak، was build). ذِكر الفاعل بعد by غير مختبَر.',
+    'المبني للمجهول (the passive) في المضارع والماضي والمضارع التام (has been broken) والسؤال والنفي: الخيار الخاطئ دائمًا الفعل بصيغته الأولى (is speak، was build، has been break). ذِكر الفاعل بعد by غير مختبَر.',
   ],
   [L2('s1-nccd-u2_l3')]: [
     'لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.',
