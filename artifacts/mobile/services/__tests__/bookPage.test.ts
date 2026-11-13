@@ -73,10 +73,20 @@ describe('book-page-links.json', () => {
       images?: string[]; renderedStartPage?: number; renderedEndPage?: number;
     };
     const all = lessons as Record<string, Entry>;
+    // Images under a key whose own lesson they are not (the key was cut from the
+    // wrong pages), kept so a hand-corrected lesson can name them.
+    const orphans = ((pageLinks as { orphanRenders?: Record<string, Entry> }).orphanRenders) ?? {};
+    for (const [key, o] of Object.entries(orphans)) {
+      assert.equal(all[key], undefined, `${key} is both a lesson and an orphan render`);
+      assert.ok(books[o.sourceId], `${key}: orphan render of an unverified book`);
+    }
     const rendered = (l: Entry) => [l.renderedStartPage ?? l.startPage, l.renderedEndPage ?? l.endPage] as const;
     for (const [id, l] of Object.entries(all)) {
       const [first, last] = rendered(l);
       assert.ok(first >= 1 && first <= last && last - first < 20, `${id}: bad rendered range ${first}-${last}`);
+      if (!l.images) {
+        assert.ok(l.endPage <= last, `${id}: shows pages past its own images without listing them`);
+      }
       if (l.renderedStartPage !== undefined) {
         // Its own image 1 is no longer its first page, so the default 1..n is wrong.
         assert.ok(l.images, `${id}: a range whose start moved must list the images it shows`);
@@ -86,7 +96,7 @@ describe('book-page-links.json', () => {
       l.images.forEach((key, i) => {
         const m = key.match(/^(kbl-[^/]+)\/(\d+)$/);
         assert.ok(m, `${id}: bad image key ${key}`);
-        const host = all[m[1]!];
+        const host = all[m[1]!] ?? orphans[m[1]!];
         assert.ok(host, `${id}: ${key} names a lesson with no rendered images`);
         assert.equal(host.sourceId, l.sourceId, `${id}: ${key} is from another book`);
         const [hostFirst, hostLast] = rendered(host);
