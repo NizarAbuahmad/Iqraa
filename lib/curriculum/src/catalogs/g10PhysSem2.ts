@@ -2,12 +2,14 @@
  * Grade 10 Physics — Semester 2 curriculum (NCCD student book).
  * Source of truth: data/iqra_curriculum_g10_phys_sem2.json
  *
- * Everything here comes from the student book. Unlike Semester 1, not even
- * period counts come from the teacher guide: `phys-s2-teacher-guide` extracts
- * with the definite article transposed («الحركة» → «احلركة») and its extraction
- * was deleted on 2026-09-03, so every `periods` is null and every
- * `total_periods` with it. The PDF is intact in R2 and needs a better
- * extractor or OCR; until then a physics S2 lesson has no duration.
+ * Everything here comes from the student book except two period counts. The
+ * first extraction of `phys-s2-teacher-guide` transposed the definite article
+ * («الحركة» → «احلركة») and was deleted on 2026-09-03; a tesseract OCR of the
+ * guide was committed on 2026-09-07. It is readable but its «عدد الحصص» column
+ * is interleaved, so only unit 5's two lessons (5 and 5, `periods_note`) were
+ * read with confidence. Every other `periods`, and every `total_periods`, is
+ * null, and such a lesson has no duration until someone fills it from the
+ * printed guide.
  *
  * Two things recorded in the JSON rather than smoothed over here:
  *
@@ -46,6 +48,8 @@ export type PhysSem2Lesson = {
   title_en: string;
   main_idea_ar: string;
   periods: number | null;
+  /** Where a count was read from the guide's OCR rather than copied from print, says so. */
+  periods_note?: string;
   /** Set where the book prints a title two different ways; says which was taken. */
   title_note?: string;
   objectives: string[];
