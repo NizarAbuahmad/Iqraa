@@ -10,6 +10,46 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 10 lesson content: wrong maths and chemistry text corrected from the books — 2026-11-13
+
+Second fix from the Grade 10 review, on the same branch as the figures fix below. Lessons get their summary, key concepts, terms and rules from hand-written rows in `artifacts/mobile/services/knowledgeBase.ts`, merged onto the NCCD lesson by title (`enrichLesson`). Several of those rows described a different lesson, or material the 2026 book does not teach. Each fix below was checked against the extracted book text (`lib/curriculum/src/data/extracted/`), with page numbers in code comments.
+
+**Chemistry**
+- **Bohr (S1 u1_l1).** The rules used E = −13.6/n² eV. The book never uses 13.6 or eV; it works Eₙ = −R_H/n² with R_H = 2.18 × 10⁻¹⁸ J, and |ΔE| = R_H(1/n₁² − 1/n₂²), on pp.16–18. Now in joules.
+- **Wave-mechanical model (u1_l2).** It carried Heisenberg and Pauli, which appear on no page of the book. It also carried Aufbau, Hund and the filling order, which are the next lesson (pp.30–31). It now has the book's content from pp.20–23: Schrödinger, the orbital, the four quantum numbers with the book's terms «الفرعي» and «المغزلي», n², 2n² and the sublevel capacities.
+- **Electronic configuration (u2_l1).** A new row, `kbl-chem-2-0`, gives this lesson Aufbau, Hund and the book's filling order. Its five terms carry definitions from the book's glossary (pp.75–76); before, they were empty.
+- **Chemical reactions (S2 u4_l1).** The filler concept «تطبيقات حياتية» is replaced by the lesson's own terms from p.10.
+- **Offline chemistry bank** (`lib/math-practice`). `ch-as-m1` and `ch-as-m3` and their worked steps are now in joules: −5.45 × 10⁻¹⁹ J and −2.42 × 10⁻¹⁹ J. Each distractor is a named slip (÷n, n ignored, the other level), computed, not typed. So is the `ch-as-m4` comparison. `chemistryBankDepth.test.ts` pins both keys.
+- **`catalog.ts` outcome `o-chem-2-1`.** It is merged onto the wave-model lesson but read «writes electron configurations for elements 1–36», which is the next lesson. Reworded to the quantum-number outcome the book states for this lesson; the id is kept. The superseded `lesson-chem-1` objective's formula was also corrected. That objective is not served, but it is the text a future copy would come from.
+
+**Maths**
+- **Composition and inverse (S2 u5_l3, u5_l4).** One merged row «تركيب الاقترانات والاقتران العكسي والاقتران الجذري», matched by prefix, gave the composition lesson the inverse content and left the inverse lesson with only its placeholder. It is split into two rows, following the book (p.25 and pp.32–41): one-to-one (not «تقابل»), the horizontal-line test, the identity function, and the radical function including odd roots.
+- **Unit circle (S1 u3_l1).** It described right-triangle ratios; the book lesson (p.66) is standard position and the unit circle.
+- **Graphs (u3_l3).** It taught amplitude, period changes and shifts, none of which is in the book. It now covers sin, cos and tan on [0°, 360°], as pp.82–87 do; tan is «غير معرّف» at 90° and 270°, the book's wording.
+- **Trig equations (u3_l4).** The general solution «+360°n» is gone; the book works within one rotation.
+- **Sectors (S1 u2_l2).** A sector was defined as bounded by two arcs; it is one arc and two radii (p.41). The radian content is gone, since the book uses degrees only.
+- **Law of sines (u4_l2).** The garbled «(ZZض)» and the ambiguous case, which the book does not treat, are replaced by its two cases (ASA/SAA and SSA, p.107).
+- **Tangent (S2 u6_l1).** «touches the curve at one point only» is false in general: the book's own figure shows a tangent crossing the cubic. Now defined by slope.
+- **Vectors (u7_l1).** The unit vector is not in the book, and equal vectors belong to the next lesson. Both are replaced by the p.80 terms.
+- **Grouped variance (u8_l3).** The lesson opened with the range. It now gives the book's grouped-table formulas (p.125).
+
+**Scope check.** A before/after snapshot of all 3,335 KB lessons differs in exactly these 14 Grade 10 lessons and nothing else, so no other grade shares a changed title.
+
+**Verified:**
+- mobile suite: 9,213 pass, 0 fail, 10 skipped;
+- api-server, build then test: 2,899 pass;
+- math-practice: 949 pass;
+- curriculum: 915 pass;
+- `pnpm run typecheck`.
+
+**Not verified:**
+- live-AI output for these lessons;
+- the screens themselves.
+
+**Left open:**
+- placeholder summaries remain for maths u4_l3, u4_l4, u5_l1, u5_l2, u8_l4, u8_l5 and the labs. The hand-written row for «قانون جيوب التمام» never matches the catalog's «قانون جيب التمام», and renaming a catalog title was left alone;
+- the 2020-edition maths lessons u1_l3 and u1_l4, and the missing «حل معادلات خاصة».
+
 ## Grade 10 book figures: junk dropped, misplaced figures moved — 2026-11-13
 
 First fix from a Grade 10 review covering coverage, results and book images, across all 15 subjects. Six reviewers each took a subject group and opened all ≈700 Grade 10 figure crops. They checked every figure→lesson map entry and every book-page range against the extracted book text. This PR fixes only the figures that need no PDF.
