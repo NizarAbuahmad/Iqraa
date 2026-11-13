@@ -89,6 +89,24 @@ describe('layoutScene: physics the drawing gets right', () => {
     assert.ok(texts.includes('H') && texts.includes('R'));
   });
 
+  it('projectile: the v0 label sits above the path, and a low drawing is centred', () => {
+    const prims = layoutScene(SAMPLES[4]!, BOX).prims;
+    const lab = one(prims, 'v0-label');
+    const path = one(prims, 'path');
+    if (lab.t !== 'text' || path.t !== 'poly') return assert.fail('shapes');
+    const half = (lab.text.length * 7.2) / 2;
+    const near = path.pts.filter(q => q.x >= lab.at.x - half && q.x <= lab.at.x + half);
+    assert.ok(near.length > 0);
+    for (const q of near) assert.ok(lab.at.y - 4 < q.y, `label centre ${lab.at.y - 4} above path ${q.y}`);
+    const apex = path.pts.reduce((a, b) => (b.y < a.y ? b : a));
+    const rl = one(prims, 'R-label');
+    if (rl.t !== 'text') return assert.fail('R-label');
+    assert.ok(Math.abs(apex.y - (BOX.h - rl.at.y)) < 40, 'roughly centred');
+    const tall = one(layoutScene(SAMPLES[5]!, BOX).prims, 'path');
+    if (tall.t !== 'poly') return assert.fail('path');
+    assert.ok(Math.abs(Math.min(...tall.pts.map(q => q.y)) - (24 + 14)) <= 1, 'steep path still reaches Hmax');
+  });
+
   it('circular: v is tangent and F points to the centre', () => {
     const prims = layoutScene(SAMPLES[7]!, BOX).prims;
     const v = one(prims, 'v');

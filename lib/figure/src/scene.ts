@@ -126,7 +126,14 @@ function layoutAttraction(f: AttractionFigure, box: Box): ScenePrim[] {
 function layoutProjectile(f: ProjectileFigure, box: Box): ScenePrim[] {
   const out: ScenePrim[] = [];
   const unit = Math.min(box.w, box.h);
-  const ground = box.h - M - 12;
+  const ground0 = box.h - M - 12;
+  // A low trajectory is centred vertically; one scaled up to the box stays put.
+  let ground = ground0;
+  if (f.launch === 'ground') {
+    const Hmax0 = ground0 - M - 14;
+    const H0 = ((box.w - 2 * M) * Math.tan(rad(f.angle!))) / 4;
+    if (H0 < Hmax0) ground = ground0 - (Hmax0 - H0) / 2;
+  }
   const has = (m: string) => f.marks.includes(m as never);
   out.push(line({ x: M - 8, y: ground }, { x: box.w - M + 8, y: ground }, 'muted', 'ground'));
 
@@ -151,8 +158,8 @@ function layoutProjectile(f: ProjectileFigure, box: Box): ScenePrim[] {
     const tip = polar(O, deg, len);
     if (has('v0')) {
       out.push(arrow(O, tip, 1, 'v0'));
-      const at = polar(O, deg, len + 14);
-      out.push(text({ x: at.x + 10, y: at.y }, tagged('v0', f.speed), box, 'v0-label', 1));
+      const at = polar(tip, deg + 90, 14 + 6.5);
+      out.push(text({ x: at.x, y: at.y }, tagged('v0', f.speed), box, 'v0-label', 1));
     }
     if (has('vx')) {
       out.push(arrow(O, { x: tip.x, y: O.y }, 2, 'vx', true));
