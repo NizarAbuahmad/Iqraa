@@ -19,6 +19,8 @@ export const PHYSICS_UNITS = [
 const PROJECTILE_MARKS: readonly ProjectileMark[] = ['v0', 'vx', 'vy', 'H', 'R'];
 const WAVE_MARKS: readonly WaveMark[] = ['crest', 'trough', 'A', 'lambda'];
 const CIRCULAR_ARROWS = ['v', 'F', 'a'] as const;
+/** Degrees: the least angle between two force arrows on one body. */
+export const MIN_ARROW_GAP = 15;
 
 // The maths label rule plus the Greek letters the physics book uses. Tatweel (U+0640) is excluded as in gate.ts.
 const PHYS_LABEL = /^[A-Za-zء-غف-يλθαβωΔμ]{1,3}[0-9]?['′]?$/u;
@@ -36,7 +38,8 @@ function resolveValue(raw: unknown): PhysicsValue | null | undefined {
   if (!isRec(raw)) return null;
   const n = raw['n'];
   const unit = raw['unit'];
-  if (!isNum(n) || Math.abs(n) > 1e6) return null;
+  // Never negative: a drawn arrow's direction carries the sign, and the leak guard compares magnitudes.
+  if (!isNum(n) || n < 0 || n > 1e6) return null;
   if (Math.abs(n * 1000 - Math.round(n * 1000)) > 1e-6) return null;
   if (!oneOf(unit, PHYSICS_UNITS)) return null;
   return { n: Number(n.toFixed(3)), unit };
@@ -72,6 +75,8 @@ function resolveForces(raw: Rec): ForcesFigure | null {
     const size = a['size'];
     const label = a['label'];
     if (!isInt(dir) || dir < 0 || dir > 359) return null;
+    // Two arrows from one body less than MIN_ARROW_GAP apart (on the circle: 355° and 5° are 10°) draw over each other.
+    if (arrows.some(b => Math.min(Math.abs(b.dir - dir), 360 - Math.abs(b.dir - dir)) < MIN_ARROW_GAP)) return null;
     if (size !== 1 && size !== 2 && size !== 3) return null;
     if (!isLabel(label) || labels.has(label)) return null;
     labels.add(label);

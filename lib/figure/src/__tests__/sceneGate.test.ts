@@ -65,6 +65,27 @@ describe('resolveSceneFigure', () => {
     assert.equal(resolveSceneFigure(withValue('12 N')), null);
   });
 
+  it('values: never negative, since the direction carries the sign', () => {
+    const withValue = (value: unknown) => forces({ arrows: [{ dir: 0, size: 1, label: 'F', value }] });
+    assert.equal(resolveSceneFigure(withValue({ n: -5, unit: 'N' })), null);
+    assert.equal(resolveSceneFigure(withValue({ n: -0.001, unit: 'N' })), null);
+    assert.ok(resolveSceneFigure(withValue({ n: 0, unit: 'N' })));
+    assert.equal(resolveSceneFigure({ kind: 'wave', cycles: 1, marks: ['A'], amplitude: { n: -2, unit: 'm' } }), null);
+    assert.equal(resolveSceneFigure(projectile({ speed: { n: -20, unit: 'm/s' } })), null);
+  });
+
+  it('forces: two arrows less than 15° apart would overlap, so the figure is refused', () => {
+    const pair = (a: number, b: number) => forces({ arrows: [{ dir: a, size: 2, label: 'F' }, { dir: b, size: 1, label: 'T' }] });
+    assert.equal(resolveSceneFigure(pair(90, 90)), null);
+    assert.equal(resolveSceneFigure(pair(90, 100)), null);
+    assert.equal(resolveSceneFigure(pair(90, 104)), null);
+    assert.equal(resolveSceneFigure(pair(355, 5)), null, '355° and 5° are 10° apart');
+    assert.equal(resolveSceneFigure(pair(0, 359)), null);
+    assert.ok(resolveSceneFigure(pair(90, 105)));
+    assert.ok(resolveSceneFigure(pair(350, 5)));
+    assert.ok(resolveSceneFigure(pair(0, 180)));
+  });
+
   it('projectile: ground needs an angle 10–80 and no height; horizontal has no angle and no H; speed needs the v0 mark', () => {
     assert.equal(resolveSceneFigure(projectile({ angle: undefined })), null);
     assert.equal(resolveSceneFigure(projectile({ angle: 85 })), null);
