@@ -23,6 +23,7 @@ import { MockAIService } from './generators';
 import { appendFormats, requestWithoutFormats, splitFormatTypes } from './worksheetFormats.ts';
 import { applyClassroomSetup } from '@/services/classroomRouting';
 import { ApiError, apiFetch } from '../apiClient';
+import { reportRequestBody } from '../reportReason';
 import { describeAiError, generateWithProvenance, recordGeneration } from './aiProvenance.ts';
 import { streamChat, type ChatParams } from './chatStreamClient';
 import type { BoardSolution } from '@workspace/math-verify';
@@ -311,9 +312,10 @@ export class RemoteAIService extends AIService {
    * that one did *not* leave the report queued and saying otherwise would be
    * a lie the teacher acts on.
    */
-  async reportVariant(variantId: string): Promise<boolean> {
+  async reportVariant(variantId: string, reason?: string): Promise<boolean> {
     const res = await apiFetch(`/generate/variants/${encodeURIComponent(variantId)}/retire`, {
       method: 'POST',
+      body: reportRequestBody(reason),
     });
     if (res.status === 404) return false;
     if (!res.ok) {
