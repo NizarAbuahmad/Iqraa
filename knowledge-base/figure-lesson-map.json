@@ -2131,6 +2131,15 @@
     {
       "sourceId": "g8-math-s2-student-book",
       "unit": 7,
+      "lesson": 1,
+      "bookTitleAr": "إثبات توازي المستقيمات وتعامدها",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u7_l1",
+      "score": null,
+      "matchedBy": "hand-checked: the book prints this lesson as unit 7 lesson 1 and its one figure (p076, parallel and perpendicular lines) was confirmed by looking at it; the row was missing, so the figure went unused"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 7,
       "lesson": 2,
       "bookTitleAr": "متوازي الأضلاع",
       "kbLessonId": "kbl-g8-math-s2-nccd-u7_l2",
