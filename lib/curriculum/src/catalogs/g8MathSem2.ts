@@ -9,8 +9,8 @@
  *
  * Mirrors g9MathSem1.ts's shape deliberately — same field names, same
  * builder functions — so a caller that already knows that catalog needs
- * nothing new to consume this one. Semester 1 has not been attached yet, so
- * there is no g8MathSem1.ts to pair with this file.
+ * nothing new to consume this one. Semester 1 is g8MathSem1.ts (units 1-4);
+ * this book continues the numbering at unit 5.
  */
 
 import raw from '../data/iqra_curriculum_g8_math_sem2.json' with { type: 'json' };

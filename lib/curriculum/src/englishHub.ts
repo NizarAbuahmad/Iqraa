@@ -71,6 +71,7 @@ export const MIN_HUB_WORDS = 4;
  */
 export const GRAMMAR_ONLY_LESSONS: readonly string[] = [
   'kbl-g9-eng-s1-nccd-u2_l3',
+  'kbl-g9-eng-s1-nccd-u4_l7',
   'kbl-g9-eng-s2-nccd-u7_l1',
   'kbl-g9-eng-s2-nccd-u7_l2',
   'kbl-g9-eng-s2-nccd-u8_l5',

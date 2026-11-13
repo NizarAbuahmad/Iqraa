@@ -17,6 +17,7 @@ import {
   hasExtractedText,
   type Passage,
 } from '../passages.ts';
+import { getObjectivesForUnit } from '../objectives.ts';
 
 const CIRCLE = 'kbu-math-s1-nccd-u2';
 const TRIG = 'kbu-math-s1-nccd-u3';
@@ -152,6 +153,46 @@ describe('passagesForUnit', () => {
     // to ever tag a document this way.
     assert.deepEqual(passagesForUnit({ unitId: 'kbu-eng-agri-s1-nccd-u1' }), []);
     assert.deepEqual(passagesForUnit({ unitId: 'not-a-unit' }), []);
+  });
+
+  it('finds a unit\'s pages from its lesson titles when the book prints no objectives', () => {
+    // Grade 9 Islamic Studies prints no learning outcomes, so a unit-wide paper
+    // and the exam generator — both call with no `terms` — searched with nothing
+    // and got no pages for 8 of 8 units, while a single lesson (which passes its
+    // title) found them. The unit's own lesson titles are the description left.
+    const unit = 'kbu-g9-islamic-s1-nccd-u1';
+    assert.ok(hasExtractedText('g9-islamic-s1-student-book'));
+    const ps = passagesForUnit({ unitId: unit, limit: 4, quotableOnly: true });
+    assert.ok(ps.length > 0, 'a unit with extracted text and no objectives still gets pages');
+    for (const p of ps) assert.equal(p.sourceId, 'g9-islamic-s1-student-book');
+    // Page 4 is the contents page, which lists every lesson title in the book
+    // and so outscored the unit's own pages for every unit before it was skipped.
+    assert.ok(!ps.some(p => p.page === 4), 'the contents page is not a passage');
+    // Unit 1 is PDF pages 6-33 by that contents page; unit 4 repeats unit 1's
+    // lesson types (Surat al-Isra', recitation), whose pages used to leak in.
+    for (const p of ps) assert.ok(p.page >= 6 && p.page <= 33, `page ${p.page} is outside unit 1`);
+  });
+
+  it('never serves the front matter, and keeps the last unit in its own pages', () => {
+    // Page 3 is the book's introduction, which names every unit's topics; it
+    // was once returned as a unit-2 source. Unit 4 is PDF pages 82 on.
+    for (const n of [1, 2, 3, 4]) {
+      for (const p of passagesForUnit({ unitId: `kbu-g9-islamic-s1-nccd-u${n}`, limit: 4, quotableOnly: true })) {
+        assert.ok(p.page > 5, `unit ${n} got front-matter page ${p.page}`);
+      }
+    }
+    const last = passagesForUnit({ unitId: 'kbu-g9-islamic-s1-nccd-u4', limit: 4, quotableOnly: true });
+    assert.ok(last.length > 0);
+    for (const p of last) assert.ok(p.page >= 82, `page ${p.page} is outside unit 4`);
+  });
+
+  it('gives a unit nothing rather than a sibling unit\'s pages when its titles are not its own', () => {
+    // Grade 6 Arabic heads every unit with the same skill names («أستمع
+    // بانتباه»…) and prints no outcomes, so only the title fallback describes a
+    // unit. Unit 2 has no two words of its own on any page: it gets nothing,
+    // where scoring on the shared names handed it other units' pages.
+    assert.equal(getObjectivesForUnit('kbu-g6-arabic-s1-nccd-u2').length, 0, 'still a fallback unit');
+    assert.deepEqual(passagesForUnit({ unitId: 'kbu-g6-arabic-s1-nccd-u2', limit: 4, quotableOnly: true }), []);
   });
 
   it('knows which sources have text', () => {
