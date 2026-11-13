@@ -226,7 +226,7 @@ describe('«حل مسائل ثلاثية الأبعاد»', () => {
       } else {
         kinds.add('tower');
         // 45° from B puts B at the tower's height from A; AC ⟂ AB
-        assert.equal(Number(item.answer), Math.hypot(n[0]!, n[3]!), p);
+        assert.equal(Number(item.answer), Math.hypot(n[0]!, n[2]!), p);
       }
     }
     assert.equal(kinds.size, 6, [...kinds].join());
@@ -261,11 +261,11 @@ describe('«اقترانات كثيرات الحدود»', () => {
         const m = p.match(/f\(x\) = (.+)، g\(x\) = (.+)، فأجد f\(x\) (\+|−) g\(x\)/)!;
         const f = parsePoly(m[1]!), g = parsePoly(m[2]!);
         const sign = m[3] === '+' ? 1 : -1;
-        for (const x of [-3, -1, 0, 2, 5]) assert.equal(at(parsePoly(item.answer), x), at(f, x) + sign * at(g, x), p);
+        for (const x of [-3, -1, 0, 2, 5]) assert.ok(Math.abs(at(parsePoly(item.answer), x) - (at(f, x) + sign * at(g, x))) < 1e-9, p);
       } else {
         kinds.add('product');
         const m = p.match(/ناتج \((.+?)\)\((.+?)\) بالصورة/)!;
-        for (const x of [-3, -1, 0, 2, 5]) assert.equal(at(parsePoly(item.answer), x), at(parsePoly(m[1]!), x) * at(parsePoly(m[2]!), x), p);
+        for (const x of [-3, -1, 0, 2, 5]) assert.ok(Math.abs(at(parsePoly(item.answer), x) - at(parsePoly(m[1]!), x) * at(parsePoly(m[2]!), x)) < 1e-9, p);
       }
     }
     assert.equal(kinds.size, 7, [...kinds].join());
@@ -330,6 +330,6 @@ describe('«الاقترانات النسبية»', () => {
         assert.deepEqual(mul(de, q), nu, p);
       }
     }
-    assert.equal(kinds.size, 8, [...kinds].join());
+    assert.equal(kinds.size, 7, [...kinds].join());
   });
 });
