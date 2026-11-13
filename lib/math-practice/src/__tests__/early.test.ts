@@ -988,13 +988,15 @@ describe('money, time and measurement: answers recomputed', () => {
     for (const item of draws('am_pm')) {
       const p = item.promptAr!, n = nums(p), a = Number(item.answer);
       if (has(p, 'كم ساعة')) { ampm.add('duration'); assert.equal(a, 12 - n[0]! + n[2]!); }
-      else if (has(p, 'بنظام 24 ساعة. كم تكون')) { ampm.add('from 24'); assert.equal(a + 12, n[0]); assert.ok(a >= 1 && a <= 11); }
+      else if (has(p, 'بنظام 24 ساعةً. كم تكون')) { ampm.add('from 24'); assert.equal(a + 12, n[0]); assert.ok(a >= 1 && a <= 11); }
       else if (has(p, 'في أي ساعة بعد الظهر')) { ampm.add('ends'); assert.equal(a, n[0]! + n[2]! - 12, p); assert.ok(a >= 1 && a <= 11 && n[2]! >= 3, p); }
       else { ampm.add('to 24'); assert.equal(a, n[0]! + 12); }
     }
     assert.equal(ampm.size, 4);
     for (const item of draws('calendar')) {
-      const p = item.promptAr!, n = nums(p), a = item.answer;
+      // One and two are written as words («بعد يوم واحد», «في أسبوعين»), never «1 يومًا».
+      const p = item.promptAr!, a = item.answer;
+      const n = nums(p).length ? nums(p) : [/يومين|أسبوعين/.test(p) ? 2 : /واحد/.test(p) ? 1 : NaN];
       if (has(p, 'كم يومًا')) assert.equal(Number(a), n[0]! * 7); else if (has(p, 'كم أسبوعًا')) assert.equal(Number(a) * 7, n[0]); else { const i = DAYS.findIndex(d => p.includes(`اليوم ${d}`)); assert.equal(a, DAYS[(i + n[0]!) % 7]); }
     }
   });

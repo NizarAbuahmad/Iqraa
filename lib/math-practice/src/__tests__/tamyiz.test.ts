@@ -30,6 +30,8 @@ const NOUNS: Array<[string, string, string]> = [
   ['أكواب', 'كوبًا', 'كوب'],
   ['أمتار', 'مترًا', 'متر'], ['سنتيمترات', 'سنتيمترًا', 'سنتيمتر'], ['كيلوغرامات', 'كيلوغرامًا', 'كيلوغرام'],
   ['غرامات', 'غرامًا', 'غرام'], ['لترات', 'لترًا', 'لتر'], ['مليلترات', 'مليلترًا', 'مليلتر'],
+  // Grade 3's calendar printed «بعد 9 يومًا» and «في 2 أسابيع» (found 2026-11-13).
+  ['أيام', 'يومًا', 'يوم'], ['أسابيع', 'أسبوعًا', 'أسبوع'], ['ساعات', 'ساعةً', 'ساعة'],
 ];
 
 describe('counted nouns', () => {
@@ -43,7 +45,9 @@ describe('counted nouns', () => {
           const ar = topic.make({ rng, diff: (['easy', 'medium', 'hard'] as const)[i % 3], grade }).ar;
           for (const forms of NOUNS) {
             // A whole number not inside a decimal («2.50 دينارًا» is read as an amount).
-            const re = new RegExp(`(?<![\\d.])(\\d+) (${forms.join('|')})(?![\\u0600-\\u06FF])`, 'g');
+            // The noun ends at anything but a letter or a mark: U+0600-U+0620 are
+            // punctuation, and counting «؟» as a letter hid every noun that ends a question.
+            const re = new RegExp(`(?<![\\d.])(\\d+) (${forms.join('|')})(?![\\u0621-\\u065F\\u0670-\\u06FF])`, 'g');
             for (const m of ar.matchAll(re)) {
               const n = Number(m[1]);
               if (n < 3) continue;

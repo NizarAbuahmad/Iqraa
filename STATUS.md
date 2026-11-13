@@ -70,6 +70,7 @@ Checked 2026-10-22:
 
 ## Open
 
+- 2026-11-13 — Grade 3: «صفحة الكتاب» withdrawn for Arabic S2, Maths S2 and Science S2 (wrong pages) until the three books are re-rendered from the PDFs; no Grade 3 book text is extracted, so live generation has no book passages for Grade 3 («Grade 3 review…» in the log)
 - 2026-10-31 — Homework submissions record their author (migration `0022`)
 - 2026-10-31 — Homework project submission — teacher screens (phase 3: the switch, the handed-in list, one project, «حذف المشروع»; what is left open is the item «Homework projects: what the teacher's app still cannot do…» below)
 - 2026-10-31 — Teacher can clear one student's project (the API; the app's button is the teacher-screens entry above)

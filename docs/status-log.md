@@ -10,6 +10,61 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 3 review: wrong book pages withdrawn, calendar Arabic fixed, gaps listed — 2026-11-13
+
+A review of all 15 Grade 3 catalogs (60 units, 254 lessons) against the books, the figures and what the
+generators produce. NCCD was unreachable from the session (connection reset on every request), so the books were
+read through what the repo already holds: the rendered lesson pages and figure crops in the public R2 bucket.
+
+**Fixed.**
+- **«صفحة الكتاب» showed the wrong pages for 29 Grade 3 lessons; those entries are removed** from
+  `knowledge-base/book-page-links.json`, so those lessons show no pages rather than another lesson's. Checked by
+  opening the images: **Arabic S2** (24 lessons) is shifted by one lesson throughout — the speaking lesson shows
+  the listening lesson, reading shows speaking, writing shows reading (u6_l1 had no entry at all); **Maths S2**
+  (all 4 entries) — u8_l6 opens on the unit-8 project, u9_l3 on the unit-9 opener, u11_l4 «اللتر والمللتر» on
+  «الكيلومتر», u12_l4 on lesson 3; **Science S2** u4_l2 runs 17 pages into the Earth lesson («الخريطة
+  الجغرافية»). All came from `render_lesson_pages.py` placing lessons by title in our own copy. The images in R2
+  are untouched (nothing deletes them; the app simply no longer asks for them). Re-render these three books with
+  the PDFs (`IQRAA_PDF_ROOT=… python scripts/render_lesson_pages.py`, then `upload-book-pages-r2`) and open page 1
+  of a few lessons before uploading.
+- **The calendar and money stems' Arabic** (`lib/math-practice/src/early.ts`): «ما اليوم بعد 9 يومًا؟»,
+  «كم يومًا في 2 أسابيع؟», «بعد 1 يومًا» now read «بعد 9 أيام», «في أسبوعين», «بعد يوم واحد»; «لدفع 100 دينارًا»
+  reads «100 دينار»; «بنظام 24 ساعة» reads «ساعةً». The agreement test (`tamyiz.test.ts`) never saw any of it: its
+  look-ahead counted «؟» (U+061F) as a letter, so a counted noun that ends a question was skipped. It now stops
+  at letters and marks only, and lists days, weeks and hours.
+
+**Verified.** Red first: the tightened `tamyiz.test.ts` failed on 46 calendar stems and 2 banknote stems, then
+passed after the fix; `lib/math-practice` 949/949; `pnpm run typecheck`; the mobile suite. 16 further lessons'
+first pages (Arabic S1, Islamic S1/S2, PE S1/S2, arts, social S1/S2) were opened and are on the right lesson. All
+85 lesson figures of the three Grade 3 books that have figures answer 200 from R2, and the per-lesson contact
+sheets were read: each figure sits under its own lesson (the `p003*` front-matter crops are correctly unmapped).
+The offline maths generator was run for all 70 maths lessons the way the quiz screen calls it (grounded by
+lesson id, all 70 grounded to themselves): 66 produce a quiz and worksheet, and ~660 quiz items were read by hand
+— every answer key is correct.
+
+**Not fixed — gaps, for the owner.**
+- **No Grade 3 book text reaches the live model.** Grade 3 has no row in `g10_sources.json` and no
+  `extracted/g3-*.json` (Grades 4-6 have 32-41 each), so live generation for every Grade 3 lesson is grounded on
+  the catalog summary alone — for Arabic, the lesson title alone (title-only catalogs). Needs the PDFs (tracks A-B
+  of `docs/adding-a-book.md`).
+- **Figures exist for 3 of 15 books** (Science S1/S2, Social S2); Maths, Arabic, Islamic, PE, arts and Social S1
+  have none — the contents-route placement did not reproduce their catalogs (2026-09-19). **Book pages:** Maths
+  S1, Science S1 and both English books have none; Social S1 lacks u2_l2 and u3_l2, arts lacks u2_l10. Social S2
+  now has 2 of 9.
+- **English is unit-level** (2 lessons per unit, «Vocabulary & Grammar» / «Listening & Speaking»), S1 built from
+  the teacher's book; the book's per-unit lessons are not in the catalog (its own `known_gaps`).
+- **Offline (no live AI) works for maths only**: every non-maths Grade 3 lesson answers «No offline question
+  bank», by design; 4 maths lessons have no bank either (u1_l7 «الأرقام الهندية», u7_l6 and u8_l6 problem-solving,
+  u9_l8 «الكسور والقسمة»). Some items fit their lesson loosely: u3_l4 «الطرح مع وجود أصفار» draws mostly
+  subtractions without zeros, u6_l2 «الزوايا» asks in degrees (whether the Grade 3 book uses degrees was not
+  checked).
+- **Learning outcomes**: only Maths and English carry objectives; the other 11 catalogs record why in
+  `known_gaps` (the student books print none).
+- **Not checked:** whether NCCD's 2026-2027 semester-1 editions (the catalog's `pdfUrl`s) changed any lesson —
+  every Grade 3 page and figure here is from our older copy; the live AI path (no model call was made).
+
+No «ما الجديد» entry: wrong pages withdrawn and a grammar fix, not a feature.
+
 ## Today's setup nudge no longer says "no plan" about a plan that exists — 2026-11-05
 
 A teacher added a pacing plan from the Today nudge «أضف الخطة» and the nudge kept saying «لا توجد خطة زمنية». Not a
