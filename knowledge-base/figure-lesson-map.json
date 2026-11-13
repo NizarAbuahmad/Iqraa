@@ -3087,7 +3087,7 @@
       "kbLessonId": "kbl-g7-eng-s2-nccd-u6_l7",
       "score": 1,
       "matchedBy": "book-opener-title",
-      "why": "Offset by 4 (S2 units are 5-8, not 6-10 like the other grades) AND lesson-remapped. Both Grade 7 books PRINT 1,2,3,5,6,8,9,10,11, but only the S1 catalog carries those numbers; the S2 catalog renumbers them 1..9. The two are positionally identical — checked title by title against u4/u7 — so the join here is the printed number's POSITION. Mapping l9 to l9 would file «English in action» photos under «Writing»."
+      "why": "Offset by 4 (S2 units are 5-8). CORRECTED NOTE (Grade 7 audit, 2026-11-13): the book prints lessons 1,2,3,5,6,8,9,10,11 and the S2 catalog KEEPS those numbers (u6_l9 «اللغة في الاستخدام», u7_l11 «الكتابة: مقابلة»); it does not renumber them 1..9. So this entry and (3,7) point at u6_l7 / u7_l7, which do not exist, and the index's p027 (2,9) and p043 (3,11) are shown nowhere. They are left unreachable on purpose: neither PNG is in the public bucket, and the app has no fallback for a figure that fails to load. To fix: upload both (upload-figures-r2), then change these two entries to (2,9) → kbl-g7-eng-s2-nccd-u6_l9 and (3,11) → kbl-g7-eng-s2-nccd-u7_l11 and regenerate bookFigureAssets.ts."
     },
     {
       "sourceId": "g7-english-s2-student-book",
