@@ -60,22 +60,26 @@ function subjectName(item: LibraryItem, lang: string): string {
   return subject ? (lang === 'ar' ? subject.nameAr : subject.name) : item.subjectId;
 }
 
+/** The item's grade by name, or its id when the catalog does not list it. */
+function gradeName(item: LibraryItem, lang: string): string {
+  const grade = getVisibleGrades().find(g => g.id === item.gradeId);
+  return grade ? (lang === 'ar' ? grade.nameAr : grade.name) : item.gradeId;
+}
+
 /** Every lesson of one subject in one grade, in book order. */
 function lessonsOf(subjectId: string, gradeId: string) {
   return getUnitsForSubjectGrade(subjectId, gradeId).flatMap(u => getLessonsForUnit(u.id));
 }
 
 /**
- * Where an item is filed, in words: subject, then lesson or semester. The list
- * showed raw ids («mathematics · kbl-math-s1-nccd-u1_l1»), so an admin could
- * not see that an edit had moved anything.
+ * Where an item is filed, in words: subject, then lesson. The list showed raw
+ * ids («mathematics · kbl-math-s1-nccd-u1_l1»), so an admin could not see
+ * that an edit had moved anything.
  */
-function placeName(item: LibraryItem, lang: string, semesterLabels: readonly [string, string]): string {
+function placeName(item: LibraryItem, lang: string): string {
   const lesson = item.lessonId ? getLessonById(item.lessonId) : undefined;
   const parts = [subjectName(item, lang)];
-  const ar = lang === 'ar';
-  if (item.lessonId) parts.push(lesson ? (ar ? lesson.titleAr : lesson.titleEn) : item.lessonId);
-  else if (item.semester) parts.push(semesterLabels[item.semester - 1]!);
+  if (item.lessonId) parts.push(lesson ? (lang === 'ar' ? lesson.titleAr : lesson.titleEn) : item.lessonId);
   return parts.join(' · ');
 }
 
@@ -86,7 +90,6 @@ export default function LibraryAdminScreen() {
   const { user } = useAuth();
   const params = useLocalSearchParams<{ gradeId?: string }>();
   const align = isRTL ? 'right' : 'left';
-  const semesterLabels = [t('libraryAdminScopeS1'), t('libraryAdminScopeS2')] as const;
 
   const grades = getVisibleGrades();
   const [gradeIdx, setGradeIdx] = useState(() => Math.max(0, grades.findIndex(g => g.id === params.gradeId)));
@@ -102,7 +105,10 @@ export default function LibraryAdminScreen() {
   const lessonGradeId = editing?.gradeId ?? gradeId;
   const lessonSubjectId = editing?.subjectId ?? subjectId;
   const lessons = useMemo(() => lessonsOf(lessonSubjectId, lessonGradeId), [lessonSubjectId, lessonGradeId]);
-  const [scope, setScope] = useState<'all' | 'semester-1' | 'semester-2' | 'lesson'>('all');
+  // A whole subject or one lesson. There was a «الفصل الأول/الثاني» scope too,
+  // dropped on 2026-11-13: nothing a teacher sees read it (no filter, no badge),
+  // so tagging an item with a semester changed nothing.
+  const [scope, setScope] = useState<'all' | 'lesson'>('all');
   const [lessonIdx, setLessonIdx] = useState(0);
   const [category, setCategory] = useState<LibraryCategory>('infographic');
   const [title, setTitle] = useState('');
@@ -152,8 +158,7 @@ export default function LibraryAdminScreen() {
     setCategory(item.category);
     setThumbnailUrl(item.thumbnailUrl ?? '');
     setThumbnailFailed(false);
-    const s = item.semester;
-    setScope(s === 1 ? 'semester-1' : s === 2 ? 'semester-2' : item.lessonId ? 'lesson' : 'all');
+    setScope(item.lessonId ? 'lesson' : 'all');
     // The picker shows the item's own lesson. -1 when the KB no longer has it:
     // the picker is then blank and saving keeps the id it already had.
     setLessonIdx(item.lessonId ? lessonsOf(item.subjectId, item.gradeId).findIndex(l => l.id === item.lessonId) : 0);
@@ -191,7 +196,9 @@ export default function LibraryAdminScreen() {
       gradeId,
       subjectId,
       lessonId: scope === 'lesson' ? (lessons[lessonIdx]?.id ?? editing?.lessonId ?? null) : null,
-      semester: scope === 'semester-1' ? (1 as const) : scope === 'semester-2' ? (2 as const) : null,
+      // Always none: saving an edit also clears a semester tag left from before
+      // the option went, so no item carries a filing nobody can see or change.
+      semester: null,
       category,
       titleAr: title.trim(),
       description: description.trim(),
@@ -261,7 +268,10 @@ export default function LibraryAdminScreen() {
       destructive: true,
     });
     if (!ok) return;
-    if (await deleteLibraryItem(item.id)) reload();
+    if (!(await deleteLibraryItem(item.id))) return;
+    // Deleting the item being edited left the form in edit mode, and its next save was a PATCH to a 404.
+    if (item.id === editingId) cancelEdit();
+    reload();
   };
 
   const input: TextStyle[] = [
@@ -285,7 +295,7 @@ export default function LibraryAdminScreen() {
         // Grade and subject are not editable: PATCH cannot move an item, and
         // pickers that looked editable here saved nothing.
         <Text style={[styles.hint, { color: colors.mutedForeground, textAlign: align, marginBottom: 8 }]}>
-          {t('libraryAdminEditPlace', subjectName(editing, lang))}
+          {t('libraryAdminEditPlace', `${gradeName(editing, lang)} · ${subjectName(editing, lang)}`)}
         </Text>
       ) : (
         <>
@@ -311,7 +321,7 @@ export default function LibraryAdminScreen() {
       )}
       <Text style={label}>{t('libraryAdminScope')}</Text>
       <View style={[styles.chips, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        {(['all', 'semester-1', 'semester-2', 'lesson'] as const).map(s => (
+        {(['all', 'lesson'] as const).map(s => (
           <Pressable
             key={s}
             onPress={() => setScope(s)}
@@ -320,7 +330,7 @@ export default function LibraryAdminScreen() {
             style={[styles.chip, { backgroundColor: s === scope ? ACCENT : colors.muted }]}
           >
             <Text style={{ color: s === scope ? palette.primaryForeground : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
-              {s === 'all' ? t('libraryAdminScopeAll') : s === 'semester-1' ? t('libraryAdminScopeS1') : s === 'semester-2' ? t('libraryAdminScopeS2') : t('libraryAdminScopeLesson')}
+              {s === 'all' ? t('libraryAdminScopeAll') : t('libraryAdminScopeLesson')}
             </Text>
           </Pressable>
         ))}
@@ -467,7 +477,7 @@ export default function LibraryAdminScreen() {
           <View style={{ flex: 1 }}>
             <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }}>{item.titleAr}</Text>
             <Text style={[styles.hint, { color: colors.mutedForeground, textAlign: align }]}>
-              {t(CATEGORY_LABEL[item.category] ?? 'libraryCatDocument')} · {placeName(item, lang, semesterLabels)}
+              {t(CATEGORY_LABEL[item.category] ?? 'libraryCatDocument')} · {placeName(item, lang)}
             </Text>
           </View>
           <Pressable onPress={() => startEdit(item)} hitSlop={8} accessibilityLabel={t('libraryAdminEditSave')}>

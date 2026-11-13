@@ -455,20 +455,24 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
     () => narrowToSelection(getVisibleGrades(), user?.gradeIds),
     [user?.gradeIds],
   );
-  const [pickedGrade, setGrade] = useState<string>(gradeId || grades[0]?.id || '');
+  // The chips show grades highest level first, and the default is the first
+  // chip — not `grades[0]`, whose catalog order puts Grade 1 before Grade 2.
+  const chipGrades = useMemo(() => gradesForChips(grades), [grades]);
+  const firstGrade = chipGrades[0]?.id ?? '';
+  const [pickedGrade, setGrade] = useState<string>(gradeId || firstGrade);
   // The tab stays mounted while the teacher edits their grades on the profile
   // page, so the initial pick can name a grade they no longer teach — and with
   // one grade left there is no picker to move off it. Fall back to the first
   // grade they do teach; an explicit grade param is still honoured.
   const grade =
-    pickedGrade === gradeId || grades.some(g => g.id === pickedGrade) ? pickedGrade : (grades[0]?.id ?? '');
+    pickedGrade === gradeId || grades.some(g => g.id === pickedGrade) ? pickedGrade : firstGrade;
   // A student has no grade picker of their own, so with no grade param the
   // library opened on the catalog's first grade — Grade 10 for a Grade 9
   // student. Start on the grade their class is in, unless they (or a param)
   // already chose one.
   useEffect(() => {
     if (!isStudent || gradeId) return;
-    const initial = grades[0]?.id || '';
+    const initial = firstGrade;
     let cancelled = false;
     void getMyGradeIds().then(ids => {
       const own = preferredGrade(grades, ids);
@@ -499,25 +503,37 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
   // twice. The rows are kept with the grade they belong to, so a grade still
   // loading reads as loading, and a failed load is said — an unreachable
   // server used to look exactly like an empty library.
+  // «أعد المحاولة» bumps `reloadKey` rather than calling the loader itself, so
+  // the focus effect owns every request and cancels it: a retry fired by hand
+  // could answer after the teacher had moved to another grade and overwrite
+  // that grade's rows. A failure is kept with its grade for the same reason,
+  // and so the notice does not flash on the next grade before it loads.
   const [uploaded, setUploaded] = useState<{ gradeId: string; rows: LibraryItem[] } | null>(null);
-  const [uploadFailed, setUploadFailed] = useState(false);
+  const [failedGrade, setFailedGrade] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const loadUploaded = useCallback(() => {
     let live = true;
-    setUploadFailed(false);
     void listLibraryChecked(grade).then(rows => {
       if (!live) return;
-      if (rows) setUploaded({ gradeId: grade, rows });
-      else setUploadFailed(true);
+      if (rows) {
+        setUploaded({ gradeId: grade, rows });
+        setFailedGrade(null);
+      } else setFailedGrade(grade);
     });
     return () => { live = false; };
-  }, [grade]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reloadKey re-runs the load on purpose
+  }, [grade, reloadKey]);
   useFocusEffect(loadUploaded);
+  const retryUploads = () => {
+    setFailedGrade(null);
+    setReloadKey(k => k + 1);
+  };
   const haveUploads = uploaded?.gradeId === grade;
   const uploadedRows = useMemo(() => (haveUploads && uploaded ? uploaded.rows : []), [haveUploads, uploaded]);
   // A refocus that fails while this grade's rows are already on screen keeps
   // them and says nothing; only a grade with nothing loaded reports the failure.
-  const uploadsLoading = !haveUploads && !uploadFailed;
-  const uploadsFailed = !haveUploads && uploadFailed;
+  const uploadsFailed = !haveUploads && failedGrade === grade;
+  const uploadsLoading = !haveUploads && !uploadsFailed;
 
   const allItems = useMemo(
     () =>
@@ -610,14 +626,17 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
   // matches a row's lesson title and subject name, in both languages: a teacher
   // types the lesson they are preparing, and a sheet filed under it rarely
   // repeats that in its own title.
-  const searchExtra = useCallback(
-    (item: ResourceItem) => {
+  // Built once per list, not per keystroke: `getLessonById` walks the whole KB.
+  const searchText = useMemo(() => {
+    const byKey = new Map<string, string>();
+    for (const item of items) {
       const lesson = item.lessonId ? getLessonById(item.lessonId) : undefined;
       const subject = item.subjectId ? gradeSubjectsAll.find(s => s.id === item.subjectId) : undefined;
-      return `${lesson ? `${lesson.titleAr} ${lesson.titleEn}` : ''} ${subject ? `${subject.nameAr} ${subject.name}` : ''}`;
-    },
-    [gradeSubjectsAll],
-  );
+      byKey.set(item.key, `${lesson ? `${lesson.titleAr} ${lesson.titleEn}` : ''} ${subject ? `${subject.nameAr} ${subject.name}` : ''}`);
+    }
+    return byKey;
+  }, [items, gradeSubjectsAll]);
+  const searchExtra = useCallback((item: ResourceItem) => searchText.get(item.key) ?? '', [searchText]);
   const shown = useMemo(
     () => filterResources(items, { lessonId: lessonId ?? undefined, query, alsoMatch: searchExtra }),
     [items, lessonId, query, searchExtra],
@@ -786,7 +805,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
         {grades.length > 1 ? (
           <ChipRow
             isRTL={isRTL}
-            options={gradesForChips(grades).map(g => ({ id: g.id, label: lang === 'ar' ? g.nameAr : g.name }))}
+            options={chipGrades.map(g => ({ id: g.id, label: lang === 'ar' ? g.nameAr : g.name }))}
             active={grade}
             onPick={id => id && pickGrade(id)}
           />
@@ -854,7 +873,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
               {t('libraryLoadFailed')}
             </Text>
             <Pressable
-              onPress={() => { Haptics.selectionAsync(); loadUploaded(); }}
+              onPress={() => { Haptics.selectionAsync(); retryUploads(); }}
               accessibilityRole="button"
               hitSlop={8}
               style={styles.noticeBtn}
