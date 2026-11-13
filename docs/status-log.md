@@ -60,6 +60,35 @@ pass, 0 fail, 10 skipped; curriculum test 915/915; `verify` 0 errors.
 
 No «ما الجديد» entry: corrections to which picture a lesson shows, not a feature.
 
+## «المصادر وإخلاء المسؤولية»: a public sources and disclaimer screen — 2026-11-13
+
+For the Play review: the app has to say it is not a government app, and where its curriculum comes from.
+
+**What changed.** A new screen, `app/legal/sources.tsx` at `/legal/sources`: the store listing's disclaimer and
+two links that open in the browser (`openExternal`: a new tab on web, the in-app browser on Android), the NCCD
+textbooks page and the Ministry's site. It sits under `/legal`, so `PUBLIC_ROUTES` already lets a signed-out
+visitor in. Links to it: the foot of login and register (`SourcesAuthLink`, under «اقترح ميزة») and Settings →
+«حول إقرأ». A plain-text line «المصدر: المركز الوطني لتطوير المناهج» (`SourceCredit`) sits under every
+textbook-figure panel (`BookFiguresPanel`, five generator screens and the student exam) and at the end of the
+curriculum lesson page. It is not a link on purpose: on the exam and generator screens a tap that left would cost
+a sitting or an unsaved paper. All text is in `constants/sources.ts`.
+
+**The brand in the disclaimer is «إقرأ», not «اقرأ».** The listing's draft as given used «اقرأ»; CI fails that in
+the app's source («Brand is «إقرأ»»), and CLAUDE.md names «إقرأ» as the brand. The Play listing should match the app.
+
+**Version code:** no repo change. `eas.json` has `appVersionSource: "remote"` and `autoIncrement: true` on
+`production`, so a production EAS build takes the next code by itself. `app.json` `version` stays `1.6.0`
+(nothing native changed).
+
+**No «ما الجديد» entry:** a disclaimer is not something to try, and a dialog for it would be noise.
+
+**Verified.** `sourcesDisclaimer.test.ts` (the exact Arabic disclaimer and URLs, the route is public, the three
+links and the two credits are wired); `pnpm run typecheck`; the whole mobile suite (9,229 tests, 0 fail).
+In a browser (Expo web, 390 px, signed out): login's foot shows the link, tapping it opens the screen, the
+screen renders in light and dark, and a source link opens a new tab. **Not verified:** on an Android device;
+Settings and the credit line in a browser (both need a signed-in account; they typecheck and the test pins
+that they are wired); the two government sites themselves (this sandbox cannot reach them).
+
 ## A content report can say what is wrong — 2026-11-11
 
 The admin's «تقرير محتوى جديد» email of 2026-11-11 (a Grade 4 Arabic lesson plan, the second Grade 4 Arabic report in four

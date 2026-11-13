@@ -28,6 +28,7 @@ import { guardianConfigStale, switchNeedsAgeConfirmation } from '@/services/sign
 import { resetGuardianConfigCache, useGuardianConfig } from '@/services/guardianConfig';
 import type { GlyphId } from '@/constants/glyphs';
 import { SPACE, TYPE } from '@/constants/theme';
+import { SOURCES_ROUTE, sourcesCopy } from '@/constants/sources';
 import { PUSH_PREF_ROWS, showsFamilyPushPrefs, withPref, type PushPrefCategory, type PushPrefs } from '@/services/pushPrefs';
 import { fetchPushPrefs, savePushPref } from '@/services/pushPrefsApi';
 
@@ -484,6 +485,14 @@ export default function SettingsScreen() {
             isRTL={isRTL}
             colors={colors}
             onPress={() => router.push('/legal/terms' as any)}
+          />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <SettingRow
+            icon="library-outline"
+            label={sourcesCopy(lang).title}
+            isRTL={isRTL}
+            colors={colors}
+            onPress={() => router.push(SOURCES_ROUTE as any)}
           />
         </View>
 
