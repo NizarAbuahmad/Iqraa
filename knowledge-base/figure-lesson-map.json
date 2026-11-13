@@ -7193,6 +7193,33 @@
       "kbLessonId": "kbl-g4-pe-s1-nccd-u3_l3",
       "score": 1,
       "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-voc-s2-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "التَّعْبيرُ اللَّفْظِيُّ وَغَيْرُ اللَّفْظِيِّ",
+      "kbLessonId": "kbl-g4-voc-s2-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-voc-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "التَّفْكيرُ الإِبْداعِيُّ",
+      "kbLessonId": "kbl-g4-voc-s2-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-voc-s2-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "أَهَمِّيَّةُ رِيادَةِ الأَعْمالِ",
+      "kbLessonId": "kbl-g4-voc-s2-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
     }
   ],
   "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Units 1-4 are semester 1 and units 5-8 are semester 2, so the printed unit number also identifies which student book a figure came from — `check_semester` in scripts/extract_book_figures.py enforces that. Note the maths PDFs in attached_assets are named backwards: the file called `1st_semester` is the second-semester book. Source ids follow the books' contents, not their filenames."
