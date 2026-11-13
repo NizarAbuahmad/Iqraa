@@ -105,17 +105,17 @@ describe('maths lessons: covered or refused, never off-topic filler', () => {
 // ── A short paper says so ────────────────────────────────────────────────────
 
 describe('a paper shorter than asked for carries the reason', () => {
-  // A lesson whose bank family is thin: `circle` holds five items. (This was
-  // «قانون الجيوب» until its family grew to ten, 2026-11-13.)
-  const thin = mathLessons.find(l => gradeOf(l) === 10 && l.titleAr.includes('معادلة الدائرة'))!;
+  // A lesson whose bank family is small (`vectors`: 5 items). «قانون الجيوب» was
+  // the example until 2026-11-13; it has its own generator now and never runs short.
+  const thinLesson = mathLessons.find(l => gradeOf(l) === 10 && l.titleAr.includes('المتجهات في المستوى الإحداثي'))!;
   const addition = mathLessons.find(l => gradeOf(l) === 2 && l.titleAr.replace(/[ً-ْ]/g, '') === 'الجمع')!;
 
   it('finds the lessons it needs', () => {
-    assert.ok(thin && addition, 'the catalog changed');
+    assert.ok(thinLesson && addition, 'the catalog changed');
   });
 
   it('a quiz that outruns the lesson\'s bank reports requested and produced', async () => {
-    const quiz = await service.generateQuiz({ ...mathReq(thin), numQuestions: 9 });
+    const quiz = await service.generateQuiz({ ...mathReq(thinLesson), numQuestions: 9 });
     assert.ok(quiz.shortfall, 'no shortfall on a short quiz');
     assert.equal(quiz.shortfall!.requested, 9);
     assert.equal(quiz.shortfall!.produced, quiz.questions.length);
@@ -123,7 +123,7 @@ describe('a paper shorter than asked for carries the reason', () => {
   });
 
   it('a worksheet that outruns the bank reports it, counting only the questions that exist', async () => {
-    const sheet = await service.generateWorksheet({ ...mathReq(thin), numQuestions: 12, questionTypes: ['multiple_choice', 'short_answer'] });
+    const sheet = await service.generateWorksheet({ ...mathReq(thinLesson), numQuestions: 12, questionTypes: ['multiple_choice', 'short_answer'] });
     assert.ok(sheet.shortfall, 'no shortfall on a short worksheet');
     // A worked example, when the paper opens with one, is one of the items the
     // picker's total counts — so it is one of the items produced. It is not a

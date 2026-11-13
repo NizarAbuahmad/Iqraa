@@ -88,9 +88,10 @@ describe('the worked example is the lesson\'s own', () => {
 
   it('practice takes the lesson\'s own items first, within the tier asked', () => {
     for (let k = 0; k < 20; k++) {
-      // Medium holds c-m1 (circle equation) and c-m2 (an arc): the lesson's own wins.
-      const q = takeConcreteMath('short_answer', 'معادلة الدائرة', null, 'medium', 'ar', 4, new Set(), false)!;
-      assert.match(q.text, /معادلة الدائرة/, q.text);
+      // Medium holds v-m1 (adding vectors) and v-m2 (dot product): the lesson's own wins.
+      // («معادلة الدائرة» was the example until it got its own generator, `grade10.ts`.)
+      const q = takeConcreteMath('short_answer', 'الضرب القياسي', null, 'medium', 'ar', 4, new Set(), false)!;
+      assert.match(q.text, /الضرب القياسي/, q.text);
       const arc = takeConcreteMath('short_answer', 'الأقواس والقطاعات', null, 'medium', 'ar', 4, new Set(), false)!;
       assert.match(arc.text, /قطاع|قوس/, arc.text);
     }
