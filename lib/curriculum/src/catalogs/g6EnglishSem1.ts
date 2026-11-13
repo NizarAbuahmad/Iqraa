@@ -7,7 +7,7 @@
  * © Pearson Education Limited and York Press, so all six sources are registered
  * `authority: 'third-party'` and none of their text is ever quoted. What is
  * carried is structure only: unit names as the contents page prints them, and
- * the nine-lesson sequence the Teacher's Book's "Unit walkthrough" states.
+ * the twelve-lesson sequence the Teacher's Book's "Unit walkthrough" states.
  *
  * `objectives` and `vocabulary` are deliberately empty. The Teacher's Book does
  * print per-unit objectives, vocabulary and grammar in its "Scope and sequence"
@@ -18,9 +18,12 @@
  * — nccd sources — and every source here is third-party. The units and lessons
  * are for browsing and picking; nothing will generate from the book's text.
  *
- * The nine lessons are not extrapolated from one unit: the walkthrough (pp. 8-9)
- * presents the template as the shape of every unit, with lessons 4 and 7 named
- * as the Activity Book companions to 3 and 6.
+ * The twelve lessons are not extrapolated from one unit: the Teacher's Book
+ * says «12 lessons» a unit (p. 9) and its walkthrough (pp. 8-12) presents the
+ * template as the shape of every unit, with lessons 4, 7 and 12 named as the
+ * Activity Book companions to 3, 6 and 11. Lessons 10 (Literacy) and 11
+ * (Writing) were missing until the 2026-11-13 Grade 6 audit, which read past
+ * p. 9; lesson 2 is «Team Talk» in the books, not «Fun Talk».
  *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */
