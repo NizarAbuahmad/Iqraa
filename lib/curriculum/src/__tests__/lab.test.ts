@@ -22,7 +22,7 @@ import {
 } from '../lab.ts';
 import { lessonKbId } from '../curriculumIds.ts';
 import { GRADES, SUBJECTS } from '../catalog.ts';
-import { getExternalResource } from '../external.ts';
+import { EXTERNAL_RESOURCES, getExternalResource } from '../external.ts';
 
 interface CatalogLesson {
   id: string;
@@ -74,6 +74,17 @@ const SLUG_BY_SUBJECT: Record<string, string> = {
 };
 
 describe('the shipped lab manifest', () => {
+  it('lists every licensed science image and video, and never a simulation', () => {
+    const LAB_SUBJECTS = new Set(['chemistry', 'physics', 'biology', 'earth-science', 'science']);
+    const pointedAt = new Set(LAB_ITEMS.flatMap(i => (i.kind === 'external' ? [i.externalId] : [])));
+    const missing = EXTERNAL_RESOURCES.filter(
+      r => LAB_SUBJECTS.has(r.subjectId) && (r.kind === 'image' || r.kind === 'video') && !pointedAt.has(r.id),
+    ).map(r => r.id);
+    assert.deepEqual(missing, [], `science media with no lab row: ${missing.join(', ')}`);
+    const sims = EXTERNAL_RESOURCES.filter(r => r.kind === 'simulation' && pointedAt.has(r.id)).map(r => r.id);
+    assert.deepEqual(sims, [], `a simulation reaches the Lab outside releasedVirtualLab: ${sims.join(', ')}`);
+  });
+
   it('is structurally valid', () => {
     assert.deepEqual(validateLabItems(), []);
   });
