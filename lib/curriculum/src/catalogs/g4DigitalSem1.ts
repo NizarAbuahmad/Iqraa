@@ -12,6 +12,10 @@
  * in the order the activity book's contents page prints them (pages 4-6 of
  * the 149-page PDF).
  *
+ * The book covers the whole year: units 6-10 (blocks 4-6 and the last two
+ * projects) belong to semester 2 and live in g4DigitalSem2.ts since
+ * 2026-11-13. This file carries units 1-5.
+ *
  * Title-only: the activity book's table of contents is everything that was
  * read. There is no per-lesson content — `main_idea_ar`/`objectives`/
  * `vocabulary` are empty throughout, same as g5DigitalSem1.

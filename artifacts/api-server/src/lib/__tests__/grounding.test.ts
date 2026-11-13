@@ -52,6 +52,22 @@ describe("groundingFor", () => {
     assert.ok(g.sources.every(s => s.sourceId.startsWith("chem-")), "a maths book answered a chemistry unit");
   });
 
+  it("grounds on the picked lesson's own pages when the app sends its id", () => {
+    // Grade 4 maths S1 unit 3: «قسمة مضاعفات 10, 100, 1000» is student-book
+    // pp. 50-52. The unit id alone ranks the unit's plan pages first.
+    const unitId = "kbu-g4-math-s1-nccd-u3";
+    const lessonId = "kbl-g4-math-s1-nccd-u3_l1";
+    const pages = (g: ReturnType<typeof groundingFor>) => (g?.sources ?? []).map(s => `${s.sourceId}:${s.page}`);
+    const picked = groundingFor({ unitId, lessonId }, true);
+    assert.ok(picked?.sources.some(s => s.sourceId === "g4-math-s1-student-book" && s.page >= 50 && s.page <= 52));
+    assert.notDeepEqual(pages(picked), pages(groundingFor({ unitId }, true)));
+    // A lesson from another unit changes nothing.
+    assert.deepEqual(
+      pages(groundingFor({ unitId, lessonId: "kbl-g4-math-s1-nccd-u1_l1" }, true)),
+      pages(groundingFor({ unitId }, true)),
+    );
+  });
+
   it("ignores a unit id that is not one", () => {
     // The KB's legacy rows carry ids like `kbu-chem-1`. Falling back to the
     // topic is right; treating the string as a unit would find nothing and

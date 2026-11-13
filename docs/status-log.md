@@ -115,6 +115,137 @@ build + tests 2899/2899; repo `pnpm run typecheck` clean; `math-practice`
 counted «أوجد ضعف/نصف العدد…» as one kind) was fixed by making doubling and
 halving distinct word problems.
 
+## Grade 4 review: every book's lessons are in; retrieval finds a lesson's own pages; figures and page links on the wrong lesson removed — 2026-11-13
+
+Asked: review the Grade 4 subjects — are all the books' topics in, do generators get the right material, are the
+books' images used properly. 17 catalogs (maths, science, Arabic, Islamic, social studies and vocational, two semesters
+each; English two; digital, creative arts and PE one each) were read against the extracted book text, the R2 book-page
+images and every figure contact sheet. No PDF was reachable (nccd.gov.jo resets the connection from the cloud
+container; the PDFs are not in the public bucket), so nothing was re-extracted or re-rendered.
+
+**Coverage.** All 313 lessons of the 17 catalogs are in the books and every lesson the books print is in the catalogs,
+in the book's order: units, lesson titles, every Qur'an verse range, the transcribed main ideas and vocabulary. Science
+S1 really is 4 units / 9 lessons; its S2 numbering 6–10 is the book's. Additions: Grade 4 maths S2 u9_l5/u9_l6 gain
+the estimation objectives the book prints on pp. 99 and 103, u7_l6 the term «أعداد عشرية متكافئة» (p. 51); Arabic S1's
+five «أبني لغتي» lessons, identical rows until now, each gain its unit's grammar competency from the «(1.5)» block
+(pp. 7, 33, 59, 85, 111); science S1 unit 4 gains its printed «الفكرة العامة» (p. 67, the old gap had looked at p. 68)
+and a false known_gap about the contents page went. The maths S1 catalog records that the extracted S1 teacher guide
+is a longer 2023 edition (extra «المضاعفات» and «الشبكات» lessons, other numbering).
+
+**Retrieval (`passagesForUnit`, all grades).** Measured on the 242 Grade 4 lessons whose student-book pages are known:
+before, 83 got one of their own pages among the four passages a generator is sent and 26 got none; the rest got the
+unit opener and the guide's unit plan, identical for every lesson of a unit. Three causes, three changes:
+the lesson's own title, key terms and outcomes now weigh 8× a unit-wide term (`LESSON_WEIGHT`); a title is read down
+to three letters with a stop list, because «آدم», «طرح», «جمع» are what name a lesson; and, in a book that never spells
+a term correctly, the term also matches its mid-word lam-alef reversal («صلاة» is «صالة» 44 times and «صلاة» never in
+the Grade 4 Islamic student books, so no prayer lesson found its pages). The reversal is per book and skips a final
+«لا», after a review found «ثلاث» → «ثالث» and «ولا» → «وال» matching nearly every page. The lesson is the request's `lessonId` (the app already sent it; `groundingFor` ignored it)
+or an exact title inside the unit. After: 152 of 234 Grade 4 lessons, 15 empty; all grades 363 → 540 of 2168 with
+no grade worse. Pinned in `passages.test.ts` («passagesForUnit for one lesson») and `grounding.test.ts`; the feature tests fail on
+the previous code.
+
+**Figures and book pages.** Removed from lessons, after viewing each crop: two Unit 4 opener photos on the social
+«القوانين والأنظمة», the Unit 6 opener on «الحقيقة والرأي», seven decorative unit-opener crops and three sliced crops
+in vocational S1, the violinist on the qanun lesson and six duplicate or text-only crops in creative arts, and in
+science a car clip-art, an album graphic, a butterfly fragment, a periscope review box, an empty organiser, half a sun,
+a text-overlay opener and a bare orbit circle (30 PNGs deleted with their index entries). Moved to their own lesson:
+vocational «ألوان الخضراوات والفواكه» (u4_l2 → u4_l1), the science volume cylinders (u4_l2 → u4_l1), the Sun–Earth
+model (u6_l2 → u7_l1), a circuit question (u9_l2 → u9_l1). `book-page-links.json` lost the entries that showed another
+lesson's pages — vocational S2 u2_l1, u3_l2, u3_l3; social S1 u4_l5; arts u3_l4; PE u1_l3, u2_l1 — and three were cut
+to the pages that are theirs (maths S2 u9_l3 91–92, PE u1_l2 10–12, PE u3_l3 50–53). That file is generated
+(`render_lesson_pages.py` from a page map); re-running it from the same map brings the wrong ranges back.
+
+**Verified.** `verify` 0 errors; curriculum, mobile and api-server suites and the monorepo typecheck (results in the
+PR). **Not verified / left open — needs the PDFs or a decision:**
+- **Re-OCR** the character-scrambled text of `g4-social-s1/s2-student-book`, `g4-voc-s1/s2-student-book`,
+  `g4-math-s1-exercise-book`, `g4-arabic-s2-exercise-book` (≈0.3–3.6 «على» per 1000 Arabic words against 10–18 in
+  clean books; the quality gates passed them). Social lessons mostly get no book text because of it.
+- **PE has no text at all**: no `g4-pe` source registered, so PE generation is never grounded in the book.
+- ~~Digital filed entirely under semester 1~~ — done, see below.
+- **Missing figures**: maths, Arabic, Islamic, English, digital, PE and vocational S2 have no crops at all; reviewers
+  listed the lessons that most need them (angles, protractor, symmetry, fraction and decimal models, Venn diagrams;
+  the food pyramid; vocational S2 tool photos). Re-cropping the sliced ones that were kept is also open.
+- **Book-page ranges to re-render**: the removed entries above, maths S2 u9_l4–l6 (none), the three maths S2 concept
+  activities that sit on the previous lesson (pp. 22, 37, 51), and the unit-end spill of every book's last lesson
+  into the next unit's opener.
+- **Moved (owner's decision, same PR): Grade 4 digital units 6–10 are semester 2.** The activity book covers the
+  year («ثلاث لبنات تعلّم لكل فصل دراسي», p. 3; blocks 4–6 cite semester-2 science and maths units, pp. 82, 92, 102), so
+  `iqra_curriculum_g4_digital_sem2.json` / `g4DigitalSem2.ts` / `book-digital-4-s2` / `kb-digital-4-s2` now hold
+  u6–u10 (13 lessons) with the book's numbers, and semester 1 keeps u1–u5 (14). The book's two sources carry the bank
+  tag `g4-digital-s2` too, so semester-2 units read the same book (light lands on guide p. 50 and book p. 82).
+  `book-digital-4-s2` is appended to `MVP_BOOK_IDS`. **The 13 lessons' ids changed** from `kbl-g4-digital-s1-nccd-u6…`
+  to `kbl-g4-digital-s2-nccd-u6…` and there is no redirect: anything stored under an old id (a pooled generation, a
+  pacing-plan row, a saved material) no longer resolves to a lesson. Not checked how many such rows production holds.
+- English unit numbers are one higher than the book's («Welcome» is u1); vocational S1 `main_idea_ar` holds the review
+  question, not the opener's «الفكرة الرئيسة», in 14 of 15 lessons; vocational S2 U5/U6 `general_idea_ar` are copies of
+  their first lesson's; the hadith lessons do not carry their hadith; Islamic objectives could come from the guides'
+  «مخطط الوحدة» tables. None was changed here.
+
+## «المصادر وإخلاء المسؤولية»: a public sources and disclaimer screen — 2026-11-13
+
+For the Play review: the app has to say it is not a government app, and where its curriculum comes from.
+
+**What changed.** A new screen, `app/legal/sources.tsx` at `/legal/sources`: the store listing's disclaimer and
+two links that open in the browser (`openExternal`: a new tab on web, the in-app browser on Android), the NCCD
+textbooks page and the Ministry's site. It sits under `/legal`, so `PUBLIC_ROUTES` already lets a signed-out
+visitor in. Links to it: the foot of login and register (`SourcesAuthLink`, under «اقترح ميزة») and Settings →
+«حول إقرأ». A plain-text line «المصدر: المركز الوطني لتطوير المناهج» (`SourceCredit`) sits under every
+textbook-figure panel (`BookFiguresPanel`, five generator screens and the student exam) and at the end of the
+curriculum lesson page. It is not a link on purpose: on the exam and generator screens a tap that left would cost
+a sitting or an unsaved paper. All text is in `constants/sources.ts`.
+
+**The brand in the disclaimer is «إقرأ», not «اقرأ».** The listing's draft as given used «اقرأ»; CI fails that in
+the app's source («Brand is «إقرأ»»), and CLAUDE.md names «إقرأ» as the brand. The Play listing should match the app.
+
+**Version code:** no repo change. `eas.json` has `appVersionSource: "remote"` and `autoIncrement: true` on
+`production`, so a production EAS build takes the next code by itself. `app.json` `version` stays `1.6.0`
+(nothing native changed).
+
+**No «ما الجديد» entry:** a disclaimer is not something to try, and a dialog for it would be noise.
+
+**Verified.** `sourcesDisclaimer.test.ts` (the exact Arabic disclaimer and URLs, the route is public, the three
+links and the two credits are wired); `pnpm run typecheck`; the whole mobile suite (9,229 tests, 0 fail).
+In a browser (Expo web, 390 px, signed out): login's foot shows the link, tapping it opens the screen, the
+screen renders in light and dark, and a source link opens a new tab. **Not verified:** on an Android device;
+Settings and the credit line in a browser (both need a signed-in account; they typecheck and the test pins
+that they are wired); the two government sites themselves (this sandbox cannot reach them).
+## A content report can say what is wrong — 2026-11-11
+
+The admin's «تقرير محتوى جديد» email of 2026-11-11 (a Grade 4 Arabic lesson plan, the second Grade 4 Arabic report in four
+days) said only *that* a paper was flagged. The report carried no reason: `ai_artifact_reports.reason` existed since the
+table was made, but `reportVariant` never wrote it and neither route accepted it, so it was `""` on every row.
+
+**What changed.** «بلّغ عن مشكلة» now opens a sheet (`components/ui/ReportProblemSheet.tsx`, replacing the bare confirm on
+the shared result row and on Slides) with an optional box, «ما المشكلة؟ (اختياري)». Empty is still one tap. The reason goes
+in the body of `POST /generate/variants/:id/retire` (`reportRequestBody`, sent only when non-empty), is normalised by
+`lib/reportReason.ts` (non-string or blank → none, control characters dropped, cut to 500 — the client box has the same
+`maxLength`), stored in the existing `reason` column (**no migration**), quoted in both blocks of the admin email
+(escaped, line breaks kept) and returned by `GET /moderation/artifact-reports`, where the card shows it above «عرض المحتوى».
+A failed send leaves the sheet open with the text still in it.
+
+**Verified.** Red/green: `reportReason.test.ts`, `artifactReportEmail.test.ts` (reason in both blocks, absent when empty,
+markup escaped), mobile `reportReason.test.ts`; `artifactReportReason.test.ts` scans the route → store → notification →
+list wiring, and was shown to fail when the reason was dropped from the notification call. `pnpm run typecheck`; api-server
+build + suite (2,913 pass, 0 skipped).
+
+**Not verified / limits.** The sheet and the admin card were **not** opened in a browser or on a device: a pooled result
+needs a live API and database. Nothing here exercises Postgres — the `reason` insert and the admin select are checked by
+type and by source scan only. The **student** report (`POST /student/lesson-explanation/:variantId/report`) still sends no
+reason, so its rows stay `""`; it would need the same sheet on the student screen. A second report by the same teacher on
+the same open artifact is still treated as a duplicate and does not update the first one's reason. The push to admins is
+unchanged (kind and lesson only); the reason is in the email and on the card. Reports filed before this change have no
+reason and show none.
+
+**Also in this PR: the E2E job is pinned to `ubuntu-24.04`.** The smoke test (`.github/workflows/e2e.yml`) failed twice on
+this PR before any test ran: `playwright install --with-deps chromium` ran apt against the Ubuntu 26.04 («resolute»)
+mirrors and could not resolve `archive.ubuntu.com`, `security.ubuntu.com` or `azure.archive.ubuntu.com` (exit 100 after
+~10 minutes), on two different runners. The last green E2E runs (Nov 5 and Nov 9) predate it. Nothing in the report-reason
+diff touches that workflow. The pin is the smallest change and affects only this job (the other workflows do not run apt).
+**Verified:** on the pinned runner the smoke test installed the browser and passed (about 3 minutes, 2026-11-13), so 24.04
+reaches the mirrors that 26.04 could not. **Not verified:** that `ubuntu-latest` itself had rolled to 26.04 (inferred from
+the apt log; the pin makes it moot) or that the DNS failure is gone for good rather than absent that day. E2E is not a
+required check, so this never gated merging.
+
 ## Today's setup nudge no longer says "no plan" about a plan that exists — 2026-11-05
 
 A teacher added a pacing plan from the Today nudge «أضف الخطة» and the nudge kept saying «لا توجد خطة زمنية». Not a
