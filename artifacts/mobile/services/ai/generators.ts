@@ -1423,10 +1423,12 @@ export class MockAIService extends AIService {
     const lessonType = docs.present ? null : lessonTypeForId(req.lessonId);
     // How much a child can be asked to do: Grades 1–3 close aloud and get one
     // short task at home. The lesson's own book decides, else the request's grade.
-    const band = gradeBandFor(kb && kb.id === req.lessonId ? kb : null, req.grade);
+    // The lesson the request names by id — not one `groundedKb` found by title.
+    const namedKb = kb && kb.id === req.lessonId ? kb : null;
+    const band = gradeBandFor(namedKb, req.grade);
     // An Arabic reader's lesson is titled by its skill («أستمع بانتباه وتركيز»);
     // its homework is about the unit's theme instead.
-    const unitTheme = kind === 'arabic' && lessonType && kb?.id === req.lessonId ? getUnitForLesson(kb)?.[lang === 'ar' ? 'titleAr' : 'titleEn']?.trim() : undefined;
+    const unitTheme = kind === 'arabic' && lessonType && namedKb ? getUnitForLesson(namedKb)?.[lang === 'ar' ? 'titleAr' : 'titleEn']?.trim() : undefined;
     const hwTopic = unitTheme && !/^(الوحدة|Unit\s*\d)/.test(unitTheme) ? unitTheme : topic;
     // A first generation is variant 0 — the plan as it has always been. A
     // regenerate may draw either wording of the five style-owned sections;
