@@ -36,7 +36,7 @@ import { MARKS_BY_COMPETENCY, competencyForBlooms, type CompetencyKey } from "./
 import type { BookSupplied } from "./bookQuestions.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
 import { variationBlock } from "../../lib/variation.ts";
-import { firstGradeClauseEn } from "../../lib/firstGrade.ts";
+import { firstGradeClauseEn, firstGradeTypeNotesEn } from "../../lib/firstGrade.ts";
 import { figureFormatEn } from "../../lib/figurePrompt.ts";
 import { figureConsistentWith, resolveFigure } from "@workspace/figure";
 
@@ -352,7 +352,12 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
       ]
       : []),
     // Grade 1: six-year-olds learning to read (`firstGrade.ts`); empty for any other grade.
-    ...(req.gradeId === "grade-1" ? [firstGradeClauseEn({ gradeId: req.gradeId, subjectId: req.objectives[0]?.subjectId }, "paper").trim()] : []),
+    ...(req.gradeId === "grade-1"
+      ? [
+        firstGradeClauseEn({ gradeId: req.gradeId, subjectId: req.objectives[0]?.subjectId }, "paper").trim(),
+        firstGradeTypeNotesEn(req.assessmentTypes),
+      ].filter(Boolean)
+      : []),
     "",
     "Return JSON only: {\"questions\": [ … ]}. No prose, no markdown fence.",
   ].join("\n");

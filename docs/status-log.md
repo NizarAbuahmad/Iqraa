@@ -143,6 +143,19 @@ maths questions were checked by hand by a sub-agent and re-checked by script: **
      («مفردات الدروس»).
    - A plan from the teacher's uploaded file, for Grade 1, is the Grade 1 plan with the file named in materials and
      introduction and the file's concepts as the objectives («أن يتعرّف الطفل «الجذر» ويسمّيه»).
+10. **A Grade 1 evaluation holds only types a six-year-old can answer.** The new-evaluation picker offered all eight
+    types for every grade, with short answer ticked by default, and the API took them all. Now
+    `FIRST_GRADE_EVALUATION_TYPES` (`lib/exam-paper`, shared by app and API) is multiple choice, true/false,
+    matching, fill in the blank and a practical task. Short answer, open-ended and problem solving ask for written
+    sentences or working, so they are out:
+    - the picker lists only those five for a Grade 1 book, and turns the default ticks into choice alone
+      (`services/evaluationTypes.ts`);
+    - `POST /evaluations` drops the others, and refuses with `grade1_types` if nothing is left;
+    - generation applies the same rule, so an older Grade 1 evaluation is generated with what it kept, or choice and
+      true/false, with a note saying which types were left out;
+    - the evaluation prompt describes each of the paper's types for a six-year-old (`firstGradeTypeNotesEn`):
+      three options of a letter, word, number or ★ group; one letter, word or number in a blank; a task done with
+      objects while the teacher watches.
 
 **Verified.** Each new test red before its fix, green after. `pnpm run typecheck`; math-practice suite; api-server
 `build` + `test`; mobile suite. **Not verified:** a live model's Grade 1 output with the new clause (no live run from
@@ -150,9 +163,9 @@ the session) — after merge, generate one Grade 1 Arabic letter plan, worksheet
 stems by a native reviewer.
 
 **Still open, found by the sweep:**
-- The new maths generators ignore difficulty (as most of `early.ts` does). A Grade 1 evaluation paper is told it
-  is for six-year-olds but still uses the evaluation's own question types; a live model's Grade 1 output for any of
-  the item 9 prompts has not been read.
+- The new maths generators ignore difficulty (as most of `early.ts` does). A live model's Grade 1 output for the
+  item 9 and 10 prompts has not been read. An older Grade 1 evaluation's stored types are narrowed when it is
+  generated, not rewritten in the database.
 - **Maths, still to check against the PDF:** the book's own number-chart direction (the generator no longer depends
   on it) and whether «الأنماط الهندسية» uses «معين».
 - **Grade 1 books need ingesting** (text, figures, book pages) from a machine that can reach the PDFs —

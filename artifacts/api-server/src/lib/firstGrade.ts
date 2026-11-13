@@ -174,3 +174,22 @@ export function firstGradeClauseEn(b: GradeFields, use: FirstGradeUse, opts: Cla
   const lead = opts.ifLesson ? "\nIf the deck is a lesson or a review for this class, follow this:" : "";
   return `${lead}\n${BASE_EN[use]}${group}${subject ? `\n${SUBJECT_EN[subject]}` : ""}\n${OVERRIDE_EN}`;
 }
+
+/**
+ * How each question type a Grade 1 evaluation may hold looks for a six-year-old
+ * (`FIRST_GRADE_EVALUATION_TYPES` in `@workspace/exam-paper`). The evaluation
+ * prompt lists the lines for the paper's own types, after the "paper" clause.
+ */
+export const FIRST_GRADE_TYPE_NOTES_EN: Readonly<Record<string, string>> = {
+  multiple_choice: "multiple_choice: three options, each a letter, a word, a number or a group of symbols (★ ★ ★); the teacher reads the question aloud.",
+  true_false: "true_false: one short sentence the teacher reads aloud.",
+  matching: "matching: three or four pairs, each side a letter, a word, a number or a group of symbols.",
+  fill_blank: "fill_blank: the blank takes one letter, one word or one number, never a phrase.",
+  practical_task: "practical_task: something the child does with objects while the teacher watches (count out 7 counters, point to the triangle, sort the cards); the teacher marks it.",
+};
+
+/** The type lines for a Grade 1 evaluation of these types; empty when none applies. */
+export function firstGradeTypeNotesEn(types: readonly string[]): string {
+  const lines = types.map(t => FIRST_GRADE_TYPE_NOTES_EN[t]).filter((x): x is string => !!x);
+  return lines.length ? ["In this Grade 1 paper each type looks like this:", ...lines.map(l => `- ${l}`)].join("\n") : "";
+}
