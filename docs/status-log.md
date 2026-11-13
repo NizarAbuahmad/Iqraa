@@ -32,6 +32,20 @@ read through what the repo already holds: the rendered lesson pages and figure c
   u1_l2 to p21, four pages into «تنظيم الوقت» and onto the unit-2 opener; they are cut back to p6-13 and p14-19,
   checked against the images (p13 is lesson 1's «التقويم», p14 opens «الدرس الثاني», p20 is the unit-2 opener).
   Cutting back needs no upload: images 1..k are already in the bucket.
+- **Grades 5 and 8, sampled then checked book by book.** Page 1 of three lessons in each of the 29 Grade 5 and
+  Grade 8 books with pages (81 lessons) was opened; 74 were on their lesson. The four books that failed were then
+  opened lesson by lesson (49 lessons), every page of the long ranges:
+  - Grade 8 Arabic S2: u8_l4 (writing) showed lesson 5, «أبني لغتي» — removed; the other 13 are right.
+  - Grade 8 Arabic S1: u5_l5 «الفعل المضارع» was the unit's «حصاد الوحدة» — removed; the lesson itself is p129-131,
+    inside u5_l4's images, so u5_l4 is cut back to p126-128 (its writing lesson). The other 23 are right.
+  - Grade 5 social S1: u1_l2 ran onto lesson 3's opener (cut to p15-20); u1_l3 ran through the unit review and
+    three lessons of unit 2 (cut to p22-27); u2_l1 «الملك وصلاحياته» showed lesson 3's «صلاحيات مجلس الوزراء» onward
+    (the lesson is p30-34) — removed. u4_l3 (p88-92, the end of the lesson and the unit review) is kept.
+  - Grade 5 social S2: u5_l3 opened on lesson 2 (its own start, p18, is image 5), u6_l1 «مفاهيم اقتصادية» showed the
+    services lesson, u8_l2 «التراث الثقافي» opened on lesson 1 «الثقافة» (its own start, p87, is image 6) — all three
+    removed. A range can only be cut from its end without re-rendering, so a lesson whose right pages begin
+    inside its folder, or sit in another lesson's folder, goes until it is re-rendered from the PDF.
+  - Not opened: the other 25 books' lessons beyond the three sampled each.
 - **A test now catches a range that swallows another lesson** (`bookPage.test.ts`): no lesson's pages may contain
   the start page of a different lesson as the figure index records it. It failed on exactly these two books before
   the fix. A wider rule, «no two lessons share a page», was tried and dropped: ~30 ranges in Grades 6-10 overlap,
