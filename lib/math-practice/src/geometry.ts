@@ -210,6 +210,50 @@ const circleParts = T('circle_parts', /^الدائره واجزاؤها$/, [6, 6
   return { eq: `${r}`, answer: String(2 * r), wrongs: pos(2 * r, [r, r * r, 4 * r, 3 * r]), ar: `ما طول أطول وتر في دائرة نصف قطرها ${r} سم؟`, en: `What is the length of the longest chord in a circle with radius ${r} cm?` };
 });
 
+/** «7.5» for 15/2, «8» for 16/2. */
+const half = (n: number) => (n % 2 ? `${(n - 1) / 2}.5` : String(n / 2));
+
+/**
+ * Grade 6 «إنشاءات هندسية» (S1 pp. 117-124): the perpendicular bisector cuts a
+ * segment into two congruent parts at a right angle, and an angle bisector cuts
+ * an angle into two congruent angles (the book's question 13: «PQ ينصّف
+ * ∠NPM» — so m∠NPM = 2 m∠QPM). The drawing itself is done with a ruler and
+ * compasses; these are the measures it guarantees.
+ */
+const constructions = T('constructions', /^انشاءات هندسيه$/, [6, 6], ({ rng, diff }) => {
+  const k = pick(rng, [0, 1, 2, 3]);
+  if (k === 0) {
+    const L = int(rng, 4, span(diff, 14, 24, 40)), ans = half(L);
+    return {
+      eq: `AM ${L}`, answer: ans, wrongs: wrongsFrom(ans, [L, 2 * L, half(L + 2)], j => half(L + 2 * Math.abs(j))),
+      ar: `رُسم العمود المنصف للقطعة المستقيمة AB التي طولها ${L} سم، فقطعها في النقطة M. ما طول AM بالسنتيمتر؟`,
+      en: `The perpendicular bisector of segment AB, which is ${L} cm long, meets it at M. How long is AM, in centimetres?`,
+    };
+  }
+  if (k === 1) {
+    const a = 2 * int(rng, 10, span(diff, 45, 70, 85));
+    return {
+      eq: `∠ABC ${a} / 2`, answer: `${a / 2}°`, wrongs: deg(a / 2, [a, 90 - a / 2, 180 - a, a / 2 + 10]),
+      ar: `زاوية ABC قياسها ${a}°، رُسم منصفها BD. ما قياس الزاوية ABD؟`,
+      en: `Angle ABC measures ${a}° and BD is its bisector. What is the measure of angle ABD?`,
+    };
+  }
+  if (k === 2) {
+    const x = int(rng, 10, span(diff, 45, 70, 89));
+    return {
+      eq: `∠QPM ${x} × 2`, answer: `${2 * x}°`, wrongs: deg(2 * x, [x, 90 + x, 180 - 2 * x, 2 * x + 10]),
+      ar: `الشعاع PQ ينصّف الزاوية NPM، وقياس الزاوية QPM يساوي ${x}°. ما قياس الزاوية NPM؟`,
+      en: `Ray PQ bisects angle NPM, and angle QPM measures ${x}°. What is the measure of angle NPM?`,
+    };
+  }
+  const L = int(rng, 4, span(diff, 14, 24, 40));
+  return {
+    eq: `⊥ CD ${L}`, answer: '90°', wrongs: deg(90, [45, 180, 60, L]),
+    ar: `رُسم العمود المنصف للقطعة المستقيمة CD التي طولها ${L} سم. ما قياس الزاوية التي يصنعها العمود المنصف مع القطعة CD؟`,
+    en: `The perpendicular bisector of segment CD, which is ${L} cm long, is drawn. What angle does it make with CD?`,
+  };
+});
+
 const SECTOR_ANGLES = [30, 45, 60, 72, 90, 120, 180, 240, 270];
 /** Survey sizes whose name agrees as «N طالبًا» (last two digits 11–99). */
 const SURVEY_TOTALS = [36, 60, 72, 120, 180, 240, 360];
@@ -1110,6 +1154,33 @@ const medians = T('medians_centroid', /^القطع المتوسطه والارت
   return { eq: `${m}`, answer: String(ans), wrongs: pos(ans, [m / 2, m, k ? m / 3 : (2 * m) / 3, ans + 1, m - 1]), ar: `في المثلث ABC، القطعة المتوسطة من الرأس A طولها ${m} سم، ومركز المثلث G. ما طول ${k ? 'AG' : 'GD (حيث D منتصف BC)'}؟`, en: `In triangle ABC the median from vertex A is ${m} cm long, and G is the centroid. What is the length of ${k ? 'AG' : 'GD (where D is the midpoint of BC)'}?` };
 });
 
+/**
+ * Grade 9 GeoGebra lab «توسع: مثلث القطع المنصفة» (added 2026-11-13): the triangle
+ * the three midsegments make has a quarter of the area and half the perimeter of
+ * the triangle they are drawn in, whatever its shape.
+ */
+const midsegmentTriangle = T('midsegment_triangle', /^(?:معمل برمجيه جيوجبرا (?:توسع )?)?مثلث القطع المنصفه$/, [9, 9], ({ rng, diff }) => {
+  // 0 area of the midsegment triangle; 1 area of the triangle; 2 perimeter; 3 area from coordinates; 4 the ratio
+  const kind = pick(rng, [0, 1, 2, 3, 4]);
+  if (kind === 2) {
+    const a = int(rng, 3, 9), b = int(rng, 3, 9), c = int(rng, Math.abs(a - b) + 1, a + b - 1), h = a + b + c;
+    return { eq: `${2 * a}, ${2 * b}, ${2 * c}`, answer: String(h), wrongs: pos(h, [2 * h, a + b, b + c, a + c, h + a]), ar: `أطوال أضلاع المثلث ABC هي ${2 * a} سم و ${2 * b} سم و ${2 * c} سم. ما محيط مثلث القطع المنصفة له بالسنتمتر؟`, en: `The sides of triangle ABC are ${2 * a} cm, ${2 * b} cm and ${2 * c} cm. What is the perimeter, in cm, of its midsegment triangle?` };
+  }
+  if (kind === 3) {
+    let p = int(rng, 1, 6), v = int(rng, 1, 6);
+    if ((p * v) % 2) v = v === 6 ? 5 : v + 1;
+    const u = int(rng, -3, 6), m = (p * v) / 2;
+    return { eq: `${p}, ${u}, ${v}`, answer: String(m), wrongs: pos(m, [2 * p * v, p * v, (p * v) / 4, 4 * m + 2, m + 1]), ar: `رؤوس المثلث ABC هي A${pt(0, 0)} و B${pt(2 * p, 0)} و C${pt(2 * u, 2 * v)}. ما مساحة مثلث القطع المنصفة له بوحدة المساحة؟`, en: `Triangle ABC has vertices A${pt(0, 0)}, B${pt(2 * p, 0)} and C${pt(2 * u, 2 * v)}. What is the area, in square units, of its midsegment triangle?` };
+  }
+  if (kind === 4) {
+    const shape = pick(rng, [['حاد الزوايا', 'acute'], ['قائم الزاوية', 'right-angled'], ['مختلف الأضلاع', 'scalene']] as const);
+    return { eq: shape[1], answer: '1 : 4', wrongs: ['1 : 2', '1 : 3', '1 : 8'], ar: `في مثلث ${shape[0]}، ما نسبة مساحة مثلث القطع المنصفة إلى مساحة المثلث الأصلي؟`, en: `In a ${shape[1]} triangle, what is the ratio of the area of the midsegment triangle to the area of the original triangle?` };
+  }
+  const m = int(rng, 2, span(diff, 9, 15, 24));
+  if (kind === 1) return { eq: `${m}`, answer: String(4 * m), wrongs: pos(4 * m, [2 * m, 3 * m, 8 * m, m * m, m + 4]), ar: `مساحة مثلث القطع المنصفة للمثلث ABC تساوي ${m} سم². ما مساحة المثلث ABC؟`, en: `The midsegment triangle of triangle ABC has area ${m} cm². What is the area of triangle ABC?` };
+  return { eq: `${4 * m}`, answer: String(m), wrongs: pos(m, [2 * m, 3 * m, 4 * m, 8 * m, m + 1]), ar: `مساحة المثلث ABC تساوي ${4 * m} سم². ما مساحة مثلث القطع المنصفة له؟`, en: `Triangle ABC has area ${4 * m} cm². What is the area of its midsegment triangle?` };
+});
+
 const TRI9: Array<[number, number, number]> = [[3, 4, 5], [5, 12, 13], [8, 15, 17], [7, 24, 25]];
 type Ratio = 'sin' | 'cos' | 'tan';
 const RATIOS: Ratio[] = ['sin', 'cos', 'tan'];
@@ -1383,7 +1454,7 @@ const clockWords = T('time_words', /^قراءه الوقت/, [3, 3], ({ rng }) =
 
 export const GEOMETRY_TOPICS: readonly Topic[] = [
   perimeter, area, composite, parallelogramArea, triangleArea, trapezoidArea, rectPrism,
-  circleParts, sector, circumference, circleArea,
+  circleParts, sector, circumference, circleArea, constructions,
   prismCylinderVolume, pyramidConeVolume, prismCylinderSurface, pyramidConeSurface, sphere,
   angleKind, lineAndPoint, triBySides, triByAngles,
   quadName('quad_name_g5', /^تصنيف الاشكال الرباعيه$/, 5), quadName('quad_name_g6', /^الاشكال الرباعيه$/, 6),
@@ -1393,7 +1464,7 @@ export const GEOMETRY_TOPICS: readonly Topic[] = [
   similarity, pyth,
   reflectLine, translate('translate_g5', /^الانسحاب$/, 5), translate('translate_g6', /^الانسحاب في المستوي الاحداثي$/, 6), reflectAxes, coordPlane5, coordPlane6, rotate,
   dilate('dilate_g7', /^التكبير$/, 7), dilate('dilate_g8', /^التمدد$/, 8),
-  distance, pointLine, proportionalParts, bisector, medians, trigRatios, trigApplications,
+  distance, pointLine, proportionalParts, midsegmentTriangle, bisector, medians, trigRatios, trigApplications,
   circleChords, circleAngles, bearing, sineArea,
   convertGen('units_m', /^المتر والسنتيمتر$/, ['length_m'], [3, 3]), convertGen('units_km', /^الكيلومتر$/, ['length_km'], [3, 3]),
   convertGen('units_mass', /^الغرام والكيلوغرام$/, ['mass'], [3, 3]), convertGen('units_volume', /^اللتر والمليلتر$/, ['volume'], [3, 3]),

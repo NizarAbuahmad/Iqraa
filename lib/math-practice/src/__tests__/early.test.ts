@@ -423,6 +423,9 @@ describe('early arithmetic: answers recomputed', () => {
     for (const id of ['equal_groups_a', 'equal_groups_b']) for (const item of draws(id)) {
       const p = item.promptAr!, n = nums(p), a = Number(item.answer);
       if (has(p, 'كم قلمًا')) assert.equal(a, n[0]! * n[1]!); else if (has(p, 'كم قطعة')) assert.equal(a * n[1]!, n[0]); else assert.equal(a * n[1]!, n[0]);
+      // Number agreement: «2 أقلام» and «25 قطع» are not Arabic (found 2026-11-13).
+      assert.doesNotMatch(p, /(^|[^\d])[12] (أقلام|قطع|مجموعات)/, p);
+      assert.doesNotMatch(p, /(^|[^\d])(1[1-9]|[2-9]\d) قطع(?!ة)/, p);
     }
     for (const grade of [2, 3]) {
       const kinds = new Set<string>();
@@ -904,8 +907,9 @@ describe('money, time and measurement: answers recomputed', () => {
     const din = new Set<string>();
     for (const item of draws('dinar', 300)) {
       const p = item.promptAr!, a = Number(item.answer);
-      const words = (w: string) => (w === 'دينار واحد' ? 1 : w === 'ديناران' ? 2 : Number(w.match(/\d+/)![0]));
+      const words = (w: string) => (w === 'دينار واحد' ? 1 : w === 'ديناران' || w === 'دينارين' ? 2 : Number(w.match(/\d+/)![0]));
       assert.ok(has(p, 'الدينار الواحد = 100 قرش'), p);
+      assert.doesNotMatch(p, /في ديناران/, p); // genitive after a preposition: «في دينارين»
       if (has(p, 'يعيد لها')) { din.add('change'); const price = Number(p.match(/بـ (\d+) قرشًا/)![1]); assert.ok(price >= 11, p); assert.equal(a + price, 100, p); continue; }
       if (has(p, 'ينقصه')) {
         din.add('short');
@@ -921,6 +925,7 @@ describe('money, time and measurement: answers recomputed', () => {
     for (const item of draws('banknotes', 300)) {
       const p = item.promptAr!, a = Number(item.answer);
       const money = (s: string) => (s.includes('دينار واحد') ? 1 : s.includes('ديناران') ? 2 : Number(s.match(/\d+/)![0]));
+      assert.doesNotMatch(p, /(^|[^\d])[12] أوراق/, p); // two notes is «ورقتان», so counts start at 3
       if (has(p, 'كم ورقة')) { const f = money(p.match(/فئة (.+?) تلزم/)![1]!), t = money(p.match(/لدفع (.+?)؟/)![1]!); assert.equal(a * f, t); }
       else if (has(p, 'و ') && has(p, 'أوراق من فئة') && p.split('فئة').length === 3) { const m = p.match(/(\d+) أوراق من فئة (.+?) و (\d+) أوراق من فئة (.+?)\./)!; assert.equal(a, Number(m[1]) * money(m[2]!) + Number(m[3]) * money(m[4]!)); }
       else { const m = p.match(/في (\d+) أوراق نقدية من فئة (.+?)؟/)!; assert.equal(a, Number(m[1]) * money(m[2]!)); }

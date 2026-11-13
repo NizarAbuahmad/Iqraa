@@ -27,6 +27,8 @@ const others = (rng: Rng, ans: string, all: readonly string[]) => shuffle(rng, a
 /** «دينار واحد / ديناران / 5 دنانير / 12 دينارًا» */
 const counted = (n: number, one: string, two: string, few: string, many: string) => (n === 1 ? one : n === 2 ? two : n <= 10 ? `${n} ${few}` : `${n} ${many}`);
 const dinars = (n: number) => counted(n, 'دينار واحد', 'ديناران', 'دنانير', 'دينارًا');
+/** After «في / من / بـ» a dual is genitive: «في دينارين», never «في ديناران». */
+const dinarsAfterPreposition = (n: number) => counted(n, 'دينار واحد', 'دينارين', 'دنانير', 'دينارًا');
 /** «كرة واحدة / كرتان / 5 كرات / 12 كرةً» */
 const balls = (n: number) => (n === 1 ? 'كرة واحدة' : n === 2 ? 'كرتان' : `${n} ${tamyiz(n, 'كرات', 'كرةً', 'كرة')}`);
 /** «45 قرشًا / 7 قروش / 300 قرش» — for 3 or more. */
@@ -739,11 +741,15 @@ const mentalMultiples = (id: string, match: RegExp, add: boolean, grade: number)
   return { eq: `${x}, ${y}`, answer: String(r), wrongs: ints(r, [r * 10, r / 10, add ? x - y : x + y, r + place]), ar: `${x} ${op} ${y} = ___`, en: `${x} ${op} ${y} = ___` };
 });
 
+// Counts start at 3 so «${n} أقلام / ${g} مجموعات» are right as written («2
+// أقلام» is not Arabic: two is a dual, «قلمان»); a total of 11 or more takes the
+// singular — «وُزّعت 25 قطعةً», never «25 قطع».
+const pieces = (n: number) => `${n} ${tamyiz(n, 'قطع', 'قطعةً', 'قطعة')}`;
 const equalGroups = (id: string, match: RegExp) => T(id, match, [2, 2], ({ rng }) => {
-  const g = int(rng, 2, 5), n = int(rng, 2, 6), t = g * n, k = pick(rng, [0, 1, 2]);
+  const g = int(rng, 3, 5), n = int(rng, 3, 6), t = g * n, k = pick(rng, [0, 1, 2]);
   if (k === 0) return { eq: `${g}, ${n}`, answer: String(t), wrongs: ints(t, [g + n, t + g, t - n, g * g]), ar: `${g} مجموعات متساوية، في كل منها ${n} أقلام. كم قلمًا في المجموع؟`, en: `There are ${g} equal groups with ${n} pencils in each. How many pencils are there in all?` };
-  if (k === 1) return { eq: `${t}, ${g}`, answer: String(n), wrongs: ints(n, [t, g, n + 1, t - g]), ar: `وُزّعت ${t} قطع بالتساوي على ${g} مجموعات. كم قطعة في كل مجموعة؟`, en: `${t} pieces are shared equally among ${g} groups. How many pieces are in each group?` };
-  return { eq: `${t}, ${n}`, answer: String(g), wrongs: ints(g, [t, n, g + 1, t - n]), ar: `${t} قطع، وُضع في كل مجموعة ${n} قطع. كم مجموعة تكوّنت؟`, en: `${t} pieces are put into groups of ${n}. How many groups are made?` };
+  if (k === 1) return { eq: `${t}, ${g}`, answer: String(n), wrongs: ints(n, [t, g, n + 1, t - g]), ar: `وُزّعت ${pieces(t)} بالتساوي على ${g} مجموعات. كم قطعة في كل مجموعة؟`, en: `${t} pieces are shared equally among ${g} groups. How many pieces are in each group?` };
+  return { eq: `${t}, ${n}`, answer: String(g), wrongs: ints(g, [t, n, g + 1, t - n]), ar: `${pieces(t)}، وُضع في كل مجموعة ${pieces(n)}. كم مجموعة تكوّنت؟`, en: `${t} pieces are put into groups of ${n}. How many groups are made?` };
 });
 
 const divisionRelation = T('division_relation', /^العلاقه بين القسمه والضرب$|^علاقه القسمه بالضرب$/, [2, 3], ({ rng }) => {
@@ -1076,11 +1082,12 @@ const dinar = T('dinar', /^الدينار$/, [2, 2], ({ rng }) => {
     const price = int(rng, 2, 5), m = 10 * int(rng, 1, 9), have = price * 100 - m;
     return { eq: `${price}, ${have}`, answer: String(m), wrongs: ints(m, [100 - m, m + 100, m + 10, m - 10]), ar: `ثمن لعبة ${dinars(price)}، ومع رامي ${qirsh(have)}. كم قرشًا ينقصه ليشتري اللعبة؟ (الدينار الواحد = 100 قرش)`, en: `A toy costs ${price} dinars and Rami has ${have} qirsh. How many more qirsh does he need to buy it? (1 dinar = 100 qirsh)` };
   }
-  if (k === 0) return { eq: `${d}`, answer: String(d * 100), wrongs: ints(d * 100, [d * 10, d, d * 1000, d * 100 + 100]), ar: `إذا كان الدينار الواحد = 100 قرش فكم قرشًا في ${dinars(d)}؟`, en: `If 1 dinar = 100 qirsh, how many qirsh are in ${d} dinars?` };
+  if (k === 0) return { eq: `${d}`, answer: String(d * 100), wrongs: ints(d * 100, [d * 10, d, d * 1000, d * 100 + 100]), ar: `إذا كان الدينار الواحد = 100 قرش فكم قرشًا في ${dinarsAfterPreposition(d)}؟`, en: `If 1 dinar = 100 qirsh, how many qirsh are in ${d} dinars?` };
   return { eq: `${d * 100}`, answer: String(d), wrongs: ints(d, [d * 10, d + 1, d - 1, d * 100]), ar: `إذا كان الدينار الواحد = 100 قرش فكم دينارًا في ${d * 100} قرش؟`, en: `If 1 dinar = 100 qirsh, how many dinars are in ${d * 100} qirsh?` };
 });
 const banknotes = T('banknotes', /^فئات النقود الورقيه$/, [2, 2], ({ rng }) => {
-  const f = pick(rng, [5, 10, 20]), n = int(rng, 2, 6), g = pick(rng, [1, 5, 10].filter(x => x !== f)), m = int(rng, 2, 4), k = pick(rng, [0, 1, 2]);
+  // 3 or more notes, so «${n} أوراق» is right as written (two would be «ورقتان»).
+  const f = pick(rng, [5, 10, 20]), n = int(rng, 3, 6), g = pick(rng, [1, 5, 10].filter(x => x !== f)), m = int(rng, 3, 4), k = pick(rng, [0, 1, 2]);
   if (k === 0) return { eq: `${f}, ${n}`, answer: String(f * n), wrongs: ints(f * n, [f + n, f * n + f, f * n - n, n]), ar: `كم دينارًا في ${n} أوراق نقدية من فئة ${dinars(f)}؟`, en: `How many dinars are in ${n} banknotes of ${f} dinars?` };
   if (k === 1) return { eq: `${f}, ${n}, ${g}, ${m}`, answer: String(f * n + g * m), wrongs: ints(f * n + g * m, [f + n + g + m, f * n, g * m, f * n + g * m + g]), ar: `مع سلمى ${n} أوراق من فئة ${dinars(f)} و ${m} أوراق من فئة ${dinars(g)}. كم دينارًا معها؟`, en: `Salma has ${n} notes of ${f} dinars and ${m} notes of ${g} dinar${g === 1 ? '' : 's'}. How many dinars does she have?` };
   const total = f * n;

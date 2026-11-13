@@ -1851,6 +1851,130 @@ const expLaws: Topic = {
   },
 };
 
+// ─── Grade 6: measures with decimals, and «solve a simpler problem» ─────────
+//
+// Both lessons follow the Grade 6 S1 student book (pp. 81-84 and 86-87). All
+// arithmetic is done on whole numbers scaled by a power of ten and printed with
+// `fmtDec`, so no float residue reaches a stem or an answer.
+
+/** A whole number from lo to hi that is not a multiple of 10 — a value with a real tenths digit once divided by 10. */
+const notTens = (rng: Rng, lo: number, hi: number) => { const n = int(rng, lo, hi); return n % 10 === 0 ? n + 1 : n; };
+
+/** [big unit, small unit, small units in a big one, «بالمتر المربع», in English, a square-unit name]. */
+const AREA_UNITS: Array<[string, string, number, string, string]> = [
+  ['m', 'cm', 100, 'بالمتر المربع', 'in square metres'],
+  ['cm', 'mm', 10, 'بالسنتيمتر المربع', 'in square centimetres'],
+];
+/** [big unit, small unit, small units in a big one, sizes of the small portion]. */
+const SHARE_UNITS: Array<[string, string, number, number[]]> = [
+  ['L', 'mL', 1000, [125, 200, 250, 320, 400, 500, 750]],
+  ['kg', 'g', 1000, [40, 125, 200, 250, 400, 500, 800]],
+  ['m', 'cm', 100, [12, 15, 24, 25, 30, 40, 60]],
+];
+/** Grams used per item, for the compound-unit problem («2kg, 800g» of flour, 0.4kg a pie). */
+const PER_ITEM_G = [200, 250, 300, 400, 500, 600, 800];
+
+/**
+ * Grade 6 «القياس: تطبيقات العمليات على الأعداد العشرية»: two measures in
+ * different units are brought to one unit, then multiplied («2.5m × 420cm» in
+ * m², a rug's area) or divided («6.5L ÷ 400mL», how many pies from «2kg, 800g»).
+ */
+const decMeasure: Topic = {
+  id: 'dec_measure', match: /^القياس تطبيقات العمليات علي الاعداد العشريه$/, grades: [6, 6],
+  make({ rng, diff }) {
+    const k = pick(rng, [0, 1, 2, 3]);
+    if (k === 0 || k === 1) {
+      // a big-unit length with a tenths digit, times a small-unit length
+      const [U, u, f, inAr, inEn] = k === 1 ? AREA_UNITS[0]! : pick(rng, AREA_UNITS);
+      // a rug stays rug-sized (2-6m by 1.5-4.5m); the bare product may be larger
+      const a10 = k === 1 ? notTens(rng, 21, 59) : notTens(rng, 11, [60, 120, 350][tier(diff)]!);
+      const b = k === 1 ? 10 * int(rng, 15, 45) : f === 100 ? 10 * int(rng, 12, [40, 70, 95][tier(diff)]!) : int(rng, 12, [40, 70, 95][tier(diff)]!);
+      const n = a10 * b, places = f === 100 ? 3 : 2;
+      const ans = fmtDec(n, places);
+      // no conversion; converted by the wrong power of ten; added instead of multiplied
+      const wrongs = wrongsFrom(ans, [fmtDec(n, 1), fmtDec(n, places - 1), fmtDec(a10 * (f / 10) + b, places - 1)], j => fmtDec(n + 10 ** (places - 1) * Math.abs(j), places));
+      const a = fmtDec(a10, 1);
+      if (k === 1) return { eq: `rug ${a}${U} ${b}${u}`, answer: ans, wrongs, ar: `اشترت هناء سجادة مستطيلة الشكل طولها ${a}${U}، وعرضها ${b}${u}. ما مساحة السجادة بالمتر المربع؟`, en: `Hana bought a rectangular rug ${a}${U} long and ${b}${u} wide. What is its area in square metres?` };
+      return { eq: `${a}${U} × ${b}${u}`, answer: ans, wrongs, ar: `أوجد الناتج ${inAr}: ${a}${U} × ${b}${u}`, en: `Find the result ${inEn}: ${a}${U} × ${b}${u}` };
+    }
+    if (k === 2) {
+      // how many small portions fit in a big-unit amount
+      const [U, u, f, sizes] = pick(rng, SHARE_UNITS);
+      const s = pick(rng, sizes);
+      let q10 = 10 * int(rng, 4, [12, 25, 40][tier(diff)]!);
+      if (diff === 'hard' && (5 * s) % 10 === 0) q10 += 5; // half a portion more, while the amount stays whole small units
+      const total10 = q10 * s; // tenths of a small unit, a multiple of 10
+      const A = fmtDec(total10 / 10, String(f).length - 1);
+      const ans = fmtDec(q10, 1);
+      return {
+        eq: `${A}${U} ÷ ${s}${u}`, answer: ans,
+        wrongs: wrongsFrom(ans, [fmtDec(q10, 2), fmtDec(q10 * 10, 1), fmtDec(q10, 3)], j => fmtDec(q10 + 10 * Math.abs(j), 1)),
+        ar: `أوجد الناتج: ${A}${U} ÷ ${s}${u}`, en: `Find the result: ${A}${U} ÷ ${s}${u}`,
+      };
+    }
+    // a compound unit: «2kg, 800g» of flour, a pie uses 0.4kg
+    for (;;) {
+      const g = pick(rng, PER_ITEM_G), c = int(rng, 4, [9, 14, 20][tier(diff)]!), total = c * g;
+      const K = Math.floor(total / 1000), G = total % 1000;
+      if (K === 0 || G === 0) continue;
+      const per = fmtDec(g, 3);
+      return {
+        eq: `${K}kg, ${G}g ÷ ${per}kg`, answer: String(c),
+        wrongs: wrongsFrom(String(c), [Math.floor((K * 1000) / g), Math.round((K * 1000 + G * 10) / g), c * 10]),
+        ar: `لدى طاهٍ ${K}kg, ${G}g من الطحين، ويستهلك صنع الفطيرة الواحدة ${per}kg منه. كم فطيرةً يمكنه أن يصنع؟`,
+        en: `A cook has ${K}kg, ${G}g of flour, and one pie uses ${per}kg of it. How many pies can he make?`,
+      };
+    }
+  },
+};
+
+/**
+ * Grade 6 «خطة حل المسألة: حل مسألة أبسط»: a rate given with awkward decimals
+ * (236.8km in 3.7 hours) is scaled to a new amount (5.85 hours). The book
+ * rounds to a simpler problem first (240km, 4 hours, 6 hours → 360km), then
+ * solves the real one the same way; the simpler problem's answer is the
+ * distractor a pupil reaches by stopping early.
+ */
+const simplerProblem: Topic = {
+  id: 'simpler_problem', match: /^خطه حل المساله حل مساله ابسط$/, grades: [6, 6],
+  make({ rng, diff }) {
+    const k = pick(rng, [0, 1, 2]);
+    if (k === 0) {
+      const r = int(rng, 45, 95), t1 = notTens(rng, 21, 69);
+      const t2 = diff === 'hard' ? 5 * notTens(rng, 21, 179) : 10 * notTens(rng, 15, 89); // hundredths of an hour
+      const d1 = fmtDec(r * t1, 1), d2n = r * t2, ans = fmtDec(d2n, 2);
+      const simple = (Math.round((r * t1) / 100) * 10 / Math.round(t1 / 10)) * Math.round(t2 / 100);
+      return {
+        eq: `${d1}km / ${fmtDec(t1, 1)}h × ${fmtDec(t2, 2)}h`, answer: ans,
+        wrongs: wrongsFrom(ans, [Number.isInteger(simple) ? simple : r * Math.round(t2 / 100), r * Math.round(t2 / 100), fmtDec(r * t1 * t2, 3)], j => fmtDec(d2n + 100 * Math.abs(j) * 5, 2)),
+        ar: `قطع يزيد بشاحنته مسافة ${d1}km في ${fmtDec(t1, 1)} ساعات. كم كيلومترًا يقطع في ${fmtDec(t2, 2)} ساعات إذا سار بالسرعة نفسها؟`,
+        en: `Yazeed drove his truck ${d1}km in ${fmtDec(t1, 1)} hours. How many kilometres will he drive in ${fmtDec(t2, 2)} hours at the same speed?`,
+      };
+    }
+    if (k === 1) {
+      // ρ litres per 100km; distances in tenths of a km, so litres need at most three decimals
+      const rho = int(rng, 5, 12), x1 = notTens(rng, 305, 995), x2 = notTens(rng, 1205, [2995, 4995, 6995][tier(diff)]!);
+      const f1 = fmtDec(rho * x1, 3), f2n = rho * x2, ans = fmtDec(f2n, 3);
+      return {
+        eq: `${f1}L / ${fmtDec(x1, 1)}km × ${fmtDec(x2, 1)}km`, answer: ans,
+        // the simpler problem (distance to the nearest 10km); a power of ten off; the extra distance only
+        wrongs: wrongsFrom(ans, [fmtDec(rho * Math.round(x2 / 100), 1), fmtDec(f2n, 2), fmtDec(rho * (x2 - x1), 3)], j => fmtDec(f2n + 1000 * Math.abs(j), 3)),
+        ar: `تستهلك سيارة ${f1}L من الوقود لقطع مسافة ${fmtDec(x1, 1)}km. كم لترًا من الوقود تستهلك لقطع مسافة ${fmtDec(x2, 1)}km؟`,
+        en: `A car uses ${f1}L of fuel to travel ${fmtDec(x1, 1)}km. How many litres does it use to travel ${fmtDec(x2, 1)}km?`,
+      };
+    }
+    // a price per kg in piastres (even, so any multiple of 50g costs whole fils)
+    const P = 2 * int(rng, 75, 450), m10 = notTens(rng, 11, 49), g2 = 50 * int(rng, 3, 19);
+    const c1 = fmtDec(P * m10, 3), ans = fmtDec((P * g2) / 100, 3);
+    return {
+      eq: `${c1}JD / ${fmtDec(m10, 1)}kg × ${g2}g`, answer: ans,
+      wrongs: wrongsFrom(ans, [fmtDec(P * g2, 2), fmtDec((P * g2) / 10, 3), fmtDec(P, 2)], j => fmtDec((P * g2) / 100 + 10 * Math.abs(j), 3)),
+      ar: `إذا كان سعر ${fmtDec(m10, 1)}kg من الجبن ${c1} دينار، فما سعر ${g2}g من الجبن نفسه بالدينار؟`,
+      en: `If ${fmtDec(m10, 1)}kg of cheese costs ${c1} JD, what does ${g2}g of the same cheese cost, in JD?`,
+    };
+  },
+};
+
 /** Specific titles first; the more general patterns after. */
 export const TOPICS: readonly Topic[] = [
   roundDec, roundWhole, estSumDec,
@@ -1864,6 +1988,7 @@ export const TOPICS: readonly Topic[] = [
   mixedImproper, fracDec, decPlace, pctConv, ratioEquiv, ratioSimplest,
   ratCompare, ratOp('rat_addsub', /جمع الاعداد النسبيه/, ['+', '−']), ratOp('rat_muldiv', /ضرب الاعداد النسبيه/, ['×', '÷']),
   repeating, expLaws,
+  decMeasure, simplerProblem,
   ...ALGEBRA_TOPICS,
   ...GEOMETRY_TOPICS,
   ...STATS_TOPICS,

@@ -12,8 +12,8 @@
     ],
     "provenance_note": "نُقلت الوحداتُ الأربعُ من قائمةِ محتوياتِ كتابِ الطالبِ في 2026-09-15. الوحداتُ مرقَّمةٌ من 5 إلى 8، تُكمِلُ ترقيمَ الفصلِ الأوَّلِ (1-4). تسلسلُ الدروسِ هوَ القالبُ نفسُهُ المنصوصُ عليهِ في دليلِ المعلِّمِ.",
     "known_gaps": [
-      "هذا الملفُّ عناوينُ فقط (title-only)، وهوَ هنا قرارٌ يتعلَّقُ بالحقوقِ لا بالجهدِ. الكتابُ وكتابُ الأنشطةِ ودليلُ المعلِّمِ كلُّها © Pearson Education Limited و York Press، وكلُّها مُسجَّلةٌ authority = third-party، فلا يُقتبَسُ منها نصٌّ. ما نُقِلَ هنا بِنيةٌ مَحضٌ: أسماءُ الوحداتِ كما تطبعُها قائمةُ المحتوياتِ، وتسلسلُ الدروسِ التسعةِ كما ينصُّ عليهِ «Unit walkthrough» في دليلِ المعلِّمِ. objectives و vocabulary فارغتانِ عمدًا: دليلُ المعلِّمِ يطبعُ في «Scope and sequence» نتاجاتِ كلِّ وحدةٍ ومفرداتِها وقواعدَها، وهيَ مادَّةٌ محفوظةُ الحقوقِ لا تُنقَلُ.",
-      "الدروسُ التسعةُ في كلِّ وحدةٍ ليست استنتاجًا من وحدةٍ واحدةٍ: «Unit walkthrough» في دليلِ المعلِّمِ (ص 8-9) يعرضُ القالبَ بوصفِهِ قالبَ كلِّ وحدةٍ — الدرسُ 1 مجلَّةُ World of Wonder! والمفرداتُ، والدروسُ 2-4 المحادثةُ والقواعدُ، والدروسُ 5-7 نادي الكتابِ، والدرسانِ 8-9 الثقافةُ والمشروعُ. الدرسانِ 4 و7 هما درسا كتابِ الأنشطةِ المرافقانِ للدرسينِ 3 و6، كما يقولُ الدليلُ نصًّا.",
+      "هذا الملفُّ عناوينُ فقط (title-only)، وهوَ هنا قرارٌ يتعلَّقُ بالحقوقِ لا بالجهدِ. الكتابُ وكتابُ الأنشطةِ ودليلُ المعلِّمِ كلُّها © Pearson Education Limited و York Press، وكلُّها مُسجَّلةٌ authority = third-party، فلا يُقتبَسُ منها نصٌّ. ما نُقِلَ هنا بِنيةٌ مَحضٌ: أسماءُ الوحداتِ كما تطبعُها قائمةُ المحتوياتِ، وتسلسلُ الدروسِ الاثني عشرَ كما يعدُّها دليلُ المعلِّمِ (ص 9). objectives و vocabulary فارغتانِ عمدًا: دليلُ المعلِّمِ يطبعُ في «Scope and sequence» نتاجاتِ كلِّ وحدةٍ ومفرداتِها وقواعدَها، وهيَ مادَّةٌ محفوظةُ الحقوقِ لا تُنقَلُ.",
+      "~~الدروسُ التسعةُ في كلِّ وحدةٍ…~~ **صُحِّحَ 2026-11-13: الوحدةُ اثنا عشرَ درسًا لا تسعةٌ.** الصفحةُ 9 من دليلِ المعلِّمِ تقولُ نصًّا «There are 12 lessons in each main unit» وتعدُّها: 10 Literacy (كتابُ الطالبِ وكتابُ الأنشطةِ)، 11 Writing (كتابُ الطالبِ)، 12 Writing (كتابُ الأنشطةِ، مرافقٌ للدرسِ 11)، وصفحةُ الدليلِ 12 تعرضُ «Lessons 10–12». قراءةُ الصفحتينِ 8-9 وحدَهما أسقطَتِ الثلاثةَ الأخيرةَ من كلِّ وحدةٍ (24 درسًا في الفصلينِ)، فأُلحِقَتْ في آخرِ كلِّ وحدةٍ (u*_l10..l12) دونَ تغييرِ معرِّفٍ قائمٍ. واسمُ الدرسِ 2 «Team Talk» كما يطبعُهُ كتابُ الطالبِ والدليلُ، لا «Fun Talk». الدرسانِ 4 و7 و12 هي دروسُ كتابِ الأنشطةِ المرافقةُ للدروسِ 3 و6 و11.",
       "periods و total_periods فارغتانِ: عددُ الحصصِ غيرُ مطبوعٍ.",
       "الدروسُ غيرُ مؤسَّسةٍ (not groundable): المقاطعُ المقتبَسَةُ تقتصرُ على مصادرِ nccd، وهذهِ كلُّها third-party. فالوحداتُ والدروسُ صالحةٌ للتصفُّحِ والاختيارِ، لا لتوليدِ محتوًى مُستنِدٍ إلى نصِّ الكتابِ."
     ]
@@ -42,8 +42,8 @@
         {
           "id": "u5_l2",
           "order": 2,
-          "title_ar": "الدرس 2: «Fun Talk»",
-          "title_en": "Lesson 2: Fun Talk",
+          "title_ar": "الدرس 2: «Team Talk»",
+          "title_en": "Lesson 2: Team Talk",
           "main_idea_ar": "",
           "periods": null,
           "objectives": [],
@@ -118,6 +118,36 @@
           "periods": null,
           "objectives": [],
           "vocabulary": []
+        },
+        {
+          "id": "u5_l10",
+          "order": 10,
+          "title_ar": "الدرس 10: القراءة والكتابة (Literacy)",
+          "title_en": "Lesson 10: Literacy",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l11",
+          "order": 11,
+          "title_ar": "الدرس 11: الكتابة",
+          "title_en": "Lesson 11: Writing",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l12",
+          "order": 12,
+          "title_ar": "الدرس 12: كتاب الأنشطة (مرافق للدرس 11)",
+          "title_en": "Lesson 12: Activity Book (accompanying Lesson 11)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
         }
       ]
     },
@@ -144,8 +174,8 @@
         {
           "id": "u6_l2",
           "order": 2,
-          "title_ar": "الدرس 2: «Fun Talk»",
-          "title_en": "Lesson 2: Fun Talk",
+          "title_ar": "الدرس 2: «Team Talk»",
+          "title_en": "Lesson 2: Team Talk",
           "main_idea_ar": "",
           "periods": null,
           "objectives": [],
@@ -220,6 +250,36 @@
           "periods": null,
           "objectives": [],
           "vocabulary": []
+        },
+        {
+          "id": "u6_l10",
+          "order": 10,
+          "title_ar": "الدرس 10: القراءة والكتابة (Literacy)",
+          "title_en": "Lesson 10: Literacy",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l11",
+          "order": 11,
+          "title_ar": "الدرس 11: الكتابة",
+          "title_en": "Lesson 11: Writing",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l12",
+          "order": 12,
+          "title_ar": "الدرس 12: كتاب الأنشطة (مرافق للدرس 11)",
+          "title_en": "Lesson 12: Activity Book (accompanying Lesson 11)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
         }
       ]
     },
@@ -246,8 +306,8 @@
         {
           "id": "u7_l2",
           "order": 2,
-          "title_ar": "الدرس 2: «Fun Talk»",
-          "title_en": "Lesson 2: Fun Talk",
+          "title_ar": "الدرس 2: «Team Talk»",
+          "title_en": "Lesson 2: Team Talk",
           "main_idea_ar": "",
           "periods": null,
           "objectives": [],
@@ -322,6 +382,36 @@
           "periods": null,
           "objectives": [],
           "vocabulary": []
+        },
+        {
+          "id": "u7_l10",
+          "order": 10,
+          "title_ar": "الدرس 10: القراءة والكتابة (Literacy)",
+          "title_en": "Lesson 10: Literacy",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l11",
+          "order": 11,
+          "title_ar": "الدرس 11: الكتابة",
+          "title_en": "Lesson 11: Writing",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l12",
+          "order": 12,
+          "title_ar": "الدرس 12: كتاب الأنشطة (مرافق للدرس 11)",
+          "title_en": "Lesson 12: Activity Book (accompanying Lesson 11)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
         }
       ]
     },
@@ -348,8 +438,8 @@
         {
           "id": "u8_l2",
           "order": 2,
-          "title_ar": "الدرس 2: «Fun Talk»",
-          "title_en": "Lesson 2: Fun Talk",
+          "title_ar": "الدرس 2: «Team Talk»",
+          "title_en": "Lesson 2: Team Talk",
           "main_idea_ar": "",
           "periods": null,
           "objectives": [],
@@ -420,6 +510,36 @@
           "order": 9,
           "title_ar": "الدرس 9: الإنجليزية في التطبيق",
           "title_en": "Lesson 9: English in action",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l10",
+          "order": 10,
+          "title_ar": "الدرس 10: القراءة والكتابة (Literacy)",
+          "title_en": "Lesson 10: Literacy",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l11",
+          "order": 11,
+          "title_ar": "الدرس 11: الكتابة",
+          "title_en": "Lesson 11: Writing",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l12",
+          "order": 12,
+          "title_ar": "الدرس 12: كتاب الأنشطة (مرافق للدرس 11)",
+          "title_en": "Lesson 12: Activity Book (accompanying Lesson 11)",
           "main_idea_ar": "",
           "periods": null,
           "objectives": [],
