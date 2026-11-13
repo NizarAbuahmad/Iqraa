@@ -38,10 +38,20 @@ if (!dir) {
 }
 
 const links = JSON.parse(readFileSync(path.join(ROOT, 'knowledge-base/book-page-links.json'), 'utf8')) as {
-  lessons: Record<string, { startPage: number; endPage: number }>;
+  lessons: Record<string, { startPage: number; endPage: number; images?: string[]; renderedStartPage?: number; renderedEndPage?: number }>;
+  /** Images under a key whose own lesson they are not; listed so they stay accounted for. */
+  orphanRenders?: Record<string, { startPage: number; endPage: number }>;
 };
-const files = Object.entries(links.lessons).flatMap(([id, l]) =>
-  Array.from({ length: l.endPage - l.startPage + 1 }, (_, n) => `${id}/${n + 1}.jpg`));
+// A lesson listing `images` reads pages rendered under other keys (a hand
+// correction, see `bookPagesForLesson`); a lesson whose range was moved after
+// its images were cut still owns them (`renderedStartPage`/`renderedEndPage`).
+const range = (id: string, first: number, last: number) =>
+  Array.from({ length: last - first + 1 }, (_, n) => `${id}/${n + 1}.jpg`);
+const lessonFiles = Object.entries(links.lessons).flatMap(([id, l]) => l.images
+  ? l.images.map(k => `${k}.jpg`)
+  : range(id, l.renderedStartPage ?? l.startPage, l.renderedEndPage ?? l.endPage));
+const orphanFiles = Object.entries(links.orphanRenders ?? {}).flatMap(([id, o]) => range(id, o.startPage, o.endPage));
+const files = [...new Set([...lessonFiles, ...orphanFiles])];
 const { R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY } = process.env;
 if (!R2_ENDPOINT || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
   console.error('R2 is not configured — set R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY in .env.');

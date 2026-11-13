@@ -12,6 +12,7 @@
  * side needed the same 7 activity-type branches as the English side.
  */
 
+import { gradeAr, subjectAr } from "./promptLabels.ts";
 import {
   lessonKindClauseAr, lessonKindClauseEn, usesWorkedExample, worksheetKindRuleAr, worksheetKindRuleEn,
 } from "./lessonKinds.ts";
@@ -272,7 +273,7 @@ export function lessonPlanPromptAr(b: any): string {
     : null;
   const priorNotes = typeof b.priorTopicsNotes === "string" ? b.priorTopicsNotes.trim() : "";
   const hasPriorReview = Boolean(priorConcepts || priorNotes);
-  return `أنشئ خطة درس كاملة لمادة ${b.subject} للصف ${b.grade} حول موضوع "${b.topic}"، مدتها ${b.duration ?? 45} دقيقة.
+  return `أنشئ خطة درس كاملة لمادة ${subjectAr(b.subject)} للصف ${gradeAr(b.grade)} حول موضوع "${b.topic}"، مدتها ${b.duration ?? 45} دقيقة.
 ${b.objectives ? `الأهداف المحددة:\n${b.objectives}` : ""}
 ${b.additionalContext ? `سياق إضافي: ${b.additionalContext}` : ""}
 ${lessonStyleClauseAr(b)}${kindBlockAr(b)}${revisionClauseAr(b, "plan")}
@@ -442,7 +443,7 @@ export function worksheetPromptAr(b: any): string {
   const prior = b.includePriorReview && Array.isArray(b.priorKnowledge) && b.priorKnowledge.length
     ? b.priorKnowledge
     : null;
-  return `أنشئ ${isHW ? "واجبًا منزليًا" : "ورقة عمل"} لمادة ${b.subject} للصف ${b.grade} حول "${b.topic}".
+  return `أنشئ ${isHW ? "واجبًا منزليًا" : "ورقة عمل"} لمادة ${subjectAr(b.subject)} للصف ${gradeAr(b.grade)} حول "${b.topic}".
 عدد الأسئلة: ${n}
 أنواع الأسئلة المطلوبة (لا تستعمل غيرها، ووزّع الأسئلة عليها): ${types.join(", ")}
 ${worksheetTypeShapesAr(types)}
@@ -582,7 +583,7 @@ export function quizPromptAr(b: any): string {
   const marks = b.totalMarks ?? 20;
   const types = quizTypes(b);
   const sections = types.map((t, i) => `السؤال ${ORDINAL_AR[i]}: ${QUIZ_SECTION_NAME_AR[t]}`).join("، ثم ");
-  return `أنشئ اختبارًا لمادة ${b.subject} للصف ${b.grade} حول "${b.topic}".
+  return `أنشئ اختبارًا لمادة ${subjectAr(b.subject)} للصف ${gradeAr(b.grade)} حول "${b.topic}".
 عدد الأسئلة: ${n}، العلامة الكاملة: ${marks}
 ${quizDifficultyClauseAr(b)}
 
@@ -842,7 +843,7 @@ export function activityPromptAr(b: any): string {
     "hands-on": "تطبيقي عملي", game: "لعبة تعليمية", warmup: "تهيئة واسترجاع",
   };
   const rule = ACTIVITY_FORMAT_RULES_AR[key] ?? ACTIVITY_FORMAT_RULES_AR.group;
-  return `صمّم نشاطًا تعليميًا ${typeLabel[key] ?? key} لمادة ${b.subject} للصف ${b.grade} حول موضوع "${b.topic}".
+  return `صمّم نشاطًا تعليميًا ${typeLabel[key] ?? key} لمادة ${subjectAr(b.subject)} للصف ${gradeAr(b.grade)} حول موضوع "${b.topic}".
 مدة النشاط: ${dur} دقيقة.
 ${b.objectives ? `هدف النشاط: ${b.objectives}` : ""}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي:\n${b.additionalContext}` : ""}
@@ -922,7 +923,7 @@ export const INFOGRAPHIC_ICONS = [
 ] as const;
 
 export function infographicPromptAr(b: any): string {
-  return `صمّم محتوى إنفوجرافيك تعليمي لمادة ${b.subject} للصف ${b.grade} حول موضوع "${b.topic}".
+  return `صمّم محتوى إنفوجرافيك تعليمي لمادة ${subjectAr(b.subject)} للصف ${gradeAr(b.grade)} حول موضوع "${b.topic}".
 ${b.additionalContext ? `\nسياق الكتاب المدرسي:\n${b.additionalContext}` : ""}
 
 الإنفوجرافيك صفحة واحدة يلخّص الدرس بصريًا للطلبة. قواعد:

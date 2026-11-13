@@ -3052,27 +3052,18 @@
     {
       "sourceId": "g7-english-s2-student-book",
       "unit": 2,
-      "lesson": 7,
+      "lesson": 9,
       "bookTitleAr": "اللغة في الاستخدام",
-      "kbLessonId": "kbl-g7-eng-s2-nccd-u6_l7",
+      "kbLessonId": "kbl-g7-eng-s2-nccd-u6_l9",
       "score": 1,
       "matchedBy": "book-opener-title",
-      "why": "Offset by 4 (S2 units are 5-8, not 6-10 like the other grades) AND lesson-remapped. Both Grade 7 books PRINT 1,2,3,5,6,8,9,10,11, but only the S1 catalog carries those numbers; the S2 catalog renumbers them 1..9. The two are positionally identical — checked title by title against u4/u7 — so the join here is the printed number's POSITION. Mapping l9 to l9 would file «English in action» photos under «Writing»."
-    },
-    {
-      "sourceId": "g7-english-s2-student-book",
-      "unit": 3,
-      "lesson": 7,
-      "bookTitleAr": "اللغة في الاستخدام",
-      "kbLessonId": "kbl-g7-eng-s2-nccd-u7_l7",
-      "score": 1,
-      "matchedBy": "book-opener-title"
+      "why": "Offset by 4 (S2 units are 5-8, not 6-10 like the other grades). Both Grade 7 books PRINT lessons 1,2,3,5,6,8,9,10,11 and both catalogs now keep those printed numbers, so the join is printed number to the same number. (Until the 2026-11-13 Grade 7 audit this keyed lessons 1..9 by position — u6_l7, u7_l7 — which the catalog no longer has, so p027 and p043 were never shown and p041 was labelled as Writing.)"
     },
     {
       "sourceId": "g7-english-s2-student-book",
       "unit": 3,
       "lesson": 9,
-      "bookTitleAr": "الكتابة: مقابلة",
+      "bookTitleAr": "اللغة في الاستخدام",
       "kbLessonId": "kbl-g7-eng-s2-nccd-u7_l9",
       "score": 1,
       "matchedBy": "book-opener-title"
@@ -3094,6 +3085,16 @@
       "kbLessonId": "kbl-g7-eng-s2-nccd-u8_l2",
       "score": 1,
       "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s2-student-book",
+      "unit": 3,
+      "lesson": 11,
+      "bookTitleAr": "الكتابة: مقابلة",
+      "kbLessonId": "kbl-g7-eng-s2-nccd-u7_l11",
+      "score": 1,
+      "matchedBy": "hand",
+      "why": "2026-11-13 Grade 7 audit: p043 (interview photo) belongs to the Writing — An interview lesson; the old entries keyed lesson 7, which the catalog does not have."
     },
     {
       "sourceId": "g6-science-s1-student-book",

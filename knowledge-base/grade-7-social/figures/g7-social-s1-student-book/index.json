@@ -187,10 +187,10 @@
         249.0,
         362.0
       ],
-      "unit": 3,
-      "lesson": 5,
+      "unit": 4,
+      "lesson": 2,
       "lessonTitleEn": null,
-      "lessonTitleAr": null,
+      "lessonTitleAr": "حضاراتُ بلادِ الشامِ القديمةُ (المظاهرُ الحضاريّةُ والإنجازاتُ)",
       "lessonStartPage": 66
     },
     {
@@ -331,10 +331,10 @@
         595.3,
         536.0
       ],
-      "unit": 4,
-      "lesson": 4,
+      "unit": 5,
+      "lesson": 1,
       "lessonTitleEn": null,
-      "lessonTitleAr": null,
+      "lessonTitleAr": "التنوُّعُ الثقافيُّ",
       "lessonStartPage": 91
     },
     {
@@ -347,10 +347,10 @@
         534.3,
         514.0
       ],
-      "unit": 4,
-      "lesson": 4,
+      "unit": 5,
+      "lesson": 1,
       "lessonTitleEn": null,
-      "lessonTitleAr": null,
+      "lessonTitleAr": "التنوُّعُ الثقافيُّ",
       "lessonStartPage": 91
     },
     {
@@ -411,10 +411,10 @@
         337.5,
         396.5
       ],
-      "unit": 5,
-      "lesson": 2,
+      "unit": 6,
+      "lesson": 1,
       "lessonTitleEn": null,
-      "lessonTitleAr": null,
+      "lessonTitleAr": "السلوكُ الإيجابيُّ",
       "lessonStartPage": 107
     },
     {
@@ -570,22 +570,6 @@
         33.2,
         322.2,
         268.2
-      ],
-      "unit": 6,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 124
-    },
-    {
-      "file": "p131.png",
-      "sourceId": "g7-social-s1-student-book",
-      "pdfPage": 131,
-      "rect": [
-        101.5,
-        123.3,
-        521.6,
-        235.8
       ],
       "unit": 6,
       "lesson": 3,

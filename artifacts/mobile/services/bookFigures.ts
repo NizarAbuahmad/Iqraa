@@ -248,15 +248,40 @@ export type BookPages = {
  * `book-page-links.json` only after comparing the live book with the copy our
  * page numbers came from — a book re-issued with different pagination gets no
  * pages rather than the wrong ones. Null for every lesson not listed.
+ *
+ * A lesson whose start the scripts missed had its pages rendered under the
+ * lesson before it, whose range ran on through it. Corrected by hand from a
+ * read of the pages (the 2026-11-13 Grade 7 audit), such a lesson lists
+ * `images`: one `<kbLessonId>/<n>` per page, naming images already in the
+ * bucket under a lesson's key (its own or another's). A lesson whose range
+ * was moved after its images were cut keeps `renderedStartPage` /
+ * `renderedEndPage`, the pages its own images 1..n really are. `bookPage.test.ts` checks every
+ * borrowed image names the right page of a rendered range.
  */
+export type BookPageEntry = {
+  sourceId: string;
+  startPage: number;
+  endPage: number;
+  aspect: number;
+  /** One image key (`<kbLessonId>/<n>`) per page, when not this lesson's own 1..n. */
+  images?: string[];
+  /** First page with an image under this lesson's key, when its start was moved. */
+  renderedStartPage?: number;
+  /** Last page with an image under this lesson's key, when not `endPage`. */
+  renderedEndPage?: number;
+};
+
+export const BOOK_PAGE_LESSONS: Readonly<Record<string, BookPageEntry>> =
+  (pageLinks as { lessons: Record<string, BookPageEntry> }).lessons;
+
 export function bookPagesForLesson(kbLessonId: string | null | undefined): BookPages | null {
   if (!kbLessonId) return null;
-  const entry = (pageLinks as { lessons: Record<string, { startPage: number; endPage: number; aspect: number }> })
-    .lessons[kbLessonId];
+  const entry = BOOK_PAGE_LESSONS[kbLessonId];
   if (!entry) return null;
   const count = entry.endPage - entry.startPage + 1;
+  const keys = entry.images ?? Array.from({ length: count }, (_, n) => `${kbLessonId}/${n + 1}`);
   return {
-    urls: Array.from({ length: count }, (_, n) => `${BOOK_PAGES_BASE_URL}/${kbLessonId}/${n + 1}.jpg`),
+    urls: keys.map(k => `${BOOK_PAGES_BASE_URL}/${k}.jpg`),
     page: entry.startPage,
     aspect: entry.aspect,
   };
