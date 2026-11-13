@@ -74,9 +74,8 @@ silently ran on through it. Corrected from the page reads, reusing only images a
 
 **Verified:**
 - `pnpm run typecheck`;
-- mobile suite: 9,210 pass before the last two data commits, the 4 failures traced to an attempted
-  classroom change that was reverted;
-- `bookPage`, `lessonSlides` and `bookFigures` tests after them;
+- the whole mobile suite on the final tree (9,214 pass, 0 fail, 10 skipped);
+- api-server `pnpm build && pnpm test` (2,910 pass);
 - `promptLabels.test.ts`.
 
 **Not verified:** the lesson screen's «صفحة الكتاب» and slides in a browser.
