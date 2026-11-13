@@ -117,6 +117,8 @@ describe('counting and place value: answers recomputed', () => {
     const TENS_WORD: Record<string, number> = { 'عشرون': 20, 'ثلاثون': 30, 'أربعون': 40, 'خمسون': 50, 'ستون': 60, 'سبعون': 70, 'ثمانون': 80, 'تسعون': 90 };
     for (const item of draws('tens_ones_c')) {
       const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+      if (has(p, 'أيّ تمثيل')) { const [t, o] = item.answer.match(/\d+/g)!.map(Number); assert.equal(t! * 10 + o!, n[0], p); continue; }
+      if (has(p, 'أضافت عمود')) { assert.equal(a, (n[0]! + 1) * 10 + n[1]!, p); continue; }
       if (has(p, 'مُمثَّل')) assert.equal(a, n[0]! * 10 + n[1]!, p);
       else if (has(p, 'عمود عشرات')) assert.equal(a, Math.floor(n[0]! / 10), p);
       else if (has(p, 'مكعب آحاد')) assert.equal(a, n[0]! % 10, p);
@@ -891,6 +893,10 @@ describe('money, time and measurement: answers recomputed', () => {
     }
     for (const id of ['coins_a', 'coins_b', 'coins_c']) for (const item of draws(id)) {
       const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+      if (has(p, 'أكبر قيمة')) { const v = (w: string) => (w === 'قرش واحد' ? 1 : Number(w.match(/\d+/)![0])); assert.equal(v(item.answer), Math.max(...n.length ? n : [1], has(p, 'قرش واحد') ? 1 : 0), p); continue; }
+      if (has(p, 'أكمل:')) { assert.equal(a, n[0]! - n[1]! - n[2]!, p); assert.ok(a > 0, p); continue; }
+      if (has(p, 'ينقصها')) { assert.equal(a, n[0]! - n[1]!, p); assert.ok(a > 0, p); continue; }
+      if (has(p, 'دفع سامي')) { assert.equal(a * n[1]!, n[0], p); continue; }
       if (has(p, 'تساوي قطعة واحدة')) assert.equal(a * n[0]!, n[1], p);
       else if (has(p, 'كم قرشًا بقي')) { assert.equal(a, n[0]! - n[1]!, p); assert.ok(a > 0, p); }
       else if (has(p, 'كم قطعة')) assert.equal(a * n[0]!, n[1]); else if (has(p, 'و ') && n.length === 4) assert.equal(a, n[0]! * n[1]! + n[2]! * n[3]!); else assert.equal(a, n[0]! * n[1]!);

@@ -110,11 +110,17 @@ const tensOnes = (id: string, match: RegExp, mode: 'tens' | 'mixed' | 'model') =
     return { eq: `${n}`, answer: String(t), wrongs: ints(t, [o, n, t + 1, t - 1]), ar: `كم عشرة في العدد ${n}؟`, en: `How many tens are in ${n}?` };
   }
   if (mode === 'model') {
-    const t = int(rng, 3, 9), o = int(rng, 3, 9), n = t * 10 + o, km = pick(rng, [0, 1, 2, 3]);
+    const t = int(rng, 3, 9), o = int(rng, 3, 9), n = t * 10 + o, km = pick(rng, [0, 1, 2, 3, 4]);
+    if (km === 4 && t !== o) {
+      // which model shows the number: the tens and ones swapped is the classic slip (so t ≠ o)
+      const right = `${t} أعمدة و ${o} مكعبات`, swapped = `${o} أعمدة و ${t} مكعبات`;
+      return { eq: `${n}`, answer: right, wrongs: [...new Set([swapped, `${t} أعمدة و ${o + 1 > 9 ? o - 1 : o + 1} مكعبات`, `${t + 1 > 9 ? t - 1 : t + 1} أعمدة و ${o} مكعبات`])].filter(w => w !== right).slice(0, 3), ar: `أيّ تمثيل يُظهر العدد ${n} بأعمدة العشرات ومكعبات الآحاد؟`, en: `Which model shows ${n} with tens rods and ones cubes?` };
+    }
     if (km === 0) return { eq: `${t}, ${o}`, answer: String(n), wrongs: ints(n, [o * 10 + t, t + o, n + 10, n - 1]), ar: `عدد مُمثَّل بـ ${t} أعمدة عشرات و ${o} مكعبات آحاد. ما العدد؟`, en: `A number is shown with ${t} tens rods and ${o} ones cubes. What is the number?` };
     if (km === 1) return { eq: `${n}`, answer: String(t), wrongs: ints(t, [o, n, t + 1, t - 1]), ar: `نمثّل العدد ${n} بأعمدة العشرات ومكعبات الآحاد. كم عمود عشرات نحتاج؟`, en: `We show ${n} with tens rods and ones cubes. How many tens rods do we need?` };
     if (km === 2) return { eq: `${n}`, answer: String(o), wrongs: ints(o, [t, n, o + 1, o - 1]), ar: `نمثّل العدد ${n} بأعمدة العشرات ومكعبات الآحاد. كم مكعب آحاد نحتاج؟`, en: `We show ${n} with tens rods and ones cubes. How many ones cubes do we need?` };
-    return { eq: `${n}`, answer: String(t + o), wrongs: ints(t + o, [n, t, o, t + o + 1]), ar: `نمثّل العدد ${n} بأعمدة العشرات ومكعبات الآحاد. كم قطعة نحتاج كلها (أعمدة ومكعبات)؟`, en: `We show ${n} with tens rods and ones cubes. How many pieces do we need altogether?` };
+    // a story: some rods and cubes are put on the table, then one more rod
+    return { eq: `${t}, ${o}`, answer: String(n + 10), wrongs: ints(n + 10, [n, n + 1, t + o + 1, n + 20]), word: true, ar: `وضعت سلمى على الطاولة ${t} أعمدة عشرات و ${o} مكعبات آحاد، ثم أضافت عمود عشرات آخر. ما العدد الذي أصبحت تمثّله؟`, en: `Salma puts ${t} tens rods and ${o} ones cubes on the table, then adds one more tens rod. What number do they show now?` };
   }
   const k = pick(rng, [0, 1, 2, 3]);
   // «3 عشرات و 7 آحاد»: counts of 3–9, so never «1 عشرات» or «2 آحاد»
@@ -1020,7 +1026,28 @@ const decimalMoney = T('decimal_money', /^الاعداد العشريه والن
 const coins = (id: string, match: RegExp) => T(id, match, [1, 1], ({ rng }) => {
   // counts of 3 or more, so «3 قطع», never «2 قطع» (it is «قطعتان»)
   const v = pick(rng, [5, 10]), n = int(rng, 3, 6), w = v === 5 ? 10 : 5, m = int(rng, 3, 4);
-  const k = id === 'coins_a' ? pick(rng, [0, 1]) : id === 'coins_b' ? pick(rng, [2, 4]) : 3;
+  const k = id === 'coins_a' ? pick(rng, [0, 1, 5]) : id === 'coins_b' ? pick(rng, [2, 4, 6]) : pick(rng, [3, 7, 8]);
+  if (k === 5) {
+    // telling the coins apart: which is worth more
+    const [x, y] = shuffle(rng, pick(rng, [[1, 5], [5, 10], [10, 25], [25, 50], [5, 25], [10, 50]] as Array<[number, number]>)), big = Math.max(x!, y!);
+    const name = (c: number) => (c === 1 ? 'قرش واحد' : qirsh(c));
+    return { eq: `${x}, ${y}`, answer: name(big), wrongs: [name(Math.min(x!, y!)), 'متساويتان', name(x! + y!)], ar: `أيّ القطعتين أكبر قيمة: قطعة ${name(x!)} أم قطعة ${name(y!)}؟`, en: `Which coin is worth more: ${x} qirsh or ${y} qirsh?` };
+  }
+  if (k === 6) {
+    // the same amount made another way: complete it
+    const [a, b, gap] = pick(rng, [[10, 10, 5], [10, 5, 10], [25, 10, 15], [10, 10, 30], [25, 5, 20]] as Array<[number, number, number]>), total = a + b + gap;
+    return { eq: `${total}, ${a}, ${b}`, answer: String(gap), wrongs: ints(gap, [total, a + b, gap + 5, gap - 5]), ar: `أكمل: ${qirsh(total)} = ${qirsh(a)} + ${qirsh(b)} + ___`, en: `Complete: ${total} qirsh = ${a} qirsh + ${b} qirsh + ___ qirsh` };
+  }
+  if (k === 7) {
+    // not enough yet: how much more
+    const have = v * n, price = have + 5 * int(rng, 1, 4);
+    return { eq: `${price}, ${have}`, answer: String(price - have), wrongs: ints(price - have, [price, have, price + have, price - have + 5]), word: true, ar: `ثمن قصة ${qirsh(price)}، ومع ليلى ${qirsh(have)} فقط. كم قرشًا ينقصها لتشتري القصة؟`, en: `A story book costs ${price} qirsh and Layla has only ${have} qirsh. How many more qirsh does she need?` };
+  }
+  if (k === 8) {
+    // paying with one kind of coin
+    const c = pick(rng, [5, 10]), cnt = int(rng, 3, 6), price = c * cnt;
+    return { eq: `${price}, ${c}`, answer: String(cnt), wrongs: ints(cnt, [price, c, cnt + 1, cnt - 1]), word: true, ar: `دفع سامي ثمن عصير ${qirsh(price)} بقطع من فئة ${qirsh(c)} فقط. كم قطعة دفع؟`, en: `Sami pays ${price} qirsh for a juice using only ${c}-qirsh coins. How many coins does he pay?` };
+  }
   if (k === 4) {
     // one bigger coin in smaller coins of one kind
     const [big, small] = pick(rng, [[10, 5], [25, 5], [50, 10], [50, 25], [50, 5]] as Array<[number, number]>), c = big / small;
