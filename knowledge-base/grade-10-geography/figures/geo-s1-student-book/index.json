@@ -66,38 +66,6 @@
       "lessonStartPage": 44
     },
     {
-      "file": "p051-v2.png",
-      "sourceId": "geo-s1-student-book",
-      "pdfPage": 51,
-      "rect": [
-        149.0,
-        209.0,
-        465.0,
-        522.1
-      ],
-      "unit": 2,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": "ُالنقل",
-      "lessonStartPage": 44
-    },
-    {
-      "file": "p055.png",
-      "sourceId": "geo-s1-student-book",
-      "pdfPage": 55,
-      "rect": [
-        47.8,
-        317.1,
-        398.9,
-        732.7
-      ],
-      "unit": 3,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 54
-    },
-    {
       "file": "p056.png",
       "sourceId": "geo-s1-student-book",
       "pdfPage": 56,
