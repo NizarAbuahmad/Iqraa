@@ -62,6 +62,67 @@ hand. Seven get none: «خطة حل المسألة: أنشئ جدولًا», «�
 **Verified:** `bookFigures`, `bookPage`, `bookFigureAssets` tests, curriculum test and verify, typecheck.
 **Not verified:** the pages on a phone; anything needing the PDFs.
 
+## Grade 10 figures: six unit-review figures the audit missed — 2026-11-13
+
+A re-check of Grade 10 after «Grade 10 checked against its books, and corrected» and «Grade 10 audit: book pages,
+figures and contents…» (both the same day). Those cover coverage, results, book pages and figures, so this only
+re-ran two automated checks over every served Grade 10 figure (521):
+- figures that sit outside their lesson's corrected page range
+- figures filed under a unit's last lesson just before the next unit
+
+**What changed.** Six figures on unit-review pages were still filed under the unit's last lesson. The audit's rule
+is to drop exactly these. Each was confirmed from the extracted page text («مراجعة الوحدة», numbered review
+questions) and by opening the image:
+- biology S1 `p018c`
+- biology S2 `p054b` (an endangered-amphibians pie chart)
+- earth S1 `p058b` and `p058c-v2`
+- earth S2 `p024b`, and `p055` (a whole page of review questions with a currents map)
+
+They now sit under no lesson. They are kept on disk rather than deleted, so this is easy to undo.
+
+**Looked at and left.**
+- Physics S1 `p056`: a position–time graph on lesson u2_l1's own «مراجعة الدرس» page, so it belongs to that lesson.
+  The audit's range for u2_l1 (36–55) skips that page. Page ranges are backed by rendered images in the bucket,
+  so the range is not changed here.
+- Physics S2 `p039` (three crops): friction's pros and cons, in the gap after u4_l2 «تطبيقات على القوى».
+- English "near the next unit" hits: real writing and reading lesson pages.
+- Maths S1 `p009`, `p015` and `p016`: left unmapped on purpose by the first review until they are uploaded.
+
+**Verified.** Red/green on a new `bookFigures.test.ts` block. The figure, page, asset, figure-view and slide tests
+pass (199), and so does `pnpm run typecheck`. The generated figure list only loses these six keys, so there is
+nothing to upload.
+**Not verified.** Not looked at in the running app.
+
+## Grade 8 maths: offline questions for the four S2 lessons that had none — 2026-11-13
+
+**Why.** Grade 8 had already been checked against its books by earlier changes. One gap was left: four
+maths S2 lessons threw `NoQuestionBankError` offline, so every quiz, worksheet and homework paper on them
+failed with live AI off. The lessons are «رسم الأشكال ثلاثيّة الأبعاد» (u8_l1), «المقاطع والمجسّمات
+الدّورانيّة» (u8_l2), «الرُّبَيعيّات» (u9_l1) and «اختيار التمثيل الأنسب» (u9_l2).
+
+**What changed.**
+- `lib/math-practice/src/g8.ts` adds one computed generator per lesson. Each is limited to Grade 8
+  (`grades: [8, 8]`) and matched on the exact folded title, so a same-titled lesson in another grade is not
+  captured. There is no extracted Grade 8 maths book, so the questions ask what each lesson's NCCD
+  objectives list: counts in a view of a cube stack, the shape of a cross-section, the volume of a solid of
+  revolution, quartiles and outliers, and the chart that fits a described situation.
+- The quartile method (the median is left out of both halves when n is odd) and the 1.5×IQR outlier rule
+  are printed in every stem that needs them, so the key cannot depend on an unstated convention.
+- `congruence_a` (S1 u4_l1) could produce only 3 distinct questions. It now has six kinds and fills a
+  10-question paper.
+- The Grade 10 entry below said `g10.ts` holds five generators; it holds one, now corrected there.
+
+**Verified.**
+- `g8Lessons.test.ts` re-derives every key by a separate route: a voxel model for the views, numerical
+  integration for the solids, brute-force reflections for planes of symmetry, and a separate quartile
+  routine. Sample keys were also checked by hand. Nothing is `verified`, and no item carries a `check`.
+- math-practice tests pass. The results of the full CI set are in the PR body.
+- Not opened in a browser. No live model was run.
+
+**Not done.** No worked steps for the four new generators, so they do not supply a worksheet's worked
+example (the solved slots walk on to a lesson that has working). The questions follow the objectives, not
+a book page, until a Grade 8 maths book is extracted.
+
 ## Grade 10 checked against its books, and corrected — 2026-11-13
 
 **What was checked.** All 33 Grade 10 books in the catalog (425 lessons before this change), against
@@ -112,10 +173,12 @@ be about to, continuous/perfect passives). Two decorative chemistry unit covers 
 wording).
 
 **Offline results.** Every lesson grounds on itself by id. Lesson plans and activities generate for all.
-Five maths lessons that refused offline papers now have computed generators (`lib/math-practice/src/g10.ts`:
-special equations, trig graphs, 3-D problems, polynomial and rational functions; keys re-derived by
-`g10Lessons.test.ts`, never `verified`, no worked steps). Because those have no steps, a semester-wide
-worksheet lost its worked example; the solved slots now walk on to the next lesson with working
+The new «حل معادلات خاصة» lesson has a computed generator (`lib/math-practice/src/g10.ts`; keys
+re-derived by `g10Lessons.test.ts`, never `verified`, no worked steps). This branch first also wrote
+generators for trig graphs, 3-D problems, polynomial and rational functions; `main`'s `grade10.ts` landed
+the same four in parallel, so after the merge `grade10.ts` serves them and `g10.ts` holds only the one
+(an earlier version of this entry said five). Generators without steps had cost a semester-wide
+worksheet its worked example; the solved slots now walk on to the next lesson with working
 (`generators.ts`, pinned for both semesters).
 
 **Not done.** Needs the PDFs: the three «حل معادلات خاصة» figures (never uploaded to R2 — mapping them
