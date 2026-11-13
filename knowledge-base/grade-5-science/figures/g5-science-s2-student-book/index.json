@@ -82,22 +82,6 @@
       "lessonStartPage": null
     },
     {
-      "file": "p011-v2.png",
-      "sourceId": "g5-science-s2-student-book",
-      "pdfPage": 11,
-      "rect": [
-        0.0,
-        7.0,
-        314.0,
-        301.0
-      ],
-      "unit": 1,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 10
-    },
-    {
       "file": "p017b.png",
       "sourceId": "g5-science-s2-student-book",
       "pdfPage": 17,
@@ -138,54 +122,6 @@
         497.5,
         392.6,
         703.0
-      ],
-      "unit": 1,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 16
-    },
-    {
-      "file": "p022-v2.png",
-      "sourceId": "g5-science-s2-student-book",
-      "pdfPage": 22,
-      "rect": [
-        0.0,
-        0.0,
-        257.0,
-        182.0
-      ],
-      "unit": 1,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 16
-    },
-    {
-      "file": "p025b.png",
-      "sourceId": "g5-science-s2-student-book",
-      "pdfPage": 25,
-      "rect": [
-        249.9,
-        373.9,
-        409.0,
-        452.6
-      ],
-      "unit": 1,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 16
-    },
-    {
-      "file": "p025c-v2.png",
-      "sourceId": "g5-science-s2-student-book",
-      "pdfPage": 25,
-      "rect": [
-        71.0,
-        391.0,
-        148.0,
-        468.0
       ],
       "unit": 1,
       "lesson": 2,
@@ -290,22 +226,6 @@
       "lessonStartPage": 31
     },
     {
-      "file": "p035.png",
-      "sourceId": "g5-science-s2-student-book",
-      "pdfPage": 35,
-      "rect": [
-        48.8,
-        297.1,
-        238.4,
-        506.7
-      ],
-      "unit": 2,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 31
-    },
-    {
       "file": "p036-v2.png",
       "sourceId": "g5-science-s2-student-book",
       "pdfPage": 36,
@@ -338,22 +258,6 @@
       "lessonStartPage": 36
     },
     {
-      "file": "p037.png",
-      "sourceId": "g5-science-s2-student-book",
-      "pdfPage": 37,
-      "rect": [
-        0.0,
-        0.0,
-        366.8,
-        327.2
-      ],
-      "unit": 2,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 36
-    },
-    {
       "file": "p038-v2.png",
       "sourceId": "g5-science-s2-student-book",
       "pdfPage": 38,
@@ -370,38 +274,6 @@
       "lessonStartPage": 36
     },
     {
-      "file": "p047-v2.png",
-      "sourceId": "g5-science-s2-student-book",
-      "pdfPage": 47,
-      "rect": [
-        66.0,
-        506.0,
-        303.0,
-        732.6
-      ],
-      "unit": 3,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 46
-    },
-    {
-      "file": "p047b-v2.png",
-      "sourceId": "g5-science-s2-student-book",
-      "pdfPage": 47,
-      "rect": [
-        309.0,
-        517.0,
-        416.3,
-        731.0
-      ],
-      "unit": 3,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 46
-    },
-    {
       "file": "p056-v2.png",
       "sourceId": "g5-science-s2-student-book",
       "pdfPage": 56,
@@ -410,22 +282,6 @@
         517.7,
         423.0,
         693.0
-      ],
-      "unit": 3,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 53
-    },
-    {
-      "file": "p060-v2.png",
-      "sourceId": "g5-science-s2-student-book",
-      "pdfPage": 60,
-      "rect": [
-        78.7,
-        325.0,
-        196.2,
-        503.7
       ],
       "unit": 3,
       "lesson": 2,
@@ -459,10 +315,10 @@
         254.0,
         433.0
       ],
-      "unit": 3,
+      "unit": 4,
       "lesson": 2,
       "lessonTitleEn": null,
-      "lessonTitleAr": null,
+      "lessonTitleAr": "الطّاقَةُ الميكانيكِيَّةُ",
       "lessonStartPage": 53
     },
     {
@@ -523,43 +379,11 @@
         237.0,
         469.0
       ],
-      "unit": 4,
-      "lesson": 2,
+      "unit": 5,
+      "lesson": 1,
       "lessonTitleEn": null,
-      "lessonTitleAr": null,
+      "lessonTitleAr": "مُكَوِّناتُ الأَرْضِ",
       "lessonStartPage": 73
-    },
-    {
-      "file": "p086-v2.png",
-      "sourceId": "g5-science-s2-student-book",
-      "pdfPage": 86,
-      "rect": [
-        88.0,
-        534.2,
-        450.9,
-        768.0
-      ],
-      "unit": 5,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 86
-    },
-    {
-      "file": "p087-v2.png",
-      "sourceId": "g5-science-s2-student-book",
-      "pdfPage": 87,
-      "rect": [
-        0.0,
-        484.0,
-        616.0,
-        822.0
-      ],
-      "unit": 5,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 86
     },
     {
       "file": "p090-v2.png",
@@ -594,54 +418,6 @@
       "lessonStartPage": 86
     },
     {
-      "file": "p092.png",
-      "sourceId": "g5-science-s2-student-book",
-      "pdfPage": 92,
-      "rect": [
-        81.3,
-        467.6,
-        456.2,
-        764.5
-      ],
-      "unit": 5,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 92
-    },
-    {
-      "file": "p097.png",
-      "sourceId": "g5-science-s2-student-book",
-      "pdfPage": 97,
-      "rect": [
-        47.0,
-        427.5,
-        364.0,
-        738.5
-      ],
-      "unit": 5,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 92
-    },
-    {
-      "file": "p100c.png",
-      "sourceId": "g5-science-s2-student-book",
-      "pdfPage": 100,
-      "rect": [
-        4.3,
-        509.7,
-        623.6,
-        822.0
-      ],
-      "unit": 5,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 92
-    },
-    {
       "file": "p101-v2.png",
       "sourceId": "g5-science-s2-student-book",
       "pdfPage": 101,
@@ -652,25 +428,9 @@
         576.9
       ],
       "unit": 5,
-      "lesson": 2,
+      "lesson": 1,
       "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 92
-    },
-    {
-      "file": "p101b-v2.png",
-      "sourceId": "g5-science-s2-student-book",
-      "pdfPage": 101,
-      "rect": [
-        175.0,
-        612.0,
-        423.0,
-        739.8
-      ],
-      "unit": 5,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
+      "lessonTitleAr": "مُكَوِّناتُ الأَرْضِ",
       "lessonStartPage": 92
     }
   ]
