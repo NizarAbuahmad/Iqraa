@@ -199,7 +199,7 @@ describe('routing of the lessons that had no bank', () => {
     it(`${title} → ${id}, served in every format`, () => {
       assert.equal(topicFor(title, 9)?.id, id);
       assert.ok(mathBankCovers(title, null, 9));
-      for (const type of ['mcq', 'short_answer', 'true_false', 'fill_blank'] as const) {
+      for (const type of ['multiple_choice', 'short_answer', 'true_false', 'fill_blank'] as const) {
         assert.ok(takeElementaryMath(type, title, null, 9, 'medium', 'ar', 2, new Set()), `${type} refused for ${title}`);
       }
     });
