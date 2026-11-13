@@ -1062,8 +1062,9 @@ describe('geometry routing', () => {
     ['المسافة في المستوى الإحداثي', 9, 'distance_plane'], ['النسب المثلثية', 9, 'trig_ratios'], ['الاتجاه من الشمال (Bearing)', 10, 'bearing'],
     ['المتر والسنتيمتر', 3, 'units_m'], ['الزمن', 4, 'time_g45'], ['الفترات الزمنية (1)', 3, 'time_g3'], ['قراءة الوقت باستعمال (و، إلا)', 3, 'time_words'],
     // lessons that stay refused: no generator is about them
-    // («رسم الأشكال ثلاثية الأبعاد» is Grade 8 only since 2026-11-13: g8Lessons.test.ts)
-    ['الأرقام الهندية', 3, null], ['رسم الأشكال ثلاثية الأبعاد', 7, null], ['التطابق', 7, null],
+    // («رسم الأشكال ثلاثية الأبعاد» is Grade 8 only since 2026-11-13: g8Lessons.test.ts;
+    // «التطابق» is Grade 7 only since 2026-11-13: g7Lessons.test.ts)
+    ['الأرقام الهندية', 3, null], ['رسم الأشكال ثلاثية الأبعاد', 7, null], ['التطابق', 7, 'g7_congruence'], ['التطابق', 8, null],
   ];
   for (const [title, grade, id] of cases) {
     it(`${title} (G${grade}) → ${id ?? 'refused'}`, () => {

@@ -74,7 +74,7 @@ const workBackward = T('g7_work_backward', /^خطه حل المساله الحل
     const start = int(rng, -8, 8);
     const end = start - fall + rise;
     return {
-      eq: `back temp ${fall} ${rise} ${end}`, answer: `${signed(start)}°`,
+      eq: `back temp ${fall} ${rise} ${signed(end)}`, answer: `${signed(start)}°`,
       wrongs: wrongsFrom(`${signed(start)}°`, [end - fall + rise, end - fall - rise, end + fall + rise, -start].map(v => `${signed(v)}°`), j => `${signed(start + j)}°`),
       ar: `انخفضت درجة الحرارة في الصباح ${degrees(fall)}، ثم ارتفعت ظهرًا ${degrees(rise)}، فأصبحت ${signed(end)}°. كم كانت درجة الحرارة قبل الانخفاض؟`,
       en: `In the morning the temperature fell by ${fall} degrees, then at noon it rose by ${rise} degrees, ending at ${signed(end)}°. What was the temperature before it fell?`,
@@ -104,7 +104,7 @@ const workBackward = T('g7_work_backward', /^خطه حل المساله الحل
       const b = m * x - r * d;
       if (b < 1 || b > 40) continue;
       return {
-        eq: `back machine ${m} -${b} /${d} = ${r}`, answer: signed(x),
+        eq: `back machine ${m} −${b} /${d} = ${signed(r)}`, answer: signed(x),
         wrongs: numWrongs(x, [(r * d - b) / m, (r * d + b) * m, r * d + b, (r + b) * d / m].filter(Number.isInteger), signed),
         ar: `فكّرتُ في عدد، ثم ضربته في ${m}، ثم طرحتُ من الناتج ${b}، ثم قسمتُ الناتج على ${d}، فكانت النتيجة ${signed(r)}. ما العدد الذي فكّرتُ فيه؟`,
         en: `I thought of a number, multiplied it by ${m}, subtracted ${b}, then divided the result by ${d}, and got ${signed(r)}. What was my number?`,
@@ -114,7 +114,7 @@ const workBackward = T('g7_work_backward', /^خطه حل المساله الحل
   const b = int(rng, 1, 20), add = diff === 'easy' || rng() < 0.5;
   const c = add ? m * x + b : m * x - b;
   return {
-    eq: `back machine ${m} ${add ? '+' : '-'}${b} = ${c}`, answer: signed(x),
+    eq: `back machine ${m} ${add ? '+' : '−'}${b} = ${signed(c)}`, answer: signed(x),
     wrongs: numWrongs(x, [add ? (c + b) / m : (c - b) / m, add ? c / m - b : c / m + b, add ? c - b : c + b, c * m + b].filter(Number.isInteger), signed),
     ar: `فكّرتُ في عدد، ثم ضربته في ${m}، ثم ${add ? 'أضفتُ إلى الناتج' : 'طرحتُ من الناتج'} ${b}، فكانت النتيجة ${signed(c)}. ما العدد الذي فكّرتُ فيه؟`,
     en: `I thought of a number, multiplied it by ${m}, then ${add ? 'added' : 'subtracted'} ${b}, and got ${signed(c)}. What was my number?`,

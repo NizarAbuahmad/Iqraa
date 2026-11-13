@@ -82,7 +82,7 @@ describe('Grade 7 generators: shape', () => {
         assert.equal(item.wrongs.length, 3, where);
         assert.equal(new Set([item.answer, ...item.wrongs]).size, 4, `not distinct: ${where}`);
         assert.ok(!('check' in item) && !('verified' in item), `carries a check: ${where}`);
-        for (const s of [item.answer, ...item.wrongs, item.promptAr!, item.promptEn!]) {
+        for (const s of [item.answer, ...item.wrongs, item.promptAr!, item.promptEn!, item.eq]) {
           assert.ok(!/NaN|undefined|Infinity|\[object/.test(s), `bad text: ${where}`);
           assert.ok(!/(^|[^\w])-\d/.test(s), `hyphen-minus: ${s}`);
         }
