@@ -116,6 +116,27 @@ describe('Grade 1 Arabic semester 2 pages (audit 2026-11-13)', () => {
   });
 });
 
+describe('Grade 3 Arabic semester 2 and maths pages (audit 2026-11-13)', () => {
+  // Every Arabic S2 lesson was cut one lesson early (its folder opens on the
+  // lesson BEFORE it), the same fault as Grade 6 Arabic. Read by eye.
+  const A = 'kbl-g3-arabic-s2-nccd-';
+  it('each Arabic S2 lesson reads the folder that opens on it', () => {
+    assert.equal(bookPagesForLesson(`${A}u6_l1`)!.urls[0], `${BOOK_PAGES_BASE_URL}/${A}u6_l2/1.jpg`);
+    assert.equal(bookPagesForLesson(`${A}u9_l5`)!.urls[0], `${BOOK_PAGES_BASE_URL}/${A}u10_l1/1.jpg`);
+    // unit 10's last folder holds lesson 4 (p. 115) and lesson 5 (p. 120)
+    assert.equal(bookPagesForLesson(`${A}u10_l4`)!.page, 115);
+    assert.equal(bookPagesForLesson(`${A}u10_l5`)!.urls[0], `${BOOK_PAGES_BASE_URL}/${A}u10_l5/6.jpg`);
+  });
+
+  it('a maths lesson opens on its own page of the unit folder, not the unit cover', () => {
+    const M = 'kbl-g3-math-s2-nccd-';
+    // the folder named after u9_l3 opens on the unit 9 cover (p. 42); lesson 3 is p. 48
+    assert.equal(bookPagesForLesson(`${M}u9_l3`)!.page, 48);
+    assert.equal(bookPagesForLesson(`${M}u9_l3`)!.urls[0], `${BOOK_PAGES_BASE_URL}/${M}u9_l3/7.jpg`);
+    assert.equal(bookPagesForLesson(`${M}u8_l1`)!.page, 26);
+  });
+});
+
 describe('bookPagesForLesson', () => {
   it('lists one image per page of the lesson, numbered from 1', () => {
     const [id, entry] = Object.entries(lessons)[0]!;
