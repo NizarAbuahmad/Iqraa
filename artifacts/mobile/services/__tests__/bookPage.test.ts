@@ -9,7 +9,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import pageLinks from '../../../../knowledge-base/book-page-links.json' with { type: 'json' };
-import { BOOK_PAGES_BASE_URL, bookPagesForLesson, lessonsWithFigures } from '../bookFigures.ts';
+import { BOOK_PAGES_BASE_URL, bookPagesForLesson, lessonsWithFigures, type BookPageLink } from '../bookFigures.ts';
 import { KB_BOOKS, KB_LESSONS, KB_UNITS } from '../knowledgeBase.ts';
 
 const { books, lessons } = pageLinks as {
@@ -28,6 +28,36 @@ describe('book-page-links.json', () => {
       assert.ok(book, `${id} is cut from an unverified book`);
       assert.ok(l.startPage >= 1 && l.startPage <= l.endPage && l.endPage <= book.pages, id);
       assert.ok(l.endPage - l.startPage < 20, `${id} is ${l.endPage - l.startPage + 1} pages`);
+    }
+  });
+
+  it('a corrected range reads only pages its folder actually holds', () => {
+    // `rendered` points a lesson at images cut for another range. Each folder
+    // was cut as one contiguous run of pages, so the lesson's pages must sit
+    // inside that run, in a folder named after a real lesson.
+    const known = new Set(KB_LESSONS.map(l => l.id));
+    for (const [id, l] of Object.entries(lessons as Record<string, BookPageLink>)) {
+      const r = l.rendered;
+      if (!r) continue;
+      // `<lesson>-vN`: a re-render that could not reuse the lesson's own folder (render_lesson_pages.py, target_dir)
+      assert.ok(known.has(r.dir.replace(/-v\d+$/, '')), `${id} reads from unknown folder ${r.dir}`);
+      assert.ok(r.startPage <= l.startPage && l.endPage <= r.endPage,
+        `${id} (${l.startPage}-${l.endPage}) is outside ${r.dir}'s pages (${r.startPage}-${r.endPage})`);
+      assert.ok(r.endPage - r.startPage < 20, `${r.dir} cannot hold ${r.endPage - r.startPage + 1} pages`);
+    }
+  });
+
+  it('a folder another lesson reads from says the same pages everywhere', () => {
+    // Two entries naming one folder must agree on which pages it holds, and
+    // a folder still used by its own lesson (no `rendered`) holds that
+    // lesson's range — so one image index never means two pages.
+    const holds = new Map<string, string>();
+    for (const [id, l] of Object.entries(lessons as Record<string, BookPageLink>)) {
+      const dir = l.rendered?.dir ?? id;
+      const span = `${l.sourceId}:${l.rendered?.startPage ?? l.startPage}`;
+      const prev = holds.get(dir);
+      assert.ok(prev === undefined || prev === span, `${dir} is read as ${prev} and as ${span}`);
+      holds.set(dir, span);
     }
   });
 
@@ -78,6 +108,18 @@ describe('bookPagesForLesson', () => {
     assert.equal(pages.urls.at(-1), `${BOOK_PAGES_BASE_URL}/${id}/${pages.urls.length}.jpg`);
     assert.equal(pages.page, entry.startPage);
     assert.ok(pages.aspect > 0.5 && pages.aspect < 1, 'a portrait page');
+  });
+
+  it('reads a corrected range from the folder that holds its pages', () => {
+    const entry = Object.entries(lessons as Record<string, BookPageLink>).find(([, l]) => l.rendered);
+    assert.ok(entry, 'no corrected range to check');
+    const [id, l] = entry;
+    const r = l.rendered!;
+    const pages = bookPagesForLesson(id)!;
+    assert.equal(pages.page, l.startPage);
+    assert.equal(pages.urls.length, l.endPage - l.startPage + 1);
+    assert.equal(pages.urls[0], `${BOOK_PAGES_BASE_URL}/${r.dir}/${l.startPage - r.startPage + 1}.jpg`);
+    assert.equal(pages.urls.at(-1), `${BOOK_PAGES_BASE_URL}/${r.dir}/${l.endPage - r.startPage + 1}.jpg`);
   });
 
   it('gives nothing for a lesson without pages, or no lesson', () => {
