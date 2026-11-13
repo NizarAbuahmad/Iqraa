@@ -326,9 +326,11 @@ describe("prompt version per kind", () => {
    */
   const body = { lessonId: "kbl-g10-chem-1", subject: "Chemistry", grade: "10", language: "arabic" };
 
-  it("gives lesson-teaching its own version, and every other kind the global one", () => {
+  it("gives lesson-teaching and lesson-plan their own versions, and every other kind the global one", () => {
     assert.equal(promptVersionFor("lesson-teaching"), "2026-11-03.2");
-    for (const kind of ["worksheet", "quiz", "lesson-plan", "homework", "prompt-slides"]) {
+    // 2026-11-13: the lesson-type and grade-band clauses (`lessonKinds.ts`).
+    assert.equal(promptVersionFor("lesson-plan"), "2026-11-13.1");
+    for (const kind of ["worksheet", "quiz", "homework", "prompt-slides"]) {
       assert.equal(promptVersionFor(kind), PROMPT_VERSION, kind);
     }
   });

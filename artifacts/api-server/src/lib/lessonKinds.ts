@@ -191,3 +191,146 @@ export function lessonKindClauseEn(b: { subject?: string; subjectId?: string }):
   if (!kind) return "";
   return `${KIND_EN[kind]}${kind === "science" && hasCalcs(b) ? CALC_EN : ""}\n${OVERRIDE_EN}`;
 }
+
+// ─── Lesson types inside a subject ───────────────────────────────────────────
+
+/**
+ * The lesson's TYPE inside its subject — a hadith, a drama, a listening lesson.
+ *
+ * The subject clause above is one routine per subject, and inside Islamic
+ * education, the arts and Arabic it fitted one type of lesson: the recitation
+ * clause asked a lesson on the wudu for choral reading and pronunciation, the
+ * arts clause asked a drama lesson for "a product". The app reads the type from
+ * the lesson's id (`artifacts/mobile/services/ai/lessonTypes.ts`) and sends it
+ * as `lessonType`; the list below must equal that file's `LESSON_TYPES` (a test
+ * reads both). A type that is not on the list, or does not belong to the
+ * request's subject, adds nothing — the request is client-controlled.
+ */
+export const LESSON_TYPES = [
+  "quran", "hadith", "creed", "worship", "sira", "conduct",
+  "visual-art", "music", "drama",
+  "listening", "speaking", "reading", "writing", "language", "letters",
+] as const;
+export type LessonType = typeof LESSON_TYPES[number];
+
+export const KIND_OF_TYPE: Record<LessonType, LessonKind> = {
+  quran: "recitation", hadith: "recitation", creed: "recitation",
+  worship: "recitation", sira: "recitation", conduct: "recitation",
+  "visual-art": "making", music: "making", drama: "making",
+  listening: "arabic", speaking: "arabic", reading: "arabic",
+  writing: "arabic", language: "arabic", letters: "arabic",
+};
+
+/** The request's lesson type, when it is a known one that belongs to its subject. */
+export function lessonTypeOf(b: { subject?: string; subjectId?: string; lessonType?: unknown }): LessonType | null {
+  const t = b.lessonType;
+  if (typeof t !== "string" || !(LESSON_TYPES as readonly string[]).includes(t)) return null;
+  const type = t as LessonType;
+  return lessonKindOf(b) === KIND_OF_TYPE[type] ? type : null;
+}
+
+const TYPE_AR: Record<LessonType, string> = {
+  quran: "نوع الدرس: تلاوة قرآن (سورة أو أحكام تلاوة) — تلاوة المعلّم ثم ترديد جماعي ففردي، ومعاني المفردات من الكتاب، والمعنى الإجمالي، وتسميع ما قُرّر حفظه.",
+  hadith: "نوع الدرس: حديث شريف — قراءة نص الحديث كما ورد في سياق الكتاب وذكر راويه، ومعاني مفرداته، والتوجيه الذي يدعو إليه؛ ثم مواقف قصيرة يقرّر فيها الطلبة ما يوافق التوجيه، وتسميع الحديث.",
+  creed: "نوع الدرس: عقيدة (أركان، أو اسم من أسماء الله الحسنى، أو ركن من أركان الإيمان) — يعرض المعلّم ما يذكره الكتاب بندًا بندًا (الأركان بترتيبها، أو الاسم ومعناه) ويسمّيه صراحةً كما ورد في سياق الكتاب، ثم يربطه بأمثلة من حياة الطالب وأثره في سلوكه. لا تلاوة ولا تسميع حفظ في هذا الدرس.",
+  worship: "نوع الدرس: عبادة عملية (وضوء أو صلاة أو صيام…) — خطوات العبادة بترتيبها كما في الكتاب، ثم أداء المعلّم العملي، ثم محاكاة الطلبة خطوة بخطوة، ثم أداء فردي بقائمة رصد. لا تُضف حكمًا لم يرد في سياق الكتاب.",
+  sira: "نوع الدرس: سيرة وقصة — رواية القصة كما في الكتاب، وترتيب أحداثها على خط زمني، وإعادة الطلبة روايتها، والصفة أو العبرة المستفادة. لا تلاوة ولا تسميع، ولا تفصيل لم يرد في سياق الكتاب.",
+  conduct: "نوع الدرس: خُلق وآداب وقيم — موقف من حياة الطلبة، والتوجيه الذي يذكره الكتاب، وتمييز السلوك الحسن من غيره بأمثلة وتمثيل أدوار، وعمل محدّد يلتزم به الطالب. لا تلاوة ولا تسميع حفظ.",
+  "visual-art": "نوع الدرس: تربية فنية (رسم أو تلوين أو تشكيل) — عرض نموذج وتقنية، ثم يُنتج الطالب عمله، ثم يراجعه بمعايير. سمِّ ما يذكره سياق الكتاب من ألوان أو أشكال أو خطوط بأسمائها.",
+  music: "نوع الدرس: تربية موسيقية — استماع أولًا، ثم تقليد بالتصفيق أو الآلة أو الغناء (صدى)، ثم أداء جماعي وتنويع من ابتكار الطلبة. \"materials\": آلة إيقاعية أو تصفيق وتسجيل. لا «نموذج منجز» ولا منتج يُصنع.",
+  drama: "نوع الدرس: تربية مسرحية — تحديد مساحة تمثيل، ومشهد قصير يؤدّيه المعلّم، ثم تجريب الطلبة في مجموعات (تجميد، وتبادل دوري الممثل والجمهور)، ثم عرض مشهد قصير وتعليق الجمهور. لا «نموذج منجز» ولا منتج يُصنع.",
+  listening: "نوع الدرس: استماع — يقرأ المعلّم نص الاستماع من دليل المعلّم أو يشغّل تسجيله والكتب مغلقة؛ الطلبة يستمعون ولا يقرؤون النص. أسئلة تذكّر ثم ترتيب ثم رأي، وإجابات شفوية أو بالرسم. لا قراءة جهرية من الطلبة ولا فقرة مكتوبة.",
+  speaking: "نوع الدرس: تحدّث — صورة أو موقف من الكتاب، ومفردات مساعدة، ونموذج حديث قصير من المعلّم، ثم حديث الطلبة بالتناوب وفي ثنائيات، وتقييم الطلاقة ووضوح الجملة. لا قراءة نص ولا كتابة فقرة.",
+  reading: "نوع الدرس: قراءة وفهم — قراءة المعلّم النموذجية لنص الدرس، ثم قراءة الطلبة، ومعاني المفردات من السياق، وأسئلة الفهم من السهل إلى العميق.",
+  writing: "نوع الدرس: كتابة — إن كان الدرس قاعدة إملائية أو كتابية فأمثلة من نص الوحدة يلاحظ الطلبة فيها القاعدة، ثم تصنيف كلمات وإملاء قصير ونسخ؛ وإن كان كتابة موضوع فنموذج ثم تخطيط ثم مسودة ثم مراجعة بمعايير.",
+  language: "نوع الدرس: بناء لغوي — جمل من نص الوحدة تحمل الظاهرة اللغوية، يكتشفها الطلبة منها، ثم تركيب وتصحيح وتطبيق في جمل من تأليفهم.",
+  letters: "نوع الدرس: حرف وصوت — سماع الصوت في كلمات، ورؤية شكل الحرف في مواضعه، وقراءة المقاطع بالحركات، وكتابة الحرف. \"assessment\": قراءة مقاطع وكتابة الحرف.",
+};
+
+const TYPE_EN: Record<LessonType, string> = {
+  quran: "Lesson type: Quran recitation (a surah or a recitation rule) — the teacher recites, students repeat together then one by one, the word meanings from the book, the overall meaning, and recitation of what is set for memorising.",
+  hadith: "Lesson type: hadith — read the hadith as the book context gives it and name its narrator, the meanings of its words and the guidance it calls to; then short situations where students decide what follows the guidance, and recitation of the hadith.",
+  creed: "Lesson type: creed (pillars, one of the Names of Allah, or an article of faith) — the teacher sets out what the book states item by item (the pillars in order, or the Name and its meaning), naming each as the book context does, then links it to examples from the student's life and its effect on behaviour. No recitation and no memorisation check in this lesson.",
+  worship: "Lesson type: an act of worship (wudu, prayer, fasting…) — the steps in the book's order, the teacher's demonstration, students miming step by step, then individual performance against a checklist. Add no ruling the book context does not contain.",
+  sira: "Lesson type: sira and story — tell the story as the book gives it, put its events on a timeline, students retell it, and the quality or lesson learned. No recitation, no memorisation, and no detail the book context does not contain.",
+  conduct: "Lesson type: manners, character and values — a situation from students' lives, the guidance the book gives, telling good behaviour from bad through examples and role play, and one specific deed the student commits to. No recitation and no memorisation check.",
+  "visual-art": "Lesson type: visual art (drawing, colouring or making) — show a model and a technique, the student makes their own work, then reviews it against criteria. Name the colours, shapes or lines the book context gives.",
+  music: "Lesson type: music — listen first, then copy by clapping, instrument or singing (echo), then perform together and vary it with the students' own ideas. \"materials\": a percussion instrument or clapping, and a recording. No \"finished model\" and no product to make.",
+  drama: "Lesson type: drama — mark out an acting space, the teacher performs a short scene, students try it in groups (freeze, swapping actor and audience), then perform a short scene and the audience responds. No \"finished model\" and no product to make.",
+  listening: "Lesson type: listening — the teacher reads the listening text from the teacher's guide, or plays its recording, with books closed; students listen and do not read the text. Recall, then ordering, then opinion questions, answered aloud or by drawing. No reading aloud by students and no written paragraph.",
+  speaking: "Lesson type: speaking — a picture or situation from the book, helpful vocabulary, a short spoken model from the teacher, then students speak in turns and in pairs; assess fluency and clear sentences. No reading of a text and no written paragraph.",
+  reading: "Lesson type: reading and comprehension — the teacher's model reading of the lesson's text, then students read, word meanings from context, and comprehension questions from easy to deep.",
+  writing: "Lesson type: writing — if the lesson is a spelling or writing rule, examples from the unit's text where students notice the rule, then sorting words, a short dictation and copying; if it is a composition, a model, then a plan, a draft and a review against criteria.",
+  language: "Lesson type: language building — sentences from the unit's text that carry the language feature, students discover it from them, then build, correct and use it in sentences of their own.",
+  letters: "Lesson type: a letter and its sound — hear the sound in words, see the letter's shape in its positions, read its syllables with the vowel marks, and write it. \"assessment\": reading syllables and writing the letter.",
+};
+
+const TYPE_OVERRIDE_AR = "نوع الدرس يحدّد ما يجري في \"mainActivity\" و\"guidedPractice\" و\"independentPractice\"، ويحلّ محلّ ما يخالفه في بند طبيعة المادة أعلاه.";
+const TYPE_OVERRIDE_EN = "The lesson type decides what happens in \"mainActivity\", \"guidedPractice\" and \"independentPractice\", and replaces anything in the subject section above that contradicts it.";
+
+/** The lesson-type clause to put after the subject clause, or "". */
+export function lessonTypeClauseAr(b: { subject?: string; subjectId?: string; lessonType?: unknown }): string {
+  const type = lessonTypeOf(b);
+  return type ? `${TYPE_AR[type]}\n${TYPE_OVERRIDE_AR}` : "";
+}
+
+export function lessonTypeClauseEn(b: { subject?: string; subjectId?: string; lessonType?: unknown }): string {
+  const type = lessonTypeOf(b);
+  return type ? `${TYPE_EN[type]}\n${TYPE_OVERRIDE_EN}` : "";
+}
+
+// ─── Grade bands ─────────────────────────────────────────────────────────────
+
+/**
+ * Homework and closure sized to the grade — mirrors `gradeLevelOf` /
+ * `gradeBandOf` in `artifacts/mobile/services/ai/lessonTypes.ts`. Grades 1–3
+ * close aloud and take home one short task; Grades 4–6 write at most five
+ * sentences; Grade 7 and up, and a grade we cannot read, get no clause.
+ */
+export type GradeBand = "early" | "middle" | "upper";
+
+const AR_GRADE_ORDINALS = [
+  "الاول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس",
+  "السابع", "الثامن", "التاسع", "العاشر", "الحادي عشر", "الثاني عشر",
+];
+
+export function gradeLevelOf(grade: unknown): number | null {
+  if (typeof grade !== "string" && typeof grade !== "number") return null;
+  const g = String(grade)
+    .replace(/[ً-ْٰـ]/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+  const digits = g.match(/^(?:grade[-\s]?)?(\d{1,2})$/);
+  if (digits) {
+    const n = Number(digits[1]);
+    return n >= 1 && n <= 12 ? n : null;
+  }
+  const ar = g.replace(/^الصف\s*/, "");
+  const order = AR_GRADE_ORDINALS.map((name, i) => [name, i + 1] as const).sort((a, b) => b[0].length - a[0].length);
+  for (const [name, n] of order) if (ar === name) return n;
+  return null;
+}
+
+export function gradeBandOf(level: number | null): GradeBand {
+  if (level === null) return "upper";
+  if (level <= 3) return "early";
+  if (level <= 6) return "middle";
+  return "upper";
+}
+
+/** The homework/closure clause for the request's grade, or "". */
+export function gradeBandClauseAr(b: { grade?: unknown }): string {
+  const band = gradeBandOf(gradeLevelOf(b.grade));
+  if (band === "early") return "الصفوف الأولى (الأول إلى الثالث): اجعل \"homework\" مهمة واحدة قصيرة يؤدّيها الطفل في البيت في نحو عشر دقائق مع أحد أفراد أسرته — شفوية أو عملية، أو كتابة جملة أو جملتين على الأكثر؛ لا فقرة ولا ملخص ولا عدد كبير من الجمل. واجعل \"closure\" شفويًا (سؤال يجيب عنه الطلبة بالكلام أو بالإشارة)، لا بطاقة مكتوبة.";
+  if (band === "middle") return "الصفوف من الرابع إلى السادس: اجعل \"homework\" قصيرًا، لا يتجاوز ما يكتبه الطالب فيه خمس جمل.";
+  return "";
+}
+
+export function gradeBandClauseEn(b: { grade?: unknown }): string {
+  const band = gradeBandOf(gradeLevelOf(b.grade));
+  if (band === "early") return "Early grades (1 to 3): make \"homework\" one short task the child can do at home in about ten minutes with a family member — oral or hands-on, or at most one or two written sentences; no paragraph, no summary, no long sentence count. Make \"closure\" oral (a question students answer aloud or by gesture), not a written card.";
+  if (band === "middle") return "Grades 4 to 6: keep \"homework\" short — no more than five sentences of writing.";
+  return "";
+}

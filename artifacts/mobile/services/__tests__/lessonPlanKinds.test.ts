@@ -13,6 +13,7 @@ import assert from 'node:assert/strict';
 import { aiService } from '../ai/generators.ts';
 import { LESSON_STYLE_IDS } from '../ai/lessonPlanBlueprints.ts';
 import { arPrefixed, lessonKindFor, type LessonKind } from '../ai/lessonPlanKinds.ts';
+import { lessonTypeForKb } from '../ai/lessonTypes.ts';
 import { arMinutes } from '../ai/lessonPlanTypes.ts';
 import { KB_LESSONS, getBookForLesson } from '../knowledgeBase.ts';
 import { figuresForLesson } from '../bookFigures.ts';
@@ -21,8 +22,14 @@ import type { AIRequest, LessonPlanOutput } from '../ai/AIService.ts';
 // The mock generator sleeps 1–2 s per call to feel like a model; this suite makes hundreds.
 (aiService as unknown as { delay: () => Promise<void> }).delay = async () => {};
 
+/**
+ * The subject's first lesson that still gets its KIND's routine: no type, or a
+ * type the routine was written for (a surah, a visual-art or a reading lesson).
+ * The other types have their own bodies, pinned in `lessonPlanTypes.test.ts`.
+ */
+const KIND_ROUTINE = new Set([null, 'quran', 'visual-art', 'reading']);
 const lessonOf = (subjectId: string) => {
-  const l = KB_LESSONS.find(x => getBookForLesson(x)?.subjectId === subjectId);
+  const l = KB_LESSONS.find(x => getBookForLesson(x)?.subjectId === subjectId && KIND_ROUTINE.has(lessonTypeForKb(x)));
   assert.ok(l, `no ${subjectId} lesson — the catalog changed`);
   return l;
 };

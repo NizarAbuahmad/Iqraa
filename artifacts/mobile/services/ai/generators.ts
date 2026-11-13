@@ -33,6 +33,8 @@ import { buildLessonStyleBlueprint, type LessonDocContext } from './lessonPlanBl
 import { revisionPlanFromRequest } from './lessonPlanRevision.ts';
 import { arPrefixed, lessonKindFor, type LessonKind } from './lessonPlanKinds.ts';
 import { arMinutes } from './lessonPlanTypes.ts';
+import { typedEarlyHomework, typedIntro, typedObjectives } from './lessonPlanTyped.ts';
+import { gradeBandFor, lessonTypeForId, type GradeBand, type LessonType } from './lessonTypes.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
 import { QUIZ_TYPE_ORDER } from '../quizPaper.ts';
 import { splitFormatTypes, fitFormats, formatPoints, worksheetTotal, buildFormatSet, formatsHaveNoLesson } from './worksheetFormats.ts';
@@ -294,10 +296,12 @@ function kindObjectives(kind: LessonKind, topic: string, lang: Lang): string[] |
   return (lang === 'ar' ? ar : en)[kind] ?? null;
 }
 
-function lpObjectivesAr(topic: string, kb: KBLesson | null, custom?: string, kind: LessonKind = 'calc'): string[] {
+function lpObjectivesAr(topic: string, kb: KBLesson | null, custom?: string, kind: LessonKind = 'calc', type: LessonType | null = null): string[] {
   if (custom?.trim()) return custom.trim().split('\n').filter(Boolean);
   // Prefer official curriculum outcomes when present on the KB lesson
   if (kb?.objectives?.length) return [...kb.objectives];
+  const typed = typedObjectives(type, topic, 'ar');
+  if (typed) return typed;
   const own = kindObjectives(kind, topic, 'ar');
   if (own && (kind === 'movement' || kind === 'making' || kind === 'recitation')) return own;
   if (kb?.keyConceptsAr.length) {
@@ -412,8 +416,8 @@ function kindIntro(kind: LessonKind, topic: string, lang: Lang): string[] | null
   return (lang === 'ar' ? ar : en)[kind] ?? null;
 }
 
-function lpIntroAr(topic: string, kb: KBLesson | null, kind: LessonKind = 'calc'): string {
-  const own = kindIntro(kind, topic, 'ar');
+function lpIntroAr(topic: string, kb: KBLesson | null, kind: LessonKind = 'calc', type: LessonType | null = null): string {
+  const own = typedIntro(type, topic, 'ar') ?? kindIntro(kind, topic, 'ar');
   if (own) return pick(own) + bookFigureCue(kb, 'ar');
   if (kb) return pick([
     `سأبدأ بطرح السؤال: "أين نلتقي ${arPrefixed('ب', topic)} في حياتنا اليومية؟" وأسجّل إجابات الطلبة على السبورة.${bookFigureCue(kb, 'ar')} ثم أربط إجاباتهم بأهداف الدرس.`,
@@ -425,8 +429,17 @@ function lpIntroAr(topic: string, kb: KBLesson | null, kind: LessonKind = 'calc'
     `"فكّر – زاوج – شارك": يفكر كل طالب 30 ثانية فيما يعرفه عن ${topic}، يشارك زميله، ثم تُطرح بعض الإجابات على الصف.`,
   ]);
 }
-function lpClosureAr(topic: string, dur: number): string {
+/**
+ * Grades 1–3 close aloud. Every plan used to end on a written card — «اكتب 3
+ * أشياء تعلّمتها، 2 مفاهيم، 1 سؤال» — which a seven-year-old cannot do in five
+ * minutes at the end of a lesson.
+ */
+function lpClosureAr(topic: string, dur: number, band: GradeBand = 'upper'): string {
   const t = Math.round(dur * 0.1);
+  if (band === 'early') return pick([
+    `(${arMinutes(t)}) غلق الدرس شفويًا:\n• سأسأل: «ما أجمل شيء تعلّمناه اليوم عن ${topic}؟» ويجيب ثلاثة أو أربعة طلبة.\n• ثم يرفع كل طالب إبهامه إن فهم الدرس، أو يده إن بقي عنده سؤال، وسأبدأ الحصة القادمة بأسئلتهم.`,
+    `(${arMinutes(t)}) دائرة الختام:\n• سأطلب من كل طالب أن يقول كلمة واحدة تذكّره بدرس اليوم.\n• وسأختم بتذكير الطلبة بما سيفعلونه في البيت.`,
+  ]);
   return pick([
     `(${arMinutes(t)}) غلق الدرس:\n• أهم شيء تعلمته اليوم عن ${topic}.\n• سؤال لا يزال يراوده.\nوسأجمع البطاقات عند الخروج.`,
     `(${arMinutes(t)}) "3-2-1": سأطلب من كل طالب أن يكتب قبل الخروج:\n• 3 أشياء تعلمها\n• 2 مفاهيم يريد فهمها أكثر\n• 1 سؤال لديه عن ${topic}`,
@@ -435,9 +448,11 @@ function lpClosureAr(topic: string, dur: number): string {
 
 // ─── Lesson Plan helpers (English) ───────────────────────────────────────────
 
-function lpObjectivesEn(topic: string, kb: KBLesson | null, custom?: string, kind: LessonKind = 'calc'): string[] {
+function lpObjectivesEn(topic: string, kb: KBLesson | null, custom?: string, kind: LessonKind = 'calc', type: LessonType | null = null): string[] {
   if (custom?.trim()) return custom.trim().split('\n').filter(Boolean);
   if (kb?.objectives?.length) return [...kb.objectives];
+  const typed = typedObjectives(type, topic, 'en');
+  if (typed) return typed;
   const own = kindObjectives(kind, topic, 'en');
   if (own && (kind === 'movement' || kind === 'making' || kind === 'recitation')) return own;
   if (kb?.keyConceptsEn.length) {
@@ -454,8 +469,8 @@ function lpObjectivesEn(topic: string, kb: KBLesson | null, custom?: string, kin
     `Students will solve problems involving ${topic} using systematic methods`,
   ];
 }
-function lpIntroEn(topic: string, kb: KBLesson | null, kind: LessonKind = 'calc'): string {
-  const own = kindIntro(kind, topic, 'en');
+function lpIntroEn(topic: string, kb: KBLesson | null, kind: LessonKind = 'calc', type: LessonType | null = null): string {
+  const own = typedIntro(type, topic, 'en') ?? kindIntro(kind, topic, 'en');
   if (own) return pick(own) + bookFigureCue(kb, 'en');
   if (kb) return pick([
     `Open with: "Where do we encounter ${topic} in everyday life?" Record 3-4 student responses on the board.${bookFigureCue(kb, 'en')} Then bridge to today's objectives.`,
@@ -467,8 +482,12 @@ function lpIntroEn(topic: string, kb: KBLesson | null, kind: LessonKind = 'calc'
     `"Think – Pair – Share": Students think for 30 seconds about what they know about ${topic}, share with a partner, then selected pairs share with the class.`,
   ]);
 }
-function lpClosureEn(topic: string, dur: number): string {
+function lpClosureEn(topic: string, dur: number, band: GradeBand = 'upper'): string {
   const t = Math.round(dur * 0.1);
+  if (band === 'early') return pick([
+    `(${t} min) Oral close:\n• Ask: “What was the best thing we learned today about ${topic}?” and take three or four answers.\n• Students show a thumbs-up if they understood, or a raised hand if they still have a question; start the next lesson with those questions.`,
+    `(${t} min) Closing circle:\n• Each student says one word that reminds them of today’s lesson.\n• Finish by reminding students what they will do at home.`,
+  ]);
   return pick([
     `(${t} min) Exit ticket:\n• Most important thing learned about ${topic}.\n• One remaining question.\nCollect at the door.`,
     `(${t} min) "3-2-1" reflection:\n• 3 things learned\n• 2 concepts to explore further\n• 1 question about ${topic}`,
@@ -496,15 +515,49 @@ function kindHomework(kind: LessonKind, topic: string, lang: Lang): string[] | n
   };
   return (lang === 'ar' ? ar : en)[kind] ?? null;
 }
-function lpHomework(topic: string, lang: Lang, kind: LessonKind = 'calc'): string {
+/** Homework for Grades 1–3: one short task, oral or hands-on, with someone at home. */
+function earlyKindHomework(kind: LessonKind, topic: string, lang: Lang): string[] {
+  const ar: Record<LessonKind, string[]> = {
+    calc: [`حلّ تمرينين من الكتاب عن «${topic}»، واطلب من أحد أفراد أسرتك أن يراجعهما معك.`, `ابحث في بيتك عن مثال على «${topic}»، وارسمه أو أخبر أسرتك عنه.`],
+    science: [`لاحظ شيئًا في بيتك يتصل بدرس «${topic}»، وأخبر أسرتك بما لاحظت.`, 'ارسم شيئًا رأيته اليوم في الدرس، واكتب اسمه تحته.'],
+    recitation: [`أخبر أحد أفراد أسرتك بما تعلّمته في درس «${topic}».`, 'ارسم نفسك وأنت تعمل بما تعلّمته اليوم.'],
+    arabic: ['اقرأ نص الدرس بصوت واضح لأحد أفراد أسرتك.', 'اكتب جملة واحدة فيها كلمة جديدة من الدرس.'],
+    english: ['قل الكلمات الإنجليزية الجديدة لأحد أفراد أسرتك، وأشر إلى صورة كل كلمة.', 'ارسم صورتين لكلمتين جديدتين، واكتب الكلمة الإنجليزية تحت كل صورة.'],
+    social: [`اسأل أحد أفراد أسرتك سؤالًا واحدًا عن «${topic}»، وأخبر صفّك بإجابته.`, `ارسم صورة عن «${topic}»، وأخبر أسرتك عنها.`],
+    movement: ['العب مع أحد أفراد أسرتك لعبة فيها الحركة التي تعلّمناها، عشر دقائق وبأمان.', 'أرِ أسرتك الحركة التي تعلّمتها اليوم.'],
+    making: ['أكمل عملك في البيت، وأحضره إلى الصف.', `ابحث في بيتك عن شيء يذكّرك بدرس «${topic}»، وأخبر صفّك عنه.`],
+  };
+  const en: Record<LessonKind, string[]> = {
+    calc: [`Do two exercises from the book on “${topic}” and ask a family member to check them with you.`, `Find an example of “${topic}” at home, and draw it or tell your family about it.`],
+    science: [`Notice something at home linked to “${topic}” and tell your family what you noticed.`, 'Draw something you saw in today’s lesson and write its name under it.'],
+    recitation: [`Tell a family member what you learned in “${topic}”.`, 'Draw yourself doing what you learned today.'],
+    arabic: ['Read the lesson’s text aloud to a family member.', 'Write one sentence with a new word from the lesson.'],
+    english: ['Say the new English words to a family member and point to a picture of each.', 'Draw two pictures for two new words and write the English word under each.'],
+    social: [`Ask a family member one question about “${topic}” and tell the class their answer.`, `Draw a picture about “${topic}” and tell your family about it.`],
+    movement: ['Play a game with a family member that uses the movement we learned, for ten minutes and safely.', 'Show your family the movement you learned today.'],
+    making: ['Finish your work at home and bring it to class.', `Find something at home that reminds you of “${topic}” and tell the class about it.`],
+  };
+  return (lang === 'ar' ? ar : en)[kind];
+}
+
+/**
+ * The plan's homework, sized to the grade. A Grade 2 maths plan used to ask for
+ * «ملخصًا شخصيًا من 10 جمل», and a Grade 2 Arabic one for «فقرة من خمس جمل عن
+ * «أستمع بانتباه وتركيز»». Grades 1–3 get one short task (`typedEarlyHomework` /
+ * `earlyKindHomework`); Grades 4–6 get a five-sentence summary in place of ten;
+ * Grade 7 and up keep what they had.
+ */
+function lpHomework(topic: string, lang: Lang, kind: LessonKind = 'calc', band: GradeBand = 'upper', type: LessonType | null = null): string {
+  if (band === 'early') return pick(type ? typedEarlyHomework(type, topic, lang) : earlyKindHomework(kind, topic, lang));
   const own = kindHomework(kind, topic, lang);
   if (own) return pick(own);
+  const sentences = band === 'middle' ? (lang === 'ar' ? 'خمس جمل' : '5-sentence') : (lang === 'ar' ? '10 جمل' : '10-sentence');
   return pick(lang === 'ar' ? [
     `أجب عن التمارين المحددة من الكتاب المدرسي حول ${topic}. بيّن خطوات الحل كاملة.`,
-    `اكتب ملخصًا شخصيًا من 10 جمل عن ${topic}. أضف مثالًا حياتيًا وجدته بنفسك.`,
+    `اكتب ملخصًا شخصيًا من ${sentences} عن ${topic}. أضف مثالًا حياتيًا وجدته بنفسك.`,
   ] : [
     `Complete the assigned textbook exercises on ${topic}. Show all working for full credit.`,
-    `Write a 10-sentence personal summary of ${topic} including a real-world example you found.`,
+    `Write a ${sentences} personal summary of ${topic} including a real-world example you found.`,
   ]);
 }
 /**
@@ -1363,13 +1416,25 @@ export class MockAIService extends AIService {
     // the caller's subject name is only the fallback for a typed topic.
     const subjectId = (kb ? getBookForLesson(kb)?.subjectId : subjectIdFromName(req.subject)) ?? undefined;
     const kind = lessonKindFor(subjectId);
+    // Inside a subject, the lesson's TYPE (a hadith, a drama, a listening
+    // lesson), read from the lesson the request names by id — never from the
+    // title search `groundedKb` falls back to. Null for a typed topic, an
+    // uploaded file and every other subject.
+    const lessonType = docs.present ? null : lessonTypeForId(req.lessonId);
+    // How much a child can be asked to do: Grades 1–3 close aloud and get one
+    // short task at home. The lesson's own book decides, else the request's grade.
+    const band = gradeBandFor(kb && kb.id === req.lessonId ? kb : null, req.grade);
+    // An Arabic reader's lesson is titled by its skill («أستمع بانتباه وتركيز»);
+    // its homework is about the unit's theme instead.
+    const unitTheme = kind === 'arabic' && lessonType && kb?.id === req.lessonId ? getUnitForLesson(kb)?.[lang === 'ar' ? 'titleAr' : 'titleEn']?.trim() : undefined;
+    const hwTopic = unitTheme && !/^(الوحدة|Unit\s*\d)/.test(unitTheme) ? unitTheme : topic;
     // A first generation is variant 0 — the plan as it has always been. A
     // regenerate may draw either wording of the five style-owned sections;
     // `freshOnRegenerate` then keeps the draw that differs most from the plan on
     // screen, so pressing the button again alternates.
     const variant = req.regenerate === true && Math.random() < 0.5 ? 1 : 0;
     const styleBlueprint = buildLessonStyleBlueprint(style, {
-      topic, kb, lang, subject: req.subject, duration: dur, doc: docCtx, kind, subjectId, variant,
+      topic, kb, lang, subject: req.subject, duration: dur, doc: docCtx, kind, subjectId, variant, lessonType,
     });
 
     // Document-grounded lesson plan (Demo Mode) — prefer uploaded materials over KB soft pin
@@ -1392,7 +1457,7 @@ export class MockAIService extends AIService {
             + (exampleLine ? `\n\nمثال جاهز من الملف:\n• ${exampleLine}` : ''),
           guidedPractice: styleBlueprint.guidedPractice,
           independentPractice: styleBlueprint.independentPractice,
-          closure: lpClosureAr(topic, dur),
+          closure: lpClosureAr(topic, dur, band),
           assessment: `مرتبط ${arPrefixed('ب', fileLabel)}`
             + (conceptLine ? ` (${docs.concepts.slice(0, 2).join(' / ')})` : '')
             + `.\n${styleBlueprint.assessment}`,
@@ -1417,7 +1482,7 @@ export class MockAIService extends AIService {
           + (exampleLine ? `\n\nFile-ready example:\n• ${exampleLine}` : ''),
         guidedPractice: styleBlueprint.guidedPractice,
         independentPractice: styleBlueprint.independentPractice,
-        closure: lpClosureEn(topic, dur),
+        closure: lpClosureEn(topic, dur, band),
         assessment: `Tied to ${fileLabel}`
           + (conceptLine ? ` (${docs.concepts.slice(0, 2).join(' / ')})` : '')
           + `.\n${styleBlueprint.assessment}`,
@@ -1430,33 +1495,33 @@ export class MockAIService extends AIService {
       return {
         title: `${topic} – خطة درس`,
         grade: req.grade, subject: req.subject, duration: dur,
-        objectives: lpObjectivesAr(topic, kb, req.objectives, kind),
+        objectives: lpObjectivesAr(topic, kb, req.objectives, kind, lessonType),
         materials: styleBlueprint.materials,
         ...(priorReview ? { priorReview } : {}),
-        introduction: lpIntroAr(topic, kb, kind),
+        introduction: lpIntroAr(topic, kb, kind, lessonType),
         mainActivity: styleBlueprint.mainActivity,
         guidedPractice: styleBlueprint.guidedPractice,
         independentPractice: styleBlueprint.independentPractice,
-        closure: lpClosureAr(topic, dur),
+        closure: lpClosureAr(topic, dur, band),
         assessment: styleBlueprint.assessment,
         differentiation: styleBlueprint.differentiation,
-        homework: lpHomework(topic, 'ar', kind),
+        homework: lpHomework(hwTopic, 'ar', kind, band, lessonType),
       };
     }
     return {
       title: `${topic} – Lesson Plan`,
       grade: req.grade, subject: req.subject, duration: dur,
-      objectives: lpObjectivesEn(topic, kb, req.objectives, kind),
+      objectives: lpObjectivesEn(topic, kb, req.objectives, kind, lessonType),
       materials: styleBlueprint.materials,
       ...(priorReview ? { priorReview } : {}),
-      introduction: lpIntroEn(topic, kb, kind),
+      introduction: lpIntroEn(topic, kb, kind, lessonType),
       mainActivity: styleBlueprint.mainActivity,
       guidedPractice: styleBlueprint.guidedPractice,
       independentPractice: styleBlueprint.independentPractice,
-      closure: lpClosureEn(topic, dur),
+      closure: lpClosureEn(topic, dur, band),
       assessment: styleBlueprint.assessment,
       differentiation: styleBlueprint.differentiation,
-      homework: lpHomework(topic, 'en', kind),
+      homework: lpHomework(hwTopic, 'en', kind, band, lessonType),
     };
   }
 

@@ -47,9 +47,15 @@ export const PROMPT_VERSION = "2026-10-04.1";
  *   2026-11-03 (second): rule 16. A maths lesson may ask for one `visual` (a
  *   graph or vectors) on a concept or the worked example; a row stored before
  *   this has none, so a maths lesson's pooled section would never draw one.
+ * - `lesson-plan`, 2026-11-13: the prompt gained the lesson-type clause (a
+ *   hadith, a drama or a listening lesson is told so, `lessonType`) and the
+ *   grade's homework and closure size. A plan pooled before has neither: a
+ *   Grade 2 listening lesson would keep being served a read-aloud and a
+ *   five-sentence paragraph.
  */
 const PROMPT_VERSION_BY_KIND: Readonly<Record<string, string>> = {
   "lesson-teaching": "2026-11-03.2",
+  "lesson-plan": "2026-11-13.1",
 };
 
 /** The version a kind's pool is keyed and stored under. */
@@ -71,6 +77,10 @@ const SLICED_FIELDS = [
 const STRICT_ONLY_FIELDS = [
   ...SLICED_FIELDS,
   "teachingStyle",
+  // The lesson's type inside its subject (`lessonKinds.ts`). It follows from
+  // the lesson, but a request that names a type and one that does not get
+  // different prompts. Absent everywhere but the lesson plan.
+  "lessonType",
   "activityType",
   "groupType",
   "teachingGoal",

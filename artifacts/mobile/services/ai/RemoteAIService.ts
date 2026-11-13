@@ -20,6 +20,7 @@ import {
 } from './AIService';
 import { DEMO_MODE } from './demoMode';
 import { MockAIService } from './generators';
+import { lessonTypeForId } from './lessonTypes.ts';
 import { appendFormats, requestWithoutFormats, splitFormatTypes } from './worksheetFormats.ts';
 import { applyClassroomSetup } from '@/services/classroomRouting';
 import { ApiError, apiFetch } from '../apiClient';
@@ -120,13 +121,23 @@ async function postJSON<T>(
   }
 }
 
+/**
+ * The live lesson plan is told the lesson's type, read from its id the same way
+ * the offline plan reads it — so a hadith lesson is a hadith lesson whether live
+ * AI is on or not. A request that names no catalog lesson goes as it was.
+ */
+export function withLessonType(req: AIRequest): AIRequest {
+  const lessonType = lessonTypeForId(req.lessonId);
+  return lessonType ? { ...req, lessonType } : req;
+}
+
 export class RemoteAIService extends AIService {
   private fallback = new MockAIService();
 
   async generateLessonPlan(req: AIRequest, opts?: GenerateOptions): Promise<LessonPlanOutput> {
     return generateWithProvenance(
       'lesson-plan',
-      () => postJSON<LessonPlanOutput>('/generate/lesson-plan', req, opts, DOCUMENT_TIMEOUT_MS),
+      () => postJSON<LessonPlanOutput>('/generate/lesson-plan', withLessonType(req), opts, DOCUMENT_TIMEOUT_MS),
       () => this.fallback.generateLessonPlan(req),
     );
   }

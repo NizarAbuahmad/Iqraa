@@ -34,6 +34,13 @@ export interface AIRequest {
    */
   lessonId?: string;
   /**
+   * The lesson's type inside its subject (a hadith, a drama, a listening
+   * lesson), read from `lessonId` by `RemoteAIService` for the lesson-plan route
+   * — see `lessonTypes.ts`. The server checks it against its own list and the
+   * subject, so an unknown value only loses the clause.
+   */
+  lessonType?: string;
+  /**
    * A scope wider than one lesson — a unit, a semester or the whole book.
    *
    * `scopeKey` is id-only and part of the artifact pool's cache key, so a
