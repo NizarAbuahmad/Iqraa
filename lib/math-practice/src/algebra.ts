@@ -1806,10 +1806,10 @@ const interpretGraphs: Topic = topic('interpret_graphs', /^تفسير التمث
     const headEn = `The conversion graph from ${c.aEn} (horizontal axis) to ${c.bEn} (vertical axis) is a straight line from the origin through (${p}, ${c.f * p}).`;
     if (kind === 0) {
       const ans = c.f * r;
-      return { eq: `${p}, ${c.f * p}, ${r}`, answer: String(ans), wrongs: num(ans, whole([c.f + r, c.f * p, c.f * r + c.f, c.f * (r - 1), r * p]), String), ar: `${head} كم ${c.b[2]} تقابل ${unitCount(r, c.a)}؟`, en: `${headEn} How many ${c.bEn} correspond to ${r} ${c.aEn}?` };
+      return { eq: `${p}, ${c.f * p}, ${r}`, answer: String(ans), wrongs: num(ans, whole([c.f + r, c.f * p, c.f * r + c.f, c.f * (r - 1), r * p]), String), ar: `${head} كم ${c.b[1]} تقابل ${unitCount(r, c.a)}؟`, en: `${headEn} How many ${c.bEn} correspond to ${r} ${c.aEn}?` };
     }
     const m = c.f * r;
-    return { eq: `${p}, ${c.f * p}, ${m}`, answer: String(r), wrongs: num(r, whole([m - c.f, c.f - r, r + p, r * 2, p]), String), ar: `${head} كم ${c.a[2]} تقابل ${unitCount(m, c.b)}؟`, en: `${headEn} How many ${c.aEn} correspond to ${m} ${c.bEn}?` };
+    return { eq: `${p}, ${c.f * p}, ${m}`, answer: String(r), wrongs: num(r, whole([m - c.f, c.f - r, r + p, r * 2, p]), String), ar: `${head} كم ${c.a[1]} تقابل ${unitCount(m, c.b)}؟`, en: `${headEn} How many ${c.aEn} correspond to ${m} ${c.bEn}?` };
   }
 
   if (kind === 2 || kind === 3) {
