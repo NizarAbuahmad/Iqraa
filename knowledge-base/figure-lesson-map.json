@@ -1,5 +1,5 @@
 {
-  "note": "Book lesson -> curriculum lesson. Proposed by title overlap, then hand-checked. A null kbLessonId means no lesson corresponds; those figures stay unused. Do not auto-fill from `candidates`: the book and the curriculum disagree about lesson boundaries — the book splits composition/inverse/radical into separate lessons where the curriculum merges them, so high word overlap is not proof.",
+  "note": "Book lesson -> curriculum lesson. Proposed by title overlap, then hand-checked. A null kbLessonId means no lesson corresponds; those figures stay unused. Do not auto-fill from `candidates`: the book and the curriculum can disagree about lesson boundaries (Grade 10 maths S1 unit 1: the curriculum keeps two teacher-guide exponent lessons the 2026 book does not have), so high word overlap is not proof.",
   "generatedFrom": "lessonTitleEn vs KB_LESSONS titleEn, constrained to the unit number the book prints",
   "entries": [
     {
@@ -80,7 +80,7 @@
         }
       ],
       "matchedBy": null,
-      "why": "The book opens unit 1 with a lesson the curriculum does not carry, which is why every later unit-1 lesson sits one place lower in the curriculum than the number the book prints. Left unmatched rather than forced onto a neighbour."
+      "why": "The book opens unit 1 with «حل معادلات خاصة». Since 2026-11-13 the curriculum carries it as kbl-math-s1-nccd-u1_l5, but these figures were never uploaded to R2 (the uploader only sends mapped keys), so mapping them without running upload-figures-r2 would show broken images. Map to u1_l5 and upload in the same step."
     },
     {
       "sourceId": "math-s1-student-book",
@@ -264,7 +264,7 @@
       "bookTitleEn": "Inverse Function",
       "kbLessonId": "kbl-math-s2-nccd-u5_l4",
       "score": 0.67,
-      "why": "الاقتران العكسي = the inverse function. NOT u5_l3, which the English matcher preferred at 0.67 — that lesson merges composition, inverse and radical",
+      "why": "الاقتران العكسي = the inverse function; the book's lesson also covers «الاقتران الجذري» (p32), as u5_l4 does. NOT u5_l3, which the English matcher preferred at 0.67 — that lesson is composition only.",
       "matchedBy": "hand-checked against the curriculum Arabic title"
     },
     {
