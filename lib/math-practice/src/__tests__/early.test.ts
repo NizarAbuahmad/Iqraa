@@ -1004,6 +1004,9 @@ describe('money, time and measurement: answers recomputed', () => {
     for (const item of draws('calendar')) {
       const p = item.promptAr!, n = nums(p), a = item.answer;
       if (has(p, 'كم يومًا')) assert.equal(Number(a), n[0]! * 7); else if (has(p, 'كم أسبوعًا')) assert.equal(Number(a) * 7, n[0]); else { const i = DAYS.findIndex(d => p.includes(`اليوم ${d}`)); assert.equal(a, DAYS[(i + n[0]!) % 7]); }
+      // «بعد 5 يومًا» is «بعد 5 أيام», and «2 أسابيع» is «أسبوعين» (Grade 3 audit, 2026-11-13).
+      assert.doesNotMatch(p, /(^|[^\d])([1-9]|10) يومًا/, p);
+      assert.doesNotMatch(p, /(^|[^\d])[12] أسابيع/, p);
     }
   });
 
