@@ -71,6 +71,7 @@ Checked 2026-10-22:
 
 ## Open
 
+- 2026-11-13 — Grade 7 audit: Grade 7 has no extracted book text, so live generation is ungrounded for all 397 lessons (needs the PDFs); 24 creative-arts and social lessons still lack book pages; the English S2 figures p027/p043 wait for an upload and remap; the misplaced «ﷺ» in Grade 8/9 Islamic is unchecked («Grade 7 audit…» in the log)
 - 2026-11-13 — Grade 6 audit: 49 lessons have no book pages until their right pages are re-rendered from the PDFs (`knowledge-base/g6-book-pages-to-render.json`, command in the log; NCCD and the private bucket were unreachable from the sandbox), and social, vocational and Arabic grounding text is reversed or scrambled and needs `extract-text --force --ocr` («Grade 6 audit: every lesson's book pages…» in the log)
 - 2026-11-13 — Grade 4 review: lessons complete in all 17 books; what needs the PDFs or a decision (re-OCR social/vocational text, PE has no book text, books with no figure crops, book pages to re-render) is listed in «Grade 4 review: every book's lessons are in…» in the log
 - 2026-10-31 — Homework submissions record their author (migration `0022`)

@@ -146,22 +146,6 @@
       "lessonStartPage": 46
     },
     {
-      "file": "p058-v2.png",
-      "sourceId": "g7-social-s1-student-book",
-      "pdfPage": 58,
-      "rect": [
-        66.0,
-        440.0,
-        352.0,
-        714.3
-      ],
-      "unit": 3,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 57
-    },
-    {
       "file": "p060.png",
       "sourceId": "g7-social-s1-student-book",
       "pdfPage": 60,
@@ -176,22 +160,6 @@
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": 57
-    },
-    {
-      "file": "p073-v2.png",
-      "sourceId": "g7-social-s1-student-book",
-      "pdfPage": 73,
-      "rect": [
-        49.0,
-        202.0,
-        249.0,
-        362.0
-      ],
-      "unit": 3,
-      "lesson": 5,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 66
     },
     {
       "file": "p076.png",
@@ -322,38 +290,6 @@
       "lessonStartPage": 91
     },
     {
-      "file": "p098b-v2.png",
-      "sourceId": "g7-social-s1-student-book",
-      "pdfPage": 98,
-      "rect": [
-        55.0,
-        0.0,
-        595.3,
-        536.0
-      ],
-      "unit": 4,
-      "lesson": 4,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 91
-    },
-    {
-      "file": "p099.png",
-      "sourceId": "g7-social-s1-student-book",
-      "pdfPage": 99,
-      "rect": [
-        28.8,
-        103.2,
-        534.3,
-        514.0
-      ],
-      "unit": 4,
-      "lesson": 4,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 91
-    },
-    {
       "file": "p102-v2.png",
       "sourceId": "g7-social-s1-student-book",
       "pdfPage": 102,
@@ -400,22 +336,6 @@
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": 100
-    },
-    {
-      "file": "p115.png",
-      "sourceId": "g7-social-s1-student-book",
-      "pdfPage": 115,
-      "rect": [
-        35.5,
-        161.5,
-        337.5,
-        396.5
-      ],
-      "unit": 5,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 107
     },
     {
       "file": "p123-v2.png",
@@ -588,10 +508,10 @@
         235.8
       ],
       "unit": 6,
-      "lesson": 3,
+      "lesson": 2,
       "lessonTitleEn": null,
       "lessonTitleAr": null,
-      "lessonStartPage": 124
+      "lessonStartPage": 120
     }
   ]
 }
