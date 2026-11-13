@@ -781,7 +781,7 @@ describe('data and proportion routing', () => {
     ['معدل الوحدة', 7, 'unit_rate'], ['التناسب', 7, 'proportion'], ['العلاقات التناسبية', 7, 'proportional_relation'], ['التغير الطردي', 7, 'direct_variation'],
     ['التغير العكسي', 7, 'inverse_variation'], ['التقسيم التناسبي', 7, 'proportional_division'], ['تطبيقات مالية', 7, 'financial_math'], ['مقياس الرسم', 7, 'map_scale'],
     ['التشابه', 7, 'similar_figures'], ['النسبة المئوية', 8, 'percent_g8'],
-    ['اختيار التمثيل الأنسب', 8, null], ['تفسير التمثيلات البيانية', 9, null], ['الربيعيات', 8, null],
+    ['اختيار التمثيل الأنسب', 8, null], ['تفسير التمثيلات البيانية', 9, 'interpret_graphs'], ['الربيعيات', 8, null],
   ];
   for (const [title, grade, id] of cases) {
     it(`${title} (G${grade}) → ${id ?? 'refused'}`, () => {

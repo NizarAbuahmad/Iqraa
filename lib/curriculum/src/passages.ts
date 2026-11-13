@@ -40,7 +40,7 @@ import { fileURLToPath } from 'node:url';
 import { normalizeArabic } from './arabic.ts';
 import { bankTagsForUnit, itemsForUnitTags, usePolicy, type BankUsePolicy } from './bank.ts';
 import { getObjectivesForUnit } from './objectives.ts';
-import { LESSONS } from './catalog.ts';
+import { LESSONS, UNITS } from './catalog.ts';
 import type { CurriculumSource, SourceAuthority } from './sources.ts';
 
 const extractedDir = path.join(
@@ -139,6 +139,109 @@ function pagesFor(sourceId: string): Array<{ page: number; raw: string; search: 
   const pages = doc.text.map(p => ({ page: p.page, raw: p.text, search: searchForm(p.text) }));
   cache.set(sourceId, pages);
   return pages;
+}
+
+/**
+ * A page that lists lessons rather than teaching one — the contents page, a
+ * unit opener's «دروس الوحدة». It prints many lesson titles, so a search made
+ * of lesson titles ranks it first for every unit, though it teaches nothing.
+ * A lesson counts as listed when most of its title's terms are on the page
+ * (OCR mangles some), and three listed lessons make a listing page: a lesson's
+ * own pages name it, and now and then one neighbour.
+ */
+function isListingPage(search: string, bookTitleTerms: readonly string[][]): boolean {
+  let listed = 0;
+  for (const terms of bookTitleTerms) {
+    if (!terms.length) continue;
+    const found = terms.filter(t => search.includes(t)).length;
+    if (found / terms.length >= 0.6 && ++listed >= 3) return true;
+  }
+  return false;
+}
+
+/**
+ * What keeps a search made of lesson titles inside its own unit.
+ *
+ * The units of one book repeat lesson types — every Grade 9 Islamic unit has a
+ * «سورة الإسراء» lesson and a «التلاوة والتجويد» one — so a page about unit 4's
+ * recitation also matches unit 1's titles. A page is kept only when this unit's
+ * titles describe it better than any sibling unit's do, never when it is a
+ * listing page, and never when it comes before the contents page ends (the
+ * introduction names every topic of the book). Only terms no sibling unit's
+ * titles share count, and a page needs two of them. Measured 2026-11-13
+ * against the unit page ranges on each book's contents page: Grade 9 Islamic
+ * S1/S2, 28 of 31 returned pages in the right unit (without the guards about
+ * half were); Grade 10 geography S1, every page in order inside its unit; a
+ * Grade 6 Arabic unit whose titles are the same skill names as its siblings'
+ * gets no pages rather than another unit's.
+ */
+interface TitleGuards {
+  /** Per unit, the title terms no sibling unit's titles share. */
+  termsByUnit: Map<string, string[]>;
+  /** Each lesson's title terms, for the listing-page test. */
+  allTitleTerms: string[][];
+  firstPageBySource: Map<string, number>;
+}
+
+// The catalog never changes at run time, so one build per book is enough.
+const guardsByBook = new Map<string, TitleGuards>();
+
+function titleGuardsFor(unitId: string): TitleGuards | null {
+  const bookId = UNITS.find(u => u.id === unitId)?.bookId;
+  if (!bookId) return null;
+  const hit = guardsByBook.get(bookId);
+  if (hit) return hit;
+  const units = UNITS.filter(u => u.bookId === bookId);
+  const lessonsByUnit = units.map(u => LESSONS.filter(l => l.unitId === u.id));
+  const allTitleTerms = lessonsByUnit.flat().map(l => queryTerms([l.titleAr]));
+  const unitTerms = lessonsByUnit.map(ls => new Set(ls.flatMap(l => queryTerms([l.titleAr]))));
+  // Only the terms no other unit's titles use: «الاستماع» heads every unit of
+  // an Arabic book and says nothing about which unit a page belongs to.
+  const distinctive = unitTerms.map((mine, i) =>
+    [...mine].filter(t => unitTerms.every((other, j) => j === i || !other.has(t))));
+  const guards: TitleGuards = {
+    termsByUnit: new Map(units.map((u, i) => [u.id, distinctive[i]!])),
+    allTitleTerms,
+    firstPageBySource: new Map(),
+  };
+  guardsByBook.set(bookId, guards);
+  return guards;
+}
+
+function titleScore(search: string, terms: readonly string[]): number {
+  let score = 0;
+  for (const t of terms) if (search.includes(t)) score += t.length;
+  return score;
+}
+
+/**
+ * The first page after the front matter: the page after the contents page,
+ * found as the first listing page in the opening 15% of the book. 0 (nothing
+ * skipped) when no contents page is recognised.
+ */
+function firstLessonPage(guards: TitleGuards, sourceId: string): number {
+  const hit = guards.firstPageBySource.get(sourceId);
+  if (hit !== undefined) return hit;
+  const pages = pagesFor(sourceId);
+  const window = Math.ceil(pages.length * 0.15);
+  const contents = pages.slice(0, window).find(p => isListingPage(p.search, guards.allTitleTerms));
+  const first = contents ? contents.page + 1 : 0;
+  guards.firstPageBySource.set(sourceId, first);
+  return first;
+}
+
+function pageBelongsToUnit(guards: TitleGuards, unitId: string, sourceId: string, page: { page: number; search: string }): boolean {
+  if (page.page < firstLessonPage(guards, sourceId)) return false;
+  if (isListingPage(page.search, guards.allTitleTerms)) return false;
+  const own = guards.termsByUnit.get(unitId) ?? [];
+  // Two of this unit's own terms, as the main search asks two of its terms: one
+  // shared word is a coincidence, and none is no evidence the page is this unit's.
+  if (own.filter(t => page.search.includes(t)).length < 2) return false;
+  const mine = titleScore(page.search, own);
+  for (const [id, terms] of guards.termsByUnit) {
+    if (id !== unitId && titleScore(page.search, terms) >= mine) return false;
+  }
+  return true;
 }
 
 /** Whether any text has been extracted for a source. */
@@ -242,11 +345,24 @@ export function passagesForUnit(query: PassageQuery): Passage[] {
   // Objectives and vocabulary are what the catalog knows about this unit, and
   // they are the strongest available description of what its pages say.
   const objectives = getObjectivesForUnit(unitId);
+  // Some books print no learning outcomes at all (Grade 9 Islamic Studies,
+  // history, geography, civics, PE), so their units have no objectives. A
+  // caller that passes no `terms` and no lesson — a unit/semester/book paper,
+  // the exam generator — then searched with nothing and got no pages, even for
+  // a book whose text is extracted. The unit's own lesson titles are what is
+  // left to describe it. Only as a fallback: where objectives exist they are
+  // the stronger description, and adding titles would re-rank every other unit.
+  const lessonTitles = objectives.length || query.terms?.length || query.lessonId
+    ? []
+    : LESSONS.filter(l => l.unitId === unitId).map(l => l.titleAr);
   const unitTerms = queryTerms([
     ...(query.terms ?? []),
     ...objectives.map(o => o.description),
     ...objectives.flatMap(o => o.skills ?? []),
+    ...lessonTitles,
   ]);
+  // Only the title fallback needs these; the other paths are left as they were.
+  const fallback = lessonTitles.length ? titleGuardsFor(unitId) : null;
   // The lesson's own words: its title, its key terms (the book's vocabulary
   // box) and its own outcomes. For the many lessons whose book prints no
   // outcomes these are the only terms there are, and a one-word title alone
@@ -288,6 +404,7 @@ export function passagesForUnit(query: PassageQuery): Passage[] {
       if (!pages.some(p => p.search.includes(t))) reversedLamAlef.set(t, r);
     }
     for (const page of pages) {
+      if (fallback && !pageBelongsToUnit(fallback, unitId, source.id, page)) continue;
       // Longer terms are rarer and so more informative: «المماس» locating a page
       // means more than «الشكل» does. Length is a cheap stand-in for IDF over a
       // corpus this small.
