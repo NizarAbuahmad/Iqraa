@@ -194,22 +194,6 @@
       "lessonStartPage": 24
     },
     {
-      "file": "p033.png",
-      "sourceId": "g4-social-s2-student-book",
-      "pdfPage": 33,
-      "rect": [
-        47.1,
-        193.1,
-        464.2,
-        636.1
-      ],
-      "unit": 1,
-      "lesson": 4,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 24
-    },
-    {
       "file": "p034c.png",
       "sourceId": "g4-social-s2-student-book",
       "pdfPage": 34,

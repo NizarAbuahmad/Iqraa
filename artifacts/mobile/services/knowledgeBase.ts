@@ -303,6 +303,10 @@ import {
   buildG4DigitalSem1Catalog,
 } from './curriculumG4DigitalSem1.ts';
 import {
+  G4_DIGITAL_S2_BOOK_ID,
+  buildG4DigitalSem2Catalog,
+} from './curriculumG4DigitalSem2.ts';
+import {
   G4_ISLAMIC_S1_BOOK_ID,
   buildG4IslamicSem1Catalog,
 } from './curriculumG4IslamicSem1.ts';
@@ -1703,6 +1707,15 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Digital Skills – Grade 4 – Semester 1',
     semester: 1,
     source: 'iqra_curriculum_g4_digital_sem1.json (NCCD)',
+  },
+  {
+    id: G4_DIGITAL_S2_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'digital-literacy',
+    titleAr: 'المهارات الرقمية – الصف الرابع – الفصل الثاني',
+    titleEn: 'Digital Skills – Grade 4 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g4_digital_sem2.json (NCCD)',
   },
   {
     id: G4_ISLAMIC_S1_BOOK_ID,
@@ -3717,6 +3730,7 @@ const _g4MathSem2 = buildG4MathSem2Catalog();
 const _g4ScienceSem1 = buildG4ScienceSem1Catalog();
 const _g4ScienceSem2 = buildG4ScienceSem2Catalog();
 const _g4DigitalSem1 = buildG4DigitalSem1Catalog();
+const _g4DigitalSem2 = buildG4DigitalSem2Catalog();
 const _g4IslamicSem1 = buildG4IslamicSem1Catalog();
 const _g4IslamicSem2 = buildG4IslamicSem2Catalog();
 const _g4SocialSem1 = buildG4SocialSem1Catalog();
@@ -4056,6 +4070,7 @@ export const KB_UNITS: KBUnit[] = [
   ..._g4ScienceSem1.units,
   ..._g4ScienceSem2.units,
   ..._g4DigitalSem1.units,
+  ..._g4DigitalSem2.units,
   ..._g4IslamicSem1.units,
   ..._g4IslamicSem2.units,
   ..._g4SocialSem1.units,
@@ -4267,6 +4282,7 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g4ScienceSem1.lessons,
   ..._g4ScienceSem2.lessons,
   ..._g4DigitalSem1.lessons,
+  ..._g4DigitalSem2.lessons,
   ..._g4IslamicSem1.lessons,
   ..._g4IslamicSem2.lessons,
   ..._g4SocialSem1.lessons,

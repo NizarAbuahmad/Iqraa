@@ -1,5 +1,5 @@
 /**
- * The six gates `extract-text.ts` runs on any candidate text — from
+ * The seven gates `extract-text.ts` runs on any candidate text — from
  * pdf-parse or from the OCR fallback alike, which is why this lives beside
  * `lamTranspositionRate` in `textQuality.ts` rather than inside
  * `extract-text.ts` itself (that file ends in a top-level `await main()`;
@@ -13,10 +13,12 @@ import { fileURLToPath } from 'node:url';
 import {
   LATIN_BOOK_RATIO,
   MIN_ARABIC_WORDS_TO_JUDGE,
+  REVERSED_WORD_LIMIT,
   arabicWordCount,
   englishFunctionWordShare,
   lamTranspositionRate,
   rejectReason,
+  reversedWordRate,
   wordTranspositionRate,
 } from '../../scripts/textQuality.ts';
 
@@ -42,6 +44,27 @@ describe('rejectReason', () => {
     // not the base Arabic block real extraction should produce.
     const presentationForms = '\uFE8D\uFE8E'.repeat(60);
     assert.match(rejectReason(presentationForms)!, /presentation-form/);
+  });
+
+  it('rejects Arabic stored in visual order, each word spelled backwards', () => {
+    // The real shape of g6-social-s1 and g6-voc-s1 (audit, 2026-11-13):
+    // «ةَيِبَرَعْلِ ا ةَرَزيجْلُ ا هْبِشْ» for «شبه الجزيرة العربية». Every word
+    // ending in ة now begins with it, which no Arabic word does.
+    const reversed = CLEAN.repeat(4).split(' ').map(w => [...w].reverse().join('')).join(' ');
+    assert.match(rejectReason(reversed)!, /visual order/);
+    assert.equal(rejectReason(CLEAN.repeat(4)), null);
+  });
+
+  it('measures visual order on the real books: the reversed ones over the limit, clean ones under', () => {
+    const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'data', 'extracted');
+    const rate = (id: string) => reversedWordRate(
+      (JSON.parse(readFileSync(path.join(dir, `${id}.json`), 'utf8')) as { text: Array<{ text: string }> }).text.map(p => p.text).join('\n'));
+    for (const id of ['g6-social-s1-student-book', 'g6-social-s2-student-book', 'g6-voc-s1-student-book', 'g6-voc-s2-student-book']) {
+      assert.ok(rate(id)! > REVERSED_WORD_LIMIT, `${id} reads as forward text: ${rate(id)}`);
+    }
+    for (const id of ['g6-math-s1-student-book', 'g6-science-s1-student-book', 'g6-islamic-s1-student-book', 'g6-arabic-s1-student-book']) {
+      assert.ok(rate(id)! < REVERSED_WORD_LIMIT, `${id} reads as reversed: ${rate(id)}`);
+    }
   });
 
   it('rejects text whose definite article is transposed past the threshold', () => {
