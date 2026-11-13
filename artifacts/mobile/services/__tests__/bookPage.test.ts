@@ -8,7 +8,12 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
+import { readdirSync, readFileSync, existsSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import pageLinks from '../../../../knowledge-base/book-page-links.json' with { type: 'json' };
+import figureMap from '../../../../knowledge-base/figure-lesson-map.json' with { type: 'json' };
 import { BOOK_PAGES_BASE_URL, bookPagesForLesson, lessonsWithFigures } from '../bookFigures.ts';
 import { KB_BOOKS, KB_LESSONS, KB_UNITS } from '../knowledgeBase.ts';
 
@@ -16,6 +21,18 @@ const { books, lessons } = pageLinks as {
   books: Record<string, { pages: number }>;
   lessons: Record<string, { sourceId: string; startPage: number; endPage: number; aspect: number }>;
 };
+
+/** Every committed figure index (`knowledge-base/<book>/figures/<sourceId>/index.json`), as the scripts read them. */
+const KB_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../knowledge-base');
+const figureIndexes: Array<{ sourceId: string; figures: Array<{ unit: number | null; lesson: number | null; lessonStartPage?: number | null }> }> =
+  readdirSync(KB_DIR).flatMap(book => {
+    const dir = path.join(KB_DIR, book, 'figures');
+    if (!existsSync(dir)) return [];
+    return readdirSync(dir)
+      .map(source => path.join(dir, source, 'index.json'))
+      .filter(existsSync)
+      .map(file => JSON.parse(readFileSync(file, 'utf8')));
+  });
 
 describe('book-page-links.json', () => {
   it('lists at least one lesson', () => {
@@ -60,6 +77,30 @@ describe('book-page-links.json', () => {
       checked++;
     }
     assert.ok(checked > 0, 'no lessons from the page-only subjects to check');
+  });
+
+  it("no lesson's pages run past the start of another lesson the figures place", () => {
+    // Grade 3 science S2 u4_l2 ran 17 pages into the Earth lesson, and grade 8
+    // vocational u1_l1 four pages into u1_l2: a range that swallows a lesson start
+    // the figure extractor read off the book shows the class the wrong lesson.
+    const kbOf = new Map(figureMap.entries.map(e => [`${e.sourceId}|${e.unit}|${e.lesson}`, e.kbLessonId]));
+    const starts: Array<{ sourceId: string; page: number; kb: string }> = [];
+    for (const index of figureIndexes) {
+      for (const f of index.figures) {
+        const kb = kbOf.get(`${index.sourceId}|${f.unit}|${f.lesson}`);
+        if (f.lessonStartPage && kb) starts.push({ sourceId: index.sourceId, page: f.lessonStartPage, kb });
+      }
+    }
+    assert.ok(starts.length > 100, `only ${starts.length} lesson starts read`);
+    const bad = new Set<string>();
+    for (const [id, l] of Object.entries(lessons)) {
+      for (const s of starts) {
+        if (s.sourceId === l.sourceId && s.kb !== id && l.startPage < s.page && s.page <= l.endPage) {
+          bad.add(`${id} p${l.startPage}-${l.endPage} contains the start of ${s.kb} (p${s.page})`);
+        }
+      }
+    }
+    assert.deepEqual([...bad], []);
   });
 
   it('a book without a live copy (pdfUrl null) was rendered from ours, and says so', () => {

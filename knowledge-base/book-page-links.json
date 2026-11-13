@@ -278,12 +278,6 @@
    "pages": 124,
    "source": "our copy of the student book"
   },
-  "g5-science-s2-student-book": {
-   "bookId": "kb-science-5-s2",
-   "pdfUrl": null,
-   "pages": 108,
-   "source": "our copy of the student book"
-  },
   "g5-social-s1-student-book": {
    "bookId": "kb-social-5-s1",
    "pdfUrl": null,
@@ -5247,12 +5241,6 @@
    "endPage": 54,
    "aspect": 0.75
   },
-  "kbl-g5-science-s2-nccd-u9_l1": {
-   "sourceId": "g5-science-s2-student-book",
-   "startPage": 30,
-   "endPage": 49,
-   "aspect": 0.7586
-  },
   "kbl-g5-social-s1-nccd-u1_l2": {
    "sourceId": "g5-social-s1-student-book",
    "startPage": 15,
@@ -9786,13 +9774,13 @@
   "kbl-g8-voc-s1-nccd-u1_l1": {
    "sourceId": "g8-voc-s1-student-book",
    "startPage": 6,
-   "endPage": 19,
+   "endPage": 13,
    "aspect": 0.75
   },
   "kbl-g8-voc-s1-nccd-u1_l2": {
    "sourceId": "g8-voc-s1-student-book",
    "startPage": 14,
-   "endPage": 21,
+   "endPage": 19,
    "aspect": 0.75
   },
   "kbl-g8-voc-s1-nccd-u2_l1": {

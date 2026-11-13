@@ -27,6 +27,16 @@ read through what the repo already holds: the rendered lesson pages and figure c
   are untouched (nothing deletes them; the app simply no longer asks for them). Re-render these three books with
   the PDFs (`IQRAA_PDF_ROOT=… python scripts/render_lesson_pages.py`, then `upload-book-pages-r2`) and open page 1
   of a few lessons before uploading.
+- **The same fault outside Grade 3, two books.** Grade 5 science S2's only entry, u9_l1 «السرعة», showed pages
+  30-49 (a unit-7 lesson review through «الكثافة») and is removed. Grade 8 vocational S1 u1_l1 ran to p19 and
+  u1_l2 to p21, four pages into «تنظيم الوقت» and onto the unit-2 opener; they are cut back to p6-13 and p14-19,
+  checked against the images (p13 is lesson 1's «التقويم», p14 opens «الدرس الثاني», p20 is the unit-2 opener).
+  Cutting back needs no upload: images 1..k are already in the bucket.
+- **A test now catches a range that swallows another lesson** (`bookPage.test.ts`): no lesson's pages may contain
+  the start page of a different lesson as the figure index records it. It failed on exactly these two books before
+  the fix. A wider rule, «no two lessons share a page», was tried and dropped: ~30 ranges in Grades 6-10 overlap,
+  many by design (`verify_book_pages.py` lets a curriculum lesson span book lessons, and labs share pages), and
+  sorting the real faults from those needs the images opened one by one — not done here.
 - **The calendar and money stems' Arabic** (`lib/math-practice/src/early.ts`): «ما اليوم بعد 9 يومًا؟»,
   «كم يومًا في 2 أسابيع؟», «بعد 1 يومًا» now read «بعد 9 أيام», «في أسبوعين», «بعد يوم واحد»; «لدفع 100 دينارًا»
   reads «100 دينار»; «بنظام 24 ساعة» reads «ساعةً». The agreement test (`tamyiz.test.ts`) never saw any of it: its
