@@ -10,6 +10,61 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 8 audit: book pages and figures — 2026-11-13
+
+Same method as «Grade 7 audit» below: every published page image of every Grade 8 range was viewed (18 books
+with pages, ~2,300 images), and every figure crop. The catalog has 19 catalogs and 358 lessons, and all 358
+ground to themselves by lesson id.
+
+**Coverage.**
+- No printed lesson is missing from any Grade 8 catalog, on any page that has an image.
+- **Digital skills S1 very probably lacks its second unit.** The catalog has one unit of four lessons. Unit 1
+  ends with its summary and questions at p.87-91 of a 187-page book. Pages 92-187 have no image, and
+  semester 2 starts at unit 3. Recorded in that catalog's `known_gaps`, with no lessons added by guess.
+- **Financial literacy and PE have no semester-2 catalog at all.** PE has no page images either.
+- Lessons whose pages were never rendered, so nothing can be checked:
+  - maths S2: 14 of 20;
+  - social S1: u1, u5_l3, u6;
+  - arabic S2: 8 lessons;
+  - art: u2_l7;
+  - social S2: u7_l1.
+
+**Book pages** (same fields as Grade 7):
+- Social studies ranges swallowed two or three whole lessons: S1 u2_l2 held u2_l3-l4, u3_l1 held u3_l2-l4,
+  u4_l3 held u5_l1-l2; S2 u9_l3 held all of u10_l1. Those lessons now have their own pages, and S1 u4_l1
+  and S2 u10_l1 no longer show only the unit opener.
+- Arabic:
+  - S1 unit 5 had slipped a lesson: u5_l5 showed only the review.
+  - S2 u8_l4's images were u8_l5's. Relabelled; u8_l4's key is now an orphan render.
+  - S2 u8_l1 lay inside u7_l5.
+- Maths S1 «تحليل ثلاثيات الحدود» lay inside u2_l2.
+- Financial literacy u2_l1 held the rest of its unit.
+- English:
+  - The two 20-page writing lessons ran through Culture/Literature Spots, word lists and grammar reference.
+  - Life Skills pages are cut from the units' last lessons.
+  - Lesson 1A of units 2, 7 and 8 gains the unit-opener page it works from («photo on page 14»).
+  - S2 2A and 3A share p.21, deliberately.
+- Science, maths, art and vocational: unit reviews and the next unit's opener are cut off the last lesson.
+- Arabic S2 u8_l4 and social S2 u7_l1 have no pages now: their images were another lesson's or only an opener.
+- 311 Grade 8 lessons have pages (was 301).
+
+**Figures.** All 425 crops were viewed, 419 of them mapped:
+- 85 dropped: 68 bad crops (halves and fifths of one figure, opener crops with sliced text boxes, slivers),
+  13 non-figures, 4 duplicates.
+- 9 good figures moved to their own lesson.
+- Maths S2 p076 had no map entry and was never shown.
+- All 419 mapped Grade 8 figures exist on R2.
+
+**Not done:**
+- No Grade 8 book has extracted text (same gap as Grade 7).
+- This session's R2 key reads only the public bucket. `iqraa-media` answers 403, so no PDF was reachable,
+  and the unrendered pages and digital S1's tail remain unseen.
+- `lib/curriculum`'s `r2.test.ts` fails in this environment because R2 variables are set. It does the same
+  without these changes.
+
+**Verified:** `pnpm run typecheck`; the whole mobile suite (9,214 pass, 0 fail, 10 skipped); `curriculum verify`
+(0 errors). **Not verified:** the pages and slides in a browser.
+
 ## Grade 7 audit: book pages, figures, unit context, prompt wording — 2026-11-13
 
 All 11 Grade 7 subjects (21 books, 397 catalog lessons) were checked against the student books. The PDFs
