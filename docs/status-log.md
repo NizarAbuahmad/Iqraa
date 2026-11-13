@@ -90,7 +90,10 @@ upload needed (keys only removed).
   every `iqraa-media` object**, so the page images could not be read. Needs keys
   that read that bucket, then a new session. Islamic main ideas: 34/37 were
   already there; the three recitation-practice lessons print no box, and
-  «السيدة فاطمة الأزدية» prints the box heading with nothing under it.
+  «السيدة فاطمة الأزدية» prints the box heading with nothing under it. At the
+  owner's request three of those four now take their main idea from the lesson's
+  «إضاءة» box (u1_l3 «سورة الواقعة» S1 p17, u5_l3 «سورة عبس» S2 p20, u8_l4 the
+  box's first sentence, S2 p119); u8_l3 prints neither box and stays empty.
 
 **Not done — needs the PDFs or a decision:**
 - **The digital activity book is whole-year**; u6-u10 are semester 2 content
