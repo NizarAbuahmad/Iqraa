@@ -37,4 +37,32 @@ describe('guide-sourced objectives and page search', () => {
     const ps = passagesForUnit({ unitId: 'kbu-g5-islamic-s1-nccd-u2', lessonId: 'kbl-g5-islamic-s1-nccd-u2_l2', quotableOnly: true });
     assert.ok(ownPage(ps, 'g5-islamic-s1-student-book', 29, 32), ps.map(p => `${p.sourceId}:${p.page}`).join(', '));
   });
+
+  // The Grade 10 catalogs are hand-written builders, not `makeNccdCatalog`, so
+  // they register through `markGuideObjectiveUnits` themselves (2026-11-13:
+  // 1 → 33 of 50 lessons reach their own pages).
+  it('the hand-built Grade 10 Islamic catalogs are marked too', () => {
+    for (const unitId of ['kbu-islamic-s1-nccd-u1', 'kbu-islamic-s2-nccd-u4']) {
+      assert.equal(objectivesFromTeacherGuide(unitId), true, unitId);
+      assert.ok(getObjectivesForUnit(unitId).length > 0, `${unitId} lost its objectives`);
+    }
+  });
+
+  it('Grade 10 «صحيح الإمام مسلم» reaches its own student-book pages (67-72)', () => {
+    const ps = passagesForUnit({ unitId: 'kbu-islamic-s2-nccd-u2', lessonId: 'kbl-islamic-s2-nccd-u2_l2', quotableOnly: true });
+    assert.ok(ownPage(ps, 'islamic-s2-student-book', 67, 72), ps.map(p => `${p.sourceId}:${p.page}`).join(', '));
+  });
+
+  // A page needs two matched terms. «حق التملّك» gives one («حق» is too short),
+  // so without its guide outcomes it got nothing at all; it keeps them.
+  it('a lesson whose own words give one term keeps its guide outcomes rather than getting nothing', () => {
+    for (const [unitId, lessonId] of [
+      ['kbu-islamic-s1-nccd-u1', 'kbl-islamic-s1-nccd-u1_l5'],
+      ['kbu-islamic-s2-nccd-u3', 'kbl-islamic-s2-nccd-u3_l1'],
+      ['kbu-g5-islamic-s1-nccd-u4', 'kbl-g5-islamic-s1-nccd-u4_l4'],
+      ['kbu-g4-islamic-s2-nccd-u8', 'kbl-g4-islamic-s2-nccd-u8_l5'],
+    ] as const) {
+      assert.ok(passagesForUnit({ unitId, lessonId, quotableOnly: true }).length > 0, lessonId);
+    }
+  });
 });

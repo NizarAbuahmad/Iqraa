@@ -24,6 +24,7 @@ import {
   unitKbId,
   type CurriculumIdScope,
 } from '../curriculumIds.ts';
+import { markGuideObjectiveUnits } from './nccdCatalog.ts';
 
 /** Book id in KB_BOOKS this catalog belongs to (new subject — no legacy rows). */
 export const ISLAMIC_S2_BOOK_ID = 'kb-islamic-10-s2';
@@ -89,6 +90,9 @@ const SCOPE: CurriculumIdScope = { gradeId: 'grade-10', subject: 'islamic', seme
 export function islamicSem2UnitKbId(jsonUnitId: string): string {
   return unitKbId(SCOPE, jsonUnitId);
 }
+
+// The objectives are the teacher guide's «نتاجات التعلم»; keep them out of page search.
+markGuideObjectiveUnits(nccdG10IslamicSem2.meta, nccdG10IslamicSem2.units.map(u => islamicSem2UnitKbId(u.id)));
 
 /** Stable KB lesson id (e.g. u1_l1 → kbl-islamic-s2-nccd-u1_l1). */
 export function islamicSem2LessonKbId(jsonLessonId: string): string {

@@ -156,6 +156,19 @@ export function objectivesFromTeacherGuide(unitKbId: string): boolean {
 }
 
 /**
+ * Record a catalog's units when its `meta.objectives_source` is `"teacher-guide"`.
+ * `makeNccdCatalog` calls this; a hand-written builder (the Grade 10 files)
+ * must call it too, or its guide wording keeps steering page search.
+ */
+export function markGuideObjectiveUnits(
+  meta: Record<string, unknown> | undefined,
+  unitKbIds: readonly string[],
+): void {
+  if (meta?.objectives_source !== 'teacher-guide') return;
+  for (const id of unitKbIds) guideObjectiveUnits.add(id);
+}
+
+/**
  * A lesson with no `periods` still has to occupy time on a timetable, so the
  * browser bills it as one 45-minute period. Named because the twenty-two
  * hand-written builders each inline `(lesson.periods ?? 1) * 45` and a reader
@@ -178,9 +191,7 @@ export function makeNccdCatalog(opts: {
   const unitKbId = (jsonUnitId: string): string => makeUnitKbId(scope, jsonUnitId);
   const lessonKbId = (jsonLessonId: string): string => makeLessonKbId(scope, jsonLessonId);
 
-  if (curriculum.meta?.objectives_source === 'teacher-guide') {
-    for (const u of curriculum.units) guideObjectiveUnits.add(unitKbId(u.id));
-  }
+  markGuideObjectiveUnits(curriculum.meta, curriculum.units.map(u => unitKbId(u.id)));
 
   const findLessonByKbId = (kbLessonId: string): NccdLesson | null => {
     const prefix = lessonKbPrefix(scope);

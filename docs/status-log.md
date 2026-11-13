@@ -125,9 +125,25 @@ upload needed (keys only removed).
   it did before it had objectives; the objectives stay for everything else.
   Measured on the 2048 lessons with known pages: 432 (baseline 425; Grade 4 and 5
   Islamic back to 28 and 27, no grade worse). Pinned by
-  `guideObjectivesSearch.test.ts`. **Follow-up:** Grade 10 Islamic reaches its own
-  page for 1 of 50 lessons on `main` too, likely the same cause; mark it only after
-  checking where its objectives came from.
+  `guideObjectivesSearch.test.ts`.
+- **Grade 10 Islamic: objectives were already filled (50/50, 221), from the guides.**
+  The provenance note says the «نتاجات التعلم» block on each lesson page of the
+  teacher guides; 192 of 221 match the guide's text verbatim, and the misses
+  checked are the guide's OCR noise («بياذ» for «بيان», «المرائيق» for
+  «المواثيق»), not different outcomes. So it had the same fault: 1 of 50 lessons
+  reached its own pages. Both JSONs are now marked. Its builders are the
+  hand-written kind, not `makeNccdCatalog`, so they register through the new
+  `markGuideObjectiveUnits` (which `makeNccdCatalog` now calls too). **1 → 33 of 50.**
+  Marking left two lessons with no passages at all: «حق التملّك» and «حقّ المواطنة»
+  are one search term each («حق» is too short), and a page needs two. The same
+  was true of Grade 5 «برّ الوالدين» and Grade 4 «الاحترام» under the earlier fix. A
+  lesson whose title and vocabulary give fewer than two terms now keeps its guide
+  outcomes, since the guide's page for that lesson beats nothing. All lessons with
+  known pages: 456 → 489 of 2076; Grade 4 lessons without passages 5 → 4, Grade 5
+  3 → 2 (and one more reaches its own pages); no grade worse. Pinned in
+  `guideObjectivesSearch.test.ts`, each new test checked to fail with its fix
+  reverted. Curriculum 945 + the `r2` environment failure, verify 0 errors,
+  api-server 2923/2923, typecheck clean.
 - **Islamic vocabulary NOT filled:** the «المفردات والتراكيب» boxes (12 lessons,
   listed by page in `known_gaps`) print their headwords in the Mushaf font, which
   pdf-parse dropped, and **the cloud environment's R2 keys answer AccessDenied on

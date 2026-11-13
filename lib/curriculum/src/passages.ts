@@ -375,18 +375,20 @@ export function passagesForUnit(query: PassageQuery): Passage[] {
   // outcomes these are the only terms there are, and a one-word title alone
   // can never reach the two matches a page needs.
   const lesson = queryLesson(query);
-  const lessonTerms = lesson
-    ? [
-      ...queryTerms([lesson.titleAr], 3),
-      ...queryTerms([
-        ...lesson.keywordsAr,
-        ...(guideObjectives ? [] : [
-          ...lesson.objectivesAr,
-          ...lesson.outcomes.flatMap(o => [o.descriptionAr, ...(o.skills ?? [])]),
-        ]),
-      ]),
-    ]
+  const ownWords = lesson
+    ? [...queryTerms([lesson.titleAr], 3), ...queryTerms(lesson.keywordsAr)]
     : [];
+  // A page needs two matched terms, so a lesson whose title and vocabulary give
+  // fewer — «حق التملّك» is «التملك» alone, «حق» being too short — would get
+  // nothing. Its guide outcomes then stay in: the guide's page for this lesson
+  // is a better answer than none.
+  const outcomeWords = lesson && (!guideObjectives || new Set(ownWords).size < 2)
+    ? queryTerms([
+      ...lesson.objectivesAr,
+      ...lesson.outcomes.flatMap(o => [o.descriptionAr, ...(o.skills ?? [])]),
+    ])
+    : [];
+  const lessonTerms = [...ownWords, ...outcomeWords];
   const weight = new Map<string, number>(unitTerms.map(t => [t, 1]));
   for (const t of lessonTerms) weight.set(t, LESSON_WEIGHT);
   const terms = [...weight.keys()];
