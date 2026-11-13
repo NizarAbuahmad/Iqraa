@@ -3280,6 +3280,16 @@
       "matchedBy": "book-opener-title"
     },
     {
+      "sourceId": "g6-science-s1-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "العَمَلِيّاتُ الجُيولوجِيَّةُ المُؤَثِّرَةُ في سَطْحِ الأَرْضِ",
+      "kbLessonId": "kbl-g6-science-s1-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "hand",
+      "why": "2026-11-13 Grade 6 audit: target for p101.png (unit-4 review Q7, soil erosion under water — a geological process). No figure carries (4,1) today, so the move also needs p101.png's lesson changed from 2 to 1 in the book's index.json."
+    },
+    {
       "sourceId": "g6-science-s2-student-book",
       "unit": 1,
       "lesson": 1,

@@ -18,22 +18,6 @@
       "lessonStartPage": 10
     },
     {
-      "file": "p013-v2.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 13,
-      "rect": [
-        103.1,
-        255.8,
-        401.8,
-        553.4
-      ],
-      "unit": 1,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 10
-    },
-    {
       "file": "p014-v2.png",
       "sourceId": "g6-science-s1-student-book",
       "pdfPage": 14,
@@ -42,86 +26,6 @@
         218.4,
         304.0,
         386.9
-      ],
-      "unit": 1,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 10
-    },
-    {
-      "file": "p015-v2.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 15,
-      "rect": [
-        227.2,
-        440.7,
-        471.0,
-        590.0
-      ],
-      "unit": 1,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 10
-    },
-    {
-      "file": "p015b-v2.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 15,
-      "rect": [
-        99.0,
-        440.7,
-        297.2,
-        616.0
-      ],
-      "unit": 1,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 10
-    },
-    {
-      "file": "p016-v2.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 16,
-      "rect": [
-        90.0,
-        378.3,
-        301.0,
-        502.0
-      ],
-      "unit": 1,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 10
-    },
-    {
-      "file": "p016b.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 16,
-      "rect": [
-        334.8,
-        381.3,
-        508.1,
-        468.2
-      ],
-      "unit": 1,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 10
-    },
-    {
-      "file": "p016c-v2.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 16,
-      "rect": [
-        90.0,
-        469.0,
-        301.0,
-        563.0
       ],
       "unit": 1,
       "lesson": 1,
@@ -194,134 +98,6 @@
       "lessonStartPage": 22
     },
     {
-      "file": "p029-v2.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 29,
-      "rect": [
-        67.0,
-        421.0,
-        264.0,
-        526.0
-      ],
-      "unit": 1,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 22
-    },
-    {
-      "file": "p029c-v2.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 29,
-      "rect": [
-        119.0,
-        426.0,
-        499.2,
-        675.2
-      ],
-      "unit": 1,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 22
-    },
-    {
-      "file": "p029d.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 29,
-      "rect": [
-        396.4,
-        422.7,
-        504.4,
-        528.1
-      ],
-      "unit": 1,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 22
-    },
-    {
-      "file": "p030.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 30,
-      "rect": [
-        172.3,
-        328.5,
-        258.4,
-        472.7
-      ],
-      "unit": 1,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 22
-    },
-    {
-      "file": "p030b.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 30,
-      "rect": [
-        251.5,
-        358.7,
-        326.9,
-        434.2
-      ],
-      "unit": 1,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 22
-    },
-    {
-      "file": "p030c-v2.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 30,
-      "rect": [
-        199.0,
-        518.6,
-        283.0,
-        637.0
-      ],
-      "unit": 1,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 22
-    },
-    {
-      "file": "p030d-v2.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 30,
-      "rect": [
-        282.0,
-        610.0,
-        365.0,
-        714.3
-      ],
-      "unit": 1,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 22
-    },
-    {
-      "file": "p033b.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 33,
-      "rect": [
-        239.1,
-        346.0,
-        462.6,
-        514.8
-      ],
-      "unit": 1,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 22
-    },
-    {
       "file": "p037b-v2.png",
       "sourceId": "g6-science-s1-student-book",
       "pdfPage": 37,
@@ -386,70 +162,6 @@
       "lessonStartPage": 42
     },
     {
-      "file": "p063.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 63,
-      "rect": [
-        60.0,
-        111.3,
-        234.7,
-        220.1
-      ],
-      "unit": 3,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 58
-    },
-    {
-      "file": "p075.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 75,
-      "rect": [
-        185.8,
-        234.4,
-        299.0,
-        330.5
-      ],
-      "unit": 3,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 66
-    },
-    {
-      "file": "p075b.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 75,
-      "rect": [
-        303.5,
-        244.8,
-        416.8,
-        330.5
-      ],
-      "unit": 3,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 66
-    },
-    {
-      "file": "p077b-v2.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 77,
-      "rect": [
-        52.1,
-        59.2,
-        246.6,
-        247.0
-      ],
-      "unit": 3,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 66
-    },
-    {
       "file": "p101.png",
       "sourceId": "g6-science-s1-student-book",
       "pdfPage": 101,
@@ -460,7 +172,7 @@
         727.9
       ],
       "unit": 4,
-      "lesson": 2,
+      "lesson": 1,
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": 92
