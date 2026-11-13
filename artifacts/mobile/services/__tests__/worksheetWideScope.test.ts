@@ -91,13 +91,28 @@ describe('offline worksheet — a wide scope', () => {
     if (produced < 30) assert.equal(out.shortfall?.requested, 30);
   });
 
+  for (const [sel, label] of [[sem1, 'الفصل الأول كاملًا'], [sem2, 'الفصل الثاني كاملًا']] as const) {
+    it(`the half-solved question names a lesson of the scope (${label})`, async () => {
+      // A slot whose lesson has a bank but no worked steps (S1's opener «حل
+      // معادلات خاصة», S2's polynomial and rational functions) must not cost the
+      // paper its worked example: the solved slots walk on to the next lesson
+      // with working. Both semesters used to lose the half-solved item to it.
+      const wide = buildWideRequest(sel, 'ar', 12, 'balanced')!;
+      const req = { ...base, topic: label, numQuestions: 12, ...wide.fields } as AIRequest;
+      const out = await aiService.generateWorksheet(req);
+      const half = halfSolved(out);
+      assert.ok(half, 'the wide maths paper should have a half-solved section');
+      assert.ok(out.workedExample, '... and the worked example it follows');
+      assert.ok(half.lessonId, 'half-solved question has no lessonId');
+      assert.ok(wide.lessons.some(l => l.id === half.lessonId), `foreign lesson ${half.lessonId}`);
+    });
+  }
+
   it('the half-solved question names a lesson of the scope', async () => {
     // Unit 6 (derivatives), balanced: the first two slots' lessons both have
-    // checked working, so the paper has an example and a half-solved item. A
-    // slot whose lesson has no working drops them — semester 1's second slot,
-    // and since 2026-11-13 semester 2's first two (polynomials, rational
-    // functions), which have their own generators but no worked solutions.
-    // If the data stops giving one, say so rather than pass vacuously.
+    // checked working, so the paper has an example and a half-solved item. (The
+    // semester papers above now keep theirs too: the solved slots walk past a
+    // lesson with a generator but no worked solutions.)
     const unit6: ScopeSelection = { kind: 'unit', gradeId: 'grade-10', subjectId: 'mathematics', unitId: 'kbu-math-s2-nccd-u6' };
     const wide = buildWideRequest(unit6, 'ar', 12, 'balanced')!;
     const req = { ...base, topic: 'وحدة المشتقات', numQuestions: 12, ...wide.fields } as AIRequest;

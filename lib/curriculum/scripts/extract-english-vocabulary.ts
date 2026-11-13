@@ -48,12 +48,23 @@ const EXTRACTED = path.resolve(HERE, '../src/data/extracted');
 const OUT = path.resolve(HERE, '../src/data/english_vocabulary.json');
 
 /**
- * `eng-s2-student-book` is deliberately absent: it was extracted by OCR and no
- * `WL` marker survives, so it yields nothing. Listing it would make an empty
- * result look like a parser regression rather than a source problem.
+ * `eng-s2-student-book` is deliberately absent. It was extracted by OCR: only a handful of `WL` markers survive
+ * (WL6.1-6.3 read «@WI6.1», «@Wwie.3», …) and the IPA is garbled («/lizv a 'mes.1dz/»), so a parse would file
+ * misspelt transcriptions under the right lessons. Its headings do read «LESSON nA», so `wordsFrom` would take the
+ * lesson from them just as it does for semester 1 — the day a clean text layer replaces the OCR, add it here.
  */
-const BOOKS: { sourceId: string; lessonId: (unit: number, lesson: number) => string }[] = [
-  { sourceId: 'eng-s1-student-book', lessonId: (u, l) => `kbl-eng-s1-nccd-u${u}_l${l}` },
+const BOOKS: {
+  sourceId: string;
+  lessonId: (unit: number, lesson: number) => string;
+  /**
+   * The book's `WLu.n` is a running count per unit, so the lesson is the one in the «LESSON nA» heading above the
+   * marker. Grade 10 semester 1 only for now: Grade 9 semester 1 prints the same layout and has the same mis-filing
+   * (85-odd words a lesson late), but fixing it moves four Grade 9 grammar lessons out of the word hub and needs its
+   * own pass over the Grade 9 grammar and tests.
+   */
+  lessonFromHeading?: boolean;
+}[] = [
+  { sourceId: 'eng-s1-student-book', lessonId: (u, l) => `kbl-eng-s1-nccd-u${u}_l${l}`, lessonFromHeading: true },
   // Grade 8 is the same Jordan High Note series and layout as Grade 9: seven `LESSON nA…G` pages per unit, and a
   // Word List whose `WL<unit>.<lesson>` markers number the lessons the catalog numbers. Semester 2 numbers its
   // units 6-10 (as Grade 9 semester 2 does), so its markers run WL6.1 to WL10.7.
@@ -196,6 +207,7 @@ function wordsFrom(book: (typeof BOOKS)[number]): Row[] {
   const out: Row[] = [];
   let marker: { unit: number; lesson: number } | null = null;
   let inSection = false;
+  let headingLesson: number | null = null;
 
   for (const page of pagesOf(book.sourceId)) {
     if (isWordListPage(page)) inSection = true;
@@ -205,9 +217,19 @@ function wordsFrom(book: (typeof BOOKS)[number]): Row[] {
     for (const line of page.text.split('\n').map(s => s.trim()).filter(Boolean)) {
       // The marker is usually a line of its own ("WL1.2"), but when a lesson heading wraps onto three lines it ends
       // the last heading line instead ("GRAMMAR \tWL1.1", Grade 8). A line with a slash is an IPA row, never a marker.
+      // For a book with `lessonFromHeading`, the lesson is the one in the «LESSON nA» heading above the marker, NOT
+      // the marker's second number: in Grade 10 semester 1 `WLu.n` is a running count per unit (page 65: LESSON 1A
+      // WL2.1, 2A WL2.2, 3A WL2.3, 5A WL2.4), so reading n as the lesson filed the words of lesson 5A under 4. The
+      // marker's own number is the fallback for a marker with no heading before it.
+      if (!line.includes('/')) {
+        const h = line.match(/^LESSON\s+(\d+)\s*[A-Z]?\b/i);
+        if (h) headingLesson = Number(h[1]);
+        if (/^UNIT\b/i.test(line)) headingLesson = null;
+      }
       const wl = line.match(/^WL\s*(\d+)\.(\d+)/) ?? (line.includes('/') ? null : line.match(/\sWL\s*(\d+)\.(\d+)\s*$/));
       if (wl) {
-        marker = { unit: Number(wl[1]), lesson: Number(wl[2]) };
+        marker = { unit: Number(wl[1]), lesson: (book.lessonFromHeading ? headingLesson : null) ?? Number(wl[2]) };
+        headingLesson = null;
         buf = '';
         continue;
       }

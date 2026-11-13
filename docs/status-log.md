@@ -50,6 +50,106 @@ the first and last page of every book-page entry.
 **Verified:** see the PR. The new test was first seen failing. **Not run:** the pages on a phone, live AI, and
 anything needing the PDFs (see the earlier entry's open list, which this pass does not change).
 
+## Grade 8 maths: offline questions for the four S2 lessons that had none — 2026-11-13
+
+**Why.** Grade 8 had already been checked against its books by earlier changes. One gap was left: four
+maths S2 lessons threw `NoQuestionBankError` offline, so every quiz, worksheet and homework paper on them
+failed with live AI off. The lessons are «رسم الأشكال ثلاثيّة الأبعاد» (u8_l1), «المقاطع والمجسّمات
+الدّورانيّة» (u8_l2), «الرُّبَيعيّات» (u9_l1) and «اختيار التمثيل الأنسب» (u9_l2).
+
+**What changed.**
+- `lib/math-practice/src/g8.ts` adds one computed generator per lesson. Each is limited to Grade 8
+  (`grades: [8, 8]`) and matched on the exact folded title, so a same-titled lesson in another grade is not
+  captured. There is no extracted Grade 8 maths book, so the questions ask what each lesson's NCCD
+  objectives list: counts in a view of a cube stack, the shape of a cross-section, the volume of a solid of
+  revolution, quartiles and outliers, and the chart that fits a described situation.
+- The quartile method (the median is left out of both halves when n is odd) and the 1.5×IQR outlier rule
+  are printed in every stem that needs them, so the key cannot depend on an unstated convention.
+- `congruence_a` (S1 u4_l1) could produce only 3 distinct questions. It now has six kinds and fills a
+  10-question paper.
+- The Grade 10 entry below said `g10.ts` holds five generators; it holds one, now corrected there.
+
+**Verified.**
+- `g8Lessons.test.ts` re-derives every key by a separate route: a voxel model for the views, numerical
+  integration for the solids, brute-force reflections for planes of symmetry, and a separate quartile
+  routine. Sample keys were also checked by hand. Nothing is `verified`, and no item carries a `check`.
+- math-practice tests pass. The results of the full CI set are in the PR body.
+- Not opened in a browser. No live model was run.
+
+**Not done.** No worked steps for the four new generators, so they do not supply a worksheet's worked
+example (the solved slots walk on to a lesson that has working). The questions follow the objectives, not
+a book page, until a Grade 8 maths book is extracted.
+
+## Grade 10 checked against its books, and corrected — 2026-11-13
+
+**What was checked.** All 33 Grade 10 books in the catalog (425 lessons before this change), against
+their extracted text in `lib/curriculum/src/data/extracted/` — nearly every Grade 10 book has text,
+unlike Grade 9. Five read-only reviews (maths+physics, sciences, Arabic+Islamic+finance, English+digital,
+social+art+PE+vocational), every headline finding re-checked here against the page text. Then a sweep
+of every lesson through the offline generators, the live-grounding retrieval, and the figure index. The
+four York Press vocational English books have no text and were checked structurally only. nccd.gov.jo
+still does not answer from a cloud session, so nothing was checked against page images.
+
+**Coverage.** Every lesson the books print is in the catalog, in order, except:
+- **Maths S1 unit 1 followed the 2020 teacher guide, not the current book.** The 2026 student book
+  (2nd ed., revised 2022) opens with «حل معادلات خاصة» and has no exponent lessons; the catalog carried
+  the guide's «تبسيط المقادير الأسية» and «حل المعادلة الأسية» and called the book "an older edition".
+  Owner's decision: add the book lesson and keep both guide lessons. «حل معادلات خاصة» is
+  `kbl-math-s1-nccd-u1_l5` (a new id after the persisted four; `order` puts it first), its objectives
+  derived from the book's examples (it prints none); the guide lessons are labelled as such.
+- **Introductory experiments** were listed as lab lessons in chemistry but missing from biology and earth
+  science: 10 added (`u*_lab`), titles verified on their pages.
+- **Vocational education had no Grade 10 catalog** though its part-1 book is extracted. Added
+  (owner's decision) as `book-voc-10-s1`: 4 units, 9 chapters, objectives from each chapter's printed
+  list. The book is a 2016 Ministry edition; the file on record as part 2 is a 2015 *Grade 9* book
+  (ISBN 978-9957-84-641-1), so S2 waits for the right book. A «ما الجديد» entry (teachers).
+- Still missing for lack of a book: PE S2, financial literacy S2 (the S2 we hold is an older edition).
+
+**Live grounding.** Grade 10 history, civics and art had extracted text that never reached a prompt:
+the manifest tagged them `history-s*`, `civic-s*`, `art-g10-general` while their units derive `hist-s*`,
+`civ-s*`, `arts-s1`. Fixed (33/33 lessons now get their book's pages); the art teacher guide keeps the
+old tag on purpose — it is an older Ministry guide for a different, art-only course. New test
+(`bank.test.ts`): every ingested book with text must carry a tag some catalog unit derives, exceptions
+listed with reasons. English stays unquotable (third-party, a copyright decision).
+
+**Content corrected** (from the pages; uncertain readings are in each file's `known_gaps`):
+Islamic — 27 of 50 empty main ideas filled from book + guide (23 unreadable in the OCR); S2 unit 2's
+Quranic title. Arabic S1 — a missing objective, one cut short, a title word. Biology S1 — the three unit
+general ideas rebuilt from letter-reversed text. Earth science — two section headings removed from
+vocabulary; S2 unit 4 periods from the guide. Chemistry S1 — u3_l2's two printed experiments. History —
+the Ottoman lesson's main idea is the book's box, multi-term entries split, «Sipahi» not «Sepoy». Maths —
+invented and missing terms, the S2 unit-8 lab's order, prior knowledge, stale notes. English — 85 of 257
+S1 word-list words were on the wrong lesson (the `WL` markers are running numbers, not lesson numbers;
+`extract-english-vocabulary.ts` now reads the preceding «LESSON nA»); grammar items rewritten where they
+taught what the book does not (u7_l1 reported speech, u6_l1) and added where the book teaches what no item
+covered (u6_l4 alternatives to if, permission/requests, bare infinitive, articles with jobs/superlatives,
+be about to, continuous/perfect passives). Two decorative chemistry unit covers dropped from the figures.
+**Kept as they were, on purpose:** «قانون جيب التمام», «قسمة كثيرات الحدود والاقترانات النسبية» and
+«قارّةُ أوقيانوسيا» — the books print «جيوب», «الاقترانات النسبية» and «أوقيانوسيا: الملامح الطبيعية
+والبشرية», but each rename made exact-title grounding lose the lesson (`known_gaps` records the book's
+wording).
+
+**Offline results.** Every lesson grounds on itself by id. Lesson plans and activities generate for all.
+The new «حل معادلات خاصة» lesson has a computed generator (`lib/math-practice/src/g10.ts`; keys
+re-derived by `g10Lessons.test.ts`, never `verified`, no worked steps). This branch first also wrote
+generators for trig graphs, 3-D problems, polynomial and rational functions; `main`'s `grade10.ts` landed
+the same four in parallel, so after the merge `grade10.ts` serves them and `g10.ts` holds only the one
+(an earlier version of this entry said five). Generators without steps had cost a semester-wide
+worksheet its worked example; the solved slots now walk on to the next lesson with working
+(`generators.ts`, pinned for both semesters).
+
+**Not done.** Needs the PDFs: the three «حل معادلات خاصة» figures (never uploaded to R2 — mapping them
+alone would show broken images; noted in the map), book pages for art / history S2 / most of geography S2
+/ vocational English, the vocational part-2 and PE S2 books, a page-image check of the OCR reconstructions
+listed in `known_gaps` (Islamic main ideas, vocational objectives, a geography term box). English lesson
+periods: the teacher's guides print none. **Grade 9 English S1 has the same word-list bug**; left for its
+own change (fixing it turns four G9 grammar lessons grammar-only). Ten offline maths quizzes still return
+3–8 of 10 questions where the bank is thin.
+
+**Verified.** Root typecheck; curriculum `verify` 0 errors and tests; math-practice tests; api-server
+build + tests; mobile suite; math-verifier — results in the PR body. Not opened in a browser or on a
+device; no live model was run.
+
 ## Grade 10 audit: book pages, figures and contents checked against the printed books — 2026-11-13
 
 The Grade 6–9 review («Grade 9 audit…»), repeated for all of Grade 10 (425 lessons). Every served page image and every

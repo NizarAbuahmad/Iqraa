@@ -72,6 +72,7 @@ Checked 2026-10-22:
 
 ## Open
 
+- 2026-11-13 — Grade 10 checked against its books and corrected; history, civics and art text now grounds live prompts (it never did); vocational S1 added; what is left needs the PDFs or a book (PE S2, financial literacy S2, vocational S2, the «حل معادلات خاصة» figures to map and upload) and the same English word-list fix for Grade 9 («Grade 10 checked against its books, and corrected» in the log)
 - 2026-11-13 — Grade 9 checked against its books and corrected; what is left needs the PDFs (nccd.gov.jo does not answer from cloud sessions): figures for 16 books, book pages for art / vocational / history S2, two missing download links, and a page check of the 11 books with no extracted text («Grade 9 checked against its books, and corrected» in the log)
 - 2026-11-13 — Grade 10 audit: book pages and figures corrected against the page images; maths unit 1 follows an older edition than the book served (owner's call); still to render from the PDFs: history S2, geography S2 (7), biology S1 u1_l1, four opening labs, arts («Grade 10 audit…» in the log)
 - 2026-11-13 — Grade 9 audit: book pages and figures corrected against the page images; still to render from the PDFs: Arabic S2 u8_l5/u9_l1/u10_l5, three English S2 lessons' first pages, PE S2 u7_l4, history S2 units 4–5 («Grade 9 audit…» in the log)

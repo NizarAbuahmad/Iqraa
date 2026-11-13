@@ -8,13 +8,14 @@
  *
  * Why a checked-in map rather than matching at runtime
  * ────────────────────────────────────────────────────
- * The book and the curriculum disagree about lesson boundaries. The book
- * splits composition, inverse and radical functions into separate lessons
- * where `KB_LESSONS` merges them into one; the book opens unit 1 with a lesson
- * («حل معادلات خاصة») the curriculum does not carry at all, which shifts every
- * later unit-1 lesson by one. A fuzzy title match scored 0.67 between «Inverse
- * Function» and the merged lesson — high enough to look convincing, wrong
- * enough to file a figure under a lesson about something else.
+ * The book and the curriculum disagree about lesson boundaries and numbering.
+ * Grade 10 maths S1 unit 1 is the live case: the book opens with «حل معادلات
+ * خاصة», which the curriculum carries as `u1_l5` (an id added after the
+ * persisted four), so the book's lesson n is the curriculum's `u1_l{n-1}`; and
+ * the curriculum keeps two teacher-guide exponent lessons the book does not
+ * have. A fuzzy title match once scored 0.67 between «Inverse Function» and a
+ * neighbouring lesson — high enough to look convincing, wrong enough to file a
+ * figure under a lesson about something else.
  *
  * So the join lives in `knowledge-base/figure-lesson-map.json`, proposed by
  * title overlap and then read by a human. An entry with a null `kbLessonId`
