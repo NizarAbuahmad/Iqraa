@@ -17,6 +17,12 @@
  * names a different hamza topic than the lesson's own page), and both items
  * of u8_l5 (list punctuation not recoverable) — so u8_l5 has none.
  *
+ * `vocabulary` is empty except u8_l4 (2026-11-13): the only place either
+ * book prints words with their meanings is the "word: meaning" margin gloss
+ * of Shawqi's poem on p. 76 of that writing lesson (pp. 73-78). Its six
+ * words are taken unvowelled, in the gloss's order, with `en: ""`; the
+ * search and the rest of the reasoning are in the JSON's known_gaps.
+ *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */
 

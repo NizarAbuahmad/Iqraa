@@ -9,7 +9,10 @@
  * of the same fixed pattern (أستمع، أتحدث، أقرأ، أكتب، أبني لغتي), and every
  * lesson is a page of interactive exercises (multiple choice, matching,
  * fill-in-the-blank) around a literary or grammar topic, not an expository
- * passage. So main_idea_ar and vocabulary stay empty. `objectives` is filled
+ * passage. So main_idea_ar and vocabulary stay empty — and the book prints no
+ * word box to take vocabulary from (searched 2026-11-13: no glossary or
+ * "word: meaning" margin note; its coloured-word meaning tasks are exercises,
+ * not a list; see known_gaps). `objectives` is filled
  * (2026-11-13) from the "unit competencies" page after each unit opener
  * (pp. 7, 31, 61, 89, 117), which is grouped by the five lesson types, so
  * group (1)…(5) maps onto lessons 1-5: three items for lessons 1-4, two for
