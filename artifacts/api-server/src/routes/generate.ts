@@ -73,6 +73,7 @@ import {
   storeVariant,
 } from "../lib/artifactCache.ts";
 import { notifyAdminsOfArtifactReport } from "../lib/adminNotify.ts";
+import { normalizeReportReason } from "../lib/reportReason.ts";
 import { decideServe } from "../lib/variantPolicy.ts";
 import { SingleFlight } from "../lib/singleFlight.ts";
 import {
@@ -1187,7 +1188,9 @@ generateRouter.post("/generate/variants/:id/retire", async (req: AuthenticatedRe
     res.status(404).json({ error: "No pooled variant to report." });
     return;
   }
-  const outcome = await reportVariant({ artifactId: id, reporterUserId: req.user!.id });
+  // Optional, and never a reason to refuse a report.
+  const reason = normalizeReportReason((req.body as { reason?: unknown } | undefined)?.reason);
+  const outcome = await reportVariant({ artifactId: id, reporterUserId: req.user!.id, reason });
   if (!outcome.ok) {
     // 404 for "no such variant" and for "already retired" alike: both mean
     // there is nothing left in the pool to report, which is what the caller
@@ -1208,7 +1211,7 @@ generateRouter.post("/generate/variants/:id/retire", async (req: AuthenticatedRe
   // approves in the same second) would only email and push the admins about
   // something one of them just did — 8 such mails on 2026-10-18.
   if (req.user!.role !== "system_admin") {
-    notifyAdminsOfArtifactReport({ kind: outcome.kind, lessonRef: outcome.lessonRef }).catch((err) =>
+    notifyAdminsOfArtifactReport({ kind: outcome.kind, lessonRef: outcome.lessonRef, reason }).catch((err) =>
       logger.error({ err, artifactId: id }, "admin artifact-report notification failed"),
     );
   }
