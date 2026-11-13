@@ -35,6 +35,9 @@ describe("physics drawing format", () => {
     it(`${lang}: lists every unit`, () => {
       for (const u of PHYSICS_UNITS) assert.ok(text.includes(u), `missing unit ${u}`);
     });
+    it(`${lang}: states the no-repeat rules`, () => {
+      assert.ok(text.includes(lang === "en" ? "never use one label twice" : "ولا تستعمل الوسم نفسه مرتين"));
+    });
     it(`${lang}: names all six kinds and carries the examples`, () => {
       for (const k of ["forces", "attraction", "projectile", "circular", "wave", "vectors"]) assert.ok(text.includes(`"${k}"`), k);
       for (const e of PHYSICS_FIGURE_EXAMPLES) assert.ok(text.includes(e));
