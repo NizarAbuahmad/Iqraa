@@ -31,14 +31,14 @@ import { DECK_ICON_NAMES, diagramLimitsAr, diagramLimitsEn } from "./promptSlide
 import { PROMPT_EXAMPLE_CHECKS } from "./lessonTeachingChecks.ts";
 import { figureFormatAr, figureFormatEn } from "./figurePrompt.ts";
 import { isMathContext } from "@workspace/math-practice";
-import { keyTermsTeachingClauseAr, keyTermsTeachingClauseEn, parseKeyTerms } from "./keyTerms.ts";
+import { keyTermsTeachingClauseAr, keyTermsTeachingClauseEn, parseKeyTerms, TEACHING_CONCEPTS_MAX_WITH_TERMS } from "./keyTerms.ts";
 
 /** Concept slides asked for. More is a lecture; fewer is not an explanation. */
 export const TEACHING_CONCEPTS_MIN = 3;
 export const TEACHING_CONCEPTS_MAX = 5;
 
-/** The ceiling when the book's key terms need more than five ideas (u6_l2 has seven). */
-export const TEACHING_CONCEPTS_MAX_WITH_TERMS = 8;
+/** The ceiling when the book's key terms need more than five ideas (u6_l2 has seven). Lives in keyTerms.ts. */
+export { TEACHING_CONCEPTS_MAX_WITH_TERMS };
 
 /** The upper bound asked for: five, or one slide per key term up to eight. */
 export function teachingConceptsMax(b: Record<string, unknown>): number {
@@ -102,7 +102,7 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي لهذا ال�
      - "mindmap": ${limits.mindmap}؛ و"role" اختياري: "cause" للسبب و"effect" للنتيجة.
    - "icon": اسم أيقونة واحد من: ${DECK_ICON_NAMES.join(", ")}.
    - "chart": {"kind":"chart","chartType":"bar","categories":[..],"values":[..]} فقط من أرقام واردة في محتوى الكتاب أعلاه. لا تخترع أرقامًا أبدًا، ولا تجمع "chart" مع "shape".
-   - "photo": عبارة بحث إنجليزية من ٢-٥ كلمات لمشهد حقيقي (مكان، تجربة، ظاهرة)، لا لقاعدة رياضية؛ في فكرتين على الأكثر. ومتى أضفت "photo" فاجعل أحد سطور "points" يقول ما يظهر في الصورة وكيف يوضّح الفكرة، فالصورة لا تُعرض بلا كلام يفسّرها.
+   - "photo": عبارة بحث إنجليزية من ٢-٥ كلمات لمشهد حقيقي (مكان، تجربة، ظاهرة)، لا لقاعدة رياضية؛ في فكرتين على الأكثر. ومتى أضفت "photo" فاجعل أحد سطور "points" يصف هذا المشهد نفسه وصلته بالفكرة بكلام يُفهم ولو لم تظهر أي صورة، ولا تكتب «في الصورة» ولا «تُظهر الصورة».
 14. الدقة قبل الإرجاع — يقرأ هذا الشرحَ طالبٌ وحده، فلا أحد يصحّح خطأه:
    - "answer" في المثال والتدريب هو الناتج النهائي محسوبًا ومبسّطًا: عدد بوحدته، أو الأزواج المرتبة نفسها، أو العبارة بعد التبسيط. لا شرطة «—»، ولا وصف للطريقة («الحل هو نقطتا التقاطع»)، ولا عبارة لم تُحسب («63 × sin 30°» بل «31.5 cm²»).
    - تحقّق من كل إجابة: عوّضها في المسألة (في كل معادلة من النظام) وأعد كل عملية حسابية. إن لم تتحقق فغيّر أرقام المسألة لا الإجابة، واختر أرقامًا تعطي ناتجًا نظيفًا (عددًا صحيحًا أو كسرًا بسيطًا).
@@ -172,7 +172,7 @@ Mandatory rules:
      - "mindmap": ${limits.mindmap}; "role" is optional: "cause" or "effect".
    - "icon": one icon name from: ${DECK_ICON_NAMES.join(", ")}.
    - "chart": {"kind":"chart","chartType":"bar","categories":[..],"values":[..]} only from figures in the textbook content above; never invent figures, and never put "chart" with "shape".
-   - "photo": a 2-5 word English search phrase for a real scene (a place, an experiment, a phenomenon), never for a maths rule; on two concepts at most. When you add a "photo", make one line of "points" say what the photo shows and how it illustrates the idea; a photo is never projected without words that explain it.
+   - "photo": a 2-5 word English search phrase for a real scene (a place, an experiment, a phenomenon), never for a maths rule; on two concepts at most. When you add a "photo", make one line of "points" describe that scene itself and how it relates to the idea, in words that make sense even if no photo appears; never write "in the photo" or "the photo shows".
 14. Accuracy before you return — a student reads this explanation alone, with nobody to catch a mistake:
    - "answer" in the worked example and the practice is the final result, worked out and simplified: a number with its unit, the ordered pairs themselves, or the simplified expression. Never a dash "—", never a description of the method ("the solution is the intersection points"), never an unevaluated expression (not "63 × sin 30°" but "31.5 cm²").
    - Check every answer: substitute it back into the problem (into every equation of a system) and redo every calculation. If it does not check, change the problem's numbers, not the answer, and pick numbers that give a clean result (a whole number or a simple fraction).

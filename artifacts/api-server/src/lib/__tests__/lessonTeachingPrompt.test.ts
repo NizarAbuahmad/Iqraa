@@ -304,7 +304,9 @@ describe("lesson-teaching: key terms", () => {
 
     it(`${lang}: a photo must be explained in words, on every lesson`, () => {
       const p = build(BODY);
-      assert.match(p, lang === "ar" ? /ومتى أضفت "photo" فاجعل أحد سطور "points" يقول ما يظهر في الصورة/ : /When you add a "photo", make one line of "points" say what the photo shows/);
+      assert.match(p, lang === "ar" ? /ومتى أضفت "photo" فاجعل أحد سطور "points" يصف هذا المشهد نفسه/ : /When you add a "photo", make one line of "points" describe that scene itself/);
+      assert.match(p, lang === "ar" ? /ولا تكتب «في الصورة» ولا «تُظهر الصورة»/ : /never write "in the photo" or "the photo shows"/);
+      assert.ok(!p.includes(lang === "ar" ? "يقول ما يظهر في الصورة" : "say what the photo shows"));
     });
   }
 });

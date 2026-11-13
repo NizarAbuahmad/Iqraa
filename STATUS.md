@@ -70,6 +70,9 @@ Checked 2026-10-22:
 
 ## Open
 
+- The key-terms coverage change (2026-11-13) has had no live model run (OpenAI credit exhausted on 2026-11-13). First
+  live check: the u2_l2 quiz, the u6_l2 slides and one 10–12-term lesson (e.g. `kbl-phys-s2-nccd-u6_l1`), reading the
+  «key terms coverage» log line and every answer key.
 - 2026-10-31 — Homework submissions record their author (migration `0022`)
 - 2026-10-31 — Homework project submission — teacher screens (phase 3: the switch, the handed-in list, one project, «حذف المشروع»; what is left open is the item «Homework projects: what the teacher's app still cannot do…» below)
 - 2026-10-31 — Teacher can clear one student's project (the API; the app's button is the teacher-screens entry above)

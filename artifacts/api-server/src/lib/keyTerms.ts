@@ -27,6 +27,8 @@
 import { parseWideScope } from "./grounding.ts";
 
 export const KEY_TERMS_MAX = 12;
+/** The most concept slides a lesson-teaching reply may carry when terms ask for more than five. */
+export const TEACHING_CONCEPTS_MAX_WITH_TERMS = 8;
 const TERM_MAX = 60;
 
 export function parseKeyTerms(body: Record<string, unknown>): string[] | null {
@@ -48,7 +50,7 @@ const list = (terms: string[]) => terms.map(t => `- ${t}`).join("\n");
 export function keyTermsQuestionClauseAr(b: Record<string, unknown>): string {
   const terms = parseKeyTerms(b);
   if (!terms) return "";
-  return `\nمصطلحات الدرس كما في الكتاب:\n${list(terms)}\nوزّع الأسئلة على هذه المصطلحات بحيث يتناول كل مصطلح سؤالًا واحدًا على الأقل ما دام عدد الأسئلة يسمح؛ وإن كانت الأسئلة أقل من المصطلحات فاختر مصطلحات متباعدة في القائمة ولا تحصرها في أولها. المصطلح الذي يمثّل كمية تُقاس أو تُحسب (مثل زمن التحليق أو الكتلة المولية) يُسأل عنه بمسألة حسابية بأرقام، في سؤال من الأنواع المطلوبة أعلاه.`;
+  return `\nمصطلحات الدرس كما في الكتاب:\n${list(terms)}\nوزّع الأسئلة على هذه المصطلحات بحيث يكون لكل مصطلح سؤال واحد على الأقل ما دام عدد الأسئلة يسمح؛ وإن كانت الأسئلة أقل من المصطلحات فاختر مصطلحات متباعدة في القائمة ولا تحصرها في أولها. المصطلح الذي يمثّل كمية تُقاس أو تُحسب (مثل زمن التحليق أو الكتلة المولية) يُسأل عنه بمسألة حسابية بأرقام، في سؤال من الأنواع المطلوبة أعلاه.`;
 }
 
 export function keyTermsQuestionClauseEn(b: Record<string, unknown>): string {
@@ -60,13 +62,13 @@ export function keyTermsQuestionClauseEn(b: Record<string, unknown>): string {
 export function keyTermsTeachingClauseAr(b: Record<string, unknown>): string {
   const terms = parseKeyTerms(b);
   if (!terms) return "";
-  return `\nمصطلحات الدرس كما في الكتاب (إلزامي):\n${list(terms)}\nاشرح كل مصطلح منها في فكرة واحدة على الأقل من "concepts"، ويجوز أن تجمع فكرةٌ مصطلحين متلازمين إذا شرحتهما معًا (مثل التداخل ومبدأ تراكب الموجات). لا تُسقط مصطلحًا. حين يكون للمصطلح علاقة رياضية في هذا الدرس فليكن مثاله في "points" مسألة قصيرة بأرقام. وإن كان بين المصطلحات كمية تُحسب فاجعل "workedExample" و"practice" مسألتين حسابيتين عن إحداها.\n`;
+  return `\nمصطلحات الدرس كما في الكتاب (إلزامية):\n${list(terms)}\nاشرح كل مصطلح منها في فكرة واحدة على الأقل من "concepts"، ويجوز أن تجمع فكرةٌ مصطلحين متلازمين إذا شرحتهما معًا (مثل التداخل ومبدأ تراكب الموجات). لا تُسقط مصطلحًا. حين يكون للمصطلح علاقة رياضية في هذا الدرس فليكن مثاله في "points" مسألة قصيرة بأرقام. وإن كان بين المصطلحات كمية تُحسب فاجعل "workedExample" و"practice" مسألتين حسابيتين عن إحداها.${terms.length > TEACHING_CONCEPTS_MAX_WITH_TERMS ? ` المصطلحات أكثر من ${TEACHING_CONCEPTS_MAX_WITH_TERMS}: اجمع المصطلحات المتجاورة في القائمة، كل مصطلحين أو ثلاثة في فكرة واحدة، حتى لا يزيد عدد "concepts" على ${TEACHING_CONCEPTS_MAX_WITH_TERMS}، ولا تُسقط مصطلحًا.` : ""}\n`;
 }
 
 export function keyTermsTeachingClauseEn(b: Record<string, unknown>): string {
   const terms = parseKeyTerms(b);
   if (!terms) return "";
-  return `\nThe lesson's key terms, as the book prints them (mandatory):\n${list(terms)}\nExplain every term in at least one item of "concepts"; one concept may cover two terms that belong together if it explains both (such as interference and the principle of superposition). Do not drop a term. When a term has a mathematical relation in this lesson, make its example in "points" a short problem with numbers. If any term is a quantity that is calculated, make "workedExample" and "practice" calculations about one of them.\n`;
+  return `\nThe lesson's key terms, as the book prints them (mandatory):\n${list(terms)}\nExplain every term in at least one item of "concepts"; one concept may cover two terms that belong together if it explains both (such as interference and the principle of superposition). Do not drop a term. When a term has a mathematical relation in this lesson, make its example in "points" a short problem with numbers. If any term is a quantity that is calculated, make "workedExample" and "practice" calculations about one of them.${terms.length > TEACHING_CONCEPTS_MAX_WITH_TERMS ? ` There are more than ${TEACHING_CONCEPTS_MAX_WITH_TERMS} terms: group neighbouring terms in the list, two or three to a concept, so that "concepts" never exceeds ${TEACHING_CONCEPTS_MAX_WITH_TERMS}, and drop no term.` : ""}\n`;
 }
 
 // ─── Measuring ───────────────────────────────────────────────────────────────
@@ -106,4 +108,32 @@ export function missingKeyTerms(terms: string[], content: unknown): string[] {
     const t = tokens(term);
     return t.length > 0 && !text.includes(` ${t.join(" ")} `);
   });
+}
+
+/**
+ * What of a lesson-teaching reply reaches the slide: the first eight concepts'
+ * title and points, the worked example and the practice. A term that appears
+ * only in a teacher note, or in a ninth concept, is not covered for the pupil.
+ */
+export function teachingCoverageContent(content: unknown): unknown {
+  const obj = (v: unknown): Record<string, unknown> | null =>
+    v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+  const pick = (v: unknown, keys: string[]): Record<string, unknown> | null => {
+    const o = obj(v);
+    if (!o) return null;
+    const out: Record<string, unknown> = {};
+    for (const k of keys) if (k in o) out[k] = o[k];
+    return out;
+  };
+  const c = obj(content);
+  const out: Record<string, unknown> = {};
+  if (!c) return out;
+  if (Array.isArray(c.concepts)) {
+    out.concepts = c.concepts.slice(0, TEACHING_CONCEPTS_MAX_WITH_TERMS).map(x => pick(x, ["title", "points"]) ?? {});
+  }
+  const we = pick(c.workedExample, ["problem", "steps", "answer"]);
+  if (we) out.workedExample = we;
+  const pr = pick(c.practice, ["problem", "answer"]);
+  if (pr) out.practice = pr;
+  return out;
 }

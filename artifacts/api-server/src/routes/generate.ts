@@ -34,7 +34,7 @@ import {
   sanitizeDeckStructure,
 } from "../lib/promptSlidesPrompt.ts";
 import { lessonTeachingPromptAr, lessonTeachingPromptEn, teachingVisualCounts } from "../lib/lessonTeachingPrompt.ts";
-import { missingKeyTerms, parseKeyTerms } from "../lib/keyTerms.ts";
+import { missingKeyTerms, parseKeyTerms, teachingCoverageContent } from "../lib/keyTerms.ts";
 import { problemsOf, settleTeaching } from "../lib/lessonTeachingChecks.ts";
 import {
   QUESTIONS_TOKENS,
@@ -703,16 +703,21 @@ function withMeta(result: GenerateResult, grounding: Grounding | null): unknown 
  * counted once per teacher.
  */
 function logKeyTermCoverage(kind: string, body: Record<string, unknown>, result: GenerateResult): void {
-  const terms = parseKeyTerms(body);
-  if (!terms) return;
-  logger.info({
-    kind,
-    lessonId: typeof body.lessonId === "string" ? body.lessonId : undefined,
-    terms: terms.length,
-    missing: missingKeyTerms(terms, result.content),
-    variantId: result.variantId,
-    servedReason: result.servedReason,
-  }, "key terms coverage");
+  try {
+    const terms = parseKeyTerms(body);
+    if (!terms) return;
+    const measured = kind === "lesson-teaching" ? teachingCoverageContent(result.content) : result.content;
+    logger.info({
+      kind,
+      lessonId: typeof body.lessonId === "string" ? body.lessonId : undefined,
+      terms: terms.length,
+      missing: missingKeyTerms(terms, measured),
+      variantId: result.variantId,
+      servedReason: result.servedReason,
+    }, "key terms coverage");
+  } catch (err) {
+    logger.warn({ kind, err }, "key terms coverage failed");
+  }
 }
 
 /**

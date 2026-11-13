@@ -21,15 +21,20 @@ Spec `docs/superpowers/specs/2026-11-13-lesson-key-terms-coverage-design.md`, pl
 `docs/superpowers/plans/2026-11-13-lesson-key-terms-coverage.md`.
 
 **What changed.**
-- **The terms travel with the request.** `groundingRequestFields` (`services/kbContext.ts`) adds `keyTerms` from the
-  grounded lesson's own book subject, **only physics or chemistry** (`scienceKeyTerms` / `keyTermsField`; trimmed,
-  deduped, capped). Maths, English, ungrounded topics and wide scopes send nothing, so their requests are unchanged.
-  `buildWorksheetRequest`, `buildLessonTeachingRequest` and `quiz.tsx` send it.
+- **The terms travel with the request.** The app adds `keyTerms` with `scienceKeyTerms` + `keyTermsField`
+  (`services/kbContext.ts`) from the grounded lesson's own book subject, **only physics or chemistry** (trimmed,
+  deduped, capped), in `buildWorksheetRequest`, `buildLessonTeachingRequest` and `quiz.tsx`; `groundingRequestFields`
+  is unchanged. Maths, English, ungrounded topics and wide scopes send nothing, so their requests are unchanged.
 - **API.** `artifacts/api-server/src/lib/keyTerms.ts`: `parseKeyTerms`, the prompt clauses and `missingKeyTerms`. Quiz,
   worksheet and homework prompts print a «cover every term» clause; lesson-teaching prints the terms too.
 - **Slides.** lesson-teaching asks for 3 to `max(5, min(8, n))` concepts (n = number of terms) and the app's
   `usableTeaching` keeps up to 8 (was 5). Every lesson's photo must now be explained in the concept's own points
-  (the air-track finding), terms or not.
+  (the air-track finding), terms or not. Final wording of the rule: a line of «points» describes the scene itself in
+  words that stand without a picture, and never says «في الصورة» / «تُظهر الصورة».
+- **More than 8 terms.** The clause tells the model to group neighbouring terms (two or three to a concept) so
+  «concepts» never exceeds 8 and no term is dropped. Lesson-teaching coverage is measured on what reaches the slide
+  (`teachingCoverageContent`: the first 8 concepts' title/points, the worked example, the practice), and the log
+  helper can no longer fail a completed generation (try/catch, warn).
 - **Prompt version.** `PROMPT_VERSION_BY_KIND['lesson-teaching']` is `2026-11-13.1`. **Pool cost:** every lesson's
   next slides explanation regenerates once (a pooled one under the old version is no longer a hit).
 - **Cache key.** `keyTermsHash` joins the strict generation key, so a request with terms and one without never share a
@@ -51,11 +56,16 @@ each red before green.
   (credit exhausted) on 2026-11-13, so the planned before/after run of the u2_l2 quiz and the u6_l2 slides was not
   done, and no answer key was checked by hand. First check once credit returns: generate those two, read the «key
   terms coverage» line (it names the terms each generation skipped) and read the questions and slides.
-- `lesson-teaching` runs on Claude Sonnet 5.5 in production (STATUS.md), so the slides prompt's behaviour is that
-  model's, not OpenAI's; even a live OpenAI run would not have proved it.
+- lesson-teaching, quiz and worksheet run on whichever model `AI_MODEL_DOCUMENTS` selects (`DOCUMENT_KINDS` in
+  `artifacts/api-server/src/lib/aiBudget.ts`); STATUS.md is inconsistent on whether that variable is set, so which
+  model will follow these rules is unconfirmed.
 - No app or browser check of the screens.
 - The offline generators are unchanged, so an offline paper (live AI off or fallen back) can still skip a term. Chat
-  (`chatArtifacts.ts`) and the CQV batch homework paths send no terms.
+  (`chatArtifacts.ts`), the CQV batch homework paths and lesson-flow (its worksheet and exit-ticket quiz go through
+  `groundingRequestFields`: `app/ai-tools/lesson-flow.tsx`, `services/lessonFlowRunner.ts`) send no terms, so a
+  physics lesson there keeps the old prompts.
+- A lesson with more than 12 terms (`kbl-g9-chem-s2-nccd-u4_l1` has 13) sends only the first 12; five lessons send
+  9–12 terms and are told to group them into at most 8 concepts.
 - Known matcher limits (log noise only, nothing is removed by it): plural/construct forms (الموجات vs موجة), ؤ/ئ,
   Arabic-Indic digits can read as «missing»; punctuation-only terms read as present.
 

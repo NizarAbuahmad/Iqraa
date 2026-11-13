@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   KEY_TERMS_MAX, keyTermsQuestionClauseAr, keyTermsQuestionClauseEn,
   keyTermsTeachingClauseAr, keyTermsTeachingClauseEn, missingKeyTerms, parseKeyTerms,
+  teachingCoverageContent, TEACHING_CONCEPTS_MAX_WITH_TERMS,
 } from "../keyTerms.ts";
 
 const WAVES = ["انعكاس الموجة", "انكسار الموجة", "مبدأ تراكب الموجات", "تداخل", "حيود", "استقطاب", "تأثير دوبلر"];
@@ -44,7 +45,7 @@ describe("clauses", () => {
     it(`${lang}: the question clause lists every term and asks for calculations on quantities`, () => {
       const c = q({ keyTerms: WAVES });
       for (const term of WAVES) assert.ok(c.includes(`- ${term}`), term);
-      assert.match(c, lang === "ar" ? /سؤالًا واحدًا على الأقل/ : /at least one question/);
+      assert.match(c, lang === "ar" ? /سؤال واحد على الأقل/ : /at least one question/);
       assert.match(c, lang === "ar" ? /مسألة حسابية بأرقام/ : /calculation with numbers/);
     });
 
@@ -52,7 +53,7 @@ describe("clauses", () => {
       const c = t({ keyTerms: WAVES });
       for (const term of WAVES) assert.ok(c.includes(`- ${term}`), term);
       assert.match(c, lang === "ar" ? /لا تُسقط مصطلحًا/ : /Do not drop a term/);
-      assert.match(c, lang === "ar" ? /"workedExample"/ : /"workedExample"/);
+      assert.match(c, /"workedExample"/);
     });
   }
 });
@@ -80,5 +81,53 @@ describe("missingKeyTerms", () => {
 
   it("works for English and ignores case", () => {
     assert.deepEqual(missingKeyTerms(["Time of Flight", "Range"], { q: "Find the time of flight." }), ["Range"]);
+  });
+});
+
+describe("more than eight terms", () => {
+  const nine = Array.from({ length: 9 }, (_, i) => `مصطلح${i}`);
+  const eight = nine.slice(0, 8);
+  for (const lang of ["ar", "en"] as const) {
+    it(`${lang}: the grouping sentence is present for 9 terms and absent for 8`, () => {
+      const t = lang === "ar" ? keyTermsTeachingClauseAr : keyTermsTeachingClauseEn;
+      const re = lang === "ar" ? /المصطلحات أكثر من 8: اجمع المصطلحات المتجاورة/ : /There are more than 8 terms: group neighbouring terms/;
+      assert.match(t({ keyTerms: nine }), re);
+      assert.doesNotMatch(t({ keyTerms: eight }), re);
+    });
+  }
+  it("the ceiling is eight", () => assert.equal(TEACHING_CONCEPTS_MAX_WITH_TERMS, 8));
+});
+
+describe("teachingCoverageContent", () => {
+  const concepts = Array.from({ length: 9 }, (_, i) => ({
+    title: `فكرة ${i}`, points: [`نقطة ${i}`], teacherNote: `ملاحظة ${i}`, misconception: `خطأ ${i}`, hint: `تلميح ${i}`,
+  }));
+  const content = {
+    concepts,
+    workedExample: { problem: "p", steps: ["s"], answer: "a", teacherNote: "tn" },
+    practice: { problem: "pp", answer: "pa", hint: "h" },
+  };
+  it("keeps only what reaches the slide", () => {
+    const out = teachingCoverageContent(content) as any;
+    assert.equal(out.concepts.length, 8);
+    assert.deepEqual(Object.keys(out.concepts[0]).sort(), ["points", "title"]);
+    assert.deepEqual(out.workedExample, { problem: "p", steps: ["s"], answer: "a" });
+    assert.deepEqual(out.practice, { problem: "pp", answer: "pa" });
+  });
+  it("tolerates any shape", () => {
+    assert.deepEqual(teachingCoverageContent(null), {});
+    assert.deepEqual(teachingCoverageContent("x"), {});
+    assert.deepEqual(teachingCoverageContent({ concepts: "x", practice: 3 }), {});
+  });
+  it("a term only in a teacherNote or only in concept 9 is missing", () => {
+    const c = {
+      concepts: [
+        { title: "أ", points: ["ب"], teacherNote: "حيود" },
+        ...Array.from({ length: 7 }, () => ({ title: "ج", points: ["د"] })),
+        { title: "استقطاب", points: ["x"] },
+      ],
+    };
+    assert.deepEqual(missingKeyTerms(["حيود", "استقطاب"], teachingCoverageContent(c)), ["حيود", "استقطاب"]);
+    assert.deepEqual(missingKeyTerms(["حيود", "استقطاب"], c), []);
   });
 });
